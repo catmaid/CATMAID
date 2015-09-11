@@ -612,7 +612,7 @@
               CATMAID.info(message);
               // Update internal representation
               var hasAnnotation = function(r) {
-                return r.annotations.some(function(a) {
+                return r.id == neuron_id && r.annotations.some(function(a) {
                   return a.id == annotation_id;
                 });
               };

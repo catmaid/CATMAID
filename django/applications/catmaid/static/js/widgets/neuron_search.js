@@ -179,6 +179,7 @@
     var datatable = $(selector).DataTable({
       destroy: true,
       dom: "lrptip",
+      autoWidth: false,
       paging: true,
       displayStart: this.display_start,
       pageLength: this.display_length,

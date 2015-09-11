@@ -44,6 +44,18 @@ Selection table:
   wheel) is checked.
 
 
+Neuron sarch:
+
+- The "select all" checkbox now does what it says and selects all neurons in the
+  results set.
+
+- Pagination now works like in other widgets and the number of elements per page
+  can be adjusted.
+
+- Annotations are not loaded by default anymore, but can be shown with the help
+  of the new "Show annotations" checkbox.
+
+
 Miscellaneous:
 
 - When a connector is selected, basic information about it is displayed at the

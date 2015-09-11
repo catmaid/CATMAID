@@ -285,53 +285,6 @@
       a.dataset.annotation = entity.name;
       a.dataset.indent = indent;
     }
-    // Add click handlers to remove tags from nodes
-    var NA = this;
-    $(".remove_annotation", $(ul)).click( function(event) {
-        // Prevent the event from bubbling up the DOM tree
-        event.stopPropagation();
-        // Handle click
-        var neuron_id = $(this).parent().attr('neuron_id');
-        var annotation_id = $(this).parent().attr('annotation_id');
-        CATMAID.remove_annotation(neuron_id,
-            annotation_id, (function(message) {
-                // Display message returned by the server
-                CATMAID.info(message);
-                // Update internal representation
-                var hasAnnotation = function(r) {
-                  return r.annotations.some(function(a) {
-                    return a.id == annotation_id;
-                  });
-                };
-                var nextAnnotationMatch = function(r) {
-                  for (var i=0; i<r.annotations.length; ++i) {
-                    if (r.annotations[i].id == annotation_id) return i;
-                  }
-                  return null;
-                };
-                this.queryResults[0].filter(hasAnnotation).forEach(function(r) {
-                  var i = nextAnnotationMatch(r);
-                  if (i !== null) r.annotations.splice(i, 1);
-                });
-                // Remove current annotation from displayed list
-                var result_tr = $('#neuron_annotations_query_results' +
-                    this.widgetID).find('.show_annotation[neuron_id=' +
-                    neuron_id + '][annotation_id=' + annotation_id + ']');
-                result_tr.fadeOut(1000, function() { $(this).remove(); });
-            }).bind(NA));
-    });
-    // Add click handlers to show an annotation in navigator
-    $(".show_annotation", $(ul)).click( function() {
-        // Expect name to be the text content of the node
-        var annotation_name = $(this).text();
-        var annotation_id = $(this).attr('annotation_id');
-        // Create a new navigator and set it to an annotation filter node
-        var NN = new CATMAID.NeuronNavigator();
-        // Create a new window, based on the newly created navigator
-        WindowMaker.create('neuron-navigator', NN);
-        // Select the cloned node in the new navigator
-        NN.set_annotation_node(annotation_name, annotation_id);
-    });
     // Add handler to the checkbox infront of each entity
     var create_cb_handler = function(widget) {
       return function() {
@@ -629,6 +582,55 @@
               }
         });
       }
+    });
+
+    // Add click handlers to remove tags from nodes
+    $table.on('click.cm', 'ul .remove_annotation', this,  function(event) {
+      // Prevent the event from bubbling up the DOM tree
+      event.stopPropagation();
+      // Handle click
+      var widget = event.data;
+      var neuron_id = $(this).parent().attr('neuron_id');
+      var annotation_id = $(this).parent().attr('annotation_id');
+      CATMAID.remove_annotation(neuron_id,
+          annotation_id, (function(message) {
+              // Display message returned by the server
+              CATMAID.info(message);
+              // Update internal representation
+              var hasAnnotation = function(r) {
+                return r.annotations.some(function(a) {
+                  return a.id == annotation_id;
+                });
+              };
+              var nextAnnotationMatch = function(r) {
+                for (var i=0; i<r.annotations.length; ++i) {
+                  if (r.annotations[i].id == annotation_id) return i;
+                }
+                return null;
+              };
+              this.queryResults[0].filter(hasAnnotation).forEach(function(r) {
+                var i = nextAnnotationMatch(r);
+                if (i !== null) r.annotations.splice(i, 1);
+              });
+              // Remove current annotation from displayed list
+              var result_tr = $('#neuron_annotations_query_results' +
+                  this.widgetID).find('.show_annotation[neuron_id=' +
+                  neuron_id + '][annotation_id=' + annotation_id + ']');
+              result_tr.fadeOut(1000, function() { $(this).remove(); });
+          }).bind(widget));
+    });
+
+    // Add click handlers to show an annotation in navigator
+    $table.on('click.cm', 'ul .show_annotation', function() {
+        // Expect name to be the text content of the node
+        var annotation_name = $(this).text();
+        var annotation_id = $(this).attr('annotation_id');
+        // Create a new navigator and set it to an annotation filter node
+        var NN = new CATMAID.NeuronNavigator();
+        // Create a new window, based on the newly created navigator
+        WindowMaker.create('neuron-navigator', NN);
+        // Select the cloned node in the new navigator
+        NN.set_annotation_node(annotation_name, annotation_id);
     });
   };
 

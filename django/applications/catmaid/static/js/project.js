@@ -46,7 +46,7 @@ function Project( pid )
 
 		if ( stackViewers.length > 1 )
 			self.moveToProject( self.coordinates.z, self.coordinates.y, self.coordinates.x,
-					lastFocusedStackViewer.primaryStack.resolution.x / lastFocusedStackViewer.scale );
+					lastFocusedStackViewer.primaryStack.stackToProjectSX( lastFocusedStackViewer.s ));
 		else
 		{
 			var c = stackViewer.projectCoordinates();

@@ -9,14 +9,14 @@
  */
 
 /**
- */
-
-/**
- * A TrakEM2 Web project.
+ * A CATMAID project.
  *
  * - contains abstract objects on top of a common project-specific semantic framework
  * - is related to one ore more stacks of statically aligned layers
  *   ( all stacks of a project are related by translation using physical dimensions )
+ *
+ * @class
+ * @param {number} pid  API ID of this CATMAID project.
  */
 function Project( pid )
 {
@@ -27,6 +27,8 @@ function Project( pid )
 
 	/**
 	 * Add a stack viewer to the project.
+	 *
+	 * @param {StackViewer} stackViewer Viewer to add to the project and UI.
 	 */
 	this.addStackViewer = function( stackViewer )
 	{
@@ -61,8 +63,6 @@ function Project( pid )
 			if ( !tool )
 				tool = new Navigator();
 			self.setTool( tool );
-			// self.focusedStack.setTool( tool );
-
 		}
 
 		// Announce that a new stack view was added
@@ -91,6 +91,11 @@ function Project( pid )
 		return stackViewers;
 	};
 
+	/**
+	 * Get all stack viewers whose primary stack has a given ID.
+	 * @param  {number} stackId  ID of the primary stack to search for.
+	 * @return {StackViewer[]}
+	 */
 	this.getViewersForStack = function (stackId)
 	{
 		return stackViewers.filter(function (stackViewer) {
@@ -249,7 +254,6 @@ function Project( pid )
 		document.getElementById( "content" ).style.display = "none";
 		document.body.appendChild( view );
 		CATMAID.ui.registerEvent( "onresize", resize );
-		//window.onresize();
 
 		document.onkeydown = onkeydown;
 	};

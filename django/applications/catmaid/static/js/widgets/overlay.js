@@ -309,6 +309,19 @@ SkeletonAnnotations.getActiveNodeVector3 = function() {
 };
 
 /**
+ * Get a THREE.Vector3 representation of the active treenode's location in
+ * project coordinates.
+ */
+SkeletonAnnotations.getActiveNodeProjectVector3 = function() {
+  if (null === this.atn.id) {
+    return new THREE.Vector3();
+  } else {
+    var position = this.getActiveNodePositionW();
+    return new THREE.Vector3(position.x, position.y, position.z);
+  }
+};
+
+/**
  * Get the ID of the stack viewer the active node was selected from or null if
  * there is no active node.
  */

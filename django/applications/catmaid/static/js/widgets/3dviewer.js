@@ -1489,7 +1489,10 @@
   };
 
   WebGLApplication.prototype.Space.prototype.updateSplitShading = function(old_skeleton_id, new_skeleton_id, options) {
-    if ('active_node_split' === options.shading_method || 'near_active_node' === options.shading_method) {
+    if ('active_node_split' === options.shading_method ||
+        'near_active_node' === options.shading_method ||
+        'near_active_node_z_project' === options.shading_method ||
+        'near_active_node_z_camera' === options.shading_method) {
       if (old_skeleton_id !== new_skeleton_id) {
         if (old_skeleton_id && old_skeleton_id in this.content.skeletons) this.content.skeletons[old_skeleton_id].updateSkeletonColor(options);
       }
@@ -3239,6 +3242,14 @@
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColor = function(options) {
     var node_weights,
         arbor;
+    if ('near_active_node_z_camera' !== options.shading_method &&
+        'near_active_node_z_project' !== options.shading_method &&
+        this.line_material instanceof WebGLApplication.ShaderLineBasicMaterial) {
+      this.line_material = this.actor.neurite.material = new THREE.LineBasicMaterial({
+        color: this.line_material.color,
+        opacity: this.line_material.opacity,
+        linewidth: options.skeleton_line_width});
+    }
 
     if ('none' === options.shading_method) {
       node_weights = null;
@@ -3384,6 +3395,40 @@
             node_weights[node] = undefined === within[node] ? 0 : 1;
           });
         }
+
+      } else if ('near_active_node_z_camera' === options.shading_method ||
+                 'near_active_node_z_project' === options.shading_method) {
+        this.line_material = this.actor.neurite.material =
+            new WebGLApplication.ShaderLineBasicMaterial(this.line_material);
+
+        // Determine active node distance in the vertex shader and pass to the
+        // fragment shader as a varying.
+        this.line_material.insertSnippet(
+            'vertexDeclarations',
+            'uniform vec3 u_activeNodePosition;\n' +
+            'uniform float u_horizon;\n' +
+            'varying float activeNodeDistanceDarkening;\n');
+        this.line_material.insertSnippet(
+            'vertexPosition',
+            ('near_active_node_z_camera' === options.shading_method ?
+              'vec3 camVert = (vec4(position, 1.0) * modelMatrix).xyz - cameraPosition;\n' +
+              'vec3 camAtn = (vec4(u_activeNodePosition, 1.0) * modelMatrix).xyz - cameraPosition;\n' +
+              'float zDist = distance(dot(camVert, normalize(camAtn)), length(camAtn));\n' :
+              'float zDist = distance(position.z, u_activeNodePosition.z);\n') +
+            'activeNodeDistanceDarkening = 1.0 - clamp(zDist/u_horizon, 0.0, 1.0);\n');
+
+        this.line_material.insertSnippet(
+            'fragmentDeclarations',
+            'varying float activeNodeDistanceDarkening;\n');
+        this.line_material.insertSnippet(
+            'fragmentColor',
+            'gl_FragColor = vec4(diffuse * activeNodeDistanceDarkening, opacity);\n');
+
+        this.line_material.addUniforms({
+            u_activeNodePosition: { type: 'v3', value: SkeletonAnnotations.getActiveNodeProjectVector3() },
+            u_horizon: { type: 'f', value: options.distance_to_active_node }});
+        this.line_material.refresh();
+
       } else if ('synapse-free' === options.shading_method) {
         var locations = this.getPositions(),
             node_weights = {};
@@ -3565,6 +3610,8 @@
         }
       }
     }
+
+    if (typeof this.line_material.refresh === 'function') this.line_material.refresh();
   };
 
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.changeSkeletonLineWidth = function(width) {
@@ -4429,7 +4476,7 @@
     value = this._validate(value, "Invalid value");
     if (!value) return;
     this.options.distance_to_active_node = value;
-    if ('near_active_node' === this.options.shading_method) {
+    if (this.options.shading_method.indexOf('near_active_node') !== -1) {
       var skid = SkeletonAnnotations.getActiveSkeletonId();
       if (skid) {
         var skeleton = this.space.content.skeletons[skid];
@@ -4748,6 +4795,91 @@
         onDone(frames);
       }
     }
+  };
+
+  /**
+   * This is a wrapper that allows insertion of snippets of vertex and fragment
+   * shaders at critical sections while otherwise behaving like the shaders for
+   * THREE's built-in BasicLineMaterial.
+   *
+   * Note that this class may need to be updated whenever THREE.js is upgraded.
+   *
+   * @class
+   * @param {THREE.LineBasicMaterial} lineBasicMaterial
+   *        A material to use for color and line property initialization.
+   */
+  WebGLApplication.ShaderLineBasicMaterial = function (lineBasicMaterial) {
+    THREE.ShaderMaterial.call(this);
+
+    this.uniforms = jQuery.extend(true, {}, THREE.ShaderLib.basic.uniforms);
+    this.vertexShader = THREE.ShaderLib.basic.vertexShader;
+    this.fragmentShader = THREE.ShaderLib.basic.fragmentShader;
+
+    // Copy properties from LineBasicMaterial.
+    this.color = lineBasicMaterial.color.clone();
+    this.fog = lineBasicMaterial.fog;
+    this.linewidth = lineBasicMaterial.linewidth;
+    this.linecap = lineBasicMaterial.linecap;
+    this.linejoin = lineBasicMaterial.linejoin;
+    this.vertexColors = lineBasicMaterial.vertexColors;
+  };
+
+  WebGLApplication.ShaderLineBasicMaterial.prototype = Object.create(THREE.ShaderMaterial.prototype);
+  WebGLApplication.ShaderLineBasicMaterial.prototype.constructor = WebGLApplication.ShaderLineBasicMaterial;
+
+  WebGLApplication.ShaderLineBasicMaterial.INSERTION_LOCATIONS = {
+    vertexDeclarations: {
+      shader: 'vertex',
+      regex: /void\s+main\(\s*\)\s+\{/,
+      replacement: 'void main() {'},
+    vertexPosition: {
+      shader: 'vertex',
+      regex: /gl_Position\s*=\s*projectionMatrix\s*\*\s*mvPosition;/,
+      replacement: 'gl_Position = projectionMatrix * mvPosition;'},
+    fragmentDeclarations: {
+      shader: 'fragment',
+      regex: /void\s+main\(\s*\)\s+\{/,
+      replacement: 'void main() {'},
+    fragmentColor: {
+      shader: 'fragment',
+      regex: /gl_FragColor\s*=\s*vec4\(\s*diffuse,\s*opacity\s*\);/,
+      replacement: ''}
+  };
+
+  /**
+   * Add uniforms to the vertex and fragment shaders.
+   * @param {object} uniforms THREE.js uniform definitions.
+   */
+  WebGLApplication.ShaderLineBasicMaterial.prototype.addUniforms = function (uniforms) {
+    $.extend(this.uniforms, uniforms);
+  };
+
+  /**
+   * Insert a GLSL snippet into a vertex or fragment shader at a known location.
+   * @param  {string} insertionName Name of a insertion location defined in
+   *                                INSERTION_LOCATIONS.
+   * @param  {string} glsl          GLSL code to insert into the shader.
+   */
+  WebGLApplication.ShaderLineBasicMaterial.prototype.insertSnippet = function (insertionName, glsl) {
+    var insertionPoint = WebGLApplication.ShaderLineBasicMaterial.INSERTION_LOCATIONS[insertionName];
+    var shaderSource = insertionPoint.shader === 'vertex' ? this.vertexShader : this.fragmentShader;
+    shaderSource = shaderSource.replace(insertionPoint.regex, glsl + insertionPoint.replacement);
+    if (insertionPoint.shader === 'vertex') {
+      this.vertexShader = shaderSource;
+    } else {
+      this.fragmentShader = shaderSource;
+    }
+    this.needsUpdate = true;
+  };
+
+  /**
+   * Refresh built-in THREE.js material uniform values from this material's
+   * properties. Necessary because THREE.js performs this in WebGLRenderer's
+   * setProgram only for its built-in materials.
+   */
+  WebGLApplication.ShaderLineBasicMaterial.prototype.refresh = function () {
+    this.uniforms.diffuse.value = this.color;
+    this.uniforms.opacity.value = this.opacity;
   };
 
   // Make 3D viewer available in CATMAID namespace

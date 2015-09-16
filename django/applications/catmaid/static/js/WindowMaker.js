@@ -1114,6 +1114,8 @@ var WindowMaker = new function()
     [['none', 'None'],
      ['active_node_split', 'Active node split'],
      ['near_active_node', 'Near active node'],
+     ['near_active_node_z_project', 'Near active node (Z only)'],
+     ['near_active_node_z_camera', 'Near active node (camera plane)'],
      ['synapse-free', 'Synapse-free chunks'],
      ['downstream_amount', 'Downstream cable'],
      ['betweenness_centrality', 'Betweenness centrality'],

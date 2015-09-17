@@ -638,10 +638,6 @@ SelectionTable.prototype.GUI.prototype.update_skeleton_color_button = function(s
 
 /** Remove all, and repopulate with the current range. */
 SelectionTable.prototype.GUI.prototype.update = function() {
-
-  var skeletons = this.table.filteredSkeletons(false),
-      skeleton_ids = skeletons.reduce(function(o, sk, i) { o[sk.id] = i; return o; }, {});
-
   // Update GUI state
   var widgetID = this.table.widgetID;
 
@@ -662,7 +658,7 @@ SelectionTable.prototype.GUI.prototype.update = function() {
 
   // Re-create table, let DataTables take care of paging
   var reviews = this.table.reviews;
-  var data = skeletons.reduce(function(d, s, i) {
+  var data = this.table.skeletons.reduce(function(d, s, i) {
     d[i] = {
       index: i, // For initial sorting
       skeleton: s,
@@ -670,7 +666,7 @@ SelectionTable.prototype.GUI.prototype.update = function() {
       reviewPercentage: reviews[s.id],
     };
     return d;
-  }, new Array(skeletons.length));
+  }, new Array(this.table.skeletons.length));
 
   var createCheckbox = function(key, skeleton) {
     var id = 'skeleton' + key + widgetID + '-' + skeleton.id;
@@ -708,9 +704,14 @@ SelectionTable.prototype.GUI.prototype.update = function() {
       },
       {
         "type": "text",
-        "render": function(data, type, row, meta) {
-          return '<a href="#" class="neuron-selection-link action-select">' +
-            (row.name ? row.name : "undefined") + '</a>';
+        "render": {
+          "display": function(data, type, row, meta) {
+            return '<a href="#" class="neuron-selection-link action-select">' +
+              (row.name ? row.name : "undefined") + '</a>';
+          },
+          "_": function(data, type, row, meta) {
+            return row.name ? row.name : "undefined";
+          }
         }
       },
       {
@@ -793,6 +794,16 @@ SelectionTable.prototype.GUI.prototype.update = function() {
       tds.eq(-1).addClass('centering').css('white-space', 'nowrap');
     }
   });
+
+  // If there is a regex search active, filter the table
+  if (this.table.match) {
+    // Treat search string as regular expression, if it starts with "/"
+    if (this.table.match.substr(0, 1) === "/") {
+      table.column(2).search(this.table.match.substr(1), true, false).draw();
+    } else {
+      table.column(2).search(this.table.match).draw();
+    }
+  }
 
   // If the skeleton order changed through the datatable, propagate this change
   // back to the internal skeleton ID list.

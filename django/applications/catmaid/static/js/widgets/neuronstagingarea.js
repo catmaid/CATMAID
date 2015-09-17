@@ -797,10 +797,19 @@ SelectionTable.prototype.GUI.prototype.update = function() {
   // If the skeleton order changed through the datatable, propagate this change
   // back to the internal skeleton ID list.
   table.on("order.dt", this, function(e) {
-    // Get the current order of skeletons
-    var data = $(this).DataTable().rows({order: 'current'}).data().toArray();
-    // Update the widget's internal representation
     var widget = e.data.table;
+    // Get the current order of skeletons and store it in the widget
+    var data = $(this).DataTable().rows({order: 'current'}).data().toArray();
+    // Before data is written back, we make sure the widget contains the same
+    // data as the table.
+    function inSet(d) { return this.has(d.skeleton.id); }
+    var skeleton_ids = Object.keys(widget.skeleton_ids).map(Number);
+    if (data.length != skeleton_ids.length ||
+        !data.every(inSet, new Set(skeleton_ids))) {
+      return;
+    }
+
+    // Update the widget's internal representation
     widget.skeletons = data.map(function(d) {
       return d.skeleton;
     });

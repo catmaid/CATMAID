@@ -3,7 +3,7 @@
 
 QUnit.test('Instance registry test', function( assert ) {
   // Create a new instance registry based type
-  var T = function() { this.widgetID = this.registerInstance(); }
+  var T = function() { this.widgetID = this.registerInstance(); };
   T.prototype = new InstanceRegistry();
 
   // Test if new instance IDs get assigned as expexted

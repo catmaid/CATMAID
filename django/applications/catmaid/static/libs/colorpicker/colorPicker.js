@@ -1,3 +1,6 @@
+// Wrap color picker in ready handler, it expects document to be available
+$(document).ready((function() {
+
 ;(function(window, undefined){
 	"use strict"
 
@@ -1397,3 +1400,5 @@
 	};
 
 })(window);
+
+}).bind(this));

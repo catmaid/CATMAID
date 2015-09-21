@@ -66,6 +66,10 @@ class FlyTEMMiddleware(BasicModelMapMiddleware):
     url_prefix = '/flytem'
 
 
+class DVIDMiddleware(BasicModelMapMiddleware):
+    url_prefix = '/dvid'
+
+
 class ProfilingMiddleware(object):
     """This middleware will create a cProfile log file for a view request if
     'profile' is part of the request URL, which can be done by simply attaching

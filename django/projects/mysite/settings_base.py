@@ -211,6 +211,13 @@ VERSION = utils.get_version()
 # FLYTEM_STACK_TILE_WIDTH = 512
 # FLYTEM_STACK_TILE_HEIGHT = 512
 
+# DVID auto-discovery. To activate add the following lines to your settings.py
+# file:
+# MIDDLEWARE_CLASSES += ('catmaid.middleware.DVIDMiddleware',)
+# DVID_URL = 'http://emdata2.int.janelia.org:7000/api'
+# DVID_FORMAT = 'jpg:80'
+# DVID_SHOW_NONDISPLAYABLE_REPOS = True
+
 # Make Django root folder available
 PROJECT_ROOT = utils.relative('..', '..')
 # Add all subdirectories of project, applications and lib to sys.path

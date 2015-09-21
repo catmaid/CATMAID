@@ -25,7 +25,6 @@ def projects(request):
                 }
             }
         })
-    
-    print projects
-    return HttpResponse(json.dumps(projects, sort_keys=True, indent=2), content_type="text/json")
 
+    return HttpResponse(json.dumps(projects, sort_keys=True, indent=2),
+                        content_type="text/json")

@@ -18,8 +18,6 @@ def stack_info(request, project_id=None, stack_id=None):
     broken_slices = {i:1 for i in stack.broken_slices}
 
     result = get_stack_info_response(project, stack, ps, overlay_data, broken_slices)
-    print 'stack_info'
-    print result
     return HttpResponse(json.dumps(result, sort_keys=True, indent=4), content_type="text/json")
 
 def stacks(request, project_id=None):

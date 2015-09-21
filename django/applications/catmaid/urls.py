@@ -435,6 +435,7 @@ urlpatterns += patterns('catmaid.control',
 # Patterns for FlyTEM access
 urlpatterns += patterns('catmaid.control.flytem',
     (r'^flytem/projects$', 'project.projects'),
+    (r'^(?P<project_id>.+)/user/reviewer-whitelist$', 'review.reviewer_whitelist'),
     (r'^flytem/(?P<project_id>.+)/stack/(?P<stack_id>.+)/info$', 'stack.stack_info'),
     (r'^flytem/(?P<project_id>.+)/stacks$', 'stack.stacks'),
 )
@@ -442,6 +443,7 @@ urlpatterns += patterns('catmaid.control.flytem',
 # Patterns for DVID access
 urlpatterns += patterns('catmaid.control.dvid',
     (r'^dvid/projects$', 'project.projects'),
+    (r'^(?P<project_id>.+)/user/reviewer-whitelist$', 'review.reviewer_whitelist'),
     (r'^dvid/(?P<project_id>.+)/stack/(?P<stack_id>.+)/info$', 'stack.stack_info'),
     (r'^dvid/(?P<project_id>.+)/stacks$', 'stack.stacks'),
 )

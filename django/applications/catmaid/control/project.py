@@ -8,8 +8,32 @@ from django.db import connection
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 
-from catmaid.models import UserRole, Class, Project, Stack
+from catmaid.models import UserRole, Class, Project, Stack, Relation
 from catmaid.control.authentication import requires_user_role
+
+# All classes needed by the tracing system alongside their
+# descriptions.
+needed_classes = {
+    'stackgroup': "An identifier for a group of stacks",
+}
+
+# All relations needed by the tracing system alongside their
+# descriptions.
+needed_relations = {
+    'has_channel': "A stack group can have assosiated channels",
+    'has_view': "A stack group can have assosiated orthogonal views",
+}
+
+def validate_project_setup(project_id, user_id):
+    """Will create needed class and relations if they don't exist.
+    """
+    for nc, desc in needed_classes.iteritems():
+        Class.objects.get_or_create(project_id=project_id,
+                class_name=nc, defaults={'user_id': user_id})
+
+    for nr, desc in needed_relations.iteritems():
+        Relation.objects.get_or_create(project_id=project_id,
+                relation_name=nr, defaults={'user_id': user_id})
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def list_project_tags(request, project_id=None):

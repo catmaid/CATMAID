@@ -49,6 +49,18 @@ class Project(models.Model):
     def __unicode__(self):
         return self.title
 
+def on_project_save(sender, instance, created, **kwargs):
+    """ Make sure all required classes and relations are set up.
+    """
+    if created and sender == Project:
+        from control.project import validate_project_setup
+        from catmaid import get_system_user
+        user = get_system_user()
+        validate_project_setup(instance.id, user.id)
+
+# Validate project when they are saved
+post_save.connect(on_project_save, sender=Project)
+
 class Stack(models.Model):
     class Meta:
         db_table = "stack"

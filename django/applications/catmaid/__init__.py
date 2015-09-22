@@ -49,6 +49,25 @@ def validate_configuration():
             raise ImproperlyConfigured("Please make sure settings field %s "
                     "is of type %s" % (field, data_type))
 
+def get_system_user():
+    """Return a User instance of a superuser. This is either the superuser
+    having the ID configured in SYSTEM_USER_ID or the superuser with the lowest
+    ID."""
+    if hasattr(settings, "SYSTEM_USER_ID"):
+        try:
+            return User.objects.get(id=settings.SYSTEM_USER_ID, is_superuser=True)
+        except User.DoesNotExist:
+            raise ImproperlyConfigured("Could not find any super user with ID "
+                                       "configured in SYSTEM_USER_ID (%s), "
+                                       "please fix this in settings.py" % settings.SYSTEM_USER_ID)
+    else:
+        # Find admin user with lowest id
+        users = User.objects.filter(is_superuser=True).order_by('id')
+        if not len(users):
+            raise ImproperlyConfigured("Couldn't find any super user, " +
+                                       "please make sure you have one")
+        return users[0]
+
 
 def check_superuser():
     """Make sure there is at least one superuser available and, if configured,

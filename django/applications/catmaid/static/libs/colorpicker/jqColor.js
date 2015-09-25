@@ -85,7 +85,8 @@
 							memoryColors: $.docCookies('colorPickerMemos' + ((config || {}).noAlpha ? 'NoAlpha' : '')),
 							size: $.docCookies('colorPickerSize') || 1,
 							renderCallback: renderCallback,
-							actionCallback: actionCallback
+							actionCallback: actionCallback,
+							showCallback: function() {}
 						};
 
 					for (var n in config) {
@@ -123,6 +124,7 @@
 						colorPickers.current = colorPickers[index];
 						$(options.appendTo || document.body).append($colorPicker);
 						setTimeout(function() { // compensating late style on onload in colorPicker
+							colorPicker.color.options.showCallback.call(this);
 							$colorPicker.show(colorPicker.color.options.animationSpeed);
 						}, 0);
 					});

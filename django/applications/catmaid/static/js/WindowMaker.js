@@ -741,8 +741,8 @@ var WindowMaker = new function()
           '<tr>' +
             '<th></th>' +
             '<th><span class="ui-icon ui-icon-close" id="selection-table-remove-all' + ST.widgetID + '" title="Remove all"></th>' +
-            '<th class="expanding"><input type="button" value="Filter by regex" class="filter" />' +
-              '<input class="filter" type="text" id="selection-table-filter' + ST.widgetID + '" /></th>' +
+            '<th class="expanding"><input type="button" value="Filter" class="filter" />' +
+              '<input class="filter" type="text" placeholder="Use / for regex" id="selection-table-filter' + ST.widgetID + '" /></th>' +
             '<th><select class="review-filter">' +
               '<option value="Union" selected>Union</option>' +
               '<option value="Team">Team</option>' +

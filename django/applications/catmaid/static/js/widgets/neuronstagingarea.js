@@ -887,11 +887,20 @@ SelectionTable.prototype.filteredSkeletons = function(only_selected) {
   if (0 === this.skeletons.length) return this.skeletons;
   if (this.match) {
     try {
-      return this.skeletons.filter(function(skeleton) {
-        if (only_selected && !skeleton.selected) return false;
-        var matches = NeuronNameService.getInstance().getName(skeleton.id).match(this);
-        return matches && matches.length > 0;
-      }, new RegExp(this.match));
+      // If the search string starts with a slash, treat it as a regular
+      // expression. Otherwise do a simple search in the neuron name.
+      if (this.match.substr(0, 1) === '/') {
+        return this.skeletons.filter(function(skeleton) {
+          if (only_selected && !skeleton.selected) return false;
+          var matches = NeuronNameService.getInstance().getName(skeleton.id).match(this);
+          return matches && matches.length > 0;
+        }, new RegExp(this.match.substr(1)));
+      } else {
+        return this.skeletons.filter(function(skeleton) {
+          if (only_selected && !skeleton.selected) return false;
+          return -1 !== NeuronNameService.getInstance().getName(skeleton.id).indexOf(this);
+        }, this.match)
+      }
     } catch (e) {
       alert(e.message);
       return [];

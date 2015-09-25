@@ -2330,7 +2330,7 @@ GroupGraph.prototype._exportSVG = function() {
   // Group the path elements of each edge
   for (; i<children.length; ++i) {
     var child = children[i];
-    if ('text' === child.localName) break;
+    if ('text' === child.localName) continue;
     switch(child.pathSegList.length) {
       case 2:
         // New graph edge

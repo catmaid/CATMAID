@@ -689,6 +689,24 @@ class StackClassInstance(models.Model):
     stack = models.ForeignKey(Stack)
     class_instance = models.ForeignKey(ClassInstance)
 
+
+class StackGroupManager(models.Manager):
+    """A manager that will return only objects (expected to be class instances)
+    that have their class attribute set to 'stackgroup'"""
+
+    def get_queryset(self):
+        return super(StackGroupManager, self).get_queryset().filter(
+            class_column__class_name='stackgroup')
+
+
+class StackGroup(ClassInstance):
+    objects = StackGroupManager()
+    class Meta:
+        proxy=True
+
+    def __unicode__(self):
+        return self.name
+
 # ------------------------------------------------------------------------
 # Now the non-Django tables:
 

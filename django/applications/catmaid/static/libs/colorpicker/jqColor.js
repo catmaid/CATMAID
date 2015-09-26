@@ -86,7 +86,10 @@
 							size: $.docCookies('colorPickerSize') || 1,
 							renderCallback: renderCallback,
 							actionCallback: actionCallback,
-							showCallback: function() {}
+							beforeShowCallback: function() {},
+							afterShowCallback: function() {},
+							beforeHideCallback: function() {},
+							afterHideCallback: function() {},
 						};
 
 					for (var n in config) {
@@ -124,8 +127,10 @@
 						colorPickers.current = colorPickers[index];
 						$(options.appendTo || document.body).append($colorPicker);
 						setTimeout(function() { // compensating late style on onload in colorPicker
-							colorPicker.color.options.showCallback.call(this);
-							$colorPicker.show(colorPicker.color.options.animationSpeed);
+							colorPicker.color.options.beforeShowCallback.call(this, colorPicker);
+							var afterShow = colorPicker.color.options.afterShowCallback.bind(
+									this, colorPicker);
+							$colorPicker.show(colorPicker.color.options.animationSpeed, afterShow);
 						}, 0);
 					});
 
@@ -138,7 +143,10 @@
 
 						if (isColorPicker && colorPicker && $(colorPickers).index(isColorPicker)) {
 							if (e.target === colorPicker.nodes.exit) {
-								$colorPicker.hide(animationSpeed);
+								colorPicker.color.options.beforeHideCallback.call(this, colorPicker);
+								var afterHide = colorPicker.color.options.afterHideCallback.bind(
+										this, colorPicker);
+								$colorPicker.hide(animationSpeed, afterHide);
 								$(':focus').trigger('blur');
 							} else {
 								// buttons on colorPicker don't work any more
@@ -147,7 +155,10 @@
 						} else if (inputIndex !== -1) {
 							// input fireld
 						} else {
-							$colorPicker.hide(animationSpeed);
+							colorPicker.color.options.beforeHideCallback.call(this, colorPicker);
+							var afterHide = colorPicker.color.options.afterHideCallback.bind(
+									this, $colorPicker);
+							$colorPicker.hide(animationSpeed, afterHide);
 						}
 					});
 				},

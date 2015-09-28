@@ -52,7 +52,6 @@ class BrokenSliceAdmin(GuardedModelAdmin):
         """ Remove last_index field if an existing instance is edited.
         """
         fieldsets = super(BrokenSliceAdmin, self).get_fieldsets(request, obj)
-        print fieldsets
         if obj and 'last_index' in fieldsets[0][1]['fields']:
             fieldsets[0][1]['fields'].remove('last_index')
         return fieldsets

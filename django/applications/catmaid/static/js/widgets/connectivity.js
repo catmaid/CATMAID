@@ -1129,8 +1129,8 @@
       var u = User.all()[r];
       reviewerNames[u ? u.fullName : r] = r;
     });
-    reviewerNames['Team'] = 'whitelist';
     var displayOrder = Object.keys(reviewerNames).sort();
+    reviewerNames['Team'] = 'whitelist';
     displayOrder.unshift('Team');
     displayOrder.forEach(function (displayName) {
       var r = reviewerNames[displayName];

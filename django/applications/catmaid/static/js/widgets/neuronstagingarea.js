@@ -10,7 +10,8 @@
   session,
   SkeletonAnnotations,
   User,
-  WindowMaker
+  WindowMaker,
+  Set
 */
 
 "use strict";

@@ -937,3 +937,7 @@ div.selection-table.windowContent {
 .dataTables_wrapper {
   min-height: 0;
 }
+
+.cp-app {
+    z-index: 15000;
+}

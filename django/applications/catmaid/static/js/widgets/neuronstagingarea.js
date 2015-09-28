@@ -961,28 +961,9 @@ SelectionTable.prototype.batchColorSelected = function(rgb, alpha, colorChanged,
     skeleton.opacity = alpha;
     this.notifyLink(skeleton); // TODO need a batchNotifyLink
   }, this);
-  $('#selection-table-batch-color-button' + this.widgetID)[0].style.backgroundColor = rgb.hex;
+  //$('#selection-table-batch-color-button' + this.widgetID)[0].style.backgroundColor = rgb.hex;
   this.gui.invalidate();
 };
-
-SelectionTable.prototype.toggleBatchColorWheel = function() {
-  var div = $('#selection-table-batch-color-wheel' + this.widgetID);
-  if (this.batch_cw) {
-    // hide it
-    delete this.batch_cw;
-    $('#selection-table-batch-color-wheel' + this.widgetID).hide();
-    div.empty();
-  } else {
-    // show it
-    this.batch_cw = Raphael.colorwheel(div[0], 150);
-    var c = $('#selection-table-batch-color-button' + this.widgetID)[0].style.backgroundColor;
-    var rgb = c.substring(c.indexOf('(') + 1, c.lastIndexOf(')')).split(',').map(Number);
-    this.batch_cw.color(this._rgbarray2hex(rgb));
-    this.batch_cw.onchange(this.batchColorSelected.bind(this));
-    $('#selection-table-batch-color-wheel' + this.widgetID).show();
-  }
-};
-
 
 /** credit: http://stackoverflow.com/questions/638948/background-color-hex-to-javascript-variable-jquery */
 SelectionTable.prototype._rgb2hex = function(rgb) {

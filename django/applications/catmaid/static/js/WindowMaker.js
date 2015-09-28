@@ -765,7 +765,11 @@ var WindowMaker = new function()
       ST.update();
     });
     $("input#selection-table-batch-color-button" + ST.widgetID, tab).on("click",
-        ST.toggleBatchColorWheel.bind(ST));
+        function() {
+          CATMAID.ColorPicker.toggle(this, {
+            onColorChange: ST.batchColorSelected.bind(ST)
+          });
+        });
     $('th input[type=button].filter', tab).on("click", function() {
       var filter = $('th input[type=text].filter', tab).val();
       ST.filterBy(filter);

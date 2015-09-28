@@ -690,6 +690,21 @@ class StackClassInstance(models.Model):
     class_instance = models.ForeignKey(ClassInstance)
 
 
+class StackStackGroupManager(models.Manager):
+    """A manager that will return only objects (expected to be class instances)
+    that have their class attribute set to 'stackgroup'"""
+
+    def get_queryset(self):
+        return super(StackStackGroupManager, self).get_queryset().filter(
+            class_instance__class_column__class_name='stackgroup')
+
+
+class StackStackGroup(StackClassInstance):
+    objects = StackStackGroupManager()
+    class Meta:
+        proxy=True
+
+
 class StackGroupManager(models.Manager):
     """A manager that will return only objects (expected to be class instances)
     that have their class attribute set to 'stackgroup'"""

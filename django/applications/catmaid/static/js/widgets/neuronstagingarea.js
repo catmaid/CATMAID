@@ -761,8 +761,9 @@ SelectionTable.prototype.GUI.prototype.update = function() {
             return row.skeleton.color.getHSL();
           },
           "display": function(data, type, row, meta) {
-            return '<button value="color" class="action-changecolor" ' +
+            return '<button class="action-changecolor" ' +
                 'id="skeletonaction-changecolor-' + widgetID + '-' + row.skeleton.id +
+                '" value="#' + row.skeleton.color.getHexString() + '"' +
                 '" style="background-color: #' + row.skeleton.color.getHexString() +
                 '">color</button>' +
                 '<div style="display: none" id="color-wheel' + widgetID + '-' + row.skeleton.id +
@@ -912,6 +913,38 @@ SelectionTable.prototype.filteredSkeletons = function(only_selected) {
   }
   if (only_selected) return this.skeletons.filter(function(skeleton) { return skeleton.selected; });
   return this.skeletons;
+};
+
+SelectionTable.prototype.colorSkeleton = function(skeletonID, allSelected, rgb,
+    alpha, colorChanged, alphaChanged) {
+  var skeleton = this.skeletons[this.skeleton_ids[skeletonID]];
+  // Only update the color if it was changed
+  if (colorChanged) {
+    skeleton.color.setRGB(rgb.r, rgb.g, rgb.b);
+  }
+  if (alphaChanged) {
+    skeleton.opacity = alpha;
+  }
+
+  if (colorChanged || alphaChanged) {
+    this.gui.update_skeleton_color_button(skeleton);
+    this.notifyLink(skeleton);
+  }
+
+  if (allSelected) {
+    colorAllSelected(this, skeleton.color, skeleton.opacity);
+  }
+
+  function colorAllSelected(table, color, alpha) {
+    table.getSelectedSkeletons().forEach(function(skid) {
+      var s = table.skeletons[table.skeleton_ids[skid]];
+      s.color.copy(color);
+      s.opacity = alpha;
+      table.gui.update_skeleton_color_button(s);
+      table.notifyLink(s);
+    });
+    $('#selection-table-batch-color-button' + table.widgetID)[0].style.backgroundColor = color.getStyle();
+  }
 };
 
 SelectionTable.prototype.batchColorSelected = function(rgb, alpha, colorChanged, alphaChanged) {

@@ -818,51 +818,9 @@ var WindowMaker = new function()
       .on("click", "td .action-changecolor", ST, function(e) {
         var table = e.data;
         var skeletonID = rowToSkeletonID(this);
-        var skeleton = table.skeletons[table.skeleton_ids[skeletonID]];
-        // Select the inner div, which will contain the color wheel
-        var container = $('#color-wheel' + table.widgetID + '-' + skeletonID);
-        var allSelected = $('input[type=checkbox]', container);
-        var colorwheel = $('div.colorwheel', container);
-        if (skeleton.cw) {
-          delete skeleton.cw;
-          container.hide();
-          colorwheel.empty();
-          allSelected.off('change.colorwheel');
-        } else {
-          allSelected.on('change.colorwheel', function() {
-            if (this.checked) {
-              colorAllSelected(table, skeleton.color, skeleton.opacity);
-            }
-          });
-          var cw = Raphael.colorwheel(colorwheel[0], 150);
-          cw.color('#' + skeleton.color.getHexString(), skeleton.opacity);
-          cw.onchange(function(color, alpha, colorChanged, alphaChanged) {
-            var c = [parseInt(color.r) / 255.0,
-                     parseInt(color.g) / 255.0,
-                     parseInt(color.b) / 255.0];
-            skeleton.color.setRGB(c[0], c[1], c[2]);
-            skeleton.opacity = alpha;
-            table.gui.update_skeleton_color_button(skeleton);
-            table.notifyLink(skeleton);
-
-            if (allSelected.prop('checked')) {
-              colorAllSelected(table, skeleton.color, alpha);
-            }
-          });
-          skeleton.cw = cw;
-          container.show();
-        }
-
-        function colorAllSelected(table, color, alpha) {
-          table.getSelectedSkeletons().forEach(function(skid) {
-            var s = table.skeletons[table.skeleton_ids[skid]];
-            s.color.copy(color);
-            s.opacity = alpha;
-            table.gui.update_skeleton_color_button(s);
-            table.notifyLink(s);
-          });
-          $('#selection-table-batch-color-button' + table.widgetID)[0].style.backgroundColor = color.getStyle();
-        }
+        CATMAID.ColorPicker.toggle(this, {
+          onColorChange: table.colorSkeleton.bind(table, skeletonID, false)
+        });
       });
 
     /**

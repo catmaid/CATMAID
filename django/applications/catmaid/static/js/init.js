@@ -656,7 +656,7 @@ CATMAID.layoutStackViewers = function() {
     var windows = rootWindow.getWindows();
     if (3 === windows.length) {
       // Create fourth window for nicer layout
-      WindowMaker.create('neuron-staging-area');
+      WindowMaker.create('keyboard-shortcuts');
     } else if (4 < windows.length) {
       // Stop layouting if there are more than four windows
       return;

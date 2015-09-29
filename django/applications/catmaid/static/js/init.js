@@ -599,7 +599,7 @@ function openStackGroup(pid, sgid, successFn) {
         return;
       }
 
-      if (project && project.id != pid) {
+      if (project) {
         project.destroy();
       }
 

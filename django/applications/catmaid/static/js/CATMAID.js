@@ -172,14 +172,16 @@ window.onbeforeunload = function() {
           CATMAID.tools.callIfFn(success, json);
         }
       } else {
-        var msg = "An error occured";
-        var detail = "The server returned an unexpected status: " + status;
+        var e = {
+          error: "An error occured",
+          detail: "The server returned an unexpected status: " + status
+        };
         // Call error handler, if any, and force silence if it returned true.
         if (CATMAID.tools.isFn(error)) {
-          silent = error(msg, detail) || silent;
+          silent = error(e) || silent;
         }
         if (!silent) {
-          CATMAID.error(msg, detail);
+          CATMAID.error(e.msg, e.detail);
         }
       }
     };
@@ -194,11 +196,8 @@ window.onbeforeunload = function() {
   {
     return new Promise(function(resolve, reject) {
       var url = CATMAID.makeURL(relativeURL);
-      var errHandler = function(msg, detail) {
-        reject({msg: msg, detail: detail});
-      };
       requestQueue.register(url, method, data,
-          CATMAID.jsonResponseHandler(resolve, errHandler, true));
+          CATMAID.jsonResponseHandler(resolve, reject, true));
     });
   };
 

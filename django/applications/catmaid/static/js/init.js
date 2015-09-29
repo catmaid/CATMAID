@@ -274,7 +274,7 @@ function updateProjects(completionCallback) {
   CATMAID.fetch('projects', 'GET')
     .catch(function(error) {
       // Show error and continue with null JSON
-      CATMAID.error("Could not load available projects: " + error.msg, error.detail);
+      CATMAID.error("Could not load available projects: " + error.error, error.detail);
       return null;
     })
     .then(function(json) {
@@ -625,13 +625,13 @@ function openStackGroup(pid, sgid, successFn) {
             }
           })
           .catch(function(error) {
-            CATMAID.error("Couldn't load stack of stack group: " + error.msg,
+            CATMAID.error("Couldn't load stack of stack group: " + error.error,
                 error.detail);
           });
       }
     })
     .catch(function(error) {
-      CATMAID.error("Couldn't load stack group: " + error.msg, error.detail);
+      CATMAID.error("Couldn't load stack group: " + error.error, error.detail);
     });
 }
 

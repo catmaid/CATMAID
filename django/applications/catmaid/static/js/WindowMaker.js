@@ -4,9 +4,9 @@
 /** An object that encapsulates the functions for creating accessory windows. */
 var WindowMaker = new function()
 {
-  /** The table of window names versus their open instances..
+  /** Map of window widget names to a map of CMWindow instances to widget objects.
    * Only windows that are open are stored. */
-  var windows = {};
+  var windows = new Map();
   var self = this;
 
   var createContainer = function(id) {
@@ -35,16 +35,12 @@ var WindowMaker = new function()
               document.getElementById("content").style.display = "none";
             } else {
               // Remove from listing
-              for (var name in windows) {
-                if (windows.hasOwnProperty(name)) {
-                  if (win === windows[name]) {
-                    // console.log("deleted " + name, windows[name]);
-                    delete windows[name];
-                    break;
-                  }
+              windows.forEach(function (widgetWindows, widgetName) {
+                widgetWindows.delete(win);
+                if (widgetWindows.size === 0) {
+                  windows.delete(widgetName);
                 }
-              }
-              // win.close();
+              });
             }
             break;
           case CMWWindow.RESIZE:
@@ -119,7 +115,7 @@ var WindowMaker = new function()
     addListener(win, content, config.controlsID, destroy, resize);
     addLogic(win);
 
-    return win;
+    return {window: win, widget: instance};
   };
 
   /**
@@ -200,7 +196,7 @@ var WindowMaker = new function()
     addLogic(win);
     CATMAID.ConnectorSelection.init(); // MUST go after adding the container to the window, otherwise one gets "cannot read property 'aoData' of null" when trying to add data to the table
 
-    return win;
+    return {window: win, widget: null};
   };
 
   var createSkeletonMeasurementsTable = function()
@@ -267,7 +263,7 @@ var WindowMaker = new function()
 
     SMT.init(); // Must be invoked after the table template has been created above.
 
-    return win;
+    return {window: win, widget: SMT};
   };
 
 
@@ -362,7 +358,7 @@ var WindowMaker = new function()
     CATMAID.skeletonListSources.updateGUI();
     AA.init();
 
-    return win;
+    return {window: win, widget: AA};
   };
 
 
@@ -618,7 +614,7 @@ var WindowMaker = new function()
 
     ND.init(container);
 
-    return win;
+    return {window: win, widget: ND};
   };
 
   var createConnectivityMatrixWindow = function(instance) {
@@ -878,41 +874,12 @@ var WindowMaker = new function()
       return skeletonID;
     }
 
-    //addListener(win, container, buttons, ST.destroy.bind(ST));
+    addListener(win, container, buttons.id, ST.destroy.bind(ST));
     win.addListener(
       function(callingWindow, signal) {
         switch (signal) {
-          case CMWWindow.CLOSE:
-            if (typeof project === undefined || project === null) {
-              rootWindow.close();
-              document.getElementById("content").style.display = "none";
-            }
-            else {
-              // Remove from listing
-              for (var name in windows) {
-                if (windows.hasOwnProperty(name)) {
-                  if (win === windows[name]) {
-                    // console.log("deleted " + name, windows[name]);
-                    delete windows[name];
-                    break;
-                  }
-                }
-              }
-              ST.destroy();
-              // win.close();
-            }
-            break;
           case CMWWindow.FOCUS:
             ST.setLastFocused();
-            break;
-          case CMWWindow.RESIZE:
-            if( buttons.id !== undefined ) {
-                container.style.height = ( win.getContentHeight() - $('#' + buttons.id).height() ) + "px";
-            } else {
-                container.style.height = ( win.getContentHeight() ) + "px";
-            }
-            container.style.width = ( win.getAvailableWidth() + "px" );
-
             break;
         }
         return true;
@@ -950,7 +917,7 @@ var WindowMaker = new function()
     ST.init();
     win.focus();
 
-    return win;
+    return {window: win, widget: ST};
   };
 
   var appendToTab = function(tab, elems) {
@@ -1308,14 +1275,12 @@ var WindowMaker = new function()
             }
             else {
               // Remove from listing
-              for (var name in windows) {
-                if (windows.hasOwnProperty(name)) {
-                  if (win === windows[name]) {
-                    delete windows[name];
-                    break;
-                  }
+              windows.forEach(function (widgetWindows, widgetName) {
+                widgetWindows.delete(win);
+                if (widgetWindows.size === 0) {
+                  windows.delete(widgetName);
                 }
-              }
+              });
               WA.destroy();
             }
             break;
@@ -1350,7 +1315,7 @@ var WindowMaker = new function()
       }
     }
 
-    return win;
+    return {window: win, widget: WA};
   };
 
   /** Creates and returns a new 3d window. */
@@ -1401,7 +1366,7 @@ var WindowMaker = new function()
     // Fill in with a Raphael canvas, now that the window exists in the DOM:
     Treelines.createViewerFromCATMAID(canvas.getAttribute("id"));
 
-    return win;
+    return {window: win, widget: null};
   };
 
   var createSliceInfoWindow = function()
@@ -1428,7 +1393,7 @@ var WindowMaker = new function()
 
     addLogic(win);
 
-    return win;
+    return {window: win, widget: null};
   };
 
   var createGraphWindow = function()
@@ -1592,7 +1557,7 @@ var WindowMaker = new function()
 
     CATMAID.skeletonListSources.updateGUI();
 
-    return win;
+    return {window: win, widget: GG};
   };
 
   var createCircuitGraphPlot = function() {
@@ -1703,7 +1668,7 @@ var WindowMaker = new function()
 
     CATMAID.skeletonListSources.updateGUI();
 
-    return win;
+    return {window: win, widget: GP};
   };
 
 
@@ -1804,7 +1769,7 @@ var WindowMaker = new function()
 
     CATMAID.skeletonListSources.updateGUI();
 
-    return win;
+    return {window: win, widget: MA};
   };
 
   var createVennDiagramWindow = function() {
@@ -1854,7 +1819,7 @@ var WindowMaker = new function()
 
     CATMAID.skeletonListSources.updateGUI();
 
-    return win;
+    return {window: win, widget: VD};
   };
 
 
@@ -1890,7 +1855,7 @@ var WindowMaker = new function()
 
     addLogic(win);
 
-    return win;
+    return {window: win, widget: null};
   };
 
 
@@ -1923,7 +1888,7 @@ var WindowMaker = new function()
 
     addLogic(win);
 
-    return win;
+    return {window: win, widget: null};
   };
 
   var createNodeTableWindow = function(tnt_instance)
@@ -2028,7 +1993,7 @@ var WindowMaker = new function()
 
     TNT.init( project.getId() );
 
-    return win;
+    return {window: win, widget: TNT};
   };
 
   var createConnectorTableWindow = function(ct_instance)
@@ -2116,7 +2081,7 @@ var WindowMaker = new function()
 
     CT.init( project.getId() );
 
-    return win;
+    return {window: win, widget: CT};
   };
 
   var createSelect = function(id, items, use_numbers) {
@@ -2252,7 +2217,7 @@ var WindowMaker = new function()
     SA.init(); // must be called after the above placeholder table is created
     CATMAID.skeletonListSources.updateGUI();
 
-    return win;
+    return {window: win, widget: SA};
   };
 
     var createLogTableWindow = function()
@@ -2375,7 +2340,7 @@ var WindowMaker = new function()
 
         LogTable.init( project.getId() );
 
-        return win;
+        return {window: win, widget: null};
     };
 
     var createReviewWindow = function()
@@ -2444,7 +2409,7 @@ var WindowMaker = new function()
         addListener(win, container, 'review_widget_buttons');
         addLogic(win);
 
-        return win;
+        return {window: win, widget: RS};
     };
 
     var createConnectivityWindow = function()
@@ -2537,7 +2502,7 @@ var WindowMaker = new function()
         addLogic(win);
         CATMAID.skeletonListSources.updateGUI();
 
-        return win;
+        return {window: win, widget: SC};
     };
 
   var createConnectivityGraphPlot = function(instance) {
@@ -2573,7 +2538,7 @@ var WindowMaker = new function()
 
     addLogic(win);
 
-    return win;
+    return {window: win, widget: GP};
   };
 
     var createAdjacencyMatrixWindow = function()
@@ -2603,7 +2568,7 @@ var WindowMaker = new function()
 
         AdjacencyMatrix.init();
 
-        return win;
+        return {window: win, widget: null};
     };
 
   var createExportWidget = function()
@@ -2648,7 +2613,7 @@ var WindowMaker = new function()
           }
         });
 
-      return win;
+      return {window: win, widget: null};
   };
 
 
@@ -2693,7 +2658,7 @@ var WindowMaker = new function()
 
     OntologyEditor.init();
 
-    return win;
+    return {window: win, widget: null};
   };
 
   var createOntologySearchWidget = function(osInstance)
@@ -2718,7 +2683,7 @@ var WindowMaker = new function()
     // container.
     OS.init_ui(container);
 
-    return win;
+    return {window: win, widget: OS};
   };
 
   var createClassificationWidget = function()
@@ -2736,7 +2701,7 @@ var WindowMaker = new function()
 
     ClassificationEditor.init();
 
-    return win;
+    return {window: win, widget: null};
   };
 
   var createClusteringWidget = function()
@@ -2756,7 +2721,7 @@ var WindowMaker = new function()
 
     ClusteringWidget.init();
 
-    return win;
+    return {window: win, widget: null};
   };
 
   var getHelpForActions = function(actions)
@@ -2893,7 +2858,7 @@ var WindowMaker = new function()
 
     addLogic(win);
 
-    return win;
+    return {window: win, widget: null};
   };
 
   var createSearchWindow = function()
@@ -2905,7 +2870,7 @@ var WindowMaker = new function()
 
     addLogic(win);
 
-    return win;
+    return {window: win, widget: null};
   };
 
 
@@ -2924,7 +2889,7 @@ var WindowMaker = new function()
 
     ProjectStatistics.init();
 
-    return win;
+    return {window: win, widget: null};
   };
   
   
@@ -2989,7 +2954,7 @@ var WindowMaker = new function()
 
     NotificationsTable.init();
     
-    return win;
+    return {window: win, widget: null};
   };
   
   var createNeuronAnnotationsWindow = function()
@@ -3209,7 +3174,7 @@ var WindowMaker = new function()
       $('input#neuron_query_by_name' + NA.widgetID).focus();
     }, 10);
 
-    return win;
+    return {window: win, widget: NA};
   };
 
   var createNeuronNavigatorWindow = function(new_nn_instance)
@@ -3236,7 +3201,7 @@ var WindowMaker = new function()
 
     CATMAID.skeletonListSources.updateGUI();
 
-    return win;
+    return {window: win, widget: NN};
   };
 
   var createSettingsWindow = function()
@@ -3256,7 +3221,7 @@ var WindowMaker = new function()
     var SW = new CATMAID.SettingsWidget();
     SW.init(container);
 
-    return win;
+    return {window: win, widget: SW};
   };
   
   var creators = {
@@ -3301,10 +3266,11 @@ var WindowMaker = new function()
   this.show = function(name)
   {
     if (creators.hasOwnProperty(name)) {
-      if (windows[name]) {
-        windows[name].focus();
+      if (windows.has(name)) {
+        windows.get(name).keys().next().value.focus();
       } else {
-        windows[name] = creators[name]();
+        var handles = creators[name]();
+        windows.set(name, new Map([[handles.window, handles.widget]]));
       }
     } else {
       alert("No known window with name " + name);
@@ -3315,7 +3281,12 @@ var WindowMaker = new function()
    * in extra parameters that will be passed on to the actual creator method. */
   this.create = function(name, init_params) {
     if (creators.hasOwnProperty(name)) {
-      windows[name] = creators[name](init_params);
+      var handles = creators[name](init_params);
+      if (windows.has(name)) {
+        windows.get(name).set(handles.window, handles.widget);
+      } else {
+        windows.set(name, new Map([[handles.window, handles.widget]]));
+      }
     } else {
       alert("No known window with name " + name);
     }

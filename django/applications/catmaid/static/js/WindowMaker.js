@@ -3293,6 +3293,24 @@ var WindowMaker = new function()
   };
 
   /**
+   * Return the widget instance, if any, associated with the focused window if
+   * it was created through WindowMaker.
+   * @return {object} The widget instance associated with the focused window, or
+   *                  null if none.
+   */
+  this.getFocusedWindowWidget = function () {
+    var focusedWidget = null;
+    windows.forEach(function (widgetWindows) {
+      widgetWindows.forEach(function (widget, window) {
+        if (window.hasFocus()) {
+          focusedWidget = widget;
+        }
+      });
+    });
+    return focusedWidget;
+  };
+
+  /**
    * Allow new widgets to register with a window maker.
    */
   this.registerWidget = function(key, creator) {
@@ -3314,6 +3332,8 @@ var WindowMaker = new function()
 (function(CATMAID) {
 
   "use strict";
+
+  CATMAID.front = WindowMaker.getFocusedWindowWidget;
 
   /**
    * Make new widgets available under the given unique key.

@@ -2,6 +2,10 @@
 
 ### Features and enhancements
 
+Scripting:
+
+- The widget instance associated with the focued window can be retrieved with
+  the convenience function `CATMAID.front()`.
 
 
 ### Bug fixes

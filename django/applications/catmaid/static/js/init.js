@@ -464,13 +464,6 @@ function openProjectStack( pid, sid, successFn, useExistingViewer )
 }
 
 /**
- * Open the given a specific stack group in a project.
- */
-function openStackGroup( pid, sgid, successFn, useExistingViewer ) {
-  CATMAID.error("Opening stack groups isn't implemented, yet");
-}
-
-/**
  * handle an open-project-stack-request answer
  * open the project or, if already opened, add the stack to the opened project
  *
@@ -591,6 +584,53 @@ function handle_openProjectStack( e, stackViewer )
 
   CATMAID.ui.releaseEvents();
   return stackViewer;
+}
+
+/**
+ * Open the given a specific stack group in a project.
+ */
+function openStackGroup(pid, sgid, successFn) {
+  CATMAID.fetch(pid + "/stackgroup/" + sgid + "/info", "GET")
+    .then(function(json) {
+      if (!json.stacks || 0 === json.stacks.length) {
+        // If a stack group has no stacks associated, cancel loading.
+        CATMAID.error("The selected stack group has no stacks associated",
+            "Canceling loading");
+        return;
+      }
+
+      if (project && project.id != pid) {
+        project.destroy();
+      }
+
+      // Open first stack
+      loadNextStack(json.project_id, json.stacks.shift(), json.stacks);
+
+      function loadNextStack(pid, stack, stacks, firstStackViewer) {
+        CATMAID.fetch(pid + '/stack/' + stack.id + '/info', 'GET')
+          .then(function(json) {
+            var stackViewer;
+            // If there is already a stack loaded and this stack is a channel of
+            // the group, add it to the existing stack viewer. Otherwise, open
+            // the stack in a new stack viewer.
+            if (firstStackViewer && 'has_channel' === stack.relation) {
+              stackViewer = firstStackViewer
+            }
+            var newStackViewer = handle_openProjectStack(json, stackViewer);
+            if (0 < stacks.length) {
+              var sv = firstStackViewer ? firstStackViewer : newStackViewer;
+              loadNextStack(pid, stacks.shift(), stacks, sv)
+            }
+          })
+          .catch(function(error) {
+            CATMAID.error("Couldn't load stack of stack group: " + error.msg,
+                error.detail);
+          });
+      }
+    })
+    .catch(function(error) {
+      CATMAID.error("Couldn't load stack group: " + error.msg, error.detail);
+    });
 }
 
 /**

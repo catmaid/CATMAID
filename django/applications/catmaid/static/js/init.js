@@ -12,6 +12,8 @@ var global_bottom = 29;
 var requestQueue;
 var project;
 
+var cachedProjectsInfo = null;
+
 var current_dataview;
 var dataview_menu;
 
@@ -262,50 +264,33 @@ function updateProjects(completionCallback) {
 	w.appendChild(document.createTextNode("loading ..."));
 	pp.appendChild(w);
 
-	requestQueue.register(django_url + 'projects',
-		'GET',
-		undefined,
-		function (status, text, xml) {
-			handle_updateProjects(status, text, xml);
-			if (typeof completionCallback !== "undefined") {
-				completionCallback();
-			}
-		});
-}
+  // Destroy active project
+  // TODO: Does this really have to happen here?
+  if (project) {
+    project.destroy();
+    project = undefined;
+  }
 
-var cachedProjectsInfo = null;
-
-/**
- * handle a project-menu-update-request answer
- * update the project menu
- *
- * free the window
- */
-
-function handle_updateProjects(status, text, xml) {
-	if (status == 200 && text) {
-		var e = $.parseJSON(text);
-
-		if (e.error) {
-			project_menu.update();
-			alert(e.error);
-		} else {
-			cachedProjectsInfo = e;
-			// recreate the project data view
-			if (current_dataview) {
-				switch_dataview(current_dataview);
-			} else {
-				load_default_dataview();
-			}
-			// update the project > open menu
-			project_menu.update(cachedProjectsInfo);
-		}
-		if (project) {
-			project.destroy();
-			project = undefined;
-		}
-	}
-	CATMAID.ui.releaseEvents();
+  CATMAID.fetch('projects', 'GET')
+    .catch(function(error) {
+      // Show error and continue with null JSON
+      CATMAID.error("Could not load available projects: " + error.msg, error.detail);
+      return null;
+    })
+    .then(function(json) {
+      // recreate the project data view
+      if (current_dataview) {
+        switch_dataview(current_dataview);
+      } else {
+        load_default_dataview();
+      }
+      cachedProjectsInfo = json;
+      project_menu.update(json);
+      CATMAID.ui.releaseEvents();
+      if (CATMAID.tools.isFn(completionCallback)) {
+        completionCallback();
+      }
+    });
 }
 
 function updateProjectListMessage(text) {

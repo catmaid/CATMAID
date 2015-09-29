@@ -755,15 +755,19 @@ SelectionTable.prototype.GUI.prototype.update = function() {
         }
       },
       {
-        "orderDataType": "dom-color-property",
         "type": "hslcolor",
-        "render": function(data, type, row, meta) {
-          return '<button value="color" class="action-changecolor" ' +
-              'id="skeletonaction-changecolor-' + widgetID + '-' + row.skeleton.id +
-              '" style="background-color: #' + row.skeleton.color.getHexString() +
-              '">color</button>' +
-              '<div style="display: none" id="color-wheel' + widgetID + '-' + row.skeleton.id +
-              '"><div><label><input type="checkbox" />all selected</label></div><div class="colorwheel"></div></div>';
+        "render": {
+          "_": function(data, type, row, meta) {
+            return row.skeleton.color.getHSL();
+          },
+          "display": function(data, type, row, meta) {
+            return '<button value="color" class="action-changecolor" ' +
+                'id="skeletonaction-changecolor-' + widgetID + '-' + row.skeleton.id +
+                '" style="background-color: #' + row.skeleton.color.getHexString() +
+                '">color</button>' +
+                '<div style="display: none" id="color-wheel' + widgetID + '-' + row.skeleton.id +
+                '"><div><label><input type="checkbox" />all selected</label></div><div class="colorwheel"></div></div>';
+          }
         }
       },
       {

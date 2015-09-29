@@ -172,13 +172,14 @@ window.onbeforeunload = function() {
           CATMAID.tools.callIfFn(success, json);
         }
       } else {
+        var msg = "An error occured";
+        var detail = "The server returned an unexpected status: " + status;
         // Call error handler, if any, and force silence if it returned true.
         if (CATMAID.tools.isFn(error)) {
-          silent = error() || silent;
+          silent = error(msg, detail) || silent;
         }
         if (!silent) {
-          CATMAID.error("An error occured", "The server returned an unexpected " +
-              "status: " + status);
+          CATMAID.error(msg, detail);
         }
       }
     };

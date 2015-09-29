@@ -614,12 +614,12 @@ function openStackGroup(pid, sgid, successFn) {
             // the group, add it to the existing stack viewer. Otherwise, open
             // the stack in a new stack viewer.
             if (firstStackViewer && 'has_channel' === stack.relation) {
-              stackViewer = firstStackViewer
+              stackViewer = firstStackViewer;
             }
             var newStackViewer = handle_openProjectStack(json, stackViewer);
             if (0 < stacks.length) {
               var sv = firstStackViewer ? firstStackViewer : newStackViewer;
-              loadNextStack(pid, stacks.shift(), stacks, sv)
+              loadNextStack(pid, stacks.shift(), stacks, sv);
             } else {
               CATMAID.layoutStackViewers();
             }
@@ -678,8 +678,8 @@ CATMAID.layoutStackViewers = function() {
     }
 
     // Arrange windows in four-pane layout
-    var left = new CMWVSplitNode(xyWin, xzWin)
-    var right = new CMWVSplitNode(zyWin, extraWin[0])
+    var left = new CMWVSplitNode(xyWin, xzWin);
+    var right = new CMWVSplitNode(zyWin, extraWin[0]);
     rootWindow.replaceChild(new CMWHSplitNode(left, right));
   }
 };

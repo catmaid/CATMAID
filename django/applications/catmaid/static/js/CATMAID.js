@@ -198,7 +198,7 @@ window.onbeforeunload = function() {
         reject({msg: msg, detail: detail});
       };
       requestQueue.register(url, method, data,
-          CATMAID.jsonResponseHandler(resolve, errHandler, true))
+          CATMAID.jsonResponseHandler(resolve, errHandler, true));
     });
   };
 

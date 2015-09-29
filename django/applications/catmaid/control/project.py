@@ -8,8 +8,32 @@ from django.db import connection
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 
-from catmaid.models import UserRole, Class, Project, Stack
+from catmaid.models import UserRole, Class, Project, Stack, Relation, StackGroup
 from catmaid.control.authentication import requires_user_role
+
+# All classes needed by the tracing system alongside their
+# descriptions.
+needed_classes = {
+    'stackgroup': "An identifier for a group of stacks",
+}
+
+# All relations needed by the tracing system alongside their
+# descriptions.
+needed_relations = {
+    'has_channel': "A stack group can have assosiated channels",
+    'has_view': "A stack group can have assosiated orthogonal views",
+}
+
+def validate_project_setup(project_id, user_id):
+    """Will create needed class and relations if they don't exist.
+    """
+    for nc, desc in needed_classes.iteritems():
+        Class.objects.get_or_create(project_id=project_id,
+                class_name=nc, defaults={'user_id': user_id})
+
+    for nr, desc in needed_relations.iteritems():
+        Relation.objects.get_or_create(project_id=project_id,
+                relation_name=nr, defaults={'user_id': user_id})
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def list_project_tags(request, project_id=None):
@@ -87,11 +111,21 @@ def projects(request):
     # Extend projects with extra catalogueable info
     projects = extend_projects(request.user, projects)
 
+    # Get all stack groups for this project
+    project_stack_groups = {}
+    for group in StackGroup.objects.all():
+        groups = project_stack_groups.get(group.project_id)
+        if not groups:
+            groups = []
+            project_stack_groups[group.project_id] = groups
+        groups.append(group)
+
     # Create a dictionary with those results that we can output as JSON:
     result = []
     for p in projects:
         if not p.stacks.all():
             continue
+
         stacks_dict = {}
         for s in p.stacks.all():
             stacks_dict[s.id] = {
@@ -99,10 +133,33 @@ def projects(request):
                 'comment': s.comment,
                 'note': '',
                 'action': 'javascript:openProjectStack(%d,%d)' % (p.id, s.id)}
-        result.append( {
+
+        stackgroups_dict = {}
+        stackgroups = project_stack_groups.get(p.id)
+        if stackgroups:
+            for sg in stackgroups:
+                stackgroups_dict[sg.id] = {
+                    'title': sg.name,
+                    'comment': '',
+                    'note': '',
+                    'action': 'javascript:openStackGroup(%d,%d)' % (p.id, sg.id)
+                }
+
+        result.append({
             'pid': p.id,
             'title': p.title,
             'catalogue': int(p.is_catalogueable),
             'note': '',
-            'action': stacks_dict} )
+            'action': [{
+                'title': 'Stacks',
+                'comment': '',
+                'note': '',
+                'action': stacks_dict
+            }, {
+                'title': 'Stack groups',
+                'comment': '',
+                'note': '',
+                'action': stackgroups_dict
+            }]
+        })
     return HttpResponse(json.dumps(result, sort_keys=True, indent=4), content_type="text/json")

@@ -68,6 +68,11 @@ urlpatterns += patterns('catmaid.control.stack',
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/models$', 'stack_models'),
 )
 
+# General stack group access
+urlpatterns += patterns('catmaid.control.stackgroup',
+    (r'^(?P<project_id>\d+)/stackgroup/(?P<stackgroup_id>\d+)/info$', 'get_stackgroup_info'),
+)
+
 # Tile access
 urlpatterns += patterns('catmaid.control.tile',
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/tile$', 'get_tile'),

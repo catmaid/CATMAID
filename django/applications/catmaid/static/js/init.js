@@ -12,6 +12,8 @@ var global_bottom = 29;
 var requestQueue;
 var project;
 
+var cachedProjectsInfo = null;
+
 var current_dataview;
 var dataview_menu;
 
@@ -262,50 +264,33 @@ function updateProjects(completionCallback) {
 	w.appendChild(document.createTextNode("loading ..."));
 	pp.appendChild(w);
 
-	requestQueue.register(django_url + 'projects',
-		'GET',
-		undefined,
-		function (status, text, xml) {
-			handle_updateProjects(status, text, xml);
-			if (typeof completionCallback !== "undefined") {
-				completionCallback();
-			}
-		});
-}
+  // Destroy active project
+  // TODO: Does this really have to happen here?
+  if (project) {
+    project.destroy();
+    project = undefined;
+  }
 
-var cachedProjectsInfo = null;
-
-/**
- * handle a project-menu-update-request answer
- * update the project menu
- *
- * free the window
- */
-
-function handle_updateProjects(status, text, xml) {
-	if (status == 200 && text) {
-		var e = $.parseJSON(text);
-
-		if (e.error) {
-			project_menu.update();
-			alert(e.error);
-		} else {
-			cachedProjectsInfo = e;
-			// recreate the project data view
-			if (current_dataview) {
-				switch_dataview(current_dataview);
-			} else {
-				load_default_dataview();
-			}
-			// update the project > open menu
-			project_menu.update(cachedProjectsInfo);
-		}
-		if (project) {
-			project.destroy();
-			project = undefined;
-		}
-	}
-	CATMAID.ui.releaseEvents();
+  CATMAID.fetch('projects', 'GET')
+    .catch(function(error) {
+      // Show error and continue with null JSON
+      CATMAID.error("Could not load available projects: " + error.msg, error.detail);
+      return null;
+    })
+    .then(function(json) {
+      // recreate the project data view
+      if (current_dataview) {
+        switch_dataview(current_dataview);
+      } else {
+        load_default_dataview();
+      }
+      cachedProjectsInfo = json;
+      project_menu.update(json);
+      CATMAID.ui.releaseEvents();
+      if (CATMAID.tools.isFn(completionCallback)) {
+        completionCallback();
+      }
+    });
 }
 
 function updateProjectListMessage(text) {
@@ -600,6 +585,104 @@ function handle_openProjectStack( e, stackViewer )
   CATMAID.ui.releaseEvents();
   return stackViewer;
 }
+
+/**
+ * Open the given a specific stack group in a project.
+ */
+function openStackGroup(pid, sgid, successFn) {
+  CATMAID.fetch(pid + "/stackgroup/" + sgid + "/info", "GET")
+    .then(function(json) {
+      if (!json.stacks || 0 === json.stacks.length) {
+        // If a stack group has no stacks associated, cancel loading.
+        CATMAID.error("The selected stack group has no stacks associated",
+            "Canceling loading");
+        return;
+      }
+
+      if (project) {
+        project.destroy();
+      }
+
+      // Open first stack
+      loadNextStack(json.project_id, json.stacks.shift(), json.stacks);
+
+      function loadNextStack(pid, stack, stacks, firstStackViewer) {
+        CATMAID.fetch(pid + '/stack/' + stack.id + '/info', 'GET')
+          .then(function(json) {
+            var stackViewer;
+            // If there is already a stack loaded and this stack is a channel of
+            // the group, add it to the existing stack viewer. Otherwise, open
+            // the stack in a new stack viewer.
+            if (firstStackViewer && 'has_channel' === stack.relation) {
+              stackViewer = firstStackViewer
+            }
+            var newStackViewer = handle_openProjectStack(json, stackViewer);
+            if (0 < stacks.length) {
+              var sv = firstStackViewer ? firstStackViewer : newStackViewer;
+              loadNextStack(pid, stacks.shift(), stacks, sv)
+            } else {
+              CATMAID.layoutStackViewers();
+            }
+          })
+          .catch(function(error) {
+            CATMAID.error("Couldn't load stack of stack group: " + error.msg,
+                error.detail);
+          });
+      }
+    })
+    .catch(function(error) {
+      CATMAID.error("Couldn't load stack group: " + error.msg, error.detail);
+    });
+}
+
+/**
+ * Layout currently open stack viewers. Currently, this only changes the layout
+ * if there are three ortho-views present.
+ */
+CATMAID.layoutStackViewers = function() {
+  var stackViewers = project.getStackViewers();
+  var orientations = stackViewers.reduce(function(o, s) {
+    o[s.primaryStack.orientation] = s;
+    return o;
+  }, {});
+
+  // If there are three different ortho stacks, arrange viewers in four-pane
+  // layout. On the left side XY on top of XZ, on the righ ZY on top of a
+  // selection table.
+  var Stack = CATMAID.Stack;
+  if (3 === stackViewers.length && orientations[Stack.ORIENTATION_XY] &&
+      orientations[Stack.ORIENTATION_XZ] && orientations[Stack.ORIENTATION_ZY]) {
+    // Test if a fourth window has to be created
+    var windows = rootWindow.getWindows();
+    if (3 === windows.length) {
+      // Create fourth window for nicer layout
+      WindowMaker.create('neuron-staging-area');
+    } else if (4 < windows.length) {
+      // Stop layouting if there are more than four windows
+      return;
+    }
+
+    // Get references to stack viewer windows
+    var xyWin = orientations[Stack.ORIENTATION_XY].getWindow();
+    var xzWin = orientations[Stack.ORIENTATION_XZ].getWindow();
+    var zyWin = orientations[Stack.ORIENTATION_ZY].getWindow();
+
+    // Find fourth window
+    var extraWin = rootWindow.getWindows().filter(function(w) {
+      return w !== xyWin && w !== xzWin && w !== zyWin;
+    });
+
+    // Raise error if there is more than one extra window
+    if (1 !== extraWin.length) {
+      throw CATMAID.Error("Couldn't find extra window for layouting");
+    }
+
+    // Arrange windows in four-pane layout
+    var left = new CMWVSplitNode(xyWin, xzWin)
+    var right = new CMWVSplitNode(zyWin, extraWin[0])
+    rootWindow.replaceChild(new CMWHSplitNode(left, right));
+  }
+};
 
 /**
  * Check if the client CATMAID version matches the server version. If it does

@@ -49,6 +49,18 @@ class Project(models.Model):
     def __unicode__(self):
         return self.title
 
+def on_project_save(sender, instance, created, **kwargs):
+    """ Make sure all required classes and relations are set up.
+    """
+    if created and sender == Project:
+        from control.project import validate_project_setup
+        from catmaid import get_system_user
+        user = get_system_user()
+        validate_project_setup(instance.id, user.id)
+
+# Validate project when they are saved
+post_save.connect(on_project_save, sender=Project)
+
 class Stack(models.Model):
     class Meta:
         db_table = "stack"
@@ -663,6 +675,52 @@ class CardinalityRestriction(models.Model):
             return False
         else:
             raise Exception("Unsupported cardinality type.")
+
+class StackClassInstance(models.Model):
+    class Meta:
+        db_table = "stack_class_instance"
+    # Repeat the columns inherited from 'relation_instance'
+    user = models.ForeignKey(User)
+    creation_time = models.DateTimeField(default=datetime.now)
+    edition_time = models.DateTimeField(default=datetime.now)
+    project = models.ForeignKey(Project)
+    relation = models.ForeignKey(Relation)
+    # Now new columns:
+    stack = models.ForeignKey(Stack)
+    class_instance = models.ForeignKey(ClassInstance)
+
+
+class StackStackGroupManager(models.Manager):
+    """A manager that will return only objects (expected to be class instances)
+    that have their class attribute set to 'stackgroup'"""
+
+    def get_queryset(self):
+        return super(StackStackGroupManager, self).get_queryset().filter(
+            class_instance__class_column__class_name='stackgroup')
+
+
+class StackStackGroup(StackClassInstance):
+    objects = StackStackGroupManager()
+    class Meta:
+        proxy=True
+
+
+class StackGroupManager(models.Manager):
+    """A manager that will return only objects (expected to be class instances)
+    that have their class attribute set to 'stackgroup'"""
+
+    def get_queryset(self):
+        return super(StackGroupManager, self).get_queryset().filter(
+            class_column__class_name='stackgroup')
+
+
+class StackGroup(ClassInstance):
+    objects = StackGroupManager()
+    class Meta:
+        proxy=True
+
+    def __unicode__(self):
+        return self.name
 
 # ------------------------------------------------------------------------
 # Now the non-Django tables:

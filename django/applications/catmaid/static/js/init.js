@@ -464,6 +464,13 @@ function openProjectStack( pid, sid, successFn, useExistingViewer )
 }
 
 /**
+ * Open the given a specific stack group in a project.
+ */
+function openStackGroup( pid, sgid, successFn, useExistingViewer ) {
+  CATMAID.error("Opening stack groups isn't implemented, yet");
+}
+
+/**
  * handle an open-project-stack-request answer
  * open the project or, if already opened, add the stack to the opened project
  *

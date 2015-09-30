@@ -8,12 +8,15 @@
 
   "use strict";
 
-  var activeOptions;
-  var activeColor;
-  var activeAlpha;
+  var activeOptions = null;
+  var activeColor = null;
+  var activeAlpha = null;
 
   function onClose(colorPicker) {
     $(colorPicker.color.options.input).colorPicker("destroy");
+    activeOptions = null;
+    activeColor = null;
+    activeAlpha = null;
   }
 
   function onConvert(color, mode) {
@@ -27,7 +30,6 @@
 
     if (colorChanged || alphaChanged) {
       if (activeOptions && activeOptions.onColorChange) {
-        console.log(color);
         activeOptions.onColorChange(color.rgb, color.alpha, colorChanged, alphaChanged);
       }
     }

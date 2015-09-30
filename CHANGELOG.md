@@ -33,8 +33,33 @@ Orthogonal views and multi-channel data:
   either the new Stack group page or while editing/creating a stack.
 
 
+3D viewer:
+
+- Skeletons can be shaded by distance from a plane through the active node. The
+  plane can either be a Z-plane in project space or a plane normal to the ray
+  from the camera to the active node.
+
+
+Tile layer:
+
+- WebGL rendering is now compatible with orthogonal views.
+
+- Tiles can now be rendered either with linear pixel interpolation (previous
+  default behavior) or nearest neighbor interpolation. This is controlled by
+  the "Image tile interpolation" setting.
+
+
 ### Bug fixes
 
+Tile layer:
+
+- Fixed a major WebGL tile layer GPU memory leak.
+
+
+Miscellaneous:
+
+- An error no longer appears when selecting an un-annotated skeleton while
+  neuron labels are configured to use a meta-annotation.
 
 
 ## 2015.9.11

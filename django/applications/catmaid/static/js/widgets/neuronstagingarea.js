@@ -786,8 +786,7 @@ SelectionTable.prototype.GUI.prototype.update = function() {
       tds.eq(2).css('background-color',
           CATMAID.ReviewSystem.getBackgroundColor(data.reviewPercentage));
       // Prepare color wheel cell
-      tds.eq(-2).addClass('centering').attr(
-          'data-color', data.skeleton.color.getHexString());
+      tds.eq(-2).addClass('centering');
       // Prepare action cell
       tds.eq(-1).addClass('centering').css('white-space', 'nowrap');
     }

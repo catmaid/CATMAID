@@ -629,14 +629,6 @@ SelectionTable.prototype.GUI.prototype.invalidate = function() {
   }
 };
 
-SelectionTable.prototype.GUI.prototype.update_skeleton_color_button = function(skeleton) {
-  var button = $('#skeletonaction-changecolor-' + this.table.widgetID + '-' + skeleton.id);
-  var color = '#' + skeleton.color.getHexString();
-  button.css("background-color", color);
-  // Set data of table cell for sorting and invalidate it to update data table
-  button.closest('td').attr('data-color', color);
-};
-
 /** Remove all, and repopulate with the current range. */
 SelectionTable.prototype.GUI.prototype.update = function() {
   // Update GUI state
@@ -928,7 +920,6 @@ SelectionTable.prototype.colorSkeleton = function(skeletonID, allSelected, rgb,
   }
 
   if (colorChanged || alphaChanged) {
-    this.gui.update_skeleton_color_button(skeleton);
     this.notifyLink(skeleton);
   }
 

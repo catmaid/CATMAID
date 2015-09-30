@@ -750,9 +750,7 @@ var WindowMaker = new function()
             '<th><input type="checkbox" id="selection-table-show-all-text' + ST.widgetID + '" style="float: left" /></th>' +
             '<th><input type="checkbox" id="selection-table-show-all-meta' + ST.widgetID + '" checked style="float: left" /></th>' +
             '<th><button id="selection-table-batch-color-button' + ST.widgetID +
-                '" type="button" value="#ffff00" style="background-color: #ffff00">Batch color</button>' +
-              '<div id="selection-table-batch-color-wheel' + ST.widgetID + '">' +
-                '<div class="batch-colorwheel"></div></div></th>' +
+                '" type="button" value="#ffff00" style="background-color: #ffff00">Batch color</button></th>' +
             '<th></th>' +
           '</tr>' +
         '</thead>' +

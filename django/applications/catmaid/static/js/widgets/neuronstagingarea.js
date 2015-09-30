@@ -755,12 +755,10 @@ SelectionTable.prototype.GUI.prototype.update = function() {
           },
           "display": function(data, type, row, meta) {
             var color = row.skeleton.color.getHexString();
-            return '<button class="action-changecolor" ' +
-                'id="skeletonaction-changecolor-' + widgetID + '-' + row.skeleton.id +
-                '" value="#' + color + '" style="background-color: #' + color +
-                ';color: ' + CATMAID.tools.getContrastColor(color) + '">color</button>' +
-                '<div style="display: none" id="color-wheel' + widgetID + '-' + row.skeleton.id +
-                '"><div><label><input type="checkbox" />all selected</label></div><div class="colorwheel"></div></div>';
+            var id = 'skeletonaction-changecolor-' + widgetID + '-' + row.skeleton.id;
+            return '<button class="action-changecolor" id="' + id  + '" value="#' +
+                color + '" style="background-color: #' + color + ';color: ' +
+                CATMAID.tools.getContrastColor(color) + '">color</button>';
           }
         }
       },

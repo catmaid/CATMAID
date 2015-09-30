@@ -754,11 +754,11 @@ SelectionTable.prototype.GUI.prototype.update = function() {
             return row.skeleton.color.getHSL();
           },
           "display": function(data, type, row, meta) {
+            var color = row.skeleton.color.getHexString();
             return '<button class="action-changecolor" ' +
                 'id="skeletonaction-changecolor-' + widgetID + '-' + row.skeleton.id +
-                '" value="#' + row.skeleton.color.getHexString() + '"' +
-                '" style="background-color: #' + row.skeleton.color.getHexString() +
-                '">color</button>' +
+                '" value="#' + color + '" style="background-color: #' + color +
+                ';color: ' + CATMAID.tools.getContrastColor(color) + '">color</button>' +
                 '<div style="display: none" id="color-wheel' + widgetID + '-' + row.skeleton.id +
                 '"><div><label><input type="checkbox" />all selected</label></div><div class="colorwheel"></div></div>';
           }

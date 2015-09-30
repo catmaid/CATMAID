@@ -1598,7 +1598,8 @@ GroupGraph.prototype.exportGML = function() {
 GroupGraph.prototype._getGrowParameters = function() {
   return {n_circles: Number($('#gg_n_circles_of_hell' + this.widgetID).val()),
           min_downstream: Number($('#gg_n_min_downstream' + this.widgetID).val()),
-          min_upstream: Number($('#gg_n_min_upstream' + this.widgetID).val())};
+          min_upstream: Number($('#gg_n_min_upstream' + this.widgetID).val()),
+          filter_regex: $('#gg_filter_regex' + this.widgetID).val()};
 };
 
 // Find skeletons to grow from groups or single skeleton nodes
@@ -1651,12 +1652,22 @@ GroupGraph.prototype.growGraph = function() {
              n_circles: n_circles,
              min_pre: p.min_upstream,
              min_post: p.min_downstream},
-            function(status, text) {
-              if (200 !== status) return;
-              var json = $.parseJSON(text);
-              if (json.error) return alert(json.error);
-              callback(skids.concat(json[0]));
-            });
+            CATMAID.jsonResponseHandler(function(json) {
+              if (p.filter_regex !== '') {
+                requestQueue.register(django_url + project.id + "/annotations/skeletons/list",
+                    "POST",
+                    {skids: json[0]},
+                    CATMAID.jsonResponseHandler(function (json) {
+                      var filterRegex = new RegExp(p.filter_regex, 'i');
+                      var filteredNeighbors = Object.keys(json.skeletons).filter(function (skid) {
+                        return json.skeletons[skid].some(function (a) {
+                          return filterRegex.test(json.annotations[a.id]);
+                        });
+                      });
+                      callback(skids.concat(filteredNeighbors));
+                    }));
+              } else callback(skids.concat(json[0]));
+            }));
       },
       append = (function(skids) {
         var color = new THREE.Color().setHex(0xffae56),

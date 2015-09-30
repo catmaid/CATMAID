@@ -175,8 +175,9 @@ var WindowMaker = new function()
     return left ? elems[elems.length - 1] : elems[0];
   };
 
-  var appendNumericField = function(div, label, title, value, postlabel, onchangeFn, length) {
+  var createNumericField = function(id, label, title, value, postlabel, onchangeFn, length) {
     var nf = document.createElement('input');
+    if (id) nf.setAttribute('id', id);
     nf.setAttribute('type', 'text');
     nf.setAttribute('value', value);
     if (length) nf.setAttribute('size', length);
@@ -187,11 +188,16 @@ var WindowMaker = new function()
       if (label) labelEl.appendChild(document.createTextNode(label));
       labelEl.appendChild(nf);
       if (postlabel) labelEl.appendChild(document.createTextNode(postlabel));
-      div.appendChild(labelEl);
+      return labelEl;
     } else {
-      div.appendChild(nf);
+      return nf;
     }
-    return nf;
+  };
+
+  var appendNumericField = function(div, label, title, value, postlabel, onchangeFn, length) {
+    var field = createNumericField(undefined, label, title, value, postlabel, onchangeFn, length);
+    div.append(field);
+    return field;
   };
 
   /**
@@ -1578,6 +1584,9 @@ var WindowMaker = new function()
          [document.createTextNode(" orders, limit:")],
          [f("upstream")],
          [f("downstream")],
+         [createNumericField('gg_filter_regex' + GG.widgetID, 'filter (regex):',
+                             'Only include neighbors with annotations matching this regex.',
+                             '', '', undefined, 4)],
          [document.createTextNode(" - Find ")],
          ['paths', GG.growPaths.bind(GG)],
          [document.createTextNode(" by ")],

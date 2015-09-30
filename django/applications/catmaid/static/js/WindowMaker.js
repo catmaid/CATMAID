@@ -749,8 +749,8 @@ var WindowMaker = new function()
             '<th><input type="checkbox" id="selection-table-show-all-post' + ST.widgetID + '" checked style="float: left" /></th>' +
             '<th><input type="checkbox" id="selection-table-show-all-text' + ST.widgetID + '" style="float: left" /></th>' +
             '<th><input type="checkbox" id="selection-table-show-all-meta' + ST.widgetID + '" checked style="float: left" /></th>' +
-            '<th><input id="selection-table-batch-color-button' + ST.widgetID +
-                '" type="button" value="Batch color" style="background-color: #ffff00" />' +
+            '<th><button id="selection-table-batch-color-button' + ST.widgetID +
+                '" type="button" value="#ffff00" style="background-color: #ffff00">Batch color</button>' +
               '<div id="selection-table-batch-color-wheel' + ST.widgetID + '">' +
                 '<div class="batch-colorwheel"></div></div></th>' +
             '<th></th>' +
@@ -764,7 +764,7 @@ var WindowMaker = new function()
       ST.review_filter = this.value;
       ST.update();
     });
-    $("input#selection-table-batch-color-button" + ST.widgetID, tab).on("click",
+    $("button#selection-table-batch-color-button" + ST.widgetID, tab).on("click",
         function() {
           CATMAID.ColorPicker.toggle(this, {
             onColorChange: ST.batchColorSelected.bind(ST)

@@ -941,22 +941,19 @@ SelectionTable.prototype.colorSkeleton = function(skeletonID, allSelected, rgb,
       var s = table.skeletons[table.skeleton_ids[skid]];
       s.color.copy(color);
       s.opacity = alpha;
-      table.gui.update_skeleton_color_button(s);
       table.notifyLink(s);
     });
-    $('#selection-table-batch-color-button' + table.widgetID)[0].style.backgroundColor = color.getStyle();
   }
+
+  this.gui.invalidate();
 };
 
 SelectionTable.prototype.batchColorSelected = function(rgb, alpha, colorChanged, alphaChanged) {
-  var c = [parseInt(rgb.r) / 255.0,
-           parseInt(rgb.g) / 255.0,
-           parseInt(rgb.b) / 255.0];
   this.getSelectedSkeletons().forEach(function(skid) {
     var skeleton = this.skeletons[this.skeleton_ids[skid]];
     if (colorChanged) {
       // Set color only if it was actually changed
-      skeleton.color.setRGB(c[0], c[1], c[2]);
+      skeleton.color.setRGB(rgb.r, rgb.g, rgb.b);
     }
     skeleton.opacity = alpha;
     this.notifyLink(skeleton); // TODO need a batchNotifyLink

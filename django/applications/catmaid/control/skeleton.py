@@ -1204,7 +1204,7 @@ def get_annotation_info(project_id, skeleton_ids, annotations, metaannotations,
         response['neuronnames'] = {n_to_sk_ids[n]:name for n,name in cursor.fetchall()}
 
     # If wanted, get the meta annotations for each annotation
-    if metaannotations:
+    if metaannotations and len(annotations):
         # Request only ID of annotated annotations, annotator ID, meta
         # annotation ID, meta annotation Name
         cursor.execute("""

@@ -90,7 +90,7 @@ def check_superuser():
             try:
                 user = User.objects.get(id=settings.SYSTEM_USER_ID)
             except User.DoesNotExist:
-                raise ImproperlyConfigured("Could not find any superuser with the"
+                raise ImproperlyConfigured("Could not find any super user with the "
                                         "ID configured in SYSTEM_USER_ID")
             if not user.is_superuser:
                 raise ImproperlyConfigured("The user configured in SYSTEM_USER_ID "

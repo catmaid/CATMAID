@@ -260,6 +260,14 @@ CATMAID.tools = CATMAID.tools || {};
   };
 
   /**
+   * Convert RGB values between 0 and 255 to a hex representation.
+   */
+  tools.rgbToHex = function(r, g, b) {
+    // See http://stackoverflow.com/questions/5623838
+    return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+  };
+
+  /**
    * Calculate an approximate lumance value from RGB values.
    */
   tools.rgbToLuminance = function(r, g, b) {

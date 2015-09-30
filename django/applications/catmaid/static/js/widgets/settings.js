@@ -233,7 +233,7 @@
         {name: 'Keep images pixelated (nearest)', id: 'nearest'}
       ];
       interpolationModes.forEach(function(o) {
-        var selected = (o.id === userprofile.tile_linear_interpolation ? 'linear' : 'nearest');
+        var selected = (o.id === (userprofile.tile_linear_interpolation ? 'linear' : 'nearest'));
         this.append(new Option(o.name, o.id, selected, selected));
       }, tileInterpolation);
 

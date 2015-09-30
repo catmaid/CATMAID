@@ -155,7 +155,8 @@ def update_user_profile(request):
                 {'name': 'tracing_overlay_screen_scaling', 'parse': json.loads},
                 {'name': 'tracing_overlay_scale', 'parse': float},
                 {'name': 'prefer_webgl_layers', 'parse': json.loads},
-                {'name': 'use_cursor_following_zoom', 'parse': json.loads}]:
+                {'name': 'use_cursor_following_zoom', 'parse': json.loads},
+                {'name': 'tile_linear_interpolation', 'parse': json.loads}]:
         request_var = request.POST.get(var['name'], None)
         if request_var:
             request_var = var['parse'](request_var)

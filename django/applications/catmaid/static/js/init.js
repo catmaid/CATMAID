@@ -519,7 +519,8 @@ function handle_openProjectStack( e, stackViewer )
       tilesource,
       true,
       1,
-      !useExistingViewer);
+      !useExistingViewer,
+      userprofile.tile_linear_interpolation);
 
   if (!useExistingViewer) {
     stackViewer.addLayer( "TileLayer", tilelayer );

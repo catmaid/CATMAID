@@ -225,6 +225,34 @@
             CATMAID.msg('Success', 'User profile updated successfully.');
           });
         }));
+
+      // Tile interpolation
+      var tileInterpolation = $('<select/>');
+      var interpolationModes = [
+        {name: 'Smoothly blur pixels (linear)', id: 'linear'},
+        {name: 'Keep images pixelated (nearest)', id: 'nearest'}
+      ];
+      interpolationModes.forEach(function(o) {
+        var selected = (o.id === userprofile.tile_linear_interpolation ? 'linear' : 'nearest');
+        this.append(new Option(o.name, o.id, selected, selected));
+      }, tileInterpolation);
+
+      ds.append(createLabeledControl('Image tile interpolation', tileInterpolation,
+            'Choose how to interpolate pixel values when image tiles are ' +
+            'magnified.'));
+      tileInterpolation.on('change', function(e) {
+        userprofile.tile_linear_interpolation = this.value === 'linear';
+        userprofile.saveAll(function () {
+          CATMAID.msg('Success', 'User profile updated successfully.');
+        });
+        project.getStackViewers().forEach(function (stackViewer) {
+          stackViewer.getLayers().forEach(function (layer) {
+            if (layer instanceof CATMAID.TileLayer) {
+              layer.setInterpolationMode(userprofile.tile_linear_interpolation);
+            }
+          });
+        });
+      });
     };
 
     /*

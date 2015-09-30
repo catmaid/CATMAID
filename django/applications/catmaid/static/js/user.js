@@ -153,7 +153,8 @@ Userprofile.prototype.getOptions = function() {
     tracing_overlay_screen_scaling: true,
     tracing_overlay_scale: true,
     prefer_webgl_layers: true,
-    use_cursor_following_zoom: true
+    use_cursor_following_zoom: true,
+    tile_linear_interpolation: true
   };
 };
 

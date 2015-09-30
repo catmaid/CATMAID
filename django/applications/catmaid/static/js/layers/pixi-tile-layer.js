@@ -28,11 +28,29 @@
     this._oldZ = undefined;
 
     this._tileRequest = {};
+    this._pixiInterpolationMode = this._interpolationMode ? PIXI.SCALE_MODES.LINEAR : PIXI.SCALE_MODES.NEAREST;
   }
 
   PixiTileLayer.prototype = Object.create(CATMAID.TileLayer.prototype);
   $.extend(PixiTileLayer.prototype, CATMAID.PixiLayer.prototype); // Mixin/multiple inherit PixiLayer.
   PixiTileLayer.prototype.constructor = PixiTileLayer;
+
+  /** @inheritdoc */
+  PixiTileLayer.prototype.setInterpolationMode = function (linear) {
+    this._interpolationMode = linear;
+    this._pixiInterpolationMode = this._interpolationMode ? PIXI.SCALE_MODES.LINEAR : PIXI.SCALE_MODES.NEAREST;
+    for (var i = 0; i < this._tiles.length; ++i) {
+      for (var j = 0; j < this._tiles[0].length; ++j) {
+        var texture = this._tiles[i][j].texture;
+        if (texture && texture.valid &&
+            texture.baseTexture.scaleMode !== this._pixiInterpolationMode) {
+          texture.baseTexture.scaleMode = this._pixiInterpolationMode;
+          texture.update();
+        }
+      }
+    }
+    this.redraw();
+  };
 
   /** @inheritdoc */
   PixiTileLayer.prototype.unregister = function () {
@@ -157,6 +175,10 @@
                 this._tilesBuffer[i][j] = false;
                 CATMAID.PixiContext.GlobalTextureManager.inc(source);
                 CATMAID.PixiContext.GlobalTextureManager.dec(tile.texture.baseTexture.source.src);
+                if (texture.baseTexture.scaleMode !== this._pixiInterpolationMode) {
+                  texture.baseTexture.scaleMode = this._pixiInterpolationMode;
+                  texture.update();
+                }
                 tile.texture = texture;
                 tile.visible = true;
               } else {
@@ -233,6 +255,10 @@
             CATMAID.PixiContext.GlobalTextureManager.inc(source);
             CATMAID.PixiContext.GlobalTextureManager.dec(tile.texture.baseTexture.source.src);
             tile.texture = texture || PIXI.Texture.fromImage(source);
+            if (tile.texture.baseTexture.scaleMode !== this._pixiInterpolationMode) {
+              tile.texture.baseTexture.scaleMode = this._pixiInterpolationMode;
+              tile.texture.update();
+            }
             tile.visible = true;
           }
         }

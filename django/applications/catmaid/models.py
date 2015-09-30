@@ -849,6 +849,8 @@ class UserProfile(models.Model):
         default=settings.PROFILE_PREFER_WEBGL_LAYERS)
     use_cursor_following_zoom = models.BooleanField(
         default=settings.PROFILE_USE_CURSOR_FOLLOWING_ZOOM)
+    tile_linear_interpolation = models.BooleanField(
+        default=settings.PROFILE_TILE_LINEAR_INTERPOLATION)
 
     def __unicode__(self):
         return self.user.username
@@ -873,6 +875,7 @@ class UserProfile(models.Model):
         pdict['tracing_overlay_scale'] = self.tracing_overlay_scale
         pdict['prefer_webgl_layers'] = self.prefer_webgl_layers
         pdict['use_cursor_following_zoom'] = self.use_cursor_following_zoom
+        pdict['tile_linear_interpolation'] = self.tile_linear_interpolation
         return pdict
 
     # Fix a problem with duplicate keys when new users are added.

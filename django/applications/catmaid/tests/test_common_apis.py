@@ -87,6 +87,7 @@ class InsertionTest(TestCase):
     """ This test case insers various model objects and tests if this is done as
     expected. No fixture data is needed for this test.
     """
+    fixtures = ['catmaid_smallenv']
     maxDiff = None
 
     def insert_project(self):

@@ -844,11 +844,6 @@ table.skeleton-table tr td.centering {
   text-align: center;
 }
 
-/* Center colorwheel in selection table */
-table.skeleton-table div.colorwheel {
-  display: inline;
-}
-
 /* Exception for display problem in datatables*/
 table.skeleton-table tr:last-child th::after {
   content: "";

@@ -1,8 +1,7 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
-  InstanceRegistry,
-  parseColorWheel
+  InstanceRegistry
 */
 
 "use strict";
@@ -68,18 +67,19 @@ VennDiagram.prototype.append = function(models) {
     // Add new group
     var options = new CATMAID.OptionsDialog("Group properties");
     options.appendField("Name:", "vd-name", "", null);
-    var display = document.createElement('input');
-    display.setAttribute('type', 'button');
-    display.setAttribute('value', 'Color');
-    var default_color = '#aaaaff';
-    $(display).css("background-color", default_color);
-    options.dialog.appendChild(display);
-    var div = document.createElement('div');
-    options.dialog.appendChild(div);
-    var cw = Raphael.colorwheel(div, 150);
-    cw.color(default_color);
-    cw.onchange(function(color) {
-      $(display).css("background-color", '#' + parseColorWheel(color).getHexString());
+
+    var groupColor = '#aaaaff';
+    var colorButton = document.createElement('button');
+    colorButton.appendChild(document.createTextNode('Color'));
+    options.dialog.appendChild(colorButton);
+    CATMAID.ColorPicker.enable(colorButton, {
+      initialColor: groupColor,
+      onColorChange: function(rgb, alpha, colorChanged, alphaChanged) {
+        if (colorChanged) {
+          groupColor = CATMAID.tools.rgbToHex(Math.round(rgb.r * 255),
+              Math.round(rgb.g * 255), Math.round(rgb.b * 255));
+        }
+      }
     });
 
     var self = this;
@@ -93,7 +93,7 @@ VennDiagram.prototype.append = function(models) {
         self.groups.push(new VennDiagram.prototype.Group(
                     visible,
                     label,
-                    parseColorWheel(cw.color())));
+                    new THREE.Color(groupColor)));
 
         // Reorder from large to small, so that small ones end up on top
         self.groups.sort(function(g1, g2) {

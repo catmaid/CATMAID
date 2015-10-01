@@ -4439,25 +4439,17 @@
     // Defaults for initialization:
     var options = WebGLApplication.prototype.OPTIONS;
 
-    var ic = new THREE.Color(options.meshes_color);
-    var initialStyle = 'rgb(' + ic.r + ',' + ic.g + ',' + ic.b + ',' +
-        options.meshes_opacity + ')';
-
-    var c = $(document.createElement("button")).attr({
-          id: buttonId,
-          value: initialStyle
-        })
-        .css('background-color', options.meshes_color)
-        .click(function() {
-          CATMAID.ColorPicker.toggle(this, {
-            onColorChange: onchange
-          });
-        })
-        .text('color')
-        .get(0);
+    var colorButton = document.createElement("button");
+    colorButton.setAttribute('id', buttonId);
+    colorButton.appendChild(document.createTextNode('color'));
+    CATMAID.ColorPicker.enable(colorButton, {
+      initialColor: options.meshes_color,
+      initialAlpha: options.meshes_opacity,
+      onColorChange: onchange
+    });
 
     var div = document.createElement('span');
-    div.appendChild(c);
+    div.appendChild(colorButton);
     div.appendChild($(
       '<span>(Opacity: <span id="' + labelId + '">' +
         options.meshes_opacity + '</span>)</span>').get(0));

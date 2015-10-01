@@ -4421,16 +4421,13 @@
   };
 
   WebGLApplication.prototype.createMeshColorButton = function() {
-    var mesh_color = '#meshes-color' + this.widgetID,
-        mesh_opacity = '#mesh-opacity' + this.widgetID,
-        mesh_colorwheel = '#mesh-colorwheel' + this.widgetID;
-    var onchange = (function(color, alpha) {
-      color = new THREE.Color().setRGB(parseInt(color.r) / 255.0,
-          parseInt(color.g) / 255.0, parseInt(color.b) / 255.0);
-      $(mesh_color).css('background-color', color.getStyle());
-      $(mesh_opacity).text(alpha.toFixed(2));
-      this.options.meshes_color = $(mesh_color).css('background-color').replace(/\s/g, '');
+    var buttonId = 'meshes-color' + this.widgetID,
+        labelId = 'mesh-opacity' + this.widgetID;
+
+    var onchange = (function(rgb, alpha, colorChanged, alphaChanged) {
+      $('#' + labelId).text(alpha.toFixed(2));
       if (this.options.show_meshes) {
+        var color = new THREE.Color().setRGB(rgb.r, rgb.g, rgb.b);
         var material = this.options.createMeshMaterial(color, alpha);
         this.space.content.meshes.forEach(function(mesh) {
           mesh.material = material;
@@ -4442,33 +4439,20 @@
     // Defaults for initialization:
     var options = WebGLApplication.prototype.OPTIONS;
 
-    var c = $(document.createElement("button")).attr({
-        id: mesh_color.slice(1),
-        value: 'color'
-      })
-        .css('background-color', options.meshes_color)
-        .click( function( event )
-        {
-          var sel = $(mesh_colorwheel);
-          if (sel.is(':hidden')) {
-            var cw = Raphael.colorwheel(sel[0], 150);
-            cw.color($(mesh_color).css('background-color'),
-                     $(mesh_opacity).text());
-            cw.onchange(onchange);
-            sel.show();
-          } else {
-            sel.hide();
-            sel.empty();
-          }
-        })
-        .text('color')
-        .get(0);
+    var colorButton = document.createElement("button");
+    colorButton.setAttribute('id', buttonId);
+    colorButton.appendChild(document.createTextNode('color'));
+    CATMAID.ColorPicker.enable(colorButton, {
+      initialColor: options.meshes_color,
+      initialAlpha: options.meshes_opacity,
+      onColorChange: onchange
+    });
+
     var div = document.createElement('span');
-    div.appendChild(c);
+    div.appendChild(colorButton);
     div.appendChild($(
-      '<span>(Opacity: <span id="' + mesh_opacity.slice(1) + '">' +
+      '<span>(Opacity: <span id="' + labelId + '">' +
         options.meshes_opacity + '</span>)</span>').get(0));
-    div.appendChild($('<div id="' + mesh_colorwheel.slice(1) + '">').hide().get(0));
     return div;
   };
 

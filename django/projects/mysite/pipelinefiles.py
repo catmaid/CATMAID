@@ -47,6 +47,8 @@ libraries_js = {
                'jquery-ui.min.js', 'jquery-ui.*.js',
                'jquery.dataTables.min.js', 'jquery.*.js',
                'dataTables.colReorder.js'],
+    'colorpicker': ['colors.js', 'colorPicker.data.js', 'colorPicker.js',
+                    'jqColor.js'],
     'fabric.js': ['all.modified.js'],
     'raphael': ['raphael.js', 'g.raphael.js', 'g.pie-min.js', 'g.line.altered.js',
                 'raphael-custom.js', 'colorwheel.js', 'raphael.export.js'],

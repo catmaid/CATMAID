@@ -11,7 +11,8 @@
   Set,
   SkeletonAnnotations,
   User,
-  WindowMaker
+  WindowMaker,
+  Set
 */
 
 "use strict";
@@ -442,12 +443,13 @@ SelectionTable.prototype.clear = function(source_chain) {
 /** Set the color of all skeletons based on the state of the "Color" pulldown menu. */
 SelectionTable.prototype.randomizeColorsOfSelected = function() {
   this.next_color_index = 0; // reset
-  this.filteredSkeletons(true).forEach(function(skeleton) {
+  var updatedSkeletonIDs = this.filteredSkeletons(true).map(function(skeleton) {
     skeleton.color = this.pickColor();
+    return skeleton.id;
   }, this);
   this.updateLink(this.getSelectedSkeletonModels());
   // Update UI
-  this.gui.invalidate();
+  this.gui.invalidate(updatedSkeletonIDs);
 };
 
 SelectionTable.prototype.colorizeWith = function(scheme) {
@@ -617,24 +619,24 @@ SelectionTable.prototype.GUI.prototype.clear = function() {
 };
 
 /**
- * Make the UI reload all cached data and refresh the display.
+ * Make the UI reload all cached data and refresh the display. If skeletonIDs is
+ * an array with skeleton IDs, only rows representing these skeletons will be
+ * invalidated.
  */
-SelectionTable.prototype.GUI.prototype.invalidate = function() {
+SelectionTable.prototype.GUI.prototype.invalidate = function(skeletonIDs) {
   var tableSelector = "table#skeleton-table" + this.table.widgetID;
   if ($.fn.DataTable.isDataTable(tableSelector)) {
     var datatable = $(tableSelector).DataTable();
     if (datatable) {
-      datatable.rows().invalidate();
+      var filter;
+      if (skeletonIDs) {
+        filter = skeletonIDs.map(function(skid) {
+          return '[data-skeleton-id=' + skid + ']';
+        });
+      }
+      datatable.rows(filter).invalidate();
     }
   }
-};
-
-SelectionTable.prototype.GUI.prototype.update_skeleton_color_button = function(skeleton) {
-  var button = $('#skeletonaction-changecolor-' + this.table.widgetID + '-' + skeleton.id);
-  var color = '#' + skeleton.color.getHexString();
-  button.css("background-color", color);
-  // Set data of table cell for sorting and invalidate it to update data table
-  button.closest('td').attr('data-color', color);
 };
 
 /** Remove all, and repopulate with the current range. */
@@ -762,12 +764,11 @@ SelectionTable.prototype.GUI.prototype.update = function() {
             return row.skeleton.color.getHSL();
           },
           "display": function(data, type, row, meta) {
-            return '<button value="color" class="action-changecolor" ' +
-                'id="skeletonaction-changecolor-' + widgetID + '-' + row.skeleton.id +
-                '" style="background-color: #' + row.skeleton.color.getHexString() +
-                '">color</button>' +
-                '<div style="display: none" id="color-wheel' + widgetID + '-' + row.skeleton.id +
-                '"><div><label><input type="checkbox" />all selected</label></div><div class="colorwheel"></div></div>';
+            var color = row.skeleton.color.getHexString();
+            var id = 'skeletonaction-changecolor-' + widgetID + '-' + row.skeleton.id;
+            return '<button class="action-changecolor" id="' + id  + '" value="#' +
+                color + '" style="background-color: #' + color + ';color: ' +
+                CATMAID.tools.getContrastColor(color) + '">color</button>';
           }
         }
       },
@@ -793,8 +794,7 @@ SelectionTable.prototype.GUI.prototype.update = function() {
       tds.eq(2).css('background-color',
           CATMAID.ReviewSystem.getBackgroundColor(data.reviewPercentage));
       // Prepare color wheel cell
-      tds.eq(-2).addClass('centering').attr(
-          'data-color', data.skeleton.color.getHexString());
+      tds.eq(-2).addClass('centering');
       // Prepare action cell
       tds.eq(-1).addClass('centering').css('white-space', 'nowrap');
     }
@@ -915,41 +915,51 @@ SelectionTable.prototype.filteredSkeletons = function(only_selected) {
   return this.skeletons;
 };
 
+SelectionTable.prototype.colorSkeleton = function(skeletonID, allSelected, rgb,
+    alpha, colorChanged, alphaChanged) {
+  var skeleton = this.skeletons[this.skeleton_ids[skeletonID]];
+  // Only update the color if it was changed
+  if (colorChanged) {
+    skeleton.color.setRGB(rgb.r, rgb.g, rgb.b);
+  }
+  if (alphaChanged) {
+    skeleton.opacity = alpha;
+  }
+
+  if (colorChanged || alphaChanged) {
+    this.notifyLink(skeleton);
+  }
+
+  if (allSelected) {
+    colorAllSelected(this, skeleton.color, skeleton.opacity);
+  }
+
+  function colorAllSelected(table, color, alpha) {
+    table.getSelectedSkeletons().forEach(function(skid) {
+      var s = table.skeletons[table.skeleton_ids[skid]];
+      s.color.copy(color);
+      s.opacity = alpha;
+      table.notifyLink(s);
+    });
+  }
+
+  this.gui.invalidate([skeletonID]);
+};
+
 SelectionTable.prototype.batchColorSelected = function(rgb, alpha, colorChanged, alphaChanged) {
-  var c = [parseInt(rgb.r) / 255.0,
-           parseInt(rgb.g) / 255.0,
-           parseInt(rgb.b) / 255.0];
-  this.getSelectedSkeletons().forEach(function(skid) {
+  var selectedSkeletonIDs = this.getSelectedSkeletons();
+  selectedSkeletonIDs.forEach(function(skid) {
     var skeleton = this.skeletons[this.skeleton_ids[skid]];
     if (colorChanged) {
       // Set color only if it was actually changed
-      skeleton.color.setRGB(c[0], c[1], c[2]);
+      skeleton.color.setRGB(rgb.r, rgb.g, rgb.b);
     }
     skeleton.opacity = alpha;
     this.notifyLink(skeleton); // TODO need a batchNotifyLink
   }, this);
-  $('#selection-table-batch-color-button' + this.widgetID)[0].style.backgroundColor = rgb.hex;
-  this.gui.invalidate();
+  //$('#selection-table-batch-color-button' + this.widgetID)[0].style.backgroundColor = rgb.hex;
+  this.gui.invalidate(selectedSkeletonIDs);
 };
-
-SelectionTable.prototype.toggleBatchColorWheel = function() {
-  var div = $('#selection-table-batch-color-wheel' + this.widgetID);
-  if (this.batch_cw) {
-    // hide it
-    delete this.batch_cw;
-    $('#selection-table-batch-color-wheel' + this.widgetID).hide();
-    div.empty();
-  } else {
-    // show it
-    this.batch_cw = Raphael.colorwheel(div[0], 150);
-    var c = $('#selection-table-batch-color-button' + this.widgetID)[0].style.backgroundColor;
-    var rgb = c.substring(c.indexOf('(') + 1, c.lastIndexOf(')')).split(',').map(Number);
-    this.batch_cw.color(this._rgbarray2hex(rgb));
-    this.batch_cw.onchange(this.batchColorSelected.bind(this));
-    $('#selection-table-batch-color-wheel' + this.widgetID).show();
-  }
-};
-
 
 /** credit: http://stackoverflow.com/questions/638948/background-color-hex-to-javascript-variable-jquery */
 SelectionTable.prototype._rgb2hex = function(rgb) {

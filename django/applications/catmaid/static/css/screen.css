@@ -844,11 +844,6 @@ table.skeleton-table tr td.centering {
   text-align: center;
 }
 
-/* Center colorwheel in selection table */
-table.skeleton-table div.colorwheel {
-  display: inline;
-}
-
 /* Exception for display problem in datatables*/
 table.skeleton-table tr:last-child th::after {
   content: "";
@@ -936,4 +931,8 @@ div.selection-table.windowContent {
 
 .dataTables_wrapper {
   min-height: 0;
+}
+
+.cp-app {
+    z-index: 15000;
 }

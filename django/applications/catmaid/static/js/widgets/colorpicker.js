@@ -95,7 +95,7 @@
       if (options.initialColor) {
         // Use three.js for color conversion
         var tc = new THREE.Color(options.initialColor);
-        var hex = tc.getHexString();
+        var hex = '#' + tc.getHexString();
         element.style.backgroundColor = hex;
         element.style.color = CATMAID.tools.getContrastColor(hex);
         color = tc.getStyle();

@@ -6,7 +6,6 @@
   fetchSkeletons,
   InstanceRegistry,
   NeuronNameService,
-  parseColorWheel,
   project,
   requestQueue,
   SelectionTable,
@@ -423,13 +422,21 @@ GroupGraph.prototype.graph_properties = function() {
   var edgeFnNames = ["identity", "log", "log10", "sqrt"];
   var edgeFnSel = dialog.appendChoice("Edge width as a function of synaptic count:", "edge_width_fn", edgeFnNames, edgeFnNames, this.edge_width_function);
 
+  var newEdgeColor = this.edge_color;
+  var colorButton = document.createElement('button');
+  colorButton.appendChild(document.createTextNode('edge color'));
+  CATMAID.ColorPicker.enable(colorButton, {
+    initialColor: this.edge_color,
+    onColorChange: function(rgb, alpha, colorChanged, alphaChanged) {
+      if (colorChanged) {
+        newEdgeColor = CATMAID.tools.rgbToHex(Math.round(rgb.r * 255),
+            Math.round(rgb.g * 255), Math.round(rgb.b * 255));
+      }
+    }
+  });
 
   var p = document.createElement('p');
-  var cw_div = document.createElement('div');
-  p.appendChild(cw_div);
-  var edge_cw = Raphael.colorwheel(cw_div, 150);
-  edge_cw.color(this.edge_color);
-  p.appendChild(cw_div);
+  p.appendChild(colorButton);
   dialog.dialog.appendChild(p);
 
   dialog.onOK = (function() {
@@ -473,7 +480,7 @@ GroupGraph.prototype.graph_properties = function() {
     var edge_min_width = Number(props[2].value.trim());
     if (!Number.isNaN(edge_min_width)) this.edge_min_width = edge_min_width;
     this.edge_width_function = edgeFnNames[edgeFnSel.selectedIndex];
-    this.edge_color = '#' + parseColorWheel(edge_cw.color()).getHexString();
+    this.edge_color = newEdgeColor;
     this.updateEdgeGraphics();
   }).bind(this);
 
@@ -1412,22 +1419,19 @@ GroupGraph.prototype.appendGroup = function(models) {
     options.appendCheckbox("Hide intragroup edges", "gg-edges", true);
     options.appendCheckbox("Append number of neurons to name", "gg-number", true);
     options.appendMessage("Choose group color:");
-    var display = document.createElement('input');
-    display.setAttribute('type', 'button');
-    display.setAttribute('value', 'Color');
-    var default_color = '#aaaaff';
-    $(display).css("background-color", default_color);
-    options.dialog.appendChild(display);
-    var div = document.createElement('div');
-    options.dialog.appendChild(div);
-    var cw = Raphael.colorwheel(div, 150);
-    cw.color(default_color);
-    cw.onchange(function(color) {
-      $(display).css("background-color", '#' + parseColorWheel(color).getHexString());
+    var groupColor = '#aaaaff';
+    var colorButton = document.createElement('button');
+    colorButton.appendChild(document.createTextNode('Color'));
+    options.dialog.appendChild(colorButton);
+    CATMAID.ColorPicker.enable(colorButton, {
+      initialColor: groupColor,
+      onColorChange: function(rgb, alpha, colorChanged, alphaChanged) {
+        groupColor = CATMAID.tools.rgbToHex(Math.round(rgb.r * 255),
+            Math.round(rgb.g * 255), Math.round(rgb.b * 255));
+      }
     });
 
     var self = this;
-
     options.onOK = function() {
       var label = ['typed', 'common', 'all', 'names'].reduce(function(s, tag) {
         if (s) return s;
@@ -1441,7 +1445,8 @@ GroupGraph.prototype.appendGroup = function(models) {
       if ($('#gg-number').prop('checked')) label += ' [#' + (names.length -1) + ']';
 
       var gid = self.nextGroupID();
-      self.groups[gid] = new GroupGraph.prototype.Group(gid, models, label, parseColorWheel(cw.color()), $('#gg-edges').prop('checked'));
+      self.groups[gid] = new GroupGraph.prototype.Group(gid, models, label,
+          new THREE.Color(groupColor), $('#gg-edges').prop('checked'));
       self.append(models); // will remove/add/group nodes as appropriate
     };
 

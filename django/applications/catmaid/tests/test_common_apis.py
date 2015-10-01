@@ -442,10 +442,18 @@ class ViewPageTests(TestCase):
         self.assertEqual(len(result), 1)
 
         # Check the project:
-        stacks = result[0]['action']
+        options = result[0]['action']
+        self.assertEqual(len(options), 2)
+
+        # Check stacks:
+        stacks = result[0]['action'][0]['action']
         self.assertEqual(len(stacks), 1)
         stack = stacks['3']
         self.assertTrue(re.search(r'javascript:openProjectStack\( *3, *3 *\)', stack['action']))
+
+        # Check stacks groups
+        stackgroups = result[0]['action'][1]['action']
+        self.assertEqual(len(stackgroups), 0)
 
         # Now log in and check that we see a different set of projects:
         self.fake_authentication()
@@ -470,17 +478,17 @@ class ViewPageTests(TestCase):
             return rl[0]
 
         # Check the first project:
-        stacks = get_project(result, 1)['action']
+        stacks = get_project(result, 1)['action'][0]['action']
         self.assertEqual(len(stacks), 1)
 
         # Check the second project:
-        stacks = get_project(result, 3)['action']
+        stacks = get_project(result, 3)['action'][0]['action']
         self.assertEqual(len(stacks), 1)
         stack = stacks['3']
         self.assertTrue(re.search(r'javascript:openProjectStack\( *3, *3 *\)', stack['action']))
 
         # Check the third project:
-        stacks = get_project(result, 5)['action']
+        stacks = get_project(result, 5)['action'][0]['action']
         self.assertEqual(len(stacks), 2)
 
     def test_login(self):

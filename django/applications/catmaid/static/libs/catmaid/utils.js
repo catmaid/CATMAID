@@ -113,13 +113,6 @@ Colorizer.prototype.pickColor = function() {
   return color;
 };
 
-/** Parse into a THREE.Color the color object returned from a Raphael color wheel. */
-var parseColorWheel = function(color) {
-  return new THREE.Color().setRGB(parseInt(color.r) / 255.0,
-                                  parseInt(color.g) / 255.0,
-                                  parseInt(color.b) / 255.0);
-};
-
 /** Load each skeleton from the skeleton_ids array one by one, invoking the fnLoadedOne
  * with the ID and the corresponding JSON.
  * If some skeletons fail to load (despite existing), the fnFailedLoading will be invoked with the ID.

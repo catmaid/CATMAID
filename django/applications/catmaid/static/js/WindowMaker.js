@@ -1223,11 +1223,19 @@ var WindowMaker = new function()
               WA.adjustStaticContent();
             }, 4],
           ['Line width', o.skeleton_line_width, null, function() { WA.updateSkeletonLineWidth(this.value); }, 4],
-          ['Custom Tags (regex):', o.custom_tag_spheres_regex, '', function() { WA.options.custom_tag_spheres_regex = this.value; }, 10]
+          {
+            type: 'numeric',
+            label: 'Custom Tags (regex):',
+            title: 'Display handle spheres for nodes with tags matching this regex.',
+            value: o.custom_tag_spheres_regex,
+            onchangeFn: function () { WA.options.custom_tag_spheres_regex = this.value; },
+            length: 10
+          }
         ]);
 
     var nodeScalingInput = appendNumericField(tabs['View settings'],
-        'Node handle scaling', o.skeleton_node_scaling, null, function() {
+        'Node handle scaling', 'Size of handle spheres for tagged nodes.',
+              o.skeleton_node_scaling, null, function() {
               WA.options.skeleton_node_scaling = Math.max(0, this.value) || 1.0;
               WA.adjustContent();
               WA.updateSkeletonNodeHandleScaling(this.value);
@@ -1286,9 +1294,17 @@ var WindowMaker = new function()
           ['Back and forth', o.animation_back_forth, function() {
             WA.options.animation_back_forth = this.checked;
           }, false],
-          ['Stepwise neuron visibility', o.animation_stepwise_visibility, function() {
-            WA.options.animation_stepwise_visibility = this.checked;
-          }, false]
+          {
+            type: 'checkbox',
+            label: 'Stepwise neuron visibility',
+            title: 'Start with one neuron visible, then make another neuron ' +
+                   'visible with each complete rotation.',
+            value: o.animation_stepwise_visibility,
+            onclickFn: function() {
+              WA.options.animation_stepwise_visibility = this.checked;
+            },
+            left: false
+          }
         ]);
 
     appendToTab(tabs['Export'],

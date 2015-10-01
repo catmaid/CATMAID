@@ -79,6 +79,44 @@
       return $element;
     },
 
+    /**
+     * Bind a click handler to the given element. If the optiopns contain an
+     * initial color and an initial opacity, these will be set.
+     *
+     * Options can contain the following fields:
+     *
+     *   initialColor: hex string, e.g. #22EE44
+     *   initialAlpha: float between 0 and 1, e.g. 0.4
+     *   onColorChange: function that is called on a color change
+     */
+    enable: function(element, options) {
+      options = options || {};
+      var color;
+      if (options.initialColor) {
+        // Use three.js for color conversion
+        var tc = new THREE.Color(options.initialColor);
+        var hex = tc.getHexString();
+        element.style.backgroundColor = hex;
+        element.style.color = CATMAID.tools.getContrastColor(hex);
+        color = tc.getStyle();
+        if (options.initialAlpha) {
+          // Add alpha to style
+          color = color.replace(/\)/, ',' + options.initialAlpha + ')');
+        }
+      } else {
+        // Set to yellow as default
+        color = 'rgb(255, 255, 0)';
+      }
+
+      // The currently used color picker implementation expects this attribute
+      // to be set to the initial color.
+      element.setAttribute('value', color);
+
+      $(element).on('click', function() {
+        CATMAID.ColorPicker.toggle(this, options);
+      });
+    },
+
 
     /**
      * Hide color picker for a specific DOM element.

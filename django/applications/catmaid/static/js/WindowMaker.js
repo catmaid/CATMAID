@@ -136,11 +136,11 @@ var WindowMaker = new function()
     return select;
   };
 
-  var appendButton = function(div, title, onclickFn, attr) {
+  var appendButton = function(div, label, onclickFn, attr) {
     var b = document.createElement('input');
     if (attr) Object.keys(attr).forEach(function(key) { b.setAttribute(key, attr[key]); });
     b.setAttribute('type', 'button');
-    b.setAttribute('value', title);
+    b.setAttribute('value', label);
     b.onclick = onclickFn;
     div.appendChild(b);
     return b;
@@ -157,24 +157,25 @@ var WindowMaker = new function()
     return fb;
   };
 
-  var createCheckbox = function(title, value, onclickFn) {
+  var createCheckbox = function(label, value, onclickFn) {
     var cb = document.createElement('input');
     cb.setAttribute('type', 'checkbox');
     cb.checked = value ? true : false;
     cb.onclick = onclickFn;
-    return [cb, document.createTextNode(title)];
+    return [cb, document.createTextNode(label)];
   };
 
-  var appendCheckbox = function(div, title, value, onclickFn, left) {
-    var label = document.createElement('label');
-    var elems = createCheckbox(title, value, onclickFn);
+  var appendCheckbox = function(div, label, title, value, onclickFn, left) {
+    var labelEl = document.createElement('label');
+    labelEl.setAttribute('title', title);
+    var elems = createCheckbox(label, value, onclickFn);
     if (left) elems.reverse();
-    elems.forEach(function(elem) { label.appendChild(elem); });
-    div.appendChild(label);
+    elems.forEach(function(elem) { labelEl.appendChild(elem); });
+    div.appendChild(labelEl);
     return left ? elems[elems.length - 1] : elems[0];
   };
 
-  var appendNumericField = function(div, label, value, postlabel, onchangeFn, length) {
+  var appendNumericField = function(div, label, title, value, postlabel, onchangeFn, length) {
     var nf = document.createElement('input');
     nf.setAttribute('type', 'text');
     nf.setAttribute('value', value);
@@ -182,6 +183,7 @@ var WindowMaker = new function()
     if (onchangeFn) nf.onchange = onchangeFn;
     if (label || postlabel) {
       var labelEl = document.createElement('label');
+      labelEl.setAttribute('title', title);
       if (label) labelEl.appendChild(document.createTextNode(label));
       labelEl.appendChild(nf);
       if (postlabel) labelEl.appendChild(document.createTextNode(postlabel));
@@ -192,15 +194,41 @@ var WindowMaker = new function()
     return nf;
   };
 
+  /**
+   * Construct elements from an array of parameters and append them to a tab
+   * element.
+   * @param  {Element}     tab   The tab to which to append constructed elements.
+   * @param  {[[]|object]} elems An array of parameters from which to construct
+   *                             elements. The elements of the array are either
+   *                             arrays of parameters, in which case the length
+   *                             of the array is used to choose element type, or
+   *                             an object specifying parameters, in which case
+   *                             the `type` property specifies element type.
+   * @return {[Element]}         An array of the constructed elements.
+   */
   var appendToTab = function(tab, elems) {
     return elems.map(function(e) {
-      switch (e.length) {
-        case 1: return tab.appendChild(e[0]);
-        case 2: return appendButton(tab, e[0], e[1]);
-        case 3: return appendButton(tab, e[0], e[1], e[2]);
-        case 4: return appendCheckbox(tab, e[0], e[1], e[2], e[3]);
-        case 5: return appendNumericField(tab, e[0], e[1], e[2], e[3], e[4]);
-        default: return undefined;
+      if (Array.isArray(e)) {
+        switch (e.length) {
+          case 1: return tab.appendChild(e[0]);
+          case 2: return appendButton(tab, e[0], e[1]);
+          case 3: return appendButton(tab, e[0], e[1], e[2]);
+          case 4: return appendCheckbox(tab, e[0], e[0], e[1], e[2], e[3]);
+          case 5: return appendNumericField(tab, e[0], e[0], e[1], e[2], e[3], e[4]);
+          default: return undefined;
+        }
+      } else {
+        switch (e.type) {
+          case 'child':
+            return tab.appendChild(e.element);
+          case 'button':
+            return appendButton(tab, e.label, e.onclickFn, e.attr);
+          case 'checkbox':
+            return appendCheckbox(tab, e.label, e.title, e.value, e.onclickFn, e.left);
+          case 'numeric':
+            return appendNumericField(tab, e.label, e.title, e.value, e.postlabel, e.onchangeFn, e.length);
+          default: return undefined;
+        }
       }
     });
   };

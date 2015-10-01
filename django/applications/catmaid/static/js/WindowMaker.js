@@ -118,6 +118,111 @@ var WindowMaker = new function()
     return {window: win, widget: instance};
   };
 
+  var createSelect = function(id, items, use_numbers) {
+    var select = document.createElement('select');
+    select.setAttribute("id", id);
+    items.forEach(function(item, i) {
+      var option = document.createElement("option");
+      option.text = item;
+      option.value = use_numbers ? i : item;
+      select.appendChild(option);
+    });
+    return select;
+  };
+
+  var appendSelect = function(div, name, entries) {
+    var select = createSelect(div.id + "_" + name, entries, true);
+    div.appendChild(select);
+    return select;
+  };
+
+  var appendButton = function(div, title, onclickFn, attr) {
+    var b = document.createElement('input');
+    if (attr) Object.keys(attr).forEach(function(key) { b.setAttribute(key, attr[key]); });
+    b.setAttribute('type', 'button');
+    b.setAttribute('value', title);
+    b.onclick = onclickFn;
+    div.appendChild(b);
+    return b;
+  };
+
+  var appendHiddenFileButton = function(div, id, onchangeFn) {
+    var fb = document.createElement('input');
+    fb.setAttribute('type', 'file');
+    fb.setAttribute('id', id);
+    fb.setAttribute('name', 'files[]');
+    fb.style.display = 'none';
+    fb.onchange = onchangeFn;
+    div.appendChild(fb);
+    return fb;
+  };
+
+  var createCheckbox = function(title, value, onclickFn) {
+    var cb = document.createElement('input');
+    cb.setAttribute('type', 'checkbox');
+    cb.checked = value ? true : false;
+    cb.onclick = onclickFn;
+    return [cb, document.createTextNode(title)];
+  };
+
+  var appendCheckbox = function(div, title, value, onclickFn, left) {
+    var label = document.createElement('label');
+    var elems = createCheckbox(title, value, onclickFn);
+    if (left) elems.reverse();
+    elems.forEach(function(elem) { label.appendChild(elem); });
+    div.appendChild(label);
+    return left ? elems[elems.length - 1] : elems[0];
+  };
+
+  var appendNumericField = function(div, label, value, postlabel, onchangeFn, length) {
+    var nf = document.createElement('input');
+    nf.setAttribute('type', 'text');
+    nf.setAttribute('value', value);
+    if (length) nf.setAttribute('size', length);
+    if (onchangeFn) nf.onchange = onchangeFn;
+    if (label || postlabel) {
+      var labelEl = document.createElement('label');
+      if (label) labelEl.appendChild(document.createTextNode(label));
+      labelEl.appendChild(nf);
+      if (postlabel) labelEl.appendChild(document.createTextNode(postlabel));
+      div.appendChild(labelEl);
+    } else {
+      div.appendChild(nf);
+    }
+    return nf;
+  };
+
+  var appendToTab = function(tab, elems) {
+    return elems.map(function(e) {
+      switch (e.length) {
+        case 1: return tab.appendChild(e[0]);
+        case 2: return appendButton(tab, e[0], e[1]);
+        case 3: return appendButton(tab, e[0], e[1], e[2]);
+        case 4: return appendCheckbox(tab, e[0], e[1], e[2], e[3]);
+        case 5: return appendNumericField(tab, e[0], e[1], e[2], e[3], e[4]);
+        default: return undefined;
+      }
+    });
+  };
+
+  /**
+   * Create a tab group and add it to the given container. The widget ID is
+   * expected to be unique.
+   */
+  var appendTabs = function(container, widgetID, titles) {
+    var ul = document.createElement('ul');
+    container.appendChild(ul);
+    return titles.reduce(function(o, name) {
+      var id = name.replace(/ /, '') + widgetID;
+      ul.appendChild($('<li><a href="#' + id + '">' + name + '</a></li>')[0]);
+      var div = document.createElement('div');
+      div.setAttribute('id', id);
+      container.appendChild(div);
+      o[name] = div;
+      return o;
+    }, {});
+  };
+
   /**
    * Clones the given form into a dynamically created iframe and submits it
    * there. This can be used to store autocompletion information of a form that
@@ -878,37 +983,6 @@ var WindowMaker = new function()
     win.focus();
 
     return {window: win, widget: ST};
-  };
-
-  var appendToTab = function(tab, elems) {
-    return elems.map(function(e) {
-      switch (e.length) {
-        case 1: return tab.appendChild(e[0]);
-        case 2: return appendButton(tab, e[0], e[1]);
-        case 3: return appendButton(tab, e[0], e[1], e[2]);
-        case 4: return appendCheckbox(tab, e[0], e[1], e[2], e[3]);
-        case 5: return appendNumericField(tab, e[0], e[1], e[2], e[3], e[4]);
-        default: return undefined;
-      }
-    });
-  };
-
-  /**
-   * Create a tab group and add it to the given container. The widget ID is
-   * expected to be unique.
-   */
-  var appendTabs = function(container, widgetID, titles) {
-    var ul = document.createElement('ul');
-    container.appendChild(ul);
-    return titles.reduce(function(o, name) {
-      var id = name.replace(/ /, '') + widgetID;
-      ul.appendChild($('<li><a href="#' + id + '">' + name + '</a></li>')[0]);
-      var div = document.createElement('div');
-      div.setAttribute('id', id);
-      container.appendChild(div);
-      o[name] = div;
-      return o;
-    }, {});
   };
 
   /** Creates and returns a new 3d webgl window */
@@ -2042,80 +2116,6 @@ var WindowMaker = new function()
     CT.init( project.getId() );
 
     return {window: win, widget: CT};
-  };
-
-  var createSelect = function(id, items, use_numbers) {
-    var select = document.createElement('select');
-    select.setAttribute("id", id);
-    items.forEach(function(item, i) {
-      var option = document.createElement("option");
-      option.text = item;
-      option.value = use_numbers ? i : item;
-      select.appendChild(option);
-    });
-    return select;
-  };
-
-  var appendSelect = function(div, name, entries) {
-    var select = createSelect(div.id + "_" + name, entries, true);
-    div.appendChild(select);
-    return select;
-  };
-
-  var appendButton = function(div, title, onclickFn, attr) {
-    var b = document.createElement('input');
-    if (attr) Object.keys(attr).forEach(function(key) { b.setAttribute(key, attr[key]); });
-    b.setAttribute('type', 'button');
-    b.setAttribute('value', title);
-    b.onclick = onclickFn;
-    div.appendChild(b);
-    return b;
-  };
-
-  var appendHiddenFileButton = function(div, id, onchangeFn) {
-    var fb = document.createElement('input');
-    fb.setAttribute('type', 'file');
-    fb.setAttribute('id', id);
-    fb.setAttribute('name', 'files[]');
-    fb.style.display = 'none';
-    fb.onchange = onchangeFn;
-    div.appendChild(fb);
-    return fb;
-  };
-
-  var createCheckbox = function(title, value, onclickFn) {
-    var cb = document.createElement('input');
-    cb.setAttribute('type', 'checkbox');
-    cb.checked = value ? true : false;
-    cb.onclick = onclickFn;
-    return [cb, document.createTextNode(title)];
-  };
-
-  var appendCheckbox = function(div, title, value, onclickFn, left) {
-    var label = document.createElement('label');
-    var elems = createCheckbox(title, value, onclickFn);
-    if (left) elems.reverse();
-    elems.forEach(function(elem) { label.appendChild(elem); });
-    div.appendChild(label);
-    return left ? elems[elems.length - 1] : elems[0];
-  };
-
-  var appendNumericField = function(div, label, value, postlabel, onchangeFn, length) {
-    var nf = document.createElement('input');
-    nf.setAttribute('type', 'text');
-    nf.setAttribute('value', value);
-    if (length) nf.setAttribute('size', length);
-    if (onchangeFn) nf.onchange = onchangeFn;
-    if (label || postlabel) {
-      var labelEl = document.createElement('label');
-      if (label) labelEl.appendChild(document.createTextNode(label));
-      labelEl.appendChild(nf);
-      if (postlabel) labelEl.appendChild(document.createTextNode(postlabel));
-      div.appendChild(labelEl);
-    } else {
-      div.appendChild(nf);
-    }
-    return nf;
   };
 
 

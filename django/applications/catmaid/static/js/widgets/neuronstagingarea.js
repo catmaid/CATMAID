@@ -8,6 +8,7 @@
   project,
   requestQueue,
   session,
+  Set,
   SkeletonAnnotations,
   User,
   WindowMaker

@@ -442,12 +442,13 @@ SelectionTable.prototype.clear = function(source_chain) {
 /** Set the color of all skeletons based on the state of the "Color" pulldown menu. */
 SelectionTable.prototype.randomizeColorsOfSelected = function() {
   this.next_color_index = 0; // reset
-  this.filteredSkeletons(true).forEach(function(skeleton) {
+  var updatedSkeletonIDs = this.filteredSkeletons(true).map(function(skeleton) {
     skeleton.color = this.pickColor();
+    return skeleton.id;
   }, this);
   this.updateLink(this.getSelectedSkeletonModels());
   // Update UI
-  this.gui.invalidate();
+  this.gui.invalidate(updatedSkeletonIDs);
 };
 
 SelectionTable.prototype.colorizeWith = function(scheme) {
@@ -617,14 +618,22 @@ SelectionTable.prototype.GUI.prototype.clear = function() {
 };
 
 /**
- * Make the UI reload all cached data and refresh the display.
+ * Make the UI reload all cached data and refresh the display. If skeletonIDs is
+ * an array with skeleton IDs, only rows representing these skeletons will be
+ * invalidated.
  */
-SelectionTable.prototype.GUI.prototype.invalidate = function() {
+SelectionTable.prototype.GUI.prototype.invalidate = function(skeletonIDs) {
   var tableSelector = "table#skeleton-table" + this.table.widgetID;
   if ($.fn.DataTable.isDataTable(tableSelector)) {
     var datatable = $(tableSelector).DataTable();
     if (datatable) {
-      datatable.rows().invalidate();
+      var filter;
+      if (skeletonIDs) {
+        filter = skeletonIDs.map(function(skid) {
+          return '[data-skeleton-id=' + skid + ']';
+        });
+      }
+      datatable.rows(filter).invalidate();
     }
   }
 };
@@ -933,11 +942,12 @@ SelectionTable.prototype.colorSkeleton = function(skeletonID, allSelected, rgb,
     });
   }
 
-  this.gui.invalidate();
+  this.gui.invalidate([skeletonID]);
 };
 
 SelectionTable.prototype.batchColorSelected = function(rgb, alpha, colorChanged, alphaChanged) {
-  this.getSelectedSkeletons().forEach(function(skid) {
+  var selectedSkeletonIDs = this.getSelectedSkeletons();
+  selectedSkeletonIDs.forEach(function(skid) {
     var skeleton = this.skeletons[this.skeleton_ids[skid]];
     if (colorChanged) {
       // Set color only if it was actually changed
@@ -947,7 +957,7 @@ SelectionTable.prototype.batchColorSelected = function(rgb, alpha, colorChanged,
     this.notifyLink(skeleton); // TODO need a batchNotifyLink
   }, this);
   //$('#selection-table-batch-color-button' + this.widgetID)[0].style.backgroundColor = rgb.hex;
-  this.gui.invalidate();
+  this.gui.invalidate(selectedSkeletonIDs);
 };
 
 /** credit: http://stackoverflow.com/questions/638948/background-color-hex-to-javascript-variable-jquery */

@@ -49,6 +49,15 @@ Tile layer:
   the "Image tile interpolation" setting.
 
 
+Miscellaneous:
+
+- A new color picker replaces the color wheel. The new control hovers over other
+  elements so it can be moved, has color memory slots, defaults to a smaller
+  size and can be resized to show input elements for different color spaces. To
+  save a color in a memory slot, click on the rectangle containing the small
+  circle next to the memory slots.
+
+
 ### Bug fixes
 
 Tile layer:

@@ -102,7 +102,7 @@
         return true;
       } );
 
-    this.overview = new Overview( this );
+    this.overview = new CATMAID.Overview( this );
     this._view.appendChild( this.overview.getView() );
 
     this.tilelayercontrol = new CATMAID.TilelayerControl( this );

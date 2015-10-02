@@ -477,26 +477,36 @@
         ['Leaf node', 'leaf_node_color'],
       ]);
 
+      var setColorOfTracingFields = function() {
+        colors.forEach(function(field, label) {
+          var input = colorControls.get(field);
+          var color = $(input).find('input').val();
+          SkeletonAnnotations[field] = color;
+        });
+        // Update all tracing layers
+        project.getStackViewers().forEach(function(sv) {
+          var overlay = SkeletonAnnotations.getSVGOverlay(sv.getId());
+          if (overlay) overlay.recolorAllNodes();
+        });
+      };
+
       var colorControls = new Map();
       colors.forEach(function(field, label) {
-        var input = createInputSetting(label, SkeletonAnnotations[field]);
+        var color = SkeletonAnnotations[field];
+        var input = createInputSetting(label, color);
         this.append(input);
+        var colorField = $(input).find('input');
+        CATMAID.ColorPicker.enable(colorField, {
+          initialColor: color,
+          onColorChange: setColorOfTracingFields
+        });
         colorControls.set(field, input);
       }, dsNodeColors);
 
       // Allow color confirmation with enter
       dsNodeColors.find('input').on('keyup', function(e) {
         if (13 === e.keyCode) {
-          colors.forEach(function(field, label) {
-            var input = colorControls.get(field);
-            var color = $(input).find('input').val();
-            SkeletonAnnotations[field] = color;
-          });
-          // Update all tracing layers
-          project.getStackViewers().forEach(function(sv) {
-            var overlay = SkeletonAnnotations.getSVGOverlay(sv.getId());
-            if (overlay) overlay.recolorAllNodes();
-          });
+          setColorOfTracingFields();
         }
       });
 

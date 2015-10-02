@@ -604,7 +604,7 @@ function Project( pid )
 		return actions;
 	};
 
-	var keyCodeToAction = getKeyCodeToActionMap(actions);
+	var keyCodeToAction = CATMAID.getKeyCodeToActionMap(actions);
 }
 
 // Add event support to project and define some event constants

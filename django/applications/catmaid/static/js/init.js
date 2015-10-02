@@ -224,7 +224,7 @@ function handle_profile_update(e) {
   }
 
   // update the edit tool actions and its div container
-  var new_edit_actions = createButtonsFromActions(CATMAID.EditTool.actions,
+  var new_edit_actions = CATMAID.createButtonsFromActions(CATMAID.EditTool.actions,
     'toolbox_edit', '');
   $('#toolbox_edit').replaceWith(new_edit_actions);
   $('#toolbox_edit').hide();
@@ -1130,13 +1130,13 @@ var realInit = function()
 	document.getElementById( "session_box" ).style.display = "none";
 
 	// Create the toolboxes
-	$('#toolbox_project').replaceWith(createButtonsFromActions(
+	$('#toolbox_project').replaceWith(CATMAID.createButtonsFromActions(
 		CATMAID.toolActions, 'toolbox_project', ''));
-	$('#toolbox_edit').replaceWith(createButtonsFromActions(
+	$('#toolbox_edit').replaceWith(CATMAID.createButtonsFromActions(
 		CATMAID.EditTool.actions, 'toolbox_edit', ''));
-  $('#toolbox_segmentation').replaceWith(createButtonsFromActions(
+  $('#toolbox_segmentation').replaceWith(CATMAID.createButtonsFromActions(
     CATMAID.SegmentationTool.actions, 'toolbox_segmentation', ''));
-	$('#toolbox_data').replaceWith(createButtonsFromActions(
+	$('#toolbox_data').replaceWith(CATMAID.createButtonsFromActions(
 		CATMAID.TracingTool.actions, 'toolbox_data', ''));
 
 	// Add the toolbar buttons:

@@ -181,7 +181,7 @@
           return actions;
       };
 
-      this.addAction( new Action({
+      this.addAction( new CATMAID.Action({
           helpText: "Move up 1 slice in z (or 10 with Shift held)",
           keyShortcuts: {
               ',': [ 44, 188 ]
@@ -192,7 +192,7 @@
           }
       }) );
 
-      this.addAction( new Action({
+      this.addAction( new CATMAID.Action({
           helpText: "Move down 1 slice in z (or 10 with Shift held)",
           keyShortcuts: {
               '.': [ 46, 190 ]
@@ -203,7 +203,7 @@
           }
       }) );
 
-      var keyCodeToAction = getKeyCodeToActionMap(actions);
+      var keyCodeToAction = CATMAID.getKeyCodeToActionMap(actions);
 
       /** This function should return true if there was any action
           linked to the key code, or false otherwise. */

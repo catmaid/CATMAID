@@ -210,7 +210,7 @@ function TextlabelTool()
     down: 40
   };
 
-  var keyCodeToAction = getKeyCodeToActionMap(actions);
+  var keyCodeToAction = CATMAID.getKeyCodeToActionMap(actions);
 
   /** This function should return true if there was any action
       linked to the key code, or false otherwise. */

@@ -289,7 +289,7 @@
 
     var actions = [
 
-      new Action({
+      new CATMAID.Action({
         helpText: "Zoom in (smaller increments with Shift held)",
         keyShortcuts: {
           '+': [ 43, 107, 61, 187 ]
@@ -300,7 +300,7 @@
         }
       }),
 
-      new Action({
+      new CATMAID.Action({
         helpText: "Zoom out (smaller increments with Shift held)",
         keyShortcuts: {
           '-': [ 45, 109, 173, 189 ]
@@ -311,7 +311,7 @@
         }
       }),
 
-      new Action({
+      new CATMAID.Action({
         helpText: "Move up 1 slice in z (or 10 with Shift held)",
         keyShortcuts: {
           ',': [ 44, 188 ]
@@ -322,7 +322,7 @@
         }
       }),
 
-      new Action({
+      new CATMAID.Action({
         helpText: "Move down 1 slice in z (or 10 with Shift held)",
         keyShortcuts: {
           '.': [ 190 ]
@@ -333,7 +333,7 @@
         }
       }),
 
-      new Action({
+      new CATMAID.Action({
         helpText: "Move left (towards negative x, faster with Shift held)",
         keyShortcuts: {
           "\u2190": [ arrowKeyCodes.left ]
@@ -345,7 +345,7 @@
         }
       }),
 
-      new Action({
+      new CATMAID.Action({
         helpText: "Move right (towards positive x, faster with Shift held)",
         keyShortcuts: {
           "\u2192": [ arrowKeyCodes.right ]
@@ -357,7 +357,7 @@
         }
       }),
 
-      new Action({
+      new CATMAID.Action({
         helpText: "Move up (towards negative y, faster with Shift held)",
         keyShortcuts: {
           "\u2191": [ arrowKeyCodes.up ]
@@ -369,7 +369,7 @@
         }
       }),
 
-      new Action({
+      new CATMAID.Action({
         helpText: "Move down (towards positive y, faster with Shift held)",
         keyShortcuts: {
           "\u2193": [ arrowKeyCodes.down ]
@@ -381,7 +381,7 @@
         }
       }),
 
-      new Action({
+      new CATMAID.Action({
         helpText: "Hide all layers except image tile layer (while held)",
         keyShortcuts: {
           "SPACE": [ 32 ]
@@ -425,7 +425,7 @@
         }
       })];
 
-    var keyCodeToAction = getKeyCodeToActionMap(actions);
+    var keyCodeToAction = CATMAID.getKeyCodeToActionMap(actions);
 
     /**
      * install this tool in a stackViewer.

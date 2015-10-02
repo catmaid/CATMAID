@@ -196,7 +196,7 @@ var WindowMaker = new function()
 
   var appendNumericField = function(div, label, title, value, postlabel, onchangeFn, length) {
     var field = createNumericField(undefined, label, title, value, postlabel, onchangeFn, length);
-    div.append(field);
+    div.appendChild(field);
     return field;
   };
 

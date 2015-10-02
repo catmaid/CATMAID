@@ -80,8 +80,9 @@
     },
 
     /**
-     * Bind a click handler to the given element. If the optiopns contain an
-     * initial color and an initial opacity, these will be set.
+     * Bind a click handler to the given element. This DOM element can be a
+     * jQuery object, but doesn't need to be. If the optiopns contain an initial
+     * color and an initial opacity, these will be set.
      *
      * Options can contain the following fields:
      *
@@ -91,13 +92,16 @@
      */
     enable: function(element, options) {
       options = options || {};
+      // Use jQuery to update element. This way also jQuery elements can be
+      // passed in.
+      var $element = $(element);
       var color;
       if (options.initialColor) {
         // Use three.js for color conversion
         var tc = new THREE.Color(options.initialColor);
         var hex = '#' + tc.getHexString();
-        element.style.backgroundColor = hex;
-        element.style.color = CATMAID.tools.getContrastColor(hex);
+        $element.css('backgroundColor', hex)
+        $element.css('color', CATMAID.tools.getContrastColor(hex));
         color = tc.getStyle();
         if (options.initialAlpha) {
           // Add alpha to style
@@ -110,9 +114,9 @@
 
       // The currently used color picker implementation expects this attribute
       // to be set to the initial color.
-      element.setAttribute('value', color);
+      $element.attr('value', color);
 
-      $(element).on('click', function() {
+      $element.on('click', function() {
         CATMAID.ColorPicker.toggle(this, options);
       });
     },

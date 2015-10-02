@@ -107,7 +107,6 @@ PIPELINE_JS['catmaid'] = {
         'js/action.js',
         'js/init.js',
         'js/network-api.js',
-        'js/overview.js',
         'js/project.js',
         'js/segmentationtool.js',
         'js/stack.js',

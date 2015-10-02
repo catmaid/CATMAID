@@ -152,7 +152,7 @@ function handle_login(status, text, xml, completionCallback) {
     if (e.id || (e.permissions && -1 !== e.permissions.indexOf('catmaid.can_browse'))) {
       // Asynchronously, try to get a full list of users if a user is logged in
       // or the anonymous user has can_browse permissions.
-      User.getUsers(done);
+      CATMAID.User.getUsers(done);
     } else {
       done();
     }
@@ -209,7 +209,7 @@ function handle_logout(status, text, xml) {
 function handle_profile_update(e) {
   try {
     if (e.userprofile) {
-      userprofile = new Userprofile(e.userprofile);
+      userprofile = new CATMAID.Userprofile(e.userprofile);
     } else {
       throw "The server returned no valid user profile.";
     }

@@ -111,8 +111,10 @@
 
     connectors.forEach(function(row) {
       rows.push([row[0],
-                row[2], NeuronNameService.getInstance().getName(row[3]), row[4], User.safe_get(row[5]).login,
-                row[7], NeuronNameService.getInstance().getName(row[8]), row[9], User.safe_get(row[10]).login]);
+                row[2], NeuronNameService.getInstance().getName(row[3]),
+                row[4], CATMAID.User.safe_get(row[5]).login,
+                row[7], NeuronNameService.getInstance().getName(row[8]),
+                row[9], CATMAID.User.safe_get(row[10]).login]);
       // Store all locations (overwriting can be ignored, it is the same data)
       locations[row[0]] = row[1];
       locations[row[2]] = row[6];

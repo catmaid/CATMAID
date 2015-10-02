@@ -4,7 +4,6 @@
   project,
   requestQueue,
   SelectionTable,
-  User,
   WindowMaker
 */
 
@@ -100,7 +99,7 @@ var ProjectStatistics = new function()
     // Sort by username
     var odd_row = true;
     var usernamesToIds = Object.keys(data['stats_table']).reduce(function(o, id) {
-      var u = User.all()[id];
+      var u = CATMAID.User.all()[id];
       o[u ? u.login : id] = id;
       return o;
     }, {});

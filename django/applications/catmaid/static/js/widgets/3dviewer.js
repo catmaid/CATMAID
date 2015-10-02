@@ -16,7 +16,6 @@
   SkeletonRegistry,
   submitterFn,
   SynapseClustering,
-  User,
   WindowMaker
  */
 
@@ -3511,7 +3510,7 @@
           dendriteColor = new THREE.Color().setRGB(0, 0, 1),
           notComputable = new THREE.Color().setRGB(0.4, 0.4, 0.4);
       if ('creator' === options.color_method) {
-        pickColor = function(vertex) { return User(vertex.user_id).color; };
+        pickColor = function(vertex) { return CATMAID.User(vertex.user_id).color; };
       } else if ('all-reviewed' === options.color_method) {
         pickColor = this.reviews ?
           (function(vertex) {
@@ -4318,7 +4317,7 @@
       }
     });
 
-    var users = User.all();
+    var users = CATMAID.User.all();
     for (var userID in users) {
       if (users.hasOwnProperty(userID) && userID !== "-1") {
         var user = users[userID];

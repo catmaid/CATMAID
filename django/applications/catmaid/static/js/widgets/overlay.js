@@ -12,8 +12,7 @@
   SkeletonElements,
   submitterFn,
   user_groups,
-  userprofile,
-  User
+  userprofile
 */
 
 "use strict";
@@ -3271,8 +3270,8 @@ SkeletonAnnotations.SVGOverlay.prototype.printTreenodeInfo = function(nodeID, pr
   var url = django_url + project.id + '/node/user-info';
 
   this.submit(url, {node_id: nodeID}, function(jso) {
-      var creator = User.safeToString(jso.user);
-      var editor = User.safeToString(jso.editor);
+      var creator = CATMAID.User.safeToString(jso.user);
+      var editor = CATMAID.User.safeToString(jso.editor);
 
       var msg = prefixMessage + " created by " + creator + ' ' +
           CATMAID.tools.contextualDateString(jso.creation_time) + ", last edited by " + editor + ' ' +
@@ -3281,7 +3280,7 @@ SkeletonAnnotations.SVGOverlay.prototype.printTreenodeInfo = function(nodeID, pr
       if (jso.reviewers.length > 0) {
         var reviews = [];
         for (var i=0; i<jso.reviewers.length; ++i) {
-          reviews.push(User.safeToString(jso.reviewers[i]) + ' ' +
+          reviews.push(CATMAID.User.safeToString(jso.reviewers[i]) + ' ' +
               CATMAID.tools.contextualDateString(jso.review_times[i]));
         }
         msg += reviews.join(', ');

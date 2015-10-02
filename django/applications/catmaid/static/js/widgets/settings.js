@@ -7,7 +7,6 @@
   requestQueue,
   SelectionTable,
   SkeletonAnnotations,
-  User,
   userprofile,
   WindowMaker
 */
@@ -654,11 +653,11 @@
           "reviewers are not informed whether you have added them to your team."));
 
       // Get all available users
-      var users = User.all();
+      var users = CATMAID.User.all();
       var reviewers = Object.keys(users).map(function (userId) { return users[userId]; });
       // Add reviewer options to select box
       var reviewerSelect = $('<select/>');
-      reviewers.sort(User.displayNameCompare).forEach(function (user) {
+      reviewers.sort(CATMAID.User.displayNameCompare).forEach(function (user) {
         this.append(new Option(user.getDisplayName(), user.id));
       }, reviewerSelect);
 
@@ -697,7 +696,7 @@
         $(whitelist).empty();
         var wlEntries = CATMAID.ReviewSystem.Whitelist.getWhitelist();
         var options = Object.keys(wlEntries).map(function(userId) {
-          var user = User.safe_get(userId);
+          var user = CATMAID.User.safe_get(userId);
           var optionElement = $('<option/>')
               .attr('value', userId)
               .text(user.getDisplayName() + ' (' + wlEntries[userId].toDateString() + ')');
@@ -705,7 +704,7 @@
         });
 
         options.sort(function (a, b) {
-            return User.displayNameCompare(users[a.value], users[b.value]); });
+            return CATMAID.User.displayNameCompare(users[a.value], users[b.value]); });
 
         options.forEach(whitelist.appendChild.bind(whitelist));
       };

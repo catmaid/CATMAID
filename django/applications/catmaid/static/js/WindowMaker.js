@@ -3089,7 +3089,7 @@ var WindowMaker = new function()
     var $select = $('tr #neuron_query_by_annotator' + NA.widgetID);
     var $filter_select = $("#neuron_annotations_query_results_table" +
         NA.widgetID + ' select[name=annotator_filter]');
-    var users = User.all();
+    var users = CATMAID.User.all();
     for (var userID in users) {
       if (users.hasOwnProperty(userID) && userID !== "-1") {
         var user = users[userID];

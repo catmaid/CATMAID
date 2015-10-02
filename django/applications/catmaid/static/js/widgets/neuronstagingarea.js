@@ -10,7 +10,6 @@
   session,
   Set,
   SkeletonAnnotations,
-  User,
   WindowMaker,
   Set
 */
@@ -133,7 +132,7 @@ SelectionTable.prototype.skeleton_info = function(skeleton_ids) {
         dialog.setAttribute("id", "dialog-confirm");
         dialog.setAttribute("title", "Skeleton Information");
 
-        var users = User.all();
+        var users = CATMAID.User.all();
         var format = function(contributors) {
           return "<br /><table>" + Object.keys(contributors)
             .reduce(function(a, user_id) {

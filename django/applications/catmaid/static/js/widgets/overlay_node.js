@@ -1317,7 +1317,7 @@
               relation_name: relation_name},
             CATMAID.jsonResponseHandler(function(data) {
               var msg = title + ' edge: ' + data.map(function (info) {
-                return 'created by ' + User.safeToString(info.user) + ' ' +
+                return 'created by ' + CATMAID.User.safeToString(info.user) + ' ' +
                     CATMAID.tools.contextualDateString(info.creation_time) +
                     ', last edited ' +
                     CATMAID.tools.contextualDateString(info.edition_time);

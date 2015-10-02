@@ -102,7 +102,8 @@
      */
     var createInputSetting = function(name, val, helptext, handler)
     {
-      var input = $('<input/>').attr('type', 'text').val(val);
+      var input = $('<input/>').attr('type', 'text')
+        .addClass("ui-corner-all").val(val);
       if (handler) {
         input.change(handler);
       }

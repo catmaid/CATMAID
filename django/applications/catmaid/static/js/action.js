@@ -199,7 +199,7 @@ CATMAID.toolActions = [
 		buttonID: 'edit_button_select',
 		buttonName: "select",
 		run: function (e) {
-			project.setTool( new Selector() );
+			project.setTool( new CATMAID.Selector() );
 			return true;
 		}
 	}),

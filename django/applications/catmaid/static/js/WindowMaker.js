@@ -1402,57 +1402,6 @@ var WindowMaker = new function()
     return {window: win, widget: WA};
   };
 
-  /** Creates and returns a new 3d window. */
-  var create3dWindow = function()
-  {
-    var win = new CMWWindow("3D View");
-    var content = win.getFrame();
-    content.style.backgroundColor = "#ffffff";
-
-    var container = createContainer("view_in_3d_widget");
-    content.appendChild(container);
-
-    var add = document.createElement('input');
-    add.setAttribute("type", "button");
-    add.setAttribute("id", "add_current_to_3d_view");
-    add.setAttribute("value", "Add current skeleton to 3D view");
-    add.onclick = Treelines.addTo3DView; // function declared in treeline.js
-    container.appendChild(add);
-
-    var introduction = document.createElement('p');
-    introduction.setAttribute("id", "view3DIntroduction");
-    container.appendChild(introduction);
-
-    var list = document.createElement('ul');
-    list.setAttribute("id", "view-3d-object-list");
-    container.appendChild(list);
-
-    var canvas = document.createElement('div');
-    canvas.setAttribute("id", "viewer-3d-canvas");
-    canvas.style.width = "800px";
-    canvas.style.height = "600px";
-    container.appendChild(canvas);
-
-    var buttons = document.createElement('div');
-    ['xy', 'xz', 'zy'].map(function (s) {
-      var b = document.createElement('input');
-      b.setAttribute("id", s + "-button");
-      b.setAttribute("type", "button");
-      b.setAttribute("value", s.toUpperCase());
-      buttons.appendChild(b);
-    });
-    container.appendChild(buttons);
-
-    addListener(win, container);
-
-    addLogic(win);
-
-    // Fill in with a Raphael canvas, now that the window exists in the DOM:
-    Treelines.createViewerFromCATMAID(canvas.getAttribute("id"));
-
-    return {window: win, widget: null};
-  };
-
   var createSliceInfoWindow = function()
   {
     var win = new CMWWindow("Slice Info Widget");
@@ -3240,7 +3189,6 @@ var WindowMaker = new function()
   var creators = {
     "keyboard-shortcuts": createKeyboardShortcutsWindow,
     "search": createSearchWindow,
-    "3d-view": create3dWindow,
     "3d-webgl-view": create3dWebGLWindow,
     "node-table": createNodeTableWindow,
     "connector-table": createConnectorTableWindow,

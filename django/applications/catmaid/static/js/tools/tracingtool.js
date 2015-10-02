@@ -17,7 +17,7 @@
    */
   function TracingTool()
   {
-    this.prototype = new Navigator();
+    this.prototype = new CATMAID.Navigator();
     this.toolname = "tracingtool";
 
     var self = this;
@@ -1514,7 +1514,7 @@
                   alert("Setting up tracing failed with HTTP status code: "+status);
                 } else {
                   var json = $.parseJSON(data);
-                  project.setTool( new Navigator() );
+                  project.setTool( new CATMAID.Navigator() );
                   if (json.error) {
                     alert("An error was returned when trying to set up tracing: " +
                       json.error);
@@ -1529,7 +1529,7 @@
               });
         },
         "No": function() {
-            project.setTool( new Navigator() );
+            project.setTool( new CATMAID.Navigator() );
             $(this).dialog("close");
           }
         };
@@ -1546,7 +1546,7 @@
         msg.innerHTML = msg_text;
         buttons = {
           "Ok": function() {
-              project.setTool( new Navigator() );
+              project.setTool( new CATMAID.Navigator() );
               $(this).dialog("close");
             }
           };

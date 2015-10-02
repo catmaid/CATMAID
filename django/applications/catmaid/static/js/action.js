@@ -209,7 +209,7 @@ CATMAID.toolActions = [
 		buttonID: 'edit_button_move',
 		buttonName: "move",
 		run: function (e) {
-			project.setTool( new Navigator() );
+			project.setTool( new CATMAID.Navigator() );
 			return true;
 		}
 	}),

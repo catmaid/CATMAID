@@ -3,7 +3,7 @@
 
 function TextlabelTool()
 {
-  this.prototype = new Navigator();
+  this.prototype = new CATMAID.Navigator();
 
   var self = this;
   var textlabelLayer = null;

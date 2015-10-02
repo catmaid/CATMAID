@@ -192,7 +192,7 @@ function handle_logout(status, text, xml) {
 
 	document.getElementById( "message_box" ).style.display = "none";
 
-	if ( project && project.id ) project.setTool( new Navigator() );
+	if ( project && project.id ) project.setTool( new CATMAID.Navigator() );
 
 	if (status == 200 && text) {
 		var e = $.parseJSON(text);
@@ -1173,7 +1173,7 @@ var realInit = function()
 	// login and thereafter load stacks if requested
 	login(undefined, undefined, function() {
 		var tools = {
-			navigator: Navigator,
+			navigator: CATMAID.Navigator,
 			tracingtool: CATMAID.TracingTool,
 			segmentationtool: CATMAID.SegmentationTool,
 			classification_editor: null

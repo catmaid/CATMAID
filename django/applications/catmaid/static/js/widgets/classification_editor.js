@@ -489,7 +489,7 @@ var ClassificationEditor = new function()
         };
 
         // Open the navigator tool as replacement
-        project.setTool( new Navigator() );
+        project.setTool( new CATMAID.Navigator() );
 
         // Create a cancel button
         var cancel_button = document.createElement("div");
@@ -498,7 +498,7 @@ var ClassificationEditor = new function()
         cancel_link.setAttribute("class", "button");
         cancel_link.onclick = function()
         {
-            project.setTool( new Navigator() );
+            project.setTool( new CATMAID.Navigator() );
         };
         var cancel_img = document.createElement("img");
         cancel_img.setAttribute("src", STATIC_URL_JS + "images/cancel.gif");
@@ -613,7 +613,7 @@ var ClassificationEditor = new function()
                                 bboxtool.destroy();
                             };
                             // set tool to navigator
-                            project.setTool( new Navigator() );
+                            project.setTool( new CATMAID.Navigator() );
                         }
                     };
                     openProjectStack( roi.project_id, roi.stack_id, callback);

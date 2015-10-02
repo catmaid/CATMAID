@@ -61,7 +61,7 @@ function Project( pid )
 		if ( stackViewers.length == 1 )
 		{
 			if ( !tool )
-				tool = new Navigator();
+				tool = new CATMAID.Navigator();
 			self.setTool( tool );
 		}
 

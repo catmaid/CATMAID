@@ -3,7 +3,7 @@
  */
 function OntologyTool()
 {
-    this.prototype = new Navigator();
+    this.prototype = new CATMAID.Navigator();
     this.toolname = "ontologytool";
     var self = this;
     var actions = [];

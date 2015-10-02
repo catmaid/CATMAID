@@ -100,7 +100,7 @@
         // Use three.js for color conversion
         var tc = new THREE.Color(options.initialColor);
         var hex = '#' + tc.getHexString();
-        $element.css('backgroundColor', hex)
+        $element.css('backgroundColor', hex);
         $element.css('color', CATMAID.tools.getContrastColor(hex));
         color = tc.getStyle();
         if (options.initialAlpha) {

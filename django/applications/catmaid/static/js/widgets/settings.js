@@ -574,6 +574,15 @@
       dsSkeletonProjection.append(skpMaxStrahler);
       dsSkeletonProjection.append(skpDistanceFalloff);
 
+      // Add color picker to input fields
+      [skpDownstreamColor, skpUpstreamColor].forEach(function(colorOption) {
+        var colorField = $(colorOption).find('input');
+        CATMAID.ColorPicker.enable(colorField, {
+          initialColor: colorField.val(),
+          onColorChange: updateSkeletonProjectionDisplay
+        });
+      });
+
       // Add a spinner to Strahler configuration
       $(skpMinStrahler).add(skpMaxStrahler).find('input').spinner({
         min: -1,

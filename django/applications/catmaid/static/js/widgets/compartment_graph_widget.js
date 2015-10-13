@@ -2941,8 +2941,10 @@ GroupGraph.prototype.setContent = function(p) {
   $.extend(this, p.properties);
   this.groups = p.groups;
   this.subgraphs = p.subgraphs;
-  this.cy.add(p.elements);
-  this.cy.layout(p.layout);
+  this.cy.ready(function() {
+    this.add(p.elements);
+    this.layout(p.layout);
+  });
 };
 
 GroupGraph.prototype.copyContent = function() {
@@ -2968,7 +2970,8 @@ GroupGraph.prototype.copyContent = function() {
     name: 'preset',
     positions: this.cy.nodes().toArray().reduce(function(p, node) { p[node.id()] = node.position(); return p; }, {}),
     fit: false,
-    zoom: this.cy.zoom()
+    zoom: this.cy.zoom(),
+    pan: this.cy.pan()
   };
 
   var copier = function(elem) { return {data: $.extend(true, {}, elem.data())}; };

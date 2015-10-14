@@ -206,6 +206,9 @@ urlpatterns += patterns('catmaid.control.skeleton',
             'get_skeleton_permissions'),
     (r'^(?P<project_id>\d+)/skeleton/annotationlist$', 'annotation_list'),
     (r'^(?P<project_id>\d+)/skeleton/list$', 'list_skeletons'),
+    (r'^(?P<project_id>\d+)/skeletongroup/adjacency_matrix$', 'adjacency_matrix'),
+    (r'^(?P<project_id>\d+)/skeletongroup/skeletonlist_subgraph', 'skeletonlist_subgraph'),
+    (r'^(?P<project_id>\d+)/skeletongroup/all_shared_connectors', 'all_shared_connectors'),
 )
 
 # Skeleton export
@@ -224,13 +227,6 @@ urlpatterns += patterns('catmaid.control.skeletonexport',
     (r'^(?P<project_id>\d+)/skeleton/connectors-by-partner$', 'skeleton_connectors_by_partner'),
     (r'^(?P<project_id>\d+)/skeletons/within-spatial-distance$', 'within_spatial_distance'),
     (r'^(?P<project_id>\d+)/skeletons/partners-by-connector$', 'partners_by_connector'),
-)
-
-# Skeleton group access
-urlpatterns += patterns('catmaid.control.skeletongroup',
-    (r'^(?P<project_id>\d+)/skeletongroup/adjacency_matrix$', 'adjacency_matrix'),
-    (r'^(?P<project_id>\d+)/skeletongroup/skeletonlist_subgraph', 'skeletonlist_subgraph'),
-    (r'^(?P<project_id>\d+)/skeletongroup/all_shared_connectors', 'all_shared_connectors'),
 )
 
 # Object tree

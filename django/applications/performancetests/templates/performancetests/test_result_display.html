@@ -112,8 +112,12 @@
       // Remove existing plot, if any
       d3.selectAll("div#result_plot svg").remove();
 
+      var zoom = d3.behavior.zoom()
+          .on("zoom", zoomed);
+
       // Create a new plot
       var svg = d3.select("div#result_plot").append("svg")
+        .call(zoom)
           .attr("width", width + margin.left + margin.right)
           .attr("height", height + margin.top + margin.bottom)
         .append("g")
@@ -198,8 +202,19 @@
           .attr("dy", ".35em")
           .style("text-anchor", "end")
           .text(function (d) {
-          return d;
-      });
+              return d;
+          });
+
+      zoom.x(x);
+      zoom.y(y);
+
+      function zoomed() {
+        svg.select("g.x.axis").call(xAxis);
+        svg.select("g.y.axis").call(yAxis);
+        svg.selectAll("path.line").attr("d", function(d) {
+          return line(d.values);
+       });
+      }
     }
 
   </script>

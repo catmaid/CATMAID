@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import TestView, TestResult
+from .models import TestView, TestResult, Event
 from .views import TestResultDisplay
 
 def trimmed_result(obj):
@@ -17,9 +17,15 @@ class TestResultAdmin(admin.ModelAdmin):
     search_fields = ('view', 'result_code', 'result')
     order_by = ('creation_time',)
 
+class EventAdmin(admin.ModelAdmin):
+    list_display = ('creation_time', 'title')
+    search_fields = ('title',)
+    order_by = ('creation_time',)
+
 # Register models with admin site
 admin.site.register(TestView, TestViewAdmin)
 admin.site.register(TestResult, TestResultAdmin)
+admin.site.register(Event, EventAdmin)
 
 # Register additional views
 admin.site.register_view('performancetests', 'Plot performance test results',

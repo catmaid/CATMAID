@@ -50,3 +50,18 @@ class TestResult(models.Model):
             creation_time = self.creation_time,
             version = self.version,
         )
+
+
+class Event(models.Model):
+    """
+    An Event marks a certain point in time that could cause test results to be
+    not easiliy comparable before and after it.
+    """
+    title = models.TextField()
+    creation_time = models.DateTimeField(default=datetime.now)
+
+    def as_json(self):
+        return dict(
+            title = self.title,
+            creation_time = self.creation_time
+        )

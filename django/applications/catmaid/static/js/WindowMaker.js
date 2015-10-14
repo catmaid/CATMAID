@@ -1053,6 +1053,8 @@ var WindowMaker = new function()
           ['Refresh', WA.updateSkeletons.bind(WA)],
           [document.createTextNode(' - ')],
           ['Spatial select', WA.spatialSelect.bind(WA)],
+          [document.createTextNode(' - ')],
+          ['Count', WA.countObjects.bind(WA)],
         ]);
 
     var storedViewsSelect = document.createElement('select');
@@ -1385,7 +1387,7 @@ var WindowMaker = new function()
     // Resize WebGLView after staging list has been added
     win.callListeners( CMWWindow.RESIZE );
 
-    // Make slection table smaller so that it only occupies about 25% of the
+    // Make selection table smaller so that it only occupies about 25% of the
     // available vertical space (instead of 50%).
     win.getParent().changeHeight(Math.abs(win.getHeight() * 0.5));
 

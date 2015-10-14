@@ -3181,6 +3181,23 @@
     }).bind(this), {});
   };
 
+  /** Return a map of node ID vs map of tag vs true. */
+  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createTagMap = function() {
+    var map = {};
+    Object.keys(this.tags).forEach(function(tag) {
+      this.tags[tag].forEach(function(node) {
+        var o = map[node];
+        if (o) o[tag] = true;
+        else {
+          o = {};
+          o[tag] = true;
+          map[node] = o;
+        }
+      }, this);
+    }, this);
+    return map;
+  };
+
   /** For skeletons with a single node will return an Arbor without edges and with a null root,
    * given that it has no edges, and therefore no vertices, at all. */
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createArbor = function() {
@@ -4778,6 +4795,163 @@
         onDone(frames);
       }
     }
+  };
+
+  /** Measure distances along cable to synapses or other features, and count synapses. */
+  WebGLApplication.prototype.countObjects = function() {
+
+    if (0 === this.getSelectedSkeletons().length) {
+      CATMAID.msg("Information", "Add one or more skeletons first!");
+      return;
+    }
+
+    var dialog = new CATMAID.OptionsDialog("Count");
+    dialog.appendMessage("(For measurements and synapse counts of whole arbors, plot morphological measurements in the Circuit Graph Plot (the [P] icon) and then export to CSV.)");
+
+    var kind = dialog.appendChoice("Count: ", "kind",
+        ["postsynaptic sites",
+         "presynaptic sites",
+         "skeleton nodes tagged with..."],
+        ["pre",
+         "post",
+         "tags"]);
+
+    var atags = (function(skeletons) {
+      var tags = Object.keys(skeletons).reduce(function(o, skid) {
+        Object.keys(skeletons[skid].tags).forEach(function(tag) { o[tag] = true; });
+        return o;
+      }, {});
+      var a = Object.keys(tags);
+      a.sort();
+      return a;
+    })(this.space.content.skeletons);
+
+    var tag_choice = dialog.appendChoice("Tag (if applicable): ", "tag",
+        atags,
+        atags);
+
+    var reference = dialog.appendChoice("Reference node: ", "ref",
+        ["active node",
+         "root node"],
+        ["active",
+         "root"]);
+
+    var max_distance = dialog.appendField("Max. distance (nm): ", "max", this.options.distance_to_active_node, false);
+
+    var mode = dialog.appendChoice("Mode: ", "mode",
+        ["along cable (selected arbor only)",
+         "Euclidean distance (all arbors)"],
+        ["cable",
+         "euclidean"]);
+
+    dialog.onOK = (function() {
+      var active_node = SkeletonAnnotations.getActiveNodeId();
+      var active_skid = SkeletonAnnotations.getActiveSkeletonId();
+      var max = Number(max_distance.value); // TODO may fail as non-numeric
+      var sks = this.space.content.skeletons;
+      var tag = atags.length > 0 ? atags[tag_choice.selectedIndex] : null;
+
+      // Select skeletons
+      var skids;
+      if (0 === mode.selectedIndex) {
+        // Along cable (selected arbor only)
+        var sk = sks[active_skid];
+        if (!sk || !sk.visible) {
+          CATMAID.msg("Oops", "Active skeleton not among those in the 3D Viewer");
+          return;
+        }
+        skids = [active_skid];
+      } else {
+        skids = Object.keys(this.space.content.skeletons);
+      }
+
+      var countRelationFn = function(type, synapse_map) {
+        return function(node) {
+          var relations = synapse_map[node];
+          if (!relations) return 0;
+          return relations.reduce(function(sum, relation) {
+            return sum + (type === relation.type ? 1 : 0);
+          }, 0);
+        };
+      };
+
+      // Count function generator: 'o' is a synapse map or the map of text tags, keyed by treenode ID
+      var counterFn = function(skid) {
+        switch (kind.selectedIndex) {
+          case 0: // postsynaptic site
+            return countRelationFn(1, sks[skid].createSynapseMap());
+          case 1: // presynaptic site
+            return countRelationFn(0, sks[skid].createSynapseMap());
+          case 2: // text tag
+            if (tag && sks[skid].tags[tag]) {
+              return (function(tag, node) {
+                var tags = this[node]; // 'this' is the tag map
+                return tags && tags[tag] ? 1 : 0;
+              }).bind(sks[skid].createTagMap(), tag);
+            } else {
+              // not present in skeleton
+              return null;
+            }
+          default:
+            CATMAID.msg("Error", "Unknown kind");
+            return null;
+        }
+      };
+
+      var origin = null;
+      if (0 === reference.selectedIndex && 1 === mode.selectedIndex) {
+        // Use active node as reference for all skeletons
+        var p = SkeletonAnnotations.getActiveNodePositionW();
+        origin = new THREE.Vector3d(p.x, p.y, p.z);
+      }
+
+      var rows = [];
+
+      skids.forEach(function(skid) {
+        var counter = counterFn(skid); // will be null when nothing to count
+        var count = 0;
+
+        if (counter) {
+          var positions = sks[skid].getPositions();
+          var arbor = sks[skid].createArbor();
+
+          if (0 === mode.selectedIndex) {
+            // Along cable
+            if (0 === reference.selectedIndex) {
+              arbor.reroot(active_node); // guaranteed above to belong to the skeleton
+            }
+            var distances = arbor.nodesDistanceTo(arbor.root, function(child, paren) { return positions[child].distanceTo(positions[paren]); }).distances;
+            arbor.nodesArray().forEach(function(node) {
+              if (distances[node] < max) count += counter(node);
+            });
+          } else {
+            // Euclidean distance
+            var o = origin;
+            if (1 === reference.selectedIndex) {
+              var o = positions[arbor.root];
+            }
+            arbor.nodesArray().forEach(function(node) {
+              if (o.distanceTo(positions[node]) < max) count += counter(node);
+            });
+          }
+        }
+
+        rows.push([skid, NeuronNameService.getInstance().getName(skid), count]);
+      }, this);
+
+
+      var csv = rows.map(function(row) {
+        return row[0] + ', "' + row[1] + '", ' + row[2];
+      }).join('\n');
+      saveAs(new Blob([csv], {type: "text/csv"}), "counts.csv");
+
+      if (1 === rows.length) {
+        CATMAID.msg("CSV contains:", csv);
+      }
+
+    }).bind(this);
+
+    dialog.show(400, 300, false);
   };
 
   /**

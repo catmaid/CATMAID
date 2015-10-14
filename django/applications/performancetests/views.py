@@ -1,6 +1,6 @@
 from django.views.generic import TemplateView
 from django.core import serializers
-from .models import TestResult, TestView
+from .models import TestResult, TestView, Event
 
 class TestResultDisplay(TemplateView):
     template_name = 'performancetests/test_result_display.html'
@@ -15,5 +15,7 @@ class TestResultDisplay(TemplateView):
         # Build a dictionary of views
         view_index = {r.view_id: r.view for r in test_results}
         context['view_index'] = view_index
+        # Add events
+        context['events'] = list(Event.objects.all().order_by('-creation_time'))
 
         return context

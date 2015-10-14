@@ -21,7 +21,7 @@ class TestView(models.Model):
             view_id = self.id,
             view_method = self.method,
             view_data = self.data,
-            view_creation_time = self.creation_time,
+            creation_time = self.creation_time.strftime('%Y-%m-%dT%H:%M:%S')
         )
 
 
@@ -47,7 +47,7 @@ class TestResult(models.Model):
             time = self.time,
             result_code = self.result_code,
             result = self.result,
-            creation_time = self.creation_time,
+            creation_time = self.creation_time.strftime('%Y-%m-%dT%H:%M:%S'),
             version = self.version,
         )
 
@@ -63,5 +63,5 @@ class Event(models.Model):
     def as_json(self):
         return dict(
             title = self.title,
-            creation_time = self.creation_time
+            creation_time = self.creation_time.strftime('%Y-%m-%dT%H:%M:%S')
         )

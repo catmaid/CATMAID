@@ -229,16 +229,6 @@ urlpatterns += patterns('catmaid.control.skeletonexport',
     (r'^(?P<project_id>\d+)/skeletons/partners-by-connector$', 'partners_by_connector'),
 )
 
-# Object tree
-urlpatterns += patterns('catmaid.control.tree',
-    (r'^(?P<project_id>\d+)/object-tree/expand$', 'tree_object_expand'),
-    (r'^(?P<project_id>\d+)/object-tree/list', 'tree_object_list'),
-    (r'^(?P<project_id>\d+)/object-tree/(?P<node_id>\d+)/get-all-skeletons', 'objecttree_get_all_skeletons'),
-    (r'^(?P<project_id>\d+)/object-tree/(?P<node_id>\d+)/(?P<node_type>\w+)/(?P<threshold>\d+)/get-skeletons', 'collect_skeleton_ids'),
-    (r'^(?P<project_id>\d+)/object-tree/instance-operation$', 'instance_operation'),
-    (r'^(?P<project_id>\d+)/object-tree/group/(?P<group_id>\d+)/remove-empty-neurons$', 'remove_empty_neurons'),
-)
-
 # Treenode and Connector image stack archive export
 urlpatterns += patterns('catmaid.control.treenodeexport',
     (r'^(?P<project_id>\d+)/connectorarchive/export$', 'export_connectors'),

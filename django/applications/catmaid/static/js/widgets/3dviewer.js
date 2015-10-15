@@ -4892,6 +4892,8 @@
               // not present in skeleton
               return null;
             }
+            // Required to make JSHint stop complaining
+            /*falls through*/
           default:
             CATMAID.msg("Error", "Unknown kind");
             return null;

@@ -53,6 +53,8 @@ INSTALLED_APPS = (
     'guardian',
     'south',
     'pipeline',
+    'rest_framework',
+    'rest_framework_swagger',
 )
 
 LOGGING = {
@@ -244,3 +246,26 @@ PERFORMANCETEST_SCM_URL = "https://github.com/catmaid/CATMAID/commit/{version}"
 STATIC_EXTENSION_URL = "/staticext/"
 STATIC_EXTENSION_ROOT = "/tmp"
 STATIC_EXTENSION_FILES = []
+
+REST_FRAMEWORK = {
+    # CSRF is unnecessary because there is no form-based workflow to
+    # distinguish intentional from hijacked requests.
+    'DEFAULT_AUTHENTICATION_CLASSES': ('custom_rest_authentication.CsrfExemptSessionAuthentication',),
+    'VIEW_DESCRIPTION_FUNCTION': 'custom_rest_swagger_googledoc.get_googledocstring'
+}
+
+SWAGGER_SETTINGS = {
+    'info': {
+        'title': 'CATMAID',
+        'description': '''
+                       This is an API for accessing project, stack and
+                       annotation data for this CATMAID instance. More
+                       information is available at
+                       <a href="http://catmaid.org">catmaid.org</a>.
+                       ''',
+        'contact': 'catmaid@googlegroups.com',
+        'license': 'GPLv3',
+        'licenseUrl': 'https://raw.githubusercontent.com/catmaid/CATMAID/master/LICENSE',
+    },
+    'doc_expansion': 'list'
+}

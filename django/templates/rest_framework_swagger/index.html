@@ -1,0 +1,17 @@
+{% extends 'rest_framework_swagger/base.html' %}
+
+{% block branding %}
+    <a id="logo"
+       style="background:transparent url({{ STATIC_URL }}images/catmaidlogo.svg) no-repeat left center; padding-left: 50px;"
+       href="{{ CATMAID_URL }}">
+      CATMAID API
+    </a>
+{% endblock %}
+
+{% block django_rest_swagger %}
+    <div id="django-rest-swagger">
+        <div class="swagger-ui-wrap">
+            <a href="http://swagger.wordnik.com">Docs powered by Swagger</a>
+        </div>
+    </div>
+{% endblock %}

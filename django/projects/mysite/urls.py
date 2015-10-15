@@ -21,6 +21,11 @@ urlpatterns += patterns('',
     url(r'^admin/', include(admin.site.urls))
 )
 
+# API Documentation
+urlpatterns += patterns('',
+    url(r'^apis/', include('rest_framework_swagger.urls')),
+)
+
 if settings.DEBUG:
     urlpatterns += patterns('',
         (r'^static/(?P<path>.*)$', 'django.views.static.serve', {'document_root': settings.STATIC_ROOT}),

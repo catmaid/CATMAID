@@ -3197,8 +3197,8 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNextOpenEndNode = function(nodeID, 
     // TODO could be done by inspecting the graph locally if it is loaded in the
     // 3D viewer or treenode table (but either source may not be up to date)
     this.submit(
-        django_url + project.id + '/skeleton/' + skid + '/openleaf',
-        {tnid: nodeID},
+        django_url + project.id + '/skeletons/' + skid + '/open-leaves',
+        {treenode_id: nodeID},
         function (json) {
           // json is an array of nodes. Each node is an array:
           // [0]: open end node ID

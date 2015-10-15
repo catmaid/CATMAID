@@ -14,6 +14,8 @@ from django.shortcuts import get_object_or_404
 from django.db import connection
 from django.db.models import Q
 
+from rest_framework.decorators import api_view
+
 from catmaid.models import Project, UserRole, Class, ClassInstance, Review, \
         ClassInstanceClassInstance, Relation, Treenode, TreenodeConnector
 from catmaid.objects import Skeleton, SkeletonGroup, \
@@ -46,11 +48,55 @@ def get_skeleton_permissions(request, project_id, skeleton_id):
 
     return HttpResponse(json.dumps(permissions))
 
+@api_view(['POST'])
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def last_openleaf(request, project_id=None, skeleton_id=None):
-    """ Return a list of the ID and location of open leaf nodes in the skeleton
-    and their path length distance to the specified treenode. """
-    tnid = int(request.POST['tnid'])
+def open_leaves(request, project_id=None, skeleton_id=None):
+    """List open leaf nodes in a skeleton.
+
+    Return a list of the ID and location of open leaf nodes in a skeleton,
+    their path length distance to the specified treenode, and their creation
+    time.
+
+    Leaves are considered open if they are not tagged with a tag matching
+    a particular regex.
+
+    .. note:: This endpoint is used interactively by the client so performance
+              is critical.
+    ---
+    parameters:
+        - name: treenode_id
+          description: ID of the origin treenode for path length distances
+          required: true
+          type: integer
+          paramType: form
+    models:
+      open_leaf_node:
+        id: open_leaf_node
+        properties:
+        - description: ID of an open leaf treenode
+          type: integer
+          required: true
+        - description: Node location
+          type: array
+          items:
+            type: number
+            format: double
+          required: true
+        - description: Distance from the query node
+          type: number
+          format: double
+          required: true
+        - description: Node creation time
+          type: string
+          format: date-time
+          required: true
+    type:
+    - type: array
+      items:
+        $ref: open_leaf_node
+      required: true
+    """
+    tnid = int(request.POST['treenode_id'])
     cursor = connection.cursor()
 
     cursor.execute("SELECT id FROM relation WHERE project_id=%s AND relation_name='labeled_as'" % int(project_id))

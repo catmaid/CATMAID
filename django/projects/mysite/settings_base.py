@@ -49,7 +49,6 @@ INSTALLED_APPS = (
     'taggit',
     'adminplus',
     'catmaid',
-    'vncbrowser',
     'performancetests',
     'guardian',
     'south',

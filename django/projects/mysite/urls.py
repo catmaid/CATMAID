@@ -4,7 +4,6 @@ from django.conf import settings
 from catmaid.views import *
 
 import catmaid
-import vncbrowser
 
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin
@@ -15,11 +14,6 @@ admin.autodiscover()
 # CATMAID
 urlpatterns = patterns('',
     url(r'^', include('catmaid.urls')),
-)
-
-# Neuron Catalog
-urlpatterns += patterns('',
-    url(r'^vncbrowser/', include('vncbrowser.urls')),
 )
 
 # Admin site

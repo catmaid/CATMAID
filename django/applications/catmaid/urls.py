@@ -155,6 +155,7 @@ urlpatterns += patterns('catmaid.control.neuron',
     (r'^(?P<project_id>\d+)/neuron/(?P<neuron_id>\d+)/get-all-skeletons$', 'get_all_skeletons_of_neuron'),
     (r'^(?P<project_id>\d+)/neuron/(?P<neuron_id>\d+)/give-to-user$', 'give_neuron_to_other_user'),
     (r'^(?P<project_id>\d+)/neuron/(?P<neuron_id>\d+)/delete$', 'delete_neuron'),
+    (r'^(?P<project_id>\d+)/neurons/(?P<neuron_id>\d+)/rename$', 'rename_neuron'),
 )
 
 # Node access

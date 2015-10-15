@@ -491,6 +491,52 @@ class ViewPageTests(TestCase):
         stacks = get_project(result, 5)['action'][0]['action']
         self.assertEqual(len(stacks), 2)
 
+    def test_rename_neuron(self):
+        self.fake_authentication()
+        neuron_id = 233
+
+        count_logs = lambda: Log.objects.all().count()
+        log_count = count_logs()
+        old_name = ClassInstance.objects.get(id=neuron_id).name
+        new_name = 'newname'
+        self.assertFalse(old_name == new_name)
+
+        url = '/%d/neurons/%s/rename' % (self.test_project_id, neuron_id)
+        response = self.client.post(url, {'name': new_name})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = {
+            'success': True,
+            'renamed_neuron': neuron_id
+        }
+        self.assertEqual(expected_result, parsed_response)
+
+        self.assertEqual(new_name, ClassInstance.objects.get(id=neuron_id).name)
+        self.assertEqual(log_count + 1, count_logs())
+
+    def test_rename_neuron_fail(self):
+        self.fake_authentication()
+        neuron_id = 362
+
+        # Lock this neuron for another user
+        _annotate_entities(self.test_project_id, [neuron_id], {'locked': 1})
+
+        count_logs = lambda: Log.objects.all().count()
+        log_count = count_logs()
+        old_name = ClassInstance.objects.get(id=neuron_id).name
+        new_name = 'newname'
+        self.assertFalse(old_name == new_name)
+
+        url = '/%d/neurons/%s/rename' % (self.test_project_id, neuron_id)
+        response = self.client.post(url, {'name': new_name})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        self.assertTrue('error' in parsed_response)
+        self.assertTrue(parsed_response['error'])
+
+        self.assertEqual(old_name, ClassInstance.objects.get(id=neuron_id).name)
+        self.assertEqual(log_count, count_logs())
+
     def test_skeletons_from_neuron(self):
         self.fake_authentication()
         url = '/%d/neuron/%d/get-all-skeletons' % (self.test_project_id,

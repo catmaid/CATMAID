@@ -247,6 +247,10 @@ STATIC_EXTENSION_URL = "/staticext/"
 STATIC_EXTENSION_ROOT = "/tmp"
 STATIC_EXTENSION_FILES = []
 
+REST_FRAMEWORK = {
+    'VIEW_DESCRIPTION_FUNCTION': 'custom_rest_swagger_googledoc.get_googledocstring'
+}
+
 SWAGGER_SETTINGS = {
     'info': {
         'title': 'CATMAID',

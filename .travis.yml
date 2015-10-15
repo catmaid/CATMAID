@@ -4,8 +4,8 @@ language: python
 python:
   - "2.7"
 env:
-  - SLIMERJSLAUNCHER=$(which firefox) DISPLAY=:99.0 PATH=$TRAVIS_BUILD_DIR/slimerjs:$PATH TMPDIR=$TRAVIS_BUILD_DIR/tmp
   global:
+    - SLIMERJSLAUNCHER=$(which firefox) DISPLAY=:99.0 PATH=$TRAVIS_BUILD_DIR/slimerjs:$PATH TMPDIR=$TRAVIS_BUILD_DIR/tmp
     - GH_REF: github.com/catmaid/catmaid.github.io.git
     - secure: "AaY9sIlNMAcZXbcTjqMsXTCbJ11hn02++zdtZToT2StKAKeJaGSpjWJZ9AX0AWFCzdqAbIuk0bK6sXVnWsOtwOlB+5R3aqRJt8UuBH2lKrdPt9ytjJ4w/nVJKGqycqmsvkJVuYFpwbOLnsKytZSl+l7itD+XGnBt3VNqYO+uG2w="
 addons:

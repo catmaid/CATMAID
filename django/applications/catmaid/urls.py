@@ -21,7 +21,6 @@ urlpatterns = patterns('',
 
 # Authentication and permissions
 urlpatterns += patterns('catmaid.control.authentication',
-    (r'^login$', 'login_vnc'),
     (r'^accounts/login$', 'login_user'),
     (r'^accounts/logout$', 'logout_user'),
     (r'^accounts/(?P<project_id>\d+)/all-usernames$', 'all_usernames'),

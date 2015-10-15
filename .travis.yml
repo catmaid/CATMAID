@@ -5,6 +5,9 @@ python:
   - "2.7"
 env:
   - SLIMERJSLAUNCHER=$(which firefox) DISPLAY=:99.0 PATH=$TRAVIS_BUILD_DIR/slimerjs:$PATH TMPDIR=$TRAVIS_BUILD_DIR/tmp
+  global:
+    - GH_REF: github.com/catmaid/catmaid.github.io.git
+    - secure: "AaY9sIlNMAcZXbcTjqMsXTCbJ11hn02++zdtZToT2StKAKeJaGSpjWJZ9AX0AWFCzdqAbIuk0bK6sXVnWsOtwOlB+5R3aqRJt8UuBH2lKrdPt9ytjJ4w/nVJKGqycqmsvkJVuYFpwbOLnsKytZSl+l7itD+XGnBt3VNqYO+uG2w="
 addons:
   firefox: "38.0"
   postgresql: 9.3
@@ -54,3 +57,16 @@ script:
   - ./.travis-run-slimerjs.sh http://localhost:8000/tests
 after_success:
   - cd django/projects/mysite && coveralls
+  # Build documentation
+  - cd ../../../sphinc-doc
+  - make html
+  # Push to GitHub pages
+  - git clone ${GH_REF} build/catmaid.github.io
+  - cd build/catmaid.github.io
+  - git rm -r dev
+  - mv ../build/html dev
+  - git add dev
+  - git config user.name "Tracis CI"
+  - git condig user.email "tom@voodoo-arts.net"
+  - git commit -m "Compile new version of documentation"
+  - git push "https://${GH_TOKEN}@${GH_REF}" master:master

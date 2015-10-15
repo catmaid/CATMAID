@@ -989,6 +989,7 @@
       this.mc_click = function(d) {
         var e = d3.event;
         e.stopPropagation();
+        e.preventDefault();
         var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.parentNode.parentNode);
         if (catmaidSVGOverlay.ensureFocused()) {
           return;

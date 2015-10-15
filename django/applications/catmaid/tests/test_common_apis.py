@@ -491,13 +491,6 @@ class ViewPageTests(TestCase):
         stacks = get_project(result, 5)['action'][0]['action']
         self.assertEqual(len(stacks), 2)
 
-    def test_login(self):
-        self.fake_authentication()
-        response = self.client.get('/login')
-        self.assertEqual(response.status_code, 200)
-        response = self.client.get('/login?return_url=%2F3')
-        self.assertEqual(response.status_code, 200)
-
     def test_skeletons_from_neuron(self):
         self.fake_authentication()
         url = '/%d/neuron/%d/get-all-skeletons' % (self.test_project_id,

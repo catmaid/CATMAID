@@ -2317,14 +2317,14 @@ class ViewPageTests(TestCase):
         for mi in ('0','1','2','3'):
             self.assertEqual(expected_result[mi], parsed_response[mi])
 
-    def test_skeleton_openleaf(self):
+    def test_skeleton_open_leaves(self):
         skeleton_id = 235
 
         self.fake_authentication()
-        url = '/%d/skeleton/%d/openleaf' % (self.test_project_id, skeleton_id,)
+        url = '/%d/skeletons/%d/open-leaves' % (self.test_project_id, skeleton_id,)
 
         # Return untagged root
-        response = self.client.post(url, {'tnid': 243})
+        response = self.client.post(url, {'treenode_id': 243})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         distsort = lambda end: end[2]
@@ -2341,7 +2341,7 @@ class ViewPageTests(TestCase):
                 '/%d/label/treenode/%d/update' % (self.test_project_id, 237),
                 {'tags': 'soma', 'delete_existing': 'false'})
         self.assertEqual(response.status_code, 200)
-        response = self.client.post(url, {'tnid': 243})
+        response = self.client.post(url, {'treenode_id': 243})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         parsed_response.sort(key=distsort)
@@ -2354,7 +2354,7 @@ class ViewPageTests(TestCase):
                 '/%d/label/treenode/%d/update' % (self.test_project_id, 261),
                 {'tags': 'End', 'delete_existing': 'false'})
         self.assertEqual(response.status_code, 200)
-        response = self.client.post(url, {'tnid': 243})
+        response = self.client.post(url, {'treenode_id': 243})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         parsed_response.sort(key=distsort)
@@ -2366,7 +2366,7 @@ class ViewPageTests(TestCase):
                 '/%d/label/treenode/%d/update' % (self.test_project_id, 277),
                 {'tags': 'mitochondria ends', 'delete_existing': 'false'})
         self.assertEqual(response.status_code, 200)
-        response = self.client.post(url, {'tnid': 243})
+        response = self.client.post(url, {'treenode_id': 243})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         parsed_response.sort(key=distsort)

@@ -248,6 +248,9 @@ STATIC_EXTENSION_ROOT = "/tmp"
 STATIC_EXTENSION_FILES = []
 
 REST_FRAMEWORK = {
+    # CSRF is unnecessary because there is no form-based workflow to
+    # distinguish intentional from hijacked requests.
+    'DEFAULT_AUTHENTICATION_CLASSES': ('custom_rest_authentication.CsrfExemptSessionAuthentication',),
     'VIEW_DESCRIPTION_FUNCTION': 'custom_rest_swagger_googledoc.get_googledocstring'
 }
 

@@ -1867,7 +1867,7 @@
     container.append(root_button);
 
     root_button.onclick = (function() {
-      requestQueue.register(django_url + project.id + '/skeleton/' + this.skeleton_ids[0] + '/get-root', "POST", { pid: project.id }, function (status, text) {
+      requestQueue.register(django_url + project.id + '/skeletons/' + this.skeleton_ids[0] + '/root', 'GET', undefined, function (status, text) {
         if (200 !== status) return;
         var json = $.parseJSON(text);
         if (json.error) return new CATMAID.ErrorDialog(json.error,

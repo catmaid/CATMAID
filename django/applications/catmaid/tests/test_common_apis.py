@@ -603,7 +603,7 @@ class ViewPageTests(TestCase):
 
     def test_skeleton_root(self):
         self.fake_authentication()
-        response = self.client.get('/%d/skeleton/%d/get-root' % (self.test_project_id, 235))
+        response = self.client.get('/%d/skeletons/%d/root' % (self.test_project_id, 235))
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         self.assertEqual(parsed_response['root_id'], 237)

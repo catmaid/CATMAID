@@ -13,6 +13,7 @@ from django.http import HttpResponse, Http404
 from django.shortcuts import get_object_or_404
 from django.db import connection
 from django.db.models import Q
+from django.views.decorators.cache import never_cache
 
 from rest_framework.decorators import api_view
 
@@ -492,8 +493,30 @@ def split_skeleton(request, project_id=None):
 
     return HttpResponse(json.dumps({'skeleton_id': new_skeleton.id}), content_type='text/json')
 
+
+@api_view(['GET'])
+@never_cache
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def root_for_skeleton(request, project_id=None, skeleton_id=None):
+    """Retrieve ID and location of the skeleton's root treenode.
+    ---
+    type:
+      root_id:
+        type: integer
+        required: true
+      x:
+        type: number
+        format: double
+        required: true
+      y:
+        type: number
+        format: double
+        required: true
+      z:
+        type: number
+        format: double
+        required: true
+    """
     tn = Treenode.objects.get(
         project=project_id,
         parent__isnull=True,

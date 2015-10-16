@@ -101,12 +101,14 @@ CATMAID.Events.extend(SkeletonAnnotations);
  */
 SkeletonAnnotations.atn.set = function(node, stack_viewer_id) {
   var changed = false;
+  var skeleton_changed = false;
 
   if (node) {
     // Find out if there was a change
     var stack_viewer = project.getStackViewer(stack_viewer_id);
+    skeleton_changed = (this.skeleton_id !== node.skeleton_id);
     changed = (this.id !== node.id) ||
-              (this.skeleton_id !== node.skeleton_id) ||
+              (skeleton_changed) ||
               (this.type !== node.type) ||
               (this.subtype !== node.subtype) ||
               (this.z !== node.z) ||
@@ -129,6 +131,7 @@ SkeletonAnnotations.atn.set = function(node, stack_viewer_id) {
     this.stack_viewer_id = stack_viewer_id;
   } else {
     changed = true;
+    skeleton_changed = !!this.skeleton_id;
     // Set all to null
     for (var prop in this) {
       if (this.hasOwnProperty(prop)) {
@@ -143,7 +146,7 @@ SkeletonAnnotations.atn.set = function(node, stack_viewer_id) {
   // Trigger event if node ID or position changed
   if (changed) {
     SkeletonAnnotations.trigger(
-          SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED, this);
+          SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED, this, skeleton_changed);
   }
 };
 
@@ -156,6 +159,7 @@ SkeletonAnnotations.atn.promise = function()
 {
   var overlay = SkeletonAnnotations.getSVGOverlay(this.stack_viewer_id);
   var nodePromise = overlay.promiseNode(overlay.nodes[this.id]);
+  var isNewSkeleton = !this.skeleton_id;
   function AtnPromise(atn) {
     // Override prototype's
     this.then = function(fn) {
@@ -164,7 +168,7 @@ SkeletonAnnotations.atn.promise = function()
         if (atn.id !== result) {
           atn.id = result;
           SkeletonAnnotations.trigger(
-              SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED, atn);
+              SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED, atn, isNewSkeleton);
         }
         // Call the orginal callback
         if (fn) {

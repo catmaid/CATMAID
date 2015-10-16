@@ -174,7 +174,7 @@ var ProjectStatistics = new function()
           }
 
           // Query all neurons reviewed by the given user in the given timeframe
-          requestQueue.register(django_url + project.id + '/skeleton/list',
+          requestQueue.register(django_url + project.id + '/skeletons/',
               'GET', params, CATMAID.jsonResponseHandler(function(skeleton_ids) {
                 // Open a new selection table with the returned set of
                 // skeleton IDs, if any.

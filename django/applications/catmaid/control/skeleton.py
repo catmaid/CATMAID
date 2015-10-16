@@ -1286,8 +1286,47 @@ def get_annotation_info(project_id, skeleton_ids, annotations, metaannotations,
 
     return response
 
+
+@api_view(['GET'])
 @requires_user_role(UserRole.Browse)
 def list_skeletons(request, project_id):
+    """List skeletons matching filtering criteria.
+
+    The result set is the intersection of skeletons matching criteria (the
+    criteria are conjunctive) unless stated otherwise.
+    ---
+    parameters:
+        - name: created_by
+          description: Filter for user ID of the skeletons' creator.
+          type: integer
+          paramType: query
+        - name: reviewed_by
+          description: Filter for user ID of the skeletons' reviewer.
+          type: integer
+          paramType: query
+        - name: from_date
+          description: Filter for skeletons with nodes created after this date.
+          type: string
+          format: date
+          paramType: query
+        - name: to_date
+          description: Filter for skeletons with nodes created before this date.
+          type: string
+          format: date
+          paramType: query
+        - name: nodecount_gt
+          description: |
+            Filter for skeletons with more nodes than this threshold. Removes
+            all other criteria.
+          type: integer
+          paramType: query
+    type:
+    - type: array
+      items:
+        type: integer
+        description: ID of skeleton matching the criteria.
+      required: true
+    """
     created_by = request.GET.get('created_by', None)
     reviewed_by = request.GET.get('reviewed_by', None)
     from_date = request.GET.get('from', None)

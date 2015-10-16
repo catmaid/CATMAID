@@ -2789,7 +2789,7 @@ class ViewPageTests(TestCase):
         self.fake_authentication()
 
         # Query all skeletons
-        url = '/%d/skeleton/list' % self.test_project_id
+        url = '/%d/skeletons/' % self.test_project_id
         response = self.client.get(url)
         parsed_response = json.loads(response.content)
         expected_result = frozenset([2388, 235, 373, 2411, 1, 361, 2364, 2451, 2440, 2433])

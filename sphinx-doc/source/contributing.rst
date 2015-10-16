@@ -197,11 +197,24 @@ using django-rest-swagger's `YAML hooks
         #...
 
 API URLs should prefer plural resource names and use hyphens rather than
-underscores. Parameters that are not resource identifiers should be passed as
+underscores. Non-terminal endpoint paths that represent resources should have a
+trailing slash, e.g., ``GET http://localhost/{project_id}/skeletons/``, but not
+terminal operations on that resource collection like
+``GET http://localhost/{project_id}/skeletons/review-status``.
+
+Parameters that are not resource identifiers should be passed as
 query or form parameters, not in the URL path. If an endpoint accepts an array
 of parameters, it should support receiving the array encoded as JSON; form
 array parameters may be accepted, but a JSON array in a single form parameter
 must be accepted for ease of use.
+
+Prefer descriptive, consistent names for parameters. For example, an endpoint
+receiving a list of skeleton identifiers should prefer a parameter named
+``skeleton_ids`` over ``skids`` or ``ids``; a few bytes in the header are not
+going to have a performance impact relative to the packaging of HTTP and
+transport, much less when HTTP2/SPDY and modern compression-aware browsers are
+involved. However, abbreviated property names or array-packed values are
+acceptable for the responses of performance-critical endpoints.
 
 Javascript
 ##########

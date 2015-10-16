@@ -41,7 +41,7 @@ Activate the `virtualenv`::
 
 Update Python packages::
 
-   pip install -r pip-frozen
+   pip install -r requirements.txt
 
 Synchronize the Django environment with the database::
 

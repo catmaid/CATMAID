@@ -125,7 +125,7 @@ You should then install all the rest of the required Python
 packages with::
 
     cd /home/alice/catmaid/django
-    pip install -r pip-frozen
+    pip install -r requirements.txt
 
 If that worked correctly, then the second-last line of output
 will begin ``Successfully installed``, and list the Python

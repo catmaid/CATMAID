@@ -108,21 +108,11 @@ shells, for example, you will need to activate it by running::
 
     On Ubuntu versions before 14.04 a rather old version of Pip is shipped.
     This is the tool we use to install Python packages within the virtualenv, so
-    let's update it therefor first---within the virtualenv::
+    let's update it first::
 
-        pip install pip==1.5.4
+        python -m pip install -U pip
 
-    You can probably use a later version as well, but we tested it with Pip
-    v1.5.4.
-
-Due to `a dependency problem
-<https://github.com/h5py/h5py/issues/96>`_, we need to install
-NumPy and Distribute separately::
-
-   pip install numpy==1.6.1 distribute==0.7.3
-
-You should then install all the rest of the required Python
-packages with::
+Install all of the required Python packages with::
 
     cd /home/alice/catmaid/django
     pip install -r requirements.txt

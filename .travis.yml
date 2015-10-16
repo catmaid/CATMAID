@@ -17,9 +17,9 @@ before_install:
   - sh -e /etc/init.d/xvfb start
 install:
   - travis_retry sudo apt-get install -y -qq $(< packagelist-ubuntu-12.04-apt.txt)
-  - travis_retry pip install -q pip==1.5.4
-  - travis_retry travis_wait pip install -q numpy==1.6.1 distribute==0.7.3
+  - travis_retry python -m pip install -U pip
   - travis_retry travis_wait 60 pip install -q -r django/requirements.txt
+  - pip list
   # Install additional dependencies for Travis
   - pip install coveralls
   - npm install jshint qunit-phantomjs-runner

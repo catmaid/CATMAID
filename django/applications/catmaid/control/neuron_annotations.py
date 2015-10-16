@@ -7,6 +7,8 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.db import connection
 
+from rest_framework.decorators import api_view
+
 from catmaid.models import UserRole, Project, Class, ClassInstance, \
         ClassInstanceClassInstance, Relation, ReviewerWhitelist
 from catmaid.control.authentication import requires_user_role, can_edit_or_fail
@@ -744,10 +746,91 @@ def generate_co_annotation_query(project_id, co_annotation_ids, classIDs, relati
     return select, rest
 
 
+@api_view(['GET', 'POST'])
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def list_annotations(request, project_id=None):
-    """ Creates a list of objects containing an annotation name and the user
-    name and ID of the users having linked that particular annotation.
+    """List annotations matching filtering criteria that are currently in use.
+
+    The result set is the intersection of annotations matching criteria (the
+    criteria are conjunctive) unless stated otherwise.
+    ---
+    parameters:
+      - name: annotations
+        description: A list of (meta) annotations with which which resulting annotations should be annotated with.
+        paramType: query
+        type: array
+        items:
+            type: integer
+            description: An annotation ID
+      - name: annotates
+        description: A list of entity IDs (like annotations and neurons) that should be annotated by the result set.
+        paramType: query
+        type: array
+        items:
+            type: integer
+            description: An entity ID
+      - name: parallel_annotations
+        description: A list of annotation that have to be used alongside the result set.
+        paramType: query
+        type: array
+        items:
+            type: integer
+            description: An annotation ID
+      - name: user_id
+        description: Result annotations have to be used by this user.
+        paramType: query
+        type: integer
+      - name: neuron_id
+        description: Result annotations will annotate this neuron.
+        paramType: query
+        type: integer
+      - name: skeleton_id
+        description: Result annotations will annotate the neuron modeled by this skeleton.
+        paramType: query
+        type: integer
+      - name: ignored_annotations
+        description: A list of annotation names that will be excluded from the result set.
+        paramType: query
+        type: array
+        items:
+            type: string
+    models:
+      annotation_user_list_element:
+        id: annotation_user_list_element
+        properties:
+          id:
+            type: integer
+            name: id
+            description: The user id
+            required: true
+          name:
+            type: string
+            name: name
+            description: The user name
+            required: true
+      annotation_list_element:
+        id: annotation_list_element
+        description: Represents one annotation along with its users.
+        properties:
+          name:
+            type: string
+            description: The name of the annotation
+            required: true
+          id:
+            type: integer
+            description: The id of the annotation
+            required: true
+          users:
+            type: array
+            description: A list of users
+            required: true
+            items:
+              $ref: annotation_user_list_element
+    type:
+      - type: array
+        items:
+          $ref: annotation_list_element
+        required: true
     """
 
     if not request.POST:

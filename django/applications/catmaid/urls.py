@@ -98,10 +98,10 @@ urlpatterns += patterns('catmaid.control.stats',
 
 # Annotations
 urlpatterns += patterns('catmaid.control.neuron_annotations',
+    (r'^(?P<project_id>\d+)/annotations/$', 'list_annotations'),
     (r'^(?P<project_id>\d+)/neuron/query-by-annotations$', 'query_neurons_by_annotations'),
     (r'^(?P<project_id>\d+)/neuron/table/query-by-annotations$',
             'query_neurons_by_annotations_datatable'),
-    (r'^(?P<project_id>\d+)/annotations/list$', 'list_annotations'),
     (r'^(?P<project_id>\d+)/annotations/skeletons/list$', 'annotations_for_skeletons'),
     (r'^(?P<project_id>\d+)/annotations/entities/list$', 'annotations_for_entities'),
     (r'^(?P<project_id>\d+)/annotations/table-list$', 'list_annotations_datatable'),

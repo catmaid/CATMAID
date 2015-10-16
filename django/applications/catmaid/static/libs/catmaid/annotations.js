@@ -289,7 +289,7 @@
    * the passed handler is called with the annotation set as parameter.
    */
   CATMAID.retrieve_annotations_for_skeleton = function(skid, handler) {
-    requestQueue.register(django_url + project.id +  '/annotations/list',
+    requestQueue.register(django_url + project.id +  '/annotations/',
       'POST', {'skeleton_id': skid}, function(status, text) {
         if (status !== 200) {
           alert("Unexpected status code: " + status);
@@ -332,7 +332,7 @@
   };
 
   AnnotationCache.prototype.update = function(callback) {
-    requestQueue.register(django_url + project.id + '/annotations/list',
+    requestQueue.register(django_url + project.id + '/annotations/',
         'POST', {}, (function (status, data, text) {
           var e = $.parseJSON(data);
           if (status !== 200) {

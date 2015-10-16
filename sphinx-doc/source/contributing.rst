@@ -148,7 +148,60 @@ including:
 * `PEP8 naming conventions <https://www.python.org/dev/peps/pep-0008/#naming-conventions>`_
 
 All new code should include docstrings that follow `PEP257
-<https://www.python.org/dev/peps/pep-0257/>`_.
+<https://www.python.org/dev/peps/pep-0257/>`_ and use `Google's argument
+formatting
+<http://sphinxcontrib-napoleon.readthedocs.org/en/latest/example_google.html>`_.
+
+HTTP API
+********
+
+Functions that are exposed as HTTP API endpoints should declare what HTTP
+methods they accept using the :code:`@api_view` decorator. Endpoints' docstrings
+should define what parameters they accept and the strucuture of their response
+in `Swagger spec
+<https://github.com/swagger-api/swagger-spec/blob/master/versions/1.2.md>`_
+using django-rest-swagger's `YAML hooks
+<http://django-rest-swagger.readthedocs.org/en/latest/yaml.html>`_:
+
+.. code-block:: python
+
+    @api_view(['GET', 'POST'])
+    def api_endpoint(request):
+        """Short endpoint description.
+
+        Longer description of the endpoint's purpose, expectations and behavior.
+
+        This endpoint returns an array of objects, so the model of the objects
+        in the array must be specified in a separate ``model`` stanza.
+        ---
+        parameters:
+            - name: resource_id
+              description: ID of a resource.
+              required: true
+              type: integer
+              paramType: form
+        models:
+          api_endpoint_inner_type:
+            id: api_endpoint_inner_type
+            properties:
+              name:
+                description: Name of some example type that this endpoint
+                type: string
+                required: true
+        type:
+        - type: array
+          items:
+            $ref: api_endpoint_inner_type
+          required: true
+        """
+        #...
+
+API URLs should prefer plural resource names and use hyphens rather than
+underscores. Parameters that are not resource identifiers should be passed as
+query or form parameters, not in the URL path. If an endpoint accepts an array
+of parameters, it should support receiving the array encoded as JSON; form
+array parameters may be accepted, but a JSON array in a single form parameter
+must be accepted for ease of use.
 
 Javascript
 ##########

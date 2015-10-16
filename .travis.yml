@@ -58,15 +58,15 @@ script:
 after_success:
   - cd django/projects/mysite && coveralls
   # Build documentation
-  - cd ../../../sphinc-doc
+  - cd ../../../sphinx-doc
   - make html
   # Push to GitHub pages
-  - git clone ${GH_REF} build/catmaid.github.io
+  - git clone "https://${GH_REF}" build/catmaid.github.io
   - cd build/catmaid.github.io
   - git rm -r dev
   - mv ../build/html dev
   - git add dev
-  - git config user.name "Tracis CI"
-  - git condig user.email "tom@voodoo-arts.net"
+  - git config --global user.email "tom@voodoo-arts.net"
+  - git config --global user.name "Tracis CI"
   - git commit -m "Compile new version of documentation"
   - git push "https://${GH_TOKEN}@${GH_REF}" master:master

@@ -64,7 +64,7 @@ after_success:
   - git clone "https://${GH_REF}" build/catmaid.github.io
   - cd build/catmaid.github.io
   - git rm -r dev
-  - mv ../build/html dev
+  - mv ../html dev
   - git add dev
   - git config --global user.email "tom@voodoo-arts.net"
   - git config --global user.name "Tracis CI"

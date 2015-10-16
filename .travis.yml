@@ -69,4 +69,4 @@ after_success:
   - git config --global user.email "tom@voodoo-arts.net"
   - git config --global user.name "Tracis CI"
   - git commit -m "Compile new version of documentation"
-  - git push "https://${GH_TOKEN}@${GH_REF}" master:master
+  - git push --quiet "https://${GH_TOKEN}@${GH_REF}" master:master > /dev/null

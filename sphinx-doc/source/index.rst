@@ -21,4 +21,5 @@ Documentation
    :maxdepth: 2
 
    user
+   administrator
    developer

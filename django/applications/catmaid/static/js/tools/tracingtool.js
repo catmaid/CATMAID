@@ -398,9 +398,9 @@
      * Handle update of active node. All nodes are recolored and the neuron name in
      * the top bar is updated.
      */
-    function handleActiveNodeChange(node) {
+    function handleActiveNodeChange(node, skeletonChanged) {
       if (node && node.id) {
-        if (SkeletonAnnotations.TYPE_NODE === node.type) {
+        if (skeletonChanged && SkeletonAnnotations.TYPE_NODE === node.type) {
           setNeuronNameInTopbars(node.skeleton_id);
         } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === node.type) {
           if (SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR === node.subtype) {

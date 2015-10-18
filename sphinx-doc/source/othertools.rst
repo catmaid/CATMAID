@@ -1,4 +1,4 @@
-Similar software tools
+Similar Software Tools
 ======================
 
 Interactive skeleton tracing

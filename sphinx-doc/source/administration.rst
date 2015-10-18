@@ -1,6 +1,6 @@
 .. _administering:
 
-Administering a CATMAID instance
+Administering a CATMAID Instance
 ================================
 
 This section presents information on how to update a running CATMAID

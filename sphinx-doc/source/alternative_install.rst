@@ -1,6 +1,6 @@
 .. _alternative-install:
 
-Setting up Nginx for CATMAID
+Setting Up Nginx for CATMAID
 ============================
 
 Of course, using Apache and its WSGI module (mod_wsgi) is not the only

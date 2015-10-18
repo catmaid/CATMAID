@@ -1,4 +1,4 @@
-Django unit tests for CATMAID
+Django Unit Tests for CATMAID
 =============================
 
 If you want to be able to run the unit tests, you will need to allow

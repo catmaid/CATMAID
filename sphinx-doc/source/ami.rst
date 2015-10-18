@@ -1,6 +1,6 @@
 .. _ami:
 
-Creating a CATMAID instance on EC2
+Creating a CATMAID Instance on EC2
 ==================================
 
 If you use Amazon's EC2 service to host web services in the

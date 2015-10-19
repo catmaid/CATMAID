@@ -74,6 +74,11 @@ Tile layer:
 - Fixed a major WebGL tile layer GPU memory leak.
 
 
+3D viewer:
+
+- In orthographic mode, the correct depth ordering is now used again.
+
+
 Miscellaneous:
 
 - An error no longer appears when selecting an un-annotated skeleton while

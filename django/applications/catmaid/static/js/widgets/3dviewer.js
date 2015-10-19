@@ -1980,7 +1980,6 @@
 
   WebGLApplication.prototype.Space.prototype.View = function(space) {
     this.space = space;
-    this.logDepthBuffer = true;
 
     this.init();
 
@@ -2005,6 +2004,7 @@
     var orthoNear = -regularFarPlane;
     var orthoFar = regularFarPlane;
 
+    this.logDepthBuffer = true;
     this.mainCamera = new THREE.CombinedCamera(-this.space.canvasWidth,
         -this.space.canvasHeight, fov, near, far, orthoNear, orthoFar);
     this.mainCamera.frustumCulled = false;
@@ -2021,17 +2021,30 @@
 
     this.projector = new THREE.Projector();
 
-    this.renderer = this.createRenderer('webgl');
+    this.mouse = {position: new THREE.Vector2(),
+                  is_mouse_down: false};
 
-    this.space.container.appendChild(this.renderer.domElement);
+    this.initRenderer();
 
     // Create controls after the renderer's DOM element has been added, so they
     // are initialized with the correct dimensions right from the start.
     this.controls = this.createControls();
+  };
 
-    this.mouse = {position: new THREE.Vector2(),
-                  is_mouse_down: false};
+  /**
+   * Create a new renderer and add its DOM element to the 3D viewer's container
+   * element. If there is already a renderer, remove its DOM element and
+   * handlers on it.
+   */
+  WebGLApplication.prototype.Space.prototype.View.prototype.initRenderer = function() {
+    // Remove existing elements if there is a current renderer
+    if (this.renderer) {
+      this.space.container.removeChild(this.renderer.domElement);
+      this.mouseControls.detach(this.renderer.domElement);
+    }
 
+    this.renderer = this.createRenderer('webgl');
+    this.space.container.appendChild(this.renderer.domElement);
     this.mouseControls = new this.MouseControls();
     this.mouseControls.attach(this, this.renderer.domElement);
 
@@ -2514,16 +2527,19 @@
         if (this.logDepthBuffer) {
           originalFarPlaneP = this.camera.cameraP.far;
           this.camera.cameraP.far = this.camera.cameraO.far;
-          this.camera.toOrthographic();
-        } else {
-          this.camera.toOrthographic();
         }
+        this.logDepthBuffer = false;
+        this.camera.toOrthographic();
       } else {
         if (this.logDepthBuffer && originalFarPlaneP) {
           this.camera.cameraP.far = originalFarPlaneP;
         }
+        this.logDepthBuffer = true;
         this.camera.toPerspective();
       }
+      // Since we use different depth buffer types for perspective and
+      // orthographic mode, the rendeer has to be re-initialized.
+      this.initRenderer();
     };
   })();
 

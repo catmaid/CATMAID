@@ -7,7 +7,7 @@ Contributors: Albert Cardona, Andrew Champion, Tom Kazimiers
 
 Scripting:
 
-- The widget instance associated with the focued window can be retrieved with
+- The widget instance associated with the focused window can be retrieved with
   the convenience function `CATMAID.front()`.
 
 

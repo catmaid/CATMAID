@@ -49,6 +49,12 @@ Tile layer:
   the "Image tile interpolation" setting.
 
 
+Graph widget:
+
+- When growing by circles, the set of neurons added can be filtered to include
+  only those with annotations matching a regex.
+
+
 Miscellaneous:
 
 - A new color picker replaces the color wheel. The new control hovers over other
@@ -56,6 +62,9 @@ Miscellaneous:
   size and can be resized to show input elements for different color spaces. To
   save a color in a memory slot, click on the rectangle containing the small
   circle next to the memory slots.
+
+- Documentation for some HTTP API endpoints is now available from your CATMAID
+  server at the `/apis/` URL.
 
 
 ### Bug fixes

@@ -79,6 +79,11 @@ Tile layer:
 - In orthographic mode, the correct depth ordering is now used again.
 
 
+Selection table:
+
+- Color sorting works again.
+
+
 Miscellaneous:
 
 - An error no longer appears when selecting an un-annotated skeleton while

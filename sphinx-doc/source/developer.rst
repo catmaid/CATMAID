@@ -6,6 +6,7 @@ Developer Documentation
 
    data_view_types
    contributing
+   tile_sources
    dbmigration
    djangounittest
    ami

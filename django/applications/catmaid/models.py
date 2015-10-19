@@ -87,7 +87,17 @@ class Stack(models.Model):
     tile_height = models.IntegerField(default=256,
             help_text="The height of one tile.")
     tile_source_type = models.IntegerField(default=1,
-            help_text="This represents how the tile data is organized.")
+            choices=((1, '1: File-based image stack'),
+                     (2, '2: Request query-based image stack'),
+                     (3, '3: HDF5 via CATMAID backend'),
+                     (4, '4: File-based image stack with zoom level directories'),
+                     (5, '5: Directory-based image stack'),
+                     (6, '6: DVID imageblk voxels'),
+                     (7, '7: Render service'),
+                     (8, '8: DVID imagetile tiles')),
+            help_text='This represents how the tile data is organized. '
+            'See <a href="http://catmaid.org/tile_sources.html">tile source '
+            'conventions documentation</a>.')
     metadata = models.TextField(default='', blank=True,
             help_text="Arbitrary text that is displayed alongside the stack.")
     tags = TaggableManager(blank=True)

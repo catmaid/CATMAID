@@ -2057,8 +2057,7 @@
             "3D viewer.");
     }, false);
     this.renderer.context.canvas.addEventListener('webglcontextrestored', (function(e) {
-      // TODO: Calling init() isn't enough, but one can manually restart
-      // the widget.
+      this.initRenderer();
     }).bind(this), false);
   };
 

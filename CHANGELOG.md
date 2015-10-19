@@ -1,4 +1,7 @@
-## Under development
+## 2015.10.19
+
+Contributors: Albert Cardona, Andrew Champion, Tom Kazimiers
+
 
 ### Features and enhancements
 

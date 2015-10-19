@@ -510,7 +510,7 @@ SelectionTable.prototype.update = function() {
   var self = this;
   var models = this.skeletons.reduce(function(o, sk) { o[sk.id] = sk; return o; }, {});
   var indices = this.skeleton_ids;
-  var skeleton_ids = Object.keys(models);
+  var prev_skeleton_ids = Object.keys(models);
 
   requestQueue.register(django_url + project.id + '/skeleton/neuronnames', 'POST',
     {skids: Object.keys(models)},
@@ -521,10 +521,12 @@ SelectionTable.prototype.update = function() {
       Object.keys(json).forEach(function(skid) {
         o[indices[skid]] = skid;
       });
+
       var new_models = {};
       self.skeletons = [];
       self.skeleton_ids = {};
-      Object.keys(o).map(Number).sort(function(a, b) { return a - b; }).forEach(function(index) {
+      var skeleton_ids = Object.keys(o).map(Number);
+      skeleton_ids.sort(function(a, b) { return a - b; }).forEach(function(index) {
         var skid = o[index],
             model = models[skid];
         if (model.baseName !== json[skid]) {
@@ -535,24 +537,35 @@ SelectionTable.prototype.update = function() {
         self.skeleton_ids[skid] = self.skeletons.length -1;
       });
 
-      // Retrieve review status
-      skeleton_ids = skeleton_ids.concat(Object.keys(new_models));
-      var postData = {
-          skeleton_ids: skeleton_ids,
-          whitelist: self.review_filter === 'Team'};
-      if (self.review_filter === 'Self') postData.user_ids = [session.userid];
-      requestQueue.register(django_url + project.id + '/skeleton/review-status', 'POST',
-        postData,
-        CATMAID.jsonResponseHandler(function(json) {
-          // Update review information
-          skeleton_ids.forEach(function(skeleton_id) {
-            var counts = json[skeleton_id];
-            self.reviews[skeleton_id] = parseInt(Math.floor(100 * counts[1] / counts[0]));
-          }, this);
-          // Update user interface
-          self.gui.update();
-          self.updateLink(new_models);
-        }));
+      // Let the user know, if there are now less skeletons than before.
+      var removedNeurons = prev_skeleton_ids.length - self.skeletons.length;
+      if (removedNeurons > 0) {
+        CATMAID.warn(removedNeurons + " neuron(s) were removed");
+      }
+
+      // Retrieve review status, if there are any skeletons
+      if (self.skeletons.length > 0 ) {
+        var postData = {
+            skeleton_ids: self.skeletons,
+            whitelist: self.review_filter === 'Team'};
+        if (self.review_filter === 'Self') postData.user_ids = [session.userid];
+        requestQueue.register(django_url + project.id + '/skeleton/review-status', 'POST',
+          postData,
+          CATMAID.jsonResponseHandler(function(json) {
+            // Update review information
+            skeleton_ids.forEach(function(skeleton_id) {
+              var counts = json[skeleton_id];
+              self.reviews[skeleton_id] = parseInt(Math.floor(100 * counts[1] / counts[0]));
+            }, this);
+            // Update user interface
+            self.gui.update();
+            self.updateLink(new_models);
+          }));
+      } else {
+        // Update user interface
+        self.gui.update();
+        self.updateLink(new_models);
+      }
     });
 };
 

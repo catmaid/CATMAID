@@ -21,7 +21,6 @@ urlpatterns = patterns('',
 
 # Authentication and permissions
 urlpatterns += patterns('catmaid.control.authentication',
-    (r'^login$', 'login_vnc'),
     (r'^accounts/login$', 'login_user'),
     (r'^accounts/logout$', 'logout_user'),
     (r'^accounts/(?P<project_id>\d+)/all-usernames$', 'all_usernames'),
@@ -68,6 +67,11 @@ urlpatterns += patterns('catmaid.control.stack',
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/models$', 'stack_models'),
 )
 
+# General stack group access
+urlpatterns += patterns('catmaid.control.stackgroup',
+    (r'^(?P<project_id>\d+)/stackgroup/(?P<stackgroup_id>\d+)/info$', 'get_stackgroup_info'),
+)
+
 # Tile access
 urlpatterns += patterns('catmaid.control.tile',
     (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/tile$', 'get_tile'),
@@ -94,10 +98,10 @@ urlpatterns += patterns('catmaid.control.stats',
 
 # Annotations
 urlpatterns += patterns('catmaid.control.neuron_annotations',
+    (r'^(?P<project_id>\d+)/annotations/$', 'list_annotations'),
     (r'^(?P<project_id>\d+)/neuron/query-by-annotations$', 'query_neurons_by_annotations'),
     (r'^(?P<project_id>\d+)/neuron/table/query-by-annotations$',
             'query_neurons_by_annotations_datatable'),
-    (r'^(?P<project_id>\d+)/annotations/list$', 'list_annotations'),
     (r'^(?P<project_id>\d+)/annotations/skeletons/list$', 'annotations_for_skeletons'),
     (r'^(?P<project_id>\d+)/annotations/entities/list$', 'annotations_for_entities'),
     (r'^(?P<project_id>\d+)/annotations/table-list$', 'list_annotations_datatable'),
@@ -151,6 +155,7 @@ urlpatterns += patterns('catmaid.control.neuron',
     (r'^(?P<project_id>\d+)/neuron/(?P<neuron_id>\d+)/get-all-skeletons$', 'get_all_skeletons_of_neuron'),
     (r'^(?P<project_id>\d+)/neuron/(?P<neuron_id>\d+)/give-to-user$', 'give_neuron_to_other_user'),
     (r'^(?P<project_id>\d+)/neuron/(?P<neuron_id>\d+)/delete$', 'delete_neuron'),
+    (r'^(?P<project_id>\d+)/neurons/(?P<neuron_id>\d+)/rename$', 'rename_neuron'),
 )
 
 # Node access
@@ -180,6 +185,7 @@ urlpatterns += patterns('catmaid.control.treenode',
 
 # General skeleton access
 urlpatterns += patterns('catmaid.control.skeleton',
+    (r'^(?P<project_id>\d+)/skeletons/$', 'list_skeletons'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/node_count$', 'node_count'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/neuronname$', 'neuronname'),
     (r'^(?P<project_id>\d+)/skeleton/neuronnames$', 'neuronnames'),
@@ -191,16 +197,18 @@ urlpatterns += patterns('catmaid.control.skeleton',
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/statistics$', 'skeleton_statistics'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/contributor_statistics$', 'contributor_statistics'),
     (r'^(?P<project_id>\d+)/skeleton/contributor_statistics_multiple$', 'contributor_statistics_multiple'),
-    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/openleaf$', 'last_openleaf'),
+    (r'^(?P<project_id>\d+)/skeletons/(?P<skeleton_id>\d+)/open-leaves$', 'open_leaves'),
+    (r'^(?P<project_id>\d+)/skeletons/(?P<skeleton_id>\d+)/root$', 'root_for_skeleton'),
     (r'^(?P<project_id>\d+)/skeleton/split$', 'split_skeleton'),
-    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/get-root$', 'root_for_skeleton'),
     (r'^(?P<project_id>\d+)/skeleton/ancestry$', 'skeleton_ancestry'),
     (r'^(?P<project_id>\d+)/skeleton/join$', 'join_skeleton'),
     (r'^(?P<project_id>\d+)/skeleton/reroot$', 'reroot_skeleton'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/permissions$',
             'get_skeleton_permissions'),
     (r'^(?P<project_id>\d+)/skeleton/annotationlist$', 'annotation_list'),
-    (r'^(?P<project_id>\d+)/skeleton/list$', 'list_skeletons'),
+    (r'^(?P<project_id>\d+)/skeletongroup/adjacency_matrix$', 'adjacency_matrix'),
+    (r'^(?P<project_id>\d+)/skeletongroup/skeletonlist_subgraph', 'skeletonlist_subgraph'),
+    (r'^(?P<project_id>\d+)/skeletongroup/all_shared_connectors', 'all_shared_connectors'),
 )
 
 # Skeleton export
@@ -219,23 +227,6 @@ urlpatterns += patterns('catmaid.control.skeletonexport',
     (r'^(?P<project_id>\d+)/skeleton/connectors-by-partner$', 'skeleton_connectors_by_partner'),
     (r'^(?P<project_id>\d+)/skeletons/within-spatial-distance$', 'within_spatial_distance'),
     (r'^(?P<project_id>\d+)/skeletons/partners-by-connector$', 'partners_by_connector'),
-)
-
-# Skeleton group access
-urlpatterns += patterns('catmaid.control.skeletongroup',
-    (r'^(?P<project_id>\d+)/skeletongroup/adjacency_matrix$', 'adjacency_matrix'),
-    (r'^(?P<project_id>\d+)/skeletongroup/skeletonlist_subgraph', 'skeletonlist_subgraph'),
-    (r'^(?P<project_id>\d+)/skeletongroup/all_shared_connectors', 'all_shared_connectors'),
-)
-
-# Object tree
-urlpatterns += patterns('catmaid.control.tree',
-    (r'^(?P<project_id>\d+)/object-tree/expand$', 'tree_object_expand'),
-    (r'^(?P<project_id>\d+)/object-tree/list', 'tree_object_list'),
-    (r'^(?P<project_id>\d+)/object-tree/(?P<node_id>\d+)/get-all-skeletons', 'objecttree_get_all_skeletons'),
-    (r'^(?P<project_id>\d+)/object-tree/(?P<node_id>\d+)/(?P<node_type>\w+)/(?P<threshold>\d+)/get-skeletons', 'collect_skeleton_ids'),
-    (r'^(?P<project_id>\d+)/object-tree/instance-operation$', 'instance_operation'),
-    (r'^(?P<project_id>\d+)/object-tree/group/(?P<group_id>\d+)/remove-empty-neurons$', 'remove_empty_neurons'),
 )
 
 # Treenode and Connector image stack archive export
@@ -435,6 +426,15 @@ urlpatterns += patterns('catmaid.control',
 # Patterns for FlyTEM access
 urlpatterns += patterns('catmaid.control.flytem',
     (r'^flytem/projects$', 'project.projects'),
+    (r'^(?P<project_id>.+)/user/reviewer-whitelist$', 'review.reviewer_whitelist'),
     (r'^flytem/(?P<project_id>.+)/stack/(?P<stack_id>.+)/info$', 'stack.stack_info'),
     (r'^flytem/(?P<project_id>.+)/stacks$', 'stack.stacks'),
+)
+
+# Patterns for DVID access
+urlpatterns += patterns('catmaid.control.dvid',
+    (r'^dvid/projects$', 'project.projects'),
+    (r'^(?P<project_id>.+)/user/reviewer-whitelist$', 'review.reviewer_whitelist'),
+    (r'^dvid/(?P<project_id>.+)/stack/(?P<stack_id>.+)/info$', 'stack.stack_info'),
+    (r'^dvid/(?P<project_id>.+)/stacks$', 'stack.stacks'),
 )

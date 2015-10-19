@@ -24,14 +24,6 @@ from catmaid.models import Project, UserRole, ClassInstance, \
         ClassInstanceClassInstance
 from catmaid.control.common import my_render_to_response
 
-def login_vnc(request):
-    return my_render_to_response(request,
-                                 'vncbrowser/login.html',
-                                {'return_url': request.GET.get('return_url', '/'),
-                                 'project_id': 0,
-                                 'catmaid_url': settings.CATMAID_URL,
-                                 'catmaid_login': settings.CATMAID_URL + 'model/login.php'})
-
 
 def login_user(request):
     profile_context = {}

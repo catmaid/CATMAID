@@ -21,7 +21,7 @@ class TestView(models.Model):
             view_id = self.id,
             view_method = self.method,
             view_data = self.data,
-            view_creation_time = self.creation_time,
+            creation_time = self.creation_time.strftime('%Y-%m-%dT%H:%M:%S')
         )
 
 
@@ -47,6 +47,21 @@ class TestResult(models.Model):
             time = self.time,
             result_code = self.result_code,
             result = self.result,
-            creation_time = self.creation_time,
+            creation_time = self.creation_time.strftime('%Y-%m-%dT%H:%M:%S'),
             version = self.version,
+        )
+
+
+class Event(models.Model):
+    """
+    An Event marks a certain point in time that could cause test results to be
+    not easiliy comparable before and after it.
+    """
+    title = models.TextField()
+    creation_time = models.DateTimeField(default=datetime.now)
+
+    def as_json(self):
+        return dict(
+            title = self.title,
+            creation_time = self.creation_time.strftime('%Y-%m-%dT%H:%M:%S')
         )

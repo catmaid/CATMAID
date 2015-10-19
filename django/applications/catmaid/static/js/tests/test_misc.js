@@ -79,4 +79,19 @@ QUnit.test('Miscellaneous tests', function( assert ) {
     assert.strictEqual(CATMAID.makeStaticURL("/c"), "b/c",
         "CATMAID.makeStaticURL creates correct path if input has leading slash");
   })();
+
+  // Test CATMAID.fetch()
+  (function() {
+    var done = assert.async();
+    // Test wrong URL
+    CATMAID.fetch('non-existing-endpoint', 'GET')
+        .then(function(args) {
+          assert.ok(false, "CATMAID.fetch() should not run success handler on error");
+          done();
+        })
+        .catch(function(args) {
+          assert.ok(true, "CATMAID.fetch() runs error handler on error");
+          done();
+        });
+  })();
 });

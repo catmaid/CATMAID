@@ -60,22 +60,26 @@
   <script type="text/javascript">
     var views = {{ view_index.values | jsonify | safe }};
     var results = {{ test_results | jsonify | safe }};
+    var events = {{ events | jsonify | safe }};
 
-    var parseDate = d3.time.format("%Y-%m-%dT%H:%M:%S.%L").parse;
+    var parseDate = d3.time.format("%Y-%m-%dT%H:%M:%S").parse;
     results.forEach(function(r) {
       r.creation_time = parseDate(r.creation_time);
     });
+    events.forEach(function(e) {
+      e.creation_time = parseDate(e.creation_time);
+    });
 
-    redrawPlot(views, results, "log");
+    redrawPlot(views, results, events, "log");
 
     $("select#result_plot_scale").on("change", function() {
-      redrawPlot(views, results, this.value);
+      redrawPlot(views, results, events, this.value);
     });
 
     /**
      * Create a timing plot of all test results.
      */
-    function redrawPlot(views, results, scale) {
+    function redrawPlot(views, results, events, scale) {
       var margin = {top: 20, right: 80, bottom: 30, left: 50},
           width = 960 - margin.left - margin.right,
           height = 500 - margin.top - margin.bottom;
@@ -108,8 +112,12 @@
       // Remove existing plot, if any
       d3.selectAll("div#result_plot svg").remove();
 
+      var zoom = d3.behavior.zoom()
+          .on("zoom", zoomed);
+
       // Create a new plot
       var svg = d3.select("div#result_plot").append("svg")
+        .call(zoom)
           .attr("width", width + margin.left + margin.right)
           .attr("height", height + margin.top + margin.bottom)
         .append("g")
@@ -163,6 +171,17 @@
            return color(d.view_id);
          });
 
+      // Add events
+      for (var i=0; i<events.length; ++i) {
+        var time = x(events[i].creation_time);
+        svg.append("svg:line")
+          .attr("x1", time)
+          .attr("x2", time)
+          .attr("y1", 0)
+          .attr("y2", height)
+          .style("stroke", "rgb(189, 189, 189)");
+      }
+
       var legend = svg.selectAll(".legend")
           .data(color.domain().slice().reverse())
           .enter().append("g")
@@ -183,8 +202,19 @@
           .attr("dy", ".35em")
           .style("text-anchor", "end")
           .text(function (d) {
-          return d;
-      });
+              return d;
+          });
+
+      zoom.x(x);
+      zoom.y(y);
+
+      function zoomed() {
+        svg.select("g.x.axis").call(xAxis);
+        svg.select("g.y.axis").call(yAxis);
+        svg.selectAll("path.line").attr("d", function(d) {
+          return line(d.values);
+       });
+      }
     }
 
   </script>

@@ -182,3 +182,31 @@ def give_neuron_to_other_user(request, project_id=None, neuron_id=None):
     return HttpResponse(json.dumps({'success':'Moved neuron #%s to %s staging area.'}))
 
 
+@requires_user_role(UserRole.Annotate)
+def rename_neuron(request, project_id=None, neuron_id=None):
+    """Rename a neuron if it is not locked by a user on which the current user
+    has no permission.
+    """
+    # Make sure the user can edit the neuron
+    can_edit_class_instance_or_fail(request.user, neuron_id, 'neuron')
+    new_name = request.POST.get('name', None)
+    if not new_name:
+        raise ValueError("No name specified")
+    # Do not allow '|' in name because it is used as string separator in NeuroHDF export
+    if '|' in new_name:
+        raise ValueError('New name should not contain pipe character')
+
+    # Update neuron name
+    neuron = ClassInstance.objects.get(id=neuron_id)
+    old_name = neuron.name
+    neuron.name=new_name
+    neuron.save()
+
+    # Insert log entry and return successfully
+    insert_into_log(project_id, request.user.id, "rename_neuron", None,
+                    "Renamed neuron with ID %s from %s to %s" % (neuron.id , old_name, new_name))
+
+    return HttpResponse(json.dumps({
+        'success': True,
+        'renamed_neuron': neuron.id
+    }))

@@ -70,6 +70,12 @@
         switch ( signal )
         {
         case CMWWindow.CLOSE:
+          self._layers.forEach(function (layer) {
+            if (typeof layer.unregister === 'function') {
+              layer.unregister();
+            }
+          });
+          self._layers.clear();
           self._project.removeStackViewer( self.getId() );
           break;
         case CMWWindow.RESIZE:
@@ -96,7 +102,7 @@
         return true;
       } );
 
-    this.overview = new Overview( this );
+    this.overview = new CATMAID.Overview( this );
     this._view.appendChild( this.overview.getView() );
 
     this.tilelayercontrol = new CATMAID.TilelayerControl( this );

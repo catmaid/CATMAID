@@ -6,7 +6,6 @@
   fetchSkeletons,
   InstanceRegistry,
   NeuronNameService,
-  parseColorWheel,
   project,
   requestQueue,
   SelectionTable,
@@ -423,13 +422,21 @@ GroupGraph.prototype.graph_properties = function() {
   var edgeFnNames = ["identity", "log", "log10", "sqrt"];
   var edgeFnSel = dialog.appendChoice("Edge width as a function of synaptic count:", "edge_width_fn", edgeFnNames, edgeFnNames, this.edge_width_function);
 
+  var newEdgeColor = this.edge_color;
+  var colorButton = document.createElement('button');
+  colorButton.appendChild(document.createTextNode('edge color'));
+  CATMAID.ColorPicker.enable(colorButton, {
+    initialColor: this.edge_color,
+    onColorChange: function(rgb, alpha, colorChanged, alphaChanged) {
+      if (colorChanged) {
+        newEdgeColor = CATMAID.tools.rgbToHex(Math.round(rgb.r * 255),
+            Math.round(rgb.g * 255), Math.round(rgb.b * 255));
+      }
+    }
+  });
 
   var p = document.createElement('p');
-  var cw_div = document.createElement('div');
-  p.appendChild(cw_div);
-  var edge_cw = Raphael.colorwheel(cw_div, 150);
-  edge_cw.color(this.edge_color);
-  p.appendChild(cw_div);
+  p.appendChild(colorButton);
   dialog.dialog.appendChild(p);
 
   dialog.onOK = (function() {
@@ -473,7 +480,7 @@ GroupGraph.prototype.graph_properties = function() {
     var edge_min_width = Number(props[2].value.trim());
     if (!Number.isNaN(edge_min_width)) this.edge_min_width = edge_min_width;
     this.edge_width_function = edgeFnNames[edgeFnSel.selectedIndex];
-    this.edge_color = '#' + parseColorWheel(edge_cw.color()).getHexString();
+    this.edge_color = newEdgeColor;
     this.updateEdgeGraphics();
   }).bind(this);
 
@@ -1412,22 +1419,19 @@ GroupGraph.prototype.appendGroup = function(models) {
     options.appendCheckbox("Hide intragroup edges", "gg-edges", true);
     options.appendCheckbox("Append number of neurons to name", "gg-number", true);
     options.appendMessage("Choose group color:");
-    var display = document.createElement('input');
-    display.setAttribute('type', 'button');
-    display.setAttribute('value', 'Color');
-    var default_color = '#aaaaff';
-    $(display).css("background-color", default_color);
-    options.dialog.appendChild(display);
-    var div = document.createElement('div');
-    options.dialog.appendChild(div);
-    var cw = Raphael.colorwheel(div, 150);
-    cw.color(default_color);
-    cw.onchange(function(color) {
-      $(display).css("background-color", '#' + parseColorWheel(color).getHexString());
+    var groupColor = '#aaaaff';
+    var colorButton = document.createElement('button');
+    colorButton.appendChild(document.createTextNode('Color'));
+    options.dialog.appendChild(colorButton);
+    CATMAID.ColorPicker.enable(colorButton, {
+      initialColor: groupColor,
+      onColorChange: function(rgb, alpha, colorChanged, alphaChanged) {
+        groupColor = CATMAID.tools.rgbToHex(Math.round(rgb.r * 255),
+            Math.round(rgb.g * 255), Math.round(rgb.b * 255));
+      }
     });
 
     var self = this;
-
     options.onOK = function() {
       var label = ['typed', 'common', 'all', 'names'].reduce(function(s, tag) {
         if (s) return s;
@@ -1441,7 +1445,8 @@ GroupGraph.prototype.appendGroup = function(models) {
       if ($('#gg-number').prop('checked')) label += ' [#' + (names.length -1) + ']';
 
       var gid = self.nextGroupID();
-      self.groups[gid] = new GroupGraph.prototype.Group(gid, models, label, parseColorWheel(cw.color()), $('#gg-edges').prop('checked'));
+      self.groups[gid] = new GroupGraph.prototype.Group(gid, models, label,
+          new THREE.Color(groupColor), $('#gg-edges').prop('checked'));
       self.append(models); // will remove/add/group nodes as appropriate
     };
 
@@ -1593,7 +1598,8 @@ GroupGraph.prototype.exportGML = function() {
 GroupGraph.prototype._getGrowParameters = function() {
   return {n_circles: Number($('#gg_n_circles_of_hell' + this.widgetID).val()),
           min_downstream: Number($('#gg_n_min_downstream' + this.widgetID).val()),
-          min_upstream: Number($('#gg_n_min_upstream' + this.widgetID).val())};
+          min_upstream: Number($('#gg_n_min_upstream' + this.widgetID).val()),
+          filter_regex: $('#gg_filter_regex' + this.widgetID).val()};
 };
 
 // Find skeletons to grow from groups or single skeleton nodes
@@ -1646,12 +1652,22 @@ GroupGraph.prototype.growGraph = function() {
              n_circles: n_circles,
              min_pre: p.min_upstream,
              min_post: p.min_downstream},
-            function(status, text) {
-              if (200 !== status) return;
-              var json = $.parseJSON(text);
-              if (json.error) return alert(json.error);
-              callback(skids.concat(json[0]));
-            });
+            CATMAID.jsonResponseHandler(function(json) {
+              if (p.filter_regex !== '') {
+                requestQueue.register(django_url + project.id + "/annotations/skeletons/list",
+                    "POST",
+                    {skids: json[0]},
+                    CATMAID.jsonResponseHandler(function (json) {
+                      var filterRegex = new RegExp(p.filter_regex, 'i');
+                      var filteredNeighbors = Object.keys(json.skeletons).filter(function (skid) {
+                        return json.skeletons[skid].some(function (a) {
+                          return filterRegex.test(json.annotations[a.id]);
+                        });
+                      });
+                      callback(skids.concat(filteredNeighbors));
+                    }));
+              } else callback(skids.concat(json[0]));
+            }));
       },
       append = (function(skids) {
         var color = new THREE.Color().setHex(0xffae56),
@@ -2330,7 +2346,7 @@ GroupGraph.prototype._exportSVG = function() {
   // Group the path elements of each edge
   for (; i<children.length; ++i) {
     var child = children[i];
-    if ('text' === child.localName) break;
+    if ('text' === child.localName) continue;
     switch(child.pathSegList.length) {
       case 2:
         // New graph edge
@@ -2925,8 +2941,10 @@ GroupGraph.prototype.setContent = function(p) {
   $.extend(this, p.properties);
   this.groups = p.groups;
   this.subgraphs = p.subgraphs;
-  this.cy.add(p.elements);
-  this.cy.layout(p.layout);
+  this.cy.ready(function() {
+    this.add(p.elements);
+    this.layout(p.layout);
+  });
 };
 
 GroupGraph.prototype.copyContent = function() {
@@ -2952,7 +2970,8 @@ GroupGraph.prototype.copyContent = function() {
     name: 'preset',
     positions: this.cy.nodes().toArray().reduce(function(p, node) { p[node.id()] = node.position(); return p; }, {}),
     fit: false,
-    zoom: this.cy.zoom()
+    zoom: this.cy.zoom(),
+    pan: this.cy.pan()
   };
 
   var copier = function(elem) { return {data: $.extend(true, {}, elem.data())}; };

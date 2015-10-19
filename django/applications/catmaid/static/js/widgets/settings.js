@@ -7,7 +7,6 @@
   requestQueue,
   SelectionTable,
   SkeletonAnnotations,
-  User,
   userprofile,
   WindowMaker
 */
@@ -102,7 +101,8 @@
      */
     var createInputSetting = function(name, val, helptext, handler)
     {
-      var input = $('<input/>').attr('type', 'text').val(val);
+      var input = $('<input/>').attr('type', 'text')
+        .addClass("ui-corner-all").val(val);
       if (handler) {
         input.change(handler);
       }
@@ -225,6 +225,34 @@
             CATMAID.msg('Success', 'User profile updated successfully.');
           });
         }));
+
+      // Tile interpolation
+      var tileInterpolation = $('<select/>');
+      var interpolationModes = [
+        {name: 'Smoothly blur pixels (linear)', id: 'linear'},
+        {name: 'Keep images pixelated (nearest)', id: 'nearest'}
+      ];
+      interpolationModes.forEach(function(o) {
+        var selected = (o.id === (userprofile.tile_linear_interpolation ? 'linear' : 'nearest'));
+        this.append(new Option(o.name, o.id, selected, selected));
+      }, tileInterpolation);
+
+      ds.append(createLabeledControl('Image tile interpolation', tileInterpolation,
+            'Choose how to interpolate pixel values when image tiles are ' +
+            'magnified.'));
+      tileInterpolation.on('change', function(e) {
+        userprofile.tile_linear_interpolation = this.value === 'linear';
+        userprofile.saveAll(function () {
+          CATMAID.msg('Success', 'User profile updated successfully.');
+        });
+        project.getStackViewers().forEach(function (stackViewer) {
+          stackViewer.getLayers().forEach(function (layer) {
+            if (layer instanceof CATMAID.TileLayer) {
+              layer.setInterpolationMode(userprofile.tile_linear_interpolation);
+            }
+          });
+        });
+      });
     };
 
     /*
@@ -449,26 +477,36 @@
         ['Leaf node', 'leaf_node_color'],
       ]);
 
+      var setColorOfTracingFields = function() {
+        colors.forEach(function(field, label) {
+          var input = colorControls.get(field);
+          var color = $(input).find('input').val();
+          SkeletonAnnotations[field] = color;
+        });
+        // Update all tracing layers
+        project.getStackViewers().forEach(function(sv) {
+          var overlay = SkeletonAnnotations.getSVGOverlay(sv.getId());
+          if (overlay) overlay.recolorAllNodes();
+        });
+      };
+
       var colorControls = new Map();
       colors.forEach(function(field, label) {
-        var input = createInputSetting(label, SkeletonAnnotations[field]);
+        var color = SkeletonAnnotations[field];
+        var input = createInputSetting(label, color);
         this.append(input);
+        var colorField = $(input).find('input');
+        CATMAID.ColorPicker.enable(colorField, {
+          initialColor: color,
+          onColorChange: setColorOfTracingFields
+        });
         colorControls.set(field, input);
       }, dsNodeColors);
 
       // Allow color confirmation with enter
       dsNodeColors.find('input').on('keyup', function(e) {
         if (13 === e.keyCode) {
-          colors.forEach(function(field, label) {
-            var input = colorControls.get(field);
-            var color = $(input).find('input').val();
-            SkeletonAnnotations[field] = color;
-          });
-          // Update all tracing layers
-          project.getStackViewers().forEach(function(sv) {
-            var overlay = SkeletonAnnotations.getSVGOverlay(sv.getId());
-            if (overlay) overlay.recolorAllNodes();
-          });
+          setColorOfTracingFields();
         }
       });
 
@@ -535,6 +573,15 @@
       dsSkeletonProjection.append(skpMinStrahler);
       dsSkeletonProjection.append(skpMaxStrahler);
       dsSkeletonProjection.append(skpDistanceFalloff);
+
+      // Add color picker to input fields
+      [skpDownstreamColor, skpUpstreamColor].forEach(function(colorOption) {
+        var colorField = $(colorOption).find('input');
+        CATMAID.ColorPicker.enable(colorField, {
+          initialColor: colorField.val(),
+          onColorChange: updateSkeletonProjectionDisplay
+        });
+      });
 
       // Add a spinner to Strahler configuration
       $(skpMinStrahler).add(skpMaxStrahler).find('input').spinner({
@@ -606,11 +653,11 @@
           "reviewers are not informed whether you have added them to your team."));
 
       // Get all available users
-      var users = User.all();
+      var users = CATMAID.User.all();
       var reviewers = Object.keys(users).map(function (userId) { return users[userId]; });
       // Add reviewer options to select box
       var reviewerSelect = $('<select/>');
-      reviewers.sort(User.displayNameCompare).forEach(function (user) {
+      reviewers.sort(CATMAID.User.displayNameCompare).forEach(function (user) {
         this.append(new Option(user.getDisplayName(), user.id));
       }, reviewerSelect);
 
@@ -649,7 +696,7 @@
         $(whitelist).empty();
         var wlEntries = CATMAID.ReviewSystem.Whitelist.getWhitelist();
         var options = Object.keys(wlEntries).map(function(userId) {
-          var user = User.safe_get(userId);
+          var user = CATMAID.User.safe_get(userId);
           var optionElement = $('<option/>')
               .attr('value', userId)
               .text(user.getDisplayName() + ' (' + wlEntries[userId].toDateString() + ')');
@@ -657,7 +704,7 @@
         });
 
         options.sort(function (a, b) {
-            return User.displayNameCompare(users[a.value], users[b.value]); });
+            return CATMAID.User.displayNameCompare(users[a.value], users[b.value]); });
 
         options.forEach(whitelist.appendChild.bind(whitelist));
       };

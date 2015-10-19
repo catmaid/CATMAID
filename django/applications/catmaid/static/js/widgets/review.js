@@ -966,7 +966,7 @@
           }
         }
 
-        if (!(userId in User.all())) {
+        if (!(userId in CATMAID.User.all())) {
           CATMAID.msg('ERROR', 'Reviewer does not have a valid user ID');
           return this;
         }

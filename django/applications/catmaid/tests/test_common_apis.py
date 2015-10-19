@@ -87,6 +87,7 @@ class InsertionTest(TestCase):
     """ This test case insers various model objects and tests if this is done as
     expected. No fixture data is needed for this test.
     """
+    fixtures = ['catmaid_smallenv']
     maxDiff = None
 
     def insert_project(self):
@@ -441,10 +442,18 @@ class ViewPageTests(TestCase):
         self.assertEqual(len(result), 1)
 
         # Check the project:
-        stacks = result[0]['action']
+        options = result[0]['action']
+        self.assertEqual(len(options), 2)
+
+        # Check stacks:
+        stacks = result[0]['action'][0]['action']
         self.assertEqual(len(stacks), 1)
         stack = stacks['3']
         self.assertTrue(re.search(r'javascript:openProjectStack\( *3, *3 *\)', stack['action']))
+
+        # Check stacks groups
+        stackgroups = result[0]['action'][1]['action']
+        self.assertEqual(len(stackgroups), 0)
 
         # Now log in and check that we see a different set of projects:
         self.fake_authentication()
@@ -469,25 +478,64 @@ class ViewPageTests(TestCase):
             return rl[0]
 
         # Check the first project:
-        stacks = get_project(result, 1)['action']
+        stacks = get_project(result, 1)['action'][0]['action']
         self.assertEqual(len(stacks), 1)
 
         # Check the second project:
-        stacks = get_project(result, 3)['action']
+        stacks = get_project(result, 3)['action'][0]['action']
         self.assertEqual(len(stacks), 1)
         stack = stacks['3']
         self.assertTrue(re.search(r'javascript:openProjectStack\( *3, *3 *\)', stack['action']))
 
         # Check the third project:
-        stacks = get_project(result, 5)['action']
+        stacks = get_project(result, 5)['action'][0]['action']
         self.assertEqual(len(stacks), 2)
 
-    def test_login(self):
+    def test_rename_neuron(self):
         self.fake_authentication()
-        response = self.client.get('/login')
+        neuron_id = 233
+
+        count_logs = lambda: Log.objects.all().count()
+        log_count = count_logs()
+        old_name = ClassInstance.objects.get(id=neuron_id).name
+        new_name = 'newname'
+        self.assertFalse(old_name == new_name)
+
+        url = '/%d/neurons/%s/rename' % (self.test_project_id, neuron_id)
+        response = self.client.post(url, {'name': new_name})
         self.assertEqual(response.status_code, 200)
-        response = self.client.get('/login?return_url=%2F3')
+        parsed_response = json.loads(response.content)
+        expected_result = {
+            'success': True,
+            'renamed_neuron': neuron_id
+        }
+        self.assertEqual(expected_result, parsed_response)
+
+        self.assertEqual(new_name, ClassInstance.objects.get(id=neuron_id).name)
+        self.assertEqual(log_count + 1, count_logs())
+
+    def test_rename_neuron_fail(self):
+        self.fake_authentication()
+        neuron_id = 362
+
+        # Lock this neuron for another user
+        _annotate_entities(self.test_project_id, [neuron_id], {'locked': 1})
+
+        count_logs = lambda: Log.objects.all().count()
+        log_count = count_logs()
+        old_name = ClassInstance.objects.get(id=neuron_id).name
+        new_name = 'newname'
+        self.assertFalse(old_name == new_name)
+
+        url = '/%d/neurons/%s/rename' % (self.test_project_id, neuron_id)
+        response = self.client.post(url, {'name': new_name})
         self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        self.assertTrue('error' in parsed_response)
+        self.assertTrue(parsed_response['error'])
+
+        self.assertEqual(old_name, ClassInstance.objects.get(id=neuron_id).name)
+        self.assertEqual(log_count, count_logs())
 
     def test_skeletons_from_neuron(self):
         self.fake_authentication()
@@ -555,7 +603,7 @@ class ViewPageTests(TestCase):
 
     def test_skeleton_root(self):
         self.fake_authentication()
-        response = self.client.get('/%d/skeleton/%d/get-root' % (self.test_project_id, 235))
+        response = self.client.get('/%d/skeletons/%d/root' % (self.test_project_id, 235))
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         self.assertEqual(parsed_response['root_id'], 237)
@@ -709,109 +757,6 @@ class ViewPageTests(TestCase):
         expected_result = {'message': 'success'}
         self.assertEqual(expected_result, parsed_response)
         self.assertEqual(5, connector.confidence)
-
-    def test_tree_object_list_no_parent(self):
-        self.fake_authentication()
-        response = self.client.post(
-                '/%d/object-tree/list' % self.test_project_id, {
-                    'parentid': 0})
-        self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
-        expected_response = [{
-            'data': {'title': 'neuropile'},
-            'attr': {'id': 'node_2323', 'rel': 'root'},
-            'state': 'closed'}]
-        self.assertEqual(expected_response, parsed_response)
-
-    def test_tree_object_list_empty(self):
-        self.fake_authentication()
-        response = self.client.post(
-                '/%d/object-tree/list' % self.test_project_id, {
-                    'parentid': 1,
-                    'parentname': 'dull skeleton (gerhard)'})
-        self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
-        expected_response = []
-        self.assertEqual(expected_response, parsed_response)
-
-    def test_tree_object_list_groups(self):
-        self.fake_authentication()
-        response = self.client.post(
-                '/%d/object-tree/list' % self.test_project_id, {
-                    'parentid': 2323,
-                    'parentname': 'neuropile'})
-        self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
-        expected_response = [{
-            'data': {'title': 'Fragments'},
-            'attr': {'id': 'node_4', 'rel': 'group'},
-            'state': 'closed'},
-            {'data': {'title': 'group'},
-            'attr': {'id': 'node_231', 'rel': 'group'},
-            'state': 'closed'},
-            {'data': {'title': 'Isolated synaptic terminals'},
-            'attr': {'id': 'node_364', 'rel': 'group'},
-            'state': 'closed'}]
-        self.assertEqual(expected_response, parsed_response)
-
-    def test_tree_object_list_skeleton(self):
-        self.fake_authentication()
-        response = self.client.post(
-                '/%d/object-tree/list' % self.test_project_id, {
-                    'parentid': 2,
-                    'parentname': 'dull neuron'})
-        self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
-        expected_response = [
-                {u'data': {u'title': u'dull skeleton'},
-                u'attr': {u'id': u'node_1', u'rel': u'skeleton'},
-                u'state': u'closed'}]
-        self.assertEqual(expected_response, parsed_response)
-
-    def test_tree_object_list_neurons(self):
-        self.fake_authentication()
-        response = self.client.post(
-                '/%d/object-tree/list' % self.test_project_id, {
-                    'parentid': 4,
-                    'parentname': 'Fragments'})
-        self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
-        expected_response = [
-                {'data': {'title': 'dull neuron'},
-                'attr': {'id': 'node_2', 'rel': 'neuron'},
-                'state': 'closed'},
-                {'data': {'title': 'neuron 2365'},
-                'attr': {'id': 'node_2365', 'rel': 'neuron'},
-                'state': 'closed'},
-                {'data': {'title': 'neuron 2381'},
-                'attr': {'id': 'node_2381', 'rel': 'neuron'},
-                'state': 'closed'},
-                {'data': {'title': 'neuron 2389'},
-                'attr': {'id': 'node_2389', 'rel': 'neuron'},
-                'state': 'closed'},
-                {'data': {'title': 'neuron 2412'},
-                'attr': {'id': 'node_2412', 'rel': 'neuron'},
-                'state': 'closed'},
-                {'data': {'title': 'neuron 2434'},
-                'attr': {'id': 'node_2434', 'rel': 'neuron'},
-                'state': 'closed'},
-                {'data': {'title': 'neuron 2441'},
-                'attr': {'id': 'node_2441', 'rel': 'neuron'},
-                'state': 'closed'},
-                {'data': {'title': 'neuron 2452'},
-                'attr': {'id': 'node_2452', 'rel': 'neuron'},
-                'state': 'closed'}]
-        self.assertEqual(expected_response, parsed_response)
-
-    def test_tree_object_expand(self):
-        self.fake_authentication()
-        response = self.client.post(
-                '/%d/object-tree/expand' % self.test_project_id,
-                {'class_instance_id': 235})
-        self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
-        expected_response = [2323, 231, 233, 235]
-        self.assertEqual(expected_response, parsed_response)
 
     def test_list_connector_empty(self):
         self.fake_authentication()
@@ -2372,14 +2317,14 @@ class ViewPageTests(TestCase):
         for mi in ('0','1','2','3'):
             self.assertEqual(expected_result[mi], parsed_response[mi])
 
-    def test_skeleton_openleaf(self):
+    def test_skeleton_open_leaves(self):
         skeleton_id = 235
 
         self.fake_authentication()
-        url = '/%d/skeleton/%d/openleaf' % (self.test_project_id, skeleton_id,)
+        url = '/%d/skeletons/%d/open-leaves' % (self.test_project_id, skeleton_id,)
 
         # Return untagged root
-        response = self.client.post(url, {'tnid': 243})
+        response = self.client.post(url, {'treenode_id': 243})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         distsort = lambda end: end[2]
@@ -2396,7 +2341,7 @@ class ViewPageTests(TestCase):
                 '/%d/label/treenode/%d/update' % (self.test_project_id, 237),
                 {'tags': 'soma', 'delete_existing': 'false'})
         self.assertEqual(response.status_code, 200)
-        response = self.client.post(url, {'tnid': 243})
+        response = self.client.post(url, {'treenode_id': 243})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         parsed_response.sort(key=distsort)
@@ -2409,7 +2354,7 @@ class ViewPageTests(TestCase):
                 '/%d/label/treenode/%d/update' % (self.test_project_id, 261),
                 {'tags': 'End', 'delete_existing': 'false'})
         self.assertEqual(response.status_code, 200)
-        response = self.client.post(url, {'tnid': 243})
+        response = self.client.post(url, {'treenode_id': 243})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         parsed_response.sort(key=distsort)
@@ -2421,7 +2366,7 @@ class ViewPageTests(TestCase):
                 '/%d/label/treenode/%d/update' % (self.test_project_id, 277),
                 {'tags': 'mitochondria ends', 'delete_existing': 'false'})
         self.assertEqual(response.status_code, 200)
-        response = self.client.post(url, {'tnid': 243})
+        response = self.client.post(url, {'treenode_id': 243})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         parsed_response.sort(key=distsort)
@@ -2844,7 +2789,7 @@ class ViewPageTests(TestCase):
         self.fake_authentication()
 
         # Query all skeletons
-        url = '/%d/skeleton/list' % self.test_project_id
+        url = '/%d/skeletons/' % self.test_project_id
         response = self.client.get(url)
         parsed_response = json.loads(response.content)
         expected_result = frozenset([2388, 235, 373, 2411, 1, 361, 2364, 2451, 2440, 2433])

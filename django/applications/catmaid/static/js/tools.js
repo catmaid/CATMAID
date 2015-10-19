@@ -244,12 +244,27 @@ CATMAID.tools = CATMAID.tools || {};
    * Convert a hex color string to an RGB object.
    */
   tools.hexToRGB = function(hex) {
+    // Expand shorthand form (e.g. "03F") to full form (e.g. "0033FF")
+    // See http://stackoverflow.com/questions/5623838
+    var shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+    hex = hex.replace(shorthandRegex, function(m, r, g, b) {
+        return r + r + g + g + b + b;
+    });
+
     var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return result ? {
         r: parseInt(result[1], 16),
         g: parseInt(result[2], 16),
         b: parseInt(result[3], 16)
     } : null;
+  };
+
+  /**
+   * Convert RGB values between 0 and 255 to a hex representation.
+   */
+  tools.rgbToHex = function(r, g, b) {
+    // See http://stackoverflow.com/questions/5623838
+    return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
   };
 
   /**

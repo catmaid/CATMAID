@@ -14,7 +14,6 @@
   SelectionTable,
   SkeletonAnnotations,
   TreenodeTable,
-  User,
   WindowMaker
 */
 
@@ -671,7 +670,7 @@
             "bSearchable": true,
             "bSortable": true,
             "mRender": function(data, type, full) {
-              return full[3] in User.all() ? User.all()[full[3]].login : "unknown";
+              return full[3] in CATMAID.User.all() ? CATMAID.User.all()[full[3]].login : "unknown";
             }
           });
     }
@@ -1787,7 +1786,7 @@
           // If the user isn't available client-side, schedule an update of the
           // user information the client-side.
           var locked_user_id = locked[0][3];
-          User.auto_update_call(locked_user_id, add_user_info);
+          CATMAID.User.auto_update_call(locked_user_id, add_user_info);
         } else {
           annotation_title.appendChild(document.createTextNode(
               'No one locked this neuron'));
@@ -1868,7 +1867,7 @@
     container.append(root_button);
 
     root_button.onclick = (function() {
-      requestQueue.register(django_url + project.id + '/skeleton/' + this.skeleton_ids[0] + '/get-root', "POST", { pid: project.id }, function (status, text) {
+      requestQueue.register(django_url + project.id + '/skeletons/' + this.skeleton_ids[0] + '/root', 'GET', undefined, function (status, text) {
         if (200 !== status) return;
         var json = $.parseJSON(text);
         if (json.error) return new CATMAID.ErrorDialog(json.error,

@@ -15,6 +15,8 @@
    * @param {number}  opacity      Opacity to draw the layer.
    * @param {boolean} showOverview Whether to show a "minimap" overview of the
    *                               stack.
+   * @param {boolean} linearInterpolation Whether to use linear or nearest
+   *                               neighbor tile texture interpolation.
    */
   function TileLayer(
       stackViewer,
@@ -23,7 +25,8 @@
       tileSource,
       visibility,
       opacity,
-      showOverview) {
+      showOverview,
+      linearInterpolation) {
     this.stackViewer = stackViewer;
     this.displayname = displayname;
     this.stack = stack;
@@ -49,6 +52,11 @@
     this.tilesContainer = document.createElement('div');
     this.tilesContainer.className = 'sliceTiles';
 
+    /** @type {boolean} True to use linear tile texture interpolation, false to
+                        use nearest neighbor. */
+    this._interpolationMode = linearInterpolation;
+    this.tilesContainer.classList.add('interpolation-mode-' + (this._interpolationMode ? 'linear' : 'nearest'));
+
     if (tileSource.transposeTiles && tileSource.transposeTiles.has(stack.orientation)) {
       // Some tile sources may provide transposed tiles versus CATMAID's
       // expectation, e.g., YZ tiles for a ZY oriented stack. In these cases
@@ -68,6 +76,17 @@
       this.overviewLayer = tileSource.getOverviewLayer(this);
     }
   }
+
+  /**
+   * Sets the interpolation mode for tile textures to linear pixel interpolation
+   * or nearest neighbor.
+   * @param {boolean} linear True for linear, false for nearest neighbor.
+   */
+  TileLayer.prototype.setInterpolationMode = function (linear) {
+    this.tilesContainer.classList.remove('interpolation-mode-' + (this._interpolationMode ? 'linear' : 'nearest'));
+    this._interpolationMode = linear;
+    this.tilesContainer.classList.add('interpolation-mode-' + (this._interpolationMode ? 'linear' : 'nearest'));
+  };
 
   /**
    * Return friendly name of this layer.

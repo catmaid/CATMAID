@@ -1,4 +1,4 @@
-Running a CATMAID instance on Amazon AWS/EC2
+Running a CATMAID Instance on Amazon AWS/EC2
 ============================================
 
 First, you have to register for `Amazon Web Services <http://aws.amazon.com/>`_.

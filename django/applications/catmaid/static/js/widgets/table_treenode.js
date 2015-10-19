@@ -134,7 +134,7 @@ TreenodeTable.prototype._appendSkeletons = function(skeleton_ids) {
   };
 
   var stack = project.focusedStackViewer.primaryStack,
-      users = User.all(),
+      users = CATMAID.User.all(),
       n_rows = this.oTable.fnSettings().fnRecordsTotal(),
       all_rows = [];
 

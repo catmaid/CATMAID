@@ -1,6 +1,6 @@
 .. _administering:
 
-Administering a CATMAID instance
+Administering a CATMAID Instance
 ================================
 
 This section presents information on how to update a running CATMAID
@@ -41,7 +41,7 @@ Activate the `virtualenv`::
 
 Update Python packages::
 
-   pip install -r pip-frozen
+   pip install -r requirements.txt
 
 Synchronize the Django environment with the database::
 

@@ -989,6 +989,7 @@
       this.mc_click = function(d) {
         var e = d3.event;
         e.stopPropagation();
+        e.preventDefault();
         var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.parentNode.parentNode);
         if (catmaidSVGOverlay.ensureFocused()) {
           return;
@@ -1317,7 +1318,7 @@
               relation_name: relation_name},
             CATMAID.jsonResponseHandler(function(data) {
               var msg = title + ' edge: ' + data.map(function (info) {
-                return 'created by ' + User.safeToString(info.user) + ' ' +
+                return 'created by ' + CATMAID.User.safeToString(info.user) + ' ' +
                     CATMAID.tools.contextualDateString(info.creation_time) +
                     ', last edited ' +
                     CATMAID.tools.contextualDateString(info.edition_time);

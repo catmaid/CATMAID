@@ -499,14 +499,8 @@ var NeuronNameService = (function()
        */
       renameNeuron: function(neuronId, skeletonIds, newName, callback)
       {
-        requestQueue.register(django_url + project.id + '/object-tree/instance-operation',
-          'POST',
-          {operation: "rename_node",
-           id: neuronId,
-           title: newName,
-           classname: "neuron",
-           pid: project.id
-          },
+        requestQueue.register(django_url + project.id + '/neurons/' + neuronId + '/rename',
+          'POST', { name: newName },
           CATMAID.jsonResponseHandler((function(data) {
             // Update all skeletons of the current neuron that are managed
             var updatedSkeletons = skeletonIds.filter(function(skid) {

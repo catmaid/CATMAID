@@ -6,7 +6,6 @@
   project,
   requestQueue,
   SelectionTable,
-  User,
   WindowMaker
 */
 
@@ -1126,11 +1125,11 @@
     // Build select options
     var reviewerNames = {};
     this.reviewers.forEach(function(r) {
-      var u = User.all()[r];
+      var u = CATMAID.User.all()[r];
       reviewerNames[u ? u.fullName : r] = r;
     });
-    reviewerNames['Team'] = 'whitelist';
     var displayOrder = Object.keys(reviewerNames).sort();
+    reviewerNames['Team'] = 'whitelist';
     displayOrder.unshift('Team');
     displayOrder.forEach(function (displayName) {
       var r = reviewerNames[displayName];

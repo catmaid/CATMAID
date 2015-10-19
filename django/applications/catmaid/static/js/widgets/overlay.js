@@ -12,8 +12,7 @@
   SkeletonElements,
   submitterFn,
   user_groups,
-  userprofile,
-  User
+  userprofile
 */
 
 "use strict";
@@ -102,12 +101,14 @@ CATMAID.Events.extend(SkeletonAnnotations);
  */
 SkeletonAnnotations.atn.set = function(node, stack_viewer_id) {
   var changed = false;
+  var skeleton_changed = false;
 
   if (node) {
     // Find out if there was a change
     var stack_viewer = project.getStackViewer(stack_viewer_id);
+    skeleton_changed = (this.skeleton_id !== node.skeleton_id);
     changed = (this.id !== node.id) ||
-              (this.skeleton_id !== node.skeleton_id) ||
+              (skeleton_changed) ||
               (this.type !== node.type) ||
               (this.subtype !== node.subtype) ||
               (this.z !== node.z) ||
@@ -130,6 +131,7 @@ SkeletonAnnotations.atn.set = function(node, stack_viewer_id) {
     this.stack_viewer_id = stack_viewer_id;
   } else {
     changed = true;
+    skeleton_changed = !!this.skeleton_id;
     // Set all to null
     for (var prop in this) {
       if (this.hasOwnProperty(prop)) {
@@ -144,7 +146,7 @@ SkeletonAnnotations.atn.set = function(node, stack_viewer_id) {
   // Trigger event if node ID or position changed
   if (changed) {
     SkeletonAnnotations.trigger(
-          SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED, this);
+          SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED, this, skeleton_changed);
   }
 };
 
@@ -157,6 +159,7 @@ SkeletonAnnotations.atn.promise = function()
 {
   var overlay = SkeletonAnnotations.getSVGOverlay(this.stack_viewer_id);
   var nodePromise = overlay.promiseNode(overlay.nodes[this.id]);
+  var isNewSkeleton = !this.skeleton_id;
   function AtnPromise(atn) {
     // Override prototype's
     this.then = function(fn) {
@@ -165,7 +168,7 @@ SkeletonAnnotations.atn.promise = function()
         if (atn.id !== result) {
           atn.id = result;
           SkeletonAnnotations.trigger(
-              SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED, atn);
+              SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED, atn, isNewSkeleton);
         }
         // Call the orginal callback
         if (fn) {
@@ -306,6 +309,19 @@ SkeletonAnnotations.getActiveNodePositionW = function() {
  */
 SkeletonAnnotations.getActiveNodeVector3 = function() {
   return new THREE.Vector3(this.atn.x, this.atn.y, this.atn.z);
+};
+
+/**
+ * Get a THREE.Vector3 representation of the active treenode's location in
+ * project coordinates.
+ */
+SkeletonAnnotations.getActiveNodeProjectVector3 = function() {
+  if (null === this.atn.id) {
+    return new THREE.Vector3();
+  } else {
+    var position = this.getActiveNodePositionW();
+    return new THREE.Vector3(position.x, position.y, position.z);
+  }
 };
 
 /**
@@ -807,6 +823,7 @@ SkeletonAnnotations.SVGOverlay.prototype.ensureFocused = function() {
  * Unregister this layer and destroy all UI elements and event handlers.
  */
 SkeletonAnnotations.SVGOverlay.prototype.destroy = function() {
+  this.updateNodeCoordinatesinDB();
   this.suspended = true;
   this.unregister();
   // Show warning in case of pending request
@@ -3184,8 +3201,8 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNextOpenEndNode = function(nodeID, 
     // TODO could be done by inspecting the graph locally if it is loaded in the
     // 3D viewer or treenode table (but either source may not be up to date)
     this.submit(
-        django_url + project.id + '/skeleton/' + skid + '/openleaf',
-        {tnid: nodeID},
+        django_url + project.id + '/skeletons/' + skid + '/open-leaves',
+        {treenode_id: nodeID},
         function (json) {
           // json is an array of nodes. Each node is an array:
           // [0]: open end node ID
@@ -3257,8 +3274,8 @@ SkeletonAnnotations.SVGOverlay.prototype.printTreenodeInfo = function(nodeID, pr
   var url = django_url + project.id + '/node/user-info';
 
   this.submit(url, {node_id: nodeID}, function(jso) {
-      var creator = User.safeToString(jso.user);
-      var editor = User.safeToString(jso.editor);
+      var creator = CATMAID.User.safeToString(jso.user);
+      var editor = CATMAID.User.safeToString(jso.editor);
 
       var msg = prefixMessage + " created by " + creator + ' ' +
           CATMAID.tools.contextualDateString(jso.creation_time) + ", last edited by " + editor + ' ' +
@@ -3267,7 +3284,7 @@ SkeletonAnnotations.SVGOverlay.prototype.printTreenodeInfo = function(nodeID, pr
       if (jso.reviewers.length > 0) {
         var reviews = [];
         for (var i=0; i<jso.reviewers.length; ++i) {
-          reviews.push(User.safeToString(jso.reviewers[i]) + ' ' +
+          reviews.push(CATMAID.User.safeToString(jso.reviewers[i]) + ' ' +
               CATMAID.tools.contextualDateString(jso.review_times[i]));
         }
         msg += reviews.join(', ');

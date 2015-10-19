@@ -1,3 +1,98 @@
+## 2015.10.19
+
+Contributors: Albert Cardona, Andrew Champion, Tom Kazimiers
+
+
+### Features and enhancements
+
+Scripting:
+
+- The widget instance associated with the focused window can be retrieved with
+  the convenience function `CATMAID.front()`.
+
+
+Orthogonal views and multi-channel data:
+
+- Stack groups can be used to relate different stacks to each other within one
+  project, e.g. to make clear that some stacks are different orthogonal views or
+  different channels of the same dataset. If there are stack groups defined in a
+  project, they are for now available through the "Projects" menu, which
+  provides sub-menus for stacks and stack groups for each project. When opened,
+  the stacks of a channel based stack groups are added as layers to the first
+  stack. Ortho-view stacks are all opened in a separate stack viewer.
+
+- If a stack group consists of the three different orthogonal views for a
+  dataset, the window layout is adapted automatically as soon as the stack group
+  is opened. The layout will be a four-pane layout in which the left half of the
+  screen is the XY view on top of the XZ view and the right half of the screen
+  is the ZY view on top of a selection table.
+
+- Since stack group are instances of the 'stackgroup' class, they can be
+  referenced from within ontologies. All projects now have a 'stackgroup' class
+  and the relations 'has_view' and 'has_channel' created by default. They are
+  also created for projects that don't have them, yet.
+
+- Stack groups can be created and managed from with the admin interface through
+  either the new Stack group page or while editing/creating a stack.
+
+
+3D viewer:
+
+- Skeletons can be shaded by distance from a plane through the active node. The
+  plane can either be a Z-plane in project space or a plane normal to the ray
+  from the camera to the active node.
+
+
+Tile layer:
+
+- WebGL rendering is now compatible with orthogonal views.
+
+- Tiles can now be rendered either with linear pixel interpolation (previous
+  default behavior) or nearest neighbor interpolation. This is controlled by
+  the "Image tile interpolation" setting.
+
+
+Graph widget:
+
+- When growing by circles, the set of neurons added can be filtered to include
+  only those with annotations matching a regex.
+
+
+Miscellaneous:
+
+- A new color picker replaces the color wheel. The new control hovers over other
+  elements so it can be moved, has color memory slots, defaults to a smaller
+  size and can be resized to show input elements for different color spaces. To
+  save a color in a memory slot, click on the rectangle containing the small
+  circle next to the memory slots.
+
+- Documentation for some HTTP API endpoints is now available from your CATMAID
+  server at the `/apis/` URL.
+
+
+### Bug fixes
+
+Tile layer:
+
+- Fixed a major WebGL tile layer GPU memory leak.
+
+
+3D viewer:
+
+- In orthographic mode, the correct depth ordering is now used again.
+
+
+Selection table:
+
+- Color sorting works again.
+
+
+Miscellaneous:
+
+- An error no longer appears when selecting an un-annotated skeleton while
+  neuron labels are configured to use a meta-annotation.
+
+
 ## 2015.9.11
 
 Contributors: Albert Cardona, Andrew Champion, Tom Kazimiers

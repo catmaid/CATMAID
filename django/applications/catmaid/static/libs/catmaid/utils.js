@@ -38,8 +38,9 @@ InstanceRegistry.prototype.registerInstance = function() {
   // Find lowest unused number
   var max = Math.max.apply(Math, pids.map(Number)),
       pid = max + 1;
-  for (var i = 0; i < max; ++i) {
-    if (typeof(pids[i]) === 'undefined') {
+  for (var i = 1; i < max; ++i) {
+    // Check if i doesn't exist yet as an instance ID
+    if (typeof(this.instances[i]) === 'undefined') {
       pid = i;
       break;
     }
@@ -110,13 +111,6 @@ Colorizer.prototype.pickColor = function() {
                hsl.l);
   this.next_color_index += 1;
   return color;
-};
-
-/** Parse into a THREE.Color the color object returned from a Raphael color wheel. */
-var parseColorWheel = function(color) {
-  return new THREE.Color().setRGB(parseInt(color.r) / 255.0,
-                                  parseInt(color.g) / 255.0,
-                                  parseInt(color.b) / 255.0);
 };
 
 /** Load each skeleton from the skeleton_ids array one by one, invoking the fnLoadedOne

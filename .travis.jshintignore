@@ -5,6 +5,7 @@ django/applications/vncbrowser/**
 django/applications/catmaid/static/js/tests/libs/**
 django/applications/catmaid/static/libs/MochiKit/**
 django/applications/catmaid/static/libs/SVGKit/**
+django/applications/catmaid/static/libs/colorpicker/**
 django/applications/catmaid/static/libs/cytoscapejs/**
 django/applications/catmaid/static/libs/d3/**
 django/applications/catmaid/static/libs/excanvas/**

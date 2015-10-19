@@ -1,6 +1,6 @@
 .. _creating-data-view-types:
 
-Creating new Data View Types
+Creating New Data View Types
 ============================
 
 There are currently only rather general data view types available in

@@ -4,9 +4,9 @@
 /** An object that encapsulates the functions for creating accessory windows. */
 var WindowMaker = new function()
 {
-  /** The table of window names versus their open instances..
+  /** Map of window widget names to a map of CMWindow instances to widget objects.
    * Only windows that are open are stored. */
-  var windows = {};
+  var windows = new Map();
   var self = this;
 
   var createContainer = function(id) {
@@ -35,16 +35,12 @@ var WindowMaker = new function()
               document.getElementById("content").style.display = "none";
             } else {
               // Remove from listing
-              for (var name in windows) {
-                if (windows.hasOwnProperty(name)) {
-                  if (win === windows[name]) {
-                    // console.log("deleted " + name, windows[name]);
-                    delete windows[name];
-                    break;
-                  }
+              windows.forEach(function (widgetWindows, widgetName) {
+                widgetWindows.delete(win);
+                if (widgetWindows.size === 0) {
+                  windows.delete(widgetName);
                 }
-              }
-              // win.close();
+              });
             }
             break;
           case CMWWindow.RESIZE:
@@ -119,7 +115,146 @@ var WindowMaker = new function()
     addListener(win, content, config.controlsID, destroy, resize);
     addLogic(win);
 
-    return win;
+    return {window: win, widget: instance};
+  };
+
+  var createSelect = function(id, items, use_numbers) {
+    var select = document.createElement('select');
+    select.setAttribute("id", id);
+    items.forEach(function(item, i) {
+      var option = document.createElement("option");
+      option.text = item;
+      option.value = use_numbers ? i : item;
+      select.appendChild(option);
+    });
+    return select;
+  };
+
+  var appendSelect = function(div, name, entries) {
+    var select = createSelect(div.id + "_" + name, entries, true);
+    div.appendChild(select);
+    return select;
+  };
+
+  var appendButton = function(div, label, onclickFn, attr) {
+    var b = document.createElement('input');
+    if (attr) Object.keys(attr).forEach(function(key) { b.setAttribute(key, attr[key]); });
+    b.setAttribute('type', 'button');
+    b.setAttribute('value', label);
+    b.onclick = onclickFn;
+    div.appendChild(b);
+    return b;
+  };
+
+  var appendHiddenFileButton = function(div, id, onchangeFn) {
+    var fb = document.createElement('input');
+    fb.setAttribute('type', 'file');
+    fb.setAttribute('id', id);
+    fb.setAttribute('name', 'files[]');
+    fb.style.display = 'none';
+    fb.onchange = onchangeFn;
+    div.appendChild(fb);
+    return fb;
+  };
+
+  var createCheckbox = function(label, value, onclickFn) {
+    var cb = document.createElement('input');
+    cb.setAttribute('type', 'checkbox');
+    cb.checked = value ? true : false;
+    cb.onclick = onclickFn;
+    return [cb, document.createTextNode(label)];
+  };
+
+  var appendCheckbox = function(div, label, title, value, onclickFn, left) {
+    var labelEl = document.createElement('label');
+    labelEl.setAttribute('title', title);
+    var elems = createCheckbox(label, value, onclickFn);
+    if (left) elems.reverse();
+    elems.forEach(function(elem) { labelEl.appendChild(elem); });
+    div.appendChild(labelEl);
+    return left ? elems[elems.length - 1] : elems[0];
+  };
+
+  var createNumericField = function(id, label, title, value, postlabel, onchangeFn, length) {
+    var nf = document.createElement('input');
+    if (id) nf.setAttribute('id', id);
+    nf.setAttribute('type', 'text');
+    nf.setAttribute('value', value);
+    if (length) nf.setAttribute('size', length);
+    if (onchangeFn) nf.onchange = onchangeFn;
+    if (label || postlabel) {
+      var labelEl = document.createElement('label');
+      labelEl.setAttribute('title', title);
+      if (label) labelEl.appendChild(document.createTextNode(label));
+      labelEl.appendChild(nf);
+      if (postlabel) labelEl.appendChild(document.createTextNode(postlabel));
+      return labelEl;
+    } else {
+      return nf;
+    }
+  };
+
+  var appendNumericField = function(div, label, title, value, postlabel, onchangeFn, length) {
+    var field = createNumericField(undefined, label, title, value, postlabel, onchangeFn, length);
+    div.appendChild(field);
+    return field;
+  };
+
+  /**
+   * Construct elements from an array of parameters and append them to a tab
+   * element.
+   * @param  {Element}     tab   The tab to which to append constructed elements.
+   * @param  {[[]|object]} elems An array of parameters from which to construct
+   *                             elements. The elements of the array are either
+   *                             arrays of parameters, in which case the length
+   *                             of the array is used to choose element type, or
+   *                             an object specifying parameters, in which case
+   *                             the `type` property specifies element type.
+   * @return {[Element]}         An array of the constructed elements.
+   */
+  var appendToTab = function(tab, elems) {
+    return elems.map(function(e) {
+      if (Array.isArray(e)) {
+        switch (e.length) {
+          case 1: return tab.appendChild(e[0]);
+          case 2: return appendButton(tab, e[0], e[1]);
+          case 3: return appendButton(tab, e[0], e[1], e[2]);
+          case 4: return appendCheckbox(tab, e[0], e[0], e[1], e[2], e[3]);
+          case 5: return appendNumericField(tab, e[0], e[0], e[1], e[2], e[3], e[4]);
+          default: return undefined;
+        }
+      } else {
+        switch (e.type) {
+          case 'child':
+            return tab.appendChild(e.element);
+          case 'button':
+            return appendButton(tab, e.label, e.onclickFn, e.attr);
+          case 'checkbox':
+            return appendCheckbox(tab, e.label, e.title, e.value, e.onclickFn, e.left);
+          case 'numeric':
+            return appendNumericField(tab, e.label, e.title, e.value, e.postlabel, e.onchangeFn, e.length);
+          default: return undefined;
+        }
+      }
+    });
+  };
+
+  /**
+   * Create a tab group and add it to the given container. The widget ID is
+   * expected to be unique.
+   */
+  var appendTabs = function(container, widgetID, titles) {
+    var ul = document.createElement('ul');
+    container.appendChild(ul);
+    return titles.reduce(function(o, name) {
+      var id = name.replace(/ /, '') + widgetID;
+      ul.appendChild($('<li><a href="#' + id + '">' + name + '</a></li>')[0]);
+      var div = document.createElement('div');
+      div.setAttribute('id', id);
+      container.appendChild(div);
+      o[name] = div;
+      return o;
+    }, {});
   };
 
   /**
@@ -200,7 +335,7 @@ var WindowMaker = new function()
     addLogic(win);
     CATMAID.ConnectorSelection.init(); // MUST go after adding the container to the window, otherwise one gets "cannot read property 'aoData' of null" when trying to add data to the table
 
-    return win;
+    return {window: win, widget: null};
   };
 
   var createSkeletonMeasurementsTable = function()
@@ -267,7 +402,7 @@ var WindowMaker = new function()
 
     SMT.init(); // Must be invoked after the table template has been created above.
 
-    return win;
+    return {window: win, widget: SMT};
   };
 
 
@@ -362,7 +497,7 @@ var WindowMaker = new function()
     CATMAID.skeletonListSources.updateGUI();
     AA.init();
 
-    return win;
+    return {window: win, widget: AA};
   };
 
 
@@ -618,7 +753,7 @@ var WindowMaker = new function()
 
     ND.init(container);
 
-    return win;
+    return {window: win, widget: ND};
   };
 
   var createConnectivityMatrixWindow = function(instance) {
@@ -741,8 +876,8 @@ var WindowMaker = new function()
           '<tr>' +
             '<th></th>' +
             '<th><span class="ui-icon ui-icon-close" id="selection-table-remove-all' + ST.widgetID + '" title="Remove all"></th>' +
-            '<th class="expanding"><input type="button" value="Filter by regex" class="filter" />' +
-              '<input class="filter" type="text" id="selection-table-filter' + ST.widgetID + '" /></th>' +
+            '<th class="expanding"><input type="button" value="Filter" class="filter" />' +
+              '<input class="filter" type="text" placeholder="Use / for regex" id="selection-table-filter' + ST.widgetID + '" /></th>' +
             '<th><select class="review-filter">' +
               '<option value="Union" selected>Union</option>' +
               '<option value="Team">Team</option>' +
@@ -753,10 +888,8 @@ var WindowMaker = new function()
             '<th><input type="checkbox" id="selection-table-show-all-post' + ST.widgetID + '" checked style="float: left" /></th>' +
             '<th><input type="checkbox" id="selection-table-show-all-text' + ST.widgetID + '" style="float: left" /></th>' +
             '<th><input type="checkbox" id="selection-table-show-all-meta' + ST.widgetID + '" checked style="float: left" /></th>' +
-            '<th><input id="selection-table-batch-color-button' + ST.widgetID +
-                '" type="button" value="Batch color" style="background-color: #ffff00" />' +
-              '<div id="selection-table-batch-color-wheel' + ST.widgetID + '">' +
-                '<div class="batch-colorwheel"></div></div></th>' +
+            '<th><button id="selection-table-batch-color-button' + ST.widgetID +
+                '" type="button" value="#ffff00" style="background-color: #ffff00">Batch color</button></th>' +
             '<th></th>' +
           '</tr>' +
         '</thead>' +
@@ -768,8 +901,12 @@ var WindowMaker = new function()
       ST.review_filter = this.value;
       ST.update();
     });
-    $("input#selection-table-batch-color-button" + ST.widgetID, tab).on("click",
-        ST.toggleBatchColorWheel.bind(ST));
+    $("button#selection-table-batch-color-button" + ST.widgetID, tab).on("click",
+        function() {
+          CATMAID.ColorPicker.toggle(this, {
+            onColorChange: ST.batchColorSelected.bind(ST)
+          });
+        });
     $('th input[type=button].filter', tab).on("click", function() {
       var filter = $('th input[type=text].filter', tab).val();
       ST.filterBy(filter);
@@ -822,51 +959,9 @@ var WindowMaker = new function()
       .on("click", "td .action-changecolor", ST, function(e) {
         var table = e.data;
         var skeletonID = rowToSkeletonID(this);
-        var skeleton = table.skeletons[table.skeleton_ids[skeletonID]];
-        // Select the inner div, which will contain the color wheel
-        var container = $('#color-wheel' + table.widgetID + '-' + skeletonID);
-        var allSelected = $('input[type=checkbox]', container);
-        var colorwheel = $('div.colorwheel', container);
-        if (skeleton.cw) {
-          delete skeleton.cw;
-          container.hide();
-          colorwheel.empty();
-          allSelected.off('change.colorwheel');
-        } else {
-          allSelected.on('change.colorwheel', function() {
-            if (this.checked) {
-              colorAllSelected(table, skeleton.color, skeleton.opacity);
-            }
-          });
-          var cw = Raphael.colorwheel(colorwheel[0], 150);
-          cw.color('#' + skeleton.color.getHexString(), skeleton.opacity);
-          cw.onchange(function(color, alpha, colorChanged, alphaChanged) {
-            var c = [parseInt(color.r) / 255.0,
-                     parseInt(color.g) / 255.0,
-                     parseInt(color.b) / 255.0];
-            skeleton.color.setRGB(c[0], c[1], c[2]);
-            skeleton.opacity = alpha;
-            table.gui.update_skeleton_color_button(skeleton);
-            table.notifyLink(skeleton);
-
-            if (allSelected.prop('checked')) {
-              colorAllSelected(table, skeleton.color, alpha);
-            }
-          });
-          skeleton.cw = cw;
-          container.show();
-        }
-
-        function colorAllSelected(table, color, alpha) {
-          table.getSelectedSkeletons().forEach(function(skid) {
-            var s = table.skeletons[table.skeleton_ids[skid]];
-            s.color.copy(color);
-            s.opacity = alpha;
-            table.gui.update_skeleton_color_button(s);
-            table.notifyLink(s);
-          });
-          $('#selection-table-batch-color-button' + table.widgetID)[0].style.backgroundColor = color.getStyle();
-        }
+        CATMAID.ColorPicker.toggle(this, {
+          onColorChange: table.colorSkeleton.bind(table, skeletonID, false)
+        });
       });
 
     /**
@@ -878,41 +973,12 @@ var WindowMaker = new function()
       return skeletonID;
     }
 
-    //addListener(win, container, buttons, ST.destroy.bind(ST));
+    addListener(win, container, buttons.id, ST.destroy.bind(ST));
     win.addListener(
       function(callingWindow, signal) {
         switch (signal) {
-          case CMWWindow.CLOSE:
-            if (typeof project === undefined || project === null) {
-              rootWindow.close();
-              document.getElementById("content").style.display = "none";
-            }
-            else {
-              // Remove from listing
-              for (var name in windows) {
-                if (windows.hasOwnProperty(name)) {
-                  if (win === windows[name]) {
-                    // console.log("deleted " + name, windows[name]);
-                    delete windows[name];
-                    break;
-                  }
-                }
-              }
-              ST.destroy();
-              // win.close();
-            }
-            break;
           case CMWWindow.FOCUS:
             ST.setLastFocused();
-            break;
-          case CMWWindow.RESIZE:
-            if( buttons.id !== undefined ) {
-                container.style.height = ( win.getContentHeight() - $('#' + buttons.id).height() ) + "px";
-            } else {
-                container.style.height = ( win.getContentHeight() ) + "px";
-            }
-            container.style.width = ( win.getAvailableWidth() + "px" );
-
             break;
         }
         return true;
@@ -950,38 +1016,7 @@ var WindowMaker = new function()
     ST.init();
     win.focus();
 
-    return win;
-  };
-
-  var appendToTab = function(tab, elems) {
-    return elems.map(function(e) {
-      switch (e.length) {
-        case 1: return tab.appendChild(e[0]);
-        case 2: return appendButton(tab, e[0], e[1]);
-        case 3: return appendButton(tab, e[0], e[1], e[2]);
-        case 4: return appendCheckbox(tab, e[0], e[1], e[2], e[3]);
-        case 5: return appendNumericField(tab, e[0], e[1], e[2], e[3], e[4]);
-        default: return undefined;
-      }
-    });
-  };
-
-  /**
-   * Create a tab group and add it to the given container. The widget ID is
-   * expected to be unique.
-   */
-  var appendTabs = function(container, widgetID, titles) {
-    var ul = document.createElement('ul');
-    container.appendChild(ul);
-    return titles.reduce(function(o, name) {
-      var id = name.replace(/ /, '') + widgetID;
-      ul.appendChild($('<li><a href="#' + id + '">' + name + '</a></li>')[0]);
-      var div = document.createElement('div');
-      div.setAttribute('id', id);
-      container.appendChild(div);
-      o[name] = div;
-      return o;
-    }, {});
+    return {window: win, widget: ST};
   };
 
   /** Creates and returns a new 3d webgl window */
@@ -1018,6 +1053,8 @@ var WindowMaker = new function()
           ['Refresh', WA.updateSkeletons.bind(WA)],
           [document.createTextNode(' - ')],
           ['Spatial select', WA.spatialSelect.bind(WA)],
+          [document.createTextNode(' - ')],
+          ['Count', WA.countObjects.bind(WA)],
         ]);
 
     var storedViewsSelect = document.createElement('select');
@@ -1114,6 +1151,8 @@ var WindowMaker = new function()
     [['none', 'None'],
      ['active_node_split', 'Active node split'],
      ['near_active_node', 'Near active node'],
+     ['near_active_node_z_project', 'Near active node (Z only)'],
+     ['near_active_node_z_camera', 'Near active node (camera plane)'],
      ['synapse-free', 'Synapse-free chunks'],
      ['downstream_amount', 'Downstream cable'],
      ['betweenness_centrality', 'Betweenness centrality'],
@@ -1192,11 +1231,19 @@ var WindowMaker = new function()
               WA.adjustStaticContent();
             }, 4],
           ['Line width', o.skeleton_line_width, null, function() { WA.updateSkeletonLineWidth(this.value); }, 4],
-          ['Custom Tags (regex):', o.custom_tag_spheres_regex, '', function() { WA.options.custom_tag_spheres_regex = this.value; }, 10]
+          {
+            type: 'numeric',
+            label: 'Custom Tags (regex):',
+            title: 'Display handle spheres for nodes with tags matching this regex.',
+            value: o.custom_tag_spheres_regex,
+            onchangeFn: function () { WA.options.custom_tag_spheres_regex = this.value; },
+            length: 10
+          }
         ]);
 
     var nodeScalingInput = appendNumericField(tabs['View settings'],
-        'Node handle scaling', o.skeleton_node_scaling, null, function() {
+        'Node handle scaling', 'Size of handle spheres for tagged nodes.',
+              o.skeleton_node_scaling, null, function() {
               WA.options.skeleton_node_scaling = Math.max(0, this.value) || 1.0;
               WA.adjustContent();
               WA.updateSkeletonNodeHandleScaling(this.value);
@@ -1255,9 +1302,17 @@ var WindowMaker = new function()
           ['Back and forth', o.animation_back_forth, function() {
             WA.options.animation_back_forth = this.checked;
           }, false],
-          ['Stepwise neuron visibility', o.animation_stepwise_visibility, function() {
-            WA.options.animation_stepwise_visibility = this.checked;
-          }, false]
+          {
+            type: 'checkbox',
+            label: 'Stepwise neuron visibility',
+            title: 'Start with one neuron visible, then make another neuron ' +
+                   'visible with each complete rotation.',
+            value: o.animation_stepwise_visibility,
+            onclickFn: function() {
+              WA.options.animation_stepwise_visibility = this.checked;
+            },
+            left: false
+          }
         ]);
 
     appendToTab(tabs['Export'],
@@ -1306,14 +1361,12 @@ var WindowMaker = new function()
             }
             else {
               // Remove from listing
-              for (var name in windows) {
-                if (windows.hasOwnProperty(name)) {
-                  if (win === windows[name]) {
-                    delete windows[name];
-                    break;
-                  }
+              windows.forEach(function (widgetWindows, widgetName) {
+                widgetWindows.delete(win);
+                if (widgetWindows.size === 0) {
+                  windows.delete(widgetName);
                 }
-              }
+              });
               WA.destroy();
             }
             break;
@@ -1334,7 +1387,7 @@ var WindowMaker = new function()
     // Resize WebGLView after staging list has been added
     win.callListeners( CMWWindow.RESIZE );
 
-    // Make slection table smaller so that it only occupies about 25% of the
+    // Make selection table smaller so that it only occupies about 25% of the
     // available vertical space (instead of 50%).
     win.getParent().changeHeight(Math.abs(win.getHeight() * 0.5));
 
@@ -1348,58 +1401,7 @@ var WindowMaker = new function()
       }
     }
 
-    return win;
-  };
-
-  /** Creates and returns a new 3d window. */
-  var create3dWindow = function()
-  {
-    var win = new CMWWindow("3D View");
-    var content = win.getFrame();
-    content.style.backgroundColor = "#ffffff";
-
-    var container = createContainer("view_in_3d_widget");
-    content.appendChild(container);
-
-    var add = document.createElement('input');
-    add.setAttribute("type", "button");
-    add.setAttribute("id", "add_current_to_3d_view");
-    add.setAttribute("value", "Add current skeleton to 3D view");
-    add.onclick = Treelines.addTo3DView; // function declared in treeline.js
-    container.appendChild(add);
-
-    var introduction = document.createElement('p');
-    introduction.setAttribute("id", "view3DIntroduction");
-    container.appendChild(introduction);
-
-    var list = document.createElement('ul');
-    list.setAttribute("id", "view-3d-object-list");
-    container.appendChild(list);
-
-    var canvas = document.createElement('div');
-    canvas.setAttribute("id", "viewer-3d-canvas");
-    canvas.style.width = "800px";
-    canvas.style.height = "600px";
-    container.appendChild(canvas);
-
-    var buttons = document.createElement('div');
-    ['xy', 'xz', 'zy'].map(function (s) {
-      var b = document.createElement('input');
-      b.setAttribute("id", s + "-button");
-      b.setAttribute("type", "button");
-      b.setAttribute("value", s.toUpperCase());
-      buttons.appendChild(b);
-    });
-    container.appendChild(buttons);
-
-    addListener(win, container);
-
-    addLogic(win);
-
-    // Fill in with a Raphael canvas, now that the window exists in the DOM:
-    Treelines.createViewerFromCATMAID(canvas.getAttribute("id"));
-
-    return win;
+    return {window: win, widget: WA};
   };
 
   var createSliceInfoWindow = function()
@@ -1426,7 +1428,7 @@ var WindowMaker = new function()
 
     addLogic(win);
 
-    return win;
+    return {window: win, widget: null};
   };
 
   var createGraphWindow = function()
@@ -1533,6 +1535,9 @@ var WindowMaker = new function()
          [document.createTextNode(" orders, limit:")],
          [f("upstream")],
          [f("downstream")],
+         [createNumericField('gg_filter_regex' + GG.widgetID, 'filter (regex):',
+                             'Only include neighbors with annotations matching this regex.',
+                             '', '', undefined, 4)],
          [document.createTextNode(" - Find ")],
          ['paths', GG.growPaths.bind(GG)],
          [document.createTextNode(" by ")],
@@ -1590,7 +1595,7 @@ var WindowMaker = new function()
 
     CATMAID.skeletonListSources.updateGUI();
 
-    return win;
+    return {window: win, widget: GG};
   };
 
   var createCircuitGraphPlot = function() {
@@ -1701,7 +1706,7 @@ var WindowMaker = new function()
 
     CATMAID.skeletonListSources.updateGUI();
 
-    return win;
+    return {window: win, widget: GP};
   };
 
 
@@ -1802,7 +1807,7 @@ var WindowMaker = new function()
 
     CATMAID.skeletonListSources.updateGUI();
 
-    return win;
+    return {window: win, widget: MA};
   };
 
   var createVennDiagramWindow = function() {
@@ -1852,7 +1857,7 @@ var WindowMaker = new function()
 
     CATMAID.skeletonListSources.updateGUI();
 
-    return win;
+    return {window: win, widget: VD};
   };
 
 
@@ -1888,7 +1893,7 @@ var WindowMaker = new function()
 
     addLogic(win);
 
-    return win;
+    return {window: win, widget: null};
   };
 
 
@@ -1921,7 +1926,7 @@ var WindowMaker = new function()
 
     addLogic(win);
 
-    return win;
+    return {window: win, widget: null};
   };
 
   var createNodeTableWindow = function(tnt_instance)
@@ -2026,7 +2031,7 @@ var WindowMaker = new function()
 
     TNT.init( project.getId() );
 
-    return win;
+    return {window: win, widget: TNT};
   };
 
   var createConnectorTableWindow = function(ct_instance)
@@ -2114,81 +2119,7 @@ var WindowMaker = new function()
 
     CT.init( project.getId() );
 
-    return win;
-  };
-
-  var createSelect = function(id, items, use_numbers) {
-    var select = document.createElement('select');
-    select.setAttribute("id", id);
-    items.forEach(function(item, i) {
-      var option = document.createElement("option");
-      option.text = item;
-      option.value = use_numbers ? i : item;
-      select.appendChild(option);
-    });
-    return select;
-  };
-
-  var appendSelect = function(div, name, entries) {
-    var select = createSelect(div.id + "_" + name, entries, true);
-    div.appendChild(select);
-    return select;
-  };
-
-  var appendButton = function(div, title, onclickFn, attr) {
-    var b = document.createElement('input');
-    if (attr) Object.keys(attr).forEach(function(key) { b.setAttribute(key, attr[key]); });
-    b.setAttribute('type', 'button');
-    b.setAttribute('value', title);
-    b.onclick = onclickFn;
-    div.appendChild(b);
-    return b;
-  };
-
-  var appendHiddenFileButton = function(div, id, onchangeFn) {
-    var fb = document.createElement('input');
-    fb.setAttribute('type', 'file');
-    fb.setAttribute('id', id);
-    fb.setAttribute('name', 'files[]');
-    fb.style.display = 'none';
-    fb.onchange = onchangeFn;
-    div.appendChild(fb);
-    return fb;
-  };
-
-  var createCheckbox = function(title, value, onclickFn) {
-    var cb = document.createElement('input');
-    cb.setAttribute('type', 'checkbox');
-    cb.checked = value ? true : false;
-    cb.onclick = onclickFn;
-    return [cb, document.createTextNode(title)];
-  };
-
-  var appendCheckbox = function(div, title, value, onclickFn, left) {
-    var label = document.createElement('label');
-    var elems = createCheckbox(title, value, onclickFn);
-    if (left) elems.reverse();
-    elems.forEach(function(elem) { label.appendChild(elem); });
-    div.appendChild(label);
-    return left ? elems[elems.length - 1] : elems[0];
-  };
-
-  var appendNumericField = function(div, label, value, postlabel, onchangeFn, length) {
-    var nf = document.createElement('input');
-    nf.setAttribute('type', 'text');
-    nf.setAttribute('value', value);
-    if (length) nf.setAttribute('size', length);
-    if (onchangeFn) nf.onchange = onchangeFn;
-    if (label || postlabel) {
-      var labelEl = document.createElement('label');
-      if (label) labelEl.appendChild(document.createTextNode(label));
-      labelEl.appendChild(nf);
-      if (postlabel) labelEl.appendChild(document.createTextNode(postlabel));
-      div.appendChild(labelEl);
-    } else {
-      div.appendChild(nf);
-    }
-    return nf;
+    return {window: win, widget: CT};
   };
 
 
@@ -2250,7 +2181,7 @@ var WindowMaker = new function()
     SA.init(); // must be called after the above placeholder table is created
     CATMAID.skeletonListSources.updateGUI();
 
-    return win;
+    return {window: win, widget: SA};
   };
 
     var createLogTableWindow = function()
@@ -2373,7 +2304,7 @@ var WindowMaker = new function()
 
         LogTable.init( project.getId() );
 
-        return win;
+        return {window: win, widget: null};
     };
 
     var createReviewWindow = function()
@@ -2442,7 +2373,7 @@ var WindowMaker = new function()
         addListener(win, container, 'review_widget_buttons');
         addLogic(win);
 
-        return win;
+        return {window: win, widget: RS};
     };
 
     var createConnectivityWindow = function()
@@ -2535,7 +2466,7 @@ var WindowMaker = new function()
         addLogic(win);
         CATMAID.skeletonListSources.updateGUI();
 
-        return win;
+        return {window: win, widget: SC};
     };
 
   var createConnectivityGraphPlot = function(instance) {
@@ -2571,7 +2502,7 @@ var WindowMaker = new function()
 
     addLogic(win);
 
-    return win;
+    return {window: win, widget: GP};
   };
 
     var createAdjacencyMatrixWindow = function()
@@ -2601,7 +2532,7 @@ var WindowMaker = new function()
 
         AdjacencyMatrix.init();
 
-        return win;
+        return {window: win, widget: null};
     };
 
   var createExportWidget = function()
@@ -2646,7 +2577,7 @@ var WindowMaker = new function()
           }
         });
 
-      return win;
+      return {window: win, widget: null};
   };
 
 
@@ -2691,7 +2622,7 @@ var WindowMaker = new function()
 
     OntologyEditor.init();
 
-    return win;
+    return {window: win, widget: null};
   };
 
   var createOntologySearchWidget = function(osInstance)
@@ -2716,7 +2647,7 @@ var WindowMaker = new function()
     // container.
     OS.init_ui(container);
 
-    return win;
+    return {window: win, widget: OS};
   };
 
   var createClassificationWidget = function()
@@ -2734,7 +2665,7 @@ var WindowMaker = new function()
 
     ClassificationEditor.init();
 
-    return win;
+    return {window: win, widget: null};
   };
 
   var createClusteringWidget = function()
@@ -2754,7 +2685,7 @@ var WindowMaker = new function()
 
     ClusteringWidget.init();
 
-    return win;
+    return {window: win, widget: null};
   };
 
   var getHelpForActions = function(actions)
@@ -2891,7 +2822,7 @@ var WindowMaker = new function()
 
     addLogic(win);
 
-    return win;
+    return {window: win, widget: null};
   };
 
   var createSearchWindow = function()
@@ -2903,7 +2834,7 @@ var WindowMaker = new function()
 
     addLogic(win);
 
-    return win;
+    return {window: win, widget: null};
   };
 
 
@@ -2922,7 +2853,7 @@ var WindowMaker = new function()
 
     ProjectStatistics.init();
 
-    return win;
+    return {window: win, widget: null};
   };
   
   
@@ -2987,7 +2918,7 @@ var WindowMaker = new function()
 
     NotificationsTable.init();
     
-    return win;
+    return {window: win, widget: null};
   };
   
   var createNeuronAnnotationsWindow = function()
@@ -3160,7 +3091,7 @@ var WindowMaker = new function()
     var $select = $('tr #neuron_query_by_annotator' + NA.widgetID);
     var $filter_select = $("#neuron_annotations_query_results_table" +
         NA.widgetID + ' select[name=annotator_filter]');
-    var users = User.all();
+    var users = CATMAID.User.all();
     for (var userID in users) {
       if (users.hasOwnProperty(userID) && userID !== "-1") {
         var user = users[userID];
@@ -3207,7 +3138,7 @@ var WindowMaker = new function()
       $('input#neuron_query_by_name' + NA.widgetID).focus();
     }, 10);
 
-    return win;
+    return {window: win, widget: NA};
   };
 
   var createNeuronNavigatorWindow = function(new_nn_instance)
@@ -3234,7 +3165,7 @@ var WindowMaker = new function()
 
     CATMAID.skeletonListSources.updateGUI();
 
-    return win;
+    return {window: win, widget: NN};
   };
 
   var createSettingsWindow = function()
@@ -3254,13 +3185,12 @@ var WindowMaker = new function()
     var SW = new CATMAID.SettingsWidget();
     SW.init(container);
 
-    return win;
+    return {window: win, widget: SW};
   };
   
   var creators = {
     "keyboard-shortcuts": createKeyboardShortcutsWindow,
     "search": createSearchWindow,
-    "3d-view": create3dWindow,
     "3d-webgl-view": create3dWebGLWindow,
     "node-table": createNodeTableWindow,
     "connector-table": createConnectorTableWindow,
@@ -3299,10 +3229,11 @@ var WindowMaker = new function()
   this.show = function(name)
   {
     if (creators.hasOwnProperty(name)) {
-      if (windows[name]) {
-        windows[name].focus();
+      if (windows.has(name)) {
+        windows.get(name).keys().next().value.focus();
       } else {
-        windows[name] = creators[name]();
+        var handles = creators[name]();
+        windows.set(name, new Map([[handles.window, handles.widget]]));
       }
     } else {
       alert("No known window with name " + name);
@@ -3313,10 +3244,33 @@ var WindowMaker = new function()
    * in extra parameters that will be passed on to the actual creator method. */
   this.create = function(name, init_params) {
     if (creators.hasOwnProperty(name)) {
-      windows[name] = creators[name](init_params);
+      var handles = creators[name](init_params);
+      if (windows.has(name)) {
+        windows.get(name).set(handles.window, handles.widget);
+      } else {
+        windows.set(name, new Map([[handles.window, handles.widget]]));
+      }
     } else {
       alert("No known window with name " + name);
     }
+  };
+
+  /**
+   * Return the widget instance, if any, associated with the focused window if
+   * it was created through WindowMaker.
+   * @return {object} The widget instance associated with the focused window, or
+   *                  null if none.
+   */
+  this.getFocusedWindowWidget = function () {
+    var focusedWidget = null;
+    windows.forEach(function (widgetWindows) {
+      widgetWindows.forEach(function (widget, window) {
+        if (window.hasFocus()) {
+          focusedWidget = widget;
+        }
+      });
+    });
+    return focusedWidget;
   };
 
   /**
@@ -3341,6 +3295,8 @@ var WindowMaker = new function()
 (function(CATMAID) {
 
   "use strict";
+
+  CATMAID.front = WindowMaker.getFocusedWindowWidget;
 
   /**
    * Make new widgets available under the given unique key.

@@ -1,4 +1,4 @@
-Exporting and importing Data
+Exporting and Importing Data
 ============================
 
 For importing, there are currently two different tool-sets available in CATMAID.

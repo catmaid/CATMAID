@@ -4,7 +4,10 @@ language: python
 python:
   - "2.7"
 env:
-  - SLIMERJSLAUNCHER=$(which firefox) DISPLAY=:99.0 PATH=$TRAVIS_BUILD_DIR/slimerjs:$PATH TMPDIR=$TRAVIS_BUILD_DIR/tmp
+  global:
+    - SLIMERJSLAUNCHER=$(which firefox) DISPLAY=:99.0 PATH=$TRAVIS_BUILD_DIR/slimerjs:$PATH TMPDIR=$TRAVIS_BUILD_DIR/tmp
+    - GH_REF: github.com/catmaid/catmaid.github.io.git
+    - secure: "jS17W1CVlSIcUl0BqQjWpDlncxvOFg3w6HDOCuCp0DlPjMaJcLK3xjPqKE3a4FbTvTWo/q8jxjk4lGkRa5GneZhk/b0UEpQBrfY6NmQF4df0MHA7rRdLoSYAqh96bMKWLWSZ/teEB89wUxX21Zyuft05IvJ0G1s4PazTrZoovcg="
 addons:
   firefox: "38.0"
   postgresql: 9.3
@@ -14,9 +17,9 @@ before_install:
   - sh -e /etc/init.d/xvfb start
 install:
   - travis_retry sudo apt-get install -y -qq $(< packagelist-ubuntu-12.04-apt.txt)
-  - travis_retry pip install -q pip==1.5.4
-  - travis_retry travis_wait pip install -q numpy==1.6.1 distribute==0.7.3
-  - travis_retry travis_wait 60 pip install -q -r django/pip-frozen
+  - travis_retry python -m pip install -U pip
+  - travis_retry travis_wait 60 pip install -q -r django/requirements.txt
+  - pip list
   # Install additional dependencies for Travis
   - pip install coveralls
   - npm install jshint qunit-phantomjs-runner
@@ -54,3 +57,16 @@ script:
   - ./.travis-run-slimerjs.sh http://localhost:8000/tests
 after_success:
   - cd django/projects/mysite && coveralls
+  # Build documentation
+  - cd ../../../sphinx-doc
+  - make html
+  # Push to GitHub pages
+  - git clone "https://${GH_REF}" build/catmaid.github.io
+  - cd build/catmaid.github.io
+  - git rm -r dev
+  - mv ../html dev
+  - git add dev
+  - git config --global user.email "tom@voodoo-arts.net"
+  - git config --global user.name "Tracis CI"
+  - git commit -m "Compile new version of documentation"
+  - git push --quiet "https://${GH_TOKEN}@${GH_REF}" master:master > /dev/null

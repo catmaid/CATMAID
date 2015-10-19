@@ -2,7 +2,7 @@
    sphinx-quickstart on Sat Dec 10 20:48:29 2011.
 Welcome to CATMAID
 ==================
-The **C** ollaborative **A** nnotation **T** oolkit for **M** assive **A** mounts of **I** mage **D** ata
+The **C**\ ollaborative **A**\ nnotation **T**\ oolkit for **M**\ assive **A**\ mounts of **I**\ mage **D**\ ata
 
 **Features:**
 
@@ -12,7 +12,7 @@ The **C** ollaborative **A** nnotation **T** oolkit for **M** assive **A** mount
 - Multiple linked image stack display
 - Neuron Catalog
 - SVG and WebGL-based neuronal morphology viewer
-- Open source software
+- Open source software (`GPLv3 <https://www.tldrlegal.com/l/gpl-3.0>`_)
 
 Documentation
 -------------
@@ -21,4 +21,5 @@ Documentation
    :maxdepth: 2
 
    user
+   administrator
    developer

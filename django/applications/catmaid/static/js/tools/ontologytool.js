@@ -3,7 +3,7 @@
  */
 function OntologyTool()
 {
-    this.prototype = new Navigator();
+    this.prototype = new CATMAID.Navigator();
     this.toolname = "ontologytool";
     var self = this;
     var actions = [];
@@ -21,7 +21,7 @@ function OntologyTool()
         return actions;
     };
 
-    this.addAction( new Action({
+    this.addAction( new CATMAID.Action({
         helpText: "Open the ontology editor",
         buttonName: "editor",
         buttonID: "ontology_button_editor",
@@ -32,7 +32,7 @@ function OntologyTool()
         }
     }));
 
-    this.addAction( new Action({
+    this.addAction( new CATMAID.Action({
         helpText: "Show classification editor",
         buttonName: 'classification_editor',
         buttonID: "classification_editor_button",
@@ -43,7 +43,7 @@ function OntologyTool()
         }
     }));
 
-    this.addAction( new Action({
+    this.addAction( new CATMAID.Action({
         helpText: "Show clustering widget",
         buttonName: 'clustering_widget',
         buttonID: "clustering_button",
@@ -54,7 +54,7 @@ function OntologyTool()
         }
     }));
 
-    this.addAction( new Action({
+    this.addAction( new CATMAID.Action({
         helpText: "Show ontology search widget",
         buttonName: 'search',
         buttonID: "ontology_search_button",
@@ -73,7 +73,7 @@ function OntologyTool()
     var setupSubTools = function()
     {
         // setup tool box
-        var box = createButtonsFromActions(
+        var box = CATMAID.createButtonsFromActions(
             actions,
             "toolbox_ontology",
             "ontology_");
@@ -154,7 +154,7 @@ function OntologyTool()
         // nothing to do here currently
 	};
 
-    var keyCodeToAction = getKeyCodeToActionMap(actions);
+    var keyCodeToAction = CATMAID.getKeyCodeToActionMap(actions);
 
     /**
      * This function should return true if there was any action

@@ -12,6 +12,8 @@ var global_bottom = 29;
 var requestQueue;
 var project;
 
+var cachedProjectsInfo = null;
+
 var current_dataview;
 var dataview_menu;
 
@@ -150,7 +152,7 @@ function handle_login(status, text, xml, completionCallback) {
     if (e.id || (e.permissions && -1 !== e.permissions.indexOf('catmaid.can_browse'))) {
       // Asynchronously, try to get a full list of users if a user is logged in
       // or the anonymous user has can_browse permissions.
-      User.getUsers(done);
+      CATMAID.User.getUsers(done);
     } else {
       done();
     }
@@ -190,7 +192,7 @@ function handle_logout(status, text, xml) {
 
 	document.getElementById( "message_box" ).style.display = "none";
 
-	if ( project && project.id ) project.setTool( new Navigator() );
+	if ( project && project.id ) project.setTool( new CATMAID.Navigator() );
 
 	if (status == 200 && text) {
 		var e = $.parseJSON(text);
@@ -207,7 +209,7 @@ function handle_logout(status, text, xml) {
 function handle_profile_update(e) {
   try {
     if (e.userprofile) {
-      userprofile = new Userprofile(e.userprofile);
+      userprofile = new CATMAID.Userprofile(e.userprofile);
     } else {
       throw "The server returned no valid user profile.";
     }
@@ -222,7 +224,7 @@ function handle_profile_update(e) {
   }
 
   // update the edit tool actions and its div container
-  var new_edit_actions = createButtonsFromActions(CATMAID.EditTool.actions,
+  var new_edit_actions = CATMAID.createButtonsFromActions(CATMAID.EditTool.actions,
     'toolbox_edit', '');
   $('#toolbox_edit').replaceWith(new_edit_actions);
   $('#toolbox_edit').hide();
@@ -262,50 +264,33 @@ function updateProjects(completionCallback) {
 	w.appendChild(document.createTextNode("loading ..."));
 	pp.appendChild(w);
 
-	requestQueue.register(django_url + 'projects',
-		'GET',
-		undefined,
-		function (status, text, xml) {
-			handle_updateProjects(status, text, xml);
-			if (typeof completionCallback !== "undefined") {
-				completionCallback();
-			}
-		});
-}
+  // Destroy active project
+  // TODO: Does this really have to happen here?
+  if (project) {
+    project.destroy();
+    project = undefined;
+  }
 
-var cachedProjectsInfo = null;
-
-/**
- * handle a project-menu-update-request answer
- * update the project menu
- *
- * free the window
- */
-
-function handle_updateProjects(status, text, xml) {
-	if (status == 200 && text) {
-		var e = $.parseJSON(text);
-
-		if (e.error) {
-			project_menu.update();
-			alert(e.error);
-		} else {
-			cachedProjectsInfo = e;
-			// recreate the project data view
-			if (current_dataview) {
-				switch_dataview(current_dataview);
-			} else {
-				load_default_dataview();
-			}
-			// update the project > open menu
-			project_menu.update(cachedProjectsInfo);
-		}
-		if (project) {
-			project.destroy();
-			project = undefined;
-		}
-	}
-	CATMAID.ui.releaseEvents();
+  CATMAID.fetch('projects', 'GET')
+    .catch(function(error) {
+      // Show error and continue with null JSON
+      CATMAID.error("Could not load available projects: " + error.error, error.detail);
+      return null;
+    })
+    .then(function(json) {
+      // recreate the project data view
+      if (current_dataview) {
+        switch_dataview(current_dataview);
+      } else {
+        load_default_dataview();
+      }
+      cachedProjectsInfo = json;
+      project_menu.update(json);
+      CATMAID.ui.releaseEvents();
+      if (CATMAID.tools.isFn(completionCallback)) {
+        completionCallback();
+      }
+    });
 }
 
 function updateProjectListMessage(text) {
@@ -534,7 +519,8 @@ function handle_openProjectStack( e, stackViewer )
       tilesource,
       true,
       1,
-      !useExistingViewer);
+      !useExistingViewer,
+      userprofile.tile_linear_interpolation);
 
   if (!useExistingViewer) {
     stackViewer.addLayer( "TileLayer", tilelayer );
@@ -600,6 +586,104 @@ function handle_openProjectStack( e, stackViewer )
   CATMAID.ui.releaseEvents();
   return stackViewer;
 }
+
+/**
+ * Open the given a specific stack group in a project.
+ */
+function openStackGroup(pid, sgid, successFn) {
+  CATMAID.fetch(pid + "/stackgroup/" + sgid + "/info", "GET")
+    .then(function(json) {
+      if (!json.stacks || 0 === json.stacks.length) {
+        // If a stack group has no stacks associated, cancel loading.
+        CATMAID.error("The selected stack group has no stacks associated",
+            "Canceling loading");
+        return;
+      }
+
+      if (project) {
+        project.destroy();
+      }
+
+      // Open first stack
+      loadNextStack(json.project_id, json.stacks.shift(), json.stacks);
+
+      function loadNextStack(pid, stack, stacks, firstStackViewer) {
+        CATMAID.fetch(pid + '/stack/' + stack.id + '/info', 'GET')
+          .then(function(json) {
+            var stackViewer;
+            // If there is already a stack loaded and this stack is a channel of
+            // the group, add it to the existing stack viewer. Otherwise, open
+            // the stack in a new stack viewer.
+            if (firstStackViewer && 'has_channel' === stack.relation) {
+              stackViewer = firstStackViewer;
+            }
+            var newStackViewer = handle_openProjectStack(json, stackViewer);
+            if (0 < stacks.length) {
+              var sv = firstStackViewer ? firstStackViewer : newStackViewer;
+              loadNextStack(pid, stacks.shift(), stacks, sv);
+            } else {
+              CATMAID.layoutStackViewers();
+            }
+          })
+          .catch(function(error) {
+            CATMAID.error("Couldn't load stack of stack group: " + error.error,
+                error.detail);
+          });
+      }
+    })
+    .catch(function(error) {
+      CATMAID.error("Couldn't load stack group: " + error.error, error.detail);
+    });
+}
+
+/**
+ * Layout currently open stack viewers. Currently, this only changes the layout
+ * if there are three ortho-views present.
+ */
+CATMAID.layoutStackViewers = function() {
+  var stackViewers = project.getStackViewers();
+  var orientations = stackViewers.reduce(function(o, s) {
+    o[s.primaryStack.orientation] = s;
+    return o;
+  }, {});
+
+  // If there are three different ortho stacks, arrange viewers in four-pane
+  // layout. On the left side XY on top of XZ, on the righ ZY on top of a
+  // selection table.
+  var Stack = CATMAID.Stack;
+  if (3 === stackViewers.length && orientations[Stack.ORIENTATION_XY] &&
+      orientations[Stack.ORIENTATION_XZ] && orientations[Stack.ORIENTATION_ZY]) {
+    // Test if a fourth window has to be created
+    var windows = rootWindow.getWindows();
+    if (3 === windows.length) {
+      // Create fourth window for nicer layout
+      WindowMaker.create('keyboard-shortcuts');
+    } else if (4 < windows.length) {
+      // Stop layouting if there are more than four windows
+      return;
+    }
+
+    // Get references to stack viewer windows
+    var xyWin = orientations[Stack.ORIENTATION_XY].getWindow();
+    var xzWin = orientations[Stack.ORIENTATION_XZ].getWindow();
+    var zyWin = orientations[Stack.ORIENTATION_ZY].getWindow();
+
+    // Find fourth window
+    var extraWin = rootWindow.getWindows().filter(function(w) {
+      return w !== xyWin && w !== xzWin && w !== zyWin;
+    });
+
+    // Raise error if there is more than one extra window
+    if (1 !== extraWin.length) {
+      throw CATMAID.Error("Couldn't find extra window for layouting");
+    }
+
+    // Arrange windows in four-pane layout
+    var left = new CMWVSplitNode(xyWin, xzWin);
+    var right = new CMWVSplitNode(zyWin, extraWin[0]);
+    rootWindow.replaceChild(new CMWHSplitNode(left, right));
+  }
+};
 
 /**
  * Check if the client CATMAID version matches the server version. If it does
@@ -1046,13 +1130,13 @@ var realInit = function()
 	document.getElementById( "session_box" ).style.display = "none";
 
 	// Create the toolboxes
-	$('#toolbox_project').replaceWith(createButtonsFromActions(
+	$('#toolbox_project').replaceWith(CATMAID.createButtonsFromActions(
 		CATMAID.toolActions, 'toolbox_project', ''));
-	$('#toolbox_edit').replaceWith(createButtonsFromActions(
+	$('#toolbox_edit').replaceWith(CATMAID.createButtonsFromActions(
 		CATMAID.EditTool.actions, 'toolbox_edit', ''));
-  $('#toolbox_segmentation').replaceWith(createButtonsFromActions(
+  $('#toolbox_segmentation').replaceWith(CATMAID.createButtonsFromActions(
     CATMAID.SegmentationTool.actions, 'toolbox_segmentation', ''));
-	$('#toolbox_data').replaceWith(createButtonsFromActions(
+	$('#toolbox_data').replaceWith(CATMAID.createButtonsFromActions(
 		CATMAID.TracingTool.actions, 'toolbox_data', ''));
 
 	// Add the toolbar buttons:
@@ -1089,7 +1173,7 @@ var realInit = function()
 	// login and thereafter load stacks if requested
 	login(undefined, undefined, function() {
 		var tools = {
-			navigator: Navigator,
+			navigator: CATMAID.Navigator,
 			tracingtool: CATMAID.TracingTool,
 			segmentationtool: CATMAID.SegmentationTool,
 			classification_editor: null

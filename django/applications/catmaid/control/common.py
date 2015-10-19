@@ -16,7 +16,7 @@ from catmaid.models import Log, NeuronSearch, CELL_BODY_CHOICES, \
 
 
 def get_catmaid_version(request):
-    return HttpResponse(json.dumps({'SERVER_VERSION': settings.VERSION}), mimetype='application/json')
+    return HttpResponse(json.dumps({'SERVER_VERSION': settings.VERSION}), content_type='application/json')
 
 
 def _create_relation(user, project_id, relation_id, instance_a_id, instance_b_id):

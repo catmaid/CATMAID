@@ -21,17 +21,6 @@ $.fn.dataTable.ext.order['dom-checkbox'] = function (settings, col) {
   });
 };
 
-/*
- * Sorting function for inputs with a back ground color which reates an array of
- * all background colors.
- */
-$.fn.dataTable.ext.order['dom-color-property'] = function (settings, col) {
-  return this.api().column(col, {order:'index'}).nodes().map(function (td, i) {
-    var c = $(td).attr('data-color');
-    return new THREE.Color(c).getHSL();
-  });
-};
-
 /**
  * Add ascending natural sort string compare type.
  */
@@ -59,3 +48,42 @@ $.fn.dataTable.ext.oSort['hslcolor-asc']  = function(a, b) {
 $.fn.dataTable.ext.oSort['hslcolor-desc']  = function(a, b) {
   return -1 * CATMAID.tools.compareHSLColors(a, b);
 };
+
+
+/**
+ * Three.js extensions
+ */
+
+/**
+ * Override colors array access to make sure the underlying typed array has the
+ * expected size.
+ *
+ * TODO: Remove this workaround once issue #7361 in Three.js is resolved.
+ */
+(function() {
+  var originalGeometry = THREE.Geometry;
+  THREE.Geometry = function() {
+    // Call original constructor
+    originalGeometry.apply(this, arguments);
+
+    var colors = this.colors;
+    Object.defineProperty(this, "colors", {
+      get: function() {
+        return colors;
+      },
+      set: function(value) {
+        // Make sure the attribute has enough space
+        var nVertices = this.vertices.length;
+        if (this._bufferGeometry) {
+          if (nVertices !== this._bufferGeometry.attributes.color.count) {
+            this._bufferGeometry.addAttribute("color",
+                new THREE.BufferAttribute(new Float32Array(nVertices * 3), 3));
+          }
+        }
+
+        colors = value;
+      }});
+  };
+  THREE.Geometry.prototype = originalGeometry.prototype;
+  THREE.Geometry.constructor = originalGeometry.constructor;
+})();

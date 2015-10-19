@@ -27,7 +27,7 @@
 
     if (userprofile.show_text_label_tool) {
       editToolActions.push(
-        new Action({
+        new CATMAID.Action({
           helpText: "Text label tool",
           buttonID: 'edit_button_text',
           buttonName: 'text',
@@ -40,7 +40,7 @@
 
     if (userprofile.show_tagging_tool) {
       editToolActions.push(
-        new Action({
+        new CATMAID.Action({
           helpText: "Tagging tool",
           buttonID: 'edit_button_tags',
           buttonName: 'tags',
@@ -53,7 +53,7 @@
 
     if (userprofile.show_cropping_tool) {
       editToolActions.push(
-        new Action({
+        new CATMAID.Action({
           helpText: "Crop tool",
           buttonID: 'edit_button_crop',
           buttonName: 'crop',
@@ -66,7 +66,7 @@
 
     if (userprofile.show_segmentation_tool) {
       editToolActions.push(
-        new Action({
+        new CATMAID.Action({
            helpText: "Segmentation Tool",
            buttonID: 'edit_button_segmentation',
            buttonName: 'canvas',
@@ -80,7 +80,7 @@
 
     if (userprofile.show_tracing_tool) {
       editToolActions.push(
-        new Action({
+        new CATMAID.Action({
           helpText: "Tracing tool",
           buttonID: 'edit_button_trace',
           buttonName: 'trace',
@@ -115,7 +115,7 @@
 
     if (userprofile.show_ontology_tool) {
       editToolActions.push(
-        new Action({
+        new CATMAID.Action({
           helpText: "Show ontology tools",
           buttonID: "edit_button_ontology",
           buttonName: 'ontology_tools',
@@ -128,7 +128,7 @@
 
     if (userprofile.show_roi_tool) {
       editToolActions.push(
-        new Action({
+        new CATMAID.Action({
           helpText: "Show ROI tool",
           buttonID: "edit_button_roi",
           buttonName: 'roitool',

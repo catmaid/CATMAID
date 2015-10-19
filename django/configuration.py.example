@@ -29,7 +29,7 @@ catmaid_writable_path = ''
 catmaid_timezone = ''
 
 # The domain name (server name) which hosts the CATMAID installation
-# without http:// and without a trailing slash, e.g.: localhost
+# without http:// and without a trailing slash or port, e.g.: localhost
 
 catmaid_servername = ''
 

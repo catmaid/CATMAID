@@ -37,8 +37,14 @@ class AjaxExceptionMiddleware(object):
             response['traceback'] = ''.join(traceback.format_tb(tb))
         return HttpResponse(json.dumps(response))
 
-class FlyTEMMiddleware(object):
 
+class BasicModelMapMiddleware(object):
+    """Redirect requests to stacks and projects to alternative models that will
+    fetch information from other sources. If the url_prefix field is set, it is
+    prepended to request URLs.
+    """
+
+    url_prefix = ''
     stack_info_pattern = re.compile(r'^/.+/stack/.+/info$')
     stacks_pattern = re.compile(r'/.+/stacks')
 
@@ -48,8 +54,20 @@ class FlyTEMMiddleware(object):
                     self.stacks_pattern.search(request.path)
 
         if new_path:
-            request.path_info = '/flytem' + request.path_info
-            request.path = '/flytem' + request.path
+            request.path_info = self.url_prefix + request.path_info
+            request.path = self.url_prefix + request.path
+
+
+class FlyTEMMiddleware(BasicModelMapMiddleware):
+    """Let this middleware redirect requests for stacks and projects to FlyTEM
+    render service models.
+    """
+
+    url_prefix = '/flytem'
+
+
+class DVIDMiddleware(BasicModelMapMiddleware):
+    url_prefix = '/dvid'
 
 
 class ProfilingMiddleware(object):

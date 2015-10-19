@@ -49,11 +49,12 @@ INSTALLED_APPS = (
     'taggit',
     'adminplus',
     'catmaid',
-    'vncbrowser',
     'performancetests',
     'guardian',
     'south',
     'pipeline',
+    'rest_framework',
+    'rest_framework_swagger',
 )
 
 LOGGING = {
@@ -134,6 +135,7 @@ PROFILE_TRACING_OVERLAY_SCREEN_SCALING = True
 PROFILE_TRACING_OVERLAY_SCALE = 1.0
 PROFILE_PREFER_WEBGL_LAYERS = False
 PROFILE_USE_CURSOR_FOLLOWING_ZOOM = True
+PROFILE_TILE_LINEAR_INTERPOLATION = True
 
 # Defines if a cropped image of a ROI should be created
 # automatically when the ROI is created. If set to False
@@ -211,6 +213,13 @@ VERSION = utils.get_version()
 # FLYTEM_STACK_TILE_WIDTH = 512
 # FLYTEM_STACK_TILE_HEIGHT = 512
 
+# DVID auto-discovery. To activate add the following lines to your settings.py
+# file:
+# MIDDLEWARE_CLASSES += ('catmaid.middleware.DVIDMiddleware',)
+# DVID_URL = 'http://emdata2.int.janelia.org:7000/api'
+# DVID_FORMAT = 'jpg:80'
+# DVID_SHOW_NONDISPLAYABLE_REPOS = True
+
 # Make Django root folder available
 PROJECT_ROOT = utils.relative('..', '..')
 # Add all subdirectories of project, applications and lib to sys.path
@@ -237,3 +246,26 @@ PERFORMANCETEST_SCM_URL = "https://github.com/catmaid/CATMAID/commit/{version}"
 STATIC_EXTENSION_URL = "/staticext/"
 STATIC_EXTENSION_ROOT = "/tmp"
 STATIC_EXTENSION_FILES = []
+
+REST_FRAMEWORK = {
+    # CSRF is unnecessary because there is no form-based workflow to
+    # distinguish intentional from hijacked requests.
+    'DEFAULT_AUTHENTICATION_CLASSES': ('custom_rest_authentication.CsrfExemptSessionAuthentication',),
+    'VIEW_DESCRIPTION_FUNCTION': 'custom_rest_swagger_googledoc.get_googledocstring'
+}
+
+SWAGGER_SETTINGS = {
+    'info': {
+        'title': 'CATMAID',
+        'description': '''
+                       This is an API for accessing project, stack and
+                       annotation data for this CATMAID instance. More
+                       information is available at
+                       <a href="http://catmaid.org">catmaid.org</a>.
+                       ''',
+        'contact': 'catmaid@googlegroups.com',
+        'license': 'GPLv3',
+        'licenseUrl': 'https://raw.githubusercontent.com/catmaid/CATMAID/master/LICENSE',
+    },
+    'doc_expansion': 'list'
+}

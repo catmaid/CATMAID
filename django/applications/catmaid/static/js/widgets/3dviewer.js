@@ -16,7 +16,6 @@
   SkeletonRegistry,
   submitterFn,
   SynapseClustering,
-  User,
   WindowMaker
  */
 
@@ -1360,7 +1359,7 @@
     this.scene = new THREE.Scene();
     // A render target used for picking objects
     this.pickingTexture = new THREE.WebGLRenderTarget(w, h);
-    this.pickingTexture.generateMipmaps = false;
+    this.pickingTexture.texture.generateMipmaps = false;
 
     this.view = new this.View(this);
     this.lights = this.createLights(this.dimensions, this.center, this.view.camera);
@@ -1489,7 +1488,10 @@
   };
 
   WebGLApplication.prototype.Space.prototype.updateSplitShading = function(old_skeleton_id, new_skeleton_id, options) {
-    if ('active_node_split' === options.shading_method || 'near_active_node' === options.shading_method) {
+    if ('active_node_split' === options.shading_method ||
+        'near_active_node' === options.shading_method ||
+        'near_active_node_z_project' === options.shading_method ||
+        'near_active_node_z_camera' === options.shading_method) {
       if (old_skeleton_id !== new_skeleton_id) {
         if (old_skeleton_id && old_skeleton_id in this.content.skeletons) this.content.skeletons[old_skeleton_id].updateSkeletonColor(options);
       }
@@ -1597,7 +1599,7 @@
     this.radiusSphere = new THREE.OctahedronGeometry(10, 3);
     this.icoSphere = new THREE.IcosahedronGeometry(1, 2);
     this.cylinder = new THREE.CylinderGeometry(1, 1, 1, 10, 1, false);
-    this.textMaterial = new THREE.MeshNormalMaterial( { color: 0xffffff, overdraw: true } );
+    this.textMaterial = new THREE.MeshNormalMaterial( { overdraw: true } );
     // Mesh materials for spheres on nodes tagged with 'uncertain end', 'undertain continuation' or 'TODO'
     this.labelColors = {uncertain: new THREE.MeshBasicMaterial({color: 0xff8000, opacity:0.6, transparent: true}),
                         todo:      new THREE.MeshBasicMaterial({color: 0xff0000, opacity:0.6, transparent: true}),
@@ -1688,7 +1690,7 @@
     geometry.computeLineDistances();
 
     var material = new THREE.LineBasicMaterial( { color: 0xff0000 } );
-    var mesh = new THREE.Line( geometry, material, THREE.LinePieces );
+    var mesh = new THREE.LineSegments( geometry, material );
 
     mesh.position.set(0, 0, 0);
 
@@ -1767,7 +1769,7 @@
       var material = new THREE.LineBasicMaterial({
         color: o['color'] || 0x535353
       });
-      var mesh = new THREE.Line( geometry, material, THREE.LinePieces );
+      var mesh = new THREE.LineSegments( geometry, material );
 
       mesh.position.set(min_x, floor, min_z);
 
@@ -1978,7 +1980,6 @@
 
   WebGLApplication.prototype.Space.prototype.View = function(space) {
     this.space = space;
-    this.logDepthBuffer = true;
 
     this.init();
 
@@ -2003,6 +2004,7 @@
     var orthoNear = -regularFarPlane;
     var orthoFar = regularFarPlane;
 
+    this.logDepthBuffer = true;
     this.mainCamera = new THREE.CombinedCamera(-this.space.canvasWidth,
         -this.space.canvasHeight, fov, near, far, orthoNear, orthoFar);
     this.mainCamera.frustumCulled = false;
@@ -2019,17 +2021,30 @@
 
     this.projector = new THREE.Projector();
 
-    this.renderer = this.createRenderer('webgl');
+    this.mouse = {position: new THREE.Vector2(),
+                  is_mouse_down: false};
 
-    this.space.container.appendChild(this.renderer.domElement);
+    this.initRenderer();
 
     // Create controls after the renderer's DOM element has been added, so they
     // are initialized with the correct dimensions right from the start.
     this.controls = this.createControls();
+  };
 
-    this.mouse = {position: new THREE.Vector2(),
-                  is_mouse_down: false};
+  /**
+   * Create a new renderer and add its DOM element to the 3D viewer's container
+   * element. If there is already a renderer, remove its DOM element and
+   * handlers on it.
+   */
+  WebGLApplication.prototype.Space.prototype.View.prototype.initRenderer = function() {
+    // Remove existing elements if there is a current renderer
+    if (this.renderer) {
+      this.space.container.removeChild(this.renderer.domElement);
+      this.mouseControls.detach(this.renderer.domElement);
+    }
 
+    this.renderer = this.createRenderer('webgl');
+    this.space.container.appendChild(this.renderer.domElement);
     this.mouseControls = new this.MouseControls();
     this.mouseControls.attach(this, this.renderer.domElement);
 
@@ -2042,8 +2057,7 @@
             "3D viewer.");
     }, false);
     this.renderer.context.canvas.addEventListener('webglcontextrestored', (function(e) {
-      // TODO: Calling init() isn't enough, but one can manually restart
-      // the widget.
+      this.initRenderer();
     }).bind(this), false);
   };
 
@@ -2220,7 +2234,7 @@
           });
           this.m[key] = material;
         }
-        var newMesh = new THREE.Line( this.g, material, THREE.LinePieces );
+        var newMesh = new THREE.LineSegments( this.g, material );
         // Move new mesh to position of replaced mesh and adapt size
         newMesh.position.copy(mesh.position);
         scene.add(newMesh);
@@ -2512,16 +2526,19 @@
         if (this.logDepthBuffer) {
           originalFarPlaneP = this.camera.cameraP.far;
           this.camera.cameraP.far = this.camera.cameraO.far;
-          this.camera.toOrthographic();
-        } else {
-          this.camera.toOrthographic();
         }
+        this.logDepthBuffer = false;
+        this.camera.toOrthographic();
       } else {
         if (this.logDepthBuffer && originalFarPlaneP) {
           this.camera.cameraP.far = originalFarPlaneP;
         }
+        this.logDepthBuffer = true;
         this.camera.toPerspective();
       }
+      // Since we use different depth buffer types for perspective and
+      // orthographic mode, the rendeer has to be re-initialized.
+      this.initRenderer();
     };
   })();
 
@@ -2926,9 +2943,9 @@
     this.geometry[CTYPES[2]] = new THREE.Geometry();
 
         this.actor = {}; // has three keys (the CTYPES), each key contains the edges of each type
-        this.actor[CTYPES[0]] = new THREE.Line(this.geometry[CTYPES[0]], this.line_material, THREE.LinePieces);
-        this.actor[CTYPES[1]] = new THREE.Line(this.geometry[CTYPES[1]], this.space.staticContent.connectorLineColors[CTYPES[1]], THREE.LinePieces);
-        this.actor[CTYPES[2]] = new THREE.Line(this.geometry[CTYPES[2]], this.space.staticContent.connectorLineColors[CTYPES[2]], THREE.LinePieces);
+        this.actor[CTYPES[0]] = new THREE.LineSegments(this.geometry[CTYPES[0]], this.line_material);
+        this.actor[CTYPES[1]] = new THREE.LineSegments(this.geometry[CTYPES[1]], this.space.staticContent.connectorLineColors[CTYPES[1]]);
+        this.actor[CTYPES[2]] = new THREE.LineSegments(this.geometry[CTYPES[2]], this.space.staticContent.connectorLineColors[CTYPES[2]]);
 
     this.specialTagSpheres = {};
     this.synapticSpheres = {};
@@ -3179,6 +3196,23 @@
     }).bind(this), {});
   };
 
+  /** Return a map of node ID vs map of tag vs true. */
+  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createTagMap = function() {
+    var map = {};
+    Object.keys(this.tags).forEach(function(tag) {
+      this.tags[tag].forEach(function(node) {
+        var o = map[node];
+        if (o) o[tag] = true;
+        else {
+          o = {};
+          o[tag] = true;
+          map[node] = o;
+        }
+      }, this);
+    }, this);
+    return map;
+  };
+
   /** For skeletons with a single node will return an Arbor without edges and with a null root,
    * given that it has no edges, and therefore no vertices, at all. */
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createArbor = function() {
@@ -3239,6 +3273,14 @@
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColor = function(options) {
     var node_weights,
         arbor;
+    if ('near_active_node_z_camera' !== options.shading_method &&
+        'near_active_node_z_project' !== options.shading_method &&
+        this.line_material instanceof WebGLApplication.ShaderLineBasicMaterial) {
+      this.line_material = this.actor.neurite.material = new THREE.LineBasicMaterial({
+        color: this.line_material.color,
+        opacity: this.line_material.opacity,
+        linewidth: options.skeleton_line_width});
+    }
 
     if ('none' === options.shading_method) {
       node_weights = null;
@@ -3384,6 +3426,40 @@
             node_weights[node] = undefined === within[node] ? 0 : 1;
           });
         }
+
+      } else if ('near_active_node_z_camera' === options.shading_method ||
+                 'near_active_node_z_project' === options.shading_method) {
+        this.line_material = this.actor.neurite.material =
+            new WebGLApplication.ShaderLineBasicMaterial(this.line_material);
+
+        // Determine active node distance in the vertex shader and pass to the
+        // fragment shader as a varying.
+        this.line_material.insertSnippet(
+            'vertexDeclarations',
+            'uniform vec3 u_activeNodePosition;\n' +
+            'uniform float u_horizon;\n' +
+            'varying float activeNodeDistanceDarkening;\n');
+        this.line_material.insertSnippet(
+            'vertexPosition',
+            ('near_active_node_z_camera' === options.shading_method ?
+              'vec3 camVert = (vec4(position, 1.0) * modelMatrix).xyz - cameraPosition;\n' +
+              'vec3 camAtn = (vec4(u_activeNodePosition, 1.0) * modelMatrix).xyz - cameraPosition;\n' +
+              'float zDist = distance(dot(camVert, normalize(camAtn)), length(camAtn));\n' :
+              'float zDist = distance(position.z, u_activeNodePosition.z);\n') +
+            'activeNodeDistanceDarkening = 1.0 - clamp(zDist/u_horizon, 0.0, 1.0);\n');
+
+        this.line_material.insertSnippet(
+            'fragmentDeclarations',
+            'varying float activeNodeDistanceDarkening;\n');
+        this.line_material.insertSnippet(
+            'fragmentColor',
+            'gl_FragColor = vec4(diffuse * activeNodeDistanceDarkening, opacity);\n');
+
+        this.line_material.addUniforms({
+            u_activeNodePosition: { type: 'v3', value: SkeletonAnnotations.getActiveNodeProjectVector3() },
+            u_horizon: { type: 'f', value: options.distance_to_active_node }});
+        this.line_material.refresh();
+
       } else if ('synapse-free' === options.shading_method) {
         var locations = this.getPositions(),
             node_weights = {};
@@ -3466,7 +3542,7 @@
           dendriteColor = new THREE.Color().setRGB(0, 0, 1),
           notComputable = new THREE.Color().setRGB(0.4, 0.4, 0.4);
       if ('creator' === options.color_method) {
-        pickColor = function(vertex) { return User(vertex.user_id).color; };
+        pickColor = function(vertex) { return CATMAID.User(vertex.user_id).color; };
       } else if ('all-reviewed' === options.color_method) {
         pickColor = this.reviews ?
           (function(vertex) {
@@ -3565,6 +3641,8 @@
         }
       }
     }
+
+    if (typeof this.line_material.refresh === 'function') this.line_material.refresh();
   };
 
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.changeSkeletonLineWidth = function(width) {
@@ -3928,8 +4006,8 @@
           vertices2.push(v);
         }
       }
-      this.connectoractor[type] = new THREE.Line( this.connectorgeometry[type],
-          this.actor[type].material, THREE.LinePieces );
+      this.connectoractor[type] = new THREE.LineSegments( this.connectorgeometry[type],
+          this.actor[type].material );
       this.connectorgeometry[type].colors = this.geometry[type].colors;
       this.connectorgeometry[type].colorsNeedUpdate = true;
       this.space.add( this.connectoractor[type] );
@@ -4271,7 +4349,7 @@
       }
     });
 
-    var users = User.all();
+    var users = CATMAID.User.all();
     for (var userID in users) {
       if (users.hasOwnProperty(userID) && userID !== "-1") {
         var user = users[userID];
@@ -4374,16 +4452,13 @@
   };
 
   WebGLApplication.prototype.createMeshColorButton = function() {
-    var mesh_color = '#meshes-color' + this.widgetID,
-        mesh_opacity = '#mesh-opacity' + this.widgetID,
-        mesh_colorwheel = '#mesh-colorwheel' + this.widgetID;
-    var onchange = (function(color, alpha) {
-      color = new THREE.Color().setRGB(parseInt(color.r) / 255.0,
-          parseInt(color.g) / 255.0, parseInt(color.b) / 255.0);
-      $(mesh_color).css('background-color', color.getStyle());
-      $(mesh_opacity).text(alpha.toFixed(2));
-      this.options.meshes_color = $(mesh_color).css('background-color').replace(/\s/g, '');
+    var buttonId = 'meshes-color' + this.widgetID,
+        labelId = 'mesh-opacity' + this.widgetID;
+
+    var onchange = (function(rgb, alpha, colorChanged, alphaChanged) {
+      $('#' + labelId).text(alpha.toFixed(2));
       if (this.options.show_meshes) {
+        var color = new THREE.Color().setRGB(rgb.r, rgb.g, rgb.b);
         var material = this.options.createMeshMaterial(color, alpha);
         this.space.content.meshes.forEach(function(mesh) {
           mesh.material = material;
@@ -4395,33 +4470,20 @@
     // Defaults for initialization:
     var options = WebGLApplication.prototype.OPTIONS;
 
-    var c = $(document.createElement("button")).attr({
-        id: mesh_color.slice(1),
-        value: 'color'
-      })
-        .css('background-color', options.meshes_color)
-        .click( function( event )
-        {
-          var sel = $(mesh_colorwheel);
-          if (sel.is(':hidden')) {
-            var cw = Raphael.colorwheel(sel[0], 150);
-            cw.color($(mesh_color).css('background-color'),
-                     $(mesh_opacity).text());
-            cw.onchange(onchange);
-            sel.show();
-          } else {
-            sel.hide();
-            sel.empty();
-          }
-        })
-        .text('color')
-        .get(0);
+    var colorButton = document.createElement("button");
+    colorButton.setAttribute('id', buttonId);
+    colorButton.appendChild(document.createTextNode('color'));
+    CATMAID.ColorPicker.enable(colorButton, {
+      initialColor: options.meshes_color,
+      initialAlpha: options.meshes_opacity,
+      onColorChange: onchange
+    });
+
     var div = document.createElement('span');
-    div.appendChild(c);
+    div.appendChild(colorButton);
     div.appendChild($(
-      '<span>(Opacity: <span id="' + mesh_opacity.slice(1) + '">' +
+      '<span>(Opacity: <span id="' + labelId + '">' +
         options.meshes_opacity + '</span>)</span>').get(0));
-    div.appendChild($('<div id="' + mesh_colorwheel.slice(1) + '">').hide().get(0));
     return div;
   };
 
@@ -4429,7 +4491,7 @@
     value = this._validate(value, "Invalid value");
     if (!value) return;
     this.options.distance_to_active_node = value;
-    if ('near_active_node' === this.options.shading_method) {
+    if (this.options.shading_method.indexOf('near_active_node') !== -1) {
       var skid = SkeletonAnnotations.getActiveSkeletonId();
       if (skid) {
         var skeleton = this.space.content.skeletons[skid];
@@ -4748,6 +4810,250 @@
         onDone(frames);
       }
     }
+  };
+
+  /** Measure distances along cable to synapses or other features, and count synapses. */
+  WebGLApplication.prototype.countObjects = function() {
+
+    if (0 === this.getSelectedSkeletons().length) {
+      CATMAID.msg("Information", "Add one or more skeletons first!");
+      return;
+    }
+
+    var dialog = new CATMAID.OptionsDialog("Count");
+    dialog.appendMessage("(For measurements and synapse counts of whole arbors, plot morphological measurements in the Circuit Graph Plot (the [P] icon) and then export to CSV.)");
+
+    var kind = dialog.appendChoice("Count: ", "kind",
+        ["postsynaptic sites",
+         "presynaptic sites",
+         "skeleton nodes tagged with..."],
+        ["pre",
+         "post",
+         "tags"]);
+
+    var atags = (function(skeletons) {
+      var tags = Object.keys(skeletons).reduce(function(o, skid) {
+        Object.keys(skeletons[skid].tags).forEach(function(tag) { o[tag] = true; });
+        return o;
+      }, {});
+      var a = Object.keys(tags);
+      a.sort();
+      return a;
+    })(this.space.content.skeletons);
+
+    var tag_choice = dialog.appendChoice("Tag (if applicable): ", "tag",
+        atags,
+        atags);
+
+    var reference = dialog.appendChoice("Reference node: ", "ref",
+        ["active node",
+         "root node"],
+        ["active",
+         "root"]);
+
+    var max_distance = dialog.appendField("Max. distance (nm): ", "max", this.options.distance_to_active_node, false);
+
+    var mode = dialog.appendChoice("Mode: ", "mode",
+        ["along cable (selected arbor only)",
+         "Euclidean distance (all arbors)"],
+        ["cable",
+         "euclidean"]);
+
+    dialog.onOK = (function() {
+      var active_node = SkeletonAnnotations.getActiveNodeId();
+      var active_skid = SkeletonAnnotations.getActiveSkeletonId();
+      var max = Number(max_distance.value); // TODO may fail as non-numeric
+      var sks = this.space.content.skeletons;
+      var tag = atags.length > 0 ? atags[tag_choice.selectedIndex] : null;
+
+      // Select skeletons
+      var skids;
+      if (0 === mode.selectedIndex) {
+        // Along cable (selected arbor only)
+        var sk = sks[active_skid];
+        if (!sk || !sk.visible) {
+          CATMAID.msg("Oops", "Active skeleton not among those in the 3D Viewer");
+          return;
+        }
+        skids = [active_skid];
+      } else {
+        skids = Object.keys(this.space.content.skeletons);
+      }
+
+      var countRelationFn = function(type, synapse_map) {
+        return function(node) {
+          var relations = synapse_map[node];
+          if (!relations) return 0;
+          return relations.reduce(function(sum, relation) {
+            return sum + (type === relation.type ? 1 : 0);
+          }, 0);
+        };
+      };
+
+      // Count function generator: 'o' is a synapse map or the map of text tags, keyed by treenode ID
+      var counterFn = function(skid) {
+        switch (kind.selectedIndex) {
+          case 0: // postsynaptic site
+            return countRelationFn(1, sks[skid].createSynapseMap());
+          case 1: // presynaptic site
+            return countRelationFn(0, sks[skid].createSynapseMap());
+          case 2: // text tag
+            if (tag && sks[skid].tags[tag]) {
+              return (function(tag, node) {
+                var tags = this[node]; // 'this' is the tag map
+                return tags && tags[tag] ? 1 : 0;
+              }).bind(sks[skid].createTagMap(), tag);
+            } else {
+              // not present in skeleton
+              return null;
+            }
+            // Required to make JSHint stop complaining
+            /*falls through*/
+          default:
+            CATMAID.msg("Error", "Unknown kind");
+            return null;
+        }
+      };
+
+      var origin = null;
+      if (0 === reference.selectedIndex && 1 === mode.selectedIndex) {
+        // Use active node as reference for all skeletons
+        var p = SkeletonAnnotations.getActiveNodePositionW();
+        origin = new THREE.Vector3d(p.x, p.y, p.z);
+      }
+
+      var rows = [];
+
+      skids.forEach(function(skid) {
+        var counter = counterFn(skid); // will be null when nothing to count
+        var count = 0;
+
+        if (counter) {
+          var positions = sks[skid].getPositions();
+          var arbor = sks[skid].createArbor();
+
+          if (0 === mode.selectedIndex) {
+            // Along cable
+            if (0 === reference.selectedIndex) {
+              arbor.reroot(active_node); // guaranteed above to belong to the skeleton
+            }
+            var distances = arbor.nodesDistanceTo(arbor.root, function(child, paren) { return positions[child].distanceTo(positions[paren]); }).distances;
+            arbor.nodesArray().forEach(function(node) {
+              if (distances[node] < max) count += counter(node);
+            });
+          } else {
+            // Euclidean distance
+            var o = origin;
+            if (1 === reference.selectedIndex) {
+              var o = positions[arbor.root];
+            }
+            arbor.nodesArray().forEach(function(node) {
+              if (o.distanceTo(positions[node]) < max) count += counter(node);
+            });
+          }
+        }
+
+        rows.push([skid, NeuronNameService.getInstance().getName(skid), count]);
+      }, this);
+
+
+      var csv = rows.map(function(row) {
+        return row[0] + ', "' + row[1] + '", ' + row[2];
+      }).join('\n');
+      saveAs(new Blob([csv], {type: "text/csv"}), "counts.csv");
+
+      if (1 === rows.length) {
+        CATMAID.msg("CSV contains:", csv);
+      }
+
+    }).bind(this);
+
+    dialog.show(400, 300, false);
+  };
+
+  /**
+   * This is a wrapper that allows insertion of snippets of vertex and fragment
+   * shaders at critical sections while otherwise behaving like the shaders for
+   * THREE's built-in BasicLineMaterial.
+   *
+   * Note that this class may need to be updated whenever THREE.js is upgraded.
+   *
+   * @class
+   * @param {THREE.LineBasicMaterial} lineBasicMaterial
+   *        A material to use for color and line property initialization.
+   */
+  WebGLApplication.ShaderLineBasicMaterial = function (lineBasicMaterial) {
+    THREE.ShaderMaterial.call(this);
+
+    this.uniforms = jQuery.extend(true, {}, THREE.ShaderLib.basic.uniforms);
+    this.vertexShader = THREE.ShaderLib.basic.vertexShader;
+    this.fragmentShader = THREE.ShaderLib.basic.fragmentShader;
+
+    // Copy properties from LineBasicMaterial.
+    this.color = lineBasicMaterial.color.clone();
+    this.fog = lineBasicMaterial.fog;
+    this.linewidth = lineBasicMaterial.linewidth;
+    this.linecap = lineBasicMaterial.linecap;
+    this.linejoin = lineBasicMaterial.linejoin;
+    this.vertexColors = lineBasicMaterial.vertexColors;
+  };
+
+  WebGLApplication.ShaderLineBasicMaterial.prototype = Object.create(THREE.ShaderMaterial.prototype);
+  WebGLApplication.ShaderLineBasicMaterial.prototype.constructor = WebGLApplication.ShaderLineBasicMaterial;
+
+  WebGLApplication.ShaderLineBasicMaterial.INSERTION_LOCATIONS = {
+    vertexDeclarations: {
+      shader: 'vertex',
+      regex: /void\s+main\(\s*\)\s+\{/,
+      replacement: 'void main() {'},
+    vertexPosition: {
+      shader: 'vertex',
+      regex: /gl_Position\s*=\s*projectionMatrix\s*\*\s*mvPosition;/,
+      replacement: 'gl_Position = projectionMatrix * mvPosition;'},
+    fragmentDeclarations: {
+      shader: 'fragment',
+      regex: /void\s+main\(\s*\)\s+\{/,
+      replacement: 'void main() {'},
+    fragmentColor: {
+      shader: 'fragment',
+      regex: /gl_FragColor\s*=\s*vec4\(\s*diffuse,\s*opacity\s*\);/,
+      replacement: ''}
+  };
+
+  /**
+   * Add uniforms to the vertex and fragment shaders.
+   * @param {object} uniforms THREE.js uniform definitions.
+   */
+  WebGLApplication.ShaderLineBasicMaterial.prototype.addUniforms = function (uniforms) {
+    $.extend(this.uniforms, uniforms);
+  };
+
+  /**
+   * Insert a GLSL snippet into a vertex or fragment shader at a known location.
+   * @param  {string} insertionName Name of a insertion location defined in
+   *                                INSERTION_LOCATIONS.
+   * @param  {string} glsl          GLSL code to insert into the shader.
+   */
+  WebGLApplication.ShaderLineBasicMaterial.prototype.insertSnippet = function (insertionName, glsl) {
+    var insertionPoint = WebGLApplication.ShaderLineBasicMaterial.INSERTION_LOCATIONS[insertionName];
+    var shaderSource = insertionPoint.shader === 'vertex' ? this.vertexShader : this.fragmentShader;
+    shaderSource = shaderSource.replace(insertionPoint.regex, glsl + insertionPoint.replacement);
+    if (insertionPoint.shader === 'vertex') {
+      this.vertexShader = shaderSource;
+    } else {
+      this.fragmentShader = shaderSource;
+    }
+    this.needsUpdate = true;
+  };
+
+  /**
+   * Refresh built-in THREE.js material uniform values from this material's
+   * properties. Necessary because THREE.js performs this in WebGLRenderer's
+   * setProgram only for its built-in materials.
+   */
+  WebGLApplication.ShaderLineBasicMaterial.prototype.refresh = function () {
+    this.uniforms.diffuse.value = this.color;
+    this.uniforms.opacity.value = this.opacity;
   };
 
   // Make 3D viewer available in CATMAID namespace

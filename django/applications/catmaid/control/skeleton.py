@@ -13,10 +13,15 @@ from django.http import HttpResponse, Http404
 from django.shortcuts import get_object_or_404
 from django.db import connection
 from django.db.models import Q
+from django.views.decorators.cache import never_cache
+
+from rest_framework.decorators import api_view
 
 from catmaid.models import Project, UserRole, Class, ClassInstance, Review, \
         ClassInstanceClassInstance, Relation, Treenode, TreenodeConnector
-from catmaid.objects import Skeleton
+from catmaid.objects import Skeleton, SkeletonGroup, \
+        compartmentalize_skeletongroup_by_edgecount, \
+        compartmentalize_skeletongroup_by_confidence
 from catmaid.control.authentication import requires_user_role, \
         can_edit_class_instance_or_fail, can_edit_or_fail
 from catmaid.control.common import insert_into_log, get_class_to_id_map, \
@@ -44,11 +49,55 @@ def get_skeleton_permissions(request, project_id, skeleton_id):
 
     return HttpResponse(json.dumps(permissions))
 
+@api_view(['POST'])
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def last_openleaf(request, project_id=None, skeleton_id=None):
-    """ Return a list of the ID and location of open leaf nodes in the skeleton
-    and their path length distance to the specified treenode. """
-    tnid = int(request.POST['tnid'])
+def open_leaves(request, project_id=None, skeleton_id=None):
+    """List open leaf nodes in a skeleton.
+
+    Return a list of the ID and location of open leaf nodes in a skeleton,
+    their path length distance to the specified treenode, and their creation
+    time.
+
+    Leaves are considered open if they are not tagged with a tag matching
+    a particular regex.
+
+    .. note:: This endpoint is used interactively by the client so performance
+              is critical.
+    ---
+    parameters:
+        - name: treenode_id
+          description: ID of the origin treenode for path length distances
+          required: true
+          type: integer
+          paramType: form
+    models:
+      open_leaf_node:
+        id: open_leaf_node
+        properties:
+        - description: ID of an open leaf treenode
+          type: integer
+          required: true
+        - description: Node location
+          type: array
+          items:
+            type: number
+            format: double
+          required: true
+        - description: Distance from the query node
+          type: number
+          format: double
+          required: true
+        - description: Node creation time
+          type: string
+          format: date-time
+          required: true
+    type:
+    - type: array
+      items:
+        $ref: open_leaf_node
+      required: true
+    """
+    tnid = int(request.POST['treenode_id'])
     cursor = connection.cursor()
 
     cursor.execute("SELECT id FROM relation WHERE project_id=%s AND relation_name='labeled_as'" % int(project_id))
@@ -444,8 +493,30 @@ def split_skeleton(request, project_id=None):
 
     return HttpResponse(json.dumps({'skeleton_id': new_skeleton.id}), content_type='text/json')
 
+
+@api_view(['GET'])
+@never_cache
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def root_for_skeleton(request, project_id=None, skeleton_id=None):
+    """Retrieve ID and location of the skeleton's root treenode.
+    ---
+    type:
+      root_id:
+        type: integer
+        required: true
+      x:
+        type: number
+        format: double
+        required: true
+      y:
+        type: number
+        format: double
+        required: true
+      z:
+        type: number
+        format: double
+        required: true
+    """
     tn = Treenode.objects.get(
         project=project_id,
         parent__isnull=True,
@@ -1204,7 +1275,7 @@ def get_annotation_info(project_id, skeleton_ids, annotations, metaannotations,
         response['neuronnames'] = {n_to_sk_ids[n]:name for n,name in cursor.fetchall()}
 
     # If wanted, get the meta annotations for each annotation
-    if metaannotations:
+    if metaannotations and len(annotations):
         # Request only ID of annotated annotations, annotator ID, meta
         # annotation ID, meta annotation Name
         cursor.execute("""
@@ -1238,8 +1309,47 @@ def get_annotation_info(project_id, skeleton_ids, annotations, metaannotations,
 
     return response
 
+
+@api_view(['GET'])
 @requires_user_role(UserRole.Browse)
 def list_skeletons(request, project_id):
+    """List skeletons matching filtering criteria.
+
+    The result set is the intersection of skeletons matching criteria (the
+    criteria are conjunctive) unless stated otherwise.
+    ---
+    parameters:
+        - name: created_by
+          description: Filter for user ID of the skeletons' creator.
+          type: integer
+          paramType: query
+        - name: reviewed_by
+          description: Filter for user ID of the skeletons' reviewer.
+          type: integer
+          paramType: query
+        - name: from_date
+          description: Filter for skeletons with nodes created after this date.
+          type: string
+          format: date
+          paramType: query
+        - name: to_date
+          description: Filter for skeletons with nodes created before this date.
+          type: string
+          format: date
+          paramType: query
+        - name: nodecount_gt
+          description: |
+            Filter for skeletons with more nodes than this threshold. Removes
+            all other criteria.
+          type: integer
+          paramType: query
+    type:
+    - type: array
+      items:
+        type: integer
+        description: ID of skeleton matching the criteria.
+      required: true
+    """
     created_by = request.GET.get('created_by', None)
     reviewed_by = request.GET.get('reviewed_by', None)
     from_date = request.GET.get('from', None)
@@ -1319,3 +1429,107 @@ def _list_skeletons(project_id, created_by=None, reviewed_by=None, from_date=Non
     cursor = connection.cursor()
     cursor.execute(query, params)
     return [r[0] for r in cursor.fetchall()]
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def adjacency_matrix(request, project_id=None):
+    skeletonlist = request.POST.getlist('skeleton_list[]')
+    skeletonlist = map(int, skeletonlist)
+    p = get_object_or_404(Project, pk=project_id)
+    skelgroup = SkeletonGroup( skeletonlist, p.id )
+
+    nodeslist = [ {'group': 1,
+                   'id': k,
+                   'name': d['neuronname']} for k,d in skelgroup.graph.nodes_iter(data=True)  ]
+    nodesid_list = [ele['id'] for ele in nodeslist]
+
+    data = {
+        'nodes': nodeslist,
+        'links': [ {'id': '%i_%i' % (u,v),
+                    'source': nodesid_list.index(u),
+                    'target': nodesid_list.index(v),
+                    'value': d['count']} for u,v,d in skelgroup.graph.edges_iter(data=True)  ]
+    }
+
+    return HttpResponse(json.dumps(data, sort_keys=True, indent=4), content_type='text/json')
+
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def skeletonlist_subgraph(request, project_id=None):
+    skeletonlist = request.POST.getlist('skeleton_list[]')
+    skeletonlist = map(int, skeletonlist)
+    p = get_object_or_404(Project, pk=project_id)
+    skelgroup = SkeletonGroup( skeletonlist, p.id )
+
+    data = {
+        'nodes': [ {'id': str(k),
+                    'label': str(d['baseName']),
+                    'skeletonid': str(d['skeletonid']),
+                    'node_count': d['node_count']
+                    } for k,d in skelgroup.graph.nodes_iter(data=True)  ],
+        'edges': [ {'id': '%i_%i' % (u,v),
+                    'source': str(u),
+                    'target': str(v),
+                    'weight': d['count'],
+                    'label': str(d['count']),
+                    'directed': True} for u,v,d in skelgroup.graph.edges_iter(data=True)  ]
+    }
+
+    return HttpResponse(json.dumps(data, sort_keys=True, indent=4), content_type='text/json')
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def skeletonlist_confidence_compartment_subgraph(request, project_id=None):
+    skeletonlist = request.POST.getlist('skeleton_list[]')
+    skeletonlist = map(int, skeletonlist)
+    confidence = int(request.POST.get('confidence_threshold', 5))
+    p = get_object_or_404(Project, pk=project_id)
+    # skelgroup = SkeletonGroup( skeletonlist, p.id )
+    # split up where conficence bigger than confidence
+    resultgraph = compartmentalize_skeletongroup_by_confidence( skeletonlist, p.id, confidence )
+
+    data = {
+        'nodes': [ { 'data': {'id': str(k),
+                    'label': str(d['neuronname']),
+                    'skeletonid': str(d['skeletonid']),
+                    'node_count': d['node_count']} } for k,d in resultgraph.nodes_iter(data=True)  ],
+        'edges': [ { 'data': {'id': '%s_%s' % (u,v),
+                    'source': str(u),
+                    'target': str(v),
+                    'weight': d['count'],
+                    'label': str(d['count']),
+                    'directed': True}} for u,v,d in resultgraph.edges_iter(data=True)  ]
+    }
+
+    return HttpResponse(json.dumps(data, sort_keys=True, indent=4), content_type='text/json')
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def skeletonlist_edgecount_compartment_subgraph(request, project_id=None):
+    skeletonlist = request.POST.getlist('skeleton_list[]')
+    skeletonlist = map(int, skeletonlist)
+    edgecount = int(request.POST.get('edgecount', 10))
+    p = get_object_or_404(Project, pk=project_id)
+    # skelgroup = SkeletonGroup( skeletonlist, p.id )
+    # split up where conficence bigger than confidence
+    resultgraph = compartmentalize_skeletongroup_by_edgecount( skeletonlist, p.id, edgecount )
+
+    data = {
+        'nodes': [ { 'data': {'id': str(k),
+                    'label': str(d['neuronname']),
+                    'skeletonid': str(d['skeletonid']),
+                    'node_count': d['node_count']} } for k,d in resultgraph.nodes_iter(data=True)  ],
+        'edges': [ { 'data': {'id': '%s_%s' % (u,v),
+                    'source': str(u),
+                    'target': str(v),
+                    'weight': d['count'],
+                    'label': str(d['count']),
+                    'directed': True}} for u,v,d in resultgraph.edges_iter(data=True)  ]
+    }
+
+    return HttpResponse(json.dumps(data, sort_keys=True, indent=4), content_type='text/json')
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def all_shared_connectors(request, project_id=None):
+    skeletonlist = request.POST.getlist('skeletonlist[]')
+    skeletonlist = map(int, skeletonlist)
+    p = get_object_or_404(Project, pk=project_id)
+    skelgroup = SkeletonGroup( skeletonlist, p.id )
+    return HttpResponse(json.dumps(dict.fromkeys(skelgroup.all_shared_connectors()) ), content_type='text/json')

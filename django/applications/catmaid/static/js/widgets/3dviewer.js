@@ -1359,7 +1359,7 @@
     this.scene = new THREE.Scene();
     // A render target used for picking objects
     this.pickingTexture = new THREE.WebGLRenderTarget(w, h);
-    this.pickingTexture.generateMipmaps = false;
+    this.pickingTexture.texture.generateMipmaps = false;
 
     this.view = new this.View(this);
     this.lights = this.createLights(this.dimensions, this.center, this.view.camera);
@@ -1599,7 +1599,7 @@
     this.radiusSphere = new THREE.OctahedronGeometry(10, 3);
     this.icoSphere = new THREE.IcosahedronGeometry(1, 2);
     this.cylinder = new THREE.CylinderGeometry(1, 1, 1, 10, 1, false);
-    this.textMaterial = new THREE.MeshNormalMaterial( { color: 0xffffff, overdraw: true } );
+    this.textMaterial = new THREE.MeshNormalMaterial( { overdraw: true } );
     // Mesh materials for spheres on nodes tagged with 'uncertain end', 'undertain continuation' or 'TODO'
     this.labelColors = {uncertain: new THREE.MeshBasicMaterial({color: 0xff8000, opacity:0.6, transparent: true}),
                         todo:      new THREE.MeshBasicMaterial({color: 0xff0000, opacity:0.6, transparent: true}),
@@ -1690,7 +1690,7 @@
     geometry.computeLineDistances();
 
     var material = new THREE.LineBasicMaterial( { color: 0xff0000 } );
-    var mesh = new THREE.Line( geometry, material, THREE.LinePieces );
+    var mesh = new THREE.LineSegments( geometry, material );
 
     mesh.position.set(0, 0, 0);
 
@@ -1769,7 +1769,7 @@
       var material = new THREE.LineBasicMaterial({
         color: o['color'] || 0x535353
       });
-      var mesh = new THREE.Line( geometry, material, THREE.LinePieces );
+      var mesh = new THREE.LineSegments( geometry, material );
 
       mesh.position.set(min_x, floor, min_z);
 
@@ -2222,7 +2222,7 @@
           });
           this.m[key] = material;
         }
-        var newMesh = new THREE.Line( this.g, material, THREE.LinePieces );
+        var newMesh = new THREE.LineSegments( this.g, material );
         // Move new mesh to position of replaced mesh and adapt size
         newMesh.position.copy(mesh.position);
         scene.add(newMesh);
@@ -2928,9 +2928,9 @@
     this.geometry[CTYPES[2]] = new THREE.Geometry();
 
         this.actor = {}; // has three keys (the CTYPES), each key contains the edges of each type
-        this.actor[CTYPES[0]] = new THREE.Line(this.geometry[CTYPES[0]], this.line_material, THREE.LinePieces);
-        this.actor[CTYPES[1]] = new THREE.Line(this.geometry[CTYPES[1]], this.space.staticContent.connectorLineColors[CTYPES[1]], THREE.LinePieces);
-        this.actor[CTYPES[2]] = new THREE.Line(this.geometry[CTYPES[2]], this.space.staticContent.connectorLineColors[CTYPES[2]], THREE.LinePieces);
+        this.actor[CTYPES[0]] = new THREE.LineSegments(this.geometry[CTYPES[0]], this.line_material);
+        this.actor[CTYPES[1]] = new THREE.LineSegments(this.geometry[CTYPES[1]], this.space.staticContent.connectorLineColors[CTYPES[1]]);
+        this.actor[CTYPES[2]] = new THREE.LineSegments(this.geometry[CTYPES[2]], this.space.staticContent.connectorLineColors[CTYPES[2]]);
 
     this.specialTagSpheres = {};
     this.synapticSpheres = {};
@@ -3991,8 +3991,8 @@
           vertices2.push(v);
         }
       }
-      this.connectoractor[type] = new THREE.Line( this.connectorgeometry[type],
-          this.actor[type].material, THREE.LinePieces );
+      this.connectoractor[type] = new THREE.LineSegments( this.connectorgeometry[type],
+          this.actor[type].material );
       this.connectorgeometry[type].colors = this.geometry[type].colors;
       this.connectorgeometry[type].colorsNeedUpdate = true;
       this.space.add( this.connectoractor[type] );

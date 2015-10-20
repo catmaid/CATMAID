@@ -544,8 +544,9 @@ SelectionTable.prototype.update = function() {
 
       // Retrieve review status, if there are any skeletons
       if (self.skeletons.length > 0 ) {
+        var skeleton_ids = Object.keys(self.skeleton_ids)
         var postData = {
-            skeleton_ids: self.skeletons,
+            skeleton_ids: skeleton_ids,
             whitelist: self.review_filter === 'Team'};
         if (self.review_filter === 'Self') postData.user_ids = [session.userid];
         requestQueue.register(django_url + project.id + '/skeleton/review-status', 'POST',

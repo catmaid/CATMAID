@@ -3073,7 +3073,7 @@ class PermissionTests(TestCase):
             '/%(pid)s/graph/circlesofhell' % url_params,
             '/%(pid)s/connector/list/one_to_many' % url_params,
             '/%(pid)s/%(skid)s/1/1/0/compact-arbor' % url_params,
-            '/%(pid)s/annotations/skeletons/list' % url_params,
+            '/%(pid)s/annotations/forskeletons' % url_params,
             '/%(pid)s/annotations/table-list' % url_params,
             '/%(pid)s/skeleton/analytics' % url_params,
             '/%(pid)s/skeleton/annotationlist' % url_params,
@@ -3124,7 +3124,7 @@ class PermissionTests(TestCase):
         # methods
         for api in self.can_browse_post_api:
             msg = "POST %s" % api
-            response = self.client.get(api)
+            response = self.client.post(api)
             self.assertEqual(response.status_code, 200, msg)
             try:
                 parsed_response = json.loads(response.content)

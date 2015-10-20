@@ -960,17 +960,22 @@ SelectionTable.prototype.colorSkeleton = function(skeletonID, allSelected, rgb,
 
 SelectionTable.prototype.batchColorSelected = function(rgb, alpha, colorChanged, alphaChanged) {
   var selectedSkeletonIDs = this.getSelectedSkeletons();
-  selectedSkeletonIDs.forEach(function(skid) {
+  var changedModels = selectedSkeletonIDs.reduce((function(o, skid) {
     var skeleton = this.skeletons[this.skeleton_ids[skid]];
     if (colorChanged) {
       // Set color only if it was actually changed
       skeleton.color.setRGB(rgb.r, rgb.g, rgb.b);
     }
     skeleton.opacity = alpha;
-    this.notifyLink(skeleton); // TODO need a batchNotifyLink
-  }, this);
+    o[skid] = skeleton;
+    return o;
+  }).bind(this), {});
   //$('#selection-table-batch-color-button' + this.widgetID)[0].style.backgroundColor = rgb.hex;
   this.gui.invalidate(selectedSkeletonIDs);
+  // Update link if models were changed
+  if (colorChanged || alphaChanged) {
+    this.updateLink(changedModels);
+  }
 };
 
 /** credit: http://stackoverflow.com/questions/638948/background-color-hex-to-javascript-variable-jquery */

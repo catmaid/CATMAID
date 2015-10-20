@@ -1,5 +1,6 @@
 celery==3.1.9
 cssmin==0.2.0
+Cython==0.23.4
 distribute==0.7.3
 Django==1.6.11
 django-adminplus==0.3

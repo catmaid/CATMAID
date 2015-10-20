@@ -2229,8 +2229,8 @@ class ViewPageTests(TestCase):
         parsed_response = json.loads(response.content)
 
         response = self.client.post(
-            '/%d/annotations/skeletons/list' % (self.test_project_id,),
-            {'skids[0]': skeleton_id})
+            '/%d/annotations/forskeletons' % (self.test_project_id,),
+            {'skeleton_ids[0]': skeleton_id})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
 

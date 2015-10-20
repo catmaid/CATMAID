@@ -544,7 +544,7 @@ SelectionTable.prototype.update = function() {
 
       // Retrieve review status, if there are any skeletons
       if (self.skeletons.length > 0 ) {
-        var skeleton_ids = Object.keys(self.skeleton_ids)
+        var skeleton_ids = Object.keys(self.skeleton_ids);
         var postData = {
             skeleton_ids: skeleton_ids,
             whitelist: self.review_filter === 'Team'};

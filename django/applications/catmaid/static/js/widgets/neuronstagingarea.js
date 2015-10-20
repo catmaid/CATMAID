@@ -525,8 +525,7 @@ SelectionTable.prototype.update = function() {
       var new_models = {};
       self.skeletons = [];
       self.skeleton_ids = {};
-      var skeleton_ids = Object.keys(o).map(Number);
-      skeleton_ids.sort(function(a, b) { return a - b; }).forEach(function(index) {
+      Object.keys(o).map(Number).sort(function(a, b) { return a - b; }).forEach(function(index) {
         var skid = o[index],
             model = models[skid];
         if (model.baseName !== json[skid]) {

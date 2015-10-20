@@ -1039,9 +1039,30 @@ def list_annotations_datatable(request, project_id=None):
     return HttpResponse(json.dumps(response), content_type='text/json')
 
 
+@api_view(['POST'])
 @requires_user_role([UserRole.Browse])
 def annotations_for_skeletons(request, project_id=None):
-    skids = tuple(int(skid) for key, skid in request.POST.iteritems() if key.startswith('skids['))
+    """Get annotations and who used them for a set of skeletons.
+
+    This method focuses only on annotations linked to skeletons and is likely to
+    be faster than the general query. Returns an object with two fields:
+    "annotations", which is itself an object with annotation IDs as fields,
+    giving access to the corresponding annotation names. And the field
+    "skeletons" is also an object, mapping skeleton IDs to lists of
+    annotation-annotator ID pairs. Also, as JSON separator a colon is used
+    instead of a comma.
+    ---
+    parameters:
+      - name: skeleton_ids
+        description: A list of skeleton IDs which are annotated by the resulting annotations.
+        paramType: query
+        type: array
+        items:
+            type: integer
+            description: A skeleton ID
+    """
+    skids = tuple(int(skid) for key, skid in request.POST.iteritems() \
+            if key.startswith('skeleton_ids['))
     cursor = connection.cursor()
     cursor.execute("SELECT id FROM relation WHERE project_id=%s AND relation_name='annotated_with'" % int(project_id))
     annotated_with_id = cursor.fetchone()[0]

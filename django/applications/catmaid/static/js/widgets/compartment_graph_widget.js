@@ -1454,8 +1454,8 @@ GroupGraph.prototype.appendGroup = function(models) {
 
   }).bind(this);
 
-  requestQueue.register(django_url + project.id + "/annotations/skeletons/list", "POST",
-                        {skids: Object.keys(models)}, f);
+  requestQueue.register(django_url + project.id + "/annotations/forskeletons", "POST",
+                        {skeleton_ids: Object.keys(models)}, f);
 };
 
 GroupGraph.prototype.update = function() {
@@ -1654,9 +1654,9 @@ GroupGraph.prototype.growGraph = function() {
              min_post: p.min_downstream},
             CATMAID.jsonResponseHandler(function(json) {
               if (p.filter_regex !== '') {
-                requestQueue.register(django_url + project.id + "/annotations/skeletons/list",
+                requestQueue.register(django_url + project.id + "/annotations/forskeletons",
                     "POST",
-                    {skids: json[0]},
+                    {skeleton_ids: json[0]},
                     CATMAID.jsonResponseHandler(function (json) {
                       var filterRegex = new RegExp(p.filter_regex, 'i');
                       var filteredNeighbors = Object.keys(json.skeletons).filter(function (skid) {

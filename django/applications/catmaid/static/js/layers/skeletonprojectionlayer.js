@@ -376,6 +376,30 @@
   };
 
   /**
+   * Get the node closest to the given position in a certain radius around it,
+   * if any.
+   */
+  SkeletonProjectionLayer.prototype.getClosestNode = function(x, y, radius) {
+    var nearestnode = null;
+    // Find a node close to this location
+    if (this.currentArborParser) {
+      var mindistsq = radius * radius;
+      var positions = this.currentArborParser.positions;
+      for (var nodeID in positions) {
+        var pos = positions[nodeID];
+        var xdiff = x - pos.x;
+        var ydiff = y - pos.y;
+        var distsq = xdiff*xdiff + ydiff*ydiff;
+        if (distsq < mindistsq) {
+          mindistsq = distsq;
+          nearestnode = nodeID;
+        }
+      }
+    }
+    return nearestnode;
+  };
+
+  /**
    * A set of shading modes for the projected skeleton parts. Each function
    * returns a color based on a node distance and world position.
    */

@@ -2037,13 +2037,20 @@
    * handlers on it.
    */
   WebGLApplication.prototype.Space.prototype.View.prototype.initRenderer = function() {
+    var clearColor = null;
     // Remove existing elements if there is a current renderer
     if (this.renderer) {
       this.space.container.removeChild(this.renderer.domElement);
       this.mouseControls.detach(this.renderer.domElement);
+      // Save clear color
+      clearColor = this.renderer.getClearColor();
     }
 
     this.renderer = this.createRenderer('webgl');
+    if (clearColor) {
+      this.renderer.setClearColor(clearColor);
+    }
+
     this.space.container.appendChild(this.renderer.domElement);
     this.mouseControls = new this.MouseControls();
     this.mouseControls.attach(this, this.renderer.domElement);

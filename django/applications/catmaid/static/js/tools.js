@@ -260,6 +260,18 @@ CATMAID.tools = CATMAID.tools || {};
   };
 
   /**
+   * Convert any CSS color definition to RGB.
+   */
+  tools.cssColorToRGB = function(cssColor) {
+    var c = new THREE.Color(cssColor);
+    return {
+      r: c.r,
+      g: c.g,
+      b: c.b
+    };
+  };
+
+  /**
    * Convert RGB values between 0 and 255 to a hex representation.
    */
   tools.rgbToHex = function(r, g, b) {

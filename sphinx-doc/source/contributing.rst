@@ -155,6 +155,15 @@ formatting
 HTTP API
 ********
 
+Documentation for endpoints exposed by the HTTP API is available from the
+CATMAID server itself via the ``/apis/`` page::
+
+    http://localhost:8000/apis/
+
+... or, for custom configurations::
+
+    http://<catmaid_servername>/<catmaid_subdirectory>/apis/
+
 Functions that are exposed as HTTP API endpoints should declare what HTTP
 methods they accept using the :code:`@api_view` decorator. Endpoints' docstrings
 should define what parameters they accept and the strucuture of their response

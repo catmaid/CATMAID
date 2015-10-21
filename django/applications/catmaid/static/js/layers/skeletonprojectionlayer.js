@@ -209,11 +209,12 @@
    * the skeleton is already loaded, the back-end does't have to be asked.
    */
   SkeletonProjectionLayer.prototype.loadSkeletonOfNode = function(node) {
+    var self = this;
     return new Promise(function(resolve, reject) {
       if (!node) reject("No node provided");
       if (!node.skeleton_id) reject("Node has no skeleton");
 
-      var self = this, failed = false, ap;
+      var failed = false, ap;
       fetchSkeletons(
           [node.skeleton_id],
           function(skid) {
@@ -223,6 +224,15 @@
           function(skid) { return {}; },
           function(skid, json) {
             ap = new CATMAID.ArborParser().init('compact-arbor', json);
+            // Trasnform positons into stack space. This makes lookup later on
+            // quicker.
+            var stack = self.stackViewer.primaryStack;
+            for (var nodeID in ap.positions) {
+              var pos = ap.positions[nodeID];
+              pos.set(stack.projectToStackX(pos.z, pos.y, pos.x),
+                      stack.projectToStackY(pos.z, pos.y, pos.x),
+                      stack.projectToStackZ(pos.z, pos.y, pos.x));
+            };
           },
           function(skid) {
             failed = true;
@@ -328,21 +338,19 @@
 
       // render node that are not in this layer
       var stack = this.stackViewer.primaryStack;
+      // Positions are already transformed into stack space
       var pos = this.positions[n];
-      var xs = stack.projectToStackX(pos.z, pos.y, pos.x);
-      var ys = stack.projectToStackY(pos.z, pos.y, pos.x);
-      var zs = stack.projectToStackZ(pos.z, pos.y, pos.x);
-      var opacity = this.opacity(n, pos, zs);
-      var color = this.color(n, pos, zs);
+      var opacity = this.opacity(n, pos, pos.z);
+      var color = this.color(n, pos, pos.z);
 
       // Display only nodes and edges not on the current section
-      if (zs !== this.stackViewer.z) {
+      if (pos.z !== this.stackViewer.z) {
         if (this.showNodes) {
           var c = this.paper.select('.nodes').append('use')
             .attr({
               'xlink:href': '#' + this.ref,
-              'x': xs,
-              'y': ys,
+              'x': pos.x,
+              'y': pos.y,
               'fill': color,
               'opacity': opacity})
             .classed('overlay-node', true);
@@ -352,13 +360,11 @@
           var e = this.edges[n];
           if (e) {
             var pos2 = this.positions[e];
-            var xs2 = stack.projectToStackX(pos2.z, pos2.y, pos2.x);
-            var ys2 = stack.projectToStackY(pos2.z, pos2.y, pos2.x);
             var edge = this.paper.select('.lines').append('line');
             edge.toBack();
             edge.attr({
-                x1: xs, y1: ys,
-                x2: xs2, y2: ys2,
+                x1: pos.x, y1: pos.y,
+                x2: pos2.x, y2: pos2.y,
                 stroke: color,
                 'stroke-width': this.edgeWidth,
                 'opacity': opacity

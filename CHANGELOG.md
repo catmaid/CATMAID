@@ -7,10 +7,23 @@ Selection table:
 - Batch coloring is now much quicker.
 
 
+Skeleton projection layer
+
+- With the new "Skeleton color gradient" coloring mode, the skeleton's tracing
+  color (currently only yellow fo the active skeleton) is used for coloring. It
+  fades into downstream and upstream colors, respectively (which are black and
+  white by default).
+
+- Nodes can be selected by placing the mouse close to them (regardless if
+  displayed or not) and pressing 'g'. If no node is found in close proximity
+  (<50px screen space), the tracing layer's node selection is used.
+
+
 ### Bug fixes
 
 - The skeleton projection layer will now update automatically on skeleton
-  changes like new or removed nodes as well as splits and merges.
+  changes like new or removed nodes as well as splits and merges. It will also
+  not complain anymore if a connector was selected.
 
 
 ## 2015.10.19

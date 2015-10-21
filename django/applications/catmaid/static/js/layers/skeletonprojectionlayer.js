@@ -283,7 +283,7 @@
       paper: this.paper,
       ref: this.graphics.Node.prototype.USE_HREF + this.graphics.USE_HREF_SUFFIX,
       color: this.options.downstreamColor,
-      shade: createShading(this, arbor, downstream),
+      opacity: createShading(this, arbor, downstream),
       edgeWidth: this.graphics.ArrowLine.prototype.EDGE_WIDTH || 2,
       showEdges: this.options.showEdges,
       showNodes: this.options.showNodes
@@ -301,7 +301,7 @@
 
       // Update render options with upstream color
       renderOptions.color = this.options.upstreamColor;
-      renderOptions.shade = createShading(this, arbor, upstream);
+      renderOptions.opacity = createShading(this, arbor, upstream);
 
       // Render downstream nodes
       upstream.nodesArray().forEach(renderNodes, renderOptions);
@@ -319,7 +319,7 @@
       var xs = stack.projectToStackX(pos.z, pos.y, pos.x);
       var ys = stack.projectToStackY(pos.z, pos.y, pos.x);
       var zs = stack.projectToStackZ(pos.z, pos.y, pos.x);
-      var opacity = this.shade(n, pos, zs);
+      var opacity = this.opacity(n, pos, zs);
 
       // Display only nodes and edges not on the current section
       if (zs !== this.stackViewer.z) {

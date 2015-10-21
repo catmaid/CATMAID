@@ -20,3 +20,4 @@ libtiff-dev
 libblas-dev
 liblapack-dev
 pkg-config
+virtualenvwrapper

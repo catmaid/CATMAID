@@ -529,7 +529,7 @@
       var skpShading = $('<select/>');
       var skpShadingOptions = [
         {name: 'Plain color', id: 'plain'},
-        {name: 'Towards color', id: 'toplain'},
+        {name: 'Skeleton color gradient', id: 'skeletoncolorgradient'},
         {name: 'Z distance', id: 'zdistance'},
         {name: 'Relative Strahler gradient', id: 'relstrahlergradient'},
         {name: 'Relative Strahler cut', id: 'relstrahlercut'},

@@ -57,7 +57,7 @@
     // Indicate if skeleton should be simplified
     simplify: false,
     // Indicate coloiring mode
-    shadingMode: "toplain",
+    shadingMode: "skeletoncolorgradient",
     // Indicate if edges should be rendered
     showEdges: true,
     // Indicate if nodes should be rendered
@@ -470,7 +470,7 @@
     /**
      * Change skeleton color towards plain colors with increasing Z distance.
      */
-    "toplain": {
+    "skeletoncolorgradient": {
       "opacity": function(layer, arbor, subarbor) {
         return function(node, pos, zStack) {
           return 1;

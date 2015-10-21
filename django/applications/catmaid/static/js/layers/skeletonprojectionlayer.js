@@ -164,7 +164,7 @@
   SkeletonProjectionLayer.prototype.update = function(node) {
     var self = this;
     var newSkeleton = null;
-    if (node && node.id) {
+    if (node && node.id && node.type === SkeletonAnnotations.TYPE_NODE) {
       // If possible, use a cached skeleton to avoid requesting it with every
       // node change.
       var cached = (node.skeleton_id === this.currentSkeletonID) &&

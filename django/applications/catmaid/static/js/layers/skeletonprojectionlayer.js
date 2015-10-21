@@ -177,7 +177,11 @@
         .then(this.redraw.bind(this))
         .catch(CATMAID.error);
     } else {
-     this.redraw();
+      this.currentNodeID = null;
+      this.currentSkeletonID = null;
+      this.currentArborParser = null;
+      this.clear();
+      this.redraw();
     }
   };
 

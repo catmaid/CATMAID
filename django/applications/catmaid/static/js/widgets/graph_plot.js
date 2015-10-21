@@ -236,8 +236,8 @@ CircuitGraphPlot.prototype.append = function(models) {
 
 	// fetch connectivity data, create adjacency matrix and plot it
   // register with name service before we go about the plot
-  requestQueue.register(django_url + project.id + '/skeletongroup/skeletonlist_confidence_compartment_subgraph', 'POST',
-			{skeleton_list: skids},
+  requestQueue.register(django_url + project.id + '/skeletons/confidence-compartment-subgraph',
+			{skeleton_ids: skids},
 			(function(status, text) {
 				if (200 !== status) return;
 				var json = $.parseJSON(text);

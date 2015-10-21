@@ -2823,10 +2823,10 @@ class ViewPageTests(TestCase):
         skeleton_ids = [235, 361, 373]
         # Basic graph
         response = self.client.post(
-            '/%d/skeletongroup/skeletonlist_confidence_compartment_subgraph' % self.test_project_id,
-            {'skeleton_list[0]': skeleton_ids[0],
-             'skeleton_list[1]': skeleton_ids[1],
-             'skeleton_list[2]': skeleton_ids[2]})
+            '/%d/skeletons/confidence-compartment-subgraph' % self.test_project_id,
+            {'skeleton_ids[0]': skeleton_ids[0],
+             'skeleton_ids[1]': skeleton_ids[1],
+             'skeleton_ids[2]': skeleton_ids[2]})
         parsed_response = json.loads(response.content)
         expected_result_edges = [[235, 361, 1], [235, 373, 2]]
         # Since order is not important, check length and matches separately.
@@ -2841,10 +2841,10 @@ class ViewPageTests(TestCase):
         self.assertEqual(response.status_code, 200)
         # Add confidence criteria, but not one that should affect the graph.
         response = self.client.post(
-            '/%d/skeletongroup/skeletonlist_confidence_compartment_subgraph' % self.test_project_id,
-            {'skeleton_list[0]': skeleton_ids[0],
-             'skeleton_list[1]': skeleton_ids[1],
-             'skeleton_list[2]': skeleton_ids[2],
+            '/%d/skeletons/confidence-compartment-subgraph' % self.test_project_id,
+            {'skeleton_ids[0]': skeleton_ids[0],
+             'skeleton_ids[1]': skeleton_ids[1],
+             'skeleton_ids[2]': skeleton_ids[2],
              'confidence_threshold': 2})
         parsed_response = json.loads(response.content)
         expected_result_nodes = frozenset(['235', '361', '373'])
@@ -2857,10 +2857,10 @@ class ViewPageTests(TestCase):
 
         # Use confidence criteria that should split edges from 235 to 373.
         response = self.client.post(
-            '/%d/skeletongroup/skeletonlist_confidence_compartment_subgraph' % self.test_project_id,
-            {'skeleton_list[0]': skeleton_ids[0],
-             'skeleton_list[1]': skeleton_ids[1],
-             'skeleton_list[2]': skeleton_ids[2],
+            '/%d/skeletons/confidence-compartment-subgraph' % self.test_project_id,
+            {'skeleton_ids[0]': skeleton_ids[0],
+             'skeleton_ids[1]': skeleton_ids[1],
+             'skeleton_ids[2]': skeleton_ids[2],
              'confidence_threshold': 4})
         parsed_response = json.loads(response.content)
         expected_result_nodes = frozenset(['235_1', '235_2', '361', '373'])
@@ -2875,10 +2875,10 @@ class ViewPageTests(TestCase):
         # Again split with confidence, but also cluster the split synapses
         # together with bandwidth.
         response = self.client.post(
-            '/%d/skeletongroup/skeletonlist_confidence_compartment_subgraph' % self.test_project_id,
-            {'skeleton_list[0]': skeleton_ids[0],
-             'skeleton_list[1]': skeleton_ids[1],
-             'skeleton_list[2]': skeleton_ids[2],
+            '/%d/skeletons/confidence-compartment-subgraph' % self.test_project_id,
+            {'skeleton_ids[0]': skeleton_ids[0],
+             'skeleton_ids[1]': skeleton_ids[1],
+             'skeleton_ids[2]': skeleton_ids[2],
              'expand[0]': skeleton_ids[0],
              'confidence_threshold': 4,
              'bandwidth': 2000})
@@ -3143,7 +3143,7 @@ class PermissionTests(TestCase):
             '/%(pid)s/node/user-info' % url_params,
             '/%(pid)s/node/get_location' % url_params,
             '/%(pid)s/node/list' % url_params,
-            '/%(pid)s/skeletongroup/skeletonlist_confidence_compartment_subgraph' % url_params,
+            '/%(pid)s/skeletons/confidence-compartment-subgraph' % url_params,
             '/%(pid)s/graph/circlesofhell' % url_params,
             '/%(pid)s/connector/list/one_to_many' % url_params,
             '/%(pid)s/%(skid)s/1/1/0/compact-arbor' % url_params,

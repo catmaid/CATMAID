@@ -1475,9 +1475,9 @@ GroupGraph.prototype._load = function(models) {
   var skeleton_ids = Object.keys(models);
   if (0 === skeleton_ids.length) return CATMAID.info("Nothing to load!");
 
-  requestQueue.replace(django_url + project.id + "/skeletongroup/skeletonlist_confidence_compartment_subgraph",
+  requestQueue.replace(django_url + project.id + "/skeletons/confidence-compartment-subgraph",
       "POST",
-      {skeleton_list: skeleton_ids},
+      {skeleton_ids: skeleton_ids},
       (function (status, text) {
           if (200 !== status) return;
           var json = $.parseJSON(text);

@@ -11,6 +11,8 @@ from numpy.linalg import norm
 from django.db import connection
 from django.http import HttpResponse
 
+from rest_framework.decorators import api_view
+
 from catmaid.models import UserRole
 from catmaid.control.authentication import requires_user_role
 from catmaid.control.common import get_relation_to_id_map
@@ -389,8 +391,87 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, e
     return dual_split_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, expand)
 
 
+@api_view(['POST'])
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def skeleton_graph(request, project_id=None):
+    """Get a synaptic graph between skeletons compartmentalized by confidence.
+
+    Given a set of skeletons, retrieve presynaptic-to-postsynaptic edges
+    between them, annotated with count. If a confidence threshold is
+    supplied, compartmentalize the skeletons at edges in the arbor
+    below that threshold and report connectivity based on these
+    compartments.
+
+    When skeletons are split into compartments, nodes in the graph take an
+    string ID like ``{skeleton_id}_{compartment #}``.
+    ---
+    parameters:
+        - name: skeleton_ids[]
+          description: IDs of the skeletons to graph
+          required: true
+          type: array
+          items:
+            type: integer
+          paramType: form
+        - name: confidence_threshold
+          description: Confidence value below which to segregate compartments
+          type: integer
+          paramType: form
+        - name: bandwidth
+          description: Bandwidth in nanometers
+          type: number
+        - name: cable_spread
+          description: Cable spread in nanometers
+          type: number
+        - name: expand[]
+          description: IDs of the skeletons to expand
+          type: array
+          items:
+            type: integer
+    models:
+      skeleton_graph_edge:
+        id: skeleton_graph_edge
+        properties:
+        - description: ID of the presynaptic skeleton or compartment
+          type: integer|string
+          required: true
+        - description: ID of the postsynaptic skeleton or compartment
+          type: integer|string
+          required: true
+        - description: number of synapses constituting this edge
+          type: integer
+          required: true
+      skeleton_graph_intraedge:
+        id: skeleton_graph_intraedge
+        properties:
+        - description: ID of the presynaptic skeleton or compartment
+          type: integer|string
+          required: true
+        - description: ID of the postsynaptic skeleton or compartment
+          type: integer|string
+          required: true
+    type:
+      edges:
+        type: array
+        items:
+          $ref: skeleton_graph_edge
+        required: true
+      nodes:
+        type: array
+        items:
+          type: integer|string
+        required: false
+      intraedges:
+        type: array
+        items:
+          $ref: skeleton_graph_intraedge
+        required: false
+      branch_nodes:
+        type: array
+        items:
+          type: integer|string
+        required: false
+    """
     compute_risk = 1 == int(request.POST.get('risk', 0))
     if compute_risk:
         # TODO port the last bit: computing the synapse risk
@@ -398,7 +479,7 @@ def skeleton_graph(request, project_id=None):
         return slow_graph(request, project_id=project_id)
 
     project_id = int(project_id)
-    skeleton_ids = set(int(v) for k,v in request.POST.iteritems() if k.startswith('skeleton_list['))
+    skeleton_ids = set(int(v) for k,v in request.POST.iteritems() if k.startswith('skeleton_ids['))
     confidence_threshold = min(int(request.POST.get('confidence_threshold', 0)), 5)
     bandwidth = float(request.POST.get('bandwidth', 0)) # in nanometers
     cable_spread = float(request.POST.get('cable_spread', 2500)) # in nanometers

@@ -269,10 +269,19 @@
     var downstream = fragments[0];
     var upstream = fragments[1];
 
-    var createShading = SkeletonProjectionLayer.shadingModes[this.options.shadingMode];
-    if (!createShading) {
-      throw new CATMAID.ValueError("Couldn't find shading method " +
-          this.shadingMode);
+    var material = SkeletonProjectionLayer.shadingModes[this.options.shadingMode];
+    if (!material) {
+      throw new CATMAID.ValueError("Couldn't find material method " + this.shadingMode);
+    }
+
+    // Allow opacity-only definitions for simplicity
+    if (CATMAID.tools.isFn(material)) {
+      material = {
+        opacity: material,
+        color: function(layer, color) {
+          return function() { return color; };
+        }
+      };
     }
 
     // Construct rendering option context
@@ -282,8 +291,8 @@
       stackViewer: this.stackViewer,
       paper: this.paper,
       ref: this.graphics.Node.prototype.USE_HREF + this.graphics.USE_HREF_SUFFIX,
-      color: this.options.downstreamColor,
-      opacity: createShading(this, arbor, downstream),
+      color: material.color(this, this.options.downstreamColor),
+      opacity: material.opacity(this, arbor, downstream),
       edgeWidth: this.graphics.ArrowLine.prototype.EDGE_WIDTH || 2,
       showEdges: this.options.showEdges,
       showNodes: this.options.showNodes
@@ -300,8 +309,8 @@
       upstream = upstream.reroot(parentID);
 
       // Update render options with upstream color
-      renderOptions.color = this.options.upstreamColor;
-      renderOptions.opacity = createShading(this, arbor, upstream);
+      renderOptions.color = material.color(this, this.options.upstreamColor);
+      renderOptions.opacity = material.opacity(this, arbor, upstream);
 
       // Render downstream nodes
       upstream.nodesArray().forEach(renderNodes, renderOptions);
@@ -320,6 +329,7 @@
       var ys = stack.projectToStackY(pos.z, pos.y, pos.x);
       var zs = stack.projectToStackZ(pos.z, pos.y, pos.x);
       var opacity = this.opacity(n, pos, zs);
+      var color = this.color(n, pos, zs);
 
       // Display only nodes and edges not on the current section
       if (zs !== this.stackViewer.z) {
@@ -329,7 +339,7 @@
               'xlink:href': '#' + this.ref,
               'x': xs,
               'y': ys,
-              'fill': this.color,
+              'fill': color,
               'opacity': opacity})
             .classed('overlay-node', true);
         }
@@ -345,7 +355,7 @@
             edge.attr({
                 x1: xs, y1: ys,
                 x2: xs2, y2: ys2,
-                stroke: this.color,
+                stroke: color,
                 'stroke-width': this.edgeWidth,
                 'opacity': opacity
             });

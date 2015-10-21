@@ -9,7 +9,8 @@ Selection table:
 
 ### Bug fixes
 
-
+- The skeleton projection layer will now update automatically on skeleton
+  changes like new or removed nodes as well as splits and merges.
 
 
 ## 2015.10.19

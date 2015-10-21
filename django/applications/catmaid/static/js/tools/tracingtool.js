@@ -834,8 +834,35 @@
         if (!mayView())
           return false;
         if (!(e.ctrlKey || e.metaKey)) {
-          var respectVirtualNodes = true;
-          activeTracingLayer.svgOverlay.activateNearestNode(respectVirtualNodes);
+          // Give all layers a chance to activate a node
+          var selectedNode = null;
+          var layers = activeStackViewer.getLayers();
+          var layerOrder = activeStackViewer.getLayerOrder();
+          // TODO: Don't use internal objects of the tracing overlay, i.e. find
+          // a better way to get the current mouse position.
+          var x = activeTracingLayer.svgOverlay.coords.lastX;
+          var y = activeTracingLayer.svgOverlay.coords.lastY;
+          // Only allow nodes that are screen space 50px or closer
+          var r = 50.0 / activeStackViewer.scale;
+          for (var i=0, max=layerOrder.length; i<max; ++i) {
+            // Read layers from top to bottom
+            var l = layers.get(layerOrder[max-i-1]);
+            if (CATMAID.tools.isFn(l.getClosestNode)) {
+              selectedNode = l.getClosestNode(x, y, r);
+              if (selectedNode) {
+                break;
+              }
+            }
+          }
+          if (selectedNode) {
+            // If this layer has a node close by, activate it
+            SkeletonAnnotations.staticMoveToAndSelectNode(selectedNode);
+          } else {
+            // If no layer found a node close by, ask the tracing layer for the
+            // closest node without any bounds.
+            var respectVirtualNodes = true;
+            activeTracingLayer.svgOverlay.activateNearestNode(respectVirtualNodes);
+          }
           return true;
         } else {
           return false;

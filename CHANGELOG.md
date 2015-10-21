@@ -2,7 +2,9 @@
 
 ### Features and enhancements
 
+Selection table:
 
+- Batch coloring is now much quicker.
 
 
 ### Bug fixes

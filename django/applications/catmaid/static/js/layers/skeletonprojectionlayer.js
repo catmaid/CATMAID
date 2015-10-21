@@ -232,7 +232,7 @@
               pos.set(stack.projectToStackX(pos.z, pos.y, pos.x),
                       stack.projectToStackY(pos.z, pos.y, pos.x),
                       stack.projectToStackZ(pos.z, pos.y, pos.x));
-            };
+            }
           },
           function(skid) {
             failed = true;

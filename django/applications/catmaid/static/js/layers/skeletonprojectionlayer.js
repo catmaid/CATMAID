@@ -57,7 +57,7 @@
     // Indicate if skeleton should be simplified
     simplify: false,
     // Indicate coloiring mode
-    shadingMode: "skeletoncolorgradient",
+    shadingMode: "plain",
     // Indicate if edges should be rendered
     showEdges: true,
     // Indicate if nodes should be rendered

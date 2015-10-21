@@ -57,7 +57,7 @@
     // Indicate if skeleton should be simplified
     simplify: false,
     // Indicate coloiring mode
-    shadingMode: "plain",
+    shadingMode: "toplain",
     // Indicate if edges should be rendered
     showEdges: true,
     // Indicate if nodes should be rendered
@@ -461,6 +461,33 @@
         var zDist = Math.abs(zStack - stackViewer.z);
         return Math.max(0, 1 - falloff * zDist);
       };
+    },
+
+    /**
+     * Change skeleton color towards plain colors with increasing Z distance.
+     */
+    "toplain": {
+      "opacity": function(layer, arbor, subarbor) {
+        return function(node, pos, zStack) {
+          return 1;
+        };
+      },
+      "color": function(layer, color) {
+        var falloff = layer.options.distanceFalloff;
+        var stackViewer = layer.stackViewer;
+        var from = CATMAID.tools.cssColorToRGB(SkeletonAnnotations.active_skeleton_color);
+        var to = CATMAID.tools.cssColorToRGB(color);
+        return function(node, pos, zStack) {
+          // Merge colors
+          var zDist = Math.abs(zStack - stackViewer.z);
+          var factor = Math.max(0, 1 - falloff * zDist);
+          var invFactor = 1 - factor;
+          var r = Math.round((from.r * factor + to.r * invFactor) * 255);
+          var g = Math.round((from.g * factor + to.g * invFactor) * 255);
+          var b = Math.round((from.b * factor + to.b * invFactor) * 255);
+          return "rgb(" + r + "," + g + "," + b + ")";
+        };
+      }
     }
   };
 

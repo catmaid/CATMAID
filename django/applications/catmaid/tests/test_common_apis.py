@@ -2817,6 +2817,80 @@ class ViewPageTests(TestCase):
         # Also check response length to be sure there were no duplicates.
         self.assertEqual(len(expected_result), len(parsed_response))
 
+    def test_skeleton_graph(self):
+        self.fake_authentication()
+
+        skeleton_ids = [235, 361, 373]
+        # Basic graph
+        response = self.client.post(
+            '/%d/skeletongroup/skeletonlist_confidence_compartment_subgraph' % self.test_project_id,
+            {'skeleton_list[0]': skeleton_ids[0],
+             'skeleton_list[1]': skeleton_ids[1],
+             'skeleton_list[2]': skeleton_ids[2]})
+        parsed_response = json.loads(response.content)
+        expected_result_edges = [[235, 361, 1], [235, 373, 2]]
+        # Since order is not important, check length and matches separately.
+        self.assertEqual(len(expected_result_edges), len(parsed_response['edges']))
+        for row in expected_result_edges:
+            self.assertTrue(row in parsed_response['edges'])
+
+        # Confidence split
+        # Change confidence that affects 1 edge from 235 to 373
+        response = self.client.post('/%d/node/289/confidence/update' % self.test_project_id,
+            {'new_confidence': 3})
+        self.assertEqual(response.status_code, 200)
+        # Add confidence criteria, but not one that should affect the graph.
+        response = self.client.post(
+            '/%d/skeletongroup/skeletonlist_confidence_compartment_subgraph' % self.test_project_id,
+            {'skeleton_list[0]': skeleton_ids[0],
+             'skeleton_list[1]': skeleton_ids[1],
+             'skeleton_list[2]': skeleton_ids[2],
+             'confidence_threshold': 2})
+        parsed_response = json.loads(response.content)
+        expected_result_nodes = frozenset(['235', '361', '373'])
+        expected_result_edges = [['235', '361', 1], ['235', '373', 2]]
+        self.assertEqual(expected_result_nodes, frozenset(parsed_response['nodes']))
+        # Since order is not important, check length and matches separately.
+        self.assertEqual(len(expected_result_edges), len(parsed_response['edges']))
+        for row in expected_result_edges:
+            self.assertTrue(row in parsed_response['edges'])
+
+        # Use confidence criteria that should split edges from 235 to 373.
+        response = self.client.post(
+            '/%d/skeletongroup/skeletonlist_confidence_compartment_subgraph' % self.test_project_id,
+            {'skeleton_list[0]': skeleton_ids[0],
+             'skeleton_list[1]': skeleton_ids[1],
+             'skeleton_list[2]': skeleton_ids[2],
+             'confidence_threshold': 4})
+        parsed_response = json.loads(response.content)
+        expected_result_nodes = frozenset(['235_1', '235_2', '361', '373'])
+        expected_result_edges = [['235_1', '361', 1], ['235_1', '373', 1], ['235_2', '373', 1]]
+        self.assertEqual(expected_result_nodes, frozenset(parsed_response['nodes']))
+        # Since order is not important, check length and matches separately.
+        self.assertEqual(len(expected_result_edges), len(parsed_response['edges']))
+        for row in expected_result_edges:
+            self.assertTrue(row in parsed_response['edges'])
+
+        # Dual split
+        # Again split with confidence, but also cluster the split synapses
+        # together with bandwidth.
+        response = self.client.post(
+            '/%d/skeletongroup/skeletonlist_confidence_compartment_subgraph' % self.test_project_id,
+            {'skeleton_list[0]': skeleton_ids[0],
+             'skeleton_list[1]': skeleton_ids[1],
+             'skeleton_list[2]': skeleton_ids[2],
+             'expand[0]': skeleton_ids[0],
+             'confidence_threshold': 4,
+             'bandwidth': 2000})
+        parsed_response = json.loads(response.content)
+        expected_result_nodes = frozenset(['235_1_1', '235_1_2', '235_2', '361', '373'])
+        expected_result_edges = [['235_1_1', '361', 1], ['235_1_1', '373', 1], ['235_2', '373', 1]]
+        self.assertEqual(expected_result_nodes, frozenset(parsed_response['nodes']))
+        # Since order is not important, check length and matches separately.
+        self.assertEqual(len(expected_result_edges), len(parsed_response['edges']))
+        for row in expected_result_edges:
+            self.assertTrue(row in parsed_response['edges'])
+
     def test_annotation_creation(self):
         self.fake_authentication()
 

@@ -2930,7 +2930,7 @@ class ViewPageTests(TestCase):
         skeleton_id = 2388
 
         # No reviews, single segment
-        url = '/%d/skeleton/review-status' % (self.test_project_id)
+        url = '/%d/skeletons/review-status' % (self.test_project_id)
         response = self.client.post(url, {'skeleton_ids[0]': skeleton_id})
         self.assertEqual(response.status_code, 200)
         expected_result = {'2388': [3, 0]}
@@ -3151,7 +3151,7 @@ class PermissionTests(TestCase):
             '/%(pid)s/annotations/table-list' % url_params,
             '/%(pid)s/skeleton/analytics' % url_params,
             '/%(pid)s/skeleton/annotationlist' % url_params,
-            '/%(pid)s/skeleton/review-status' % url_params,
+            '/%(pid)s/skeletons/review-status' % url_params,
             '/%(pid)s/skeleton/%(skid)s/neuronname' % url_params,
             '/%(pid)s/skeleton/connectors-by-partner' % url_params,
             '/%(pid)s/neuron/table/query-by-annotations' % url_params,

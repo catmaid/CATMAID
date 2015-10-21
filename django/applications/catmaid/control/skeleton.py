@@ -767,10 +767,54 @@ def get_connectivity_matrix(project_id, row_skeleton_ids, col_skeleton_ids):
     return outgoing
 
 
+@api_view(['POST'])
 @requires_user_role([UserRole.Browse, UserRole.Annotate])
 def review_status(request, project_id=None):
-    """ Return the review status for each skeleton in the request as a
-    tuple of total nodes and number of reviewed nodes (integers). """
+    """Retrieve the review status for a collection of skeletons.
+
+    The review status for each skeleton in the request is a tuple of total
+    nodes and number of reviewed nodes (integers). The reviews of only
+    certain users or a reviewer team may be counted instead of all reviews.
+    ---
+    parameters:
+        - name: skeleton_ids[]
+          description: IDs of the skeletons to retrieve.
+          required: true
+          type: array
+          items:
+            type: integer
+          paramType: form
+        - name: whitelist
+          description: |
+            ID of the user whose reviewer team to use to filter reviews
+            (exclusive to user_ids)
+          type: integer
+          paramType: form
+        - name: user_ids[]
+          description: |
+            IDs of the users whose reviews should be counted (exclusive
+            to whitelist)
+          type: array
+          items:
+            type: integer
+          paramType: form
+    models:
+      review_status_tuple:
+        id: review_status_tuple
+        properties:
+        - description: Total number of treenodes in the skeleton
+          type: integer
+          required: true
+        - description: |
+            Number of reviewed treenodes in the skeleton matching filters
+            (if any)
+          type: integer
+          required: true
+    type:
+      '{skeleton_id}':
+        $ref: review_status_tuple
+        required: true
+    """
     skeleton_ids = set(int(v) for k,v in request.POST.iteritems() if k.startswith('skeleton_ids['))
     whitelist = bool(json.loads(request.POST.get('whitelist', 'false')))
     whitelist_id = None

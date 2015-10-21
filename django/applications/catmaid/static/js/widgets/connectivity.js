@@ -457,7 +457,7 @@
     if (this.reviewFilter && this.reviewFilter !== 'whitelist') request.user_ids = [this.reviewFilter];
     return new Promise(function (resolve, reject) {
       requestQueue.register(
-          CATMAID.makeURL(project.id + '/skeleton/review-status'),
+          CATMAID.makeURL(project.id + '/skeletons/review-status'),
           'POST',
           request,
           CATMAID.jsonResponseHandler(function(json) {

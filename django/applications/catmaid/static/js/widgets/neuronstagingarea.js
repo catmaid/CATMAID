@@ -337,7 +337,7 @@ SelectionTable.prototype.append = function(models) {
       skeleton_ids: skeleton_ids,
       whitelist: this.review_filter === 'Team'};
   if (this.review_filter === 'Self') postData.user_ids = [session.userid];
-  requestQueue.register(django_url + project.id + '/skeleton/review-status', 'POST',
+  requestQueue.register(django_url + project.id + '/skeletons/review-status', 'POST',
     postData,
     (function(status, text) {
       if (200 !== status) return;
@@ -549,7 +549,7 @@ SelectionTable.prototype.update = function() {
             skeleton_ids: skeleton_ids,
             whitelist: self.review_filter === 'Team'};
         if (self.review_filter === 'Self') postData.user_ids = [session.userid];
-        requestQueue.register(django_url + project.id + '/skeleton/review-status', 'POST',
+        requestQueue.register(django_url + project.id + '/skeletons/review-status', 'POST',
           postData,
           CATMAID.jsonResponseHandler(function(json) {
             // Update review information

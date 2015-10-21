@@ -1985,7 +1985,7 @@ GroupGraph.prototype.colorBy = function(mode, select) {
     // if neither user_ids nor whitelist is specified, returns the union
     if ('own-review' === mode) postData['user_ids'] = [session.userid];
     else if ('whitelist-review' === mode) postData['whitelist'] = true;
-    requestQueue.register(django_url + project.id + "/skeleton/review-status", "POST",
+    requestQueue.register(django_url + project.id + "/skeletons/review-status", "POST",
         postData,
         function(status, text) {
           if (status !== 200) return;

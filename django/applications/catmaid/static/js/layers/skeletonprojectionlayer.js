@@ -41,7 +41,10 @@
 
     // Listen to active node change events
     SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
-        this.update, this);
+        this.handleActiveNodeChange, this);
+    // Listen to changes on skeletons
+    SkeletonAnnotations.on(SkeletonAnnotations.EVENT_SKELETON_CHANGED,
+        this.handleChangedSkeleton, this);
 
     if (options.initialNode) this.update(options.initialNode);
   };
@@ -147,7 +150,9 @@
     this.stackViewer.getView().removeChild(this.view);
 
     SkeletonAnnotations.off(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
-        this.update, this);
+        this.handleActiveNodeChange, this);
+    SkeletonAnnotations.off(SkeletonAnnotations.EVENT_SKELETON_CHANGED,
+        this.handleChangedSkeleton, this);
   };
 
 
@@ -173,6 +178,25 @@
         .catch(CATMAID.error);
     } else {
      this.redraw();
+    }
+  };
+
+  /**
+   * Redraw the skeleton if the active node changed.
+   */
+  SkeletonProjectionLayer.prototype.handleActiveNodeChange = function(node, skeletonChanged) {
+    if ((!node && this.currentNodeID) || (node.id !== this.currentNodeID)) {
+      this.update(node);
+    }
+  };
+
+  /**
+   * Reload skeleton information if the current skeleton changed.
+   */
+  SkeletonProjectionLayer.prototype.handleChangedSkeleton = function(skeletonID) {
+    if (skeletonID === this.currentSkeletonID) {
+      this.currentArborParser = null;
+      this.update(SkeletonAnnotations.atn);
     }
   };
 

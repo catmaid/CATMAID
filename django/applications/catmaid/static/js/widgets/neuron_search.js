@@ -835,11 +835,11 @@
     var entityIdsToQuery = entitiesToQuery.map(function(e) { return e.id; });
 
     if (entitiesToQuery.length > 0) {
-      var url = CATMAID.makeURL(project.id + '/annotations/entities/list');
+      var url = CATMAID.makeURL(project.id + '/annotations/query');
       var self = this;
       requestQueue.register(url, 'POST',
           {
-            ids: entityIdsToQuery
+            object_ids: entityIdsToQuery
           },
           CATMAID.jsonResponseHandler(function(json) {
             // Create mapping from skeleton ID to result object

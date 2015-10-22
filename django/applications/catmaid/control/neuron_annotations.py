@@ -1093,11 +1093,40 @@ def annotations_for_skeletons(request, project_id=None):
     }, separators=(',', ':')))
 
 
+@api_view(['POST'])
 @requires_user_role([UserRole.Browse])
 def annotations_for_entities(request, project_id=None):
-    ids = tuple(int(eid) for key, eid in request.POST.iteritems() if key.startswith('ids['))
+    """Query annotations linked to a list of objects.
+
+    These objects can for instance be neurons, annotations or stack groups. From
+    a database perspective, these objects are class instances.
+
+    Returned is an object with the fields "entities" and "annotations". The
+    former is an object mapping an entity ID to a list of annotations. Each
+    annotation is represented by an object containing its "id" and "uid", the
+    user who annotated it. The latter maps annotation IDs to annotation names.
+    For instance::
+
+    { "entities": { "42": [{id: 1, uid: 12}, {id: 3, uid: 14}] }, "annotations": { 12: "example1", 14: "example2" } }
+    ---
+    parameters:
+      - name: object_ids
+        description: A list of object IDs for which annotations should be returned.
+        paramType: form
+        type: array
+        allowMultiple: true
+        items:
+            type: integer
+            description: A skeleton ID
+    """
+    # Get 'annotated_with' relation ID
+    object_ids = tuple(int(eid) for key, eid in request.POST.iteritems() \
+            if key.startswith('object_ids['))
     cursor = connection.cursor()
-    cursor.execute("SELECT id FROM relation WHERE project_id=%s AND relation_name='annotated_with'" % int(project_id))
+    cursor.execute("""
+        SELECT id FROM relation
+        WHERE project_id=%s AND
+        relation_name='annotated_with'" % int(project_id))""")
     annotated_with_id = cursor.fetchone()[0]
 
     # Select pairs of skeleton_id vs annotation name
@@ -1109,7 +1138,7 @@ def annotations_for_entities(request, project_id=None):
     WHERE entity_annotation.class_instance_a IN (%s)
       AND entity_annotation.relation_id = %s
       AND entity_annotation.class_instance_b = annotation.id
-    ''' % (",".join(map(str, ids)), annotated_with_id))
+    ''' % (",".join(map(str, object_ids)), annotated_with_id))
 
     # Group by entity ID
     m = defaultdict(list)

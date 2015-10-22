@@ -1126,7 +1126,7 @@ def annotations_for_entities(request, project_id=None):
     cursor.execute("""
         SELECT id FROM relation
         WHERE project_id=%s AND
-        relation_name='annotated_with'" % int(project_id))""")
+        relation_name='annotated_with'""" % int(project_id))
     annotated_with_id = cursor.fetchone()[0]
 
     # Select pairs of skeleton_id vs annotation name

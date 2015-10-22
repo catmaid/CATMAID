@@ -9,6 +9,9 @@
    * managed skeletons is possible.
    */
   var BasicSkeletonSource = function(name) {
+    // Call super-constructor
+    CATMAID.SkeletonSource.call(this);
+
     this.name = name;
     this.registerSource();
     this.skeletonModels = {};
@@ -25,7 +28,8 @@
     this.nextGroupName = null;
   };
 
-  BasicSkeletonSource.prototype = new CATMAID.SkeletonSource();
+  BasicSkeletonSource.prototype = Object.create(CATMAID.SkeletonSource.prototype);
+  BasicSkeletonSource.prototype.constructor = BasicSkeletonSource;
 
   /* Implement SkeletonSource interface */
 

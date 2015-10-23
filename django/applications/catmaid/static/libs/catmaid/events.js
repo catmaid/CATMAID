@@ -75,6 +75,18 @@
     },
 
     /**
+     * Remove all listeners from all events available for the current context.
+     */
+    clearAllEvents: function() {
+      var result = false;
+      if (this.hasOwnProperty('events')) {
+        this.events.clear();
+      }
+      return result
+    },
+
+
+    /**
      * Triggers the given event and calls all its listeners.
      */
     trigger: function(event) {
@@ -99,6 +111,7 @@
     this.on = Event.on;
     this.off = Event.off;
     this.clear = Event.clear;
+    this.clearAllEvents = Event.clearAllEvents;
     this.trigger = Event.trigger;
 
     return this;

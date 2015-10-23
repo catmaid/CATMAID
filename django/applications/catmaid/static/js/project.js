@@ -608,7 +608,7 @@ function Project( pid )
 }
 
 // Add event support to project and define some event constants
-CATMAID.Events.extend(Project.prototype);
+CATMAID.asEventSource(Project.prototype);
 Project.EVENT_STACKVIEW_ADDED = 'project_stackview_added';
 Project.EVENT_STACKVIEW_CLOSED = 'project_stackview_closed';
 Project.EVENT_STACKVIEW_FOCUS_CHANGED = 'project_stackview_focus_changed';

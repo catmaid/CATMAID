@@ -411,7 +411,7 @@
 
   // Collect annotation related events in a dedicated object
   CATMAID.Annotations = {};
-  CATMAID.Events.extend(CATMAID.Annotations);
   CATMAID.Annotations.EVENT_ANNOTATIONS_CHANGED = "annotations_changed";
+  CATMAID.asEventSource(CATMAID.Annotations);
 
 })(CATMAID);

@@ -92,7 +92,7 @@ SkeletonAnnotations.defaultNewNeuronName = '';
 // Don't show merging UI for single node skeletons
 SkeletonAnnotations.quickSingleNodeSkeletonMerge = true;
 
-CATMAID.Events.extend(SkeletonAnnotations);
+CATMAID.asEventSource(SkeletonAnnotations);
 
 /**
  * Sets the active node, if node is not null. Otherwise, the active node is
@@ -538,7 +538,7 @@ SkeletonAnnotations.SVGOverlay = function(stackViewer, options) {
 SkeletonAnnotations.SVGOverlay.prototype = {
   EVENT_HIT_NODE_DISPLAY_LIMIT: "tracing_hit_node_display_limit"
 };
-CATMAID.Events.extend(SkeletonAnnotations.SVGOverlay.prototype);
+CATMAID.asEventSource(SkeletonAnnotations.SVGOverlay.prototype);
 
 /**
  * Creates the node with the given ID, if it is only a virtual node. Otherwise,

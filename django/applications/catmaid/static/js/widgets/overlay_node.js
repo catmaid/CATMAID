@@ -701,10 +701,12 @@
 
         // Don't let mouse down events bubble up
         mc.on('mousedown', function() {
-            d3.event.stopPropagation();
+          d3.event.stopPropagation();
+          d3.event.preventDefault();
         });
         mc.on('click', function() {
           d3.event.stopPropagation();
+          d3.event.preventDefault();
           if (onclickHandler) { onclickHandler(); }
           return true;
         });
@@ -979,6 +981,7 @@
       /** Here 'this' is c's SVG node. */
       var mc_dblclick = function(d) {
         d3.event.stopPropagation();
+        d3.event.preventDefault();
         var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.parentNode.parentNode);
         catmaidSVGOverlay.ensureFocused();
       };
@@ -1057,6 +1060,7 @@
         if (is_middle_click(e)) return; // Allow middle-click panning
 
         e.stopPropagation();
+        e.preventDefault();
 
         if (!o) return; // Not properly initialized with mc_start
         if (e.shiftKey) return;
@@ -1145,11 +1149,13 @@
         var e = d3.event;
         if (is_middle_click(e)) return; // Allow middle-click panning
         e.stopPropagation();
+        e.preventDefault();
       };
 
       var connector_mc_click = function(d) {
         var e = d3.event;
         e.stopPropagation();
+        e.preventDefault();
         var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.parentNode.parentNode);
         if (catmaidSVGOverlay.ensureFocused()) {
           return;
@@ -1203,6 +1209,7 @@
         var node = catmaidSVGOverlay.nodes[d];
         if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
           e.stopPropagation();
+          e.preventDefault();
           catmaidSVGOverlay.activateNode(node);
           catmaidSVGOverlay.splitSkeleton(d);
         }

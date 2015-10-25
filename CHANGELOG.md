@@ -70,6 +70,11 @@ Orthogonal views and multi-channel data:
   plane can either be a Z-plane in project space or a plane normal to the ray
   from the camera to the active node.
 
+- New "Count" button to count the number of pre- or postsynaptic sites, or the
+  number of treenodes tagged with a given text tag, within a distance of the
+	active node in the selected arbor along the cable of the arbor, or within a
+	given Euclidean distance for any arbor present in the 3D viewer.
+
 
 Tile layer:
 

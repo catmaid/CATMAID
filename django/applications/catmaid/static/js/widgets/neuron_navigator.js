@@ -1127,7 +1127,7 @@
           try {
             new RegExp(data.search.value);
             searchInput.css('background-color', '');
-            params['name_filter'] = data.search.value;
+            params['neuron_query_by_name'] = data.search.value;
           } catch (e) {
             // If the search field does not contain a valid regular expression,
             // cancel this update.

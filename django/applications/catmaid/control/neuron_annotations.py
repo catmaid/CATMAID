@@ -229,11 +229,6 @@ def query_neurons_by_annotations(request, project_id = None):
     query = create_basic_annotated_entity_query(p, request.POST,
             relations, classes, allowed_classes)
 
-    # Name constraints
-    search_term = request.POST.get('name_filter', '')
-    if len(search_term) > 0:
-        query = query.filter(name__iregex=search_term)
-
     # Sorting
     sort_by = request.POST.get('sort_by', 'id')
     if sort_by not in ('id', 'name', 'first_name', 'last_name'):

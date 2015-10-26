@@ -99,6 +99,6 @@ This can happen when old PostGIS library files are removed and PostGIS can't
 find what it expects. To fix this, log into the CATMAID Postgres database and
 update the PostGIS extension::
 
-    sudo -u postgis psql -d <CATMAID-DB-NAME>
+    sudo -u postgres psql -d <CATMAID-DB-NAME>
     ALTER EXTENSION postgis UPDATE;
 

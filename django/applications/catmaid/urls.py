@@ -107,8 +107,6 @@ urlpatterns += patterns('catmaid.control.neuron_annotations',
     (r'^(?P<project_id>\d+)/annotations/(?P<annotation_id>\d+)/remove$',
             'remove_annotation'),
     (r'^(?P<project_id>\d+)/neuron/query-by-annotations$', 'query_neurons_by_annotations'),
-    (r'^(?P<project_id>\d+)/neuron/table/query-by-annotations$',
-            'query_neurons_by_annotations_datatable'),
 )
 
 # Text labels

@@ -209,88 +209,69 @@ def create_annotated_entity_list(project, entities_qs, relations, annotations=Tr
 
 @requires_user_role([UserRole.Browse])
 def query_neurons_by_annotations(request, project_id = None):
+    """Query entities based on various constraints
+
+    Entities are objects that can be referenced within CATMAID's semantic
+    space, e.g. neurons, annotations or stack groups. This API allows to query
+    them, mainly by annotations that have been used with them.
+    """
     p = get_object_or_404(Project, pk = project_id)
 
     classes = dict(Class.objects.filter(project_id=project_id).values_list('class_name', 'id'))
     relations = dict(Relation.objects.filter(project_id=project_id).values_list('relation_name', 'id'))
 
-    query = create_basic_annotated_entity_query(p,
-            request.POST, relations, classes)
-    query = query.order_by('id').distinct()
+    # Type constraints
+    allowed_classes = [v for k,v in request.POST.iteritems()
+            if k.startswith('types[')]
+    if not allowed_classes:
+        allowed_classes = ('neuron', 'annotation')
 
+    query = create_basic_annotated_entity_query(p, request.POST,
+            relations, classes, allowed_classes)
+
+    # Name constraints
+    search_term = request.POST.get('name_filter', '')
+    if len(search_term) > 0:
+        query = query.filter(name__iregex=search_term)
+
+    # Sorting
+    sort_by = request.POST.get('sort_by', 'id')
+    if sort_by not in ('id', 'name', 'first_name', 'last_name'):
+        raise ValueError("Only 'id', 'name', 'first_name' and 'last_name' "
+                         "are allowed for the 'sort-dir' parameter")
+    sort_dir = request.POST.get('sort_dir', 'asc')
+    if sort_dir not in ('asc', 'desc'):
+        raise ValueError("Only 'asc' and 'desc' are allowed for the 'sort-dir' parameter")
+    query = query.order_by(sort_by if sort_dir == 'asc' else ('-' + sort_by))
+
+    # Make sure we get a distinct result, which otherwise might not be the case
+    # due to the joins made.
+    query = query.distinct()
+
+    # If there are range limits and given that it is very likely that there are
+    # many entities returned, it is more efficient to get the total result
+    # number with two queries: 1. Get total number of neurons 2. Get limited
+    # set. The (too expensive) alternative would be to get all neurons for
+    # counting and limiting on the Python side.
+    range_start = request.POST.get('range_start', None)
+    range_length = request.POST.get('range_length', None)
     with_annotations = request.POST.get('with_annotations', 'false') == 'true'
-
-    # Collect entity information
-    entities = create_annotated_entity_list(p, query, relations,
-            with_annotations)
+    if range_start and range_length:
+        range_start = int(range_start)
+        range_length = int(range_length)
+        num_records = query.count()
+        entities = create_annotated_entity_list(p,
+                query[range_start:range_start + range_length],
+                relations, with_annotations)
+    else:
+        entities = create_annotated_entity_list(p, query, relations,
+                with_annotations)
+        num_records = len(entities)
 
     return HttpResponse(json.dumps({
       'entities': entities,
+      'totalRecords': num_records,
     }))
-
-@requires_user_role([UserRole.Browse])
-def query_neurons_by_annotations_datatable(request, project_id=None):
-    p = get_object_or_404(Project, pk = project_id)
-
-    classes = dict(Class.objects.filter(project_id=project_id).values_list('class_name', 'id'))
-    relations = dict(Relation.objects.filter(project_id=project_id).values_list('relation_name', 'id'))
-
-    display_start = int(request.POST.get('iDisplayStart', 0))
-    display_length = int(request.POST.get('iDisplayLength', -1))
-    if display_length < 0:
-        display_length = 2000  # Default number of result rows
-
-    neuron_query = create_basic_annotated_entity_query(p, request.POST,
-            relations, classes, allowed_classes=['neuron'])
-
-    search_term = request.POST.get('sSearch', '')
-    if len(search_term) > 0:
-        neuron_query = neuron_query.filter(name__iregex=search_term)
-
-    should_sort = request.POST.get('iSortCol_0', False)
-    if should_sort:
-        column_count = int(request.POST.get('iSortingCols', 0))
-        sorting_directions = [request.POST.get('sSortDir_%d' % d, 'DESC')
-                for d in range(column_count)]
-        sorting_directions = map(lambda d: '-' if upper(d) == 'DESC' else '',
-                sorting_directions)
-
-        fields = ['name', 'first_name', 'last_name']
-        sorting_index = [int(request.POST.get('iSortCol_%d' % d))
-                for d in range(column_count)]
-        sorting_cols = map(lambda i: fields[i], sorting_index)
-
-        neuron_query = neuron_query.extra(order_by=[di + col for (di, col) in zip(
-                sorting_directions, sorting_cols)])
-
-    # Make sure we get a distinct result (which otherwise might not be the case
-    # due to the JOINS that are made).
-    neuron_query = neuron_query.distinct()
-
-    # Since it is very likely that there are many neurons, it is more efficient
-    # to do two queries: 1. Get total number of neurons 2. Get limited set. The
-    # alternative would be to get all neurons for counting and limiting on the
-    # Python side. This, however, is too expensive when there are many neurons.
-    num_records = neuron_query.count()
-
-    response = {
-        'iTotalRecords': num_records,
-        'iTotalDisplayRecords': num_records,
-        'aaData': []
-    }
-
-    entities = create_annotated_entity_list(p,
-            neuron_query[display_start:display_start + display_length], relations)
-    for entity in entities:
-        if entity['type'] == 'neuron':
-            response['aaData'] += [[
-                entity['name'],
-                entity['annotations'],
-                entity['skeleton_ids'],
-                entity['id'],
-            ]]
-
-    return HttpResponse(json.dumps(response), content_type='text/json')
 
 def _update_neuron_annotations(project_id, user, neuron_id, annotation_map):
     """ Ensure that the neuron is annotated_with only the annotations given.

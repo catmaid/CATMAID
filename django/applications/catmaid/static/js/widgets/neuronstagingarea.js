@@ -1,8 +1,7 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
-  CATMAID
-  Colorizer,
+  CATMAID,
   InstanceRegistry,
   NeuronNameService,
   project,
@@ -40,7 +39,7 @@ SelectionTable._lastFocused = null; // Static reference to last focused instance
 SelectionTable.prototype = {};
 $.extend(SelectionTable.prototype, new InstanceRegistry());
 $.extend(SelectionTable.prototype, new CATMAID.SkeletonSource());
-$.extend(SelectionTable.prototype, new Colorizer());
+CATMAID.asColorizer(SelectionTable.prototype);
 
 SelectionTable.prototype.highlighting_color = "#d6ffb5";
 

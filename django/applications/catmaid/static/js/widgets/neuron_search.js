@@ -351,8 +351,8 @@
           .val("None").trigger("change");
     }
 
-    var form_data = $('#neuron_query_by_annotations' +
-        this.widgetID).serializeArray().reduce(function(o, e) {
+    var form_data = $('#neuron_query_by_annotations' + this.widgetID)
+        .serializeArray().reduce(function(o, e) {
           if (0 === e.name.indexOf('neuron_query_by_annotation')) {
             o[e.name] = CATMAID.annotations.getID(e.value);
           } else if (0 === e.name.indexOf('neuron_query_include_subannotation')) {

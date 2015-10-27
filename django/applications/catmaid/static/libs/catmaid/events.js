@@ -102,7 +102,7 @@
     this.trigger = Event.trigger;
 
     return this;
-  }
+  };
 
   // Make event source available in CATMAID namespace and add a mixin version of
   // it.

@@ -110,4 +110,19 @@ var requestQueue = new RequestQueue();
       (startsWith(path, "/") ? path.substr(1) : path);
   };
 
+  /**
+   * Create a documentation URL for www.catmaid.org.
+   *
+   * @param {string} path - The relative path, without domain URL. A leading
+   *                        slash is not required.
+   * @returns {string}    - The complete URL.
+   */
+  CATMAID.makeDocURL = function(path) {
+    validateString(path, "relative path for URL creation");
+    var version = "stable";
+    return "http://catmaid.readthedocs.org/en/" + version + "/" +
+      (startsWith(path, "/") ? path.substr(1) : path);
+
+  };
+
 })(CATMAID);

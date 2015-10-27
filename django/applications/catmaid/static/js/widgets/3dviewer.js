@@ -4687,9 +4687,14 @@
     var camera = this.space.view.camera;
     var target = this.space.view.controls.target;
 
+    var docURL = CATMAID.makeDocURL('user_faq.html#faq-3dviewer-webm');
+    dialog.appendHTML('Note: you can convert the resulting WebM file to ' +
+        'other formats. Have a look at the <a href="' + docURL +
+        '">documentation</a> for more information.');
+
     dialog.onOK = handleOK.bind(this);
 
-    dialog.show(400, 450, true);
+    dialog.show(400, 500, true);
 
     function handleOK() {
       /* jshint validthis: true */ // `this` is bound to this WebGLApplication

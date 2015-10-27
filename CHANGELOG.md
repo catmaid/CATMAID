@@ -33,6 +33,8 @@ Miscellaneous:
   changes like new or removed nodes as well as splits and merges. It will also
   not complain anymore if a connector was selected.
 
+- Text rendered in the 3D viewer is now upright again (instead of upside-down).
+
 
 ## 2015.10.19
 

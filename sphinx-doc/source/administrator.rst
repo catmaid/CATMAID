@@ -9,4 +9,4 @@ Administrator Documentation
    userprofiles
    celeryinstall
    alternative_install
-   faq
+   admin_faq

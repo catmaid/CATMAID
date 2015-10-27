@@ -1572,6 +1572,8 @@
 
     this.createTextMesh = function(tagString, material) {
       var text = new THREE.Mesh(this.getTagGeometry(tagString), material);
+      // We need to flip up, because our cameras' up direction is -Y.
+      text.scale.setY(-1);
       text.visible = true;
       return text;
     };
@@ -1598,7 +1600,7 @@
     this.radiusSphere = new THREE.OctahedronGeometry(10, 3);
     this.icoSphere = new THREE.IcosahedronGeometry(1, 2);
     this.cylinder = new THREE.CylinderGeometry(1, 1, 1, 10, 1, false);
-    this.textMaterial = new THREE.MeshNormalMaterial( { overdraw: true } );
+    this.textMaterial = new THREE.MeshNormalMaterial();
     // Mesh materials for spheres on nodes tagged with 'uncertain end', 'undertain continuation' or 'TODO'
     this.labelColors = {uncertain: new THREE.MeshBasicMaterial({color: 0xff8000, opacity:0.6, transparent: true}),
                         todo:      new THREE.MeshBasicMaterial({color: 0xff0000, opacity:0.6, transparent: true}),

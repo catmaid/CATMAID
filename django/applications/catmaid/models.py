@@ -1,4 +1,5 @@
 from django import forms
+from django.contrib.gis.db import models as spatial_models
 from django.db import models
 from django.db.models import Q
 from django.db.models.signals import pre_save, post_save, post_syncdb
@@ -526,6 +527,19 @@ class ReviewerWhitelist(models.Model):
     user = models.ForeignKey(User)
     reviewer = models.ForeignKey(User, related_name='+')
     accept_after = models.DateTimeField(default=datetime.min)
+
+class Volume(UserFocusedModel):
+    """A three-dimensional volume in project space. Implremented as PostGIS
+    Geometry type.
+    """
+    editor = models.ForeignKey(User, related_name='editor', db_column='editor_id')
+    name = models.CharField(max_length=255)
+    comment = models.TextField(blank=True, null=True)
+    # GeoDjango-specific: a geometry field (MultiPolygonField) with
+    # PostGIS-specific three dimensions.
+    geometry = spatial_models.GeometryField(dim=3, srid=0)
+    # Override default manager with a GeoManager instance
+    objects = spatial_models.GeoManager()
 
 class RegionOfInterest(UserFocusedModel):
     class Meta:

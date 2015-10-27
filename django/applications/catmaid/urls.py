@@ -377,6 +377,13 @@ urlpatterns += patterns('catmaid.control.clustering',
         name="clustering_display"),
 )
 
+# Volumes
+urlpatterns += patterns('catmaid.control.volume',
+   (r'^(?P<project_id>\d+)/volumes/', 'volume_collection'),
+   (r'^(?P<project_id>\d+)/volumes/(?P<volume_id>\d+)/', 'volume_detail'),
+   (r'^(?P<project_id>\d+)/volumes/(?P<volume_id>\d+)/intersect', 'intersects'),
+)
+
 # Front-end tests
 urlpatterns += patterns('',
     url(r'^tests$', login_required(CatmaidView.as_view(template_name="catmaid/tests.html")), name="frontend_tests"),

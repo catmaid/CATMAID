@@ -19,6 +19,14 @@ Skeleton projection layer
   (<50px screen space), the tracing layer's node selection is used.
 
 
+Miscellaneous:
+
+- By default new widgets will now select the last widget created as skeleton
+  source. If wanted, this can be adjusted to the previous behavior (always
+  select 'Active skeleton') through the 'Auto-select widget created last as
+  source for new widgets' option in the settings widget.
+
+
 ### Bug fixes
 
 - The skeleton projection layer will now update automatically on skeleton

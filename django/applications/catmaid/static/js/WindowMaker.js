@@ -1028,6 +1028,11 @@ var WindowMaker = new function()
       return;
     }
 
+    // A selection table is opened alongside the 3D viewer. Initialize it first,
+    // so that it will default to the last opened skeleton source to pull from
+    // (which otherwise would be the 3D viewer).
+    var ST = new SelectionTable();
+
     var WA = new CATMAID.WebGLApplication();
 
     var win = new CMWWindow(WA.getName());
@@ -1349,7 +1354,7 @@ var WindowMaker = new function()
     nodeScalingInput.value = WA.options.skeleton_node_scaling;
 
     // Create a Selection Table, preset as the sync target
-    createStagingListWindow( null, win, WA.getName() );
+    createStagingListWindow( ST, win, WA.getName() );
 
     win.addListener(
       function(callingWindow, signal) {

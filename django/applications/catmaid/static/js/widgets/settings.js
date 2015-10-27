@@ -747,6 +747,15 @@
       function() {
         SkeletonAnnotations.quickSingleNodeSkeletonMerge = this.checked;
       }));
+
+      // Auto-select skeleton source created last
+      ds.append(createCheckboxSetting('Auto-select widget created last as source ' +
+            'for new widgets', CATMAID.skeletonListSources.defaultSelectLastSource,
+            'Many widget support pulling in skeletons from other widgets. With ' +
+            'this option the skeleton source created last, is selected by ' +
+            'default, otherwise the active skeleton is.', function() {
+              CATMAID.skeletonListSources.defaultSelectLastSource = this.checked;
+            }));
     };
 
 

@@ -43,6 +43,13 @@
     });
   };
 
+  OptionsDialog.prototype.appendHTML = function(html) {
+    var container = document.createElement('p');
+    container.innerHTML = html;
+    this.dialog.appendChild(container);
+    return container;
+  };
+
   OptionsDialog.prototype.appendMessage = function(text) {
     var msg = document.createElement('p');
     msg.appendChild(document.createTextNode(text));

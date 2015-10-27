@@ -11,7 +11,6 @@
   NeuronDendrogram,
   project,
   requestQueue,
-  SelectionTable,
   SkeletonAnnotations,
   TreenodeTable,
   WindowMaker
@@ -1358,7 +1357,7 @@
           var $row_cells = $cells.find('input[neuron_id=' + n.id + ']').
               parent().parent().find('td');
           $row_cells.css('background-color',
-              SelectionTable.prototype.highlighting_color);
+              CATMAID.SelectionTable.prototype.highlighting_color);
         }
       });
     }
@@ -1370,7 +1369,7 @@
   NeuronNavigator.NeuronListMixin.prototype.getSelectedSkeletonModels = function() {
     return this.get_entities(true).reduce((function(o, n) {
       n.skeleton_ids.forEach(function(skid) {
-        o[skid] = new SelectionTable.prototype.SkeletonModel(
+        o[skid] = new CATMAID.SelectionTable.prototype.SkeletonModel(
             skid, n.name, new THREE.Color().setRGB(1, 1, 0));
       });
       return o;
@@ -2120,7 +2119,7 @@
     if (skeleton_id) {
       // Highlight corresponding row if present
       $rows.find('td:contains(' + skeleton_id + ')').parent().css(
-          'background-color', SelectionTable.prototype.highlighting_color);
+          'background-color', CATMAID.SelectionTable.prototype.highlighting_color);
     }
   };
 
@@ -2129,7 +2128,7 @@
    */
   NeuronNavigator.NeuronNode.prototype.getSelectedSkeletonModels = function() {
     return this.skeleton_ids.reduce((function(o, skid) {
-      o[skid] = new SelectionTable.prototype.SkeletonModel(
+      o[skid] = new CATMAID.SelectionTable.prototype.SkeletonModel(
           skid, this.neuron_name, new THREE.Color().setRGB(1, 1, 0));
       return o;
     }).bind(this), {});

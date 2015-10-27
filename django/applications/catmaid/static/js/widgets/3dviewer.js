@@ -10,7 +10,6 @@
   project,
   Project,
   requestQueue,
-  SelectionTable,
   session,
   SkeletonAnnotations,
   SkeletonRegistry,
@@ -565,10 +564,10 @@
         if (0 === skids.length) return CATMAID.info("No skeletons found");
         var models = {};
         skids.forEach(function(skid) {
-          models[skid] = new SelectionTable.prototype.SkeletonModel(skid, "", new THREE.Color().setRGB(0.5, 0.5, 0.5));
+          models[skid] = new CATMAID.SelectionTable.prototype.SkeletonModel(skid, "", new THREE.Color().setRGB(0.5, 0.5, 0.5));
         });
         WindowMaker.create('neuron-staging-area');
-        var sel = SelectionTable.prototype.getLastInstance();
+        var sel = CATMAID.SelectionTable.prototype.getLastInstance();
         sel.append(models);
       };
 

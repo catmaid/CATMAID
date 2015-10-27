@@ -694,8 +694,8 @@
       run: function (e) {
         if (e.shiftKey) { // Select skeletons by radius.
           var selectionCallback = (e.ctrlKey || e.metaKey) ?
-              function (skids) { SelectionTable.getLastFocused().removeSkeletons(skids); } :
-              function (skids) { SelectionTable.getLastFocused().addSkeletons(skids); };
+              function (skids) { CATMAID.SelectionTable.getLastFocused().removeSkeletons(skids); } :
+              function (skids) { CATMAID.SelectionTable.getLastFocused().addSkeletons(skids); };
           var atnID = SkeletonAnnotations.getActiveNodeId();
 
           activeTracingLayer.svgOverlay.selectRadius(
@@ -719,10 +719,10 @@
               });
         } else { // Select active skeleton.
           if (e.ctrlKey || e.metaKey) {
-            SelectionTable.getLastFocused().removeSkeletons([
+            CATMAID.SelectionTable.getLastFocused().removeSkeletons([
                 SkeletonAnnotations.getActiveSkeletonId()]);
           } else {
-            SelectionTable.getLastFocused().append(
+            CATMAID.SelectionTable.getLastFocused().append(
                 SkeletonAnnotations.activeSkeleton.getSelectedSkeletonModels());
           }
         }
@@ -1184,7 +1184,7 @@
           var actionaddstage = function(type) {
             return function() {
               // Find an open Selection, or open one if none
-              var selection = SelectionTable.prototype.getOrCreate();
+              var selection = CATMAID.SelectionTable.prototype.getOrCreate();
               selection.addSkeletons([parseInt($(this).attr('id'))]);
               return false;
             };

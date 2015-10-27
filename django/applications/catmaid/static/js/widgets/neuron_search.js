@@ -6,7 +6,6 @@
   NeuronNameService,
   project,
   requestQueue,
-  SelectionTable,
   WindowMaker
 */
 
@@ -88,7 +87,7 @@
 
   NeuronAnnotations.prototype.getSkeletonModel = function(skeleton_id) {
     if (this.hasSkeleton(skeleton_id)) {
-      return new SelectionTable.prototype.SkeletonModel(skeleton_id, "",
+      return new CATMAID.SelectionTable.prototype.SkeletonModel(skeleton_id, "",
           new THREE.Color().setRGB(1, 1, 0));
     } else {
       return null;
@@ -99,7 +98,7 @@
     return this.get_selected_neurons().reduce(function(o, e) {
       if (e.type === 'neuron') {
         e.skeleton_ids.forEach(function(s) {
-          o[s] = new SelectionTable.prototype.SkeletonModel(
+          o[s] = new CATMAID.SelectionTable.prototype.SkeletonModel(
               s, e.name, new THREE.Color().setRGB(1, 1, 0));
         });
       }
@@ -136,7 +135,7 @@
       // case that there is only one neuron, belonging to the skeleton.
       neurons.forEach($.proxy(function(n) {
         $('.neuron_annotation_result_row' + this.widgetID + '_' + n.id).css(
-            'background-color', SelectionTable.prototype.highlighting_color);
+            'background-color', CATMAID.SelectionTable.prototype.highlighting_color);
       }, this));
     }
   };

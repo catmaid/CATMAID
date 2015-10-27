@@ -6,7 +6,7 @@
 <script type="text/javascript">
 
   function new_window_with_return( url ) {
-    var selectionTables = SelectionTable.prototype.getInstances();
+    var selectionTables = CATMAID.SelectionTable.prototype.getInstances();
     if (0 === selectionTables.length) {
       alert("Open and populate a Selection Table first!");
       return;
@@ -44,7 +44,7 @@
 				 'Active neuron and input synapses only from neurons in Selection Table'],
 				[0, 1, 2],
 				0);
-		var selectionTables = SelectionTable.prototype.getInstances();
+		var selectionTables = CATMAID.SelectionTable.prototype.getInstances();
 		var choiceST = dialog.appendChoice("Selection table: ", "neuroml-st",
 				selectionTables.map(function(item) { return item.getName(); }),
 				selectionTables.map(function(item, i) { return i; }),

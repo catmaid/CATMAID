@@ -763,7 +763,7 @@ var WindowMaker = new function()
 
   var createStagingListWindow = function( instance, webglwin, webglwin_name ) {
 
-    var ST = instance ? instance : new SelectionTable();
+    var ST = instance ? instance : new CATMAID.SelectionTable();
 
     var win = new CMWWindow(ST.getName());
     var content = win.getFrame();
@@ -930,7 +930,7 @@ var WindowMaker = new function()
       })
       .on("click", "td .action-info", function() {
         var skeletonID = rowToSkeletonID(this);
-        SelectionTable.prototype.skeleton_info([skeletonID]);
+        CATMAID.SelectionTable.prototype.skeleton_info([skeletonID]);
       })
       .on("click", "td .action-navigator", function() {
         var skeletonID = rowToSkeletonID(this);
@@ -1031,7 +1031,7 @@ var WindowMaker = new function()
     // A selection table is opened alongside the 3D viewer. Initialize it first,
     // so that it will default to the last opened skeleton source to pull from
     // (which otherwise would be the 3D viewer).
-    var ST = new SelectionTable();
+    var ST = new CATMAID.SelectionTable();
 
     var WA = new CATMAID.WebGLApplication();
 

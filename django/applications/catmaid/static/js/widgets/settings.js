@@ -5,7 +5,6 @@
   NeuronNameService,
   project,
   requestQueue,
-  SelectionTable,
   SkeletonAnnotations,
   userprofile,
   WindowMaker

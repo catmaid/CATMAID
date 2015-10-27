@@ -5,7 +5,6 @@
   InstanceRegistry,
   project,
   requestQueue,
-  SelectionTable,
   SkeletonAnnotations
 */
 
@@ -97,7 +96,7 @@ NeuronDendrogram.prototype.getSelectedSkeletonModels = function()
 {
   var models = {};
   if (this.currentSkeletonId) {
-    models[this.currentSkeletonId] = new SelectionTable.prototype.SkeletonModel(
+    models[this.currentSkeletonId] = new CATMAID.SelectionTable.prototype.SkeletonModel(
         this.currentSkeletonId, "", new THREE.Color().setRGB(1, 1, 0));
   }
   return models;

@@ -3,7 +3,6 @@
 /* global
   project,
   requestQueue,
-  SelectionTable,
   WindowMaker
 */
 
@@ -182,9 +181,9 @@ var ProjectStatistics = new function()
                   CATMAID.info('No skeletons found for your selection');
                   return;
                 }
-                var ST = new SelectionTable();
+                var ST = new CATMAID.SelectionTable();
                 var models = skeleton_ids.reduce(function(o, skid) {
-                  o[skid] = new SelectionTable.prototype.SkeletonModel(skid, "",
+                  o[skid] = new CATMAID.SelectionTable.prototype.SkeletonModel(skid, "",
                       new THREE.Color().setRGB(1, 1, 0));
                   return o;
                 }, {});

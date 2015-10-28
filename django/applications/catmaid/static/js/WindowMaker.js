@@ -953,6 +953,8 @@ var WindowMaker = new function()
             skeleton[other] = visible;
             $('#skeleton' + other + table.widgetID + '-' + skeletonID).prop('checked', visible);
           });
+          // Update table information
+          table.updateTableInfo();
         }
         table.notifyLink(skeleton);
       })

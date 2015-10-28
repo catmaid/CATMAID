@@ -366,6 +366,13 @@
     this.gui.invalidate();
   };
 
+  /**
+   * Make GUI update the table's status information.
+   */
+  SelectionTable.prototype.updateTableInfo = function() {
+    this.gui.updateTableInfo();
+  };
+
   /** ids: an array of Skeleton IDs. */
   SelectionTable.prototype.removeSkeletons = function(ids) {
     if (1 === ids.length) {
@@ -619,6 +626,40 @@
     }
   };
 
+  /**
+   * Update the table's status information.
+   */
+  SelectionTable.prototype.GUI.prototype.updateTableInfo = function() {
+    // Select info sibling of table
+    var infoContainer = $('table#skeleton-table' + this.table.widgetID +
+        ' + div.dataTables_info');
+    infoContainer.text(this.getTableInfo());
+  };
+
+  /**
+   * Get a string representation of the table's status.
+   */
+  SelectionTable.prototype.GUI.prototype.getTableInfo = function() {
+    var info;
+    var tableSelector = "table#skeleton-table" + this.table.widgetID;
+    if ($.fn.DataTable.isDataTable(tableSelector)) {
+      var datatable = $(tableSelector).DataTable();
+      if (datatable) {
+        var nSelected =  this.table.skeletons.reduce(function(n, s) {
+          return s.selected ? n + 1 : n;
+        }, 0);
+        var i = datatable.page.info();
+        // Add selection info
+        info = "Selected " + nSelected + " and showing " + (i.end - i.start) +
+            " of " + i.recordsDisplay + " neurons";
+        if (i.recordsTotal !== i.recordsDisplay) {
+          info += " (filtered from " + i.recordsTotal + " total neurons)";
+        }
+      }
+    }
+    return info;
+  };
+
   /** Remove all, and repopulate with the current range. */
   SelectionTable.prototype.GUI.prototype.update = function() {
     // Update GUI state
@@ -662,6 +703,7 @@
       destroy: true,
       dom: "lrptip",
       paging: true,
+      infoCallback: this.getTableInfo.bind(this),
       displayStart: this.entriesPerPage * this.page,
       pageLength: this.entriesPerPage,
       lengthMenu: [[10, 25, 100, -1], [10, 25, 100, "All"]],

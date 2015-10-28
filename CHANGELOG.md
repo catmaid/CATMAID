@@ -6,6 +6,10 @@ Selection table:
 
 - Batch coloring is now much quicker.
 
+- The status text line at the bottom of the table includes now the number of
+  selected neurons. This is helpful when a filter is active and more neurons are
+  selected than visible.
+
 
 Skeleton projection layer
 

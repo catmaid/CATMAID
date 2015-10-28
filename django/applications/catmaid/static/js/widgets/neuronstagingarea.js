@@ -816,16 +816,6 @@
       }, {});
     });
 
-    // On every redraw make sure no color wheel is still attached to a skeleton
-    table.on("draw.dt", this, function(e) {
-        // Remove all color wheels
-        e.data.table.skeletons.forEach(function(s) {
-          if (s.cw) {
-            delete s.cw;
-          }
-        });
-    });
-
     // If the active skeleton is within the range, highlight it
     var selectedSkeletonId = SkeletonAnnotations.getActiveSkeletonId();
     if (selectedSkeletonId) this.table.highlight(selectedSkeletonId);

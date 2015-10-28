@@ -224,6 +224,7 @@
     }
     // Update UI
     this.gui.invalidate();
+    this.updateTableInfo();
   };
 
   /** Where 'type' is 'pre' or 'post' or 'text' or 'meta', which are the prefixes of

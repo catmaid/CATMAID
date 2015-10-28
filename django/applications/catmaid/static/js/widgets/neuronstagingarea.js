@@ -363,7 +363,7 @@
    * changed.
    */
   SelectionTable.prototype.updateNeuronNames = function() {
-    this.gui.update();
+    this.gui.invalidate();
   };
 
   /** ids: an array of Skeleton IDs. */
@@ -645,7 +645,6 @@
       d[i] = {
         index: i, // For initial sorting
         skeleton: s,
-        name: NeuronNameService.getInstance().getName(s.id),
         reviewPercentage: reviews[s.id],
       };
       return d;
@@ -689,11 +688,13 @@
           "type": "text",
           "render": {
             "display": function(data, type, row, meta) {
+              var name = NeuronNameService.getInstance().getName(row.skeleton.id);
               return '<a href="#" class="neuron-selection-link action-select">' +
-                (row.name ? row.name : "undefined") + '</a>';
+                (name ? name : "undefined") + '</a>';
             },
             "_": function(data, type, row, meta) {
-              return row.name ? row.name : "undefined";
+              var name = NeuronNameService.getInstance().getName(row.skeleton.id);
+              return name ? name : "undefined";
             }
           }
         },

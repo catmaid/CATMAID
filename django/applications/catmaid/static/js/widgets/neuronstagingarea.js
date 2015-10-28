@@ -584,6 +584,7 @@
 
   SelectionTable.prototype.GUI = function(table) {
     this.table = table;
+    this.datatable = null;
     this.page = 0;
     this.entriesPerPage = 25;
     this.showVisibilityControls = true;
@@ -660,8 +661,25 @@
     return info;
   };
 
-  /** Remove all, and repopulate with the current range. */
+  /**
+   * Initialize a new datatable, if there was non created, yet. Update the
+   * existing table otherwise.
+   */
   SelectionTable.prototype.GUI.prototype.update = function() {
+    if (this.datatable) {
+      // Reload data from widget
+      this.datatable.ajax.reload();
+    } else {
+      // Initialize a new DataTable instance
+      this.init();
+    }
+  };
+
+  /**
+   * Remove all and initialize a new datatable that gets its content from the
+   * widget.
+   */
+  SelectionTable.prototype.GUI.prototype.init = function() {
     // Update GUI state
     var widgetID = this.table.widgetID;
 
@@ -676,6 +694,7 @@
         datatable.destroy();
       }
     }
+    this.datatable = null;
 
     // Remove all table rows
     $("tr[id^='skeletonrow" + widgetID + "']").remove();
@@ -698,7 +717,7 @@
         (skeleton[key] ? ' checked' : '') + ' />';
     };
 
-    var table = $("table#skeleton-table" + widgetID ).DataTable({
+    this.datatable = $("table#skeleton-table" + widgetID ).DataTable({
       data: data,
       destroy: true,
       dom: "lrptip",
@@ -709,6 +728,27 @@
       lengthMenu: [[10, 25, 100, -1], [10, 25, 100, "All"]],
       processing: true,
       serverSide: false,
+      // Load data from widget through ajax option. This allows for complete
+      // control over data and allows us to still use DataTable's sorting and
+      // filtering (we filter in the widget, though).
+      ajax: (function(data, callback, settings) {
+        var filteredSkeletons = this.table.filteredSkeletons(false);
+        var skeletonData = filteredSkeletons.reduce(function(d, s, i) {
+          d[i] = {
+            index: i, // For initial sorting
+            skeleton: s,
+            reviewPercentage: reviews[s.id],
+          };
+          return d;
+        }, new Array(filteredSkeletons.length));
+
+        callback({
+          draw: data.draw,
+          recordsTotal: this.table.skeletons.length,
+          recordsFiltered: filteredSkeletons.length,
+          data: skeletonData
+        });
+      }).bind(this),
       autoWidth: false,
       order: this.order,
       orderCellsTop: true,
@@ -823,19 +863,9 @@
       }
     });
 
-    // If there is a regex search active, filter the table
-    if (this.table.match) {
-      // Treat search string as regular expression, if it starts with "/"
-      if (this.table.match.substr(0, 1) === "/") {
-        table.column(2).search(this.table.match.substr(1), true, false).draw();
-      } else {
-        table.column(2).search(this.table.match).draw();
-      }
-    }
-
     // If the skeleton order changed through the datatable, propagate this change
     // back to the internal skeleton ID list.
-    table.on("order.dt", this, function(e) {
+    this.datatable.on("order.dt", this, function(e) {
       var widget = e.data.table;
       // Get the current order of skeletons and store it in the widget
       var data = $(this).DataTable().rows({order: 'current'}).data().toArray();

@@ -1369,8 +1369,8 @@
   NeuronNavigator.NeuronListMixin.prototype.getSelectedSkeletonModels = function() {
     return this.get_entities(true).reduce((function(o, n) {
       n.skeleton_ids.forEach(function(skid) {
-        o[skid] = new CATMAID.SelectionTable.prototype.SkeletonModel(
-            skid, n.name, new THREE.Color().setRGB(1, 1, 0));
+        o[skid] = new CATMAID.SkeletonModel(skid, n.name,
+            new THREE.Color().setRGB(1, 1, 0));
       });
       return o;
     }).bind(this), {});
@@ -2128,8 +2128,8 @@
    */
   NeuronNavigator.NeuronNode.prototype.getSelectedSkeletonModels = function() {
     return this.skeleton_ids.reduce((function(o, skid) {
-      o[skid] = new CATMAID.SelectionTable.prototype.SkeletonModel(
-          skid, this.neuron_name, new THREE.Color().setRGB(1, 1, 0));
+      o[skid] = new CATMAID.SkeletonModel(skid, this.neuron_name,
+          new THREE.Color().setRGB(1, 1, 0));
       return o;
     }).bind(this), {});
   };

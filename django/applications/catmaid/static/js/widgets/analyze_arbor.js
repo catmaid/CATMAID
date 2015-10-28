@@ -137,7 +137,7 @@ AnalyzeArbor.prototype.hasSkeleton = function(skeleton_id) {
 
 AnalyzeArbor.prototype.createModel = function(skeleton_id) {
   var name = NeuronNameService.getInstance().getName(skeleton_id);
-  return new CATMAID.SelectionTable.prototype.SkeletonModel(skeleton_id, name, this.getSkeletonColor());
+  return new CATMAID.SkeletonModel(skeleton_id, name, this.getSkeletonColor());
 };
 
 AnalyzeArbor.prototype.getSelectedSkeletonModels = function() {

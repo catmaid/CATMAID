@@ -183,7 +183,7 @@ var ProjectStatistics = new function()
                 }
                 var ST = new CATMAID.SelectionTable();
                 var models = skeleton_ids.reduce(function(o, skid) {
-                  o[skid] = new CATMAID.SelectionTable.prototype.SkeletonModel(skid, "",
+                  o[skid] = new CATMAID.SkeletonModel(skid, "",
                       new THREE.Color().setRGB(1, 1, 0));
                   return o;
                 }, {});

@@ -87,7 +87,7 @@
 
   NeuronAnnotations.prototype.getSkeletonModel = function(skeleton_id) {
     if (this.hasSkeleton(skeleton_id)) {
-      return new CATMAID.SelectionTable.prototype.SkeletonModel(skeleton_id, "",
+      return new CATMAID.SkeletonModel(skeleton_id, "",
           new THREE.Color().setRGB(1, 1, 0));
     } else {
       return null;
@@ -98,8 +98,8 @@
     return this.get_selected_neurons().reduce(function(o, e) {
       if (e.type === 'neuron') {
         e.skeleton_ids.forEach(function(s) {
-          o[s] = new CATMAID.SelectionTable.prototype.SkeletonModel(
-              s, e.name, new THREE.Color().setRGB(1, 1, 0));
+          o[s] = new CATMAID.SkeletonModel(s, e.name,
+              new THREE.Color().setRGB(1, 1, 0));
         });
       }
       return o;

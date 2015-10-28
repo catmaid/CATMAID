@@ -346,7 +346,7 @@ GroupGraph.prototype.hasSkeleton = function(skeleton_id) {
 };
 
 GroupGraph.prototype.createSkeletonModel = function(props) {
-  return new CATMAID.SelectionTable.prototype.SkeletonModel(props.skeleton_id, props.label, new THREE.Color().setHex(parseInt('0x' + props.color.substring(1))));
+  return new CATMAID.SkeletonModel(props.skeleton_id, props.label, new THREE.Color().setHex(parseInt('0x' + props.color.substring(1))));
 };
 
 GroupGraph.prototype.getSkeletonModel = function(skeleton_id) {
@@ -1671,7 +1671,7 @@ GroupGraph.prototype.growGraph = function() {
       append = (function(skids) {
         var color = new THREE.Color().setHex(0xffae56),
             models = skids.reduce(function(m, skid) {
-              var model = new CATMAID.SelectionTable.prototype.SkeletonModel(skid, "", color);
+              var model = new CATMAID.SkeletonModel(skid, "", color);
               model.selected = true;
               m[skid] = model;
               return m;
@@ -1824,7 +1824,7 @@ GroupGraph.prototype.growPaths = function() {
     if (0 === skids.length) return CATMAID.info("No new paths found.");
     // Append all new
     this.append(skids.reduce(function(o, skid) {
-      o[skid] = new CATMAID.SelectionTable.prototype.SkeletonModel(skid, "", new THREE.Color().setHex(0xffae56));
+      o[skid] = new CATMAID.SkeletonModel(skid, "", new THREE.Color().setHex(0xffae56));
       return o;
     }, {}));
   }).bind(this);
@@ -3005,7 +3005,7 @@ GroupGraph.prototype.loadFromJSON = function(files) {
         var asModel = function(ob) {
           skids[ob.id] = true;
           var color = new THREE.Color(ob.color.r, ob.color.g, ob.color.b);
-          return $.extend(new CATMAID.SelectionTable.prototype.SkeletonModel(ob.id, ob.baseName, color), ob, {color: color});
+          return $.extend(new CATMAID.SkeletonModel(ob.id, ob.baseName, color), ob, {color: color});
         };
         // Replace JSON of models with proper SkeletonModel instances
         json.elements.nodes.forEach(function(node) {

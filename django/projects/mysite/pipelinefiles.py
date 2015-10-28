@@ -120,6 +120,7 @@ PIPELINE_JS['catmaid'] = {
         'js/ui.js',
         'js/user.js',
         'js/WindowMaker.js',
+        'js/skeleton-model.js',
         'js/tools/navigator.js',
         'js/tools/boxselectiontool.js',
         'js/tools/roitool.js',

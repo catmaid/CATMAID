@@ -808,6 +808,8 @@ table.skeleton-table tr td {
 table.skeleton-table tr th.expanding,
 table.skeleton-table tr td.expanding {
   width: auto;
+  padding-left: 10px;
+  padding-right: 10px;
 }
 
 table.skeleton-table td * {

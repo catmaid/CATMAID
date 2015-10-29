@@ -920,11 +920,11 @@
   };
 
   /** Filtering by an empty text resets to no filtering. */
-  SelectionTable.prototype.filterBy = function(text) {
-    if (!text || 0 === text.length) {
-      delete this.match;
+  SelectionTable.prototype.filterBy = function(name) {
+    if (!name || 0 === name.length) {
+      delete this.nameMatch;
     } else {
-      this.match = text;
+      this.nameMatch = name;
     }
     this.gui.update();
   };
@@ -934,21 +934,21 @@
    * and containing only those selected if so indicated by only_selected. */
   SelectionTable.prototype.filteredSkeletons = function(only_selected) {
     if (0 === this.skeletons.length) return this.skeletons;
-    if (this.match) {
+    if (this.nameMatch) {
       try {
         // If the search string starts with a slash, treat it as a regular
         // expression. Otherwise do a simple search in the neuron name.
-        if (this.match.substr(0, 1) === '/') {
+        if (this.nameMatch.substr(0, 1) === '/') {
           return this.skeletons.filter(function(skeleton) {
             if (only_selected && !skeleton.selected) return false;
-            var matches = NeuronNameService.getInstance().getName(skeleton.id).match(this);
-            return matches && matches.length > 0;
-          }, new RegExp(this.match.substr(1)));
+            var nameMatch = NeuronNameService.getInstance().getName(skeleton.id).nameMatch(this);
+            return nameMatch && nameMatch.length > 0;
+          }, new RegExp(this.nameMatch.substr(1)));
         } else {
           return this.skeletons.filter(function(skeleton) {
             if (only_selected && !skeleton.selected) return false;
             return -1 !== NeuronNameService.getInstance().getName(skeleton.id).indexOf(this);
-          }, this.match);
+          }, this.nameMatch);
         }
       } catch (e) {
         alert(e.message);

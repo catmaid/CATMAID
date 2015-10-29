@@ -877,7 +877,8 @@ var WindowMaker = new function()
             '<th></th>' +
             '<th><span class="ui-icon ui-icon-close" id="selection-table-remove-all' + ST.widgetID + '" title="Remove all"></th>' +
             '<th class="expanding"><input type="button" value="Filter" class="filter" />' +
-              '<input class="filter" type="text" placeholder="Use / for regex" id="selection-table-filter' + ST.widgetID + '" /></th>' +
+              '<input class="filter" type="text" title="Use / for regex" placeholder="name filter" id="selection-table-filter' + ST.widgetID + '" />' +
+              '<input class="filter" type="text" title="Use / for regex" placeholder="annotation filter" id="selection-table-ann-filter' + ST.widgetID + '" /></th>' +
             '<th><select class="review-filter">' +
               '<option value="Union" selected>Union</option>' +
               '<option value="Team">Team</option>' +
@@ -907,13 +908,24 @@ var WindowMaker = new function()
             onColorChange: ST.batchColorSelected.bind(ST)
           });
         });
-    $('th input[type=button].filter', tab).on("click", function() {
-      var filter = $('th input[type=text].filter', tab).val();
-      ST.filterBy(filter);
-    });
+    $('th input[type=button].filter', tab).on("click", filterNeuronList);
     $('th input[type=text].filter', tab).on("keyup", function(e) {
-      if (13 === e.keyCode) ST.filterBy(this.value);
+      if (13 === e.keyCode) filterNeuronList();
     });
+
+    // Add auto completetion to annotation filter
+    CATMAID.annotations.add_autocomplete_to_input(
+        $("#selection-table-ann-filter" + ST.widgetID, tab));
+
+    /**
+     * Trigger list filter.
+     */
+    function filterNeuronList() {
+      var filters = $('th input[type=text].filter', tab);
+      var nameFilter = filters[0].value;
+      var annotationFilter = filters[1].value;
+      ST.filterBy(nameFilter, annotationFilter);
+    };
 
     $(tab)
       .on("click", "td .action-remove", ST, function(e) {

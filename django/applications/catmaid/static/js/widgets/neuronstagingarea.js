@@ -29,6 +29,7 @@
     this.all_items_visible = {pre: true, post: true, text: false, meta: true};
     this.next_color_index = 0;
     this.order = [[0, 'asc']];
+    this.annotationFilter = null;
     this.gui = new this.GUI(this);
 
     // Listen to change events of the active node and skeletons
@@ -337,6 +338,8 @@
           var counts = json[skeleton_id];
           this.reviews[skeleton_id] = parseInt(Math.floor(100 * counts[1] / counts[0]));
           this.skeleton_ids[skeleton_id] = this.skeletons.length -1;
+          // Force update of annotations as soon as they are used
+          this.annotationMapping = null;
         }, this);
 
         // Add skeletons
@@ -411,6 +414,7 @@
     this.reviews = {};
     this.gui.clear();
     this.next_color_index = 0;
+    this.annotationMapping = null;
 
     this.clearLink(source_chain);
   };
@@ -728,20 +732,46 @@
       pageLength: this.entriesPerPage,
       lengthMenu: [[10, 25, 100, -1], [10, 25, 100, "All"]],
       processing: true,
-      serverSide: false,
       // Load data from widget through ajax option. This allows for complete
-      // control over data and allows us to still use DataTable's sorting and
-      // filtering (we filter in the widget, though).
+      // control over the data and allows for manual filtering and sorting.
+      serverSide: true,
       ajax: (function(data, callback, settings) {
+        // Sort data if ordering changed
+        var col = data.order[0].column;
+        var dir = data.order[0].dir;
+        if (!this.table.order || this.table.order[0][0] !== col ||
+            this.table.order[0][1] !== dir) {
+          var desc = dir === 'desc';
+          // Use only first level sort
+          if (2 === col) { // Name
+            this.table.sortByName(desc);
+          } else if (3 === col) { // Review
+            this.table.sortByReview(desc);
+          } else if (4 === col) { // Selected
+            this.table.sortBySelected(desc);
+          } else if (9 === col) { // Color
+            this.table.sortByColor(desc);
+          }
+
+          // Save new ordering
+          this.table.order = [[col, dir]];
+        }
+
+        // Filtering
         var filteredSkeletons = this.table.filteredSkeletons(false);
-        var skeletonData = filteredSkeletons.reduce(function(d, s, i) {
+
+        // Pagination
+        var lastIndex = Math.min(filteredSkeletons.length, data.start + data.length);
+        var skeletonsOnPage = filteredSkeletons.slice(data.start, lastIndex);
+
+        var skeletonData = skeletonsOnPage.reduce(function(d, s, i) {
           d[i] = {
             index: i, // For initial sorting
             skeleton: s,
             reviewPercentage: reviews[s.id],
           };
           return d;
-        }, new Array(filteredSkeletons.length));
+        }, new Array(skeletonsOnPage.length));
 
         callback({
           draw: data.draw,
@@ -863,31 +893,6 @@
       }
     });
 
-    // If the skeleton order changed through the datatable, propagate this change
-    // back to the internal skeleton ID list.
-    this.datatable.on("order.dt", this, function(e) {
-      var widget = e.data.table;
-      // Get the current order of skeletons and store it in the widget
-      var data = $(this).DataTable().rows({order: 'current'}).data().toArray();
-      // Before data is written back, we make sure the widget contains the same
-      // data as the table.
-      function inSet(d) { /* jshint validthis: true */ return this.has(d.skeleton.id); }
-      var skeleton_ids = Object.keys(widget.skeleton_ids).map(Number);
-      if (data.length != skeleton_ids.length ||
-          !data.every(inSet, new Set(skeleton_ids))) {
-        return;
-      }
-
-      // Update the widget's internal representation
-      widget.skeletons = data.map(function(d) {
-        return d.skeleton;
-      });
-      widget.skeleton_ids = widget.skeletons.reduce(function(o, sk, i) {
-        o[sk.id] = i;
-        return o;
-      }, {});
-    });
-
     // If the active skeleton is within the range, highlight it
     var selectedSkeletonId = SkeletonAnnotations.getActiveSkeletonId();
     if (selectedSkeletonId) this.table.highlight(selectedSkeletonId);
@@ -919,11 +924,46 @@
   };
 
   /** Filtering by an empty text resets to no filtering. */
-  SelectionTable.prototype.filterBy = function(name) {
+  SelectionTable.prototype.filterBy = function(name, annotation) {
     if (!name || 0 === name.length) {
       delete this.nameMatch;
     } else {
       this.nameMatch = name;
+    }
+    if (!annotation || 0 === annotation.length) {
+      this.annotationFilter = null;
+    } else {
+      // Build a regular expression for the search
+      var pattern = '/' === annotation.substr(0, 1) ? annotation.substr(1) :
+          CATMAID.tools.escapeRegEx(annotation);
+      this.annotationFilter = new RegExp(pattern);
+
+      // Update local annotation information
+      if (!this.annotationMapping) {
+        // Get all data that is needed for the fallback list
+        requestQueue.register(django_url + project.id + '/skeleton/annotationlist',
+          'POST',
+          {
+            skeleton_ids: Object.keys(this.skeleton_ids),
+            metaannotations: 0,
+            neuronnames: 0,
+          },
+          CATMAID.jsonResponseHandler((function(json) {
+            // Store mapping and update UI
+            this.annotationMapping = new Map();
+            for (var skeletonID in json.skeletons) {
+              // We know that we want to use this for filtering, so we can store
+              // the annotation names directly.
+              var annotations = json.skeletons[skeletonID].annotations.map(function(a) {
+                return json.annotations[a.id];
+              });
+              this.annotationMapping.set(parseInt(skeletonID, 10), annotations);
+            }
+            this.gui.update();
+          }).bind(this)));
+        // Return without update
+        return;
+      }
     }
     this.gui.update();
   };
@@ -933,29 +973,110 @@
    * and containing only those selected if so indicated by only_selected. */
   SelectionTable.prototype.filteredSkeletons = function(only_selected) {
     if (0 === this.skeletons.length) return this.skeletons;
+
+    var filteredSkeletons = this.skeletons;
+
+    // Filter selected
+    if (only_selected) {
+      filteredSkeletons = filteredSkeletons.filter(function(skeleton) {
+        return skeleton.selected;
+      });
+    }
+
+    // Filter skeletons by name
     if (this.nameMatch) {
       try {
         // If the search string starts with a slash, treat it as a regular
         // expression. Otherwise do a simple search in the neuron name.
         if (this.nameMatch.substr(0, 1) === '/') {
-          return this.skeletons.filter(function(skeleton) {
-            if (only_selected && !skeleton.selected) return false;
-            var nameMatch = NeuronNameService.getInstance().getName(skeleton.id).nameMatch(this);
+          filteredSkeletons = filteredSkeletons.filter(function(skeleton) {
+            var nameMatch = NeuronNameService.getInstance().getName(skeleton.id).match(this);
             return nameMatch && nameMatch.length > 0;
           }, new RegExp(this.nameMatch.substr(1)));
         } else {
-          return this.skeletons.filter(function(skeleton) {
-            if (only_selected && !skeleton.selected) return false;
+          filteredSkeletons = filteredSkeletons.filter(function(skeleton) {
             return -1 !== NeuronNameService.getInstance().getName(skeleton.id).indexOf(this);
           }, this.nameMatch);
         }
       } catch (e) {
-        alert(e.message);
+        CATMAID.error(e.message, e);
         return [];
       }
     }
-    if (only_selected) return this.skeletons.filter(function(skeleton) { return skeleton.selected; });
-    return this.skeletons;
+
+    // Filter skeletons by annotation
+    if (this.annotationFilter) {
+      try {
+        filteredSkeletons = filteredSkeletons.filter(function(skeleton) {
+          // Keep skeleton if at least one of its annotations matches the
+          // regular expression.
+          var annotations = this.annotationMapping.get(skeleton.id);
+          if (annotations) {
+            return annotations.some(function(annotation) {
+              return this.test(annotation);
+            }, this.annotationFilter);
+          }
+          return false;
+        }, this);
+      } catch (e) {
+        CATMAID.error(e.message, e);
+        return [];
+      }
+    }
+
+    return filteredSkeletons;
+  };
+
+  SelectionTable.prototype.sort = function(sortingFn, update) {
+    this.skeletons.sort(sortingFn);
+
+    // Refresh indices
+    this.skeleton_ids = this.skeletons.reduce(function(o, sk, i) {
+      o[sk.id] = i;
+      return o;
+    }, {});
+
+    if (update) {
+      this.gui.update();
+    }
+  };
+
+  SelectionTable.prototype.sortByName = function(desc) {
+    var factor = desc ? -1 : 1;
+    this.sort(function(sk1, sk2) {
+      var name1 = NeuronNameService.getInstance().getName(sk1.id).toLowerCase(),
+          name2 = NeuronNameService.getInstance().getName(sk2.id).toLowerCase();
+      return factor * CATMAID.tools.compareStrings(name1, name2);
+    });
+  };
+
+  SelectionTable.prototype.sortByReview = function(desc) {
+    var factor = desc ? -1 : 1;
+    var self = this;
+    this.sort(function(sk1, sk2) {
+      var r1 = self.reviews[sk1.id];
+      var r2 = self.reviews[sk2.id];
+      return factor * (r1 < r2 ? -1 : (r1 > r2 ? 1 : 0));
+    });
+  };
+
+  SelectionTable.prototype.sortBySelected = function(desc) {
+    var factor = desc ? -1 : 1;
+    this.sort(function(sk1, sk2) {
+      var s1 = sk1.selected ? 1 : 0;
+      var s2 = sk2.selected ? 1 : 0;
+      return factor * (s1 < s2 ? -1 : (s1 > s2 ? 1 : 0));
+    });
+  };
+
+  /** Sort by hue, then saturation, then luminance. */
+  SelectionTable.prototype.sortByColor = function(desc) {
+    var factor = desc ? -1 : 1;
+    this.sort(function(sk1, sk2) {
+      var hsl1 = sk1.color.getHSL(),
+          hsl2 = sk2.color.getHSL();
+      return factor * CATMAID.tools.compareHSLColors(hsl1, hsl2);
+    });
   };
 
   SelectionTable.prototype.colorSkeleton = function(skeletonID, allSelected, rgb,

@@ -827,7 +827,7 @@ table.skeleton-table .ui-icon-close {
 }
 
 table.skeleton-table th input.filter {
-  width: 50%;
+  width: 33%;
   max-width: 10em;
 }
 

@@ -373,4 +373,20 @@ CATMAID.tools = CATMAID.tools || {};
     };
   })();
 
+  /**
+   * Escape a string so it can be used in a regular expression without
+   * triggering any regular expression patern (e.g. to search for slashes).
+   * From: http://stackoverflow.com/questions/3115150
+   *
+   * @param  {string} text   The string to escape.
+   * @return {string}        A new escaped string.
+   */
+  tools.escapeRegEx = (function() {
+    // All characters that should be replaced
+    var pattern = /[-[\]{}()*+?.,\\^$|#\s]/g;
+    return function(text) {
+      return text.replace(pattern, "\\$&");
+    };
+  })();
+
 })(CATMAID.tools);

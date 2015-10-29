@@ -10,6 +10,16 @@ Selection table:
   selected neurons. This is helpful when a filter is active and more neurons are
   selected than visible.
 
+- Sorting for visibility columns has been removed.
+
+- Neurons part of a Selection Table can now also be filtered based on
+  annotations. This can be done with the help of the input field next to the
+  name filter. Like with the name filter input, pressing the Enter key will
+  activate both filters and starting with a slash character ("/") will make the
+  input be treated as a regular expression (to e.g. only show neurons that are
+  annotated with a1 and b2, use "/a1|b2"). For now no meta-annotations are taken
+  into account.
+
 
 Skeleton projection layer
 

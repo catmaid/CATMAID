@@ -111,6 +111,18 @@
     }, $('<div />'));
   };
 
+  /**
+   * Helper function to create a select element with options.
+   */
+  DOM.createSelectSetting = function(name, options, helptext, handler)
+  {
+    var select = $('<select />');
+    for (var o in options) {
+      select.append(new Option(o, options[o]));
+    }
+    return CATMAID.DOM.createLabeledControl(name, select);
+  };
+
   // Export DOM namespace
   CATMAID.DOM = DOM;
 

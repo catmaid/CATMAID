@@ -788,34 +788,33 @@
           }
         },
         {
-          "orderDataType": "dom-checkbox",
           "render": function(data, type, row, meta) {
             return createCheckbox('selected', row.skeleton);
           }
         },
         {
-          "orderDataType": "dom-checkbox",
+          "orderable": false,
           "visible": this.showVisibilityControls,
           "render": function(data, type, row, meta) {
             return createCheckbox('pre_visible', row.skeleton);
           }
         },
         {
-          "orderDataType": "dom-checkbox",
+          "orderable": false,
           "visible": this.showVisibilityControls,
           "render": function(data, type, row, meta) {
             return createCheckbox('post_visible', row.skeleton);
           }
         },
         {
-          "orderDataType": "dom-checkbox",
+          "orderable": false,
           "visible": this.showVisibilityControls,
           "render": function(data, type, row, meta) {
             return createCheckbox('text_visible', row.skeleton);
           }
         },
         {
-          "orderDataType": "dom-checkbox",
+          "orderable": false,
           "visible": this.showVisibilityControls,
           "render": function(data, type, row, meta) {
             return createCheckbox('meta_visible', row.skeleton);

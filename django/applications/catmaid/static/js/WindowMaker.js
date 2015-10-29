@@ -925,7 +925,7 @@ var WindowMaker = new function()
       var nameFilter = filters[0].value;
       var annotationFilter = filters[1].value;
       ST.filterBy(nameFilter, annotationFilter);
-    };
+    }
 
     $(tab)
       .on("click", "td .action-remove", ST, function(e) {

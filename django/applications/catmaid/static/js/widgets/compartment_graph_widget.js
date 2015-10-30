@@ -1187,6 +1187,8 @@ GroupGraph.prototype.updateGraph = function(json, models, morphology) {
   this.resetState();
   this.colorBy($('#graph_color_choice' + this.widgetID)[0].value);
 
+  this.updateEdgeGraphics();
+
   this.updateLayout();
 };
 

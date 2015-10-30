@@ -529,14 +529,13 @@ class ReviewerWhitelist(models.Model):
     accept_after = models.DateTimeField(default=datetime.min)
 
 class Volume(UserFocusedModel):
-    """A three-dimensional volume in project space. Implremented as PostGIS
+    """A three-dimensional volume in project space. Implemented as PostGIS
     Geometry type.
     """
     editor = models.ForeignKey(User, related_name='editor', db_column='editor_id')
     name = models.CharField(max_length=255)
     comment = models.TextField(blank=True, null=True)
-    # GeoDjango-specific: a geometry field (MultiPolygonField) with
-    # PostGIS-specific three dimensions.
+    # GeoDjango-specific: a geometry field with PostGIS-specific 3 dimensions.
     geometry = spatial_models.GeometryField(dim=3, srid=0)
     # Override default manager with a GeoManager instance
     objects = spatial_models.GeoManager()

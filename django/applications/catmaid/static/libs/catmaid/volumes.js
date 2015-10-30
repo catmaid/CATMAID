@@ -14,6 +14,23 @@
     this.id = options.id || null;
   };
 
+  CATMAID.Volume.prototype = {};
+  CATMAID.asEventSource(CATMAID.Volume.prototype);
+
+  CATMAID.Volume.prototype.EVENT_PROPERTY_CHANGED = "volume_property_changed";
+
+  /**
+   * Set a particular field to a given value. If this changes an existing value,
+   * the "property changed" event is triggered.
+   */
+  CATMAID.Volume.prototype.set = function(field, value) {
+    var oldValue = this[field];
+    if (oldValue !== value) {
+      this[field] = value;
+      this.on(this.EVENT_PROPERTY_CHANGED, field, value, oldValue);
+    }
+  };
+
   /**
    * Store a client-side volume to the server. If the ID field is null, a new
    * volume wil be created.
@@ -46,14 +63,14 @@
   CATMAID.BoxVolume = function(options) {
     options = options || {};
     CATMAID.Volume.call(this, options);
-    this.minX = options.minX || 0;
-    this.minY = options.minY || 0;
-    this.minZ = options.minZ || 0;
-    this.maxX = options.minX || 1;
-    this.maxY = options.minY || 1;
-    this.maxZ = options.minZ || 1;
-    this.title = options.title || "Box volume";
-    this.comment = options.comment || undefined;
+    this.set("minX", options.minX || 0);
+    this.set("minY", options.minY || 0);
+    this.set("minZ", options.minZ || 0);
+    this.set("maxX", options.minX || 1);
+    this.set("maxY", options.minY || 1);
+    this.set("maxZ", options.minZ || 1);
+    this.set("title", options.title || "Box volume");
+    this.set("comment", options.comment || undefined);
   };
 
   CATMAID.BoxVolume.prototype = Object.create(CATMAID.Volume.prototype);

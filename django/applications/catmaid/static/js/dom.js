@@ -123,7 +123,7 @@
     if (handler) {
       select.on('change', handler);
     }
-    return CATMAID.DOM.createLabeledControl(name, select);
+    return CATMAID.DOM.createLabeledControl(name, select, helptext);
   };
 
   // Export DOM namespace

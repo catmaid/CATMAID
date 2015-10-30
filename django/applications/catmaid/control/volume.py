@@ -183,7 +183,7 @@ def add_volume(request, project_id):
         v =  request.POST.get(c, None)
         if not v:
             raise ValueError("Coordinate parameter %s missing." % c)
-        return int(v)
+        return float(v)
 
     title = request.POST.get("title", None)
     if not title:

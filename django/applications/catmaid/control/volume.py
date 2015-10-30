@@ -216,15 +216,15 @@ def intersects(request, project_id, volume_id):
       - name: x
         description: X coordinate of point to test
         paramType: query
-        type: integer
+        type: number
       - name: y
         description: Y coordinate of point to test
         paramType: query
-        type: integer
+        type: number
       - name: z
         description: Z coordinate of point to test
         paramType: query
-        type: integer
+        type: number
     type:
       'intersects':
         type: boolean
@@ -240,7 +240,7 @@ def intersects(request, project_id, volume_id):
     if None in (x,y,z):
         raise ValueError("Please provide valid X, Y and Z coordinates")
 
-    x, y, z = int(x), int(y), int(z)
+    x, y, z = float(x), float(y), float(z)
 
     cursor = connection.cursor()
     cursor.execute("""

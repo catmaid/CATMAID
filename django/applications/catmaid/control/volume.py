@@ -242,9 +242,11 @@ def intersects(request, project_id, volume_id):
 
     x, y, z = float(x), float(y), float(z)
 
+    # This test works only for boxes, because it only checks bouding box
+    # overlap (&&& operator).
     cursor = connection.cursor()
     cursor.execute("""
-        SELECT ST_3DIntersects(pt.geometry, catmaid_volume.geometry)
+        SELECT pt.geometry &&& catmaid_volume.geometry
         FROM (SELECT 'POINT(%s %s %s)'::geometry) AS pt, catmaid_volume
         WHERE catmaid_volume.id=%s""",
         (x, y, z, volume_id))

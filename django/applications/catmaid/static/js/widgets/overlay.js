@@ -474,6 +474,8 @@ SkeletonAnnotations.SVGOverlay = function(stackViewer, options) {
   this.labels = {};
   /** Toggle for text labels on nodes and connectors. */
   this.show_labels = options.show_labels || false;
+  /** Toggle for radius circle for active node. */
+  this.showActiveNodeRadius = options.active_node_radius || false;
   /** Indicate if this overlay is suspended and won't update nodes on redraw. */
   this.suspended = options.suspended || false;
 
@@ -894,6 +896,15 @@ SkeletonAnnotations.SVGOverlay.prototype.recolorAllNodes = function () {
       this.nodes[nodeID].updateColors();
     }
   }
+};
+
+/**
+ * Set whether the radius of the active node is visible.
+ */
+SkeletonAnnotations.SVGOverlay.prototype.setActiveNodeRadiusVisibility = function (visibility) {
+  this.showActiveNodeRadius = visibility;
+  this.graphics.setActiveNodeRadiusVisibility(visibility);
+  this.recolorAllNodes(); // Necessary to trigger update of radius graphics.
 };
 
 /**

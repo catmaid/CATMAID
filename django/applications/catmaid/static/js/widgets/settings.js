@@ -423,6 +423,29 @@
 
       // Overlay settings
       ds = addSettingsContainer(container, "Tracing Overlay");
+
+
+      // Active node radius display.
+      var atnRadiusEnabled = project.getStackViewers().every(function(sv) {
+        var overlay = SkeletonAnnotations.getSVGOverlay(sv.getId());
+        return overlay ? overlay.showActiveNodeRadius : true;
+      });
+      var atnRadiusCb = createCheckboxSetting(
+          "Display radius for active node",
+          atnRadiusEnabled,
+          "Show a radius circle around the active node if its radius is set.",
+          function () {
+            var checked = this.checked;
+            project.getStackViewers().every(function(sv) {
+              var overlay = SkeletonAnnotations.getSVGOverlay(sv.getId());
+              if (overlay) {
+                overlay.setActiveNodeRadiusVisibility(checked);
+              }
+            });
+          });
+      ds.append(atnRadiusCb);
+
+
       // Add explanatory text
       ds.append($('<div/>').addClass('setting').append("Choose how nodes, " +
           "edges, connectors, and labels are scaled in the tracing overlay. " +

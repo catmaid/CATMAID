@@ -379,10 +379,10 @@ urlpatterns += patterns('catmaid.control.clustering',
 
 # Volumes
 urlpatterns += patterns('catmaid.control.volume',
-   (r'^(?P<project_id>\d+)/volumes/', 'volume_collection'),
-   (r'^(?P<project_id>\d+)/volumes/add', 'add_volume'),
-   (r'^(?P<project_id>\d+)/volumes/(?P<volume_id>\d+)/', 'volume_detail'),
-   (r'^(?P<project_id>\d+)/volumes/(?P<volume_id>\d+)/intersect', 'intersects'),
+   (r'^(?P<project_id>\d+)/volumes/$', 'volume_collection'),
+   (r'^(?P<project_id>\d+)/volumes/add$', 'add_volume'),
+   (r'^(?P<project_id>\d+)/volumes/(?P<volume_id>\d+)/$', 'volume_detail'),
+   (r'^(?P<project_id>\d+)/volumes/(?P<volume_id>\d+)/intersect$', 'intersects'),
 )
 
 # Front-end tests

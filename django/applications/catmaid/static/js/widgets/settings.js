@@ -674,14 +674,15 @@
           function () {
             SkeletonAnnotations.defaultNewNeuronName = $(this).val();
           }));
-    ds.append(CATMAID.DOM.createCheckboxSetting("Merge annotations of " +
-      "single-node skeletons without asking",
-      SkeletonAnnotations.quickSingleNodeSkeletonMerge, "If true, no merge dialog " +
-      "will be shown for single-node skeletons with annotations. Instead, all " +
-      "annotations will be merged without asking.",
-      function() {
-        SkeletonAnnotations.quickSingleNodeSkeletonMerge = this.checked;
-      }));
+
+      ds.append(CATMAID.DOM.createCheckboxSetting("Merge annotations of " +
+        "single-node skeletons without asking",
+        SkeletonAnnotations.quickSingleNodeSkeletonMerge, "If true, no merge dialog " +
+        "will be shown for single-node skeletons with annotations. Instead, all " +
+        "annotations will be merged without asking.",
+        function() {
+          SkeletonAnnotations.quickSingleNodeSkeletonMerge = this.checked;
+        }));
 
       // Auto-select skeleton source created last
       ds.append(CATMAID.DOM.createCheckboxSetting('Auto-select widget created last as source ' +

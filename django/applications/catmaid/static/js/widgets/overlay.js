@@ -1953,7 +1953,13 @@ SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso,
     var yp = stackViewer.primaryStack.stackToProjectY(z, pos[1], pos[0]);
     var zp = stackViewer.primaryStack.stackToProjectZ(z, pos[1], pos[0]);
     var id = SkeletonAnnotations.getVirtualNodeID(child.id, parent.id, xp, yp, zp);
-    var r = -1;
+
+    if (child.radius && parent.radius) {
+      var a = (parent.z - z)/(parent.z - child.z);
+      var r = parent.radius + a * (child.radius - parent.radius);
+    } else {
+      var r = -1;
+    }
     var c = 5;
 
     var vn = graphics.newNode(id, parent, parent.id, r, pos[0], pos[1], z, 0, c,

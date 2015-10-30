@@ -120,6 +120,9 @@
     for (var o in options) {
       select.append(new Option(o, options[o]));
     }
+    if (handler) {
+      select.on('change', handler);
+    }
     return CATMAID.DOM.createLabeledControl(name, select);
   };
 

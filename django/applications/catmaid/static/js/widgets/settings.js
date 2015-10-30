@@ -545,6 +545,39 @@
         });
       }
 
+      var dsTracingWarnings = CATMAID.DOM.addSettingsContainer(ds,
+          "Warnings", true);
+
+      var twVolumeSelect = CATMAID.DOM.createSelectSetting("New nodes not in " +
+          "volume", {"None": "none"}, "A warning will be shown when new " +
+          "nodes are created outside of the selected volume", function(e) {
+            var volumeID = null;
+
+            // Add new handler if, needed
+            if (-1 !== this.selectedIndex) {
+              var o = this.options[this.selectedIndex];
+              if ("none" !== o.value) {
+                volumeID = o.value;
+              }
+            }
+
+            // Remove existing handler and new one if selected
+            SkeletonAnnotations.setNewNodeVolumeWarning(volumeID);
+          });
+      dsTracingWarnings.append(twVolumeSelect);
+
+      // Get volumes asynchronously
+      requestQueue.register(CATMAID.makeURL(project.id + "/volumes"), "GET",
+            undefined, CATMAID.jsonResponseHandler(function(json) {
+              var currentWarningVolumeID = SkeletonAnnotations.getNewNodeVolumeWarning();
+              var select = twVolumeSelect.find("select")[0];
+              json.forEach(function(volume) {
+                var name = volume.name + " (#" + volume.id + ")";
+                var selected = currentWarningVolumeID == volume.id ? true : undefined;
+                select.options.add(new Option(name, volume.id, selected, selected));
+              });
+            }));
+
       // Reviewer whitelist settings
       ds = CATMAID.DOM.addSettingsContainer(container, "Reviewer Team");
       // Add explanatory text

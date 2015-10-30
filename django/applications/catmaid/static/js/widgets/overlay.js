@@ -454,6 +454,62 @@ SkeletonAnnotations.getYOfVirtualNode = SkeletonAnnotations.getVirtualNodeCompon
  */
 SkeletonAnnotations.getZOfVirtualNode = SkeletonAnnotations.getVirtualNodeComponent.bind(window, 5);
 
+// TODO: This IIFE should be moved into the IIFE for all of SkeletonAnnotations,
+// as soon as it is created.
+(function() {
+
+  // The volume new nodes should be tested against
+  var newNodeWarningVolumeID = null;
+
+  /**
+   * The actual handler checking for volume intersections between a node and a
+   * volume. If it exists, a warning is shown.
+   */
+  var newNodeVolumeWarningHandler = function(nodeID, px, py, pz) {
+    if (!newNodeWarningVolumeID) {
+      return;
+    }
+
+    // Test for intersection with the volume
+    requestQueue.register(CATMAID.makeURL(project.id + "/volumes/" +
+          newNodeWarningVolumeID + "/intersect"), "GET", {
+            x: px, y: py, z: pz
+          }, CATMAID.jsonResponseHandler(function(json) {
+            if (!json.intersects) {
+              CATMAID.warn("Node #" + nodeID +
+                  " was created outside of volume " + newNodeWarningVolumeID);
+            }
+          }));
+  };
+
+
+  /**
+   * Set ID of volume for new node warnings. If volumeID is falsy, the warning
+   * is disabled.
+   */
+  SkeletonAnnotations.setNewNodeVolumeWarning = function(volumeID) {
+    // Disable existing event oversavation, if any.
+    SkeletonAnnotations.off(SkeletonAnnotations.EVENT_NODE_CREATED,
+        newNodeVolumeWarningHandler);
+
+    if (volumeID) {
+      // Add new listener
+      newNodeWarningVolumeID = volumeID;
+      SkeletonAnnotations.on(SkeletonAnnotations.EVENT_NODE_CREATED,
+          newNodeVolumeWarningHandler);
+    } else {
+      newNodeWarningVolumeID = null;
+    }
+  };
+
+  /**
+   * Get ID of volume currently set up fo new node warnings.
+   */
+  SkeletonAnnotations.getNewNodeVolumeWarning = function() {
+    return newNodeWarningVolumeID;
+  };
+
+})();
 
 /**
  * The constructor for SVGOverlay.

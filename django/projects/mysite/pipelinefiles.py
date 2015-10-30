@@ -104,6 +104,7 @@ for k,v in non_pipeline_js.iteritems():
 PIPELINE_JS['catmaid'] = {
     'source_filenames': (
         'js/CATMAID.js',
+        'js/dom.js',
         'js/extensions.js',
         'js/action.js',
         'js/init.js',

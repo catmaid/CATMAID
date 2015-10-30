@@ -145,14 +145,10 @@
             // Show table, remove volume settings
             $("volume-list", $content).show();
             $("volume-properties", $content).remove();
-            self.redraw()
-          })))
+            self.redraw();
+          })));
 
     $content.append($addContent);
-  };
-
-  function close() {
-
   };
 
   var volumeTypes = {

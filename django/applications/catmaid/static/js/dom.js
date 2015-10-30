@@ -9,7 +9,7 @@
 
   "use strict";
 
-  var DOM = {}
+  var DOM = {};
 
   /**
    * Helper function to create a collapsible settings container.

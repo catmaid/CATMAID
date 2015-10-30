@@ -44,7 +44,7 @@
             } else {
               CATMAID.warn("Unknown status");
             }
-          }))
+          }));
     } else {
       requestQueue.register(CATMAID.makeURL(project.id + "/volumes/" + this.id + "/"),
           "POST", this.serialize(), CATMAID.jsonResponseHandler(function(json) {

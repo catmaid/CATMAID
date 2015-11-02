@@ -760,9 +760,14 @@
         // Filtering
         var filteredSkeletons = this.table.filteredSkeletons(false);
 
-        // Pagination
-        var lastIndex = Math.min(filteredSkeletons.length, data.start + data.length);
-        var skeletonsOnPage = filteredSkeletons.slice(data.start, lastIndex);
+        // Pagination, if data.length is -1, all skeletons should be displayed
+        var skeletonsOnPage;
+        if (-1 === data.length) {
+          skeletonsOnPage = filteredSkeletons;
+        } else {
+          var lastIndex = Math.min(filteredSkeletons.length, data.start + data.length);
+          skeletonsOnPage = filteredSkeletons.slice(data.start, lastIndex);
+        }
 
         var skeletonData = skeletonsOnPage.reduce(function(d, s, i) {
           d[i] = {

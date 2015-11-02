@@ -698,11 +698,102 @@ def _skeleton_info_raw(project_id, skeletons, op):
 
     return incoming, outgoing, incoming_reviewers, outgoing_reviewers
 
+@api_view(['POST'])
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def skeleton_info_raw(request, project_id=None):
+    """Retrieve a list of down/up-stream partners of a set of skeletons.
+
+    From a queried set of source skeletons, find all upstream and downstream
+    partners, the number of synapses between each source and each partner,
+    and a list of reviewers for each partner set. Confidence distributions for
+    each synapse count are included. Optionally find only those partners
+    that are common between the source skeleton set.
+    ---
+    parameters:
+        - name: source[]
+          description: IDs of the skeletons whose partners to find
+          required: true
+          type: array
+          items:
+            type: integer
+          paramType: form
+        - name: boolean_op
+          description: |
+            Whether to find partners of any source skeleton ("OR") or partners
+            common to all source skeletons ("AND")
+          required: true
+          type: string
+          paramType: form
+    models:
+      skeleton_info_raw_partners:
+        id: skeleton_info_raw_partners
+        properties:
+          '{skeleton_id}':
+            $ref: skeleton_info_raw_partner
+            description: Map from partners' skeleton IDs to their information
+            required: true
+      skeleton_info_raw_partner:
+        id: skeleton_info_raw_partner
+        properties:
+          skids:
+            $ref: skeleton_info_raw_partner_counts
+            required: true
+          num_nodes:
+            description: The number of treenodes in this skeleton
+            required: true
+            type: integer
+      skeleton_info_raw_partner_counts:
+        id: skeleton_info_raw_partner_counts
+        properties:
+          '{skeleton_id}':
+            $ref: skeleton_info_raw_partner_count
+            description: |
+              Synapse counts between the partner and the source skeleton with
+              this ID
+            required: true
+      skeleton_info_raw_partner_count:
+        id: skeleton_info_raw_partner_count
+        properties:
+        - description: Number of synapses with confidence 1
+          type: integer
+          required: true
+        - description: Number of synapses with confidence 2
+          type: integer
+          required: true
+        - description: Number of synapses with confidence 3
+          type: integer
+          required: true
+        - description: Number of synapses with confidence 4
+          type: integer
+          required: true
+        - description: Number of synapses with confidence 5
+          type: integer
+          required: true
+    type:
+      incoming:
+        $ref: skeleton_info_raw_partners
+        description: Upstream synaptic partners
+        required: true
+      outgoing:
+        $ref: skeleton_info_raw_partners
+        description: Downstream synaptic partners
+        required: true
+      incoming_reviewers:
+        description: IDs of reviewers who have reviewed any upstream partners.
+        required: true
+        type: array
+        items:
+          type: integer
+      outgoing_reviewers:
+        description: IDs of reviewers who have reviewed any downstream partners.
+        required: true
+        type: array
+        items:
+          type: integer
+    """
     # sanitize arguments
     project_id = int(project_id)
-    skeletons = tuple(int(v) for k,v in request.POST.iteritems() if k.startswith('source['))
+    skeletons = tuple(int(v) for k,v in request.POST.iteritems() if k.startswith('source_skeleton_ids['))
     op = request.POST.get('boolean_op') # values: AND, OR
     op = {'AND': 'AND', 'OR': 'OR'}[op[6:]] # sanitize
 

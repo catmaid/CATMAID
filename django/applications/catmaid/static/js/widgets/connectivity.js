@@ -296,9 +296,9 @@
     var self = this;
 
     requestQueue.replace(
-        django_url + project.id + '/skeleton/connectivity',
+        django_url + project.id + '/skeletons/connectivity',
         'POST',
-        {'source': skids,
+        {'source_skeleton_ids': skids,
          'boolean_op': $('#connectivity_operation' + this.widgetID).val()},
         function(status, text) {
           var handle = function(status, text) {

@@ -2015,8 +2015,10 @@ class ViewPageTests(TestCase):
 
         # Test a simple request like that from the connectivity widget.
         response = self.client.post(
-            '/%d/skeleton/connectivity' % (self.test_project_id,),
-            {'source[0]': 235, 'source[1]': 373, 'boolean_op': 'logic-OR'})
+            '/%d/skeletons/connectivity' % (self.test_project_id,),
+            {'source_skeleton_ids[0]': 235,
+             'source_skeleton_ids[1]': 373,
+             'boolean_op': 'logic-OR'})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {

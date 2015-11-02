@@ -41,6 +41,7 @@
     this.edge_width_function = "sqrt"; // choices: identity, log, log10, sqrt
 
     this.edge_threshold = 1;
+    this.edge_confidence_threshold = 1;
 
     this.setState('color_mode', 'source');
 
@@ -757,16 +758,19 @@
 
     var edge_color = this.edge_color;
     var edge_text_color = this.edge_text_color;
+    var edge_confidence_threshold = this.edge_confidence_threshold;
     var asEdge = function(edge) {
+        var count = _filterSynapses(edge[2], edge_confidence_threshold);
         return {data: {directed: true,
                        arrow: 'triangle',
                        id: edge[0] + '_' + edge[1],
-                       label: edge[2],
+                       label: count,
                        color: edge_color,
                        label_color: edge_text_color,
                        source: edge[0],
                        target: edge[1],
-                       weight: edge[2]}};
+                       confidence: edge[2],
+                       weight: count}};
     };
 
     var asNode = function(nodeID) {
@@ -3089,20 +3093,38 @@
     }
   };
 
-  GroupGraph.prototype.hideEdges = function(v) {
+  GroupGraph.prototype.filterEdges = function(countThreshold, confidenceThreshold) {
     // TODO refactor _validate into a Util or CATMAID namespace
-    v = CATMAID.WebGLApplication.prototype._validate(v, 'Invalid synaptic count', 1);
-    if (!v) return;
-    v = v | 0; // cast to int
-    this.edge_threshold = v;
+    countThreshold = CATMAID.WebGLApplication.prototype._validate(countThreshold, 'Invalid synaptic count', 1);
+    confidenceThreshold = CATMAID.WebGLApplication.prototype._validate(confidenceThreshold, 'Invalid synaptic confidence threshold', 1);
+    if (!countThreshold) return;
+    countThreshold = countThreshold | 0; // cast to int
+    this.edge_threshold = countThreshold;
+    this.edge_confidence_threshold = confidenceThreshold;
     var edge_threshold = this.edge_threshold;
+    var edge_confidence_threshold = this.edge_confidence_threshold;
     this.cy.edges().each(function(i, edge) {
       var props = edge.data();
       if (props.directed) {
+        var count = _filterSynapses(props.confidence, edge_confidence_threshold);
+        props.weight = count;
+        edge.data('label', count);
+        edge.data('weight', count);
         if (props.weight < edge_threshold) edge.hide();
         else edge.show();
       }
     });
+  };
+
+  /**
+   * Helper to get the number of synapses with confidence greater than or
+   * equal to a threshold.
+   */
+  var _filterSynapses = function (synapses, threshold) {
+    if (!synapses) return 0;
+    return synapses
+            .slice(threshold - 1)
+            .reduce(function (skidSum, c) {return skidSum + c;}, 0);
   };
 
   // Export Graph Widget

@@ -35,6 +35,10 @@ Skeleton projection layer
 
 Graph widget:
 
+- Synapses can be filtered from edges based on their confidence. The confidence
+  threshold is applied to the minimum of the pre- and post-synaptic relation
+  confidences. Confidence filtering is applied prior to synapse count filtering.
+
 - Synapse count coloring on edges can now be configured independently from edge
   colors.
 

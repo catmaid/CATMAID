@@ -237,6 +237,7 @@ CircuitGraphPlot.prototype.append = function(models) {
 	// fetch connectivity data, create adjacency matrix and plot it
   // register with name service before we go about the plot
   requestQueue.register(django_url + project.id + '/skeletons/confidence-compartment-subgraph',
+      'POST',
 			{skeleton_ids: skids},
 			(function(status, text) {
 				if (200 !== status) return;
@@ -253,7 +254,7 @@ CircuitGraphPlot.prototype.append = function(models) {
         }, {});
 				// Populate adjacency matrix, accumulating edge synapse counts for groups
 				json.edges.forEach(function(edge) {
-					AdjM[indices[edge[0]]][indices[edge[1]]] += edge[2];
+					AdjM[indices[edge[0]]][indices[edge[1]]] += edge[2].reduce(function (s, c) { return s + c; }, 0);
 				});
         // Update data and GUI
         this.plot(this.ids, this.names, this.models, AdjM);

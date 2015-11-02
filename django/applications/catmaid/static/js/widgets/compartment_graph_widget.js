@@ -34,6 +34,7 @@
 
     this.edge_color = '#555';
     this.edge_opacity = 1.0;
+    this.edge_text_color = '#555';
     this.edge_text_opacity = 1.0;
     // Edge width is computed as edge_min_width + edge_width_function(weight)
     this.edge_min_width = 0;
@@ -436,8 +437,22 @@
       }
     });
 
+    var newEdgeTextColor = this.edge_text_color;
+    var textColorButton = document.createElement('button');
+    textColorButton.appendChild(document.createTextNode('edge text color'));
+    CATMAID.ColorPicker.enable(textColorButton, {
+      initialColor: this.edge_text_color,
+      onColorChange: function(rgb, alpha, colorChanged, alphaChanged) {
+        if (colorChanged) {
+          newEdgeTextColor = CATMAID.tools.rgbToHex(Math.round(rgb.r * 255),
+              Math.round(rgb.g * 255), Math.round(rgb.b * 255));
+        }
+      }
+    });
+
     var p = document.createElement('p');
     p.appendChild(colorButton);
+    p.appendChild(textColorButton);
     dialog.dialog.appendChild(p);
 
     dialog.onOK = (function() {
@@ -482,6 +497,7 @@
       if (!Number.isNaN(edge_min_width)) this.edge_min_width = edge_min_width;
       this.edge_width_function = edgeFnNames[edgeFnSel.selectedIndex];
       this.edge_color = newEdgeColor;
+      this.edge_text_color = newEdgeTextColor;
       this.updateEdgeGraphics();
     }).bind(this);
 
@@ -517,7 +533,7 @@
               "text-outline-color": "#fff",
               "text-outline-opacity": 1.0,
               "text-outline-width": 0.2,
-              "color": "data(color)", // color of the text label
+              "color": "data(label_color)", // color of the text label
             })
           .selector(":selected")
             .css({
@@ -740,12 +756,14 @@
     // Neither by confidence nor by synapse clustering.
 
     var edge_color = this.edge_color;
+    var edge_text_color = this.edge_text_color;
     var asEdge = function(edge) {
         return {data: {directed: true,
                        arrow: 'triangle',
                        id: edge[0] + '_' + edge[1],
                        label: edge[2],
                        color: edge_color,
+                       label_color: edge_text_color,
                        source: edge[0],
                        target: edge[1],
                        weight: edge[2]}};
@@ -811,10 +829,12 @@
           mode = this.subgraphs[skid],
           parts = {},
           name = NeuronNameService.getInstance().getName(skid),
+          color = '#' + models[skid].color.getHexString(),
           common = {skeletons: [models[skid]],
                     shape: "ellipse",
                     node_count: 0,
-                    color: '#' + models[skid].color.getHexString()},
+                    color: color,
+                    label_color: color},
           createNode = function(id, label, is_branch) {
             return {data: $.extend(is_branch ? {branch: true} : {}, common,
               {id: id,
@@ -890,6 +910,7 @@
                                       arrow: 'none',
                                       id: graph[i-1].data.id + '_' + graph[i].data.id,
                                       color: common.color,
+                                      label_color: common.color,
                                       source: graph[i-1].data.id,
                                       target: graph[i].data.id,
                                       weight: 10}});
@@ -935,6 +956,7 @@
                                         arrow: 'none',
                                         id: source_id + '_' + target_id,
                                         color: common.color,
+                                        label_color: common.color,
                                         source: source_id,
                                         target: target_id,
                                         weight: 10}});
@@ -1009,6 +1031,7 @@
                                       arrow: 'none',
                                       id: source_id + '_' + target_id,
                                       color: common.color,
+                                      label_color: common.color,
                                       source: source_id,
                                       target: target_id,
                                       weight: 10}});
@@ -1111,6 +1134,7 @@
         elements.edges.push({data: {directed: true,
                                     arrow: 'triangle',
                                     color: edge_color,
+                                    label_color: edge_text_color,
                                     id: source_id + '_' + target_id,
                                     source: source_id,
                                     target: target_id,
@@ -1524,17 +1548,20 @@
     var directed = this.cy.edges().filter(function(i, edge) {
       return edge.data('directed');
     });
-    directed.css('color', this.edge_color);
+    directed.css('line-color', this.edge_color);
+    directed.css('color', this.edge_text_color);
     directed.css('opacity', this.edge_opacity);
     directed.css('text-opacity', this.edge_text_opacity);
 
     var min = this.edge_min_width,
         color = this.edge_color,
+        labelColor = this.edge_text_color,
         edgeWidth = this.edgeWidthFn();
 
     this.cy.edges().each(function(i, edge) {
       if (edge.data('directed')) {
         edge.data('color', color);
+        edge.data('label_color', labelColor);
         edge.data('width', min + edgeWidth(edge.data('weight')));
       }
     });
@@ -2960,6 +2987,7 @@
      'node_height',
      'edge_color',
      'edge_opacity',
+     'edge_text_color',
      'edge_text_opacity',
      'edge_min_width',
      'edge_width_function',
@@ -3023,6 +3051,15 @@
             Object.keys(g.models).forEach(function(skid) {
               g.models[skid] = asModel(g.models[skid]);
             });
+          });
+          // Add label color information if it is missing
+          if (!json.properties.edge_text_color) {
+            json.properties.edge_text_color = json.properties.edge_color;
+          }
+          json.elements.edges.forEach(function(edge) {
+            if (!edge.data.label_color) {
+              edge.data.label_color = edge.data.color;
+            }
           });
           this.clear();
           this.setContent(json);

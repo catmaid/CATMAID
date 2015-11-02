@@ -33,6 +33,12 @@ Skeleton projection layer
   (<50px screen space), the tracing layer's node selection is used.
 
 
+Graph widget:
+
+- Synapse count coloring on edges can now be configured independently from edge
+  colors.
+
+
 Volumes:
 
 - A new widget, the Volume Manager, allows to create and list volumetric

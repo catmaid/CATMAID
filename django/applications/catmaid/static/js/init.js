@@ -1039,6 +1039,7 @@ var realInit = function()
 	var xp;
 	var init_active_node_id;
 	var init_active_skeleton;
+	var singleStackViewer = false;
 
 	var account;
 	var password;
@@ -1113,6 +1114,11 @@ var realInit = function()
 		if ( values[ "dataview" ] )
 			current_dataview = parseInt( values["dataview"] );
 		if ( isNaN( current_dataview ) ) current_dataview = undefined;
+
+		// Check if only one stack viewer should be used for all stacks
+		if ( values[ "composite" ] ) {
+			singleStackViewer = ("1" === values["composite"]);
+		}
 	}
 
 	CATMAID.statusBar = new CATMAID.Console();
@@ -1179,11 +1185,13 @@ var realInit = function()
 			classification_editor: null
 		};
 
-		loadStacksFromURL();
+		loadStacksFromURL(singleStackViewer);
 
 		// Open stacks one after another and move to the requested location. Load
 		// the requested tool after everything has been loaded.
-		function loadStacksFromURL() {
+		function loadStacksFromURL(composite, loaded) {
+			loaded = loaded || 0;
+			useExistingStackViewer = composite && (loaded > 0);
 			if (pid) {
 				if (sids.length > 0) {
 					// Open stack and queue test/loading for next one
@@ -1196,10 +1204,10 @@ var realInit = function()
 								typeof xp == "number" && typeof s == "number" ) {
 							project.moveTo(zp, yp, xp, s, function() {
 								// Load next stack
-								loadStacksFromURL();
+								loadStacksFromURL(composite, loaded + 1);
 							});
 						}
-					});
+					}, useExistingStackViewer);
 				} else {
 					// Set the tool only after the move; otherwise, thousands of skeleton
 					// nodes may be fetched and painted unnecessarily.

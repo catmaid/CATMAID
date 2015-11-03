@@ -63,6 +63,9 @@ Miscellaneous:
   select 'Active skeleton') through the 'Auto-select widget created last as
   source for new widgets' option in the settings widget.
 
+- Multiple stacks opened through a URL can now optionally be opened in the same
+  stack viewer window by adding "&composite=1" to the URL.
+
 
 ### Bug fixes
 

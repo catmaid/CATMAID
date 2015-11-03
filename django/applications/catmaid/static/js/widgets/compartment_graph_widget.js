@@ -2381,6 +2381,7 @@
     for (; i<children.length; ++i) {
       var child = children[i];
       if ('text' === child.localName) continue;
+      if (!child.pathSegList) continue;
       switch(child.pathSegList.length) {
         case 2:
           // New graph edge

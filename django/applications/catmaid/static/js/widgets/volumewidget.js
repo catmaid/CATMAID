@@ -5,10 +5,6 @@
 
   "use strict";
 
-  // Register DOM elements for different views
-  var VolumeList = document.registerElement('volume-list');
-  var VolumeProperties = document.registerElement('volume-properties');
-
   /**
    * Manage spatial volumes with this wiefet.
    */
@@ -62,7 +58,8 @@
           hrow.insertCell().appendChild(document.createTextNode(c));
         });
 
-        var tableContainer = document.createElement('volume-list');
+        var tableContainer = document.createElement('div');
+        tableContainer.setAttribute('class', 'volume-list');
         tableContainer.appendChild(table);
         container.appendChild(tableContainer);
         this.datatable = $(table).DataTable({
@@ -102,11 +99,11 @@
   VolumeManagerWidget.prototype.addVolume = function() {
     var $content = $('#volume_manger_content');
     // Hide table
-    $("volume-list", $content).hide();
+    $("div.volume-list", $content).hide();
 
     // Display inline editor for properties of new volume
-    var $addContent =$(document.createElement('volume-properties'));
-    $addContent.addClass('settings-container');
+    var $addContent =$(document.createElement('div'));
+    $addContent.addClass('settings-container volume-properties');
 
     var vid = this.datatable ? this.datatable.length + 1 : 1;
     var volumeType = volumeTypes[this.defaultVolumeType];
@@ -136,15 +133,15 @@
         .append($('<button>Cancel</Cancel>')
           .on('click', function(e) {
             // Show table
-            $("volume-list", $content).show();
-            $("volume-properties", $content).remove();
+            $("div.volume-list", $content).show();
+            $("div.volume-properties", $content).remove();
           }))
         .append($('<button>Save</Cancel>')
           .on('click', function(e) {
             volume.save();
             // Show table, remove volume settings
-            $("volume-list", $content).show();
-            $("volume-properties", $content).remove();
+            $("div.volume-list", $content).show();
+            $("div.volume-properties", $content).remove();
             self.redraw();
           })));
 

@@ -196,7 +196,7 @@
     helpText: "Manage spatial volumes",
     buttonID: "data_button_volume_manager",
     buttonName: 'volume_manager',
-    iconURL: STATIC_URL_JS + 'images/volume-manager.svg',
+    iconURL: CATMAID.makeStaticURL('images/volume-manager.svg'),
     run: function (e) {
         WindowMaker.show(widgetKey);
         return true;

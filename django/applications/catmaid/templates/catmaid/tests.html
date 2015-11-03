@@ -7,6 +7,11 @@
     <title>CATMAID front-end tests (using QUnit)---to be run with manage.py testerver</title>
     <link rel="stylesheet" href="{{ STATIC_URL }}js/tests/libs/qunit-1.17.1.css">
 
+    <script type="text/javascript">
+      var STATIC_URL_JS = '{{ STATIC_URL|escapejs }}';
+      var django_url = "{{ CATMAID_URL }}";
+    </script>
+
     {% for f in COMPRESSED_FILE_IDS %}
           {% compressed_js f %}
     {% endfor %}

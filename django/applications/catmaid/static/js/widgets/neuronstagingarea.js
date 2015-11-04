@@ -704,17 +704,6 @@
     // Remove all table rows
     $("tr[id^='skeletonrow" + widgetID + "']").remove();
 
-    // Re-create table, let DataTables take care of paging
-    var reviews = this.table.reviews;
-    var data = this.table.skeletons.reduce(function(d, s, i) {
-      d[i] = {
-        index: i, // For initial sorting
-        skeleton: s,
-        reviewPercentage: reviews[s.id],
-      };
-      return d;
-    }, new Array(this.table.skeletons.length));
-
     var createCheckbox = function(key, skeleton) {
       var id = 'skeleton' + key + widgetID + '-' + skeleton.id;
       return '<input type="checkbox" class="action-visibility" id="' + id +
@@ -723,7 +712,6 @@
     };
 
     this.datatable = $("table#skeleton-table" + widgetID ).DataTable({
-      data: data,
       destroy: true,
       dom: "lrptip",
       paging: true,

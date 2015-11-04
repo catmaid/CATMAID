@@ -43,7 +43,7 @@ PIPELINE_CSS = {
 
 libraries_js = {
     'modernizr': ['*.js'],
-    'jquery': ['jquery-2.1.3.min.js', 'jquery-migrate-1.2.1.js',
+    'jquery': ['jquery-2.1.3.min.js',
                'jquery-ui.min.js', 'jquery-ui.*.js',
                'jquery.dataTables.min.js', 'jquery.*.js',
                'dataTables.colReorder.js'],

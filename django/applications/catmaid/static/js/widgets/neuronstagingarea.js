@@ -882,7 +882,7 @@
           }
         }
       ],
-      createdRow: function(row, data, index) {
+      createdRow: (function(row, data, index) {
         var tds = $('td', row);
         // Store skeleton ID in row
         $(row).attr('data-skeleton-id', data.skeleton.id);
@@ -895,12 +895,13 @@
         tds.eq(-2).addClass('centering');
         // Prepare action cell
         tds.eq(-1).addClass('centering').css('white-space', 'nowrap');
-      }
+        // Highlight if this is the active skeleton
+        var activeSkeletonId = SkeletonAnnotations.getActiveSkeletonId();
+        if (data.skeleton.id == activeSkeletonId) {
+          $(row).css('background-color', this.table.highlighting_color);
+        }
+      }).bind(this)
     });
-
-    // If the active skeleton is within the range, highlight it
-    var selectedSkeletonId = SkeletonAnnotations.getActiveSkeletonId();
-    if (selectedSkeletonId) this.table.highlight(selectedSkeletonId);
   };
 
   SelectionTable.prototype.selectSkeletonById = function(id) {

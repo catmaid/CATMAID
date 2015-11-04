@@ -769,6 +769,7 @@
           skeletonsOnPage = filteredSkeletons.slice(data.start, lastIndex);
         }
 
+        var reviews = this.table.reviews;
         var skeletonData = skeletonsOnPage.reduce(function(d, s, i) {
           d[i] = {
             index: i, // For initial sorting

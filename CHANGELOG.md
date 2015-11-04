@@ -6,6 +6,10 @@ Selection table:
 
 - Batch coloring is now much quicker.
 
+- If the batch color button is pressed a second time the color picker will not
+  only close but also will the batch coloring be re-applied. This won't happen
+  if the color picker is closed by clicking somewhere else.
+
 - The status text line at the bottom of the table includes now the number of
   selected neurons. This is helpful when a filter is active and more neurons are
   selected than visible.

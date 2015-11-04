@@ -890,7 +890,7 @@ var WindowMaker = new function()
             '<th><input type="checkbox" id="selection-table-show-all-text' + ST.widgetID + '" style="float: left" /></th>' +
             '<th><input type="checkbox" id="selection-table-show-all-meta' + ST.widgetID + '" checked style="float: left" /></th>' +
             '<th><button id="selection-table-batch-color-button' + ST.widgetID +
-                '" type="button" value="#ffff00" style="background-color: #ffff00">Batch color</button></th>' +
+                '" type="button" value="' + ST.batchColor + '" style="background-color: ' + ST.batchColor + '">Batch color</button></th>' +
             '<th></th>' +
           '</tr>' +
         '</thead>' +
@@ -904,9 +904,20 @@ var WindowMaker = new function()
     });
     $("button#selection-table-batch-color-button" + ST.widgetID, tab).on("click",
         function() {
-          CATMAID.ColorPicker.toggle(this, {
-            onColorChange: ST.batchColorSelected.bind(ST)
-          });
+          if (CATMAID.ColorPicker.visible()) {
+            CATMAID.ColorPicker.hide(this);
+            // Apply color on closing, even if the color picker itself wasn't
+            // touched. This allows easier re-use of a previously set batch
+            // color.
+            var rgb = new THREE.Color(ST.batchColor);
+            ST.batchColorSelected(rgb, ST.batchOpacity, true, true);
+          } else {
+            CATMAID.ColorPicker.show(this, {
+              onColorChange: ST.batchColorSelected.bind(ST),
+              initialColor: ST.batchColor,
+              initialAlpha: ST.batchOpacity
+            });
+          }
         });
     $('th input[type=button].filter', tab).on("click", filterNeuronList);
     $('th input[type=text].filter', tab).on("keyup", function(e) {

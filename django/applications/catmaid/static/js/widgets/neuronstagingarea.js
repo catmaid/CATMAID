@@ -28,6 +28,8 @@
     this.all_visible = true;
     this.all_items_visible = {pre: true, post: true, text: false, meta: true};
     this.next_color_index = 0;
+    this.batchColor = '#ffff00';
+    this.batchOpacity = 1.0;
     this.order = [[0, 'asc']];
     this.annotationFilter = null;
     this.gui = new this.GUI(this);
@@ -1107,6 +1109,14 @@
 
   SelectionTable.prototype.batchColorSelected = function(rgb, alpha, colorChanged, alphaChanged) {
     var selectedSkeletonIDs = this.getSelectedSkeletons();
+
+    if (colorChanged) {
+      this.batchColor = '#' + new THREE.Color(rgb.r, rgb.g, rgb.b).getHexString();
+    }
+    if (alphaChanged) {
+      this.batchOpacity = alpha;
+    }
+
     var changedModels = selectedSkeletonIDs.reduce((function(o, skid) {
       var skeleton = this.skeletons[this.skeleton_ids[skid]];
       if (colorChanged) {

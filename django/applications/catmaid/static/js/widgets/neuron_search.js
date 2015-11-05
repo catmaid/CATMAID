@@ -298,43 +298,6 @@
       a.dataset.annotation = entity.name;
       a.dataset.indent = indent;
     }
-    // Add handler to the checkbox infront of each entity
-    var create_cb_handler = function(widget) {
-      return function() {
-            var clicked_cb = this;
-            var is_checked = this.checked;
-            var entity_id = $(this).attr('entity_id');
-            // Update the entities selection state
-            widget.entity_selection_map[entity_id] = is_checked;
-            // Update sync link
-            widget.updateLink(widget.getSelectedSkeletonModels());
-            // Potentially remove skeletons from link target
-            if (!is_checked && widget.linkTarget) {
-              var skids = widget.queryResults.reduce(function(o, qs) {
-                qs.forEach(function(e) {
-                  if (e.id == entity_id) {
-                    o = o.concat(e.skeleton_ids);
-                  }
-                });
-                return o;
-              }, []);
-              // Prevent propagation loop by checking if the target has the skeletons anymore
-              if (skids.some(widget.linkTarget.hasSkeleton, widget.linkTarget)) {
-                widget.linkTarget.removeSkeletons(skids);
-              }
-            }
-            // Due to expanded annotations, an entity can appear multiple times. Look
-            // therefore for copies of the current one to toggle it as well.
-            $("#neuron_annotations_query_results_table" + widget.widgetID).find(
-                'td input[entity_id=' + entity_id + ']').each(function() {
-                    if (this != clicked_cb) {
-                      // Set property without firing event
-                      $(this).prop('checked', is_checked);
-                    }
-                });
-        };
-    };
-    $(cb).change(create_cb_handler(this));
   };
 
   NeuronAnnotations.prototype.query = function(initialize)
@@ -499,6 +462,45 @@
       $('#neuron_annotations_query_results' + this.widgetID).hide();
       $('#neuron_annotations_query_no_results' + this.widgetID).show();
     }
+
+    // Add handler to the checkbox in front of each entity
+    var create_cb_handler = function(widget) {
+      return function() {
+            var clicked_cb = this;
+            var is_checked = this.checked;
+            var entity_id = $(this).attr('entity_id');
+            // Update the entities selection state
+            widget.entity_selection_map[entity_id] = is_checked;
+            // Update sync link
+            widget.updateLink(widget.getSelectedSkeletonModels());
+            // Potentially remove skeletons from link target
+            if (!is_checked && widget.linkTarget) {
+              var skids = widget.queryResults.reduce(function(o, qs) {
+                qs.forEach(function(e) {
+                  if (e.id == entity_id) {
+                    o = o.concat(e.skeleton_ids);
+                  }
+                });
+                return o;
+              }, []);
+              // Prevent propagation loop by checking if the target has the skeletons anymore
+              if (skids.some(widget.linkTarget.hasSkeleton, widget.linkTarget)) {
+                widget.linkTarget.removeSkeletons(skids);
+              }
+            }
+            // Due to expanded annotations, an entity can appear multiple times. Look
+            // therefore for copies of the current one to toggle it as well.
+            $("#neuron_annotations_query_results_table" + widget.widgetID).find(
+                'td input[entity_id=' + entity_id + ']').each(function() {
+                    if (this != clicked_cb) {
+                      // Set property without firing event
+                      $(this).prop('checked', is_checked);
+                    }
+                });
+        };
+    };
+    $table.off('change.cm').on('change.cm', 'input[type=checkbox][entity_id]',
+        create_cb_handler(this));
 
     // Add expand handler
     var self = this;

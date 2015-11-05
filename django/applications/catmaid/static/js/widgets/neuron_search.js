@@ -690,10 +690,11 @@
   {
     var $tableBody = $('#neuron_annotations_query_results' +
         this.widgetID + ' tbody');
-    // First, remove all 'odd' classes
-    $("tr", $tableBody).removeClass("odd");
-    // Re-add class for currently 'odd' rows
+    // First, remove all 'even; and 'odd' classes
+    $("tr", $tableBody).removeClass("odd even");
+    // Re-add class for currently 'even' and 'odd' rows
     $("tr:nth-child(odd)", $tableBody).addClass("odd");
+    $("tr:nth-child(even)", $tableBody).addClass("even");
   };
 
   NeuronAnnotations.prototype.add_query_field = function()

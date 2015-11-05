@@ -22,6 +22,8 @@
     // Results of main and sub queries. The main query will be index 0,
     // sub-queries will take the next free slot.
     this.queryResults = [];
+    // Map expanded entities to a query result index
+    this.expansions = new Map();
 
     this.entity_selection_map = {};
     this.pid = project.id;
@@ -211,6 +213,36 @@
   })();
 
   /**
+   * Add a row for each entity with the given appender function. Expanded
+   * elements will also be expanded. Keeps track of already expanded elements to
+   * avoid repetitions for cycling annotations.
+   */
+  NeuronAnnotations.prototype.appendEntities = function(entities, appender, indent,
+      expandedIds, sourceSlot) {
+    // Mark entities as unselected and create result table rows
+    entities.forEach(function(entity) {
+      var tr = this.add_result_table_row(entity, appender, indent);
+      // Add source information, if this entry resulted from expansion
+      if (sourceSlot) {
+        tr.setAttribute('expansion', sourceSlot);
+      }
+      // Add already expanded entities
+      var expansionSlot = this.expansions.get(entity);
+      var notExpanded = -1 === expandedIds.indexOf(entity.id);
+      if (expansionSlot && notExpanded) {
+        tr.setAttribute('expanded', expansionSlot);
+        var expandedEntities = this.queryResults[expansionSlot];
+        // Add entity ID to stack to not expand it twice
+        expandedIds.push(entity.id);
+        this.appendEntities(expandedEntities, appender, indent + 1, expandedIds,
+            expansionSlot);
+        // Remove ID from expansion stack, now that it is expanded
+        expandedIds.pop();
+      }
+    }, this);
+  };
+
+  /**
    * Create a table row and passes it to add_row_fn which should it add it
    * whereever it wants. The third parameter specifies the number of indentation
    * steps that should be used.
@@ -224,6 +256,7 @@
             this.widgetID + '_' + entity.id);
     tr.setAttribute('type', entity.type);
     tr.dataset.entityId = entity.id;
+    tr.entity = entity;
 
     // Checkbox & name column, potentially indented
     var td_cb = document.createElement('td');
@@ -298,6 +331,8 @@
       a.dataset.annotation = entity.name;
       a.dataset.indent = indent;
     }
+
+    return tr;
   };
 
   NeuronAnnotations.prototype.query = function(initialize)
@@ -374,6 +409,7 @@
               NeuronNameService.getInstance().unregister(this);
               // Empty selection map and store results
               this.entity_selection_map = {};
+              this.expansions.clear();
               this.queryResults = [];
               this.queryResults[0] = e.entities;
               this.total_n_results = e.entities.length;
@@ -438,15 +474,13 @@
         datatable.destroy();
       }
     }
+
     $tableBody.empty();
     // create appender function which adds rows to table
     var appender = function(tr) {
       $tableBody.append(tr);
     };
-    // Mark entities as unselected and create result table rows
-    entities.forEach((function(entity) {
-      this.add_result_table_row(entity, appender, 0);
-    }).bind(this));
+    this.appendEntities(entities, appender, 0, []);
 
     // If there are results, display the result table
     if (entities.length > 0) {
@@ -514,24 +548,26 @@
       var annotation = this.dataset.annotation;
       var aID = CATMAID.annotations.getID(annotation);
       var tr = $(this).closest('tr');
+      var entity = $(tr)[0].entity;
 
       // If expanded, collapse it. Expand it otherwise.
-      if ($(this).is('[expanded]')) {
+      if (tr.is('[expanded]')) {
         // Get sub-expansion ID an mark link not expanded
-        var sub_id = $(this).attr('expanded');
-        this.removeAttribute('expanded');
+        var sub_id = tr.attr('expanded');
+        tr.removeAttr('expanded');
         // Find all rows that have an attribute called 'expansion' and delete
         // them.
         var removed_entities = [];
         while (true) {
           var next = $(tr).next();
-          if (next.is('[expansion_' + aID + ']')) {
+          if (next.is('[expansion=' + sub_id + ']')) {
             next.remove();
           } else {
             break;
           }
         }
-        // Delete sub-expansion query result
+        // Delete sub-expansion query result and reference to it
+        delete self.expansions.delete(entity);
         delete self.queryResults[sub_id];
 
         // Update current result table classes
@@ -549,8 +585,8 @@
             }
           }
         })(self.queryResults, 0);
-        // Mark link expanded
-        this.setAttribute('expanded', sub_id);
+        // Mark row expanded
+        tr.attr('expanded', sub_id);
         // Make sure the slot in results array is used for this sub-query by
         // assigning 'null' to it (which is not 'undefined').
         self.queryResults[sub_id] = null;
@@ -577,7 +613,7 @@
                         // Append new content right after the current node and save a
                         // reference for potential removal.
                         var appender = function(new_tr) {
-                          new_tr.setAttribute('expansion_' + aID, 'true');
+                          new_tr.setAttribute('expansion', sub_id);
                           $(tr).after(new_tr);
                         };
 
@@ -590,6 +626,7 @@
                         // The order of the query result array doesn't matter.
                         // It is therefore possible to just append the new results.
                         self.queryResults[sub_id] = e.entities;
+                        self.expansions.set(entity, sub_id);
                         // Update current result table classes
                         self.update_result_row_classes();
                       });

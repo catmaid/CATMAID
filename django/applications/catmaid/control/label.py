@@ -6,6 +6,8 @@ from django.db import connection
 from django.http import HttpResponse, Http404
 from django.shortcuts import get_object_or_404
 
+from rest_framework.decorators import api_view
+
 from catmaid.models import Project, Class, ClassInstance, Relation, Connector, \
         ConnectorClassInstance, UserRole, Treenode, TreenodeClassInstance, \
         ChangeRequest
@@ -42,8 +44,19 @@ def label_remove(request, project_id=None):
     return HttpResponse(json.dumps({'error': 'Only super users can delete labels'}),
                         content_type="text/plain")
 
+@api_view(['GET', 'POST'])
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def labels_all(request, project_id=None):
+    """List all labels (front-end node *tags*) in use.
+
+    ---
+    type:
+    - type: array
+      items:
+        type: string
+      description: Labels used in this project
+      required: true
+    """
     qs = ClassInstance.objects.filter(
         class_column__class_name='label',
         project=project_id)

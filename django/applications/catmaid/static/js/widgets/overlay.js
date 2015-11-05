@@ -3754,7 +3754,7 @@ SkeletonAnnotations.Tag = new (function() {
             // TODO autocompletion should only be invoked after typing at least one character
             // add autocompletion, only request after tagbox creation
             svgOverlay.submit(
-              django_url + project.id + '/labels-all',
+              django_url + project.id + '/labels/',
               {pid: project.id},
               function(json) {
                 input.autocomplete({source: json});

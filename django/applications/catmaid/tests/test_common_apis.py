@@ -298,7 +298,7 @@ class ViewPageTests(TestCase):
 
     def test_labels(self):
         self.fake_authentication()
-        response = self.client.get('/%d/labels-all' % (self.test_project_id,))
+        response = self.client.get('/%d/labels/' % (self.test_project_id,))
         self.assertEqual(response.status_code, 200)
         returned_labels = json.loads(response.content)
         self.assertEqual(set(returned_labels),

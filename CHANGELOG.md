@@ -60,6 +60,20 @@ Volumes:
   warning will be shown.
 
 
+Neuron Search:
+
+- Partial annotations as well as regular expressions are now supported for
+  searching. If the text entered in an 'annotated' search field matches a single
+  existing annotation (i.e. one that would also show up in the auto-completion),
+  it is used as search constraint, just like before. However, if no matching
+  annotation was found, the input text is treated as a regular expression on
+  annotation names if it starts with a slash character ('/'), otherwise it is
+  treated as a regular search pattern over all annotations. For instance,
+  finding all things that are are annotated by either A1 or B2 would look
+  like '/A1|B2' or requiring annotations that end on 'xyz' could be searched for
+  by '/xyz$'. This also works with sub-annotation queries.
+
+
 Miscellaneous:
 
 - By default new widgets will now select the last widget created as skeleton

@@ -2990,7 +2990,7 @@ var WindowMaker = new function()
           '<td class="neuron_annotations_query_field_label">annotated:</td> ' +
           '<td class="neuron_annotations_query_field">' +
             '<input type="text" name="neuron_query_by_annotation" autocomplete="off" ' +
-                'class="neuron_query_by_annotation_name{{NA-ID}}" value="" />' +
+                'class="neuron_query_by_annotation_name{{NA-ID}}" value="" placeholder="Use / for RegEx" />' +
             '<input type="checkbox" name="neuron_query_include_subannotation" ' +
                 'class="neuron_query_include_subannotation{{NA-ID}}" value="" />' +
             'Include sub-annotations ' +

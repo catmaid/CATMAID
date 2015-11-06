@@ -348,58 +348,80 @@
           .val("None").trigger("change");
     }
 
-    var form_data = $('#neuron_query_by_annotations' + this.widgetID)
-        .serializeArray().reduce(function(o, e) {
-          if (0 === e.name.indexOf('neuron_query_by_annotation')) {
-            o[e.name] = CATMAID.annotations.getID(e.value);
-          } else if (0 === e.name.indexOf('neuron_query_include_subannotation')) {
-            // Expect the annotation field to be read out before this
-            var ann_input_name = e.name.replace(
-                new RegExp('neuron_query_include_subannotation'),
-                'neuron_query_by_annotation');
-            o[e.name] = o[ann_input_name];
-          } else {
-            o[e.name] = e.value;
-          }
-          return o;
-        }, {});
+    // Get user input
+    var $widget = $('#neuron_query_by_annotations' + this.widgetID);
+    var namedAs = $('input[name=neuron_query_by_name]', $widget).val().trim();
+    var annotatedBy = $('select[name=neuron_query_by_annotator]', $widget).val().trim();
+    var annotatedFrom = $('input[name=neuron_query_by_start_date]', $widget).val().trim();
+    var annotatedTo = $('input[name=neuron_query_by_end_date]', $widget).val().trim();
+    var annotations = [];
+    var aSelector = 'name=neuron_query_by_annotation';
+    var sSelector = 'name=neuron_query_include_subannotation';
+    for (var i=0; i<this.nextFieldID; ++i) {
+      var a = aSelector;
+      var s = sSelector;
+      if (i > 0) {
+        a = a + this.widgetID + '_' + i;
+        s = s + this.widgetID + '_' + i;
+      }
+      // Don't use empty names
+      var name = $('input[' + a + ']').val().trim();
+      if (name) {
+        annotations.push([name, $('input[' + s + ']').is(':checked')]);
+      }
+    }
+
+    // Build query parameter set
+    var params = {};
+    if (namedAs) { params['neuron_query_by_name'] = namedAs; }
+    if (annotatedBy && -2 != annotatedBy) {
+      params['neuron_query_by_annotator'] = 'Team' !== annotatedBy ? annotatedBy :
+            Object.keys(CATMAID.ReviewSystem.Whitelist.getWhitelist());
+    }
+    if (annotatedFrom) { params['neuron_query_by_start_date'] = annotatedFrom; }
+    if (annotatedTo) { params['neuron_query_by_end_date'] = annotatedTo; }
+    var n = 0;
+    for (var i=0; i<annotations.length; ++i) {
+      var a = annotations[i][0];
+      var s = annotations[i][1];
+      var annotationID = CATMAID.annotations.getID(a);
+      var value;
+      if (annotationID) {
+        // If the annotation matches one particular instance, use it
+        value = annotationID;
+      } else {
+        // Otherwise, treat the search term as regular expression and
+        // filter annotations that match
+        var pattern = '/' === a.substr(0, 1) ? a.substr(1) : CATMAID.tools.escapeRegEx(a);
+        var filter  = new RegExp(pattern);
+        var matches = CATMAID.annotations.getAllNames().filter(function(a) {
+          return this.test(a)
+        }, filter);
+        // Add matches to query, or-combined
+        value = matches.map(function(m) {
+          return CATMAID.annotations.getID(m);
+        }).join(",");
+      }
+      var field = s ? 'neuron_query_include_subannotation' : 'neuron_query_by_annotation';
+      params[field + n] = value;
+      ++n;
+    }
 
     // Make sure that the result is constrained in some way and not all neurons
     // are returned.
-    var has_constraints = false;
-    for (var field in form_data) {
-      if (form_data.hasOwnProperty(field)) {
-        // For the annotator field, 'no constraint' means value '-2'. The other
-        // fields need to be empty for this.
-        var empty_val = '';
-        if (field === 'neuron_query_by_annotator') {
-          empty_val = '-2';
-          if (form_data[field] === 'Team') {
-            form_data[field] = Object.keys(CATMAID.ReviewSystem.Whitelist.getWhitelist());
-          }
-        }
-        if (form_data[field] && form_data[field] != empty_val) {
-          // We found at least one constraint
-          has_constraints = true;
-        } else {
-          // Delete empty fields
-          delete form_data[field];
-        }
-      }
-    }
-    if (!has_constraints) {
-      alert("Please add at least one constraint before querying!");
+    if (0 === Object.keys(params).length) {
+      CATMAID.error("Please add at least one constraint before querying!");
       return;
     }
 
     // Augment form data with offset and limit information
-    form_data.display_start = this.display_start;
-    form_data.display_length = this.display_length;
-    form_data.with_annotations = this.displayAnnotations;
+    params.display_start = this.display_start;
+    params.display_length = this.display_length;
+    params.with_annotations = this.displayAnnotations;
 
     // Here, $.proxy is used to bind 'this' to the anonymous function
     requestQueue.register(django_url + this.pid + '/neuron/query-by-annotations',
-        'POST', form_data, $.proxy( function(status, text, xml) {
+        'POST', params, $.proxy( function(status, text, xml) {
           if (status === 200) {
             var e = $.parseJSON(text);
             if (e.error) {

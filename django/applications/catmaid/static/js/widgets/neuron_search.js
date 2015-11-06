@@ -617,7 +617,7 @@
         // and replace the clicked on annotation with the result. Pagination
         // will not be applied to expansions.
         var query_data = {
-          'neuron_query_by_annotation': aID,
+          'annotated_with': aID,
           'with_annotations': self.displayAnnotations
         };
         requestQueue.register(django_url + project.id + '/neuron/query-by-annotations',

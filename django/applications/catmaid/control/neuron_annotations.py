@@ -22,10 +22,10 @@ def create_basic_annotated_entity_query(project, params, relations, classes,
 
     annotated_with = relations['annotated_with']
 
-    # One set for requested annotations and one for those of which
-    # subannotations should be included
-    annotations = set()
-    annotations_to_expand = set()
+    # One list of annotation sets for requested annotations and one for those
+    # of which subannotations should be included
+    annotation_sets = set()
+    annotation_sets_to_expand = set()
 
     # Get name, annotator and time constraints, if available
     name = params.get('neuron_query_by_name', "").strip()
@@ -33,12 +33,15 @@ def create_basic_annotated_entity_query(project, params, relations, classes,
     start_date = params.get('neuron_query_by_start_date', "").strip()
     end_date = params.get('neuron_query_by_end_date', "").strip()
 
-    # Collect annotations and sub-annotation information
+    # Collect annotations and sub-annotation information. Each entry can be a
+    # list of IDs, which will be treated as or-combination.
     for key in params:
         if key.startswith('neuron_query_by_annotation'):
-            annotations.add(int(params[key]))
+            annotation_set = frozenset(int(a) for a in params[key].split(','))
+            annotation_sets.add(annotation_set)
         elif key.startswith('neuron_query_include_subannotation'):
-            annotations_to_expand.add(int(params[key]))
+            annotation_set = frozenset(int(a) for a in params[key].split(','))
+            annotation_sets_to_expand.add(annotation_set)
 
     # Construct a dictionary that contains all the filters needed for the
     # current query.
@@ -63,18 +66,18 @@ def create_basic_annotated_entity_query(project, params, relations, classes,
     if end_date:
         filters['cici_via_a__creation_time__lte'] = end_date
 
-    # Get map of annotations to expand and their sub-annotations
-    sub_annotation_ids = get_sub_annotation_ids(project, annotations_to_expand,
+    # Map annotation sets to their expanded sub-annotations
+    sub_annotation_ids = get_sub_annotation_ids(project, annotation_sets_to_expand,
             relations, classes)
 
     # Collect all annotations and their sub-annotation IDs (if requested) in a
     # set each. For the actual query each set is connected with AND while
     # for everything within one set OR is used.
     annotation_id_sets = []
-    for a in annotations:
-        current_annotation_ids = set([a])
+    for annotation_set in annotation_sets:
+        current_annotation_ids = set(annotation_set)
         # Add sub annotations, if requested
-        sa_ids = sub_annotation_ids.get(a)
+        sa_ids = sub_annotation_ids.get(annotation_set)
         if sa_ids and len(sa_ids):
             current_annotation_ids.update(sa_ids)
         annotation_id_sets.append(current_annotation_ids)
@@ -100,12 +103,13 @@ def create_basic_annotated_entity_query(project, params, relations, classes,
     # all instances of the given set of allowed classes.
     return entities
 
-def get_sub_annotation_ids(project_id, annotation_set, relations, classes):
+def get_sub_annotation_ids(project_id, annotation_sets, relations, classes):
     """ Sub-annotations are annotations that are annotated with an annotation
     from the annotation_set passed. Additionally, transivitely annotated
-    annotations are returned as well.
+    annotations are returned as well. Note that all entries annotation_sets
+    must be frozenset instances, they need to be hashable.
     """
-    if not annotation_set:
+    if not annotation_sets:
         return {}
 
     aaa_tuples = ClassInstanceClassInstance.objects.filter(
@@ -132,21 +136,22 @@ def get_sub_annotation_ids(project_id, annotation_set, relations, classes):
     # Collect all sub-annotations by following the annotation hierarchy for
     # every annotation in the annotation set passed.
     sa_ids = {}
-    for a in annotation_set:
-        # Start with an empty result set for each requested annotation
+    for annotation_set in annotation_sets:
+        # Start with an empty result set for each requested annotation set
         ls = set()
-        working_set = set([a])
-        while working_set:
-            parent_id = working_set.pop()
-            # Try to get the sub-annotations for this parent
-            child_ids = aaa.get(parent_id) or set_wrapper()
-            for child_id in child_ids.data:
-                if child_id not in sa_ids:
-                    # Add all children as sub annotations
-                    ls.add(child_id)
-                    working_set.add(child_id)
+        for a in annotation_set:
+            working_set = set([a])
+            while working_set:
+                parent_id = working_set.pop()
+                # Try to get the sub-annotations for this parent
+                child_ids = aaa.get(parent_id) or set_wrapper()
+                for child_id in child_ids.data:
+                    if child_id not in sa_ids:
+                        # Add all children as sub annotations
+                        ls.add(child_id)
+                        working_set.add(child_id)
         # Store the result list for this ID
-        sa_ids[a] = list(ls)
+        sa_ids[annotation_set] = list(ls)
 
     return sa_ids
 

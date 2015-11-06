@@ -1235,7 +1235,7 @@
         'skeleton_id': skeleton.id,
         'color': '#' + skeleton.color.getHexString(),
         'opacity': skeleton.opacity
-      }
+      };
     }, this);
 
     saveAs(new Blob([JSON.stringify(data, null, ' ')], {type: 'text/plain'}), filename);

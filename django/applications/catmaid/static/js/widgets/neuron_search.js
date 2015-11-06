@@ -395,7 +395,7 @@
         var pattern = '/' === a.substr(0, 1) ? a.substr(1) : CATMAID.tools.escapeRegEx(a);
         var filter  = new RegExp(pattern);
         var matches = CATMAID.annotations.getAllNames().filter(function(a) {
-          return this.test(a)
+          return this.test(a);
         }, filter);
         // Add matches to query, or-combined
         value = matches.map(function(m) {
@@ -589,7 +589,7 @@
           }
         }
         // Delete sub-expansion query result and reference to it
-        delete self.expansions.delete(entity);
+        self.expansions.delete(entity);
         delete self.queryResults[sub_id];
 
         // Update current result table classes

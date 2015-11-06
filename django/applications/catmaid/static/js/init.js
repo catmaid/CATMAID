@@ -476,7 +476,7 @@ function handle_openProjectStack( e, stackViewer )
   //! look if the project is already opened, otherwise open a new one
   if ( !( project && project.id == e.pid ) )
   {
-    project = new Project( e.pid );
+    project = new CATMAID.Project( e.pid );
     project.register();
     CATMAID.Init.trigger(CATMAID.Init.EVENT_PROJECT_CHANGED, project);
   } else {

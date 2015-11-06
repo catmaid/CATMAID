@@ -325,8 +325,8 @@
      */
     this.destroy = function()
     {
-      project.off(Project.EVENT_STACKVIEW_ADDED, prepareStackViewer, this);
-      project.off(Project.EVENT_STACKVIEW_CLOSED, closeStackViewer, this);
+      project.off(CATMAID.Project.EVENT_STACKVIEW_ADDED, prepareStackViewer, this);
+      project.off(CATMAID.Project.EVENT_STACKVIEW_CLOSED, closeStackViewer, this);
       SkeletonAnnotations.off(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
           handleActiveNodeChange, this);
 
@@ -1099,8 +1099,8 @@
     }, this);
 
     // Listen to creation and removal of new stack views in current project.
-    project.on(Project.EVENT_STACKVIEW_ADDED, prepareStackViewer, this);
-    project.on(Project.EVENT_STACKVIEW_CLOSED, closeStackViewer, this);
+    project.on(CATMAID.Project.EVENT_STACKVIEW_ADDED, prepareStackViewer, this);
+    project.on(CATMAID.Project.EVENT_STACKVIEW_CLOSED, closeStackViewer, this);
 
     // Listen to active node change events
     SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,

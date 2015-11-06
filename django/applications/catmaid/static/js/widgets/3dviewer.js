@@ -8,7 +8,6 @@
   InstanceRegistry,
   NeuronNameService,
   project,
-  Project,
   requestQueue,
   session,
   SkeletonAnnotations,
@@ -54,8 +53,8 @@
     this.options = new WebGLApplication.prototype.OPTIONS.clone();
     this.space = new this.Space(canvasWidth, canvasHeight, this.container, project.focusedStackViewer.primaryStack, this.options);
     this.updateActiveNodePosition();
-    project.on(Project.EVENT_STACKVIEW_FOCUS_CHANGED, this.adjustStaticContent, this);
-    project.on(Project.EVENT_LOCATION_CHANGED, this.handlelLocationChange, this);
+    project.on(CATMAID.Project.EVENT_STACKVIEW_FOCUS_CHANGED, this.adjustStaticContent, this);
+    project.on(CATMAID.Project.EVENT_LOCATION_CHANGED, this.handlelLocationChange, this);
     this.initialized = true;
   };
 
@@ -69,8 +68,8 @@
   WebGLApplication.prototype.destroy = function() {
     SkeletonAnnotations.off(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
         this.staticUpdateActiveNodePosition, this);
-    project.off(Project.EVENT_STACKVIEW_FOCUS_CHANGED, this.adjustStaticContent, this);
-    project.off(Project.EVENT_LOCATION_CHANGED, this.handlelLocationChange, this);
+    project.off(CATMAID.Project.EVENT_STACKVIEW_FOCUS_CHANGED, this.adjustStaticContent, this);
+    project.off(CATMAID.Project.EVENT_LOCATION_CHANGED, this.handlelLocationChange, this);
     this.unregisterInstance();
     this.unregisterSource();
     this.space.destroy();

@@ -18,7 +18,7 @@
    * ranges.
    */
   function StackViewer(
-      project,          //!< {Project} reference to the parent project
+      project,          //!< {CATMAID.Project} reference to the parent project
       primaryStack
   ) {
     this._project = project;

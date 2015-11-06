@@ -420,7 +420,7 @@
     params.with_annotations = this.displayAnnotations;
 
     // Here, $.proxy is used to bind 'this' to the anonymous function
-    requestQueue.register(django_url + this.pid + '/neuron/query-by-annotations',
+    requestQueue.register(django_url + this.pid + '/annotations/query-targets',
         'POST', params, $.proxy( function(status, text, xml) {
           if (status === 200) {
             var e = $.parseJSON(text);
@@ -620,7 +620,7 @@
           'annotated_with': aID,
           'with_annotations': self.displayAnnotations
         };
-        requestQueue.register(django_url + project.id + '/neuron/query-by-annotations',
+        requestQueue.register(django_url + project.id + '/annotations/query-targets',
             'POST', query_data, function(status, text, xml) {
               if (status === 200) {
                 var e = $.parseJSON(text);

@@ -214,7 +214,7 @@ def create_annotated_entity_list(project, entities_qs, relations, annotations=Tr
 
 @api_view(['POST'])
 @requires_user_role([UserRole.Browse])
-def query_neurons_by_annotations(request, project_id = None):
+def query_annotated_classinstances(request, project_id = None):
     """Query entities based on various constraints
 
     Entities are objects that can be referenced within CATMAID's semantic

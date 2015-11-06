@@ -1140,7 +1140,7 @@
             "dataType": 'json',
             "cache": false,
             "type": "POST",
-            "url": django_url + project.id + '/neuron/query-by-annotations',
+            "url": django_url + project.id + '/annotations/query-targets',
             "data": params,
             "success": function(json) {
                 // Format result so that DataTables can understand it

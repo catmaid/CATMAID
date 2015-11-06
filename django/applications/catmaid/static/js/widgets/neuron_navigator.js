@@ -1110,14 +1110,14 @@
         // Annotation filter
         if (filters.annotations) {
           filters.annotations.forEach(function(annotation_id, i) {
-            params['neuron_query_by_annotation[' + i + ']'] = annotation_id;
+            params['annotated_with[' + i + ']'] = annotation_id;
           });
         }
 
         // User filter -- only show neurons that have been annotated by the
         // user in question
         if (filters.user_id) {
-          params['neuron_query_by_annotator'] = filters.user_id;
+          params['annotated_by'] = filters.user_id;
         }
 
         // Validate regular expression and only send if it is valid
@@ -1126,7 +1126,7 @@
           try {
             new RegExp(data.search.value);
             searchInput.css('background-color', '');
-            params['neuron_query_by_name'] = data.search.value;
+            params['name'] = data.search.value;
           } catch (e) {
             // If the search field does not contain a valid regular expression,
             // cancel this update.

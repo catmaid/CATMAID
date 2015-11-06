@@ -28,18 +28,18 @@ def create_basic_annotated_entity_query(project, params, relations, classes,
     annotation_sets_to_expand = set()
 
     # Get name, annotator and time constraints, if available
-    name = params.get('neuron_query_by_name', "").strip()
-    annotator_ids = set(map(int, params.getlist('neuron_query_by_annotator')))
-    start_date = params.get('neuron_query_by_start_date', "").strip()
-    end_date = params.get('neuron_query_by_end_date', "").strip()
+    name = params.get('name', "").strip()
+    annotator_ids = set(map(int, params.getlist('annotated_by')))
+    start_date = params.get('annotation_date_start', "").strip()
+    end_date = params.get('annotation_date_end', "").strip()
 
     # Collect annotations and sub-annotation information. Each entry can be a
     # list of IDs, which will be treated as or-combination.
     for key in params:
-        if key.startswith('neuron_query_by_annotation'):
+        if key.startswith('annotated_with'):
             annotation_set = frozenset(int(a) for a in params[key].split(','))
             annotation_sets.add(annotation_set)
-        elif key.startswith('neuron_query_include_subannotation'):
+        elif key.startswith('sub_annotated_with'):
             annotation_set = frozenset(int(a) for a in params[key].split(','))
             annotation_sets_to_expand.add(annotation_set)
 
@@ -212,13 +212,108 @@ def create_annotated_entity_list(project, entities_qs, relations, annotations=Tr
 
     return annotated_entities
 
+@api_view(['POST'])
 @requires_user_role([UserRole.Browse])
 def query_neurons_by_annotations(request, project_id = None):
     """Query entities based on various constraints
 
     Entities are objects that can be referenced within CATMAID's semantic
     space, e.g. neurons, annotations or stack groups. This API allows to query
-    them, mainly by annotations that have been used with them.
+    them, mainly by annotations that have been used with them. Multiple
+    annotation parameters can be used to combine different annotation sets with
+    AND. Elements of one annotation parameter are combined with OR.
+    ---
+    parameters:
+      - name: name
+        description: The name (or a part of it) of result elements.
+        type: string
+        paramType: form
+      - name: annotated_by
+        description: A result element was annotated by a user with this ID.
+        type: integer
+        paramType: form
+        allowMultiple: true
+      - name: annotation_date_start
+        description: The earliest YYYY-MM-DD date result elements have been annotated at.
+        format: date
+        type: string
+        paramType: query
+      - name: annotation_date_end
+        description: The latest YYYY-MM-DD date result elements have been annotated at.
+        format: date
+        type: string
+        paramType: query
+      - name: annotated_with
+        description: A comma separated list of annotation IDs of which at least one annotated the result elements.
+        type: integer
+        paramType: form
+        allowMultiple: true
+      - name: sub_annotated_with
+        description: A comma separated list of annotation IDs of which at least one or its sub-annotations annotated the result elements.
+        type: integer
+        paramType: form
+        allowMultiple: true
+      - name: with_annotations
+        description: Indicate if annotations of result elements should be returned.
+        type: boolean
+        paramType: form
+      - name: types
+        description: Allowed result types. Multple types can be passed with multiple parameters. Defaults to 'neuron' and 'annotation'.
+        type: string
+        paramType: form
+        allowMultiple: true
+      - name: sort_by
+        description: Indicates how results are sorted.
+        type: string
+        defaultValue: id
+        enum: [id, name, first_name, last_name]
+        paramType: form
+      - name: sort_dir
+        description: Indicates sorting direction.
+        type: string
+        defaultValue: asc
+        enum: [asc, desc]
+        paramType: form
+      - name: range_start
+        description: The first result element index.
+        type: integer
+        paramType: form
+      - name: range_end
+        description: The maximum number result elements.
+        type: integer
+        paramType: form
+    models:
+      annotated_entity:
+        id: annotated_entity
+        description: A result entity.
+        properties:
+          name:
+            type: string
+            description: The name of the entity
+            required: true
+          id:
+            type: integer
+            description: The id of the entity
+            required: true
+          skeleton_ids:
+            type: array
+            description: A list of users
+            required: true
+            items:
+                type: integer
+          type:
+            type: string
+            description: Type of the entity
+            required: true
+    type:
+        entities:
+            type: array
+            items:
+              $ref: annotated_entity
+            required: true
+        totalRecords:
+            type: integer
+            required: true
     """
     p = get_object_or_404(Project, pk = project_id)
 

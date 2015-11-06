@@ -373,13 +373,13 @@
 
     // Build query parameter set
     var params = {};
-    if (namedAs) { params['neuron_query_by_name'] = namedAs; }
+    if (namedAs) { params['name'] = namedAs; }
     if (annotatedBy && -2 != annotatedBy) {
-      params['neuron_query_by_annotator'] = 'Team' !== annotatedBy ? annotatedBy :
+      params['annotated_by'] = 'Team' !== annotatedBy ? annotatedBy :
             Object.keys(CATMAID.ReviewSystem.Whitelist.getWhitelist());
     }
-    if (annotatedFrom) { params['neuron_query_by_start_date'] = annotatedFrom; }
-    if (annotatedTo) { params['neuron_query_by_end_date'] = annotatedTo; }
+    if (annotatedFrom) { params['annotation_date_start'] = annotatedFrom; }
+    if (annotatedTo) { params['annotation_date_end'] = annotatedTo; }
     var n = 0;
     for (var i=0; i<annotations.length; ++i) {
       var a = annotations[i][0];
@@ -402,7 +402,7 @@
           return CATMAID.annotations.getID(m);
         }).join(",");
       }
-      var field = s ? 'neuron_query_include_subannotation' : 'neuron_query_by_annotation';
+      var field = s ? 'sub_annotated_with' : 'annotated_with';
       params[field + n] = value;
       ++n;
     }
@@ -415,8 +415,8 @@
     }
 
     // Augment form data with offset and limit information
-    params.display_start = this.display_start;
-    params.display_length = this.display_length;
+    params.rangey_start = this.display_start;
+    params.range_length = this.display_length;
     params.with_annotations = this.displayAnnotations;
 
     // Here, $.proxy is used to bind 'this' to the anonymous function

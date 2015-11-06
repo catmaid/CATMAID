@@ -169,6 +169,7 @@ urlpatterns += patterns('catmaid.control.node',
     (r'^(?P<project_id>\d+)/node/children$', 'find_children'),
     (r'^(?P<project_id>\d+)/node/get_location$', 'get_location'),
     (r'^(?P<project_id>\d+)/node/user-info$', 'user_info'),
+    (r'^(?P<project_id>\d+)/nodes/find-labels$', 'find_labels'),
 )
 
 # Treenode access
@@ -195,6 +196,7 @@ urlpatterns += patterns('catmaid.control.skeleton',
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/statistics$', 'skeleton_statistics'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/contributor_statistics$', 'contributor_statistics'),
     (r'^(?P<project_id>\d+)/skeleton/contributor_statistics_multiple$', 'contributor_statistics_multiple'),
+    (r'^(?P<project_id>\d+)/skeletons/(?P<skeleton_id>\d+)/find-labels$', 'find_labels'),
     (r'^(?P<project_id>\d+)/skeletons/(?P<skeleton_id>\d+)/open-leaves$', 'open_leaves'),
     (r'^(?P<project_id>\d+)/skeletons/(?P<skeleton_id>\d+)/root$', 'root_for_skeleton'),
     (r'^(?P<project_id>\d+)/skeleton/split$', 'split_skeleton'),

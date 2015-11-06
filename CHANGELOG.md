@@ -2,6 +2,14 @@
 
 ### Features and enhancements
 
+Key shortcuts / mouse operations:
+
+- Pressing \ now brings up a dialog to go to the nearest node with a label
+  matching a query regex. If a node is active, this search is limited to the
+  active skeleton. Shift + \ cycles through matching nodes in ascending
+  distance order. Ctrl + \ repeats the last search regex without prompting.
+
+
 Selection table:
 
 - Batch coloring is now much quicker.

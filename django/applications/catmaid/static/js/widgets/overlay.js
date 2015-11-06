@@ -539,6 +539,9 @@ SkeletonAnnotations.SVGOverlay = function(stackViewer, options) {
   this.switchingConnectorID = null;
   this.switchingTreenodeID = null;
 
+  /* State for finding nodes matching tags. */
+  this.nextNearestMatchingTag = {matches: [], query: null, radius: Infinity};
+
   /* lastX, lastY: in unscaled stack coordinates, for the 'z' key to know where
    * the mouse was. */
   this.coords = {lastX: null, lastY: null};
@@ -3324,6 +3327,118 @@ SkeletonAnnotations.SVGOverlay.prototype.cycleThroughOpenEnds = function (treeno
   currentEnd = (currentEnd + 1) % this.nextOpenEnds.ends.length;
 
   var node = this.nextOpenEnds.ends[currentEnd];
+  this.moveTo(node[1][2], node[1][1], node[1][0], this.selectNode.bind(this, node[0]));
+};
+
+/**
+ * Go the nearest node with a label matching a regex. If a skeleton is active,
+ * this is limited to the active skeleton and goes to the nearest node by
+ * path distance
+ *
+ * @param  {boolean} cycle  If true, cycle through results in the previous set.
+ * @param  {boolean} repeat If true, repeat the last label search.
+ */
+SkeletonAnnotations.SVGOverlay.prototype.goToNearestMatchingTag = function (cycle, repeat) {
+  if (cycle) return this.cycleThroughNearestMatchingTags();
+
+  var self = this;
+
+  var retrieveNearestMatchingTags = function () {
+    var nodeId = SkeletonAnnotations.getActiveNodeId();
+
+    if (nodeId) {
+      if (!SkeletonAnnotations.isRealNode(nodeId)) {
+        nodeId = SkeletonAnnotations.getParentOfVirtualNode(nodeId);
+      }
+      var skeletonId = SkeletonAnnotations.getActiveSkeletonId();
+      self.submit(
+          django_url + project.id + '/skeletons/' + skeletonId + '/find-labels',
+          { treenode_id: nodeId,
+            label_regex: self.nextNearestMatchingTag.query },
+          function (json) {
+            // json is an array of nodes. Each node is an array:
+            // [0]: open end node ID
+            // [1]: location array as [x, y, z]
+            // [2]: distance (path length)
+            // [3]: matching tags
+            self.nextNearestMatchingTag.matches = json;
+            self.cycleThroughNearestMatchingTags();
+          });
+    } else {
+      var projectCoordinates = self.stackViewer.projectCoordinates();
+      self.submit(
+          django_url + project.id + '/nodes/find-labels',
+          { x: projectCoordinates.x,
+            y: projectCoordinates.y,
+            z: projectCoordinates.z,
+            label_regex: self.nextNearestMatchingTag.query },
+          function (json) {
+            self.nextNearestMatchingTag.matches = json;
+            self.cycleThroughNearestMatchingTags();
+          });
+    }
+  };
+
+  if (!repeat || this.nextNearestMatchingTag.query === null) {
+    var options = new CATMAID.OptionsDialog("Search for node by tag");
+    options.appendField("Tag (regex):", "nearest-matching-tag-regex", "", true);
+    if (!SkeletonAnnotations.getActiveNodeId()) {
+      options.appendField("Within distance:", "nearest-matching-tag-radius", "", true);
+    }
+
+    options.onOK = function() {
+        var regex = $('#nearest-matching-tag-regex').val();
+        if (regex && regex.length > 0) regex = regex.trim();
+        else return alert("Must provide a tag name or regex search.");
+
+        self.nextNearestMatchingTag.query = regex;
+
+        var radius = $('#nearest-matching-tag-radius');
+        if (radius) {
+          radius = Number.parseInt(radius.val(), 10);
+          self.nextNearestMatchingTag.radius = radius;
+        } else {
+          self.nextNearestMatchingTag.radius = Infinity;
+        }
+
+        retrieveNearestMatchingTags();
+    };
+
+    options.show(300, 180, true);
+  } else {
+    retrieveNearestMatchingTags();
+  }
+};
+
+/**
+ * Cycle through nodes with labels matching a query retrieved by
+ * goToNearestMatchingTag.
+ */
+SkeletonAnnotations.SVGOverlay.prototype.cycleThroughNearestMatchingTags = function () {
+  if (this.nextNearestMatchingTag.matches.length === 0) {
+    CATMAID.info('No nodes with matching tags');
+    return;
+  }
+
+  var treenodeId = SkeletonAnnotations.getActiveNodeId();
+  if (treenodeId) {
+    var currentNode = this.nextNearestMatchingTag.matches.map(function (node) {
+      return node[0] === treenodeId;
+    }).indexOf(true);
+  } else {
+    var currentNode = -1;
+  }
+
+  // Cycle through nodes.
+  currentNode = (currentNode + 1) % this.nextNearestMatchingTag.matches.length;
+
+  var node = this.nextNearestMatchingTag.matches[currentNode];
+
+  if (node[2] > this.nextNearestMatchingTag.radius) {
+    var remainingNodes = this.nextNearestMatchingTag.matches.length - currentNode;
+    CATMAID.info(remainingNodes + ' more nodes have matching tags but are beyond the distance limit.');
+    return;
+  }
   this.moveTo(node[1][2], node[1][1], node[1][0], this.selectNode.bind(this, node[0]));
 };
 

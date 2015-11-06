@@ -1053,6 +1053,15 @@
       }
     }) );
 
+    this.addAction( new CATMAID.Action({
+      helpText: "Find the nearest matching tagged node (Ctrl: repeat last tag query; Subsequent shift+\\: cycle to next nearest)",
+      keyShortcuts: { '\\': [ 220 ] },
+      run: function (e) {
+        activeTracingLayer.svgOverlay.goToNearestMatchingTag(e.shiftKey, e.ctrlKey);
+        return true;
+      }
+    }));
+
 
     var keyCodeToAction = CATMAID.getKeyCodeToActionMap(actions);
 

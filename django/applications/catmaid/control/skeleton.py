@@ -154,6 +154,116 @@ def open_leaves(request, project_id=None, skeleton_id=None):
 
     return HttpResponse(json.dumps(nearest, cls=DjangoJSONEncoder))
 
+@api_view(['POST'])
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def find_labels(request, project_id=None, skeleton_id=None):
+    """List nodes in a skeleton with labels matching a query.
+
+    Find all nodes in this skeleton with labels (front-end node tags) matching
+    a regular expression, sort them by ascending path distance from a treenode
+    in the skeleton, and return the result.
+    ---
+    parameters:
+        - name: treenode_id
+          description: ID of the origin treenode for path length distances
+          required: true
+          type: integer
+          paramType: form
+        - name: label_regex
+          description: Regular expression query to match labels
+          required: true
+          type: string
+          paramType: form
+    models:
+      find_labels_node:
+        id: find_labels_node
+        properties:
+        - description: ID of a node with a matching label
+          type: integer
+          required: true
+        - description: Node location
+          type: array
+          items:
+            type: number
+            format: double
+          required: true
+        - description: Path distance from the origin treenode
+          type: number
+          format: double
+          required: true
+        - description: Labels on this node matching the query
+          type: array
+          items:
+            type: string
+          required: true
+    type:
+    - type: array
+      items:
+        $ref: find_labels_node
+      required: trueist open leaf nodes in a skeleton.
+    """
+    tnid = int(request.POST['treenode_id'])
+    label_regex = str(request.POST['label_regex'])
+    cursor = connection.cursor()
+
+    cursor.execute("SELECT id FROM relation WHERE project_id=%s AND relation_name='labeled_as'" % int(project_id))
+    labeled_as = cursor.fetchone()[0]
+
+    # Select all nodes in the skeleton and any matching labels
+    cursor.execute('''
+            SELECT
+                t.id,
+                t.parent_id,
+                t.location_x,
+                t.location_y,
+                t.location_z,
+                ci.name
+            FROM treenode t
+            LEFT OUTER JOIN (
+                treenode_class_instance tci
+                INNER JOIN class_instance ci
+                  ON (tci.class_instance_id = ci.id AND tci.relation_id = %s AND ci.name ~ %s))
+              ON t.id = tci.treenode_id
+            WHERE t.skeleton_id = %s
+            ''', (labeled_as, label_regex, int(skeleton_id)))
+
+    # Some entries repeated, when a node has more than one matching label
+    # Create a graph with edges from parent to child, and accumulate parents
+    tree = nx.DiGraph()
+    for row in cursor.fetchall():
+        nodeID = row[0]
+        if row[1]:
+            # It is ok to add edges that already exist: DiGraph doesn't keep duplicates
+            tree.add_edge(row[1], nodeID)
+        else:
+            tree.add_node(nodeID)
+        tree.node[nodeID]['loc'] = (row[2], row[3], row[4])
+        if row[5]:
+            props = tree.node[nodeID]
+            tags = props.get('tags')
+            if tags:
+                tags.append(row[5])
+            else:
+                props['tags'] = [row[5]]
+
+    if tnid not in tree:
+        raise Exception("Could not find %s in skeleton %s" % (tnid, int(skeleton_id)))
+
+    reroot(tree, tnid)
+    distances = edge_count_to_root(tree, root_node=tnid)
+
+    nearest = []
+
+    for nodeID, props in tree.nodes_iter(data=True):
+        if 'tags' in props:
+            # Found a node with a matching label
+            d = distances[nodeID]
+            nearest.append([nodeID, props['loc'], d, props['tags']])
+
+    nearest.sort(key=lambda n: n[2])
+
+    return HttpResponse(json.dumps(nearest))
+
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def skeleton_statistics(request, project_id=None, skeleton_id=None):

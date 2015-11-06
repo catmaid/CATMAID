@@ -580,4 +580,4 @@
   // Make Project available in CATMAID namespace
   CATMAID.Project = Project;
 
-})(CATMAID)
+})(CATMAID);

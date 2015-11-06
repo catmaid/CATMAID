@@ -88,6 +88,8 @@ Miscellaneous:
 - Multiple stacks opened through a URL can now optionally be opened in the same
   stack viewer window by adding "&composite=1" to the URL.
 
+- If an already reviewed node is moved it will now become unreviewed again.
+
 
 ### Bug fixes
 

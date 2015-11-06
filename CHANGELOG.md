@@ -24,6 +24,10 @@ Selection table:
   annotated with a1 and b2, use "/a1|b2"). For now no meta-annotations are taken
   into account.
 
+- With the help of the new "Open" and "Close" buttons, skeleton lists can be
+  stored into JSON files as well as loaded from them. Along with each skeleton
+  ID, the current color and opacity is stored.
+
 
 Skeleton projection layer
 

@@ -800,6 +800,20 @@ var WindowMaker = new function()
     update.onclick = ST.update.bind(ST);
     buttons.appendChild(update);
 
+    var fileButton = appendHiddenFileButton(buttons, 'st-file-dialog-' + ST.widgetID,
+        function(evt) { ST.loadFromFiles(evt.target.files); });
+    var open = document.createElement('input');
+    open.setAttribute("type", "button");
+    open.setAttribute("value", "Open");
+    open.onclick = function() { fileButton.click(); };
+    buttons.appendChild(open);
+
+    var save = document.createElement('input');
+    save.setAttribute("type", "button");
+    save.setAttribute("value", "Save");
+    save.onclick = ST.saveToFile.bind(ST);
+    buttons.appendChild(save);
+
     buttons.appendChild(document.createTextNode(' Sync to:'));
     var link = CATMAID.skeletonListSources.createPushSelect(ST, 'link');
     link.onchange = ST.syncLink.bind(ST, link);

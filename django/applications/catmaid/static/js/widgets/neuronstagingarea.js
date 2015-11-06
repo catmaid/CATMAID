@@ -1158,6 +1158,90 @@
     return [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)];
   };
 
+  /**
+   * Open a list of skeletons including their colors from a file.
+   */
+  SelectionTable.prototype.loadFromFiles = function(files) {
+      if (0 === files.length) {
+        CATMAID.error("Choose at least one file!");
+        return;
+      }
+      if (files.length > 1) {
+        CATMAID.error("Choose only one file!");
+        return;
+      }
+
+      var name = files[0].name;
+      if (name.lastIndexOf('.json') !== name.length - 5) {
+        CATMAID.error("File extension must be '.json'");
+        return;
+      }
+
+      var self = this;
+      var reader = new FileReader();
+      reader.onload = function(e) {
+          var skeletons = JSON.parse(e.target.result);
+          // Make sure all skeletons have at least a skeleton ID
+          var validSkeletons = skeletons.filter(function(s) {
+            return s.skeleton_id !== undefined;
+          });
+          var skeletonIds = validSkeletons.map(function(s) {
+            return s.skeleton_id;
+          });
+          // Get names
+          requestQueue.register(CATMAID.makeURL(project.id + '/skeleton/neuronnames'),
+              "POST", {skids: skeletonIds}, CATMAID.jsonResponseHandler(function(json) {
+                // Check if there are skeletons missing
+                var foundSkeletons = skeletonIds.filter(function(skid) {
+                  return undefined !== json[skid];
+                });
+                var missing = skeletonIds.length - foundSkeletons.length;
+                if (missing> 0) {
+                  CATMAID.warn("Could not load " + missing + " missing skeleton" +
+                      (1 === missing ? "" : "s"));
+                }
+
+                // Create models for valid skeletons
+                var models = validSkeletons.reduce(function(m, s) {
+                  var color = s.color ? s.color : self.batchColor;
+                  var name = json[s.skeleton_id];
+                  var model = new CATMAID.SkeletonModel(s.skeleton_id, name,
+                      new THREE.Color(color));
+                  model.opacity = s.opacity ? s.opacity : self.batchOpacity;
+                  m[s.skeleton_id] = model;
+                  return m;
+                }, {});
+
+                // Load models
+                self.append(models);
+          }));
+      };
+      reader.readAsText(files[0]);
+  };
+
+  /**
+   * Save the current list of skeletons including their colors to a file.
+   */
+  SelectionTable.prototype.saveToFile = function() {
+    var today = new Date();
+    var defaultFileName = 'catmaid-skeletons-' + today.getFullYear() + '-' +
+        (today.getMonth() + 1) + '-' + today.getDate() + '.json';
+    var filename = prompt('File name', defaultFileName);
+    if (!filename) return;
+
+    // Create a list of all skeletons along with their color and opacity
+    var data = this.skeletons.map(function(skeleton) {
+      return {
+        'skeleton_id': skeleton.id,
+        'color': '#' + skeleton.color.getHexString(),
+        'opacity': skeleton.opacity
+      }
+    }, this);
+
+    saveAs(new Blob([JSON.stringify(data, null, ' ')], {type: 'text/plain'}), filename);
+  };
+
+
   // Export selection table
   CATMAID.SelectionTable = SelectionTable;
 

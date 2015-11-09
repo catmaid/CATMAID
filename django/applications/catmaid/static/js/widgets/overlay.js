@@ -1824,11 +1824,11 @@ SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso,
   jso[0].forEach(function(a, index, array) {
     // a[0]: ID, a[1]: parent ID, a[2]: x, a[3]: y, a[4]: z, a[5]: confidence
     // a[8]: user_id, a[6]: radius, a[7]: skeleton_id, a[8]: user can edit or not
-    var z = this.stackViewer.primaryStack.projectToStackZ(a[4], a[3], a[2]);
+    var z = this.stackViewer.primaryStack.projectToUnclampedStackZ(a[4], a[3], a[2]);
     this.nodes[a[0]] = this.graphics.newNode(
       a[0], null, a[1], a[6],
-      this.stackViewer.primaryStack.projectToStackX(a[4], a[3], a[2]),
-      this.stackViewer.primaryStack.projectToStackY(a[4], a[3], a[2]),
+      this.stackViewer.primaryStack.projectToUnclampedStackX(a[4], a[3], a[2]),
+      this.stackViewer.primaryStack.projectToUnclampedStackY(a[4], a[3], a[2]),
       z, z - this.stackViewer.z, a[5], a[7], a[8]);
   }, this);
 
@@ -1846,11 +1846,11 @@ SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso,
     // and confidence, a[6]: postsynaptic nodes as array of arrays with treenode id
     // and confidence, a[7]: undirected nodes as array of arrays with treenode
     // id, a[8]: whether the user can edit the connector
-    var z = this.stackViewer.primaryStack.projectToStackZ(a[3], a[2], a[1]);
+    var z = this.stackViewer.primaryStack.projectToUnclampedStackZ(a[3], a[2], a[1]);
     this.nodes[a[0]] = this.graphics.newConnectorNode(
       a[0],
-      this.stackViewer.primaryStack.projectToStackX(a[3], a[2], a[1]),
-      this.stackViewer.primaryStack.projectToStackY(a[3], a[2], a[1]),
+      this.stackViewer.primaryStack.projectToUnclampedStackX(a[3], a[2], a[1]),
+      this.stackViewer.primaryStack.projectToUnclampedStackY(a[3], a[2], a[1]),
       z, z - this.stackViewer.z, a[4], subtype, a[8]);
   }, this);
 
@@ -3197,9 +3197,9 @@ SkeletonAnnotations.SVGOverlay.prototype.promiseNodeLocation = function (
     var z = parseFloat(SkeletonAnnotations.getZOfVirtualNode(nodeID));
     return Promise.resolve({
       id: nodeID,
-      x: stack.projectToStackX(z, y, x),
-      y: stack.projectToStackY(z, y, x),
-      z: stack.projectToStackZ(z, y, x)
+      x: stack.projectToUnclampedStackX(z, y, x),
+      y: stack.projectToUnclampedStackY(z, y, x),
+      z: stack.projectToUnclampedStackZ(z, y, x)
     });
   }
 
@@ -3212,9 +3212,9 @@ SkeletonAnnotations.SVGOverlay.prototype.promiseNodeLocation = function (
     var stack = self.stackViewer.primaryStack;
     return {
       id: json[0],
-      x: stack.projectToStackX(json[3], json[2], json[1]),
-      y: stack.projectToStackY(json[3], json[2], json[1]),
-      z: stack.projectToStackZ(json[3], json[2], json[1])
+      x: stack.projectToUnclampedStackX(json[3], json[2], json[1]),
+      y: stack.projectToUnclampedStackY(json[3], json[2], json[1]),
+      z: stack.projectToUnclampedStackZ(json[3], json[2], json[1])
     };
   });
 };

@@ -279,7 +279,7 @@
             color: 0x00ff00,
             linewidth: 3,
           });
-          skeleton.space.add(new THREE.Line(geometry, material, THREE.LinePieces));
+          skeleton.space.add(new THREE.LineSegments(geometry, material));
           // Update view
           skeleton.space.render();
         }

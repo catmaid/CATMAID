@@ -93,7 +93,7 @@
    */
   RoiTool.prototype.changeCropBoxXByInput = function( e )
   {
-      var val = parseInt( this.box_roi_x.value );
+      var val = parseInt( this.box_roi_x.value, 10 );
       var cropBox = this.getCropBox();
 
       if ( isNaN( val ) )
@@ -119,7 +119,7 @@
    */
   RoiTool.prototype.changeCropBoxYByInput = function( e )
   {
-      var val = parseInt( this.box_roi_y.value );
+      var val = parseInt( this.box_roi_y.value, 10 );
       var cropBox = this.getCropBox();
 
       if ( isNaN( val ) )
@@ -145,7 +145,7 @@
    */
   RoiTool.prototype.changeCropBoxWByInput = function( e )
   {
-      var val = parseInt( this.box_roi_w.value );
+      var val = parseInt( this.box_roi_w.value, 10 );
       var cropBox = this.getCropBox();
 
       if ( isNaN( val ) )
@@ -168,7 +168,7 @@
    */
   RoiTool.prototype.changeCropBoxHByInput = function( e )
   {
-      var val = parseInt( this.box_roi_h.value );
+      var val = parseInt( this.box_roi_h.value, 10 );
       var cropBox = this.getCropBox();
 
       if ( isNaN( val ) )
@@ -191,7 +191,7 @@
    */
   RoiTool.prototype.changeCropBoxRByInput = function( e )
   {
-      var val = parseInt( this.box_roi_r.value );
+      var val = parseInt( this.box_roi_r.value, 10 );
       var cropBox = this.getCropBox();
 
       if ( isNaN( val ) )
@@ -215,7 +215,7 @@
       var w = CATMAID.ui.getMouseWheel( e );
       if ( w )
       {
-          this.value = parseInt( this.value ) - w;
+          this.value = parseInt( this.value, 10 ) - w;
           this.onchange();
       }
       return false;

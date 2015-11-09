@@ -63,8 +63,6 @@
           this.box_roi_h.value = isNaN(roiBoxBB.height_px) ? "-" : roiBoxBB.height_px;
           this.box_roi_r.value = isNaN(roiBoxBB.rotation_cw) ? "-" : roiBoxBB.rotation_cw;
       }
-
-      return;
   };
 
   /**
@@ -85,7 +83,6 @@
   {
       this.mouseCatcher.style.width = width + "px";
       this.mouseCatcher.style.height = height + "px";
-      return;
   };
 
   /**
@@ -111,7 +108,6 @@
           this.updateCropBox();
           this.updateControls();
       }
-      return;
   };
 
   /**
@@ -137,7 +133,6 @@
           this.updateCropBox();
           this.updateControls();
       }
-      return;
   };
 
   /**
@@ -160,7 +155,6 @@
           this.updateCropBox();
           this.updateControls();
       }
-      return;
   };
 
   /**
@@ -183,7 +177,6 @@
           this.updateCropBox();
           this.updateControls();
       }
-      return;
   };
 
   /**
@@ -204,7 +197,6 @@
           this.updateCropBox();
           this.updateControls();
       }
-      return;
   };
 
   /**
@@ -376,8 +368,6 @@
       document.getElementById( "toolbar_roi" ).style.display = "block";
 
       this.updateControls();
-
-      return;
   };
 
   /**
@@ -387,8 +377,6 @@
   {
       if ( this.stackViewer && this.mouseCatcher.parentNode == this.stackViewer.getView() )
           this.stackViewer.getView().removeChild( this.mouseCatcher );
-
-      return;
   };
 
   /**
@@ -414,8 +402,6 @@
 
       // call destroy of super class
       RoiTool.superproto.destroy.call( this );
-
-      return;
   };
 
   /**

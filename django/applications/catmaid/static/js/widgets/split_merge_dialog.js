@@ -215,7 +215,7 @@
         // add name of model 2 to model 1). Don't check it, if it is named in the
         // default pattern "neuron 123456".
         var name = this.models[this.model2_id].baseName;
-        var checked = (null === name.match(/neuron \d+/));
+        var checked = (null === name.match(/[Nn]euron \d+/));
         var cb = create_labeled_checkbox(name, session.userid, checked, false,
             name + " (reference to merged in neuron)");
         if (count1 > count2) {

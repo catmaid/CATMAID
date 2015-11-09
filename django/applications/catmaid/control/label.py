@@ -103,20 +103,6 @@ def labels_for_nodes(request, project_id=None):
 
         for row in cursor.fetchall():
             result[row[0]].append(row[1])
-        # The code below:
-        # 1. Is hard to read, compared to plain SQL (see above)
-        # 2. Selects all possible columns, wastefully
-        # 3. If appended with values(...), then returns a dictionary, wastefully
-        # 4. Runs slower than the equivalent code above
-        """
-        qs_treenodes = TreenodeClassInstance.objects.filter(
-            relation__relation_name='labeled_as',
-            class_instance__class_column__class_name='label',
-            treenode__id__in=(int(x) for x in treenode_ids.split(',')),
-            project=project_id).select_related('treenode', 'class_instance').values('treenode_id', 'class_instance__name')
-        for tci in qs_treenodes:
-            result[tci['treenode_id']].append(tci['class_instance__name'])
-        """
 
     if connector_ids:
         cursor.execute('''
@@ -130,17 +116,6 @@ def labels_for_nodes(request, project_id=None):
         ''' % ','.join(str(int(x)) for x in connector_ids.split(','))) # convoluted to sanitize
         for row in cursor.fetchall():
             result[row[0]].append(row[1])
-
-        # See notes above for treenode_ids
-        """
-        qs_connectors = ConnectorClassInstance.objects.filter(
-            relation__relation_name='labeled_as',
-            class_instance__class_column__class_name='label',
-            connector__id__in=(int(x) for x in connector_ids.split(',')),
-            project=project_id).select_related('connector', 'class_instance')
-        for cci in qs_connectors:
-            result[cci.connector.id].append(cci.class_instance.name)
-        """
 
     return HttpResponse(json.dumps(result), content_type="text/plain")
 

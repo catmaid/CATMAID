@@ -87,7 +87,7 @@ def labels_for_nodes(request, project_id=None):
     treenode_ids = request.POST.get('treenode_ids', '').strip()
     connector_ids = request.POST.get('connector_ids', '').strip()
     result = defaultdict(list)
-    cursor = connection.cursor();
+    cursor = connection.cursor()
 
     if treenode_ids:
         # Could use treenode_ids directly as a string, but it is good to sanitize arguments

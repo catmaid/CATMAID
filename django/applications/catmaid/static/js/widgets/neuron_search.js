@@ -402,15 +402,21 @@
           return CATMAID.annotations.getID(m);
         }).join(",");
       }
-      var field = s ? 'sub_annotated_with' : 'annotated_with';
-      params[field + n] = value;
-      ++n;
+      if (0 < value.trim().length) {
+        var field = s ? 'sub_annotated_with' : 'annotated_with';
+        params[field + n] = value;
+        ++n;
+      }
     }
 
     // Make sure that the result is constrained in some way and not all neurons
     // are returned.
     if (0 === Object.keys(params).length) {
-      CATMAID.error("Please add at least one constraint before querying!");
+      if (0 < annotations.length) {
+        CATMAID.error("Couldn't find matching annotation(s)!");
+      } else {
+        CATMAID.error("Please add at least one constraint before querying!");
+      }
       return;
     }
 

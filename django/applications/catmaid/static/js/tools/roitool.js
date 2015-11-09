@@ -102,7 +102,9 @@
       }
       else
       {
-          var screen_left = this.getScreenLeft(this.stackViewer);
+          var screen = stackViewer.screenPosition();
+          var screen_left = stackViewer.primaryStack.stackToProjectX(
+              stackViewer.z, scrren.top, screen.left);
           var width_world = cropBox.right - cropBox.left;
           cropBox.left = this.toWorld( val, this.stackViewer.primaryStack.resolution.x ) + screen_left;
           cropBox.right = cropBox.left + width_world;
@@ -126,7 +128,9 @@
       }
       else
       {
-          var screen_top = this.getScreenTop(this.stackViewer);
+          var screen = stackViewer.screenPosition();
+          var screen_top = stackViewer.primaryStack.stackToProjectY(
+              stackViewer.z, screen.top, screen.left);
           var height_world = cropBox.bottom - cropBox.top;
           cropBox.top = this.toWorld( val, this.stackViewer.primaryStack.resolution.y ) + screen_top;
           cropBox.bottom = cropBox.top + height_world;

@@ -44,18 +44,6 @@
       return val * this.output_unit_factor;
   };
 
-  BoxSelectionTool.prototype.getScreenLeft = function(stackViewer)
-  {
-      return ( ( stackViewer.x - stackViewer.viewWidth / stackViewer.scale / 2 ) +
-          stackViewer.primaryStack.translation.x ) * stackViewer.primaryStack.resolution.x;
-  };
-
-  BoxSelectionTool.prototype.getScreenTop = function(stackViewer)
-  {
-      return ( ( stackViewer.y - stackViewer.viewHeight / stackViewer.scale / 2 ) +
-          stackViewer.primaryStack.translation.y ) * stackViewer.primaryStack.resolution.y;
-  };
-
   /**
    * Gets the bounding box of the current crop box in world
    * and pixel coordinates.
@@ -68,9 +56,14 @@
       var r = Math.max( this.cropBox.left, this.cropBox.right );
       var width = r - l;
       var height = b - t;
+
+      var screen = stackViewer.screenPosition();
+
       //! left-most border of the view in physical project coordinates
-      var screen_left = this.getScreenLeft(stackViewer);
-      var screen_top = this.getScreenTop(stackViewer);
+      var screen_left = stackViewer.primaryStack.stackToProjectX(stackViewer.z,
+          screen.top, screen.left);
+      var screen_top = stackViewer.primaryStack.stackToProjectY(stackViewer.z,
+          screen.top, screen.left);
 
       var rx = stackViewer.primaryStack.resolution.x / stackViewer.scale;
       var ry = stackViewer.primaryStack.resolution.y / stackViewer.scale;

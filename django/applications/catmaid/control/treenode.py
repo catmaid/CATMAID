@@ -467,6 +467,12 @@ def delete_treenode(request, project_id=None):
             response_on_error = 'Could not delete neuron #%s' % neuron.id
             deleted_neuron = _delete_if_empty(neuron.id)
 
+            if deleted_neuron:
+                # Insert log entry for neuron deletion
+                insert_into_log(project_id, request.user.id, 'remove_neuron',
+                               (treenode.location_x, treenode.location_y, treenode.location_z),
+                               'Deleted neuron %s and skeleton(s) %s.' % (neuron.id, treenode.skeleton_id))
+
         else:
             # Treenode is not root, it has a parent and perhaps children.
             # Reconnect all the children to the parent.

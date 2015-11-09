@@ -494,6 +494,7 @@ class ConnectorClassInstance(UserFocusedModel):
 class TreenodeConnector(UserFocusedModel):
     class Meta:
         db_table = "treenode_connector"
+        unique_together = (('project', 'treenode', 'connector', 'relation'),)
     # Repeat the columns inherited from 'relation_instance'
     relation = models.ForeignKey(Relation)
     # Now new columns:

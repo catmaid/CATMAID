@@ -14,7 +14,7 @@
  */
 function CroppingTool() {
 	// call super constructor
-	RoiTool.call( this );
+	CATMAID.RoiTool.call( this );
 
 	var self = this;
 	this.toolname = "croppingtool";
@@ -493,5 +493,5 @@ function CroppingTool() {
 		return;
 	};
 }
-CATMAID.tools.extend( CroppingTool, RoiTool );
+CATMAID.tools.extend( CroppingTool, CATMAID.RoiTool );
 

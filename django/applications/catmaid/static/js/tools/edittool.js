@@ -133,7 +133,7 @@
           buttonID: "edit_button_roi",
           buttonName: 'roitool',
           run: function (e) {
-            project.setTool( new RoiTool() );
+            project.setTool( new CATMAID.RoiTool() );
             return true;
           }
         }));

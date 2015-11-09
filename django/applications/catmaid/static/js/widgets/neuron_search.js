@@ -401,12 +401,14 @@
         value = matches.map(function(m) {
           return CATMAID.annotations.getID(m);
         }).join(",");
+        // If empty continue with next annotation (if any)
+        if (0 === value.trim().length) {
+          continue;
+        }
       }
-      if (0 < value.trim().length) {
-        var field = s ? 'sub_annotated_with' : 'annotated_with';
-        params[field + n] = value;
-        ++n;
-      }
+      var field = s ? 'sub_annotated_with' : 'annotated_with';
+      params[field + n] = value;
+      ++n;
     }
 
     // Make sure that the result is constrained in some way and not all neurons

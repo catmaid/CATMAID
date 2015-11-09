@@ -3170,7 +3170,7 @@ var WindowMaker = new function()
       selected: function(event, ui) {
         var val = $(this).val();
         NA.annotationUserFilter = val != 'show_all' ? val : null;
-        NA.updateAnnotationUI();
+        NA.updateAnnotationFiltering();
       }
     });
     

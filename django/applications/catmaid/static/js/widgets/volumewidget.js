@@ -152,12 +152,12 @@
     "box": {
       name: "Box",
       createSettings: function(volume) {
-        var minX = function(e) { volume.minX = this.value; };
-        var minY = function(e) { volume.minY = this.value; };
-        var minZ = function(e) { volume.minZ = this.value; };
-        var maxX = function(e) { volume.maxX = this.value; };
-        var maxY = function(e) { volume.maxY = this.value; };
-        var maxZ = function(e) { volume.maxZ = this.value; };
+        var minX = function(e) { volume.set("minX", Number(this.value)); };
+        var minY = function(e) { volume.set("minY", Number(this.value)); };
+        var minZ = function(e) { volume.set("minZ", Number(this.value)); };
+        var maxX = function(e) { volume.set("maxX", Number(this.value)); };
+        var maxY = function(e) { volume.set("maxY", Number(this.value)); };
+        var maxZ = function(e) { volume.set("maxZ", Number(this.value)); };
         var $settings = $('<div />');
         var $content = CATMAID.DOM.addSettingsContainer($settings,
             "Box settings", false);

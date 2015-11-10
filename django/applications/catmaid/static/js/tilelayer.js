@@ -415,7 +415,7 @@
    * @param  {function(number, number)} progressCallback
    */
   TileLayer.prototype.cacheLocations = function (locations, progressCallback) {
-    var s = self.stack.projectToStackSX(this.stackViewer.primaryStack.stackToProjectSX(this.stackViewer.s));
+    var s = this.stack.projectToStackSX(this.stackViewer.primaryStack.stackToProjectSX(this.stackViewer.s));
     var self = this;
 
     var tileIndices = locations.reduce(function (tileInds, loc) {

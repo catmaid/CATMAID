@@ -27,7 +27,7 @@
     var oldValue = this[field];
     if (oldValue !== value) {
       this[field] = value;
-      this.on(this.EVENT_PROPERTY_CHANGED, field, value, oldValue);
+      this.trigger(this.EVENT_PROPERTY_CHANGED, field, value, oldValue);
     }
   };
 

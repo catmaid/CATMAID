@@ -1676,54 +1676,62 @@ SkeletonAnnotations.SVGOverlay.prototype.createNode = function (parentID,
 
   var self = this;
 
-  this.submit(
-      django_url + project.id + '/treenode/create',
-      {pid: project.id,
-       parent_id: parentID,
-       x: phys_x,
-       y: phys_y,
-       z: phys_z,
-       radius: radius,
-       confidence: confidence,
-       useneuron: useneuron,
-       neuron_name: neuronname},
-      function(jso) {
-        // add treenode to the display and update it
-        var nid = parseInt(jso.treenode_id);
-        var skid = parseInt(jso.skeleton_id);
+  return new Promise(function (resolve, reject) {
 
-        // Trigger change event for skeleton
-        SkeletonAnnotations.trigger(
-              SkeletonAnnotations.EVENT_SKELETON_CHANGED, skid);
+    requestQueue.register(
+        django_url + project.id + '/treenode/create',
+        'POST',
+        {pid: project.id,
+         parent_id: parentID,
+         x: phys_x,
+         y: phys_y,
+         z: phys_z,
+         radius: radius,
+         confidence: confidence,
+         useneuron: useneuron,
+         neuron_name: neuronname},
+        CATMAID.jsonResponseHandler(function(result) {
+          // add treenode to the display and update it
+          var nid = parseInt(result.treenode_id);
+          var skid = parseInt(result.skeleton_id);
 
-        // The parent will be null if there isn't one or if the parent Node
-        // object is not within the set of retrieved nodes, but the parentID
-        // will be defined.
-        var nn = self.graphics.newNode(nid, self.nodes[parentID], parentID,
-            radius, pos_x, pos_y, pos_z, 0, 5 /* confidence */, skid, true);
+          // Trigger change event for skeleton
+          SkeletonAnnotations.trigger(
+                SkeletonAnnotations.EVENT_SKELETON_CHANGED, skid);
 
-        self.nodes[nid] = nn;
-        nn.createGraphics();
+          // The parent will be null if there isn't one or if the parent Node
+          // object is not within the set of retrieved nodes, but the parentID
+          // will be defined.
+          var nn = self.graphics.newNode(nid, self.nodes[parentID], parentID,
+              radius, pos_x, pos_y, pos_z, 0, 5 /* confidence */, skid, true);
 
-        // Emit new node event after we added to our local node set to not
-        // trigger a node update.
-        SkeletonAnnotations.trigger(SkeletonAnnotations.EVENT_NODE_CREATED,
-            nid, phys_x, phys_y, phys_z);
+          self.nodes[nid] = nn;
+          nn.createGraphics();
 
-        // Set atn to be the newly created node
-        self.activateNode(nn);
-        // Append to parent and recolor
-        if (parentID) {
-          var parentNode = self.nodes[parentID];
-          if (parentNode) {
-            parentNode.addChildNode(nn);
-            parentNode.updateColors();
+          // Emit new node event after we added to our local node set to not
+          // trigger a node update.
+          SkeletonAnnotations.trigger(SkeletonAnnotations.EVENT_NODE_CREATED,
+              nid, phys_x, phys_y, phys_z);
+
+          // Set atn to be the newly created node
+          self.activateNode(nn);
+          // Append to parent and recolor
+          if (parentID) {
+            var parentNode = self.nodes[parentID];
+            if (parentNode) {
+              parentNode.addChildNode(nn);
+              parentNode.updateColors();
+            }
           }
-        }
 
-        // Invoke callback if necessary
-        if (afterCreate) afterCreate(self, nn);
-      });
+          // Invoke callback if necessary
+          if (afterCreate) afterCreate(self, nn);
+          resolve(self, nn);
+        }, function(err) {
+          // Reject promise in case of error
+          reject(err);
+        }));
+  });
 };
 
 /**
@@ -2260,20 +2268,29 @@ SkeletonAnnotations.SVGOverlay.prototype.createNodeOrLink = function(insert, lin
     // depending on what mode we are in do something else when clicking
     if (SkeletonAnnotations.currentmode === SkeletonAnnotations.MODES.SKELETON) {
       if (SkeletonAnnotations.TYPE_NODE === atn.type || null === atn.id) {
-        // Create a new treenode, either root node if atn is null, or child if
-        // it is not null
-        if (null !== atn.id) {
-          // Make sure the parent exists
-          atn.promise().then((function(atnId) {
-            CATMAID.statusBar.replaceLast("Created new node as child of node #" + atn.id);
-            this.createNode(atnId, phys_x, phys_y, phys_z, -1, 5,
-                pos_x, pos_y, pos_z, postCreateFn);
-          }).bind(this));
-        } else {
+        // Wait for the submitter queue before determining the active node,
+        // then return the node creation promise so that node creation and its
+        // resulting active node change resolve before any other submitter queue
+        // items are processed.
+        this.submit.then((function () {
+          // Create a new treenode, either root node if atn is null, or child if
+          // it is not null
+          if (null !== SkeletonAnnotations.atn.id) {
+            var self = this;
+            return new Promise(function (resolve, reject) {
+              // Make sure the parent exists
+              SkeletonAnnotations.atn.promise().then((function(atnId) {
+                CATMAID.statusBar.replaceLast("Created new node as child of node #" + atnId);
+                self.createNode(atnId, phys_x, phys_y, phys_z, -1, 5,
+                    pos_x, pos_y, pos_z, postCreateFn).then(resolve, reject);
+              }));
+            });
+          } else {
             // Create root node
-            this.createNode(null, phys_x, phys_y, phys_z, -1, 5,
+            return this.createNode(null, phys_x, phys_y, phys_z, -1, 5,
                 pos_x, pos_y, pos_z, postCreateFn);
-        }
+          }
+        }).bind(this));
       } else if (SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR === atn.subtype) {
         // create new treenode (and skeleton) presynaptic to activated connector
         // if the connector doesn't have a presynaptic node already

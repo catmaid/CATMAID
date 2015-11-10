@@ -14,6 +14,8 @@ Instead, use the smallest set of endpoints covering the entire path tree
 as the root paths and Swagger resources.
 """
 
+import re
+
 from rest_framework_swagger.urlparser import UrlParser
 
 
@@ -23,7 +25,7 @@ def _minimal_top_level_apis(self, apis):
     apis -- list of APIs as returned by self.get_apis
     """
     root_paths = set()
-    api_paths = [endpoint['path'].strip("/") for endpoint in apis]
+    api_paths = [re.sub(r'/\{[^\}]+\}$', '', endpoint['path'].strip("/")) for endpoint in apis]
 
     for path in api_paths:
         #  If a URLs /resource/ and /resource/{pk} exist, use the base

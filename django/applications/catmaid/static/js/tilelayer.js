@@ -510,7 +510,7 @@
   /**
    * Get the stack viewer.
    */
-   TileLayer.prototype.getStackViewer = function () { return this.stackViewer; };
+  TileLayer.prototype.getStackViewer = function () { return this.stackViewer; };
 
   /**
    * Get the DOM element view for this layer.

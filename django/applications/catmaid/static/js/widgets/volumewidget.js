@@ -128,6 +128,11 @@
     $addContent.append(volumeType.createSettings(volume));
 
     var self = this;
+    var closeVolumeEdit;
+    var onClose = function() {
+      volume.off(volume.EVENT_PROPERTY_CHANGED, volumeChanged);
+      CATMAID.tools.callIfFn(closeVolumeEdit);
+    };
     $addContent.append($('<div class="clear" />'));
     $addContent.append($('<div />')
         .append($('<button>Cancel</Cancel>')
@@ -135,6 +140,7 @@
             // Show table
             $("div.volume-list", $content).show();
             $("div.volume-properties", $content).remove();
+            onClose();
           }))
         .append($('<button>Save</Cancel>')
           .on('click', function(e) {
@@ -142,10 +148,43 @@
             // Show table, remove volume settings
             $("div.volume-list", $content).show();
             $("div.volume-properties", $content).remove();
+            onClose();
             self.redraw();
           })));
 
     $content.append($addContent);
+
+    // Add a visualization layer (for now only if a box is created)
+    var onUpdate;
+    if (project.focusedStackViewer) {
+      var stack = project.focusedStackViewer;
+      if ("box" === this.defaultVolumeType) {
+        // TODO: Use a proper layer for this and make this work wirh regular
+        // ortho stacks.
+        var boxTool = new CATMAID.BoxSelectionTool();
+        boxTool.destroy();
+        boxTool.register(stack);
+        boxTool.createCropBoxByWorld(
+            volume.minX, volume.minY, Math.abs(volume.maxX - volume.minX),
+            Math.abs(volume.maxY - volume.minY), 0);
+        onUpdate = function(field, newValue, oldValue) {
+          boxTool.cropBox.top = volume.minY;
+          boxTool.cropBox.bottom = volume.maxY;
+          boxTool.cropBox.left = volume.minX;
+          boxTool.cropBox.right = volume.maxX;
+          boxTool.updateCropBox();
+        };
+        closeVolumeEdit = function() {
+          boxTool.destroy();
+        };
+      }
+    }
+
+    function volumeChanged(field, newValue, oldValue) {
+      CATMAID.tools.callIfFn(onUpdate);
+    }
+
+    volume.on(volume.EVENT_PROPERTY_CHANGED, volumeChanged)
   };
 
   var volumeTypes = {

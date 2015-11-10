@@ -184,7 +184,7 @@
       CATMAID.tools.callIfFn(onUpdate);
     }
 
-    volume.on(volume.EVENT_PROPERTY_CHANGED, volumeChanged)
+    volume.on(volume.EVENT_PROPERTY_CHANGED, volumeChanged);
   };
 
   var volumeTypes = {

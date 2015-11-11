@@ -124,7 +124,7 @@ class DVIDImportWizard(SessionWizardView):
                 dc = dvid.DVIDClient(dvid_server)
                 dvid_instances = dc.get_instance_type_map()
                 context['dvid_instances'] = dvid_instances
-                context['supported_instance_types'] = dvid.SUPPORTED_INSTANCE_TYPES
+                context['supported_instance_types'] = list(dvid.SUPPORTED_INSTANCE_TYPES)
             elif self.steps.current == 'confirm':
                 dvid_server = self.get_cleaned_data_for_step('server')['server']
                 dvid_repo = self.get_cleaned_data_for_step('stack')['repository']

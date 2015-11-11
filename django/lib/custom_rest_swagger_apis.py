@@ -24,7 +24,7 @@ def _minimal_top_level_apis(self, apis):
     Returns the 'top level' APIs (ie. swagger 'resources')
     apis -- list of APIs as returned by self.get_apis
     """
-    root_paths = set()
+    root_paths = self.explicit_root_paths.copy()
     api_paths = [re.sub(r'/\{[^\}]+\}$', '', endpoint['path'].strip("/")) for endpoint in apis]
 
     for path in api_paths:
@@ -39,4 +39,5 @@ def _minimal_top_level_apis(self, apis):
 
     return sorted(top_level_apis, key=self.__get_last_element__)
 
+UrlParser.explicit_root_paths = set()
 UrlParser.get_top_level_apis = _minimal_top_level_apis

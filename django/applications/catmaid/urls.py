@@ -2,7 +2,11 @@ from django.conf.urls import patterns, url
 from django.contrib.auth.decorators import login_required
 from django.views.generic import TemplateView
 
+# For adding explicit grouping resource endpoints in API documentation.
+from rest_framework_swagger.urlparser import UrlParser
+
 from catmaid.views import CatmaidView, ExportWidgetView
+
 
 # A regular expression matching floating point and integer numbers
 num = r'[-+]?[0-9]*\.?[0-9]+'
@@ -157,6 +161,7 @@ urlpatterns += patterns('catmaid.control.neuron',
 )
 
 # Node access
+UrlParser.explicit_root_paths |= set(['{project_id}/nodes'])
 urlpatterns += patterns('catmaid.control.node',
     (r'^(?P<project_id>\d+)/node/(?P<node_id>\d+)/reviewed$', 'update_location_reviewer'),
     (r'^(?P<project_id>\d+)/node/(?P<node_id>\d+)/confidence/update$', 'update_confidence'),

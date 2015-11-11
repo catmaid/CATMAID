@@ -1412,8 +1412,8 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLink = function (fromid, 
   this.promiseNodes(this.nodes[fromid], this.nodes[toid]).then(function(nids) {
     var fromid = nids[0], toid=nids[1];
     self.submit(
-      django_url + project.id + '/treenode/info',
-      {treenode_id: toid},
+      django_url + project.id + '/treenodes/' + toid + '/info',
+      undefined,
       function(json) {
         var from_model = SkeletonAnnotations.activeSkeleton.createModel();
         var to_skid = json['skeleton_id'];

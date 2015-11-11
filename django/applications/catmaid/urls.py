@@ -178,11 +178,12 @@ urlpatterns += patterns('catmaid.control.node',
 )
 
 # Treenode access
+UrlParser.explicit_root_paths |= set(['{project_id}/treenodes'])
 urlpatterns += patterns('catmaid.control.treenode',
     (r'^(?P<project_id>\d+)/treenode/create$', 'create_treenode'),
     (r'^(?P<project_id>\d+)/treenode/insert$', 'insert_treenode'),
     (r'^(?P<project_id>\d+)/treenode/delete$', 'delete_treenode'),
-    (r'^(?P<project_id>\d+)/treenode/info$', 'treenode_info'),
+    (r'^(?P<project_id>\d+)/treenodes/(?P<treenode_id>\d+)/info$', 'treenode_info'),
     (r'^(?P<project_id>\d+)/treenode/(?P<treenode_id>\d+)/parent$', 'update_parent'),
     (r'^(?P<project_id>\d+)/treenode/(?P<treenode_id>\d+)/radius$', 'update_radius'),
 )

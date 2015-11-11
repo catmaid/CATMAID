@@ -2034,8 +2034,7 @@ class ViewPageTests(TestCase):
         treenode_id = 55555
 
         response = self.client.post(
-                '/%d/treenode/info' % self.test_project_id,
-                {'treenode_id': treenode_id})
+                '/%d/treenodes/%s/info' % (self.test_project_id, treenode_id))
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = 'No skeleton and neuron for treenode %s' % treenode_id
@@ -2047,8 +2046,7 @@ class ViewPageTests(TestCase):
         treenode_id = 239
 
         response = self.client.post(
-                '/%d/treenode/info' % self.test_project_id,
-                {'treenode_id': treenode_id})
+                '/%d/treenodes/%s/info' % (self.test_project_id, treenode_id))
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {'skeleton_id': 235, 'neuron_id': 233, 'skeleton_name': 'skeleton 235', 'neuron_name': 'branched neuron'}

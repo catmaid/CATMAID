@@ -7,7 +7,7 @@ from django.contrib import messages
 from django.contrib.formtools.wizard.views import SessionWizardView
 from django.http import HttpResponseRedirect
 
-from catmaid.models import Stack
+from catmaid.models import Stack, Project, ProjectStack
 from catmaid.control import dvid
 
 TEMPLATES = {
@@ -58,6 +58,13 @@ class ConfirmForm(forms.Form):
     title = forms.CharField(help_text='Title of the new stack')
     comment = forms.CharField(help_text='Optional comment of the new stack', required=False)
     metadata = forms.CharField(help_text='Optional metadata of the new stack', required=False)
+    new_project = forms.BooleanField(required=False, help_text='This will create a new '
+                                      'projct with the same title as the stack and link '
+                                      'the created stack to it.')
+    ortho_project = forms.BooleanField(label='Ortho-view project', required=False,
+                                       help_text='Like the option above, this will create '
+                                       'a new project and link the new stack to it. Additonally, '
+                                       'the stack is also linked with orthogonal orientations.')
 
 class DVIDImportWizard(SessionWizardView):
     form_list = [('server', ServerForm), ('stack', StackForm), ('confirm', ConfirmForm)]
@@ -92,6 +99,9 @@ class DVIDImportWizard(SessionWizardView):
         resolution = (stack_data['resolution']['x'], stack_data['resolution']['y'],
                      stack_data['resolution']['z'])
 
+        new_project = self.get_cleaned_data_for_step('confirm')['new_project']
+        ortho_project = self.get_cleaned_data_for_step('confirm')['ortho_project']
+
         # Create DVID stack and return to admin home
         stack = Stack(
             title=title,
@@ -108,8 +118,26 @@ class DVIDImportWizard(SessionWizardView):
             metadata=metadata)
         stack.save()
 
-        messages.add_message(self.request, messages.SUCCESS, "A new DVID based "
-                             "stack was created successfully")
+        if new_project:
+            project = Project(title=title, comment=None)
+            project.save()
+            # Create three links, each with a different orientation, if an
+            # ortho project should be created. Link only one XY view otherwise.
+            views = (0, 1, 2) if ortho_project else (0,)
+            for v in views:
+                ps = ProjectStack(project=project,
+                                  stack=stack,
+                                  orientation=v)
+                ps.save()
+
+        msg = 'A new DVID based stack was successfully created.'
+        if new_project:
+            if ortho_project:
+                msg += ' It has been linked with XY, XZ and ZY orientations to a new project with the same name.'
+            else:
+                msg += ' It has been linked to a new project with the same name.'
+
+        messages.add_message(self.request, messages.SUCCESS, msg)
         return HttpResponseRedirect('/admin/')
 
     def get_context_data(self, form, **kwargs):

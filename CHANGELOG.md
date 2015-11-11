@@ -86,6 +86,18 @@ Neuron Search:
   by '/xyz$'. This also works with sub-annotation queries.
 
 
+Administration:
+
+- CATMAID has been able to use DVID as a project/stack back-end and as a
+  image source for quite a wile now. To make the latter option easier to setup,
+  a new admin tool is available to create CATMAID stacks based on a DVID server.
+  It can be found in the "Custom views" section of CATMAID's admin interface,
+  labeled as "DVID stack importer". With the help of this tool on can inspect
+  all available repositories and data instances on a DVID server and create a
+  stack based on one data instance. CATMAID will make sure that all
+  pre-conditions are met by a stack created this way.
+
+
 Miscellaneous:
 
 - By default new widgets will now select the last widget created as skeleton

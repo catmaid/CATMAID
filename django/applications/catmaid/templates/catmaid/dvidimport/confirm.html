@@ -1,0 +1,52 @@
+{% extends "catmaid/form_wizard.html" %}
+
+{% block stepinfo %}
+<p>
+If you submit this form, a new stack will be created based on this information.
+Please add a title and optionally a comment and meta data, review the
+information retrieved from the DVID server and confirm if everything is in
+order.
+</p>
+
+<p>
+<div class="aligned">
+  <div class="form-row">
+    <label for="id_image_base">Image base</label>
+    <input id="id_image_base" type="text" disabled size="100" value="{{ stack.image_base }}" />
+  </div>
+  <div class="form-row">
+    <div>
+    <label for="id_dim_0">Dimension</label>
+    X: <input id="id_dim_0" type="text" disabled value="{{ stack.dimension.x }}" />
+    Y: <input id="id_dim_1" type="text" disabled value="{{ stack.dimension.y }}" />
+    Z: <input id="id_dim_2" type="text" disabled value="{{ stack.dimension.z }}" />
+    </div>
+  </div>
+  <div class="form-row">
+    <div>
+    <label for="id_res_0">Resolution</label>
+    X: <input id="id_res_0" type="text" disabled value="{{ stack.resolution.x }}" />
+    Y: <input id="id_res_1" type="text" disabled value="{{ stack.resolution.y }}" />
+    Z: <input id="id_res_2" type="text" disabled value="{{ stack.resolution.z }}" />
+    </div>
+  </div>
+  <div class="form-row">
+    <label for="id_zoom_levels">Zoom levels</label>
+    <input id="id_zoom_levels" type="text" disabled value="{{ stack.zoom_levels }}" />
+  </div>
+  <div class="form-row">
+    <label for="id_tile_width">Tile width</label>
+    <input id="id_tile_width" type="text" disabled value="{{ stack.tile_width }}" />
+  </div>
+  <div class="form-row">
+    <label for="id_tile_height">Tile height</label>
+    <input id="id_tile_height" type="text" disabled value="{{ stack.tile_height }}" />
+  </div>
+  <div class="form-row">
+    <label for="id_file_extension">File extension</label>
+    <input id="id_file_extension" type="text" disabled value="{{ stack.file_extension }}" />
+  </div>
+</div>
+</p>
+{% endblock %}
+

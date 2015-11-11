@@ -1,0 +1,22 @@
+{% extends "catmaid/form_wizard.html" %}
+
+{% block stepinfo %}
+<p>
+Please enter below the specific <em>repository</em> and <em>instance</em> on the
+DVID server running at <em>{{ dvid_server }}</em>. Below you'll find a list of
+data instances available on this server, organized by instance type. CATMAID
+supports the following instance types: {{ supported_instance_types|join:", " }}.
+
+<ul>
+  {% for instance_type, instances in dvid_instances.items %}
+  <li data-instance-type="{{ instance_type }}">{{ instance_type }}
+      <ul>
+        {% for instance in instances %}
+        <li>{{ instance.instance }} (Repo: {{ instance.repo }})</li>
+        {% endfor %}
+      </ul>
+    </li>
+  {% endfor %}
+</ul>
+</p>
+{% endblock %}

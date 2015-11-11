@@ -1,6 +1,5 @@
-import json
-import urllib2
 from django.conf import settings
+from catmaid.control.dvid import get_server_info
 
 
 class DVIDDimension:
@@ -19,7 +18,8 @@ class DVIDStack:
         self.project = project_id
         self.id = stack_id
         self.title = stack_id
-        self.image_base = '%s/node/%s/%s/tile/' % (settings.DVID_URL, project_id, stack_id)
+        dvid_url = settings.DVID_URL.rstrip('/')
+        self.image_base = 'api/%s/node/%s/%s/tile/' % (dvid_url, project_id, stack_id)
         levels = stack_data['Extended']['Levels']
         self.num_zoom_levels = len(levels.keys()) - 1
         self.file_extension = settings.DVID_FORMAT
@@ -45,15 +45,8 @@ class DVIDStack:
 
 class DVIDProjectStacks:
     def __init__(self):
-        try:
-            url = '%s/repos/info' % settings.DVID_URL
-            project_stacks_json = urllib2.urlopen(url).read()
-        except urllib2.HTTPError as e:
-            raise ValueError("Couldn't retrieve DVID project information from %s" % url)
-        except urllib2.URLError as e:
-            raise ValueError("Couldn't retrieve DVID project information from %s" % url)
-
-        self.data = json.loads(project_stacks_json)
+        dvid_url = settings.DVID_URL.rstrip('/')
+        self.data = get_server_info(dvid_url)
 
         # Default to XY orientation
         self.orientation = 0

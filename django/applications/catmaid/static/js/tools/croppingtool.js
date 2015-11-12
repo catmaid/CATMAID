@@ -156,21 +156,30 @@
       var scale = 1 / Math.pow( 2, zoom_level );
       var stack = self.stackViewer.primaryStack;
       var cb = self.getCropBox();
-      var numSections = Math.max( self.slider_crop_top_z.val, self.slider_crop_bottom_z.val ) - Math.min( self.slider_crop_top_z.val, self.slider_crop_bottom_z.val ) + 1;
-      var pixelWidth = Math.round( ( Math.max( cb.left, cb.right ) - Math.min( cb.left, cb.right ) ) / stack.resolution.x * scale );
-      var pixelHeight = Math.round( ( Math.max( cb.top, cb.bottom ) - Math.min( cb.top, cb.bottom ) ) / stack.resolution.y * scale );
+      var numSections =
+          Math.max( self.slider_crop_top_z.val, self.slider_crop_bottom_z.val ) -
+          Math.min( self.slider_crop_top_z.val, self.slider_crop_bottom_z.val ) + 1;
+      var pixelWidth = Math.round(
+          (Math.max(cb.left, cb.right) - Math.min(cb.left, cb.right)) /
+          stack.resolution.x * scale );
+      var pixelHeight = Math.round(
+          (Math.max( cb.top, cb.bottom) - Math.min(cb.top, cb.bottom)) /
+          stack.resolution.y * scale);
       var z_min = self.slider_crop_top_z.val * stack.resolution.z + stack.translation.z;
       var z_max = self.slider_crop_bottom_z.val * stack.resolution.z + stack.translation.z;
       var zoom_level = self.slider_crop_s.val;
       var single_channels = self.check_rgb_slices.checked ? 0 : 1;
 
-      var str = "The generated stack will have " + nStacks + " channel(s) with " + numSections + " section(s) each.\n";
-      str += "Each section will have a size of " + pixelWidth + "x" + pixelHeight + "px.\n";
-      str += "Do you really want to crop this microstack?";
+      var str = "The generated stack will have " + nStacks +
+         " channel(s) with " + numSections + " section(s) each.\n"; +
+         "Each section will have a size of " + pixelWidth + "x" + pixelHeight +
+         "px.\nDo you really want to crop this microstack?";
 
       if ( !window.confirm( str ) ) return false;
 
-      var url = django_url + project.id + '/stack/' + stacks + '/crop/' + cb.left + "," + cb.right + "/" + cb.top + "," + cb.bottom + "/" + z_min + "," + z_max + '/' + zoom_level + '/' + single_channels + '/';
+      var url = django_url + project.id + '/stack/' + stacks + '/crop/' +
+          cb.left + "," + cb.right + "/" + cb.top + "," + cb.bottom + "/" +
+          z_min + "," + z_max + '/' + zoom_level + '/' + single_channels + '/';
       return url;
     };
 

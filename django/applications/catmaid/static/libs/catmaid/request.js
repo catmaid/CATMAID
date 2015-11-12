@@ -145,14 +145,14 @@ RequestQueue = function()
      * Returns if there is some request pending or not.
      */
     busy : function(){ return ( queue.length > 0 ); },
-    
+
     /**
      * Registers a request including a callback to the queue for waiting or
      * starts it imediately.
      */
     register : function(
         r,		//!< string  request
-        m,		//!< string  method		"GET" or "POST"
+        m,		//!< string  method	"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD" or "OPTIONS"
         d,		//!< object  data		object with key=>value
         c,		//!< function callback
         id		//!< string  id
@@ -201,7 +201,7 @@ RequestQueue = function()
      */
     replace : function(
         r,		//!< string  request
-        m,		//!< string  method		"GET" or "POST"
+        m,		//!< string  method	"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD" or "OPTIONS"
         d,		//!< object  data		object with key=>value
         c,		//!< funtion callback
         id		//!< string  id

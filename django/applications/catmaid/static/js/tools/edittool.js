@@ -58,7 +58,7 @@
           buttonID: 'edit_button_crop',
           buttonName: 'crop',
           run: function (e) {
-            project.setTool( new CroppingTool() );
+            project.setTool( new CATMAID.CroppingTool() );
             return true;
           }
         }));

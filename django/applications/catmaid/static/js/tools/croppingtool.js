@@ -134,23 +134,13 @@
     added_elements.push(rgb_slices_container);
 
     /**
-     * Creates the URL that invokes the cropping job.
+     * crop a microstack by initiating a server backend call
      */
-    this.get_crop_url = function()
+    var crop = function()
     {
-      var stacks = "";
-      var nStacks = 0;
-      for (var s in self.stacks_to_crop)
-      {
-        var stack = self.stacks_to_crop[ s ];
-        if ( stack.marked )
-        {
-          if ( nStacks > 0 )
-            stacks += ",";
-          stacks += stack.data.id.toString();
-          nStacks++;
-        }
-      }
+      var stackIds = self.stacks_to_crop
+        .filter(function(stack) { return stack.marked; })
+        .map(function(stack) { return stack.data.id; });
 
       var zoom_level = self.slider_crop_s.val;
       var scale = 1 / Math.pow( 2, zoom_level );
@@ -168,39 +158,26 @@
       var z_min = self.slider_crop_top_z.val * stack.resolution.z + stack.translation.z;
       var z_max = self.slider_crop_bottom_z.val * stack.resolution.z + stack.translation.z;
       var zoom_level = self.slider_crop_s.val;
-      var single_channels = self.check_rgb_slices.checked ? 0 : 1;
+      var rgbChannels = self.check_rgb_slices.checked;
 
-      var str = "The generated stack will have " + nStacks +
+      var msg = "The generated stack will have " + stackIds.length +
          " channel(s) with " + numSections + " section(s) each.\n"; +
          "Each section will have a size of " + pixelWidth + "x" + pixelHeight +
          "px.\nDo you really want to crop this microstack?";
 
-      if ( !window.confirm( str ) ) return false;
+      if (!window.confirm(msg)) return false;
 
-      var url = django_url + project.id + '/stack/' + stacks + '/crop/' +
-          cb.left + "," + cb.right + "/" + cb.top + "," + cb.bottom + "/" +
-          z_min + "," + z_max + '/' + zoom_level + '/' + single_channels + '/';
-      return url;
-    };
+      CATMAID.crop(project.id, stackIds, cb.left, cb.top, z_min, cb.right,
+          cb.bottom, z_max, zoom_level, cb.rotation_cw, rgbChannels)
+        .then(function(json) {
+          // This reposonse s not the ready made microstack itself but a
+          // confirmation that the cropping process was invoked
+          alert("Cropping the microstack...\nThis operation may take " +
+              "some time, you will be notified as soon as the cropped " +
+              "stack is ready." );
+        })
+        .catch(CATMAID.error);
 
-    /**
-     * crop a microstack by initiating a server backend call
-     */
-    var crop = function()
-    {
-      var url = self.get_crop_url();
-      var cb = self.getCropBox();
-      var data = {'rotationcw': cb.rotation_cw};
-      if (url) {
-        requestQueue.register(url, 'GET', data,
-            CATMAID.jsonResponseHandler(function(json) {
-              // This reposonse s not the ready made microstack itself but a
-              // confirmation that the cropping process was invoked
-              alert("Cropping the microstack...\nThis operation may take " +
-                  "some time, you will be notified as soon as the cropped " +
-                  "stack is ready." );
-           }));
-      }
       return false;
     };
 

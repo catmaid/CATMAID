@@ -1734,21 +1734,23 @@
     }
   };
 
-  /** Populates variables this.path_source and this.path_target. */
+  /** Populates variables this.path_source and this.path_target.
+   * The type is one of "source" or "target". */
   GroupGraph.prototype.pickPathOrigins = function(type) {
     if (type !== 'source' && type !== 'target') return; // sanitize
     var origin = 'path_' + type;
     if (!this[origin]) this[origin] = {};
-    var count = Object.keys(this[origin]).length;
+    var origins = this[origin];
+    var count = Object.keys(origins).length;
     this.cy.nodes().each((function(i, node) {
       if (node.visible() && node.selected()) {
-        this[origin][node.id()] = true;
+        node.data('skeletons').forEach(function(sk) { origins[sk.id] = true; });
       }
     }).bind(this));
-    if (count === Object.keys(this[origin]).length) {
+    if (count === Object.keys(origins).length) {
       return CATMAID.info("Select one or more nodes first!");
     }
-    $('#gg_path_' + type + this.widgetID).val('pick ' + type + 's (' + Object.keys(this[origin]).length + ')');
+    $('#gg_path_' + type + this.widgetID).val('pick ' + type + 's (' + Object.keys(origins).length + ')');
   };
 
   GroupGraph.prototype.clearPathOrigins = function(type) {

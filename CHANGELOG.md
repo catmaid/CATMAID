@@ -9,6 +9,11 @@ Key shortcuts / mouse operations:
   active skeleton. Shift + \ cycles through matching nodes in ascending
   distance order. Ctrl + \ repeats the last search regex without prompting.
 
+- Deleting a virtual node with DELETE or Ctrl+Shift+click instead suppresses
+  the virtual node. Suppressed virtual nodes are skipped during review. A
+  setting is available to also skip suppressed virtual nodes during normal
+  navigation with [ and ].
+
 
 Selection table:
 

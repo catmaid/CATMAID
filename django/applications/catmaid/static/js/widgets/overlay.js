@@ -87,6 +87,7 @@ SkeletonAnnotations.MODES = Object.freeze({SKELETON: 0, SYNAPSE: 1});
 SkeletonAnnotations.currentmode = SkeletonAnnotations.MODES.skeleton;
 SkeletonAnnotations.newConnectorType = SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR;
 SkeletonAnnotations.setRadiusAfterNodeCreation = false;
+SkeletonAnnotations.skipSuppressedVirtualNodes = false;
 SkeletonAnnotations.defaultNewNeuronName = '';
 // Don't show merging UI for single node skeletons
 SkeletonAnnotations.quickSingleNodeSkeletonMerge = true;
@@ -3114,21 +3115,40 @@ SkeletonAnnotations.SVGOverlay.prototype.getNodeOnSectionAndEdge = function (
     // informmation from the backend.
     var location1 = self.promiseNodeLocation(childID, false);
     var location2 = self.promiseNodeLocation(parentID, false);
+    var suppressed = SkeletonAnnotations.skipSuppressedVirtualNodes ?
+        self.promiseSuppressedVirtualNodes(childID) :
+        [];
 
     // If both locations are available, find intersection at requested Z
-    Promise.all([location1, location2]).then(function(locations) {
+    Promise.all([location1, location2, suppressed]).then(function(locations) {
       var stack = self.stackViewer.primaryStack;
       var from = reverse ? locations[1] : locations[0],
             to = reverse ? locations[0] : locations[1],
           toID = reverse ? childID : parentID;
+      var suppressedNodes = locations[2];
 
-      // Calculate target section, respect broken slices
+      // Calculate target section, respecting broken slices and suppressed
+      // virtual nodes.
       var z = from.z;
       var inc = from.z < to.z ? 1 : (from.z > to.z ? -1 : 0);
       var brokenSlices = stack.broken_slices;
+      var suppressedZs = suppressedNodes.reduce(function (zs, s) {
+        if (s.orientation === stack.orientation) {
+          var vncoord = [0, 0, 0];
+          vncoord[2 - s.orientation] = s.location_coordinate;
+          zs.push(stack.projectToStackZ(vncoord[2], vncoord[1], vncoord[0]));
+        }
+        return zs;
+      }, []);
+      var suppressedSkips = 0;
       while (true) {
         z += inc;
-        if (-1 === brokenSlices.indexOf(z)) break;
+        if (-1 !== suppressedZs.indexOf(z)) suppressedSkips++;
+        else if (-1 === brokenSlices.indexOf(z)) break;
+      }
+
+      if (suppressedSkips) {
+        CATMAID.warn('Skipped ' + suppressedSkips + ' suppressed virtual nodes.');
       }
 
       // If the target is in the section below, above or in the same section as
@@ -3217,6 +3237,36 @@ SkeletonAnnotations.SVGOverlay.prototype.promiseNodeLocation = function (
       z: stack.projectToUnclampedStackZ(json[3], json[2], json[1])
     };
   });
+};
+
+/**
+ * Promise suppressed virtual treenodes of a node, or for a virtual node its
+ * real child node.
+ * @param  {number} nodeId ID of the child node whose suppressed virtual parents
+ *                         will be returned.
+ * @return {Promise}       A promise returning the array of suppressed virtual
+ *                         node objects.
+ */
+SkeletonAnnotations.SVGOverlay.prototype.promiseSuppressedVirtualNodes = function(nodeId) {
+  if (!SkeletonAnnotations.isRealNode(nodeId)) {
+    nodeId = SkeletonAnnotations.getChildOfVirtualNode(nodeId);
+  }
+
+  var node = this.nodes[nodeId];
+  if (node && node.hasOwnProperty('suppressed')) {
+    return Promise.resolve(node.suppressed || []);
+  } else {
+    // Request suppressed virtual treenodes from backend.
+    var self = this;
+    return new Promise(function(resolve, reject) {
+      var url = django_url + project.id + "/treenodes/" + nodeId + "/suppressed-virtual/";
+      requestQueue.register(url, 'GET', undefined, CATMAID.jsonResponseHandler(resolve, reject));
+    }).then(function (json) {
+      var node = self.nodes[nodeId];
+      if (node) node.suppressed = json.length ? json : undefined;
+      return json;
+    });
+  }
 };
 
 /**
@@ -3561,8 +3611,7 @@ SkeletonAnnotations.SVGOverlay.prototype.deleteNode = function(nodeId) {
   }
 
   if (!SkeletonAnnotations.isRealNode(nodeId)) {
-    CATMAID.warn("Can't delete this node, because it is virtual");
-    return false;
+    return this.toggleVirtualNodeSuppression(nodeId);
   }
 
   if (!mayEdit() || !node.can_edit) {
@@ -3656,6 +3705,68 @@ SkeletonAnnotations.SVGOverlay.prototype.deleteNode = function(nodeId) {
       CATMAID.statusBar.replaceLast("Deleted node #" + node.id);
     });
   }
+
+  return true;
+};
+
+/**
+ * Toggle whether a given virtual node is suppressed (i.e., not traversed during
+ * review) or unsuppressed.
+ * @param  {number}  nodeId ID of the virtual node to suppress or unsuppress.
+ * @return {boolean}        Whether a toggle was issued (false for real nodes).
+ */
+SkeletonAnnotations.SVGOverlay.prototype.toggleVirtualNodeSuppression = function (nodeId) {
+  if (SkeletonAnnotations.isRealNode(nodeId)) {
+    CATMAID.warn("Can not suppress real nodes.");
+    return false;
+  }
+
+  var childId = SkeletonAnnotations.getChildOfVirtualNode(nodeId);
+  var location = this.promiseNodeLocation(nodeId);
+  var suppressed = this.promiseSuppressedVirtualNodes(nodeId);
+  var self = this;
+
+  Promise.all([location, suppressed]).then(function (values) {
+    var location = values[0],
+        suppressed = values[1],
+        stack = self.stackViewer.primaryStack,
+        orientation = stack.orientation,
+        orientationName = ['x', 'y', 'z'][orientation],
+        coordinate = [
+          stack.stackToProjectX(location.z, location.y, location.x),
+          stack.stackToProjectY(location.z, location.y, location.x),
+          stack.stackToProjectZ(location.z, location.y, location.x),
+        ][2 - orientation];
+    var match = suppressed
+        .map(function (s) {
+          return s.orientation === orientation
+              && s.location_coordinate === coordinate; })
+        .indexOf(true);
+    if (-1 !== match) {
+      var suppressedId = suppressed[match].id;
+      requestQueue.register(
+          CATMAID.makeURL(project.id + '/treenodes/' + childId + '/suppressed-virtual/' + suppressedId),
+          'DELETE',
+          undefined,
+          CATMAID.jsonResponseHandler(function () {
+            var node = self.nodes[childId];
+            if (node) delete node.suppressed;
+            CATMAID.info('Unsuppressed virtual parent of ' + childId + ' at ' +
+                         orientationName + '=' + coordinate);
+          }));
+    } else {
+      requestQueue.register(
+          CATMAID.makeURL(project.id + '/treenodes/' + childId + '/suppressed-virtual/'),
+          'POST',
+          {orientation: orientation, location_coordinate: coordinate},
+          CATMAID.jsonResponseHandler(function (json) {
+            var node = self.nodes[childId];
+            if (node && node.suppressed) node.suppressed.push(json);
+            CATMAID.info('Suppressed virtual parent of ' + childId + ' at ' +
+                         orientationName + '=' + coordinate);
+          }));
+    }
+  });
 
   return true;
 };

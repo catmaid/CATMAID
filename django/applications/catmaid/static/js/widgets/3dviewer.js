@@ -4305,6 +4305,7 @@
     }
 
     this.setTextVisibility( this.skeletonmodel.text_visible ); // the text labels
+    this.setMetaVisibility( this.skeletonmodel.meta_visible ); // tags
 
     //this.updateSkeletonColor(options);
 

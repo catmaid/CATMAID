@@ -182,37 +182,17 @@
       var url = self.get_crop_url();
       var cb = self.getCropBox();
       var data = {'rotationcw': cb.rotation_cw};
-      if (url)
-      {
-        requestQueue.register(url, 'GET', data, handle_crop );
+      if (url) {
+        requestQueue.register(url, 'GET', data,
+            CATMAID.jsonResponseHandler(function(json) {
+              // This reposonse s not the ready made microstack itself but a
+              // confirmation that the cropping process was invoked
+              alert("Cropping the microstack...\nThis operation may take " +
+                  "some time, you will be notified as soon as the cropped " +
+                  "stack is ready." );
+           }));
       }
       return false;
-    };
-
-    /**
-     * Handle the response of a microstack crop request. This answer is not the
-     * ready made microstack itself but a confirmation that the cropping
-     * process was invoked
-     */
-    var handle_crop = function( status, text, xml )
-    {
-      if ( status == 200 )
-      {
-        var e = $.parseJSON(text);
-
-        if (e.error)
-        {
-          alert( e.error );
-        }
-        else
-        {
-          CATMAID.statusBar.replaceLast( text );
-          alert( "Cropping the microstack...\nThis operation may take some time, you will be notified as soon as the cropped stack is ready." );
-        }
-      } else {
-        alert( "The server returned an unexpected response (status: " + status + "):\n" + text );
-      }
-      return;
     };
 
     /**

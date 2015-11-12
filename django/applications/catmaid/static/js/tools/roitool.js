@@ -12,37 +12,37 @@
    */
   function RoiTool()
   {
-      // call super constructor
-      CATMAID.BoxSelectionTool.call( this );
+  // call super constructor
+  CATMAID.BoxSelectionTool.call( this );
 
-      var self = this;
-      this.toolname = "roitool";
+  var self = this;
+  this.toolname = "roitool";
 
-    // inputs for x, y, width and height of the crop box
-    this.box_roi_x = document.getElementById( "box_roi_x" );
-    this.box_roi_y = document.getElementById( "box_roi_y" );
-    this.box_roi_w = document.getElementById( "box_roi_w" );
-    this.box_roi_h = document.getElementById( "box_roi_h" );
-    this.box_roi_r = document.getElementById( "box_roi_r" );
+  // inputs for x, y, width and height of the crop box
+  this.box_roi_x = document.getElementById( "box_roi_x" );
+  this.box_roi_y = document.getElementById( "box_roi_y" );
+  this.box_roi_w = document.getElementById( "box_roi_w" );
+  this.box_roi_h = document.getElementById( "box_roi_h" );
+  this.box_roi_r = document.getElementById( "box_roi_r" );
 
-    //! mouse catcher
-    this.mouseCatcher = document.createElement( "div" );
-    this.mouseCatcher.className = "sliceMouseCatcher";
-    this.mouseCatcher.style.cursor = "default";
+  //! mouse catcher
+  this.mouseCatcher = document.createElement( "div" );
+  this.mouseCatcher.className = "sliceMouseCatcher";
+  this.mouseCatcher.style.cursor = "default";
 
-      // initialize roi button
-      this.button_roi_apply = document.getElementById( "button_roi_apply" );
-      this.button_roi_apply.onclick = this.createRoi.bind(this, function(result) {
-          if (result.status) {
-              CATMAID.msg("Success", result.status);
-          }
-      });
+  // initialize roi button
+  this.button_roi_apply = document.getElementById( "button_roi_apply" );
+  this.button_roi_apply.onclick = this.createRoi.bind(this, function(result) {
+    if (result.status) {
+      CATMAID.msg("Success", result.status);
+    }
+  });
 
-      // bind event handlers to current calling context
-      this.onmousedown_bound = this.onmousedown.bind(this);
-      this.onmouseup_bound = this.onmouseup.bind(this);
-      this.onmousemove_pos_bound = this.onmousemove.pos.bind(this);
-      this.onmousemove_crop_bound = this.onmousemove.crop.bind(this);
+  // bind event handlers to current calling context
+  this.onmousedown_bound = this.onmousedown.bind(this);
+  this.onmouseup_bound = this.onmouseup.bind(this);
+  this.onmousemove_pos_bound = this.onmousemove.pos.bind(this);
+  this.onmousemove_crop_bound = this.onmousemove.crop.bind(this);
   }
 
   // Let the RoiTool inherit from the BoxSelectionTool
@@ -53,16 +53,16 @@
    */
   RoiTool.prototype.updateControls = function()
   {
-      var cb = this.getCropBox();
-      if ( cb )
-      {
-          var roiBoxBB = this.getCropBoxBoundingBox(cb.stackViewer);
-          this.box_roi_x.value = isNaN(roiBoxBB.left_px) ? "-" : roiBoxBB.left_px;
-          this.box_roi_y.value = isNaN(roiBoxBB.top_px) ? "-" : roiBoxBB.top_px;
-          this.box_roi_w.value = isNaN(roiBoxBB.width_px) ? "-" : roiBoxBB.width_px;
-          this.box_roi_h.value = isNaN(roiBoxBB.height_px) ? "-" : roiBoxBB.height_px;
-          this.box_roi_r.value = isNaN(roiBoxBB.rotation_cw) ? "-" : roiBoxBB.rotation_cw;
-      }
+    var cb = this.getCropBox();
+    if ( cb )
+    {
+      var roiBoxBB = this.getCropBoxBoundingBox(cb.stackViewer);
+      this.box_roi_x.value = isNaN(roiBoxBB.left_px) ? "-" : roiBoxBB.left_px;
+      this.box_roi_y.value = isNaN(roiBoxBB.top_px) ? "-" : roiBoxBB.top_px;
+      this.box_roi_w.value = isNaN(roiBoxBB.width_px) ? "-" : roiBoxBB.width_px;
+      this.box_roi_h.value = isNaN(roiBoxBB.height_px) ? "-" : roiBoxBB.height_px;
+      this.box_roi_r.value = isNaN(roiBoxBB.rotation_cw) ? "-" : roiBoxBB.rotation_cw;
+    }
   };
 
   /**
@@ -71,9 +71,9 @@
    */
   RoiTool.prototype.redraw = function(completionCallback)
   {
-      // call register of super class
-      RoiTool.superproto.redraw.call( this, completionCallback );
-      this.updateControls();
+    // call register of super class
+    RoiTool.superproto.redraw.call( this, completionCallback );
+    this.updateControls();
   };
 
   /**
@@ -81,8 +81,8 @@
    */
   RoiTool.prototype.resize = function( width, height )
   {
-      this.mouseCatcher.style.width = width + "px";
-      this.mouseCatcher.style.height = height + "px";
+    this.mouseCatcher.style.width = width + "px";
+    this.mouseCatcher.style.height = height + "px";
   };
 
   /**
@@ -90,24 +90,24 @@
    */
   RoiTool.prototype.changeCropBoxXByInput = function( e )
   {
-      var val = parseInt( this.box_roi_x.value, 10 );
-      var cropBox = this.getCropBox();
+    var val = parseInt( this.box_roi_x.value, 10 );
+    var cropBox = this.getCropBox();
 
-      if ( isNaN( val ) )
-      {
-          this.value = this.toPx( cropBox.left, this.stackViewer.primaryStack.resolution.x );
-      }
-      else
-      {
-          var screen = stackViewer.screenPosition();
-          var screen_left = stackViewer.primaryStack.stackToProjectX(
-              stackViewer.z, scrren.top, screen.left);
-          var width_world = cropBox.right - cropBox.left;
-          cropBox.left = this.toWorld( val, this.stackViewer.primaryStack.resolution.x ) + screen_left;
-          cropBox.right = cropBox.left + width_world;
-          this.updateCropBox();
-          this.updateControls();
-      }
+    if ( isNaN( val ) )
+    {
+      this.value = this.toPx( cropBox.left, this.stackViewer.primaryStack.resolution.x );
+    }
+    else
+    {
+      var screen = stackViewer.screenPosition();
+      var screen_left = stackViewer.primaryStack.stackToProjectX(
+        stackViewer.z, scrren.top, screen.left);
+      var width_world = cropBox.right - cropBox.left;
+      cropBox.left = this.toWorld( val, this.stackViewer.primaryStack.resolution.x ) + screen_left;
+      cropBox.right = cropBox.left + width_world;
+      this.updateCropBox();
+      this.updateControls();
+    }
   };
 
   /**
@@ -115,24 +115,24 @@
    */
   RoiTool.prototype.changeCropBoxYByInput = function( e )
   {
-      var val = parseInt( this.box_roi_y.value, 10 );
-      var cropBox = this.getCropBox();
+    var val = parseInt( this.box_roi_y.value, 10 );
+    var cropBox = this.getCropBox();
 
-      if ( isNaN( val ) )
-      {
-          this.value = this.toPx( cropBox.left, this.stackViewer.primaryStack.resolution.y );
-      }
-      else
-      {
-          var screen = stackViewer.screenPosition();
-          var screen_top = stackViewer.primaryStack.stackToProjectY(
-              stackViewer.z, screen.top, screen.left);
-          var height_world = cropBox.bottom - cropBox.top;
-          cropBox.top = this.toWorld( val, this.stackViewer.primaryStack.resolution.y ) + screen_top;
-          cropBox.bottom = cropBox.top + height_world;
-          this.updateCropBox();
-          this.updateControls();
-      }
+    if ( isNaN( val ) )
+    {
+      this.value = this.toPx( cropBox.left, this.stackViewer.primaryStack.resolution.y );
+    }
+    else
+    {
+      var screen = stackViewer.screenPosition();
+      var screen_top = stackViewer.primaryStack.stackToProjectY(
+        stackViewer.z, screen.top, screen.left);
+      var height_world = cropBox.bottom - cropBox.top;
+      cropBox.top = this.toWorld( val, this.stackViewer.primaryStack.resolution.y ) + screen_top;
+      cropBox.bottom = cropBox.top + height_world;
+      this.updateCropBox();
+      this.updateControls();
+    }
   };
 
   /**
@@ -140,21 +140,21 @@
    */
   RoiTool.prototype.changeCropBoxWByInput = function( e )
   {
-      var val = parseInt( this.box_roi_w.value, 10 );
-      var cropBox = this.getCropBox();
+    var val = parseInt( this.box_roi_w.value, 10 );
+    var cropBox = this.getCropBox();
 
-      if ( isNaN( val ) )
-      {
-          var width_world = cropBox.right - cropBox.left;
-          this.value = this.toPx( width_world, this.stackViewer.primaryStack.resolution.x );
-      }
-      else
-      {
-          var width_world = this.toWorld( val, this.stackViewer.primaryStack.resolution.x );
-          cropBox.right = cropBox.left + width_world;
-          this.updateCropBox();
-          this.updateControls();
-      }
+    if ( isNaN( val ) )
+    {
+      var width_world = cropBox.right - cropBox.left;
+      this.value = this.toPx( width_world, this.stackViewer.primaryStack.resolution.x );
+    }
+    else
+    {
+      var width_world = this.toWorld( val, this.stackViewer.primaryStack.resolution.x );
+      cropBox.right = cropBox.left + width_world;
+      this.updateCropBox();
+      this.updateControls();
+    }
   };
 
   /**
@@ -162,21 +162,21 @@
    */
   RoiTool.prototype.changeCropBoxHByInput = function( e )
   {
-      var val = parseInt( this.box_roi_h.value, 10 );
-      var cropBox = this.getCropBox();
+    var val = parseInt( this.box_roi_h.value, 10 );
+    var cropBox = this.getCropBox();
 
-      if ( isNaN( val ) )
-      {
-          var height_world = cropBox.bottom - cropBox.top;
-          this.value = this.toPx( height_world, this.stackViewer.primaryStack.resolution.y );
-      }
-      else
-      {
-          var height_world = this.toWorld( val, this.stackViewer.primaryStack.resolution.y );
-          cropBox.bottom = cropBox.top + height_world;
-          this.updateCropBox();
-          this.updateControls();
-      }
+    if ( isNaN( val ) )
+    {
+      var height_world = cropBox.bottom - cropBox.top;
+      this.value = this.toPx( height_world, this.stackViewer.primaryStack.resolution.y );
+    }
+    else
+    {
+      var height_world = this.toWorld( val, this.stackViewer.primaryStack.resolution.y );
+      cropBox.bottom = cropBox.top + height_world;
+      this.updateCropBox();
+      this.updateControls();
+    }
   };
 
   /**
@@ -184,19 +184,19 @@
    */
   RoiTool.prototype.changeCropBoxRByInput = function( e )
   {
-      var val = parseInt( this.box_roi_r.value, 10 );
-      var cropBox = this.getCropBox();
+    var val = parseInt( this.box_roi_r.value, 10 );
+    var cropBox = this.getCropBox();
 
-      if ( isNaN( val ) )
-      {
-          this.box_roi_r.value = cropBox.rotation_cw;
-      }
-      else
-      {
-          cropBox.rotation_cw = val;
-          this.updateCropBox();
-          this.updateControls();
-      }
+    if ( isNaN( val ) )
+    {
+      this.box_roi_r.value = cropBox.rotation_cw;
+    }
+    else
+    {
+      cropBox.rotation_cw = val;
+      this.updateCropBox();
+      this.updateControls();
+    }
   };
 
   /**
@@ -204,13 +204,13 @@
    */
   RoiTool.prototype.cropBoxMouseWheel = function( e )
   {
-      var w = CATMAID.ui.getMouseWheel( e );
-      if ( w )
-      {
-          this.value = parseInt( this.value, 10 ) - w;
-          this.onchange();
-      }
-      return false;
+    var w = CATMAID.ui.getMouseWheel( e );
+    if ( w )
+    {
+      this.value = parseInt( this.value, 10 ) - w;
+      this.onchange();
+    }
+    return false;
   };
 
   /**
@@ -218,27 +218,27 @@
    */
   RoiTool.prototype.onmousedown = function( e )
   {
-      var b = CATMAID.ui.getMouseButton( e );
-      switch ( b )
-      {
-      case 2:
-          CATMAID.ui.removeEvent( "onmousemove", this.onmousemove_crop_bound );
-          CATMAID.ui.removeEvent( "onmouseup", this.onmouseup_bound );
-          break;
-      default:
-          var m = CATMAID.ui.getMouse( e, this.stackViewer.getView() );
-          this.createCropBox( m.offsetX, m.offsetY );
+    var b = CATMAID.ui.getMouseButton( e );
+    switch ( b )
+    {
+    case 2:
+      CATMAID.ui.removeEvent( "onmousemove", this.onmousemove_crop_bound );
+      CATMAID.ui.removeEvent( "onmouseup", this.onmouseup_bound );
+      break;
+    default:
+      var m = CATMAID.ui.getMouse( e, this.stackViewer.getView() );
+      this.createCropBox( m.offsetX, m.offsetY );
 
-          CATMAID.ui.registerEvent( "onmousemove", this.onmousemove_crop_bound );
-          CATMAID.ui.registerEvent( "onmouseup", this.onmouseup_bound );
-          CATMAID.ui.catchEvents( "crosshair" );
-      }
-      CATMAID.ui.onmousedown( e );
+      CATMAID.ui.registerEvent( "onmousemove", this.onmousemove_crop_bound );
+      CATMAID.ui.registerEvent( "onmouseup", this.onmouseup_bound );
+      CATMAID.ui.catchEvents( "crosshair" );
+    }
+    CATMAID.ui.onmousedown( e );
 
-      //! this is a dirty trick to remove the focus from input elements when clicking the stack views, assumes, that document.body.firstChild is an empty and useless <a></a>
-      document.body.firstChild.focus();
+    //! this is a dirty trick to remove the focus from input elements when clicking the stack views, assumes, that document.body.firstChild is an empty and useless <a></a>
+    document.body.firstChild.focus();
 
-      return false;
+    return false;
   };
 
   /**
@@ -247,66 +247,66 @@
    * while moving.
    */
   RoiTool.prototype.onmousemove = {
-      pos : function ( e )
+    pos : function ( e )
+    {
+      var xp;
+      var yp;
+      var m = CATMAID.ui.getMouse( e, this.stackViewer.getView() );
+      if ( m )
       {
-          var xp;
-          var yp;
-          var m = CATMAID.ui.getMouse( e, this.stackViewer.getView() );
-          if ( m )
-          {
-              var s = this.stackViewer;
-              var pos_x = s.primaryStack.translation.x + ( s.x + ( m.offsetX - s.viewWidth / 2 ) / s.scale ) * s.primaryStack.resolution.x;
-              var pos_y = s.primaryStack.translation.x + ( s.y + ( m.offsetY - s.viewHeight / 2 ) / s.scale ) * s.primaryStack.resolution.y;
-              CATMAID.statusBar.replaceLast( "[" + this.convertWorld( pos_x ).toFixed( 3 ) + ", " + this.convertWorld( pos_y ).toFixed( 3 ) + "]" );
-          }
-          return false;
-      },
-      crop : function( e )
-      {
-          var cropBox = this.getCropBox();
-
-          if ( cropBox )
-          {
-              // adjust left and rigt component
-              cropBox.xdist += CATMAID.ui.diffX;
-              var xdist_world = this.toWorld( cropBox.xdist, this.stackViewer.primaryStack.resolution.x );
-              if ( cropBox.xdist > 0 )
-              {
-                  cropBox.left = cropBox.xorigin;
-                  cropBox.right = cropBox.xorigin + xdist_world;
-              }
-              else
-              {
-                  cropBox.left = cropBox.xorigin + xdist_world;
-                  cropBox.right = cropBox.xorigin;
-              }
-
-              // adjust top and bottom component
-              cropBox.ydist += CATMAID.ui.diffY;
-              var ydist_world = this.toWorld( cropBox.ydist, this.stackViewer.primaryStack.resolution.y );
-              if ( cropBox.ydist > 0 )
-              {
-                  cropBox.top = cropBox.yorigin;
-                  cropBox.bottom = cropBox.yorigin + ydist_world;
-              }
-              else
-              {
-                  cropBox.top = cropBox.yorigin + ydist_world;
-                  cropBox.bottom = cropBox.yorigin;
-              }
-
-              this.updateCropBox();
-          }
-          this.updateControls();
+        var s = this.stackViewer;
+        var pos_x = s.primaryStack.translation.x + ( s.x + ( m.offsetX - s.viewWidth / 2 ) / s.scale ) * s.primaryStack.resolution.x;
+        var pos_y = s.primaryStack.translation.x + ( s.y + ( m.offsetY - s.viewHeight / 2 ) / s.scale ) * s.primaryStack.resolution.y;
+        CATMAID.statusBar.replaceLast( "[" + this.convertWorld( pos_x ).toFixed( 3 ) + ", " + this.convertWorld( pos_y ).toFixed( 3 ) + "]" );
       }
+      return false;
+    },
+    crop : function( e )
+    {
+      var cropBox = this.getCropBox();
+
+      if ( cropBox )
+      {
+        // adjust left and rigt component
+        cropBox.xdist += CATMAID.ui.diffX;
+        var xdist_world = this.toWorld( cropBox.xdist, this.stackViewer.primaryStack.resolution.x );
+        if ( cropBox.xdist > 0 )
+        {
+          cropBox.left = cropBox.xorigin;
+          cropBox.right = cropBox.xorigin + xdist_world;
+        }
+        else
+        {
+          cropBox.left = cropBox.xorigin + xdist_world;
+          cropBox.right = cropBox.xorigin;
+        }
+
+        // adjust top and bottom component
+        cropBox.ydist += CATMAID.ui.diffY;
+        var ydist_world = this.toWorld( cropBox.ydist, this.stackViewer.primaryStack.resolution.y );
+        if ( cropBox.ydist > 0 )
+        {
+          cropBox.top = cropBox.yorigin;
+          cropBox.bottom = cropBox.yorigin + ydist_world;
+        }
+        else
+        {
+          cropBox.top = cropBox.yorigin + ydist_world;
+          cropBox.bottom = cropBox.yorigin;
+        }
+
+        this.updateCropBox();
+      }
+      this.updateControls();
+    }
   };
 
   RoiTool.prototype.onmouseup = function ( e )
   {
-      CATMAID.ui.releaseEvents();
-      CATMAID.ui.removeEvent( "onmousemove", this.onmousemove_crop_bound );
-      CATMAID.ui.removeEvent( "onmouseup", this.onmouseup_bound );
-      this.updateControls();
+    CATMAID.ui.releaseEvents();
+    CATMAID.ui.removeEvent( "onmousemove", this.onmousemove_crop_bound );
+    CATMAID.ui.removeEvent( "onmouseup", this.onmouseup_bound );
+    this.updateControls();
   };
 
   RoiTool.prototype.onmousewheel = function( e )
@@ -319,7 +319,7 @@
    */
   RoiTool.prototype.addMousewheelListener = function( component, handler )
   {
-      component.addEventListener( "wheel", handler, false );
+    component.addEventListener( "wheel", handler, false );
   };
 
   /**
@@ -327,7 +327,7 @@
    */
   RoiTool.prototype.removeMousewheelListener = function( component, handler )
   {
-      component.removeEventListener( "wheel", handler, false );
+    component.removeEventListener( "wheel", handler, false );
   };
 
   /**
@@ -336,38 +336,38 @@
    */
   RoiTool.prototype.register = function( parentStackViewer )
   {
-      // call register of super class (updates also stack member)
-      RoiTool.superproto.register.call( this, parentStackViewer );
+    // call register of super class (updates also stack member)
+    RoiTool.superproto.register.call( this, parentStackViewer );
 
-      // initialize the stacks we offer to crop
-      var project = this.stackViewer.getProject();
+    // initialize the stacks we offer to crop
+    var project = this.stackViewer.getProject();
 
-      this.mouseCatcher.style.cursor = "crosshair";
-      // create and remember mouse bindings, bound to the
-      // current context (this).
-      this.mouseCatcher.onmousedown = this.onmousedown_bound;
-      this.mouseCatcher.onmousemove = this.onmousemove_pos_bound;
+    this.mouseCatcher.style.cursor = "crosshair";
+    // create and remember mouse bindings, bound to the
+    // current context (this).
+    this.mouseCatcher.onmousedown = this.onmousedown_bound;
+    this.mouseCatcher.onmousemove = this.onmousemove_pos_bound;
 
-      var onmousewheel = this.onmousewheel.bind(this);
-      this.mouseCatcher.addEventListener( "wheel", onmousewheel, false );
+    var onmousewheel = this.onmousewheel.bind(this);
+    this.mouseCatcher.addEventListener( "wheel", onmousewheel, false );
 
-      this.stackViewer.getView().appendChild( this.mouseCatcher );
+    this.stackViewer.getView().appendChild( this.mouseCatcher );
 
-      var cropBoxMouseWheel = this.cropBoxMouseWheel.bind(this);
-      this.box_roi_x.onchange = this.changeCropBoxXByInput.bind(this);
-      this.addMousewheelListener( this.box_roi_x, this.cropBoxMouseWheel );
-      this.box_roi_y.onchange = this.changeCropBoxYByInput.bind(this);
-      this.addMousewheelListener( this.box_roi_y, this.cropBoxMouseWheel );
-      this.box_roi_w.onchange = this.changeCropBoxWByInput.bind(this);
-      this.addMousewheelListener( this.box_roi_w, this.cropBoxMouseWheel );
-      this.box_roi_h.onchange = this.changeCropBoxHByInput.bind(this);
-      this.addMousewheelListener( this.box_roi_h, this.cropBoxMouseWheel );
-      this.box_roi_r.onchange = this.changeCropBoxRByInput.bind(this);
-      this.addMousewheelListener( this.box_roi_r, this.cropBoxMouseWheel );
+    var cropBoxMouseWheel = this.cropBoxMouseWheel.bind(this);
+    this.box_roi_x.onchange = this.changeCropBoxXByInput.bind(this);
+    this.addMousewheelListener( this.box_roi_x, this.cropBoxMouseWheel );
+    this.box_roi_y.onchange = this.changeCropBoxYByInput.bind(this);
+    this.addMousewheelListener( this.box_roi_y, this.cropBoxMouseWheel );
+    this.box_roi_w.onchange = this.changeCropBoxWByInput.bind(this);
+    this.addMousewheelListener( this.box_roi_w, this.cropBoxMouseWheel );
+    this.box_roi_h.onchange = this.changeCropBoxHByInput.bind(this);
+    this.addMousewheelListener( this.box_roi_h, this.cropBoxMouseWheel );
+    this.box_roi_r.onchange = this.changeCropBoxRByInput.bind(this);
+    this.addMousewheelListener( this.box_roi_r, this.cropBoxMouseWheel );
 
-      document.getElementById( "toolbar_roi" ).style.display = "block";
+    document.getElementById( "toolbar_roi" ).style.display = "block";
 
-      this.updateControls();
+    this.updateControls();
   };
 
   /**
@@ -375,8 +375,8 @@
    */
   RoiTool.prototype.unregister = function()
   {
-      if ( this.stackViewer && this.mouseCatcher.parentNode == this.stackViewer.getView() )
-          this.stackViewer.getView().removeChild( this.mouseCatcher );
+    if ( this.stackViewer && this.mouseCatcher.parentNode == this.stackViewer.getView() )
+      this.stackViewer.getView().removeChild( this.mouseCatcher );
   };
 
   /**
@@ -385,23 +385,23 @@
    */
   RoiTool.prototype.destroy = function()
   {
-      this.unregister();
+    this.unregister();
 
-      document.getElementById( "toolbar_roi" ).style.display = "none";
+    document.getElementById( "toolbar_roi" ).style.display = "none";
 
-      this.box_roi_x.onchange = null;
-      this.removeMousewheelListener( this.box_roi_x, this.cropBoxMouseWheel );
-      this.box_roi_y.onchange = null;
-      this.removeMousewheelListener( this.box_roi_y, this.cropBoxMouseWheel );
-      this.box_roi_w.onchange = null;
-      this.removeMousewheelListener( this.box_roi_w, this.cropBoxMouseWheel );
-      this.box_roi_h.onchange = null;
-      this.removeMousewheelListener( this.box_roi_h, this.cropBoxMouseWheel );
+    this.box_roi_x.onchange = null;
+    this.removeMousewheelListener( this.box_roi_x, this.cropBoxMouseWheel );
+    this.box_roi_y.onchange = null;
+    this.removeMousewheelListener( this.box_roi_y, this.cropBoxMouseWheel );
+    this.box_roi_w.onchange = null;
+    this.removeMousewheelListener( this.box_roi_w, this.cropBoxMouseWheel );
+    this.box_roi_h.onchange = null;
+    this.removeMousewheelListener( this.box_roi_h, this.cropBoxMouseWheel );
 
-      this.button_roi_apply.onclick = null;
+    this.button_roi_apply.onclick = null;
 
-      // call destroy of super class
-      RoiTool.superproto.destroy.call( this );
+    // call destroy of super class
+    RoiTool.superproto.destroy.call( this );
   };
 
   /**
@@ -409,29 +409,29 @@
    * code, or false otherwise.
    */
   RoiTool.prototype.handleKeyPress = function( e ) {
-      return false;
+    return false;
   };
 
   RoiTool.prototype.createRoi = function(callback)
   {
-      // Collect relevant information
-      var cb = this.getCropBox();
-      var data = {
-          x_min: cb.left,
-          x_max: cb.right,
-          y_min: cb.top,
-          y_max: cb.bottom,
-          z: this.stackViewer.z * this.stackViewer.primaryStack.resolution.z + this.stackViewer.primaryStack.translation.z,
-          zoom_level: this.stackViewer.s,
-          rotation_cw: cb.rotation_cw,
-          stack: this.stackViewer.primaryStack.id
-      };
-      // The actual creation and linking of the ROI happens in
-      // the back-end. Create URL for initiating this:
-      var roi_url = django_url + project.id + "/roi/add";
-      // Make Ajax call and handle response in callback
-      requestQueue.register(roi_url, 'POST', data,
-          CATMAID.jsonResponseHandler(callback));
+    // Collect relevant information
+    var cb = this.getCropBox();
+    var data = {
+      x_min: cb.left,
+      x_max: cb.right,
+      y_min: cb.top,
+      y_max: cb.bottom,
+      z: this.stackViewer.z * this.stackViewer.primaryStack.resolution.z + this.stackViewer.primaryStack.translation.z,
+      zoom_level: this.stackViewer.s,
+      rotation_cw: cb.rotation_cw,
+      stack: this.stackViewer.primaryStack.id
+    };
+    // The actual creation and linking of the ROI happens in
+    // the back-end. Create URL for initiating this:
+    var roi_url = django_url + project.id + "/roi/add";
+    // Make Ajax call and handle response in callback
+    requestQueue.register(roi_url, 'POST', data,
+      CATMAID.jsonResponseHandler(callback));
   };
 
   // Export tool into CATMAID namespace

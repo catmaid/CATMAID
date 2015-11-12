@@ -835,7 +835,7 @@
 
       submit(django_url + "accounts/" + projectID + "/all-usernames", {},
         function(usernames) {
-          submit(django_url + projectID + "/skeleton/" + skeletonID + "/review",
+          submit(django_url + projectID + "/skeletons/" + skeletonID + "/review",
             {'subarbor_node_id': subarborNodeId},
             function(skeleton_data) {
                 self.createReviewSkeletonTable( skeleton_data, usernames );

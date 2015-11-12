@@ -58,13 +58,16 @@ class ConfirmForm(forms.Form):
     title = forms.CharField(help_text='Title of the new stack')
     comment = forms.CharField(help_text='Optional comment of the new stack', required=False)
     metadata = forms.CharField(help_text='Optional metadata of the new stack', required=False)
-    new_project = forms.BooleanField(required=False, help_text='This will create a new '
-                                      'projct with the same title as the stack and link '
-                                      'the created stack to it.')
-    ortho_project = forms.BooleanField(label='Ortho-view project', required=False,
-                                       help_text='Like the option above, this will create '
-                                       'a new project and link the new stack to it. Additonally, '
-                                       'the stack is also linked with orthogonal orientations.')
+    ortho_stacks = forms.BooleanField(required=False, label='Orthogonal stacks',
+                                      help_text='Create three stacks instead '
+                                      'of only one, each stack labeled to be '
+                                      'used for a different orientation.')
+    new_project = forms.BooleanField(required=False, label='Link to new project',
+                                     help_text='This will create a new project '
+                                     'with the same title as the stack and '
+                                     'link the created stack(s) to it. Ortho '
+                                     'stacks will be linked with their '
+                                     'respective orientation.')
 
 class DVIDImportWizard(SessionWizardView):
     form_list = [('server', ServerForm), ('stack', StackForm), ('confirm', ConfirmForm)]
@@ -99,43 +102,55 @@ class DVIDImportWizard(SessionWizardView):
         resolution = (stack_data['resolution']['x'], stack_data['resolution']['y'],
                      stack_data['resolution']['z'])
 
+        ortho_stacks = self.get_cleaned_data_for_step('confirm')['ortho_stacks']
         new_project = self.get_cleaned_data_for_step('confirm')['new_project']
-        ortho_project = self.get_cleaned_data_for_step('confirm')['ortho_project']
 
-        # Create DVID stack and return to admin home
-        stack = Stack(
-            title=title,
-            comment=comment,
-            dimension=dimension,
-            resolution=resolution,
-            image_base=stack_data['image_base'],
-            trakem2_project=False,
-            num_zoom_levels=stack_data['zoom_levels'],
-            file_extension=stack_data['file_extension'],
-            tile_width=stack_data['tile_width'],
-            tile_height=stack_data['tile_height'],
-            tile_source_type=stack_data['tile_source_type'],
-            metadata=metadata)
-        stack.save()
+        # Create DVID stacks and return to admin home
+        views = (
+            (0, 'XY'),
+            (1, 'XZ'),
+            (2, 'ZY'))
+        new_stacks = []
+        for view, label in views:
+            suffix = ' ' + label if ortho_stacks else ''
+            stack = Stack(
+                title=title + suffix,
+                comment=comment,
+                dimension=dimension,
+                resolution=resolution,
+                image_base=stack_data['image_base'],
+                trakem2_project=False,
+                num_zoom_levels=stack_data['zoom_levels'],
+                file_extension=stack_data['file_extension'],
+                tile_width=stack_data['tile_width'],
+                tile_height=stack_data['tile_height'],
+                tile_source_type=stack_data['tile_source_type'],
+                metadata=metadata)
+            stack.save()
+            new_stacks.append((view, stack))
 
         if new_project:
             project = Project(title=title, comment=None)
             project.save()
             # Create three links, each with a different orientation, if an
             # ortho project should be created. Link only one XY view otherwise.
-            views = (0, 1, 2) if ortho_project else (0,)
-            for v in views:
+            views = (0, 1, 2) if ortho_stacks else (0,)
+            for view, stack in new_stacks:
                 ps = ProjectStack(project=project,
                                   stack=stack,
-                                  orientation=v)
+                                  orientation=view)
                 ps.save()
 
-        msg = 'A new DVID based stack was successfully created.'
         if new_project:
-            if ortho_project:
-                msg += ' It has been linked with XY, XZ and ZY orientations to a new project with the same name.'
+            if ortho_stacks:
+                msg = ('Three new DVID based stacks have been created and '
+                      'linked to a projcet named "%s" with orientations XY, '
+                      'XZ and ZY' % title)
             else:
-                msg += ' It has been linked to a new project with the same name.'
+                msg = ('A new DVID based stack was successfully created and '
+                      'linked to a new project named "%s".' % title)
+        else:
+            msg = 'A new DVID based stack was successfully created.'
 
         messages.add_message(self.request, messages.SUCCESS, msg)
         return HttpResponseRedirect('/admin/')

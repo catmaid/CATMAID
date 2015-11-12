@@ -707,8 +707,23 @@ def _export_review_skeleton(project_id=None, skeleton_id=None,
     returned that starts at this node.
     """
     # Get all treenodes of the requested skeleton
-    treenodes = Treenode.objects.filter(skeleton_id=skeleton_id).values_list(
-        'id', 'parent_id', 'location_x', 'location_y', 'location_z')
+    cursor = connection.cursor()
+    cursor.execute("""
+            SELECT
+                t.id,
+                t.parent_id,
+                t.location_x,
+                t.location_y,
+                t.location_z,
+                ARRAY_AGG(svt.orientation),
+                ARRAY_AGG(svt.location_coordinate)
+            FROM treenode t
+            LEFT OUTER JOIN suppressed_virtual_treenode svt
+              ON (t.id = svt.child_id)
+            WHERE t.skeleton_id = %s
+            GROUP BY t.id;
+            """, (skeleton_id,))
+    treenodes = cursor.fetchall()
     # Get all reviews for the requested skeleton
     reviews = get_treenodes_to_reviews_with_time(skeleton_ids=[skeleton_id])
 
@@ -719,7 +734,12 @@ def _export_review_skeleton(project_id=None, skeleton_id=None,
     for t in treenodes:
         # While at it, send the reviewer IDs, which is useful to iterate fwd
         # to the first unreviewed node in the segment.
-        g.add_node(t[0], {'id': t[0], 'x': t[2], 'y': t[3], 'z': t[4], 'rids': reviews[t[0]]})
+        g.add_node(t[0], {'id': t[0],
+                          'x': t[2],
+                          'y': t[3],
+                          'z': t[4],
+                          'rids': reviews[t[0]],
+                          'sup': [[o, l] for [o, l] in zip(t[5], t[6]) if o is not None]})
         if reviews[t[0]]:
             reviewed.add(t[0])
         if t[1]: # if parent
@@ -841,6 +861,11 @@ def export_review_skeleton(request, project_id=None, skeleton_id=None):
             items:
               type: export_review_skeleton_segment_node_review
             required: true
+          sup:
+            type: array
+            items:
+              type: export_review_skeleton_segment_node_sup
+            required: true
       export_review_skeleton_segment_node_review:
         id: export_review_skeleton_segment_node_review
         properties:
@@ -851,6 +876,20 @@ def export_review_skeleton(request, project_id=None, skeleton_id=None):
           type: string
           format: date-time
           required: true
+      export_review_skeleton_segment_node_sup:
+        id: export_review_skeleton_segment_node_sup
+        properties:
+        - description: |
+            Stack orientation to determine which axis is the coordinate of the
+            plane where virtual nodes are suppressed. 0 for z, 1 for y, 2 for x.
+          required: true
+          type: integer
+        - description: |
+            Coordinate along the edge from this node to its parent where
+            virtual nodes are suppressed.
+          required: true
+          type: number
+          format: double
     type:
     - type: array
       items:

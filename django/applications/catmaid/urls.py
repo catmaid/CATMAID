@@ -6,6 +6,7 @@ from django.views.generic import TemplateView
 from rest_framework_swagger.urlparser import UrlParser
 
 from catmaid.views import CatmaidView, ExportWidgetView
+from catmaid.control.suppressed_virtual_treenode import SuppressedVirtualTreenodeDetail, SuppressedVirtualTreenodeList
 
 
 # A regular expression matching floating point and integer numbers
@@ -186,6 +187,14 @@ urlpatterns += patterns('catmaid.control.treenode',
     (r'^(?P<project_id>\d+)/treenodes/(?P<treenode_id>\d+)/info$', 'treenode_info'),
     (r'^(?P<project_id>\d+)/treenode/(?P<treenode_id>\d+)/parent$', 'update_parent'),
     (r'^(?P<project_id>\d+)/treenode/(?P<treenode_id>\d+)/radius$', 'update_radius'),
+)
+
+# Suppressed virtual treenode access
+urlpatterns += patterns('catmaid.control.suppressed_virtual_treenode',
+    (r'^(?P<project_id>\d+)/treenodes/(?P<treenode_id>\d+)/suppressed-virtual/$',
+            SuppressedVirtualTreenodeList.as_view()),
+    (r'^(?P<project_id>\d+)/treenodes/(?P<treenode_id>\d+)/suppressed-virtual/(?P<suppressed_id>\d+)$',
+            SuppressedVirtualTreenodeDetail.as_view()),
 )
 
 # General skeleton access

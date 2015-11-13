@@ -674,8 +674,8 @@
    */
   SelectionTable.prototype.GUI.prototype.update = function() {
     if (this.datatable) {
-      // Reload data from widget
-      this.datatable.ajax.reload();
+      // Reload data from widget without resetting the paging
+      this.datatable.ajax.reload(null, false);
     } else {
       // Initialize a new DataTable instance
       this.init();

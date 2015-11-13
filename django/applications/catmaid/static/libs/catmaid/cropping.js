@@ -26,11 +26,11 @@
       maxZ, zoomLevel, rotationZ, rgbStacks) {
 
     var stacks = stackIds.join(',');
-    var stacksToChannels = rgbStacks ? 1 : 0;
+    var singleChannel = rgbStacks ? 0 : 1;
 
     var url = django_url + projectId + '/stack/' + stacks + '/crop/' +
         minX + "," + maxX + "/" + minY + "," + maxY + "/" +
-        minZ + "," + maxZ + '/' + zoomLevel + '/' + stacksToChannels + '/';
+        minZ + "," + maxZ + '/' + zoomLevel + '/' + singleChannel + '/';
 
     var data = {'rotationcw': rotationZ ? rotationZ : 0};
 

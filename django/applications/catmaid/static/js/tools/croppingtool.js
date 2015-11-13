@@ -161,7 +161,7 @@
       var rgbChannels = self.check_rgb_slices.checked;
 
       var msg = "The generated stack will have " + stackIds.length +
-         " channel(s) with " + numSections + " section(s) each.\n"; +
+         " channel(s) with " + numSections + " section(s) each.\n" +
          "Each section will have a size of " + pixelWidth + "x" + pixelHeight +
          "px.\nDo you really want to crop this microstack?";
 

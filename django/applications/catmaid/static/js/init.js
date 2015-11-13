@@ -798,7 +798,7 @@ function handle_message( status, text, xml )
 						var dd1 = document.createElement( "dd" );
 						var dd1a = document.createElement( "a" );
 						dd1a.href = e[ i ].action;
-						dd1a.target = '_blank'; // FIXME: does not open in new window
+						dd1a.target = '_blank';
 						dd1a.appendChild( document.createTextNode( e[ i ].title ) );
 						dd1.appendChild( dd1a );
 						var dd2 = document.createElement( "dd" );

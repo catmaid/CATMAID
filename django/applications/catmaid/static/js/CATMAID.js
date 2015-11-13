@@ -158,8 +158,10 @@ window.onbeforeunload = function() {
   CATMAID.jsonResponseHandler = function(success, error, silent)
   {
     return function(status, text, xml) {
-      if (status === 200 && text) {
-        var json = $.parseJSON(text);
+      if (status >= 200 && status <= 204 &&
+          (typeof text === 'string' || text instanceof String)) {
+        // `text` may be empty for no content responses.
+        var json = text.length ? $.parseJSON(text) : {};
         if (json.error) {
           // Call error handler, if any, and force silence if it returned true.
           if (CATMAID.tools.isFn(error)) {

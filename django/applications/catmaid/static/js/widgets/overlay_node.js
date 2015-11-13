@@ -615,6 +615,7 @@
         this.isroot = null === parent_id || isNaN(parent_id) || parseInt(parent_id) < 0;
         this.can_edit = can_edit;
         this.needsync = false;
+        delete this.suppressed;
 
         if (this.c) {
           this.c.datum(id);

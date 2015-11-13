@@ -2981,13 +2981,13 @@ class ViewPageTests(TestCase):
         skeleton_id = 2388
 
         # No reviews, single segment
-        url = '/%d/skeleton/%d/review' % (self.test_project_id, skeleton_id)
-        response = self.client.get(url)
+        url = '/%d/skeletons/%d/review' % (self.test_project_id, skeleton_id)
+        response = self.client.post(url)
         self.assertEqual(response.status_code, 200)
         expected_result = [{'status': '0.00', 'id': 0, 'nr_nodes': 3, 'sequence': [
-                {'y': 6550.0, 'x': 3680.0, 'z': 0.0, 'rids': [], 'id': 2396},
-                {'y': 6030.0, 'x': 3110.0, 'z': 0.0, 'rids': [], 'id': 2394},
-                {'y': 6080.0, 'x': 2370.0, 'z': 0.0, 'rids': [], 'id': 2392}]}]
+                {'y': 6550.0, 'x': 3680.0, 'z': 0.0, 'rids': [], 'sup': [], 'id': 2396},
+                {'y': 6030.0, 'x': 3110.0, 'z': 0.0, 'rids': [], 'sup': [], 'id': 2394},
+                {'y': 6080.0, 'x': 2370.0, 'z': 0.0, 'rids': [], 'sup': [], 'id': 2392}]}]
         self.assertJSONEqual(response.content, expected_result)
 
         # Add reviews
@@ -2998,12 +2998,12 @@ class ViewPageTests(TestCase):
             review_time=review_time, skeleton_id=skeleton_id, treenode_id=2396)
         Review.objects.create(project_id=self.test_project_id, reviewer_id=3,
             review_time=review_time, skeleton_id=skeleton_id, treenode_id=2394)
-        response = self.client.get(url)
+        response = self.client.post(url)
         self.assertEqual(response.status_code, 200)
         expected_result = [{'status': '66.67', 'id': 0, 'nr_nodes': 3, 'sequence': [
-                {'y': 6550.0, 'x': 3680.0, 'z': 0.0, 'rids': [[3, review_time], [2, review_time]], 'id': 2396},
-                {'y': 6030.0, 'x': 3110.0, 'z': 0.0, 'rids': [[3, review_time]], 'id': 2394},
-                {'y': 6080.0, 'x': 2370.0, 'z': 0.0, 'rids': [], 'id': 2392}]}]
+                {'y': 6550.0, 'x': 3680.0, 'z': 0.0, 'rids': [[3, review_time], [2, review_time]], 'sup': [], 'id': 2396},
+                {'y': 6030.0, 'x': 3110.0, 'z': 0.0, 'rids': [[3, review_time]], 'sup': [], 'id': 2394},
+                {'y': 6080.0, 'x': 2370.0, 'z': 0.0, 'rids': [], 'sup': [], 'id': 2392}]}]
         self.assertJSONEqual(response.content, expected_result)
 
         # Newer reviews of same nodes should duplicate reviewer ID
@@ -3015,10 +3015,18 @@ class ViewPageTests(TestCase):
             review_time=review_time, skeleton_id=skeleton_id, treenode_id=2396)
         Review.objects.create(project_id=self.test_project_id, reviewer_id=3,
             review_time=review_time, skeleton_id=skeleton_id, treenode_id=2394)
-        response = self.client.get(url)
+        response = self.client.post(url)
         expected_result[0]['sequence'][0]['rids'].append([2, review_time])
         expected_result[0]['sequence'][1]['rids'].append([3, review_time])
         self.assertEqual(response.status_code, 200)
+        self.assertJSONEqual(response.content, expected_result)
+
+        # Test subarbor support
+        response = self.client.post(url, {'subarbor_node_id': 2394})
+        self.assertEqual(response.status_code, 200)
+        expected_result[0]['status'] = '100.00'
+        expected_result[0]['nr_nodes'] = 2
+        del expected_result[0]['sequence'][-1]
         self.assertJSONEqual(response.content, expected_result)
 
     def test_export_skeleton_reviews(self):

@@ -885,7 +885,7 @@
     }) );
 
     this.addAction( new CATMAID.Action({
-      helpText: "Delete the active node",
+      helpText: "Delete the active node (or suppress it if it is virtual)",
       keyShortcuts: { 'DEL': [ 46 ] },
       run: function (e) {
         if (!mayEdit())

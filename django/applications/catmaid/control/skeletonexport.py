@@ -10,6 +10,8 @@ from django.core.serializers.json import DjangoJSONEncoder
 from django.db import connection
 from django.http import HttpResponse
 
+from rest_framework.decorators import api_view
+
 from catmaid.models import UserRole, ClassInstance, Treenode, \
         TreenodeClassInstance, ConnectorClassInstance, Review
 from catmaid.control import export_NeuroML_Level3
@@ -697,7 +699,7 @@ def skeleton_swc(*args, **kwargs):
     return export_skeleton_response(*args, **kwargs)
 
 
-def _export_review_skeleton(project_id=None, skeleton_id=None, format=None,
+def _export_review_skeleton(project_id=None, skeleton_id=None,
                             subarbor_node_id=None):
     """ Returns a list of segments for the requested skeleton. Each segment
     contains information about the review status of this part of the skeleton.
@@ -705,8 +707,23 @@ def _export_review_skeleton(project_id=None, skeleton_id=None, format=None,
     returned that starts at this node.
     """
     # Get all treenodes of the requested skeleton
-    treenodes = Treenode.objects.filter(skeleton_id=skeleton_id).values_list(
-        'id', 'parent_id', 'location_x', 'location_y', 'location_z')
+    cursor = connection.cursor()
+    cursor.execute("""
+            SELECT
+                t.id,
+                t.parent_id,
+                t.location_x,
+                t.location_y,
+                t.location_z,
+                ARRAY_AGG(svt.orientation),
+                ARRAY_AGG(svt.location_coordinate)
+            FROM treenode t
+            LEFT OUTER JOIN suppressed_virtual_treenode svt
+              ON (t.id = svt.child_id)
+            WHERE t.skeleton_id = %s
+            GROUP BY t.id;
+            """, (skeleton_id,))
+    treenodes = cursor.fetchall()
     # Get all reviews for the requested skeleton
     reviews = get_treenodes_to_reviews_with_time(skeleton_ids=[skeleton_id])
 
@@ -717,7 +734,12 @@ def _export_review_skeleton(project_id=None, skeleton_id=None, format=None,
     for t in treenodes:
         # While at it, send the reviewer IDs, which is useful to iterate fwd
         # to the first unreviewed node in the segment.
-        g.add_node(t[0], {'id': t[0], 'x': t[2], 'y': t[3], 'z': t[4], 'rids': reviews[t[0]]})
+        g.add_node(t[0], {'id': t[0],
+                          'x': t[2],
+                          'y': t[3],
+                          'z': t[4],
+                          'rids': reviews[t[0]],
+                          'sup': [[o, l] for [o, l] in zip(t[5], t[6]) if o is not None]})
         if reviews[t[0]]:
             reviewed.add(t[0])
         if t[1]: # if parent
@@ -777,19 +799,109 @@ def _export_review_skeleton(project_id=None, skeleton_id=None, format=None,
         })
     return segments
 
+@api_view(['POST'])
 @requires_user_role(UserRole.Browse)
-def export_review_skeleton(request, project_id=None, skeleton_id=None, format=None):
-    """
-    Export the skeleton as a list of sequences of entries, each entry containing
-    an id, a sequence of nodes, the percent of reviewed nodes, and the node count.
+def export_review_skeleton(request, project_id=None, skeleton_id=None):
+    """Export skeleton as a set of segments with per-node review information.
+
+    Export the skeleton as a list of segments of non-branching node paths,
+    with detailed information on reviewers and review times for each node.
+    ---
+    parameters:
+    - name: subarbor_node_id
+      description: |
+        If provided, only the subarbor starting at this treenode is returned.
+      required: false
+      type: integer
+      paramType: form
+    models:
+      export_review_skeleton_segment:
+        id: export_review_skeleton_segment
+        properties:
+          status:
+            description: |
+              Percentage of nodes in this segment reviewed by the request user
+            type: number
+            format: double
+            required: true
+          id:
+            description: |
+              Index of this segment in the list (order by descending segment
+              node count)
+            type: integer
+            required: true
+          nr_nodes:
+            description: Number of nodes in this segment
+            type: integer
+            required: true
+          sequence:
+            description: Detail for nodes in this segment
+            type: array
+            items:
+              type: export_review_skeleton_segment_node
+            required: true
+      export_review_skeleton_segment_node:
+        id: export_review_skeleton_segment_node
+        properties:
+          id:
+            description: ID of this treenode
+            type: integer
+            required: true
+          x:
+            type: double
+            required: true
+          y:
+            type: double
+            required: true
+          z:
+            type: double
+            required: true
+          rids:
+            type: array
+            items:
+              type: export_review_skeleton_segment_node_review
+            required: true
+          sup:
+            type: array
+            items:
+              type: export_review_skeleton_segment_node_sup
+            required: true
+      export_review_skeleton_segment_node_review:
+        id: export_review_skeleton_segment_node_review
+        properties:
+        - description: Reviewer ID
+          type: integer
+          required: true
+        - description: Review timestamp
+          type: string
+          format: date-time
+          required: true
+      export_review_skeleton_segment_node_sup:
+        id: export_review_skeleton_segment_node_sup
+        properties:
+        - description: |
+            Stack orientation to determine which axis is the coordinate of the
+            plane where virtual nodes are suppressed. 0 for z, 1 for y, 2 for x.
+          required: true
+          type: integer
+        - description: |
+            Coordinate along the edge from this node to its parent where
+            virtual nodes are suppressed.
+          required: true
+          type: number
+          format: double
+    type:
+    - type: array
+      items:
+        type: export_review_skeleton_segment
+      required: true
     """
     try:
         subarbor_node_id = int(request.POST.get('subarbor_node_id', ''))
     except ValueError:
         subarbor_node_id = None
 
-    segments = _export_review_skeleton( project_id, skeleton_id, format,
-            subarbor_node_id )
+    segments = _export_review_skeleton(project_id, skeleton_id, subarbor_node_id)
     return HttpResponse(json.dumps(segments, cls=DjangoJSONEncoder),
             content_type='text/json')
 

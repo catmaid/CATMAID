@@ -6,6 +6,7 @@ from django.views.generic import TemplateView
 from rest_framework_swagger.urlparser import UrlParser
 
 from catmaid.views import CatmaidView, ExportWidgetView
+from catmaid.control.suppressed_virtual_treenode import SuppressedVirtualTreenodeDetail, SuppressedVirtualTreenodeList
 
 
 # A regular expression matching floating point and integer numbers
@@ -188,6 +189,14 @@ urlpatterns += patterns('catmaid.control.treenode',
     (r'^(?P<project_id>\d+)/treenode/(?P<treenode_id>\d+)/radius$', 'update_radius'),
 )
 
+# Suppressed virtual treenode access
+urlpatterns += patterns('catmaid.control.suppressed_virtual_treenode',
+    (r'^(?P<project_id>\d+)/treenodes/(?P<treenode_id>\d+)/suppressed-virtual/$',
+            SuppressedVirtualTreenodeList.as_view()),
+    (r'^(?P<project_id>\d+)/treenodes/(?P<treenode_id>\d+)/suppressed-virtual/(?P<suppressed_id>\d+)$',
+            SuppressedVirtualTreenodeDetail.as_view()),
+)
+
 # General skeleton access
 urlpatterns += patterns('catmaid.control.skeleton',
     (r'^(?P<project_id>\d+)/skeletons/$', 'list_skeletons'),
@@ -227,7 +236,7 @@ urlpatterns += patterns('catmaid.control.skeletonexport',
     (r'^(?P<project_id>\d+)/(?P<skeleton_id>\d+)/(?P<with_connectors>\d)/(?P<with_tags>\d)/compact-skeleton$', 'compact_skeleton'),
     (r'^(?P<project_id>\d+)/(?P<skeleton_id>\d+)/(?P<with_nodes>\d)/(?P<with_connectors>\d)/(?P<with_tags>\d)/compact-arbor$', 'compact_arbor'),
     (r'^(?P<project_id>\d+)/(?P<skeleton_id>\d+)/(?P<with_nodes>\d)/(?P<with_connectors>\d)/(?P<with_tags>\d)/compact-arbor-with-minutes$', 'compact_arbor_with_minutes'),
-    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/review$', 'export_review_skeleton'),
+    (r'^(?P<project_id>\d+)/skeletons/(?P<skeleton_id>\d+)/review$', 'export_review_skeleton'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/reviewed-nodes$', 'export_skeleton_reviews'),
     (r'^(?P<project_id>\d+)/skeletons/measure$', 'measure_skeletons'),
     (r'^(?P<project_id>\d+)/skeleton/connectors-by-partner$', 'skeleton_connectors_by_partner'),

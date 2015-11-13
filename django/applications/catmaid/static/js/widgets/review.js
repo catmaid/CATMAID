@@ -263,6 +263,15 @@
       var toSZ = stack.projectToUnclampedStackZ(to.z, to.y, to.x);
       var zDiff = toSZ - fromSZ;
       var zDiffAbs = Math.abs(zDiff);
+      var suppressedZs = self.current_segment.sequence[refIndex - 1].sup.reduce(function (zs, s) {
+        if (s[0] === stack.orientation) {
+          var vncoord = [0, 0, 0];
+          vncoord[2 - s[0]] = s[1];
+          zs.push(stack.projectToStackZ(vncoord[2], vncoord[1], vncoord[0]));
+        }
+        return zs;
+      }, []);
+      var suppressedSkips = 0;
       // If the stack space Z distance is larger than the virtual node step
       // value, stop at the section that is reachable with this value.
       if (zDiffAbs > self.virtualNodeStep) {
@@ -280,11 +289,21 @@
           // this first, because we want to step to the first valid section as
           // close as possible to the limit.
           if (-1 !== stack.broken_slices.indexOf(targetSZ)) continue;
+          if (-1 !== suppressedZs.indexOf(targetSZ)) {
+            suppressedSkips++;
+            continue;
+          }
           // If we reach the section of the original target, use this instead
-          if (targetSZ === toSZ) return null;
+          if (targetSZ === toSZ) break;
           // Stop incrementing if we reached the step limit
           if (nSteps >= self.virtualNodeStep) break;
         }
+
+        if (suppressedSkips) {
+          CATMAID.warn('Skipped ' + suppressedSkips + ' suppressed virtual nodes.');
+        }
+
+        if (targetSZ === toSZ) return null;
 
         var zRatio = nSteps / zDiffAbs;
 
@@ -835,7 +854,7 @@
 
       submit(django_url + "accounts/" + projectID + "/all-usernames", {},
         function(usernames) {
-          submit(django_url + projectID + "/skeleton/" + skeletonID + "/review",
+          submit(django_url + projectID + "/skeletons/" + skeletonID + "/review",
             {'subarbor_node_id': subarborNodeId},
             function(skeleton_data) {
                 self.createReviewSkeletonTable( skeleton_data, usernames );

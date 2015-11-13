@@ -463,6 +463,14 @@ class Treenode(UserFocusedModel):
     skeleton = models.ForeignKey(ClassInstance)
 
 
+class SuppressedVirtualTreenode(UserFocusedModel):
+    class Meta:
+        db_table = "suppressed_virtual_treenode"
+    child = models.ForeignKey(Treenode)
+    location_coordinate = models.FloatField()
+    orientation = models.SmallIntegerField(choices=((0, 'z'), (1, 'y'), (2, 'x')))
+
+
 class Connector(UserFocusedModel):
     class Meta:
         db_table = "connector"

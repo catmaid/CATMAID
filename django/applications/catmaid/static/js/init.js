@@ -813,7 +813,7 @@ function handle_message( status, text, xml )
 				var links = message_menu.getView().querySelectorAll('a');
 				for (var j=0; j<links.length; ++j) {
 					links[j].target = '_blank';
-				};
+				}
 				if ( n > 0 ) document.getElementById( "message_menu_text" ).className = "alert";
 				else document.getElementById( "message_menu_text" ).className = "";
 			}

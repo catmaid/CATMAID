@@ -110,6 +110,8 @@ Miscellaneous:
 
 - If an already reviewed node is moved it will now become unreviewed again.
 
+- Links clicked in the message menu will now open in a new page.
+
 
 ### Bug fixes
 

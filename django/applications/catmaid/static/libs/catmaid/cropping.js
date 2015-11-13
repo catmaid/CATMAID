@@ -36,7 +36,7 @@
 
     return new Promise(function(resolve, reject) {
       requestQueue.register(url, 'GET', data,
-          CATMAID.jsonResponseHandler(resolve, reject))
+          CATMAID.jsonResponseHandler(resolve, reject));
     });
   };
 

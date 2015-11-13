@@ -141,6 +141,26 @@ class DVIDImportWizard(SessionWizardView):
                                   orientation=view)
                 ps.save()
 
+            # Create a stack group if there are more than one views
+            if len(views) > 1:
+                has_view = Relation.objects.get(project=project,
+                                                relation_name='has_view')
+                stack_group = Class.objects.get(project=project,
+                                                class_name='stackgroup')
+                sg = ClassInstance.objects.create(
+                    user=self.request.user,
+                    project=project,
+                    class_column=stack_group,
+                    name=project.title)
+
+                for view, stack in new_stacks:
+                    StackClassInstance.objects.create(
+                        user=self.request.user,
+                        project=project,
+                        relation=has_view,
+                        stack=stack,
+                        class_instance=sg)
+
         if new_project:
             if ortho_stacks:
                 msg = ('Three new DVID based stacks have been created and '

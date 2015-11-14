@@ -1373,15 +1373,19 @@ var WindowMaker = new function()
             WA.options.animation_back_forth = this.checked;
           }, false],
           {
-            type: 'checkbox',
-            label: 'Stepwise neuron visibility',
-            title: 'Start with one neuron visible, then make another neuron ' +
-                   'visible with each complete rotation.',
+            type: 'select',
+            label: 'Neuron visibility:',
+            entries: [
+              {title: 'Show all immeditely', value: 'all'},
+              {title: 'One per rotation', value: 'one-per-rotation'}
+            ],
+            title: 'Select a neuron visibility pattern that is applied ' +
+                   'over the course of the animation.',
             value: o.animation_stepwise_visibility,
-            onclickFn: function() {
-              WA.options.animation_stepwise_visibility = this.checked;
-            },
-            left: false
+            onchangeFn: function(e) {
+              console.log("Change " + this.selectedIndex);
+              WA.options.animation_stepwise_visibility = this.value;
+            }
           }
         ]);
 

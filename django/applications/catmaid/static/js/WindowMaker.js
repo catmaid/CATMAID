@@ -118,21 +118,45 @@ var WindowMaker = new function()
     return {window: win, widget: instance};
   };
 
-  var createSelect = function(id, items, use_numbers) {
+  var createSelect = function(id, items, selectedValue) {
     var select = document.createElement('select');
     select.setAttribute("id", id);
     items.forEach(function(item, i) {
       var option = document.createElement("option");
-      option.text = item;
-      option.value = use_numbers ? i : item;
+      var itemType = typeof item;
+      var text, value;
+      if ('object' === itemType) {
+        text = item.title;
+        value = item.value;
+      } else {
+        text = item;
+        value = item;
+      }
+      option.text = text;
+      option.value = value;
+      if (option.value === selectedValue) {
+        option.defaultSelected = true;
+        option.selected = true;
+      }
       select.appendChild(option);
     });
     return select;
   };
 
-  var appendSelect = function(div, name, entries) {
-    var select = createSelect(div.id + "_" + name, entries, true);
+  var appendSelect = function(div, name, entries, title, value, onChangeFn) {
+    var select = createSelect(div.id + "_" + name, entries, value);
     div.appendChild(select);
+    if (title) {
+      select.title = title;
+    }
+    if (onChangeFn) {
+      select.onchange= onChangeFn;
+    }
+    var label = document.createElement('label');
+    label.setAttribute('title', title);
+    label.appendChild(document.createTextNode(name));
+    label.appendChild(select);
+    div.appendChild(label);
     return select;
   };
 
@@ -233,6 +257,8 @@ var WindowMaker = new function()
             return appendCheckbox(tab, e.label, e.title, e.value, e.onclickFn, e.left);
           case 'numeric':
             return appendNumericField(tab, e.label, e.title, e.value, e.postlabel, e.onchangeFn, e.length);
+          case 'select':
+            return appendSelect(tab, e.label, e.entries, e.title, e.value, e.onchangeFn);
           default: return undefined;
         }
       }

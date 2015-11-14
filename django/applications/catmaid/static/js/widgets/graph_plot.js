@@ -1306,3 +1306,8 @@ CircuitGraphPlot.prototype.loadPCA = function(callback) {
 
   if ('function' === typeof callback) callback();
 };
+
+CircuitGraphPlot.prototype.clearSelection = function() {
+  this.selected = {};
+  this.redraw();
+};

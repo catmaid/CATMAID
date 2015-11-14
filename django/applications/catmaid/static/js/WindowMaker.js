@@ -1740,6 +1740,14 @@ var WindowMaker = new function()
     csva.onclick = GP.exportCSVAll.bind(GP);
     buttons.appendChild(csva);
 
+    buttons.appendChild(document.createTextNode(' - '));
+
+    var deselect = document.createElement('input');
+    deselect.setAttribute("type", "button");
+    deselect.setAttribute("value", "Deselect all");
+    deselect.onclick = GP.clearSelection.bind(GP);
+    buttons.appendChild(deselect);
+
     content.appendChild(buttons);
 
     var container = createContainer('circuit_graph_plot_div' + GP.widgetID);

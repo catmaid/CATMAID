@@ -684,12 +684,13 @@ class ViewPageTests(TestCase):
                 [237, None, 5, 1065.0, 3035.0, 0.0, -1.0, 3, 1323111096.0]],
             [], [[261, 'TODO']]]
         parsed_response = json.loads(response.content)
-        self.assertItemsEqual(expected_result, parsed_response)
 
         # Check each aaData row instead of everything at once for more granular
         # error reporting. Don't expext the same ordering.
         for (expected, parsed) in zip(sorted(expected_result[0]), sorted(parsed_response[0])):
             self.assertEqual(expected, parsed)
+        self.assertEqual(expected_result[1], parsed_response[1])
+        self.assertEqual(expected_result[2], parsed_response[2])
 
     def test_list_treenode_table_empty(self):
         self.fake_authentication()

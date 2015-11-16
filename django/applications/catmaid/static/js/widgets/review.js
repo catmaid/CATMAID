@@ -390,13 +390,13 @@
               self.current_segment['nr_nodes'] + ' nodes');
           if (self.noRefreshBetwenSegments) {
             end_puffer_count += 1;
+            markSegmentDone(self.current_segment, [session.userid]);
             // do not directly jump to the next segment to review
             if( end_puffer_count < 3) {
               return;
             }
             // Segment fully reviewed, go to next without refreshing table
             // much faster for smaller fragments
-            markSegmentDone(self.current_segment, [session.userid]);
             self.selectNextSegment();
             return;
           } else {
@@ -424,7 +424,7 @@
       if (changeSelectedNode) {
 
         var whitelist = CATMAID.ReviewSystem.Whitelist.getWhitelist();
-        var reviewedByTeam = reviewedByUserOrTeam.bind(self, whitelist);
+        var reviewedByTeam = reviewedByUserOrTeam.bind(self, session.userid, whitelist);
 
         // Find index of next real node that should be reviewed
         var newIndex = Math.min(self.current_segment_index + 1, sequenceLength - 1);
@@ -475,9 +475,8 @@
             while (i_union < sequenceLength && 0 !== sequence[i_union].rids.length) {
               i_union += 1;
             }
-            var cellIDs = [];
+            var cellIDs = [session.userid];
             if (i_user === sequenceLength) {
-              cellIDs.push(session.userid);
               CATMAID.msg('DONE', 'Segment fully reviewed: ' +
                   self.current_segment['nr_nodes'] + ' nodes');
             }
@@ -500,33 +499,40 @@
     };
 
     /**
-     * Set the segment status to 100% and reflect this in the table cells
-     * identified with cellIDs.
+     * Calculate the review status for a set of user IDs (including "union")
+     * and reflect this in the appropriate table cells.
      */
-    function markSegmentDone(segment, cellIDs) {
-      cellIDs.forEach(function(s) {
+    function markSegmentDone(segment, reviewerIds) {
+      reviewerIds.forEach(function(s) {
+        var reviewedByCell = reviewedByUser.bind(self, s);
+        var status = (segment.sequence.reduce(function (count, n) {
+          var reviewed = s === 'union' ?
+              n.rids.length !== 0 :
+              n.rids.some(reviewedByCell);
+          return count + (reviewed ? 1 : 0);
+        }, 0) * 100.0 / segment.nr_nodes).toFixed(2);
         var cell = $('#rev-status-cell-' + segment['id'] + '-' + s);
-        cell.text('100.00%');
-        cell.css('background-color', CATMAID.ReviewSystem.STATUS_COLOR_FULL);
+        cell.text(status + '%')
+            .css('background-color',
+                 CATMAID.ReviewSystem.getBackgroundColor(Math.round(status)));
+        if (s === session.userid) segment['status'] = status;
       });
-
-      segment['status'] = '100.00';
     }
 
     /**
-     * Tests if a review was reviewd by the current user
+     * Tests if a review was reviewd by the given user.
      */
-    function reviewedByUser(review)
+    function reviewedByUser(userId, review)
     {
-      return session.userid === review[0];
+      return userId === review[0];
     }
 
     /**
-     * Test if a review was done by the current user or a review team member.
+     * Test if a review was done by the given user or a review team member.
      */
-    function reviewedByUserOrTeam(team, review)
+    function reviewedByUserOrTeam(userId, team, review)
     {
-      if (reviewedByUser(review)) return true;
+      if (reviewedByUser(userId, review)) return true;
       if (review[0] in team) {
         var rDate = new Date(review[1]);
         return rDate >= team[review[0]];
@@ -902,6 +908,7 @@
         return;
       }
       var startsegment = -1, endsegment = 0, locations = [];
+      var reviewedByCurrentUser = reviewedByUser.bind(self, session.userid);
 
       for(var idx in self.skeleton_segments) {
         if( self.skeleton_segments[idx]['status'] !== "100.00" ) {
@@ -909,7 +916,7 @@
             startsegment = idx;
           var seq = self.skeleton_segments[idx]['sequence'];
           for(var i = 0; i < self.skeleton_segments[idx]['nr_nodes']; i++ ) {
-            if(!seq[i]['rids'].some(reviewedByUser)) {
+            if(!seq[i]['rids'].some(reviewedByCurrentUser)) {
               locations.push([seq[i].x, seq[i].y, seq[i].z]);
             }
           }

@@ -1378,17 +1378,17 @@ var WindowMaker = new function()
             entries: [
               {title: 'Show all immeditely', value: 'all'},
               {title: 'One per rotation', value: 'one-per-rotation'},
-              {title: 'N per rotation', value: 'n-per-rotation'}
+              {title: 'N per rotation', value: 'n-per-rotation'},
+              {title: 'Explicit order', value: 'explicit-order'}
             ],
             title: 'Select a neuron visibility pattern that is applied ' +
                    'over the course of the animation.',
             value: o.animation_stepwise_visibility,
             onchangeFn: function(e) {
               var type = this.value;
-              var options = {};
               if ('one-per-rotation' === type) {
                 type = 'n-per-rotation';
-                options.n = 1;
+                WA.setAnimationNeuronVisibility(type, {n: 1});
               } else if ('n-per-rotation' === type) {
                 // Ask for n
                 var dialog = new CATMAID.OptionsDialog();
@@ -1397,13 +1397,41 @@ var WindowMaker = new function()
                 var nSkeletonsPerRot = dialog.appendField('Show n skeletons per rotation ',
                    'show-n-skeletons-per-rot-' + WA.widgetID, 1, true);
                 dialog.onOK = function() {
-                  options.n = Number(nSkeletonsPerRot.value);
+                  var options = {
+                    n: Number(nSkeletonsPerRot.value)
+                  };
                   WA.setAnimationNeuronVisibility(type, options);
                 };
                 dialog.show('auto', 'auto', true);
-                return;
+              } else if ('explicit-order' === type) {
+                // Ask for order
+                var dialog = new CATMAID.OptionsDialog();
+                dialog.appendMessage('Please map a list of skleton IDs to ' +
+                    'rotations after which they should be shown. This has ' +
+                    'to follow the pattern "(0: id1); (1: id2, id3); (4: id4); ...". ' +
+                    'Skeletons not referenced will not be shown.');
+                var input = dialog.appendField('Pattern: ',
+                    'visibility-pattern-' + WA.widgetID, '', true);
+                dialog.onOK = function() {
+                  // Remove all whitespace
+                  var regex = /\((\d+):((?:\w+)(?:,\w+)*)\)/;
+                  var rotations = input.value.replace(/\s+/g, '').split(';')
+                    .reduce(function(o, rot) {
+                      var matches = rot.match(regex);
+                      if (matches && 3 === matches.length) {
+                        o[matches[1]] = matches[2].split(',');
+                      }
+                      return o;
+                    }, {});
+                  var options = {
+                    rotations: rotations
+                  }
+                  WA.setAnimationNeuronVisibility(type, options);
+                };
+                // Don't make this dialog modal so that skeleton IDs can be
+                // copied from the UI.
+                dialog.show(500, 'auto', false);
               }
-              WA.setAnimationNeuronVisibility(type, options);
             }
           }
         ]);

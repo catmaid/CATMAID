@@ -1167,6 +1167,13 @@
           visibleSkeletons.push(skeletonIds[skeletonIndex + i]);
         }
       }
+    },
+    'explicit-order': function(options, skeletonIds, visibleSkeletons, r) {
+      if (r in options.rotations) {
+        options.rotations[r].forEach(function(skeletonId) {
+          visibleSkeletons.push(skeletonId);
+        });
+      }
     }
   };
 

@@ -131,7 +131,7 @@ div.smallMapView_hidden div.smallMapRect div
 	opacity:.25;
 }
 
-div.TilelayerControl
+div.TileLayerControl
 {
 	border: solid 1px #00F;
 	margin: 0;
@@ -150,12 +150,12 @@ div.TilelayerControl
     opacity: 0.8;
 }
 
-div.TilelayerControl .setting
+div.TileLayerControl .setting
 {
 	float: none;
 }
 
-div.TilelayerControl ol
+div.TileLayerControl ol
 {
 	list-style-type: none;
 	margin: 0;
@@ -163,7 +163,7 @@ div.TilelayerControl ol
 	clear: both;
 }
 
-div.TilelayerControl .layerControl
+div.TileLayerControl .layerControl
 {
 	margin: 0 4px 6px 4px;
 	padding: 0.4em;
@@ -188,12 +188,12 @@ li.layerControl::before
   float: left;
 }
 
-div.TilelayerControl h4
+div.TileLayerControl h4
 {
 	margin: 0.5em 0;
 }
 
-div.TilelayerControl .layerClose
+div.TileLayerControl .layerClose
 {
 	float: right;
 	margin: 0.3em;
@@ -206,7 +206,7 @@ div.TilelayerControl .layerClose
 	margin: 0.5em 0;
 }
 
-div.TilelayerControl .hSliderView
+div.TileLayerControl .hSliderView
 {
 	float: none;
 	display: inline-block;
@@ -220,7 +220,7 @@ li.layerControl ol
 	list-style-type: decimal;
 }
 
-div.TilelayerControl li.highlight
+div.TileLayerControl li.highlight
 {
 	min-height: 1em;
 	border: solid 1px #00F;

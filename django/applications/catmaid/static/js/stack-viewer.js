@@ -105,7 +105,7 @@
     this.overview = new CATMAID.Overview( this );
     this._view.appendChild( this.overview.getView() );
 
-    this.tilelayercontrol = new CATMAID.TilelayerControl( this );
+    this.tilelayercontrol = new CATMAID.TileLayerControl( this );
     $(this.tilelayercontrol.getView()).hide();
     this._view.appendChild( this.tilelayercontrol.getView() );
 
@@ -131,7 +131,7 @@
         event.cancelBubble = true;
       if ( e && e.stopPropagation )
         e.stopPropagation();
-      var state = $(this).siblings('.TilelayerControl').toggle().is(':visible');
+      var state = $(this).siblings('.TileLayerControl').toggle().is(':visible');
       $(this).attr('class', state ? 'stackControlToggle' : 'stackControlToggle_hidden');
     };
     this._view.appendChild( controlToggle );

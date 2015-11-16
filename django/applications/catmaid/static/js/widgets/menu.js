@@ -94,18 +94,7 @@ Menu = function () {
         p.className = "pulldown";
         pulldowns[content[key].title] = m;
         p.appendChild(m.getView());
-/*
-				d.onmouseover = function( e )
-				{
-					this.lastChild.style.display = "block";
-					return false;
-				}
-				d.onmouseout = function( e )
-				{
-					this.lastChild.style.display = "none";
-					return false;
-				}
-				*/
+
         d.appendChild(p);
         break;
       }

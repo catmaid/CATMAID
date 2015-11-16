@@ -4726,8 +4726,6 @@
         "animation-export-frame-rate", '25');
     var backforthField = dialog.appendCheckbox('Back and forth',
         'animation-export-backforth', false);
-    var stepVisibilityField = dialog.appendCheckbox('Stepwise neuron visibility',
-        'animation-export-backforth', false);
     var camera = this.space.view.camera;
     var target = this.space.view.controls.target;
 
@@ -4738,7 +4736,7 @@
 
     dialog.onOK = handleOK.bind(this);
 
-    dialog.show(400, 500, true);
+    dialog.show(400, 450, true);
 
     function handleOK() {
       /* jshint validthis: true */ // `this` is bound to this WebGLApplication
@@ -4778,9 +4776,9 @@
 
           // Add a notification handler for stepwise visibility, if enabled and at least
           // one skeleton is loaded.
-          if (stepVisibilityField.checked) {
-            var visType = 'n-per-rotation';
-            var visOpts = {n: 1};
+          if ('all' !== this.options.animation_stepwise_visibility_type) {
+            var visType = this.options.animation_stepwise_visibility_type;
+            var visOpts = this.options.animation_stepwise_visibility_options;
             options['notify'] = this.createStepwiseVisibilityHandler(visMap,
                 visType, visOpts);
             // Create a stop handler that resets visibility to the state we found before

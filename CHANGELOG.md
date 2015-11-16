@@ -91,6 +91,14 @@ Neuron Search:
   by '/xyz$'. This also works with sub-annotation queries.
 
 
+3D viewer:
+
+- Different neuron visibility modes are now available for animations. A
+  drop down list replaces the check-box and a option dialog is shown if
+  a particular animation mode requires user input. This allows for showing
+  more than one neurons per rotation.
+
+
 Administration:
 
 - CATMAID has been able to use DVID as a project/stack back-end and as a

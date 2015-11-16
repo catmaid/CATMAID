@@ -119,10 +119,21 @@ var requestQueue = new RequestQueue();
    */
   CATMAID.makeDocURL = function(path) {
     validateString(path, "relative path for URL creation");
-    var version = "stable";
+    var version = CATMAID.getVersionRelease();
     return "http://catmaid.readthedocs.org/en/" + version + "/" +
       (startsWith(path, "/") ? path.substr(1) : path);
+  };
 
+  /**
+   * Infer the CATMAID release from the client version.
+   *
+   * @return {string} The release version, or "stable" if none could be guessed.
+   */
+  CATMAID.getVersionRelease = function () {
+    var version = CATMAID.CLIENT_VERSION.split('-')[0];
+    if (version.length === 0 || version.split('.').length !== 3)
+      version = "stable";
+    return version;
   };
 
 })(CATMAID);

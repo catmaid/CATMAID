@@ -8,6 +8,8 @@ from collections import defaultdict
 from django.db import connection
 from django.http import HttpResponse
 
+from rest_framework.decorators import api_view
+
 from catmaid.models import UserRole, Treenode, BrokenSlice, ClassInstance, \
         ClassInstanceClassInstance
 from catmaid.control.authentication import requires_user_role, \
@@ -467,6 +469,12 @@ def delete_treenode(request, project_id=None):
             response_on_error = 'Could not delete neuron #%s' % neuron.id
             deleted_neuron = _delete_if_empty(neuron.id)
 
+            if deleted_neuron:
+                # Insert log entry for neuron deletion
+                insert_into_log(project_id, request.user.id, 'remove_neuron',
+                               (treenode.location_x, treenode.location_y, treenode.location_z),
+                               'Deleted neuron %s and skeleton(s) %s.' % (neuron.id, treenode.skeleton_id))
+
         else:
             # Treenode is not root, it has a parent and perhaps children.
             # Reconnect all the children to the parent.
@@ -524,11 +532,28 @@ def _treenode_info(project_id, treenode_id):
     return results[0]
 
 
+@api_view(['POST'])
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def treenode_info(request, project_id=None):
-    treenode_id = int(request.POST.get('treenode_id', -1))
-    if treenode_id < 0:
-        raise Exception('A treenode id has not been provided!')
-
-    info = _treenode_info(project_id, treenode_id)
+def treenode_info(request, project_id=None, treenode_id=None):
+    """Retrieve skeleton and neuron information about this treenode.
+    ---
+    type:
+      skeleton_id:
+        description: ID of the treenode's skeleton
+        type: integer
+        required: true
+      skeleton_name:
+        description: Name of the treenode's skeleton
+        type: string
+        required: true
+      neuron_id:
+        description: ID of the treenode's neuron
+        type: integer
+        required: true
+      neuron_name:
+        description: Name of the treenode's neuron
+        type: string
+        required: true
+    """
+    info = _treenode_info(int(project_id), int(treenode_id))
     return HttpResponse(json.dumps(info))

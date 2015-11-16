@@ -260,6 +260,18 @@ CATMAID.tools = CATMAID.tools || {};
   };
 
   /**
+   * Convert any CSS color definition to RGB.
+   */
+  tools.cssColorToRGB = function(cssColor) {
+    var c = new THREE.Color(cssColor);
+    return {
+      r: c.r,
+      g: c.g,
+      b: c.b
+    };
+  };
+
+  /**
    * Convert RGB values between 0 and 255 to a hex representation.
    */
   tools.rgbToHex = function(r, g, b) {
@@ -358,6 +370,22 @@ CATMAID.tools = CATMAID.tools || {};
       } else {
         return 'on ' + formattedDate(date);
       }
+    };
+  })();
+
+  /**
+   * Escape a string so it can be used in a regular expression without
+   * triggering any regular expression patern (e.g. to search for slashes).
+   * From: http://stackoverflow.com/questions/3115150
+   *
+   * @param  {string} text   The string to escape.
+   * @return {string}        A new escaped string.
+   */
+  tools.escapeRegEx = (function() {
+    // All characters that should be replaced
+    var pattern = /[-[\]{}()*+?.,\\^$|#\s]/g;
+    return function(text) {
+      return text.replace(pattern, "\\$&");
     };
   })();
 

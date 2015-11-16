@@ -154,6 +154,116 @@ def open_leaves(request, project_id=None, skeleton_id=None):
 
     return HttpResponse(json.dumps(nearest, cls=DjangoJSONEncoder))
 
+@api_view(['POST'])
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def find_labels(request, project_id=None, skeleton_id=None):
+    """List nodes in a skeleton with labels matching a query.
+
+    Find all nodes in this skeleton with labels (front-end node tags) matching
+    a regular expression, sort them by ascending path distance from a treenode
+    in the skeleton, and return the result.
+    ---
+    parameters:
+        - name: treenode_id
+          description: ID of the origin treenode for path length distances
+          required: true
+          type: integer
+          paramType: form
+        - name: label_regex
+          description: Regular expression query to match labels
+          required: true
+          type: string
+          paramType: form
+    models:
+      find_labels_node:
+        id: find_labels_node
+        properties:
+        - description: ID of a node with a matching label
+          type: integer
+          required: true
+        - description: Node location
+          type: array
+          items:
+            type: number
+            format: double
+          required: true
+        - description: Path distance from the origin treenode
+          type: number
+          format: double
+          required: true
+        - description: Labels on this node matching the query
+          type: array
+          items:
+            type: string
+          required: true
+    type:
+    - type: array
+      items:
+        $ref: find_labels_node
+      required: trueist open leaf nodes in a skeleton.
+    """
+    tnid = int(request.POST['treenode_id'])
+    label_regex = str(request.POST['label_regex'])
+    cursor = connection.cursor()
+
+    cursor.execute("SELECT id FROM relation WHERE project_id=%s AND relation_name='labeled_as'" % int(project_id))
+    labeled_as = cursor.fetchone()[0]
+
+    # Select all nodes in the skeleton and any matching labels
+    cursor.execute('''
+            SELECT
+                t.id,
+                t.parent_id,
+                t.location_x,
+                t.location_y,
+                t.location_z,
+                ci.name
+            FROM treenode t
+            LEFT OUTER JOIN (
+                treenode_class_instance tci
+                INNER JOIN class_instance ci
+                  ON (tci.class_instance_id = ci.id AND tci.relation_id = %s AND ci.name ~ %s))
+              ON t.id = tci.treenode_id
+            WHERE t.skeleton_id = %s
+            ''', (labeled_as, label_regex, int(skeleton_id)))
+
+    # Some entries repeated, when a node has more than one matching label
+    # Create a graph with edges from parent to child, and accumulate parents
+    tree = nx.DiGraph()
+    for row in cursor.fetchall():
+        nodeID = row[0]
+        if row[1]:
+            # It is ok to add edges that already exist: DiGraph doesn't keep duplicates
+            tree.add_edge(row[1], nodeID)
+        else:
+            tree.add_node(nodeID)
+        tree.node[nodeID]['loc'] = (row[2], row[3], row[4])
+        if row[5]:
+            props = tree.node[nodeID]
+            tags = props.get('tags')
+            if tags:
+                tags.append(row[5])
+            else:
+                props['tags'] = [row[5]]
+
+    if tnid not in tree:
+        raise Exception("Could not find %s in skeleton %s" % (tnid, int(skeleton_id)))
+
+    reroot(tree, tnid)
+    distances = edge_count_to_root(tree, root_node=tnid)
+
+    nearest = []
+
+    for nodeID, props in tree.nodes_iter(data=True):
+        if 'tags' in props:
+            # Found a node with a matching label
+            d = distances[nodeID]
+            nearest.append([nodeID, props['loc'], d, props['tags']])
+
+    nearest.sort(key=lambda n: n[2])
+
+    return HttpResponse(json.dumps(nearest))
+
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def skeleton_statistics(request, project_id=None, skeleton_id=None):
@@ -698,11 +808,102 @@ def _skeleton_info_raw(project_id, skeletons, op):
 
     return incoming, outgoing, incoming_reviewers, outgoing_reviewers
 
+@api_view(['POST'])
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def skeleton_info_raw(request, project_id=None):
+    """Retrieve a list of down/up-stream partners of a set of skeletons.
+
+    From a queried set of source skeletons, find all upstream and downstream
+    partners, the number of synapses between each source and each partner,
+    and a list of reviewers for each partner set. Confidence distributions for
+    each synapse count are included. Optionally find only those partners
+    that are common between the source skeleton set.
+    ---
+    parameters:
+        - name: source[]
+          description: IDs of the skeletons whose partners to find
+          required: true
+          type: array
+          items:
+            type: integer
+          paramType: form
+        - name: boolean_op
+          description: |
+            Whether to find partners of any source skeleton ("OR") or partners
+            common to all source skeletons ("AND")
+          required: true
+          type: string
+          paramType: form
+    models:
+      skeleton_info_raw_partners:
+        id: skeleton_info_raw_partners
+        properties:
+          '{skeleton_id}':
+            $ref: skeleton_info_raw_partner
+            description: Map from partners' skeleton IDs to their information
+            required: true
+      skeleton_info_raw_partner:
+        id: skeleton_info_raw_partner
+        properties:
+          skids:
+            $ref: skeleton_info_raw_partner_counts
+            required: true
+          num_nodes:
+            description: The number of treenodes in this skeleton
+            required: true
+            type: integer
+      skeleton_info_raw_partner_counts:
+        id: skeleton_info_raw_partner_counts
+        properties:
+          '{skeleton_id}':
+            $ref: skeleton_info_raw_partner_count
+            description: |
+              Synapse counts between the partner and the source skeleton with
+              this ID
+            required: true
+      skeleton_info_raw_partner_count:
+        id: skeleton_info_raw_partner_count
+        properties:
+        - description: Number of synapses with confidence 1
+          type: integer
+          required: true
+        - description: Number of synapses with confidence 2
+          type: integer
+          required: true
+        - description: Number of synapses with confidence 3
+          type: integer
+          required: true
+        - description: Number of synapses with confidence 4
+          type: integer
+          required: true
+        - description: Number of synapses with confidence 5
+          type: integer
+          required: true
+    type:
+      incoming:
+        $ref: skeleton_info_raw_partners
+        description: Upstream synaptic partners
+        required: true
+      outgoing:
+        $ref: skeleton_info_raw_partners
+        description: Downstream synaptic partners
+        required: true
+      incoming_reviewers:
+        description: IDs of reviewers who have reviewed any upstream partners.
+        required: true
+        type: array
+        items:
+          type: integer
+      outgoing_reviewers:
+        description: IDs of reviewers who have reviewed any downstream partners.
+        required: true
+        type: array
+        items:
+          type: integer
+    """
     # sanitize arguments
     project_id = int(project_id)
-    skeletons = tuple(int(v) for k,v in request.POST.iteritems() if k.startswith('source['))
+    skeletons = tuple(int(v) for k,v in request.POST.iteritems() if k.startswith('source_skeleton_ids['))
     op = request.POST.get('boolean_op') # values: AND, OR
     op = {'AND': 'AND', 'OR': 'OR'}[op[6:]] # sanitize
 
@@ -767,10 +968,54 @@ def get_connectivity_matrix(project_id, row_skeleton_ids, col_skeleton_ids):
     return outgoing
 
 
+@api_view(['POST'])
 @requires_user_role([UserRole.Browse, UserRole.Annotate])
 def review_status(request, project_id=None):
-    """ Return the review status for each skeleton in the request as a
-    tuple of total nodes and number of reviewed nodes (integers). """
+    """Retrieve the review status for a collection of skeletons.
+
+    The review status for each skeleton in the request is a tuple of total
+    nodes and number of reviewed nodes (integers). The reviews of only
+    certain users or a reviewer team may be counted instead of all reviews.
+    ---
+    parameters:
+        - name: skeleton_ids[]
+          description: IDs of the skeletons to retrieve.
+          required: true
+          type: array
+          items:
+            type: integer
+          paramType: form
+        - name: whitelist
+          description: |
+            ID of the user whose reviewer team to use to filter reviews
+            (exclusive to user_ids)
+          type: integer
+          paramType: form
+        - name: user_ids[]
+          description: |
+            IDs of the users whose reviews should be counted (exclusive
+            to whitelist)
+          type: array
+          items:
+            type: integer
+          paramType: form
+    models:
+      review_status_tuple:
+        id: review_status_tuple
+        properties:
+        - description: Total number of treenodes in the skeleton
+          type: integer
+          required: true
+        - description: |
+            Number of reviewed treenodes in the skeleton matching filters
+            (if any)
+          type: integer
+          required: true
+    type:
+      '{skeleton_id}':
+        $ref: review_status_tuple
+        required: true
+    """
     skeleton_ids = set(int(v) for k,v in request.POST.iteritems() if k.startswith('skeleton_ids['))
     whitelist = bool(json.loads(request.POST.get('whitelist', 'false')))
     whitelist_id = None

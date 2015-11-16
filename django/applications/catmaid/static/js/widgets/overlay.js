@@ -7,7 +7,6 @@
   OverlayLabel,
   project,
   requestQueue,
-  SelectionTable,
   session,
   SkeletonElements,
   submitterFn,
@@ -55,7 +54,7 @@ var SkeletonAnnotations = {
   SUBTYPE_SYNAPTIC_CONNECTOR : "synaptic-connector",
   SUBTYPE_ABUTTING_CONNECTOR : "abutting-connector",
 
-  sourceView : new CATMAID.ActiveSkeleton(),
+  activeSkeleton : new CATMAID.ActiveSkeleton(),
 
   // Event name constants
   EVENT_ACTIVE_NODE_CHANGED: "tracing_active_node_changed",
@@ -88,11 +87,12 @@ SkeletonAnnotations.MODES = Object.freeze({SKELETON: 0, SYNAPSE: 1});
 SkeletonAnnotations.currentmode = SkeletonAnnotations.MODES.skeleton;
 SkeletonAnnotations.newConnectorType = SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR;
 SkeletonAnnotations.setRadiusAfterNodeCreation = false;
+SkeletonAnnotations.skipSuppressedVirtualNodes = false;
 SkeletonAnnotations.defaultNewNeuronName = '';
 // Don't show merging UI for single node skeletons
 SkeletonAnnotations.quickSingleNodeSkeletonMerge = true;
 
-CATMAID.Events.extend(SkeletonAnnotations);
+CATMAID.asEventSource(SkeletonAnnotations);
 
 /**
  * Sets the active node, if node is not null. Otherwise, the active node is
@@ -455,6 +455,62 @@ SkeletonAnnotations.getYOfVirtualNode = SkeletonAnnotations.getVirtualNodeCompon
  */
 SkeletonAnnotations.getZOfVirtualNode = SkeletonAnnotations.getVirtualNodeComponent.bind(window, 5);
 
+// TODO: This IIFE should be moved into the IIFE for all of SkeletonAnnotations,
+// as soon as it is created.
+(function() {
+
+  // The volume new nodes should be tested against
+  var newNodeWarningVolumeID = null;
+
+  /**
+   * The actual handler checking for volume intersections between a node and a
+   * volume. If it exists, a warning is shown.
+   */
+  var newNodeVolumeWarningHandler = function(nodeID, px, py, pz) {
+    if (!newNodeWarningVolumeID) {
+      return;
+    }
+
+    // Test for intersection with the volume
+    requestQueue.register(CATMAID.makeURL(project.id + "/volumes/" +
+          newNodeWarningVolumeID + "/intersect"), "GET", {
+            x: px, y: py, z: pz
+          }, CATMAID.jsonResponseHandler(function(json) {
+            if (!json.intersects) {
+              CATMAID.warn("Node #" + nodeID +
+                  " was created outside of volume " + newNodeWarningVolumeID);
+            }
+          }));
+  };
+
+
+  /**
+   * Set ID of volume for new node warnings. If volumeID is falsy, the warning
+   * is disabled.
+   */
+  SkeletonAnnotations.setNewNodeVolumeWarning = function(volumeID) {
+    // Disable existing event oversavation, if any.
+    SkeletonAnnotations.off(SkeletonAnnotations.EVENT_NODE_CREATED,
+        newNodeVolumeWarningHandler);
+
+    if (volumeID) {
+      // Add new listener
+      newNodeWarningVolumeID = volumeID;
+      SkeletonAnnotations.on(SkeletonAnnotations.EVENT_NODE_CREATED,
+          newNodeVolumeWarningHandler);
+    } else {
+      newNodeWarningVolumeID = null;
+    }
+  };
+
+  /**
+   * Get ID of volume currently set up fo new node warnings.
+   */
+  SkeletonAnnotations.getNewNodeVolumeWarning = function() {
+    return newNodeWarningVolumeID;
+  };
+
+})();
 
 /**
  * The constructor for SVGOverlay.
@@ -475,12 +531,17 @@ SkeletonAnnotations.SVGOverlay = function(stackViewer, options) {
   this.labels = {};
   /** Toggle for text labels on nodes and connectors. */
   this.show_labels = options.show_labels || false;
+  /** Toggle for radius circle for active node. */
+  this.showActiveNodeRadius = options.active_node_radius || false;
   /** Indicate if this overlay is suspended and won't update nodes on redraw. */
   this.suspended = options.suspended || false;
 
   /* Variables keeping state for toggling between a terminal and its connector. */
   this.switchingConnectorID = null;
   this.switchingTreenodeID = null;
+
+  /* State for finding nodes matching tags. */
+  this.nextNearestMatchingTag = {matches: [], query: null, radius: Infinity};
 
   /* lastX, lastY: in unscaled stack coordinates, for the 'z' key to know where
    * the mouse was. */
@@ -538,7 +599,7 @@ SkeletonAnnotations.SVGOverlay = function(stackViewer, options) {
 SkeletonAnnotations.SVGOverlay.prototype = {
   EVENT_HIT_NODE_DISPLAY_LIMIT: "tracing_hit_node_display_limit"
 };
-CATMAID.Events.extend(SkeletonAnnotations.SVGOverlay.prototype);
+CATMAID.asEventSource(SkeletonAnnotations.SVGOverlay.prototype);
 
 /**
  * Creates the node with the given ID, if it is only a virtual node. Otherwise,
@@ -898,6 +959,15 @@ SkeletonAnnotations.SVGOverlay.prototype.recolorAllNodes = function () {
 };
 
 /**
+ * Set whether the radius of the active node is visible.
+ */
+SkeletonAnnotations.SVGOverlay.prototype.setActiveNodeRadiusVisibility = function (visibility) {
+  this.showActiveNodeRadius = visibility;
+  this.graphics.setActiveNodeRadiusVisibility(visibility);
+  this.recolorAllNodes(); // Necessary to trigger update of radius graphics.
+};
+
+/**
  * Select or deselect (if node is falsy) a node. This involves setting the top
  * bar and the status bar as well as updating SkeletonAnnotations.atn. Can
  * handle virtual nodes.
@@ -939,7 +1009,7 @@ SkeletonAnnotations.SVGOverlay.prototype.activateNode = function(node) {
   // (de)highlight in SkeletonSource instances if any if different from the last
   // activated skeleton
   if (last_skeleton_id !== SkeletonAnnotations.getActiveSkeletonId()) {
-    CATMAID.skeletonListSources.highlight(SkeletonAnnotations.sourceView,
+    CATMAID.skeletonListSources.highlight(SkeletonAnnotations.activeSkeleton,
         SkeletonAnnotations.getActiveSkeletonId());
   }
 };
@@ -1297,7 +1367,7 @@ SkeletonAnnotations.SVGOverlay.prototype.splitSkeleton = function(nodeID) {
       // Make sure we reference the correct node and create a model
       node = self.nodes[nodeId];
       var name = NeuronNameService.getInstance().getName(node.skeleton_id);
-      var model = new SelectionTable.prototype.SkeletonModel(node.skeleton_id, name, new THREE.Color().setRGB(1, 1, 0));
+      var model = new CATMAID.SkeletonModel(node.skeleton_id, name, new THREE.Color().setRGB(1, 1, 0));
       /* Create the dialog */
       var dialog = new CATMAID.SplitMergeDialog({
         model1: model,
@@ -1343,10 +1413,10 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLink = function (fromid, 
   this.promiseNodes(this.nodes[fromid], this.nodes[toid]).then(function(nids) {
     var fromid = nids[0], toid=nids[1];
     self.submit(
-      django_url + project.id + '/treenode/info',
-      {treenode_id: toid},
+      django_url + project.id + '/treenodes/' + toid + '/info',
+      undefined,
       function(json) {
-        var from_model = SkeletonAnnotations.sourceView.createModel();
+        var from_model = SkeletonAnnotations.activeSkeleton.createModel();
         var to_skid = json['skeleton_id'];
         // Make sure the user has permissions to edit both the from and the to
         // skeleton.
@@ -1383,7 +1453,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLink = function (fromid, 
             // A method to use when the to-skeleton has multiple nodes
             var merge_multiple_nodes = function() {
               var to_color = new THREE.Color().setRGB(1, 0, 1);
-              var to_model = new SelectionTable.prototype.SkeletonModel(
+              var to_model = new CATMAID.SkeletonModel(
                   to_skid, json['neuron_name'], to_color);
               var dialog = new CATMAID.SplitMergeDialog({
                 model1: from_model,
@@ -1755,11 +1825,11 @@ SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso,
   jso[0].forEach(function(a, index, array) {
     // a[0]: ID, a[1]: parent ID, a[2]: x, a[3]: y, a[4]: z, a[5]: confidence
     // a[8]: user_id, a[6]: radius, a[7]: skeleton_id, a[8]: user can edit or not
-    var z = this.stackViewer.primaryStack.projectToStackZ(a[4], a[3], a[2]);
+    var z = this.stackViewer.primaryStack.projectToUnclampedStackZ(a[4], a[3], a[2]);
     this.nodes[a[0]] = this.graphics.newNode(
       a[0], null, a[1], a[6],
-      this.stackViewer.primaryStack.projectToStackX(a[4], a[3], a[2]),
-      this.stackViewer.primaryStack.projectToStackY(a[4], a[3], a[2]),
+      this.stackViewer.primaryStack.projectToUnclampedStackX(a[4], a[3], a[2]),
+      this.stackViewer.primaryStack.projectToUnclampedStackY(a[4], a[3], a[2]),
       z, z - this.stackViewer.z, a[5], a[7], a[8]);
   }, this);
 
@@ -1777,11 +1847,11 @@ SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso,
     // and confidence, a[6]: postsynaptic nodes as array of arrays with treenode id
     // and confidence, a[7]: undirected nodes as array of arrays with treenode
     // id, a[8]: whether the user can edit the connector
-    var z = this.stackViewer.primaryStack.projectToStackZ(a[3], a[2], a[1]);
+    var z = this.stackViewer.primaryStack.projectToUnclampedStackZ(a[3], a[2], a[1]);
     this.nodes[a[0]] = this.graphics.newConnectorNode(
       a[0],
-      this.stackViewer.primaryStack.projectToStackX(a[3], a[2], a[1]),
-      this.stackViewer.primaryStack.projectToStackY(a[3], a[2], a[1]),
+      this.stackViewer.primaryStack.projectToUnclampedStackX(a[3], a[2], a[1]),
+      this.stackViewer.primaryStack.projectToUnclampedStackY(a[3], a[2], a[1]),
       z, z - this.stackViewer.z, a[4], subtype, a[8]);
   }, this);
 
@@ -1943,7 +2013,13 @@ SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso,
     var yp = stackViewer.primaryStack.stackToProjectY(z, pos[1], pos[0]);
     var zp = stackViewer.primaryStack.stackToProjectZ(z, pos[1], pos[0]);
     var id = SkeletonAnnotations.getVirtualNodeID(child.id, parent.id, xp, yp, zp);
-    var r = -1;
+
+    if (child.radius && parent.radius) {
+      var a = (parent.z - z)/(parent.z - child.z);
+      var r = parent.radius + a * (child.radius - parent.radius);
+    } else {
+      var r = -1;
+    }
     var c = 5;
 
     var vn = graphics.newNode(id, parent, parent.id, r, pos[0], pos[1], z, 0, c,
@@ -3039,21 +3115,40 @@ SkeletonAnnotations.SVGOverlay.prototype.getNodeOnSectionAndEdge = function (
     // informmation from the backend.
     var location1 = self.promiseNodeLocation(childID, false);
     var location2 = self.promiseNodeLocation(parentID, false);
+    var suppressed = SkeletonAnnotations.skipSuppressedVirtualNodes ?
+        self.promiseSuppressedVirtualNodes(childID) :
+        [];
 
     // If both locations are available, find intersection at requested Z
-    Promise.all([location1, location2]).then(function(locations) {
+    Promise.all([location1, location2, suppressed]).then(function(locations) {
       var stack = self.stackViewer.primaryStack;
       var from = reverse ? locations[1] : locations[0],
             to = reverse ? locations[0] : locations[1],
           toID = reverse ? childID : parentID;
+      var suppressedNodes = locations[2];
 
-      // Calculate target section, respect broken slices
+      // Calculate target section, respecting broken slices and suppressed
+      // virtual nodes.
       var z = from.z;
       var inc = from.z < to.z ? 1 : (from.z > to.z ? -1 : 0);
       var brokenSlices = stack.broken_slices;
+      var suppressedZs = suppressedNodes.reduce(function (zs, s) {
+        if (s.orientation === stack.orientation) {
+          var vncoord = [0, 0, 0];
+          vncoord[2 - s.orientation] = s.location_coordinate;
+          zs.push(stack.projectToStackZ(vncoord[2], vncoord[1], vncoord[0]));
+        }
+        return zs;
+      }, []);
+      var suppressedSkips = 0;
       while (true) {
         z += inc;
-        if (-1 === brokenSlices.indexOf(z)) break;
+        if (-1 !== suppressedZs.indexOf(z)) suppressedSkips++;
+        else if (-1 === brokenSlices.indexOf(z)) break;
+      }
+
+      if (suppressedSkips) {
+        CATMAID.warn('Skipped ' + suppressedSkips + ' suppressed virtual nodes.');
       }
 
       // If the target is in the section below, above or in the same section as
@@ -3122,9 +3217,9 @@ SkeletonAnnotations.SVGOverlay.prototype.promiseNodeLocation = function (
     var z = parseFloat(SkeletonAnnotations.getZOfVirtualNode(nodeID));
     return Promise.resolve({
       id: nodeID,
-      x: stack.projectToStackX(z, y, x),
-      y: stack.projectToStackY(z, y, x),
-      z: stack.projectToStackZ(z, y, x)
+      x: stack.projectToUnclampedStackX(z, y, x),
+      y: stack.projectToUnclampedStackY(z, y, x),
+      z: stack.projectToUnclampedStackZ(z, y, x)
     });
   }
 
@@ -3137,11 +3232,41 @@ SkeletonAnnotations.SVGOverlay.prototype.promiseNodeLocation = function (
     var stack = self.stackViewer.primaryStack;
     return {
       id: json[0],
-      x: stack.projectToStackX(json[3], json[2], json[1]),
-      y: stack.projectToStackY(json[3], json[2], json[1]),
-      z: stack.projectToStackZ(json[3], json[2], json[1])
+      x: stack.projectToUnclampedStackX(json[3], json[2], json[1]),
+      y: stack.projectToUnclampedStackY(json[3], json[2], json[1]),
+      z: stack.projectToUnclampedStackZ(json[3], json[2], json[1])
     };
   });
+};
+
+/**
+ * Promise suppressed virtual treenodes of a node, or for a virtual node its
+ * real child node.
+ * @param  {number} nodeId ID of the child node whose suppressed virtual parents
+ *                         will be returned.
+ * @return {Promise}       A promise returning the array of suppressed virtual
+ *                         node objects.
+ */
+SkeletonAnnotations.SVGOverlay.prototype.promiseSuppressedVirtualNodes = function(nodeId) {
+  if (!SkeletonAnnotations.isRealNode(nodeId)) {
+    nodeId = SkeletonAnnotations.getChildOfVirtualNode(nodeId);
+  }
+
+  var node = this.nodes[nodeId];
+  if (node && node.hasOwnProperty('suppressed')) {
+    return Promise.resolve(node.suppressed || []);
+  } else {
+    // Request suppressed virtual treenodes from backend.
+    var self = this;
+    return new Promise(function(resolve, reject) {
+      var url = django_url + project.id + "/treenodes/" + nodeId + "/suppressed-virtual/";
+      requestQueue.register(url, 'GET', undefined, CATMAID.jsonResponseHandler(resolve, reject));
+    }).then(function (json) {
+      var node = self.nodes[nodeId];
+      if (node) node.suppressed = json.length ? json : undefined;
+      return json;
+    });
+  }
 };
 
 /**
@@ -3252,6 +3377,118 @@ SkeletonAnnotations.SVGOverlay.prototype.cycleThroughOpenEnds = function (treeno
   currentEnd = (currentEnd + 1) % this.nextOpenEnds.ends.length;
 
   var node = this.nextOpenEnds.ends[currentEnd];
+  this.moveTo(node[1][2], node[1][1], node[1][0], this.selectNode.bind(this, node[0]));
+};
+
+/**
+ * Go the nearest node with a label matching a regex. If a skeleton is active,
+ * this is limited to the active skeleton and goes to the nearest node by
+ * path distance
+ *
+ * @param  {boolean} cycle  If true, cycle through results in the previous set.
+ * @param  {boolean} repeat If true, repeat the last label search.
+ */
+SkeletonAnnotations.SVGOverlay.prototype.goToNearestMatchingTag = function (cycle, repeat) {
+  if (cycle) return this.cycleThroughNearestMatchingTags();
+
+  var self = this;
+
+  var retrieveNearestMatchingTags = function () {
+    var nodeId = SkeletonAnnotations.getActiveNodeId();
+
+    if (nodeId) {
+      if (!SkeletonAnnotations.isRealNode(nodeId)) {
+        nodeId = SkeletonAnnotations.getParentOfVirtualNode(nodeId);
+      }
+      var skeletonId = SkeletonAnnotations.getActiveSkeletonId();
+      self.submit(
+          django_url + project.id + '/skeletons/' + skeletonId + '/find-labels',
+          { treenode_id: nodeId,
+            label_regex: self.nextNearestMatchingTag.query },
+          function (json) {
+            // json is an array of nodes. Each node is an array:
+            // [0]: open end node ID
+            // [1]: location array as [x, y, z]
+            // [2]: distance (path length)
+            // [3]: matching tags
+            self.nextNearestMatchingTag.matches = json;
+            self.cycleThroughNearestMatchingTags();
+          });
+    } else {
+      var projectCoordinates = self.stackViewer.projectCoordinates();
+      self.submit(
+          django_url + project.id + '/nodes/find-labels',
+          { x: projectCoordinates.x,
+            y: projectCoordinates.y,
+            z: projectCoordinates.z,
+            label_regex: self.nextNearestMatchingTag.query },
+          function (json) {
+            self.nextNearestMatchingTag.matches = json;
+            self.cycleThroughNearestMatchingTags();
+          });
+    }
+  };
+
+  if (!repeat || this.nextNearestMatchingTag.query === null) {
+    var options = new CATMAID.OptionsDialog("Search for node by tag");
+    options.appendField("Tag (regex):", "nearest-matching-tag-regex", "", true);
+    if (!SkeletonAnnotations.getActiveNodeId()) {
+      options.appendField("Within distance:", "nearest-matching-tag-radius", "", true);
+    }
+
+    options.onOK = function() {
+        var regex = $('#nearest-matching-tag-regex').val();
+        if (regex && regex.length > 0) regex = regex.trim();
+        else return alert("Must provide a tag name or regex search.");
+
+        self.nextNearestMatchingTag.query = regex;
+
+        var radius = $('#nearest-matching-tag-radius');
+        if (radius) {
+          radius = Number.parseInt(radius.val(), 10);
+          self.nextNearestMatchingTag.radius = radius;
+        } else {
+          self.nextNearestMatchingTag.radius = Infinity;
+        }
+
+        retrieveNearestMatchingTags();
+    };
+
+    options.show(300, 180, true);
+  } else {
+    retrieveNearestMatchingTags();
+  }
+};
+
+/**
+ * Cycle through nodes with labels matching a query retrieved by
+ * goToNearestMatchingTag.
+ */
+SkeletonAnnotations.SVGOverlay.prototype.cycleThroughNearestMatchingTags = function () {
+  if (this.nextNearestMatchingTag.matches.length === 0) {
+    CATMAID.info('No nodes with matching tags');
+    return;
+  }
+
+  var treenodeId = SkeletonAnnotations.getActiveNodeId();
+  if (treenodeId) {
+    var currentNode = this.nextNearestMatchingTag.matches.map(function (node) {
+      return node[0] === treenodeId;
+    }).indexOf(true);
+  } else {
+    var currentNode = -1;
+  }
+
+  // Cycle through nodes.
+  currentNode = (currentNode + 1) % this.nextNearestMatchingTag.matches.length;
+
+  var node = this.nextNearestMatchingTag.matches[currentNode];
+
+  if (node[2] > this.nextNearestMatchingTag.radius) {
+    var remainingNodes = this.nextNearestMatchingTag.matches.length - currentNode;
+    CATMAID.info(remainingNodes + ' more nodes have matching tags but are beyond the distance limit.');
+    return;
+  }
   this.moveTo(node[1][2], node[1][1], node[1][0], this.selectNode.bind(this, node[0]));
 };
 
@@ -3374,8 +3611,7 @@ SkeletonAnnotations.SVGOverlay.prototype.deleteNode = function(nodeId) {
   }
 
   if (!SkeletonAnnotations.isRealNode(nodeId)) {
-    CATMAID.warn("Can't delete this node, because it is virtual");
-    return false;
+    return this.toggleVirtualNodeSuppression(nodeId);
   }
 
   if (!mayEdit() || !node.can_edit) {
@@ -3469,6 +3705,68 @@ SkeletonAnnotations.SVGOverlay.prototype.deleteNode = function(nodeId) {
       CATMAID.statusBar.replaceLast("Deleted node #" + node.id);
     });
   }
+
+  return true;
+};
+
+/**
+ * Toggle whether a given virtual node is suppressed (i.e., not traversed during
+ * review) or unsuppressed.
+ * @param  {number}  nodeId ID of the virtual node to suppress or unsuppress.
+ * @return {boolean}        Whether a toggle was issued (false for real nodes).
+ */
+SkeletonAnnotations.SVGOverlay.prototype.toggleVirtualNodeSuppression = function (nodeId) {
+  if (SkeletonAnnotations.isRealNode(nodeId)) {
+    CATMAID.warn("Can not suppress real nodes.");
+    return false;
+  }
+
+  var childId = SkeletonAnnotations.getChildOfVirtualNode(nodeId);
+  var location = this.promiseNodeLocation(nodeId);
+  var suppressed = this.promiseSuppressedVirtualNodes(nodeId);
+  var self = this;
+
+  Promise.all([location, suppressed]).then(function (values) {
+    var location = values[0],
+        suppressed = values[1],
+        stack = self.stackViewer.primaryStack,
+        orientation = stack.orientation,
+        orientationName = ['x', 'y', 'z'][orientation],
+        coordinate = [
+          stack.stackToProjectX(location.z, location.y, location.x),
+          stack.stackToProjectY(location.z, location.y, location.x),
+          stack.stackToProjectZ(location.z, location.y, location.x),
+        ][2 - orientation];
+    var match = suppressed
+        .map(function (s) {
+          return s.orientation === orientation
+              && s.location_coordinate === coordinate; })
+        .indexOf(true);
+    if (-1 !== match) {
+      var suppressedId = suppressed[match].id;
+      requestQueue.register(
+          CATMAID.makeURL(project.id + '/treenodes/' + childId + '/suppressed-virtual/' + suppressedId),
+          'DELETE',
+          undefined,
+          CATMAID.jsonResponseHandler(function () {
+            var node = self.nodes[childId];
+            if (node) delete node.suppressed;
+            CATMAID.info('Unsuppressed virtual parent of ' + childId + ' at ' +
+                         orientationName + '=' + coordinate);
+          }));
+    } else {
+      requestQueue.register(
+          CATMAID.makeURL(project.id + '/treenodes/' + childId + '/suppressed-virtual/'),
+          'POST',
+          {orientation: orientation, location_coordinate: coordinate},
+          CATMAID.jsonResponseHandler(function (json) {
+            var node = self.nodes[childId];
+            if (node && node.suppressed) node.suppressed.push(json);
+            CATMAID.info('Suppressed virtual parent of ' + childId + ' at ' +
+                         orientationName + '=' + coordinate);
+          }));
+    }
+  });
 
   return true;
 };
@@ -3682,7 +3980,7 @@ SkeletonAnnotations.Tag = new (function() {
             // TODO autocompletion should only be invoked after typing at least one character
             // add autocompletion, only request after tagbox creation
             svgOverlay.submit(
-              django_url + project.id + '/labels-all',
+              django_url + project.id + '/labels/',
               {pid: project.id},
               function(json) {
                 input.autocomplete({source: json});

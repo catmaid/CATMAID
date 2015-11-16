@@ -22,23 +22,26 @@ def create_basic_annotated_entity_query(project, params, relations, classes,
 
     annotated_with = relations['annotated_with']
 
-    # One set for requested annotations and one for those of which
-    # subannotations should be included
-    annotations = set()
-    annotations_to_expand = set()
+    # One list of annotation sets for requested annotations and one for those
+    # of which subannotations should be included
+    annotation_sets = set()
+    annotation_sets_to_expand = set()
 
     # Get name, annotator and time constraints, if available
-    name = params.get('neuron_query_by_name', "").strip()
-    annotator_ids = set(map(int, params.getlist('neuron_query_by_annotator')))
-    start_date = params.get('neuron_query_by_start_date', "").strip()
-    end_date = params.get('neuron_query_by_end_date', "").strip()
+    name = params.get('name', "").strip()
+    annotator_ids = set(map(int, params.getlist('annotated_by')))
+    start_date = params.get('annotation_date_start', "").strip()
+    end_date = params.get('annotation_date_end', "").strip()
 
-    # Collect annotations and sub-annotation information
+    # Collect annotations and sub-annotation information. Each entry can be a
+    # list of IDs, which will be treated as or-combination.
     for key in params:
-        if key.startswith('neuron_query_by_annotation'):
-            annotations.add(int(params[key]))
-        elif key.startswith('neuron_query_include_subannotation'):
-            annotations_to_expand.add(int(params[key]))
+        if key.startswith('annotated_with'):
+            annotation_set = frozenset(int(a) for a in params[key].split(','))
+            annotation_sets.add(annotation_set)
+        elif key.startswith('sub_annotated_with'):
+            annotation_set = frozenset(int(a) for a in params[key].split(','))
+            annotation_sets_to_expand.add(annotation_set)
 
     # Construct a dictionary that contains all the filters needed for the
     # current query.
@@ -63,18 +66,18 @@ def create_basic_annotated_entity_query(project, params, relations, classes,
     if end_date:
         filters['cici_via_a__creation_time__lte'] = end_date
 
-    # Get map of annotations to expand and their sub-annotations
-    sub_annotation_ids = get_sub_annotation_ids(project, annotations_to_expand,
+    # Map annotation sets to their expanded sub-annotations
+    sub_annotation_ids = get_sub_annotation_ids(project, annotation_sets_to_expand,
             relations, classes)
 
     # Collect all annotations and their sub-annotation IDs (if requested) in a
     # set each. For the actual query each set is connected with AND while
     # for everything within one set OR is used.
     annotation_id_sets = []
-    for a in annotations:
-        current_annotation_ids = set([a])
+    for annotation_set in annotation_sets:
+        current_annotation_ids = set(annotation_set)
         # Add sub annotations, if requested
-        sa_ids = sub_annotation_ids.get(a)
+        sa_ids = sub_annotation_ids.get(annotation_set)
         if sa_ids and len(sa_ids):
             current_annotation_ids.update(sa_ids)
         annotation_id_sets.append(current_annotation_ids)
@@ -100,12 +103,13 @@ def create_basic_annotated_entity_query(project, params, relations, classes,
     # all instances of the given set of allowed classes.
     return entities
 
-def get_sub_annotation_ids(project_id, annotation_set, relations, classes):
+def get_sub_annotation_ids(project_id, annotation_sets, relations, classes):
     """ Sub-annotations are annotations that are annotated with an annotation
     from the annotation_set passed. Additionally, transivitely annotated
-    annotations are returned as well.
+    annotations are returned as well. Note that all entries annotation_sets
+    must be frozenset instances, they need to be hashable.
     """
-    if not annotation_set:
+    if not annotation_sets:
         return {}
 
     aaa_tuples = ClassInstanceClassInstance.objects.filter(
@@ -132,21 +136,22 @@ def get_sub_annotation_ids(project_id, annotation_set, relations, classes):
     # Collect all sub-annotations by following the annotation hierarchy for
     # every annotation in the annotation set passed.
     sa_ids = {}
-    for a in annotation_set:
-        # Start with an empty result set for each requested annotation
+    for annotation_set in annotation_sets:
+        # Start with an empty result set for each requested annotation set
         ls = set()
-        working_set = set([a])
-        while working_set:
-            parent_id = working_set.pop()
-            # Try to get the sub-annotations for this parent
-            child_ids = aaa.get(parent_id) or set_wrapper()
-            for child_id in child_ids.data:
-                if child_id not in sa_ids:
-                    # Add all children as sub annotations
-                    ls.add(child_id)
-                    working_set.add(child_id)
+        for a in annotation_set:
+            working_set = set([a])
+            while working_set:
+                parent_id = working_set.pop()
+                # Try to get the sub-annotations for this parent
+                child_ids = aaa.get(parent_id) or set_wrapper()
+                for child_id in child_ids.data:
+                    if child_id not in sa_ids:
+                        # Add all children as sub annotations
+                        ls.add(child_id)
+                        working_set.add(child_id)
         # Store the result list for this ID
-        sa_ids[a] = list(ls)
+        sa_ids[annotation_set] = list(ls)
 
     return sa_ids
 
@@ -207,90 +212,161 @@ def create_annotated_entity_list(project, entities_qs, relations, annotations=Tr
 
     return annotated_entities
 
+@api_view(['POST'])
 @requires_user_role([UserRole.Browse])
-def query_neurons_by_annotations(request, project_id = None):
+def query_annotated_classinstances(request, project_id = None):
+    """Query entities based on various constraints
+
+    Entities are objects that can be referenced within CATMAID's semantic
+    space, e.g. neurons, annotations or stack groups. This API allows to query
+    them, mainly by annotations that have been used with them. Multiple
+    annotation parameters can be used to combine different annotation sets with
+    AND. Elements of one annotation parameter are combined with OR.
+    ---
+    parameters:
+      - name: name
+        description: The name (or a part of it) of result elements.
+        type: string
+        paramType: form
+      - name: annotated_by
+        description: A result element was annotated by a user with this ID.
+        type: integer
+        paramType: form
+        allowMultiple: true
+      - name: annotation_date_start
+        description: The earliest YYYY-MM-DD date result elements have been annotated at.
+        format: date
+        type: string
+        paramType: query
+      - name: annotation_date_end
+        description: The latest YYYY-MM-DD date result elements have been annotated at.
+        format: date
+        type: string
+        paramType: query
+      - name: annotated_with
+        description: A comma separated list of annotation IDs of which at least one annotated the result elements.
+        type: integer
+        paramType: form
+        allowMultiple: true
+      - name: sub_annotated_with
+        description: A comma separated list of annotation IDs of which at least one or its sub-annotations annotated the result elements.
+        type: integer
+        paramType: form
+        allowMultiple: true
+      - name: with_annotations
+        description: Indicate if annotations of result elements should be returned.
+        type: boolean
+        paramType: form
+      - name: types
+        description: Allowed result types. Multple types can be passed with multiple parameters. Defaults to 'neuron' and 'annotation'.
+        type: string
+        paramType: form
+        allowMultiple: true
+      - name: sort_by
+        description: Indicates how results are sorted.
+        type: string
+        defaultValue: id
+        enum: [id, name, first_name, last_name]
+        paramType: form
+      - name: sort_dir
+        description: Indicates sorting direction.
+        type: string
+        defaultValue: asc
+        enum: [asc, desc]
+        paramType: form
+      - name: range_start
+        description: The first result element index.
+        type: integer
+        paramType: form
+      - name: range_end
+        description: The maximum number result elements.
+        type: integer
+        paramType: form
+    models:
+      annotated_entity:
+        id: annotated_entity
+        description: A result entity.
+        properties:
+          name:
+            type: string
+            description: The name of the entity
+            required: true
+          id:
+            type: integer
+            description: The id of the entity
+            required: true
+          skeleton_ids:
+            type: array
+            description: A list of users
+            required: true
+            items:
+                type: integer
+          type:
+            type: string
+            description: Type of the entity
+            required: true
+    type:
+        entities:
+            type: array
+            items:
+              $ref: annotated_entity
+            required: true
+        totalRecords:
+            type: integer
+            required: true
+    """
     p = get_object_or_404(Project, pk = project_id)
 
     classes = dict(Class.objects.filter(project_id=project_id).values_list('class_name', 'id'))
     relations = dict(Relation.objects.filter(project_id=project_id).values_list('relation_name', 'id'))
 
-    query = create_basic_annotated_entity_query(p,
-            request.POST, relations, classes)
-    query = query.order_by('id').distinct()
+    # Type constraints
+    allowed_classes = [v for k,v in request.POST.iteritems()
+            if k.startswith('types[')]
+    if not allowed_classes:
+        allowed_classes = ('neuron', 'annotation')
 
+    query = create_basic_annotated_entity_query(p, request.POST,
+            relations, classes, allowed_classes)
+
+    # Sorting
+    sort_by = request.POST.get('sort_by', 'id')
+    if sort_by not in ('id', 'name', 'first_name', 'last_name'):
+        raise ValueError("Only 'id', 'name', 'first_name' and 'last_name' "
+                         "are allowed for the 'sort-dir' parameter")
+    sort_dir = request.POST.get('sort_dir', 'asc')
+    if sort_dir not in ('asc', 'desc'):
+        raise ValueError("Only 'asc' and 'desc' are allowed for the 'sort-dir' parameter")
+    query = query.order_by(sort_by if sort_dir == 'asc' else ('-' + sort_by))
+
+    # Make sure we get a distinct result, which otherwise might not be the case
+    # due to the joins made.
+    query = query.distinct()
+
+    # If there are range limits and given that it is very likely that there are
+    # many entities returned, it is more efficient to get the total result
+    # number with two queries: 1. Get total number of neurons 2. Get limited
+    # set. The (too expensive) alternative would be to get all neurons for
+    # counting and limiting on the Python side.
+    range_start = request.POST.get('range_start', None)
+    range_length = request.POST.get('range_length', None)
     with_annotations = request.POST.get('with_annotations', 'false') == 'true'
-
-    # Collect entity information
-    entities = create_annotated_entity_list(p, query, relations,
-            with_annotations)
+    if range_start and range_length:
+        range_start = int(range_start)
+        range_length = int(range_length)
+        num_records = query.count()
+        entities = create_annotated_entity_list(p,
+                query[range_start:range_start + range_length],
+                relations, with_annotations)
+    else:
+        entities = create_annotated_entity_list(p, query, relations,
+                with_annotations)
+        num_records = len(entities)
 
     return HttpResponse(json.dumps({
       'entities': entities,
+      'totalRecords': num_records,
     }))
-
-@requires_user_role([UserRole.Browse])
-def query_neurons_by_annotations_datatable(request, project_id=None):
-    p = get_object_or_404(Project, pk = project_id)
-
-    classes = dict(Class.objects.filter(project_id=project_id).values_list('class_name', 'id'))
-    relations = dict(Relation.objects.filter(project_id=project_id).values_list('relation_name', 'id'))
-
-    display_start = int(request.POST.get('iDisplayStart', 0))
-    display_length = int(request.POST.get('iDisplayLength', -1))
-    if display_length < 0:
-        display_length = 2000  # Default number of result rows
-
-    neuron_query = create_basic_annotated_entity_query(p, request.POST,
-            relations, classes, allowed_classes=['neuron'])
-
-    search_term = request.POST.get('sSearch', '')
-    if len(search_term) > 0:
-        neuron_query = neuron_query.filter(name__iregex=search_term)
-
-    should_sort = request.POST.get('iSortCol_0', False)
-    if should_sort:
-        column_count = int(request.POST.get('iSortingCols', 0))
-        sorting_directions = [request.POST.get('sSortDir_%d' % d, 'DESC')
-                for d in range(column_count)]
-        sorting_directions = map(lambda d: '-' if upper(d) == 'DESC' else '',
-                sorting_directions)
-
-        fields = ['name', 'first_name', 'last_name']
-        sorting_index = [int(request.POST.get('iSortCol_%d' % d))
-                for d in range(column_count)]
-        sorting_cols = map(lambda i: fields[i], sorting_index)
-
-        neuron_query = neuron_query.extra(order_by=[di + col for (di, col) in zip(
-                sorting_directions, sorting_cols)])
-
-    # Make sure we get a distinct result (which otherwise might not be the case
-    # due to the JOINS that are made).
-    neuron_query = neuron_query.distinct()
-
-    # Since it is very likely that there are many neurons, it is more efficient
-    # to do two queries: 1. Get total number of neurons 2. Get limited set. The
-    # alternative would be to get all neurons for counting and limiting on the
-    # Python side. This, however, is too expensive when there are many neurons.
-    num_records = neuron_query.count()
-
-    response = {
-        'iTotalRecords': num_records,
-        'iTotalDisplayRecords': num_records,
-        'aaData': []
-    }
-
-    entities = create_annotated_entity_list(p,
-            neuron_query[display_start:display_start + display_length], relations)
-    for entity in entities:
-        if entity['type'] == 'neuron':
-            response['aaData'] += [[
-                entity['name'],
-                entity['annotations'],
-                entity['skeleton_ids'],
-                entity['id'],
-            ]]
-
-    return HttpResponse(json.dumps(response), content_type='text/json')
 
 def _update_neuron_annotations(project_id, user, neuron_id, annotation_map):
     """ Ensure that the neuron is annotated_with only the annotations given.
@@ -1039,9 +1115,30 @@ def list_annotations_datatable(request, project_id=None):
     return HttpResponse(json.dumps(response), content_type='text/json')
 
 
+@api_view(['POST'])
 @requires_user_role([UserRole.Browse])
 def annotations_for_skeletons(request, project_id=None):
-    skids = tuple(int(skid) for key, skid in request.POST.iteritems() if key.startswith('skids['))
+    """Get annotations and who used them for a set of skeletons.
+
+    This method focuses only on annotations linked to skeletons and is likely to
+    be faster than the general query. Returns an object with two fields:
+    "annotations", which is itself an object with annotation IDs as fields,
+    giving access to the corresponding annotation names. And the field
+    "skeletons" is also an object, mapping skeleton IDs to lists of
+    annotation-annotator ID pairs. Also, as JSON separator a colon is used
+    instead of a comma.
+    ---
+    parameters:
+      - name: skeleton_ids
+        description: A list of skeleton IDs which are annotated by the resulting annotations.
+        paramType: query
+        type: array
+        items:
+            type: integer
+            description: A skeleton ID
+    """
+    skids = tuple(int(skid) for key, skid in request.POST.iteritems() \
+            if key.startswith('skeleton_ids['))
     cursor = connection.cursor()
     cursor.execute("SELECT id FROM relation WHERE project_id=%s AND relation_name='annotated_with'" % int(project_id))
     annotated_with_id = cursor.fetchone()[0]
@@ -1072,11 +1169,40 @@ def annotations_for_skeletons(request, project_id=None):
     }, separators=(',', ':')))
 
 
+@api_view(['POST'])
 @requires_user_role([UserRole.Browse])
 def annotations_for_entities(request, project_id=None):
-    ids = tuple(int(eid) for key, eid in request.POST.iteritems() if key.startswith('ids['))
+    """Query annotations linked to a list of objects.
+
+    These objects can for instance be neurons, annotations or stack groups. From
+    a database perspective, these objects are class instances.
+
+    Returned is an object with the fields "entities" and "annotations". The
+    former is an object mapping an entity ID to a list of annotations. Each
+    annotation is represented by an object containing its "id" and "uid", the
+    user who annotated it. The latter maps annotation IDs to annotation names.
+    For instance::
+
+    { "entities": { "42": [{id: 1, uid: 12}, {id: 3, uid: 14}] }, "annotations": { 12: "example1", 14: "example2" } }
+    ---
+    parameters:
+      - name: object_ids
+        description: A list of object IDs for which annotations should be returned.
+        paramType: form
+        type: array
+        allowMultiple: true
+        items:
+            type: integer
+            description: A skeleton ID
+    """
+    # Get 'annotated_with' relation ID
+    object_ids = tuple(int(eid) for key, eid in request.POST.iteritems() \
+            if key.startswith('object_ids['))
     cursor = connection.cursor()
-    cursor.execute("SELECT id FROM relation WHERE project_id=%s AND relation_name='annotated_with'" % int(project_id))
+    cursor.execute("""
+        SELECT id FROM relation
+        WHERE project_id=%s AND
+        relation_name='annotated_with'""" % int(project_id))
     annotated_with_id = cursor.fetchone()[0]
 
     # Select pairs of skeleton_id vs annotation name
@@ -1088,7 +1214,7 @@ def annotations_for_entities(request, project_id=None):
     WHERE entity_annotation.class_instance_a IN (%s)
       AND entity_annotation.relation_id = %s
       AND entity_annotation.class_instance_b = annotation.id
-    ''' % (",".join(map(str, ids)), annotated_with_id))
+    ''' % (",".join(map(str, object_ids)), annotated_with_id))
 
     # Group by entity ID
     m = defaultdict(list)

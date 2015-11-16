@@ -58,6 +58,11 @@ clone the virtualenv by calling::
 
    deactivate
 
+.. note::
+
+   Updating PostGIS on your host system could cause CATMAID to stop working. See
+   :ref:`here <faq-postgis-update-problems>` for how to fix this.
+
 Backup an restore the database
 ------------------------------
 

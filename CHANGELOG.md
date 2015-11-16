@@ -1,3 +1,146 @@
+## 2015.11.16
+
+Contributors: Albert Cardona, Andrew Champion, Tom Kazimiers
+
+
+### Features and enhancements
+
+Key shortcuts / mouse operations:
+
+- Pressing \ now brings up a dialog to go to the nearest node with a label
+  matching a query regex. If a node is active, this search is limited to the
+  active skeleton. Shift + \ cycles through matching nodes in ascending
+  distance order. Ctrl + \ repeats the last search regex without prompting.
+
+- Deleting a virtual node with DELETE or Ctrl+Shift+click instead suppresses
+  the virtual node. Suppressed virtual nodes are skipped during review. A
+  setting is available to also skip suppressed virtual nodes during normal
+  navigation with [ and ].
+
+
+Selection table:
+
+- Batch coloring is now much quicker.
+
+- If the batch color button is pressed a second time the color picker will not
+  only close but also will the batch coloring be re-applied. This won't happen
+  if the color picker is closed by clicking somewhere else.
+
+- The status text line at the bottom of the table includes now the number of
+  selected neurons. This is helpful when a filter is active and more neurons are
+  selected than visible.
+
+- Sorting for visibility columns has been removed.
+
+- Neurons part of a Selection Table can now also be filtered based on
+  annotations. This can be done with the help of the input field next to the
+  name filter. Like with the name filter input, pressing the Enter key will
+  activate both filters and starting with a slash character ("/") will make the
+  input be treated as a regular expression (to e.g. only show neurons that are
+  annotated with a1 and b2, use "/a1|b2"). For now no meta-annotations are taken
+  into account.
+
+- With the help of the new "Open" and "Close" buttons, skeleton lists can be
+  stored into JSON files as well as loaded from them. Along with each skeleton
+  ID, the current color and opacity is stored.
+
+
+Skeleton projection layer
+
+- With the new "Skeleton color gradient" coloring mode, the skeleton's tracing
+  color (currently only yellow fo the active skeleton) is used for coloring. It
+  fades into downstream and upstream colors, respectively (which are black and
+  white by default).
+
+- Nodes can be selected by placing the mouse close to them (regardless if
+  displayed or not) and pressing 'g'. If no node is found in close proximity
+  (<50px screen space), the tracing layer's node selection is used.
+
+
+Graph widget:
+
+- Synapses can be filtered from edges based on their confidence. The confidence
+  threshold is applied to the minimum of the pre- and post-synaptic relation
+  confidences. Confidence filtering is applied prior to synapse count filtering.
+
+- Synapse count coloring on edges can now be configured independently from edge
+  colors.
+
+
+Volumes:
+
+- A new widget, the Volume Manager, allows to create and list volumetric
+  geometries. These geometries are not yet displayable and for now only
+  box volumes can be created. The widget is available through a new 3D box
+  icon, last in the list of tracing tool widgets.
+
+- New nodes can now be tested for intersection with a certain volume. The
+  Tracing section of the settings widget allows to choose a volume
+  against which new nodes will be tested. If they are outside of it, a
+  warning will be shown.
+
+
+Neuron Search:
+
+- Partial annotations as well as regular expressions are now supported for
+  searching. If the text entered in an 'annotated' search field matches a single
+  existing annotation (i.e. one that would also show up in the auto-completion),
+  it is used as search constraint, just like before. However, if no matching
+  annotation was found, the input text is treated as a regular expression on
+  annotation names if it starts with a slash character ('/'), otherwise it is
+  treated as a regular search pattern over all annotations. For instance,
+  finding all things that are are annotated by either A1 or B2 would look
+  like '/A1|B2' or requiring annotations that end on 'xyz' could be searched for
+  by '/xyz$'. This also works with sub-annotation queries.
+
+
+3D viewer:
+
+- Different neuron visibility modes are now available for animations. A
+  drop down list replaces the check-box and an option dialog is shown if
+  a particular animation mode requires user input. Besides the 'show one neuron
+  per rotation' mode, there is now also the 'Show n neurons per rotation' mode
+  and a mode which uses a pattern to explicitly define the visibility of
+  particular neurons after a particular rotation. The animation export now uses
+  the visibility mode selected in the 3D viewer.
+
+
+Administration:
+
+- CATMAID has been able to use DVID as a project/stack back-end and as a
+  image source for quite a wile now. To make the latter option easier to setup,
+  a new admin tool is available to create CATMAID stacks based on a DVID server.
+  It can be found in the "Custom views" section of CATMAID's admin interface,
+  labeled as "DVID stack importer". With the help of this tool on can inspect
+  all available repositories and data instances on a DVID server and create a
+  stack based on one data instance. CATMAID will make sure that all
+  pre-conditions are met by a stack created this way.
+
+
+Miscellaneous:
+
+- By default new widgets will now select the last widget created as skeleton
+  source. If wanted, this can be adjusted to the previous behavior (always
+  select 'Active skeleton') through the 'Auto-select widget created last as
+  source for new widgets' option in the settings widget.
+
+- Multiple stacks opened through a URL can now optionally be opened in the same
+  stack viewer window by adding "&composite=1" to the URL.
+
+- If an already reviewed node is moved it will now become unreviewed again.
+
+- Links clicked in the message menu will now open in a new page.
+
+
+### Bug fixes
+
+- The skeleton projection layer will now update automatically on skeleton
+  changes like new or removed nodes as well as splits and merges. It will also
+  not complain anymore if a connector was selected.
+
+- Text rendered in the 3D viewer is now upright again (instead of upside-down).
+
+
 ## 2015.10.19
 
 Contributors: Albert Cardona, Andrew Champion, Tom Kazimiers
@@ -41,6 +184,11 @@ Orthogonal views and multi-channel data:
 - Skeletons can be shaded by distance from a plane through the active node. The
   plane can either be a Z-plane in project space or a plane normal to the ray
   from the camera to the active node.
+
+- New "Count" button to count the number of pre- or postsynaptic sites, or the
+  number of treenodes tagged with a given text tag, within a distance of the
+	active node in the selected arbor along the cable of the arbor, or within a
+	given Euclidean distance for any arbor present in the 3D viewer.
 
 
 Tile layer:

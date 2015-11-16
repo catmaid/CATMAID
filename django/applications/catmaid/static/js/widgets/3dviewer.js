@@ -8,9 +8,7 @@
   InstanceRegistry,
   NeuronNameService,
   project,
-  Project,
   requestQueue,
-  SelectionTable,
   session,
   SkeletonAnnotations,
   SkeletonRegistry,
@@ -55,8 +53,8 @@
     this.options = new WebGLApplication.prototype.OPTIONS.clone();
     this.space = new this.Space(canvasWidth, canvasHeight, this.container, project.focusedStackViewer.primaryStack, this.options);
     this.updateActiveNodePosition();
-    project.on(Project.EVENT_STACKVIEW_FOCUS_CHANGED, this.adjustStaticContent, this);
-    project.on(Project.EVENT_LOCATION_CHANGED, this.handlelLocationChange, this);
+    project.on(CATMAID.Project.EVENT_STACKVIEW_FOCUS_CHANGED, this.adjustStaticContent, this);
+    project.on(CATMAID.Project.EVENT_LOCATION_CHANGED, this.handlelLocationChange, this);
     this.initialized = true;
   };
 
@@ -70,8 +68,8 @@
   WebGLApplication.prototype.destroy = function() {
     SkeletonAnnotations.off(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
         this.staticUpdateActiveNodePosition, this);
-    project.off(Project.EVENT_STACKVIEW_FOCUS_CHANGED, this.adjustStaticContent, this);
-    project.off(Project.EVENT_LOCATION_CHANGED, this.handlelLocationChange, this);
+    project.off(CATMAID.Project.EVENT_STACKVIEW_FOCUS_CHANGED, this.adjustStaticContent, this);
+    project.off(CATMAID.Project.EVENT_LOCATION_CHANGED, this.handlelLocationChange, this);
     this.unregisterInstance();
     this.unregisterSource();
     this.space.destroy();
@@ -565,10 +563,10 @@
         if (0 === skids.length) return CATMAID.info("No skeletons found");
         var models = {};
         skids.forEach(function(skid) {
-          models[skid] = new SelectionTable.prototype.SkeletonModel(skid, "", new THREE.Color().setRGB(0.5, 0.5, 0.5));
+          models[skid] = new CATMAID.SkeletonModel(skid, "", new THREE.Color().setRGB(0.5, 0.5, 0.5));
         });
         WindowMaker.create('neuron-staging-area');
-        var sel = SelectionTable.prototype.getLastInstance();
+        var sel = CATMAID.SelectionTable.prototype.getLastInstance();
         sel.append(models);
       };
 
@@ -711,7 +709,8 @@
     this.animation_rotation_axis = "up";
     this.animation_rotation_speed = 0.01;
     this.animation_back_forth = false;
-    this.animation_stepwise_visibility = false;
+    this.animation_stepwise_visibility_type = 'all';
+    this.animation_stepwise_visibility_options = null;
     this.strahler_cut = 2; // to approximate twigs
   };
 
@@ -1140,6 +1139,42 @@
     }
 
     this.space.render();
+  };
+
+  /**
+   * Set neuron visibility with the help of a dialog in case the visibility type
+   * needs
+   */
+  WebGLApplication.prototype.setAnimationNeuronVisibility = function(type, options) {
+    var visibility = CATMAID.WebGLApplication.AnimationNeuronVisibilities[type];
+    if (!visibility) {
+      throw new CATMAID.ValueError("Unknown neuron visibility type: " + type);
+    }
+
+    // Bind visibility to widget and option object
+    this.options.animation_stepwise_visibility_type = type;
+    this.options.animation_stepwise_visibility_options = options;
+  };
+
+  WebGLApplication.AnimationNeuronVisibilities = {
+    'all': function() {},
+    'n-per-rotation': function(options, skeletonIds, visibleSkeletons, r) {
+      // Expect r to be the numnber of rotations done
+      var skeletonIndex = parseInt(r * options.n);
+      // Make next skeleton visible, if available
+      for (var i=0; i<options.n; ++i) {
+        if ((skeletonIndex + i) < skeletonIds.length) {
+          visibleSkeletons.push(skeletonIds[skeletonIndex + i]);
+        }
+      }
+    },
+    'explicit-order': function(options, skeletonIds, visibleSkeletons, r) {
+      if (r in options.rotations) {
+        options.rotations[r].forEach(function(skeletonId) {
+          visibleSkeletons.push(skeletonId);
+        });
+      }
+    }
   };
 
   WebGLApplication.prototype.set_shading_method = function() {
@@ -1573,6 +1608,8 @@
 
     this.createTextMesh = function(tagString, material) {
       var text = new THREE.Mesh(this.getTagGeometry(tagString), material);
+      // We need to flip up, because our cameras' up direction is -Y.
+      text.scale.setY(-1);
       text.visible = true;
       return text;
     };
@@ -1599,7 +1636,7 @@
     this.radiusSphere = new THREE.OctahedronGeometry(10, 3);
     this.icoSphere = new THREE.IcosahedronGeometry(1, 2);
     this.cylinder = new THREE.CylinderGeometry(1, 1, 1, 10, 1, false);
-    this.textMaterial = new THREE.MeshNormalMaterial( { overdraw: true } );
+    this.textMaterial = new THREE.MeshNormalMaterial();
     // Mesh materials for spheres on nodes tagged with 'uncertain end', 'undertain continuation' or 'TODO'
     this.labelColors = {uncertain: new THREE.MeshBasicMaterial({color: 0xff8000, opacity:0.6, transparent: true}),
                         todo:      new THREE.MeshBasicMaterial({color: 0xff0000, opacity:0.6, transparent: true}),
@@ -2037,13 +2074,20 @@
    * handlers on it.
    */
   WebGLApplication.prototype.Space.prototype.View.prototype.initRenderer = function() {
+    var clearColor = null;
     // Remove existing elements if there is a current renderer
     if (this.renderer) {
       this.space.container.removeChild(this.renderer.domElement);
       this.mouseControls.detach(this.renderer.domElement);
+      // Save clear color
+      clearColor = this.renderer.getClearColor();
     }
 
     this.renderer = this.createRenderer('webgl');
+    if (clearColor) {
+      this.renderer.setClearColor(clearColor);
+    }
+
     this.space.container.appendChild(this.renderer.domElement);
     this.mouseControls = new this.MouseControls();
     this.mouseControls.attach(this, this.renderer.domElement);
@@ -4298,6 +4342,7 @@
     }
 
     this.setTextVisibility( this.skeletonmodel.text_visible ); // the text labels
+    this.setMetaVisibility( this.skeletonmodel.meta_visible ); // tags
 
     //this.updateSkeletonColor(options);
 
@@ -4591,10 +4636,13 @@
 
     // Add a notification handler for stepwise visibility, if enabled and at least
     // one skeleton is loaded.
-    if (this.options.animation_stepwise_visibility) {
+    var visType = this.options.animation_stepwise_visibility_type;
+    if (visType !== 'all') {
       // Get current visibility map and create notify handler
       var visMap = this.space.getVisibilityMap();
-      options['notify'] = this.createStepwiseVisibilityHandler(visMap);
+      var visOpts = this.options.animation_stepwise_visibility_options;
+      options['notify'] = this.createStepwiseVisibilityHandler(visMap,
+          visType, visOpts);
       // Create a stop handler that resets visibility to the state we found before
       // the animation.
       options['stop'] = this.createVisibibilityResetHandler(visMap);
@@ -4607,8 +4655,11 @@
    * Create a notification handler to be used with animations that will make
    * an additional neuron visibile with every call.
    */
-  WebGLApplication.prototype.createStepwiseVisibilityHandler = function(visMap)
-  {
+  WebGLApplication.prototype.createStepwiseVisibilityHandler = function(
+      visMap, type, options) {
+    type = type || 'all';
+    options = options || {};
+
     // Get all visible skeletons
     var skeletonIds = Object.keys(this.space.content.skeletons)
         .filter(function(skid) {
@@ -4620,22 +4671,23 @@
       return function() {};
     }
 
-    // Only make first skeleton visible
-    var visibleSkeletons = [skeletonIds[0]];
-    this.space.setSkeletonVisibility(visMap, visibleSkeletons);
-
+    // Create function to animate neuron visibility
+    var visibility = CATMAID.WebGLApplication.AnimationNeuronVisibilities[type];
     var widget = this;
-
-    // Create function to make one skeleton visible per rotation
-    return function (r) {
-      // Expect r to be the numnber of rotations done
-      var skeletonIndex = parseInt(r);
-      // Make next skeleton visible, if available
-      if (skeletonIndex < skeletonIds.length) {
-        visibleSkeletons.push(skeletonIds[skeletonIndex]);
+    if ('all' === type) {
+      // If all should be shown, make all visible and return no-op
+      widget.space.setSkeletonVisibility(visMap, this.space.content.skeletons);
+      return function() {};
+    } else if (CATMAID.tools.isFn(visibility)) {
+      var visibleSkeletons = [];
+      return function (r) {
+        visibility(options, skeletonIds, visibleSkeletons, r);
         widget.space.setSkeletonVisibility(visMap, visibleSkeletons);
-      }
-    };
+      };
+    } else {
+      throw new CATMAID.ValueError('Don\'t recognize neuron visibility ' +
+          'animation mode "' + visibility + '".');
+    }
   };
 
   /**
@@ -4674,10 +4726,13 @@
         "animation-export-frame-rate", '25');
     var backforthField = dialog.appendCheckbox('Back and forth',
         'animation-export-backforth', false);
-    var stepVisibilityField = dialog.appendCheckbox('Stepwise neuron visibility',
-        'animation-export-backforth', false);
     var camera = this.space.view.camera;
     var target = this.space.view.controls.target;
+
+    var docURL = CATMAID.makeDocURL('user_faq.html#faq-3dviewer-webm');
+    dialog.appendHTML('Note: you can convert the resulting WebM file to ' +
+        'other formats. Have a look at the <a href="' + docURL +
+        '">documentation</a> for more information.');
 
     dialog.onOK = handleOK.bind(this);
 
@@ -4721,8 +4776,11 @@
 
           // Add a notification handler for stepwise visibility, if enabled and at least
           // one skeleton is loaded.
-          if (stepVisibilityField.checked) {
-            options['notify'] = this.createStepwiseVisibilityHandler(visMap);
+          if ('all' !== this.options.animation_stepwise_visibility_type) {
+            var visType = this.options.animation_stepwise_visibility_type;
+            var visOpts = this.options.animation_stepwise_visibility_options;
+            options['notify'] = this.createStepwiseVisibilityHandler(visMap,
+                visType, visOpts);
             // Create a stop handler that resets visibility to the state we found before
             // the animation.
             options['stop'] = this.createVisibibilityResetHandler(visMap);
@@ -5145,8 +5203,8 @@
   CATMAID.AnimationFactory.AxisRotation = function(camera, targetPosition, axis, rSpeed,
       backAndForth, notify)
   {
-    // Counts the number of rotations done
-    var numRotations = 0;
+    // Counts the number of rotations done after initialization
+    var numRotations = null;
 
     var targetDistance = camera.position.distanceTo(targetPosition);
     rSpeed = rSpeed || 0.01;

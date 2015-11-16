@@ -58,7 +58,7 @@
           buttonID: 'edit_button_crop',
           buttonName: 'crop',
           run: function (e) {
-            project.setTool( new CroppingTool() );
+            project.setTool( new CATMAID.CroppingTool() );
             return true;
           }
         }));
@@ -133,7 +133,7 @@
           buttonID: "edit_button_roi",
           buttonName: 'roitool',
           run: function (e) {
-            project.setTool( new RoiTool() );
+            project.setTool( new CATMAID.RoiTool() );
             return true;
           }
         }));

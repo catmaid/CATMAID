@@ -39,7 +39,7 @@
     var active = SkeletonAnnotations.getActiveSkeletonId();
     if (!active) return null;
     var name = NeuronNameService.getInstance().getName(active);
-    return new SelectionTable.prototype.SkeletonModel(active, name, new THREE.Color().setRGB(1, 1, 0));
+    return new CATMAID.SkeletonModel(active, name, new THREE.Color().setRGB(1, 1, 0));
   };
 
   ActiveSkeleton.prototype.getSelectedSkeletonModels = function() {

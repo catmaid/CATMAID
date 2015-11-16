@@ -8,6 +8,11 @@
   // A prototype for a manager of existing skeleton sources
   var SkeletonSourceManager = function() {
     this.sources = {};
+    // Keep track of the order in which sources were added
+    this.orderedSources = [];
+    // Indicate if new select elements should select the last skeleton
+    // source created by default.
+    this.defaultSelectLastSource = true;
 
     // Register with neuron manager to get updates two skeletons are joined
     CATMAID.neuronController.on(CATMAID.neuronController.EVENT_SKELETONS_JOINED,
@@ -22,10 +27,15 @@
 
   SkeletonSourceManager.prototype.add = function(source) {
     this.sources[source.getName()] = source;
+    this.orderedSources.push(source.getName());
   };
 
   SkeletonSourceManager.prototype.remove = function(source) {
     delete this.sources[source.getName()];
+    var orderIndex = this.orderedSources.indexOf(source.getName());
+    if (-1 !== orderIndex) {
+      this.orderedSources.splice(orderIndex, 1);
+    }
     this.updateGUI();
     Object.keys(this.sources).forEach(function(name) {
       var s = this.sources[name];
@@ -100,6 +110,12 @@
     // Store name and filter information with the select
     $(select).data('name', name);
     $(select).data('filters', extraFilters);
+
+    // Get ordererd sources up to where 'name' was added
+    var nameIndex = this.orderedSources.indexOf(name);
+    var selectedSourceName = this.defaultSelectLastSource && nameIndex > 0 ?
+      this.orderedSources[nameIndex - 1] : SkeletonAnnotations.activeSkeleton.getName();
+
     this.createOptions().forEach(function(option, i) {
       // Ignore this option if it should be filtered.
       if (extraFilters && extraFilters.some(equals.bind(this, option.value))) {
@@ -107,7 +123,10 @@
       }
 
       if (option.value !== name) select.options.add(option);
-      if (option.value === 'Active skeleton') select.selectedIndex = i;
+      if (option.value === selectedSourceName) {
+        option.selected = true;
+        option.defaultSelected = true;
+      }
     });
 
     return select;

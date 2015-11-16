@@ -2,7 +2,12 @@ from django.conf.urls import patterns, url
 from django.contrib.auth.decorators import login_required
 from django.views.generic import TemplateView
 
+# For adding explicit grouping resource endpoints in API documentation.
+from rest_framework_swagger.urlparser import UrlParser
+
 from catmaid.views import CatmaidView, ExportWidgetView
+from catmaid.control.suppressed_virtual_treenode import SuppressedVirtualTreenodeDetail, SuppressedVirtualTreenodeList
+
 
 # A regular expression matching floating point and integer numbers
 num = r'[-+]?[0-9]*\.?[0-9]+'
@@ -99,16 +104,14 @@ urlpatterns += patterns('catmaid.control.stats',
 # Annotations
 urlpatterns += patterns('catmaid.control.neuron_annotations',
     (r'^(?P<project_id>\d+)/annotations/$', 'list_annotations'),
-    (r'^(?P<project_id>\d+)/neuron/query-by-annotations$', 'query_neurons_by_annotations'),
-    (r'^(?P<project_id>\d+)/neuron/table/query-by-annotations$',
-            'query_neurons_by_annotations_datatable'),
-    (r'^(?P<project_id>\d+)/annotations/skeletons/list$', 'annotations_for_skeletons'),
-    (r'^(?P<project_id>\d+)/annotations/entities/list$', 'annotations_for_entities'),
+    (r'^(?P<project_id>\d+)/annotations/query$', 'annotations_for_entities'),
+    (r'^(?P<project_id>\d+)/annotations/forskeletons$', 'annotations_for_skeletons'),
     (r'^(?P<project_id>\d+)/annotations/table-list$', 'list_annotations_datatable'),
     (r'^(?P<project_id>\d+)/annotations/add$', 'annotate_entities'),
     (r'^(?P<project_id>\d+)/annotations/remove$', 'remove_annotations'),
     (r'^(?P<project_id>\d+)/annotations/(?P<annotation_id>\d+)/remove$',
             'remove_annotation'),
+    (r'^(?P<project_id>\d+)/annotations/query-targets$', 'query_annotated_classinstances'),
 )
 
 # Text labels
@@ -121,7 +124,7 @@ urlpatterns += patterns('catmaid.control.textlabel',
 
 # Treenode labels
 urlpatterns += patterns('catmaid.control.label',
-    (r'^(?P<project_id>\d+)/labels-all$', 'labels_all'),
+    (r'^(?P<project_id>\d+)/labels/$', 'labels_all'),
     (r'^(?P<project_id>\d+)/labels-for-nodes$', 'labels_for_nodes'),
     (r'^(?P<project_id>\d+)/labels-for-node/(?P<ntype>(treenode|location|connector))/(?P<location_id>\d+)$', 'labels_for_node'),
     (r'^(?P<project_id>\d+)/label/(?P<ntype>(treenode|location|connector))/(?P<location_id>\d+)/update$', 'label_update'),
@@ -150,7 +153,7 @@ urlpatterns += patterns('catmaid.control.connector',
     (r'^(?P<project_id>\d+)/connector/user-info$', 'connector_user_info'),
 )
 
-# Neuron acess
+# Neuron access
 urlpatterns += patterns('catmaid.control.neuron',
     (r'^(?P<project_id>\d+)/neuron/(?P<neuron_id>\d+)/get-all-skeletons$', 'get_all_skeletons_of_neuron'),
     (r'^(?P<project_id>\d+)/neuron/(?P<neuron_id>\d+)/give-to-user$', 'give_neuron_to_other_user'),
@@ -159,6 +162,7 @@ urlpatterns += patterns('catmaid.control.neuron',
 )
 
 # Node access
+UrlParser.explicit_root_paths |= set(['{project_id}/nodes'])
 urlpatterns += patterns('catmaid.control.node',
     (r'^(?P<project_id>\d+)/node/(?P<node_id>\d+)/reviewed$', 'update_location_reviewer'),
     (r'^(?P<project_id>\d+)/node/(?P<node_id>\d+)/confidence/update$', 'update_confidence'),
@@ -171,16 +175,26 @@ urlpatterns += patterns('catmaid.control.node',
     (r'^(?P<project_id>\d+)/node/children$', 'find_children'),
     (r'^(?P<project_id>\d+)/node/get_location$', 'get_location'),
     (r'^(?P<project_id>\d+)/node/user-info$', 'user_info'),
+    (r'^(?P<project_id>\d+)/nodes/find-labels$', 'find_labels'),
 )
 
 # Treenode access
+UrlParser.explicit_root_paths |= set(['{project_id}/treenodes'])
 urlpatterns += patterns('catmaid.control.treenode',
     (r'^(?P<project_id>\d+)/treenode/create$', 'create_treenode'),
     (r'^(?P<project_id>\d+)/treenode/insert$', 'insert_treenode'),
     (r'^(?P<project_id>\d+)/treenode/delete$', 'delete_treenode'),
-    (r'^(?P<project_id>\d+)/treenode/info$', 'treenode_info'),
+    (r'^(?P<project_id>\d+)/treenodes/(?P<treenode_id>\d+)/info$', 'treenode_info'),
     (r'^(?P<project_id>\d+)/treenode/(?P<treenode_id>\d+)/parent$', 'update_parent'),
     (r'^(?P<project_id>\d+)/treenode/(?P<treenode_id>\d+)/radius$', 'update_radius'),
+)
+
+# Suppressed virtual treenode access
+urlpatterns += patterns('catmaid.control.suppressed_virtual_treenode',
+    (r'^(?P<project_id>\d+)/treenodes/(?P<treenode_id>\d+)/suppressed-virtual/$',
+            SuppressedVirtualTreenodeList.as_view()),
+    (r'^(?P<project_id>\d+)/treenodes/(?P<treenode_id>\d+)/suppressed-virtual/(?P<suppressed_id>\d+)$',
+            SuppressedVirtualTreenodeDetail.as_view()),
 )
 
 # General skeleton access
@@ -191,12 +205,13 @@ urlpatterns += patterns('catmaid.control.skeleton',
     (r'^(?P<project_id>\d+)/skeleton/neuronnames$', 'neuronnames'),
     (r'^(?P<project_id>\d+)/skeleton/node/(?P<treenode_id>\d+)/node_count$', 'node_count'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/review/reset-own$', 'reset_own_reviewer_ids'),
-    (r'^(?P<project_id>\d+)/skeleton/connectivity$', 'skeleton_info_raw'),
+    (r'^(?P<project_id>\d+)/skeletons/connectivity$', 'skeleton_info_raw'),
     (r'^(?P<project_id>\d+)/skeleton/connectivity_matrix$', 'connectivity_matrix'),
-    (r'^(?P<project_id>\d+)/skeleton/review-status$', 'review_status'),
+    (r'^(?P<project_id>\d+)/skeletons/review-status$', 'review_status'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/statistics$', 'skeleton_statistics'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/contributor_statistics$', 'contributor_statistics'),
     (r'^(?P<project_id>\d+)/skeleton/contributor_statistics_multiple$', 'contributor_statistics_multiple'),
+    (r'^(?P<project_id>\d+)/skeletons/(?P<skeleton_id>\d+)/find-labels$', 'find_labels'),
     (r'^(?P<project_id>\d+)/skeletons/(?P<skeleton_id>\d+)/open-leaves$', 'open_leaves'),
     (r'^(?P<project_id>\d+)/skeletons/(?P<skeleton_id>\d+)/root$', 'root_for_skeleton'),
     (r'^(?P<project_id>\d+)/skeleton/split$', 'split_skeleton'),
@@ -221,7 +236,7 @@ urlpatterns += patterns('catmaid.control.skeletonexport',
     (r'^(?P<project_id>\d+)/(?P<skeleton_id>\d+)/(?P<with_connectors>\d)/(?P<with_tags>\d)/compact-skeleton$', 'compact_skeleton'),
     (r'^(?P<project_id>\d+)/(?P<skeleton_id>\d+)/(?P<with_nodes>\d)/(?P<with_connectors>\d)/(?P<with_tags>\d)/compact-arbor$', 'compact_arbor'),
     (r'^(?P<project_id>\d+)/(?P<skeleton_id>\d+)/(?P<with_nodes>\d)/(?P<with_connectors>\d)/(?P<with_tags>\d)/compact-arbor-with-minutes$', 'compact_arbor_with_minutes'),
-    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/review$', 'export_review_skeleton'),
+    (r'^(?P<project_id>\d+)/skeletons/(?P<skeleton_id>\d+)/review$', 'export_review_skeleton'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/reviewed-nodes$', 'export_skeleton_reviews'),
     (r'^(?P<project_id>\d+)/skeletons/measure$', 'measure_skeletons'),
     (r'^(?P<project_id>\d+)/skeleton/connectors-by-partner$', 'skeleton_connectors_by_partner'),
@@ -379,6 +394,14 @@ urlpatterns += patterns('catmaid.control.clustering',
         name="clustering_display"),
 )
 
+# Volumes
+urlpatterns += patterns('catmaid.control.volume',
+   (r'^(?P<project_id>\d+)/volumes/$', 'volume_collection'),
+   (r'^(?P<project_id>\d+)/volumes/add$', 'add_volume'),
+   (r'^(?P<project_id>\d+)/volumes/(?P<volume_id>\d+)/$', 'volume_detail'),
+   (r'^(?P<project_id>\d+)/volumes/(?P<volume_id>\d+)/intersect$', 'intersects'),
+)
+
 # Front-end tests
 urlpatterns += patterns('',
     url(r'^tests$', login_required(CatmaidView.as_view(template_name="catmaid/tests.html")), name="frontend_tests"),
@@ -397,7 +420,7 @@ urlpatterns += patterns('catmaid.control',
     (r'^(?P<project_id>\d+)/graphexport/json$', 'graphexport.export_jsongraph' ),
 
     # Graphs
-    (r'^(?P<project_id>\d+)/skeletongroup/skeletonlist_confidence_compartment_subgraph', 'graph2.skeleton_graph'),
+    (r'^(?P<project_id>\d+)/skeletons/confidence-compartment-subgraph', 'graph2.skeleton_graph'),
 
     # Circles
     (r'^(?P<project_id>\d+)/graph/circlesofhell', 'circles.circles_of_hell'),

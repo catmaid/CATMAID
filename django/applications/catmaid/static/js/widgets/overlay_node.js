@@ -116,6 +116,10 @@
       });
     };
 
+    this.setActiveNodeRadiusVisibility = function (visibility) {
+      SkeletonElements.prototype.Node.prototype.radiusVisibility = visibility;
+    };
+
     /** Invoked at the start of the continuation that updates all nodes. */
     this.resetCache = function() {
       this.cache.reset();
@@ -265,6 +269,8 @@
       this.confidenceFontSize = this.CONFIDENCE_FONT_PT + 'pt';
       // Store current node scaling factor
       this.scaling = 1.0;
+      this.resolutionScale = 1.0;
+      this.radiusVisibility = false;
       // Store current section distance to next and previous sections. These can
       // be changed to correct for broken nodes.
       this.dToSecBefore = -1;
@@ -314,10 +320,35 @@
         if ("hidden" === this.c.attr('visibility')) this.c.show();
       };
 
+      this.createRadiusGraphics = function () {
+        if (this.radiusVisibility &&
+            SkeletonAnnotations.getActiveNodeId() === this.id &&
+            this.shouldDisplay() &&
+            this.radius > 0) {
+          if (!this.radiusGraphics) {
+            this.radiusGraphics = this.paper.select('.lines').append('circle');
+          }
+
+          var fillcolor = this.color();
+          this.radiusGraphics.attr({
+                                cx: this.x,
+                                cy: this.y,
+                                r: this.radius / this.resolutionScale,
+                                fill: 'none',
+                                stroke: fillcolor,
+                                'stroke-width': 1.5
+                              });
+        } else if (this.radiusGraphics) {
+          this.radiusGraphics.remove();
+          this.radiusGraphics = null;
+        }
+      };
+
       /** Recreate the GUI components, namely the circle and edges.
        *  This is called only when creating a single node. */
       this.createGraphics = function() {
         this.createCircle();
+        this.createRadiusGraphics();
         this.drawEdges();
       };
 
@@ -331,6 +362,7 @@
       };
 
       this.scale = function(baseScale, resScale, dynamicScale) {
+        this.resolutionScale = resScale;
         this.scaling = baseScale * resScale * (dynamicScale ? dynamicScale : 1);
         // To account for SVG non-scaling-stroke in screen scale mode the resolution
         // scaling must not be applied to edge. While all three scales could be
@@ -395,6 +427,7 @@
         if (this.c) {
           var fillcolor = this.color();
           this.c.attr({fill: fillcolor});
+          this.createRadiusGraphics();
         }
         if (this.line) {
           var linecolor = this.colorFromZDiff();
@@ -524,6 +557,10 @@
           this.c.remove();
           this.c = null;
         }
+        if (this.radiusGraphics) {
+          this.radiusGraphics.remove();
+          this.radiusGraphics = null;
+        }
         if (this.line) {
           this.line.remove();
           this.line = null;
@@ -547,6 +584,10 @@
         if (this.c) {
           this.c.datum(null);
           this.c.hide();
+        }
+        if (this.radiusGraphics) {
+          this.radiusGraphics.remove();
+          this.radiusGraphics = null;
         }
         if (this.line) {
           this.line.hide();
@@ -574,6 +615,7 @@
         this.isroot = null === parent_id || isNaN(parent_id) || parseInt(parent_id) < 0;
         this.can_edit = can_edit;
         this.needsync = false;
+        delete this.suppressed;
 
         if (this.c) {
           this.c.datum(id);
@@ -583,6 +625,7 @@
             this.c.attr({x: x, y: y});
           }
         }
+        this.createRadiusGraphics();
         if (this.line) {
           this.line.datum(id);
           this.line.hide();
@@ -701,10 +744,12 @@
 
         // Don't let mouse down events bubble up
         mc.on('mousedown', function() {
-            d3.event.stopPropagation();
+          d3.event.stopPropagation();
+          d3.event.preventDefault();
         });
         mc.on('click', function() {
           d3.event.stopPropagation();
+          d3.event.preventDefault();
           if (onclickHandler) { onclickHandler(); }
           return true;
         });
@@ -764,7 +809,8 @@
       this.skeleton_id = skeleton_id;
       this.can_edit = can_edit;
       this.isroot = null === parent_id || isNaN(parent_id) || parseInt(parent_id) < 0;
-      this.c = null; // The SVG circle for drawing
+      this.c = null; // The SVG circle for drawing and interacting with the node.
+      this.radiusGraphics = null; // The SVG circle for visualing skeleton radius.
       this.line = null; // The SVG line element that represents an edge between nodes
       this.hrefSuffix = hrefSuffix;
     };
@@ -979,6 +1025,7 @@
       /** Here 'this' is c's SVG node. */
       var mc_dblclick = function(d) {
         d3.event.stopPropagation();
+        d3.event.preventDefault();
         var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.parentNode.parentNode);
         catmaidSVGOverlay.ensureFocused();
       };
@@ -1057,6 +1104,7 @@
         if (is_middle_click(e)) return; // Allow middle-click panning
 
         e.stopPropagation();
+        e.preventDefault();
 
         if (!o) return; // Not properly initialized with mc_start
         if (e.shiftKey) return;
@@ -1145,11 +1193,13 @@
         var e = d3.event;
         if (is_middle_click(e)) return; // Allow middle-click panning
         e.stopPropagation();
+        e.preventDefault();
       };
 
       var connector_mc_click = function(d) {
         var e = d3.event;
         e.stopPropagation();
+        e.preventDefault();
         var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.parentNode.parentNode);
         if (catmaidSVGOverlay.ensureFocused()) {
           return;
@@ -1203,6 +1253,7 @@
         var node = catmaidSVGOverlay.nodes[d];
         if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
           e.stopPropagation();
+          e.preventDefault();
           catmaidSVGOverlay.activateNode(node);
           catmaidSVGOverlay.splitSkeleton(d);
         }

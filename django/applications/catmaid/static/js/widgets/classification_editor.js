@@ -6,7 +6,7 @@ var ClassificationEditor = new function()
     var display_previews = true;
     var display_edit_tools = true;
     var workspace_pid;
-    var bboxtool = new BoxSelectionTool();
+    var bboxtool = new CATMAID.BoxSelectionTool();
     // Offsets for the image preview when hovering a
     // ROI indication icon.
     var preview_x_offset = 0;
@@ -458,7 +458,7 @@ var ClassificationEditor = new function()
     this.link_roi = function(tree_id, node_id) {
         // Open Roi tool and register it with current stack. Bind own method
         // to apply button.
-        var tool = new RoiTool();
+        var tool = new CATMAID.RoiTool();
         tool.button_roi_apply.onclick = function() {
             // Collect relevant information
             var cb = tool.getCropBox();

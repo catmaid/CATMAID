@@ -10,6 +10,8 @@ from django.db import connection
 from django.http import HttpResponse
 from django.contrib.auth.models import User
 
+from rest_framework.decorators import api_view
+
 from catmaid.models import UserRole, Treenode, TreenodeConnector, Connector, \
         Location, ClassInstanceClassInstance, Review
 from catmaid.control.authentication import requires_user_role, \
@@ -785,3 +787,121 @@ def user_info(request, project_id=None):
         'reviewers': [r for r in info[5] if r],
         'review_times': [str(rt.isoformat()) for rt in info[6] if rt]
     }))
+
+@api_view(['POST'])
+@requires_user_role([UserRole.Browse])
+def find_labels(request, project_id=None):
+    """List nodes with labels matching a query, ordered by distance.
+
+    Find nodes with labels (front-end node tags) matching a regular
+    expression, sort them by ascending distance from a reference location, and
+    return the result. Returns at most 50 nodes.
+    ---
+    parameters:
+        - name: x
+          description: X coordinate of the distance reference in project space.
+          required: true
+          type: number
+          format: double
+          paramType: form
+        - name: y
+          description: Y coordinate of the distance reference in project space.
+          required: true
+          type: number
+          format: double
+          paramType: form
+        - name: z
+          description: Z coordinate of the distance reference in project space.
+          required: true
+          type: number
+          format: double
+          paramType: form
+        - name: label_regex
+          description: Regular expression query to match labels
+          required: true
+          type: string
+          paramType: form
+    models:
+      find_labels_node:
+        id: find_labels_node
+        properties:
+        - description: ID of a node with a matching label
+          type: integer
+          required: true
+        - description: Node location
+          type: array
+          items:
+            type: number
+            format: double
+          required: true
+        - description: |
+            Euclidean distance from the reference location in project space
+          type: number
+          format: double
+          required: true
+        - description: Labels on this node matching the query
+          type: array
+          items:
+            type: string
+          required: true
+    type:
+    - type: array
+      items:
+        $ref: find_labels_node
+      required: true
+    """
+    x = float(request.POST['x'])
+    y = float(request.POST['y'])
+    z = float(request.POST['z'])
+    label_regex = str(request.POST['label_regex'])
+
+    cursor = connection.cursor()
+    cursor.execute("""
+            (SELECT
+                n.id,
+                n.location_x,
+                n.location_y,
+                n.location_z,
+                SQRT(POW(n.location_x - %s, 2)
+                   + POW(n.location_y - %s, 2)
+                   + POW(n.location_z - %s, 2)) AS dist,
+                ARRAY_TO_JSON(ARRAY_AGG(l.name)) AS labels
+            FROM treenode n, class_instance l, treenode_class_instance nl, relation r
+            WHERE r.id = nl.relation_id
+              AND r.relation_name = 'labeled_as'
+              AND nl.treenode_id = n.id
+              AND l.id = nl.class_instance_id
+              AND n.project_id = %s
+              AND l.name ~ %s
+            GROUP BY n.id)
+
+            UNION ALL
+
+            (SELECT
+                n.id,
+                n.location_x,
+                n.location_y,
+                n.location_z,
+                SQRT(POW(n.location_x - %s, 2)
+                   + POW(n.location_y - %s, 2)
+                   + POW(n.location_z - %s, 2)) AS dist,
+                ARRAY_TO_JSON(ARRAY_AGG(l.name)) AS labels
+            FROM connector n, class_instance l, connector_class_instance nl, relation r
+            WHERE r.id = nl.relation_id
+              AND r.relation_name = 'labeled_as'
+              AND nl.connector_id = n.id
+              AND l.id = nl.class_instance_id
+              AND n.project_id = %s
+              AND l.name ~ %s
+            GROUP BY n.id)
+
+            ORDER BY dist
+            LIMIT 50
+            """, (x, y, z, project_id, label_regex,
+                  x, y, z, project_id, label_regex,))
+
+    return HttpResponse(json.dumps([
+            [row[0],
+             [row[1], row[2], row[3]],
+             row[4],
+             row[5]] for row in cursor.fetchall()]))

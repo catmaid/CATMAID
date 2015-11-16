@@ -44,6 +44,7 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'django.contrib.admin',
     'django.contrib.staticfiles',
+    'django.contrib.gis',
     'devserver',
     'djcelery',
     'taggit',
@@ -55,6 +56,7 @@ INSTALLED_APPS = (
     'pipeline',
     'rest_framework',
     'rest_framework_swagger',
+    'custom_rest_swagger_apis',
 )
 
 LOGGING = {
@@ -216,7 +218,7 @@ VERSION = utils.get_version()
 # DVID auto-discovery. To activate add the following lines to your settings.py
 # file:
 # MIDDLEWARE_CLASSES += ('catmaid.middleware.DVIDMiddleware',)
-# DVID_URL = 'http://emdata2.int.janelia.org:7000/api'
+# DVID_URL = 'http://emdata2.int.janelia.org:7000'
 # DVID_FORMAT = 'jpg:80'
 # DVID_SHOW_NONDISPLAYABLE_REPOS = True
 

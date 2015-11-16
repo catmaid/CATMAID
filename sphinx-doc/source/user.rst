@@ -10,4 +10,5 @@ User Documentation
    data_views
    tracing_neurons
    tools
+   user_faq
    othertools

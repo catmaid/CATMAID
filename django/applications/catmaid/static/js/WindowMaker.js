@@ -118,21 +118,45 @@ var WindowMaker = new function()
     return {window: win, widget: instance};
   };
 
-  var createSelect = function(id, items, use_numbers) {
+  var createSelect = function(id, items, selectedValue) {
     var select = document.createElement('select');
     select.setAttribute("id", id);
     items.forEach(function(item, i) {
       var option = document.createElement("option");
-      option.text = item;
-      option.value = use_numbers ? i : item;
+      var itemType = typeof item;
+      var text, value;
+      if ('object' === itemType) {
+        text = item.title;
+        value = item.value;
+      } else {
+        text = item;
+        value = item;
+      }
+      option.text = text;
+      option.value = value;
+      if (option.value === selectedValue) {
+        option.defaultSelected = true;
+        option.selected = true;
+      }
       select.appendChild(option);
     });
     return select;
   };
 
-  var appendSelect = function(div, name, entries) {
-    var select = createSelect(div.id + "_" + name, entries, true);
+  var appendSelect = function(div, name, entries, title, value, onChangeFn) {
+    var select = createSelect(div.id + "_" + name, entries, value);
     div.appendChild(select);
+    if (title) {
+      select.title = title;
+    }
+    if (onChangeFn) {
+      select.onchange= onChangeFn;
+    }
+    var label = document.createElement('label');
+    label.setAttribute('title', title);
+    label.appendChild(document.createTextNode(name));
+    label.appendChild(select);
+    div.appendChild(label);
     return select;
   };
 
@@ -233,6 +257,8 @@ var WindowMaker = new function()
             return appendCheckbox(tab, e.label, e.title, e.value, e.onclickFn, e.left);
           case 'numeric':
             return appendNumericField(tab, e.label, e.title, e.value, e.postlabel, e.onchangeFn, e.length);
+          case 'select':
+            return appendSelect(tab, e.label, e.entries, e.title, e.value, e.onchangeFn);
           default: return undefined;
         }
       }
@@ -763,7 +789,7 @@ var WindowMaker = new function()
 
   var createStagingListWindow = function( instance, webglwin, webglwin_name ) {
 
-    var ST = instance ? instance : new SelectionTable();
+    var ST = instance ? instance : new CATMAID.SelectionTable();
 
     var win = new CMWWindow(ST.getName());
     var content = win.getFrame();
@@ -799,6 +825,20 @@ var WindowMaker = new function()
     update.setAttribute("value", "Refresh");
     update.onclick = ST.update.bind(ST);
     buttons.appendChild(update);
+
+    var fileButton = appendHiddenFileButton(buttons, 'st-file-dialog-' + ST.widgetID,
+        function(evt) { ST.loadFromFiles(evt.target.files); });
+    var open = document.createElement('input');
+    open.setAttribute("type", "button");
+    open.setAttribute("value", "Open");
+    open.onclick = function() { fileButton.click(); };
+    buttons.appendChild(open);
+
+    var save = document.createElement('input');
+    save.setAttribute("type", "button");
+    save.setAttribute("value", "Save");
+    save.onclick = ST.saveToFile.bind(ST);
+    buttons.appendChild(save);
 
     buttons.appendChild(document.createTextNode(' Sync to:'));
     var link = CATMAID.skeletonListSources.createPushSelect(ST, 'link');
@@ -877,7 +917,8 @@ var WindowMaker = new function()
             '<th></th>' +
             '<th><span class="ui-icon ui-icon-close" id="selection-table-remove-all' + ST.widgetID + '" title="Remove all"></th>' +
             '<th class="expanding"><input type="button" value="Filter" class="filter" />' +
-              '<input class="filter" type="text" placeholder="Use / for regex" id="selection-table-filter' + ST.widgetID + '" /></th>' +
+              '<input class="filter" type="text" title="Use / for regex" placeholder="name filter" id="selection-table-filter' + ST.widgetID + '" />' +
+              '<input class="filter" type="text" title="Use / for regex" placeholder="annotation filter" id="selection-table-ann-filter' + ST.widgetID + '" /></th>' +
             '<th><select class="review-filter">' +
               '<option value="Union" selected>Union</option>' +
               '<option value="Team">Team</option>' +
@@ -889,7 +930,7 @@ var WindowMaker = new function()
             '<th><input type="checkbox" id="selection-table-show-all-text' + ST.widgetID + '" style="float: left" /></th>' +
             '<th><input type="checkbox" id="selection-table-show-all-meta' + ST.widgetID + '" checked style="float: left" /></th>' +
             '<th><button id="selection-table-batch-color-button' + ST.widgetID +
-                '" type="button" value="#ffff00" style="background-color: #ffff00">Batch color</button></th>' +
+                '" type="button" value="' + ST.batchColor + '" style="background-color: ' + ST.batchColor + '">Batch color</button></th>' +
             '<th></th>' +
           '</tr>' +
         '</thead>' +
@@ -903,17 +944,39 @@ var WindowMaker = new function()
     });
     $("button#selection-table-batch-color-button" + ST.widgetID, tab).on("click",
         function() {
-          CATMAID.ColorPicker.toggle(this, {
-            onColorChange: ST.batchColorSelected.bind(ST)
-          });
+          if (CATMAID.ColorPicker.visible()) {
+            CATMAID.ColorPicker.hide(this);
+            // Apply color on closing, even if the color picker itself wasn't
+            // touched. This allows easier re-use of a previously set batch
+            // color.
+            var rgb = new THREE.Color(ST.batchColor);
+            ST.batchColorSelected(rgb, ST.batchOpacity, true, true);
+          } else {
+            CATMAID.ColorPicker.show(this, {
+              onColorChange: ST.batchColorSelected.bind(ST),
+              initialColor: ST.batchColor,
+              initialAlpha: ST.batchOpacity
+            });
+          }
         });
-    $('th input[type=button].filter', tab).on("click", function() {
-      var filter = $('th input[type=text].filter', tab).val();
-      ST.filterBy(filter);
-    });
+    $('th input[type=button].filter', tab).on("click", filterNeuronList);
     $('th input[type=text].filter', tab).on("keyup", function(e) {
-      if (13 === e.keyCode) ST.filterBy(this.value);
+      if (13 === e.keyCode) filterNeuronList();
     });
+
+    // Add auto completetion to annotation filter
+    CATMAID.annotations.add_autocomplete_to_input(
+        $("#selection-table-ann-filter" + ST.widgetID, tab));
+
+    /**
+     * Trigger list filter.
+     */
+    function filterNeuronList() {
+      var filters = $('th input[type=text].filter', tab);
+      var nameFilter = filters[0].value;
+      var annotationFilter = filters[1].value;
+      ST.filterBy(nameFilter, annotationFilter);
+    }
 
     $(tab)
       .on("click", "td .action-remove", ST, function(e) {
@@ -930,7 +993,7 @@ var WindowMaker = new function()
       })
       .on("click", "td .action-info", function() {
         var skeletonID = rowToSkeletonID(this);
-        SelectionTable.prototype.skeleton_info([skeletonID]);
+        CATMAID.SelectionTable.prototype.skeleton_info([skeletonID]);
       })
       .on("click", "td .action-navigator", function() {
         var skeletonID = rowToSkeletonID(this);
@@ -953,6 +1016,8 @@ var WindowMaker = new function()
             skeleton[other] = visible;
             $('#skeleton' + other + table.widgetID + '-' + skeletonID).prop('checked', visible);
           });
+          // Update table information
+          table.updateTableInfo();
         }
         table.notifyLink(skeleton);
       })
@@ -1027,6 +1092,11 @@ var WindowMaker = new function()
       alert('Your browser does not seem to support WebGL.');
       return;
     }
+
+    // A selection table is opened alongside the 3D viewer. Initialize it first,
+    // so that it will default to the last opened skeleton source to pull from
+    // (which otherwise would be the 3D viewer).
+    var ST = new CATMAID.SelectionTable();
 
     var WA = new CATMAID.WebGLApplication();
 
@@ -1299,20 +1369,71 @@ var WindowMaker = new function()
           ['Rotation speed', o.animation_rotation_speed, '', function() {
             WA.options.animation_rotation_speed = parseFloat(this.value);
            }, 5],
+          {
+            type: 'select',
+            label: 'Neuron visibility:',
+            entries: [
+              {title: 'Show all immeditely', value: 'all'},
+              {title: 'One per rotation', value: 'one-per-rotation'},
+              {title: 'N per rotation', value: 'n-per-rotation'},
+              {title: 'Explicit order', value: 'explicit-order'}
+            ],
+            title: 'Select a neuron visibility pattern that is applied ' +
+                   'over the course of the animation.',
+            value: o.animation_stepwise_visibility,
+            onchangeFn: function(e) {
+              var type = this.value;
+              if ('one-per-rotation' === type) {
+                type = 'n-per-rotation';
+                WA.setAnimationNeuronVisibility(type, {n: 1});
+              } else if ('n-per-rotation' === type) {
+                // Ask for n
+                var dialog = new CATMAID.OptionsDialog();
+                dialog.appendMessage('Please enter the number of skeletons ' +
+                    'to make visible after one rotation.');
+                var nSkeletonsPerRot = dialog.appendField('Show n skeletons per rotation ',
+                   'show-n-skeletons-per-rot-' + WA.widgetID, 1, true);
+                dialog.onOK = function() {
+                  var options = {
+                    n: Number(nSkeletonsPerRot.value)
+                  };
+                  WA.setAnimationNeuronVisibility(type, options);
+                };
+                dialog.show('auto', 'auto', true);
+              } else if ('explicit-order' === type) {
+                // Ask for order
+                var dialog = new CATMAID.OptionsDialog();
+                dialog.appendMessage('Please map a list of skleton IDs to ' +
+                    'rotations after which they should be shown. This has ' +
+                    'to follow the pattern "(0: id1); (1: id2, id3); (4: id4); ...". ' +
+                    'Skeletons not referenced will not be shown.');
+                var input = dialog.appendField('Pattern: ',
+                    'visibility-pattern-' + WA.widgetID, '', true);
+                dialog.onOK = function() {
+                  // Remove all whitespace
+                  var regex = /\((\d+):((?:\w+)(?:,\w+)*)\)/;
+                  var rotations = input.value.replace(/\s+/g, '').split(';')
+                    .reduce(function(o, rot) {
+                      var matches = rot.match(regex);
+                      if (matches && 3 === matches.length) {
+                        o[matches[1]] = matches[2].split(',');
+                      }
+                      return o;
+                    }, {});
+                  var options = {
+                    rotations: rotations
+                  };
+                  WA.setAnimationNeuronVisibility(type, options);
+                };
+                // Don't make this dialog modal so that skeleton IDs can be
+                // copied from the UI.
+                dialog.show(500, 'auto', false);
+              }
+            }
+          },
           ['Back and forth', o.animation_back_forth, function() {
             WA.options.animation_back_forth = this.checked;
-          }, false],
-          {
-            type: 'checkbox',
-            label: 'Stepwise neuron visibility',
-            title: 'Start with one neuron visible, then make another neuron ' +
-                   'visible with each complete rotation.',
-            value: o.animation_stepwise_visibility,
-            onclickFn: function() {
-              WA.options.animation_stepwise_visibility = this.checked;
-            },
-            left: false
-          }
+          }, false]
         ]);
 
     appendToTab(tabs['Export'],
@@ -1349,7 +1470,7 @@ var WindowMaker = new function()
     nodeScalingInput.value = WA.options.skeleton_node_scaling;
 
     // Create a Selection Table, preset as the sync target
-    createStagingListWindow( null, win, WA.getName() );
+    createStagingListWindow( ST, win, WA.getName() );
 
     win.addListener(
       function(callingWindow, signal) {
@@ -1433,7 +1554,7 @@ var WindowMaker = new function()
 
   var createGraphWindow = function()
   {
-    var GG = new GroupGraph();
+    var GG = new CATMAID.GroupGraph();
 
     var win = new CMWWindow(GG.getName());
     var content = win.getFrame();
@@ -1477,8 +1598,15 @@ var WindowMaker = new function()
     var layout = appendSelect(tabs['Graph'], "compartment_layout", GG.layoutStrings);
 
     var edges = document.createElement('select');
+    edges.setAttribute('id', 'graph_edge_threshold' + GG.widgetID);
     for (var i=1; i<101; ++i) edges.appendChild(new Option(i, i));
-    edges.onchange = function() { GG.hideEdges(this.value); };
+
+    var edgeConfidence = document.createElement('select');
+    edgeConfidence.setAttribute('id', 'graph_edge_confidence_threshold' + GG.widgetID);
+    for (var i=1; i<6; ++i) edgeConfidence.appendChild(new Option(i, i));
+    edges.onchange = edgeConfidence.onchange = function() {
+        GG.filterEdges($('#graph_edge_threshold' + GG.widgetID).val(),
+                       $('#graph_edge_confidence_threshold' + GG.widgetID).val()); };
 
     appendToTab(tabs['Graph'],
         [['Re-layout', GG.updateLayout.bind(GG, layout)],
@@ -1487,7 +1615,9 @@ var WindowMaker = new function()
          [color],
          [document.createTextNode(' - Hide edges with less than ')],
          [edges],
-         [document.createTextNode(' synapses ')]
+         [document.createTextNode(' synapses ')],
+         [document.createTextNode(' - Filter synapses below confidence ')],
+         [edgeConfidence],
         ]);
 
     appendToTab(tabs['Selection'],
@@ -1686,6 +1816,14 @@ var WindowMaker = new function()
     csva.setAttribute("value", "Export CSV (all)");
     csva.onclick = GP.exportCSVAll.bind(GP);
     buttons.appendChild(csva);
+
+    buttons.appendChild(document.createTextNode(' - '));
+
+    var deselect = document.createElement('input');
+    deselect.setAttribute("type", "button");
+    deselect.setAttribute("value", "Deselect all");
+    deselect.onclick = GP.clearSelection.bind(GP);
+    buttons.appendChild(deselect);
 
     content.appendChild(buttons);
 
@@ -2951,7 +3089,7 @@ var WindowMaker = new function()
           '<td class="neuron_annotations_query_field_label">annotated:</td> ' +
           '<td class="neuron_annotations_query_field">' +
             '<input type="text" name="neuron_query_by_annotation" autocomplete="off" ' +
-                'class="neuron_query_by_annotation_name{{NA-ID}}" value="" />' +
+                'class="neuron_query_by_annotation_name{{NA-ID}}" value="" placeholder="Use / for RegEx" />' +
             '<input type="checkbox" name="neuron_query_include_subannotation" ' +
                 'class="neuron_query_include_subannotation{{NA-ID}}" value="" />' +
             'Include sub-annotations ' +
@@ -3117,7 +3255,7 @@ var WindowMaker = new function()
       selected: function(event, ui) {
         var val = $(this).val();
         NA.annotationUserFilter = val != 'show_all' ? val : null;
-        NA.updateAnnotationUI();
+        NA.updateAnnotationFiltering();
       }
     });
     

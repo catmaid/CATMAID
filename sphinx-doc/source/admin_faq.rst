@@ -82,3 +82,23 @@ it::
 
 This will reinstall (and recompile) the pgmagick module, using the version
 specified in our dependency file (``requirements.txt``).
+
+.. _faq-postgis-update-problems:
+
+CATMAID stopped working after PostGIS update
+--------------------------------------------
+
+Updating PostGIS on your host system could cause CATMAID to stop working. You
+might see errors like::
+
+   django.core.exceptions.ImproperlyConfigured: Cannot determine PostGIS
+   version for database "catmaid". GeoDjango requires at least PostGIS
+   version 1.3. Was the database created from a spatial database template?
+
+This can happen when old PostGIS library files are removed and PostGIS can't
+find what it expects. To fix this, log into the CATMAID Postgres database and
+update the PostGIS extension::
+
+    sudo -u postgres psql -d <CATMAID-DB-NAME>
+    ALTER EXTENSION postgis UPDATE;
+

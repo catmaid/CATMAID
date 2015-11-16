@@ -5,7 +5,6 @@
   NeuronNameService,
   project,
   requestQueue,
-  SelectionTable,
   WindowMaker
 */
 
@@ -197,7 +196,7 @@
       else color.setRGB(1, 0.4, 0.4); // pre
     } else if (post.length > 0) color.setRGB(0.5, 1, 1); // post
 
-    var model = new SelectionTable.prototype.SkeletonModel(skeleton_id, name, color);
+    var model = new CATMAID.SkeletonModel(skeleton_id, name, color);
     model.selected = pre.prop('checked') || post.prop('checked');
     return model;
   };
@@ -212,7 +211,7 @@
           '[type=checkbox]');
       if (cb.prop('checked')) {
         var name = skeletons[skid];
-        o[skid] = new SelectionTable.prototype.SkeletonModel(skid,
+        o[skid] = new CATMAID.SkeletonModel(skid,
             skeletons[skid], new THREE.Color().setRGB(1, 1, 0));
       }
       return o;
@@ -240,7 +239,7 @@
           else index = 0;
         } else if (1 in sk) index = 1;
         var name = $('#a-connectivity-table-' + widgetID + '-' + skid).text();
-        models[skid] = new SelectionTable.prototype.SkeletonModel(skid, name, colors[index].clone());
+        models[skid] = new CATMAID.SkeletonModel(skid, name, colors[index].clone());
       }
     });
 
@@ -297,9 +296,9 @@
     var self = this;
 
     requestQueue.replace(
-        django_url + project.id + '/skeleton/connectivity',
+        django_url + project.id + '/skeletons/connectivity',
         'POST',
-        {'source': skids,
+        {'source_skeleton_ids': skids,
          'boolean_op': $('#connectivity_operation' + this.widgetID).val()},
         function(status, text) {
           var handle = function(status, text) {
@@ -335,7 +334,7 @@
             // Register this widget with the name service for all neurons
             var createPartnerModels = function(partners, result) {
               for (var skid in partners) {
-                result[skid] = new SelectionTable.prototype.SkeletonModel(skid, '', null);
+                result[skid] = new CATMAID.SkeletonModel(skid, '', null);
               }
             };
             var partnerModels = {};
@@ -457,7 +456,7 @@
     if (this.reviewFilter && this.reviewFilter !== 'whitelist') request.user_ids = [this.reviewFilter];
     return new Promise(function (resolve, reject) {
       requestQueue.register(
-          CATMAID.makeURL(project.id + '/skeleton/review-status'),
+          CATMAID.makeURL(project.id + '/skeletons/review-status'),
           'POST',
           request,
           CATMAID.jsonResponseHandler(function(json) {

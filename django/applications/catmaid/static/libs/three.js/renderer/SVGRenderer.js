@@ -11,6 +11,7 @@ THREE.SVGObject = function ( node ) {
 };
 
 THREE.SVGObject.prototype = Object.create( THREE.Object3D.prototype );
+THREE.SVGObject.prototype.constructor = THREE.SVGObject;
 
 THREE.SVGRenderer = function () {
 
@@ -19,7 +20,7 @@ THREE.SVGRenderer = function () {
 	var _this = this,
 	_renderData, _elements, _lights,
 	_projector = new THREE.Projector(),
-	_svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'),
+	_svg = document.createElementNS( 'http://www.w3.org/2000/svg', 'svg' ),
 	_svgWidth, _svgHeight, _svgWidthHalf, _svgHeightHalf,
 
 	_v1, _v2, _v3, _v4,
@@ -35,7 +36,6 @@ THREE.SVGRenderer = function () {
 	_clearColor = new THREE.Color(),
 	_clearAlpha = 1,
 
-	_w, // z-buffer to w-buffer
 	_vector3 = new THREE.Vector3(), // Needed for PointLight
 	_centroid = new THREE.Vector3(),
 	_normal = new THREE.Vector3(),
@@ -63,11 +63,11 @@ THREE.SVGRenderer = function () {
 
 		}
 
-	}
+	};
 
 	this.setQuality = function( quality ) {
 
-		switch(quality) {
+		switch ( quality ) {
 
 			case "high": _quality = 1; break;
 			case "low": _quality = 0; break;
@@ -87,6 +87,8 @@ THREE.SVGRenderer = function () {
 		_clearAlpha = alpha !== undefined ? alpha : 1;
 
 	};
+
+	this.setPixelRatio = function () {};
 
 	this.setSize = function( width, height ) {
 
@@ -178,9 +180,9 @@ THREE.SVGRenderer = function () {
 
 				_v1 = element.v1; _v2 = element.v2; _v3 = element.v3;
 
-				if ( _v1.positionScreen.z < -1 || _v1.positionScreen.z > 1 ) continue;
-				if ( _v2.positionScreen.z < -1 || _v2.positionScreen.z > 1 ) continue;
-				if ( _v3.positionScreen.z < -1 || _v3.positionScreen.z > 1 ) continue;
+				if ( _v1.positionScreen.z < - 1 || _v1.positionScreen.z > 1 ) continue;
+				if ( _v2.positionScreen.z < - 1 || _v2.positionScreen.z > 1 ) continue;
+				if ( _v3.positionScreen.z < - 1 || _v3.positionScreen.z > 1 ) continue;
 
 				_v1.positionScreen.x *= _svgWidthHalf; _v1.positionScreen.y *= - _svgHeightHalf;
 				_v2.positionScreen.x *= _svgWidthHalf; _v2.positionScreen.y *= - _svgHeightHalf;
@@ -212,7 +214,7 @@ THREE.SVGRenderer = function () {
 				var x =   _vector3.x * _svgWidthHalf;
 				var y = - _vector3.y * _svgHeightHalf;
 
-			 	var node = object.node;
+				var node = object.node;
 				node.setAttribute( 'transform', 'translate(' + x + ',' + y + ')' );
 
 				_svg.appendChild( node );
@@ -229,7 +231,7 @@ THREE.SVGRenderer = function () {
 		_directionalLights.setRGB( 0, 0, 0 );
 		_pointLights.setRGB( 0, 0, 0 );
 
-		for ( var l = 0, ll = lights.length; l < ll; l++ ) {
+		for ( var l = 0, ll = lights.length; l < ll; l ++ ) {
 
 			var light = lights[ l ];
 			var lightColor = light.color;
@@ -381,11 +383,6 @@ THREE.SVGRenderer = function () {
 			calculateLight( _lights, _centroid, element.normalModel, _color );
 
 			_color.multiply( _diffuseColor ).add( material.emissive );
-
-		} else if ( material instanceof THREE.MeshDepthMaterial ) {
-
-			_w = 1 - ( material.__2near / (material.__farPlusNear - element.z * material.__farMinusNear) );
-			_color.setRGB( _w, _w, _w );
 
 		} else if ( material instanceof THREE.MeshNormalMaterial ) {
 

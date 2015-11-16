@@ -1,4 +1,5 @@
 from django import forms
+from django.contrib.gis.db import models as spatial_models
 from django.db import models
 from django.db.models import Q
 from django.db.models.signals import pre_save, post_save, post_syncdb
@@ -462,6 +463,14 @@ class Treenode(UserFocusedModel):
     skeleton = models.ForeignKey(ClassInstance)
 
 
+class SuppressedVirtualTreenode(UserFocusedModel):
+    class Meta:
+        db_table = "suppressed_virtual_treenode"
+    child = models.ForeignKey(Treenode)
+    location_coordinate = models.FloatField()
+    orientation = models.SmallIntegerField(choices=((0, 'z'), (1, 'y'), (2, 'x')))
+
+
 class Connector(UserFocusedModel):
     class Meta:
         db_table = "connector"
@@ -493,6 +502,7 @@ class ConnectorClassInstance(UserFocusedModel):
 class TreenodeConnector(UserFocusedModel):
     class Meta:
         db_table = "treenode_connector"
+        unique_together = (('project', 'treenode', 'connector', 'relation'),)
     # Repeat the columns inherited from 'relation_instance'
     relation = models.ForeignKey(Relation)
     # Now new columns:
@@ -526,6 +536,18 @@ class ReviewerWhitelist(models.Model):
     user = models.ForeignKey(User)
     reviewer = models.ForeignKey(User, related_name='+')
     accept_after = models.DateTimeField(default=datetime.min)
+
+class Volume(UserFocusedModel):
+    """A three-dimensional volume in project space. Implemented as PostGIS
+    Geometry type.
+    """
+    editor = models.ForeignKey(User, related_name='editor', db_column='editor_id')
+    name = models.CharField(max_length=255)
+    comment = models.TextField(blank=True, null=True)
+    # GeoDjango-specific: a geometry field with PostGIS-specific 3 dimensions.
+    geometry = spatial_models.GeometryField(dim=3, srid=0)
+    # Override default manager with a GeoManager instance
+    objects = spatial_models.GeoManager()
 
 class RegionOfInterest(UserFocusedModel):
     class Meta:

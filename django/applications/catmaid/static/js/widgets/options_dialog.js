@@ -25,7 +25,7 @@
     $(this.dialog).dialog({
       width: width ? width : 300,
       height: height ? height : 200,
-      modal: modal ? modal : true,
+      modal: modal !== undefined ? modal : true,
       close: function() {
         if (self.onCancel) self.onCancel();
         $(this).dialog("destroy");
@@ -41,6 +41,13 @@
         }
       }
     });
+  };
+
+  OptionsDialog.prototype.appendHTML = function(html) {
+    var container = document.createElement('p');
+    container.innerHTML = html;
+    this.dialog.appendChild(container);
+    return container;
   };
 
   OptionsDialog.prototype.appendMessage = function(text) {

@@ -1,5 +1,5 @@
 QUnit.test('Event system test', function( assert ) {
-  var e = CATMAID.Events.Event;
+  var e = new CATMAID.EventSource();
 
   /**
    * Test if something is a function. From:
@@ -77,19 +77,22 @@ QUnit.test('Event system test', function( assert ) {
   assert.strictEqual(wasExecuted2, false, 'removed single listener');
   assert.strictEqual(wasExecuted3, true, 'left correct listeners in place');
 
-  // Test extension of object with event system
-  var obj2 = {};
-  CATMAID.Events.extend(obj2);
-  assert.strictEqual(obj2.on, CATMAID.Events.Event.on);
-  assert.strictEqual(obj2.trigger, CATMAID.Events.Event.trigger);
+  // Test mixin extension of object with event system
+  (function() {
+    var obj1 = CATMAID.asEventSource({});
+    assert.ok(isFunction(obj1.on), 'mixin correctly created on() method');
+    assert.ok(isFunction(obj1.off), 'mixin correctly created off() method');
+    assert.ok(isFunction(obj1.trigger), 'mixin correctly created trigger() method');
+    assert.ok(isFunction(obj1.clear), 'mixin correctly created clear() method');
 
-  // Test if extension of an object returns the object
-  var obj3 = {};
-  assert.strictEqual(CATMAID.Events.extend(obj3), obj3);
+    // Test if extension of an object returns the object
+    var obj2 = {};
+    assert.strictEqual(CATMAID.asEventSource(obj2), obj2);
+  })();
 
   // Test if context is ignored  on removal, if not passed
   (function() {
-    var e = CATMAID.Events.Event;
+    var e = CATMAID.asEventSource({});
     var wasExecuted = false;
     var handler = function() { wasExecuted = true; };
     var o1 = {}, o2 = {};
@@ -103,7 +106,7 @@ QUnit.test('Event system test', function( assert ) {
 
   // Test if context is respected on removal, if passed
   (function() {
-    var e = CATMAID.Events.Event;
+    var e = CATMAID.asEventSource({});
     var wasExecuted = false;
     var executionContext;
     var handler = function() { wasExecuted = true; executionContext = this; };
@@ -116,6 +119,13 @@ QUnit.test('Event system test', function( assert ) {
         'if a context is passed for removal 1');
     assert.strictEqual(executionContext, o2, 'remove only listeners for a given ' +
         'if a context is passed for removal 2');
+  })();
+
+  // Test if new event sources are created empty
+  (function() {
+    var e = CATMAID.asEventSource({});
+    var handler = function() {};
+    assert.strictEqual(e.events, undefined, 'event list is empty after initialization');
   })();
 });
 

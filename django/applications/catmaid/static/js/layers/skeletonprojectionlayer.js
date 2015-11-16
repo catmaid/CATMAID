@@ -41,7 +41,10 @@
 
     // Listen to active node change events
     SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
-        this.update, this);
+        this.handleActiveNodeChange, this);
+    // Listen to changes on skeletons
+    SkeletonAnnotations.on(SkeletonAnnotations.EVENT_SKELETON_CHANGED,
+        this.handleChangedSkeleton, this);
 
     if (options.initialNode) this.update(options.initialNode);
   };
@@ -147,7 +150,9 @@
     this.stackViewer.getView().removeChild(this.view);
 
     SkeletonAnnotations.off(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
-        this.update, this);
+        this.handleActiveNodeChange, this);
+    SkeletonAnnotations.off(SkeletonAnnotations.EVENT_SKELETON_CHANGED,
+        this.handleChangedSkeleton, this);
   };
 
 
@@ -159,7 +164,7 @@
   SkeletonProjectionLayer.prototype.update = function(node) {
     var self = this;
     var newSkeleton = null;
-    if (node && node.id) {
+    if (node && node.id && node.type === SkeletonAnnotations.TYPE_NODE) {
       // If possible, use a cached skeleton to avoid requesting it with every
       // node change.
       var cached = (node.skeleton_id === this.currentSkeletonID) &&
@@ -172,7 +177,30 @@
         .then(this.redraw.bind(this))
         .catch(CATMAID.error);
     } else {
-     this.redraw();
+      this.currentNodeID = null;
+      this.currentSkeletonID = null;
+      this.currentArborParser = null;
+      this.clear();
+      this.redraw();
+    }
+  };
+
+  /**
+   * Redraw the skeleton if the active node changed.
+   */
+  SkeletonProjectionLayer.prototype.handleActiveNodeChange = function(node, skeletonChanged) {
+    if ((!node && this.currentNodeID) || (node.id !== this.currentNodeID)) {
+      this.update(node);
+    }
+  };
+
+  /**
+   * Reload skeleton information if the current skeleton changed.
+   */
+  SkeletonProjectionLayer.prototype.handleChangedSkeleton = function(skeletonID) {
+    if (skeletonID === this.currentSkeletonID) {
+      this.currentArborParser = null;
+      this.update(SkeletonAnnotations.atn);
     }
   };
 
@@ -181,11 +209,12 @@
    * the skeleton is already loaded, the back-end does't have to be asked.
    */
   SkeletonProjectionLayer.prototype.loadSkeletonOfNode = function(node) {
+    var self = this;
     return new Promise(function(resolve, reject) {
       if (!node) reject("No node provided");
       if (!node.skeleton_id) reject("Node has no skeleton");
 
-      var self = this, failed = false, ap;
+      var failed = false, ap;
       fetchSkeletons(
           [node.skeleton_id],
           function(skid) {
@@ -195,6 +224,15 @@
           function(skid) { return {}; },
           function(skid, json) {
             ap = new CATMAID.ArborParser().init('compact-arbor', json);
+            // Trasnform positons into stack space. This makes lookup later on
+            // quicker.
+            var stack = self.stackViewer.primaryStack;
+            for (var nodeID in ap.positions) {
+              var pos = ap.positions[nodeID];
+              pos.set(stack.projectToStackX(pos.z, pos.y, pos.x),
+                      stack.projectToStackY(pos.z, pos.y, pos.x),
+                      stack.projectToStackZ(pos.z, pos.y, pos.x));
+            }
           },
           function(skid) {
             failed = true;
@@ -245,10 +283,19 @@
     var downstream = fragments[0];
     var upstream = fragments[1];
 
-    var createShading = SkeletonProjectionLayer.shadingModes[this.options.shadingMode];
-    if (!createShading) {
-      throw new CATMAID.ValueError("Couldn't find shading method " +
-          this.shadingMode);
+    var material = SkeletonProjectionLayer.shadingModes[this.options.shadingMode];
+    if (!material) {
+      throw new CATMAID.ValueError("Couldn't find material method " + this.shadingMode);
+    }
+
+    // Allow opacity-only definitions for simplicity
+    if (CATMAID.tools.isFn(material)) {
+      material = {
+        opacity: material,
+        color: function(layer, color) {
+          return function() { return color; };
+        }
+      };
     }
 
     // Construct rendering option context
@@ -258,8 +305,8 @@
       stackViewer: this.stackViewer,
       paper: this.paper,
       ref: this.graphics.Node.prototype.USE_HREF + this.graphics.USE_HREF_SUFFIX,
-      color: this.options.downstreamColor,
-      shade: createShading(this, arbor, downstream),
+      color: material.color(this, this.options.downstreamColor),
+      opacity: material.opacity(this, arbor, downstream),
       edgeWidth: this.graphics.ArrowLine.prototype.EDGE_WIDTH || 2,
       showEdges: this.options.showEdges,
       showNodes: this.options.showNodes
@@ -276,8 +323,8 @@
       upstream = upstream.reroot(parentID);
 
       // Update render options with upstream color
-      renderOptions.color = this.options.upstreamColor;
-      renderOptions.shade = createShading(this, arbor, upstream);
+      renderOptions.color = material.color(this, this.options.upstreamColor);
+      renderOptions.opacity = material.opacity(this, arbor, upstream);
 
       // Render downstream nodes
       upstream.nodesArray().forEach(renderNodes, renderOptions);
@@ -291,21 +338,20 @@
 
       // render node that are not in this layer
       var stack = this.stackViewer.primaryStack;
+      // Positions are already transformed into stack space
       var pos = this.positions[n];
-      var xs = stack.projectToStackX(pos.z, pos.y, pos.x);
-      var ys = stack.projectToStackY(pos.z, pos.y, pos.x);
-      var zs = stack.projectToStackZ(pos.z, pos.y, pos.x);
-      var opacity = this.shade(n, pos, zs);
+      var opacity = this.opacity(n, pos, pos.z);
+      var color = this.color(n, pos, pos.z);
 
       // Display only nodes and edges not on the current section
-      if (zs !== this.stackViewer.z) {
+      if (pos.z !== this.stackViewer.z) {
         if (this.showNodes) {
           var c = this.paper.select('.nodes').append('use')
             .attr({
               'xlink:href': '#' + this.ref,
-              'x': xs,
-              'y': ys,
-              'fill': this.color,
+              'x': pos.x,
+              'y': pos.y,
+              'fill': color,
               'opacity': opacity})
             .classed('overlay-node', true);
         }
@@ -314,14 +360,12 @@
           var e = this.edges[n];
           if (e) {
             var pos2 = this.positions[e];
-            var xs2 = stack.projectToStackX(pos2.z, pos2.y, pos2.x);
-            var ys2 = stack.projectToStackY(pos2.z, pos2.y, pos2.x);
             var edge = this.paper.select('.lines').append('line');
             edge.toBack();
             edge.attr({
-                x1: xs, y1: ys,
-                x2: xs2, y2: ys2,
-                stroke: this.color,
+                x1: pos.x, y1: pos.y,
+                x2: pos2.x, y2: pos2.y,
+                stroke: color,
                 'stroke-width': this.edgeWidth,
                 'opacity': opacity
             });
@@ -329,6 +373,30 @@
         }
       }
     }
+  };
+
+  /**
+   * Get the node closest to the given position in a certain radius around it,
+   * if any.
+   */
+  SkeletonProjectionLayer.prototype.getClosestNode = function(x, y, radius) {
+    var nearestnode = null;
+    // Find a node close to this location
+    if (this.currentArborParser) {
+      var mindistsq = radius * radius;
+      var positions = this.currentArborParser.positions;
+      for (var nodeID in positions) {
+        var pos = positions[nodeID];
+        var xdiff = x - pos.x;
+        var ydiff = y - pos.y;
+        var distsq = xdiff*xdiff + ydiff*ydiff;
+        if (distsq < mindistsq) {
+          mindistsq = distsq;
+          nearestnode = nodeID;
+        }
+      }
+    }
+    return nearestnode;
   };
 
   /**
@@ -427,6 +495,33 @@
         var zDist = Math.abs(zStack - stackViewer.z);
         return Math.max(0, 1 - falloff * zDist);
       };
+    },
+
+    /**
+     * Change skeleton color towards plain colors with increasing Z distance.
+     */
+    "skeletoncolorgradient": {
+      "opacity": function(layer, arbor, subarbor) {
+        return function(node, pos, zStack) {
+          return 1;
+        };
+      },
+      "color": function(layer, color) {
+        var falloff = layer.options.distanceFalloff;
+        var stackViewer = layer.stackViewer;
+        var from = CATMAID.tools.cssColorToRGB(SkeletonAnnotations.active_skeleton_color);
+        var to = CATMAID.tools.cssColorToRGB(color);
+        return function(node, pos, zStack) {
+          // Merge colors
+          var zDist = Math.abs(zStack - stackViewer.z);
+          var factor = Math.max(0, 1 - falloff * zDist);
+          var invFactor = 1 - factor;
+          var r = Math.round((from.r * factor + to.r * invFactor) * 255);
+          var g = Math.round((from.g * factor + to.g * invFactor) * 255);
+          var b = Math.round((from.b * factor + to.b * invFactor) * 255);
+          return "rgb(" + r + "," + g + "," + b + ")";
+        };
+      }
     }
   };
 

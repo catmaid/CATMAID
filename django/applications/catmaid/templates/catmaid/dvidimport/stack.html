@@ -1,0 +1,66 @@
+{% extends "catmaid/form_wizard.html" %}
+
+{% block extrahead %}
+  {{ block.super }}
+  <script>
+    document.addEventListener('DOMContentLoaded', function(event) {
+      // Create a checkbox to show all data instances
+      var checkbox = document.createElement('input');
+      checkbox.setAttribute('type', 'checkbox')
+      checkbox.onchange = function() {
+        showUnsupportedInstances(this.checked);
+      };
+      var label = document.createElement('label');
+      label.appendChild(checkbox);
+      label.appendChild(document.createTextNode('Show data instances with ' +
+            'unsupported data types'));
+      var p = document.createElement('p');
+      p.appendChild(label);
+
+      var instanceList = document.querySelector('ul#instance-list');
+      if (instanceList) {
+        // Insert check-box before list
+        instanceList.parentNode.insertBefore(p, instanceList);
+
+        // Hide all non supported types by default
+        showUnsupportedInstances(false);
+      }
+
+      /**
+       * Show or hide unsupported data instance types.
+       */
+      function showUnsupportedInstances(show) {
+        var supportedTypes = {{ supported_instance_types|safe }};
+        var instanceList = document.querySelector('ul#instance-list');
+
+        for (var i=0; i<instanceList.childElementCount; ++i) {
+          var li = instanceList.children[i];
+          if (-1 === supportedTypes.indexOf(li.dataset.instanceType)) {
+            li.style.display = show ? 'block' : 'none';
+          }
+        };
+      }
+    });
+  </script>
+{% endblock %}
+
+{% block stepinfo %}
+<p>
+Please enter below the specific <em>repository</em> and <em>instance</em> on the
+DVID server running at <em>{{ dvid_server }}</em>. Below you'll find a list of
+data instances available on this server, organized by instance type. CATMAID
+supports the following instance types: {{ supported_instance_types|join:", " }}.
+
+<ul id='instance-list'>
+  {% for instance_type, instances in dvid_instances.items %}
+  <li data-instance-type="{{ instance_type }}">{{ instance_type }}
+      <ul>
+        {% for instance in instances %}
+        <li>{{ instance.instance }} (Repo: {{ instance.repo }})</li>
+        {% endfor %}
+      </ul>
+    </li>
+  {% endfor %}
+</ul>
+</p>
+{% endblock %}

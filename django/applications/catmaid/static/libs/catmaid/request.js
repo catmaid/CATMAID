@@ -10,9 +10,6 @@
  */
 
 /**
- */
-
-/**
  * Implements a cross browser HTTPrequest-FIFO-queue.
  */
 RequestQueue = function()
@@ -42,7 +39,7 @@ RequestQueue = function()
     for ( var i = 0; i < a.length; ++i )
     {
       var r = p + "[" + i + "]";
-      
+
       switch ( typeof a[ i ] )
       {
       case "undefined":
@@ -60,7 +57,7 @@ RequestQueue = function()
       }
     }
     q = q.replace( /\&$/, "" );
-    
+
     return q;
   };
 
@@ -74,7 +71,7 @@ RequestQueue = function()
         r = p + "[" + k + "]";
       else
         r = k;
-      
+
       switch ( typeof o[ k ] )
       {
       case "undefined":
@@ -92,7 +89,7 @@ RequestQueue = function()
       }
     }
     q = q.replace( /\&$/, "" );
-    
+
     return q;
   };
 
@@ -129,8 +126,6 @@ RequestQueue = function()
     xmlHttp.setRequestHeader( "X-Requested-With", "XMLHttpRequest" );
     xmlHttp.onreadystatechange = callback;
     xmlHttp.send( queue[ 0 ].data );
-    
-    return;
   };
 
   var callback = function()
@@ -143,7 +138,6 @@ RequestQueue = function()
       if ( queue.length > 0 )
         send();
     }
-    return;
   };
 
   return {
@@ -151,14 +145,14 @@ RequestQueue = function()
      * Returns if there is some request pending or not.
      */
     busy : function(){ return ( queue.length > 0 ); },
-    
+
     /**
      * Registers a request including a callback to the queue for waiting or
      * starts it imediately.
      */
     register : function(
         r,		//!< string  request
-        m,		//!< string  method		"GET" or "POST"
+        m,		//!< string  method	"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD" or "OPTIONS"
         d,		//!< object  data		object with key=>value
         c,		//!< function callback
         id		//!< string  id
@@ -178,11 +172,11 @@ RequestQueue = function()
         );
         break;
       default:
-  var request = "";
-  var encoded = encodeObject( d );
-  if (encoded !== "") {
-    request = "?" + encoded;
-  }
+        var request = "";
+        var encoded = encodeObject( d );
+        if (encoded !== "") {
+          request = "?" + encoded;
+        }
         queue.push(
           {
             request : r + request,
@@ -197,7 +191,6 @@ RequestQueue = function()
       {
         send();
       }
-      return;
     },
 
     /**
@@ -208,7 +201,7 @@ RequestQueue = function()
      */
     replace : function(
         r,		//!< string  request
-        m,		//!< string  method		"GET" or "POST"
+        m,		//!< string  method	"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD" or "OPTIONS"
         d,		//!< object  data		object with key=>value
         c,		//!< funtion callback
         id		//!< string  id
@@ -226,7 +219,6 @@ RequestQueue = function()
         }
       }
       this.register( r, m, d, c, id );
-      return;
     }
   };
 };

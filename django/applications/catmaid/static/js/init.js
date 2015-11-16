@@ -3,7 +3,7 @@
 
 /** @type {Object} Global access to window and project control events and variables. */
 CATMAID.Init = {};
-CATMAID.Events.extend(CATMAID.Init);
+CATMAID.asEventSource(CATMAID.Init);
 CATMAID.Init.EVENT_PROJECT_CHANGED = "init_project_changed";
 CATMAID.Init.EVENT_USER_CHANGED = "init_user_changed";
 
@@ -476,7 +476,7 @@ function handle_openProjectStack( e, stackViewer )
   //! look if the project is already opened, otherwise open a new one
   if ( !( project && project.id == e.pid ) )
   {
-    project = new Project( e.pid );
+    project = new CATMAID.Project( e.pid );
     project.register();
     CATMAID.Init.trigger(CATMAID.Init.EVENT_PROJECT_CHANGED, project);
   } else {
@@ -798,7 +798,7 @@ function handle_message( status, text, xml )
 						var dd1 = document.createElement( "dd" );
 						var dd1a = document.createElement( "a" );
 						dd1a.href = e[ i ].action;
-						dd1a.target = '_blank'; // FIXME: does not open in new window
+						dd1a.target = '_blank';
 						dd1a.appendChild( document.createTextNode( e[ i ].title ) );
 						dd1.appendChild( dd1a );
 						var dd2 = document.createElement( "dd" );
@@ -809,6 +809,11 @@ function handle_message( status, text, xml )
 					}
 				}
 				message_menu.update( e );
+				// Make all message links open in a new page
+				var links = message_menu.getView().querySelectorAll('a');
+				for (var j=0; j<links.length; ++j) {
+					links[j].target = '_blank';
+				}
 				if ( n > 0 ) document.getElementById( "message_menu_text" ).className = "alert";
 				else document.getElementById( "message_menu_text" ).className = "";
 			}
@@ -1039,6 +1044,7 @@ var realInit = function()
 	var xp;
 	var init_active_node_id;
 	var init_active_skeleton;
+	var singleStackViewer = false;
 
 	var account;
 	var password;
@@ -1113,6 +1119,11 @@ var realInit = function()
 		if ( values[ "dataview" ] )
 			current_dataview = parseInt( values["dataview"] );
 		if ( isNaN( current_dataview ) ) current_dataview = undefined;
+
+		// Check if only one stack viewer should be used for all stacks
+		if ( values[ "composite" ] ) {
+			singleStackViewer = ("1" === values["composite"]);
+		}
 	}
 
 	CATMAID.statusBar = new CATMAID.Console();
@@ -1179,11 +1190,13 @@ var realInit = function()
 			classification_editor: null
 		};
 
-		loadStacksFromURL();
+		loadStacksFromURL(singleStackViewer);
 
 		// Open stacks one after another and move to the requested location. Load
 		// the requested tool after everything has been loaded.
-		function loadStacksFromURL() {
+		function loadStacksFromURL(composite, loaded) {
+			loaded = loaded || 0;
+			useExistingStackViewer = composite && (loaded > 0);
 			if (pid) {
 				if (sids.length > 0) {
 					// Open stack and queue test/loading for next one
@@ -1196,10 +1209,10 @@ var realInit = function()
 								typeof xp == "number" && typeof s == "number" ) {
 							project.moveTo(zp, yp, xp, s, function() {
 								// Load next stack
-								loadStacksFromURL();
+								loadStacksFromURL(composite, loaded + 1);
 							});
 						}
-					});
+					}, useExistingStackViewer);
 				} else {
 					// Set the tool only after the move; otherwise, thousands of skeleton
 					// nodes may be fetched and painted unnecessarily.

@@ -11,7 +11,6 @@
   NeuronDendrogram,
   project,
   requestQueue,
-  SelectionTable,
   SkeletonAnnotations,
   TreenodeTable,
   WindowMaker
@@ -1090,96 +1089,116 @@
     // Fill neuron table
     var datatable = $(table).dataTable({
       // http://www.datatables.net/usage/options
-      "bDestroy": true,
-      "sDom": '<"H"lrf>t<"F"ip>',
-      "bProcessing": true,
-      "bServerSide": true,
-      "bAutoWidth": false,
-      "iDisplayLength": this.possibleLengths[0],
-      "sAjaxSource": django_url + project.id + '/neuron/table/query-by-annotations',
-      "fnServerData": function (sSource, aoData, fnCallback) {
-          // Annotation filter
-          if (filters.annotations) {
-            filters.annotations.forEach(function(annotation_id, i) {
-              aoData.push({
-                  'name': 'neuron_query_by_annotation[' + i + ']',
-                  'value': annotation_id
-              });
-            });
-          }
-          // User filter -- only show neurons that have been annotated by the
-          // user in question
-          if (filters.user_id) {
-            aoData.push({
-                'name': 'neuron_query_by_annotator',
-                'value': filters.user_id
-            });
-          }
+      "destroy": true,
+      "dom": '<"H"lrf>t<"F"ip>',
+      "processing": true,
+      "autoWidth": false,
+      "pageLength": this.possibleLengths[0],
+      "serverSide": true,
+      "ajax": function(data, dtCallback, settings) {
+        // Build own set of request parameters
+        var params = {};
 
-          // Validate regular expression and only send if it is valid
-          var searchInput = this.parent().find('div.dataTables_filter input[type=search]');
-          var searchField = aoData.filter(function(e) { return 'sSearch' === e.name; })[0];
+        // Set general parameters
+        params['range_start'] = data.start;
+        params['range_length'] = data.length;
+        params['sort_by'] = "name";
+        params['sort_dir'] = data.order[0].dir;
+        params['types[0]'] = 'neuron';
+        params['with_annotations'] = true;
+
+        // Annotation filter
+        if (filters.annotations) {
+          filters.annotations.forEach(function(annotation_id, i) {
+            params['annotated_with[' + i + ']'] = annotation_id;
+          });
+        }
+
+        // User filter -- only show neurons that have been annotated by the
+        // user in question
+        if (filters.user_id) {
+          params['annotated_by'] = filters.user_id;
+        }
+
+        // Validate regular expression and only send if it is valid
+        var searchInput = this.parent().find('div.dataTables_filter input[type=search]');
+        if ("" !== data.search.value) {
           try {
-            new RegExp(searchField.value);
+            new RegExp(data.search.value);
             searchInput.css('background-color', '');
+            params['name'] = data.search.value;
           } catch (e) {
             // If the search field does not contain a valid regular expression,
             // cancel this update.
             searchInput.css('background-color', 'salmon');
             return;
           }
+        }
 
-          $.ajax({
-              "dataType": 'json',
-              "cache": false,
-              "type": "POST",
-              "url": sSource,
-              "data": aoData,
-              "success": function(result) {
-                  if (result.error) {
-                    if (-1 !== result.error.indexOf('invalid regular expression')) {
-                      searchInput.css('background-color', 'salmon');
-                      CATMAID.warn(result.error);
-                    } else {
-                      CATMAID.error(result.error, result.detail);
-                    }
-                    return;
+        // Request data from back-end
+        $.ajax({
+            "dataType": 'json',
+            "cache": false,
+            "type": "POST",
+            "url": django_url + project.id + '/annotations/query-targets',
+            "data": params,
+            "success": function(json) {
+                // Format result so that DataTables can understand it
+                var result = {
+                  draw: data.draw,
+                  recordsTotal: json.totalRecords,
+                  recordsFiltered: json.totalRecords,
+                  data: json.entities
+                };
+
+                if (json.error) {
+                  if (-1 !== json.error.indexOf('invalid regular expression')) {
+                    searchInput.css('background-color', 'salmon');
+                    CATMAID.warn(json.error);
+                  } else {
+                    CATMAID.error(json.error, json.detail);
                   }
-                  fnCallback(result);
-                  if (callback) {
-                    callback(result);
-                  }
-              }
-          });
+                  result.error = json.error;
+                }
+
+                // Let datatables know about new data
+                dtCallback(result);
+
+                if (callback && !json.error ) {
+                  callback(json);
+                }
+            }
+        });
       },
-      "aLengthMenu": [
+      "lengthMenu": [
           this.possibleLengths,
           this.possibleLengthsLabels
       ],
       "oLanguage": {
         "sSearch": "Search neuron names (regex):"
       },
-      "bJQueryUI": true,
-      "aaSorting": [[ 1, "asc" ]],
-      "aoColumns": [
+      "jQueryUI": true,
+      "order": [[ 1, "asc" ]],
+      "columns": [
         {
-          "sWidth": '5em',
-          "sClass": 'selector_column center',
-          "bSearchable": false,
-          "bSortable": false,
-          "mRender": function (data, type, full) {
-            var cb_id = 'navigator_neuron_' + full[3] + '_selection' +
+          "width": "5em",
+          "className": "selector_column center",
+          "searchable": false,
+          "orderable": false,
+          "render": function(data, type, row, meta) {
+            var cb_id = 'navigator_neuron_' + row.id + '_selection' +
                 self.navigator.widgetID;
             return '<input type="checkbox" id="' + cb_id +
-                '" name="someCheckbox" neuron_id="' + full[3] + '" />';
-        },
+                '" name="someCheckbox" neuron_id="' + row.id + '" />';
+          }
         },
         {
-          "bSearchable": true,
-          "bSortable": true,
-          "mData": 0,
-          "aDataSort": [ 0 ],
-        },
+          "searchable": true,
+          "orderable": true,
+          "render": function(data, type, row, meta) {
+            return row.name;
+          }
+        }
       ]
     });
 
@@ -1262,13 +1281,13 @@
 
     // If a neuron is selected a neuron filter node is created
     $('#' + table_id).on('dblclick', 'tbody tr', function () {
-        var aData = datatable.fnGetData(this);
-        var n = {
-          'name': aData[0],
-          'skeleton_ids': aData[2],
-          'id': aData[3],
+        var neuronData = datatable.fnGetData(this);
+        var neuron = {
+          'name': neuronData.name,
+          'skeleton_ids': neuronData.skeleton_ids,
+          'id': neuronData.id,
         };
-        var node = new NeuronNavigator.NeuronNode(n);
+        var node = new NeuronNavigator.NeuronNode(neuron);
         node.link(self.navigator, self);
         self.navigator.select_node(node);
     });
@@ -1338,7 +1357,7 @@
           var $row_cells = $cells.find('input[neuron_id=' + n.id + ']').
               parent().parent().find('td');
           $row_cells.css('background-color',
-              SelectionTable.prototype.highlighting_color);
+              CATMAID.SelectionTable.prototype.highlighting_color);
         }
       });
     }
@@ -1350,8 +1369,8 @@
   NeuronNavigator.NeuronListMixin.prototype.getSelectedSkeletonModels = function() {
     return this.get_entities(true).reduce((function(o, n) {
       n.skeleton_ids.forEach(function(skid) {
-        o[skid] = new SelectionTable.prototype.SkeletonModel(
-            skid, n.name, new THREE.Color().setRGB(1, 1, 0));
+        o[skid] = new CATMAID.SkeletonModel(skid, n.name,
+            new THREE.Color().setRGB(1, 1, 0));
       });
       return o;
     }).bind(this), {});
@@ -1377,7 +1396,10 @@
   };
 
   /**
-   * Generate a function that will use the list of neurons as its 'this'.
+   * Generate a function that will override the (outer) argument array with
+   * content from the (inner) result argument array. This is used to sync the
+   * table content to the internal representation of the currently listed
+   * neurons.
    */
   NeuronNavigator.NeuronListMixin.prototype.post_process_fn = function(listed_neurons) {
     // Callback for post-process data received from server
@@ -1385,14 +1407,7 @@
         // Reset the neuron list
         this.length = 0;
         // Store the new neurons in the list
-        result.aaData.forEach(function(e) {
-            this.push({
-              name: e[0],
-              annotations: e[1],
-              skeleton_ids: e[2],
-              id: e[3]
-            });
-        }, this);
+        result.entities.forEach(function(e) { this.push(e); }, this);
     }).bind(listed_neurons);
   };
 
@@ -2104,7 +2119,7 @@
     if (skeleton_id) {
       // Highlight corresponding row if present
       $rows.find('td:contains(' + skeleton_id + ')').parent().css(
-          'background-color', SelectionTable.prototype.highlighting_color);
+          'background-color', CATMAID.SelectionTable.prototype.highlighting_color);
     }
   };
 
@@ -2113,8 +2128,8 @@
    */
   NeuronNavigator.NeuronNode.prototype.getSelectedSkeletonModels = function() {
     return this.skeleton_ids.reduce((function(o, skid) {
-      o[skid] = new SelectionTable.prototype.SkeletonModel(
-          skid, this.neuron_name, new THREE.Color().setRGB(1, 1, 0));
+      o[skid] = new CATMAID.SkeletonModel(skid, this.neuron_name,
+          new THREE.Color().setRGB(1, 1, 0));
       return o;
     }).bind(this), {});
   };

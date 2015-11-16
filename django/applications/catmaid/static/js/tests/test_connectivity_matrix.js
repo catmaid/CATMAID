@@ -4,7 +4,7 @@
 QUnit.test('Connectivity matrix test', function( assert ) {
   var rowSkeletonIDs = [1,2,3];
   var colSkeletonIDs = [4,5,6];
-  // Create a reduced fake response from the back-end: skeleton/connectivity
+  // Create a reduced fake response from the back-end: skeleton/connectivity_matrix
   var data = {
     // Postsynaptic partners of rows
     '1': { '4': 3, '6': 8 },

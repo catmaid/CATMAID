@@ -325,8 +325,8 @@
      */
     this.destroy = function()
     {
-      project.off(Project.EVENT_STACKVIEW_ADDED, prepareStackViewer, this);
-      project.off(Project.EVENT_STACKVIEW_CLOSED, closeStackViewer, this);
+      project.off(CATMAID.Project.EVENT_STACKVIEW_ADDED, prepareStackViewer, this);
+      project.off(CATMAID.Project.EVENT_STACKVIEW_CLOSED, closeStackViewer, this);
       SkeletonAnnotations.off(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
           handleActiveNodeChange, this);
 
@@ -694,8 +694,8 @@
       run: function (e) {
         if (e.shiftKey) { // Select skeletons by radius.
           var selectionCallback = (e.ctrlKey || e.metaKey) ?
-              function (skids) { SelectionTable.getLastFocused().removeSkeletons(skids); } :
-              function (skids) { SelectionTable.getLastFocused().addSkeletons(skids); };
+              function (skids) { CATMAID.SelectionTable.getLastFocused().removeSkeletons(skids); } :
+              function (skids) { CATMAID.SelectionTable.getLastFocused().addSkeletons(skids); };
           var atnID = SkeletonAnnotations.getActiveNodeId();
 
           activeTracingLayer.svgOverlay.selectRadius(
@@ -719,11 +719,11 @@
               });
         } else { // Select active skeleton.
           if (e.ctrlKey || e.metaKey) {
-            SelectionTable.getLastFocused().removeSkeletons([
+            CATMAID.SelectionTable.getLastFocused().removeSkeletons([
                 SkeletonAnnotations.getActiveSkeletonId()]);
           } else {
-            SelectionTable.getLastFocused().append(
-                SkeletonAnnotations.sourceView.getSelectedSkeletonModels());
+            CATMAID.SelectionTable.getLastFocused().append(
+                SkeletonAnnotations.activeSkeleton.getSelectedSkeletonModels());
           }
         }
       }
@@ -834,8 +834,35 @@
         if (!mayView())
           return false;
         if (!(e.ctrlKey || e.metaKey)) {
-          var respectVirtualNodes = true;
-          activeTracingLayer.svgOverlay.activateNearestNode(respectVirtualNodes);
+          // Give all layers a chance to activate a node
+          var selectedNode = null;
+          var layers = activeStackViewer.getLayers();
+          var layerOrder = activeStackViewer.getLayerOrder();
+          // TODO: Don't use internal objects of the tracing overlay, i.e. find
+          // a better way to get the current mouse position.
+          var x = activeTracingLayer.svgOverlay.coords.lastX;
+          var y = activeTracingLayer.svgOverlay.coords.lastY;
+          // Only allow nodes that are screen space 50px or closer
+          var r = 50.0 / activeStackViewer.scale;
+          for (var i=0, max=layerOrder.length; i<max; ++i) {
+            // Read layers from top to bottom
+            var l = layers.get(layerOrder[max-i-1]);
+            if (CATMAID.tools.isFn(l.getClosestNode)) {
+              selectedNode = l.getClosestNode(x, y, r);
+              if (selectedNode) {
+                break;
+              }
+            }
+          }
+          if (selectedNode) {
+            // If this layer has a node close by, activate it
+            SkeletonAnnotations.staticMoveToAndSelectNode(selectedNode);
+          } else {
+            // If no layer found a node close by, ask the tracing layer for the
+            // closest node without any bounds.
+            var respectVirtualNodes = true;
+            activeTracingLayer.svgOverlay.activateNearestNode(respectVirtualNodes);
+          }
           return true;
         } else {
           return false;
@@ -858,7 +885,7 @@
     }) );
 
     this.addAction( new CATMAID.Action({
-      helpText: "Delete the active node",
+      helpText: "Delete the active node (or suppress it if it is virtual)",
       keyShortcuts: { 'DEL': [ 46 ] },
       run: function (e) {
         if (!mayEdit())
@@ -1026,6 +1053,15 @@
       }
     }) );
 
+    this.addAction( new CATMAID.Action({
+      helpText: "Find the nearest matching tagged node (Ctrl: repeat last tag query; Subsequent shift+\\: cycle to next nearest)",
+      keyShortcuts: { '\\': [ 220 ] },
+      run: function (e) {
+        activeTracingLayer.svgOverlay.goToNearestMatchingTag(e.shiftKey, e.ctrlKey);
+        return true;
+      }
+    }));
+
 
     var keyCodeToAction = CATMAID.getKeyCodeToActionMap(actions);
 
@@ -1072,8 +1108,8 @@
     }, this);
 
     // Listen to creation and removal of new stack views in current project.
-    project.on(Project.EVENT_STACKVIEW_ADDED, prepareStackViewer, this);
-    project.on(Project.EVENT_STACKVIEW_CLOSED, closeStackViewer, this);
+    project.on(CATMAID.Project.EVENT_STACKVIEW_ADDED, prepareStackViewer, this);
+    project.on(CATMAID.Project.EVENT_STACKVIEW_CLOSED, closeStackViewer, this);
 
     // Listen to active node change events
     SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
@@ -1157,7 +1193,7 @@
           var actionaddstage = function(type) {
             return function() {
               // Find an open Selection, or open one if none
-              var selection = SelectionTable.prototype.getOrCreate();
+              var selection = CATMAID.SelectionTable.prototype.getOrCreate();
               selection.addSkeletons([parseInt($(this).attr('id'))]);
               return false;
             };

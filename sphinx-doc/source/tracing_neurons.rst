@@ -51,42 +51,12 @@ click on the icon to change to tracing mode:
 
 .. image:: _static/tracing/tool-icons-trace.png
 
-If there are any treenodes in view, you'll now see them as yellow dots:
+If there are any treenodes in view, you'll now see them as magenta dots:
 
-.. image:: _static/tracing/no-edges-with-arrow.png
+.. image:: _static/tracing/tracing-view.png
 
-But you'll probably want to trace with the edges between treenodes
-also shown.  You can do that by clicking the "show edges?" checkbox
-shown in the image above.  Then the view will look more like:
-
-.. image:: _static/tracing/edges-with-arrow.png
-
-Before starting tracing, it's a good idea to create a neuron in the
-logical structure of the project to keep your tracing organized.
-(Otherwise, it will go into the top level "Fragments" folder.)  To
-create a neuron (or a group of neurons) you need to use the object
-tree, which can be opened with the icon indicated by the arrow in the
-image above.
-
-Once the object tree is open, you can navigate down to where you want
-to put your neuron.  Then right-click on the group you want to create
-a new neuron in, and select "Create neuron":
-
-.. image:: _static/tracing/object-tree-create-neuron.png
-
-You might want to rename the neuron by right clicking on it and
-selecting "Rename Neuron".  Now click on your neuron to make sure that
-it is highlighted in blue, like this:
-
-.. image:: _static/tracing/highlighted-neuron.png
-
-While the neuron is highlighted like that, any new skeletons you
-create by clicking in the interface will be children of that neuron.
-You can now close the object tree (by clicking in the top right hand
-corner of the pane).
-
-So, to place the first node in your neuron's skeleton, just left-click
-within a membrane that doesn't already have yellow node in it.  You
+To place the first node in a new neuron's skeleton, just left-click
+within a membrane that doesn't already have node in it.  You
 should see a green node appear, like this:
 
 .. image:: _static/tracing/first-node.png
@@ -100,8 +70,8 @@ clicking will be linked to that node.  To make a different node the
 active node, just left-click on it.
 
 (If you want to create a completely new skeleton, there must be
-no active node - to deselect it, hold down Control (or ⌘ on Mac
-OS) and left-click somewhere other than on a node.)
+no active node - to deselect it, hold down :kbd:`Control` (or :kbd:`⌘` on Mac
+OS) and left-click somewhere other than on a node, or press :kbd:`D`.)
 
 Try clicking elsewhere within this layer to create a line of nodes.
 Try changing the active node to one of the middle nodes, and continue
@@ -111,8 +81,26 @@ You can move any node by clicking on it and dragging it around.
 
 Deleting Nodes
 ``````````````
-To delete a node, hold down Control (or ⌘ on Mac OS) and Shift,
-and left-click on the node.
+To delete a node, hold down :kbd:`Control` (or :kbd:`⌘` on Mac OS) and
+:kbd:`Shift`, and left-click on the node, or activate the node and press
+:kbd:`Delete`.
+
+Navigating between Nodes
+````````````````````````
+While you can navigate through nodes in a skeleton by changing slices and
+clicking on nodes, this is cumbersome. Instead, there are many key
+shortcuts to navigate through a skeleton based on its topology and
+other annotations.
+
+The simplest navigation shortcuts are moving closer to or further from
+the root node. Pressing :kbd:`[` will move to the parent of the active node,
+closer to the root node. Pressing :kbd:`]` will move to the child of the
+active node, further from the root node. If the active node is a branch point,
+one of the children will be selected at random.
+
+To discover more ways to navigate nodes, like finding leaf nodes without
+children, click the question mark icon in the toolbar to see a list of
+keyboard shortcuts.
 
 Splitting Skeletons
 ```````````````````
@@ -123,22 +111,25 @@ toolbar, which looks like this:
 
 .. image:: _static/tracing/scissors.png
 
-Then click on the node at which you want to split the skeleton.
-You will then end up with two skeletons in the containing
-neuron.  All parts of the skeleton from the root node up to and
+A dialog will appear with a 3D rendering of the skeleton, so you can
+visualize what each skeleton will look like once the split is made.
+If you are satisfied with the split, press the 'Ok' button.
+You will then end up with two skeletons.
+All parts of the skeleton from the root node up to and
 including the split point will still be in the original
 skeleton, but the nodes downstream from that point will be in a
-new skeleton.
+new skeleton and neuron.
 
 Joining Skeletons
 `````````````````
-To join one skeleton to another one, so that they form a single
-skeleton, hold down Shift and left-click on a node in the other
+To join one skeleton to another so that they form a single
+skeleton, activate the node in one skeleton where you would like the join
+to occur, then hold down :kbd:`Shift` and left-click on a node in the other
 skeleton.  (You may not join any part of a skeleton to itself.)
 
 Tagging Nodes
 `````````````
-To add a tag to the active node, press 't', you should see
+To add a tag to the active node, press :kbd:`T`. You should see
 something like the following:
 
 .. image:: _static/tracing/tag-after-t.png
@@ -147,12 +138,11 @@ Then you can type a tag:
 
 .. image:: _static/tracing/tag-after-writing-todo.png
 
-... and press enter:
+... and press :kbd:`Enter`:
 
 .. image:: _static/tracing/tag-after-enter.png
 
-In order to actually save your tag to the database, you then
-need to click "Save":
+To actually save your tag to the database, press :kbd:`Enter` again:
 
 .. image:: _static/tracing/tag-after-save.png
 
@@ -179,7 +169,7 @@ connector:
 
 .. image:: _static/tracing/synapse-progress0001.png
 
-The purple arrow leading to the large connector indicates that
+The red arrow leading to the large connector indicates that
 your original node is presynaptic to the connector.  Then you
 can add a postsynaptic partner by shift-clicking in the center
 of a membrane that appears to be postsynaptic:
@@ -212,22 +202,33 @@ normal tracing mode with this button:
 
 .. image:: _static/tracing/synapse-dropping-switch-back.png
 
-Using the node table
-````````````````````
+Using the treenode table
+````````````````````````
 
 You may need to find a particular node of a treeline, for
 example if it was tagged with TODO and you need to go back to
 it.  The easiest way to locate particular nodes in a skeleton is
-to select a node in that skeleton and click on the treenode
-table button:
+to select a node in that skeleton and click on the Neuron Navigator
+button:
+
+.. image:: _static/tracing/neuron-navigator.png
+
+A window will open containing a new Neuron Navigator, which is a *widget*
+for exploring neurons and their annotations. CATMAID has many widgets
+to help catalog, explore, and analyze your data. In the section of the
+Neuron Navigator for the active neuron, click the Treenode Table button:
 
 .. image:: _static/tracing/treenode-table.png
 
 This will bring up a table of all the nodes in that skeleton:
 
 .. image:: _static/tracing/treenode-table-open.png
-   :scale: 70 %
 
-You can sort this table by clicking in the column headings.  To
-go to a particular node, just double click on the row.
+You can sort this table by clicking in the column headings. To
+go to a particular node, just double click on the row. To filter by node
+type, select an option from the dropdown in the table header. Find the
+TODO-tagged node you are looking for by typing "TODO" in the text input
+in the tags header and press :kbd:`Enter`:
+
+.. image:: _static/tracing/treenode-table-open-tags.png
 

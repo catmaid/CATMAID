@@ -14,6 +14,7 @@ from catmaid.control.classificationadmin import classification_admin_view
 from catmaid.control.annotationadmin import ImportingWizard
 from catmaid.views import UseranalyticsView, UserProficiencyView, \
     GroupMembershipHelper
+from catmaid.views.dvid import DVIDImportWizard
 
 
 def add_related_field_wrapper(form, col_name, rel=None):
@@ -374,3 +375,5 @@ admin.site.register_view('classificationadmin',
 admin.site.register_view('groupmembershiphelper',
                          'Group membership helper',
                          view=GroupMembershipHelper.as_view())
+admin.site.register_view('dvidimporter', 'DVID stack importer',
+                         view=DVIDImportWizard.as_view())

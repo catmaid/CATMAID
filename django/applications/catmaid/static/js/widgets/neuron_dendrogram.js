@@ -5,7 +5,6 @@
   InstanceRegistry,
   project,
   requestQueue,
-  SelectionTable,
   SkeletonAnnotations
 */
 
@@ -56,7 +55,7 @@ var NeuronDendrogram = function() {
 NeuronDendrogram.prototype = {};
 $.extend(NeuronDendrogram.prototype, new InstanceRegistry());
 $.extend(NeuronDendrogram.prototype, new CATMAID.SkeletonSource());
-$.extend(NeuronDendrogram.prototype, CATMAID.Events.Event);
+CATMAID.asEventSource(NeuronDendrogram.prototype);
 
 /* Implement interfaces */
 
@@ -97,7 +96,7 @@ NeuronDendrogram.prototype.getSelectedSkeletonModels = function()
 {
   var models = {};
   if (this.currentSkeletonId) {
-    models[this.currentSkeletonId] = new SelectionTable.prototype.SkeletonModel(
+    models[this.currentSkeletonId] = new CATMAID.SkeletonModel(
         this.currentSkeletonId, "", new THREE.Color().setRGB(1, 1, 0));
   }
   return models;

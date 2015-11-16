@@ -43,7 +43,7 @@ PIPELINE_CSS = {
 
 libraries_js = {
     'modernizr': ['*.js'],
-    'jquery': ['jquery-2.1.3.min.js', 'jquery-migrate-1.2.1.js',
+    'jquery': ['jquery-2.1.3.min.js',
                'jquery-ui.min.js', 'jquery-ui.*.js',
                'jquery.dataTables.min.js', 'jquery.*.js',
                'dataTables.colReorder.js'],
@@ -57,8 +57,9 @@ libraries_js = {
     'numeric': ['numeric-1.2.6.js'],
     'three.js': ['three.js', 'controls/TrackballControls.js',
                  'camera/CombinedCamera.js', 'Detector.js',
-                 'helvetiker_regular.typeface.js',
-                 'renderer/Projector.js', 'renderer/SVGRenderer.js'],
+                 'geometries/TextGeometry.js', 'renderer/Projector.js',
+                 'renderer/SVGRenderer.js', 'utils/FontUtils.js',
+                 'helvetiker_regular.typeface.js'],
     'threex': ['*.js'],
     'pixi.js': ['*.js'],
     'cytoscapejs': ['cytoscape.js'],
@@ -103,6 +104,7 @@ for k,v in non_pipeline_js.iteritems():
 PIPELINE_JS['catmaid'] = {
     'source_filenames': (
         'js/CATMAID.js',
+        'js/dom.js',
         'js/extensions.js',
         'js/action.js',
         'js/init.js',
@@ -119,6 +121,7 @@ PIPELINE_JS['catmaid'] = {
         'js/ui.js',
         'js/user.js',
         'js/WindowMaker.js',
+        'js/skeleton-model.js',
         'js/tools/navigator.js',
         'js/tools/boxselectiontool.js',
         'js/tools/roitool.js',

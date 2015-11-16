@@ -6,6 +6,8 @@ from django.db import connection
 from django.http import HttpResponse, Http404
 from django.shortcuts import get_object_or_404
 
+from rest_framework.decorators import api_view
+
 from catmaid.models import Project, Class, ClassInstance, Relation, Connector, \
         ConnectorClassInstance, UserRole, Treenode, TreenodeClassInstance, \
         ChangeRequest
@@ -42,8 +44,19 @@ def label_remove(request, project_id=None):
     return HttpResponse(json.dumps({'error': 'Only super users can delete labels'}),
                         content_type="text/plain")
 
+@api_view(['GET', 'POST'])
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def labels_all(request, project_id=None):
+    """List all labels (front-end node *tags*) in use.
+
+    ---
+    type:
+    - type: array
+      items:
+        type: string
+      description: Labels used in this project
+      required: true
+    """
     qs = ClassInstance.objects.filter(
         class_column__class_name='label',
         project=project_id)
@@ -74,7 +87,7 @@ def labels_for_nodes(request, project_id=None):
     treenode_ids = request.POST.get('treenode_ids', '').strip()
     connector_ids = request.POST.get('connector_ids', '').strip()
     result = defaultdict(list)
-    cursor = connection.cursor();
+    cursor = connection.cursor()
 
     if treenode_ids:
         # Could use treenode_ids directly as a string, but it is good to sanitize arguments
@@ -90,20 +103,6 @@ def labels_for_nodes(request, project_id=None):
 
         for row in cursor.fetchall():
             result[row[0]].append(row[1])
-        # The code below:
-        # 1. Is hard to read, compared to plain SQL (see above)
-        # 2. Selects all possible columns, wastefully
-        # 3. If appended with values(...), then returns a dictionary, wastefully
-        # 4. Runs slower than the equivalent code above
-        """
-        qs_treenodes = TreenodeClassInstance.objects.filter(
-            relation__relation_name='labeled_as',
-            class_instance__class_column__class_name='label',
-            treenode__id__in=(int(x) for x in treenode_ids.split(',')),
-            project=project_id).select_related('treenode', 'class_instance').values('treenode_id', 'class_instance__name')
-        for tci in qs_treenodes:
-            result[tci['treenode_id']].append(tci['class_instance__name'])
-        """
 
     if connector_ids:
         cursor.execute('''
@@ -117,17 +116,6 @@ def labels_for_nodes(request, project_id=None):
         ''' % ','.join(str(int(x)) for x in connector_ids.split(','))) # convoluted to sanitize
         for row in cursor.fetchall():
             result[row[0]].append(row[1])
-
-        # See notes above for treenode_ids
-        """
-        qs_connectors = ConnectorClassInstance.objects.filter(
-            relation__relation_name='labeled_as',
-            class_instance__class_column__class_name='label',
-            connector__id__in=(int(x) for x in connector_ids.split(',')),
-            project=project_id).select_related('connector', 'class_instance')
-        for cci in qs_connectors:
-            result[cci.connector.id].append(cci.class_instance.name)
-        """
 
     return HttpResponse(json.dumps(result), content_type="text/plain")
 

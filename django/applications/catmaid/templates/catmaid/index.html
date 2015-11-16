@@ -13,19 +13,14 @@
 			var django_url = "{{ CATMAID_URL }}";
 		</script>
 
-		<!--[if gte IE 5]>
-		<script type="text/javascript" src="{{ STATIC_URL }}libs/excanvas/excanvas.js"></script>
-		<![endif]-->
-
 		{% compressed_css 'libraries' %}
 		{% compressed_css 'catmaid' %}
 
     <!-- Regular CATMAID components -->
     {% for f in COMPRESSED_FILE_IDS %}
-		  {% compressed_js f %}
-    {% endfor %}
-    {% for f in NON_COMPRESSED_FILES %}
-      <script type="application/javascript" src="{{ STATIC_URL }}{{ f }}"></script>
+        {% if f != 'catmaid' %}
+            {% compressed_js f %}
+        {% endif %}
     {% endfor %}
 
     <!-- Front end initialization -->
@@ -34,6 +29,12 @@
 					"{{ STATIC_EXTENSION_URL|escapejs }}");
 			CATMAID.CLIENT_VERSION = "{% catmaid_version %}";
 		</script>
+
+	{% compressed_js 'catmaid' %}
+
+    {% for f in NON_COMPRESSED_FILES %}
+      <script type="application/javascript" src="{{ STATIC_URL }}{{ f }}"></script>
+    {% endfor %}
 
     <!-- Extensions -->
     {% for f in STATIC_EXTENSION_FILES %}

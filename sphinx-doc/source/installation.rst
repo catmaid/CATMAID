@@ -7,12 +7,6 @@ These installation instructions have been tested on the most
 recent stable release of Ubuntu (14.04 precise), so may need
 some minor changes for other Debian-based distributions.
 
-As an alternative, we have generated an AMI (Amazon Machine
-Image) that will let you easily create an EC2 instance with a
-running CATMAID instance and a couple of example projects.  If
-you would prefer that approach, please see the instructions in
-:ref:`ami`.
-
 Introduction
 ------------
 

@@ -6,7 +6,6 @@
   NeuronNameService,
   project,
   requestQueue,
-  SelectionTable,
   WindowMaker
 */
 
@@ -23,6 +22,8 @@
     // Results of main and sub queries. The main query will be index 0,
     // sub-queries will take the next free slot.
     this.queryResults = [];
+    // Map expanded entities to a query result index
+    this.expansions = new Map();
 
     this.entity_selection_map = {};
     this.pid = project.id;
@@ -88,7 +89,7 @@
 
   NeuronAnnotations.prototype.getSkeletonModel = function(skeleton_id) {
     if (this.hasSkeleton(skeleton_id)) {
-      return new SelectionTable.prototype.SkeletonModel(skeleton_id, "",
+      return new CATMAID.SkeletonModel(skeleton_id, "",
           new THREE.Color().setRGB(1, 1, 0));
     } else {
       return null;
@@ -99,8 +100,8 @@
     return this.get_selected_neurons().reduce(function(o, e) {
       if (e.type === 'neuron') {
         e.skeleton_ids.forEach(function(s) {
-          o[s] = new SelectionTable.prototype.SkeletonModel(
-              s, e.name, new THREE.Color().setRGB(1, 1, 0));
+          o[s] = new CATMAID.SkeletonModel(s, e.name,
+              new THREE.Color().setRGB(1, 1, 0));
         });
       }
       return o;
@@ -136,7 +137,7 @@
       // case that there is only one neuron, belonging to the skeleton.
       neurons.forEach($.proxy(function(n) {
         $('.neuron_annotation_result_row' + this.widgetID + '_' + n.id).css(
-            'background-color', SelectionTable.prototype.highlighting_color);
+            'background-color', CATMAID.SelectionTable.prototype.highlighting_color);
       }, this));
     }
   };
@@ -212,6 +213,36 @@
   })();
 
   /**
+   * Add a row for each entity with the given appender function. Expanded
+   * elements will also be expanded. Keeps track of already expanded elements to
+   * avoid repetitions for cycling annotations.
+   */
+  NeuronAnnotations.prototype.appendEntities = function(entities, appender, indent,
+      expandedIds, sourceSlot) {
+    // Mark entities as unselected and create result table rows
+    entities.forEach(function(entity) {
+      var tr = this.add_result_table_row(entity, appender, indent);
+      // Add source information, if this entry resulted from expansion
+      if (sourceSlot) {
+        tr.setAttribute('expansion', sourceSlot);
+      }
+      // Add already expanded entities
+      var expansionSlot = this.expansions.get(entity);
+      var notExpanded = -1 === expandedIds.indexOf(entity.id);
+      if (expansionSlot && notExpanded) {
+        tr.setAttribute('expanded', expansionSlot);
+        var expandedEntities = this.queryResults[expansionSlot];
+        // Add entity ID to stack to not expand it twice
+        expandedIds.push(entity.id);
+        this.appendEntities(expandedEntities, appender, indent + 1, expandedIds,
+            expansionSlot);
+        // Remove ID from expansion stack, now that it is expanded
+        expandedIds.pop();
+      }
+    }, this);
+  };
+
+  /**
    * Create a table row and passes it to add_row_fn which should it add it
    * whereever it wants. The third parameter specifies the number of indentation
    * steps that should be used.
@@ -225,6 +256,7 @@
             this.widgetID + '_' + entity.id);
     tr.setAttribute('type', entity.type);
     tr.dataset.entityId = entity.id;
+    tr.entity = entity;
 
     // Checkbox & name column, potentially indented
     var td_cb = document.createElement('td');
@@ -299,43 +331,8 @@
       a.dataset.annotation = entity.name;
       a.dataset.indent = indent;
     }
-    // Add handler to the checkbox infront of each entity
-    var create_cb_handler = function(widget) {
-      return function() {
-            var clicked_cb = this;
-            var is_checked = this.checked;
-            var entity_id = $(this).attr('entity_id');
-            // Update the entities selection state
-            widget.entity_selection_map[entity_id] = is_checked;
-            // Update sync link
-            widget.updateLink(widget.getSelectedSkeletonModels());
-            // Potentially remove skeletons from link target
-            if (!is_checked && widget.linkTarget) {
-              var skids = widget.queryResults.reduce(function(o, qs) {
-                qs.forEach(function(e) {
-                  if (e.id == entity_id) {
-                    o = o.concat(e.skeleton_ids);
-                  }
-                });
-                return o;
-              }, []);
-              // Prevent propagation loop by checking if the target has the skeletons anymore
-              if (skids.some(widget.linkTarget.hasSkeleton, widget.linkTarget)) {
-                widget.linkTarget.removeSkeletons(skids);
-              }
-            }
-            // Due to expanded annotations, an entity can appear multiple times. Look
-            // therefore for copies of the current one to toggle it as well.
-            $("#neuron_annotations_query_results_table" + widget.widgetID).find(
-                'td input[entity_id=' + entity_id + ']').each(function() {
-                    if (this != clicked_cb) {
-                      // Set property without firing event
-                      $(this).prop('checked', is_checked);
-                    }
-                });
-        };
-    };
-    $(cb).change(create_cb_handler(this));
+
+    return tr;
   };
 
   NeuronAnnotations.prototype.query = function(initialize)
@@ -351,58 +348,88 @@
           .val("None").trigger("change");
     }
 
-    var form_data = $('#neuron_query_by_annotations' +
-        this.widgetID).serializeArray().reduce(function(o, e) {
-          if (0 === e.name.indexOf('neuron_query_by_annotation')) {
-            o[e.name] = CATMAID.annotations.getID(e.value);
-          } else if (0 === e.name.indexOf('neuron_query_include_subannotation')) {
-            // Expect the annotation field to be read out before this
-            var ann_input_name = e.name.replace(
-                new RegExp('neuron_query_include_subannotation'),
-                'neuron_query_by_annotation');
-            o[e.name] = o[ann_input_name];
-          } else {
-            o[e.name] = e.value;
-          }
-          return o;
-        }, {});
+    // Get user input
+    var $widget = $('#neuron_query_by_annotations' + this.widgetID);
+    var namedAs = $('input[name=neuron_query_by_name]', $widget).val().trim();
+    var annotatedBy = $('select[name=neuron_query_by_annotator]', $widget).val().trim();
+    var annotatedFrom = $('input[name=neuron_query_by_start_date]', $widget).val().trim();
+    var annotatedTo = $('input[name=neuron_query_by_end_date]', $widget).val().trim();
+    var annotations = [];
+    var aSelector = 'name=neuron_query_by_annotation';
+    var sSelector = 'name=neuron_query_include_subannotation';
+    for (var i=0; i<this.nextFieldID; ++i) {
+      var a = aSelector;
+      var s = sSelector;
+      if (i > 0) {
+        a = a + this.widgetID + '_' + i;
+        s = s + this.widgetID + '_' + i;
+      }
+      // Don't use empty names
+      var name = $('input[' + a + ']').val().trim();
+      if (name) {
+        annotations.push([name, $('input[' + s + ']').is(':checked')]);
+      }
+    }
+
+    // Build query parameter set
+    var params = {};
+    if (namedAs) { params['name'] = namedAs; }
+    if (annotatedBy && -2 != annotatedBy) {
+      params['annotated_by'] = 'Team' !== annotatedBy ? annotatedBy :
+            Object.keys(CATMAID.ReviewSystem.Whitelist.getWhitelist());
+    }
+    if (annotatedFrom) { params['annotation_date_start'] = annotatedFrom; }
+    if (annotatedTo) { params['annotation_date_end'] = annotatedTo; }
+    var n = 0;
+    for (var i=0; i<annotations.length; ++i) {
+      var a = annotations[i][0];
+      var s = annotations[i][1];
+      var annotationID = CATMAID.annotations.getID(a);
+      var value;
+      if (annotationID) {
+        // If the annotation matches one particular instance, use it
+        value = annotationID;
+      } else {
+        // Otherwise, treat the search term as regular expression and
+        // filter annotations that match
+        var pattern = '/' === a.substr(0, 1) ? a.substr(1) : CATMAID.tools.escapeRegEx(a);
+        var filter  = new RegExp(pattern);
+        var matches = CATMAID.annotations.getAllNames().filter(function(a) {
+          return this.test(a);
+        }, filter);
+        // Add matches to query, or-combined
+        value = matches.map(function(m) {
+          return CATMAID.annotations.getID(m);
+        }).join(",");
+        // If empty continue with next annotation (if any)
+        if (0 === value.trim().length) {
+          continue;
+        }
+      }
+      var field = s ? 'sub_annotated_with' : 'annotated_with';
+      params[field + n] = value;
+      ++n;
+    }
 
     // Make sure that the result is constrained in some way and not all neurons
     // are returned.
-    var has_constraints = false;
-    for (var field in form_data) {
-      if (form_data.hasOwnProperty(field)) {
-        // For the annotator field, 'no constraint' means value '-2'. The other
-        // fields need to be empty for this.
-        var empty_val = '';
-        if (field === 'neuron_query_by_annotator') {
-          empty_val = '-2';
-          if (form_data[field] === 'Team') {
-            form_data[field] = Object.keys(CATMAID.ReviewSystem.Whitelist.getWhitelist());
-          }
-        }
-        if (form_data[field] && form_data[field] != empty_val) {
-          // We found at least one constraint
-          has_constraints = true;
-        } else {
-          // Delete empty fields
-          delete form_data[field];
-        }
+    if (0 === Object.keys(params).length) {
+      if (0 < annotations.length) {
+        CATMAID.error("Couldn't find matching annotation(s)!");
+      } else {
+        CATMAID.error("Please add at least one constraint before querying!");
       }
-    }
-    if (!has_constraints) {
-      alert("Please add at least one constraint before querying!");
       return;
     }
 
     // Augment form data with offset and limit information
-    form_data.display_start = this.display_start;
-    form_data.display_length = this.display_length;
-    form_data.with_annotations = this.displayAnnotations;
+    params.rangey_start = this.display_start;
+    params.range_length = this.display_length;
+    params.with_annotations = this.displayAnnotations;
 
     // Here, $.proxy is used to bind 'this' to the anonymous function
-    requestQueue.register(django_url + this.pid + '/neuron/query-by-annotations',
-        'POST', form_data, $.proxy( function(status, text, xml) {
+    requestQueue.register(django_url + this.pid + '/annotations/query-targets',
+        'POST', params, $.proxy( function(status, text, xml) {
           if (status === 200) {
             var e = $.parseJSON(text);
             if (e.error) {
@@ -412,6 +439,7 @@
               NeuronNameService.getInstance().unregister(this);
               // Empty selection map and store results
               this.entity_selection_map = {};
+              this.expansions.clear();
               this.queryResults = [];
               this.queryResults[0] = e.entities;
               this.total_n_results = e.entities.length;
@@ -476,15 +504,13 @@
         datatable.destroy();
       }
     }
+
     $tableBody.empty();
     // create appender function which adds rows to table
     var appender = function(tr) {
       $tableBody.append(tr);
     };
-    // Mark entities as unselected and create result table rows
-    entities.forEach((function(entity) {
-      this.add_result_table_row(entity, appender, 0);
-    }).bind(this));
+    this.appendEntities(entities, appender, 0, []);
 
     // If there are results, display the result table
     if (entities.length > 0) {
@@ -501,6 +527,45 @@
       $('#neuron_annotations_query_no_results' + this.widgetID).show();
     }
 
+    // Add handler to the checkbox in front of each entity
+    var create_cb_handler = function(widget) {
+      return function() {
+            var clicked_cb = this;
+            var is_checked = this.checked;
+            var entity_id = $(this).attr('entity_id');
+            // Update the entities selection state
+            widget.entity_selection_map[entity_id] = is_checked;
+            // Update sync link
+            widget.updateLink(widget.getSelectedSkeletonModels());
+            // Potentially remove skeletons from link target
+            if (!is_checked && widget.linkTarget) {
+              var skids = widget.queryResults.reduce(function(o, qs) {
+                qs.forEach(function(e) {
+                  if (e.id == entity_id) {
+                    o = o.concat(e.skeleton_ids);
+                  }
+                });
+                return o;
+              }, []);
+              // Prevent propagation loop by checking if the target has the skeletons anymore
+              if (skids.some(widget.linkTarget.hasSkeleton, widget.linkTarget)) {
+                widget.linkTarget.removeSkeletons(skids);
+              }
+            }
+            // Due to expanded annotations, an entity can appear multiple times. Look
+            // therefore for copies of the current one to toggle it as well.
+            $("#neuron_annotations_query_results_table" + widget.widgetID).find(
+                'td input[entity_id=' + entity_id + ']').each(function() {
+                    if (this != clicked_cb) {
+                      // Set property without firing event
+                      $(this).prop('checked', is_checked);
+                    }
+                });
+        };
+    };
+    $table.off('change.cm').on('change.cm', 'input[type=checkbox][entity_id]',
+        create_cb_handler(this));
+
     // Add expand handler
     var self = this;
     $table.off('click.cm');
@@ -513,24 +578,26 @@
       var annotation = this.dataset.annotation;
       var aID = CATMAID.annotations.getID(annotation);
       var tr = $(this).closest('tr');
+      var entity = $(tr)[0].entity;
 
       // If expanded, collapse it. Expand it otherwise.
-      if ($(this).is('[expanded]')) {
+      if (tr.is('[expanded]')) {
         // Get sub-expansion ID an mark link not expanded
-        var sub_id = $(this).attr('expanded');
-        this.removeAttribute('expanded');
+        var sub_id = tr.attr('expanded');
+        tr.removeAttr('expanded');
         // Find all rows that have an attribute called 'expansion' and delete
         // them.
         var removed_entities = [];
         while (true) {
           var next = $(tr).next();
-          if (next.is('[expansion_' + aID + ']')) {
+          if (next.is('[expansion=' + sub_id + ']')) {
             next.remove();
           } else {
             break;
           }
         }
-        // Delete sub-expansion query result
+        // Delete sub-expansion query result and reference to it
+        self.expansions.delete(entity);
         delete self.queryResults[sub_id];
 
         // Update current result table classes
@@ -548,8 +615,8 @@
             }
           }
         })(self.queryResults, 0);
-        // Mark link expanded
-        this.setAttribute('expanded', sub_id);
+        // Mark row expanded
+        tr.attr('expanded', sub_id);
         // Make sure the slot in results array is used for this sub-query by
         // assigning 'null' to it (which is not 'undefined').
         self.queryResults[sub_id] = null;
@@ -558,10 +625,10 @@
         // and replace the clicked on annotation with the result. Pagination
         // will not be applied to expansions.
         var query_data = {
-          'neuron_query_by_annotation': aID,
+          'annotated_with': aID,
           'with_annotations': self.displayAnnotations
         };
-        requestQueue.register(django_url + project.id + '/neuron/query-by-annotations',
+        requestQueue.register(django_url + project.id + '/annotations/query-targets',
             'POST', query_data, function(status, text, xml) {
               if (status === 200) {
                 var e = $.parseJSON(text);
@@ -576,7 +643,7 @@
                         // Append new content right after the current node and save a
                         // reference for potential removal.
                         var appender = function(new_tr) {
-                          new_tr.setAttribute('expansion_' + aID, 'true');
+                          new_tr.setAttribute('expansion', sub_id);
                           $(tr).after(new_tr);
                         };
 
@@ -589,6 +656,7 @@
                         // The order of the query result array doesn't matter.
                         // It is therefore possible to just append the new results.
                         self.queryResults[sub_id] = e.entities;
+                        self.expansions.set(entity, sub_id);
                         // Update current result table classes
                         self.update_result_row_classes();
                       });
@@ -652,10 +720,11 @@
   {
     var $tableBody = $('#neuron_annotations_query_results' +
         this.widgetID + ' tbody');
-    // First, remove all 'odd' classes
-    $("tr", $tableBody).removeClass("odd");
-    // Re-add class for currently 'odd' rows
+    // First, remove all 'even; and 'odd' classes
+    $("tr", $tableBody).removeClass("odd even");
+    // Re-add class for currently 'even' and 'odd' rows
     $("tr:nth-child(odd)", $tableBody).addClass("odd");
+    $("tr:nth-child(even)", $tableBody).addClass("even");
   };
 
   NeuronAnnotations.prototype.add_query_field = function()
@@ -835,11 +904,11 @@
     var entityIdsToQuery = entitiesToQuery.map(function(e) { return e.id; });
 
     if (entitiesToQuery.length > 0) {
-      var url = CATMAID.makeURL(project.id + '/annotations/entities/list');
+      var url = CATMAID.makeURL(project.id + '/annotations/query');
       var self = this;
       requestQueue.register(url, 'POST',
           {
-            ids: entityIdsToQuery
+            object_ids: entityIdsToQuery
           },
           CATMAID.jsonResponseHandler(function(json) {
             // Create mapping from skeleton ID to result object

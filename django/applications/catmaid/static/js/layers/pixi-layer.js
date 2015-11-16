@@ -681,7 +681,7 @@
 
   CATMAID.Init.on(CATMAID.Init.EVENT_PROJECT_CHANGED,
       function (project) {
-        project.on(Project.EVENT_STACKVIEW_CLOSED,
+        project.on(CATMAID.Project.EVENT_STACKVIEW_CLOSED,
             function (stackViewer) {
               var context = PixiLayer.contexts.get(stackViewer);
               if (context) {

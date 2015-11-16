@@ -1377,14 +1377,33 @@ var WindowMaker = new function()
             label: 'Neuron visibility:',
             entries: [
               {title: 'Show all immeditely', value: 'all'},
-              {title: 'One per rotation', value: 'one-per-rotation'}
+              {title: 'One per rotation', value: 'one-per-rotation'},
+              {title: 'N per rotation', value: 'n-per-rotation'}
             ],
             title: 'Select a neuron visibility pattern that is applied ' +
                    'over the course of the animation.',
             value: o.animation_stepwise_visibility,
             onchangeFn: function(e) {
-              console.log("Change " + this.selectedIndex);
-              WA.options.animation_stepwise_visibility = this.value;
+              var type = this.value;
+              var options = {};
+              if ('one-per-rotation' === type) {
+                type = 'n-per-rotation';
+                options.n = 1;
+              } else if ('n-per-rotation' === type) {
+                // Ask for n
+                var dialog = new CATMAID.OptionsDialog();
+                dialog.appendMessage('Please enter the number of skeletons ' +
+                    'to make visible after one rotation.');
+                var nSkeletonsPerRot = dialog.appendField('Show n skeletons per rotation ',
+                   'show-n-skeletons-per-rot-' + WA.widgetID, 1, true);
+                dialog.onOK = function() {
+                  options.n = Number(nSkeletonsPerRot.value);
+                  WA.setAnimationNeuronVisibility(type, options);
+                };
+                dialog.show('auto', 'auto', true);
+                return;
+              }
+              WA.setAnimationNeuronVisibility(type, options);
             }
           }
         ]);

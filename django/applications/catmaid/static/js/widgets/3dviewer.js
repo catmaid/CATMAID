@@ -709,7 +709,8 @@
     this.animation_rotation_axis = "up";
     this.animation_rotation_speed = 0.01;
     this.animation_back_forth = false;
-    this.animation_stepwise_visibility = 'all';
+    this.animation_stepwise_visibility_type = 'all';
+    this.animation_stepwise_visibility_options = null;
     this.strahler_cut = 2; // to approximate twigs
   };
 
@@ -1138,6 +1139,35 @@
     }
 
     this.space.render();
+  };
+
+  /**
+   * Set neuron visibility with the help of a dialog in case the visibility type
+   * needs
+   */
+  WebGLApplication.prototype.setAnimationNeuronVisibility = function(type, options) {
+    var visibility = CATMAID.WebGLApplication.AnimationNeuronVisibilities[type];
+    if (!visibility) {
+      throw new CATMAID.ValueError("Unknown neuron visibility type: " + type);
+    }
+
+    // Bind visibility to widget and option object
+    this.options.animation_stepwise_visibility_type = type;
+    this.options.animation_stepwise_visibility_options = options;
+  };
+
+  WebGLApplication.AnimationNeuronVisibilities = {
+    'all': function() {},
+    'n-per-rotation': function(options, skeletonIds, visibleSkeletons, r) {
+      // Expect r to be the numnber of rotations done
+      var skeletonIndex = parseInt(r * options.n);
+      // Make next skeleton visible, if available
+      for (var i=0; i<options.n; ++i) {
+        if ((skeletonIndex + i) < skeletonIds.length) {
+          visibleSkeletons.push(skeletonIds[skeletonIndex + i]);
+        }
+      }
+    }
   };
 
   WebGLApplication.prototype.set_shading_method = function() {
@@ -4599,13 +4629,13 @@
 
     // Add a notification handler for stepwise visibility, if enabled and at least
     // one skeleton is loaded.
-    if (this.options.animation_stepwise_visibility != 'all') {
+    var visType = this.options.animation_stepwise_visibility_type;
+    if (visType !== 'all') {
       // Get current visibility map and create notify handler
       var visMap = this.space.getVisibilityMap();
-      var visOpts = {
-        visibility: this.options.animation_stepwise_visibility
-      }
-      options['notify'] = this.createStepwiseVisibilityHandler(visMap, visOpts);
+      var visOpts = this.options.animation_stepwise_visibility_options;
+      options['notify'] = this.createStepwiseVisibilityHandler(visMap,
+          visType, visOpts);
       // Create a stop handler that resets visibility to the state we found before
       // the animation.
       options['stop'] = this.createVisibibilityResetHandler(visMap);
@@ -4618,8 +4648,9 @@
    * Create a notification handler to be used with animations that will make
    * an additional neuron visibile with every call.
    */
-  WebGLApplication.prototype.createStepwiseVisibilityHandler = function(visMap, options)
-  {
+  WebGLApplication.prototype.createStepwiseVisibilityHandler = function(
+      visMap, type, options) {
+    type = type || 'all';
     options = options || {};
 
     // Get all visible skeletons
@@ -4633,35 +4664,23 @@
       return function() {};
     }
 
-    // Only make first skeleton visible
-    var visibleSkeletons = [skeletonIds[0]];
-    this.space.setSkeletonVisibility(visMap, visibleSkeletons);
-
-    var widget = this;
-    var visibility = options.visibility || 'all';
-
     // Create function to animate neuron visibility
-    if ('all' === visibility) {
+    var visibility = CATMAID.WebGLApplication.AnimationNeuronVisibilities[type];
+    var widget = this;
+    if ('all' === type) {
       // If all should be shown, make all visible and return no-op
       widget.space.setSkeletonVisibility(visMap, this.space.content.skeletons);
       return function() {};
-    } else if ('one-per-rotation' === visibility) {
-      // Show one neuron in the current order per rotation
+    } else if (CATMAID.tools.isFn(visibility)) {
+      var visibleSkeletons = [];
       return function (r) {
-        // Expect r to be the numnber of rotations done
-        var skeletonIndex = parseInt(r);
-        // Make next skeleton visible, if available
-        if (skeletonIndex < skeletonIds.length) {
-          visibleSkeletons.push(skeletonIds[skeletonIndex]);
-          widget.space.setSkeletonVisibility(visMap, visibleSkeletons);
-        }
+        visibility(options, skeletonIds, visibleSkeletons, r);
+        widget.space.setSkeletonVisibility(visMap, visibleSkeletons);
       };
     } else {
       throw new CATMAID.ValueError('Don\'t recognize neuron visibility ' +
           'animation mode "' + visibility + '".');
     }
-
-    return f;
   };
 
   /**
@@ -4753,11 +4772,10 @@
           // Add a notification handler for stepwise visibility, if enabled and at least
           // one skeleton is loaded.
           if (stepVisibilityField.checked) {
-            var visibilityOptions = {
-              visibility: 'one-per-rotation'
-            };
+            var visType = 'n-per-rotation';
+            var visOpts = {n: 1};
             options['notify'] = this.createStepwiseVisibilityHandler(visMap,
-                visibilityOptions);
+                visType, visOpts);
             // Create a stop handler that resets visibility to the state we found before
             // the animation.
             options['stop'] = this.createVisibibilityResetHandler(visMap);

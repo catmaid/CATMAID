@@ -4732,7 +4732,7 @@
     var docURL = CATMAID.makeDocURL('user_faq.html#faq-3dviewer-webm');
     dialog.appendHTML('Note: you can convert the resulting WebM file to ' +
         'other formats. Have a look at the <a href="' + docURL +
-        '">documentation</a> for more information.');
+        '" target="_blank">documentation</a> for more information.');
 
     dialog.onOK = handleOK.bind(this);
 

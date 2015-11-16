@@ -2861,6 +2861,9 @@ var WindowMaker = new function()
     }
 
     var keysHTML = '<p id="keyShortcutsText">';
+    keysHTML += '<a href="' + CATMAID.makeDocURL('/') + '" target="_blank">';
+    keysHTML += 'General documentation for CATMAID release ' + CATMAID.getVersionRelease();
+    keysHTML += '</a>';
     keysHTML += '<h4>Global Key Help</h4>';
 
     actions = project.getActions();

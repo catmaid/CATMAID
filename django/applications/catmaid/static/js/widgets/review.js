@@ -930,14 +930,14 @@
       $('#counting-cache-info').text( 'From segment: ' + startsegment + ' to ' + endsegment );
       var counterContainer = $('#counting-cache');
       counterContainer.empty();
-      project.getStacks().forEach(function(stack) {
-        var tilelayer = stack.getLayer('TileLayer');
-        // Create loading information text for each stack
+      project.getStackViewers().forEach(function(stackViewer) {
+        var tilelayer = stackViewer.getLayer('TileLayer');
+        // Create loading information text for each stack viewer.
         var layerCounter = document.createElement('div');
         counterContainer.append(layerCounter);
         if (tilelayer) {
           tilelayer.cacheLocations(locations,
-              loadImageCallback.bind(self, layerCounter, stack.title));
+              loadImageCallback.bind(self, layerCounter, stackViewer.primaryStack.title));
         }
       });
     };

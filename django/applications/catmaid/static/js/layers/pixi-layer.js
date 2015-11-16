@@ -4,6 +4,9 @@
 
   "use strict";
 
+  // Suppress display of the PIXI banner message in the console.
+  PIXI.utils._saidHello = true;
+
   PixiLayer.contexts = new Map();
 
   /**

@@ -153,7 +153,7 @@ urlpatterns += patterns('catmaid.control.connector',
     (r'^(?P<project_id>\d+)/connector/user-info$', 'connector_user_info'),
 )
 
-# Neuron acess
+# Neuron access
 urlpatterns += patterns('catmaid.control.neuron',
     (r'^(?P<project_id>\d+)/neuron/(?P<neuron_id>\d+)/get-all-skeletons$', 'get_all_skeletons_of_neuron'),
     (r'^(?P<project_id>\d+)/neuron/(?P<neuron_id>\d+)/give-to-user$', 'give_neuron_to_other_user'),

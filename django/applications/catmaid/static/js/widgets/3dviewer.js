@@ -1756,6 +1756,10 @@
     this.scene.remove(mesh);
   };
 
+  WebGLApplication.prototype.Space.prototype.removeAll = function(objects) {
+    this.scene.remove.apply(this.scene, objects);
+  };
+
   WebGLApplication.prototype.Space.prototype.render = function() {
     if (this.view) {
       this.view.render();
@@ -1790,12 +1794,19 @@
   };
 
   WebGLApplication.prototype.Space.prototype.removeSkeletons = function(skeleton_ids) {
-    skeleton_ids.forEach(this.removeSkeleton, this);
+    // First remove all objects from the Three.js scene
+
+    // Destroy all CATMAID parts of these objects
+    var collection = [];
+    skeleton_ids.forEach(function(skeleton_id) {
+      this.removeSkeleton(skeleton_id, collection);
+    }, this);
+    this.removeAll(collection);
   };
 
-  WebGLApplication.prototype.Space.prototype.removeSkeleton = function(skeleton_id) {
+  WebGLApplication.prototype.Space.prototype.removeSkeleton = function(skeleton_id, collection) {
     if (skeleton_id in this.content.skeletons) {
-      this.content.skeletons[skeleton_id].destroy();
+      this.content.skeletons[skeleton_id].destroy(collection);
       delete this.content.skeletons[skeleton_id];
     }
   };
@@ -3606,8 +3617,8 @@
     this.connectorgeometry = {};
   };
 
-  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.destroy = function() {
-    this.removeActorFromScene();
+  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.destroy = function(collection) {
+    this.removeActorFromScene(collection);
     [this.actor, this.geometry, this.connectorgeometry, this.connectoractor,
      this.specialTagSpheres, this.synapticSpheres,
      this.radiusVolumes, this.textlabels].forEach(function(ob) {
@@ -3619,7 +3630,16 @@
     });
   };
 
-  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.removeActorFromScene = function() {
+  /**
+   * Dispose the skeleton's geometry and material, the connector geometry
+   * (connector material is shared) and remove all actor and spehere meshes from
+   * the scene. If @collection is given it is expected to be an array and meshes
+   * won't be removed, but added to it. It is then the responsibiliy of the
+   * caller to remove the objects from the scene.
+   *
+   * @param collection Optional array to collect meshes to be removed
+   */
+  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.removeActorFromScene = function(collection) {
     // Dispose of both geometry and material, unique to this Skeleton
     this.actor[this.CTYPES[0]].geometry.dispose();
     this.actor[this.CTYPES[0]].material.dispose();
@@ -3629,14 +3649,20 @@
     this.actor[this.CTYPES[2]].geometry.dispose();
     this.actor[this.CTYPES[3]].geometry.dispose();
 
+    var meshes = collection || [];
     [this.actor, this.synapticSpheres, this.radiusVolumes,
      this.specialTagSpheres].forEach(function(ob) {
       if (ob) {
         for (var key in ob) {
-          if (ob.hasOwnProperty(key)) this.space.remove(ob[key]);
+          if (ob.hasOwnProperty(key)) this.push(ob[key]);
         }
       }
-    }, this);
+    }, meshes);
+
+    // If no collection was given, remove objects right away
+    if (!collection) {
+      this.space.removeAll(meshes);
+    }
 
     this.remove_connector_selection();
     this.removeTextMeshes();

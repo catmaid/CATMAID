@@ -94,9 +94,12 @@ Neuron Search:
 3D viewer:
 
 - Different neuron visibility modes are now available for animations. A
-  drop down list replaces the check-box and a option dialog is shown if
-  a particular animation mode requires user input. This allows for showing
-  more than one neurons per rotation.
+  drop down list replaces the check-box and an option dialog is shown if
+  a particular animation mode requires user input. Besides the 'show one neuron
+  per rotation' mode, there is now also the 'Show n neurons per rotation' mode
+  and a mode which uses a pattern to explicitly define the visibility of
+  particular neurons after a particular rotation. The animation export now uses
+  the visibility mode selected in the 3D viewer.
 
 
 Administration:

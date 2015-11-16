@@ -5180,8 +5180,8 @@
   CATMAID.AnimationFactory.AxisRotation = function(camera, targetPosition, axis, rSpeed,
       backAndForth, notify)
   {
-    // Counts the number of rotations done
-    var numRotations = 0;
+    // Counts the number of rotations done after initialization
+    var numRotations = null;
 
     var targetDistance = camera.position.distanceTo(targetPosition);
     rSpeed = rSpeed || 0.01;

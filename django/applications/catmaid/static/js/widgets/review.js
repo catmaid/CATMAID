@@ -786,6 +786,7 @@
         row = $('<tr />')
           .attr('class', 'review-segment')
           .attr('data-sgid', sd.id);
+        if (self.current_segment && sd.id === self.current_segment.id) row.addClass('highlight');
         // Index
         row.append( $('<td />').text(skeleton_data[e]['id'] ) );
         // Single user status

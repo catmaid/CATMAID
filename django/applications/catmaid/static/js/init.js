@@ -1250,6 +1250,10 @@ var realInit = function()
   CATMAID.statusBar.setBottom();
 
 	window.onresize();
+
+  console.log('CATMAID (Client version ' + CATMAID.CLIENT_VERSION + ')\n' +
+              'For help interacting with CATMAID from the console see:\n' +
+              'https://github.com/catmaid/CATMAID/wiki/Scripting');
 };
 
 /**

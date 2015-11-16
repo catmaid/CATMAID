@@ -285,7 +285,47 @@ function updateProjects(completionCallback) {
         load_default_dataview();
       }
       cachedProjectsInfo = json;
-      project_menu.update(json);
+
+      // Prepare JSON so that a menu can be created from it
+      var projects = json.map(function(p) {
+        var stacks = p.stacks.reduce(function(o, s) {
+          o[s.id] = {
+            'title': s.title,
+            'comment': s.comment,
+            'note': '',
+            'action': openProjectStack.bind(window, p.id, s.id)
+          };
+          return o;
+        }, {});
+        var stackgroups = p.stackgroups.reduce(function(o, sg) {
+          o[sg.id] = {
+            'title': sg.title,
+            'comment': sg.comment,
+            'note': '',
+            'action': openStackGroup.bind(window, p.id, sg.id)
+          };
+          return o;
+        }, {});
+
+        return {
+          'title': p.title,
+          'note': '',
+          'action': [{
+            'title': 'Stacks',
+            'comment': '',
+            'note': '',
+            'action': stacks
+          }, {
+            'title': 'Stack groups',
+            'comment': '',
+            'note': '',
+            'action': stackgroups
+          }]
+
+        };
+      });
+
+      project_menu.update(projects);
       CATMAID.ui.releaseEvents();
       if (CATMAID.tools.isFn(completionCallback)) {
         completionCallback();

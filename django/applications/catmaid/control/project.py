@@ -120,46 +120,35 @@ def projects(request):
             project_stack_groups[group.project_id] = groups
         groups.append(group)
 
-    # Create a dictionary with those results that we can output as JSON:
     result = []
     for p in projects:
         if not p.stacks.all():
             continue
 
-        stacks_dict = {}
+        stacks = []
         for s in p.stacks.all():
-            stacks_dict[s.id] = {
+            stacks.append({
+                'id': s.id,
                 'title': s.title,
                 'comment': s.comment,
-                'note': '',
-                'action': 'javascript:openProjectStack(%d,%d)' % (p.id, s.id)}
+            })
 
-        stackgroups_dict = {}
-        stackgroups = project_stack_groups.get(p.id)
-        if stackgroups:
-            for sg in stackgroups:
-                stackgroups_dict[sg.id] = {
+        stackgroups = []
+        available_stackgroups = project_stack_groups.get(p.id)
+        if available_stackgroups:
+            for sg in available_stackgroups:
+                stackgroups.append({
+                    'id': sg.id,
                     'title': sg.name,
                     'comment': '',
-                    'note': '',
-                    'action': 'javascript:openStackGroup(%d,%d)' % (p.id, sg.id)
-                }
+                })
 
         result.append({
-            'pid': p.id,
+            'id': p.id,
             'title': p.title,
             'catalogue': int(p.is_catalogueable),
-            'note': '',
-            'action': [{
-                'title': 'Stacks',
-                'comment': '',
-                'note': '',
-                'action': stacks_dict
-            }, {
-                'title': 'Stack groups',
-                'comment': '',
-                'note': '',
-                'action': stackgroups_dict
-            }]
+            'stacks': stacks,
+            'stackgroups': stackgroups
         })
+
     return HttpResponse(json.dumps(result, sort_keys=True, indent=4), content_type="text/json")

@@ -441,18 +441,12 @@ class ViewPageTests(TestCase):
         result = json.loads(response.content)
         self.assertEqual(len(result), 1)
 
-        # Check the project:
-        options = result[0]['action']
-        self.assertEqual(len(options), 2)
-
         # Check stacks:
-        stacks = result[0]['action'][0]['action']
+        stacks = result[0]['stacks']
         self.assertEqual(len(stacks), 1)
-        stack = stacks['3']
-        self.assertTrue(re.search(r'javascript:openProjectStack\( *3, *3 *\)', stack['action']))
 
         # Check stacks groups
-        stackgroups = result[0]['action'][1]['action']
+        stackgroups = result[0]['stackgroups']
         self.assertEqual(len(stackgroups), 0)
 
         # Now log in and check that we see a different set of projects:
@@ -472,23 +466,21 @@ class ViewPageTests(TestCase):
         self.assertEqual(len(result), 3)
 
         def get_project(result, pid):
-            rl = [r for r in result if r['pid'] == pid]
+            rl = [r for r in result if r['id'] == pid]
             if len(rl) != 1:
                 raise ValueError("Malformed result")
             return rl[0]
 
         # Check the first project:
-        stacks = get_project(result, 1)['action'][0]['action']
+        stacks = get_project(result, 1)['stacks']
         self.assertEqual(len(stacks), 1)
 
         # Check the second project:
-        stacks = get_project(result, 3)['action'][0]['action']
+        stacks = get_project(result, 3)['stacks']
         self.assertEqual(len(stacks), 1)
-        stack = stacks['3']
-        self.assertTrue(re.search(r'javascript:openProjectStack\( *3, *3 *\)', stack['action']))
 
         # Check the third project:
-        stacks = get_project(result, 5)['action'][0]['action']
+        stacks = get_project(result, 5)['stacks']
         self.assertEqual(len(stacks), 2)
 
     def test_rename_neuron(self):

@@ -1425,7 +1425,7 @@ var WindowMaker = new function()
                     }, {});
                   var options = {
                     rotations: rotations
-                  }
+                  };
                   WA.setAnimationNeuronVisibility(type, options);
                 };
                 // Don't make this dialog modal so that skeleton IDs can be

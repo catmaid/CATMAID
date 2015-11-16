@@ -7,7 +7,10 @@ from django.contrib import messages
 from django.contrib.formtools.wizard.views import SessionWizardView
 from django.http import HttpResponseRedirect
 
-from catmaid.models import Stack, Project, ProjectStack
+from catmaid.models import (
+    Stack, Project, ProjectStack, Relation, Class, ClassInstance,
+    StackClassInstance
+)
 from catmaid.control import dvid
 
 TEMPLATES = {

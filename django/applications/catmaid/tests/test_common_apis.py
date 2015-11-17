@@ -458,12 +458,11 @@ class ViewPageTests(TestCase):
             p = Project.objects.get(pk=pid)
             assign_perm('can_browse', test_user, p)
 
-        # We expect three projects, because there are no stacks linked to
-        # project 2. This API should therefore not return it.
-        response = self.client.get('/projects')
+        # We expect four projects, one of them (project 2) is empty.
+        response = self.client.get('/projects/')
         self.assertEqual(response.status_code, 200)
         result = json.loads(response.content)
-        self.assertEqual(len(result), 3)
+        self.assertEqual(len(result), 4)
 
         def get_project(result, pid):
             rl = [r for r in result if r['id'] == pid]

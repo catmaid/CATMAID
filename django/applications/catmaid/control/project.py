@@ -122,9 +122,6 @@ def projects(request):
 
     result = []
     for p in projects:
-        if not p.stacks.all():
-            continue
-
         stacks = []
         for s in p.stacks.all():
             stacks.append({

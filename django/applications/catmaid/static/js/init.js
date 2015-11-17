@@ -286,8 +286,11 @@ function updateProjects(completionCallback) {
       }
       cachedProjectsInfo = json;
 
-      // Prepare JSON so that a menu can be created from it
-      var projects = json.map(function(p) {
+      // Prepare JSON so that a menu can be created from it. Display only
+      // projects that have at least one stack linked to them.
+      var projects = json.filter(function(p) {
+        return p.stacks.length > 0;
+      }).map(function(p) {
         var stacks = p.stacks.reduce(function(o, s) {
           o[s.id] = {
             'title': s.title,

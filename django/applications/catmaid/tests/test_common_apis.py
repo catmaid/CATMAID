@@ -424,7 +424,7 @@ class ViewPageTests(TestCase):
     def test_project_list(self):
         # Check that, pre-authentication, we can see none of the
         # projects:
-        response = self.client.get('/projects')
+        response = self.client.get('/projects/')
         self.assertEqual(response.status_code, 200)
         result = json.loads(response.content)
         self.assertEqual(len(result), 0)
@@ -436,7 +436,7 @@ class ViewPageTests(TestCase):
 
         # Check that, pre-authentication, we can see two of the
         # projects:
-        response = self.client.get('/projects')
+        response = self.client.get('/projects/')
         self.assertEqual(response.status_code, 200)
         result = json.loads(response.content)
         self.assertEqual(len(result), 1)

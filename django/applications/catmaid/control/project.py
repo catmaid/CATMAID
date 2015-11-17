@@ -11,6 +11,9 @@ from django.shortcuts import get_object_or_404
 from catmaid.models import UserRole, Class, Project, Stack, Relation, StackGroup
 from catmaid.control.authentication import requires_user_role
 
+from rest_framework.decorators import api_view
+
+
 # All classes needed by the tracing system alongside their
 # descriptions.
 needed_classes = {
@@ -100,9 +103,72 @@ def get_project_qs_for_user(user):
     perms=['can_administer', 'can_annotate', 'can_browse']
     return get_objects_for_user(user, perms, Project, any_perm=True)
 
+@api_view(['GET'])
 def projects(request):
-    """ Returns a list of project objects that are visible for the requesting
-    user and that have at least one stack linked to it.
+    """ Get a list of project visible for the requesting user.
+    ---
+    models:
+      project_api_stack_element:
+        id: project_api_stack_element
+        properties:
+          id:
+            type: integer
+            description: Stack ID
+            required: true
+          title:
+            type: string
+            description: Stack title
+            required: true
+          comment:
+            type: string
+            description: Comment on stack
+            required: true
+      project_api_stackgroup_element:
+        id: project_api_stackgroup_element
+        properties:
+          id:
+            type: integer
+            description: Stack group ID
+            required: true
+          title:
+            type: string
+            description: Stack group title
+            required: true
+          comment:
+            type: string
+            description: Comment on stack group
+            required: true
+      project_api_element:
+        id: project_api_element
+        properties:
+          id:
+            type: integer
+            description: Project ID
+            required: true
+          title:
+            type: string
+            description: Project title
+            required: true
+          catalogue:
+            type: boolean
+            description: Indicates if the project has a catalogue entry
+            required: true
+          stacks:
+            type: array
+            items:
+              $ref: project_api_stack_element
+            required: true
+          stackgroups:
+            type: array
+            items:
+              $ref: project_api_stackgroup_element
+            required: true
+    type:
+      projects:
+        type: array
+        items:
+          $ref: project_api_element
+        required: true
     """
 
     # Get all projects that are visisble for the current user

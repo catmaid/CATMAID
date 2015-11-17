@@ -62,7 +62,7 @@ urlpatterns += patterns('catmaid.control.message',
 
 # General project model access
 urlpatterns += patterns('catmaid.control.project',
-    (r'^projects$', 'projects'),
+    (r'^projects/$', 'projects'),
 )
 
 # General stack model access

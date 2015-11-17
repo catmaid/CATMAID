@@ -271,7 +271,7 @@ function updateProjects(completionCallback) {
     project = undefined;
   }
 
-  CATMAID.fetch('projects', 'GET')
+  CATMAID.fetch('projects/', 'GET')
     .catch(function(error) {
       // Show error and continue with null JSON
       CATMAID.error("Could not load available projects: " + error.error, error.detail);

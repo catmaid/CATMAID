@@ -2828,15 +2828,15 @@ var WindowMaker = new function()
 
   var getHelpForActions = function(actions)
   {
-    var action, keys, i, k, result = '';
+    var action, keys, i, k, result = '<dl class="keyboardShortcuts">';
     for( i = 0; i < actions.length; ++i ) {
       action = actions[i];
       keys = action.getKeys();
       for( k in keys ) {
-        result += '<kbd>' + k + '</kbd> ' + action.getHelpText() + "<br />";
+        result += '<dt><kbd>' + k + '</kbd></dt><dd>' + action.getHelpText() + '</dd>';
       }
     }
-    return result;
+    return result + '</dl>';
   };
 
   this.setKeyShortcuts = function(win)

@@ -290,7 +290,7 @@
     var actions = [
 
       new CATMAID.Action({
-        helpText: "Zoom in (smaller increments with Shift held)",
+        helpText: "Zoom in (smaller increments with <kbd>Shift</kbd> held)",
         keyShortcuts: {
           '+': [ 43, 107, 61, 187 ]
         },
@@ -301,7 +301,7 @@
       }),
 
       new CATMAID.Action({
-        helpText: "Zoom out (smaller increments with Shift held)",
+        helpText: "Zoom out (smaller increments with <kbd>Shift</kbd> held)",
         keyShortcuts: {
           '-': [ 45, 109, 173, 189 ]
         },
@@ -312,7 +312,7 @@
       }),
 
       new CATMAID.Action({
-        helpText: "Move up 1 slice in z (or 10 with Shift held)",
+        helpText: "Move up 1 slice in z (or 10 with <kbd>Shift</kbd> held)",
         keyShortcuts: {
           ',': [ 44, 188 ]
         },
@@ -323,7 +323,7 @@
       }),
 
       new CATMAID.Action({
-        helpText: "Move down 1 slice in z (or 10 with Shift held)",
+        helpText: "Move down 1 slice in z (or 10 with <kbd>Shift</kbd> held)",
         keyShortcuts: {
           '.': [ 190 ]
         },
@@ -334,7 +334,7 @@
       }),
 
       new CATMAID.Action({
-        helpText: "Move left (towards negative x, faster with Shift held)",
+        helpText: "Move left (towards negative x, faster with <kbd>Shift</kbd> held)",
         keyShortcuts: {
           "\u2190": [ arrowKeyCodes.left ]
         },
@@ -346,7 +346,7 @@
       }),
 
       new CATMAID.Action({
-        helpText: "Move right (towards positive x, faster with Shift held)",
+        helpText: "Move right (towards positive x, faster with <kbd>Shift</kbd> held)",
         keyShortcuts: {
           "\u2192": [ arrowKeyCodes.right ]
         },
@@ -358,7 +358,7 @@
       }),
 
       new CATMAID.Action({
-        helpText: "Move up (towards negative y, faster with Shift held)",
+        helpText: "Move up (towards negative y, faster with <kbd>Shift</kbd> held)",
         keyShortcuts: {
           "\u2191": [ arrowKeyCodes.up ]
         },
@@ -370,7 +370,7 @@
       }),
 
       new CATMAID.Action({
-        helpText: "Move down (towards positive y, faster with Shift held)",
+        helpText: "Move down (towards positive y, faster with <kbd>Shift</kbd> held)",
         keyShortcuts: {
           "\u2193": [ arrowKeyCodes.down ]
         },

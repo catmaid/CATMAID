@@ -538,31 +538,31 @@
       };
 
     this.addAction( new CATMAID.Action({
-      helpText: "Add ends Tag (Shift: Remove) for the active node",
+      helpText: "Add ends Tag (<kbd>Shift</kbd>: Remove) for the active node",
       keyShortcuts: { "K": [ 75 ] },
         run: tagFn('ends')
     } ) );
 
     this.addAction( new CATMAID.Action({
-      helpText: "Add 'uncertain end' Tag (Shift: Remove) for the active node",
+      helpText: "Add 'uncertain end' Tag (<kbd>Shift</kbd>: Remove) for the active node",
       keyShortcuts: { "U": [ 85 ] },
         run: tagFn('uncertain end')
     } ) );
 
     this.addAction( new CATMAID.Action({
-      helpText: "Add 'uncertain continuation' Tag (Shift: Remove) for the active node",
+      helpText: "Add 'uncertain continuation' Tag (<kbd>Shift</kbd>: Remove) for the active node",
       keyShortcuts: { "C": [ 67 ] },
         run: tagFn('uncertain continuation')
     } ) );
 
     this.addAction( new CATMAID.Action({
-      helpText: "Add 'not a branch' Tag (Shift: Remove) for the active node",
+      helpText: "Add 'not a branch' Tag (<kbd>Shift</kbd>: Remove) for the active node",
       keyShortcuts: { "N": [ 78 ] },
         run: tagFn('not a branch')
     } ) );
 
     this.addAction( new CATMAID.Action({
-      helpText: "Add 'soma' Tag (Shift: Remove) for the active node",
+      helpText: "Add 'soma' Tag (<kbd>Shift</kbd>: Remove) for the active node",
       keyShortcuts: { "M": [ 77 ] },
         run: tagFn('soma')
     } ) );
@@ -586,7 +586,7 @@
     } ) );
 
     this.addAction( new CATMAID.Action({
-      helpText: "Go to nearest open leaf node (subsequent shift+R: cycle through other open leaves; with alt: most recent rather than nearest)",
+      helpText: "Go to nearest open leaf node (subsequent <kbd>Shift</kbd>+<kbd>R</kbd>: cycle through other open leaves; with <kbd>Alt</kbd>: most recent rather than nearest)",
       keyShortcuts: { "R": [ 82 ] },
       run: function (e) {
         if (!mayView())
@@ -597,7 +597,7 @@
     } ) );
 
     this.addAction( new CATMAID.Action({
-      helpText: "Go to next branch or end point (with alt, stop earlier at node with tag, synapse or low confidence; subsequent shift+V: cycle through other branches)",
+      helpText: "Go to next branch or end point (with <kbd>Alt</kbd>: stop earlier at node with tag, synapse or low confidence; subsequent <kbd>Shift</kbd>+<kbd>V</kbd>: cycle through other branches)",
       keyShortcuts: { "V": [ 86 ] },
       run: function (e) {
         if (!mayView())
@@ -608,7 +608,7 @@
     } ) );
 
     this.addAction( new CATMAID.Action({
-      helpText: "Go to previous branch or end node (with alt, stop earlier at node with tag, synapse or low confidence)",
+      helpText: "Go to previous branch or end node (with <kbd>Alt</kbd>: stop earlier at node with tag, synapse or low confidence)",
       keyShortcuts: { "B": [ 66 ] },
       run: function (e) {
         if (!mayView())
@@ -631,7 +631,7 @@
     }) );
 
     this.addAction( new CATMAID.Action({
-      helpText: "Go to the parent of the active node (Ctrl: ignore virtual nodes)",
+      helpText: "Go to the parent of the active node (<kbd>Ctrl</kbd>: ignore virtual nodes)",
       keyShortcuts: { "[": [ 219, 56 ] },
       run: function (e) {
         if (!mayView())
@@ -642,7 +642,7 @@
     }) );
 
     this.addAction( new CATMAID.Action({
-      helpText: "Go to the child of the active node (Ctrl: ignore virtual nodes; Subsequent shift+]: cycle through children)",
+      helpText: "Go to the child of the active node (<kbd>Ctrl</kbd>: ignore virtual nodes; Subsequent <kbd>Shift</kbd>+<kbd>]</kbd>: cycle through children)",
       keyShortcuts: { "]": [ 221, 57 ] },
       run: function (e) {
         if (!mayView())
@@ -653,7 +653,7 @@
     }) );
 
     this.addAction( new CATMAID.Action({
-      helpText: "Edit the radius of the active node (Shift: without measurment tool)",
+      helpText: "Edit the radius of the active node (<kbd>Shift</kbd>: without measurment tool)",
       keyShortcuts: { "O": [ 79 ] },
       run: function (e) {
         if (!mayView())
@@ -687,7 +687,7 @@
     }) );
 
     this.addAction( new CATMAID.Action({
-      helpText: "Append the active skeleton to the last used selection widget (Ctrl: remove from selection; Shift: select by radius)",
+      helpText: "Append the active skeleton to the last used selection widget (<kbd>Ctrl</kbd>: remove from selection; <kbd>Shift</kbd>: select by radius)",
       keyShortcuts: {
         "Y": [ 89 ]
       },
@@ -814,13 +814,13 @@
     }) );
 
     this.addAction( new CATMAID.Action({
-      helpText: "Add TODO Tag (Shift: Remove) to the active node",
+      helpText: "Add TODO Tag (<kbd>Shift</kbd>: Remove) to the active node",
       keyShortcuts: { "L": [ 76 ] },
       run: tagFn('TODO')
     }) );
 
     this.addAction( new CATMAID.Action({
-      helpText: "Add 'microtubules end' tag (Shift: Remove) to the active node",
+      helpText: "Add 'microtubules end' tag (<kbd>Shift</kbd>: Remove) to the active node",
       keyShortcuts: {
         "F": [ 70 ]
       },
@@ -871,7 +871,7 @@
     }) );
 
     this.addAction( new CATMAID.Action({
-      helpText: "Create treenode (Shift on another node: join), behavior like mouse click",
+      helpText: "Create treenode (<kbd>Shift</kbd> on another node: join), behavior like mouse click",
       keyShortcuts: { 'Z': [ 90 ] },
       run: function (e) {
         if (!mayEdit())
@@ -974,7 +974,7 @@
     }) );
 
     this.addAction( new CATMAID.Action({
-        helpText: "Move to next node in segment for review (with shift, move to next unreviewed node in the segment)",
+        helpText: "Move to next node in segment for review (with <kbd>Shift</kbd>: move to next unreviewed node in the segment)",
         keyShortcuts: { 'W': [ 87 ] },
         run: function (e) {
             if (!mayEdit())
@@ -1054,7 +1054,7 @@
     }) );
 
     this.addAction( new CATMAID.Action({
-      helpText: "Find the nearest matching tagged node (Ctrl: repeat last tag query; Subsequent shift+\\: cycle to next nearest)",
+      helpText: "Find the nearest matching tagged node (<kbd>Ctrl</kbd>: repeat last tag query; Subsequent <kbd>Shift</kbd>+<kbd>\\</kbd>: cycle to next nearest)",
       keyShortcuts: { '\\': [ 220 ] },
       run: function (e) {
         activeTracingLayer.svgOverlay.goToNearestMatchingTag(e.shiftKey, e.ctrlKey);

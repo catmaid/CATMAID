@@ -28,7 +28,6 @@
     this.resize = function ( width, height )
     {
       self.svgOverlay.redraw();
-      return;
     };
 
 
@@ -50,14 +49,7 @@
     /** */
     this.redraw = function( completionCallback )
     {
-      // should never update from database - is called frequently
-      // on dragging
-
-      // TODO: only move the nodes in the Raphael paper
-      // will only update them when releasing the mouse when navigating.
-
       self.svgOverlay.redraw(false, completionCallback);
-      return;
     };
 
     /**
@@ -67,15 +59,6 @@
     {
       self.svgOverlay.redraw(true, completionCallback);
     };
-
-    /*
-    this.update = function()
-    {
-      // this fetches from the database, e.g. after deleting a node in the object tree
-      self.svgOverlay.updateNodes();
-      self.svgOverlay.redraw( stack );
-    };
-    */
 
     this.unregister = function()
     {

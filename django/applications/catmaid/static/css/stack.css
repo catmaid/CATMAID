@@ -360,6 +360,7 @@ div.sliceView p.neuronname
 	vertical-align:bottom;
 	z-index:7;
 	color:#ffffff;
+	background-color:#060;
 }
 
 div.stackInfo,

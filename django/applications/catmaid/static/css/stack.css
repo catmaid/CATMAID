@@ -363,6 +363,11 @@ div.sliceView p.neuronname
 	background-color:#060;
 }
 
+div.sliceView p.neuronname:empty
+{
+	display:none;
+}
+
 div.stackInfo,
 div.stackInfo_selected
 {

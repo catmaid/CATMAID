@@ -105,11 +105,11 @@
     };
   };
 
-  /*
-  * Get Tile from HDF5 through Django.
-  *
-  * Source type: 3
-  */
+  /**
+   * Get Tile from HDF5 through Django.
+   *
+   * Source type: 3
+   */
   CATMAID.HDF5TileSource = function(baseURL, fileExtension, tileWidth, tileHeight) {
     this.getTileURL = function(project, stack, slicePixelPosition,
                                col, row, zoomLevel) {
@@ -192,15 +192,15 @@
     };
   };
 
-  /*
-  * Simple tile source type for DVID imageblk (uint8blk, rgba8blk) datatype
-  * see https://github.com/janelia-flyem/dvid
-  *
-  * GET  <api URL>/node/<UUID>/<data name>/raw/<dims>/<size>/<offset>[/<format>][?throttle=true][?queryopts]
-  * e.g. GET <api URL>/node/3f8c/grayscale/raw/0_1/512_256/0_0_100/jpg:80
-
-  * Source type: 6
-  */
+  /**
+   * Simple tile source type for DVID imageblk (uint8blk, rgba8blk) datatype
+   * see https://github.com/janelia-flyem/dvid
+   *
+   * GET  <api URL>/node/<UUID>/<data name>/raw/<dims>/<size>/<offset>[/<format>][?throttle=true][?queryopts]
+   * e.g. GET <api URL>/node/3f8c/grayscale/raw/0_1/512_256/0_0_100/jpg:80
+   *
+   * Source type: 6
+   */
   CATMAID.DVIDImageblkTileSource = function(baseURL, fileExtension, tileWidth, tileHeight)
   {
     this.getTileURL = function( project, stack, slicePixelPosition,
@@ -225,13 +225,13 @@
   };
 
 
-  /*
+  /**
    * Tile source for the Janelia tile render web-service
-   * 
+   *
    * https://github.com/saalfeldlab/render/tree/ws_phase_1
    *
    * Documentation on
-   * 
+   *
    * http://wiki/wiki/display/flyTEM/Render+Web+Service+APIs
    *
    * Source type: 7
@@ -261,15 +261,15 @@
     };
   };
 
-  /*
-  * Simple tile source type for DVID imagetile datatype
-  * see https://github.com/janelia-flyem/dvid
-  *
-  * GET  <api URL>/node/<UUID>/<data name>/tile/<dims>/<scaling>/<tile coord>[?noblanks=true]
-  * e.g. GET <api URL>/node/3f8c/mymultiscale2d/tile/xy/0/10_10_20
-  * 
-  * Source type: 8
-  */
+  /**
+   * Simple tile source type for DVID imagetile datatype
+   * see https://github.com/janelia-flyem/dvid
+   *
+   * GET  <api URL>/node/<UUID>/<data name>/tile/<dims>/<scaling>/<tile coord>[?noblanks=true]
+   * e.g. GET <api URL>/node/3f8c/mymultiscale2d/tile/xy/0/10_10_20
+   *
+   * Source type: 8
+   */
   CATMAID.DVIDImagetileTileSource = function(baseURL, fileExtension, tileWidth, tileHeight)
   {
     this.getTileURL = function(project, stack, slicePixelPosition,
@@ -299,9 +299,8 @@
     this.unregister = function() { };
   };
 
-  /*
-   * This is an overviewlayer that displays a small overview
-   * map.
+  /**
+   * This is an overview layer that displays a small overview map.
    */
   CATMAID.GenericOverviewLayer = function(layer, baseURL, fileExtension,
                                           getOverviewURL) {

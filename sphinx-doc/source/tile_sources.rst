@@ -256,7 +256,7 @@ Frontend Retrieval
 ------------------
 
 The front end implements tile source URL generation in
-``django/applications/catmaid/static/js/tilesource.js``. To define a new tile
+``django/applications/catmaid/static/js/tile-source.js``. To define a new tile
 source type, follow the convention of the existing tiles sources by creating
 a function that returns an object with the appropriate ``getTileURL``,
 ``getOverviewURL``, and ``getOverviewLayer`` methods. The overview URL should

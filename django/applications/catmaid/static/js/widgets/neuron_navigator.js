@@ -7,7 +7,6 @@
   checkPermission,
   ConnectorTable,
   InstanceRegistry,
-  NeuronNameService,
   NeuronDendrogram,
   project,
   requestQueue,
@@ -49,7 +48,7 @@
   {
     this.unregisterInstance();
     this.unregisterSource();
-    NeuronNameService.getInstance().unregister(this);
+    CATMAID.NeuronNameService.getInstance().unregister(this);
 
     // Unregister from event stream
     CATMAID.neuronController.off(CATMAID.neuronController.EVENT_SKELETON_CHANGED,
@@ -224,7 +223,7 @@
     WindowMaker.create('neuron-navigator', NN);
     // Register the new navigator with the neuron name service
     NN.registered_neurons = CATMAID.tools.deepCopy(this.registered_neurons);
-    NeuronNameService.getInstance().registerAll(NN,
+    CATMAID.NeuronNameService.getInstance().registerAll(NN,
         Object.keys(NN.registered_neurons).reduce(function(m, n) {
           m[n] = {};
           return m;
@@ -272,7 +271,7 @@
       // Register with the neuron name service to get notified about updates
       var model = {};
       model[skeleton_id] = {};
-      NeuronNameService.getInstance().registerAll(this, model);
+      CATMAID.NeuronNameService.getInstance().registerAll(this, model);
       this.registered_neurons[skeleton_id] = 1;
     }
   };
@@ -291,7 +290,7 @@
     if (1 === n_references) {
       // Unregister with the neuron name service, because this was the last node
       // referencing it.
-      NeuronNameService.getInstance().unregister(this, [skeleton_id]);
+      CATMAID.NeuronNameService.getInstance().unregister(this, [skeleton_id]);
       delete this.registered_neurons[skeleton_id];
     } else {
       // Decrement reference counter
@@ -1850,7 +1849,7 @@
     rename_button.onclick = (function() {
       var new_name = prompt("Rename", this.neuron_name);
       if (!new_name) return;
-      NeuronNameService.getInstance().renameNeuron(this.neuron_id, this.skeleton_ids, new_name, (function() {
+      CATMAID.NeuronNameService.getInstance().renameNeuron(this.neuron_id, this.skeleton_ids, new_name, (function() {
           $('div.nodeneuronname', container).html('Name: ' + new_name);
           this.neuron_name = new_name;
       }).bind(this));

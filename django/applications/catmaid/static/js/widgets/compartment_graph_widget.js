@@ -5,7 +5,6 @@
   cytoscape,
   fetchSkeletons,
   InstanceRegistry,
-  NeuronNameService,
   project,
   requestQueue,
   session,
@@ -285,7 +284,7 @@
   GroupGraph.prototype.destroy = function() {
     this.unregisterInstance();
     this.unregisterSource();
-    NeuronNameService.getInstance().unregister(this);
+    CATMAID.NeuronNameService.getInstance().unregister(this);
   };
 
   GroupGraph.prototype.nextGroupID = function() {
@@ -720,7 +719,7 @@
       var models = node.data('skeletons');
       // skip groups
       if (1 === models.length) {
-        var name = NeuronNameService.getInstance().getName(models[0].id);
+        var name = CATMAID.NeuronNameService.getInstance().getName(models[0].id);
         if (this.subgraphs[models[0].id]) {
           var label = node.data('label');
           var i_ = label.lastIndexOf(' [');
@@ -780,7 +779,7 @@
             model = models[skeleton_id];
         return {data: {id: nodeID, // MUST be a string, or fails
                         skeletons: [model.clone()],
-                        label: NeuronNameService.getInstance().getName(model.id),
+                        label: CATMAID.NeuronNameService.getInstance().getName(model.id),
                         node_count: 0,
                         shape: "ellipse",
                         color: '#' + model.color.getHexString()}};
@@ -832,7 +831,7 @@
           ap = new CATMAID.ArborParser().init('compact-arbor', m),
           mode = this.subgraphs[skid],
           parts = {},
-          name = NeuronNameService.getInstance().getName(skid),
+          name = CATMAID.NeuronNameService.getInstance().getName(skid),
           color = '#' + models[skid].color.getHexString(),
           common = {skeletons: [models[skid]],
                     shape: "ellipse",
@@ -1316,7 +1315,7 @@
           // Update node properties
 
           if (new_model.baseName) {
-            var name = NeuronNameService.getInstance().getName(new_model.id),
+            var name = CATMAID.NeuronNameService.getInstance().getName(new_model.id),
                 name = name ? name : new_model.baseName,
                 label = node.data('label');
             if (subgraphs[new_model.id] && label.length > 0) {
@@ -1496,7 +1495,7 @@
 
   GroupGraph.prototype.load = function(models) {
     // Register with name service before we attempt to load the graph
-    NeuronNameService.getInstance().registerAll(this, models, (function() {
+    CATMAID.NeuronNameService.getInstance().registerAll(this, models, (function() {
       this._load(models);
     }).bind(this));
   };

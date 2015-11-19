@@ -226,7 +226,7 @@
       // remove it.
       var label = $('#neuronName' + stackViewer.getId());
       var labelData = label.data();
-      if (labelData) NeuronNameService.getInstance().unregister(labelData);
+      if (labelData) CATMAID.NeuronNameService.getInstance().unregister(labelData);
       label.remove();
 
       // Remove the tracing layer
@@ -357,7 +357,7 @@
         var label = $('#neuronName' + stackViewer.getId());
         label.text(text || '');
         var labelData = label.data();
-        if (labelData) NeuronNameService.getInstance().unregister(labelData);
+        if (labelData) CATMAID.NeuronNameService.getInstance().unregister(labelData);
       });
     }
 
@@ -378,18 +378,18 @@
         var label = $('#neuronName' + stackViewer.getId());
         if (0 === label.length) return;
 
-        NeuronNameService.getInstance().unregister(label.data());
+        CATMAID.NeuronNameService.getInstance().unregister(label.data());
 
         label.data('skeleton_id', skeletonID);
         label.data('updateNeuronNames', function () {
-          label.text(prefix + NeuronNameService.getInstance().getName(this.skeleton_id));
+          label.text(prefix + CATMAID.NeuronNameService.getInstance().getName(this.skeleton_id));
         });
 
         var models = {};
         models[skeletonID] = {};
-        NeuronNameService.getInstance().registerAll(label.data(), models)
+        CATMAID.NeuronNameService.getInstance().registerAll(label.data(), models)
           .then(function() {
-            label.text(prefix + NeuronNameService.getInstance().getName(skeletonID));
+            label.text(prefix + CATMAID.NeuronNameService.getInstance().getName(skeletonID));
           });
       });
     }

@@ -42,7 +42,7 @@
    * Handle destruction of widget.
    */
   ConnectivityMatrixWidget.prototype.destroy = function() {
-    NeuronNameService.getInstance().unregister(this);
+    CATMAID.NeuronNameService.getInstance().unregister(this);
     this.content = null;
     this.rowDimension.destroy();
     this.colDimension.destroy();
@@ -423,7 +423,7 @@
 
     // Update connectivity matrix and make sure all currently looked at
     // skeletons are known to the neuron name service.
-    var nns = NeuronNameService.getInstance();
+    var nns = CATMAID.NeuronNameService.getInstance();
     this.matrix.rowSkeletonIDs = this.rowDimension.getSelectedSkeletons();
     this.matrix.colSkeletonIDs = this.colDimension.getSelectedSkeletons();
     this.matrix.refresh()
@@ -867,7 +867,7 @@
     }
 
     var m = matrix.connectivityMatrix;
-    var nns = NeuronNameService.getInstance();
+    var nns = CATMAID.NeuronNameService.getInstance();
     var rowSums = [];
     var colSums = [];
 
@@ -1070,7 +1070,7 @@
       sort: function(desc, matrix, src, isRow, a, b) {
         // Compare against the group name, if a or b is a group,
         // otherwise use the name of the neuron name service.
-        var nns = NeuronNameService.getInstance();
+        var nns = CATMAID.NeuronNameService.getInstance();
         a = src.isGroup(a) ? a : nns.getName(a);
         b = src.isGroup(b) ? b : nns.getName(b);
         var c = CATMAID.tools.compareStrings('' + a, '' + b);

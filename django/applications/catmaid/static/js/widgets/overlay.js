@@ -3,7 +3,6 @@
 /* global
   CATMAID,
   mayEdit,
-  NeuronNameService,
   OverlayLabel,
   project,
   requestQueue,
@@ -799,7 +798,7 @@ SkeletonAnnotations.SVGOverlay.prototype.renameNeuron = function(skeletonID) {
       function(json) {
           var new_name = prompt("Change neuron name", json['neuronname']);
           if (!new_name) return;
-          NeuronNameService.getInstance().renameNeuron(
+          CATMAID.NeuronNameService.getInstance().renameNeuron(
               json['neuronid'], [skeletonID], new_name);
       });
 };
@@ -1366,7 +1365,7 @@ SkeletonAnnotations.SVGOverlay.prototype.splitSkeleton = function(nodeID) {
     self.promiseNode(node).then(function(nodeId) {
       // Make sure we reference the correct node and create a model
       node = self.nodes[nodeId];
-      var name = NeuronNameService.getInstance().getName(node.skeleton_id);
+      var name = CATMAID.NeuronNameService.getInstance().getName(node.skeleton_id);
       var model = new CATMAID.SkeletonModel(node.skeleton_id, name, new THREE.Color().setRGB(1, 1, 0));
       /* Create the dialog */
       var dialog = new CATMAID.SplitMergeDialog({

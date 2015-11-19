@@ -3,7 +3,6 @@
 /* global
   fetchSkeletons,
   InstanceRegistry,
-  NeuronNameService,
   project,
   SkeletonAnnotations,
   SynapseClustering,
@@ -100,7 +99,7 @@ AnalyzeArbor.prototype.destroy = function() {
   this.clear(); // clear after clearing linkTarget, so it doesn't get cleared
   this.unregisterInstance();
   this.unregisterSource();
-  NeuronNameService.getInstance().unregister(this);
+  CATMAID.NeuronNameService.getInstance().unregister(this);
 };
 
 AnalyzeArbor.prototype.update = function() {
@@ -136,7 +135,7 @@ AnalyzeArbor.prototype.hasSkeleton = function(skeleton_id) {
 };
 
 AnalyzeArbor.prototype.createModel = function(skeleton_id) {
-  var name = NeuronNameService.getInstance().getName(skeleton_id);
+  var name = CATMAID.NeuronNameService.getInstance().getName(skeleton_id);
   return new CATMAID.SkeletonModel(skeleton_id, name, this.getSkeletonColor());
 };
 
@@ -151,7 +150,7 @@ AnalyzeArbor.prototype.getSkeletonModels = AnalyzeArbor.prototype.getSelectedSke
 
 AnalyzeArbor.prototype.updateNeuronNames = function() {
   this.skeleton_ids.forEach(function(skid, i) {
-    this.table.fnUpdate(NeuronNameService.getInstance().getName(skid), i, 0);
+    this.table.fnUpdate(CATMAID.NeuronNameService.getInstance().getName(skid), i, 0);
   }, this);
 };
 
@@ -190,7 +189,7 @@ AnalyzeArbor.prototype.append = function(models) {
 };
 
 AnalyzeArbor.prototype.appendOrdered = function(skids, models) {
-  NeuronNameService.getInstance().registerAll(this, models, (function() {
+  CATMAID.NeuronNameService.getInstance().registerAll(this, models, (function() {
     fetchSkeletons(
         skids,
         function(skid) { return django_url + project.id + '/' + skid + '/1/1/1/compact-arbor-with-minutes'; },
@@ -453,7 +452,7 @@ AnalyzeArbor.prototype.appendOne = function(skid, json) {
     this.arbor_stats[skid].dendritic.backbone_cable = pruned.cableLength(smooth_positions);
   }
 
-  var row = [NeuronNameService.getInstance().getName(skid) + (twigs_approx_by_strahler ? " (twigs as Strahler<=" + this.strahler_cut + ")" : ""),
+  var row = [CATMAID.NeuronNameService.getInstance().getName(skid) + (twigs_approx_by_strahler ? " (twigs as Strahler<=" + this.strahler_cut + ")" : ""),
              Math.round(cable) | 0,
              ap.n_inputs,
              ap.n_outputs,
@@ -531,7 +530,7 @@ AnalyzeArbor.prototype.updateCharts = function() {
         skids.map(function(skid, i) {
           var e = this.arbor_stats[skid],
               sum = e.dendritic.n_subs + (e.axonal ? e.axonal.n_subs : 0);
-          return {name: NeuronNameService.getInstance().getName(skid) + " (" + sum + ")",
+          return {name: CATMAID.NeuronNameService.getInstance().getName(skid) + " (" + sum + ")",
                   value: sum,
                   color: colors(i)};
         }, this),
@@ -657,7 +656,7 @@ AnalyzeArbor.prototype.updateCharts = function() {
       var stats = this.arbor_stats[skid],
           Entry = function(x, y, root) { this.x = x; this.y = y; this.root = root; },
           neuron = {color: colors(k),
-                    name : NeuronNameService.getInstance().getName(skid)};
+                    name : CATMAID.NeuronNameService.getInstance().getName(skid)};
       Entry.prototype = neuron;
       series.push(neuron);
       ["dendritic", "axonal"].forEach(function(type) {
@@ -682,14 +681,14 @@ AnalyzeArbor.prototype.updateCharts = function() {
         {x: row[1] / 1000,
          y: stats.dendritic.n_subs + (stats.axonal ? stats.axonal.n_subs : 0),
          color: neuron_colors[skid],
-         name: NeuronNameService.getInstance().getName(skid),
+         name: CATMAID.NeuronNameService.getInstance().getName(skid),
          skid: skid
         });
       total_dendritic_backbone_cable_vs_dendritic_twigs.push(
         {x: stats.dendritic.backbone_cable / 1000,
          y: stats.dendritic.n_subs,
          color: neuron_colors[skid],
-         name: NeuronNameService.getInstance().getName(skid),
+         name: CATMAID.NeuronNameService.getInstance().getName(skid),
          skid: skid
         });
     }, this);

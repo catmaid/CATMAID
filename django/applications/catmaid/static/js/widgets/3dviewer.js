@@ -6,7 +6,6 @@
   error,
   fetchSkeletons,
   InstanceRegistry,
-  NeuronNameService,
   project,
   requestQueue,
   session,
@@ -73,7 +72,7 @@
     this.unregisterInstance();
     this.unregisterSource();
     this.space.destroy();
-    NeuronNameService.getInstance().unregister(this);
+    CATMAID.NeuronNameService.getInstance().unregister(this);
     Object.keys(this).forEach(function(key) { delete this[key]; }, this);
   };
 
@@ -335,7 +334,7 @@
     dialog.appendMessage('Adjust the catalog export settings to your liking.');
 
     // Create a new empty neuron name service that takes care of the sorting names
-    var ns = NeuronNameService.newInstance(true);
+    var ns = CATMAID.NeuronNameService.newInstance(true);
     var namingOptions = ns.getOptions();
     var namingOptionNames = namingOptions.map(function(o) { return o.name; });
     var namingOptionIds = namingOptions.map(function(o) { return o.id; });
@@ -1259,7 +1258,7 @@
 
 
     // Register with the neuron name service and fetch the skeleton data
-    NeuronNameService.getInstance().registerAll(this, models,
+    CATMAID.NeuronNameService.getInstance().registerAll(this, models,
       fetchSkeletons.bind(this,
           skeleton_ids,
           function(skeleton_id) {
@@ -2361,7 +2360,7 @@
           text.setAttribute('x', svg.viewBox.baseVal.x + 5);
           text.setAttribute('y', svg.viewBox.baseVal.y + fontsize + 5);
           text.setAttribute('style', 'font-family: Arial; font-size: ' + fontsize + 'px;');
-          var name = NeuronNameService.getInstance().getName(skid);
+          var name = CATMAID.NeuronNameService.getInstance().getName(skid);
           text.appendChild(document.createTextNode(name));
           svg.appendChild(text);
         }
@@ -3520,7 +3519,7 @@
         node_weights = {};
         if (!this.axon) {
           // Not computable
-          console.log("Shading '" + options.shading_method + "' not computable for skeleton ID #" + this.id + ", neuron named: " + NeuronNameService.getInstance().getName(this.id) + ". The axon is missing.");
+          console.log("Shading '" + options.shading_method + "' not computable for skeleton ID #" + this.id + ", neuron named: " + CATMAID.NeuronNameService.getInstance().getName(this.id) + ". The axon is missing.");
         } else {
           // Prune artifactual branches
           if (this.tags['not a branch']) {
@@ -3537,7 +3536,7 @@
             var cuts = arbor.approximateTwigRoots(options.strahler_cut);
             if (cuts && cuts.length > 0) {
               upstream = arbor.upstreamArbor(cuts);
-              CATMAID.msg("Approximating dendritic backbone", "By strahler number " + options.strahler_cut + ", neuron: " + NeuronNameService.getInstance().getName(this.id));
+              CATMAID.msg("Approximating dendritic backbone", "By strahler number " + options.strahler_cut + ", neuron: " + CATMAID.NeuronNameService.getInstance().getName(this.id));
             }
           }
           node_weights = {};
@@ -5011,7 +5010,7 @@
           }
         }
 
-        rows.push([skid, NeuronNameService.getInstance().getName(skid), count]);
+        rows.push([skid, CATMAID.NeuronNameService.getInstance().getName(skid), count]);
       }, this);
 
 

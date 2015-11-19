@@ -2,7 +2,6 @@
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
   CATMAID,
-  NeuronNameService,
   project,
   requestQueue,
   SkeletonAnnotations,
@@ -237,7 +236,7 @@
           "components, which are then formatted into a label for the neuron."));
 
       // Get all available options
-      var namingOptions = NeuronNameService.getInstance().getOptions();
+      var namingOptions = CATMAID.NeuronNameService.getInstance().getOptions();
       // Add naming option select box
       var select = $('<select/>');
       namingOptions.forEach(function(o) {
@@ -252,9 +251,9 @@
         // The function to be called to actually add the label
         var addLabeling = function(metaAnnotation) {
           if (metaAnnotation) {
-            NeuronNameService.getInstance().addLabeling(newLabel, metaAnnotation);
+            CATMAID.NeuronNameService.getInstance().addLabeling(newLabel, metaAnnotation);
           } else {
-            NeuronNameService.getInstance().addLabeling(newLabel);
+            CATMAID.NeuronNameService.getInstance().addLabeling(newLabel);
           }
           updateComponentList();
         };
@@ -287,7 +286,7 @@
         if (componentList.selectedIndex < componentList.length - 1) {
           // We display the component list reversed, therefore we need to mirror
           // the index.
-          NeuronNameService.getInstance().removeLabeling(componentList.length - componentList.selectedIndex - 1);
+          CATMAID.NeuronNameService.getInstance().removeLabeling(componentList.length - componentList.selectedIndex - 1);
           updateComponentList();
         }
       });
@@ -297,7 +296,7 @@
 
       var updateComponentList = function() {
         $(componentList).empty();
-        var options = NeuronNameService.getInstance().getComponentList().map(function(o, i) {
+        var options = CATMAID.NeuronNameService.getInstance().getComponentList().map(function(o, i) {
           // Add each component list element to the select control. The last
           // element is disabled by default.
           var optionElement = $('<option/>').attr('value', o.id)
@@ -319,13 +318,13 @@
 
       ds.append(CATMAID.DOM.createInputSetting(
           "Formatted neuron name",
-          NeuronNameService.getInstance().getFormatString(),
+          CATMAID.NeuronNameService.getInstance().getFormatString(),
           "Format the neuron label using label components from list above. " +
           "Reference the Nth component by using \"%N\". " +
           "Use \"%f\" for a fallback that uses first available component " +
           "from the top.",
           function () {
-            NeuronNameService.getInstance().setFormatString($(this).val());
+            CATMAID.NeuronNameService.getInstance().setFormatString($(this).val());
           }));
 
 

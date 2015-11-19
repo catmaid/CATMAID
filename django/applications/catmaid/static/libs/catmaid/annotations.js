@@ -170,7 +170,7 @@
 
                 // Let the neuron name service update itself and execute the
                 // callbackback after this is done
-                NeuronNameService.getInstance().refresh(function() {
+                CATMAID.NeuronNameService.getInstance().refresh(function() {
                   if (callback) callback();
                 });
               }
@@ -225,7 +225,7 @@
               if (e.deleted_annotation) CATMAID.annotations.remove(annotation_id);
 
               // Let the neuron name service update itself
-              NeuronNameService.getInstance().refresh();
+              CATMAID.NeuronNameService.getInstance().refresh();
 
               // Use a copy of the entity id list, because we we will use this array also
               // as a callback parameter. No deep clone required, we expect only numbers
@@ -269,7 +269,7 @@
         },
         CATMAID.jsonResponseHandler(function(json) {
           // Let the neuron name service update itself
-          NeuronNameService.getInstance().refresh();
+          CATMAID.NeuronNameService.getInstance().refresh();
 
           // Use a copy of the entity id list, because we we will use this array also
           // as a callback parameter. No deep clone required, we expect only numbers

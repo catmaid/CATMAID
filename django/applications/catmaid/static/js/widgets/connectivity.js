@@ -2,7 +2,6 @@
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
   InstanceRegistry,
-  NeuronNameService,
   project,
   requestQueue,
   WindowMaker
@@ -89,7 +88,7 @@
           // Update name
           skeletons[skid] = model.baseName;
           $('#a-connectivity-table-' + widgetID + '-' + skid).html(
-              NeuronNameService.getInstance().getName(skid));
+              CATMAID.NeuronNameService.getInstance().getName(skid));
         } else {
           // Remove
           delete skeletons[skid];
@@ -115,7 +114,7 @@
     }
 
     // Add skeletons
-    NeuronNameService.getInstance().registerAll(this, models, (function() {
+    CATMAID.NeuronNameService.getInstance().registerAll(this, models, (function() {
       this.update();
       this.updateLink(models);
     }).bind(this));
@@ -128,7 +127,7 @@
   SkeletonConnectivity.prototype.destroy = function() {
     this.unregisterInstance();
     this.unregisterSource();
-    NeuronNameService.getInstance().unregister(this);
+    CATMAID.NeuronNameService.getInstance().unregister(this);
 
     // Unregister from neuron controller
     CATMAID.neuronController.off(CATMAID.neuronController.EVENT_SKELETON_CHANGED,
@@ -342,7 +341,7 @@
             createPartnerModels(self.outgoing, partnerModels);
 
             // Make all partners known to the name service
-            NeuronNameService.getInstance().registerAll(self, partnerModels, self.redraw.bind(self));
+            CATMAID.NeuronNameService.getInstance().registerAll(self, partnerModels, self.redraw.bind(self));
           };
 
           // Handle result and create tables, if possible
@@ -424,7 +423,7 @@
     $("#connectivity_widget" + this.widgetID)
         .find('a[data-skeleton-id]')
         .each(function (index, element) {
-          this.textContent = NeuronNameService.getInstance().getName(this.getAttribute('data-skeleton-id'));
+          this.textContent = CATMAID.NeuronNameService.getInstance().getName(this.getAttribute('data-skeleton-id'));
     });
 
     $("#connectivity_widget" + this.widgetID)
@@ -432,7 +431,7 @@
         .each(function (index, element) {
           var count = this.firstChild.textContent;
           this.setAttribute('title', count + " synapse(s) for neuron '" +
-              NeuronNameService.getInstance().getName(this.getAttribute('skid')));
+              CATMAID.NeuronNameService.getInstance().getName(this.getAttribute('skid')));
     });
 
     var widgetID = this.widgetID;
@@ -513,7 +512,7 @@
      */
     var createNameElement = function(name, skeleton_id) {
       var a = document.createElement('a');
-      a.appendChild(document.createTextNode(NeuronNameService.getInstance().getName(skeleton_id)));
+      a.appendChild(document.createTextNode(CATMAID.NeuronNameService.getInstance().getName(skeleton_id)));
       a.setAttribute('href', '#');
       a.setAttribute('id', 'a-connectivity-table-' + widgetID + '-' + skeleton_id);
       a.setAttribute('data-skeleton-id', skeleton_id);
@@ -669,7 +668,7 @@
         var td = document.createElement('td');
         var title = skid ?
             count + " synapse(s) for neuron '" +
-                NeuronNameService.getInstance().getName(skid) + "'." :
+                CATMAID.NeuronNameService.getInstance().getName(skid) + "'." :
             count + " synapses for all selected neurons.";
         td.setAttribute('class', 'syncount');
         // Only add the count as displayed text if it is greater zero. This
@@ -1244,7 +1243,7 @@
                   // Include neuron name in "syn count" field of first header row.
                   if (0 === rowIndex && 2 === i) {
                     var sk = widget.ordered_skeleton_ids[0];
-                    return '"#Synapses with ' + NeuronNameService.getInstance().getName(sk) + '"';
+                    return '"#Synapses with ' + CATMAID.NeuronNameService.getInstance().getName(sk) + '"';
                   }
                   return c;
                 } :
@@ -1255,7 +1254,7 @@
                       1 < i && (3 + nSkeletons) > i) {
                     var index = parseInt(c.replace(/\"/g, ''), 10);
                     var sk = widget.ordered_skeleton_ids[index - 1];
-                    return '"#Synapses with ' + NeuronNameService.getInstance().getName(sk) + '"';
+                    return '"#Synapses with ' + CATMAID.NeuronNameService.getInstance().getName(sk) + '"';
                   }
                   return c;
                 };

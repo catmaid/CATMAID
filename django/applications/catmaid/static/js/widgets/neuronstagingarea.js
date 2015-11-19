@@ -3,7 +3,6 @@
 /* global
   CATMAID,
   InstanceRegistry,
-  NeuronNameService,
   project,
   requestQueue,
   session,
@@ -57,7 +56,7 @@
     this.clear(); // clear after clearing linkTarget, so it doesn't get cleared
     this.unregisterInstance();
     this.unregisterSource();
-    NeuronNameService.getInstance().unregister(this);
+    CATMAID.NeuronNameService.getInstance().unregister(this);
     if (SelectionTable._lastFocused === this) SelectionTable._lastFocused = null;
     SkeletonAnnotations.off(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
         this.selectActiveNode, this);
@@ -140,7 +139,7 @@
           table.style.border = 1;
           table.innerHTML = [
             [(1 === skeleton_ids.length) ? "Neuron name:" : "Number of skeletons:",
-             (1 === skeleton_ids.length) ? NeuronNameService.getInstance().getName(skeleton_ids[0]) : skeleton_ids.length],
+             (1 === skeleton_ids.length) ? CATMAID.NeuronNameService.getInstance().getName(skeleton_ids[0]) : skeleton_ids.length],
             ["Node count: ", json.n_nodes],
             ["Nodes contributed by: ", format(json.node_contributors)],
             ["Number of presynaptic sites: ", json.n_pre],
@@ -345,7 +344,7 @@
         }, this);
 
         // Add skeletons
-        NeuronNameService.getInstance().registerAll(this, models,
+        CATMAID.NeuronNameService.getInstance().registerAll(this, models,
             this.gui.update.bind(this.gui));
 
         this.updateLink(models);
@@ -797,12 +796,12 @@
           "type": "text",
           "render": {
             "display": function(data, type, row, meta) {
-              var name = NeuronNameService.getInstance().getName(row.skeleton.id);
+              var name = CATMAID.NeuronNameService.getInstance().getName(row.skeleton.id);
               return '<a href="#" class="neuron-selection-link action-select">' +
                 (name ? name : "undefined") + '</a>';
             },
             "_": function(data, type, row, meta) {
-              var name = NeuronNameService.getInstance().getName(row.skeleton.id);
+              var name = CATMAID.NeuronNameService.getInstance().getName(row.skeleton.id);
               return name ? name : "undefined";
             }
           }
@@ -987,12 +986,12 @@
         // expression. Otherwise do a simple search in the neuron name.
         if (this.nameMatch.substr(0, 1) === '/') {
           filteredSkeletons = filteredSkeletons.filter(function(skeleton) {
-            var nameMatch = NeuronNameService.getInstance().getName(skeleton.id).match(this);
+            var nameMatch = CATMAID.NeuronNameService.getInstance().getName(skeleton.id).match(this);
             return nameMatch && nameMatch.length > 0;
           }, new RegExp(this.nameMatch.substr(1)));
         } else {
           filteredSkeletons = filteredSkeletons.filter(function(skeleton) {
-            return -1 !== NeuronNameService.getInstance().getName(skeleton.id).indexOf(this);
+            return -1 !== CATMAID.NeuronNameService.getInstance().getName(skeleton.id).indexOf(this);
           }, this.nameMatch);
         }
       } catch (e) {
@@ -1041,8 +1040,8 @@
   SelectionTable.prototype.sortByName = function(desc) {
     var factor = desc ? -1 : 1;
     this.sort(function(sk1, sk2) {
-      var name1 = NeuronNameService.getInstance().getName(sk1.id).toLowerCase(),
-          name2 = NeuronNameService.getInstance().getName(sk2.id).toLowerCase();
+      var name1 = CATMAID.NeuronNameService.getInstance().getName(sk1.id).toLowerCase(),
+          name2 = CATMAID.NeuronNameService.getInstance().getName(sk2.id).toLowerCase();
       return factor * CATMAID.tools.compareStrings(name1, name2);
     });
   };

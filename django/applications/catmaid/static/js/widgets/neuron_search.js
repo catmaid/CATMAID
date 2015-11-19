@@ -3,7 +3,6 @@
 /* global
   checkPermission,
   InstanceRegistry,
-  NeuronNameService,
   project,
   requestQueue,
   WindowMaker
@@ -58,7 +57,7 @@
   {
     this.unregisterInstance();
     this.unregisterSource();
-    NeuronNameService.getInstance().unregister(this);
+    CATMAID.NeuronNameService.getInstance().unregister(this);
     CATMAID.Annotations.off(CATMAID.Annotations.EVENT_ANNOTATIONS_CHANGED,
         this.handleAnnotationUpdate, this);
   };
@@ -274,7 +273,7 @@
     a.setAttribute('href', '#');
     // For a neuron, ask the neuron name service about the name
     var name = ('neuron' !== entity.type) ? entity.name :
-        NeuronNameService.getInstance().getName(entity.skeleton_ids[0]);
+        CATMAID.NeuronNameService.getInstance().getName(entity.skeleton_ids[0]);
     a.appendChild(document.createTextNode(name));
     var label = document.createElement('label');
     label.appendChild(cb);
@@ -436,7 +435,7 @@
               new CATMAID.ErrorDialog(e.error, e.detail).show();
             } else {
               // Unregister last result set from neuron name service
-              NeuronNameService.getInstance().unregister(this);
+              CATMAID.NeuronNameService.getInstance().unregister(this);
               // Empty selection map and store results
               this.entity_selection_map = {};
               this.expansions.clear();
@@ -452,7 +451,7 @@
               // Register search results with neuron name service and rebuild
               // result table.
               var skeletonObject = getSkeletonIDsInResult(e);
-              NeuronNameService.getInstance().registerAll(this, skeletonObject,
+              CATMAID.NeuronNameService.getInstance().registerAll(this, skeletonObject,
                   this.refresh.bind(this));
             }
           }
@@ -638,7 +637,7 @@
                   // Register search results with neuron name service and rebuild
                   // result table.
                   var skeletonObject = getSkeletonIDsInResult(e);
-                  NeuronNameService.getInstance().registerAll(this, skeletonObject,
+                  CATMAID.NeuronNameService.getInstance().registerAll(this, skeletonObject,
                       function () {
                         // Append new content right after the current node and save a
                         // reference for potential removal.

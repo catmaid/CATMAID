@@ -7,6 +7,11 @@ Miscellaneous:
 - Many tracing widgets now allow a user to hide their controls. A little gear
   icon in their title bar toggles their visibility.
 
+- Rather than only specifying annotations that are used as successive
+  fallbacks for labeling neurons, neuron labels can now be specified as
+  arbitrary combinations of annotation-based components using a format string.
+  This is still configured in the annotations section of the settings widget.
+
 
 ### Bug fixes
 

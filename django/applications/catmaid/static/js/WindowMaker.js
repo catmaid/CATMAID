@@ -94,7 +94,7 @@ var WindowMaker = new function()
        // Toggle display of first button panel found
         var style = 'none' === panels[0].style.display ? 'block' : 'none';
         panels[0].style.display = style;
-      };
+      }
     });
   };
 

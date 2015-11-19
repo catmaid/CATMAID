@@ -1,14 +1,11 @@
 import json
 
-from collections import defaultdict
-
 from guardian.shortcuts import get_objects_for_user
 
-from django.db import connection
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 
-from catmaid.models import UserRole, Class, Project, Stack, Relation, StackGroup
+from catmaid.models import UserRole, Class, Project, Relation, StackGroup
 from catmaid.control.authentication import requires_user_role
 
 from rest_framework.decorators import api_view

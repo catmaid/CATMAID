@@ -7,7 +7,7 @@
 "use strict";
 
 /**
- * The neuron name service is a singlton that creates a name for a specific
+ * The neuron name service is a singleton that creates a name for a specific
  * neuron. Based on the user's settings, the name is the regular neuron name or
  * based on annotations.It can be configured with the help of the settings
  * widget. All potentially asynchronous methods return a promise that is
@@ -15,7 +15,7 @@
  */
 var NeuronNameService = (function()
 {
-  // The NeuronNameService is a singlton
+  // The NeuronNameService is a singleton
   var instance;
 
   /**
@@ -45,7 +45,7 @@ var NeuronNameService = (function()
     var appendSkeletonId = false;
 
     // An object mapping skeleton IDs to objects that contain the current name and
-    // a list of clients, inerested in the particular skeleton.
+    // a list of clients, interested in the particular skeleton.
     var managedSkeletons = {};
 
     // A list of all clients
@@ -54,8 +54,8 @@ var NeuronNameService = (function()
     return {
 
       /**
-       * Allows the caller to select whether the skeleton ID should be appende to
-       * every label or not.
+       * Allows the caller to select whether the skeleton ID should be appended
+       * to every label or not.
        */
       setAppendSkeletonId: function(append)
       {
@@ -359,7 +359,7 @@ var NeuronNameService = (function()
 
             var skeleton = managedSkeletons[skid];
 
-            // Walk backwars through fallback list to name the current skeleton
+            // Walk backwards through fallback list to name the current skeleton
             for (var i=fallbackList.length - 1; i > -1; --i) {
               var l = fallbackList[i];
               if ('neuronname' === l.id) {
@@ -430,7 +430,7 @@ var NeuronNameService = (function()
             }
           }
 
-          // Resolve the promisme  and execute callback, if any
+          // Resolve the promise and execute callback, if any
           resolve();
           if (callback) {
             callback();

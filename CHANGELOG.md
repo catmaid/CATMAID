@@ -2,7 +2,10 @@
 
 ### Features and enhancements
 
+Miscellaneous:
 
+- Many tracing widgets now allow a user to hide their controls. A little gear
+  icon in their title bar toggles their visibility.
 
 
 ### Bug fixes

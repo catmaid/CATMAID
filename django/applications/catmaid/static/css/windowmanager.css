@@ -48,3 +48,11 @@ div.windowContent[data-msg]:before
   top: 50%;
   transform: translate(0, -50%);
 }
+
+.windowButton
+{
+  float: left;
+  cursor: pointer;
+  border: none;
+  background: none;
+}

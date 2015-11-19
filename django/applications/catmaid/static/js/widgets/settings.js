@@ -233,13 +233,9 @@
           "setting allows you to change the way neurons are named in these " +
           "widgets. Neurons are usually annotated and below you can choose " +
           "if and how these annotations should be used for labeling a neuron. " +
-          "You can add different representations to a fallback list, in case " +
-          "a desired representation isn't available for a neuron."));
+          "You can add different representations to a list of available " +
+          "components, which are then formatted into a label for the neuron."));
 
-      ds.append(CATMAID.DOM.createCheckboxSetting("Append Skeleton ID",
-        NeuronNameService.getInstance().getAppendSkeletonId(), null, function() {
-          NeuronNameService.getInstance().setAppendSkeletonId(this.checked);
-       }));
       // Get all available options
       var namingOptions = NeuronNameService.getInstance().getOptions();
       // Add naming option select box
@@ -249,9 +245,9 @@
       }, select);
       ds.append(CATMAID.DOM.createLabeledControl('Neuron label', select));
 
-      // Create 'Add' button and fallback list
-      var fallbackList = $('<select/>').addClass('multiline').attr('size', '4')[0];
-      var addButton = $('<button/>').text('Add labeling').click(function() {
+      // Create 'Add' button and component list
+      var componentList = $('<select/>').addClass('multiline').attr('size', '4')[0];
+      var addButton = $('<button/>').text('Add label component').click(function() {
         var newLabel = select.val();
         // The function to be called to actually add the label
         var addLabeling = function(metaAnnotation) {
@@ -260,7 +256,7 @@
           } else {
             NeuronNameService.getInstance().addLabeling(newLabel);
           }
-          updateFallbackList();
+          updateComponentList();
         };
 
         // Get current labeling selection and ask for a meta annotation if
@@ -286,40 +282,51 @@
           addLabeling();
         }
       });
-      var removeButton = $('<button/>').text('Remove labeling').click(function() {
+      var removeButton = $('<button/>').text('Remove label component').click(function() {
         // The last element cannot be removed
-        if (fallbackList.selectedIndex < fallbackList.length - 1) {
-          // We display the fallback list reversed, therefore we need to mirror
+        if (componentList.selectedIndex < componentList.length - 1) {
+          // We display the component list reversed, therefore we need to mirror
           // the index.
-          NeuronNameService.getInstance().removeLabeling(fallbackList.length - fallbackList.selectedIndex - 1);
-          updateFallbackList();
+          NeuronNameService.getInstance().removeLabeling(componentList.length - componentList.selectedIndex - 1);
+          updateComponentList();
         }
       });
       ds.append(CATMAID.DOM.createLabeledControl('', addButton));
-      ds.append(CATMAID.DOM.createLabeledControl('', fallbackList));
+      ds.append(CATMAID.DOM.createLabeledControl('', componentList));
       ds.append(CATMAID.DOM.createLabeledControl('', removeButton));
 
-      var updateFallbackList = function() {
-        $(fallbackList).empty();
-        var options = NeuronNameService.getInstance().getFallbackList().map(function(o, i) {
-          // Add each fallback list element to the select control. The last
+      var updateComponentList = function() {
+        $(componentList).empty();
+        var options = NeuronNameService.getInstance().getComponentList().map(function(o, i) {
+          // Add each component list element to the select control. The last
           // element is disabled by default.
           var optionElement = $('<option/>').attr('value', o.id)
-              .text(o.name);
+              .text(i + ': ' + o.name);
           if (i === 0) {
             optionElement.attr('disabled', 'disabled');
           }
           return optionElement[0];
         });
-        // We want to display the last fall back list element first, so we need
+        // We want to display the last component list element first, so we need
         // to reverse the options, before we add it.
         options.reverse();
         options.forEach(function(o) {
-          fallbackList.appendChild(o);
+          componentList.appendChild(o);
         });
       };
-      // Initialize fallback ist
-      updateFallbackList();
+      // Initialize component list
+      updateComponentList();
+
+      ds.append(CATMAID.DOM.createInputSetting(
+          "Formatted neuron name",
+          NeuronNameService.getInstance().getFormatString(),
+          "Format the neuron label using label components from list above. " +
+          "Reference the Nth component by using \"%N\". " +
+          "Use \"%f\" for a fallback that uses first available component " +
+          "from the top.",
+          function () {
+            NeuronNameService.getInstance().setFormatString($(this).val());
+          }));
 
 
       // Overlay settings

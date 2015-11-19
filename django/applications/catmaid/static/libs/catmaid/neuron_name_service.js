@@ -20,12 +20,12 @@ var NeuronNameService = (function()
 
   /**
    * Creates a new instance of the neuron name service. If empty is true, the
-   * fallback list is empty.
+   * component list is empty.
    */
   function init(empty) {
     // All available naming options. If an entry needs a parameter and includes
     // the pattern "..." in its name, this pattern will be replaced by the
-    // parameter when added to the actual fallback list.
+    // parameter when added to the actual label component list.
     var options = [
       {id: 'neuronname', name: "Neuron name", needsParam: false},
       {id: 'skeletonid', name: "Skeleton ID", needsParam: false},
@@ -35,14 +35,14 @@ var NeuronNameService = (function()
       {id: 'own-meta', name: "Own annotations annotated with ...", needsParam: true},
     ];
 
-    // The current fallback/naming list
-    var fallbackList = empty ? [] : [
+    // The current label component/naming list
+    var componentList = empty ? [] : [
       {id: 'skeletonid', name: "Skeleton ID"},
       {id: 'neuronname', name: "Neuron name"}
     ];
 
-    // Indicates if the skeleton ID should be appended to every label
-    var appendSkeletonId = false;
+    // The format string mapping components into a final neuron name.
+    var formatString = '%f';
 
     // An object mapping skeleton IDs to objects that contain the current name and
     // a list of clients, interested in the particular skeleton.
@@ -54,24 +54,23 @@ var NeuronNameService = (function()
     return {
 
       /**
-       * Allows the caller to select whether the skeleton ID should be appended
-       * to every label or not.
+       * Mutator for the format string that maps componenets to a final neuron
+       * name.
        */
-      setAppendSkeletonId: function(append)
+      setFormatString: function(format)
       {
-        appendSkeletonId = append ? true: false;
+        formatString = format;
 
         // Update the name representation of all neurons
         this.refresh();
       },
 
       /**
-       * Return true if the skeleton ID is appended to every label, false
-       * otherwise.
+       * Accessor for the format string.
        */
-      getAppendSkeletonId: function()
+      getFormatString: function()
       {
-        return appendSkeletonId;
+        return formatString;
       },
 
       /**
@@ -83,11 +82,11 @@ var NeuronNameService = (function()
       },
 
       /**
-       * Returns a copy of the internal fallback list.
+       * Returns a copy of the internal label component list.
        */
-      getFallbackList: function()
+      getComponentList: function()
       {
-        return $.extend(true, [], fallbackList);
+        return $.extend(true, [], componentList);
       },
 
       /**
@@ -126,23 +125,23 @@ var NeuronNameService = (function()
         }
 
         // Add new labeling to list
-        fallbackList.push(newLabeling);
+        componentList.push(newLabeling);
 
         // Update the name representation of all neurons
         this.refresh();
       },
 
       /**
-       * Removes the labeling at the given index from the fallback list. All items
-       * but the first on can be removed.
+       * Removes the labeling at the given index from the component list. All
+       * items but the first on can be removed.
        */
       removeLabeling: function(index)
       {
-        if (index < 1 || index >= fallbackList.length) {
+        if (index < 1 || index >= componentList.length) {
           return;
         }
 
-        fallbackList.splice(index, 1);
+        componentList.splice(index, 1);
 
         // Update the name representation of all neurons
         this.refresh();
@@ -359,9 +358,8 @@ var NeuronNameService = (function()
 
             var skeleton = managedSkeletons[skid];
 
-            // Walk backwards through fallback list to name the current skeleton
-            for (var i=fallbackList.length - 1; i > -1; --i) {
-              var l = fallbackList[i];
+            // Find values for component in the list.
+            var componentValues = componentList.map(function (l) {
               if ('neuronname' === l.id) {
                 return data.neuronnames[skid];
               } else if ('skeletonid' === l.id) {
@@ -406,10 +404,28 @@ var NeuronNameService = (function()
                   }
                 }
               }
+
+              return null;
+            });
+
+            var fallbackValue = null;
+            for (var i = 0; i < componentList.length; ++i) {
+              if (componentValues[i] !== null)
+                fallbackValue = componentValues[i];
             }
 
-            // Return null if no valid skeleton name could be found
-            return null;
+            var name = formatString.replace(/%(f|\d+)/g, function (match, component) {
+              if (component === 'f') {
+                return fallbackValue;
+              }
+
+              var index = parseInt(component, 10);
+              if (index >= 0 && index < componentValues.length) {
+                return componentValues[index];
+              } else return match;
+            });
+
+            return name;
           };
 
           if (skids) {
@@ -418,15 +434,11 @@ var NeuronNameService = (function()
               if (!managedSkeletons[skid]) {
                 return;
               }
-              var n = name(skid);
-              if (appendSkeletonId) { n += " #" + skid; }
-              managedSkeletons[skid].name = n;
+              managedSkeletons[skid].name = name(skid);
             });
           } else {
             for (var skid in managedSkeletons) {
-              var n = name(skid);
-              if (appendSkeletonId) { n += " #" + skid; }
-              managedSkeletons[skid].name = n;
+              managedSkeletons[skid].name = name(skid);
             }
           }
 
@@ -438,7 +450,7 @@ var NeuronNameService = (function()
         };
 
         // Request information only, if needed
-        var needsNoBackend = 0 === fallbackList.filter(function(l) {
+        var needsNoBackend = 0 === componentList.filter(function(l) {
             return 'skeletonid' !== l.id;
         }).length;
 
@@ -456,15 +468,15 @@ var NeuronNameService = (function()
             update(null, resolve, reject);
           } else {
             // Check if we need meta annotations
-            var needsMetaAnnotations = fallbackList.some(function(l) {
+            var needsMetaAnnotations = componentList.some(function(l) {
                 return 'all-meta' ===  l.id || 'own-meta' === l.id;
             });
             // Check if we need neuron names
-            var needsNeueonNames = fallbackList.some(function(l) {
+            var needsNeueonNames = componentList.some(function(l) {
                 return 'neuronname' === l.id;
             });
 
-            // Get all data that is needed for the fallback list
+            // Get all data that is needed for the component list
             requestQueue.register(django_url + project.id + '/skeleton/annotationlist',
               'POST',
               {

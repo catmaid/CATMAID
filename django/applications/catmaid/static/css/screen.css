@@ -673,6 +673,10 @@ div#classification_graph_object img.roiimage {
 	font-weight:bold;
 }
 
+#review_segment_table tr.active {
+  background-color: #0F0;
+}
+
 #review_segment_table th {
   white-space: nowrap;
   vertical-align: baseline;

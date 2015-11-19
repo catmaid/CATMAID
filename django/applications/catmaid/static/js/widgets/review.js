@@ -91,27 +91,40 @@
      * review is continued.
      */
     this.handleActiveNodeChange = function(node) {
+      var $rows = $('table#review_segment_table tr.review-segment');
+      $rows.removeClass('active');
+
       // Ignore this node change if no segment is under review at the moment
+      if (!this.skeleton_segments) return;
       var segment = this.current_segment ? this.current_segment['sequence'] : null;
-      if (!segment) return;
-      var rNode = segment[this.current_segment_index];
-      if (!rNode) return;
+      var rNode = !!segment ? segment[this.current_segment_index] : null;
 
       if (node) {
+        var nodeId = node.id;
         if (!SkeletonAnnotations.isRealNode(node.id)) {
           // Force re-focus on next step if the newly active virtual node is not
           // on the edge between parent and child.
           var pID = SkeletonAnnotations.getParentOfVirtualNode(node.id);
           var cID = SkeletonAnnotations.getChildOfVirtualNode(node.id);
-          if (rNode.id != pID && rNode.id != cID) {
+          nodeId = pID;
+          if (rNode && rNode.id != pID && rNode.id != cID) {
             this.segmentUnfocused = true;
           }
-        } else if (node.id != rNode.id) {
+        } else if (rNode && node.id != rNode.id) {
           // Force re-focus on next step if the new active node is not the
           // node currently under review.
           this.segmentUnfocused = true;
         }
-      } else {
+
+        // Find and highlight segment rows containing the active node.
+        var activeSegmentIds = this.skeleton_segments
+            .filter(function (seg) {
+              return seg.sequence.some(function (n) {
+                return n.id === nodeId;
+              });})
+            .map(function (seg) { return seg.id; });
+        $rows.filter('[data-sgid="' + activeSegmentIds.join('"],[data-sgid="') + '"]').addClass('active');
+      } else if (rNode) {
         // Force re-focus on next step if there is no active node anymore.
         this.segmentUnfocused = true;
       }

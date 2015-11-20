@@ -833,40 +833,40 @@ def list_annotations(request, project_id=None):
     parameters:
       - name: annotations
         description: A list of (meta) annotations with which which resulting annotations should be annotated with.
-        paramType: query
+        paramType: form
         type: array
         items:
             type: integer
             description: An annotation ID
       - name: annotates
         description: A list of entity IDs (like annotations and neurons) that should be annotated by the result set.
-        paramType: query
+        paramType: form
         type: array
         items:
             type: integer
             description: An entity ID
       - name: parallel_annotations
         description: A list of annotation that have to be used alongside the result set.
-        paramType: query
+        paramType: form
         type: array
         items:
             type: integer
             description: An annotation ID
       - name: user_id
         description: Result annotations have to be used by this user.
-        paramType: query
+        paramType: form
         type: integer
       - name: neuron_id
         description: Result annotations will annotate this neuron.
-        paramType: query
+        paramType: form
         type: integer
       - name: skeleton_id
         description: Result annotations will annotate the neuron modeled by this skeleton.
-        paramType: query
+        paramType: form
         type: integer
       - name: ignored_annotations
         description: A list of annotation names that will be excluded from the result set.
-        paramType: query
+        paramType: form
         type: array
         items:
             type: string
@@ -1131,7 +1131,7 @@ def annotations_for_skeletons(request, project_id=None):
     parameters:
       - name: skeleton_ids
         description: A list of skeleton IDs which are annotated by the resulting annotations.
-        paramType: query
+        paramType: form
         type: array
         items:
             type: integer

@@ -123,32 +123,32 @@ def add_volume(request, project_id):
     parameters:
       - name: minx
         description: Minimum x coordinate of box
-        paramType: query
+        paramType: form
         type: integer
         required: true
       - name: miny
         description: Minimum y coordinate of box
-        paramType: query
+        paramType: form
         type: integer
         required: true
       - name: minz
         description: Minimum z coordinate of box
-        paramType: query
+        paramType: form
         type: integer
         required: true
       - name: maxx
         description: Maximum x coordinate of box
-        paramType: query
+        paramType: form
         type: integer
         required: true
       - name: maxy
         description: Maximum y coordinate of box
-        paramType: query
+        paramType: form
         type: integer
         required: true
       - name: maxz
         description: Maximum z coordinate of box
-        paramType: query
+        paramType: form
         type: integer
         required: true
       - name: title

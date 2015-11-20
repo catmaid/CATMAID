@@ -1947,25 +1947,16 @@ SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso,
     }
   }, this);
 
-  // Draw node edges first, including the ones for virtual nodes
+  // Draw node edges and circles, including the ones for virtual nodes.
   for (var i in this.nodes) {
     if (this.nodes.hasOwnProperty(i)) {
       this.nodes[i].drawEdges();
-    }
-  }
-
-  
-  // Now that all edges have been created, disable unused arrows
-  this.graphics.disableRemainingArrows();
-
-  // Create circles on top of the edges
-  // so that the events reach the circles first
-  for (var i in this.nodes) {
-    if (this.nodes.hasOwnProperty(i)) {
-      // Will only create it or unhide it if the node is to be displayed
       this.nodes[i].createCircle();
     }
   }
+
+  // Now that all edges have been created, disable unused arrows
+  this.graphics.disableRemainingArrows();
 
   if (this.getLabelStatus()) {
     // For every node ID

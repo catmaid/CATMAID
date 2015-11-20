@@ -673,6 +673,10 @@ div#classification_graph_object img.roiimage {
   border-collapse: collapse;
 }
 
+#review_segment_table tr:nth-child(even) {
+  background-color: #EEE;
+}
+
 #review_segment_table tr.highlight {
 	font-weight:bold;
   border: 1px solid #000;

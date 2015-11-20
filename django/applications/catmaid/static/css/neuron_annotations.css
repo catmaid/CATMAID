@@ -1,36 +1,36 @@
 .neuron_annotations_query_fields_label {
-    font-family:Arial, Helvetica, sans-serif;
-    font-size:12px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
 }
+
 .neuron_annotations_query_field_label {
-    text-align:right;
-    font-family:Arial, Helvetica, sans-serif;
-    font-size:12px;
+  text-align: right;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
 }
+
 .neuron_annotations_query_field {
-    font-family:Arial, Helvetica, sans-serif;
-    font-size:12px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
 }
 
 .neuron_annotations_query_results_table {
-    overflow:auto;
-    padding-bottom: 50px;
+  overflow: auto;
+  padding-bottom: 50px;
 }
 
 .neuron_annotations_query_footer {
-    position: relative;
-    margin: 1em 0 1em 0;
-    clear:both;
+  position: relative;
+  margin: 1em 0 1em 0;
+  clear: both;
 }
 
-.resultTags
-{
+.resultTags {
   margin: 4px 0;
   padding: 0;
 }
 
-.resultTags li
-{
+.resultTags li {
   display: inline-block;
   background-color: #eef;
   list-style-type: none;
@@ -41,13 +41,11 @@
   -webkit-border-radius: 5px;
 }
 
-.resultTags li:hover
-{
+.resultTags li:hover {
   background-color: #eee;
 }
 
-.resultTags div.remove_annotation
-{
+.resultTags div.remove_annotation {
   display: inline;
   background-image: url(../images/minus_small.png);
   background-color: #eef;

@@ -3060,7 +3060,7 @@ var WindowMaker = new function()
 
     addLogic(win);
 
-    ProjectStatistics.init();
+    CATMAID.ProjectStatistics.init();
 
     return {window: win, widget: null};
   };

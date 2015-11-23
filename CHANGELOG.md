@@ -2,6 +2,13 @@
 
 ### Features and enhancements
 
+Selection table:
+
+- A new option ("Append with batch color") allows to override the color and
+  opacity of appended skeletons with the current batch color and batch opacity.
+  It is deselected by default.
+
+
 Miscellaneous:
 
 - Many tracing widgets now allow a user to hide their controls. A little gear

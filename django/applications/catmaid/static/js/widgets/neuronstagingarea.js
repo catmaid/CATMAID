@@ -31,6 +31,7 @@
     this.batchOpacity = 1.0;
     this.order = [[0, 'asc']];
     this.annotationFilter = null;
+    this.appendWithBatchColor = false;
     this.gui = new this.GUI(this);
 
     // Listen to change events of the active node and skeletons
@@ -329,6 +330,11 @@
           model.text_visible = this.all_items_visible['text'];
           model.pre_visible = this.all_items_visible['pre'];
           model.post_visible = this.all_items_visible['post'];
+
+          if (this.appendWithBatchColor) {
+            model.color.setStyle(this.batchColor);
+            model.opacity = this.batchOpacity;
+          }
 
           if (skeleton_id in this.skeleton_ids) {
             // Update skeleton

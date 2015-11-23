@@ -915,6 +915,18 @@ var WindowMaker = new function()
     summaryInfoButton.onclick = ST.summary_info.bind(ST);
     buttons.appendChild(summaryInfoButton);
 
+    var appendWithBatchColorCb = document.createElement('input');
+    appendWithBatchColorCb.setAttribute('type', 'checkbox');
+    appendWithBatchColorCb.onchange = function() {
+      ST.appendWithBatchColor = this.checked;
+    };
+    var appendWithBatchColor = document.createElement('label');
+    appendWithBatchColor.appendChild(appendWithBatchColorCb);
+    appendWithBatchColorCb.checked = ST.appendWithBatchColor;
+    appendWithBatchColor.appendChild(document.createTextNode(
+          'Append with batch color'));
+    buttons.appendChild(appendWithBatchColor);
+
     var hideVisibilitySettigsCb = document.createElement('input');
     hideVisibilitySettigsCb.setAttribute('type', 'checkbox');
     hideVisibilitySettigsCb.onchange = function() {

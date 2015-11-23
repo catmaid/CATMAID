@@ -49,6 +49,13 @@ def validate_configuration():
             raise ImproperlyConfigured("Please make sure settings field %s "
                     "is of type %s" % (field, data_type))
 
+    # Make sure swagger (API doc) knows about a potential sub-directory
+    if not hasattr(settings, 'SWAGGER_SETTINGS'):
+        settings.SWAGGER_SETTINGS = {}
+    if 'api_path' not in settings.SWAGGER_SETTINGS:
+        settings.SWAGGER_SETTINGS['api_path'] = settings.CATMAID_URL
+
+
 def get_system_user():
     """Return a User instance of a superuser. This is either the superuser
     having the ID configured in SYSTEM_USER_ID or the superuser with the lowest

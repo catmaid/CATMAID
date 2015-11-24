@@ -49,7 +49,7 @@ class BasicModelMapMiddleware(object):
     stacks_pattern = re.compile(r'/.+/stacks')
 
     def process_request(self, request):
-        new_path = (request.path == '/projects') or \
+        new_path = (request.path == '/projects/') or \
                     self.stack_info_pattern.search(request.path) or \
                     self.stacks_pattern.search(request.path)
 

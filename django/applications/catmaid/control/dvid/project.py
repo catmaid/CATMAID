@@ -14,10 +14,12 @@ def projects(request):
     for pid in project_stacks.data:
         p = project_stacks.data[pid]
         dvid_project = {
-            'note': p['Description'],
-            'pid': p['Root'],
+            'id': p['Root'],
             'title': p['Alias'],
-            'action': {}
+            'comment': p['Description'],
+            'stacks': [],
+            'stackgroups': []
+
         }
 
         for sid in p['DataInstances']:
@@ -27,11 +29,10 @@ def projects(request):
             if s['Base']['TypeName'] != 'imagetile':
                 continue
 
-            dvid_project['action'][sid] = {
-                'action': 'javascript:openProjectStack("%s", "%s")' % (pid, sid),
-                'comment': '',
-                'note': '',
-                'title': sid
+            dvid_project['stacks'].append({
+                'id': sid,
+                'title': sid,
+                'comment': ''
             }
 
         if dvid_project['action'] or settings.DVID_SHOW_NONDISPLAYABLE_REPOS:

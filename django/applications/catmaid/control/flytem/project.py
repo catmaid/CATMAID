@@ -13,17 +13,17 @@ def projects(request):
     projects = []
     for p in project_stacks.data:
         projects.append({
-            'note': '',
-            'pid': p['stack'],
+            'id': p['stack'],
             'title': '%s: %s' % (p['project'], p['stack']),
-            'action': {
-                p['stack'] : {
-                    'action': 'javascript:openProjectStack("%s", "%s")' % (p['project'], p['stack']),
-                    'comment': '<p>Owner: %s</p>' % p['owner'],
-                    'note': '',
+            'comment': '',
+            'stacks': [
+                {
+                    'id': p['stack'],
                     'title': p['stack'],
+                    'comment': '<p>Owner: %s</p>' % p['owner'],
                 }
-            }
+            ],
+            'stackgroups': []
         })
 
     return HttpResponse(json.dumps(projects, sort_keys=True, indent=2),

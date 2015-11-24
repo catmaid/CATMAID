@@ -904,8 +904,8 @@ def skeleton_info_raw(request, project_id=None):
     # sanitize arguments
     project_id = int(project_id)
     skeletons = tuple(int(v) for k,v in request.POST.iteritems() if k.startswith('source_skeleton_ids['))
-    op = request.POST.get('boolean_op') # values: AND, OR
-    op = {'AND': 'AND', 'OR': 'OR'}[op[6:]] # sanitize
+    op = str(request.POST.get('boolean_op')) # values: AND, OR
+    op = {'AND': 'AND', 'OR': 'OR'}[op] # sanitize
 
     incoming, outgoing, incoming_reviewers, outgoing_reviewers = _skeleton_info_raw(project_id, skeletons, op)
 

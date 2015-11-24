@@ -2596,8 +2596,8 @@ var WindowMaker = new function()
 
         var op = document.createElement('select');
         op.setAttribute('id', 'connectivity_operation' + widgetID);
-        op.appendChild(new Option('All partners', 'logic-OR'));
-        op.appendChild(new Option('Common partners', 'logic-AND')); // added prefix, otherwise gets sent as nonsense
+        op.appendChild(new Option('All partners', 'OR'));
+        op.appendChild(new Option('Common partners', 'AND')); // added prefix, otherwise gets sent as nonsense
         contentbutton.appendChild(op);
 
         var add = document.createElement('input');

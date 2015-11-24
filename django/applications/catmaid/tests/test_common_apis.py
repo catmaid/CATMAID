@@ -2003,7 +2003,7 @@ class ViewPageTests(TestCase):
             '/%d/skeletons/connectivity' % (self.test_project_id,),
             {'source_skeleton_ids[0]': 235,
              'source_skeleton_ids[1]': 373,
-             'boolean_op': 'logic-OR'})
+             'boolean_op': 'OR'})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {
@@ -2011,6 +2011,21 @@ class ViewPageTests(TestCase):
             "outgoing": {"361": {"skids": {"235": [0, 0, 0, 0, 1]}, "num_nodes": 9},
                          "373": {"skids": {"235": [0, 0, 0, 0, 2]}, "num_nodes": 5}},
             "incoming": {"235": {"skids": {"373": [0, 0, 0, 0, 2]}, "num_nodes": 28}},
+            "incoming_reviewers": []}
+        self.assertEqual(expected_result, parsed_response)
+
+        # Test for conjunctive connectivity.
+        response = self.client.post(
+            '/%d/skeletons/connectivity' % (self.test_project_id,),
+            {'source_skeleton_ids[0]': 235,
+             'source_skeleton_ids[1]': 373,
+             'boolean_op': 'AND'})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = {
+            "outgoing_reviewers": [],
+            "outgoing": {},
+            "incoming": {},
             "incoming_reviewers": []}
         self.assertEqual(expected_result, parsed_response)
 

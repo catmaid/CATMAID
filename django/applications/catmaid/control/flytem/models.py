@@ -34,9 +34,9 @@ class FlyTEMStack:
             url = '%s/project/%s/stack/%s/bounds' % (settings.FLYTEM_SERVICE_URL, project_id, stack_id)
             bounds_json = urllib2.urlopen(url).read()
         except urllib2.HTTPError as e:
-            raise ValueError("Couldn't retrieve FlyTEM project information from %s" % url)
+            raise ValueError("Couldn't retrieve FlyTEM project information from %s. Error: %s" % (url, e))
         except urllib2.URLError as e:
-            raise ValueError("Couldn't retrieve FlyTEM project information from %s" % url)
+            raise ValueError("Couldn't retrieve FlyTEM project information from %s. Error: %s" % (url, e))
 
         bounds_json = json.loads(bounds_json)
 
@@ -44,9 +44,9 @@ class FlyTEMStack:
             url = '%s/project/%s/stack/%s/zValues' % (settings.FLYTEM_SERVICE_URL, project_id, stack_id)
             zvalues_json = urllib2.urlopen(url).read()
         except urllib2.HTTPError as e:
-            raise ValueError("Couldn't retrieve FlyTEM project information from %s" % url)
+            raise ValueError("Couldn't retrieve FlyTEM project information from %s. Error: %s" % (url, e))
         except urllib2.URLError as e:
-            raise ValueError("Couldn't retrieve FlyTEM project information from %s" % url)
+            raise ValueError("Couldn't retrieve FlyTEM project information from %s. Error: %s" % (url, e))
 
         zvalues_json = json.loads(zvalues_json)
         zvalues = [int(v) for v in zvalues_json]
@@ -72,9 +72,9 @@ class FlyTEMProjectStacks:
             url = '%s/stackIds' % settings.FLYTEM_SERVICE_URL
             project_stacks_json = urllib2.urlopen(url).read()
         except urllib2.HTTPError as e:
-            raise ValueError("Couldn't retrieve FlyTEM project information from %s" % url)
+            raise ValueError("Couldn't retrieve FlyTEM project information from %s. Error: %s" % (url, e))
         except urllib2.URLError as e:
-            raise ValueError("Couldn't retrieve FlyTEM project information from %s" % url)
+            raise ValueError("Couldn't retrieve FlyTEM project information from %s. Error: %s" % (url, e))
 
         self.data = json.loads(project_stacks_json)
 

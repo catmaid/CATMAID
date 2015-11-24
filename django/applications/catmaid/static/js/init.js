@@ -1122,8 +1122,7 @@ var realInit = function()
     }
     else
     {
-      if ( values[ "pid" ] ) pid = parseInt( values[ "pid" ] );
-      if ( isNaN( pid ) ) pid = undefined;
+      if ( values[ "pid" ] ) pid = values[ "pid" ];
       if ( values[ "zp" ] ) zp = parseInt( values[ "zp" ] );
       if ( isNaN( zp ) ) zp = undefined;
       if ( values[ "yp" ] ) yp = parseInt( values[ "yp" ] );
@@ -1134,7 +1133,7 @@ var realInit = function()
 
       for ( var i = 0; values[ "sid" + i ]; ++i )
       {
-        var sid = parseInt( values[ "sid" + i ] );
+        var sid = values[ "sid" + i ];
         // Make sure a stack isn't opened multiple times
         if ( -1 !== sids.indexOf( sid ) ) {
           continue;
@@ -1144,7 +1143,7 @@ var realInit = function()
           ss.push( parseFloat( values[ "s" + i ] ) );
         else
           ss.push( NaN );
-        if ( isNaN( sids[ i ] ) || isNaN( ss[ i ] ) )
+        if ( isNaN( ss[ i ] ) )
         {
           sids.pop();
           ss.pop();

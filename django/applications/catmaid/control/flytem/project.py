@@ -1,8 +1,7 @@
 import json
-import urllib2
 from django.http import HttpResponse
-from django.conf import settings
 from catmaid.control.flytem.models import FlyTEMProjectStacks
+
 
 def projects(request):
     """ Returns a list of project objects that are visible for the requesting

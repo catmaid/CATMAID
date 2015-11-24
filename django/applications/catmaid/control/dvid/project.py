@@ -33,7 +33,7 @@ def projects(request):
                 'id': sid,
                 'title': sid,
                 'comment': ''
-            }
+            })
 
         if dvid_project['action'] or settings.DVID_SHOW_NONDISPLAYABLE_REPOS:
             projects.append(dvid_project)

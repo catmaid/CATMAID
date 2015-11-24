@@ -69,7 +69,7 @@
           fileExtension;
     };
 
-    this.getOverviewURL = function(slicePixelPosition) {
+    this.getOverviewURL = function(stack, slicePixelPosition) {
       return baseURL + slicePixelPosition[0] + '/small.' + fileExtension;
     };
 
@@ -152,7 +152,7 @@
           fileExtension;
     };
 
-    this.getOverviewURL = function(slicePixelPosition) {
+    this.getOverviewURL = function(stack, slicePixelPosition) {
       return baseURL + slicePixelPosition[0] + '/small.' + fileExtension;
     };
 
@@ -182,7 +182,7 @@
          fileExtension;
     };
 
-    this.getOverviewURL = function( slicePixelPosition ) {
+    this.getOverviewURL = function(stack, slicePixelPosition) {
       return baseURL + '/small/' + slicePixelPosition[0] + '.' + fileExtension;
     };
 
@@ -250,7 +250,7 @@
           ',' + tw + ',' + th + ',' + invScale + self.mimeType;
     };
 
-    this.getOverviewURL = function(slicePixelPosition) {
+    this.getOverviewURL = function(stack, slicePixelPosition) {
       return baseURL + 'z/' + slicePixelPosition[0] + '/box/0,0,' + stack.dimension.x + ',' +
           stack.dimension.y + ',' + 192 / stack.dimension.x + self.mimeType;
     };
@@ -307,7 +307,7 @@
     this.redraw = function() {
       var stack = layer.getStack();
       var slicePixelPosition = [stackViewer.scaledPositionInStack(stack).z];
-      img.src = getOverviewURL( slicePixelPosition );
+      img.src = getOverviewURL(stack, slicePixelPosition);
     };
 
     this.unregister = function() {

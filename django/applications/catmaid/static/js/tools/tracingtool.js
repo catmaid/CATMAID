@@ -1307,15 +1307,15 @@
         }
     }),
 
-      new CATMAID.Action({
-          helpText: "Connectivity widget",
-          buttonID: "data_button_connectivity",
-          buttonName: 'table_connectivity',
-          run: function (e) {
-              WindowMaker.create('connectivity-widget');
-              return true;
-          }
-      }),
+    new CATMAID.Action({
+        helpText: "Connectivity widget",
+        buttonID: "data_button_connectivity",
+        buttonName: 'table_connectivity',
+        run: function (e) {
+            WindowMaker.create('connectivity-widget');
+            return true;
+        }
+    }),
 
     new CATMAID.Action({
       helpText: "Connectivity Matrix",
@@ -1486,6 +1486,16 @@
         buttonName: 'export_widget',
         run: function (e) {
             WindowMaker.show('export-widget');
+            return true;
+        }
+    }),
+
+    new CATMAID.Action({
+        helpText: "Synapse Distribution Plot",
+        buttonID: "data_button_synapse_plot",
+        buttonName: 'synapse_plot',
+        run: function (e) {
+            WindowMaker.create('synapse-plot');
             return true;
         }
     }),

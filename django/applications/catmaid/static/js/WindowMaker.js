@@ -1602,6 +1602,108 @@ var WindowMaker = new function()
     return {window: win, widget: null};
   };
 
+  var createSynapsePlotWindow = function()
+  {
+    var SP = new SynapsePlot();
+
+    var win = new CMWWindow(SP.getName());
+    var content = win.getFrame();
+    content.style.backgroundColor = "#ffffff";
+
+    var bar = document.createElement('div');
+    bar.setAttribute("id", "synapse_plot_buttons" + SP.widgetID);
+    bar.setAttribute('class', 'buttonpanel');
+    addButtonDisplayToggle(win);
+
+    var tabs = appendTabs(bar, SP.widgetID, ['Main', 'Options']);
+
+    appendToTab(tabs['Main'],
+        [[document.createTextNode('From')],
+         [CATMAID.skeletonListSources.createSelect(SP)],
+         ['Append', SP.loadSource.bind(SP)],
+         ['Clear', SP.clear.bind(SP)],
+         ['Refresh', SP.update.bind(SP)],
+         ['Export SVG', SP.exportSVG.bind(SP)],
+         ['Export CSV', SP.exportCSV.bind(SP)]]);
+
+    var nf = createNumericField("synapse_count_threshold" + SP.widgetID, // id
+                                "Synapse count threshold: ",             // label
+                                "Synapse count threshold",               // title
+                                SP.threshold,                            // initial value
+                                undefined,                               // postlabel
+                                SP.onchangeSynapseThreshold.bind(SP),    // onchangeFn
+                                5);                                      // textfield length in number of chars
+
+    var filter = CATMAID.skeletonListSources.createPushSelect(SP, "filter");
+    filter.onchange = SP.onchangeFilterPresynapticSkeletons.bind(SP);
+
+    var ais_choice = createSelect("synapse_plot_AIS_" + SP.widgetID, ["Computed", "Node tagged with..."], "Computed");
+
+    var tag = createNumericField("synapse_count_tag" + SP.widgetID,
+                                 undefined,
+                                 "Tag",
+                                 "",
+                                 undefined,
+                                 undefined,
+                                 10);
+    tag.onchange = SP.onchangeAxonInitialSegmentTag.bind(SP, tag);
+
+    ais_choice.onchange = SP.onchangeChoiceAxonInitialSegment.bind(SP, ais_choice, tag);
+
+    var jitter = createNumericField("synapse_plot_jitter" + SP.widgetID,
+                                   undefined,
+                                   "Jitter",
+                                   SP.jitter,
+                                   undefined,
+                                   undefined,
+                                   5);
+
+    jitter.onchange = SP.onchangeJitter.bind(SP, jitter);
+
+    var choice_coloring = CATMAID.skeletonListSources.createPushSelect(SP, "coloring");
+    choice_coloring.onchange = SP.onchangeColoring.bind(SP);
+
+    appendToTab(tabs['Options'],
+        [[nf],
+         [document.createTextNode(' Only in: ')],
+         [filter],
+         [document.createTextNode(' Axon initial segment: ')],
+         [ais_choice],
+         [document.createTextNode(' Tag: ')],
+         [tag],
+         [document.createTextNode(' Jitter: ')],
+         [jitter],
+         [document.createTextNode(' Color by: ')],
+         [choice_coloring]]);
+
+
+
+    content.appendChild( bar );
+
+    $(bar).tabs();
+
+    var container = createContainer("synapse_plot_widget" + SP.widgetID);
+    container.style.overflow = 'hidden';
+    content.appendChild(container);
+
+    var graph = document.createElement('div');
+    graph.setAttribute("id", "synapse_plot" + SP.widgetID);
+    graph.style.width = "100%";
+    graph.style.height = "100%";
+    graph.style.backgroundColor = "#ffffff";
+    container.appendChild(graph);
+
+    addListener(win, container, 'synapse_plot_buttons' + SP.widgetID,
+        SP.destroy.bind(SP), SP.resize.bind(SP));
+
+    addLogic(win);
+
+    CATMAID.skeletonListSources.updateGUI();
+
+    return {window: win, widget: SP};
+  };
+
+
   var createGraphWindow = function()
   {
     var GG = new CATMAID.GroupGraph();
@@ -3432,6 +3534,7 @@ var WindowMaker = new function()
     "analyze-arbor": createAnalyzeArbor,
     "neuron-dendrogram": createNeuronDendrogram,
     "connectivity-matrix": createConnectivityMatrixWindow,
+    "synapse-plot": createSynapsePlotWindow,
   };
 
   /** If the window for the given name is already showing, just focus it.

@@ -148,12 +148,12 @@ def compact_skeleton(request, project_id=None, skeleton_id=None, with_connectors
 def compact_arbor(request, project_id=None, skeleton_id=None, with_nodes=None, with_connectors=None, with_tags=None):
     """
     Performance-critical function. Do not edit unless to improve performance.
-    Returns, in JSON, [[nodes], [outputs], [inputs], {nodeID: [tags]}],
-    with inputs and outputs being empty when 0 == with_connectors,
+    Returns, in JSON, [[nodes], [connections], {nodeID: [tags]}],
+    with connections being empty when 0 == with_connectors,
     and the dict of node tags being empty 0 == with_tags, respectively.
 
     The difference between this function and the compact_skeleton function is that
-    the connectors contain the whole chain from the skeleton of interest to the
+    the connections contain the whole chain from the skeleton of interest to the
     partner skeleton:
     [treenode_id, confidence,
      connector_id,

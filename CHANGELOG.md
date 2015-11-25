@@ -8,6 +8,24 @@ Selection table:
   opacity of appended skeletons with the current batch color and batch opacity.
   It is deselected by default.
 
+New widget "Synapse Distribution Plot":
+  For one or more neurons, plot distances of postsynaptic sites relative
+	to an axon initial segment, represented by a skeleton node that is either
+	computed or given via text tags.
+  Each row represents the inputs contributed by a presynaptic arbor.
+  Presynaptic arbors (rows) are sorted from more to less synapses.
+  Presynaptic arbors can be filtered (i.e. hidden away) by a threshold
+  on the number of inputs each provides, or by being listed in another
+  widget that has selected skeletons.
+	Individual synapses take by default the color of the postsynaptic arbor
+	(that is, the arbors added via "Append"), but can be colored as well
+	according to neuron colors in another widget.
+  Click on an individual postsynaptic site to go to the corresponding
+  skeleton node.
+  Click on the legend to jump to the skeleton node representing the
+  axon initial segment, relative to which all distance measurements
+  where made.
+
 
 Miscellaneous:
 

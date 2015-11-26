@@ -1,7 +1,9 @@
 /* global
  project,
  fetchSkeletons,
- SkeletonAnnotations
+ InstanceRegistry,
+ SkeletonAnnotations,
+ SynapseClustering
 */
 
 "use strict";
@@ -140,7 +142,7 @@ SynapsePlot.prototype._append = function(models) {
   fetchSkeletons(
       skids,
       function(skid) { return django_url + project.id + '/' + skid + '/1/1/1/compact-arbor'; },
-      function(skid) { return {} }, // POST
+      function(skid) { return {}; }, // POST
       (function(post_skid, json) {
         // register
         this.models[post_skid] = models[post_skid];
@@ -224,7 +226,7 @@ SynapsePlot.prototype.onchangeChoiceAxonInitialSegment = function(select, field)
 SynapsePlot.prototype.onchangeAxonInitialSegmentTag = function(field) {
   this.ais_tag = field.value.trim();
   if (this.ais_method === this.AIS_TAG) {
-    if ("" == this.ais_tag) {
+    if ("" === this.ais_tag) {
       CATMAID.msg("Information", "Write in the name of a tag");
       return;
     }
@@ -275,7 +277,7 @@ SynapsePlot.prototype.findAxonInitialSegment = function(morphology) {
     if (nodes) {
       if (1 === nodes.length) return nodes[0];
       CATMAID.ms("Warning", "More than one node tagged with '" + this.ais_tag + "'");
-      return null
+      return null;
     } else {
       CATMAID.msg("Warning", "Could not find a node tagged with '" + this.ais_tag + "'");
       return null;
@@ -524,7 +526,7 @@ SynapsePlot.prototype._redraw = function(container, containerID) {
       .attr("y", 9)
       .attr("dy", ".35em")
       .style("text-anchor", "end")
-      .text(function(skid) { return CATMAID.NeuronNameService.getInstance().getName(skid); })
+      .text(function(skid) { return CATMAID.NeuronNameService.getInstance().getName(skid); });
 };
 
 SynapsePlot.prototype.highlight = function(skid) {

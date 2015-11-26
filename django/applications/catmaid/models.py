@@ -97,7 +97,7 @@ class Stack(models.Model):
                      (7, '7: Render service'),
                      (8, '8: DVID imagetile tiles')),
             help_text='This represents how the tile data is organized. '
-            'See <a href="http://catmaid.org/tile_sources.html">tile source '
+            'See <a href="http://catmaid.org/page/tile_sources.html">tile source '
             'conventions documentation</a>.')
     metadata = models.TextField(default='', blank=True,
             help_text="Arbitrary text that is displayed alongside the stack.")

@@ -1,7 +1,7 @@
 div.toolbar_container {
   clear: both;
-  margin: 0px;
-  padding: 0px;
+  margin: 0;
+  padding: 0;
   width: 100%;
   border: none;
   background: url(../images/bar32_bg.gif) repeat left top;
@@ -10,8 +10,8 @@ div.toolbar_container {
 
 div.toolbar {
   clear: both;
-  margin: 0px;
-  padding: 0px;
+  margin: 0;
+  padding: 0;
   width: 100%;
   border: none;
   background: url(../images/bar32_bg.gif) repeat left top;
@@ -19,17 +19,17 @@ div.toolbar {
 }
 
 div.toolbar div.toolbar_fill {
-  margin: 0px;
-  padding: 0px;
-  height: 0px;
-  width: 0px;
+  margin: 0;
+  padding: 0;
+  height: 0;
+  width: 0;
   clear: both;
   overflow: hidden;
 }
 
 div.toolbar div.box {
-  margin: 0px;
-  padding: 0px 10px 0px 10px;
+  margin: 0;
+  padding: 0 10px 0 10px;
   height: 32px;
   white-space: nowrap;
   float: left;
@@ -38,8 +38,8 @@ div.toolbar div.box {
 }
 
 div.toolbar div.box_right {
-  margin: 0px;
-  padding: 0px 10px 0px 10px;
+  margin: 0;
+  padding: 0 10px 0 10px;
   height: 32px;
   white-space: nowrap;
   float: right;
@@ -50,8 +50,8 @@ div.toolbar div.box_right {
 div.toolbar div.box p,
 div.toolbar div.box_right p {
   border: none;
-  margin: 0px;
-  padding: 4px 0px 0px 0px;
+  margin: 0;
+  padding: 4px 0 0 0;
   vertical-align: middle;
   line-height: 20px;
   float: left;
@@ -60,8 +60,8 @@ div.toolbar div.box_right p {
 div.toolbar div.box img,
 div.toolbar div.box_right img {
   border: none;
-  margin: 0px;
-  padding: 0px;
+  margin: 0;
+  padding: 0;
   vertical-align: bottom;
 }
 
@@ -78,8 +78,8 @@ div.toolbar div.box_right a.button,
 div.toolbar div.box a.button_active,
 div.toolbar div.box_right a.button_active {
   border: none;
-  margin: 4px 0px 0px 0px;
-  padding: 0px 1em 0px 0px;
+  margin: 4px 0 0 0;
+  padding: 0 1em 0 0;
   width: 24px;
   height: 24px;
   cursor: pointer;
@@ -111,7 +111,7 @@ div.toolbar div.box_right select {
 
 div.menu div.box,
 div.menu div.box_right {
-  padding: 0px;
+  padding: 0;
 }
 
 div.toolbar div.menu_item p {
@@ -147,26 +147,26 @@ div.menu_item tr.menu_item a {
 
 div.menu_item div.pulldown td,
 div.pulldown_item div.pulldown td {
-  padding: 0px;
+  padding: 0;
   padding-left: 1em;
-  margin: 0px;
+  margin: 0;
 }
 
 div.menu_item div.pulldown td p,
 div.pulldown_item div.pulldown td p {
-  margin: 0px;
+  margin: 0;
   /*padding: 0.05em 0.25em 0.05em 0.25em;*/
-  padding: 0px 4px 1px 4px;
+  padding: 0 4px 1px 4px;
 }
 
 div.menu_item div.pulldown,
 div.pulldown_item div.pulldown {
   clear: both;
   position: relative;
-  top: 0px;
-  left: 0px;
-  width: 0px;
-  height: 0px;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
   z-index: 99;
   overflow: visible;
   display: none;
@@ -180,11 +180,11 @@ div.pulldown_item div.pulldown {
 div.menu_item div.pulldown div.menu_text,
 div.pulldown_item div.pulldown div.menu_text {
   clear: both;
-  padding: 0px;
-  margin: 0px;
+  padding: 0;
+  margin: 0;
   position: absolute;
-  top: 0px;
-  left: 0px;
+  top: 0;
+  left: 0;
   border: solid 1px #DDDDDD;
   background: #FFFFFF;
   white-space: nowrap;
@@ -203,14 +203,14 @@ div.menu_item tr.menu_item_selected a.hoverlink {
 
 div.toolbar div.box p.toolbar_wait,
 div.toolbar div.box_right p.toolbar_wait {
-  padding: 4px 0px 4px 24px;
+  padding: 4px 0 4px 24px;
   vertical-align: middle;
   background: url(../images/wait_bgtransgrey.gif) no-repeat left center;
   display: none;
 }
 
 div.toolbar .alert {
-  padding: 4px 0px 4px 24px;
+  padding: 4px 0 4px 24px;
   vertical-align: middle;
   background: url(../images/alert_bgtransgrey.gif) no-repeat right center;
 }

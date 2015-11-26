@@ -1,9 +1,9 @@
-div.sliceView div.sliceSVGOverlay {
+.sliceView div.sliceSVGOverlay {
   position: absolute;
-  top: 0px;
-  left: 0px;
-  margin: 0px;
-  padding: 0px;
+  top: 0;
+  left: 0;
+  margin: 0;
+  padding: 0;
 }
 
 .tagEditor {
@@ -12,7 +12,7 @@ div.sliceView div.sliceSVGOverlay {
 }
 
 .tagEditor li {
-  display: inline;
+  display: inline-block;
   background-image: url(../images/minus_small.png);
   background-color: #eef;
   background-position: right center;
@@ -23,6 +23,7 @@ div.sliceView div.sliceSVGOverlay {
   cursor: pointer;
   -moz-border-radius: 5px;
   -webkit-border-radius: 5px;
+  border-radius: 5px;
 }
 
 .tagEditor li: hover {

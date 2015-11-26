@@ -22,7 +22,7 @@ install:
   - pip list
   # Install additional dependencies for Travis
   - pip install coveralls
-  - npm install jshint qunit-phantomjs-runner
+  - npm install jshint qunit-phantomjs-runner csslint
 before_script:
   - psql -c 'CREATE DATABASE catmaid;' -U postgres
   - psql -c 'CREATE EXTENSION postgis;' -U postgres catmaid
@@ -41,6 +41,9 @@ before_script:
   - cd ..
 script:
   - jshint --config=.travis.jshintrc --exclude-path=.travis.jshintignore django/applications
+  - cd django/applications/catmaid/static/css
+  - csslint .
+  - cd ../../../../..
   - cd django/projects/mysite
   - python manage.py syncdb --migrate --noinput
   - python manage.py collectstatic --link --noinput

@@ -2,8 +2,8 @@ html,
 body {
 	border: none;
 	min-width: 300px;
-	margin: 0px;
-	padding: 0px;
+	margin: 0;
+	padding: 0;
 }
 
 html,
@@ -44,7 +44,7 @@ dl {
 }
 
 #project_filter_indicator.filtering {
-	padding: 4px 24px 4px 0px;
+	padding: 4px 24px 4px 0;
 	vertical-align: middle;
 	background: url(../images/wait_bgwhite.gif) no-repeat right center;
 }
@@ -56,12 +56,12 @@ dd {
 
 dl p {
 	font-style: italic;
-	margin: 0px;
+	margin: 0;
 }
 
 .wait_bgwhite,
 div.form .wait_bgwhite {
-	padding: 4px 0px 4px 24px;
+	padding: 4px 0 4px 24px;
 	vertical-align: middle;
 	background: url(../images/wait_bgwhite.gif) no-repeat left center;
 }
@@ -79,10 +79,10 @@ dd {
 	width: 100%;
 	background: url(../images/bar32_bg.gif) repeat-x left top;
 	position: absolute;
-	left: 0px;
-	bottom: 0px;
-	margin: 0px;
-	padding: 0px;
+	left: 0;
+	bottom: 0;
+	margin: 0;
+	padding: 0;
 	overflow: hidden;
 	border: none;
 	border-top: solid 4px #000000;
@@ -90,8 +90,8 @@ dd {
 
 #imprint p {
 	border: none;
-	margin: 0px;
-	padding: 4px 0px 0px 20px;
+	margin: 0;
+	padding: 4px 0 0 20px;
 	vertical-align: middle;
 	line-height: 20px;
 }
@@ -105,9 +105,9 @@ dd {
 
 #content {
 	position: absolute;
-	left: 0px;
-	top: 0px;
-	bottom: 0px;
+	left: 0;
+	top: 0;
+	bottom: 0;
 	width: 100%;
 	overflow: auto;
 	background: #FFFFFF;
@@ -128,7 +128,7 @@ html.mod-js.mod-opacity.mod-canvas.mod-svg.mod-webgl.mod-json #browser_unsupport
   left: 0;
 }
 
-div#browser_unsupported .message {
+#browser_unsupported .message {
   position: fixed;
   left: 30%;
   top: 20%;
@@ -138,11 +138,11 @@ div#browser_unsupported .message {
   z-index: 99;
 }
 
-div#browser_unsupported h1 {
+#browser_unsupported h1 {
   margin-bottom: 2em;
 }
 
-div#browser_unsupported p {
+#browser_unsupported p {
   padding: 0.5em 2em 1.5em 2em;
   font-size: 14px;
   line-height: 1.2;
@@ -165,9 +165,9 @@ div.form table td {
 }
 
 div.form p {
-  margin: 0px;
+  margin: 0;
   border: dashed 1px #FFFFFF;
-  padding: 0.5em 0em 0.5em 0em;
+  padding: 0.5em 0 0.5em 0;
 }
 
 div.form textarea,
@@ -191,14 +191,14 @@ div#data_view .header img {
 
 div#data_view .header h1 {
   float: left;
-  margin: 0px;
+  margin: 0;
 }
 
 div#data_view table {
 	margin:1.5em 16px 0.5em 20px;
 	line-height:1.1em;
 	font-weight:normal;
-	border: 0px;
+	border: 0;
 }
 
 div#data_view tr.odd {
@@ -256,10 +256,7 @@ div#data_view .highlight {
 }
 
 div#data_view figure {
-	margin-top: 0px;
-	margin-right: 10px;
-	margin-bottom: 11px;
-	margin-left: 10px;
+  margin: 0 10px 11px 10px;
 }
 
 div#data_view .comment {
@@ -348,8 +345,8 @@ div#classification_graph_object img.roiimage {
 
 .extend-box-open,
 .extend-box-closed {
-	width: 0px;
-	height: 0px;
+	width: 0;
+	height: 0;
 	float: left;
 	margin-top: 1px;
 	margin-right: 3px;
@@ -387,7 +384,7 @@ div#classification_graph_object img.roiimage {
 }
 
 .navigator_content.multi_table_node .dataTables_wrapper {
-  min-height: 0px;
+  min-height: 0;
   margin-bottom: 1em;
 }
 
@@ -410,12 +407,12 @@ div#classification_graph_object img.roiimage {
 
 .neuron_annotations_query_results_table label input,
 .neuron_annotations_query_results_table label a {
-  margin-top: 0px;
+  margin-top: 0;
   vertical-align: top;
 }
 
 .neuron_annotations_query_results_table ul {
-  margin-top: 0px;
+  margin-top: 0;
 }
 
 .neuron_annotations_query_results_table th input[type=checkbox] {
@@ -706,7 +703,6 @@ div#classification_graph_object img.roiimage {
 .settings-container {
   clear: both;
   float: left;
-  display: inline-block;
 }
 
 

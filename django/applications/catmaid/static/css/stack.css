@@ -1,39 +1,39 @@
-div.sliceView {
+.sliceView {
   position: relative;
-  margin: 0px;
-  sliceViewtop: 0px;
-  right: 0px;
-  bottom: 0px;
-  left: 0px;
-  padding: 0px;
+  margin: 0;
+  sliceViewtop: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  padding: 0;
   background: #000000;
   overflow: hidden;
 }
 
-div.sliceView .sliceTiles {
+.sliceView .sliceTiles {
   position: absolute;
-  top: 0px;
-  left: 0px;
+  top: 0;
+  left: 0;
   border: none;
-  margin: 0px;
-  padding: 0px;
+  margin: 0;
+  padding: 0;
   white-space: nowrap;
   transform: translateZ(0px);
 }
 
-div.sliceView div.sliceTiles img {
+.sliceView div.sliceTiles img {
   position: absolute;
   border: none;
-  margin: 0px;
-  padding: 0px;
+  margin: 0;
+  padding: 0;
   transform: translateZ(0px);
 }
 
-div.sliceView div.sliceTiles.transpose img {
+.sliceView div.sliceTiles.transpose img {
   transform: rotate3d(1, 1, 0, 180deg);
 }
 
-div.sliceView div.sliceTiles.interpolation-mode-nearest img {
+.sliceView div.sliceTiles.interpolation-mode-nearest img {
   image-rendering: optimizeSpeed;             /*               */
   image-rendering: -moz-crisp-edges;          /* Firefox       */
   image-rendering: -o-crisp-edges;            /* Opera         */
@@ -45,14 +45,14 @@ div.sliceView div.sliceTiles.interpolation-mode-nearest img {
 div.smallMapView,
 div.smallMapView_hidden {
   position: absolute;
-  bottom: 0px;
-  right: 0px;
+  bottom: 0;
+  right: 0;
   overflow: hidden;
-  margin: 0px;
-  padding: 0px;
+  margin: 0;
+  padding: 0;
   max-width: 192px;
   max-height: 192px;
-  border: none 0px;
+  border: none 0;
   border-top: solid 4px #000000;
   border-left: solid 4px #000000;
   background: #000000;
@@ -66,8 +66,8 @@ div.smallMapView_hidden {
 
 body {
   border: none;
-  margin: 0px;
-  padding: 0px;
+  margin: 0;
+  padding: 0;
   color: #000000;
   font-family: Arial, Helvetica, sans-serif;
   font-size: 11px;
@@ -77,8 +77,8 @@ body {
 div.smallMapView div.smallMapToggle,
 div.smallMapView_hidden div.smallMapToggle {
   position: absolute;
-  left: 0px;
-  top: 0px;
+  left: 0;
+  top: 0;
   width: 16px;
   height: 16px;
   overflow: hidden;
@@ -92,18 +92,18 @@ div.smallMapView_hidden div.smallMapToggle {
 div.smallMapView img.smallMapMap,
 div.smallMapView_hidden img.smallMapMap {
   border: none;
-  margin: 0px;
-  padding: 0px;
+  margin: 0;
+  padding: 0;
   cursor: pointer;
 }
 
 div.smallMapView div.smallMapRect,
 div.smallMapView_hidden div.smallMapRect {
   position: absolute;
-  top: 0px;
-  left: 0px;
-  margin: 0px;
-  padding: 0px;
+  top: 0;
+  left: 0;
+  margin: 0;
+  padding: 0;
   border: solid 2px #0000FF;
   background: url(../images/blue20.png);
   overflow: hidden;
@@ -111,8 +111,8 @@ div.smallMapView_hidden div.smallMapRect {
 
 div.smallMapView div.smallMapRect div,
 div.smallMapView_hidden div.smallMapRect div {
-  margin: 0px;
-  padding: 0px;
+  margin: 0;
+  padding: 0;
   border: none;
   width: 100%;
   height: 100%;
@@ -215,14 +215,14 @@ div.TileLayerControl li.highlight {
 div.stackControlToggle,
 div.stackControlToggle_hidden {
   position: absolute;
-  bottom: 0px;
-  left: 0px;
+  bottom: 0;
+  left: 0;
   overflow: hidden;
-  margin: 0px;
-  padding: 0px;
+  margin: 0;
+  padding: 0;
   width: 16px;
   height: 16px;
-  border: none 0px;
+  border: none 0;
   border-top: solid 4px #000000;
   border-right: solid 4px #000000;
   background: #0000FF url(../images/slice_control_toggle_hide.svg) no-repeat center;
@@ -233,19 +233,19 @@ div.stackControlToggle_hidden {
   background: #0000FF url(../images/slice_control_toggle_show.svg) no-repeat center;
 }
 
-div.sliceView div.sliceMouseCatcher {
+.sliceView div.sliceMouseCatcher {
   position: absolute;
-  top: 0px;
-  left: 0px;
-  margin: 0px;
-  padding: 0px;
+  top: 0;
+  left: 0;
+  margin: 0;
+  padding: 0;
   width: 100%;
   height: 100%;
   z-index: 5;
   cursor: move;
 }
 
-div.sliceView div.sliceBenchmark {
+.sliceView div.sliceBenchmark {
   position: absolute;
   left: 32px;
   bottom: 32px;
@@ -254,15 +254,15 @@ div.sliceView div.sliceBenchmark {
   border: solid 2px #0000FF;
   border-top: none;
   overflow: visible;
-  margin: 0px;
-  padding: 0px;
+  margin: 0;
+  padding: 0;
   vertical-align: bottom;
   z-index: 3;
 }
 
-div.sliceView div.sliceBenchmark p {
+.sliceView div.sliceBenchmark p {
   border: none;
-  margin: 0px;
+  margin: 0;
   margin-top: -12px;
   padding: 3px 6px 3px 14px;
   color: #FFFFFF;
@@ -270,12 +270,12 @@ div.sliceView div.sliceBenchmark p {
   overflow: hidden;
 }
 
-div.sliceView div.sliceBenchmark p span {
+.sliceView div.sliceBenchmark p span {
   padding: 3px 6px 3px 6px;
   background: #0000FF;
 }
 
-div.sliceView div.metadata {
+.sliceView div.metadata {
   position: absolute;
   right: 10px;
   top: 42px;
@@ -283,15 +283,15 @@ div.sliceView div.metadata {
   width: auto;
   border: none;
   overflow: visible;
-  margin: 0px;
-  padding: 0px;
+  margin: 0;
+  padding: 0;
   vertical-align: bottom;
   z-index: 3;
 }
 
-div.sliceView div.metadata p {
+.sliceView div.metadata p {
   border: none;
-  margin: 0px;
+  margin: 0;
   margin-top: -12px;
   padding: 3px 6px 3px 14px;
   color: #FFFFFF;
@@ -299,7 +299,7 @@ div.sliceView div.metadata p {
   overflow: hidden;
 }
 
-div.sliceView div.indicatorbar {
+.sliceView div.indicatorbar {
   position: absolute;
   right: 5px;
   top: 25px;
@@ -307,19 +307,19 @@ div.sliceView div.indicatorbar {
   width: auto;
   border: none;
   overflow: visible;
-  margin: 0px;
-  padding: 0px;
+  margin: 0;
+  padding: 0;
   vertical-align: bottom;
   z-index: 10;
 }
 
-div.sliceView p.neuronname {
+.sliceView p.neuronname {
   position: absolute;
   right: 60px;
-  top: 0px;
+  top: 0;
   width: auto;
   border: none;
-  margin: 0px;
+  margin: 0;
   padding: 3px 6px 3px 6px;
   vertical-align: bottom;
   z-index: 7;
@@ -327,17 +327,17 @@ div.sliceView p.neuronname {
   background-color: #060;
 }
 
-div.sliceView p.neuronname:empty {
+.sliceView p.neuronname:empty {
   display: none;
 }
 
 div.stackInfo,
 div.stackInfo_selected {
   position: absolute;
-  left: 0px;
-  top: 0px;
-  margin: 0px;
-  padding: 0px;
+  left: 0;
+  top: 0;
+  margin: 0;
+  padding: 0;
   width: 100%;
   color: #FFFFFF;
   background: url(../images/black20.png);
@@ -351,7 +351,7 @@ div.stackInfo_selected {
 
 div.stackInfo p,
 div.stackInfo_selected p {
-  margin: 0px;
+  margin: 0;
   padding: 3px 6px 3px 6px;
   background: #A0A0A0;
   color: #FFFFFF;
@@ -372,47 +372,47 @@ div.stackInfo_selected p.stackClose {
   float: right;
 }
 
-div.sliceView div.cropBox,
-div.sliceView div.cropBoxNonActive {
+.sliceView div.cropBox,
+.sliceView div.cropBoxNonActive {
   position: absolute;
-  top: 0px;
-  left: 0px;
-  margin: 0px;
-  padding: 0px;
+  top: 0;
+  left: 0;
+  margin: 0;
+  padding: 0;
   border: solid 1px #0000FF;
   background: url(../images/blue20.png);
   overflow: visible;
   z-index: 3;
 }
 
-div.sliceView div.cropBoxNonActive {
+.sliceView div.cropBoxNonActive {
   opacity: .5;
 }
 
-div.sliceView div.cropBox p.world,
-div.sliceView div.cropBox p.screen,
-div.sliceView div.cropBox p.close {
+.sliceView div.cropBox p.world,
+.sliceView div.cropBox p.screen,
+.sliceView div.cropBox p.close {
   position: absolute;
   right: -1px;
   bottom: -24px;
-  margin: 0px;
+  margin: 0;
   padding: 2px;
   background: #0000FF;
   color: #FFFFFF;
   white-space: nowrap;
 }
 
-div.sliceView div.cropBoxNonActive p.world,
-div.sliceView div.cropBoxNonActive p.screen,
-div.sliceView div.cropBoxNonActive p.close {
+.sliceView div.cropBoxNonActive p.world,
+.sliceView div.cropBoxNonActive p.screen,
+.sliceView div.cropBoxNonActive p.close {
     visibility: hidden;
 }
 
-div.sliceView div.cropBox p.screen {
+.sliceView div.cropBox p.screen {
   bottom: -47px;
 }
 
-div.sliceView div.cropBox p.close {
+.sliceView div.cropBox p.close {
   top: -22px;
   height: 12px;
   z-index: 6;
@@ -424,6 +424,6 @@ div.sliceView div.cropBox p.close {
 }
 
 div.sliceTiles > * {
-  -webkit-transform: translateZ(0); /* Pre-chrome36 */
+  transform: translateZ(0);
   will-change: top, left;     /* Post-chrome36 */
 }

@@ -37,8 +37,8 @@
   padding: 0 0 0 6px;
   margin: 2px 2px;
   cursor: pointer;
-  border-radius: 5px;
   -webkit-border-radius: 5px;
+  border-radius: 5px;
 }
 
 .resultTags li:hover {
@@ -49,9 +49,8 @@
   display: inline;
   background-image: url(../images/minus_small.png);
   background-color: #eef;
-  background-position: right center;
+  background-position: center;
   background-repeat: no-repeat;
-  padding: 0 13px 0 0;
-  margin: 0 4px;
+  padding: 0 17px 0 4px;
   cursor: pointer;
 }

@@ -1,9 +1,9 @@
 div.resize_handle_h {
-  margin: 0px;
-  padding: 0px;
+  margin: 0;
+  padding: 0;
   position: absolute;
-  right: 0px;
-  top: 0px;
+  right: 0;
+  top: 0;
   overflow: hidden;
   width: 4px;
   height: 100%;
@@ -13,11 +13,11 @@ div.resize_handle_h {
 }
 
 div.resize_handle_v {
-  margin: 0px;
-  padding: 0px;
+  margin: 0;
+  padding: 0;
   position: absolute;
-  left: 0px;
-  bottom: 0px;
+  left: 0;
+  bottom: 0;
   overflow: hidden;
   height: 4px;
   width: 100%;

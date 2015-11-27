@@ -1617,12 +1617,19 @@ var WindowMaker = new function()
 
     var tabs = appendTabs(bar, SP.widgetID, ['Main', 'Options']);
 
+    var compartment = createSelect("synapse_plot_compartment" + SP.widgetID,
+                                   ["upstream (e.g. dendrite)", "downstream (e.g. axon)"]);
+    compartment.onchange = SP.onchangeCompartment.bind(SP, compartment);
+
     appendToTab(tabs['Main'],
         [[document.createTextNode('From')],
          [CATMAID.skeletonListSources.createSelect(SP)],
          ['Append', SP.loadSource.bind(SP)],
          ['Clear', SP.clear.bind(SP)],
          ['Refresh', SP.update.bind(SP)],
+         [document.createTextNode(" - Compartment: ")],
+         [compartment],
+         [document.createTextNode(" - ")],
          ['Export SVG', SP.exportSVG.bind(SP)],
          ['Export CSV', SP.exportCSV.bind(SP)]]);
 

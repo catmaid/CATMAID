@@ -38,6 +38,9 @@ var SynapsePlot = function() {
   // In percent of the row height
   this.jitter = 0.25;
 
+	// Whether to plot the distribution for axon or dendrite
+	this.compartment = this.UPSTREAM;
+
   // For coloring according to pre_skids
   this.pre_models = {};
 };
@@ -52,6 +55,9 @@ SynapsePlot.prototype.getName = function() {
 
 SynapsePlot.prototype.AIS_COMPUTED = 1;
 SynapsePlot.prototype.AIS_TAG = 2;
+
+SynapsePlot.prototype.DOWNSTREAM = 3; // axon
+SynapsePlot.prototype.UPSTREAM = 4; // dendrite
 
 SynapsePlot.prototype.destroy = function() {
   this.clear();
@@ -258,6 +264,11 @@ SynapsePlot.prototype.onchangeColoring = function(select) {
   this.redraw();
 };
 
+SynapsePlot.prototype.onchangeCompartment = function(select) {
+	this.compartment = select.value.startsWith("upstream") ? this.UPSTREAM : this.DOWNSTREAM;
+	this.updateGraph();
+};
+
 /** Return the treenode ID of the most proximal node of the axon initial segment, or null if not findable. */
 SynapsePlot.prototype.findAxonInitialSegment = function(morphology) {
   // Method 1:
@@ -310,12 +321,17 @@ SynapsePlot.prototype.updateGraph = function() {
       CATMAID.msg("Warning", "Could not find the axon initial segment for " + CATMAID.NeuronNameService.getInstance().getName(post_skid));
       return;
     }
-    // The arbor, pruned and rerooted at the axon initial segment (ais_node)
+		// Choose the compartment: upstream or downstream of the ais_node
     var arbor = morphology.ap.arbor.clone();
-    Object.keys(arbor.subArbor(ais_node).edges).forEach(function(node) {
-      delete arbor.edges[node];
-    });
-    arbor.reroot(ais_node);
+		var sub = arbor.subArbor(ais_node);
+		if (this.UPSTREAM === this.compartment) {
+			// Keep the dendrite, remove the axon
+    	Object.keys(sub.edges).forEach(function(node) { delete arbor.edges[node]; });
+		} else { // DOWNSTREAM: the axon
+			arbor = sub;
+		}
+		// Make measurements relative to the cut point (the axon initial segment)
+		arbor.reroot(ais_node);
     //
     var distances = arbor.nodesDistanceTo(ais_node,
       (function(child, paren) {

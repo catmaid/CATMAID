@@ -38,11 +38,14 @@ var SynapsePlot = function() {
   // In percent of the row height
   this.jitter = 0.25;
 
-	// Whether to plot the distribution for axon or dendrite
-	this.compartment = this.UPSTREAM;
+  // Whether to plot the distribution for axon or dendrite
+  this.compartment = this.UPSTREAM;
 
   // For coloring according to pre_skids
   this.pre_models = {};
+
+  // For smoothing the arbor with a Gaussian convolution
+  this.sigma = 200;
 };
 
 SynapsePlot.prototype = {};
@@ -265,8 +268,16 @@ SynapsePlot.prototype.onchangeColoring = function(select) {
 };
 
 SynapsePlot.prototype.onchangeCompartment = function(select) {
-	this.compartment = select.value.startsWith("upstream") ? this.UPSTREAM : this.DOWNSTREAM;
-	this.updateGraph();
+  this.compartment = select.value.startsWith("upstream") ? this.UPSTREAM : this.DOWNSTREAM;
+  this.updateGraph();
+};
+
+SynapsePlot.prototype.onchangeSigma = function(ev) {
+  var sigma = Number(ev.srcElement.value);
+  if (!Number.isNaN(sigma) && sigma !== this.sigma && sigma > 0) {
+    this.sigma = sigma;
+    this.updateGraph();
+  }
 };
 
 /** Return the treenode ID of the most proximal node of the axon initial segment, or null if not findable. */
@@ -316,23 +327,25 @@ SynapsePlot.prototype.updateGraph = function() {
   Object.keys(this.morphologies).forEach(function(post_skid) {
     var morphology = this.morphologies[post_skid];
     var ais_node = this.findAxonInitialSegment(morphology);
-		morphology.ais_node = ais_node; // store even if null
+    morphology.ais_node = ais_node; // store even if null
     if (!ais_node) {
       CATMAID.msg("Warning", "Could not find the axon initial segment for " + CATMAID.NeuronNameService.getInstance().getName(post_skid));
       return;
     }
-		// Choose the compartment: upstream or downstream of the ais_node
+    // Choose the compartment: upstream or downstream of the ais_node
     var arbor = morphology.ap.arbor.clone();
-		var sub = arbor.subArbor(ais_node);
-		if (this.UPSTREAM === this.compartment) {
-			// Keep the dendrite, remove the axon
-    	Object.keys(sub.edges).forEach(function(node) { delete arbor.edges[node]; });
-		} else { // DOWNSTREAM: the axon
-			arbor = sub;
-		}
-		// Make measurements relative to the cut point (the axon initial segment)
-		arbor.reroot(ais_node);
+    var sub = arbor.subArbor(ais_node);
+    if (this.UPSTREAM === this.compartment) {
+      // Keep the dendrite, remove the axon
+      Object.keys(sub.edges).forEach(function(node) { delete arbor.edges[node]; });
+    } else { // DOWNSTREAM: the axon
+      arbor = sub;
+    }
+    // Make measurements relative to the cut point (the axon initial segment)
+    arbor.reroot(ais_node);
     //
+    var positions = this.sigma > 0 ? arbor.smoothPositions(morphology.positions, this.sigma)
+                                   : morphology.positions;
     var distances = arbor.nodesDistanceTo(ais_node,
       (function(child, paren) {
         return this[child].distanceTo(this[paren]);
@@ -523,13 +536,13 @@ SynapsePlot.prototype._redraw = function(container, containerID) {
         .attr("class", "legend")
         .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; })
         .on("click", (function(skid) {
-					var ais_node = this.morphologies[skid].ais_node;
-					if (!ais_node) {
-						CATMAID.msg("Warning", "No axon initial segment found for " + CATMAID.NeuronNameService.getInstance().getName(skid));
-					} else {
-						SkeletonAnnotations.staticMoveToAndSelectNode(ais_node);
-					}
-				}).bind(this));
+          var ais_node = this.morphologies[skid].ais_node;
+          if (!ais_node) {
+            CATMAID.msg("Warning", "No axon initial segment found for " + CATMAID.NeuronNameService.getInstance().getName(skid));
+          } else {
+            SkeletonAnnotations.staticMoveToAndSelectNode(ais_node);
+          }
+        }).bind(this));
 
     legend.append("rect")
       .attr("x", width - 18)

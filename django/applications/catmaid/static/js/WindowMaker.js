@@ -1670,6 +1670,14 @@ var WindowMaker = new function()
     var choice_coloring = CATMAID.skeletonListSources.createPushSelect(SP, "coloring");
     choice_coloring.onchange = SP.onchangeColoring.bind(SP);
 
+    var sigma = createNumericField("synapse_plot_smooth" + SP.widgetID,
+                                   "Arbor smoothing: ",
+                                   "Gaussian smoothing sigma",
+                                   SP.sigma,
+                                   " nm",
+                                   SP.onchangeSigma.bind(SP),
+                                   5);
+
     appendToTab(tabs['Options'],
         [[nf],
          [document.createTextNode(' Only in: ')],
@@ -1681,7 +1689,8 @@ var WindowMaker = new function()
          [document.createTextNode(' Jitter: ')],
          [jitter],
          [document.createTextNode(' Color by: ')],
-         [choice_coloring]]);
+         [choice_coloring],
+         [sigma]]);
 
 
 

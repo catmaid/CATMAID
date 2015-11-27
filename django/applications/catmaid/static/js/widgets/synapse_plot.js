@@ -349,7 +349,7 @@ SynapsePlot.prototype.updateGraph = function() {
     var distances = arbor.nodesDistanceTo(ais_node,
       (function(child, paren) {
         return this[child].distanceTo(this[paren]);
-      }).bind(morphology.positions)).distances;
+      }).bind(positions)).distances;
     // Define synapses
     // for each treenodeID in the post_skid
     Object.keys(morphology.posts).forEach(function(treenodeID) {

@@ -141,9 +141,11 @@ SynapsePlot.prototype.append = function(models) {
 
 SynapsePlot.prototype._append = function(models) {
   var existing = this.models;
+	var updated = false;
 
   var to_add = Object.keys(models).reduce(function(o, skid) {
     if (existing.hasOwnProperty(skid)) {
+			updated = true;
       existing[skid] = models[skid]; // update: might make it invisible, change color, etc
     } else {
       o[skid] = models[skid];
@@ -152,7 +154,10 @@ SynapsePlot.prototype._append = function(models) {
   }, {});
 
   var skids = Object.keys(to_add);
-  if (0 === skids.length) return;
+  if (0 === skids.length) {
+		if (updated) this.redraw(); // recolor
+		return;
+	}
 
   this.morphologies = {};
 

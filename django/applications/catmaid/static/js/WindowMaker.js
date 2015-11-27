@@ -1617,8 +1617,7 @@ var WindowMaker = new function()
 
     var tabs = appendTabs(bar, SP.widgetID, ['Main', 'Options']);
 
-    var compartment = createSelect("synapse_plot_compartment" + SP.widgetID,
-                                   ["upstream (e.g. dendrite)", "downstream (e.g. axon)"]);
+    var compartment = createSelect("synapse_plot_compartment" + SP.widgetID, SP.COMPARTMENTS);
     compartment.onchange = SP.onchangeCompartment.bind(SP, compartment);
 
     appendToTab(tabs['Main'],

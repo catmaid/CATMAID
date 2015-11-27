@@ -59,8 +59,16 @@ SynapsePlot.prototype.getName = function() {
 SynapsePlot.prototype.AIS_COMPUTED = 1;
 SynapsePlot.prototype.AIS_TAG = 2;
 
-SynapsePlot.prototype.DOWNSTREAM = 3; // axon
-SynapsePlot.prototype.UPSTREAM = 4; // dendrite
+SynapsePlot.prototype.DOWNSTREAM = 0; // axon
+SynapsePlot.prototype.UPSTREAM = 1; // dendrite
+SynapsePlot.prototype.MOST_POSTSYNAPTIC = 2; // generally the dendrite
+SynapsePlot.prototype.LEAST_POSTSYNAPTIC = 3; // generally the axon
+
+SynapsePlot.prototype.COMPARTMENTS =
+  ["upstream (e.g. dendrite)",
+  "downstream (e.g. axon)",
+  "most postsynaptic",
+  "least presynaptic"];
 
 SynapsePlot.prototype.destroy = function() {
   this.clear();
@@ -268,7 +276,9 @@ SynapsePlot.prototype.onchangeColoring = function(select) {
 };
 
 SynapsePlot.prototype.onchangeCompartment = function(select) {
-  this.compartment = select.value.startsWith("upstream") ? this.UPSTREAM : this.DOWNSTREAM;
+	var index = this.COMPARTMENTS.indexOf(select.value);
+	if (-1 === index) return;
+	this.compartment = index;
   this.updateGraph();
 };
 
@@ -335,12 +345,35 @@ SynapsePlot.prototype.updateGraph = function() {
     // Choose the compartment: upstream or downstream of the ais_node
     var arbor = morphology.ap.arbor.clone();
     var sub = arbor.subArbor(ais_node);
-    if (this.UPSTREAM === this.compartment) {
-      // Keep the dendrite, remove the axon
+
+		var compartment = this.compartment;
+
+    if ( this.MOST_POSTSYNAPTIC  === this.compartment
+			|| this.LEAST_POSTSYNAPTIC === this.compartment) {
+			// Count postsynaptic sites in the subarbor
+			var ap = morphology.ap;
+			var n_axon_posts = sub.nodesArray().reduce(function(sum, node) {
+				return sum + (ap.inputs[node] ? 1 : 0);
+			}, 0);
+			// Chose between UPSTREAM and DOWNSTREAM
+			var fraction = n_axon_posts / ap.n_inputs;
+			switch (this.compartment) {
+				case this.MOST_POSTSYNAPTIC:  compartment = fraction < 0.5 ? this.UPSTREAM   : this.DOWNSTREAM; break;
+				case this.LEAST_POSTSYNAPTIC: compartment = fraction < 0.5 ? this.DOWNSTREAM : this.UPSTREAM;   break;
+			}
+		}
+
+    if (this.UPSTREAM === compartment) {
+      // Remove the subarbor
       Object.keys(sub.edges).forEach(function(node) { delete arbor.edges[node]; });
-    } else { // DOWNSTREAM: the axon
+    } else if (this.DOWNSTREAM === compartment) {
+			// Keep only the subarbor
       arbor = sub;
-    }
+		} else {
+			CATMAID.msg("ERROR", "Invalid compartment.");
+			return;
+		}
+
     // Make measurements relative to the cut point (the axon initial segment)
     arbor.reroot(ais_node);
     //

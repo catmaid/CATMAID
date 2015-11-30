@@ -131,6 +131,50 @@ def requires_user_role(roles):
         return wraps(f)(inner_decorator)
     return decorated_with_requires_user_role
 
+
+def requires_user_role_for_any_project(roles):
+    """
+    This decorator will return a JSON error response unless the user is logged
+    in and has at least one of the indicated roles or admin role for any
+    project.
+    """
+
+    def decorated_with_requires_user_role_for_any_project(f):
+        def inner_decorator(request, roles=roles, *args, **kwargs):
+            u = request.user
+
+            # Check for admin privs in all cases.
+            role_codesnames = set()
+            role_codesnames.add('can_administer')
+
+            if isinstance(roles, str):
+                roles = [roles]
+            for role in roles:
+                if role == UserRole.Annotate:
+                    role_codesnames.add('can_annotate')
+                elif role == UserRole.Browse:
+                    role_codesnames.add('can_browse')
+
+            has_role = get_objects_and_perms_for_user(u,
+                                                      role_codesnames,
+                                                      Project,
+                                                      any_perm=True)
+
+            if len(has_role):
+                # The user can execute the function.
+                return f(request, *args, **kwargs)
+            else:
+                msg = "The user '%s' with ID %s does not have a necessary " \
+                      "role in any project" \
+                      % (u.first_name + ' ' + u.last_name, u.id)
+                return HttpResponse(
+                        json.dumps({'error': msg, 'permission_error': True}),
+                        content_type='text/json')
+
+        return wraps(f)(inner_decorator)
+    return decorated_with_requires_user_role_for_any_project
+
+
 def get_objects_and_perms_for_user(user, codenames, klass, use_groups=True, any_perm=False):
     """ Similar to what guardian's get_objects_for_user method does,
     this method return a dictionary of object IDs (!) of model klass

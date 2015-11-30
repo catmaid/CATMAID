@@ -1,10 +1,12 @@
 from django import forms
 from django.contrib.gis.db import models as spatial_models
+from django.core.validators import RegexValidator
 from django.db import models
 from django.db.models import Q
 from django.db.models.signals import pre_save, post_save, post_syncdb
 from django.dispatch import receiver
 from datetime import datetime
+from jsonfield import JSONField
 import sys
 import re
 import urllib
@@ -27,10 +29,12 @@ CELL_BODY_CHOICES = (
     ('l', 'Local'),
     ('n', 'Non-Local' ))
 
+
 class UserRole(object):
     Admin = 'Admin'
     Annotate = 'Annotate'
     Browse = 'Browse'
+
 
 class Project(models.Model):
     class Meta:
@@ -385,11 +389,28 @@ class Message(models.Model):
     text = models.TextField(default='New message', blank=True, null=True)
     action = models.TextField(blank=True, null=True)
 
-class Settings(models.Model):
+
+class ClientDatastore(models.Model):
     class Meta:
-        db_table = "settings"
-    key = models.TextField(primary_key=True)
-    value = models.TextField(null=True)
+        db_table = "client_datastore"
+    name = models.CharField(max_length=255, unique=True, validators=[
+            RegexValidator(r'^[\w-]+$',
+                           'Only alphanumeric characters and hyphens are allowed.')])
+
+
+class ClientData(models.Model):
+    class Meta:
+        db_table = "client_data"
+        # This quadruple is effectively a multicolumn primary key.
+        unique_together = (('datastore', 'key', 'project', 'user'))
+    datastore = models.ForeignKey(ClientDatastore)
+    project = models.ForeignKey(Project, blank=True, null=True)
+    user = models.ForeignKey(User, blank=True, null=True)
+    key = models.CharField(max_length=255)
+    # TODO: JSONField does not use Postgres JSON type, does not validate that
+    # text content is valid JSON. Replace with Django's JSONField when we reach
+    # Django 1.9/Postgres 9.4.
+    value = JSONField(default={})
 
 
 class UserFocusedManager(models.Manager):

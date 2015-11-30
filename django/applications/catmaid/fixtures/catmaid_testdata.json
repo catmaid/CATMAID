@@ -6510,13 +6510,6 @@
     }
   }, 
   {
-    "pk": "schema_version", 
-    "model": "catmaid.settings", 
-    "fields": {
-      "value": "2012-07-10T20:44:35"
-    }
-  }, 
-  {
     "pk": 1, 
     "model": "catmaid.textlabel", 
     "fields": {

@@ -6,6 +6,8 @@ from django.views.generic import TemplateView
 from rest_framework_swagger.urlparser import UrlParser
 
 from catmaid.views import CatmaidView, ExportWidgetView
+from catmaid.control.client import ClientDataList, \
+                                   ClientDatastoreDetail, ClientDatastoreList
 from catmaid.control.suppressed_virtual_treenode import SuppressedVirtualTreenodeDetail, SuppressedVirtualTreenodeList
 
 
@@ -58,6 +60,13 @@ urlpatterns += patterns('catmaid.control.message',
     (r'^messages/list$', 'list_messages'),
     (r'^messages/mark_read$', 'read_message'),
     (r'^messages/latestunreaddate', 'get_latest_unread_date'),
+)
+
+# CATMAID client datastore and data access
+urlpatterns += patterns('catmaid.control.client',
+    (r'^client/datastores/$', ClientDatastoreList.as_view()),
+    (r'^client/datastores/(?P<name>[\w-]+)$', ClientDatastoreDetail.as_view()),
+    (r'^client/datastores/(?P<name>[\w-]+)/$', ClientDataList.as_view()),
 )
 
 # General project model access

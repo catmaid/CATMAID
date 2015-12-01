@@ -422,7 +422,16 @@
   CATMAID.SkeletonSourceManager = SkeletonSourceManager;
 
   // Create a default instance within the CATMAID namespace
-  CATMAID.skeletonListSources = new SkeletonSourceManager();
+  var singleton;
+  Object.defineProperty(CATMAID, "skeletonListSources", {
+    get: function() {
+      if (!singleton) {
+        singleton = new SkeletonSourceManager();
+      }
+      return singleton;
+    },
+    set: function() { /* No setting */ }
+  });
 
   /**
    * Helper function to  test if to values are the same.

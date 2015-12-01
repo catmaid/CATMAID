@@ -1009,13 +1009,6 @@ SkeletonAnnotations.SVGOverlay.prototype.activateNode = function(node) {
     atn.set(null, null);
     project.setSelectObject( null, null );
   }
-
-  // (de)highlight in SkeletonSource instances if any if different from the last
-  // activated skeleton
-  if (last_skeleton_id !== SkeletonAnnotations.getActiveSkeletonId()) {
-    CATMAID.skeletonListSources.highlight(SkeletonAnnotations.activeSkeleton,
-        SkeletonAnnotations.getActiveSkeletonId());
-  }
 };
 
 /**

@@ -243,6 +243,11 @@
   };
 
   /**
+   * A no-op implementation for highliing a skeleton.
+   */
+  SkeletonSource.prototype.highlight = function() {};
+
+  /**
    * Represents a subscription to a skeleton source.
    *
    * @param source  The source subscribed to

@@ -20,7 +20,11 @@
 
     // Register with neuron manager to get updates about deleted neurons
     CATMAID.neuronController.on(CATMAID.neuronController.EVENT_SKELETON_DELETED,
-      function(skeletonID) { this.removeSkeletons([skeletonID]); }, this);
+        this.removeSkeleton, this);
+
+    // Register to active node changes to highlight skeleton in sources
+    SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
+        this.handleActiveNodeChange, this);
   };
 
   SkeletonSourceManager.prototype = {};
@@ -32,6 +36,15 @@
   SkeletonSourceManager.prototype.add = function(source) {
     this.sources[source.getName()] = source;
     this.orderedSources.push(source.getName());
+  };
+
+  SkeletonSourceManager.prototype.destroy = function() {
+    CATMAID.neuronController.off(CATMAID.neuronController.EVENT_SKELETONS_JOINED,
+        this.replaceSkeleton);
+    CATMAID.neuronController.off(CATMAID.neuronController.EVENT_SKELETON_DELETED,
+        this.removeSkeleton);
+    SkeletonAnnotations.off(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
+        this.handleActiveNodeChange);
   };
 
   /**
@@ -370,12 +383,27 @@
       }, {});
   };
 
+  /**
+   * React to a node change event by selecting this node in all souces.
+   */
+  SkeletonSourceManager.prototype.handleActiveNodeChange = function(node, skeletonChanged) {
+    // (de)highlight in SkeletonSource instances if any if different from the last
+    // activated skeleton
+    if (skeletonChanged) {
+      this.highlight(SkeletonAnnotations.activeSkeleton, node.skeleton_id);
+    }
+  };
+
   SkeletonSourceManager.prototype.highlight = function(caller, skeleton_id) {
     Object.keys(this.sources).forEach(function(name) {
       var source = this.sources[name];
       if (source === caller) return;
       source.highlight(skeleton_id);
     }, this);
+  };
+
+  SkeletonSourceManager.prototype.removeSkeleton = function(skeletonID) {
+    return this.removeSkeletons([skeletonID]);
   };
 
   SkeletonSourceManager.prototype.removeSkeletons = function(skeleton_ids) {

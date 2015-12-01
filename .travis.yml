@@ -42,8 +42,8 @@ before_script:
 script:
   - jshint --config=.travis.jshintrc --exclude-path=.travis.jshintignore django/applications
   - cd django/applications/catmaid/static/css
-  - csslint .
-  - cd ../../../../..
+  - $TRAVIS_BUILD_DIR/.bin/csslint .
+  - cd $TRAVIS_BUILD_DIR
   - cd django/projects/mysite
   - python manage.py syncdb --migrate --noinput
   - python manage.py collectstatic --link --noinput

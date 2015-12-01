@@ -5,12 +5,22 @@
 
   "use strict";
 
-  // A Skeleton source based on the active node in the tracing layer
+  /**
+   * A proxy skeleton source based on the active node in the tracing layer.
+   */
   var ActiveSkeleton = function() {
-    this.registerSource();
+    CATMAID.SkeletonSource.call(this, true);
+
+    // Create current model for active skeleton
+    this.model = this.createModel();
+
+    // Listen to active skeleton changes and create skeleton source events
+    SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
+        this._handleActiveNodeChange, this);
   };
 
-  ActiveSkeleton.prototype = new CATMAID.SkeletonSource();
+  ActiveSkeleton.prototype = Object.create(CATMAID.SkeletonSource.prototype);
+  ActiveSkeleton.prototype.constructor = ActiveSkeleton;
 
   ActiveSkeleton.prototype.getName = function(skeleton_id) {
     return "Active skeleton";
@@ -53,6 +63,16 @@
 
   ActiveSkeleton.prototype.highlight = function(skeleton_id) {
     TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeleton_id);
+  };
+
+  ActiveSkeleton.prototype._handleActiveNodeChange = function(node, skeletonChange) {
+    if (skeletonChange) {
+      if (this.model) {
+        this.trigger(this.EVENT_MODELS_REMOVED, this, [this.model.id])
+      }
+      this.model = this.createModel();
+      this.trigger(this.EVENT_MODELS_ADDED, this, [this.model.id]);
+    }
   };
 
   // Make ActiveSkeleton available in CATMAID namespace

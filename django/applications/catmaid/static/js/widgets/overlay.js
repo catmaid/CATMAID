@@ -54,8 +54,6 @@ var SkeletonAnnotations = {
   SUBTYPE_SYNAPTIC_CONNECTOR : "synaptic-connector",
   SUBTYPE_ABUTTING_CONNECTOR : "abutting-connector",
 
-  activeSkeleton : new CATMAID.ActiveSkeleton(),
-
   // Event name constants
   EVENT_ACTIVE_NODE_CHANGED: "tracing_active_node_changed",
   EVENT_SKELETON_CHANGED: "tracing_skeleton_changed",
@@ -511,6 +509,12 @@ SkeletonAnnotations.getZOfVirtualNode = SkeletonAnnotations.getVirtualNodeCompon
   };
 
 })();
+
+/**
+ * Maintain a skeleton source for the active skeleton. Widgets can register to
+ * it.
+ */
+SkeletonAnnotations.activeSkeleton = new CATMAID.ActiveSkeleton();
 
 /**
  * The constructor for SVGOverlay.

@@ -492,6 +492,26 @@ div#classification_graph_object img.roiimage {
   padding: .2em 1em;
 }
 
+.sourcepanel {
+  clear: both;
+  float: left;
+  margin-bottom: 1em;
+}
+
+.sourcepanel label,
+.sourcepanel button,
+.sourcepanel select {
+  margin-left: 0.25em;
+  margin-right: 0.25em;
+}
+
+.sourcepanel input[type=checkbox] {
+  position: relative;
+  margin-left: 0;
+  margin-bottom: 0;
+  bottom: -0.2em;
+}
+
 .partner_table {
   padding: 3px;
   border-collapse: collapse;

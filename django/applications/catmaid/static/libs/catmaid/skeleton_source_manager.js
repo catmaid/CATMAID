@@ -25,11 +25,19 @@
 
   SkeletonSourceManager.prototype = {};
 
+  /**
+   * Add a new source to this manager. It is references by its name
+   * [source.getName()], which therefore should be unique.
+   */
   SkeletonSourceManager.prototype.add = function(source) {
     this.sources[source.getName()] = source;
     this.orderedSources.push(source.getName());
   };
 
+  /**
+   * Remove a source from this manager. It is references by its name
+   * [source.getName()], which therefore should be unique.
+   */
   SkeletonSourceManager.prototype.remove = function(source) {
     delete this.sources[source.getName()];
     var orderIndex = this.orderedSources.indexOf(source.getName());
@@ -43,14 +51,186 @@
     }, this);
   };
 
+  var defaultSourceControlOptions = {
+    showColorOption: true,
+    showGroupOption: true,
+    colors: true,
+    groups: false
+  };
+
+  /**
+   * Create a complete set of source management controls.
+   */
+  SkeletonSourceManager.prototype.createSourceControls = function(source, options) {
+    options = options || defaultSourceControlOptions;
+    // The panel wraps both controls and source list
+    var panel = document.createElement('div');
+
+
+    var controls = document.createElement('div');
+    panel.appendChild(controls);
+
+    // Source select
+    var from = document.createElement('label');
+    var fromSelect = this.createUnboundSelect(source.getName());
+    from.appendChild(document.createTextNode('From'));
+    from.appendChild(fromSelect);
+    controls.appendChild(from);
+
+    // Color checkbox
+    var colorsCb = document.createElement('input');
+    colorsCb.setAttribute('type', 'checkbox');
+    if (options.colors) {
+      colorsCb.setAttribute('checked', 'checked');
+    }
+    var colors = document.createElement('label');
+    colors.appendChild(colorsCb);
+    colors.appendChild(document.createTextNode('Use colors'));
+
+    if (options.showColorOption) {
+      controls.appendChild(colors);
+    }
+
+    // Groups
+    /*
+    var groupsCb = document.createElement('input');
+    groupsCb.setAttribute('type', 'checkbox');
+    if (options.groups) {
+      groupsCb.setAttribute('checked', 'checked');
+    }
+    var groups = document.createElement('label');
+    groups.appendChild(groupsCb);
+    groups.appendChild(document.createTextNode('As group'));
+
+    if (options.showColorOption) {
+      controls.appendChild(groups);
+    }
+    */
+
+    // Pull button
+    var append = document.createElement('button');
+    append.appendChild(document.createTextNode('Pull'));
+    controls.appendChild(append);
+    append.onclick = (function(e) {
+      var fromSource = this.getSource(fromSelect.value);
+      if (fromSource) {
+        var models = fromSource.getSelectedSkeletonModels();
+        source.append(models);
+      }
+    }).bind(this);
+
+    // Subscriptions: combination operation
+    var op = document.createElement('label');
+    var opSelect = document.createElement('select');
+    opSelect.options.add(new Option('Union', 'and'));
+    opSelect.options.add(new Option('Subtract', 'subtract'));
+    op.appendChild(document.createTextNode('Operation'));
+    op.appendChild(opSelect);
+    controls.appendChild(op);
+
+    // Subscriptions: subscription mode
+    var mode = document.createElement('label');
+    var modeSelect = document.createElement('select');
+    modeSelect.options.add(new Option('None', 'all', true, true));
+    modeSelect.options.add(new Option('Only additions', 'additions-only'));
+    modeSelect.options.add(new Option('Only removals', 'removals-only'));
+    modeSelect.options.add(new Option('Only updates', 'updates-only'));
+    mode.appendChild(document.createTextNode('Filter'));
+    mode.appendChild(modeSelect);
+    controls.appendChild(mode);
+
+    // Subscriptions: go
+    var subscribe = document.createElement('button');
+    subscribe.appendChild(document.createTextNode('Subscribe'));
+    controls.appendChild(subscribe);
+
+    var listContainer = document.createElement('div');
+    panel.appendChild(listContainer);
+    panel.style.width = "100%";
+
+    // Add a list entry for every source subscribed plus the this source
+    var subscriptions = source.getSourceSubscriptions();
+
+    // Populate a datatable
+    var table = document.createElement('table');
+    table.style.width = "100%";
+    listContainer.appendChild(table);
+    var datatable = $(table).DataTable({
+      dom: "t",
+      data: subscriptions,
+      columns: [{
+        "width": "10px",
+        "render": function(data, type, row, meta) {
+          return '<span class="ui-icon ui-icon-close action-remove" alt="Remove" title="Remove"></span>';
+        }
+      }, {
+        "data": "source.getName()"
+      }, {
+        "render": function(data, type, row, meta) {
+          var checked = row.colors ? 'checked="checked"' : '';
+          return '<label><input type="checkbox" ' + checked + ' />Colors</label>'
+        }
+      }, {
+        "render": function(data, type, row, meta) {
+          return row.op;
+        }
+      }, {
+        "render": function(data, type, row, meta) {
+          return row.mode;
+        }
+      }],
+      language: {
+        "zeroRecords": "No skeleton sources subscribed to"
+      }
+    });
+
+    $(table).on("click", "td .action-remove", source, function(e) {
+      var tr = $(this).closest("tr");
+      var subscription = datatable.row(tr).data();
+      e.data.removeSubscripition(subscription);
+      datatable.row(tr).remove().draw();
+    });
+
+    // Add subscription handler
+    subscribe.onclick = (function(e) {
+      var fromSource = this.getSource(fromSelect.value);
+      if (fromSource) {
+        var group;
+        /*
+        if (groupsCb.checked) {
+          // TODO: ask for group name
+          group = "Testgroup";
+        }
+        */
+        var syncColors = colorsCb.checked;
+        var op = opSelect.value;
+        var mode = modeSelect.value;
+        // Create and store new subscription
+        var subscription = new CATMAID.SkeletonSourceSubscription(
+            fromSource, syncColors, op, mode, group);
+        source.addSubscription(subscription);
+        // Update UI
+        datatable.row.add(subscription).draw();
+      }
+    }).bind(this);
+
+    return panel;
+  };
+
+  /**
+   * Create a list of Option instances, one for each registered source. This is
+   * useful to create select elements for all managed sources.
+   */
   SkeletonSourceManager.prototype.createOptions = function() {
     return Object.keys(this.sources).sort().map(function(name) {
       return new Option(name, name);
     }, this);
   };
 
-  /** Updates all existing 'select' GUI elements listing sources.
-   *  Assumes names are unique. */
+  /**
+   * Updates all existing 'select' GUI elements listing sources. Assumes names
+   * are unique.
+   */
   SkeletonSourceManager.prototype.updateGUI = function() {
     var options = this.createOptions.bind(this);
     var sources = this.sources;

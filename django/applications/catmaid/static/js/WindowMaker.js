@@ -902,11 +902,6 @@ var WindowMaker = new function()
     save.onclick = ST.saveToFile.bind(ST);
     buttons.appendChild(save);
 
-    buttons.appendChild(document.createTextNode(' Sync to:'));
-    var link = CATMAID.skeletonListSources.createPushSelect(ST, 'link');
-    link.onchange = ST.syncLink.bind(ST, link);
-    buttons.appendChild(link);
-
     var annotate = document.createElement('input');
     annotate.setAttribute("type", "button");
     annotate.setAttribute("value", "Annotate");
@@ -1081,7 +1076,7 @@ var WindowMaker = new function()
           // Update table information
           table.updateTableInfo();
         }
-        table.notifyLink(skeleton);
+        this.trigger(this.EVENT_MODELS_CHANGED, [skeleton]);
       })
       .on("click", "td .action-changecolor", ST, function(e) {
         var table = e.data;
@@ -1128,17 +1123,10 @@ var WindowMaker = new function()
             rootWindow.replaceChild(new CMWHSplitNode(rootWindow.getChild(), win));
         } else {
           webglwin.getParent().replaceChild(new CMWVSplitNode(webglwin, win), webglwin);
-          // Set as push target
-          for (var i = 0; i < link.options.length; ++i) {
-            if (link.options[i].value === webglwin_name) {
-              link.selectedIndex = i;
-              link.onchange(); // set the linkTarget
-              break;
-            }
-          }
         }
     }
 
+    addSourceControlsToggle(win, ST);
     addButtonDisplayToggle(win);
 
     CATMAID.skeletonListSources.updateGUI();

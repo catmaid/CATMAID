@@ -53,7 +53,6 @@
   };
 
   SelectionTable.prototype.destroy = function() {
-    delete this.linkTarget;
     this.clear(); // clear after clearing linkTarget, so it doesn't get cleared
     this.unregisterInstance();
     this.unregisterSource();
@@ -222,8 +221,9 @@
         skeleton.setVisible(this.all_visible);
         updated[skeleton.id] = skeleton.clone();
       }, this);
-    if (this.linkTarget && Object.keys(updated).length > 0) {
-      this.updateLink(updated);
+    var updatedSkeletonIds = Object.keys(updated);
+    if (updatedSkeletonIds.length > 0) {
+      this.trigger(this.EVENT_MODELS_CHANGED, this, updatedSkeletonIds);
     }
     // Update UI
     this.gui.invalidate();
@@ -403,6 +403,7 @@
     this.gui.update();
 
     if (this.linkTarget) {
+      this.trigger(this.EVENT_SOURCE_UPDATED, ids);
       // Prevent propagation loop by checking if the target has the skeletons anymore
       if (ids.some(this.linkTarget.hasSkeleton, this.linkTarget)) {
         this.linkTarget.removeSkeletons(ids);

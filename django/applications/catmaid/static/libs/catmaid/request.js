@@ -117,7 +117,7 @@ RequestQueue = function()
       queue[ 0 ].request,
       true );
     xmlHttp.setRequestHeader( "X-Requested-With", "XMLHttpRequest");
-    if ( queue[ 0 ].method == "POST" )
+    if ( queue[ 0 ].method == "POST" || queue[ 0 ].method == "PUT" )
     {
       xmlHttp.setRequestHeader( "Content-type", "application/x-www-form-urlencoded" );
       // xmlHttp.setRequestHeader( "Content-length", queue[ 0 ].data.length );
@@ -161,6 +161,7 @@ RequestQueue = function()
       switch( m )
       {
       case "POST":
+      case "PUT":
         queue.push(
           {
             request : r,

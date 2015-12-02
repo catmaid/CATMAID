@@ -68,10 +68,12 @@
   ActiveSkeleton.prototype._handleActiveNodeChange = function(node, skeletonChange) {
     if (skeletonChange) {
       if (this.model) {
-        this.trigger(this.EVENT_MODELS_REMOVED, this, [this.model.id])
+        var oldModel = this.model
+        this.model = null;
+        this.trigger(this.EVENT_MODELS_REMOVED, this, [oldModel])
       }
       this.model = this.createModel();
-      this.trigger(this.EVENT_MODELS_ADDED, this, [this.model.id]);
+      this.trigger(this.EVENT_MODELS_ADDED, this, [this.model]);
     }
   };
 

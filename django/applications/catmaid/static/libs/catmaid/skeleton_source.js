@@ -16,6 +16,11 @@
     this.widgetId = register ? this.registerSource() : null;
   };
 
+  // Operations that can be used to combine multiple sources.
+  SkeletonSource.UNION = 'union';
+  SkeletonSource.INTERSECTION = 'intersection';
+  SkeletonSource.DIFFERENCE = 'difference';
+
   SkeletonSource.prototype = {};
   CATMAID.asEventSource(SkeletonSource.prototype);
 
@@ -77,10 +82,12 @@
       source.on(source.EVENT_MODELS_CHANGED, this._onSubscribedModelsChanged, this);
     }
 
+    var models = source.getSelectedSkeletonModels();
+
     this.subscriptions.push(subscription);
 
     // Do initial update
-    this.updateSubscription(subscription);
+    this.loadSubscriptions(models);
   };
 
   /**
@@ -114,7 +121,9 @@
 
     // Remove subscription and update
     this.subscriptions.splice(index);
-    //this.updateSubscription(subscription);
+
+    // Update
+    this.loadSubscriptions({});
   };
 
   /**
@@ -145,25 +154,22 @@
    * Handle the addition of new models from a subscribed source.
    */
   SkeletonSource.prototype._onSubscribedModelsAdded = function(source, models) {
-    var subscriptions = this.getSubscriptionsHavingSource(source);
-    subscriptions.forEach(this.updateSubscription.bind(this));
+    this.loadSubscriptions(models);
   };
 
   /**
    * Handle update of models in a subscribed source (e.g. color change).
    */
   SkeletonSource.prototype._onSubscribedModelsUpdated = function(source, models) {
-    // TODO: Use update that uses combinations
     var subscriptions = this.getSubscriptionsHavingSource(source);
-    subscriptions.forEach(this.updateSubscription.bind(this));
+    this.updateFromSubscriptions(subscriptions, models);
   };
 
   /**
    * Handle removal of models in a subscribed source.
    */
-  SkeletonSource.prototype._onSubscribedModelsRemoved = function(source, skeletonIds) {
-    // TODO: Use update that uses combinations
-    this.removeSkeletons(skeletonIds);
+  SkeletonSource.prototype._onSubscribedModelsRemoved = function(source, models) {
+    this.loadSubscriptions(models);
   };
 
   /**
@@ -171,6 +177,88 @@
    */
   SkeletonSource.prototype.getSourceSubscriptions = function() {
     return this.subscriptions;
+  };
+
+  /**
+   * Clear and rebuild skeleton selection of this widget, based on current
+   * subscription states. This is currently done in the most naive way without
+   * incorporating any hinting to avoid recomputation.
+   */
+  SkeletonSource.prototype.loadSubscriptions = function(models) {
+
+    // Find a set of skeletons that are removed and one that is added/modified
+    // to not require unnecessary reloads.
+    var result;
+    for (var i=0, max=this.subscriptions.length; i<max; ++i) {
+      var sbs = this.subscriptions[i];
+      var sbsModels = sbs.source.getSelectedSkeletonModels();
+      if (0 === i) {
+        result = sbsModels;
+        continue;
+      }
+      if (SkeletonSource.UNION === sbs.op) {
+        // Make models of both sources available
+        for (var mId in sbsModels) {
+          // Use model of earleir source
+          if (!result[mId]) {
+            result[mId] = sbsModels[mId];
+          }
+        }
+      } else if (SkeletonSource.INTERSECTION === sbs.op) {
+        // Make models available that appear in both sources
+        for (var mId in result) {
+          if (!sbsModels[mId]) {
+            delete result[mId]
+          }
+        }
+      } else if (SkeletonSource.DIFFERENCE === sbs.op) {
+        // Make models available that don't appear in the current source
+        for (var mId in result) {
+          if (sbsModels[mId]) {
+            delete result[mId]
+          }
+        }
+      } else {
+        throw new CATMAID.ValueError("Unknown operation: " + sbs.op);
+      }
+    }
+
+    // We now know the expected result set, compare it with the current set and
+    // remove elements that are not expected anymore. Update the remainder.
+    var currentSet = this.getSkeletonModels();
+    if (currentSet) {
+      var toRemove = [];
+      for (var skid in currentSet) {
+        if (!result || !(skid in result)) {
+          toRemove.push(skid);
+        }
+      }
+      if (toRemove.length > 0) {
+        this.removeSkeletons(toRemove);
+      }
+    }
+
+    // Update all others
+    if (result) {
+      this.updateModels(result);
+    }
+  };
+
+  /**
+   * Load all subscriptions with their left-associtive operators.
+   */
+  SkeletonSource.prototype.updateFromSubscriptions = function(subscriptions,
+      skeletonIds) {
+
+    // Find all models that are actually used in this source. Depending on the
+    // combination of different subscriptions, not all models of all source will
+    // be part of the final set.
+    var usedSkeletonIds = skeletonIds.filter(function(s) {
+      return this.hasSkeleton(s);
+    }, this);
+
+    // Update all used models
+    this.updateModels(usedSkeletonIds);
   };
 
   SkeletonSource.prototype.loadSource = function() {

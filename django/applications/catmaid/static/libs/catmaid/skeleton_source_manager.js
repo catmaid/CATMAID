@@ -135,9 +135,11 @@
     // Subscriptions: combination operation
     var op = document.createElement('label');
     var opSelect = document.createElement('select');
-    opSelect.options.add(new Option('Union', 'and'));
-    opSelect.options.add(new Option('Subtract', 'subtract'));
-    op.appendChild(document.createTextNode('Operation'));
+    opSelect.options.add(new Option('Union', CATMAID.SkeletonSource.UNION, true, true));
+    opSelect.options.add(new Option('Intersection', CATMAID.SkeletonSource.INTERSECTION));
+    opSelect.options.add(new Option('Difference', CATMAID.SkeletonSource.DIFFERENCE));
+    op.appendChild(document.createTextNode('Operator'));
+    op.setAttribute('title', 'All operators are left-associative');
     op.appendChild(opSelect);
     controls.appendChild(op);
 
@@ -150,7 +152,7 @@
     modeSelect.options.add(new Option('Only updates', 'updates-only'));
     mode.appendChild(document.createTextNode('Filter'));
     mode.appendChild(modeSelect);
-    controls.appendChild(mode);
+    //controls.appendChild(mode);
 
     // Subscriptions: go
     var subscribe = document.createElement('button');
@@ -185,13 +187,13 @@
         }
       }, {
         "render": function(data, type, row, meta) {
-          return row.op;
+          return 0 === meta.row ? '-' : row.op;
         }
-      }, {
+      }, /*{
         "render": function(data, type, row, meta) {
           return row.mode;
         }
-      }],
+      }*/ ],
       language: {
         "zeroRecords": "No skeleton sources subscribed to"
       }

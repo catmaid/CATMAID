@@ -68,8 +68,8 @@
   };
 
   /**
-   * Returns a display-friendly representation of the user where or not it is in
-   * the user cache.
+   * Returns a display-friendly representation of the user whether or not it is
+   * in the user cache.
    */
   User.safeToString = function (id) {
     var u = User.prototype.users[id];

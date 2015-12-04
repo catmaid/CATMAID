@@ -848,7 +848,7 @@ var WindowMaker = new function()
     return createWidget(CM);
   };
 
-  var createStagingListWindow = function( instance, webglwin, webglwin_name ) {
+  var createStagingListWindow = function(instance, webglwin) {
 
     var ST = instance ? instance : new CATMAID.SelectionTable();
 
@@ -1159,6 +1159,7 @@ var WindowMaker = new function()
     var bar = document.createElement( "div" );
     bar.id = "3d_viewer_buttons";
     bar.setAttribute('class', 'buttonpanel');
+    addSourceControlsToggle(win, WA);
     addButtonDisplayToggle(win);
 
     var tabs = appendTabs(bar, WA.widgetID, ['Main', 'View', 'Shading',
@@ -1523,7 +1524,7 @@ var WindowMaker = new function()
     nodeScalingInput.value = WA.options.skeleton_node_scaling;
 
     // Create a Selection Table, preset as the sync target
-    createStagingListWindow( ST, win, WA.getName() );
+    var st = createStagingListWindow( ST, win, WA.getName() );
 
     win.addListener(
       function(callingWindow, signal) {
@@ -1567,13 +1568,10 @@ var WindowMaker = new function()
 
     CATMAID.skeletonListSources.updateGUI();
 
-    // Now that a Selection Table exists, set it as the default pull source
-    for (var i=select_source.length; --i; ) {
-      if (0 === select_source.options[i].value.indexOf("Selection ")) {
-        select_source.selectedIndex = i;
-        break;
-      }
-    }
+    // Now that a Selection Table exists, have the 3D viewer subscribe to it
+    var Subscription = CATMAID.SkeletonSourceSubscription;
+    WA.addSubscription(new Subscription(st.widget, true, true, CATMAID.SkeletonSource.UNION,
+          Subscription.ALL_EVENTS));
 
     return {window: win, widget: WA};
   };

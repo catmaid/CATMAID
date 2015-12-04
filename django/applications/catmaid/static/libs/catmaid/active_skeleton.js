@@ -70,13 +70,11 @@
       if (this.model) {
         var oldModel = this.model
         this.model = null;
-        this.trigger(this.EVENT_MODELS_REMOVED, this,
-            CATMAID.tools.idMap(oldModel.clone()))
+        this.triggerRemove(CATMAID.tools.idMap(oldModel.clone()));
       }
       this.model = this.createModel();
       if (this.model) {
-        this.trigger(this.EVENT_MODELS_ADDED, this,
-            CATMAID.tools.idMap(this.model.clone()));
+        this.triggerAdd(CATMAID.tools.idMap(this.model.clone()));
       }
     }
   };

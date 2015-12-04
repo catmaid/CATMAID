@@ -340,7 +340,7 @@
    * Handle the addition of new models from a subscribed source.
    */
   SkeletonSourceSubscription.prototype._onSubscribedModelsAdded = function(
-      source, models, order) {
+      models, order) {
     // Update cache
     for (var mId in models) {
       this.modelCache[mId] = models[mId];
@@ -352,7 +352,7 @@
   /**
    * Handle update of models in a subscribed source (e.g. color change).
    */
-  SkeletonSourceSubscription.prototype._onSubscribedModelsUpdated = function(source, models) {
+  SkeletonSourceSubscription.prototype._onSubscribedModelsUpdated = function(models) {
     // Update cache
     for (var mId in models) {
       this.modelCache[mId] = models[mId];
@@ -363,7 +363,7 @@
   /**
    * Handle removal of models in a subscribed source.
    */
-  SkeletonSourceSubscription.prototype._onSubscribedModelsRemoved = function(source, models) {
+  SkeletonSourceSubscription.prototype._onSubscribedModelsRemoved = function(models) {
     // Update cache
     for (var mId in models) {
       delete this.modelCache[mId];

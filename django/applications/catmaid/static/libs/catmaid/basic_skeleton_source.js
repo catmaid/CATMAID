@@ -62,6 +62,9 @@
     var skeleton_ids = Object.keys(models).map(function(skid) {
       return parseInt(skid, 10);
     });
+    // Remember created and updated models
+    var created = {};
+    var updated = {};
     for (var i=0; i<skeleton_ids.length; ++i) {
       var skid = skeleton_ids[i];
 
@@ -78,13 +81,17 @@
           }
         } else {
           // Update existing model and continue
-          this.skeletonModels[skid] = models[skid];
+          var model = models[skid];
+          this.skeletonModels[skid] = model;
+          updated[skid] = model;
           continue;
         }
       }
 
       // Store a reference to the skeleton model
-      this.skeletonModels[skid] = models[skid];
+      var model = models[skid];
+      this.skeletonModels[skid] = model;
+      created[skid] = model;
 
       // If no group should be created, add the ID of every added skeleton to
       // the group index, but don't create an entry in the groups object.
@@ -97,18 +104,28 @@
       this.groups[this.nextGroupName] = skeleton_ids;
     }
 
-    this.updateLink(models);
+    if (!CATMAID.tools.isEmpty(created)) {
+      this.handleAddedModels(created);
+      this.trigger(this.EVENT_MODELS_ADDED, created);
+    }
+    if (!CATMAID.tools.isEmpty(updated)) {
+      this.handleChangedModels(updated);
+      this.trigger(this.EVENT_MODELS_CHANGED, updated);
+    }
   };
 
   /**
    * Clear all references to skeletons.
    */
   BasicSkeletonSource.prototype.clear = function(sourceChain) {
+    var removedModels = this.skeletonModels;
     this.skeletonModels = {};
     this.orderedElements = [];
     this.groups = {};
-    // Clear link target, if any
-    this.clearLink(sourceChain);
+    if (!CATMAID.tools.isEmpty(removedModels)) {
+      this.handleRemovedModels(removedModels);
+      this.trigger(this.EVENT_MODELS_REMOVED, removedModels);
+    }
   };
 
   /**
@@ -117,10 +134,12 @@
    * @param skeletonIDs {Array<number>} The list of skeletons to remove
    */
   BasicSkeletonSource.prototype.removeSkeletons = function(skeletonIDs) {
+    var removed = {};
     skeletonIDs.forEach(function(skid) {
       var nSkid = parseInt(skid, 10);
       // Remove models
       if (skid in this.skeletonModels) {
+        removed[skid] = this.skeletonModels[skid];
         delete this.skeletonModels[skid];
       }
       // Remove from element index
@@ -137,12 +156,9 @@
       }
     }, this);
 
-    // Remove skeletons from link target, if any
-    if (this.linkTarget) {
-      // Prevent propagation loop by checking if the target has the skeletons anymore
-      if (skeletonIDs.some(this.linkTarget.hasSkeleton, this.linkTarget)) {
-        this.linkTarget.removeSkeletons(skeletonIDs);
-      }
+    if (!CATMAID.tools.isEmpty(removed)) {
+      this.handleRemovedModels(removed);
+      this.trigger(this.EVENT_MODELS_REMOVED, removed);
     }
   };
 
@@ -158,21 +174,27 @@
     // Add self to source chain
     sourceChain[this] = this;
 
+    var updatedModels = {};
     var newModels = {};
     Object.keys(models).forEach(function(skid) {
       var model = models[skid];
       if (skid in this.skeletonModels) {
-        this.skeletonModels[model.id] = model.clone();
+        var m = model.clone();
+        this.skeletonModels[model.id] = m;
+        updatedModels[m.id] = m;
       } else {
         newModels[skid] = model;
       }
     }, this);
 
-    if (Object.keys(newModels).length > 0) {
+    if (!CATMAID.tools.isEmpty(newModels)) {
       this.append(newModels);
     }
 
-    this.updateLink(models, sourceChain);
+    if (!CATMAID.tools.isEmpty(updatedModels)) {
+      this.handleChangedModels(updatedModels);
+      this.trigger(this.EVENT_MODELS_CHANGED, updatedModels);
+    }
   };
 
   /**
@@ -274,6 +296,16 @@
     // Sort only top-level elements on not the skeletons within the groups
     this.orderedElements.sort(compareFunction);
   };
+
+  /**
+   * Convenience functions that can be overridden by clients. They get called
+   * when the equivalent events are fired. Implementation that re-use this as
+   * prototype or standalone object can implement these methods to be not
+   * required to listen to events.
+   */
+  BasicSkeletonSource.prototype.handleAddedModels = CATMAID.noop;
+  BasicSkeletonSource.prototype.handleRemovedModels = CATMAID.noop;
+  BasicSkeletonSource.prototype.handleChangedModels = CATMAID.noop;
 
   /**
    * Private function to test if a group name is valid.

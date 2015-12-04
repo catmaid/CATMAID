@@ -414,4 +414,22 @@ CATMAID.tools = CATMAID.tools || {};
     };
   })();
 
+  // Speed up calls to hasOwnProperty
+  var hasOwnProperty = Object.prototype.hasOwnProperty;
+
+  /**
+   * Returns true if the given object has any fields and false otherwise.
+   * See also: http://stackoverflow.com/questions/4994201
+   */
+  tools.isEmpty = function(obj) {
+    // Null and undefined are "empty"
+    if (obj == null) return true;
+
+    for (var key in obj) {
+      if (hasOwnProperty.call(obj, key)) return false;
+    }
+
+    return true;
+  };
+
 })(CATMAID.tools);

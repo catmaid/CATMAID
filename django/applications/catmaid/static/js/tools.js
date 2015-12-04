@@ -389,4 +389,29 @@ CATMAID.tools = CATMAID.tools || {};
     };
   })();
 
+  /**
+   * Returns a new object having a field named after the parameter object's id
+   * field and referencing it.
+   */
+  tools.idMap = function(obj) {
+    var o = {};
+    o[obj.id] = obj;
+    return o;
+  };
+
+  /**
+   * Returns a new object having a field named after the id field of all objects
+   * in the list parameter.
+   */
+  tools.listToIdMap = (function() {
+
+    var build = function(o, e) {
+      o[e.id] = e;
+    };
+
+    return function(list) {
+      return list.reduce(build, {});
+    };
+  })();
+
 })(CATMAID.tools);

@@ -1076,7 +1076,7 @@ var WindowMaker = new function()
           // Update table information
           table.updateTableInfo();
         }
-        this.trigger(this.EVENT_MODELS_CHANGED, [skeleton]);
+        table.triggerChange(CATMAID.tools.idMap(skeleton));
       })
       .on("click", "td .action-changecolor", ST, function(e) {
         var table = e.data;

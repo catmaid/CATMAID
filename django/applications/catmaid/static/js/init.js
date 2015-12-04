@@ -470,40 +470,47 @@ function updateProjectListFromCache() {
   project_menu.update(cachedProjectsInfo);
 }
 
-/**
- * queue an open-project-stack-request to the request queue
- * freeze the window to wait for an answer. The successFn callback is called
- * only if the loading was successful.
+/*
+ * Open a project and stack in a stack viewer, returning a promise yielding
+ * the stack viewer.
+ *
+ * @param  {number|string} projectID   ID of the project to open. If different
+ *                                     than the ID of the currently open
+ *                                     project, it will be destroyed.
+ * @param  {number} stackID            ID of the stack to open.
+ * @param  {boolean} useExistingViewer True to add the stack to the existing,
+ *                                     focused stack viewer.
+ * @return {Promise}                   A promise yielding the stack viewer.
  */
-function openProjectStack( pid, sid, successFn, useExistingViewer )
-{
-  if ( project && project.id != pid )
-  {
+function openProjectStack(projectID, stackID, useExistingViewer) {
+  if (project && project.id != projectID) {
     project.destroy();
   }
 
-  CATMAID.ui.catchEvents( "wait" );
-  requestQueue.register(
-    django_url + pid + '/stack/' + sid + '/info',
-    'GET',
-    { },
-    CATMAID.jsonResponseHandler(
-      function(json) {
-        var stackViewer = handle_openProjectStack(
-            json,
-            useExistingViewer ? project.focusedStackViewer : undefined);
-        // Call success function, if any, if a stack viewer was added
-        if (stackViewer) {
-          CATMAID.tools.callIfFn(successFn, stackViewer);
-        }
-      }, function(e) {
-        // Handle login errors
-        if (e && e.permission_error) {
-          new CATMAID.LoginDialog(e.error, realInit).show();
-          return true;
-        }
-        return false;
-      }));
+  CATMAID.ui.catchEvents("wait");
+  return new Promise(function (resolve, reject) {
+    requestQueue.register(
+      django_url + projectID + '/stack/' + stackID + '/info',
+      'GET',
+      undefined,
+      CATMAID.jsonResponseHandler(
+        function(json) {
+          var stackViewer = handle_openProjectStack(
+              json,
+              useExistingViewer ? project.focusedStackViewer : undefined);
+          // Resolve yielding the created or reused stack viewer.
+          resolve(stackViewer);
+        }, function(e) {
+          reject();
+          // Handle login errors
+          if (e && e.permission_error) {
+            new CATMAID.LoginDialog(e.error, realInit).show();
+            return true;
+          }
+          return false;
+        })
+    );
+  });
 }
 
 /**
@@ -612,7 +619,7 @@ function handle_openProjectStack( e, stackViewer )
               },{
                 title: 'Add to focused viewer',
                 note: '',
-                action: ('javascript:openProjectStack(' + s.pid + ',' + s.id + ', undefined, true)')
+                action: ('javascript:openProjectStack(' + s.pid + ',' + s.id + ', true)')
               }
             ]
           }
@@ -1244,7 +1251,7 @@ var realInit = function()
           // Open stack and queue test/loading for next one
           var sid = sids.shift();
           var s = ss.shift();
-          openProjectStack(pid, sid, function() {
+          openProjectStack(pid, sid, useExistingStackViewer).then(function() {
             // Moving every stack is not really necessary, but for now a
             // convenient way to apply the requested scale to each stack.
             if (typeof zp == "number" && typeof yp == "number" &&
@@ -1254,7 +1261,7 @@ var realInit = function()
                 loadStacksFromURL(composite, loaded + 1);
               });
             }
-          }, useExistingStackViewer);
+          });
         } else {
           // Set the tool only after the move; otherwise, thousands of skeleton
           // nodes may be fetched and painted unnecessarily.

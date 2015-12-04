@@ -616,7 +616,7 @@ var ClassificationEditor = new function()
                             project.setTool( new CATMAID.Navigator() );
                         }
                     };
-                    openProjectStack( roi.project_id, roi.stack_id, callback);
+                    openProjectStack(roi.project_id, roi.stack_id).then(callback);
                 }));
     };
 

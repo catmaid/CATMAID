@@ -10,9 +10,6 @@
    * subset can be marked as selected.
    */
   var SkeletonSource = function(register) {
-    this.setOperation = SkeletonSource.prototype.OR;
-    // Keeps references to subscribed skeleton sources
-    this.subscriptions = [];
     this.widgetId = register ? this.registerSource() : null;
   };
 
@@ -32,18 +29,20 @@
   // removed or closed.
   SkeletonSource.prototype.EVENT_SOURCE_REMOVED = "skeleton_source_removed";
   // The EVENT_MODELS_ADDED event is triggered when skeleton models were added
-  // to a skeleton source. The list of skeleton IDs is expected as paramter.
+  // to a skeleton source. A list of skeleton models is expected as paramter.
   SkeletonSource.prototype.EVENT_MODELS_ADDED = "skeleton_source_models_added";
   // The EVENT_MODELS_REMOVED event is triggered when skeleton models were
-  // removed from a source. The list of skeleton IDs is expected as paramter.
+  // removed from a source. A list of skeleton models is expected as paramter.
   SkeletonSource.prototype.EVENT_MODELS_REMOVED = "skeleton_source_models_removed";
   // The EVENT_MODELS_CHANGED event is triggered when properties of skeleton
-  // source models were updated (e.g. color). The list of changed skeleton IDs
+  // source models were updated (e.g. color). A list of changed skeleton models
   // is expected as parameter
   SkeletonSource.prototype.EVENT_MODELS_CHANGED = "skeleton_source_models_changed";
 
   SkeletonSource.prototype.registerSource = function() {
     CATMAID.skeletonListSources.add(this);
+    // Initialize subscriptions
+    this.subscriptions = [];
   };
 
   SkeletonSource.prototype.unregisterSource = function() {
@@ -61,115 +60,34 @@
     // Don't allow multiple subscriptions to the same source
     var index = this.subscriptions.indexOf(subscription);
     if (-1 !== index) {
-      throw new CATMAID.ValueError("Already subscribed to this source");
+      throw new CATMAID.ValueError("Subscription already in use");
     }
 
-    var source = subscription.source;
-    source.on(source.EVENT_SOURCE_REMOVED, this._onSubscribedSourceRemoved, this);
-
-    var allEvents = subscription.mode === CATMAID.SkeletonSourceSubscription.ALL_EVENTS;
-    var onlyRemovals = subscription.mode === CATMAID.SkeletonSourceSubscription.ONLY_REMOVALS;
-    var onlyAdditions = subscription.mode === CATMAID.SkeletonSourceSubscription.ONLY_ADDITIONS;
-    var onlyUpdates = subscription.mode === CATMAID.SkeletonSourceSubscription.ONLY_UPDATES;
-
-    if (allEvents || onlyAdditions) {
-      source.on(source.EVENT_MODELS_ADDED, this._onSubscribedModelsAdded, this);
-    }
-    if (allEvents || onlyRemovals) {
-      source.on(source.EVENT_MODELS_REMOVED, this._onSubscribedModelsRemoved, this);
-    }
-    if (allEvents || onlyUpdates) {
-      source.on(source.EVENT_MODELS_CHANGED, this._onSubscribedModelsChanged, this);
-    }
-
-    var models = source.getSelectedSkeletonModels();
-
+    subscription.register(this);
     this.subscriptions.push(subscription);
 
     // Do initial update
-    this.loadSubscriptions(models);
+    this.loadSubscriptions();
   };
 
   /**
    * Remove a subscription of this source to another source. This method will
    * also unregister this source from events of the subscribed source.
    */
-  SkeletonSource.prototype.removeSubscripition = function(subscription) {
+  SkeletonSource.prototype.removeSubscription = function(subscription) {
     // Raise error if the subscription in question is not part of this source
-    var index = this.subscriptions.indexOf(subscription);
+    var index = this.subscriptions ? this.subscriptions.indexOf(subscription) : -1;
     if (-1 === index) {
       throw new CATMAID.ValueError("The subscription isn't part of this source");
     }
 
-    var source = subscription.source;
-    source.off(source.EVENT_SOURCE_REMOVED, this._onSubscribedSourceRemoved);
-
-    var allEvents = subscription.mode === CATMAID.SkeletonSourceSubscription.ALL_EVENTS;
-    var onlyRemovals = subscription.mode === CATMAID.SkeletonSourceSubscription.ONLY_REMOVALS;
-    var onlyAdditions = subscription.mode === CATMAID.SkeletonSourceSubscription.ONLY_ADDITIONS;
-    var onlyUpdates = subscription.mode === CATMAID.SkeletonSourceSubscription.ONLY_UPDATES;
-
-    if (allEvents || onlyAdditions) {
-      source.off(source.EVENT_MODELS_ADDED, this._onSubscribedModelsAdded);
-    }
-    if (allEvents || onlyRemovals) {
-      source.off(source.EVENT_MODELS_REMOVED, this._onSubscribedModelsRemoved);
-    }
-    if (allEvents || onlyUpdates) {
-      source.off(source.EVENT_MODELS_CHANGED, this._onSubscribedModelsChanged);
-    }
+    subscription.unregister();
 
     // Remove subscription and update
-    this.subscriptions.splice(index);
+    this.subscriptions.splice(index, 1);
 
     // Update
-    this.loadSubscriptions({});
-  };
-
-  /**
-   * Handle removal of a source (e.g. when its widget is closed).
-   */
-  SkeletonSource.prototype._onSubscribedSourceRemoved = function(source) {
-    // Remove all subscriptions with this source
-    this.subscriptiona.filter(function(subscription) {
-      return this === subscription.source;
-    }, source).forEach(function(subscription) {
-      this.removeSubscripition(subscription);
-    }, this);
-  };
-
-  /**
-   * Update a single subscription based on its operation.
-   *
-   * @param subscription Subscription to refresh data for
-   * @param op           The type of update
-   */
-  SkeletonSource.prototype.updateSubscription = function(subscription) {
-    // Update this source based on the subscription.
-    var models = subscription.source.getSelectedSkeletonModels();
-    this.updateModels(models);
-  };
-
-  /**
-   * Handle the addition of new models from a subscribed source.
-   */
-  SkeletonSource.prototype._onSubscribedModelsAdded = function(source, models) {
-    this.loadSubscriptions(models);
-  };
-
-  /**
-   * Handle update of models in a subscribed source (e.g. color change).
-   */
-  SkeletonSource.prototype._onSubscribedModelsUpdated = function(source, models) {
-    var subscriptions = this.getSubscriptionsHavingSource(source);
-    this.updateFromSubscriptions(subscriptions, models);
-  };
-
-  /**
-   * Handle removal of models in a subscribed source.
-   */
-  SkeletonSource.prototype._onSubscribedModelsRemoved = function(source, models) {
-    this.loadSubscriptions(models);
+    this.loadSubscriptions();
   };
 
   /**
@@ -184,14 +102,14 @@
    * subscription states. This is currently done in the most naive way without
    * incorporating any hinting to avoid recomputation.
    */
-  SkeletonSource.prototype.loadSubscriptions = function(models) {
+  SkeletonSource.prototype.loadSubscriptions = function() {
 
     // Find a set of skeletons that are removed and one that is added/modified
     // to not require unnecessary reloads.
-    var result;
+    var result = this.getSkeletonModels();
     for (var i=0, max=this.subscriptions.length; i<max; ++i) {
       var sbs = this.subscriptions[i];
-      var sbsModels = sbs.source.getSelectedSkeletonModels();
+      var sbsModels = sbs.getModels();
       if (0 === i) {
         result = sbsModels;
         continue;
@@ -244,23 +162,6 @@
     }
   };
 
-  /**
-   * Load all subscriptions with their left-associtive operators.
-   */
-  SkeletonSource.prototype.updateFromSubscriptions = function(subscriptions,
-      skeletonIds) {
-
-    // Find all models that are actually used in this source. Depending on the
-    // combination of different subscriptions, not all models of all source will
-    // be part of the final set.
-    var usedSkeletonIds = skeletonIds.filter(function(s) {
-      return this.hasSkeleton(s);
-    }, this);
-
-    // Update all used models
-    this.updateModels(usedSkeletonIds);
-  };
-
   SkeletonSource.prototype.loadSource = function() {
     var models = CATMAID.skeletonListSources.getSelectedSkeletonModels(this);
     if (0 === models.length) {
@@ -284,10 +185,18 @@
     }
   };
 
-  SkeletonSource.prototype.updateLink = function(models) {
-    if (this.linkTarget) {
-      this.linkTarget.updateModels(models);
-    }
+  SkeletonSource.prototype.triggerChange = function(models) {
+    this.trigger(this.EVENT_MODELS_CHANGED, models);
+  };
+
+  SkeletonSource.prototype.updateLink = SkeletonSource.prototype.notifyChange;
+
+  SkeletonSource.prototype.triggerAdd = function(models) {
+    this.trigger(this.EVENT_MODELS_ADDED, models);
+  };
+
+  SkeletonSource.prototype.triggerRemove = function(models) {
+    this.trigger(this.EVENT_MODELS_REMOVED, models);
   };
 
   SkeletonSource.prototype.notifyLink = function(model, source_chain) {
@@ -340,22 +249,127 @@
    *
    * @param source  The source subscribed to
    * @param colors  Indicates if source colors should be used on update
+   * @param selectionBased Addition and removal are based on the selection state
    * @param op      The operation to be used to combine skeletons
    * @param mode    Optional subscription mode, which events to listen to
    * @param group   Optional group name for skeletons from source
    */
-  var SkeletonSourceSubscription = function(source, colors, op, mode, group) {
+  var SkeletonSourceSubscription = function(source, colors, selectionBased, op,
+      mode, group) {
     this.source = source;
     this.group = group;
     this.colors = colors;
+    this.selectionBased = selectionBased;
     this.op = op;
     this.mode = mode || SkeletonSourceSubscription.ALL_EVENTS;
+    this.target = null;
   };
 
   SkeletonSourceSubscription.ALL_EVENTS = 'all';
+  SkeletonSourceSubscription.SELECTION_BASED = 'selection-based';
   SkeletonSourceSubscription.ONLY_ADDITIONS = 'additions-only';
   SkeletonSourceSubscription.ONLY_REMOVALS = 'removals-only';
   SkeletonSourceSubscription.ONLY_UPDATES = 'updates-only';
+
+  /**
+   * Register a target with this subscription and listen to events of the source
+   * with respect to the selected filters. If there are any, previous targets
+   * will be unregistered. A target is expected to be a skeleton source as well.
+   */
+  SkeletonSourceSubscription.prototype.register = function(target) {
+    // Unregister from previous target, if any
+    if (this.target) {
+      this.unregister();
+    }
+    this.target = target;
+
+    var allEvents = this.mode === CATMAID.SkeletonSourceSubscription.ALL_EVENTS;
+    var onlyRemovals = this.mode === CATMAID.SkeletonSourceSubscription.ONLY_REMOVALS;
+    var onlyAdditions = this.mode === CATMAID.SkeletonSourceSubscription.ONLY_ADDITIONS;
+    var onlyUpdates = this.mode === CATMAID.SkeletonSourceSubscription.ONLY_UPDATES;
+
+    if (allEvents || onlyAdditions) {
+      this.source.on(this.source.EVENT_MODELS_ADDED, this._onSubscribedModelsAdded, this);
+    }
+    if (allEvents || onlyRemovals) {
+      this.source.on(this.source.EVENT_MODELS_REMOVED, this._onSubscribedModelsRemoved, this);
+    }
+    if (allEvents || onlyUpdates) {
+      this.source.on(this.source.EVENT_MODELS_CHANGED, this._onSubscribedModelsChanged, this);
+    }
+
+    // Populate cache with current source state
+    this.modelCache = this.getModels(true);
+  };
+
+  /**
+   * Remove all listeners from the current source and drop cache.
+   */
+  SkeletonSourceSubscription.prototype.unregister = function() {
+    var allEvents = this.mode === CATMAID.SkeletonSourceSubscription.ALL_EVENTS;
+    var onlyRemovals = this.mode === CATMAID.SkeletonSourceSubscription.ONLY_REMOVALS;
+    var onlyAdditions = this.mode === CATMAID.SkeletonSourceSubscription.ONLY_ADDITIONS;
+    var onlyUpdates = this.mode === CATMAID.SkeletonSourceSubscription.ONLY_UPDATES;
+
+    if (allEvents || onlyAdditions) {
+      this.source.off(this.source.EVENT_MODELS_ADDED, this._onSubscribedModelsAdded, this);
+    }
+    if (allEvents || onlyRemovals) {
+      this.source.off(this.source.EVENT_MODELS_REMOVED, this._onSubscribedModelsRemoved, this);
+    }
+    if (allEvents || onlyUpdates) {
+      this.source.off(this.source.EVENT_MODELS_CHANGED, this._onSubscribedModelsChanged, this);
+    }
+
+    // Drop cache entry
+    this.modelCache = null;
+  };
+
+  /**
+   * Get all models available from this subscription. By default a cached
+   * version is used, which can be disabled. If this subscription is selection
+   * based, only selected models will be retrieved.
+   */
+  SkeletonSourceSubscription.prototype.getModels = function(nocache) {
+    var getModels = this.selectionBased ? this.source.getSelectedSkeletonModels :
+        this.source.getSkeletonModels();
+    return nocache ? getModels.call(this.source) : this.modelCache;
+  };
+
+  /**
+   * Handle the addition of new models from a subscribed source.
+   */
+  SkeletonSourceSubscription.prototype._onSubscribedModelsAdded = function(
+      source, models, order) {
+    // Update cache
+    for (var mId in models) {
+      this.modelCache[mId] = models[mId];
+    }
+
+    this.target.loadSubscriptions();
+  };
+
+  /**
+   * Handle update of models in a subscribed source (e.g. color change).
+   */
+  SkeletonSourceSubscription.prototype._onSubscribedModelsUpdated = function(source, models) {
+    // Update cache
+    for (var mId in models) {
+      this.modelCache[mId] = models[mId];
+    }
+    this.target.loadSubscriptions();
+  };
+
+  /**
+   * Handle removal of models in a subscribed source.
+   */
+  SkeletonSourceSubscription.prototype._onSubscribedModelsRemoved = function(source, models) {
+    // Update cache
+    for (var mId in models) {
+      delete this.modelCache[mId];
+    }
+    this.target.loadSubscriptions();
+  };
 
   // Make skeleton source and subscription available in CATMAID namespace
   CATMAID.SkeletonSource = SkeletonSource;

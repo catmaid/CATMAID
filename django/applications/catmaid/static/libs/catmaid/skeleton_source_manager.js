@@ -68,6 +68,7 @@
     showColorOption: true,
     showGroupOption: true,
     colors: true,
+    selectionBased: true,
     groups: false
   };
 
@@ -102,6 +103,20 @@
 
     if (options.showColorOption) {
       controls.appendChild(colors);
+    }
+
+    // Color checkbox
+    var selectedCb = document.createElement('input');
+    selectedCb.setAttribute('type', 'checkbox');
+    if (options.selectionBased) {
+      selectedCb.setAttribute('checked', 'checked');
+    }
+    var selected = document.createElement('label');
+    selected.appendChild(selectedCb);
+    selected.appendChild(document.createTextNode('Only selected'));
+
+    if (options.showColorOption) {
+      controls.appendChild(selected);
     }
 
     // Groups
@@ -152,7 +167,7 @@
     modeSelect.options.add(new Option('Only updates', 'updates-only'));
     mode.appendChild(document.createTextNode('Filter'));
     mode.appendChild(modeSelect);
-    //controls.appendChild(mode);
+    controls.appendChild(mode);
 
     // Subscriptions: go
     var subscribe = document.createElement('button');
@@ -164,7 +179,11 @@
     panel.style.width = "100%";
 
     // Add a list entry for every source subscribed plus the this source
-    var subscriptions = source.getSourceSubscriptions();
+    var subscriptions = source.getSourceSubscriptions() || [];
+
+    if (subscriptions.length < 1) {
+      // Disable operators
+    }
 
     // Populate a datatable
     var table = document.createElement('table');
@@ -189,11 +208,11 @@
         "render": function(data, type, row, meta) {
           return 0 === meta.row ? '-' : row.op;
         }
-      }, /*{
+      }, {
         "render": function(data, type, row, meta) {
           return row.mode;
         }
-      }*/ ],
+      }],
       language: {
         "zeroRecords": "No skeleton sources subscribed to"
       }
@@ -202,7 +221,7 @@
     $(table).on("click", "td .action-remove", source, function(e) {
       var tr = $(this).closest("tr");
       var subscription = datatable.row(tr).data();
-      e.data.removeSubscripition(subscription);
+      e.data.removeSubscription(subscription);
       datatable.row(tr).remove().draw();
     });
 
@@ -220,9 +239,10 @@
         var syncColors = colorsCb.checked;
         var op = opSelect.value;
         var mode = modeSelect.value;
+        var selectionBased = selectedCb.checked;
         // Create and store new subscription
         var subscription = new CATMAID.SkeletonSourceSubscription(
-            fromSource, syncColors, op, mode, group);
+            fromSource, syncColors, selectionBased, op, mode, group);
         source.addSubscription(subscription);
         // Update UI
         datatable.row.add(subscription).draw();

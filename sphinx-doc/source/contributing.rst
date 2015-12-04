@@ -45,10 +45,8 @@ Javascript VMs are typically much faster than Python.
 CATMAID is not an image host. Rather, the CATMAID backend provides resource,
 spatial, and semantic metadata about image stacks hosted elsewhere, while the
 CATMAID frontend is capable of rendering and navigating these image stacks. More
-information about the types of image hosts CATMAID supports is available `on the
-wiki <https://github.com/catmaid/CATMAID/wiki/Convention-for-Stack-Image-
-Sources>`_ and `here <https://github.com/axtimwalde/catmaid-
-tools/blob/master/README.md>`_.
+information about the types of image hosts CATMAID supports is available in the
+:doc:`tile source conventions documentation <tile_sources>`.
 
 Project Organization
 --------------------

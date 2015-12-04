@@ -69,7 +69,8 @@
     showGroupOption: true,
     colors: true,
     selectionBased: true,
-    groups: false
+    groups: false,
+    ignoreLocal: false
   };
 
   /**
@@ -105,7 +106,7 @@
       controls.appendChild(colors);
     }
 
-    // Color checkbox
+    // Selection basis checkbox
     var selectedCb = document.createElement('input');
     selectedCb.setAttribute('type', 'checkbox');
     if (options.selectionBased) {
@@ -173,6 +174,23 @@
     var subscribe = document.createElement('button');
     subscribe.appendChild(document.createTextNode('Subscribe'));
     controls.appendChild(subscribe);
+
+    // Ignore local checkbox
+    var ignoreLocalCb = document.createElement('input');
+    ignoreLocalCb.setAttribute('type', 'checkbox');
+    if (source.ignoreLocal) {
+      ignoreLocalCb.setAttribute('checked', 'checked');
+    }
+    ignoreLocalCb.onchange = function(e) {
+      source.ignoreLocal = this.checked;
+    };
+    var ignoreLocal = document.createElement('label');
+    ignoreLocal.appendChild(ignoreLocalCb);
+    ignoreLocal.appendChild(document.createTextNode('Ignore local'));
+    ignoreLocal.setAttribute('title', 'If unchecked, subscriptions will be ' +
+        'applied starting from the local model set.');
+    controls.appendChild(ignoreLocal);
+
 
     var listContainer = document.createElement('div');
     panel.appendChild(listContainer);

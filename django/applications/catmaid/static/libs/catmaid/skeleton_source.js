@@ -43,6 +43,7 @@
     CATMAID.skeletonListSources.add(this);
     // Initialize subscriptions
     this.subscriptions = [];
+    this.ignoreLocal = false;
   };
 
   SkeletonSource.prototype.unregisterSource = function() {
@@ -106,7 +107,7 @@
 
     // Find a set of skeletons that are removed and one that is added/modified
     // to not require unnecessary reloads.
-    var result = this.getSkeletonModels();
+    var result = this.ignoreLocal ? {} : this.getSkeletonModels();
     for (var i=0, max=this.subscriptions.length; i<max; ++i) {
       var sbs = this.subscriptions[i];
       var sbsModels = sbs.getModels();

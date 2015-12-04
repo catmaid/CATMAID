@@ -353,7 +353,7 @@
   /**
    * Handle update of models in a subscribed source (e.g. color change).
    */
-  SkeletonSourceSubscription.prototype._onSubscribedModelsUpdated = function(models) {
+  SkeletonSourceSubscription.prototype._onSubscribedModelsChanged = function(models) {
     // Update cache
     for (var mId in models) {
       this.modelCache[mId] = models[mId];

@@ -451,8 +451,8 @@
       self.slider_s.update(
         sExtents.max,
         sExtents.min,
-        { major: (Math.abs(sExtents.max) + Math.abs(sExtents.min)) + 1,
-          minor: (Math.abs(sExtents.max) + Math.abs(sExtents.min))*10 + 1 },
+        { major: sExtents.max - sExtents.min + 1,
+          minor: (sExtents.max - sExtents.min)*10 + 1 },
         self.stackViewer.s,
         self.changeScaleDelayed,
         -0.01);

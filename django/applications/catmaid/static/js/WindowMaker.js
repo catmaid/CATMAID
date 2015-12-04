@@ -909,8 +909,7 @@ var WindowMaker = new function()
     annotate.onclick = ST.annotate_skeleton_list.bind(ST);
     buttons.appendChild(annotate);
     
-    buttons.appendChild(document.createTextNode(' Color scheme'));
-    var c = appendSelect(buttons, 'ST-color-scheme' + ST.widgetID,
+    var c = appendSelect(buttons, 'Color scheme',
         ['CATMAID',
          'category10',
          'category20',

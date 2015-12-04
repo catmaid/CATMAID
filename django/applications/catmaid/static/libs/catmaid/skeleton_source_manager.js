@@ -115,10 +115,7 @@
     var selected = document.createElement('label');
     selected.appendChild(selectedCb);
     selected.appendChild(document.createTextNode('Only selected'));
-
-    if (options.showColorOption) {
-      controls.appendChild(selected);
-    }
+    controls.appendChild(selected);
 
     // Groups
     /*

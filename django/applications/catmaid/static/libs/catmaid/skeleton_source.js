@@ -29,14 +29,14 @@
   // removed or closed.
   SkeletonSource.prototype.EVENT_SOURCE_REMOVED = "skeleton_source_removed";
   // The EVENT_MODELS_ADDED event is triggered when skeleton models were added
-  // to a skeleton source. A list of skeleton models is expected as paramter.
+  // to a skeleton source, alongside an object mapping skeleton IDs to models.
   SkeletonSource.prototype.EVENT_MODELS_ADDED = "skeleton_source_models_added";
   // The EVENT_MODELS_REMOVED event is triggered when skeleton models were
-  // removed from a source. A list of skeleton models is expected as paramter.
+  // removed from a source, alongside an object mapping skeleton IDs to models.
   SkeletonSource.prototype.EVENT_MODELS_REMOVED = "skeleton_source_models_removed";
   // The EVENT_MODELS_CHANGED event is triggered when properties of skeleton
-  // source models were updated (e.g. color). A list of changed skeleton models
-  // is expected as parameter
+  // source models were updated (e.g. color), alongside an object mapping
+  // skeleton IDs to models.
   SkeletonSource.prototype.EVENT_MODELS_CHANGED = "skeleton_source_models_changed";
 
   SkeletonSource.prototype.registerSource = function() {

@@ -407,6 +407,7 @@ CATMAID.tools = CATMAID.tools || {};
 
     var build = function(o, e) {
       o[e.id] = e;
+      return o;
     };
 
     return function(list) {

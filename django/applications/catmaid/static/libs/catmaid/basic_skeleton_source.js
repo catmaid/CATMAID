@@ -45,6 +45,7 @@
    * Handle destruction of this skeleton source.
    */
   BasicSkeletonSource.prototype.destroy = function() {
+    // Triggers also source removed event
     this.unregisterSource();
   };
 

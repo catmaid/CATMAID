@@ -285,6 +285,8 @@
     }
     this.target = target;
 
+    this.source.on(this.source.EVENT_SOURCE_REMOVED, this._onSubscribedSourceRemoved, this);
+
     var allEvents = this.mode === CATMAID.SkeletonSourceSubscription.ALL_EVENTS;
     var onlyRemovals = this.mode === CATMAID.SkeletonSourceSubscription.ONLY_REMOVALS;
     var onlyAdditions = this.mode === CATMAID.SkeletonSourceSubscription.ONLY_ADDITIONS;
@@ -308,6 +310,8 @@
    * Remove all listeners from the current source and drop cache.
    */
   SkeletonSourceSubscription.prototype.unregister = function() {
+    this.source.off(this.source.EVENT_SOURCE_REMOVED, this._onSubscribedSourceRemoved, this);
+
     var allEvents = this.mode === CATMAID.SkeletonSourceSubscription.ALL_EVENTS;
     var onlyRemovals = this.mode === CATMAID.SkeletonSourceSubscription.ONLY_REMOVALS;
     var onlyAdditions = this.mode === CATMAID.SkeletonSourceSubscription.ONLY_ADDITIONS;
@@ -325,6 +329,13 @@
 
     // Drop cache entry
     this.modelCache = null;
+  };
+
+  /**
+   * Handle removal of a source (e.g. when its widget is closed).
+   */
+  SkeletonSourceSubscription.prototype._onSubscribedSourceRemoved = function(source) {
+    this.target.removeSubscription(this);
   };
 
   /**

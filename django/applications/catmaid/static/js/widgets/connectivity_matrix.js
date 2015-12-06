@@ -78,14 +78,6 @@
           return o;
         }).bind(this), {});
 
-        // Create hidden select elements for row and column sources
-        var rowSelect = CATMAID.skeletonListSources.createSelect(this.rowDimension);
-        rowSelect.style.display = 'none';
-        tabs['Main'].appendChild(rowSelect);
-        var colSelect = CATMAID.skeletonListSources.createSelect(this.colDimension);
-        colSelect.style.display = 'none';
-        tabs['Main'].appendChild(colSelect);
-
         // This UI combines two skeleton source selects into one.
         tabs['Main'].appendChild(document.createTextNode('From'));
         var sourceSelect = CATMAID.skeletonListSources.createSelect(this,
@@ -95,6 +87,16 @@
           rowSelect.value = this.value;
           colSelect.value = this.value;
         };
+
+        // Create hidden select elements for row and column sources
+        var rowSelect = CATMAID.skeletonListSources.createSelect(this.rowDimension);
+        rowSelect.value = sourceSelect.value;
+        rowSelect.style.display = 'none';
+        tabs['Main'].appendChild(rowSelect);
+        var colSelect = CATMAID.skeletonListSources.createSelect(this.colDimension);
+        colSelect.value = sourceSelect.value;
+        colSelect.style.display = 'none';
+        tabs['Main'].appendChild(colSelect);
 
         // Indicates if loaded skeletons should be part of a group
         var loadAsGroup = false;

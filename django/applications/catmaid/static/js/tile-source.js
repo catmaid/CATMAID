@@ -183,7 +183,7 @@
     };
 
     this.getOverviewURL = function(stack, slicePixelPosition) {
-      return baseURL + '/small/' + slicePixelPosition[0] + '.' + fileExtension;
+      return baseURL + 'small/' + slicePixelPosition[0] + '.' + fileExtension;
     };
 
     this.getOverviewLayer = function( layer ) {

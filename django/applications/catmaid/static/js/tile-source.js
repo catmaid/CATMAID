@@ -232,32 +232,25 @@
    *
    * Documentation on
    *
-   * http://wiki/wiki/display/flyTEM/Render+Web+Service+APIs
+   * http://<render service host>/swagger-ui/#!/Bounding_Box_Image_APIs
    *
    * Source type: 7
    */
   CATMAID.RenderServTileSource = function(baseURL, fileExtension, tileWidth, tileHeight)
   {
-    var self = this;
-    this.mimeType = fileExtension == 'png' ? '/png-image' : '/jpeg-image';
-    this.getTileURL = function(project, stack, slicePixelPosition,
-                               col, row, zoomLevel) {
-      var scale = Math.pow(2, zoomLevel);
-      var tw = tileWidth * scale;
-      var th = tileHeight * scale;
-      var invScale = 1.0 / scale;
-      return baseURL + 'z/' + slicePixelPosition[0] + '/box/' + col * tw + ',' + row * th +
-          ',' + tw + ',' + th + ',' + invScale + self.mimeType;
+    this.getTileURL = function(project, stack, slicePixelPosition, col, row, zoomLevel) {
+      var baseName = CATMAID.getTileBaseName(slicePixelPosition);
+      return baseURL + 'largeDataTileSource/' + tileWidth + '/' + tileHeight + '/' + 
+             zoomLevel + '/' + baseName + row + '/' +  col + '.' + fileExtension;
     };
 
     this.getOverviewURL = function(stack, slicePixelPosition) {
-      return baseURL + 'z/' + slicePixelPosition[0] + '/box/0,0,' + stack.dimension.x + ',' +
-          stack.dimension.y + ',' + 192 / stack.dimension.x + self.mimeType;
+      return baseURL + 'largeDataTileSource/' + tileWidth + '/' + tileHeight + '/' + 
+             'small/' + slicePixelPosition[0] + '.' + fileExtension;
     };
 
     this.getOverviewLayer = function(layer) {
-      return new CATMAID.GenericOverviewLayer(layer, baseURL,
-          fileExtension, this.getOverviewURL);
+      return new CATMAID.GenericOverviewLayer(layer, baseURL, fileExtension, this.getOverviewURL);
     };
   };
 

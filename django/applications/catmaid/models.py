@@ -1,10 +1,12 @@
 from django import forms
 from django.contrib.gis.db import models as spatial_models
+from django.core.validators import RegexValidator
 from django.db import models
 from django.db.models import Q
 from django.db.models.signals import pre_save, post_save, post_syncdb
 from django.dispatch import receiver
 from datetime import datetime
+from jsonfield import JSONField
 import sys
 import re
 import urllib
@@ -27,10 +29,12 @@ CELL_BODY_CHOICES = (
     ('l', 'Local'),
     ('n', 'Non-Local' ))
 
+
 class UserRole(object):
     Admin = 'Admin'
     Annotate = 'Annotate'
     Browse = 'Browse'
+
 
 class Project(models.Model):
     class Meta:
@@ -385,11 +389,28 @@ class Message(models.Model):
     text = models.TextField(default='New message', blank=True, null=True)
     action = models.TextField(blank=True, null=True)
 
-class Settings(models.Model):
+
+class ClientDatastore(models.Model):
     class Meta:
-        db_table = "settings"
-    key = models.TextField(primary_key=True)
-    value = models.TextField(null=True)
+        db_table = "client_datastore"
+    name = models.CharField(max_length=255, unique=True, validators=[
+            RegexValidator(r'^[\w-]+$',
+                           'Only alphanumeric characters and hyphens are allowed.')])
+
+
+class ClientData(models.Model):
+    class Meta:
+        db_table = "client_data"
+        # This quadruple is effectively a multicolumn primary key.
+        unique_together = (('datastore', 'key', 'project', 'user'))
+    datastore = models.ForeignKey(ClientDatastore)
+    project = models.ForeignKey(Project, blank=True, null=True)
+    user = models.ForeignKey(User, blank=True, null=True)
+    key = models.CharField(max_length=255)
+    # TODO: JSONField does not use Postgres JSON type, does not validate that
+    # text content is valid JSON. Replace with Django's JSONField when we reach
+    # Django 1.9/Postgres 9.4.
+    value = JSONField(default={})
 
 
 class UserFocusedManager(models.Manager):
@@ -852,10 +873,6 @@ class UserProfile(models.Model):
     See: http://digitaldreamer.net/blog/2010/12/8/custom-user-profile-and-extend-user-admin-django/
     """
     user = models.OneToOneField(User)
-    inverse_mouse_wheel = models.BooleanField(
-        default=settings.PROFILE_DEFAULT_INVERSE_MOUSE_WHEEL)
-    display_stack_reference_lines = models.BooleanField(
-        default=settings.PROFILE_DISPLAY_STACK_REFERENCE_LINES)
     independent_ontology_workspace_is_default = models.BooleanField(
         default=settings.PROFILE_INDEPENDENT_ONTOLOGY_WORKSPACE_IS_DEFAULT)
     show_text_label_tool = models.BooleanField(
@@ -873,16 +890,6 @@ class UserProfile(models.Model):
     show_roi_tool = models.BooleanField(
         default=settings.PROFILE_SHOW_ROI_TOOL)
     color = RGBAField(default=distinct_user_color)
-    tracing_overlay_screen_scaling = models.BooleanField(
-        default=settings.PROFILE_TRACING_OVERLAY_SCREEN_SCALING)
-    tracing_overlay_scale = models.FloatField(
-        default=settings.PROFILE_TRACING_OVERLAY_SCALE)
-    prefer_webgl_layers = models.BooleanField(
-        default=settings.PROFILE_PREFER_WEBGL_LAYERS)
-    use_cursor_following_zoom = models.BooleanField(
-        default=settings.PROFILE_USE_CURSOR_FOLLOWING_ZOOM)
-    tile_linear_interpolation = models.BooleanField(
-        default=settings.PROFILE_TILE_LINEAR_INTERPOLATION)
 
     def __unicode__(self):
         return self.user.username
@@ -891,9 +898,6 @@ class UserProfile(models.Model):
         """ Return a dictionary containing a user's profile information.
         """
         pdict = {}
-        pdict['inverse_mouse_wheel'] = self.inverse_mouse_wheel
-        pdict['display_stack_reference_lines'] = \
-            self.display_stack_reference_lines
         pdict['independent_ontology_workspace_is_default'] = \
             self.independent_ontology_workspace_is_default
         pdict['show_text_label_tool'] = self.show_text_label_tool
@@ -903,11 +907,6 @@ class UserProfile(models.Model):
         pdict['show_tracing_tool'] = self.show_tracing_tool
         pdict['show_ontology_tool'] = self.show_ontology_tool
         pdict['show_roi_tool'] = self.show_roi_tool
-        pdict['tracing_overlay_screen_scaling'] = self.tracing_overlay_screen_scaling
-        pdict['tracing_overlay_scale'] = self.tracing_overlay_scale
-        pdict['prefer_webgl_layers'] = self.prefer_webgl_layers
-        pdict['use_cursor_following_zoom'] = self.use_cursor_following_zoom
-        pdict['tile_linear_interpolation'] = self.tile_linear_interpolation
         return pdict
 
     # Fix a problem with duplicate keys when new users are added.

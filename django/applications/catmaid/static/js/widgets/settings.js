@@ -24,6 +24,82 @@
   {
 
     /**
+     * Add meta controls and information about settings cascade, scope and
+     * overrides/locking to a settings element.
+     */
+    var wrapSettingsControl = function (control, settings, key, scope) {
+      var valueScope = settings.rendered[scope][key].valueScope;
+      var fromThisScope = valueScope === scope;
+      var overridable = settings.rendered[scope][key].overridable;
+      var meta = $('<ul />');
+
+      if (!fromThisScope) {
+        control.addClass('inherited');
+        meta.append($('<li />').text('This value is inherited from ' + valueScope + ' settings.'));
+      }
+
+      if (!overridable && !fromThisScope) {
+        control.addClass('disabled');
+        control.find('button,input,select').prop('disabled', true);
+        meta.append($('<li />').text('This value is locked by ' + valueScope + ' settings.'));
+      }
+
+      meta.append($('<li />')
+          .text('CATMAID\'s default is "' + settings.schema.entries[key].default + '".'));
+
+      meta = $('<div class="settingsMeta" />').append(meta);
+
+      if (fromThisScope) {
+        meta.append($('<button />')
+            .text('Reset to inherited default')
+            .click(function () {
+              settings.unset(key, scope).then(refresh);
+            }));
+      }
+
+      // Do not allow user-specific scopes to set overridability because it
+      // is confusing.
+      if ((scope === 'global' || scope === 'project') &&
+          (!overridable && fromThisScope || overridable)) {
+        meta.append($('<button />')
+            .text(overridable ? 'Lock this setting' : 'Unlock this setting')
+            .click(function () {
+              settings.setOverridable(key, !overridable, scope).then(refresh);
+            }));
+      }
+
+      return control.append(meta);
+    };
+
+    /**
+     * Adds a selector for the scope of settings displayed by the widget.
+     */
+    var addSettingsScopeSelect = function (container) {
+      var scopeSelect = $('<select/>');
+      var scopeOptions = [
+        {name: 'Your default settings', val: 'user'},
+        {name: 'Your settings for this project', val: 'session'}
+      ];
+      if (user_permissions.can_administer[project.id]) {
+        scopeOptions = [
+          {name: 'All users: server defaults', val: 'global'},
+          {name: 'All users: project defaults', val: 'project'},
+        ].concat(scopeOptions);
+      }
+      scopeOptions.forEach(function(o) {
+        var selected = o.val === SETTINGS_SCOPE;
+        this.append(new Option(o.name + ' (' + o.val + ')', o.val, selected, selected));
+      }, scopeSelect);
+
+      scopeSelect.on('change', function(e) {
+        SETTINGS_SCOPE = this.value;
+        refresh();
+      });
+
+      $(container).append(scopeSelect);
+    };
+
+    /**
      * Adds general settings to the given container.
      */
     var addGeneralSettings = function(container)
@@ -77,53 +153,70 @@
     {
       var ds = CATMAID.DOM.addSettingsContainer(container, "Stack view");
 
-      ds.append(CATMAID.DOM.createCheckboxSetting("Invert mouse wheel",
-        userprofile.inverse_mouse_wheel, null, function() {
-          userprofile.inverse_mouse_wheel = this.checked;
-          userprofile.saveAll(function () {
-            CATMAID.msg('Success', 'User profile updated successfully.');
-          });
-        }));
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createCheckboxSetting(
+              "Invert mouse wheel",
+              CATMAID.Navigator.Settings[SETTINGS_SCOPE].invert_mouse_wheel,
+              null,
+              function() {
+                CATMAID.Navigator.Settings[SETTINGS_SCOPE].invert_mouse_wheel = this.checked;
+              }),
+          CATMAID.Navigator.Settings,
+          'invert_mouse_wheel',
+          SETTINGS_SCOPE));
 
-      ds.append(CATMAID.DOM.createCheckboxSetting("Display reference lines",
-        userprofile.display_stack_reference_lines, "Show a faint horizontal " +
-        "and vertical line that meet at the current view's center.",
-        function() {
-          userprofile.display_stack_reference_lines = this.checked;
-          userprofile.saveAll(function () {
-            project.getStackViewers().forEach(function(s) {
-              s.showReferenceLines(userprofile.display_stack_reference_lines);
-            });
-            CATMAID.msg('Success', 'User profile updated successfully.');
-          });
-        }));
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createCheckboxSetting(
+              "Display reference lines",
+              CATMAID.StackViewer.Settings[SETTINGS_SCOPE].display_stack_reference_lines,
+              "Show a faint horizontal and vertical line that meet at the " +
+              "current view's center.",
+              function() {
+                CATMAID.StackViewer.Settings
+                    .set(
+                      'display_stack_reference_lines',
+                      this.checked,
+                      SETTINGS_SCOPE)
+                    .then(function () {
+                      project.getStackViewers().forEach(function(s) {
+                        s.showReferenceLines(CATMAID.StackViewer.Settings.session.display_stack_reference_lines);
+                      });
+                    });
+              }),
+          CATMAID.StackViewer.Settings,
+          'display_stack_reference_lines',
+          SETTINGS_SCOPE));
 
       // Cursor following zoom
-      ds.append(CATMAID.DOM.createCheckboxSetting("Use cursor following zoom",
-        userprofile.use_cursor_following_zoom, "Choose whether zooming " +
-        "follows the position of the cursor (checked) or the center of the " +
-        "stack view (unchecked).",
-        function () {
-          userprofile.use_cursor_following_zoom = this.checked;
-          userprofile.saveAll(function () {
-            CATMAID.msg('Success', 'User profile updated successfully.');
-          });
-        }));
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createCheckboxSetting(
+              "Use cursor following zoom",
+              CATMAID.Navigator.Settings[SETTINGS_SCOPE].use_cursor_following_zoom,
+              "Choose whether zooming follows the position of the cursor " +
+              "(checked) or the center of the stack view (unchecked).",
+              function() {
+                CATMAID.Navigator.Settings[SETTINGS_SCOPE].use_cursor_following_zoom = this.checked;
+              }),
+          CATMAID.Navigator.Settings,
+          'use_cursor_following_zoom',
+          SETTINGS_SCOPE));
 
-      // WebGL layers
-      ds.append(CATMAID.DOM.createCheckboxSetting("Prefer WebGL Layers",
-        userprofile.prefer_webgl_layers,
-        'Choose whether to use WebGL or Canvas tile layer rendering when ' +
-        'supported by your tile source and browser. Note that your tile ' +
-        'source server may need to be <a href="http://enable-cors.org/">' +
-        'configured to enable use in WebGL</a>. (Note: you must reload ' +
-        'the page for this setting to take effect.)',
-        function() {
-          userprofile.prefer_webgl_layers = this.checked;
-          userprofile.saveAll(function () {
-            CATMAID.msg('Success', 'User profile updated successfully.');
-          });
-        }));
+      // WebGL tile layers
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createCheckboxSetting(
+              "Prefer WebGL Layers",
+              CATMAID.TileLayer.Settings[SETTINGS_SCOPE].prefer_webgl,
+              'Choose whether to use WebGL or Canvas tile layer rendering when ' +
+              'supported by your tile source and browser. Note that your tile ' +
+              'source server may need to be <a href="http://enable-cors.org/">' +
+              'configured to enable use in WebGL</a>. (Note: you must reload ' +
+              'the page for this setting to take effect.)',
+              function() {
+                CATMAID.TileLayer.Settings[SETTINGS_SCOPE].prefer_webgl = this.checked;
+              }),
+          CATMAID.TileLayer.Settings,
+          'prefer_webgl',
+          SETTINGS_SCOPE));
 
       // Tile interpolation
       var tileInterpolation = $('<select/>');
@@ -132,22 +225,26 @@
         {name: 'Keep images pixelated (nearest)', id: 'nearest'}
       ];
       interpolationModes.forEach(function(o) {
-        var selected = (o.id === (userprofile.tile_linear_interpolation ? 'linear' : 'nearest'));
+        var selected = (o.id === (CATMAID.TileLayer.Settings[SETTINGS_SCOPE].linear_interpolation ? 'linear' : 'nearest'));
         this.append(new Option(o.name, o.id, selected, selected));
       }, tileInterpolation);
 
-      ds.append(CATMAID.DOM.createLabeledControl('Image tile interpolation',
-            tileInterpolation, 'Choose how to interpolate pixel values when ' +
-            'image tiles are magnified.'));
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createLabeledControl(
+              'Image tile interpolation',
+              tileInterpolation,
+              'Choose how to interpolate pixel values when image tiles ' +
+              'are magnified.'),
+          CATMAID.TileLayer.Settings,
+          'linear_interpolation',
+          SETTINGS_SCOPE));
       tileInterpolation.on('change', function(e) {
-        userprofile.tile_linear_interpolation = this.value === 'linear';
-        userprofile.saveAll(function () {
-          CATMAID.msg('Success', 'User profile updated successfully.');
-        });
+        var interp = this.value === 'linear';
+        CATMAID.TileLayer.Settings[SETTINGS_SCOPE].linear_interpolation = interp;
         project.getStackViewers().forEach(function (stackViewer) {
           stackViewer.getLayers().forEach(function (layer) {
             if (layer instanceof CATMAID.TileLayer) {
-              layer.setInterpolationMode(userprofile.tile_linear_interpolation);
+              layer.setInterpolationMode(interp);
             }
           });
         });
@@ -356,40 +453,58 @@
       // Add explanatory text
       ds.append($('<div/>').addClass('setting').append("Choose how nodes, " +
           "edges, connectors, and labels are scaled in the tracing overlay. " +
-          "This setting can be saved to your user profile and will persist " +
+          "This setting will persist " +
           "across sessions. (Note: changes to text labels, edges and arrows " +
           "will not appear correctly in the stack view until you zoom, switch " +
           "sections or pan.)"));
 
-      ds.append(CATMAID.DOM.createRadioSetting('overlay-scaling', [
-          {id: 'overlay-scaling-screen', desc: 'Fixed screen size',
-              checked: userprofile.tracing_overlay_screen_scaling},
-          {id: 'overlay-scaling-stack', desc: 'Fixed stack size',
-              checked: !userprofile.tracing_overlay_screen_scaling}
-      ], function () {
-        userprofile.tracing_overlay_screen_scaling = this.value === 'overlay-scaling-screen';
-        project.getStackViewers().forEach(function (s) {s.redraw();});
-      }).addClass('setting'));
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createRadioSetting(
+              'overlay-scaling',
+              [{id: 'overlay-scaling-screen', desc: 'Fixed screen size',
+                checked: SkeletonAnnotations.SVGOverlay.Settings[SETTINGS_SCOPE].screen_scaling},
+               {id: 'overlay-scaling-stack', desc: 'Fixed stack size',
+                checked: !SkeletonAnnotations.SVGOverlay.Settings[SETTINGS_SCOPE].screen_scaling}],
+              null,
+              function () {
+                SkeletonAnnotations.SVGOverlay.Settings
+                    .set(
+                      'screen_scaling',
+                      this.value === 'overlay-scaling-screen',
+                      SETTINGS_SCOPE)
+                    .then(function () {
+                      project.getStackViewers().forEach(function (s) {s.redraw();});
+                    });
+              }).addClass('setting'),
+          SkeletonAnnotations.SVGOverlay.Settings,
+          'screen_scaling',
+          SETTINGS_SCOPE));
 
-      ds.append(CATMAID.DOM.createLabeledControl(
-          $('<span>Size adjustment: <span id="overlay-scale-value">' +
-              (userprofile.tracing_overlay_scale*100).toFixed() + '</span>%</span>'),
-          $('<div id="overlay-scaling-slider" />').slider({
-              min: -2,
-              max: 2,
-              step: 0.1,
-              value: Math.log(userprofile.tracing_overlay_scale)/Math.LN2,
-              change: function (event, ui) {
-                userprofile.tracing_overlay_scale = Math.pow(2, ui.value);
-                $('#overlay-scale-value').text((userprofile.tracing_overlay_scale*100).toFixed());
-                project.getStackViewers().forEach(function (s) {s.redraw();});
-              }})));
-
-      ds.append($('<button>Save to your profile</button>').click(function () {
-        userprofile.saveAll(function () {
-          CATMAID.msg('Success', 'User profile updated successfully.');
-        });
-      }).addClass('setting'));
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createLabeledControl(
+              $('<span>Size adjustment: <span id="overlay-scale-value">' +
+                  (SkeletonAnnotations.SVGOverlay.Settings[SETTINGS_SCOPE].scale*100).toFixed() +
+                  '</span>%</span>'),
+              $('<div id="overlay-scaling-slider" />').slider({
+                  min: -2,
+                  max: 2,
+                  step: 0.1,
+                  value: Math.log(SkeletonAnnotations.SVGOverlay.Settings[SETTINGS_SCOPE].scale)/Math.LN2,
+                  change: function (event, ui) {
+                    SkeletonAnnotations.SVGOverlay.Settings
+                        .set(
+                          'scale',
+                          Math.pow(2, ui.value),
+                          SETTINGS_SCOPE)
+                        .then(function () {
+                          $('#overlay-scale-value').text((
+                              SkeletonAnnotations.SVGOverlay.Settings[SETTINGS_SCOPE].scale*100).toFixed());
+                          project.getStackViewers().forEach(function (s) {s.redraw();});
+                        });
+                  }})),
+          SkeletonAnnotations.SVGOverlay.Settings,
+          'scale',
+          SETTINGS_SCOPE));
 
 
       var dsNodeColors = CATMAID.DOM.addSettingsContainer(ds, "Skeleton colors", true);
@@ -733,30 +848,38 @@
     };
 
 
-    // Add all settings
-    addGeneralSettings(space);
-    addTileLayerSettings(space);
-    addGridSettings(space);
-    addTracingSettings(space);
+    var SETTINGS_SCOPE = 'session';
 
-    // Add collapsing support to all settings containers
-    $("p.title", space).click(function() {
-      var section = this;
-      $(section).next(".content").animate(
-        { height: "toggle",
-          opacity: "toggle" },
-        { complete: function() {
-            // change open/close indicator box
-            var open_elements = $(".extend-box-open", section);
-            if (open_elements.length > 0) {
-                open_elements.attr('class', 'extend-box-closed');
-            } else {
-                $(".extend-box-closed", section).attr('class', 'extend-box-open');
-            }
-        }});
-    });
+    var refresh = (function () {
+      $(space).empty();
 
-    return;
+      addSettingsScopeSelect(space);
+
+      // Add all settings
+      addGeneralSettings(space);
+      addTileLayerSettings(space);
+      addGridSettings(space);
+      addTracingSettings(space);
+
+      // Add collapsing support to all settings containers
+      $("p.title", space).click(function() {
+        var section = this;
+        $(section).next(".content").animate(
+          { height: "toggle",
+            opacity: "toggle" },
+          { complete: function() {
+              // change open/close indicator box
+              var open_elements = $(".extend-box-open", section);
+              if (open_elements.length > 0) {
+                  open_elements.attr('class', 'extend-box-closed');
+              } else {
+                  $(".extend-box-closed", section).attr('class', 'extend-box-open');
+              }
+          }});
+      });
+    }).bind(this);
+
+    refresh();
   };
 
   CATMAID.SettingsWidget = SettingsWidget;

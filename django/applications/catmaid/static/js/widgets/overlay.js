@@ -600,6 +600,21 @@ SkeletonAnnotations.SVGOverlay.prototype = {
 };
 CATMAID.asEventSource(SkeletonAnnotations.SVGOverlay.prototype);
 
+SkeletonAnnotations.SVGOverlay.Settings = new CATMAID.Settings(
+      'tracing-overlay',
+      {
+        version: 0,
+        entries: {
+          screen_scaling: {
+            default: true
+          },
+          scale: {
+            default: 1.0
+          }
+        },
+        migrations: {}
+      });
+
 /**
  * Creates the node with the given ID, if it is only a virtual node. Otherwise,
  * it is resolved immediately. A node object as well as number (representing a
@@ -2082,14 +2097,17 @@ SkeletonAnnotations.SVGOverlay.prototype.redraw = function(force, completionCall
 
   doNotUpdate = !force && (doNotUpdate || this.suspended);
 
-  var screenScale = userprofile.tracing_overlay_screen_scaling;
+  var screenScale = SkeletonAnnotations.SVGOverlay.Settings.session.screen_scaling;
   this.paper.classed('screen-scale', screenScale);
   // All SVG elements scale automatcally, if the viewport on the SVG data
   // changes. If in screen scale mode, where the size of all elements should
   // stay the same (regardless of zoom level), counter acting this is required.
   var resScale = Math.max(stackViewer.primaryStack.resolution.x, stackViewer.primaryStack.resolution.y);
   var dynamicScale = screenScale ? (1 / (stackViewer.scale * resScale)) : false;
-  this.graphics.scale(userprofile.tracing_overlay_scale, resScale, dynamicScale);
+  this.graphics.scale(
+      SkeletonAnnotations.SVGOverlay.Settings.session.scale,
+      resScale,
+      dynamicScale);
 
   if ( !doNotUpdate ) {
     // If changing scale or slice, remove tagbox.

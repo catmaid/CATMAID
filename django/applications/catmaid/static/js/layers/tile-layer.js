@@ -543,6 +543,21 @@
     return this.opacity;
   };
 
+  TileLayer.Settings = new CATMAID.Settings(
+      'tile-layer',
+      {
+        version: 0,
+        entries: {
+          prefer_webgl: {
+            default: false
+          },
+          linear_interpolation: {
+            default: true
+          }
+        },
+        migrations: {}
+      });
+
   CATMAID.TileLayer = TileLayer;
 
 })(CATMAID);

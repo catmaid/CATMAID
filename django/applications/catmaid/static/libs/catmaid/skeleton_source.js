@@ -203,6 +203,7 @@
 
   SkeletonSource.prototype.notifyLink = function(model, source_chain) {
     if (this.linkTarget) {
+      this.triggerChange(CATMAID.tools.idMap(model));
       this.linkTarget.updateOneModel(model, source_chain);
     }
   };

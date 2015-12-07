@@ -73,7 +73,16 @@
                 self.trigger(DataStore.EVENT_LOADED, self);
                 resolve();
               },
-              reject));
+              function (error) {
+                if (error.status === 404) {
+                  self.entries = new Map();
+                  self.trigger(DataStore.EVENT_LOADED, self);
+                  resolve();
+                  return true;
+                } else {
+                  reject();
+                }
+              }));
     });
   };
 

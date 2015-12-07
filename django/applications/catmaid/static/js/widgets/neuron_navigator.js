@@ -72,6 +72,11 @@
     return this.current_node.hasSkeleton(skeleton_id);
   };
 
+  NeuronNavigator.prototype.getSkeletonModels = function()
+  {
+    return this.current_node.getSkeletonModels();
+  };
+
   NeuronNavigator.prototype.getSelectedSkeletonModels = function()
   {
     return this.current_node.getSelectedSkeletonModels();
@@ -161,6 +166,8 @@
       return;
     }
 
+    var oldModels = this.current_node ? this.getSkeletonModels() : {};
+
     // Find all nodes that will be removed after this selection
     var current_nodes = this.get_node_list(this.current_node);
     var new_nodes = this.get_node_list(node);
@@ -206,8 +213,20 @@
     // Get the current filter set and add content based on it
     node.add_content($content, this.current_node.get_filter_set());
 
-    // Update sync link
-    this.updateLink(this.getSelectedSkeletonModels());
+    var newModels = this.current_node ? this.getSkeletonModels() : {};
+
+    for (var mId in oldModels) {
+      if (mId in newModels) { delete oldModels[mId]; }
+    }
+    for (var mId in newModels) {
+      if (mId in oldModels) { delete newModels[mId]; }
+    }
+    if (!CATMAID.tools.isEmpty(oldModels)) {
+      this.triggerRemove(oldModels);
+    }
+    if (!CATMAID.tools.isEmpty(newModels)) {
+      this.triggerAdd(newModels);
+    }
   };
 
   /**
@@ -370,6 +389,15 @@
    */
   NeuronNavigator.Node.prototype.hasSkeleton = function(skeleton_id) {
     return false;
+  };
+
+  /**
+   * Default implementation for getting information for the skeleton source
+   * interface. It can be overridden by base classes.
+   */
+  NeuronNavigator.Node.prototype.getSkeletonModels = function()
+  {
+    return {};
   };
 
   /**
@@ -1262,7 +1290,7 @@
     // Add a change handler for the check boxes in each row
     $('#' + table_id).on('change', 'tbody td.selector_column input', (function() {
       // Update sync link
-      this.navigator.updateLink(this.navigator.getSelectedSkeletonModels());
+      this.navigator.triggerChange(this.navigator.getSelectedSkeletonModels());
     }).bind(this));
 
     // Add double click handler for table cells containing a select check box
@@ -1363,13 +1391,30 @@
   };
 
   /**
+   * Returns a skeleton model dictionary.
+   */
+  NeuronNavigator.NeuronListMixin.prototype.getSkeletonModels = function() {
+    return this.get_entities().reduce((function(o, n) {
+      n.skeleton_ids.forEach(function(skid) {
+        var model = new CATMAID.SkeletonModel(skid, n.name,
+            new THREE.Color().setRGB(1, 1, 0));
+        model.selected = this.listed_neurons[n.id].selected;
+        o[skid] = model;
+      });
+      return o;
+    }).bind(this), {});
+  };
+
+  /**
    * Retruns a skeleton model dictionary.
    */
   NeuronNavigator.NeuronListMixin.prototype.getSelectedSkeletonModels = function() {
     return this.get_entities(true).reduce((function(o, n) {
       n.skeleton_ids.forEach(function(skid) {
-        o[skid] = new CATMAID.SkeletonModel(skid, n.name,
+        var model = new CATMAID.SkeletonModel(skid, n.name,
             new THREE.Color().setRGB(1, 1, 0));
+        model.selected = true;
+        o[skid] = model;
       });
       return o;
     }).bind(this), {});
@@ -1378,20 +1423,25 @@
 
   /**
    * If passed true, this function returns a list of selected entities in the
-   * neuron list. Otherweise, a list of unselected entities is returned.
+   * neuron list. If passed false, a list of unselected entities is returned. If
+   * passed undefined, all entities are returned.
    */
   NeuronNavigator.NeuronListMixin.prototype.get_entities = function(checked)
   {
     if (!this.listed_neurons) return [];
 
-    var checked_neuron_IDs = $('#navigator_neuronlist_table' + this.navigator.widgetID + ' tbody input')
-      .filter(function(i, cb) { return cb.checked; })
-      .toArray()
-      .reduce(function(o, cb) { o[cb.getAttribute('neuron_id')] = true; return o; }, {});
+    if (undefined === checked) {
+      return this.listed_neurons;
+    } else {
+      var checked_neuron_IDs = $('#navigator_neuronlist_table' + this.navigator.widgetID + ' tbody input')
+        .filter(function(i, cb) { return cb.checked === checked; })
+        .toArray()
+        .reduce(function(o, cb) { o[cb.getAttribute('neuron_id')] = true; return o; }, {});
 
-    return this.listed_neurons.filter(function(neuron) {
-      return neuron.id in checked_neuron_IDs;
-    });
+      return this.listed_neurons.filter(function(neuron) {
+        return neuron.id in checked_neuron_IDs;
+      });
+    }
   };
 
   /**
@@ -2125,7 +2175,7 @@
   /**
    * Retruns a skeleton model dictionary.
    */
-  NeuronNavigator.NeuronNode.prototype.getSelectedSkeletonModels = function() {
+  NeuronNavigator.NeuronNode.prototype.getSkeletonModels = function() {
     return this.skeleton_ids.reduce((function(o, skid) {
       o[skid] = new CATMAID.SkeletonModel(skid, this.neuron_name,
           new THREE.Color().setRGB(1, 1, 0));
@@ -2133,6 +2183,8 @@
     }).bind(this), {});
   };
 
+  NeuronNavigator.NeuronNode.prototype.getSelectedSkeletonModels =
+      NeuronNavigator.NeuronNode.prototype.getSkeletonModels;
 
   /**
    * This mixin introduces fields and functions to work with the currently active

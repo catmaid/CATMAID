@@ -250,8 +250,8 @@
       var updated = CATMAID.tools.listToIdMap(skeletons.map(function(s) {
         return s.clone();
       }));
-      this.triggerChange(updated)
-    };
+      this.triggerChange(updated);
+    }
   };
 
   /** setup button handlers */
@@ -559,7 +559,7 @@
         var removed_models;
         if (removedNeurons > 0) {
           removed_models = prev_skeleton_ids.reduce(function(o, skid) {
-            var s = models[skid]; if (s) { o[skid] = s; }; return o;
+            var s = models[skid]; if (s) { o[skid] = s; } return o;
           }, {});
           CATMAID.warn(removedNeurons + " neuron(s) were removed");
         }
@@ -589,11 +589,11 @@
 
         if (!CATMAID.tools.isEmpty(updated_models)) {
           self.triggerChange(updated_models);
-        };
+        }
 
         if (!CATMAID.tools.isEmpty(removed_models)) {
           self.triggerRemove(removed_models);
-        };
+        }
       });
   };
 

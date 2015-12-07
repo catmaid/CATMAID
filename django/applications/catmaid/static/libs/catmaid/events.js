@@ -83,7 +83,7 @@
       if (this.hasOwnProperty('events')) {
         this.events.clear();
       }
-      return result
+      return result;
     },
 
 

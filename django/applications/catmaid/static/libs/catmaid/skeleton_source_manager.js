@@ -164,7 +164,7 @@
       opSelect.options.add(new Option('Intersection', CATMAID.SkeletonSource.INTERSECTION));
       opSelect.options.add(new Option('Difference', CATMAID.SkeletonSource.DIFFERENCE));
       selectDefault(opSelect, CATMAID.SkeletonSource.UNION);
-      return opSelect
+      return opSelect;
     };
     var opSelect = createOpSelector();
     var op = document.createElement('label');
@@ -182,7 +182,7 @@
       modeSelect.options.add(new Option('Only updates', 'updates-only'));
       selectDefault(modeSelect, value);
       return modeSelect;
-    }
+    };
     var modeSelect = createModeSelector('all');
     var mode = document.createElement('label');
     mode.appendChild(document.createTextNode('Filter'));
@@ -237,7 +237,7 @@
         "width": "10%",
         "render": function(data, type, row, meta) {
           var checked = row.colors ? 'checked="checked"' : '';
-          return '<label><input type="checkbox" ' + checked + ' />Colors</label>'
+          return '<label><input type="checkbox" ' + checked + ' />Colors</label>';
         }
       }, {
         "width": "10%",

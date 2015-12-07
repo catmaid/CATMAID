@@ -68,7 +68,7 @@
   ActiveSkeleton.prototype._handleActiveNodeChange = function(node, skeletonChange) {
     if (skeletonChange) {
       if (this.model) {
-        var oldModel = this.model
+        var oldModel = this.model;
         this.model = null;
         this.triggerRemove(CATMAID.tools.idMap(oldModel.clone()));
       }

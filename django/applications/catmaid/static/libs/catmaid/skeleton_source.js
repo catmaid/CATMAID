@@ -128,14 +128,14 @@
         // Make models available that appear in both sources
         for (var mId in result) {
           if (!sbsModels[mId]) {
-            delete result[mId]
+            delete result[mId];
           }
         }
       } else if (SkeletonSource.DIFFERENCE === sbs.op) {
         // Make models available that don't appear in the current source
         for (var mId in result) {
           if (sbsModels[mId]) {
-            delete result[mId]
+            delete result[mId];
           }
         }
       } else {
@@ -378,7 +378,7 @@
       var m = models[mId];
       // Remove unselected items for selection based sync
       if (this.selectionBased && !m.selected) {
-        delete this.modelCache[mId]
+        delete this.modelCache[mId];
       } else {
         this.modelCache[mId] = models[mId];
       }

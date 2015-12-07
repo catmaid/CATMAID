@@ -105,7 +105,7 @@
           var m = new CATMAID.SkeletonModel(s, e.name,
               new THREE.Color().setRGB(1, 1, 0));
           // Set correct selection state for model
-          m.selected = self.entity_selection_map[e.id]
+          m.selected = self.entity_selection_map[e.id];
           o[s] = m;
 
         });

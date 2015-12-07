@@ -145,12 +145,29 @@
       }
     }).bind(this);
 
+    // Select default value in a select element
+    var selectDefault = function(select, value) {
+      for (var i=0, max=select.options.length; i<max; ++i) {
+        var o = select.options[i];
+        if (!value || o.value === value) {
+          o.defaultSelected = o.selected = true;
+          break;
+        }
+      }
+      return select;
+    };
+
     // Subscriptions: combination operation
+    var createOpSelector = function(value) {
+      var opSelect = document.createElement('select');
+      opSelect.options.add(new Option('Union', CATMAID.SkeletonSource.UNION));
+      opSelect.options.add(new Option('Intersection', CATMAID.SkeletonSource.INTERSECTION));
+      opSelect.options.add(new Option('Difference', CATMAID.SkeletonSource.DIFFERENCE));
+      selectDefault(opSelect, CATMAID.SkeletonSource.UNION);
+      return opSelect
+    };
+    var opSelect = createOpSelector();
     var op = document.createElement('label');
-    var opSelect = document.createElement('select');
-    opSelect.options.add(new Option('Union', CATMAID.SkeletonSource.UNION, true, true));
-    opSelect.options.add(new Option('Intersection', CATMAID.SkeletonSource.INTERSECTION));
-    opSelect.options.add(new Option('Difference', CATMAID.SkeletonSource.DIFFERENCE));
     op.appendChild(document.createTextNode('Operator'));
     op.setAttribute('title', 'All operators are left-associative');
     op.appendChild(opSelect);
@@ -163,15 +180,7 @@
       modeSelect.options.add(new Option('Only additions', 'additions-only'));
       modeSelect.options.add(new Option('Only removals', 'removals-only'));
       modeSelect.options.add(new Option('Only updates', 'updates-only'));
-      // Select default
-      for (var i=0, max=modeSelect.options.length; i<max; ++i) {
-        var o = modeSelect.options[i];
-        if (!value || o.value === value) {
-          o.defaultSelected = o.selected = true;
-          break;
-        }
-        var selectedIndex = value ? modeSelect.options: 0;
-      }
+      selectDefault(modeSelect, value);
       return modeSelect;
     }
     var modeSelect = createModeSelector('all');
@@ -236,7 +245,14 @@
       }, {
         "width": "10%",
         "render": function(data, type, row, meta) {
-          return 0 === meta.row ? '-' : row.op;
+          if (0 === meta.row) {
+            return (!row.target || row.target.ignoreLocal) ?
+              '-' : "Union with local";
+          } else {
+            var opSelector = createOpSelector(row.op);
+            opSelector.setAttribute('class', 'action-changeop');
+            return opSelector.outerHTML;
+          }
         }
       }, {
         "width": "10%",
@@ -256,6 +272,12 @@
       var subscription = datatable.row(tr).data();
       e.data.removeSubscription(subscription);
       datatable.row(tr).remove().draw();
+    });
+    $(table).on("change", "td .action-changeop", source, function(e) {
+      var tr = $(this).closest("tr");
+      var subscription = datatable.row(tr).data();
+      subscription.op = this.value;
+      subscription.target.loadSubscriptions();
     });
     $(table).on("change", "td .action-changemode", source, function(e) {
       var tr = $(this).closest("tr");

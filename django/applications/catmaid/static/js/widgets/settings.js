@@ -60,7 +60,7 @@
       // Do not allow user-specific scopes to set overridability because it
       // is confusing.
       if ((scope === 'global' || scope === 'project') &&
-          (!overridable && fromThisScope || overridable)) {
+          (overridable || fromThisScope)) {
         meta.append($('<button />')
             .text(overridable ? 'Lock this setting' : 'Unlock this setting')
             .click(function () {

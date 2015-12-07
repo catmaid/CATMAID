@@ -53,8 +53,6 @@ var SkeletonAnnotations = {
   SUBTYPE_SYNAPTIC_CONNECTOR : "synaptic-connector",
   SUBTYPE_ABUTTING_CONNECTOR : "abutting-connector",
 
-  activeSkeleton : new CATMAID.ActiveSkeleton(),
-
   // Event name constants
   EVENT_ACTIVE_NODE_CHANGED: "tracing_active_node_changed",
   EVENT_SKELETON_CHANGED: "tracing_skeleton_changed",
@@ -510,6 +508,12 @@ SkeletonAnnotations.getZOfVirtualNode = SkeletonAnnotations.getVirtualNodeCompon
   };
 
 })();
+
+/**
+ * Maintain a skeleton source for the active skeleton. Widgets can register to
+ * it.
+ */
+SkeletonAnnotations.activeSkeleton = new CATMAID.ActiveSkeleton();
 
 /**
  * The constructor for SVGOverlay.
@@ -1018,13 +1022,6 @@ SkeletonAnnotations.SVGOverlay.prototype.activateNode = function(node) {
     // Deselect
     atn.set(null, null);
     project.setSelectObject( null, null );
-  }
-
-  // (de)highlight in SkeletonSource instances if any if different from the last
-  // activated skeleton
-  if (last_skeleton_id !== SkeletonAnnotations.getActiveSkeletonId()) {
-    CATMAID.skeletonListSources.highlight(SkeletonAnnotations.activeSkeleton,
-        SkeletonAnnotations.getActiveSkeletonId());
   }
 };
 

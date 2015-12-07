@@ -92,6 +92,15 @@
     return null;
   };
 
+  WebGLApplication.prototype.getSkeletonModels = function() {
+    var skeletons = this.space.content.skeletons;
+    return Object.keys(skeletons).reduce(function(m, skid) {
+      var skeleton = skeletons[skid];
+      m[skid] = skeleton.skeletonmodel.clone();
+      return m;
+    }, {});
+  };
+
   WebGLApplication.prototype.getSelectedSkeletonModels = function() {
     var skeletons = this.space.content.skeletons;
     return Object.keys(skeletons).reduce(function(m, skid) {

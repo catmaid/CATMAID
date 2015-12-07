@@ -23,6 +23,8 @@
     this.queryResults = [];
     // Map expanded entities to a query result index
     this.expansions = new Map();
+    // Map entity IDs to entities
+    this.entityMap = {};
 
     this.entity_selection_map = {};
     this.pid = project.id;
@@ -86,8 +88,8 @@
     });
   };
 
-  NeuronAnnotations.prototype.getSkeletonModel = function(skeleton_id) {
-    if (this.hasSkeleton(skeleton_id)) {
+  NeuronAnnotations.prototype.getSkeletonModel = function(skeleton_id, nocheck) {
+    if (nocheck || this.hasSkeleton(skeleton_id)) {
       return new CATMAID.SkeletonModel(skeleton_id, "",
           new THREE.Color().setRGB(1, 1, 0));
     } else {
@@ -95,12 +97,31 @@
     }
   };
 
+  NeuronAnnotations.prototype.getSkeletonModels = function() {
+    var self = this;
+    return this.get_entities().reduce(function(o, e) {
+      if (e.type === 'neuron') {
+        e.skeleton_ids.forEach(function(s) {
+          var m = new CATMAID.SkeletonModel(s, e.name,
+              new THREE.Color().setRGB(1, 1, 0));
+          // Set correct selection state for model
+          m.selected = self.entity_selection_map[e.id]
+          o[s] = m;
+
+        });
+      }
+      return o;
+    }, {});
+  };
+
   NeuronAnnotations.prototype.getSelectedSkeletonModels = function() {
     return this.get_selected_neurons().reduce(function(o, e) {
       if (e.type === 'neuron') {
         e.skeleton_ids.forEach(function(s) {
-          o[s] = new CATMAID.SkeletonModel(s, e.name,
+          var m = new CATMAID.SkeletonModel(s, e.name,
               new THREE.Color().setRGB(1, 1, 0));
+          m.selected = true;
+          o[s] = m;
         });
       }
       return o;
@@ -434,25 +455,34 @@
             if (e.error) {
               new CATMAID.ErrorDialog(e.error, e.detail).show();
             } else {
+              // Keep a copy of all models that are removed
+              var removedModels = this.getSkeletonModels();
               // Unregister last result set from neuron name service
               CATMAID.NeuronNameService.getInstance().unregister(this);
               // Empty selection map and store results
               this.entity_selection_map = {};
+              this.entityMap = {};
               this.expansions.clear();
               this.queryResults = [];
               this.queryResults[0] = e.entities;
               this.total_n_results = e.entities.length;
+              // Get new models for notification
+              var addedModels = this.getSkeletonModels();
 
               // Mark entities as unselected
               this.queryResults[0].forEach((function(entity) {
                 this.entity_selection_map[entity.id] = false;
+                this.entityMap[entity.id] = entity;
               }).bind(this));
 
               // Register search results with neuron name service and rebuild
               // result table.
-              var skeletonObject = getSkeletonIDsInResult(e);
+              var skeletonObject = getSkeletonIDsInResult(e.entities);
               CATMAID.NeuronNameService.getInstance().registerAll(this, skeletonObject,
                   this.refresh.bind(this));
+
+              this.triggerRemove(removedModels);
+              this.triggerAdd(addedModels);
             }
           }
         }, this));
@@ -463,7 +493,7 @@
    * search result passed as argument.
    */
   function getSkeletonIDsInResult(result) {
-    return result.entities.filter(function(e) {
+    return result.filter(function(e) {
       return 'neuron' === e.type;
     }).reduce(function(o, e) {
       return e.skeleton_ids.reduce(function(o, skid) {
@@ -534,22 +564,18 @@
             var entity_id = $(this).attr('entity_id');
             // Update the entities selection state
             widget.entity_selection_map[entity_id] = is_checked;
-            // Update sync link
-            widget.updateLink(widget.getSelectedSkeletonModels());
-            // Potentially remove skeletons from link target
-            if (!is_checked && widget.linkTarget) {
-              var skids = widget.queryResults.reduce(function(o, qs) {
-                qs.forEach(function(e) {
-                  if (e.id == entity_id) {
-                    o = o.concat(e.skeleton_ids);
-                  }
-                });
-                return o;
-              }, []);
-              // Prevent propagation loop by checking if the target has the skeletons anymore
-              if (skids.some(widget.linkTarget.hasSkeleton, widget.linkTarget)) {
-                widget.linkTarget.removeSkeletons(skids);
+            // Find updated skeleton models
+            var changedModels = {};
+            var entity = widget.entityMap[entity_id];
+            if ('neuron' === entity.type) {
+              for (var i=0, max=entity.skeleton_ids.length; i<max; ++i) {
+                var model = widget.getSkeletonModel(entity.skeleton_ids[i]);
+                model.selected = is_checked;
+                changedModels[model.id] = model;
               }
+            }
+            if (!CATMAID.tools.isEmpty(changedModels)) {
+              widget.triggerChange(changedModels);
             }
             // Due to expanded annotations, an entity can appear multiple times. Look
             // therefore for copies of the current one to toggle it as well.
@@ -586,7 +612,6 @@
         tr.removeAttr('expanded');
         // Find all rows that have an attribute called 'expansion' and delete
         // them.
-        var removed_entities = [];
         while (true) {
           var next = $(tr).next();
           if (next.is('[expansion=' + sub_id + ']')) {
@@ -595,12 +620,38 @@
             break;
           }
         }
+
+        // Get an object mapping for all expanded skeletons
+        var expansionSlot = self.expansions[entity];
+        var expandedEntities = self.queryResults[expansionSlot];
+        var expandedModels = {};
+        if (expandedEntities) {
+          for (var skid in getSkeletonIDsInResult(expandedEntities)) {
+            expandedModels[skid] = self.getSkeletonModel(skid);
+          }
+        }
+
         // Delete sub-expansion query result and reference to it
         self.expansions.delete(entity);
         delete self.queryResults[sub_id];
 
         // Update current result table classes
         self.update_result_row_classes();
+
+        // Find all unique skeletons that now are not available anymore from
+        // this widget (i.e. that are not part of any other expansion or the
+        // general results).
+        var currentModels = self.getSkeletonModels();
+        for (var eId in expandedModels) {
+          // Make sure we only announce now unavailable skeletons as removed
+          if (!(eId in currentModels)) {
+            delete expandedModels[e.id];
+            delete this.entityMap[e.id];
+          }
+        }
+        if (!CATMAID.tools.isEmpty(expandedModels)) {
+          this.triggerRemove(expandedModels);
+        }
       } else {
         // Find a valid sub query ID as reference
         var sub_id = (function(results, count) {
@@ -616,6 +667,10 @@
         })(self.queryResults, 0);
         // Mark row expanded
         tr.attr('expanded', sub_id);
+
+        // Map of all currently available entities
+        var knownEntities = CATMAID.tools.listToIdMap(self.get_entities());
+
         // Make sure the slot in results array is used for this sub-query by
         // assigning 'null' to it (which is not 'undefined').
         self.queryResults[sub_id] = null;
@@ -636,7 +691,7 @@
                 } else {
                   // Register search results with neuron name service and rebuild
                   // result table.
-                  var skeletonObject = getSkeletonIDsInResult(e);
+                  var skeletonObject = getSkeletonIDsInResult(e.entities);
                   CATMAID.NeuronNameService.getInstance().registerAll(this, skeletonObject,
                       function () {
                         // Append new content right after the current node and save a
@@ -646,11 +701,26 @@
                           $(tr).after(new_tr);
                         };
 
-                        // Mark entities as unselected and create result table rows
-                        e.entities.forEach((function(entity) {
+                        // Figure out which entities are new
+                        var newSkeletons = e.entities.reduce(function(o, s) {
+                          var isNeuron = entity.type === 'neuron';
+                          var unknown = !(entity.id in knownEntities);
+                          if (isNeuron && unknown) {
+                            for (var i=0, max=entity.skeleton_ids.length; i<max; ++i) {
+                              o.push(entity.skeleton_ids[i]);
+                            }
+                          }
+                          return o;
+                        }, []);
+
+                        // Mark entities as unselected, create result table rows
+                        e.entities.filter(function(entity, i, a) {
                           self.entity_selection_map[entity.id] = false;
+                          if(!(entity.id in self.entityMap)) {
+                            self.entityMap[entity.id] = entity;
+                          }
                           self.add_result_table_row(entity, appender, indent + 1);
-                        }).bind(self));
+                        });
 
                         // The order of the query result array doesn't matter.
                         // It is therefore possible to just append the new results.
@@ -658,6 +728,14 @@
                         self.expansions.set(entity, sub_id);
                         // Update current result table classes
                         self.update_result_row_classes();
+                        // Announce new models, if any
+                        if (newSkeletons.length > 0) {
+                          var newModels = newSkeletons.reduce(function(o, skid) {
+                            o[skid] = self.getSkeletonModel(skid);
+                            return o;
+                          });
+                          self.triggerAdd(newModels);
+                        }
                       });
                 }
               }
@@ -811,28 +889,14 @@
       }, this);
     }, this);
 
-    // Update sync link
-    this.updateLink(this.getSelectedSkeletonModels());
-    // Potentially remove skeletons from link target
-    if (this.linkTarget) {
-      var unselected_skids = this.get_unselected_neurons().reduce(function(o, e) {
-        if (e.type === 'neuron') {
-          o = o.concat(e.skeleton_ids);
-        }
-        return o;
-      }, []);
-      // Prevent propagation loop by checking if the target has the skeletons anymore
-      if (unselected_skids.some(this.linkTarget.hasSkeleton, this.linkTarget)) {
-        this.linkTarget.removeSkeletons(unselected_skids);
-      }
-    }
-
+    this.triggerChange(this.getSkeletonModels());
     this.invalidateUI();
   };
 
   /**
-   * If passed true, this function returns a list of selected entities.
-   * Otherweise, a list of unselected entities is returned.
+   * If passed true, this function returns a list of selected entities.  If
+   * passed false, a list of unselected entities is returned. If undefined, all
+   * all entities are returned.
    */
   NeuronAnnotations.prototype.get_entities = function(checked)
   {
@@ -841,7 +905,8 @@
         qs.forEach(function(e) {
             // Avoid duplicates if the same neuron is checked multiple times and
             // add it only if not yet present.
-            if (this.entity_selection_map[e.id] == checked && !(e.id in visited)) {
+            var valid = (checked === undefined || this.entity_selection_map[e.id] == checked);
+            if (valid && !(e.id in visited)) {
                 o.push(e);
                 visited[e.id] = true;
             }

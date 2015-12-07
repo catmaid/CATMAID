@@ -136,4 +136,9 @@ var requestQueue = new RequestQueue();
     return version;
   };
 
+  /**
+   * A general noop function.
+   */
+  CATMAID.noop = function() {};
+
 })(CATMAID);

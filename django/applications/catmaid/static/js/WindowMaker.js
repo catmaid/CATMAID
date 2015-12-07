@@ -99,6 +99,33 @@ var WindowMaker = new function()
   };
 
   /**
+   * Inject an extra button into the caption of a window. This button allows to
+   * show and hide skeleton source controls for a widget.
+   */
+  var addSourceControlsToggle = function(win, widget) {
+    addCaptionButton(win, 'ui-icon ui-icon-link', function() {
+      // Create controls for the skeleton source widget if not present,
+      // otherwise remove them.
+      var frame = win.getFrame();
+      var panel = frame.querySelector('.sourcepanel');
+      if (panel) {
+        panel.remove();
+      } else {
+        // Create new panel
+        panel = CATMAID.skeletonListSources.createSourceControls(widget);
+        panel.setAttribute('class', 'sourcepanel');
+        // Add as first element after caption and event catcher
+        var eventCatcher = frame.querySelector('.eventCatcher');
+        if (eventCatcher) {
+          // insertBefore will handle the case where there is no next sibling,
+          // the element will be appended to the end.
+          frame.insertBefore(panel, eventCatcher.nextSibling);
+        }
+      }
+    });
+  };
+
+  /**
    * Inject an extra button into the caption of a window. This button can be
    * assigned style classes and a click handler.
    */
@@ -821,7 +848,7 @@ var WindowMaker = new function()
     return createWidget(CM);
   };
 
-  var createStagingListWindow = function( instance, webglwin, webglwin_name ) {
+  var createStagingListWindow = function(instance, webglwin) {
 
     var ST = instance ? instance : new CATMAID.SelectionTable();
 
@@ -875,11 +902,6 @@ var WindowMaker = new function()
     save.onclick = ST.saveToFile.bind(ST);
     buttons.appendChild(save);
 
-    buttons.appendChild(document.createTextNode(' Sync to:'));
-    var link = CATMAID.skeletonListSources.createPushSelect(ST, 'link');
-    link.onchange = ST.syncLink.bind(ST, link);
-    buttons.appendChild(link);
-
     var annotate = document.createElement('input');
     annotate.setAttribute("type", "button");
     annotate.setAttribute("value", "Annotate");
@@ -887,8 +909,7 @@ var WindowMaker = new function()
     annotate.onclick = ST.annotate_skeleton_list.bind(ST);
     buttons.appendChild(annotate);
     
-    buttons.appendChild(document.createTextNode(' Color scheme'));
-    var c = appendSelect(buttons, 'ST-color-scheme' + ST.widgetID,
+    var c = appendSelect(buttons, 'Color scheme',
         ['CATMAID',
          'category10',
          'category20',
@@ -1066,7 +1087,7 @@ var WindowMaker = new function()
           // Update table information
           table.updateTableInfo();
         }
-        table.notifyLink(skeleton);
+        table.triggerChange(CATMAID.tools.idMap(skeleton));
       })
       .on("click", "td .action-changecolor", ST, function(e) {
         var table = e.data;
@@ -1113,17 +1134,10 @@ var WindowMaker = new function()
             rootWindow.replaceChild(new CMWHSplitNode(rootWindow.getChild(), win));
         } else {
           webglwin.getParent().replaceChild(new CMWVSplitNode(webglwin, win), webglwin);
-          // Set as push target
-          for (var i = 0; i < link.options.length; ++i) {
-            if (link.options[i].value === webglwin_name) {
-              link.selectedIndex = i;
-              link.onchange(); // set the linkTarget
-              break;
-            }
-          }
         }
     }
 
+    addSourceControlsToggle(win, ST);
     addButtonDisplayToggle(win);
 
     CATMAID.skeletonListSources.updateGUI();
@@ -1156,6 +1170,7 @@ var WindowMaker = new function()
     var bar = document.createElement( "div" );
     bar.id = "3d_viewer_buttons";
     bar.setAttribute('class', 'buttonpanel');
+    addSourceControlsToggle(win, WA);
     addButtonDisplayToggle(win);
 
     var tabs = appendTabs(bar, WA.widgetID, ['Main', 'View', 'Shading',
@@ -1520,7 +1535,7 @@ var WindowMaker = new function()
     nodeScalingInput.value = WA.options.skeleton_node_scaling;
 
     // Create a Selection Table, preset as the sync target
-    createStagingListWindow( ST, win, WA.getName() );
+    var st = createStagingListWindow( ST, win, WA.getName() );
 
     win.addListener(
       function(callingWindow, signal) {
@@ -1564,13 +1579,10 @@ var WindowMaker = new function()
 
     CATMAID.skeletonListSources.updateGUI();
 
-    // Now that a Selection Table exists, set it as the default pull source
-    for (var i=select_source.length; --i; ) {
-      if (0 === select_source.options[i].value.indexOf("Selection ")) {
-        select_source.selectedIndex = i;
-        break;
-      }
-    }
+    // Now that a Selection Table exists, have the 3D viewer subscribe to it
+    var Subscription = CATMAID.SkeletonSourceSubscription;
+    WA.addSubscription(new Subscription(st.widget, true, true, CATMAID.SkeletonSource.UNION,
+          Subscription.ALL_EVENTS));
 
     return {window: win, widget: WA};
   };

@@ -37,6 +37,9 @@ Miscellaneous:
   arbitrary combinations of annotation-based components using a format string.
   This is still configured in the annotations section of the settings widget.
 
+- Volumes can now be edited when clicked on in the volume widget. This will also
+  display the edited volume as layer in the active stack viewer.
+
 
 ### Bug fixes
 

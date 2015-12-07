@@ -240,12 +240,12 @@
   {
     this.getTileURL = function(project, stack, slicePixelPosition, col, row, zoomLevel) {
       var baseName = CATMAID.getTileBaseName(slicePixelPosition);
-      return baseURL + 'largeDataTileSource/' + tileWidth + '/' + tileHeight + '/' + 
+      return baseURL + 'largeDataTileSource/' + tileWidth + '/' + tileHeight + '/' +
              zoomLevel + '/' + baseName + row + '/' +  col + '.' + fileExtension;
     };
 
     this.getOverviewURL = function(stack, slicePixelPosition) {
-      return baseURL + 'largeDataTileSource/' + tileWidth + '/' + tileHeight + '/' + 
+      return baseURL + 'largeDataTileSource/' + tileWidth + '/' + tileHeight + '/' +
              'small/' + slicePixelPosition[0] + '.' + fileExtension;
     };
 

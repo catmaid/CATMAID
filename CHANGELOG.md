@@ -8,6 +8,7 @@ Selection table:
   opacity of appended skeletons with the current batch color and batch opacity.
   It is deselected by default.
 
+
 New widget "Synapse Distribution Plot":
   For one or more neurons, plot distances of postsynaptic sites relative
 	to an axon initial segment, represented by a skeleton node that is either
@@ -25,6 +26,23 @@ New widget "Synapse Distribution Plot":
   Click on the legend to jump to the skeleton node representing the
   axon initial segment, relative to which all distance measurements
   where made.
+
+
+Settings widget:
+
+- Persistent settings are now scoped, so that default settings may be
+  configured for an entire CATMAID instance ("global"), for each project
+  ("project"), for each user ("user"), and for each user for each project
+  ("session"). Only administrators have access to change project settings,
+  and only superusers have access to change global settings. This allows,
+  for example, administrators to set up recommended defaults for projects so
+  that users only need to adjust their settings where their preferences differ
+  from the project defaults. A selection box for which scope to adjust is
+  at the top of the settings widget. Persistent settings will display
+  information about scopes and defaults when hovering over them with the cursor.
+
+- Adminstrators may also lock persistent settings so that global or project
+  defaults can not be changed by users.
 
 
 Miscellaneous:

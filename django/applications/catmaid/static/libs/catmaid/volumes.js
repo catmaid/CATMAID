@@ -71,6 +71,7 @@
     this.set("maxZ", options.minZ || 1);
     this.set("title", options.title || "Box volume");
     this.set("comment", options.comment || undefined);
+    this.set("id", options.id || null);
   };
 
   CATMAID.BoxVolume.prototype = Object.create(CATMAID.Volume.prototype);

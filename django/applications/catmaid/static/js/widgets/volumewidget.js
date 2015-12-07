@@ -75,10 +75,17 @@
             {data: "creation_time"},
             {data: "editor"},
             {data: "edition_time"}
-          ]
+          ],
+        });
+
+        // Display a volume if clicked
+        var self = this;
+        $(table).on('click', 'td', function() {
+          var tr = $(this).closest("tr");
+          var volume = self.datatable.row(tr).data();
+          self.loadVolume(volume.id).then(self.editVolume.bind(self));
         });
       }
-
     };
   };
 
@@ -94,9 +101,35 @@
   };
 
   /**
-   * Add a new  volume. Edit it its properties directly in the widget.
+   * Return a promise for a volume from the back-end.
    */
-  VolumeManagerWidget.prototype.addVolume = function() {
+  VolumeManagerWidget.prototype.loadVolume = function(volumeId) {
+    return CATMAID.fetch(project.id + '/volumes/' + volumeId + '/', 'GET')
+      .then(function(json) {
+        // Expect box for now
+        var type = 'box';
+        // Try to create volume instance
+        var bbox = json.bbox;
+        var volumeType = volumeTypes[type];
+        return volumeType.createVolume({
+          minX: bbox.min.x,
+          minY: bbox.min.y,
+          minZ: bbox.min.z,
+          maxX: bbox.max.x,
+          maxY: bbox.max.y,
+          maxZ: bbox.max.z,
+          title: json.name,
+          comment: json.comment,
+          id: json.id
+        });
+      });
+  };
+
+  /**
+   * Request volume details, show edit controls and display a bounding box
+   * overlay. If no volume ID is given, a new volume is assumed.
+   */
+  VolumeManagerWidget.prototype.editVolume = function(volume) {
     var $content = $('#volume_manger_content');
     // Hide table
     $("div.volume-list", $content).hide();
@@ -111,7 +144,9 @@
       throw CATMAID.ValueError("Couldn't find volume type: " +
           this.defaultVolumeType);
     }
-    var volume = volumeType.createVolume({});
+    if (!volume) {
+      volume = volumeType.createVolume({});
+    }
 
     var title = function(e) { volume.title = this.value; };
     var comment = function(e) { volume.comment = this.value; };
@@ -185,6 +220,13 @@
     }
 
     volume.on(volume.EVENT_PROPERTY_CHANGED, volumeChanged);
+  };
+
+  /**
+   * Add a new  volume. Edit it its properties directly in the widget.
+   */
+  VolumeManagerWidget.prototype.addVolume = function() {
+    this.editVolume(null);
   };
 
   var volumeTypes = {

@@ -203,7 +203,7 @@ Tile source types are listed by the enumeration integer ID referenced by
 
    URL format::
 
-    <sourceBaseURL>z/<pixelPosition.z>/box/<col * tileWidth>,<row * tileHeight>,<tileWidth>,<tileHeight>,<2^-zoomLevel>/<fileExtension>-image
+    <sourceBaseURL>largeDataTileSource/<tileWidth>/<tileHeight>/<zoomLevel>/<pixelPosition.z>/<row>/<col>.<fileExtension>
 
 8. DVID ``imagetile`` tiles
 ***************************

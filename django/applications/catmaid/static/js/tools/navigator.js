@@ -140,7 +140,7 @@
       if (!w) return false;
       e.preventDefault();
 
-      if (!userprofile.inverse_mouse_wheel) w = -w;
+      if (!Navigator.Settings.session.invert_mouse_wheel) w = -w;
       w /= Math.abs(w); // Normalize w to {-1, 1}.
 
       if (e.ctrlKey || e.metaKey) { // Zoom.
@@ -213,7 +213,7 @@
       var m = CATMAID.UI.getLastMouse();
       var x = m.x - offset.left,
         y = m.y - offset.top;
-      if (userprofile.use_cursor_following_zoom &&
+      if (Navigator.Settings.use_cursor_following_zoom &&
         x >= 0 && x <= self.stackViewer.viewWidth &&
         y >= 0 && y <= self.stackViewer.viewHeight) {
         x /= self.stackViewer.scale;
@@ -542,6 +542,21 @@
       }
     };
   }
+
+  Navigator.Settings = new CATMAID.Settings(
+      'navigator',
+      {
+        version: 0,
+        entries: {
+          invert_mouse_wheel: {
+            default: false
+          },
+          use_cursor_following_zoom: {
+            default: true
+          }
+        },
+        migrations: {}
+      });
 
   // Make Navigator available in CATMAID Namespace
   CATMAID.Navigator = Navigator;

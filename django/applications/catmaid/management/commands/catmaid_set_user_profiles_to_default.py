@@ -21,9 +21,6 @@ class Command(NoArgsCommand):
                 continue
             up = u.userprofile
             # Expect user profiles to be there and add all default settings
-            up.inverse_mouse_wheel = settings.PROFILE_DEFAULT_INVERSE_MOUSE_WHEEL
-            up.display_stack_reference_lines = \
-                settings.PROFILE_DISPLAY_STACK_REFERENCE_LINES
             up.independent_ontology_workspace_is_default = \
                 settings.PROFILE_INDEPENDENT_ONTOLOGY_WORKSPACE_IS_DEFAULT
             up.show_text_label_tool = settings.PROFILE_SHOW_TEXT_LABEL_TOOL

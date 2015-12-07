@@ -1129,7 +1129,7 @@
     }
 
     if (colorChanged || alphaChanged) {
-      this.notifyLink(skeleton);
+      this.triggerChange(CATMAID.tools.idMap(skeleton));
     }
 
     if (allSelected) {
@@ -1141,8 +1141,8 @@
         var s = table.skeletons[table.skeleton_ids[skid]];
         s.color.copy(color);
         s.opacity = alpha;
-        table.triggerChange(CATMAID.tools.idMap(s));
       });
+      table.triggerChange(table.getSelectedSkeletonModels());
     }
 
     this.gui.invalidate([skeletonID]);

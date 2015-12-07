@@ -176,7 +176,8 @@ window.onbeforeunload = function() {
       } else {
         var e = {
           error: "An error occured",
-          detail: "The server returned an unexpected status: " + status
+          detail: "The server returned an unexpected status: " + status,
+          status: status
         };
         // Call error handler, if any, and force silence if it returned true.
         if (CATMAID.tools.isFn(error)) {

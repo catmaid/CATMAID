@@ -3496,7 +3496,7 @@
             'varying float activeNodeDistanceDarkening;\n');
         this.line_material.insertSnippet(
             'fragmentColor',
-            'gl_FragColor = vec4(diffuse * activeNodeDistanceDarkening, opacity);\n');
+            'gl_FragColor = vec4(outgoingLight * activeNodeDistanceDarkening, diffuseColor.a);\n');
 
         this.line_material.addUniforms({
             u_activeNodePosition: { type: 'v3', value: SkeletonAnnotations.getActiveNodeProjectVector3() },
@@ -5073,7 +5073,7 @@
       replacement: 'void main() {'},
     fragmentColor: {
       shader: 'fragment',
-      regex: /gl_FragColor\s*=\s*vec4\(\s*diffuse,\s*opacity\s*\);/,
+      regex: /gl_FragColor\s*=\s*vec4\(\s*outgoingLight,\s*diffuseColor\.a\s*\);/,
       replacement: ''}
   };
 

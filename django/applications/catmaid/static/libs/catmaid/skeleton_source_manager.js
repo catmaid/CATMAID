@@ -200,9 +200,6 @@
     if (source.ignoreLocal) {
       ignoreLocalCb.setAttribute('checked', 'checked');
     }
-    ignoreLocalCb.onchange = function(e) {
-      source.ignoreLocal = this.checked;
-    };
     var ignoreLocal = document.createElement('label');
     ignoreLocal.appendChild(ignoreLocalCb);
     ignoreLocal.appendChild(document.createTextNode('Ignore local'));
@@ -285,6 +282,11 @@
       subscription.setMode(this.value);
       subscription.target.loadSubscriptions();
     });
+
+    ignoreLocalCb.onchange = function(e) {
+      source.ignoreLocal = this.checked;
+      datatable.rows(0).invalidate().draw();
+    };
 
     // Add subscription handler
     subscribe.onclick = (function(e) {

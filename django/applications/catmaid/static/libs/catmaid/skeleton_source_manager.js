@@ -228,15 +228,18 @@
       }, {
         "data": "source.getName()"
       }, {
+        "width": "10%",
         "render": function(data, type, row, meta) {
           var checked = row.colors ? 'checked="checked"' : '';
           return '<label><input type="checkbox" ' + checked + ' />Colors</label>'
         }
       }, {
+        "width": "10%",
         "render": function(data, type, row, meta) {
           return 0 === meta.row ? '-' : row.op;
         }
       }, {
+        "width": "10%",
         "render": function(data, type, row, meta) {
           var modeSelector = createModeSelector(row.mode);
           modeSelector.setAttribute('class', 'action-changemode');

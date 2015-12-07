@@ -278,10 +278,10 @@
    * with respect to the selected filters. If there are any, previous targets
    * will be unregistered. A target is expected to be a skeleton source as well.
    */
-  SkeletonSourceSubscription.prototype.register = function(target) {
+  SkeletonSourceSubscription.prototype.register = function(target, keepCache) {
     // Unregister from previous target, if any
     if (this.target) {
-      this.unregister();
+      this.unregister(keepCache);
     }
     this.target = target;
 
@@ -302,14 +302,16 @@
       this.source.on(this.source.EVENT_MODELS_CHANGED, this._onSubscribedModelsChanged, this);
     }
 
-    // Populate cache with current source state
-    this.modelCache = this.getModels(true);
+    if (!keepCache) {
+      // Populate cache with current source state
+      this.modelCache = this.getModels(true);
+    }
   };
 
   /**
    * Remove all listeners from the current source and drop cache.
    */
-  SkeletonSourceSubscription.prototype.unregister = function() {
+  SkeletonSourceSubscription.prototype.unregister = function(keepCache) {
     this.source.off(this.source.EVENT_SOURCE_REMOVED, this._onSubscribedSourceRemoved, this);
 
     var allEvents = this.mode === CATMAID.SkeletonSourceSubscription.ALL_EVENTS;
@@ -327,8 +329,12 @@
       this.source.off(this.source.EVENT_MODELS_CHANGED, this._onSubscribedModelsChanged, this);
     }
 
-    // Drop cache entry
-    this.modelCache = null;
+    if (!keepCache) {
+      // Drop cache entry
+      this.modelCache = null;
+    }
+
+    this.target = null;
   };
 
   /**
@@ -368,7 +374,13 @@
   SkeletonSourceSubscription.prototype._onSubscribedModelsChanged = function(models) {
     // Update cache
     for (var mId in models) {
-      this.modelCache[mId] = models[mId];
+      var m = models[mId];
+      // Remove unselected items for selection based sync
+      if (this.selectionBased && !m.selected) {
+        delete this.modelCache[mId]
+      } else {
+        this.modelCache[mId] = models[mId];
+      }
     }
     this.target.loadSubscriptions();
   };
@@ -382,6 +394,24 @@
       delete this.modelCache[mId];
     }
     this.target.loadSubscriptions();
+  };
+
+  /**
+   * Set subscription mode of this subscription. This removes all event
+   * listeners and recreates only the needed ones.
+   */
+  SkeletonSourceSubscription.prototype.setMode = function(mode) {
+    if (mode !== this.mode) {
+      // Re-register to update listeners
+      var target = this.target;
+      if (target) {
+        this.unregister(true);
+        this.mode = mode;
+        this.register(target, true);
+      } else {
+        this.mode = mode;
+      }
+    }
   };
 
   // Make skeleton source and subscription available in CATMAID namespace

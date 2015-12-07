@@ -157,12 +157,25 @@
     controls.appendChild(op);
 
     // Subscriptions: subscription mode
+    var createModeSelector = function(value) {
+      var modeSelect = document.createElement('select');
+      modeSelect.options.add(new Option('None', 'all'));
+      modeSelect.options.add(new Option('Only additions', 'additions-only'));
+      modeSelect.options.add(new Option('Only removals', 'removals-only'));
+      modeSelect.options.add(new Option('Only updates', 'updates-only'));
+      // Select default
+      for (var i=0, max=modeSelect.options.length; i<max; ++i) {
+        var o = modeSelect.options[i];
+        if (!value || o.value === value) {
+          o.defaultSelected = o.selected = true;
+          break;
+        }
+        var selectedIndex = value ? modeSelect.options: 0;
+      }
+      return modeSelect;
+    }
+    var modeSelect = createModeSelector('all');
     var mode = document.createElement('label');
-    var modeSelect = document.createElement('select');
-    modeSelect.options.add(new Option('None', 'all', true, true));
-    modeSelect.options.add(new Option('Only additions', 'additions-only'));
-    modeSelect.options.add(new Option('Only removals', 'removals-only'));
-    modeSelect.options.add(new Option('Only updates', 'updates-only'));
     mode.appendChild(document.createTextNode('Filter'));
     mode.appendChild(modeSelect);
     controls.appendChild(mode);
@@ -225,7 +238,9 @@
         }
       }, {
         "render": function(data, type, row, meta) {
-          return row.mode;
+          var modeSelector = createModeSelector(row.mode);
+          modeSelector.setAttribute('class', 'action-changemode');
+          return modeSelector.outerHTML;
         }
       }],
       language: {
@@ -238,6 +253,12 @@
       var subscription = datatable.row(tr).data();
       e.data.removeSubscription(subscription);
       datatable.row(tr).remove().draw();
+    });
+    $(table).on("change", "td .action-changemode", source, function(e) {
+      var tr = $(this).closest("tr");
+      var subscription = datatable.row(tr).data();
+      subscription.setMode(this.value);
+      subscription.target.loadSubscriptions();
     });
 
     // Add subscription handler

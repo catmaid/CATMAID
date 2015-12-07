@@ -507,8 +507,8 @@ class ViewPageTests(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
+        parsed_response = [p for p in parsed_response if p['name'] == name]
         self.assertEqual(len(parsed_response), 1)
-        self.assertEqual(parsed_response[0]['name'], name)
         response = self.client.delete(url + name)
         self.assertEqual(response.status_code, 403)
 

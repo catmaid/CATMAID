@@ -351,7 +351,7 @@
    */
   SkeletonSourceSubscription.prototype.getModels = function(nocache) {
     var getModels = this.selectionBased ? this.source.getSelectedSkeletonModels :
-        this.source.getSkeletonModels();
+        this.source.getSkeletonModels;
     return nocache ? getModels.call(this.source) : this.modelCache;
   };
 

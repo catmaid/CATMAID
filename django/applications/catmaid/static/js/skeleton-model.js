@@ -41,6 +41,26 @@
     return m;
   };
 
+  /**
+   * Copy fields from other model.
+   *
+   * @param other skeleton model to copy fields from
+   *
+   * @return this skeleton model
+   */
+  SkeletonModel.prototype.set = function(other) {
+    this.id = other.id;
+    this.baseName = other.baseName;
+    this.color.copy(other.color);
+    this.selected = other.selected;
+    this.pre_visible = other.pre_visible;
+    this.post_visible = other.post_visible;
+    this.text_visible = other.text_visible;
+    this.meta_visible = other.meta_visible;
+    this.opacity = other.opacity;
+    return this;
+  };
+
   // Export skeleton model
   CATMAID.SkeletonModel = SkeletonModel;
 

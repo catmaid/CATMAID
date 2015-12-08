@@ -2718,6 +2718,7 @@ var WindowMaker = new function()
         var contentbutton = document.createElement('div');
         contentbutton.setAttribute("class", "buttonpanel");
         contentbutton.setAttribute("id", 'skeleton_connectivity_buttons' + widgetID);
+        addSourceControlsToggle(win, SC);
         addButtonDisplayToggle(win);
 
         contentbutton.appendChild(document.createTextNode('From'));

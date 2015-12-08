@@ -1897,6 +1897,7 @@ var WindowMaker = new function()
     var buttons = document.createElement('div');
     buttons.setAttribute('id', 'circuit_graph_plot_buttons' + GP.widgetID);
     buttons.setAttribute('class', 'buttonpanel');
+    addSourceControlsToggle(win, GP);
     addButtonDisplayToggle(win);
 
     buttons.appendChild(document.createTextNode('From'));

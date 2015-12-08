@@ -181,7 +181,9 @@ var WindowMaker = new function()
 
   var createSelect = function(id, items, selectedValue) {
     var select = document.createElement('select');
-    select.setAttribute("id", id);
+    if (id) {
+      select.setAttribute("id", id);
+    }
     items.forEach(function(item, i) {
       var option = document.createElement("option");
       var itemType = typeof item;
@@ -204,8 +206,9 @@ var WindowMaker = new function()
     return select;
   };
 
-  var appendSelect = function(div, name, entries, title, value, onChangeFn) {
-    var select = createSelect(div.id + "_" + name, entries, value);
+  var appendSelect = function(div, id, label, entries, title, value, onChangeFn) {
+    id = id ? (div.id + '_' + id) : undefined;
+    var select = createSelect(id, entries, value);
     div.appendChild(select);
     if (title) {
       select.title = title;
@@ -213,11 +216,13 @@ var WindowMaker = new function()
     if (onChangeFn) {
       select.onchange= onChangeFn;
     }
-    var label = document.createElement('label');
-    label.setAttribute('title', title);
-    label.appendChild(document.createTextNode(name));
-    label.appendChild(select);
-    div.appendChild(label);
+    if (label) {
+      var labelElement = document.createElement('label');
+      labelElement.setAttribute('title', title);
+      labelElement.appendChild(document.createTextNode(label));
+      labelElement.appendChild(select);
+      div.appendChild(labelElement);
+    }
     return select;
   };
 
@@ -319,7 +324,7 @@ var WindowMaker = new function()
           case 'numeric':
             return appendNumericField(tab, e.label, e.title, e.value, e.postlabel, e.onchangeFn, e.length);
           case 'select':
-            return appendSelect(tab, e.label, e.entries, e.title, e.value, e.onchangeFn);
+            return appendSelect(tab, e.id, e.label, e.entries, e.title, e.value, e.onchangeFn);
           default: return undefined;
         }
       }
@@ -909,7 +914,7 @@ var WindowMaker = new function()
     annotate.onclick = ST.annotate_skeleton_list.bind(ST);
     buttons.appendChild(annotate);
     
-    var c = appendSelect(buttons, 'Color scheme',
+    var c = appendSelect(buttons, 'ST-color-scheme', 'Color scheme ',
         ['CATMAID',
          'category10',
          'category20',
@@ -1775,7 +1780,7 @@ var WindowMaker = new function()
     color.options.add(new Option('circles of hell (downstream)', 'circles_of_hell_downstream'));
     color.onchange = GG._colorize.bind(GG, color);
 
-    var layout = appendSelect(tabs['Graph'], "compartment_layout", GG.layoutStrings);
+    var layout = appendSelect(tabs['Graph'], "compartment_layout", null, GG.layoutStrings);
 
     var edges = document.createElement('select');
     edges.setAttribute('id', 'graph_edge_threshold' + GG.widgetID);
@@ -2085,7 +2090,7 @@ var WindowMaker = new function()
 
     buttons.appendChild(document.createElement('br'));
 
-    appendSelect(buttons, "function",
+    appendSelect(buttons, "function", null,
         ['Sholl analysis',
          'Radial density of cable',
          'Radial density of branch nodes',
@@ -2101,8 +2106,7 @@ var WindowMaker = new function()
     radius.style.width = "40px";
     buttons.appendChild(radius);
 
-    buttons.appendChild(document.createTextNode(' Center: '));
-    appendSelect(buttons, "center",
+    appendSelect(buttons, "center", ' Center: ',
         ['First branch node',
          'Root node',
          'Active node',
@@ -2464,14 +2468,14 @@ var WindowMaker = new function()
 
     div.appendChild(CATMAID.skeletonListSources.createSelect(SA));
 
-    appendSelect(div, "extra" + SA.widgetID, [
+    appendSelect(div, "extra" + SA.widgetID, ' extra ', [
         {title: "No others", value: 0},
         {title: "Downstream skeletons", value: 1},
         {title: "Upstream skeletons", value: 2},
         {title: "Both upstream and downstream", value: 3}]);
     var adjacents = [];
     for (var i=0; i<5; ++i) adjacents.push(i);
-    appendSelect(div, "adjacents" + SA.widgetID, adjacents);
+    appendSelect(div, "adjacents" + SA.widgetID, ' adjacents ', adjacents);
 
     var update = document.createElement('input');
     update.setAttribute('type', 'button');

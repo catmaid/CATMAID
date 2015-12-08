@@ -349,33 +349,6 @@ var WindowMaker = new function()
     }, {});
   };
 
-  /**
-   * Clones the given form into a dynamically created iframe and submits it
-   * there. This can be used to store autocompletion information of a form that
-   * actually isn't submitted (where e.g. an AJAX request is done manually).  A
-   * search term is only added to the autocomplete history if the form is
-   * actually submitted. This, however, triggers a reload (or redirect) of the
-   * current page. To prevent this, an iframe is created where the submit of the
-   * form is done and where a reload doesn't matter. The search term is stored
-   * and the actual search can be executed.
-   * Based on http://stackoverflow.com/questions/8400269.
-   */
-  var submitFormInIFrame = function(form) {
-    // Create a new hidden iframe element as sibling of the form
-    var iframe = document.createElement('iframe');
-    iframe.setAttribute('src', '');
-    iframe.setAttribute('style', 'display:none');
-    form.parentNode.appendChild(iframe);
-    // Submit form in iframe to store autocomplete information
-    var iframeWindow = iframe.contentWindow;
-    iframeWindow.document.body.appendChild(form.cloneNode(true));
-    var frameForm = iframeWindow.document.getElementById(form.id);
-    frameForm.onsubmit = null;
-    frameForm.submit();
-    // Remove the iframe again after the submit (hopefully) run
-    setTimeout(function() { form.parentNode.removeChild(iframe); }, 100);
-  };
-
   var createConnectorSelectionWindow = function()
   {
     var win = new CMWWindow("Connector Selection Table");
@@ -3120,7 +3093,7 @@ var WindowMaker = new function()
           .attr('autocomplete', 'on')
           .on('submit', function(e) {
             // Submit form in iframe to store autocomplete information
-            submitFormInIFrame(document.getElementById('search-form'));
+            CATMAID.DOM.submitFormInIFrame(document.getElementById('search-form'));
             // Do actual search
             CATMAID.TracingTool.search();
             // Cancel submit in this context to not reload the page
@@ -3401,7 +3374,7 @@ var WindowMaker = new function()
           // Submit form in iframe to make browser save search terms for
           // autocompletion.
           var form = document.getElementById('neuron_query_by_annotations' + NA.widgetID);
-          submitFormInIFrame(form);
+          CATMAID.DOM.submitFormInIFrame(form);
           // Do actual query
           NA.query.call(NA, true);
           event.preventDefault();

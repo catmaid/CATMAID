@@ -126,6 +126,33 @@
     return CATMAID.DOM.createLabeledControl(name, select, helptext);
   };
 
+  /**
+   * Clones the given form into a dynamically created iframe and submits it
+   * there. This can be used to store autocompletion information of a form that
+   * actually isn't submitted (where e.g. an AJAX request is done manually).  A
+   * search term is only added to the autocomplete history if the form is
+   * actually submitted. This, however, triggers a reload (or redirect) of the
+   * current page. To prevent this, an iframe is created where the submit of the
+   * form is done and where a reload doesn't matter. The search term is stored
+   * and the actual search can be executed.
+   * Based on http://stackoverflow.com/questions/8400269.
+   */
+  DOM.submitFormInIFrame = function(form) {
+    // Create a new hidden iframe element as sibling of the form
+    var iframe = document.createElement('iframe');
+    iframe.setAttribute('src', '');
+    iframe.setAttribute('style', 'display:none');
+    form.parentNode.appendChild(iframe);
+    // Submit form in iframe to store autocomplete information
+    var iframeWindow = iframe.contentWindow;
+    iframeWindow.document.body.appendChild(form.cloneNode(true));
+    var frameForm = iframeWindow.document.getElementById(form.id);
+    frameForm.onsubmit = null;
+    frameForm.submit();
+    // Remove the iframe again after the submit (hopefully) run
+    setTimeout(function() { form.parentNode.removeChild(iframe); }, 100);
+  };
+
   // Export DOM namespace
   CATMAID.DOM = DOM;
 

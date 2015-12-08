@@ -2747,11 +2747,6 @@ var WindowMaker = new function()
         update.onclick = SC.update.bind(SC);
         contentbutton.appendChild(update);
 
-        contentbutton.appendChild(document.createTextNode(' Sync to:'));
-        var link = CATMAID.skeletonListSources.createPushSelect(SC, 'link');
-        link.onchange = SC.syncLink.bind(SC, link);
-        contentbutton.appendChild(link);
-
         var plot = document.createElement('input');
         plot.setAttribute("type", "button");
         plot.setAttribute("value", "Open plot");

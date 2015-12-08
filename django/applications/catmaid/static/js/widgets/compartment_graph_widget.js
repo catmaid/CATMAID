@@ -1,7 +1,6 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
-  CircuitGraphPlot,
   cytoscape,
   fetchSkeletons,
   InstanceRegistry,
@@ -2472,7 +2471,7 @@
       return;
     }
     WindowMaker.create('circuit-graph-plot');
-    var GP = CircuitGraphPlot.prototype.getLastInstance(),
+    var GP = CATMAID.CircuitGraphPlot.prototype.getLastInstance(),
         m = this.createAdjacencyMatrix();
     GP.plot(m.ids, m.names, m.skeletons, m.AdjM);
   };

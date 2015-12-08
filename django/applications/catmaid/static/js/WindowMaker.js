@@ -1888,7 +1888,7 @@ var WindowMaker = new function()
 
   var createCircuitGraphPlot = function() {
 
-    var GP = new CircuitGraphPlot();
+    var GP = new CATMAID.CircuitGraphPlot();
 
     var win = new CMWWindow(GP.getName());
     var content = win.getFrame();

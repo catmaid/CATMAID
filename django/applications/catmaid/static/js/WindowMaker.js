@@ -914,7 +914,7 @@ var WindowMaker = new function()
     annotate.onclick = ST.annotate_skeleton_list.bind(ST);
     buttons.appendChild(annotate);
     
-    var c = appendSelect(buttons, 'ST-color-scheme', 'Color scheme ',
+    var c = appendSelect(buttons, null, 'Color scheme ',
         ['CATMAID',
          'category10',
          'category20',
@@ -1780,7 +1780,7 @@ var WindowMaker = new function()
     color.options.add(new Option('circles of hell (downstream)', 'circles_of_hell_downstream'));
     color.onchange = GG._colorize.bind(GG, color);
 
-    var layout = appendSelect(tabs['Graph'], "compartment_layout", null, GG.layoutStrings);
+    var layout = appendSelect(tabs['Graph'], null, null, GG.layoutStrings);
 
     var edges = document.createElement('select');
     edges.setAttribute('id', 'graph_edge_threshold' + GG.widgetID);

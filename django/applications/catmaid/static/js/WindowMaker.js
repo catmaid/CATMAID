@@ -2464,7 +2464,11 @@ var WindowMaker = new function()
 
     div.appendChild(CATMAID.skeletonListSources.createSelect(SA));
 
-    appendSelect(div, "extra" + SA.widgetID, ["No others", "Downstream skeletons", "Upstream skeletons", "Both upstream and downstream"]);
+    appendSelect(div, "extra" + SA.widgetID, [
+        {title: "No others", value: 0},
+        {title: "Downstream skeletons", value: 1},
+        {title: "Upstream skeletons", value: 2},
+        {title: "Both upstream and downstream", value: 3}]);
     var adjacents = [];
     for (var i=0; i<5; ++i) adjacents.push(i);
     appendSelect(div, "adjacents" + SA.widgetID, adjacents);

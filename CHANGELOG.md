@@ -41,7 +41,7 @@ Settings widget:
   at the top of the settings widget. Persistent settings will display
   information about scopes and defaults when hovering over them with the cursor.
 
-- Adminstrators may also lock persistent settings so that global or project
+- Administrators may also lock persistent settings so that global or project
   defaults can not be changed by users.
 
 

@@ -82,16 +82,14 @@
           }
         } else {
           // Update existing model and continue
-          var model = models[skid];
-          this.skeletonModels[skid] = model;
-          updated[skid] = model;
+          updated[skid] = this.skeletonModels[skid].set(models[skid]);
           continue;
         }
       }
 
       // Store a reference to the skeleton model
       var model = models[skid];
-      this.skeletonModels[skid] = model;
+      this.skeletonModels[skid] = model.clone();
       created[skid] = model;
 
       // If no group should be created, add the ID of every added skeleton to

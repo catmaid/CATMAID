@@ -41,6 +41,7 @@
       if (!overridable && !fromThisScope) {
         control.addClass('disabled');
         control.find('button,input,select').prop('disabled', true);
+        control.find('.ui-slider').slider('option', 'disabled', true);
         meta.append($('<li />').text('This value is locked by ' + valueScope + ' settings.'));
       }
 

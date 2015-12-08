@@ -135,10 +135,7 @@
       var index = this.ordered_skeleton_ids.indexOf(skid);
       if (index > -1) {
         this.ordered_skeleton_ids.splice(index, 1);
-      }
-      var model = this.skeletons[skid];
-      if (model) {
-        o[skid] = model;
+        o[skid] = this.getSkeletonModel(skid);
         delete this.skeletons[skid];
       }
       return o;

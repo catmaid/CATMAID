@@ -1026,8 +1026,8 @@
       var mc_dblclick = function(d) {
         d3.event.stopPropagation();
         d3.event.preventDefault();
-        var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.parentNode.parentNode);
-        catmaidSVGOverlay.ensureFocused();
+        var catmaidTracingOverlay = SkeletonAnnotations.getTracingOverlayByPaper(this.parentNode.parentNode);
+        catmaidTracingOverlay.ensureFocused();
       };
 
       /** 
@@ -1037,15 +1037,15 @@
         var e = d3.event;
         e.stopPropagation();
         e.preventDefault();
-        var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.parentNode.parentNode);
-        if (catmaidSVGOverlay.ensureFocused()) {
+        var catmaidTracingOverlay = SkeletonAnnotations.getTracingOverlayByPaper(this.parentNode.parentNode);
+        if (catmaidTracingOverlay.ensureFocused()) {
           return;
         }
-        var node = catmaidSVGOverlay.nodes[d];
+        var node = catmaidTracingOverlay.nodes[d];
         if (e.shiftKey) {
           var atnID = SkeletonAnnotations.getActiveNodeId();
           if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
-            return catmaidSVGOverlay.deleteNode(node.id);
+            return catmaidTracingOverlay.deleteNode(node.id);
           }
           if (atnID) {
             var atnType = SkeletonAnnotations.getActiveNodeType();
@@ -1060,7 +1060,7 @@
                   return;
                 }
                 // careful, atnID is a connector
-                catmaidSVGOverlay.createLink(node.id, atnID, "postsynaptic_to");
+                catmaidTracingOverlay.createLink(node.id, atnID, "postsynaptic_to");
               } else if (atnSubType === SkeletonAnnotations.SUBTYPE_ABUTTING_CONNECTOR) {
                 if (!mayEdit()) {
                   CATMAID.error("You lack permissions to declare node #" + node.id +
@@ -1068,7 +1068,7 @@
                   return;
                 }
                 // careful, atnID is a connector
-                catmaidSVGOverlay.createLink(node.id, atnID, "abutting");
+                catmaidTracingOverlay.createLink(node.id, atnID, "abutting");
               } else {
                 CATMAID.error("Unknown connector subtype: " + atnSubType);
                 return;
@@ -1082,7 +1082,7 @@
                 alert('Can not join node with another node of the same skeleton!');
                 return;
               }
-              catmaidSVGOverlay.createTreenodeLink(atnID, node.id);
+              catmaidTracingOverlay.createTreenodeLink(atnID, node.id);
               // TODO check for error
               CATMAID.statusBar.replaceLast("Joined node #" + atnID + " to node #" + node.id);
             }
@@ -1092,7 +1092,7 @@
           }
         } else {
           // activate this node
-          catmaidSVGOverlay.activateNode(node);
+          catmaidTracingOverlay.activateNode(node);
         }
       };
 
@@ -1109,8 +1109,8 @@
         if (!o) return; // Not properly initialized with mc_start
         if (e.shiftKey) return;
 
-        var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.parentNode.parentNode);
-        var node = catmaidSVGOverlay.nodes[d];
+        var catmaidTracingOverlay = SkeletonAnnotations.getTracingOverlayByPaper(this.parentNode.parentNode);
+        var node = catmaidTracingOverlay.nodes[d];
 
         if (!mayEdit() || !node.can_edit) {
           CATMAID.statusBar.replaceLast("You don't have permission to move node #" + d);
@@ -1149,7 +1149,7 @@
           // happen that this is not the case, e.g. if the section was changed
           // before the mouse up event is triggered.
           if (svgNode.parentNode && svgNode.parentNode.parentNode) {
-            var svg = SkeletonAnnotations.getSVGOverlayByPaper(svgNode.parentNode.parentNode);
+            var svg = SkeletonAnnotations.getTracingOverlayByPaper(svgNode.parentNode.parentNode);
             if (svg) {
               svg.updateNodes();
             } else {
@@ -1166,8 +1166,8 @@
       /** Here 'this' is c's SVG node. */
       var mc_start = function(d) {
         var e = d3.event.sourceEvent;
-        var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.parentNode.parentNode);
-        var node = catmaidSVGOverlay.nodes[d];
+        var catmaidTracingOverlay = SkeletonAnnotations.getTracingOverlayByPaper(this.parentNode.parentNode);
+        var node = catmaidTracingOverlay.nodes[d];
         if (is_middle_click(e)) {
           // Allow middle-click panning
           return;
@@ -1177,7 +1177,7 @@
 
         // If not trying to join or remove a node, but merely click on it to drag it or select it:
         if (!e.shiftKey && !e.ctrlKey && !e.metaKey) {
-          catmaidSVGOverlay.activateNode(node);
+          catmaidTracingOverlay.activateNode(node);
         }
 
         o = {ox: node.x,
@@ -1200,20 +1200,20 @@
         var e = d3.event;
         e.stopPropagation();
         e.preventDefault();
-        var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.parentNode.parentNode);
-        if (catmaidSVGOverlay.ensureFocused()) {
+        var catmaidTracingOverlay = SkeletonAnnotations.getTracingOverlayByPaper(this.parentNode.parentNode);
+        if (catmaidTracingOverlay.ensureFocused()) {
           return;
         }
         var atnID = SkeletonAnnotations.getActiveNodeId(),
-            connectornode = catmaidSVGOverlay.nodes[d];
-        if (catmaidSVGOverlay.ensureFocused()) {
+            connectornode = catmaidTracingOverlay.nodes[d];
+        if (catmaidTracingOverlay.ensureFocused()) {
           return;
         }
         // return some log information when clicked on the node
         // this usually refers here to the c object
         if (e.shiftKey) {
           if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
-            return catmaidSVGOverlay.deleteNode(connectornode.id);
+            return catmaidTracingOverlay.deleteNode(connectornode.id);
           }
           if (atnID) {
             var atnType = SkeletonAnnotations.getActiveNodeType();
@@ -1231,7 +1231,7 @@
                 CATMAID.error("The selected connector is of unknown type: " + connectornode.subtype);
                 return;
               }
-              catmaidSVGOverlay.createLink(atnID, connectornode.id, linkType);
+              catmaidTracingOverlay.createLink(atnID, connectornode.id, linkType);
               CATMAID.statusBar.replaceLast("Joined node #" + atnID + " with connector #" + connectornode.id);
             }
           } else {
@@ -1240,22 +1240,22 @@
           }
         } else {
           // activate this node
-          catmaidSVGOverlay.activateNode(connectornode);
+          catmaidTracingOverlay.activateNode(connectornode);
         }
       };
 
       this.edge_mc_click = function (d) {
         var e = d3.event;
-        var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.parentNode.parentNode);
-        if (catmaidSVGOverlay.ensureFocused()) {
+        var catmaidTracingOverlay = SkeletonAnnotations.getTracingOverlayByPaper(this.parentNode.parentNode);
+        if (catmaidTracingOverlay.ensureFocused()) {
           return;
         }
-        var node = catmaidSVGOverlay.nodes[d];
+        var node = catmaidTracingOverlay.nodes[d];
         if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
           e.stopPropagation();
           e.preventDefault();
-          catmaidSVGOverlay.activateNode(node);
-          catmaidSVGOverlay.splitSkeleton(d);
+          catmaidTracingOverlay.activateNode(node);
+          catmaidTracingOverlay.splitSkeleton(d);
         }
       };
 
@@ -1318,7 +1318,7 @@
         d.suspended = true;
 
         // 'this' will be the the connector's mouse catcher line
-        var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.parentNode.parentNode);
+        var catmaidTracingOverlay = SkeletonAnnotations.getTracingOverlayByPaper(this.parentNode.parentNode);
         requestQueue.register(django_url + project.id + '/link/delete', "POST", {
           pid: project.id,
           connector_id: d.connector_id,
@@ -1333,7 +1333,7 @@
                   d.suspended = false;
                   alert(e.error);
                 } else {
-                  catmaidSVGOverlay.updateNodes(function() {
+                  catmaidTracingOverlay.updateNodes(function() {
                     // Reset deletion flag
                     d.suspended = false;
                   });

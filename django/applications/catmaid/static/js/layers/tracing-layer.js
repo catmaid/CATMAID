@@ -15,7 +15,7 @@
     var self = this;
 
     self.opacity = options.opacity || 1.0; // in the range [0,1]
-    this.svgOverlay = new SkeletonAnnotations.SVGOverlay(stack, options);
+    this.svgOverlay = new SkeletonAnnotations.TracingOverlay(stack, options);
 
     /**
      * Return friendly name of this layer.

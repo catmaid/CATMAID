@@ -2931,7 +2931,7 @@
 
     this.mesh.position.set(pos.x, pos.y, pos.z);
 
-    var overlay = SkeletonAnnotations.getSVGOverlay(SkeletonAnnotations.getActiveStackViewerId());
+    var overlay = SkeletonAnnotations.getTracingOverlay(SkeletonAnnotations.getActiveStackViewerId());
     var radius = overlay.nodes[SkeletonAnnotations.getActiveNodeId()].radius;
     CATMAID.tools.setXYZ(this.mesh.scale, radius > 0 ? radius : 40 * options.skeleton_node_scaling);
   };

@@ -431,7 +431,7 @@
 
       // Active node radius display.
       var atnRadiusEnabled = project.getStackViewers().every(function(sv) {
-        var overlay = SkeletonAnnotations.getSVGOverlay(sv.getId());
+        var overlay = SkeletonAnnotations.getTracingOverlay(sv.getId());
         return overlay ? overlay.showActiveNodeRadius : true;
       });
       var atnRadiusCb = CATMAID.DOM.createCheckboxSetting(
@@ -441,7 +441,7 @@
           function () {
             var checked = this.checked;
             project.getStackViewers().every(function(sv) {
-              var overlay = SkeletonAnnotations.getSVGOverlay(sv.getId());
+              var overlay = SkeletonAnnotations.getTracingOverlay(sv.getId());
               if (overlay) {
                 overlay.setActiveNodeRadiusVisibility(checked);
               }
@@ -462,12 +462,12 @@
           CATMAID.DOM.createRadioSetting(
               'overlay-scaling',
               [{id: 'overlay-scaling-screen', desc: 'Fixed screen size',
-                checked: SkeletonAnnotations.SVGOverlay.Settings[SETTINGS_SCOPE].screen_scaling},
+                checked: SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE].screen_scaling},
                {id: 'overlay-scaling-stack', desc: 'Fixed stack size',
-                checked: !SkeletonAnnotations.SVGOverlay.Settings[SETTINGS_SCOPE].screen_scaling}],
+                checked: !SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE].screen_scaling}],
               null,
               function () {
-                SkeletonAnnotations.SVGOverlay.Settings
+                SkeletonAnnotations.TracingOverlay.Settings
                     .set(
                       'screen_scaling',
                       this.value === 'overlay-scaling-screen',
@@ -476,33 +476,33 @@
                       project.getStackViewers().forEach(function (s) {s.redraw();});
                     });
               }).addClass('setting'),
-          SkeletonAnnotations.SVGOverlay.Settings,
+          SkeletonAnnotations.TracingOverlay.Settings,
           'screen_scaling',
           SETTINGS_SCOPE));
 
       ds.append(wrapSettingsControl(
           CATMAID.DOM.createLabeledControl(
               $('<span>Size adjustment: <span id="overlay-scale-value">' +
-                  (SkeletonAnnotations.SVGOverlay.Settings[SETTINGS_SCOPE].scale*100).toFixed() +
+                  (SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE].scale*100).toFixed() +
                   '</span>%</span>'),
               $('<div id="overlay-scaling-slider" />').slider({
                   min: -2,
                   max: 2,
                   step: 0.1,
-                  value: Math.log(SkeletonAnnotations.SVGOverlay.Settings[SETTINGS_SCOPE].scale)/Math.LN2,
+                  value: Math.log(SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE].scale)/Math.LN2,
                   change: function (event, ui) {
-                    SkeletonAnnotations.SVGOverlay.Settings
+                    SkeletonAnnotations.TracingOverlay.Settings
                         .set(
                           'scale',
                           Math.pow(2, ui.value),
                           SETTINGS_SCOPE)
                         .then(function () {
                           $('#overlay-scale-value').text((
-                              SkeletonAnnotations.SVGOverlay.Settings[SETTINGS_SCOPE].scale*100).toFixed());
+                              SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE].scale*100).toFixed());
                           project.getStackViewers().forEach(function (s) {s.redraw();});
                         });
                   }})),
-          SkeletonAnnotations.SVGOverlay.Settings,
+          SkeletonAnnotations.TracingOverlay.Settings,
           'scale',
           SETTINGS_SCOPE));
 
@@ -529,7 +529,7 @@
         });
         // Update all tracing layers
         project.getStackViewers().forEach(function(sv) {
-          var overlay = SkeletonAnnotations.getSVGOverlay(sv.getId());
+          var overlay = SkeletonAnnotations.getTracingOverlay(sv.getId());
           if (overlay) overlay.recolorAllNodes();
         });
       };

@@ -131,6 +131,8 @@
   };
 
   SkeletonConnectivity.prototype.removeSkeletons = function(skeleton_ids) {
+    // For skeleton IDs, numbers are internally expected
+    skeleton_ids = skeleton_ids.map(Number);
     var removedModels = skeleton_ids.reduce((function(o, skid) {
       var index = this.ordered_skeleton_ids.indexOf(skid);
       if (index > -1) {

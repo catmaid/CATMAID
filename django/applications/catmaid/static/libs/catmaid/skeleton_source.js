@@ -113,7 +113,7 @@
       var sbs = this.subscriptions[i];
       var sbsModels = sbs.getModels();
       // Always use union for combination with local/empty set
-      var op = 0 === i ? SkeletonSource.UNION : sbs.op
+      var op = 0 === i ? SkeletonSource.UNION : sbs.op;
       if (SkeletonSource.UNION === op) {
         // Make models of both sources available
         for (var mId in sbsModels) {

@@ -424,7 +424,7 @@ CATMAID.tools = CATMAID.tools || {};
    */
   tools.isEmpty = function(obj) {
     // Null and undefined are "empty"
-    if (obj == null) return true;
+    if (obj == null) return true; // jshint ignore:line
 
     for (var key in obj) {
       if (hasOwnProperty.call(obj, key)) return false;

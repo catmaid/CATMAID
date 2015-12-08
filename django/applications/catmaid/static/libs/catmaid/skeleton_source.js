@@ -112,11 +112,9 @@
     for (var i=0, max=this.subscriptions.length; i<max; ++i) {
       var sbs = this.subscriptions[i];
       var sbsModels = sbs.getModels();
-      if (0 === i) {
-        result = sbsModels;
-        continue;
-      }
-      if (SkeletonSource.UNION === sbs.op) {
+      // Always use union for combination with local/empty set
+      var op = 0 === i ? SkeletonSource.UNION : sbs.op
+      if (SkeletonSource.UNION === op) {
         // Make models of both sources available
         for (var mId in sbsModels) {
           // Use model of earleir source
@@ -124,14 +122,14 @@
             result[mId] = sbsModels[mId];
           }
         }
-      } else if (SkeletonSource.INTERSECTION === sbs.op) {
+      } else if (SkeletonSource.INTERSECTION === op) {
         // Make models available that appear in both sources
         for (var mId in result) {
           if (!sbsModels[mId]) {
             delete result[mId];
           }
         }
-      } else if (SkeletonSource.DIFFERENCE === sbs.op) {
+      } else if (SkeletonSource.DIFFERENCE === op) {
         // Make models available that don't appear in the current source
         for (var mId in result) {
           if (sbsModels[mId]) {
@@ -139,7 +137,7 @@
           }
         }
       } else {
-        throw new CATMAID.ValueError("Unknown operation: " + sbs.op);
+        throw new CATMAID.ValueError("Unknown operation: " + op);
       }
     }
 

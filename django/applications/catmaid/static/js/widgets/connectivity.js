@@ -187,7 +187,7 @@
     var model = new CATMAID.SkeletonModel(skeletonId, name, color);
     model.selected = !!selected;
     return model;
-  }
+  };
 
   SkeletonConnectivity.prototype.getSkeletonModel = function(skeleton_id) {
     var e_name = $('#a-connectivity-table-' + this.widgetID + '-' + skeleton_id);
@@ -203,7 +203,7 @@
 
   SkeletonConnectivity.prototype.getSelectedSkeletonModels = function() {
     return this.getSkeletonModels(true);
-  }
+  };
 
   /**
    * Get models for all skeletons in this source.

@@ -90,7 +90,7 @@ server {{
         proxy_set_header X-Forwarded-For $host;
         # This lets Django know which protocol was used to connect and also
         # overrides the header a client who fakes it.
-        proxy_set_header X-Forwarded-Protocol $scheme;
+        proxy_set_header X-Forwarded-Proto $scheme;
     }}
 }}
 """.format(cmpath=abs_catmaid_path, subdir=catmaid_subdirectory)

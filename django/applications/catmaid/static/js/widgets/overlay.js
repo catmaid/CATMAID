@@ -534,8 +534,6 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, options) {
   this.labels = {};
   /** Toggle for text labels on nodes and connectors. */
   this.show_labels = options.show_labels || false;
-  /** Toggle for radius circle for active node. */
-  this.showActiveNodeRadius = options.active_node_radius || false;
   /** Indicate if this overlay is suspended and won't update nodes on redraw. */
   this.suspended = options.suspended || false;
 
@@ -585,6 +583,7 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, options) {
 // maintained, this additional attribute would be necessary:
 // this.paper.attr('preserveAspectRatio', 'xMinYMin meet')
   this.graphics = CATMAID.SkeletonElementsFactory.createSkeletonElements(this.paper, stackViewer.getId());
+  this.graphics.setActiveNodeRadiusVisibility(SkeletonAnnotations.TracingOverlay.Settings.session.display_active_node_radius);
 
   // Listen to change and delete events of skeletons
   CATMAID.neuronController.on(CATMAID.neuronController.EVENT_SKELETON_CHANGED,
@@ -609,6 +608,9 @@ SkeletonAnnotations.TracingOverlay.Settings = new CATMAID.Settings(
       {
         version: 0,
         entries: {
+          display_active_node_radius: {
+            default: true
+          },
           screen_scaling: {
             default: true
           },
@@ -979,9 +981,8 @@ SkeletonAnnotations.TracingOverlay.prototype.recolorAllNodes = function () {
 /**
  * Set whether the radius of the active node is visible.
  */
-SkeletonAnnotations.TracingOverlay.prototype.setActiveNodeRadiusVisibility = function (visibility) {
-  this.showActiveNodeRadius = visibility;
-  this.graphics.setActiveNodeRadiusVisibility(visibility);
+SkeletonAnnotations.TracingOverlay.prototype.updateActiveNodeRadiusVisibility = function () {
+  this.graphics.setActiveNodeRadiusVisibility(SkeletonAnnotations.TracingOverlay.Settings.session.display_active_node_radius);
   this.recolorAllNodes(); // Necessary to trigger update of radius graphics.
 };
 

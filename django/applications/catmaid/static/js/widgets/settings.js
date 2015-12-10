@@ -431,24 +431,29 @@
 
 
       // Active node radius display.
-      var atnRadiusEnabled = project.getStackViewers().every(function(sv) {
-        var overlay = SkeletonAnnotations.getTracingOverlay(sv.getId());
-        return overlay ? overlay.showActiveNodeRadius : true;
-      });
-      var atnRadiusCb = CATMAID.DOM.createCheckboxSetting(
-          "Display radius for active node",
-          atnRadiusEnabled,
-          "Show a radius circle around the active node if its radius is set.",
-          function () {
-            var checked = this.checked;
-            project.getStackViewers().every(function(sv) {
-              var overlay = SkeletonAnnotations.getTracingOverlay(sv.getId());
-              if (overlay) {
-                overlay.setActiveNodeRadiusVisibility(checked);
-              }
-            });
-          });
-      ds.append(atnRadiusCb);
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createCheckboxSetting(
+              "Display radius for active node",
+              SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE].display_active_node_radius,
+              "Show a radius circle around the active node if its radius is set.",
+              function() {
+                SkeletonAnnotations.TracingOverlay.Settings
+                    .set(
+                      'display_active_node_radius',
+                      this.checked,
+                      SETTINGS_SCOPE)
+                    .then(function () {
+                      project.getStackViewers().every(function(sv) {
+                        var overlay = SkeletonAnnotations.getTracingOverlay(sv.getId());
+                        if (overlay) {
+                          overlay.updateActiveNodeRadiusVisibility();
+                        }
+                      });
+                    });
+              }),
+          SkeletonAnnotations.TracingOverlay.Settings,
+          'display_active_node_radius',
+          SETTINGS_SCOPE));
 
 
       // Add explanatory text

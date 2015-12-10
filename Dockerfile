@@ -31,14 +31,14 @@ RUN cp /home/django/configuration.py.example /home/django/configuration.py \
     && sed -i -e "s?^\(catmaid_database_password = \).*?\1'p4ssw0rd'?g" /home/django/configuration.py \
     && sed -i -e "s?^\(catmaid_timezone = \).*?\1'America/New_York'?g" /home/django/configuration.py \
     && sed -i -e "s?^\(catmaid_servername = \).*?\1'localhost'?g" /home/django/configuration.py \
-    && cd /home/django && python create_configuration.py
+    && cd /home/django && python create_configuration.py \
+    && mkdir -p /home/django/static
 # Django's createsuperuser requires input, so use the Django shell instead.
 RUN service postgresql start \
     && /bin/bash -c "source /usr/share/virtualenvwrapper/virtualenvwrapper.sh \
     && workon catmaid \
     && cd /home/django/projects/mysite \
     && python manage.py syncdb --migrate --noinput \
-    && rm -fr /home/django/static/* \
     && python manage.py collectstatic --clear --link --noinput \
     && cat /home/scripts/docker/create_superuser.py | python manage.py shell \
     && python manage.py catmaid_insert_example_projects --user=1"

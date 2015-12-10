@@ -2020,6 +2020,7 @@ var WindowMaker = new function()
     var buttons = document.createElement('div');
     buttons.setAttribute('id', 'morphology_plot_buttons' + MA.widgetID);
     buttons.setAttribute('class', 'buttonpanel');
+    addSourceControlsToggle(win, MA);
     addButtonDisplayToggle(win);
 
     buttons.appendChild(document.createTextNode('From'));

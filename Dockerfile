@@ -9,9 +9,9 @@ RUN apt-get install -y software-properties-common \
     && apt-get install -y nginx supervisor uwsgi-plugin-python
 ADD . /home/
 RUN xargs apt-get install -y < /home/packagelist-ubuntu-14.04-apt.txt
-RUN mkdir -p /opt/virtualenvs
 ENV WORKON_HOME /opt/virtualenvs
-RUN /bin/bash -c "source /usr/share/virtualenvwrapper/virtualenvwrapper.sh \
+RUN mkdir -p /opt/virtualenvs \
+    && /bin/bash -c "source /usr/share/virtualenvwrapper/virtualenvwrapper.sh \
     && mkvirtualenv catmaid \
     && workon catmaid \
     && pip install -U pip \
@@ -44,8 +44,8 @@ RUN service postgresql start \
     && python manage.py catmaid_insert_example_projects --user=1"
 
 # nginx and uWSGI setup
-RUN pip install uwsgi
-RUN echo "daemon off;" >> /etc/nginx/nginx.conf \
+RUN pip install uwsgi \
+    && echo "daemon off;" >> /etc/nginx/nginx.conf \
     && rm /etc/nginx/sites-enabled/default \
     && ln -s /home/scripts/docker/nginx-catmaid.conf /etc/nginx/sites-enabled/ \
     && ln -s /home/scripts/docker/supervisor-catmaid.conf /etc/supervisor/conf.d/

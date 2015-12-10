@@ -8,6 +8,7 @@ var WindowMaker = new function()
    * Only windows that are open are stored. */
   var windows = new Map();
   var self = this;
+  var DOM = CATMAID.DOM;
 
   var createContainer = function(id) {
     var container = document.createElement("div");
@@ -82,66 +83,6 @@ var WindowMaker = new function()
   };
 
   /**
-   * Inject an extra button into the caption of a window. This button allows to
-   * show and hide a windows button panel (a top level element of class
-   * buttonpanel).
-   */
-  var addButtonDisplayToggle = function(win) {
-    addCaptionButton(win, 'ui-icon ui-icon-gear', function() {
-      var frame = $(this).closest('.sliceView');
-      var panels = $('.buttonpanel', frame);
-      if (panels.length > 0) {
-       // Toggle display of first button panel found
-        var style = 'none' === panels[0].style.display ? 'block' : 'none';
-        panels[0].style.display = style;
-      }
-    });
-  };
-
-  /**
-   * Inject an extra button into the caption of a window. This button allows to
-   * show and hide skeleton source controls for a widget.
-   */
-  var addSourceControlsToggle = function(win, source) {
-    addCaptionButton(win, 'ui-icon ui-icon-link', function() {
-      // Create controls for the skeleton source if not present, otherwise
-      // remove them.
-      var frame = win.getFrame();
-      var panel = frame.querySelector('.sourcepanel');
-      if (panel) {
-        panel.remove();
-      } else {
-        // Create new panel
-        panel = CATMAID.skeletonListSources.createSourceControls(source);
-        panel.setAttribute('class', 'sourcepanel');
-        // Add as first element after caption and event catcher
-        var eventCatcher = frame.querySelector('.eventCatcher');
-        if (eventCatcher) {
-          // insertBefore will handle the case where there is no next sibling,
-          // the element will be appended to the end.
-          frame.insertBefore(panel, eventCatcher.nextSibling);
-        }
-      }
-    });
-  };
-
-  /**
-   * Inject an extra button into the caption of a window. This button can be
-   * assigned style classes and a click handler.
-   */
-  var addCaptionButton = function(win, iconClass, handler) {
-    var toggle = document.createElement('span');
-    toggle.setAttribute('class', iconClass);
-    toggle.onmousedown = handler;
-
-    var wrapper = document.createElement('span');
-    wrapper.setAttribute('class', 'ui-state-focus windowButton');
-    wrapper.appendChild(toggle);
-
-    $('.stackTitle', win.getFrame()).after(wrapper);
-  };
-
-  /**
    * Create a general widget window for a widget instance that provides a widget
    * configuration.
    */
@@ -159,7 +100,7 @@ var WindowMaker = new function()
       buttons.setAttribute("class", "buttonpanel");
       config.createControls.call(instance, buttons);
       container.appendChild(buttons);
-      addButtonDisplayToggle(win);
+      DOM.addButtonDisplayToggle(win);
     }
 
     // Create content
@@ -1115,8 +1056,8 @@ var WindowMaker = new function()
         }
     }
 
-    addSourceControlsToggle(win, ST);
-    addButtonDisplayToggle(win);
+    DOM.addSourceControlsToggle(win, ST);
+    DOM.addButtonDisplayToggle(win);
 
     CATMAID.skeletonListSources.updateGUI();
     ST.init();
@@ -1148,8 +1089,8 @@ var WindowMaker = new function()
     var bar = document.createElement( "div" );
     bar.id = "3d_viewer_buttons";
     bar.setAttribute('class', 'buttonpanel');
-    addSourceControlsToggle(win, WA);
-    addButtonDisplayToggle(win);
+    DOM.addSourceControlsToggle(win, WA);
+    DOM.addButtonDisplayToggle(win);
 
     var tabs = appendTabs(bar, WA.widgetID, ['Main', 'View', 'Shading',
         'Skeleton filters', 'View settings', 'Shading parameters',
@@ -1603,7 +1544,7 @@ var WindowMaker = new function()
     var bar = document.createElement('div');
     bar.setAttribute("id", "synapse_plot_buttons" + SP.widgetID);
     bar.setAttribute('class', 'buttonpanel');
-    addButtonDisplayToggle(win);
+    DOM.addButtonDisplayToggle(win);
 
     var tabs = appendTabs(bar, SP.widgetID, ['Main', 'Options']);
 
@@ -1720,8 +1661,8 @@ var WindowMaker = new function()
     var bar = document.createElement('div');
     bar.setAttribute("id", 'compartment_graph_window_buttons' + GG.widgetID);
     bar.setAttribute('class', 'buttonpanel');
-    addSourceControlsToggle(win, GG);
-    addButtonDisplayToggle(win);
+    DOM.addSourceControlsToggle(win, GG);
+    DOM.addButtonDisplayToggle(win);
 
     var tabs = appendTabs(bar, GG.widgetID, ['Main', 'Grow', 'Graph',
         'Selection', 'Subgraphs', 'Align', 'Export']);
@@ -1898,8 +1839,8 @@ var WindowMaker = new function()
     var buttons = document.createElement('div');
     buttons.setAttribute('id', 'circuit_graph_plot_buttons' + GP.widgetID);
     buttons.setAttribute('class', 'buttonpanel');
-    addSourceControlsToggle(win, GP);
-    addButtonDisplayToggle(win);
+    DOM.addSourceControlsToggle(win, GP);
+    DOM.addButtonDisplayToggle(win);
 
     buttons.appendChild(document.createTextNode('From'));
     buttons.appendChild(CATMAID.skeletonListSources.createSelect(GP));
@@ -2020,8 +1961,8 @@ var WindowMaker = new function()
     var buttons = document.createElement('div');
     buttons.setAttribute('id', 'morphology_plot_buttons' + MA.widgetID);
     buttons.setAttribute('class', 'buttonpanel');
-    addSourceControlsToggle(win, MA);
-    addButtonDisplayToggle(win);
+    DOM.addSourceControlsToggle(win, MA);
+    DOM.addButtonDisplayToggle(win);
 
     buttons.appendChild(document.createTextNode('From'));
     buttons.appendChild(CATMAID.skeletonListSources.createSelect(MA));
@@ -2122,7 +2063,7 @@ var WindowMaker = new function()
     var buttons = document.createElement('div');
     buttons.setAttribute('id', 'venn_diagram_buttons' + VD.widgetID);
     buttons.setAttribute('class', 'buttonpanel');
-    addButtonDisplayToggle(win);
+    DOM.addButtonDisplayToggle(win);
 
     buttons.appendChild(document.createTextNode('From'));
     buttons.appendChild(CATMAID.skeletonListSources.createSelect(VD));
@@ -2242,7 +2183,7 @@ var WindowMaker = new function()
     var contentbutton = document.createElement('div');
     contentbutton.setAttribute("id", 'table_of_skeleton_buttons' + TNT.widgetID);
     contentbutton.setAttribute('class', 'buttonpanel');
-    addButtonDisplayToggle(win);
+    DOM.addButtonDisplayToggle(win);
 
     contentbutton.appendChild(document.createTextNode('From'));
     contentbutton.appendChild(CATMAID.skeletonListSources.createSelect(TNT));
@@ -2349,7 +2290,7 @@ var WindowMaker = new function()
     var contentbutton = document.createElement('div');
     contentbutton.setAttribute("id", 'table_of_connector_buttons' + CT.widgetID);
     contentbutton.setAttribute('class', 'buttonpanel');
-    addButtonDisplayToggle(win);
+    DOM.addButtonDisplayToggle(win);
 
     var add = document.createElement('input');
     add.setAttribute("type", "button");
@@ -2504,7 +2445,7 @@ var WindowMaker = new function()
         var contentbutton = document.createElement('div');
         contentbutton.setAttribute("id", 'table_of_log_buttons');
         contentbutton.setAttribute('class', 'buttonpanel');
-        addButtonDisplayToggle(win);
+        DOM.addButtonDisplayToggle(win);
 
         var add = document.createElement('input');
         add.setAttribute("type", "button");
@@ -2629,7 +2570,7 @@ var WindowMaker = new function()
         var bar = document.createElement( "div" );
         bar.id = "review_widget_buttons";
         bar.setAttribute('class', 'buttonpanel');
-        addButtonDisplayToggle(win);
+        DOM.addButtonDisplayToggle(win);
 
         var RS = CATMAID.ReviewSystem;
         RS.init();
@@ -2702,8 +2643,8 @@ var WindowMaker = new function()
         var contentbutton = document.createElement('div');
         contentbutton.setAttribute("class", "buttonpanel");
         contentbutton.setAttribute("id", 'skeleton_connectivity_buttons' + widgetID);
-        addSourceControlsToggle(win, SC);
-        addButtonDisplayToggle(win);
+        DOM.addSourceControlsToggle(win, SC);
+        DOM.addButtonDisplayToggle(win);
 
         contentbutton.appendChild(document.createTextNode('From'));
         contentbutton.appendChild(CATMAID.skeletonListSources.createSelect(SC));
@@ -2790,7 +2731,7 @@ var WindowMaker = new function()
     var buttons = document.createElement('div');
     buttons.setAttribute('id', 'connectivity_graph_plot_buttons' + GP.widgetID);
     buttons.setAttribute('class', 'buttonpanel');
-    addButtonDisplayToggle(win);
+    DOM.addButtonDisplayToggle(win);
 
     var xml = document.createElement('input');
     xml.setAttribute("type", "button");
@@ -2827,7 +2768,7 @@ var WindowMaker = new function()
         var contentbutton = document.createElement('div');
         contentbutton.setAttribute("id", 'skeleton_adjmatrix_buttons');
         contentbutton.setAttribute('class', 'buttonpanel');
-        addButtonDisplayToggle(win);
+        DOM.addButtonDisplayToggle(win);
 
         var add = document.createElement('input');
         add.setAttribute("type", "button");
@@ -3096,7 +3037,7 @@ var WindowMaker = new function()
           .attr('autocomplete', 'on')
           .on('submit', function(e) {
             // Submit form in iframe to store autocomplete information
-            CATMAID.DOM.submitFormInIFrame(document.getElementById('search-form'));
+            DOM.submitFormInIFrame(document.getElementById('search-form'));
             // Do actual search
             CATMAID.TracingTool.search();
             // Cancel submit in this context to not reload the page
@@ -3249,7 +3190,7 @@ var WindowMaker = new function()
     var queryFields = document.createElement('div');
     queryFields.setAttribute('id', 'neuron_annotations_query_fields' + NA.widgetID);
     queryFields.setAttribute('class', 'buttonpanel');
-    addButtonDisplayToggle(win);
+    DOM.addButtonDisplayToggle(win);
 
     // Create the query fields HTML and use {{NA-ID}} as template for the
     // actual NA.widgetID which will be replaced afterwards.
@@ -3377,7 +3318,7 @@ var WindowMaker = new function()
           // Submit form in iframe to make browser save search terms for
           // autocompletion.
           var form = document.getElementById('neuron_query_by_annotations' + NA.widgetID);
-          CATMAID.DOM.submitFormInIFrame(form);
+          DOM.submitFormInIFrame(form);
           // Do actual query
           NA.query.call(NA, true);
           event.preventDefault();

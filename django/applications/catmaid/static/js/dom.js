@@ -153,6 +153,66 @@
     setTimeout(function() { form.parentNode.removeChild(iframe); }, 100);
   };
 
+  /**
+   * Inject an extra button into the caption of a window. This button can be
+   * assigned style classes and a click handler.
+   */
+  DOM.addCaptionButton = function(win, iconClass, handler) {
+    var toggle = document.createElement('span');
+    toggle.setAttribute('class', iconClass);
+    toggle.onmousedown = handler;
+
+    var wrapper = document.createElement('span');
+    wrapper.setAttribute('class', 'ui-state-focus windowButton');
+    wrapper.appendChild(toggle);
+
+    $('.stackTitle', win.getFrame()).after(wrapper);
+  };
+
+  /**
+   * Inject an extra button into the caption of a window. This button allows to
+   * show and hide a windows button panel (a top level element of class
+   * buttonpanel).
+   */
+  DOM.addButtonDisplayToggle = function(win) {
+    DOM.addCaptionButton(win, 'ui-icon ui-icon-gear', function() {
+      var frame = $(this).closest('.sliceView');
+      var panels = $('.buttonpanel', frame);
+      if (panels.length > 0) {
+       // Toggle display of first button panel found
+        var style = 'none' === panels[0].style.display ? 'block' : 'none';
+        panels[0].style.display = style;
+      }
+    });
+  };
+
+  /**
+   * Inject an extra button into the caption of a window. This button allows to
+   * show and hide skeleton source controls for a widget.
+   */
+  DOM.addSourceControlsToggle = function(win, source) {
+    DOM.addCaptionButton(win, 'ui-icon ui-icon-link', function() {
+      // Create controls for the skeleton source if not present, otherwise
+      // remove them.
+      var frame = win.getFrame();
+      var panel = frame.querySelector('.sourcepanel');
+      if (panel) {
+        panel.remove();
+      } else {
+        // Create new panel
+        panel = CATMAID.skeletonListSources.createSourceControls(source);
+        panel.setAttribute('class', 'sourcepanel');
+        // Add as first element after caption and event catcher
+        var eventCatcher = frame.querySelector('.eventCatcher');
+        if (eventCatcher) {
+          // insertBefore will handle the case where there is no next sibling,
+          // the element will be appended to the end.
+          frame.insertBefore(panel, eventCatcher.nextSibling);
+        }
+      }
+    });
+  };
+
   // Export DOM namespace
   CATMAID.DOM = DOM;
 

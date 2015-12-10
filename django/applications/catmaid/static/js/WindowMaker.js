@@ -1720,6 +1720,7 @@ var WindowMaker = new function()
     var bar = document.createElement('div');
     bar.setAttribute("id", 'compartment_graph_window_buttons' + GG.widgetID);
     bar.setAttribute('class', 'buttonpanel');
+    addSourceControlsToggle(win, GG);
     addButtonDisplayToggle(win);
 
     var tabs = appendTabs(bar, GG.widgetID, ['Main', 'Grow', 'Graph',

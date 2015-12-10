@@ -102,17 +102,17 @@ var WindowMaker = new function()
    * Inject an extra button into the caption of a window. This button allows to
    * show and hide skeleton source controls for a widget.
    */
-  var addSourceControlsToggle = function(win, widget) {
+  var addSourceControlsToggle = function(win, source) {
     addCaptionButton(win, 'ui-icon ui-icon-link', function() {
-      // Create controls for the skeleton source widget if not present,
-      // otherwise remove them.
+      // Create controls for the skeleton source if not present, otherwise
+      // remove them.
       var frame = win.getFrame();
       var panel = frame.querySelector('.sourcepanel');
       if (panel) {
         panel.remove();
       } else {
         // Create new panel
-        panel = CATMAID.skeletonListSources.createSourceControls(widget);
+        panel = CATMAID.skeletonListSources.createSourceControls(source);
         panel.setAttribute('class', 'sourcepanel');
         // Add as first element after caption and event catcher
         var eventCatcher = frame.querySelector('.eventCatcher');

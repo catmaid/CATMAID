@@ -58,6 +58,16 @@ Miscellaneous:
 - Volumes can now be edited when clicked on in the volume widget. This will also
   display the edited volume as layer in the active stack viewer.
 
+- A docker image of a running CATMAID instance is now available for
+  evaluating or developing CATMAID without needing to perform a complete
+  install. The latest release is available via the "stable" tag, and the
+  current development version is available via the "latest" tag. To try it:
+
+      docker run -p 8080:80 aschampion/catmaid
+
+  Then point your browser to http://localhost:8080. The default superuser has
+  username "admin" and password "admin".
+
 
 ### Bug fixes
 

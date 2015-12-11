@@ -929,8 +929,7 @@ def create_user_profile(sender, instance, created, **kwargs):
         profile.user = instance
         profile.save()
 
-# Connect the a User object's post save signal to the profile
-# creation
+# Connect the User model's post save signal to profile creation
 post_save.connect(create_user_profile, sender=User)
 
 def add_user_to_default_groups(sender, instance, created, **kwargs):
@@ -942,8 +941,7 @@ def add_user_to_default_groups(sender, instance, created, **kwargs):
             except Group.DoesNotExist:
                 print("Default group %s does not exist" % group)
 
-# Connect the a User object's post save signal to the profile
-# creation
+# Connect the User model's post save signal to default group assignment
 post_save.connect(add_user_to_default_groups, sender=User)
 
 # Prevent interactive question about wanting a superuser created.  (This code

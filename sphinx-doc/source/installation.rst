@@ -1,5 +1,11 @@
 .. _basic-installation:
 
+.. note::
+
+   These instructions describe installing CATMAID from source for
+   long-term use. If you want to quickly try CATMAID for evaluation or
+   demonstration purposes, consider using the :ref:`docker image <docker>`.
+
 Basic Installation Instructions
 ===============================
 

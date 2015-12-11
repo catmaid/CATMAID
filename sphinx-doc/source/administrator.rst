@@ -6,6 +6,7 @@ Administrator Documentation
 
    installation
    administration
+   docker
    userprofiles
    celeryinstall
    alternative_install

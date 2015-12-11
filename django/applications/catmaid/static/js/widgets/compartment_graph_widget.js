@@ -1147,9 +1147,13 @@
 
     // Add all other edges
     json.edges.forEach((function(e) {
+      var n1 = e[0], n2 = e[1];
       // Skip edges that are part of subgraphs
-      if (this.subgraphs[e[0]] || this.subgraphs[e[1]]) return;
-      elements.edges.push(asEdge(e));
+      if (this.subgraphs[n1] || this.subgraphs[n2]) return;
+      // Only allow edges that link existing models
+      if (n1 in models && n2 in models) {
+        elements.edges.push(asEdge(e));
+      }
     }).bind(this));
 
     // Group neurons, if any groups exist, skipping splitted neurons

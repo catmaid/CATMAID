@@ -8,8 +8,17 @@
   var ConnectivityMatrixWidget = function() {
     this.widgetID = this.registerInstance();
     this.matrix = new CATMAID.ConnectivityMatrix();
-    this.rowDimension = new CATMAID.BasicSkeletonSource(this.getName() + " Rows");
-    this.colDimension = new CATMAID.BasicSkeletonSource(this.getName() + " Columns");
+    var update = this.update.bind(this);
+    this.rowDimension = new CATMAID.BasicSkeletonSource(this.getName() + " Rows", {
+      handleAddedModels: update,
+      handleChangedModels: update,
+      handleRemovedModels: update
+    });
+    this.colDimension = new CATMAID.BasicSkeletonSource(this.getName() + " Columns", {
+      handleAddedModels: update,
+      handleChangedModels: update,
+      handleRemovedModels: update
+    });
     // Synapse counts are only displayed if they are at least that big
     this.synapseThreshold = 1;
     // Color index for table cell coloring option, default to Greens

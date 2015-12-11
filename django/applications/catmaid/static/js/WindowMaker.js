@@ -92,6 +92,18 @@ var WindowMaker = new function()
     var container = win.getFrame();
     container.style.backgroundColor = "#ffffff";
 
+    // Add skeleton source subscription toggle if selected
+    var source = config.subscriptionSource;
+    if (source) {
+      if (source instanceof Array) {
+        source.forEach(function(source) {
+          DOM.addSourceControlsToggle(win, source);
+        });
+      } else {
+        DOM.addSourceControlsToggle(win, source);
+      }
+    }
+
     // Create controls, if requested
     var controls;
     if (config.controlsID && config.createControls) {

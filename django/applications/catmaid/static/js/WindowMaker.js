@@ -96,8 +96,8 @@ var WindowMaker = new function()
     var source = config.subscriptionSource;
     if (source) {
       if (source instanceof Array) {
-        source.forEach(function(source) {
-          DOM.addSourceControlsToggle(win, source);
+        source.forEach(function(s) {
+          DOM.addSourceControlsToggle(win, s);
         });
       } else {
         DOM.addSourceControlsToggle(win, source);

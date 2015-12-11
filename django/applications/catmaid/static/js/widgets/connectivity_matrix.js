@@ -70,7 +70,10 @@
       class: 'connectivity_matrix',
       controlsID: 'connectivity_matrix_controls' + this.widgetID,
       contentID: 'connectivity_matrix' + this.widgetID,
-      subscriptionSource: [this.rowDimension, this.colDimension],
+      subscriptionSource: [
+          [this.colDimension, 'Show and hide controls for post-subscriptions'],
+          [this.rowDimension, 'Show and hide controls for pre-subscriptions']
+      ],
 
       /**
        * Create widget controls.

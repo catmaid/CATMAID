@@ -49,6 +49,12 @@
   SkeletonSource.prototype.unregisterSource = function() {
     this.trigger(this.EVENT_SOURCE_REMOVED, this);
     CATMAID.skeletonListSources.remove(this);
+    // Remove all subscriptions
+    if (this.subscriptions) {
+      this.subscriptions.forEach(function(s) {
+        s.unregister();
+      }, this);
+    }
     // Remove all event listeners
     this.clearAllEvents();
   };

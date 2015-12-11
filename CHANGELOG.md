@@ -26,7 +26,8 @@ New widget "Synapse Distribution Plot":
   skeleton node.
   Click on the legend to jump to the skeleton node representing the
   axon initial segment, relative to which all distance measurements
-  where made.
+  where made. All presynaptic neurons are available in a separate
+  skeleton source for each widget to pull neurons from.
 
 
 Settings widget:

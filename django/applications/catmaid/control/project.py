@@ -102,7 +102,7 @@ def get_project_qs_for_user(user):
 
 @api_view(['GET'])
 def projects(request):
-    """ Get a list of project visible for the requesting user.
+    """ List projects visible to the requesting user.
     ---
     models:
       project_api_stack_element:

@@ -51,6 +51,9 @@
 
     // For smoothing the arbor with a Gaussian convolution
     this.sigma = 200;
+
+    // Maintain a skeleton source for neurons in the plot
+    this.preSource = new CATMAID.BasicSkeletonSource(this.getName() + ' Presynaptics');
   };
 
   SynapsePlot.prototype = {};
@@ -77,6 +80,7 @@
 
   SynapsePlot.prototype.destroy = function() {
     this.clear();
+    this.preSource.destroy();
     this.unregisterInstance();
     this.unregisterSource();
     CATMAID.NeuronNameService.getInstance().unregister(this);
@@ -130,6 +134,7 @@
     this.models = {};
     this.morphologies = null;
     this.rows = null;
+    this.preSource.clear();
     this.redraw();
   };
 
@@ -434,6 +439,14 @@
 
     this.rows = sorted;
 
+    // Update plot skeleton source
+    this.preSource.clear();
+    var models = this.rows.reduce(function(o, r) {
+      o[r.pre_skid] = new CATMAID.SkeletonModel(r.pre_skid);
+      return o;
+    }, {});
+    this.preSource.append(models);
+
     this.redraw();
   };
 
@@ -449,11 +462,7 @@
 
     // Load names of pre_skids
     CATMAID.NeuronNameService.getInstance().registerAll(
-        this,
-        this.rows.reduce(function(m, pre) {
-          m[pre.pre_skid] = new CATMAID.SkeletonModel(pre.pre_skid, "", new THREE.Color());
-          return m;
-        }, {}),
+        this, this.preSource.getSkeletonModels(),
         (function() { this._redraw(container, containerID); }).bind(this));
   };
 

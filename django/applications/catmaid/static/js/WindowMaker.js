@@ -1561,7 +1561,7 @@ var WindowMaker = new function()
 
   var createSynapsePlotWindow = function()
   {
-    var SP = new SynapsePlot();
+    var SP = new CATMAID.SynapsePlot();
 
     var win = new CMWWindow(SP.getName());
     var content = win.getFrame();

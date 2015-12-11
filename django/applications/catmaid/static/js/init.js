@@ -622,12 +622,12 @@ function handle_openProjectStack( e, stackViewer )
       if (stacks.length > 1)
       {
         var stack_menu_content = [];
-        $.each(stacks, function(i, s) {
+        stacks.forEach(function(s) {
           stack_menu_content.push({
-              id : s.id,
-              title : s.title,
-              note : s.note,
-              action : [{
+              id: s.id,
+              title: s.title,
+              note: '',
+              action: [{
                   title: 'Open in new viewer',
                   note: '',
                   action: ('javascript:openProjectStack(' + s.pid + ',' + s.id + ')')

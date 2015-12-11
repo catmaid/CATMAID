@@ -737,6 +737,9 @@
         throw new CATMAID.ValueError('Expected either a group or a single skeleton ID');
       }
 
+      // Display dots instead of null/undefined if name unavailable
+      name = name ? name : '...';
+
       // Create element
       var a = document.createElement('a');
       a.href = '#';

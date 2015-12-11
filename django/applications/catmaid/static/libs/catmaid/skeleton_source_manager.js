@@ -226,6 +226,7 @@
     var datatable = $(table).DataTable({
       dom: "t",
       data: subscriptions,
+      autoWidth: false,
       columns: [{
         "width": "10px",
         "render": function(data, type, row, meta) {

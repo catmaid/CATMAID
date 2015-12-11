@@ -10,7 +10,8 @@ Selection table:
 
 
 New widget "Synapse Distribution Plot":
-  For one or more neurons, plot distances of postsynaptic sites relative
+
+- For one or more neurons, plot distances of postsynaptic sites relative
 	to an axon initial segment, represented by a skeleton node that is either
 	computed or given via text tags.
   Each row represents the inputs contributed by a presynaptic arbor.

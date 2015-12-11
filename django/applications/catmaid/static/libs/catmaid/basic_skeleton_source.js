@@ -8,9 +8,11 @@
    * maintains an ordered list of skeletons. Additionally, grouping of the
    * managed skeletons is possible.
    */
-  var BasicSkeletonSource = function(name) {
+  var BasicSkeletonSource = function(name, options) {
     // Call super-constructor
     CATMAID.SkeletonSource.call(this);
+
+    options = options || {};
 
     this.name = name;
     this.registerSource();
@@ -23,9 +25,19 @@
     this.groups = {};
     // Indicate if newly appended skeletons should be removed from existing
     // groups.
-    this.moveExistingToNewGroup = true;
+    this.moveExistingToNewGroup = options.moveExistingToNewGroup || true;
     // If set, the next skeletons appended are added to this group.
     this.nextGroupName = null;
+
+    if (options.handleAddedModels) {
+      this.handleAddedModels = options.handleAddedModels;
+    }
+    if (options.handleChangedModels) {
+      this.handleChangedModels = options.handleChangedModels;
+    }
+    if (options.handleRemovedModels) {
+      this.handleRemovedModels = options.handleRemovedModels;
+    }
   };
 
   BasicSkeletonSource.prototype = Object.create(CATMAID.SkeletonSource.prototype);

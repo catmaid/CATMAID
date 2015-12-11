@@ -157,7 +157,7 @@
    * Inject an extra button into the caption of a window. This button can be
    * assigned style classes and a click handler.
    */
-  DOM.addCaptionButton = function(win, iconClass, handler) {
+  DOM.addCaptionButton = function(win, iconClass, title, handler) {
     var toggle = document.createElement('span');
     toggle.setAttribute('class', iconClass);
     toggle.onmousedown = handler;
@@ -165,6 +165,9 @@
     var wrapper = document.createElement('span');
     wrapper.setAttribute('class', 'ui-state-focus windowButton');
     wrapper.appendChild(toggle);
+    if (title) {
+      wrapper.setAttribute('title', title);
+    }
 
     $('.stackTitle', win.getFrame()).after(wrapper);
   };
@@ -174,8 +177,9 @@
    * show and hide a windows button panel (a top level element of class
    * buttonpanel).
    */
-  DOM.addButtonDisplayToggle = function(win) {
-    DOM.addCaptionButton(win, 'ui-icon ui-icon-gear', function() {
+  DOM.addButtonDisplayToggle = function(win, title) {
+    title = title || 'Show and hide widget controls';
+    DOM.addCaptionButton(win, 'ui-icon ui-icon-gear', title, function() {
       var frame = $(this).closest('.sliceView');
       var panels = $('.buttonpanel', frame);
       if (panels.length > 0) {
@@ -190,8 +194,9 @@
    * Inject an extra button into the caption of a window. This button allows to
    * show and hide skeleton source controls for a widget.
    */
-  DOM.addSourceControlsToggle = function(win, source) {
-    DOM.addCaptionButton(win, 'ui-icon ui-icon-link', function() {
+  DOM.addSourceControlsToggle = function(win, source, title) {
+    title = title || 'Show and hide skeleton source controls';
+    DOM.addCaptionButton(win, 'ui-icon ui-icon-link', title, function() {
       // Create controls for the skeleton source if not present, otherwise
       // remove them.
       var frame = win.getFrame();

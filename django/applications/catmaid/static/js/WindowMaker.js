@@ -83,6 +83,20 @@ var WindowMaker = new function()
   };
 
   /**
+   * A custom source toggle wrapper to not repeat custom title control code. If
+   * source is an array it is assumed that the first element is the actual
+   * source and the second a title.
+   */
+  var addWidgetSourceToggle = function(win, source) {
+    // Allow custom titles if element is an array
+    if (source instanceof Array) {
+      DOM.addSourceControlsToggle(win, source[0], source[1]);
+    } else {
+      DOM.addSourceControlsToggle(win, source);
+    }
+  };
+
+  /**
    * Create a general widget window for a widget instance that provides a widget
    * configuration.
    */
@@ -97,10 +111,10 @@ var WindowMaker = new function()
     if (source) {
       if (source instanceof Array) {
         source.forEach(function(s) {
-          DOM.addSourceControlsToggle(win, s);
+          addWidgetSourceToggle(win, s);
         });
       } else {
-        DOM.addSourceControlsToggle(win, source);
+        addWidgetSourceToggle(win, s);
       }
     }
 

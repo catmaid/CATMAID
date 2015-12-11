@@ -2586,6 +2586,9 @@
         var gedge = gedges[id];
         if (gedge) {
           // Just append the synapse count to the already existing edge
+          gedge.data.confidence = gedge.data.confidence.map(function (count, conf) {
+            return count + d.confidence[conf];
+          });
           gedge.data.weight += d.weight;
           gedge.data.label = gedge.data.weight;
         } else {
@@ -3108,10 +3111,10 @@
       var props = edge.data();
       if (props.directed) {
         var count = _filterSynapses(props.confidence, edge_confidence_threshold);
-        props.weight = count;
+        edge.data('weight', count);
         edge.data('label', count);
         edge.data('weight', count);
-        if (props.weight < edge_threshold) edge.hide();
+        if (count < edge_threshold) edge.hide();
         else edge.show();
       }
     });

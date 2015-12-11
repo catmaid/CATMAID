@@ -226,7 +226,7 @@
    * Return models object for all known skeleton IDs. Override for more specific
    * and actual selection behavior.
    */
-  BasicSkeletonSource.prototype.getSelectedSkeletonModels = function() {
+  BasicSkeletonSource.prototype.getSkeletonModels = function() {
     return this.orderedElements.reduce((function(m, id) {
       if (this.isGroup(id)) {
         this.groups[id].forEach(function(s) {
@@ -238,6 +238,12 @@
       return m;
     }).bind(this), {});
   };
+
+  /**
+   * The default implementation of selected Skeleon just gets all skeletons.
+   */
+  BasicSkeletonSource.prototype.getSelectedSkeletonModels =
+      BasicSkeletonSource.prototype.getSkeletonModels;
 
   /**
    * Highlighting is not implemented in this source since it is use case

@@ -2605,6 +2605,39 @@ class ViewPageTests(TestCase):
                 "skeleton_id": 361}
         self.assertEqual(expected_result, parsed_response)
 
+    def test_node_find_previous_branch(self):
+        self.fake_authentication()
+        treenode_id = 257
+
+        response = self.client.post(
+                '/%d/treenodes/%d/previous-branch-or-root' % (self.test_project_id, treenode_id),
+                {'alt': 0})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        # Response should contain one branch.
+        expected_result = [253, 3685.0, 2160.0, 0.0]
+        self.assertEqual(expected_result, parsed_response)
+
+        treenode_id = 253
+        response = self.client.post(
+                '/%d/treenodes/%d/previous-branch-or-root' % (self.test_project_id, treenode_id),
+                {'alt': 0})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        # Response should contain one branch.
+        expected_result = [237, 1065.0, 3035.0, 0.0]
+        self.assertEqual(expected_result, parsed_response)
+
+        treenode_id = 237
+        response = self.client.post(
+                '/%d/treenodes/%d/previous-branch-or-root' % (self.test_project_id, treenode_id),
+                {'alt': 0})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        # Response should contain one branch.
+        expected_result = [237, 1065.0, 3035.0, 0.0]
+        self.assertEqual(expected_result, parsed_response)
+
     def test_node_find_end_of_linear_branch(self):
         self.fake_authentication()
         treenode_id = 391

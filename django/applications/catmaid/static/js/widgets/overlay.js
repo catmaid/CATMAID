@@ -2552,11 +2552,9 @@ SkeletonAnnotations.TracingOverlay.prototype.setConfidence = function(newConfide
     var self = this;
     this.promiseNode(node).then(function(nid) {
       self.submit(
-          django_url + project.id + '/node/' + nid + '/confidence/update',
-          {pid: project.id,
-          to_connector: toConnector,
-          tnid: nid,
-          new_confidence: newConfidence},
+          django_url + project.id + '/treenodes/' + nid + '/confidence',
+          {to_connector: toConnector,
+           new_confidence: newConfidence},
           function(json) {
             self.updateNodes();
           });
@@ -2591,9 +2589,8 @@ SkeletonAnnotations.TracingOverlay.prototype.goToPreviousBranchOrRootNode = func
   }
   var self = this;
   this.submit(
-      django_url + project.id + "/node/previous_branch_or_root",
-      {tnid: treenode_id,
-       alt: e.altKey ? 1 : 0},
+      django_url + project.id + "/treenodes/" + treenode_id + "/previous-branch-or-root",
+      {alt: e.altKey ? 1 : 0},
       function(json) {
         // json is a tuple:
         // json[0]: treenode id
@@ -2630,8 +2627,8 @@ SkeletonAnnotations.TracingOverlay.prototype.goToNextBranchOrEndNode = function(
   } else {
     var self = this;
     this.submit(
-        django_url + project.id + "/node/next_branch_or_end",
-        {tnid: treenode_id},
+        django_url + project.id + "/treenodes/" + treenode_id + "/next-branch-or-end",
+        undefined,
         function(json) {
           // json is an array of branches
           // each branch is a tuple:
@@ -2749,8 +2746,8 @@ SkeletonAnnotations.TracingOverlay.prototype.goToChildNode = function (treenode_
     var queryNode = startFromRealNode ? treenode_id :
         SkeletonAnnotations.getParentOfVirtualNode(treenode_id);
     this.submit(
-        django_url + project.id + "/node/children",
-        {tnid: queryNode},
+        django_url + project.id + "/treenodes/" + queryNode + "/children",
+        undefined,
         function(json) {
           // See goToNextBranchOrEndNode for JSON schema description.
           if (json.length === 0) {

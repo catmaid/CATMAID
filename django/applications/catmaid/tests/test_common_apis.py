@@ -801,7 +801,7 @@ class ViewPageTests(TestCase):
         treenode_id = Treenode.objects.order_by("-id")[0].id + 1  # Inexistant
         self.fake_authentication()
         response = self.client.post(
-                '/%d/node/%d/confidence/update' % (self.test_project_id, treenode_id),
+                '/%d/treenodes/%d/confidence' % (self.test_project_id, treenode_id),
                 {'new_confidence': '4'})
         self.assertEqual(response.status_code, 200)
         expected_result = 'No skeleton and neuron for treenode %s' % treenode_id
@@ -812,7 +812,7 @@ class ViewPageTests(TestCase):
         treenode_id = 7
         self.fake_authentication()
         response = self.client.post(
-                '/%d/node/%d/confidence/update' % (self.test_project_id, treenode_id),
+                '/%d/treenodes/%d/confidence' % (self.test_project_id, treenode_id),
                 {'new_confidence': '4'})
         self.assertEqual(response.status_code, 200)
         treenode = Treenode.objects.filter(id=treenode_id).get()
@@ -822,7 +822,7 @@ class ViewPageTests(TestCase):
         self.assertEqual(4, treenode.confidence)
 
         response = self.client.post(
-                '/%d/node/%d/confidence/update' % (self.test_project_id, treenode_id),
+                '/%d/treenodes/%d/confidence' % (self.test_project_id, treenode_id),
                 {'new_confidence': '5'})
         self.assertEqual(response.status_code, 200)
         treenode = Treenode.objects.filter(id=treenode_id).get()
@@ -836,7 +836,7 @@ class ViewPageTests(TestCase):
         treenode_connector_id = 360
         self.fake_authentication()
         response = self.client.post(
-                '/%d/node/%d/confidence/update' % (self.test_project_id, treenode_id),
+                '/%d/treenodes/%d/confidence' % (self.test_project_id, treenode_id),
                 {'new_confidence': '4', 'to_connector': 'true'})
         self.assertEqual(response.status_code, 200)
         connector = TreenodeConnector.objects.filter(id=treenode_connector_id).get()
@@ -846,7 +846,7 @@ class ViewPageTests(TestCase):
         self.assertEqual(4, connector.confidence)
 
         response = self.client.post(
-                '/%d/node/%d/confidence/update' % (self.test_project_id, treenode_id),
+                '/%d/treenodes/%d/confidence' % (self.test_project_id, treenode_id),
                 {'new_confidence': '5', 'to_connector': 'true'})
         self.assertEqual(response.status_code, 200)
         connector = TreenodeConnector.objects.filter(id=treenode_connector_id).get()
@@ -2610,8 +2610,7 @@ class ViewPageTests(TestCase):
         treenode_id = 391
 
         response = self.client.post(
-                '/%d/node/next_branch_or_end' % self.test_project_id, {
-                    'tnid': treenode_id})
+                '/%d/treenodes/%d/next-branch-or-end' % (self.test_project_id, treenode_id))
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         # Response should contain one branch.
@@ -2625,8 +2624,7 @@ class ViewPageTests(TestCase):
         treenode_id = 253
 
         response = self.client.post(
-                '/%d/node/next_branch_or_end' % self.test_project_id, {
-                    'tnid': treenode_id})
+                '/%d/treenodes/%d/next-branch-or-end' % (self.test_project_id, treenode_id))
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         # Response should contain two branches, and the larger branch headed by
@@ -2950,7 +2948,7 @@ class ViewPageTests(TestCase):
 
         # Confidence split
         # Change confidence that affects 1 edge from 235 to 373
-        response = self.client.post('/%d/node/289/confidence/update' % self.test_project_id,
+        response = self.client.post('/%d/treenodes/289/confidence' % self.test_project_id,
             {'new_confidence': 3})
         self.assertEqual(response.status_code, 200)
         # Add confidence criteria, but not one that should affect the graph.

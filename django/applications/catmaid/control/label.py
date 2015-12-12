@@ -230,7 +230,7 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
                 ChangeRequest(**change_request_params).save()
 
 
-    return HttpResponse(json.dumps({'message': 'success'}), content_type='text/json')
+    return HttpResponse(json.dumps({'message': 'success'}), content_type='application/json')
 
 
 def label_exists(label_id, node_type):

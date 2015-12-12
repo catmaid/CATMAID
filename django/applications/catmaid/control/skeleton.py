@@ -279,7 +279,7 @@ def skeleton_statistics(request, project_id=None, skeleton_id=None):
         'postsynaptic_sites': skel.postsynaptic_sites_count(),
         'cable_length': int(skel.cable_length()),
         'measure_construction_time': construction_time,
-        'percentage_reviewed': "%.2f" % skel.percentage_reviewed() }), content_type='text/json')
+        'percentage_reviewed': "%.2f" % skel.percentage_reviewed() }), content_type='application/json')
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -393,7 +393,7 @@ def node_count(request, project_id=None, skeleton_id=None, treenode_id=None):
         skeleton_id = Treenode.objects.get(pk=treenode_id).skeleton_id
     return HttpResponse(json.dumps({
         'count': Treenode.objects.filter(skeleton_id=skeleton_id).count(),
-        'skeleton_id': skeleton_id}), content_type='text/json')
+        'skeleton_id': skeleton_id}), content_type='application/json')
 
 def _get_neuronname_from_skeletonid( project_id, skeleton_id ):
     p = get_object_or_404(Project, pk=project_id)
@@ -410,7 +410,7 @@ def _get_neuronname_from_skeletonid( project_id, skeleton_id ):
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def neuronname(request, project_id=None, skeleton_id=None):
-    return HttpResponse(json.dumps(_get_neuronname_from_skeletonid(project_id, skeleton_id)), content_type='text/json')
+    return HttpResponse(json.dumps(_get_neuronname_from_skeletonid(project_id, skeleton_id)), content_type='application/json')
 
 def _neuronnames(skeleton_ids, project_id):
     qs = ClassInstanceClassInstance.objects.filter(
@@ -601,7 +601,7 @@ def split_skeleton(request, project_id=None):
     insert_into_log(project_id, request.user.id, "split_skeleton", location,
                     "Split skeleton with ID {0} (neuron: {1})".format( skeleton_id, neuron.name ) )
 
-    return HttpResponse(json.dumps({'skeleton_id': new_skeleton.id}), content_type='text/json')
+    return HttpResponse(json.dumps({'skeleton_id': new_skeleton.id}), content_type='application/json')
 
 
 @api_view(['GET'])
@@ -636,7 +636,7 @@ def root_for_skeleton(request, project_id=None, skeleton_id=None):
         'x': tn.location_x,
         'y': tn.location_y,
         'z': tn.location_z}),
-        content_type='text/json')
+        content_type='application/json')
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def skeleton_ancestry(request, project_id=None):
@@ -914,7 +914,7 @@ def skeleton_info_raw(request, project_id=None):
                 'outgoing': outgoing,
                 'incoming_reviewers': incoming_reviewers,
                 'outgoing_reviewers': outgoing_reviewers}),
-            content_type='text/json')
+            content_type='application/json')
 
 
 @requires_user_role(UserRole.Browse)
@@ -925,7 +925,7 @@ def connectivity_matrix(request, project_id=None):
     cols = tuple(int(v) for k, v in request.POST.iteritems() if k.startswith('columns['))
 
     matrix = get_connectivity_matrix(project_id, rows, cols)
-    return HttpResponse(json.dumps(matrix), content_type='text/json')
+    return HttpResponse(json.dumps(matrix), content_type='application/json')
 
 
 def get_connectivity_matrix(project_id, row_skeleton_ids, col_skeleton_ids):
@@ -1407,7 +1407,7 @@ def reset_own_reviewer_ids(request, project_id=None, skeleton_id=None):
     Review.objects.filter(skeleton_id=skeleton_id, reviewer=request.user).delete()
     insert_into_log(project_id, request.user.id, 'reset_reviews',
                     None, 'Reset reviews for skeleton %s' % skeleton_id)
-    return HttpResponse(json.dumps({'status': 'success'}), content_type='text/json')
+    return HttpResponse(json.dumps({'status': 'success'}), content_type='application/json')
 
 
 @requires_user_role(UserRole.Annotate)
@@ -1446,7 +1446,7 @@ def annotation_list(request, project_id=None):
     response = get_annotation_info(project_id, skeleton_ids, annotations,
                                    metaannotations, neuronnames)
 
-    return HttpResponse(json.dumps(response), content_type="text/json")
+    return HttpResponse(json.dumps(response), content_type="application/json")
 
 def get_annotation_info(project_id, skeleton_ids, annotations, metaannotations,
                         neuronnames):
@@ -1612,7 +1612,7 @@ def list_skeletons(request, project_id):
         to_date = datetime.strptime(to_date, '%Y%m%d')
 
     response = _list_skeletons(project_id, created_by, reviewed_by, from_date, to_date, nodecount_gt)
-    return HttpResponse(json.dumps(response), content_type="text/json")
+    return HttpResponse(json.dumps(response), content_type="application/json")
 
 def _list_skeletons(project_id, created_by=None, reviewed_by=None, from_date=None,
           to_date=None, nodecount_gt=0):
@@ -1695,7 +1695,7 @@ def adjacency_matrix(request, project_id=None):
                     'value': d['count']} for u,v,d in skelgroup.graph.edges_iter(data=True)  ]
     }
 
-    return HttpResponse(json.dumps(data, sort_keys=True, indent=4), content_type='text/json')
+    return HttpResponse(json.dumps(data, sort_keys=True, indent=4), content_type='application/json')
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -1719,7 +1719,7 @@ def skeletonlist_subgraph(request, project_id=None):
                     'directed': True} for u,v,d in skelgroup.graph.edges_iter(data=True)  ]
     }
 
-    return HttpResponse(json.dumps(data, sort_keys=True, indent=4), content_type='text/json')
+    return HttpResponse(json.dumps(data, sort_keys=True, indent=4), content_type='application/json')
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def skeletonlist_confidence_compartment_subgraph(request, project_id=None):
@@ -1744,7 +1744,7 @@ def skeletonlist_confidence_compartment_subgraph(request, project_id=None):
                     'directed': True}} for u,v,d in resultgraph.edges_iter(data=True)  ]
     }
 
-    return HttpResponse(json.dumps(data, sort_keys=True, indent=4), content_type='text/json')
+    return HttpResponse(json.dumps(data, sort_keys=True, indent=4), content_type='application/json')
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def skeletonlist_edgecount_compartment_subgraph(request, project_id=None):
@@ -1769,7 +1769,7 @@ def skeletonlist_edgecount_compartment_subgraph(request, project_id=None):
                     'directed': True}} for u,v,d in resultgraph.edges_iter(data=True)  ]
     }
 
-    return HttpResponse(json.dumps(data, sort_keys=True, indent=4), content_type='text/json')
+    return HttpResponse(json.dumps(data, sort_keys=True, indent=4), content_type='application/json')
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def all_shared_connectors(request, project_id=None):
@@ -1777,4 +1777,4 @@ def all_shared_connectors(request, project_id=None):
     skeletonlist = map(int, skeletonlist)
     p = get_object_or_404(Project, pk=project_id)
     skelgroup = SkeletonGroup( skeletonlist, p.id )
-    return HttpResponse(json.dumps(dict.fromkeys(skelgroup.all_shared_connectors()) ), content_type='text/json')
+    return HttpResponse(json.dumps(dict.fromkeys(skelgroup.all_shared_connectors()) ), content_type='application/json')

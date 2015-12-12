@@ -126,7 +126,7 @@ def requires_user_role(roles):
                       "project %d" % (u.first_name + ' ' + u.last_name, u.id, \
                       int(kwargs['project_id']))
                 return HttpResponse(json.dumps({'error': msg,
-                        'permission_error': True}), content_type='text/json')
+                        'permission_error': True}), content_type='application/json')
 
         return wraps(f)(inner_decorator)
     return decorated_with_requires_user_role
@@ -169,7 +169,7 @@ def requires_user_role_for_any_project(roles):
                       % (u.first_name + ' ' + u.last_name, u.id)
                 return HttpResponse(
                         json.dumps({'error': msg, 'permission_error': True}),
-                        content_type='text/json')
+                        content_type='application/json')
 
         return wraps(f)(inner_decorator)
     return decorated_with_requires_user_role_for_any_project

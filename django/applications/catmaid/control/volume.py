@@ -305,4 +305,4 @@ def intersects(request, project_id, volume_id):
 
     return HttpResponse(json.dumps({
         'intersects': result[0]
-    }), content_type='text/json')
+    }), content_type='application/json')

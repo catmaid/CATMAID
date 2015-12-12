@@ -536,7 +536,7 @@ def annotate_entities(request, project_id = None):
                 for a,e in annotation_objs.items()],
     }
 
-    return HttpResponse(json.dumps(result), content_type='text/json')
+    return HttpResponse(json.dumps(result), content_type='application/json')
 
 @requires_user_role(UserRole.Annotate)
 def remove_annotations(request, project_id=None):
@@ -567,7 +567,7 @@ def remove_annotations(request, project_id=None):
     return HttpResponse(json.dumps({
         'deleted_annotations': deleted_annotations,
         'left_uses': num_left_annotations
-    }), content_type='text/json')
+    }), content_type='application/json')
 
 
 @requires_user_role(UserRole.Annotate)
@@ -601,7 +601,7 @@ def remove_annotation(request, project_id=None, annotation_id=None):
         'message': message,
         'deleted_annotation': deleted,
         'left_uses': num_left
-    }), content_type='text/json')
+    }), content_type='application/json')
 
 def _remove_annotation(user, project_id, entity_ids, annotation_id):
     """Remove an annotation made by a certain user in a given project on a set
@@ -944,7 +944,7 @@ def list_annotations(request, project_id=None):
         ls.append({'id': uid, 'name': username})
     # Flatten dictionary to list
     annotations = tuple({'name': ids[aid], 'id': aid, 'users': users} for aid, users in annotation_dict.iteritems())
-    return HttpResponse(json.dumps({'annotations': annotations}), content_type="text/json")
+    return HttpResponse(json.dumps({'annotations': annotations}), content_type="application/json")
 
 def _fast_co_annotations(request, project_id, display_start, display_length):
     classIDs = dict(Class.objects.filter(project_id=project_id).values_list('class_name', 'id'))
@@ -1010,7 +1010,7 @@ def _fast_co_annotations(request, project_id, display_start, display_length):
                        row[0]])
 
     response['aaData'] = aaData
-    return HttpResponse(json.dumps(response), content_type='text/json')
+    return HttpResponse(json.dumps(response), content_type='application/json')
 
 
 @requires_user_role([UserRole.Browse])
@@ -1112,7 +1112,7 @@ def list_annotations_datatable(request, project_id=None):
             annotation[4], # Annotator ID
             annotation[0]]) # ID
 
-    return HttpResponse(json.dumps(response), content_type='text/json')
+    return HttpResponse(json.dumps(response), content_type='application/json')
 
 
 @api_view(['POST'])

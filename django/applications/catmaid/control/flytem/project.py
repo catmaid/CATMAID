@@ -32,4 +32,4 @@ def projects(request):
     response = [v for k,v in projects.items()]
 
     return HttpResponse(json.dumps(response, sort_keys=True, indent=2),
-                        content_type="text/json")
+                        content_type="application/json")

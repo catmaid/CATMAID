@@ -407,7 +407,7 @@ def update_location_reviewer(request, project_id=None, node_id=None):
     return HttpResponse(json.dumps({
         'reviewer_id': request.user.id,
         'review_time': r.review_time.isoformat(),
-    }), content_type='text/json')
+    }), content_type='application/json')
 
 
 @requires_user_role(UserRole.Annotate)
@@ -429,7 +429,7 @@ def update_confidence(request, project_id=None, node_id=0):
         location = Location.objects.filter(id=tnid).values_list('location_x',
                 'location_y', 'location_z')[0]
         insert_into_log(project_id, request.user.id, "change_confidence", location, "Changed to %s" % new_confidence)
-        return HttpResponse(json.dumps({'message': 'success'}), content_type='text/json')
+        return HttpResponse(json.dumps({'message': 'success'}), content_type='application/json')
 
     # Else, signal error
     if to_connector:
@@ -751,7 +751,7 @@ def find_children(request, project_id=None):
             ''', (tnid,))
 
         children = [[row] for row in cursor.fetchall()]
-        return HttpResponse(json.dumps(children), content_type='text/json')
+        return HttpResponse(json.dumps(children), content_type='application/json')
     except Exception as e:
         raise Exception('Could not obtain next branch node or leaf: ' + str(e))
 

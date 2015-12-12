@@ -64,7 +64,7 @@ def export_skeleton_response(request, project_id=None, skeleton_id=None, format=
     if format == 'swc':
         return HttpResponse(get_swc_string(treenode_qs), content_type='text/plain')
     elif format == 'json':
-        return HttpResponse(get_json_string(treenode_qs), content_type='text/json')
+        return HttpResponse(get_json_string(treenode_qs), content_type='application/json')
     else:
         raise Exception, "Unknown format ('%s') in export_skeleton_response" % (format,)
 
@@ -903,7 +903,7 @@ def export_review_skeleton(request, project_id=None, skeleton_id=None):
 
     segments = _export_review_skeleton(project_id, skeleton_id, subarbor_node_id)
     return HttpResponse(json.dumps(segments, cls=DjangoJSONEncoder),
-            content_type='text/json')
+            content_type='application/json')
 
 @requires_user_role(UserRole.Browse)
 def skeleton_connectors_by_partner(request, project_id):

@@ -57,7 +57,7 @@ def graphedge_list(request, project_id=None):
             connectordata[k]['posttreenode'] = v['posttreenode'][ v['post'].index( skeletonlist[1] ) ]
             result.append(connectordata[k])
 
-    return HttpResponse(json.dumps( result ), content_type='text/json')
+    return HttpResponse(json.dumps( result ), content_type='application/json')
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def one_to_many_synapses(request, project_id=None):
@@ -515,7 +515,7 @@ def list_completed(request, project_id):
         to_date = datetime.strptime(to_date, '%Y%m%d')
 
     response = _list_completed(project_id, completed_by, from_date, to_date)
-    return HttpResponse(json.dumps(response), content_type="text/json")
+    return HttpResponse(json.dumps(response), content_type="application/json")
 
 
 def _list_completed(project_id, completed_by=None, from_date=None, to_date=None):

@@ -110,7 +110,7 @@ def list_stack_tags(request, project_id=None, stack_id=None):
     s = get_object_or_404(Stack, pk=stack_id)
     tags = [ str(t) for t in s.tags.all()]
     result = {'tags':tags}
-    return HttpResponse(json.dumps(result, sort_keys=True, indent=4), content_type="text/json")
+    return HttpResponse(json.dumps(result, sort_keys=True, indent=4), content_type="application/json")
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def update_stack_tags(request, project_id=None, stack_id=None, tags=None):
@@ -129,12 +129,12 @@ def update_stack_tags(request, project_id=None, stack_id=None, tags=None):
     s.tags.set(*tags)
 
     # Return an empty closing response
-    return HttpResponse(json.dumps(""), content_type="text/json")
+    return HttpResponse(json.dumps(""), content_type="application/json")
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def stack_info(request, project_id=None, stack_id=None):
     result=get_stack_info(project_id, stack_id, request.user)
-    return HttpResponse(json.dumps(result, sort_keys=True, indent=4), content_type="text/json")
+    return HttpResponse(json.dumps(result, sort_keys=True, indent=4), content_type="application/json")
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -153,7 +153,7 @@ def stack_models(request, project_id=None, stack_id=None):
             break
 
     if not filename:
-        return HttpResponse(json.dumps(d), content_type="text/json")
+        return HttpResponse(json.dumps(d), content_type="application/json")
 
     with closing(h5py.File(filename, 'r')) as hfile:
         meshnames=hfile['meshes'].keys()
@@ -180,7 +180,7 @@ def stack_models(request, project_id=None, stack_id=None):
                 'materials': [],
                 'colors': []
             }
-    return HttpResponse(json.dumps(d), content_type="text/json")
+    return HttpResponse(json.dumps(d), content_type="application/json")
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def stacks(request, project_id=None):
@@ -196,4 +196,4 @@ def stacks(request, project_id=None):
             'title': stack.title,
             'comment': stack.comment})
     return HttpResponse(json.dumps(info, sort_keys=True, indent=4),
-                        content_type="text/json")
+                        content_type="application/json")

@@ -30,7 +30,7 @@ def user_list(request):
             "last_name": u.last_name,
             "color": (up.color.r, up.color.g, up.color.b) })
 
-    return HttpResponse(json.dumps(result), content_type='text/json')
+    return HttpResponse(json.dumps(result), content_type='application/json')
 
 @user_passes_test(access_check)
 def user_list_datatable(request):
@@ -107,7 +107,7 @@ def user_list_datatable(request):
             user.id,
         ]]
 
-    return HttpResponse(json.dumps(response), content_type='text/json')
+    return HttpResponse(json.dumps(response), content_type='application/json')
 
 
 initial_colors = ((1, 0, 0, 1),
@@ -149,7 +149,7 @@ def update_user_profile(request):
     # Ignore anonymous user
     if not request.user.is_authenticated() or request.user.is_anonymous():
         return HttpResponse(json.dumps({'success': "The user profile of the " +
-                "anonymous user won't be updated"}), content_type='text/json')
+                "anonymous user won't be updated"}), content_type='application/json')
 
     for var in []:
         request_var = request.POST.get(var['name'], None)
@@ -162,4 +162,4 @@ def update_user_profile(request):
     request.user.userprofile.save()
 
     return HttpResponse(json.dumps({'success': 'Updated user profile'}),
-            content_type='text/json')
+            content_type='application/json')

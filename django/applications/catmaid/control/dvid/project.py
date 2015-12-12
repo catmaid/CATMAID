@@ -39,4 +39,4 @@ def projects(request):
             projects.append(dvid_project)
 
     return HttpResponse(json.dumps(projects, sort_keys=True, indent=2),
-                        content_type="text/json")
+                        content_type="application/json")

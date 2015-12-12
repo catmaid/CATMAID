@@ -103,7 +103,7 @@ def export_wiring_diagram_nx(request, project_id=None):
 
     data = json_graph.node_link_data(g)
     json_return = json.dumps(data, sort_keys=True, indent=4)
-    return HttpResponse(json_return, content_type='text/json')
+    return HttpResponse(json_return, content_type='application/json')
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -133,4 +133,4 @@ def export_wiring_diagram(request, project_id=None):
     }
 
     json_return = json.dumps(data, sort_keys=True, indent=4)
-    return HttpResponse(json_return, content_type='text/json')
+    return HttpResponse(json_return, content_type='application/json')

@@ -42,7 +42,7 @@ def list_project_tags(request, project_id=None):
     p = get_object_or_404(Project, pk=project_id)
     tags = [ str(t) for t in p.tags.all()]
     result = {'tags':tags}
-    return HttpResponse(json.dumps(result, sort_keys=True, indent=4), content_type="text/json")
+    return HttpResponse(json.dumps(result, sort_keys=True, indent=4), content_type="application/json")
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def update_project_tags(request, project_id=None, tags=None):
@@ -61,7 +61,7 @@ def update_project_tags(request, project_id=None, tags=None):
     p.tags.set(*tags)
 
     # Return an empty closing response
-    return HttpResponse(json.dumps(""), content_type="text/json")
+    return HttpResponse(json.dumps(""), content_type="application/json")
 
 class ExProject:
     """ A wrapper around the Project model to include additional
@@ -211,4 +211,4 @@ def projects(request):
             'stackgroups': stackgroups
         })
 
-    return HttpResponse(json.dumps(result, sort_keys=True, indent=4), content_type="text/json")
+    return HttpResponse(json.dumps(result, sort_keys=True, indent=4), content_type="application/json")

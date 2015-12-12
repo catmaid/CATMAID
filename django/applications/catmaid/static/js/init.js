@@ -301,7 +301,7 @@ function updateProjects(completionCallback) {
             'title': s.title,
             'comment': s.comment,
             'note': '',
-            'action': openProjectStack.bind(window, p.id, s.id)
+            'action': openProjectStack.bind(window, p.id, s.id, false)
           };
           return o;
         }, {});
@@ -310,7 +310,7 @@ function updateProjects(completionCallback) {
             'title': sg.title,
             'comment': sg.comment,
             'note': '',
-            'action': openStackGroup.bind(window, p.id, sg.id)
+            'action': openStackGroup.bind(window, p.id, sg.id, false)
           };
           return o;
         }, {});
@@ -618,7 +618,6 @@ function handle_openProjectStack( e, stackViewer )
     access is generated. */
     stack_menu.update();
     getStackMenuInfo(project.id, function(stacks) {
-      /* jshint scripturl:true */
       if (stacks.length > 1)
       {
         var stack_menu_content = [];
@@ -630,11 +629,11 @@ function handle_openProjectStack( e, stackViewer )
               action: [{
                   title: 'Open in new viewer',
                   note: '',
-                  action: ('javascript:openProjectStack(' + s.pid + ',' + s.id + ')')
+                  action: openProjectStack.bind(window, s.pid, s.id, false)
                 },{
                   title: 'Add to focused viewer',
                   note: '',
-                  action: ('javascript:openProjectStack(' + s.pid + ',' + s.id + ', true)')
+                  action: openProjectStack.bind(window, s.pid, s.id, true)
                 }
               ]
             }

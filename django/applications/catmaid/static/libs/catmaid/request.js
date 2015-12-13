@@ -12,7 +12,7 @@
 /**
  * Implements a cross browser HTTPrequest-FIFO-queue.
  */
-RequestQueue = function()
+RequestQueue = function(originUrl, csrfToken)
 {
   var self = this;
   var queue = [];		//!< queue of waiting requests
@@ -109,23 +109,44 @@ RequestQueue = function()
       spinner.style.display = "none";
   };
 
+  var csrfSafe = function (method) {
+    // these HTTP methods do not require CSRF protection
+    return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+  };
+
+  /**
+   * Test whether a request is for the same host as the origin URL configured
+   * for this request queue. Because this URL is configured and CATMAID
+   * should always generate URLs the same way (i.e., we do not care about
+   * matches with additional protocols, etc.), this is a simple test. For
+   * more robust matching, see:
+   * https://docs.djangoproject.com/en/1.6/ref/contrib/csrf/
+   */
+  var sameOrigin = function (url) {
+    return 0 === url.indexOf(originUrl);
+  };
+
   var send = function()
   {
     showSpinner();
+    var item = queue[0];
     xmlHttp.open(
-      queue[ 0 ].method,
-      queue[ 0 ].request,
+      item.method,
+      item.request,
       true );
     xmlHttp.setRequestHeader( "X-Requested-With", "XMLHttpRequest");
-    if ( queue[ 0 ].method == "POST" || queue[ 0 ].method == "PUT" )
+    if ( item.method == "POST" || item.method == "PUT" )
     {
       xmlHttp.setRequestHeader( "Content-type", "application/x-www-form-urlencoded" );
       // xmlHttp.setRequestHeader( "Content-length", queue[ 0 ].data.length );
       // xmlHttp.setRequestHeader( "Connection", "close" );
     }
     xmlHttp.setRequestHeader( "X-Requested-With", "XMLHttpRequest" );
+    if (!csrfSafe(item.method) && sameOrigin(item.request)) {
+      xmlHttp.setRequestHeader('X-CSRFToken', csrfToken);
+    }
     xmlHttp.onreadystatechange = callback;
-    xmlHttp.send( queue[ 0 ].data );
+    xmlHttp.send( item.data );
   };
 
   var callback = function()

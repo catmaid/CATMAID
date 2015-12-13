@@ -36,6 +36,22 @@ var requestQueue = new RequestQueue();
     return str.indexOf(suffix, str.length - suffix.length) !== -1;
   };
 
+  var getCookie = function(name) {
+      var cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+          var cookies = document.cookie.split(';');
+          for (var i = 0; i < cookies.length; i++) {
+              var cookie = jQuery.trim(cookies[i]);
+              // Does this cookie string begin with the name we want?
+              if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                  cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                  break;
+              }
+          }
+      }
+      return cookieValue;
+  };
+
   /**
    * Set up the front-end environment. Both URLs are stored so that they contain
    * a trailing slash.
@@ -44,8 +60,10 @@ var requestQueue = new RequestQueue();
    * @param {string} staticURL - The URL pointing to CATMAID's static files.
    * @param {string} staticExtURL - Optional, the relative URL pointing to
    *    CATMAID's static extension files.
+   * @param {string} csrfCookieName - The name of the cookie containing the
+   *    CSRF token to be sent to the backend with XHRs.
    */
-  CATMAID.configure = function(backendURL, staticURL, staticExtURL) {
+  CATMAID.configure = function(backendURL, staticURL, staticExtURL, csrfCookieName) {
     validateString(backendURL, "back-end URL");
     validateString(staticURL, "static URL");
     if (typeof staticExtURL === 'undefined') staticExtURL = '';
@@ -70,6 +88,16 @@ var requestQueue = new RequestQueue();
       writable: false,
       value: endsWith(staticExtURL, "/") ? staticExtURL : staticExtURL + "/"
     });
+
+    Object.defineProperty(CATMAID, "csrfCookieName", {
+      enumerable: false,
+      configurable: true,
+      writable: false,
+      value: csrfCookieName
+    });
+
+    window.requestQueue = new RequestQueue(CATMAID.backendURL,
+                                           getCookie(CATMAID.csrfCookieName));
   };
 
   /**

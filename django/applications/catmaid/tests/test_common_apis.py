@@ -2709,6 +2709,18 @@ class ViewPageTests(TestCase):
                            "editor": 3}
         self.assertEqual(expected_result, parsed_response)
 
+    def test_node_get_location(self):
+        self.fake_authentication()
+
+        treenode_id = 383
+        response = self.client.post(
+                '/%d/node/get_location' % (self.test_project_id),
+                {'tnid': treenode_id})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = [383, 7850.0, 1970.0, 0.0]
+        self.assertEqual(expected_result, parsed_response)
+
     def test_node_update_single_treenode(self):
         self.fake_authentication()
         treenode_id = 289

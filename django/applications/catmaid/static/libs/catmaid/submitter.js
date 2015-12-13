@@ -17,6 +17,7 @@
  *  ... then submit requests like:
  *
  *  submit(django_url + '/skeleton_id/' + skeleton_id,
+ *     'POST',
  *     {all: true},
  *     function(json) { alert('Continuation OK! JSON reply: ' + json); });
  *
@@ -171,9 +172,9 @@ var submitterFn = function() {
 
     if (q.url) {
       if (q.replace) {
-        requestQueue.replace(q.url, "POST", q.post, handlerFn(q), q.id);
+        requestQueue.replace(q.url, q.method, q.params, handlerFn(q), q.id);
       } else {
-        requestQueue.register(q.url, "POST", q.post, handlerFn(q));
+        requestQueue.register(q.url, q.method, q.params, handlerFn(q));
       }
     } else {
       // No url: direct execution with last result
@@ -181,9 +182,10 @@ var submitterFn = function() {
     }
   };
 
-  var submit = function(url, post, fn, blockUI, replace, errCallback, quiet, id) {
+  var submit = function(url, method, params, fn, blockUI, replace, errCallback, quiet, id) {
     queue.push({url: url,
-          post: post,
+          method: method,
+          params: params,
           fn: fn,
           blockUI: blockUI,
           replace: replace,
@@ -202,7 +204,7 @@ var submitterFn = function() {
    * Allow submitter to be used as a Promise.
    */
   submit.then = function(onResolve, onReject, blockUI) {
-    submit(null, null, onResolve, blockUI, false, onReject, false);
+    submit(null, null, null, onResolve, blockUI, false, onReject, false);
     return submit;
   };
 

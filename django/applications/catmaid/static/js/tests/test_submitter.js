@@ -38,7 +38,7 @@ QUnit.test('Submitter test', function( assert ) {
       done();
     });
     // Add result check as error callback
-    submit(null, null, null, false, false, function() {
+    submit(null, null, null, null, false, false, function() {
       assert.deepEqual(results, [],
           "Submitter resets if earlier promise fails");
       done();

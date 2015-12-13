@@ -1982,6 +1982,7 @@
 
   WebGLApplication.prototype.Space.prototype.Content.prototype.loadMeshes = function(space, submit, material) {
     submit(django_url + project.id + "/stack/" + space.stack.id + "/models",
+           'POST',
            {},
            function (models) {
              var ids = Object.keys(models);

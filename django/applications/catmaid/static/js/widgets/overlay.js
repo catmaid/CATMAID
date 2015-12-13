@@ -775,6 +775,7 @@ SkeletonAnnotations.TracingOverlay.prototype.executeDependentOnNodeCount =
 {
   this.submit(
       django_url + project.id + '/skeleton/node/' + node_id + '/node_count',
+      'POST',
       {},
       function(json) {
         if (json.count > 1) {
@@ -815,6 +816,7 @@ SkeletonAnnotations.TracingOverlay.prototype.renameNeuron = function(skeletonID)
   var self = this;
   this.submit(
       django_url + project.id + '/skeleton/' + skeletonID + '/neuronname',
+      'POST',
       {},
       function(json) {
           var new_name = prompt("Change neuron name", json['neuronname']);
@@ -1230,6 +1232,7 @@ SkeletonAnnotations.TracingOverlay.prototype.insertNodeInActiveSkeleton = functi
               // it was inserted before
               self.submit(
                 django_url + project.id + '/treenode/' + isection + '/parent',
+                'POST',
                 {parent_id: nn.id},
                 function(json) {
                   self.updateNodes();
@@ -1242,6 +1245,7 @@ SkeletonAnnotations.TracingOverlay.prototype.insertNodeInActiveSkeleton = functi
   atn.promise().then(function(atnId) {
     self.submit(
         django_url + project.id + "/node/next_branch_or_end",
+        'POST',
         {tnid: atnId},
         function(json) {
           // See goToNextBranchOrEndNode for JSON schema description.
@@ -1266,6 +1270,7 @@ SkeletonAnnotations.TracingOverlay.prototype.insertNodeInActiveSkeleton = functi
               // Need to fetch the parent node first.
               self.submit(
                   django_url + project.id + "/node/get_location",
+                  'POST',
                   {tnid: parentId},
                   function(json) {
                     additionalNodes[atn.id] = {
@@ -1357,6 +1362,7 @@ SkeletonAnnotations.TracingOverlay.prototype.rerootSkeleton = function(nodeID) {
   this.promiseNode(this.nodes[nodeID]).then(function(nodeID) {
     self.submit(
         django_url + project.id + '/skeleton/reroot',
+        'POST',
         {treenode_id: nodeID},
         function() { self.updateNodes(); } );
   });
@@ -1398,6 +1404,7 @@ SkeletonAnnotations.TracingOverlay.prototype.splitSkeleton = function(nodeID) {
         // Call backend
         self.submit(
             django_url + project.id + '/skeleton/split',
+            'POST',
             {
               treenode_id: nodeId,
               upstream_annotation_map: JSON.stringify(upstream_set),
@@ -1426,6 +1433,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeLink = function (from
     var fromid = nids[0], toid=nids[1];
     self.submit(
       django_url + project.id + '/treenodes/' + toid + '/info',
+      'POST',
       undefined,
       function(json) {
         var from_model = SkeletonAnnotations.activeSkeleton.createModel();
@@ -1446,6 +1454,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeLink = function (from
               // The call to join will reroot the target skeleton at the shift-clicked treenode
               self.submit(
                 django_url + project.id + '/skeleton/join',
+                'POST',
                 data,
                 function (json) {
                   self.updateNodes(function() {
@@ -1549,6 +1558,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createLink = function (fromid, toid
   this.promiseNode(fromid).then(function(nodeID) {
     self.submit(
         django_url + project.id + '/link/create',
+        'POST',
         {pid: project.id,
          from_id: nodeID,
          link_type: link_type,
@@ -1571,6 +1581,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createSingleConnector = function (
   var self = this;
   this.submit(
       django_url + project.id + '/connector/create',
+      'POST',
       {pid: project.id,
        confidence: confval,
        x: phys_x,
@@ -1640,6 +1651,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeWithLink = function (
   var self = this;
   this.submit(
       django_url + project.id + '/treenode/create',
+      'POST',
       {pid: project.id,
        parent_id: -1,
        x: phys_x,
@@ -2501,6 +2513,7 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
     var url = django_url + project.id + '/node/list';
     self.submit(
       url,
+      'POST',
       params,
       function(json) {
         if (json.needs_setup) {
@@ -2553,6 +2566,7 @@ SkeletonAnnotations.TracingOverlay.prototype.setConfidence = function(newConfide
     this.promiseNode(node).then(function(nid) {
       self.submit(
           django_url + project.id + '/treenodes/' + nid + '/confidence',
+          'POST',
           {to_connector: toConnector,
            new_confidence: newConfidence},
           function(json) {
@@ -2590,6 +2604,7 @@ SkeletonAnnotations.TracingOverlay.prototype.goToPreviousBranchOrRootNode = func
   var self = this;
   this.submit(
       django_url + project.id + "/treenodes/" + treenode_id + "/previous-branch-or-root",
+      'POST',
       {alt: e.altKey ? 1 : 0},
       function(json) {
         // json is a tuple:
@@ -2628,6 +2643,7 @@ SkeletonAnnotations.TracingOverlay.prototype.goToNextBranchOrEndNode = function(
     var self = this;
     this.submit(
         django_url + project.id + "/treenodes/" + treenode_id + "/next-branch-or-end",
+        'POST',
         undefined,
         function(json) {
           // json is an array of branches
@@ -2747,6 +2763,7 @@ SkeletonAnnotations.TracingOverlay.prototype.goToChildNode = function (treenode_
         SkeletonAnnotations.getParentOfVirtualNode(treenode_id);
     this.submit(
         django_url + project.id + "/treenodes/" + queryNode + "/children",
+        'POST',
         undefined,
         function(json) {
           // See goToNextBranchOrEndNode for JSON schema description.
@@ -2915,6 +2932,7 @@ SkeletonAnnotations.TracingOverlay.prototype.editRadius = function(treenode_id, 
     self.promiseNode(treenode_id).then(function(nodeID) {
       self.submit(
         django_url + project.id + '/treenode/' + nodeID + '/radius',
+        'POST',
         {radius: radius,
          option: updateMode},
         function(json) {
@@ -3088,6 +3106,7 @@ SkeletonAnnotations.TracingOverlay.prototype.goToNode = function (nodeID, fn) {
     var self = this;
     this.submit(
         django_url + project.id + "/node/get_location",
+        'POST',
         {tnid: nodeID},
         function(json) {
           // json[0], [1], [2], [3]: id, x, y, z
@@ -3247,7 +3266,7 @@ SkeletonAnnotations.TracingOverlay.prototype.promiseNodeLocation = function (
   var self = this;
   return new Promise(function(resolve, reject) {
     var url = django_url + project.id + "/node/get_location";
-    self.submit(url, {tnid: nodeID}, resolve, true, false, reject);
+    self.submit(url, 'POST', {tnid: nodeID}, resolve, true, false, reject);
   }).then(function(json) {
     var stack = self.stackViewer.primaryStack;
     return {
@@ -3315,6 +3334,7 @@ SkeletonAnnotations.TracingOverlay.prototype.goToLastEditedNode = function(skele
   var self = this;
   this.submit(
     django_url + project.id + '/node/most_recent',
+    'POST',
     {pid: project.id,
      treenode_id: SkeletonAnnotations.getActiveNodeId()},
     function (jso) {
@@ -3347,6 +3367,7 @@ SkeletonAnnotations.TracingOverlay.prototype.goToNextOpenEndNode = function(node
     // 3D viewer or treenode table (but either source may not be up to date)
     this.submit(
         django_url + project.id + '/skeletons/' + skid + '/open-leaves',
+        'POST',
         {treenode_id: nodeID},
         function (json) {
           // json is an array of nodes. Each node is an array:
@@ -3423,6 +3444,7 @@ SkeletonAnnotations.TracingOverlay.prototype.goToNearestMatchingTag = function (
       var skeletonId = SkeletonAnnotations.getActiveSkeletonId();
       self.submit(
           django_url + project.id + '/skeletons/' + skeletonId + '/find-labels',
+          'POST',
           { treenode_id: nodeId,
             label_regex: self.nextNearestMatchingTag.query },
           function (json) {
@@ -3438,6 +3460,7 @@ SkeletonAnnotations.TracingOverlay.prototype.goToNearestMatchingTag = function (
       var projectCoordinates = self.stackViewer.projectCoordinates();
       self.submit(
           django_url + project.id + '/nodes/find-labels',
+          'POST',
           { x: projectCoordinates.x,
             y: projectCoordinates.y,
             z: projectCoordinates.z,
@@ -3530,7 +3553,7 @@ SkeletonAnnotations.TracingOverlay.prototype.printTreenodeInfo = function(nodeID
 
   var url = django_url + project.id + '/node/user-info';
 
-  this.submit(url, {node_id: nodeID}, function(jso) {
+  this.submit(url, 'POST', {node_id: nodeID}, function(jso) {
       var creator = CATMAID.User.safeToString(jso.user);
       var editor = CATMAID.User.safeToString(jso.editor);
 
@@ -3667,6 +3690,7 @@ SkeletonAnnotations.TracingOverlay.prototype.deleteNode = function(nodeId) {
   function deleteConnectorNode(connectornode) {
     self.submit(
         django_url + project.id + '/connector/delete',
+        'POST',
         {pid: project.id,
         connector_id: connectornode.id},
         function(json) {
@@ -3887,6 +3911,7 @@ SkeletonAnnotations.Tag = new (function() {
     atn.promise().then(function(treenode_id) {
       svgOverlay.submit(
         django_url + project.id + '/label/' + atn.type + '/' + atn.id + '/update',
+        'POST',
         {tags: label,
          delete_existing: deleteExisting ? true : false},
         function(json) {
@@ -3905,6 +3930,7 @@ SkeletonAnnotations.Tag = new (function() {
     atn.promise().then(function(treenode_id) {
       svgOverlay.submit(
         django_url + project.id + '/label/' + atn.type + '/' + atn.id + '/remove',
+        'POST',
         {tag: label},
         function(json) {
           CATMAID.info('Tag "' + label + '" removed.');
@@ -3988,6 +4014,7 @@ SkeletonAnnotations.Tag = new (function() {
 
       svgOverlay.submit(
           django_url + project.id + '/labels-for-node/' + atn.type  + '/' + atnID,
+          'POST',
           {pid: project.id},
           function(json) {
             input.tagEditor({
@@ -4001,6 +4028,7 @@ SkeletonAnnotations.Tag = new (function() {
             // add autocompletion, only request after tagbox creation
             svgOverlay.submit(
               django_url + project.id + '/labels/',
+              'POST',
               {pid: project.id},
               function(json) {
                 input.autocomplete({source: json});
@@ -4018,6 +4046,7 @@ SkeletonAnnotations.Tag = new (function() {
     atn.promise().then(function() {
       svgOverlay.submit(
           django_url + project.id + '/label/' + atn.type + '/' + atn.id + '/update',
+          'POST',
           {pid: project.id,
            tags: $("#Tags" + atn.id).tagEditorGetTags()},
           function(json) {});

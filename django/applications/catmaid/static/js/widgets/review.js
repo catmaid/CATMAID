@@ -582,7 +582,9 @@
      * Mark the given node as reviewed in the back-end.
      */
     this.markAsReviewed = function( node_ob ) {
-      submit(django_url+projectID+"/node/" + node_ob['id'] + "/reviewed", {},
+      submit(django_url + projectID + "/node/" + node_ob['id'] + "/reviewed",
+          'POST',
+          {},
           function(json) {
             if (json.reviewer_id) {
               // Append the new review to the list of reviewers of
@@ -674,7 +676,7 @@
 
         // Queue the selection so that pending requests can finish before.
         // Display an error message if something fails before.
-        submit(null, null, fn, false, false, errFn);
+        submit(null, null, null, fn, false, false, errFn);
       }
     };
 
@@ -872,9 +874,10 @@
       // empty caching text
       $('#counting-cache').text('');
 
-      submit(django_url + "accounts/" + projectID + "/all-usernames", {},
+      submit(django_url + "accounts/" + projectID + "/all-usernames", "POST", {},
         function(usernames) {
           submit(django_url + projectID + "/skeletons/" + skeletonID + "/review",
+            "POST",
             {'subarbor_node_id': subarborNodeId},
             function(skeleton_data) {
                 self.createReviewSkeletonTable( skeleton_data, usernames );
@@ -899,7 +902,7 @@
                 $(this).dialog('destroy');
               },
               "Remove all of my reviews": function () {
-                submit(django_url + projectID + "/skeleton/" + skeletonID + "/review/" + fnName, {},
+                submit(django_url + projectID + "/skeleton/" + skeletonID + "/review/" + fnName, "POST", {},
                   function (json) {
                     self.startReviewActiveSkeleton();
                   });

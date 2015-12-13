@@ -2482,6 +2482,39 @@ class ViewPageTests(TestCase):
         parsed_response.sort(key=distsort)
         self.assertEqual(parsed_response, expected_result)
 
+    def test_skeleton_find_labels(self):
+        self.fake_authentication()
+
+        # Create labels.
+        treenode_id = 387
+        response = self.client.post(
+                '/%d/label/treenode/%d/update' % (self.test_project_id, treenode_id),
+                {'tags': 'testlabel'})
+        self.assertEqual(response.status_code, 200)
+        treenode_id = 393
+        response = self.client.post(
+                '/%d/label/treenode/%d/update' % (self.test_project_id, treenode_id),
+                {'tags': 'Testlabel'})
+        self.assertEqual(response.status_code, 200)
+        # Label in other skeleton than should be ignored.
+        treenode_id = 403
+        response = self.client.post(
+                '/%d/label/treenode/%d/update' % (self.test_project_id, treenode_id),
+                {'tags': 'Testlabel'})
+        self.assertEqual(response.status_code, 200)
+
+        skeleton_id = 361
+        treenode_id = 367
+        response = self.client.post(
+                '/%d/skeletons/%d/find-labels' % (self.test_project_id, skeleton_id),
+                {'treenode_id': treenode_id,
+                 'label_regex': '[Tt]estlabel'})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = [[393, [6910.0, 990.0, 0.0], 3, ["Testlabel"]],
+                           [387, [9030.0, 1480.0, 0.0], 4, ["testlabel"]]]
+        self.assertEqual(expected_result, parsed_response)
+
     def test_skeleton_ancestry(self):
         skeleton_id = 361
 

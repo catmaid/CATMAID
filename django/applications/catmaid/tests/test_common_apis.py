@@ -2721,6 +2721,33 @@ class ViewPageTests(TestCase):
         expected_result = [383, 7850.0, 1970.0, 0.0]
         self.assertEqual(expected_result, parsed_response)
 
+    def test_node_find_labels(self):
+        self.fake_authentication()
+
+        # Create labels.
+        treenode_id = 387
+        response = self.client.post(
+                '/%d/label/treenode/%d/update' % (self.test_project_id, treenode_id),
+                {'tags': 'testlabel'})
+        self.assertEqual(response.status_code, 200)
+        treenode_id = 403
+        response = self.client.post(
+                '/%d/label/treenode/%d/update' % (self.test_project_id, treenode_id),
+                {'tags': 'Testlabel'})
+        self.assertEqual(response.status_code, 200)
+
+        response = self.client.post(
+                '/%d/nodes/find-labels' % (self.test_project_id, ),
+                {'x': 8810,
+                 'y': 1790,
+                 'z': 0,
+                 'label_regex': '[Tt]estlabel'})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = [[387, [9030.0, 1480.0, 0.0], 380.131556174964, ["testlabel"]],
+                           [403, [7840.0, 2380.0, 0.0], 1135.3413583588, ["Testlabel"]]]
+        self.assertEqual(expected_result, parsed_response)
+
     def test_node_update_single_treenode(self):
         self.fake_authentication()
         treenode_id = 289

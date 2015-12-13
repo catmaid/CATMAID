@@ -2665,6 +2665,33 @@ class ViewPageTests(TestCase):
                             [261, 2820.0, 1345.0, 0.0]]]
         self.assertEqual(expected_result, parsed_response)
 
+    def test_treenode_find_children(self):
+        self.fake_authentication()
+
+        treenode_id = 387
+        response = self.client.post(
+                '/%d/treenodes/%d/children' % (self.test_project_id, treenode_id))
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = []
+        self.assertEqual(expected_result, parsed_response)
+
+        treenode_id = 385
+        response = self.client.post(
+                '/%d/treenodes/%d/children' % (self.test_project_id, treenode_id))
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = [[[387, 9030.0, 1480.0, 0.0]]]
+        self.assertEqual(expected_result, parsed_response)
+
+        treenode_id = 367
+        response = self.client.post(
+                '/%d/treenodes/%d/children' % (self.test_project_id, treenode_id))
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = [[[383, 7850.0, 1970.0, 0.0]], [[391, 6740.0, 1530.0, 0.0]]]
+        self.assertEqual(expected_result, parsed_response)
+
     def test_node_update_single_treenode(self):
         self.fake_authentication()
         treenode_id = 289

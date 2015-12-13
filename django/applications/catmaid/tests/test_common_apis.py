@@ -2636,10 +2636,10 @@ class ViewPageTests(TestCase):
         expected_result = [237, 1065.0, 3035.0, 0.0]
         self.assertEqual(expected_result, parsed_response)
 
-    def test_node_find_end_of_linear_branch(self):
+    def test_node_find_next_branch(self):
         self.fake_authentication()
-        treenode_id = 391
 
+        treenode_id = 391
         response = self.client.post(
                 '/%d/treenodes/%d/next-branch-or-end' % (self.test_project_id, treenode_id))
         self.assertEqual(response.status_code, 200)
@@ -2650,10 +2650,7 @@ class ViewPageTests(TestCase):
                             [399, 5670.0, 640.0, 0.0]]]
         self.assertEqual(expected_result, parsed_response)
 
-    def test_node_find_next_branch(self):
-        self.fake_authentication()
         treenode_id = 253
-
         response = self.client.post(
                 '/%d/treenodes/%d/next-branch-or-end' % (self.test_project_id, treenode_id))
         self.assertEqual(response.status_code, 200)

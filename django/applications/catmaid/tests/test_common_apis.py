@@ -2692,6 +2692,23 @@ class ViewPageTests(TestCase):
         expected_result = [[[383, 7850.0, 1970.0, 0.0]], [[391, 6740.0, 1530.0, 0.0]]]
         self.assertEqual(expected_result, parsed_response)
 
+    def test_node_user_info(self):
+        self.fake_authentication()
+
+        treenode_id = 367
+        response = self.client.post(
+                '/%d/node/user-info' % (self.test_project_id),
+                {'node_id': treenode_id})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = {"reviewers": [],
+                           "creation_time": "2011-09-27T07:57:17.808000",
+                           "edition_time": "2011-12-05T13:51:36.955000",
+                           "user": 3,
+                           "review_times": [],
+                           "editor": 3}
+        self.assertEqual(expected_result, parsed_response)
+
     def test_node_update_single_treenode(self):
         self.fake_authentication()
         treenode_id = 289

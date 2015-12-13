@@ -3334,6 +3334,65 @@ class ViewPageTests(TestCase):
                 for r,t in whitelist.iteritems()]
         self.assertJSONEqual(response.content, expected_result)
 
+    def test_suppressed_virtual_nodes(self):
+        self.fake_authentication()
+
+        response = self.client.post(
+                '/%d/treenode/create' % (self.test_project_id, ),
+                {'x': 1,
+                 'y': -1,
+                 'z': 0})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        parent_id = parsed_response['treenode_id']
+        skeleton_id = parsed_response['skeleton_id']
+
+        response = self.client.post(
+                '/%d/treenode/create' % (self.test_project_id, ),
+                {'x': 3,
+                 'y': -3,
+                 'z': 2,
+                 'parent_id': parent_id})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        child_id = parsed_response['treenode_id']
+
+        # Initially no nodes should be supppressed
+        response = self.client.get(
+                '/%d/treenodes/%d/suppressed-virtual/' % (self.test_project_id, child_id))
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = []
+        self.assertEqual(expected_result, parsed_response)
+
+        # Reject attempt to suppress root node
+        response = self.client.post(
+                '/%d/treenodes/%d/suppressed-virtual/' % (self.test_project_id, parent_id),
+                {'location_coordinate': 1,
+                 'orientation': 0})
+        self.assertEqual(response.status_code, 400)
+
+        # Reject coordinate outside edge
+        response = self.client.post(
+                '/%d/treenodes/%d/suppressed-virtual/' % (self.test_project_id, child_id),
+                {'location_coordinate': 4,
+                 'orientation': 0})
+        self.assertEqual(response.status_code, 400)
+
+        # Create virtual node
+        response = self.client.post(
+                '/%d/treenodes/%d/suppressed-virtual/' % (self.test_project_id, child_id),
+                {'location_coordinate': 2,
+                 'orientation': 0})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        suppressed_id = parsed_response['id']
+
+        # Delete virtual node
+        response = self.client.delete(
+                '/%d/treenodes/%d/suppressed-virtual/%d' % (self.test_project_id, child_id, suppressed_id))
+        self.assertEqual(response.status_code, 204)
+
 
 class TreenodeTests(TestCase):
     fixtures = ['catmaid_testdata']

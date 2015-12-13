@@ -714,6 +714,7 @@
     this.follow_active = false;
     this.distance_to_active_node = 5000; // nm
     this.min_synapse_free_cable = 5000; // nm
+    this.lock_view = false;
     this.animation_rotation_axis = "up";
     this.animation_rotation_speed = 0.01;
     this.animation_back_forth = false;
@@ -2624,6 +2625,8 @@
      * camera (and target) is moved instead.
      */
     this.MouseWheel = function(ev) {
+      if (this.CATMAID_view.space.options.lock_view) return;
+
       var camera = this.CATMAID_view.camera;
       if ((ev.ctrlKey || ev.altKey) && !camera.inOrthographicMode) {
         // Move the camera and the target in target direction
@@ -2656,11 +2659,13 @@
     this.MouseMove = function(ev) {
       var mouse = this.CATMAID_view.mouse,
           space = this.CATMAID_view.space;
-      mouse.position.x =  ( ev.offsetX / space.canvasWidth  ) * 2 -1;
-      mouse.position.y = -( ev.offsetY / space.canvasHeight ) * 2 +1;
+      if (!space.options.lock_view) {
+        mouse.position.x =  ( ev.offsetX / space.canvasWidth  ) * 2 -1;
+        mouse.position.y = -( ev.offsetY / space.canvasHeight ) * 2 +1;
 
-      if (mouse.is_mouse_down) {
-        space.render();
+        if (mouse.is_mouse_down) {
+          space.render();
+        }
       }
 
       // Use a cross hair cursor if shift is pressed
@@ -2675,6 +2680,7 @@
       var mouse = this.CATMAID_view.mouse,
           controls = this.CATMAID_view.controls,
           space = this.CATMAID_view.space;
+      if (space.options.lock_view) return;
       mouse.is_mouse_down = false;
       controls.enabled = true;
       space.render(); // May need another render on occasions
@@ -2685,7 +2691,9 @@
           space = this.CATMAID_view.space,
           camera = this.CATMAID_view.camera,
           projector = this.CATMAID_view.projector;
-      mouse.is_mouse_down = true;
+      if (!space.options.lock_view) {
+        mouse.is_mouse_down = true;
+      }
       if (!ev.shiftKey) return;
 
       // Try to pick the node by casting a ray

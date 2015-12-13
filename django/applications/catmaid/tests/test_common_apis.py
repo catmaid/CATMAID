@@ -1,25 +1,23 @@
-from django.contrib.auth.models import Permission
-from django.conf import settings
-from django.test import TestCase, TransactionTestCase
-from django.test.client import Client
-from django.http import HttpResponse
-from django.db import connection, transaction
-from django.shortcuts import get_object_or_404
-from guardian.shortcuts import assign_perm
-import os
 import re
 import urllib
 import json
-import datetime
 
+from django.conf import settings
+from django.contrib.auth.models import Permission
+from django.db import connection, transaction
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
+from django.test import TestCase, TransactionTestCase
+from django.test.client import Client
+from guardian.shortcuts import assign_perm
+
+from catmaid.fields import Double3D, Integer3D
 from catmaid.models import Project, Stack, ProjectStack
 from catmaid.models import ClassInstance, Log, Message, TextlabelLocation
 from catmaid.models import Treenode, Connector, TreenodeConnector, User, Review, ReviewerWhitelist
 from catmaid.models import Textlabel, TreenodeClassInstance, ClassInstanceClassInstance
-from catmaid.fields import Double3D, Integer3D
 from catmaid.control.common import get_relation_to_id_map, get_class_to_id_map
-from catmaid.control.neuron_annotations import _annotate_entities, create_annotation_query, \
-    delete_annotation_if_unused
+from catmaid.control.neuron_annotations import _annotate_entities, create_annotation_query
 
 
 class TransactionTests(TransactionTestCase):

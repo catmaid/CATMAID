@@ -1454,6 +1454,7 @@ var WindowMaker = new function()
           ['Export catalog SVG', WA.exportCatalogSVG.bind(WA)],
           ['Export skeletons as CSV', WA.exportSkeletonsAsCSV.bind(WA)],
           ['Export connectors as CSV', WA.exportConnectorsAsCSV.bind(WA)],
+          ['Export synapses as CSV', WA.exportSynapsesAsCSV.bind(WA)],
           ['Export animation', WA.exportAnimation.bind(WA)],
         ]);
 

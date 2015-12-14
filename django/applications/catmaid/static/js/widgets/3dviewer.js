@@ -537,6 +537,46 @@
     saveAs(new Blob([rows.join('\n')], {type : 'text/csv'}), "connectors.csv");
   };
 
+  WebGLApplication.prototype.exportSynapsesAsCSV = function() {
+    var rows = [["pre_skeleton_id", "pre_treenode_id", "post_skeleton_id", "post_treenode_id"].join(',')];
+    var unique = {};
+    fetchSkeletons(
+        this.getSelectedSkeletons(),
+        function(skid) {
+          return django_url + project.id + '/' + skid + '/0/1/0/compact-arbor';
+        },
+        function(skid) { return {}; }, // POST
+        function(skid, json) {
+          unique[skid] = true;
+          json[1].forEach(function(row) {
+            if (0 === row[6]) {
+              // skid  is pre
+              rows.push([skid, row[0], row[5], row[4]].join(','));
+            } else {
+              // skid is post
+              rows.push([row[5], row[4], skid, row[0]].join(','));
+            }
+            unique[row[5]] = true;
+          });
+        },
+        function(skid) { CATMAID.msg("Error", "Failed to load synapses for: " + skid); },
+        (function() {
+          saveAs(new Blob([rows.join('\n')], {type : 'text/csv'}), "connectors.csv");
+
+          var nns = CATMAID.NeuronNameService.getInstance(),
+              dummy = new THREE.Color(1, 1, 1);
+          nns.registerAll(
+              this,
+              Object.keys(unique).reduce(function(o, skid) { o[skid] = new CATMAID.SkeletonModel(skid, "", dummy); return o; }, {}),
+              function() {
+                var names = Object.keys(unique).map(function(skid) {
+                  return [skid, '"' +  nns.getName(skid) +'"'];
+                });
+                saveAs(new Blob([names.join('\n')], {type: 'text/csv'}), "neuron_name_vs_skeleton_id.csv");
+              });
+        }).bind(this));
+  };
+
   /** Return a list of skeleton IDs that have nodes within radius of the active node. */
   WebGLApplication.prototype.spatialSelect = function() {
     if (!this.options.show_active_node) return alert("Enable active node!");

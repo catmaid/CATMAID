@@ -163,6 +163,29 @@
   };
 
   /**
+   * Find the next selected skeleton ID following the given skeleton ID in the
+   * table, if it is present.
+   */
+  NeuronAnnotations.prototype.getNextSkeletonIdAfter = function (skeleton_id) {
+    var neurons = this.get_selected_neurons().filter(function(e) {
+      return e.type === 'neuron';
+    });
+
+    var index = -1;
+    neurons.forEach(function (e, i) {
+      if (e.skeleton_ids.some(function (s) { return s === skeleton_id; }))
+        index = i;
+    });
+    if (index === -1) {
+      return undefined;
+    } else {
+      index = (index + 1) % neurons.length;
+    }
+
+    return neurons[index].skeleton_ids[0];
+  };
+
+  /**
    * Will refresh the display to update neuron names.
    */
   NeuronAnnotations.prototype.updateNeuronNames = function()

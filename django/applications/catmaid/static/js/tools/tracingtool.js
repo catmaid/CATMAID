@@ -1045,10 +1045,18 @@
     }) );
 
     this.addAction( new CATMAID.Action({
-      helpText: "Open the neuron/annotation search widget",
+      helpText: "Open the neuron/annotation search widget (with <kbd>Shift</kbd>: activate next selected neuron in search results after active skeleton)",
       keyShortcuts: { '/': [ 191 ] },
       run: function (e) {
-        WindowMaker.create('neuron-annotations');
+        if (e.shiftKey) {
+          var nextSkid = CATMAID.NeuronAnnotations.prototype.getFirstInstance()
+              .getNextSkeletonIdAfter(SkeletonAnnotations.getActiveSkeletonId());
+          if (nextSkid) {
+            CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', nextSkid);
+          }
+        } else {
+          WindowMaker.create('neuron-annotations');
+        }
         return true;
       }
     }) );

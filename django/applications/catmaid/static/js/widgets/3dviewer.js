@@ -500,18 +500,41 @@
 
   WebGLApplication.prototype.exportSkeletonsAsCSV = function() {
     var sks = this.space.content.skeletons,
-        rows = ["skeleton_id, treenode_id, parent_treenode_id, x, y, z"];
+        rows = ["neuron, skeleton_id, treenode_id, parent_treenode_id, x, y, z, r"];
     Object.keys(sks).forEach(function(skid) {
-      var vs = sks[skid].getPositions(),
-          arbor = sks[skid].createArbor(),
-          edges = arbor.edges;
-      edges[arbor.root] = '';
+      var sk = sks[skid];
+      if (!sk.visible) return;
+      var vs = sk.getPositions(),
+          arbor = sk.createArbor(),
+          edges = arbor.edges,
+          name = CATMAID.NeuronNameService.getInstance().getName(skid);
+      edges[arbor.root] = ''; // rather than null
       Object.keys(vs).forEach(function(tnid) {
         var v = vs[tnid];
-        rows.push(skid + "," + tnid + "," + edges[tnid]  + "," + v.x + "," + v.y + "," + v.z);
+        var mesh = sk.radiusVolumes[tnid];
+        var r = mesh ? mesh.scale.x : 0; // See createNodeSphere and createCylinder
+        rows.push('"' + name + '", ' + skid + "," + tnid + "," + edges[tnid]  + "," + v.x + "," + v.y + "," + v.z + "," + r);
       });
     });
     saveAs(new Blob([rows.join('\n')], {type : 'text/csv'}), "skeleton_coordinates.csv");
+  };
+
+  /** Will export only those present in the 3D View, as determined by the connector restriction option.
+   * By its generic nature, it will export even connectors whose relations to the skeleton are something
+   * other than pre- or postsynaptic_to. */
+  WebGLApplication.prototype.exportConnectorsAsCSV = function() {
+    var sks = this.space.content.skeletons,
+        rows = ["connector_id, skeleton_id, treenode_id, relation_id"];
+    Object.keys(sks).forEach(function(skid) {
+      var sk = sks[skid];
+      sk.synapticTypes.forEach(function(type) {
+        var vs = (sk.connectoractor ? sk.connectorgeometry : sk.geometry)[type].vertices;
+        for (var i=0; i<vs.length; i+=2) {
+          rows.push([vs[i].node_id, skid, vs[i+1].node_id, type].join(','));
+        }
+      });
+    });
+    saveAs(new Blob([rows.join('\n')], {type : 'text/csv'}), "connectors.csv");
   };
 
   /** Return a list of skeleton IDs that have nodes within radius of the active node. */

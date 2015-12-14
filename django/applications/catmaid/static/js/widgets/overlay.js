@@ -3958,7 +3958,7 @@ SkeletonAnnotations.Tag = new (function() {
     }
   };
 
-  this.handle_tagbox = function(atn, svgOverlay) {
+  this.handleTagbox = function(atn, svgOverlay) {
     SkeletonAnnotations.atn.promise().then((function() {
       var atnID = SkeletonAnnotations.getActiveNodeId();
       var stack = project.getStackViewer(atn.stack_viewer_id);
@@ -4067,10 +4067,10 @@ SkeletonAnnotations.Tag = new (function() {
       var self = this;
       svgOverlay.goToNode(atn.id,
           function() {
-            self.handle_tagbox(atn, svgOverlay);
+            self.handleTagbox(atn, svgOverlay);
           });
     } else {
-      this.handle_tagbox(atn, svgOverlay);
+      this.handleTagbox(atn, svgOverlay);
     }
   };
 })();

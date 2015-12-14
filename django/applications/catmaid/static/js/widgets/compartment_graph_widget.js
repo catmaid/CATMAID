@@ -1260,6 +1260,15 @@
     if (this.cy) this.cy.elements("node").remove();
   };
 
+  GroupGraph.prototype.removeSource = function () {
+    var models = CATMAID.skeletonListSources.getSelectedSkeletonModels(this);
+    if (0 === models.length) {
+      CATMAID.info('Selected source is empty.');
+      return;
+    }
+    this.removeSkeletons(Object.keys(models));
+  };
+
   GroupGraph.prototype.removeSkeletons = function(skeleton_ids) {
     // Convert array values into object keys
     var skids = skeleton_ids.reduce(function(o, skid) {

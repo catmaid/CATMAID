@@ -47,6 +47,12 @@ Settings widget:
   defaults can not be changed by users.
 
 
+Graph widget:
+
+- In the main tab, a new remove button removes skeletons in the selected
+  skeleton source from the graph.
+
+
 Miscellaneous:
 
 - Many tracing widgets now allow a user to hide their controls. A little gear

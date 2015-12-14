@@ -1699,6 +1699,7 @@ var WindowMaker = new function()
          [CATMAID.skeletonListSources.createSelect(GG)],
          ['Append', GG.loadSource.bind(GG)],
          ['Append as group', GG.appendAsGroup.bind(GG)],
+         ['Remove', GG.removeSource.bind(GG)],
          ['Clear', GG.clear.bind(GG)],
          ['Refresh', GG.update.bind(GG)],
          ['Properties', GG.graph_properties.bind(GG)],

@@ -1137,6 +1137,8 @@
         d3.event.sourceEvent.stopPropagation();
         if (!checkNodeID(this)) return;
         o = null;
+        var catmaidTracingOverlay = SkeletonAnnotations.getTracingOverlayByPaper(this.parentNode.parentNode);
+        catmaidTracingOverlay.updateNodeCoordinatesInDB();
         d3.select(this).attr({
           opacity: 1
         });

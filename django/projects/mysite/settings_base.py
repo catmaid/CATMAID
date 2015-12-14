@@ -108,11 +108,11 @@ AUTHENTICATION_BACKENDS = (
     'guardian.backends.ObjectPermissionBackend',
 )
 
-# User-ID of the anonymous (i.e. not-logged-in) user. This is usualld -1.
+# User-ID of the anonymous (i.e. not-logged-in) user. This is usually -1.
 ANONYMOUS_USER_ID = -1
 
 # Project ID of a dummy project that will keep all ontologies and
-# classifications that are shared between multiple projcts (and are
+# classifications that are shared between multiple projects (and are
 # thereby project independent).
 ONTOLOGY_DUMMY_PROJECT_ID = -1
 
@@ -177,7 +177,7 @@ CELERY_IMPORTS = (
 )
 
 # We use django-pipeline to compress and reference JavaScript and CSS files. To
-# make Pipeline integrate with staticfiles (and therefore collectatic calls)
+# make Pipeline integrate with staticfiles (and therefore collecstatic calls)
 # the STATICFILES_STORAGE variable has to be set to:
 STATICFILES_STORAGE = 'pipeline.storage.PipelineCachedStorage'
 

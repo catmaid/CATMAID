@@ -542,8 +542,8 @@
         self.skeletons = [];
         self.skeleton_ids = {};
 
+        var updated_models = {};
         Object.keys(o).map(Number).sort(function(a, b) { return a - b; }).forEach(function(index) {
-          var updated_models = {};
           var skid = o[index],
               model = models[skid];
           if (model.baseName !== json[skid]) {

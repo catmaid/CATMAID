@@ -138,7 +138,7 @@ QUnit.test('SVG overlay test', function( assert ) {
       delete availableNodes[nodeID]; 
     });
     // Update the tracing layer immediately after queing the deleting
-    SkeletonAnnotations.TracingOverlay.prototype.updateNodeCoordinatesinDB.call(
+    SkeletonAnnotations.TracingOverlay.prototype.updateNodeCoordinatesInDB.call(
         fakeOverlay, function(json) {
           assert.deepEqual(json, {"updated": 1},
               "The node update returns with expected response.");

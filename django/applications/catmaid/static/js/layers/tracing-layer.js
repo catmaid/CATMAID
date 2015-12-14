@@ -32,7 +32,7 @@
 
 
     this.beforeMove = function (completionCallback) {
-      this.svgOverlay.updateNodeCoordinatesinDB(completionCallback);
+      this.svgOverlay.updateNodeCoordinatesInDB(completionCallback);
     };
 
     this.getOpacity = function()

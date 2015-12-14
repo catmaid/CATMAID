@@ -906,7 +906,7 @@ SkeletonAnnotations.TracingOverlay.prototype.ensureFocused = function() {
  * Unregister this layer and destroy all UI elements and event handlers.
  */
 SkeletonAnnotations.TracingOverlay.prototype.destroy = function() {
-  this.updateNodeCoordinatesinDB();
+  this.updateNodeCoordinatesInDB();
   this.suspended = true;
   this.unregister();
   // Show warning in case of pending request
@@ -1763,7 +1763,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createNode = function (parentID,
  * Invoke the callback function after having pushed updated node coordinates
  * to the database. Virtual nodes are ignored.
  */
-SkeletonAnnotations.TracingOverlay.prototype.updateNodeCoordinatesinDB = function (callback) {
+SkeletonAnnotations.TracingOverlay.prototype.updateNodeCoordinatesInDB = function (callback) {
   /**
    * Create a promise that will update all nodes in the back-end that need to be
    * synced.
@@ -2416,7 +2416,7 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
     return;
   }
 
-  this.updateNodeCoordinatesinDB(function () {
+  this.updateNodeCoordinatesInDB(function () {
     // Bail if the overlay was destroyed or suspended before this callback.
     if (self.suspended) {
       return;
@@ -3064,12 +3064,12 @@ SkeletonAnnotations.TracingOverlay.prototype.measureRadius = function () {
 };
 
 /**
- * All moving functions must perform moves via the updateNodeCoordinatesinDB
+ * All moving functions must perform moves via the updateNodeCoordinatesInDB
  * otherwise, coordinates for moved nodes would not be updated.
  */
 SkeletonAnnotations.TracingOverlay.prototype.moveTo = function(z, y, x, fn) {
   var stackViewer = this.stackViewer;
-  this.updateNodeCoordinatesinDB(function() {
+  this.updateNodeCoordinatesInDB(function() {
     stackViewer.getProject().moveTo(z, y, x, undefined, fn);
   });
 };

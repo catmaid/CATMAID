@@ -53,6 +53,16 @@ Graph widget:
   skeleton source from the graph.
 
 
+Review system:
+
+- Creation, deletion, and edition of synapses and relations now causes related
+  nodes to become unreviewed. Changes to presynaptic relations or the connector
+  itself cause all related treenodes to become unreviewed, while changes to
+  postsynaptic relations affect only that specific related treenode. Changes
+  to other connection relations (abutment, etc.) behave like presynaptic
+  relations, propagating to all related treenodes.
+
+
 Miscellaneous:
 
 - Many tracing widgets now allow a user to hide their controls. A little gear

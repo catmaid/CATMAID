@@ -63,6 +63,41 @@ Review system:
   relations, propagating to all related treenodes.
 
 
+Skeleton source subscriptions:
+
+- So far some widgets allowed to synchronize their skeleton list along with
+  individual property changes. This was done through a "Sync to" selection which
+  pushed this information to other widgets. This has now been replaced with a
+  subscription option. Many widgets allow now to react to changes in skeleton
+  lists in other widgets. Widgets supporting this got a new small chain icon in
+  their title bar with which a subscription management user interface can be
+  shown and hidden.
+
+- The UI allows to add subscriptions to multiple sources which can then be
+  combined through set operations. Currently sources are combined in a strict
+  left-associative fashion from top to bottom of the list. When "Ignore local"
+  is checked, widget local skeletons are not used when subscriptions are
+  refreshed and will subsequently be removed. Otherwise, the local set is united
+  with the first subscription before all other subscription sources are applied.
+
+- The scope of individual subscriptions can be adjusted: By default each
+  subscription reacts to skeletons added, removed and updated in a source. The
+  "Filter" selection allows to listen to only one of these events. For instance,
+  subscribing to the active skeleton with the "Only additions" filter, allows to
+  collect skeletons selected active skeletons without removing them again from
+  a widget.
+
+- By default, only selected skeletons are subscribed to. This means if a
+  skeleton becomes unselected in a source it is removed from the target widget.
+  If the "Only selected" checkbox is unchecked, also unselected skeletons are
+  added to a target widget. They are removed when skeletons are removed from the
+  source and their selection state is synced.
+
+- All widget still feature the "From [Source] Append/Clear/Refresh" work-flow.
+  The subscription UI's "Pull" button does the same as the regular "Append"
+  button: a one-time sync from a source.
+
+
 Miscellaneous:
 
 - Many tracing widgets now allow a user to hide their controls. A little gear

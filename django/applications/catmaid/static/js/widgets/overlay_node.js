@@ -1127,6 +1127,23 @@
           y: node.y
         });
         node.drawEdges(true); // TODO for connector this is overkill
+        // Update postsynaptic edges from connectors. Suprisingly this brute
+        // approach of iterating through all nodes is sufficiently fast.
+        // TODO: A two-way map would be ergonomic and speed up ops like this.
+        if (node.type === SkeletonAnnotations.TYPE_NODE) {
+          for (var connID in catmaidTracingOverlay.nodes) {
+            if (catmaidTracingOverlay.nodes.hasOwnProperty(connID)) {
+              var conn = catmaidTracingOverlay.nodes[connID];
+              if (conn.type === SkeletonAnnotations.TYPE_CONNECTORNODE) {
+                if (node.id in conn.postgroup ||
+                    node.id in conn.pregroup ||
+                    node.id in conn.undirgroup) {
+                  conn.drawEdges(true);
+                }
+              }
+            }
+          }
+        }
         CATMAID.statusBar.replaceLast("Moving node #" + node.id);
 
         node.needsync = true;

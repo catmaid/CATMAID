@@ -135,6 +135,9 @@ Miscellaneous:
 
 - Fixed near active node shading in the 3D viewer.
 
+- Pre- and post-synaptic edges in the tracing overlay now update when dragging
+  a related treenode.
+
 
 ## 2015.11.16
 

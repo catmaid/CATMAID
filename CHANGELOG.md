@@ -71,7 +71,9 @@ Skeleton source subscriptions:
   subscription option. Many widgets allow now to react to changes in skeleton
   lists in other widgets. Widgets supporting this got a new small chain icon in
   their title bar with which a subscription management user interface can be
-  shown and hidden.
+  shown and hidden. Widgets that contain multiple sources, like the connectivity
+  matrix, have one icon per source. A hover title will show which one to use for
+  each source.
 
 - The UI allows to add subscriptions to multiple sources which can then be
   combined through set operations. Currently sources are combined in a strict

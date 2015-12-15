@@ -2759,8 +2759,10 @@ class ViewPageTests(TestCase):
                 '/%d/treenodes/%d/children' % (self.test_project_id, treenode_id))
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
-        expected_result = [[[383, 7850.0, 1970.0, 0.0]], [[391, 6740.0, 1530.0, 0.0]]]
-        self.assertItemsEqual(expected_result[0], parsed_response[0])
+        expected_result = [[383, 7850.0, 1970.0, 0.0], [391, 6740.0, 1530.0, 0.0]]
+        parsed_response = [p[0] for p in parsed_response]
+        for (expected, parsed) in zip(sorted(expected_result), sorted(parsed_response)):
+             self.assertEqual(expected, parsed)
 
     def test_node_user_info(self):
         self.fake_authentication()

@@ -485,6 +485,22 @@ div#classification_graph_object img.roiimage {
   bottom: -0.2em;
 }
 
+.sourcepanel .extra-button {
+  float: right;
+	font-weight: bold;
+  font-size: larger;
+  margin-top: .5em;
+  margin-right: .5em;
+}
+
+.extra-button a {
+  text-decoration: none;
+}
+
+.extra-button a:hover {
+  text-decoration: underline;
+}
+
 .partner_table {
   padding: 3px;
   border-collapse: collapse;

@@ -203,6 +203,15 @@
         'applied starting from the local model set.');
     controls.appendChild(ignoreLocal);
 
+    var helpButton = document.createElement('span');
+    helpButton.setAttribute('class', 'extra-button');
+    controls.appendChild(helpButton);
+    var help = document.createElement('a');
+    help.appendChild(document.createTextNode('?'));
+    help.href = CATMAID.makeDocURL('user_faq.html#faq-source-subscriptions');
+    help.target = '_blank';
+    helpButton.appendChild(help);
+
 
     var listContainer = document.createElement('div');
     panel.appendChild(listContainer);

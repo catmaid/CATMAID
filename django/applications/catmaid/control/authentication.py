@@ -19,6 +19,8 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import _get_queryset, render
 
+from rest_framework.authtoken import views as auth_views
+from rest_framework.authtoken.serializers import AuthTokenSerializer
 
 from catmaid.models import Project, UserRole, ClassInstance, \
         ClassInstanceClassInstance
@@ -427,3 +429,23 @@ def register(request):
     return render(request, "catmaid/registration/register.html", {
         'form': form,
     })
+
+
+class ObtainAuthToken(auth_views.ObtainAuthToken):
+    """Generate an authorization token to use for API requests.
+
+    Use your user credentials to generate an authorization token for querying
+    the API. This token is tied to your account and shares your permissions.
+    To use this token set the `Authorization` HTTP header to "Token "
+    concatenated with the token string, e.g.:
+
+        Authorization: Token 9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b
+
+    Requests using token authorization are not required to set cross-site
+    request forgery (CSRF) token headers.
+
+    Requests using this token can do anything your account can do, so
+    **do not distribute this token or check it into source control**.
+    """
+    def get_serializer_class(self):
+        return AuthTokenSerializer

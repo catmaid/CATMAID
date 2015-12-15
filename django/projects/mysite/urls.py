@@ -2,6 +2,7 @@ from django.conf.urls import patterns, include, url
 from django.conf import settings
 
 from catmaid.views import *
+from catmaid.control.authentication import ObtainAuthToken
 
 import catmaid
 
@@ -24,6 +25,7 @@ urlpatterns += patterns('',
 # API Documentation
 urlpatterns += patterns('',
     url(r'^apis/', include('rest_framework_swagger.urls')),
+    url(r'^api-token-auth/', ObtainAuthToken.as_view()),
 )
 
 if settings.DEBUG:

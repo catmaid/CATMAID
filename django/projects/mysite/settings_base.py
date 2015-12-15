@@ -30,6 +30,8 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    # For API tokens. Disable if not using HTTPS:
+    'catmaid.middleware.CsrfBypassTokenAuthenticationMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'catmaid.middleware.AnonymousAuthenticationMiddleware',
@@ -56,6 +58,7 @@ INSTALLED_APPS = (
     'south',
     'pipeline',
     'rest_framework',
+    'rest_framework.authtoken',
     'rest_framework_swagger',
     'custom_rest_swagger_apis',
 )
@@ -106,6 +109,8 @@ LOGIN_URL = '/accounts/login'
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend', # default
     'guardian.backends.ObjectPermissionBackend',
+    # For API tokens. Disable if not using HTTPS:
+    'rest_framework.authentication.TokenAuthentication',
 )
 
 # User-ID of the anonymous (i.e. not-logged-in) user. This is usually -1.
@@ -244,6 +249,10 @@ STATIC_EXTENSION_ROOT = "/tmp"
 STATIC_EXTENSION_FILES = []
 
 REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ),
     'VIEW_DESCRIPTION_FUNCTION': 'custom_rest_swagger_googledoc.get_googledocstring'
 }
 

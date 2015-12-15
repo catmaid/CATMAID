@@ -58,10 +58,6 @@
       this.orderedSources.splice(orderIndex, 1);
     }
     this.updateGUI();
-    Object.keys(this.sources).forEach(function(name) {
-      var s = this.sources[name];
-      if (s.linkTarget === source) delete s.linkTarget;
-    }, this);
   };
 
   var defaultSourceControlOptions = {

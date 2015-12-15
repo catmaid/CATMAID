@@ -95,8 +95,7 @@ AnalyzeArbor.prototype.adjustOptions = function() {
 };
 
 AnalyzeArbor.prototype.destroy = function() {
-  delete this.linkTarget;
-  this.clear(); // clear after clearing linkTarget, so it doesn't get cleared
+  this.clear();
   this.unregisterInstance();
   this.unregisterSource();
   CATMAID.NeuronNameService.getInstance().unregister(this);

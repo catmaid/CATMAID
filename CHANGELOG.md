@@ -133,6 +133,8 @@ Miscellaneous:
   as soon as the mouse is released, rather than waiting until the section
   changes.
 
+- Changes to the CATMAID API are now documented in `API_CHANGELOG.md`.
+
 - A docker image of a running CATMAID instance is now available for
   evaluating or developing CATMAID without needing to perform a complete
   install. The latest release is available via the "stable" tag, and the

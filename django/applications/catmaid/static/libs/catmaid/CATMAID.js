@@ -96,8 +96,11 @@ var requestQueue = new RequestQueue();
       value: csrfCookieName
     });
 
-    window.requestQueue = new RequestQueue(CATMAID.backendURL,
-                                           getCookie(CATMAID.csrfCookieName));
+    var csrfCookie = CATMAID.csrfCookieName ?
+        getCookie(CATMAID.csrfCookieName) :
+        undefined;
+
+    window.requestQueue = new RequestQueue(CATMAID.backendURL, csrfCookie);
   };
 
   /**

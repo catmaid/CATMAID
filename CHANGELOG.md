@@ -97,10 +97,11 @@ Skeleton source subscriptions:
 
 - The UI allows to add subscriptions to multiple sources which can then be
   combined through set operations. Currently sources are combined in a strict
-  left-associative fashion from top to bottom of the list. When "Ignore local"
-  is checked, widget local skeletons are not used when subscriptions are
-  refreshed and will subsequently be removed. Otherwise, the local set is united
-  with the first subscription before all other subscription sources are applied.
+  left-associative fashion from top to bottom of the list. When "Override
+  existing" is checked, widget local skeletons are not used when subscriptions
+  are refreshed and will subsequently be removed. Otherwise, the local set is
+  united with the first subscription before all other subscription sources are
+  applied.
 
 - The scope of individual subscriptions can be adjusted: By default each
   subscription reacts to skeletons added, removed and updated in a source. The

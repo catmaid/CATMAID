@@ -440,6 +440,10 @@ div#classification_graph_object img.roiimage {
   margin-bottom: 2px;
 }
 
+.buttonpanel {
+  clear: both;
+}
+
 .buttonpanel input {
   vertical-align: middle;
 }

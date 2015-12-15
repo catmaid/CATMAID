@@ -198,7 +198,7 @@
     }
     var ignoreLocal = document.createElement('label');
     ignoreLocal.appendChild(ignoreLocalCb);
-    ignoreLocal.appendChild(document.createTextNode('Ignore local'));
+    ignoreLocal.appendChild(document.createTextNode('Override existing'));
     ignoreLocal.setAttribute('title', 'If unchecked, subscriptions will be ' +
         'applied starting from the local model set.');
     controls.appendChild(ignoreLocal);

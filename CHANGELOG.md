@@ -53,6 +53,22 @@ Graph widget:
   skeleton source from the graph.
 
 
+3D Viewer:
+
+- Added new buttons under the "Export" tab to export connectors and synapses
+  as CSV. And Skeletons are now exported to CSV with a new column, the radius
+	at each skeleton node, and another new column for the neuron name as
+	rendered by the NeuronNameService (controlled by the Settings).
+	The connectors CSV contains, for each row, the connector ID, the treenode ID,
+	the skeleton ID and the relation ID, mimicking the treenode_connector table.
+	The synapses CSV exports two files:
+	  1. The skeleton ID vs the neuron name
+		2. The list of synaptic relations of any arbor visible in the 3D Viewer,
+		   with columns for the presynaptic skeleton ID, its treenode ID emitting
+			 the synapse, the postsynaptic skeleton ID, and its treenode ID that
+			 receives the synapse.
+
+
 Review system:
 
 - Creation, deletion, and edition of synapses and relations now causes related

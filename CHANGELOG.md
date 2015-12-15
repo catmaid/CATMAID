@@ -8,6 +8,10 @@ Selection table:
   opacity of appended skeletons with the current batch color and batch opacity.
   It is deselected by default.
 
+- Clearing the table doesn't ask for confirmation anymore. This has been removed
+  for consistency with other widgets and because of the now available option to
+  save/open skeleton lists.
+
 
 New widget "Synapse Distribution Plot":
 

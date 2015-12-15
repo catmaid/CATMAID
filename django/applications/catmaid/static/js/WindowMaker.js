@@ -820,11 +820,7 @@ var WindowMaker = new function()
     var clear = document.createElement('input');
     clear.setAttribute("type", "button");
     clear.setAttribute("value", "Clear");
-    clear.onclick = function() {
-      if (confirm("Do you really want to clear the current selection?")) {
-        ST.clear();
-      }
-    };
+    clear.onclick = ST.clear.bind(ST);
     buttons.appendChild(clear);
 
     var update = document.createElement('input');

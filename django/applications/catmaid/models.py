@@ -802,9 +802,6 @@ class NeuronSearch(forms.Form):
                 result += p[1] + urllib.quote(str(self.cleaned_data[p[0]]))
         return result
 
-class ApiKey(models.Model):
-    description = models.TextField()
-    key = models.CharField(max_length=128)
 
 class Log(UserFocusedModel):
     class Meta:

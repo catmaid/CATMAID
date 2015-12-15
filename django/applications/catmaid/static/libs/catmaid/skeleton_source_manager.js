@@ -60,6 +60,31 @@
     this.updateGUI();
   };
 
+  /**
+   * Get a textual representation of all subscriptions of a source.
+   */
+  SkeletonSourceManager.prototype.getSubscriptionExpression = function(source) {
+    var subscriptions = source.getSourceSubscriptions();
+    if (subscriptions && subscriptions.length > 0) {
+      // Special case where only one final element is part of the expression
+      if (source.ignoreLocal && 1 === subscriptions.length) {
+        return 'Widget skeletons = filtered subscription skeletons';
+      }
+      return 'Widget skeletons = ' + subscriptions.reduce(function(o, s, i) {
+        var name = 'S' + (i + 1);
+        if (0 === i) {
+          var union = CATMAID.SkeletonSource.operations[CATMAID.SkeletonSource.UNION];
+          return source.ignoreLocal ? name : ('(local ' + union + ' ' + name + ')');
+        } else {
+          return '(' + o + ' ' + CATMAID.SkeletonSource.operations[s.op] + ' ' + name + ')';
+        }
+      }, undefined);
+
+    } else {
+      return null;
+    }
+  };
+
   var defaultSourceControlOptions = {
     showColorOption: true,
     showGroupOption: true,
@@ -229,8 +254,9 @@
     table.style.width = "100%";
     listContainer.appendChild(table);
     var datatable = $(table).DataTable({
-      dom: "t",
+      dom: "ti",
       data: subscriptions,
+      infoCallback: this.getSubscriptionExpression.bind(this, source),
       autoWidth: false,
       columns: [{
         "width": "10px",

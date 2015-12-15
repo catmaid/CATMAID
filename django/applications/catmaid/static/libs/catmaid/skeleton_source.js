@@ -17,6 +17,11 @@
   SkeletonSource.UNION = 'union';
   SkeletonSource.INTERSECTION = 'intersection';
   SkeletonSource.DIFFERENCE = 'difference';
+  SkeletonSource.operations = {};
+  SkeletonSource.operations[SkeletonSource.UNION] = '\u222A';
+  SkeletonSource.operations[SkeletonSource.INTERSECTION] = '\u2229';
+  SkeletonSource.operations[SkeletonSource.DIFFERENCE] = '\u2216';
+
 
   SkeletonSource.prototype = {};
   CATMAID.asEventSource(SkeletonSource.prototype);

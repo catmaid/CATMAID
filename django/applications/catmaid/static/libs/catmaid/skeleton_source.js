@@ -336,6 +336,11 @@
       models, order) {
     // Update cache
     for (var mId in models) {
+      var m = models[mId];
+      // Only add selected items in selection based sync
+      if (this.selectionBased && !m.selected) {
+        continue;
+      }
       this.modelCache[mId] = models[mId];
     }
 

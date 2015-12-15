@@ -184,7 +184,8 @@
       opSelect.options.add(new Option('Union', CATMAID.SkeletonSource.UNION));
       opSelect.options.add(new Option('Intersection', CATMAID.SkeletonSource.INTERSECTION));
       opSelect.options.add(new Option('Difference', CATMAID.SkeletonSource.DIFFERENCE));
-      selectDefault(opSelect, CATMAID.SkeletonSource.UNION);
+      var defaultValue = undefined === value ? CATMAID.SkeletonSource.UNION : value;
+      selectDefault(opSelect, defaultValue);
       return opSelect;
     };
     var opSelect = createOpSelector();

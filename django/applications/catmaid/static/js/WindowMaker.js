@@ -3287,9 +3287,6 @@ var WindowMaker = new function()
           'class="neuron_annotations_query_footer">' +
         '<input type="button" id="neuron_annotations_annotate{{NA-ID}}" ' +
             'value="Annotate..." />' +
-        '<label id="neuron_annotations_add_to_selection{{NA-ID}}">' +
-          'Sync to: ' +
-        '</label>' +
         '<label>' +
           '<input type="checkbox" id="neuron_search_show_annotations{{NA-ID}}" />' +
           'Show annotations' +
@@ -3373,9 +3370,6 @@ var WindowMaker = new function()
 
     $('#neuron_annotations_toggle_neuron_selections_checkbox' + NA.widgetID)[0].onclick =
         NA.toggle_neuron_selections.bind(NA);
-    var select = CATMAID.skeletonListSources.createPushSelect(NA, 'link');
-    select.onchange = NA.syncLink.bind(NA, select);
-    $('#neuron_annotations_add_to_selection' + NA.widgetID).append(select);
 
     // Fill user select boxes
     var $select = $('tr #neuron_query_by_annotator' + NA.widgetID);

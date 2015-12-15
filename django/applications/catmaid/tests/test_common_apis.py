@@ -2760,7 +2760,7 @@ class ViewPageTests(TestCase):
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = [[[383, 7850.0, 1970.0, 0.0]], [[391, 6740.0, 1530.0, 0.0]]]
-        self.assertEqual(expected_result, parsed_response)
+        self.assertItemsEqual(expected_result[0], parsed_response[0])
 
     def test_node_user_info(self):
         self.fake_authentication()

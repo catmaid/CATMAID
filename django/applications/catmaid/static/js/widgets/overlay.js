@@ -1244,9 +1244,9 @@ SkeletonAnnotations.TracingOverlay.prototype.insertNodeInActiveSkeleton = functi
 
   atn.promise().then(function(atnId) {
     self.submit(
-        django_url + project.id + "/node/next_branch_or_end",
+        django_url + project.id + '/treenodes/' + atnId + '/next-branch-or-end',
         'POST',
-        {tnid: atnId},
+        undefined,
         function(json) {
           // See goToNextBranchOrEndNode for JSON schema description.
           // Construct a list of child nodes of the active node in case they are

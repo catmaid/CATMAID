@@ -541,6 +541,17 @@
         return false;
       }
     };
+
+    this.getMouseHelp = function () {
+      var result = '<ul>';
+      result += '<li><strong>Middle mouse drag:</strong> pan the view</li>';
+      result += '<li><strong>Mouse wheel:</strong> move up/down 1 section in z</li>';
+      result += '<li><strong>Mouse wheel with <kbd>Shift</kbd>:</strong> move up/down 10 sections in z</li>';
+      result += '<li><strong>Mouse wheel with <kbd>Ctrl</kbd>:</strong> zoom in/out to the next integer zoom level</li>';
+      result += '<li><strong>Mouse wheel with <kbd>Ctrl</kbd> and <kbd>Shift</kbd>:</strong> zoom in/out 1/10th of a zoom level</li>';
+      result += '</ul>';
+      return result;
+    };
   }
 
   Navigator.Settings = new CATMAID.Settings(

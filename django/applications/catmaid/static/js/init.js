@@ -136,6 +136,11 @@ function handle_login(status, text, xml, completionCallback) {
           action: django_url + "user/password_change/",
           title: "Change password",
           note: "",
+        },
+        "user_menu_entry_2": {
+          action: getAuthenticationToken,
+          title: "Get API token",
+          note: ""
         }
       });
 
@@ -164,6 +169,36 @@ function handle_login(status, text, xml, completionCallback) {
       completionCallback();
     }
   }
+}
+
+function getAuthenticationToken() {
+  var dialog = new CATMAID.OptionsDialog('API Authentication Token');
+  dialog.appendMessage('To retrieve your API authentication token, you must ' +
+                       're-enter your password.');
+  var password = dialog.appendField('Password:', 'password', '', true);
+  password.setAttribute('type', 'password');
+
+  dialog.onOK = function () {
+    CATMAID.fetch('/api-token-auth/',
+                  'POST',
+                  {username: username, password: password.value})
+        .then(function (json) {
+          var resultDialog = new CATMAID.OptionsDialog('API Authentication Token');
+          resultDialog.appendHTML('Your API token is <pre>' + json.token + '</pre>');
+          resultDialog.appendHTML(
+              'This token is tied to your account and shares your ' +
+              'permissions. To use this token for API requests set the ' +
+              'Authorization HTTP  header to "Token " concatenated with the ' +
+              'token string, e.g.: ' +
+              '<pre>Authorization: Token ' + json.token + '</pre>' +
+              'Requests using this token can do anything your account can ' +
+              'do, so <b>do not distribute this token or check it into ' +
+              'source control.</b>');
+          resultDialog.show(460, 300, true);
+        });
+  };
+
+  dialog.show(460, 200, true);
 }
 
 /**
@@ -210,6 +245,7 @@ function handle_profile_update(e) {
   try {
     if (e.userprofile) {
       userprofile = new CATMAID.Userprofile(e.userprofile);
+      username = e.username;
     } else {
       throw "The server returned no valid user profile.";
     }

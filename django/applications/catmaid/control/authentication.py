@@ -46,6 +46,7 @@ def login_user(request):
                 profile_context['id'] = request.session.session_key
                 profile_context['longname'] = user.get_full_name()
                 profile_context['userid'] = user.id
+                profile_context['username'] = user.username
                 profile_context['is_superuser'] = user.is_superuser
                 return HttpResponse(json.dumps(profile_context))
             else:
@@ -65,6 +66,7 @@ def login_user(request):
             profile_context['id'] = request.session.session_key
             profile_context['longname'] = request.user.get_full_name()
             profile_context['userid'] = request.user.id
+            profile_context['username'] = request.user.username
             profile_context['is_superuser'] = request.user.is_superuser
             return HttpResponse(json.dumps(profile_context))
         else:

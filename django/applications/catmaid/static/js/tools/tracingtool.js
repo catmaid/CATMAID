@@ -1088,17 +1088,18 @@
     };
 
     this.getMouseHelp = function( e ) {
-      var result = '<p>';
-      result += '<strong>click on a node:</strong> make that node active<br />';
-      result += '<strong>ctrl-click in space:</strong> deselect the active node<br />';
-      result += '<strong>ctrl-shift-click on a node:</strong> delete that node<br />';
-      result += '<strong>ctrl-shift-click on an arrow:</strong> delete that link<br />';
-      result += '<strong>shift-click in space:</strong> create a synapse with the active treenode being presynaptic.<br />';
-      result += '<strong>shift-alt-click in space:</strong> create a synapse with the active treenode as postsynaptic.<br />';
-      result += '<strong>shift-click in space:</strong> create a post-synaptic node (if there was an active connector)<br />';
-      result += '<strong>shift-click on a treenode:</strong> join two skeletons (if there was an active treenode)<br />';
-      result += '<strong>alt-ctrl-click in space:</strong> adds a node along the nearest edge of the active skeleton<br />';
-      result += '</p>';
+      var result = self.prototype.getMouseHelp();
+      result += '<ul>';
+      result += '<li><strong>Click on a node:</strong> make that node active</li>';
+      result += '<li><strong><kbd>Ctrl</kbd>+click in space:</strong> deselect the active node</li>';
+      result += '<li><strong><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+click on a node:</strong> delete that node</li>';
+      result += '<li><strong><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+click on an arrow:</strong> delete that link</li>';
+      result += '<li><strong><kbd>Shift</kbd>+click in space:</strong> create a synapse with the active treenode being presynaptic.</li>';
+      result += '<li><strong><kbd>Shift</kbd>+<kbd>Alt</kbd>+click in space:</strong> create a synapse with the active treenode as postsynaptic.</li>';
+      result += '<li><strong><kbd>Shift</kbd>+click in space:</strong> create a post-synaptic node (if there was an active connector)</li>';
+      result += '<li><strong><kbd>Shift</kbd>+click on a treenode:</strong> join two skeletons (if there was an active treenode)</li>';
+      result += '<li><strong><kbd>Alt</kbd>+<kbd>Ctrl</kbd>+click in space:</strong> adds a node along the nearest edge of the active skeleton</li>';
+      result += '</ul>';
       return result;
     };
 

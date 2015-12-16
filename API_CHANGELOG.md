@@ -6,10 +6,9 @@ included in this changelog.
 
 The CATMAID API now authorizes requests using an API token tied to your
 account instead of your username and password. To obtain this token,
-go to the API documentation page for your CATMAID server (accessible through
-the browser at '/apis/'), find the `POST /api-token-auth/` endpoint, and
-input your username and password. The returned JSON will contain your API
-token.
+open the CATMAID client in your browser, hover your cursor over your name
+(next to the "Logout" link), and click "Get API token". As a security measure,
+you will be prompted to re-enter your password, then shown your token string.
 
 To use the API token, set the HTTP `Authorization` header on all of your
 API requests to be 'Token', a space, and the token string, e.g.:

@@ -184,7 +184,25 @@ function getAuthenticationToken() {
                   {username: username, password: password.value})
         .then(function (json) {
           var resultDialog = new CATMAID.OptionsDialog('API Authentication Token');
-          resultDialog.appendHTML('Your API token is <pre>' + json.token + '</pre>');
+          resultDialog.appendHTML('Your API token is');
+          var container = document.createElement('p');
+          var token = document.createElement('input');
+          token.setAttribute('value', json.token);
+          token.setAttribute('readonly', true);
+          token.setAttribute('size', 40);
+          var copyButton = $('<button />')
+              .button({
+                icons: {primary: "ui-icon-clipboard"},
+                label: 'Copy to clipboard',
+                text: false
+              })
+              .click(function () {
+                token.select();
+                document.execCommand('copy');
+              });
+          container.appendChild(token);
+          container.appendChild(copyButton.get(0));
+          resultDialog.dialog.appendChild(container);
           resultDialog.appendHTML(
               'This token is tied to your account and shares your ' +
               'permissions. To use this token for API requests set the ' +

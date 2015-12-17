@@ -8,6 +8,7 @@ User Documentation
    screenshots
    tools
    tracing_neurons
+   api
    user_faq
    importing_data
    data_views

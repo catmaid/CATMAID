@@ -15,6 +15,7 @@ API requests to be 'Token', a space, and the token string, e.g.:
 
     Authorization: Token 9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b
 
+
 ### Additions
 
 - `GET /projects/`:

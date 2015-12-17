@@ -263,7 +263,7 @@ SWAGGER_SETTINGS = {
                        This is an API for accessing project, stack and
                        annotation data for this CATMAID instance. More
                        information is available at
-                       <a href="http://catmaid.org">catmaid.org</a>.
+                       <a href="http://catmaid.org/page/api.html">catmaid.org</a>.
                        ''',
         'contact': 'catmaid@googlegroups.com',
         'license': 'GPLv3',

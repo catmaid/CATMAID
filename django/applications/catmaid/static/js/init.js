@@ -205,14 +205,18 @@ function getAuthenticationToken() {
           resultDialog.dialog.appendChild(container);
           resultDialog.appendHTML(
               'This token is tied to your account and shares your ' +
-              'permissions. To use this token for API requests set the ' +
-              'Authorization HTTP  header to "Token " concatenated with the ' +
-              'token string, e.g.: ' +
-              '<pre>Authorization: Token ' + json.token + '</pre>' +
+              'permissions. ' +
               'Requests using this token can do anything your account can ' +
               'do, so <b>do not distribute this token or check it into ' +
               'source control.</b>');
-          resultDialog.show(460, 300, true);
+          resultDialog.appendHTML(
+              'For help using your API token, see the ' +
+              '<a target="_blank" href="' +
+              CATMAID.makeDocURL('api.html#api-token') + '">' +
+              'API use documentation</a> and ' +
+              '<a target="_blank" href="' + CATMAID.makeURL('/apis/') + '">' +
+              'this server\'s API documentation</a>.');
+          resultDialog.show(460, 280, true);
         });
   };
 

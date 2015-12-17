@@ -156,6 +156,20 @@ var requestQueue = new RequestQueue();
   };
 
   /**
+   * Create a release changelog URL for the GitHub repo.
+   *
+   * @returns {string}    - The complete URL.
+   */
+  CATMAID.makeChangelogURL = function() {
+    var version = CATMAID.getVersionRelease();
+    if ('stable' === version) {
+      return "https://github.com/catmaid/CATMAID/releases/latest";
+    } else {
+      return "https://github.com/catmaid/CATMAID/releases/tag/" + version;
+    }
+  };
+
+  /**
    * Infer the CATMAID release from the client version.
    *
    * @return {string} The release version, or "stable" if none could be guessed.

@@ -12,6 +12,8 @@ Basic Installation Instructions
 These installation instructions have been tested on the most
 recent stable release of Ubuntu (14.04 precise), so may need
 some minor changes for other Debian-based distributions.
+For installation on Mac OS X, first read these
+:ref:`additional instructions <installation-osx>`.
 
 Introduction
 ------------

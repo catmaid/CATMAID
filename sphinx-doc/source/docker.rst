@@ -18,7 +18,7 @@ Navigate your browser to `http://localhost:8080 <http://localhost:8080>`_
 and you should see the CATMAID landing page. You can log in as a superuser
 with username "admin" and password "admin". The Docker image contains a few
 example CATMAID projects and stacks, but you can add your own through the
-`admin page <http://localhost:8080/admin>`.
+`admin page <http://localhost:8080/admin>`_.
 
 .. warning::
 

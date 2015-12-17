@@ -608,7 +608,7 @@ class Restriction(models.Model):
 
 class CardinalityRestriction(models.Model):
     """ A restriction that guards the number of class instances
-    reffering explicitely to a relation in the semantic space.
+    explicitly referring to a relation in the semantic space.
     Different types are supported:
 
     0: The exact number of class instances is defined

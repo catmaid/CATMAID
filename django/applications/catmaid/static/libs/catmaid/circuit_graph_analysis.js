@@ -158,6 +158,7 @@ CircuitGraphAnalysis.prototype.eigen = function(D, L, maxiter) {
   var i = 0;
   while (sorted_lambda[i][1] < numeric.epsilon) {
     sorted_lambda.shift();
+    i++;
   }
 
   // make every row correspond to each eigenvector

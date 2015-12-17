@@ -313,6 +313,7 @@ to help verify the correctness and quality of CATMAID:
 
 * :doc:`Unit and integration tests for Django backend <djangounittest>`
 * Linting (static analysis) of the javascript code with JSHint
+* Linting of CSS with csslint
 * Unit tests of javascript code with QUnit
 
 If you `enable Travis-CI for your fork of CATMAID on GitHub <http://docs.travis-
@@ -338,6 +339,11 @@ defaults::
     ln -s .travis.jshintrc .jshintrc
     ln -s .travis.jshintignore .jshintignore
     jshint django/applications
+
+CSS linting is performed by running `csslint` from the static CSS directory::
+
+    cd django/applications/catmaid/static/css
+    csslint .
 
 QUnit tests can be run from the browser while your Django server is running. For
 example, with the default configuration this would be::

@@ -110,7 +110,7 @@
 
   SynapseFractions.prototype.clear = function() {
     this.models = {};
-    this.partner_models = null
+    this.partner_models = null;
     this.morphologies = {};
     this.fractions = null;
     this.other_source.clear();
@@ -259,7 +259,7 @@
         width = container.width() - margin.left - margin.right,
         height = container.height() - margin.top - margin.bottom;
 
-    var x = d3.scale.ordinal().rangeRoundBands([0, width], .1);
+    var x = d3.scale.ordinal().rangeRoundBands([0, width], 0.1);
     x.domain(Object.keys(this.models));
     var y = d3.scale.linear().rangeRound([height, 0]);
 

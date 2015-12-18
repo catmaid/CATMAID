@@ -1598,7 +1598,7 @@ var WindowMaker = new function()
                                 SF.onchangeSynapseThreshold.bind(SF),    // onchangeFn
                                 5);                                      // textfield length in number of chars
 
-    var cb = createCheckbox('show others', SF.show_others, SF.toggleOthers.bind(SF))
+    var cb = createCheckbox('show others', SF.show_others, SF.toggleOthers.bind(SF));
 
     appendToTab(tabs['Filter'],
         [[nf],

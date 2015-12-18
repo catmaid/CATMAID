@@ -355,7 +355,11 @@ def _skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=True, lean=
             # 'presynaptic_to' has an 'r' at position 1:
             for row in cursor.fetchall():
                 x, y, z = imap(float, (row[3], row[4], row[5]))
-                connectors.append((row[0], row[1], 0 if 'r' == row[2][1] else 1, x, y, z, row[6]))
+                connectors.append((row[0],
+                                   row[1],
+                                   0 if 'r' == row[2][1] else 1,
+                                   x, y, z,
+                                   row[6] if all_field else None))
             return name, nodes, tags, connectors, reviews
 
     return name, nodes, tags, connectors, reviews

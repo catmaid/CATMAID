@@ -1,5 +1,6 @@
 from django.conf.urls import patterns, url
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.generic import TemplateView
 
 # For adding explicit grouping resource endpoints in API documentation.
@@ -21,7 +22,7 @@ wordlist= r'\w+(,\w+)*'
 
 # Add the main index.html page at the root:
 urlpatterns = patterns('',
-    url(r'^$', CatmaidView.as_view(template_name='catmaid/index.html'),
+    url(r'^$', ensure_csrf_cookie(CatmaidView.as_view(template_name='catmaid/index.html')),
         name="home"),
     url(r'^version$', 'catmaid.control.common.get_catmaid_version')
 )

@@ -54,6 +54,20 @@
     return this;
   };
 
+  /** Same as this.tree but without parsing the positions. */
+  ArborParser.prototype.makeArbor = function(rows) {
+    var arbor = new Arbor();
+    for (var i=0; i<rows.length; ++i) {
+      var row = rows[i],
+          node = row[0],
+          paren = row[1];
+      if (paren) arbor.edges[node] = paren;
+      else arbor.root = node;
+    }
+    this.arbor = arbor;
+    return this;
+  };
+
   /** Parse connectors from compact-skeleton.
    */
   ArborParser.prototype.connectors = function(rows) {

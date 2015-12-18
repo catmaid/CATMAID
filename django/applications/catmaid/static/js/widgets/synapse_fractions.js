@@ -6,7 +6,9 @@
  fetchSkeletons,
  InstanceRegistry,
  SkeletonAnnotations,
- SynapseClustering
+ SynapseClustering,
+ colorbrewer,
+ d3
 */
 
 // TODO to be opened from the connectivity widget
@@ -26,10 +28,16 @@
     this.threshold = 5;
 
     // Restrict partners to only these, stash all others to 'others' 
-    this.partner_models = null;
+    this.only = null;
 
-    // Wehther to show the 'others' heap
+    // Whether to show the 'others' heap
     this.show_others = true;
+
+    // Color partner skeletons using these colors
+    this.partner_colors = {};
+
+    // Function to generate default colors
+    this.colorFn = d3.scale.category20();
 
     // The loaded data for each arbor
     this.morphologies = {};
@@ -110,10 +118,11 @@
 
   SynapseFractions.prototype.clear = function() {
     this.models = {};
-    this.partner_models = null;
+    this.only = null;
     this.morphologies = {};
     this.fractions = null;
     this.other_source.clear();
+    this.partner_colors = {};
     this.redraw();
   };
 
@@ -191,7 +200,7 @@
       this.fractions[skid] = Object.keys(partners).reduce((function(o, skid2) {
         var count = partners[skid2];
         if (count < this.threshold
-          || (this.partner_models && !this.partner_models[skid2])) {
+          || (this.only && !this.only[skid2])) {
           o.others += count;
         } else {
           o[skid2] = count;
@@ -247,13 +256,19 @@
                       .map(function(skid2) { return [skid2, partners[skid2]]; })
                       .sort(function(a, b) { return a[1] < b[1] ? 1 : -1; }) // Descending
                       .map(function(pair) { return pair[0]; });
-    order.push('others');
 
-    var color = d3.scale.category10();
-    var colors = order.reduce(function(o, skid, i) {
-      o[skid] = color(i);
-      return o;
-    }, {});
+    if (this.show_others) {
+      order.push('others');
+    }
+
+    var colors = (function(partner_colors, colorFn) {
+          var i = 0;
+          return order.reduce(function(o, skid) {
+            var c = partner_colors[skid];
+            o[skid] = c ? c : colorFn(i++);
+            return o;
+          }, {});
+        })(this.partner_colors, this.colorFn);
 
     var margin = {top: 20, right: 100, bottom: 50, left: 40},
         width = container.width() - margin.left - margin.right,
@@ -279,14 +294,6 @@
             .attr("height", height + margin.top + margin.bottom)
             .append("g")
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-    svg.append("g")
-            .attr("class", "x axis")
-            .attr("transform", "translate(0," + height + ")")
-            .call(xAxis);
-
-    svg.append("g")
-            .attr("class", "y axis")
-            .call(yAxis);
 
     var state = svg.selectAll(".state")
       .data(Object.keys(this.models))
@@ -332,7 +339,36 @@
         })
         .style("fill", function(d, i) {
           return colors[d.skid];
-        });
+        })
+        .on('click', function(d) {
+          if ("others" === d.skid) return;
+          CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', d.skid);
+        })
+        .append('svg:title') // on mouse over
+          .text(function(d) {
+            return (d.skid == "others" ? d.skid : CATMAID.NeuronNameService.getInstance().getName(d.skid)) + ": " + d.counts + " synapses";
+          });
+
+      var xg = svg.append("g")
+          .attr("class", "x axis")
+          .attr("transform", "translate(0," + height + ")")
+          .attr("fill", "none")
+          .attr("stroke", "black")
+          .style("shape-rendering", "crispEdges")
+          .call(xAxis);
+      xg.selectAll("text")
+          .attr("fill", "black")
+          .attr("stroke", "none");
+
+      var yg = svg.append("g")
+          .attr("class", "y axis")
+          .attr("fill", "none")
+          .attr("stroke", "black")
+          .style("shape-rendering", "crispEdges")
+          .call(yAxis);
+      yg.selectAll("text")
+          .attr("fill", "black")
+          .attr("stroke", "none");
 
     var legend = svg.selectAll(".legend")
       .data(order.map(function(a) { return a;}).reverse()) // no clone method
@@ -341,7 +377,7 @@
         .attr("class", "legend")
         .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; })
         .on("click", function(skid) {
-          if (Number.isNaN(skid)) return; // "others"
+          if ("others" === skid) return;
           CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skid);
         });
 
@@ -357,7 +393,7 @@
       .attr("dy", ".35em")
       .style("text-anchor", "end")
       .text(function(skid) {
-        if (Number.isNaN(skid)) return skid; // "others"
+        if ("others" === skid) return skid;
         return CATMAID.NeuronNameService.getInstance().getName(skid);
       });
 
@@ -368,19 +404,35 @@
     this.redraw();
   };
 
-  SynapseFractions.prototype.onchangeMode = function(ev) {
-    var mode = ev.srcElement.value;
+  SynapseFractions.prototype.onchangeMode = function(choice) {
+    var mode = choice.selectedIndex + 1;
     if (mode === this.mode) return;
-    if (-1 === this.MODES.indexOf(mode)) {
-      CATMAID.msg("WARNING", "Invalid mode: " + mode);
-      return;
-    }
     this.mode = mode;
     this.updateGraph();
   };
 
   SynapseFractions.prototype.onchangeFilterPartnerSkeletons = function() {
-    // TODO
+    var source = CATMAID.skeletonListSources.getSelectedPushSource(this, "filter");
+    if (source) {
+      this.only = source.getSelectedSkeletons().reduce(function(o, skid) { o[skid] = true; return o; }, {});
+    } else {
+      this.only = null;
+    }
+    this.updateGraph();
+  };
+
+  SynapseFractions.prototype.onchangeColorPartnerSkeletons = function() {
+    var source = CATMAID.skeletonListSources.getSelectedPushSource(this, "color");
+    if (source) {
+      var models = source.getSelectedSkeletonModels();
+      this.partner_colors = Object.keys(models).reduce(function(o, skid) {
+        o[skid] = '#' + models[skid].color.getHexString();
+        return o;
+      }, {});
+    } else {
+      this.partner_colors = {};
+    }
+    this.updateGraph();
   };
 
   SynapseFractions.prototype.onchangeSynapseThreshold = function(ev) {
@@ -395,6 +447,21 @@
       this.threshold = val;
       this.updateGraph();
     }
+  };
+
+  SynapseFractions.prototype.onchangeColorScheme = function(c) {
+    var scheme = c.options[c.selectedIndex].text;
+    if (0 === scheme.indexOf('category')) {
+      this.colorFn = d3.scale[scheme]();
+    } else if (colorbrewer.hasOwnProperty(scheme)) {
+      this.colorFn = (function(sets) {
+        // circular indexing
+        var keys = Object.keys(sets),
+            largest = sets[keys.sort(function(a, b) { return a < b ? 1 : -1; })[0]];
+        return (function(largest, i) { return largest[i % largest.length]; }).bind(null, largest);
+      })(colorbrewer[scheme]);
+    }
+    this.redraw();
   };
 
   SynapseFractions.prototype.exportCSV = function() {

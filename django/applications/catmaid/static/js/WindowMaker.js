@@ -1571,7 +1571,7 @@ var WindowMaker = new function()
     bar.setAttribute("id", "synapse_fractions_buttons" + SF.widgetID);
     bar.setAttribute('class', 'buttonpanel');
     
-    var tabs = appendTabs(bar, SF.widgetID, ['Main', 'Filter']);
+    var tabs = appendTabs(bar, SF.widgetID, ['Main', 'Filter', 'Color']);
 
     var partners_source = CATMAID.skeletonListSources.createPushSelect(SF, "filter");
     partners_source.onchange = SF.onchangeFilterPartnerSkeletons.bind(SF);
@@ -1607,6 +1607,23 @@ var WindowMaker = new function()
          [cb[0]],
          [cb[1]]
         ]);
+
+    var partners_color = CATMAID.skeletonListSources.createPushSelect(SF, "color");
+    partners_color.onchange = SF.onchangeColorPartnerSkeletons.bind(SF);
+
+    var c = createSelect('color-scheme-synapse-fractions' + SF.widgetID,
+        ['category10',
+         'category20',
+         'category20b',
+         'category20c'].concat(Object.keys(colorbrewer)));
+
+    c.onchange = SF.onchangeColorScheme.bind(SF, c);
+
+    appendToTab(tabs['Color'],
+        [[document.createTextNode("Color scheme: ")],
+         [c],
+         [document.createTextNode("Color by: ")],
+         [partners_color]]);
 
     content.appendChild(bar);
 

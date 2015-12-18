@@ -34,6 +34,16 @@ New widget "Synapse Distribution Plot":
   skeleton source for each widget to pull neurons from.
 
 
+New widget "Synapse Fraction":
+
+- For one or more neurons, render a normalized stacked bar chart with
+  the number of synapses for/from each partner skeletons (directly either
+	upstream or downstream). Can group partner skeletons: add groups by
+	selecting a skeleton source (another widget listing skeletons).
+	Click on the legend to edit (title, color) the group, or remove it.
+	Click on the legend to go to the nearest node in the partner skeleton.
+
+
 Settings widget:
 
 - Persistent settings are now scoped, so that default settings may be

@@ -83,10 +83,13 @@ open the CATMAID client in your browser, hover your cursor over your name
 As a security measure, you will be prompted to re-enter your password,
 then shown your token string.
 
-To use the API token, set the HTTP ``Authorization`` header on all of your
+To use the API token, set the HTTP ``X-Authorization`` header on all of your
 API requests to be "Token", a space, and the token string, e.g.::
 
-    Authorization: Token 9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b
+    X-Authorization: Token 9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b
+
+CATMAID uses ``X-Authorization`` rather than ``Authorization`` so that it
+does not conflict with server-level HTTP authorization.
 
 .. warning::
 
@@ -106,12 +109,12 @@ running on ``localhost`` using the `Requests Python package
     from requests.auth import AuthBase
 
     class CatmaidApiTokenAuth(AuthBase):
-        """Attaches HTTP Authorization Token headers to the given Request."""
+        """Attaches HTTP X-Authorization Token headers to the given Request."""
         def __init__(self, token):
             self.token = token
 
         def __call__(self, r):
-            r.headers['Authorization'] = 'Token {}'.format(self.token)
+            r.headers['X-Authorization'] = 'Token {}'.format(self.token)
             return r
 
     # Replace these fake values with your own.

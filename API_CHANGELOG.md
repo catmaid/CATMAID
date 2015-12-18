@@ -10,10 +10,10 @@ open the CATMAID client in your browser, hover your cursor over your name
 (next to the "Logout" link), and click "Get API token". As a security measure,
 you will be prompted to re-enter your password, then shown your token string.
 
-To use the API token, set the HTTP `Authorization` header on all of your
+To use the API token, set the HTTP `X-Authorization` header on all of your
 API requests to be 'Token', a space, and the token string, e.g.:
 
-    Authorization: Token 9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b
+    X-Authorization: Token 9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b
 
 
 ### Additions

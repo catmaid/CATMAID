@@ -31,6 +31,7 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     # For API tokens. Disable if not using HTTPS:
+    'catmaid.middleware.AuthenticationHeaderExtensionMiddleware',
     'catmaid.middleware.CsrfBypassTokenAuthenticationMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',

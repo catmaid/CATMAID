@@ -11,6 +11,19 @@ from django.conf import settings
 from rest_framework.authentication import TokenAuthentication
 
 
+class AuthenticationHeaderExtensionMiddleware(object):
+    """
+    CATMAID uses the `X-Authorization` HTTP header rather than `Authorization`
+    to prevent conflicts with, e.g., HTTP server basic authentication.
+
+    Have Django overwrite the `Authorization` header with the `X-Authorization`
+    header, if present, so that other middlewares can work normally.
+    """
+    def process_request(self, request):
+        auth = request.META.get('HTTP_X_AUTHORIZATION', b'')
+        if auth:
+            request.META['HTTP_AUTHORIZATION'] = auth
+
 class CsrfBypassTokenAuthenticationMiddleware(object):
     """
     Authenticate a user using a HTTP_AUTHORIZATION header token provided by

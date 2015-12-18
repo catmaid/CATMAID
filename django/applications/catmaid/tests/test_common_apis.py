@@ -289,7 +289,7 @@ class ViewPageTests(TestCase):
         # ...but accepts a token auth request without CSRF
         response = token_client.post('/%d/node/user-info' % (self.test_project_id,),
                 {'node_id': 383},
-                HTTP_AUTHORIZATION='Token ' + token)
+                HTTP_X_AUTHORIZATION='Token ' + token)
         self.assertEqual(response.status_code, 200)
 
         # Check that a DRF view rejects an unauthed request...
@@ -300,7 +300,7 @@ class ViewPageTests(TestCase):
         self.assertEqual(response.status_code, 403)
         # ...but accepts a token auth request without CSRF
         response = token_client.post('/%d/annotations/' % (self.test_project_id,),
-                HTTP_AUTHORIZATION='Token ' + token)
+                HTTP_X_AUTHORIZATION='Token ' + token)
         self.assertEqual(response.status_code, 200)
 
     def test_user_project_permissions_not_logged_in(self):

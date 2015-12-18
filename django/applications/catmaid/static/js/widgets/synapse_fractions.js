@@ -45,6 +45,13 @@
     // The data for redrawing
     this.fractions = null;
 
+    // Map of group ID vs object with keys: id, name, color, and map of skids vs true
+    this.groups = {};
+    // Group IDs count towards minus inifinity
+    this.next_group_id = -1;
+    // Map from skeleton ID to group ID
+    this.groupOf = {};
+
     this.mode = this.DOWNSTREAM;
 
     this.confidence_threshold = 0; // TODO add UI
@@ -104,7 +111,8 @@
 
   SynapseFractions.prototype.update = function() {
     var models = this.models;
-    this.clear();
+    var morphologies = {};
+    var fractions = null;
     this.append(models);
   };
 
@@ -123,6 +131,8 @@
     this.fractions = null;
     this.other_source.clear();
     this.partner_colors = {};
+    this.groups = {};
+    this.groupOf = {};
     this.redraw();
   };
 
@@ -172,6 +182,29 @@
         (function() { this.updateGraph(); }).bind(this));
   };
 
+  SynapseFractions.prototype.createPartnerGroup = function() {
+    var source = CATMAID.skeletonListSources.getSelectedPushSource(this, "group");
+    if (source) {
+      var gid = this.next_group_id--;
+      var name = prompt("Group name", "group" + gid);
+      var skids = source.getSelectedSkeletons().filter(function(skid) {
+        // Check that it doesn't belong to a group already
+        return !this.groupOf[skid];
+      }, this);
+      if (0 === skids.length) {
+        CATMAID.msg("WARNING", "All skeleton IDs already belong to an existing group.");
+        return;
+      }
+      this.groups[gid] = {
+        id: gid,
+        skids: skids.reduce(function(o, skid) { o[skid] = true; return o; }, {}),
+        name: name,
+        color: '#' + source.getSkeletonModel(skids[0]).color.getHexString()};
+      skids.forEach(function(skid) { this.groupOf[skid] = gid; }, this);
+    }
+    this.updateGraph();
+  };
+
   SynapseFractions.prototype.updateGraph = function() {
     if (0 === Object.keys(this.models)) return;
 
@@ -203,8 +236,15 @@
           || (this.only && !this.only[skid2])) {
           o.others += count;
         } else {
-          o[skid2] = count;
-          skids2[skid2] = true;
+          // Place either into a group or by itself
+          var gid = this.groupOf[skid2];
+          if (gid) {
+            var gcount = o[gid];
+            o[gid] = (gcount ? gcount : 0) + count;
+          } else {
+            o[skid2] = count;
+          }
+          skids2[skid2] = true; // SIDE EFFECT: accumulate unique skeleton IDs
         }
         return o;
       }).bind(this), {others: 0});
@@ -239,11 +279,11 @@
   SynapseFractions.prototype._redraw = function(container, containerID) {
 
     // Map of partners vs counts of synapses across all models
-    var partners = Object.keys(this.fractions).reduce((function(o ,skid) {
+    var partners = Object.keys(this.fractions).reduce((function(o, skid) {
       var counts = this.fractions[skid];
-      return Object.keys(counts).reduce(function(o, skid2) {
-        var sum = o[skid2];
-        o[skid2] = (sum ? sum : 0) + counts[skid2];
+      return Object.keys(counts).reduce(function(o, id) {
+        var sum = o[id];
+        o[id] = (sum ? sum : 0) + counts[id];
         return o;
       }, o);
     }).bind(this), {});
@@ -253,7 +293,7 @@
     var other = partners['others'];
     delete partners['others'];
     var order = Object.keys(partners)
-                      .map(function(skid2) { return [skid2, partners[skid2]]; })
+                      .map(function(id) { return [id, partners[id]]; })
                       .sort(function(a, b) { return a[1] < b[1] ? 1 : -1; }) // Descending
                       .map(function(pair) { return pair[0]; });
 
@@ -261,14 +301,14 @@
       order.push('others');
     }
 
-    var colors = (function(partner_colors, colorFn) {
+    var colors = (function(partner_colors, colorFn, groups) {
           var i = 0;
-          return order.reduce(function(o, skid) {
-            var c = partner_colors[skid];
-            o[skid] = c ? c : colorFn(i++);
+          return order.reduce(function(o, id) {
+            var c = id < 0 ? groups[id].color : partner_colors[id];
+            o[id] = c ? c : colorFn(i++);
             return o;
           }, {});
-        })(this.partner_colors, this.colorFn);
+        })(this.partner_colors, this.colorFn, this.groups);
 
     var margin = {top: 20, right: 100, bottom: 50, left: 40},
         width = container.width() - margin.left - margin.right,
@@ -305,11 +345,11 @@
     // Sort according to order and compute cumulatives
     var prepare = function(fractions) {
       var total = 0;
-      var data = order.reduce(function(a, skid2) {
-        var count = fractions[skid2];
+      var data = order.reduce(function(a, id) {
+        var count = fractions[id];
         if (!count) return a; // skid2 is not a partner
         total += count; // SIDE EFFECT
-        a.push({skid: skid2,
+        a.push({id: id, // skid or gid
                 counts: count,
                 cumulative: 0, // for offset
                 total: 0}); // to normalize
@@ -338,16 +378,20 @@
           return y(d.cumulative / d.total) - y((d.cumulative + d.counts) / d.total);
         })
         .style("fill", function(d, i) {
-          return colors[d.skid];
+          return colors[d.id];
         })
         .on('click', function(d) {
-          if ("others" === d.skid) return;
-          CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', d.skid);
+          if ("others" === d.id || d.id < 0) return; // negative when it is a group
+          CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', d.id);
         })
         .append('svg:title') // on mouse over
-          .text(function(d) {
-            return (d.skid == "others" ? d.skid : CATMAID.NeuronNameService.getInstance().getName(d.skid)) + ": " + d.counts + " synapses";
-          });
+          .text((function(d) {
+            var title = "";
+            if (d.id == "others") title = d.id;
+            else if (d.id < 0) title = this.groups[d.id].name;
+            else title = CATMAID.NeuronNameService.getInstance().getName(d.id);
+            return title + ": " + d.counts + " synapses";
+          }).bind(this));
 
       var xg = svg.append("g")
           .attr("class", "x axis")
@@ -376,27 +420,87 @@
         .append("g")
         .attr("class", "legend")
         .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; })
-        .on("click", function(skid) {
-          if ("others" === skid) return;
-          CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skid);
-        });
+        .on("click", (function(id) {
+          if ("others" === id) return;
+          // negative when it is a group
+          if (id < 0) {
+            this.groupEditor(id);
+            return;
+          }
+          CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', id);
+        }).bind(this));
 
     legend.append("rect")
       .attr("x", width - 18)
       .attr("width", 18)
       .attr("height", 18)
-      .style("fill", function(skid) { return colors[skid]; });
+      .style("fill", function(id) { return colors[id]; });
 
     legend.append("text")
       .attr("x", width - 24)
       .attr("y", 9)
       .attr("dy", ".35em")
       .style("text-anchor", "end")
-      .text(function(skid) {
-        if ("others" === skid) return skid;
-        return CATMAID.NeuronNameService.getInstance().getName(skid);
-      });
+      .text((function(id) {
+        if ("others" === id) return id;
+        if (id < 0) return this.groups[id].name;
+        return CATMAID.NeuronNameService.getInstance().getName(id);
+      }).bind(this));
 
+  };
+
+  /** Launch properties editor for the group. */
+  SynapseFractions.prototype.groupEditor = function(id) {
+    var group = this.groups[id];
+    if (!group) {
+      CATMAID.msg("WARNING", "Unknown group with id: " + id);
+      return;
+    }
+    var od = new CATMAID.OptionsDialog("Edit group");
+
+    od.appendMessage("The group '" + group.name + "' contains " + Object.keys(group.skids) + " neurons.");
+
+    // Edit title
+    var title = od.appendField("Edit title: ", "group-title-synapse-fraction" + this.widgetID, group.name, true);
+
+    // Edit color
+    var color = null;
+    var colorButton = document.createElement('button');
+    colorButton.appendChild(document.createTextNode('Group color'));
+    CATMAID.ColorPicker.enable(colorButton, {
+      initialColor: group.color,
+      onColorChange: (function(rgb, alpha, colorChanged, alphaChanged) {
+        if (colorChanged) {
+          color = CATMAID.tools.rgbToHex(Math.round(rgb.r * 255),
+                                         Math.round(rgb.g * 255),
+                                         Math.round(rgb.b * 255));
+        }
+      }).bind(this)
+    });
+
+    var p = document.createElement('p');
+    p.appendChild(colorButton);
+    od.dialog.appendChild(p);
+
+    // Enable deleting the group
+    var remove = od.appendCheckbox("Remove group", "group-remove-synapse-fraction" + this.widgetID, false);
+
+    od.onOK = (function() {
+      if ($(remove).prop('checked')) {
+        Object.keys(group.skids).forEach(function(skid) { delete this.groupOf[skid]; }, this);
+        delete this.groups[id];
+        this.updateGraph(); // remake this.fractions
+        return;
+      }
+      group.name = title.value;
+      if (color) group.color = color;
+
+      this.redraw();
+
+    }).bind(this);
+
+    od.show('auto', 'auto');
+    return;
   };
 
   SynapseFractions.prototype.toggleOthers = function() {

@@ -138,12 +138,6 @@
     this.redraw();
   };
 
-  SynapsePlot.prototype._registerModels = function(models) {
-    Object.keys(models).forEach(function(skid) {
-      this.models[skid] = models[skid];
-    }, this);
-  };
-
   SynapsePlot.prototype.append = function(models) {
     CATMAID.NeuronNameService.getInstance().registerAll(this, models,
         (function() { this._append(models); }).bind(this));

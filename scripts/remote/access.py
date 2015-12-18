@@ -16,14 +16,12 @@ import json
 from collections import defaultdict
 
 class Connection:
-    def __init__(self, server, authname, authpassword, username, password):
+    def __init__(self, server, authname, authpassword, authtoken):
         self.server = server
         self.authname = authname
         self.authpassword = authpassword
-        self.username = username
-        self.password = password
-        self.cookies = cookielib.CookieJar()
-        self.opener = urllib2.build_opener(urllib2.HTTPRedirectHandler(), urllib2.HTTPCookieProcessor(self.cookies))
+        self.authtoken = authtoken
+        self.opener = urllib2.build_opener(urllib2.HTTPRedirectHandler())
 
     def djangourl(self, path):
         """ Expects the path to lead with a slash '/'. """
@@ -33,19 +31,8 @@ class Connection:
         if self.authname:
             base64string = base64.encodestring('%s:%s' % (self.authname, self.authpassword)).replace('\n', '')
             request.add_header("Authorization", "Basic %s" % base64string)
-
-    def login(self):
-        url = self.djangourl("/accounts/login")
-        opts = {
-            'name': self.username,
-            'pwd': self.password
-        }
-        data = urllib.urlencode(opts)
-        request = urllib2.Request(url, data)
-        self.auth(request)
-        response = urllib2.urlopen(request)
-        self.cookies.extract_cookies(response, request)
-        return response.read()
+        if self.authtoken:
+            request.add_header("X-Authorization", "Token {}".format(self.authtoken))
 
     def fetch(self, url, post=None):
         """ Requires the url to connect to and the variables for POST, if any, in a dictionary. """
@@ -63,7 +50,7 @@ class Connection:
             return
         r = json.loads(response)
         if type(r) == dict and 'error' in r:
-            print "ERROR:", r['error']
+            print "ERROR:", r['error'], r
         else:
             return r
 
@@ -162,18 +149,16 @@ def test(connection):
 
 
 def main():
-    if not sys.argv or len(sys.argv) < 2 or "-h" == sys.argv[1] or "--help" == sys.argv[1] or len(sys.argv) < 6:
-        print("Usage: $ python remote.py http://neurocean.janelia.org authname authpassword username password")
+    if not sys.argv or len(sys.argv) < 2 or "-h" == sys.argv[1] or "--help" == sys.argv[1] or len(sys.argv) < 5:
+        print("Usage: $ python access.py http://neurocean.janelia.org authname authpassword authtoken")
         sys.exit()
 
     server = sys.argv[1]
     authname = sys.argv[2]
     authpassword = sys.argv[3]
-    username = sys.argv[4]
-    password = sys.argv[5]
+    authtoken = sys.argv[4]
 
-    c = Connection(server, authname, authpassword, username, password)
-    c.login()
+    c = Connection(server, authname, authpassword, authtoken)
 
     test(c)
 

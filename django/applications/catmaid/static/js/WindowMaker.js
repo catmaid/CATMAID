@@ -2804,10 +2804,10 @@ var WindowMaker = new function()
         contentbutton.appendChild(plot);
 
         var plot2 = document.createElement('input');
-        plot.setAttribute("type", "button");
-        plot.setAttribute("value", "Open partner chart");
-        plot.onclick = SC.openStackedBarChart.bind(SC);
-        contentbutton.appendChild(plot);
+        plot2.setAttribute("type", "button");
+        plot2.setAttribute("value", "Open partner chart");
+        plot2.onclick = SC.openStackedBarChart.bind(SC);
+        contentbutton.appendChild(plot2);
 
         var layoutToggle = document.createElement('input');
         layoutToggle.setAttribute('id', 'connectivity-layout-toggle-' + widgetID);

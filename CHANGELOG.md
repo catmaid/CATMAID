@@ -42,6 +42,8 @@ New widget "Synapse Fraction":
 	selecting a skeleton source (another widget listing skeletons).
 	Click on the legend to edit (title, color) the group, or remove it.
 	Click on the legend to go to the nearest node in the partner skeleton.
+	To open this new widget, open a connectivity widget and push the
+	button named "Open partner chart".
 
 
 Settings widget:

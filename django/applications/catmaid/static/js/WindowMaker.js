@@ -2803,6 +2803,12 @@ var WindowMaker = new function()
         plot.onclick = SC.openPlot.bind(SC);
         contentbutton.appendChild(plot);
 
+        var plot2 = document.createElement('input');
+        plot.setAttribute("type", "button");
+        plot.setAttribute("value", "Open partner chart");
+        plot.onclick = SC.openStackedBarChart.bind(SC);
+        contentbutton.appendChild(plot);
+
         var layoutToggle = document.createElement('input');
         layoutToggle.setAttribute('id', 'connectivity-layout-toggle-' + widgetID);
         layoutToggle.setAttribute('type', 'checkbox');

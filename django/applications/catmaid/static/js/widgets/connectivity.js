@@ -1352,6 +1352,10 @@
     GP.draw();
   };
 
+  SkeletonConnectivity.prototype.openStackedBarChart = function() {
+    var SF = WindowMaker.create("synapse-fractions");
+  };
+
   /**
    * A small widget to display a graph, plotting the number of upstream/downstream
    * partners against the number of synapses. A list of skeleton_ids has to be

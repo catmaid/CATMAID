@@ -293,13 +293,18 @@
     var other = partners['others'];
     delete partners['others'];
     var order = Object.keys(partners)
-                      .map(function(id) { return [id, partners[id]]; })
-                      .sort(function(a, b) { return a[1] < b[1] ? 1 : -1; }) // Descending
-                      .map(function(pair) { return pair[0]; });
+      .map(function(id) { return [id, partners[id]]; })
+      .sort(function(a, b) { return a[1] < b[1] ? 1 : -1; }) // Descending
+      .map(function(pair) { return pair[0]; });
 
     if (this.show_others) {
       order.push('others');
     }
+
+    var sorted_skids = Object.keys(this.models)
+      .map(function(skid) { return [skid, CATMAID.NeuronNameService.getInstance().getName(skid)]; })
+      .sort(function(a, b) { return a[1] > b[1]; })
+      .map(function(pair) { return pair[0]; });
 
     var colors = (function(partner_colors, colorFn, groups) {
           var i = 0;
@@ -315,7 +320,7 @@
         height = container.height() - margin.top - margin.bottom;
 
     var x = d3.scale.ordinal().rangeRoundBands([0, width], 0.1);
-    x.domain(Object.keys(this.models));
+    x.domain(sorted_skids);
     var y = d3.scale.linear().rangeRound([height, 0]);
 
     var xAxis = d3.svg.axis()
@@ -336,7 +341,7 @@
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
     var state = svg.selectAll(".state")
-      .data(Object.keys(this.models))
+      .data(sorted_skids)
       .enter()
       .append('g')
       .attr("class", "state")

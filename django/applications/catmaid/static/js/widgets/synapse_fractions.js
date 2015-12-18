@@ -187,6 +187,7 @@
     if (source) {
       var gid = this.next_group_id--;
       var name = prompt("Group name", "group" + gid);
+      if (!name) return; // cancelled
       var skids = source.getSelectedSkeletons().filter(function(skid) {
         // Check that it doesn't belong to a group already
         return !this.groupOf[skid];

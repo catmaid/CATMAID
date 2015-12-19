@@ -1606,7 +1606,7 @@ var WindowMaker = new function()
 
     appendToTab(tabs['Filter'],
         [[nf],
-         [document.createTextNode(' - By: ')],
+         [document.createTextNode(' - Only in: ')],
          [partners_source],
          [cb[0]],
          [cb[1]]

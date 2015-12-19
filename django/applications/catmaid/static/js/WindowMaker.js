@@ -1523,10 +1523,14 @@ var WindowMaker = new function()
 
     CATMAID.skeletonListSources.updateGUI();
 
-    // Now that a Selection Table exists, have the 3D viewer subscribe to it
+    // Now that a Selection Table exists, have the 3D viewer subscribe to it and
+    // make it ignore local models. Don't make it selection based, to not reload
+    // skeletons on visibility changes.
     var Subscription = CATMAID.SkeletonSourceSubscription;
-    WA.addSubscription(new Subscription(st.widget, true, true, CATMAID.SkeletonSource.UNION,
-          Subscription.ALL_EVENTS));
+    WA.addSubscription(new Subscription(st.widget, true, false,
+          CATMAID.SkeletonSource.UNION, Subscription.ALL_EVENTS));
+    // Override existing local models if subscriptions are updated
+    WA.ignoreLocal = true;
 
     return {window: win, widget: WA};
   };

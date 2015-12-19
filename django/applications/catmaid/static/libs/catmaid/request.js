@@ -109,11 +109,6 @@ RequestQueue = function(originUrl, csrfToken)
       spinner.style.display = "none";
   };
 
-  var csrfSafe = function (method) {
-    // these HTTP methods do not require CSRF protection
-    return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
-  };
-
   /**
    * Test whether a request is for the same host as the origin URL configured
    * for this request queue. Because this URL is configured and CATMAID
@@ -142,7 +137,7 @@ RequestQueue = function(originUrl, csrfToken)
       // xmlHttp.setRequestHeader( "Connection", "close" );
     }
     xmlHttp.setRequestHeader( "X-Requested-With", "XMLHttpRequest" );
-    if (!csrfSafe(item.method) && sameOrigin(item.request)) {
+    if (!RequestQueue.csrfSafe(item.method) && sameOrigin(item.request)) {
       xmlHttp.setRequestHeader('X-CSRFToken', csrfToken);
     }
     xmlHttp.onreadystatechange = callback;
@@ -243,4 +238,9 @@ RequestQueue = function(originUrl, csrfToken)
       this.register( r, m, d, c, id );
     }
   };
+};
+
+RequestQueue.csrfSafe = function (method) {
+  // these HTTP methods do not require CSRF protection
+  return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
 };

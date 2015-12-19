@@ -101,6 +101,12 @@ var requestQueue = new RequestQueue();
         undefined;
 
     window.requestQueue = new RequestQueue(CATMAID.backendURL, csrfCookie);
+    $.ajaxPrefilter(function (options, origOptions, jqXHR) {
+      if (0 === options.url.indexOf(CATMAID.backendURL) &&
+          !RequestQueue.csrfSafe(options.type)) {
+        jqXHR.setRequestHeader('X-CSRFToken', csrfCookie);
+      }
+    });
   };
 
   /**

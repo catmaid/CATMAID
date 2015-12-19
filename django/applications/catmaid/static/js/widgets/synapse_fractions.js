@@ -464,7 +464,7 @@
     }
     var od = new CATMAID.OptionsDialog("Edit group");
 
-    od.appendMessage("The group '" + group.name + "' contains " + Object.keys(group.skids) + " neurons.");
+    od.appendMessage("The group '" + group.name + "' contains " + Object.keys(group.skids).length + " neurons.");
 
     // Edit title
     var title = od.appendField("Edit title: ", "group-title-synapse-fraction" + this.widgetID, group.name, true);

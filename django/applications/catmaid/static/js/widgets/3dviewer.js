@@ -561,7 +561,7 @@
         },
         function(skid) { CATMAID.msg("Error", "Failed to load synapses for: " + skid); },
         (function() {
-          saveAs(new Blob([rows.join('\n')], {type : 'text/csv'}), "connectors.csv");
+          saveAs(new Blob([rows.join('\n')], {type : 'text/csv'}), "synapses.csv");
 
           var nns = CATMAID.NeuronNameService.getInstance(),
               dummy = new THREE.Color(1, 1, 1);

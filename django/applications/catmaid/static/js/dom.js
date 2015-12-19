@@ -196,14 +196,20 @@
    */
   DOM.addSourceControlsToggle = function(win, source, title) {
     title = title || 'Show and hide skeleton source controls';
-    DOM.addCaptionButton(win, 'ui-icon ui-icon-link', title, function() {
+
+    // A toggle function that also allows to recreate the UI.
+    var toggle = function(recreate) {
       // Create controls for the skeleton source if not present, otherwise
       // remove them.
       var frame = win.getFrame();
       var panel = frame.querySelector('.sourcepanel');
-      if (panel) {
+      var show = !panel;
+
+      if (!show) {
         panel.remove();
-      } else {
+      }
+
+      if (show || recreate) {
         // Create new panel
         panel = CATMAID.skeletonListSources.createSourceControls(source);
         panel.setAttribute('class', 'sourcepanel');
@@ -214,6 +220,26 @@
           // the element will be appended to the end.
           frame.insertBefore(panel, eventCatcher.nextSibling);
         }
+      }
+
+      return show;
+    };
+
+    // Make a update function that can be referred to from handlers
+    var update = toggle.bind(window, true);
+
+    DOM.addCaptionButton(win, 'ui-icon ui-icon-link', title, function() {
+      // Do a regular toggle update by default
+      var opened = toggle();
+
+      if (opened) {
+        // Register to the source's subscription added and removed
+        // events to recreate the UI.
+        source.on(source.EVENT_SUBSCRIPTION_ADDED, update);
+        source.on(source.EVENT_SUBSCRIPTION_REMOVED, update);
+      } else {
+        source.off(source.EVENT_SUBSCRIPTION_ADDED, update);
+        source.off(source.EVENT_SUBSCRIPTION_REMOVED, update);
       }
     });
   };

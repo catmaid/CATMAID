@@ -1621,6 +1621,7 @@ var WindowMaker = new function()
          'category20b',
          'category20c'].concat(Object.keys(colorbrewer)));
 
+    c.selectedIndex = 1;
     c.onchange = SF.onchangeColorScheme.bind(SF, c);
 
     appendToTab(tabs['Color'],

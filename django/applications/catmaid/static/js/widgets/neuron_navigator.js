@@ -1163,39 +1163,33 @@
         }
 
         // Request data from back-end
-        $.ajax({
-            "dataType": 'json',
-            "cache": false,
-            "type": "POST",
-            "url": django_url + project.id + '/annotations/query-targets',
-            "data": params,
-            "success": function(json) {
-                // Format result so that DataTables can understand it
-                var result = {
-                  draw: data.draw,
-                  recordsTotal: json.totalRecords,
-                  recordsFiltered: json.totalRecords,
-                  data: json.entities
-                };
+        requestQueue.register(django_url + project.id + '/annotations/query-targets',
+            'POST', params, CATMAID.jsonResponseHandler(function(json) {
+              // Format result so that DataTables can understand it
+              var result = {
+                draw: data.draw,
+                recordsTotal: json.totalRecords,
+                recordsFiltered: json.totalRecords,
+                data: json.entities
+              };
 
-                if (json.error) {
-                  if (-1 !== json.error.indexOf('invalid regular expression')) {
-                    searchInput.css('background-color', 'salmon');
-                    CATMAID.warn(json.error);
-                  } else {
-                    CATMAID.error(json.error, json.detail);
-                  }
-                  result.error = json.error;
+              if (json.error) {
+                if (-1 !== json.error.indexOf('invalid regular expression')) {
+                  searchInput.css('background-color', 'salmon');
+                  CATMAID.warn(json.error);
+                } else {
+                  CATMAID.error(json.error, json.detail);
                 }
+                result.error = json.error;
+              }
 
-                // Let datatables know about new data
-                dtCallback(result);
+              // Let datatables know about new data
+              dtCallback(result);
 
-                if (callback && !json.error ) {
-                  callback(json);
-                }
-            }
-        });
+              if (callback && !json.error ) {
+                callback(json);
+              }
+            }));
       },
       "lengthMenu": [
           this.possibleLengths,

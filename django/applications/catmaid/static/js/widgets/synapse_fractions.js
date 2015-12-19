@@ -200,6 +200,7 @@
         id: gid,
         skids: skids.reduce(function(o, skid) { o[skid] = true; return o; }, {}),
         name: name,
+        autocolor: true,
         color: '#' + source.getSkeletonModel(skids[0]).color.getHexString()};
       skids.forEach(function(skid) { this.groupOf[skid] = gid; }, this);
     }
@@ -310,7 +311,7 @@
     var colors = (function(partner_colors, colorFn, groups) {
           var i = 0;
           return order.reduce(function(o, id) {
-            var c = id < 0 ? groups[id].color : partner_colors[id];
+            var c = id < 0 ? (groups[id].autocolor ? colorFn(i++) : groups[id].color) : partner_colors[id];
             o[id] = c ? c : colorFn(i++);
             return o;
           }, {});
@@ -484,6 +485,8 @@
       }).bind(this)
     });
 
+    var auto = od.appendCheckbox("Automatic color", "group-autocolor-synapse-fraction" + this.widgetID, group.autocolor);
+
     var p = document.createElement('p');
     p.appendChild(colorButton);
     od.dialog.appendChild(p);
@@ -500,6 +503,7 @@
       }
       group.name = title.value;
       if (color) group.color = color;
+      group.autocolor = $(auto).prop('checked');
 
       this.redraw();
 

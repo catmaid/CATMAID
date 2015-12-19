@@ -43,6 +43,12 @@
   // source models were updated (e.g. color), alongside an object mapping
   // skeleton IDs to models.
   SkeletonSource.prototype.EVENT_MODELS_CHANGED = "skeleton_source_models_changed";
+  // The EVENT_SUBSCRIPTION_ADDED event is fired once a new subscription was
+  // added to a source.
+  SkeletonSource.prototype.EVENT_SUBSCRIPTION_ADDED = "skeleton_source_subscription_added";
+  // The EVENT_SUBSCRIPTION_REMOVED event is fired once a new subscription was
+  // removed from a source.
+  SkeletonSource.prototype.EVENT_SUBSCRIPTION_REMOVED = "skeleton_source_subscription_removed";
 
   SkeletonSource.prototype.registerSource = function() {
     CATMAID.skeletonListSources.add(this);
@@ -81,6 +87,8 @@
 
     // Do initial update
     this.loadSubscriptions();
+
+    this.trigger(this.EVENT_SUBSCRIPTION_ADDED, this, subscription);
   };
 
   /**
@@ -101,6 +109,8 @@
 
     // Update
     this.loadSubscriptions();
+
+    this.trigger(this.EVENT_SUBSCRIPTION_REMOVED, this, subscription);
   };
 
   /**

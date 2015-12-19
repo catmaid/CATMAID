@@ -161,8 +161,6 @@
       return;
     }
 
-    this.morphologies = {};
-
     fetchSkeletons(
         skids,
         function(skid) { return django_url + project.id + '/' + skid + '/1/1/1/compact-arbor'; },

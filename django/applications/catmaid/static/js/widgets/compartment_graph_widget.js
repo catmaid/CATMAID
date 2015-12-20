@@ -1755,7 +1755,8 @@
     var count = Object.keys(origins).length;
     this.cy.nodes().each((function(i, node) {
       if (node.visible() && node.selected()) {
-        node.data('skeletons').forEach(function(sk) { origins[sk.id] = true; });
+        // Collect node IDs so that groups can be evaluated dynamically
+        origins[node.id()] = true;
       }
     }).bind(this));
     if (count === Object.keys(origins).length) {

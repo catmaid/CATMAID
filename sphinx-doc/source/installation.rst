@@ -171,7 +171,8 @@ user with, for example::
 
 Besides createing the database and the database user, it will also enable a
 required Postgres extension, called ``postgis``. You should now be able to
-access the database and see that it is currently empty, e.g.::
+access the database and see that it is currently empty except for PostGIS
+relations, e.g.::
 
     psql -U catmaid_user catmaid
     Password:
@@ -179,7 +180,14 @@ access the database and see that it is currently empty, e.g.::
     Type "help" for help.
 
     catmaid=> \d
-    No relations found.
+             List of relations
+     Schema |       Name        | Type  |  Owner
+    --------+-------------------+-------+----------
+     public | geography_columns | view  | postgres
+     public | geometry_columns  | view  | postgres
+     public | raster_columns    | view  | postgres
+     public | raster_overviews  | view  | postgres
+     public | spatial_ref_sys   | table | postgres
 
 4. Create the Django settings files
 ###################################

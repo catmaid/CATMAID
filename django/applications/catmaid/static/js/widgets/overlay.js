@@ -3,7 +3,6 @@
 /* global
   CATMAID,
   mayEdit,
-  NeuronNameService,
   OverlayLabel,
   project,
   requestQueue,
@@ -53,8 +52,6 @@ var SkeletonAnnotations = {
   // Connector nodes can have different subtypes
   SUBTYPE_SYNAPTIC_CONNECTOR : "synaptic-connector",
   SUBTYPE_ABUTTING_CONNECTOR : "abutting-connector",
-
-  activeSkeleton : new CATMAID.ActiveSkeleton(),
 
   // Event name constants
   EVENT_ACTIVE_NODE_CHANGED: "tracing_active_node_changed",
@@ -157,7 +154,7 @@ SkeletonAnnotations.atn.set = function(node, stack_viewer_id) {
  */
 SkeletonAnnotations.atn.promise = function()
 {
-  var overlay = SkeletonAnnotations.getSVGOverlay(this.stack_viewer_id);
+  var overlay = SkeletonAnnotations.getTracingOverlay(this.stack_viewer_id);
   var nodePromise = overlay.promiseNode(overlay.nodes[this.id]);
   var isNewSkeleton = !this.skeleton_id;
   function AtnPromise(atn) {
@@ -185,15 +182,15 @@ SkeletonAnnotations.atn.promise = function()
 /**
  * Map a stack viewer to a displayed overlay.
  */
-SkeletonAnnotations.getSVGOverlay = function(stackViewerId) {
-  return this.SVGOverlay.prototype._instances[stackViewerId];
+SkeletonAnnotations.getTracingOverlay = function(stackViewerId) {
+  return this.TracingOverlay.prototype._instances[stackViewerId];
 };
 
 /**
  * Map a D3 paper instance to an overlay.
  */
-SkeletonAnnotations.getSVGOverlayByPaper = function(paper) {
-  var instances = this.SVGOverlay.prototype._instances;
+SkeletonAnnotations.getTracingOverlayByPaper = function(paper) {
+  var instances = this.TracingOverlay.prototype._instances;
   for (var stackViewerId in instances) {
     if (instances.hasOwnProperty(stackViewerId)) {
       var s = instances[stackViewerId];
@@ -206,11 +203,11 @@ SkeletonAnnotations.getSVGOverlayByPaper = function(paper) {
 };
 
 /**
- * Select a node in any of the existing SVGOverlay instances, by its ID.
- * WARNING: Will only select the node in the first SVGOverlay found to contain it.
+ * Select a node in any of the existing TracingOverlay instances, by its ID.
+ * WARNING: Will only select the node in the first TracingOverlay found to contain it.
  */
 SkeletonAnnotations.staticSelectNode = function(nodeID) {
-  var instances = this.SVGOverlay.prototype._instances;
+  var instances = this.TracingOverlay.prototype._instances;
   for (var stack in instances) {
     if (instances.hasOwnProperty(stack)) {
       return instances[stack].selectNode(nodeID);
@@ -224,7 +221,7 @@ SkeletonAnnotations.staticSelectNode = function(nodeID) {
  * to the database. After the move, the fn is invoked.
  */
 SkeletonAnnotations.staticMoveTo = function(z, y, x, fn) {
-  var instances = SkeletonAnnotations.SVGOverlay.prototype._instances;
+  var instances = SkeletonAnnotations.TracingOverlay.prototype._instances;
   for (var stackViewerId in instances) {
     if (instances.hasOwnProperty(stackViewerId)) {
       instances[stackViewerId].moveTo(z, y, x, fn);
@@ -237,7 +234,7 @@ SkeletonAnnotations.staticMoveTo = function(z, y, x, fn) {
  * the database. After the move, the given node is selected and fn is invoked.
  */
 SkeletonAnnotations.staticMoveToAndSelectNode = function(nodeID, fn) {
-  var instances = SkeletonAnnotations.SVGOverlay.prototype._instances;
+  var instances = SkeletonAnnotations.TracingOverlay.prototype._instances;
   for (var stackViewerId in instances) {
     if (instances.hasOwnProperty(stackViewerId)) {
       instances[stackViewerId].moveToAndSelectNode(nodeID, fn);
@@ -513,9 +510,15 @@ SkeletonAnnotations.getZOfVirtualNode = SkeletonAnnotations.getVirtualNodeCompon
 })();
 
 /**
- * The constructor for SVGOverlay.
+ * Maintain a skeleton source for the active skeleton. Widgets can register to
+ * it.
  */
-SkeletonAnnotations.SVGOverlay = function(stackViewer, options) {
+SkeletonAnnotations.activeSkeleton = new CATMAID.ActiveSkeleton();
+
+/**
+ * The constructor for TracingOverlay.
+ */
+SkeletonAnnotations.TracingOverlay = function(stackViewer, options) {
   var options = options || {};
 
   this.stackViewer = stackViewer;
@@ -531,8 +534,6 @@ SkeletonAnnotations.SVGOverlay = function(stackViewer, options) {
   this.labels = {};
   /** Toggle for text labels on nodes and connectors. */
   this.show_labels = options.show_labels || false;
-  /** Toggle for radius circle for active node. */
-  this.showActiveNodeRadius = options.active_node_radius || false;
   /** Indicate if this overlay is suspended and won't update nodes on redraw. */
   this.suspended = options.suspended || false;
 
@@ -565,8 +566,8 @@ SkeletonAnnotations.SVGOverlay = function(stackViewer, options) {
   this.old_height = stackViewer.viewHeight;
 
   this.view = document.createElement("div");
-  this.view.className = "sliceSVGOverlay";
-  this.view.id = "sliceSVGOverlayId" + stackViewer.getId();
+  this.view.className = "sliceTracingOverlay";
+  this.view.id = "sliceTracingOverlayId" + stackViewer.getId();
   this.view.style.zIndex = 5;
   // Custom cursor for tracing
   this.view.style.cursor ="url(" + STATIC_URL_JS + "images/svg-circle.cur) 15 15, crosshair";
@@ -582,6 +583,7 @@ SkeletonAnnotations.SVGOverlay = function(stackViewer, options) {
 // maintained, this additional attribute would be necessary:
 // this.paper.attr('preserveAspectRatio', 'xMinYMin meet')
   this.graphics = CATMAID.SkeletonElementsFactory.createSkeletonElements(this.paper, stackViewer.getId());
+  this.graphics.setActiveNodeRadiusVisibility(SkeletonAnnotations.TracingOverlay.Settings.session.display_active_node_radius);
 
   // Listen to change and delete events of skeletons
   CATMAID.neuronController.on(CATMAID.neuronController.EVENT_SKELETON_CHANGED,
@@ -596,10 +598,28 @@ SkeletonAnnotations.SVGOverlay = function(stackViewer, options) {
       this.handleNewNode, this);
 };
 
-SkeletonAnnotations.SVGOverlay.prototype = {
+SkeletonAnnotations.TracingOverlay.prototype = {
   EVENT_HIT_NODE_DISPLAY_LIMIT: "tracing_hit_node_display_limit"
 };
-CATMAID.asEventSource(SkeletonAnnotations.SVGOverlay.prototype);
+CATMAID.asEventSource(SkeletonAnnotations.TracingOverlay.prototype);
+
+SkeletonAnnotations.TracingOverlay.Settings = new CATMAID.Settings(
+      'tracing-overlay',
+      {
+        version: 0,
+        entries: {
+          display_active_node_radius: {
+            default: true
+          },
+          screen_scaling: {
+            default: true
+          },
+          scale: {
+            default: 1.0
+          }
+        },
+        migrations: {}
+      });
 
 /**
  * Creates the node with the given ID, if it is only a virtual node. Otherwise,
@@ -608,7 +628,7 @@ CATMAID.asEventSource(SkeletonAnnotations.SVGOverlay.prototype);
  * the node is available at the moment of the call in the nodes cache. An error
  * is thrown if this is not the case.
  */
-SkeletonAnnotations.SVGOverlay.prototype.promiseNode = function(node)
+SkeletonAnnotations.TracingOverlay.prototype.promiseNode = function(node)
 {
   var self = this;
 
@@ -688,7 +708,7 @@ SkeletonAnnotations.SVGOverlay.prototype.promiseNode = function(node)
  * Creates all given nodes, if they are virtual nodes. Otherwise, it is resolved
  * immediately.
  */
-SkeletonAnnotations.SVGOverlay.prototype.promiseNodes = function()
+SkeletonAnnotations.TracingOverlay.prototype.promiseNodes = function()
 {
   var self = this;
   var args = arguments;
@@ -732,7 +752,7 @@ SkeletonAnnotations.SVGOverlay.prototype.promiseNodes = function()
  * Execute function fn_real, if the node identified by node_id is a real node
  * (i.e not a virtual node).
  */
-SkeletonAnnotations.SVGOverlay.prototype.executeDependentOnExistence =
+SkeletonAnnotations.TracingOverlay.prototype.executeDependentOnExistence =
     function(node_id, fn_real, fn_notreal)
 {
   if (SkeletonAnnotations.isRealNode(node_id) && fn_real) {
@@ -750,11 +770,12 @@ SkeletonAnnotations.SVGOverlay.prototype.executeDependentOnExistence =
 * action to perform, as written as a question in a dialog to confirm the action
 * if the skeleton has a single node.
 */
-SkeletonAnnotations.SVGOverlay.prototype.executeDependentOnNodeCount =
+SkeletonAnnotations.TracingOverlay.prototype.executeDependentOnNodeCount =
     function(node_id, fn_one, fn_more)
 {
   this.submit(
       django_url + project.id + '/skeleton/node/' + node_id + '/node_count',
+      'POST',
       {},
       function(json) {
         if (json.count > 1) {
@@ -768,7 +789,7 @@ SkeletonAnnotations.SVGOverlay.prototype.executeDependentOnNodeCount =
 /**
  * Execute the function fn if the current user has permissions to edit it.
  */
-SkeletonAnnotations.SVGOverlay.prototype.executeIfSkeletonEditable = function(
+SkeletonAnnotations.TracingOverlay.prototype.executeIfSkeletonEditable = function(
     skeleton_id, fn) {
   var url = django_url + project.id + '/skeleton/' + skeleton_id +
       '/permissions';
@@ -790,16 +811,17 @@ SkeletonAnnotations.SVGOverlay.prototype.executeIfSkeletonEditable = function(
  * Ask the user for a new neuron name for the given skeleton and let the name
  * service write it to the skeleton.
  */
-SkeletonAnnotations.SVGOverlay.prototype.renameNeuron = function(skeletonID) {
+SkeletonAnnotations.TracingOverlay.prototype.renameNeuron = function(skeletonID) {
   if (!skeletonID) return;
   var self = this;
   this.submit(
       django_url + project.id + '/skeleton/' + skeletonID + '/neuronname',
+      'POST',
       {},
       function(json) {
           var new_name = prompt("Change neuron name", json['neuronname']);
           if (!new_name) return;
-          NeuronNameService.getInstance().renameNeuron(
+          CATMAID.NeuronNameService.getInstance().renameNeuron(
               json['neuronid'], [skeletonID], new_name);
       });
 };
@@ -807,19 +829,19 @@ SkeletonAnnotations.SVGOverlay.prototype.renameNeuron = function(skeletonID) {
 /**
  * Register of stack viewer ID vs instances.
  */
-SkeletonAnnotations.SVGOverlay.prototype._instances = {};
+SkeletonAnnotations.TracingOverlay.prototype._instances = {};
 
 /**
  * Register a new stack with this instance.
  */
-SkeletonAnnotations.SVGOverlay.prototype.register = function (stackViewer) {
+SkeletonAnnotations.TracingOverlay.prototype.register = function (stackViewer) {
   this._instances[stackViewer.getId()] = this;
 };
 
 /**
  * Unregister this overlay from all stack viewers.
  */
-SkeletonAnnotations.SVGOverlay.prototype.unregister = function () {
+SkeletonAnnotations.TracingOverlay.prototype.unregister = function () {
   for (var stackViewerId in this._instances) {
     if (this._instances.hasOwnProperty(stackViewerId)) {
       if (this === this._instances[stackViewerId]) {
@@ -834,14 +856,14 @@ SkeletonAnnotations.SVGOverlay.prototype.unregister = function () {
  * contents of any one instance may change, and the data of the nodes will
  * change as they are recycled.
  */
-SkeletonAnnotations.SVGOverlay.prototype.getNodes = function() {
+SkeletonAnnotations.TracingOverlay.prototype.getNodes = function() {
   return this.nodes;
 };
 
 /**
  * The stack viewer this overlay is registered with.
  */
-SkeletonAnnotations.SVGOverlay.prototype.getStackViewer = function() {
+SkeletonAnnotations.TracingOverlay.prototype.getStackViewer = function() {
   return this.stackViewer;
 };
 
@@ -849,7 +871,7 @@ SkeletonAnnotations.SVGOverlay.prototype.getStackViewer = function() {
  * Stores the current mouse coordinates in unscaled stack coordinates in the
  * @coords parameter.
  */
-SkeletonAnnotations.SVGOverlay.prototype.createViewMouseMoveFn = function(stackViewer, coords) {
+SkeletonAnnotations.TracingOverlay.prototype.createViewMouseMoveFn = function(stackViewer, coords) {
   return function(e) {
     var m = CATMAID.ui.getMouse(e, stackViewer.getView(), true);
     if (m) {
@@ -870,7 +892,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createViewMouseMoveFn = function(stackV
  * be switched, you should return from any event handling, otherwise all kinds
  * of surprising bugs happen...
  */
-SkeletonAnnotations.SVGOverlay.prototype.ensureFocused = function() {
+SkeletonAnnotations.TracingOverlay.prototype.ensureFocused = function() {
   var win = this.stackViewer.getWindow();
   if (win.hasFocus()) {
     return false;
@@ -883,8 +905,8 @@ SkeletonAnnotations.SVGOverlay.prototype.ensureFocused = function() {
 /**
  * Unregister this layer and destroy all UI elements and event handlers.
  */
-SkeletonAnnotations.SVGOverlay.prototype.destroy = function() {
-  this.updateNodeCoordinatesinDB();
+SkeletonAnnotations.TracingOverlay.prototype.destroy = function() {
+  this.updateNodeCoordinatesInDB();
   this.suspended = true;
   this.unregister();
   // Show warning in case of pending request
@@ -917,7 +939,7 @@ SkeletonAnnotations.SVGOverlay.prototype.destroy = function() {
  * Activates the given node id if it exists in the current retrieved set of
  * nodes.
  */
-SkeletonAnnotations.SVGOverlay.prototype.selectNode = function(id) {
+SkeletonAnnotations.TracingOverlay.prototype.selectNode = function(id) {
   var node = this.nodes[id];
   if (node) {
     this.activateNode(node);
@@ -928,7 +950,7 @@ SkeletonAnnotations.SVGOverlay.prototype.selectNode = function(id) {
  * Find connectors pre- and postsynaptic to the given node ID.
  * Returns an array of two arrays, containing IDs of pre and post connectors.
  */
-SkeletonAnnotations.SVGOverlay.prototype.findConnectors = function(node_id) {
+SkeletonAnnotations.TracingOverlay.prototype.findConnectors = function(node_id) {
   var pre = [];
   var post = [];
   for (var id in this.nodes) {
@@ -949,7 +971,7 @@ SkeletonAnnotations.SVGOverlay.prototype.findConnectors = function(node_id) {
 /**
  * Make sure all currently visible nodes have the correct color.
  */
-SkeletonAnnotations.SVGOverlay.prototype.recolorAllNodes = function () {
+SkeletonAnnotations.TracingOverlay.prototype.recolorAllNodes = function () {
   // Assumes that atn and active_skeleton_id are correct:
   for (var nodeID in this.nodes) {
     if (this.nodes.hasOwnProperty(nodeID)) {
@@ -961,9 +983,8 @@ SkeletonAnnotations.SVGOverlay.prototype.recolorAllNodes = function () {
 /**
  * Set whether the radius of the active node is visible.
  */
-SkeletonAnnotations.SVGOverlay.prototype.setActiveNodeRadiusVisibility = function (visibility) {
-  this.showActiveNodeRadius = visibility;
-  this.graphics.setActiveNodeRadiusVisibility(visibility);
+SkeletonAnnotations.TracingOverlay.prototype.updateActiveNodeRadiusVisibility = function () {
+  this.graphics.setActiveNodeRadiusVisibility(SkeletonAnnotations.TracingOverlay.Settings.session.display_active_node_radius);
   this.recolorAllNodes(); // Necessary to trigger update of radius graphics.
 };
 
@@ -972,7 +993,7 @@ SkeletonAnnotations.SVGOverlay.prototype.setActiveNodeRadiusVisibility = functio
  * bar and the status bar as well as updating SkeletonAnnotations.atn. Can
  * handle virtual nodes.
  */
-SkeletonAnnotations.SVGOverlay.prototype.activateNode = function(node) {
+SkeletonAnnotations.TracingOverlay.prototype.activateNode = function(node) {
   var atn = SkeletonAnnotations.atn,
       last_skeleton_id = atn.skeleton_id;
   if (node) {
@@ -1005,20 +1026,13 @@ SkeletonAnnotations.SVGOverlay.prototype.activateNode = function(node) {
     atn.set(null, null);
     project.setSelectObject( null, null );
   }
-
-  // (de)highlight in SkeletonSource instances if any if different from the last
-  // activated skeleton
-  if (last_skeleton_id !== SkeletonAnnotations.getActiveSkeletonId()) {
-    CATMAID.skeletonListSources.highlight(SkeletonAnnotations.activeSkeleton,
-        SkeletonAnnotations.getActiveSkeletonId());
-  }
 };
 
 /**
  * Activate the node nearest to the mouse. Optionally, virtual nodes can be
  * respected.
  */
-SkeletonAnnotations.SVGOverlay.prototype.activateNearestNode = function (respectVirtualNodes) {
+SkeletonAnnotations.TracingOverlay.prototype.activateNearestNode = function (respectVirtualNodes) {
 
   var nearestnode = this.findNodeWithinRadius(this.coords.lastX,
       this.coords.lastY, Number.MAX_VALUE, respectVirtualNodes);
@@ -1058,7 +1072,7 @@ SkeletonAnnotations.validNodeTest = function(respectVirtualNodes)
  * Expects x and y in scaled (!) stack coordinates. Can be asked to respect
  * virtual nodes.
  */
-SkeletonAnnotations.SVGOverlay.prototype.findNodeWithinRadius = function (
+SkeletonAnnotations.TracingOverlay.prototype.findNodeWithinRadius = function (
     x, y, radius, respectVirtualNodes)
 {
   var xdiff,
@@ -1094,7 +1108,7 @@ SkeletonAnnotations.SVGOverlay.prototype.findNodeWithinRadius = function (
  * Return all node IDs in the overlay within a radius of the given point.
  * Optionally, virtual nodes can be respceted.
  */
-SkeletonAnnotations.SVGOverlay.prototype.findAllNodesWithinRadius = function (
+SkeletonAnnotations.TracingOverlay.prototype.findAllNodesWithinRadius = function (
     x, y, z, radius, respectVirtualNodes)
 {
   var xdiff, ydiff, zdiff, distsq, radiussq = radius * radius, node, nodeid;
@@ -1121,7 +1135,7 @@ SkeletonAnnotations.SVGOverlay.prototype.findAllNodesWithinRadius = function (
  * Find the point along the edge from node to node.parent nearest (x, y, z),
  * optionally exluding a radius around the nodes.
  */
-SkeletonAnnotations.SVGOverlay.prototype.pointEdgeDistanceSq = function (
+SkeletonAnnotations.TracingOverlay.prototype.pointEdgeDistanceSq = function (
     x, y, z, node, exclusion)
 {
   var a, b, p, ab, ap, r, ablen;
@@ -1157,7 +1171,7 @@ SkeletonAnnotations.SVGOverlay.prototype.pointEdgeDistanceSq = function (
  * skeleton, including any nodes in additionalNodes. Virtual nodes can
  * optionally be enabled so that these are respected as well.
  */
-SkeletonAnnotations.SVGOverlay.prototype.findNearestSkeletonPoint = function (
+SkeletonAnnotations.TracingOverlay.prototype.findNearestSkeletonPoint = function (
     x, y, z, skeleton_id, additionalNodes, respectVirtualNodes)
 {
   var nearest = { distsq: Infinity, node: null, point: null };
@@ -1196,7 +1210,7 @@ SkeletonAnnotations.SVGOverlay.prototype.findNearestSkeletonPoint = function (
  * point. Includes the active node (atn), its children, and its parent, even if
  * they are beyond one section away. Can optionally respect virtual nodes.
  */
-SkeletonAnnotations.SVGOverlay.prototype.insertNodeInActiveSkeleton = function (
+SkeletonAnnotations.TracingOverlay.prototype.insertNodeInActiveSkeleton = function (
     phys_x, phys_y, phys_z, atn, respectVirtualNodes)
 {
   var self = this;
@@ -1218,6 +1232,7 @@ SkeletonAnnotations.SVGOverlay.prototype.insertNodeInActiveSkeleton = function (
               // it was inserted before
               self.submit(
                 django_url + project.id + '/treenode/' + isection + '/parent',
+                'POST',
                 {parent_id: nn.id},
                 function(json) {
                   self.updateNodes();
@@ -1229,8 +1244,9 @@ SkeletonAnnotations.SVGOverlay.prototype.insertNodeInActiveSkeleton = function (
 
   atn.promise().then(function(atnId) {
     self.submit(
-        django_url + project.id + "/node/next_branch_or_end",
-        {tnid: atnId},
+        django_url + project.id + '/treenodes/' + atnId + '/next-branch-or-end',
+        'POST',
+        undefined,
         function(json) {
           // See goToNextBranchOrEndNode for JSON schema description.
           // Construct a list of child nodes of the active node in case they are
@@ -1254,6 +1270,7 @@ SkeletonAnnotations.SVGOverlay.prototype.insertNodeInActiveSkeleton = function (
               // Need to fetch the parent node first.
               self.submit(
                   django_url + project.id + "/node/get_location",
+                  'POST',
                   {tnid: parentId},
                   function(json) {
                     additionalNodes[atn.id] = {
@@ -1281,7 +1298,7 @@ SkeletonAnnotations.SVGOverlay.prototype.insertNodeInActiveSkeleton = function (
 /**
  * Remove and hide all node labels.
  */
-SkeletonAnnotations.SVGOverlay.prototype.hideLabels = function() {
+SkeletonAnnotations.TracingOverlay.prototype.hideLabels = function() {
   document.getElementById( "trace_button_togglelabels" ).className = "button";
   this.removeLabels();
   this.show_labels = false;
@@ -1290,7 +1307,7 @@ SkeletonAnnotations.SVGOverlay.prototype.hideLabels = function() {
 /**
  * Remove all node labels in the view.  Empty the node labels array.
  */
-SkeletonAnnotations.SVGOverlay.prototype.removeLabels = function() {
+SkeletonAnnotations.TracingOverlay.prototype.removeLabels = function() {
   for (var labid in this.labels) {
     if (this.labels.hasOwnProperty(labid)) {
       this.labels[labid].remove();
@@ -1302,14 +1319,14 @@ SkeletonAnnotations.SVGOverlay.prototype.removeLabels = function() {
 /**
  * Return if labels are displayed.
  */
-SkeletonAnnotations.SVGOverlay.prototype.getLabelStatus = function() {
+SkeletonAnnotations.TracingOverlay.prototype.getLabelStatus = function() {
   return this.show_labels;
 };
 
 /**
  * Show all labels.
  */
-SkeletonAnnotations.SVGOverlay.prototype.showLabels = function() {
+SkeletonAnnotations.TracingOverlay.prototype.showLabels = function() {
   this.show_labels = true;
   this.updateNodes(function() {
     document.getElementById( "trace_button_togglelabels" ).className = "button_active";
@@ -1321,7 +1338,7 @@ SkeletonAnnotations.SVGOverlay.prototype.showLabels = function() {
  * Test also if the node is root and display a message if so. In both cases,
  * false is returned. False, otherwise.
  */
-SkeletonAnnotations.SVGOverlay.prototype.checkLoadedAndIsNotRoot = function(nodeID) {
+SkeletonAnnotations.TracingOverlay.prototype.checkLoadedAndIsNotRoot = function(nodeID) {
   if (null === nodeID || !this.nodes.hasOwnProperty(nodeID)) {
     CATMAID.warn("Cannot find node with ID " + nodeID);
     return false;
@@ -1338,13 +1355,14 @@ SkeletonAnnotations.SVGOverlay.prototype.checkLoadedAndIsNotRoot = function(node
  * the rerooting should be done, a promise is used to ensure that even virtual
  * nodes are there.
  */
-SkeletonAnnotations.SVGOverlay.prototype.rerootSkeleton = function(nodeID) {
+SkeletonAnnotations.TracingOverlay.prototype.rerootSkeleton = function(nodeID) {
   if (!this.checkLoadedAndIsNotRoot(nodeID)) return;
   if (!confirm("Do you really want to to reroot the skeleton?")) return;
   var self = this;
   this.promiseNode(this.nodes[nodeID]).then(function(nodeID) {
     self.submit(
         django_url + project.id + '/skeleton/reroot',
+        'POST',
         {treenode_id: nodeID},
         function() { self.updateNodes(); } );
   });
@@ -1356,7 +1374,7 @@ SkeletonAnnotations.SVGOverlay.prototype.rerootSkeleton = function(nodeID) {
  * dialog is shown. For now, the user is responsible of removing this node
  * again.
  */
-SkeletonAnnotations.SVGOverlay.prototype.splitSkeleton = function(nodeID) {
+SkeletonAnnotations.TracingOverlay.prototype.splitSkeleton = function(nodeID) {
   if (!this.checkLoadedAndIsNotRoot(nodeID)) return;
   var self = this;
   var node = self.nodes[nodeID];
@@ -1366,7 +1384,7 @@ SkeletonAnnotations.SVGOverlay.prototype.splitSkeleton = function(nodeID) {
     self.promiseNode(node).then(function(nodeId) {
       // Make sure we reference the correct node and create a model
       node = self.nodes[nodeId];
-      var name = NeuronNameService.getInstance().getName(node.skeleton_id);
+      var name = CATMAID.NeuronNameService.getInstance().getName(node.skeleton_id);
       var model = new CATMAID.SkeletonModel(node.skeleton_id, name, new THREE.Color().setRGB(1, 1, 0));
       /* Create the dialog */
       var dialog = new CATMAID.SplitMergeDialog({
@@ -1386,6 +1404,7 @@ SkeletonAnnotations.SVGOverlay.prototype.splitSkeleton = function(nodeID) {
         // Call backend
         self.submit(
             django_url + project.id + '/skeleton/split',
+            'POST',
             {
               treenode_id: nodeId,
               upstream_annotation_map: JSON.stringify(upstream_set),
@@ -1405,7 +1424,7 @@ SkeletonAnnotations.SVGOverlay.prototype.splitSkeleton = function(nodeID) {
  * Used to join two skeletons together. Permissions are checked at the server
  * side, returning an error if not allowed.
  */
-SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLink = function (fromid, toid) {
+SkeletonAnnotations.TracingOverlay.prototype.createTreenodeLink = function (fromid, toid) {
   if (fromid === toid) return;
   if (!this.nodes.hasOwnProperty(toid)) return;
   var self = this;
@@ -1414,6 +1433,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLink = function (fromid, 
     var fromid = nids[0], toid=nids[1];
     self.submit(
       django_url + project.id + '/treenodes/' + toid + '/info',
+      'POST',
       undefined,
       function(json) {
         var from_model = SkeletonAnnotations.activeSkeleton.createModel();
@@ -1434,6 +1454,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLink = function (fromid, 
               // The call to join will reroot the target skeleton at the shift-clicked treenode
               self.submit(
                 django_url + project.id + '/skeleton/join',
+                'POST',
                 data,
                 function (json) {
                   self.updateNodes(function() {
@@ -1530,13 +1551,14 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeLink = function (fromid, 
  * @link_type. It is expected, that both nodes are existant. All nodes are
  * updated after this. If the from-node is virtual, it will be created.
  */
-SkeletonAnnotations.SVGOverlay.prototype.createLink = function (fromid, toid,
+SkeletonAnnotations.TracingOverlay.prototype.createLink = function (fromid, toid,
     link_type, afterCreate)
 {
   var self = this;
   this.promiseNode(fromid).then(function(nodeID) {
     self.submit(
         django_url + project.id + '/link/create',
+        'POST',
         {pid: project.id,
          from_id: nodeID,
          link_type: link_type,
@@ -1553,12 +1575,13 @@ SkeletonAnnotations.SVGOverlay.prototype.createLink = function (fromid, toid,
  * completionCallback function, it is invoked with one argument: the ID of the
  * newly created connector.
  */
-SkeletonAnnotations.SVGOverlay.prototype.createSingleConnector = function (
+SkeletonAnnotations.TracingOverlay.prototype.createSingleConnector = function (
     phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, confval, subtype, completionCallback)
 {
   var self = this;
   this.submit(
       django_url + project.id + '/connector/create',
+      'POST',
       {pid: project.id,
        confidence: confval,
        x: phys_x,
@@ -1586,7 +1609,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createSingleConnector = function (
  * Create a new postsynaptic treenode from a connector. We create the treenode
  * first, then we create the link from the connector.
  */
-SkeletonAnnotations.SVGOverlay.prototype.createPostsynapticTreenode = function (
+SkeletonAnnotations.TracingOverlay.prototype.createPostsynapticTreenode = function (
     connectorID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z, afterCreate)
 {
   this.createTreenodeWithLink(connectorID, phys_x, phys_y, phys_z, radius,
@@ -1596,7 +1619,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createPostsynapticTreenode = function (
 /**
  * Create a new treenode that is postsynaptic to the given @connectorID.
  */
-SkeletonAnnotations.SVGOverlay.prototype.createPresynapticTreenode = function (
+SkeletonAnnotations.TracingOverlay.prototype.createPresynapticTreenode = function (
     connectorID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z, afterCreate)
 {
   // Check that connectorID doesn't have a presynaptic treenode already (It is
@@ -1621,13 +1644,14 @@ SkeletonAnnotations.SVGOverlay.prototype.createPresynapticTreenode = function (
  * Create a new treenode and link it immediately to the given connector with the
  * specified link_type.
  */
-SkeletonAnnotations.SVGOverlay.prototype.createTreenodeWithLink = function (
+SkeletonAnnotations.TracingOverlay.prototype.createTreenodeWithLink = function (
     connectorID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y,
     pos_z, link_type, afterCreate)
 {
   var self = this;
   this.submit(
       django_url + project.id + '/treenode/create',
+      'POST',
       {pid: project.id,
        parent_id: -1,
        x: phys_x,
@@ -1665,7 +1689,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createTreenodeWithLink = function (
  * Create a node and activate it. Expectes the parent node to be real or falsy,
  * i.e. not virtual.
  */
-SkeletonAnnotations.SVGOverlay.prototype.createNode = function (parentID,
+SkeletonAnnotations.TracingOverlay.prototype.createNode = function (parentID,
    phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z, afterCreate)
 {
   if (!parentID) { parentID = -1; }
@@ -1677,61 +1701,69 @@ SkeletonAnnotations.SVGOverlay.prototype.createNode = function (parentID,
 
   var self = this;
 
-  this.submit(
-      django_url + project.id + '/treenode/create',
-      {pid: project.id,
-       parent_id: parentID,
-       x: phys_x,
-       y: phys_y,
-       z: phys_z,
-       radius: radius,
-       confidence: confidence,
-       useneuron: useneuron,
-       neuron_name: neuronname},
-      function(jso) {
-        // add treenode to the display and update it
-        var nid = parseInt(jso.treenode_id);
-        var skid = parseInt(jso.skeleton_id);
+  return new Promise(function (resolve, reject) {
 
-        // Trigger change event for skeleton
-        SkeletonAnnotations.trigger(
-              SkeletonAnnotations.EVENT_SKELETON_CHANGED, skid);
+    requestQueue.register(
+        django_url + project.id + '/treenode/create',
+        'POST',
+        {pid: project.id,
+         parent_id: parentID,
+         x: phys_x,
+         y: phys_y,
+         z: phys_z,
+         radius: radius,
+         confidence: confidence,
+         useneuron: useneuron,
+         neuron_name: neuronname},
+        CATMAID.jsonResponseHandler(function(result) {
+          // add treenode to the display and update it
+          var nid = parseInt(result.treenode_id);
+          var skid = parseInt(result.skeleton_id);
 
-        // The parent will be null if there isn't one or if the parent Node
-        // object is not within the set of retrieved nodes, but the parentID
-        // will be defined.
-        var nn = self.graphics.newNode(nid, self.nodes[parentID], parentID,
-            radius, pos_x, pos_y, pos_z, 0, 5 /* confidence */, skid, true);
+          // Trigger change event for skeleton
+          SkeletonAnnotations.trigger(
+                SkeletonAnnotations.EVENT_SKELETON_CHANGED, skid);
 
-        self.nodes[nid] = nn;
-        nn.createGraphics();
+          // The parent will be null if there isn't one or if the parent Node
+          // object is not within the set of retrieved nodes, but the parentID
+          // will be defined.
+          var nn = self.graphics.newNode(nid, self.nodes[parentID], parentID,
+              radius, pos_x, pos_y, pos_z, 0, 5 /* confidence */, skid, true);
 
-        // Emit new node event after we added to our local node set to not
-        // trigger a node update.
-        SkeletonAnnotations.trigger(SkeletonAnnotations.EVENT_NODE_CREATED,
-            nid, phys_x, phys_y, phys_z);
+          self.nodes[nid] = nn;
+          nn.createGraphics();
 
-        // Set atn to be the newly created node
-        self.activateNode(nn);
-        // Append to parent and recolor
-        if (parentID) {
-          var parentNode = self.nodes[parentID];
-          if (parentNode) {
-            parentNode.addChildNode(nn);
-            parentNode.updateColors();
+          // Emit new node event after we added to our local node set to not
+          // trigger a node update.
+          SkeletonAnnotations.trigger(SkeletonAnnotations.EVENT_NODE_CREATED,
+              nid, phys_x, phys_y, phys_z);
+
+          // Set atn to be the newly created node
+          self.activateNode(nn);
+          // Append to parent and recolor
+          if (parentID) {
+            var parentNode = self.nodes[parentID];
+            if (parentNode) {
+              parentNode.addChildNode(nn);
+              parentNode.updateColors();
+            }
           }
-        }
 
-        // Invoke callback if necessary
-        if (afterCreate) afterCreate(self, nn);
-      });
+          // Invoke callback if necessary
+          if (afterCreate) afterCreate(self, nn);
+          resolve(self, nn);
+        }, function(err) {
+          // Reject promise in case of error
+          reject(err);
+        }));
+  });
 };
 
 /**
  * Invoke the callback function after having pushed updated node coordinates
  * to the database. Virtual nodes are ignored.
  */
-SkeletonAnnotations.SVGOverlay.prototype.updateNodeCoordinatesinDB = function (callback) {
+SkeletonAnnotations.TracingOverlay.prototype.updateNodeCoordinatesInDB = function (callback) {
   /**
    * Create a promise that will update all nodes in the back-end that need to be
    * synced.
@@ -1797,7 +1829,7 @@ SkeletonAnnotations.SVGOverlay.prototype.updateNodeCoordinatesinDB = function (c
  *            or a ConnectorNode
  * @param extraNodes is an array of nodes that should be added additonally
  */
-SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso, extraNodes) {
+SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (jso, extraNodes) {
   // Reset nodes and labels
   this.nodes = {};
   // remove labels, but do not hide them
@@ -1940,25 +1972,16 @@ SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso,
     }
   }, this);
 
-  // Draw node edges first, including the ones for virtual nodes
+  // Draw node edges and circles, including the ones for virtual nodes.
   for (var i in this.nodes) {
     if (this.nodes.hasOwnProperty(i)) {
       this.nodes[i].drawEdges();
-    }
-  }
-
-  
-  // Now that all edges have been created, disable unused arrows
-  this.graphics.disableRemainingArrows();
-
-  // Create circles on top of the edges
-  // so that the events reach the circles first
-  for (var i in this.nodes) {
-    if (this.nodes.hasOwnProperty(i)) {
-      // Will only create it or unhide it if the node is to be displayed
       this.nodes[i].createCircle();
     }
   }
+
+  // Now that all edges have been created, disable unused arrows
+  this.graphics.disableRemainingArrows();
 
   if (this.getLabelStatus()) {
     // For every node ID
@@ -2047,7 +2070,7 @@ SkeletonAnnotations.SVGOverlay.prototype.refreshNodesFromTuples = function (jso,
  * we should pass it the completionCallback.  Otherwise, just fire the
  * completionCallback at the end of this method.
  */
-SkeletonAnnotations.SVGOverlay.prototype.redraw = function(force, completionCallback) {
+SkeletonAnnotations.TracingOverlay.prototype.redraw = function(force, completionCallback) {
   // TODO: this should also check for the size of the containing
   // div having changed.  You can see this problem if you have
   // another window open beside one with the tracing overlay -
@@ -2084,14 +2107,17 @@ SkeletonAnnotations.SVGOverlay.prototype.redraw = function(force, completionCall
 
   doNotUpdate = !force && (doNotUpdate || this.suspended);
 
-  var screenScale = userprofile.tracing_overlay_screen_scaling;
+  var screenScale = SkeletonAnnotations.TracingOverlay.Settings.session.screen_scaling;
   this.paper.classed('screen-scale', screenScale);
   // All SVG elements scale automatcally, if the viewport on the SVG data
   // changes. If in screen scale mode, where the size of all elements should
   // stay the same (regardless of zoom level), counter acting this is required.
   var resScale = Math.max(stackViewer.primaryStack.resolution.x, stackViewer.primaryStack.resolution.y);
   var dynamicScale = screenScale ? (1 / (stackViewer.scale * resScale)) : false;
-  this.graphics.scale(userprofile.tracing_overlay_scale, resScale, dynamicScale);
+  this.graphics.scale(
+      SkeletonAnnotations.TracingOverlay.Settings.session.scale,
+      resScale,
+      dynamicScale);
 
   if ( !doNotUpdate ) {
     // If changing scale or slice, remove tagbox.
@@ -2125,7 +2151,7 @@ SkeletonAnnotations.SVGOverlay.prototype.redraw = function(force, completionCall
  * happen in different divs.  This is actually called from mousedown (or mouseup
  * if we ever need to make click-and-drag work with the left hand button too...)
  */
-SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
+SkeletonAnnotations.TracingOverlay.prototype.whenclicked = function (e) {
   if (this.ensureFocused()) {
     e.stopPropagation();
     return;
@@ -2186,7 +2212,7 @@ SkeletonAnnotations.SVGOverlay.prototype.whenclicked = function (e) {
  * If no active node is available, a new node, or (if link is true) connector,
  * is created.
  */
-SkeletonAnnotations.SVGOverlay.prototype.createNodeOrLink = function(insert, link, postLink) {
+SkeletonAnnotations.TracingOverlay.prototype.createNodeOrLink = function(insert, link, postLink) {
   // take into account current local offset coordinates and scale
   var pos_x = this.coords.lastX;
   var pos_y = this.coords.lastY;
@@ -2261,20 +2287,29 @@ SkeletonAnnotations.SVGOverlay.prototype.createNodeOrLink = function(insert, lin
     // depending on what mode we are in do something else when clicking
     if (SkeletonAnnotations.currentmode === SkeletonAnnotations.MODES.SKELETON) {
       if (SkeletonAnnotations.TYPE_NODE === atn.type || null === atn.id) {
-        // Create a new treenode, either root node if atn is null, or child if
-        // it is not null
-        if (null !== atn.id) {
-          // Make sure the parent exists
-          atn.promise().then((function(atnId) {
-            CATMAID.statusBar.replaceLast("Created new node as child of node #" + atn.id);
-            this.createNode(atnId, phys_x, phys_y, phys_z, -1, 5,
-                pos_x, pos_y, pos_z, postCreateFn);
-          }).bind(this));
-        } else {
+        // Wait for the submitter queue before determining the active node,
+        // then return the node creation promise so that node creation and its
+        // resulting active node change resolve before any other submitter queue
+        // items are processed.
+        this.submit.then((function () {
+          // Create a new treenode, either root node if atn is null, or child if
+          // it is not null
+          if (null !== SkeletonAnnotations.atn.id) {
+            var self = this;
+            return new Promise(function (resolve, reject) {
+              // Make sure the parent exists
+              SkeletonAnnotations.atn.promise().then((function(atnId) {
+                CATMAID.statusBar.replaceLast("Created new node as child of node #" + atnId);
+                self.createNode(atnId, phys_x, phys_y, phys_z, -1, 5,
+                    pos_x, pos_y, pos_z, postCreateFn).then(resolve, reject);
+              }));
+            });
+          } else {
             // Create root node
-            this.createNode(null, phys_x, phys_y, phys_z, -1, 5,
+            return this.createNode(null, phys_x, phys_y, phys_z, -1, 5,
                 pos_x, pos_y, pos_z, postCreateFn);
-        }
+          }
+        }).bind(this));
       } else if (SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR === atn.subtype) {
         // create new treenode (and skeleton) presynaptic to activated connector
         // if the connector doesn't have a presynaptic node already
@@ -2306,7 +2341,7 @@ SkeletonAnnotations.SVGOverlay.prototype.createNodeOrLink = function(insert, lin
  * If no active node is available, a new node, or (if link is true) connector,
  * is created.
  */
-SkeletonAnnotations.SVGOverlay.prototype.createNewOrExtendActiveSkeleton =
+SkeletonAnnotations.TracingOverlay.prototype.createNewOrExtendActiveSkeleton =
     function(insert, link, postLink) {
   // Check if there is already a node under the mouse
   // and if so, then activate it
@@ -2341,30 +2376,30 @@ SkeletonAnnotations.SVGOverlay.prototype.createNewOrExtendActiveSkeleton =
   }
 };
 
-SkeletonAnnotations.SVGOverlay.prototype.phys2pixX = function (z, y, x) {
+SkeletonAnnotations.TracingOverlay.prototype.phys2pixX = function (z, y, x) {
   return this.stackViewer.primaryStack.projectToStackX(z, y, x);
 };
-SkeletonAnnotations.SVGOverlay.prototype.phys2pixY = function (z, y, x) {
+SkeletonAnnotations.TracingOverlay.prototype.phys2pixY = function (z, y, x) {
   return this.stackViewer.primaryStack.projectToStackY(z, y, x);
 };
-SkeletonAnnotations.SVGOverlay.prototype.phys2pixZ = function (z, y, x) {
+SkeletonAnnotations.TracingOverlay.prototype.phys2pixZ = function (z, y, x) {
   return this.stackViewer.primaryStack.projectToStackZ(z, y, x);
 };
-SkeletonAnnotations.SVGOverlay.prototype.pix2physX = function (z, y, x) {
+SkeletonAnnotations.TracingOverlay.prototype.pix2physX = function (z, y, x) {
   return this.stackViewer.primaryStack.stackToProjectX(z, y, x);
 };
-SkeletonAnnotations.SVGOverlay.prototype.pix2physY = function (z, y, x) {
+SkeletonAnnotations.TracingOverlay.prototype.pix2physY = function (z, y, x) {
   return this.stackViewer.primaryStack.stackToProjectY(z, y, x);
 };
-SkeletonAnnotations.SVGOverlay.prototype.pix2physZ = function (z, y, x) {
+SkeletonAnnotations.TracingOverlay.prototype.pix2physZ = function (z, y, x) {
   return this.stackViewer.primaryStack.stackToProjectZ(z, y, x);
 };
 
-SkeletonAnnotations.SVGOverlay.prototype.show = function () {
+SkeletonAnnotations.TracingOverlay.prototype.show = function () {
   this.view.style.display = "block";
 };
 
-SkeletonAnnotations.SVGOverlay.prototype.hide = function () {
+SkeletonAnnotations.TracingOverlay.prototype.hide = function () {
   this.view.style.display = "none";
 };
 
@@ -2373,7 +2408,7 @@ SkeletonAnnotations.SVGOverlay.prototype.hide = function () {
  * volume of the current view. Will also push editions (if any) to nodes to the
  * database.
  */
-SkeletonAnnotations.SVGOverlay.prototype.updateNodes = function (callback,
+SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
     future_active_node_id, errCallback) {
   var self = this;
 
@@ -2381,7 +2416,7 @@ SkeletonAnnotations.SVGOverlay.prototype.updateNodes = function (callback,
     return;
   }
 
-  this.updateNodeCoordinatesinDB(function () {
+  this.updateNodeCoordinatesInDB(function () {
     // Bail if the overlay was destroyed or suspended before this callback.
     if (self.suspended) {
       return;
@@ -2478,6 +2513,7 @@ SkeletonAnnotations.SVGOverlay.prototype.updateNodes = function (callback,
     var url = django_url + project.id + '/node/list';
     self.submit(
       url,
+      'POST',
       params,
       function(json) {
         if (json.needs_setup) {
@@ -2518,7 +2554,7 @@ SkeletonAnnotations.SVGOverlay.prototype.updateNodes = function (callback,
  * parent or a connector. If there is more than one connector, the confidence is
  * set to all connectors.
  */
-SkeletonAnnotations.SVGOverlay.prototype.setConfidence = function(newConfidence, toConnector) {
+SkeletonAnnotations.TracingOverlay.prototype.setConfidence = function(newConfidence, toConnector) {
   var nodeID = SkeletonAnnotations.getActiveNodeId();
   if (!nodeID) return;
   var node = this.nodes[nodeID];
@@ -2529,11 +2565,10 @@ SkeletonAnnotations.SVGOverlay.prototype.setConfidence = function(newConfidence,
     var self = this;
     this.promiseNode(node).then(function(nid) {
       self.submit(
-          django_url + project.id + '/node/' + nid + '/confidence/update',
-          {pid: project.id,
-          to_connector: toConnector,
-          tnid: nid,
-          new_confidence: newConfidence},
+          django_url + project.id + '/treenodes/' + nid + '/confidence',
+          'POST',
+          {to_connector: toConnector,
+           new_confidence: newConfidence},
           function(json) {
             self.updateNodes();
           });
@@ -2547,7 +2582,7 @@ SkeletonAnnotations.SVGOverlay.prototype.setConfidence = function(newConfidence,
  * @nodeID The ID to test
  * @return false if the nodeID is falsy, true otherwise
  */
-SkeletonAnnotations.SVGOverlay.prototype.isIDNull = function(nodeID) {
+SkeletonAnnotations.TracingOverlay.prototype.isIDNull = function(nodeID) {
   if (!nodeID) {
     CATMAID.info("Select a node first!");
     return true;
@@ -2559,7 +2594,7 @@ SkeletonAnnotations.SVGOverlay.prototype.isIDNull = function(nodeID) {
  * Move to the previous branch point or the root node, if former is not
  * available. If the treenode is virtual, it's real child is used instead.
  */
-SkeletonAnnotations.SVGOverlay.prototype.goToPreviousBranchOrRootNode = function(treenode_id, e) {
+SkeletonAnnotations.TracingOverlay.prototype.goToPreviousBranchOrRootNode = function(treenode_id, e) {
   if (this.isIDNull(treenode_id)) return;
   if (!SkeletonAnnotations.isRealNode(treenode_id)) {
     // Use child of virtual node, to make sure a branch before the virtual node
@@ -2568,9 +2603,9 @@ SkeletonAnnotations.SVGOverlay.prototype.goToPreviousBranchOrRootNode = function
   }
   var self = this;
   this.submit(
-      django_url + project.id + "/node/previous_branch_or_root",
-      {tnid: treenode_id,
-       alt: e.altKey ? 1 : 0},
+      django_url + project.id + "/treenodes/" + treenode_id + "/previous-branch-or-root",
+      'POST',
+      {alt: e.altKey ? 1 : 0},
       function(json) {
         // json is a tuple:
         // json[0]: treenode id
@@ -2594,7 +2629,7 @@ SkeletonAnnotations.SVGOverlay.prototype.goToPreviousBranchOrRootNode = function
  * treenode is virtual, it's real parent is used instead. Pressing shift will
  * cause cylcing though all branches.
  */
-SkeletonAnnotations.SVGOverlay.prototype.goToNextBranchOrEndNode = function(treenode_id, e) {
+SkeletonAnnotations.TracingOverlay.prototype.goToNextBranchOrEndNode = function(treenode_id, e) {
   if (this.isIDNull(treenode_id)) return;
   if (!SkeletonAnnotations.isRealNode(treenode_id)) {
     // Use parent of virtual node, to make sure a branch after the virtual node
@@ -2607,8 +2642,9 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNextBranchOrEndNode = function(tree
   } else {
     var self = this;
     this.submit(
-        django_url + project.id + "/node/next_branch_or_end",
-        {tnid: treenode_id},
+        django_url + project.id + "/treenodes/" + treenode_id + "/next-branch-or-end",
+        'POST',
+        undefined,
         function(json) {
           // json is an array of branches
           // each branch is a tuple:
@@ -2635,7 +2671,7 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNextBranchOrEndNode = function(tree
 /**
  * Select alternative branches to the currently selected one
  */
-SkeletonAnnotations.SVGOverlay.prototype.cycleThroughBranches = function (
+SkeletonAnnotations.TracingOverlay.prototype.cycleThroughBranches = function (
     treenode_id, node_index, ignoreVirtual) {
   if (typeof this.nextBranches === 'undefined') return;
 
@@ -2675,7 +2711,7 @@ SkeletonAnnotations.SVGOverlay.prototype.cycleThroughBranches = function (
  * Optionally, the selection of virtual nodes can be disabled. This might cause
  * a jump to a location that is farther away than one section.
  */
-SkeletonAnnotations.SVGOverlay.prototype.goToParentNode = function(treenode_id, ignoreVirtual) {
+SkeletonAnnotations.TracingOverlay.prototype.goToParentNode = function(treenode_id, ignoreVirtual) {
   if (this.isIDNull(treenode_id)) return;
 
   // Find parent of node
@@ -2711,7 +2747,7 @@ SkeletonAnnotations.SVGOverlay.prototype.goToParentNode = function(treenode_id, 
  * @param {number} treenode_id - The node of which to select the child
  * @param {boolean} cycle - If true, subsequent calls cycle through children
  */
-SkeletonAnnotations.SVGOverlay.prototype.goToChildNode = function (treenode_id, cycle, ignoreVirtual) {
+SkeletonAnnotations.TracingOverlay.prototype.goToChildNode = function (treenode_id, cycle, ignoreVirtual) {
   if (this.isIDNull(treenode_id)) return;
 
   // If the existing nextBranches was fetched for this treenode, reuse it to
@@ -2726,8 +2762,9 @@ SkeletonAnnotations.SVGOverlay.prototype.goToChildNode = function (treenode_id, 
     var queryNode = startFromRealNode ? treenode_id :
         SkeletonAnnotations.getParentOfVirtualNode(treenode_id);
     this.submit(
-        django_url + project.id + "/node/children",
-        {tnid: queryNode},
+        django_url + project.id + "/treenodes/" + queryNode + "/children",
+        'POST',
+        undefined,
         function(json) {
           // See goToNextBranchOrEndNode for JSON schema description.
           if (json.length === 0) {
@@ -2750,7 +2787,7 @@ SkeletonAnnotations.SVGOverlay.prototype.goToChildNode = function (treenode_id, 
 /**
  * Stores child nodes of a treenode in a local cache.
  */
-SkeletonAnnotations.SVGOverlay.prototype.cacheBranches = function(treenode_id, branches) {
+SkeletonAnnotations.TracingOverlay.prototype.cacheBranches = function(treenode_id, branches) {
   this.nextBranches = {tnid: treenode_id, branches: branches};
 };
 
@@ -2763,7 +2800,7 @@ SkeletonAnnotations.SVGOverlay.prototype.cacheBranches = function(treenode_id, b
  * @return {Boolean}             Whether the requested branch information is
  *                               cached.
  */
-SkeletonAnnotations.SVGOverlay.prototype.hasCachedBranches = function (index, treenode_id) {
+SkeletonAnnotations.TracingOverlay.prototype.hasCachedBranches = function (index, treenode_id) {
   return this.nextBranches && // Branches are cached
       // Requested index is in cache
       this.nextBranches.branches.length && this.nextBranches.branches[0][index] &&
@@ -2775,7 +2812,7 @@ SkeletonAnnotations.SVGOverlay.prototype.hasCachedBranches = function (index, tr
  * Lets the user select a radius around a node with the help of a small
  * measurement tool, passing the selected radius to a callback when finished.
  */
-SkeletonAnnotations.SVGOverlay.prototype.selectRadius = function(treenode_id, no_centering, completionCallback) {
+SkeletonAnnotations.TracingOverlay.prototype.selectRadius = function(treenode_id, no_centering, completionCallback) {
   if (this.isIDNull(treenode_id)) return;
   var self = this;
   // References the original node the selector was created for
@@ -2885,7 +2922,7 @@ SkeletonAnnotations.SVGOverlay.prototype.selectRadius = function(treenode_id, no
  * If the measurement tool is used, the dialog display can optionally be
  * disabled
  */
-SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id, no_measurement_tool, no_centering, no_dialog) {
+SkeletonAnnotations.TracingOverlay.prototype.editRadius = function(treenode_id, no_measurement_tool, no_centering, no_dialog) {
   if (this.isIDNull(treenode_id)) return;
   var self = this;
 
@@ -2895,12 +2932,13 @@ SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id, no_m
     self.promiseNode(treenode_id).then(function(nodeID) {
       self.submit(
         django_url + project.id + '/treenode/' + nodeID + '/radius',
+        'POST',
         {radius: radius,
          option: updateMode},
         function(json) {
           // Refresh 3d views if any
           CATMAID.WebGLApplication.prototype.staticReloadSkeletons([self.nodes[nodeID].skeleton_id]);
-          // Reinit SVGOverlay to read in the radius of each altered treenode
+          // Reinit TracingOverlay to read in the radius of each altered treenode
           self.updateNodes();
         });
     });
@@ -2946,7 +2984,7 @@ SkeletonAnnotations.SVGOverlay.prototype.editRadius = function(treenode_id, no_m
  * Measure a distance from the current cursor position to the position of the
  * next click using the radius measurement tool.
  */
-SkeletonAnnotations.SVGOverlay.prototype.measureRadius = function () {
+SkeletonAnnotations.TracingOverlay.prototype.measureRadius = function () {
   console.log('foo');
   var self = this;
 
@@ -3026,12 +3064,12 @@ SkeletonAnnotations.SVGOverlay.prototype.measureRadius = function () {
 };
 
 /**
- * All moving functions must perform moves via the updateNodeCoordinatesinDB
+ * All moving functions must perform moves via the updateNodeCoordinatesInDB
  * otherwise, coordinates for moved nodes would not be updated.
  */
-SkeletonAnnotations.SVGOverlay.prototype.moveTo = function(z, y, x, fn) {
+SkeletonAnnotations.TracingOverlay.prototype.moveTo = function(z, y, x, fn) {
   var stackViewer = this.stackViewer;
-  this.updateNodeCoordinatesinDB(function() {
+  this.updateNodeCoordinatesInDB(function() {
     stackViewer.getProject().moveTo(z, y, x, undefined, fn);
   });
 };
@@ -3040,7 +3078,7 @@ SkeletonAnnotations.SVGOverlay.prototype.moveTo = function(z, y, x, fn) {
 /**
  * Move to a node and select it. Can handle virtual nodes.
  */
-SkeletonAnnotations.SVGOverlay.prototype.moveToAndSelectNode = function(nodeID, fn) {
+SkeletonAnnotations.TracingOverlay.prototype.moveToAndSelectNode = function(nodeID, fn) {
   if (this.isIDNull(nodeID)) return;
   var self = this;
   this.goToNode(nodeID,
@@ -3055,7 +3093,7 @@ SkeletonAnnotations.SVGOverlay.prototype.moveToAndSelectNode = function(nodeID, 
  * virtual and not available in the front-end already, it tries to get both
  * real parent and real child of it and determine the correct position.
  */
-SkeletonAnnotations.SVGOverlay.prototype.goToNode = function (nodeID, fn) {
+SkeletonAnnotations.TracingOverlay.prototype.goToNode = function (nodeID, fn) {
   if (this.isIDNull(nodeID)) return;
   var node = this.nodes[nodeID];
   if (node) {
@@ -3068,6 +3106,7 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNode = function (nodeID, fn) {
     var self = this;
     this.submit(
         django_url + project.id + "/node/get_location",
+        'POST',
         {tnid: nodeID},
         function(json) {
           // json[0], [1], [2], [3]: id, x, y, z
@@ -3103,7 +3142,7 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNode = function (nodeID, fn) {
  * the nodes are child and parent of the virtual node. If one of the two nodes
  * happens to be at the given Z, the respective node is returned.
  */
-SkeletonAnnotations.SVGOverlay.prototype.getNodeOnSectionAndEdge = function (
+SkeletonAnnotations.TracingOverlay.prototype.getNodeOnSectionAndEdge = function (
     childID, parentID, reverse) {
   if (childID === parentID) {
     throw new CATMAID.ValueError("Node IDs must be different");
@@ -3190,7 +3229,7 @@ SkeletonAnnotations.SVGOverlay.prototype.getNodeOnSectionAndEdge = function (
  * in stack space. If a vitual node ID is provided, its location and ID is
  * returned, too.
  */
-SkeletonAnnotations.SVGOverlay.prototype.promiseNodeLocation = function (
+SkeletonAnnotations.TracingOverlay.prototype.promiseNodeLocation = function (
     nodeID, ignoreVirtual) {
   var isVirtual = !SkeletonAnnotations.isRealNode(nodeID);
   if (ignoreVirtual && isVirtual) {
@@ -3227,7 +3266,7 @@ SkeletonAnnotations.SVGOverlay.prototype.promiseNodeLocation = function (
   var self = this;
   return new Promise(function(resolve, reject) {
     var url = django_url + project.id + "/node/get_location";
-    self.submit(url, {tnid: nodeID}, resolve, true, false, reject);
+    self.submit(url, 'POST', {tnid: nodeID}, resolve, true, false, reject);
   }).then(function(json) {
     var stack = self.stackViewer.primaryStack;
     return {
@@ -3247,7 +3286,7 @@ SkeletonAnnotations.SVGOverlay.prototype.promiseNodeLocation = function (
  * @return {Promise}       A promise returning the array of suppressed virtual
  *                         node objects.
  */
-SkeletonAnnotations.SVGOverlay.prototype.promiseSuppressedVirtualNodes = function(nodeId) {
+SkeletonAnnotations.TracingOverlay.prototype.promiseSuppressedVirtualNodes = function(nodeId) {
   if (!SkeletonAnnotations.isRealNode(nodeId)) {
     nodeId = SkeletonAnnotations.getChildOfVirtualNode(nodeId);
   }
@@ -3275,7 +3314,7 @@ SkeletonAnnotations.SVGOverlay.prototype.promiseSuppressedVirtualNodes = functio
  * alternatively, the parent if reverse is trueish. Returns a promise which
  * resolves to the node datastructure, return by getNodeOnSectionAndEdge.
  */
-SkeletonAnnotations.SVGOverlay.prototype.moveToNodeOnSectionAndEdge = function (
+SkeletonAnnotations.TracingOverlay.prototype.moveToNodeOnSectionAndEdge = function (
     childID, parentID, select, reverse) {
   return this.getNodeOnSectionAndEdge(childID, parentID, reverse)
     .then((function(node) {
@@ -3289,12 +3328,13 @@ SkeletonAnnotations.SVGOverlay.prototype.moveToNodeOnSectionAndEdge = function (
  * Move to the node that was edited last and select it. This will always be a
  * real node.
  */
-SkeletonAnnotations.SVGOverlay.prototype.goToLastEditedNode = function(skeletonID) {
+SkeletonAnnotations.TracingOverlay.prototype.goToLastEditedNode = function(skeletonID) {
   if (this.isIDNull(skeletonID)) return;
   if (!skeletonID) return;
   var self = this;
   this.submit(
     django_url + project.id + '/node/most_recent',
+    'POST',
     {pid: project.id,
      treenode_id: SkeletonAnnotations.getActiveNodeId()},
     function (jso) {
@@ -3309,7 +3349,7 @@ SkeletonAnnotations.SVGOverlay.prototype.goToLastEditedNode = function(skeletonI
  * other. If a virtual node is passed in, the request is done for its real
  * parent.
  */
-SkeletonAnnotations.SVGOverlay.prototype.goToNextOpenEndNode = function(nodeID, cycle, byTime) {
+SkeletonAnnotations.TracingOverlay.prototype.goToNextOpenEndNode = function(nodeID, cycle, byTime) {
   if (this.isIDNull(nodeID)) return;
   if (cycle) {
     this.cycleThroughOpenEnds(nodeID, byTime);
@@ -3327,6 +3367,7 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNextOpenEndNode = function(nodeID, 
     // 3D viewer or treenode table (but either source may not be up to date)
     this.submit(
         django_url + project.id + '/skeletons/' + skid + '/open-leaves',
+        'POST',
         {treenode_id: nodeID},
         function (json) {
           // json is an array of nodes. Each node is an array:
@@ -3350,7 +3391,7 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNextOpenEndNode = function(nodeID, 
  * (or the first) and select the node. If sorting by time is requested and no
  * sorting took place so for, sort all open ends by time.
  */
-SkeletonAnnotations.SVGOverlay.prototype.cycleThroughOpenEnds = function (treenode_id, byTime) {
+SkeletonAnnotations.TracingOverlay.prototype.cycleThroughOpenEnds = function (treenode_id, byTime) {
   if (typeof this.nextOpenEnds === 'undefined' ||
       this.nextOpenEnds.ends.length === 0 ||
       this.nextOpenEnds.skid !== SkeletonAnnotations.getActiveSkeletonId()) {
@@ -3388,7 +3429,7 @@ SkeletonAnnotations.SVGOverlay.prototype.cycleThroughOpenEnds = function (treeno
  * @param  {boolean} cycle  If true, cycle through results in the previous set.
  * @param  {boolean} repeat If true, repeat the last label search.
  */
-SkeletonAnnotations.SVGOverlay.prototype.goToNearestMatchingTag = function (cycle, repeat) {
+SkeletonAnnotations.TracingOverlay.prototype.goToNearestMatchingTag = function (cycle, repeat) {
   if (cycle) return this.cycleThroughNearestMatchingTags();
 
   var self = this;
@@ -3403,6 +3444,7 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNearestMatchingTag = function (cycl
       var skeletonId = SkeletonAnnotations.getActiveSkeletonId();
       self.submit(
           django_url + project.id + '/skeletons/' + skeletonId + '/find-labels',
+          'POST',
           { treenode_id: nodeId,
             label_regex: self.nextNearestMatchingTag.query },
           function (json) {
@@ -3418,6 +3460,7 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNearestMatchingTag = function (cycl
       var projectCoordinates = self.stackViewer.projectCoordinates();
       self.submit(
           django_url + project.id + '/nodes/find-labels',
+          'POST',
           { x: projectCoordinates.x,
             y: projectCoordinates.y,
             z: projectCoordinates.z,
@@ -3464,7 +3507,7 @@ SkeletonAnnotations.SVGOverlay.prototype.goToNearestMatchingTag = function (cycl
  * Cycle through nodes with labels matching a query retrieved by
  * goToNearestMatchingTag.
  */
-SkeletonAnnotations.SVGOverlay.prototype.cycleThroughNearestMatchingTags = function () {
+SkeletonAnnotations.TracingOverlay.prototype.cycleThroughNearestMatchingTags = function () {
   if (this.nextNearestMatchingTag.matches.length === 0) {
     CATMAID.info('No nodes with matching tags');
     return;
@@ -3495,7 +3538,7 @@ SkeletonAnnotations.SVGOverlay.prototype.cycleThroughNearestMatchingTags = funct
 /**
  * Sets treenode information as status. Can handle virtual nodes.
  */
-SkeletonAnnotations.SVGOverlay.prototype.printTreenodeInfo = function(nodeID, prefixMessage) {
+SkeletonAnnotations.TracingOverlay.prototype.printTreenodeInfo = function(nodeID, prefixMessage) {
   if (this.isIDNull(nodeID)) return;
   var isReal = SkeletonAnnotations.isRealNode(nodeID);
   if (typeof prefixMessage === "undefined") {
@@ -3510,7 +3553,7 @@ SkeletonAnnotations.SVGOverlay.prototype.printTreenodeInfo = function(nodeID, pr
 
   var url = django_url + project.id + '/node/user-info';
 
-  this.submit(url, {node_id: nodeID}, function(jso) {
+  this.submit(url, 'POST', {node_id: nodeID}, function(jso) {
       var creator = CATMAID.User.safeToString(jso.user);
       var editor = CATMAID.User.safeToString(jso.editor);
 
@@ -3539,7 +3582,7 @@ SkeletonAnnotations.SVGOverlay.prototype.printTreenodeInfo = function(nodeID, pr
  * active node will be switched to its connector (if one uniquely exists). If
  * you then run the command again, it will switch back to the terminal.
  */
-SkeletonAnnotations.SVGOverlay.prototype.switchBetweenTerminalAndConnector = function() {
+SkeletonAnnotations.TracingOverlay.prototype.switchBetweenTerminalAndConnector = function() {
   var atn = SkeletonAnnotations.atn;
   if (null === atn.id) {
     CATMAID.info("A terminal must be selected in order to switch to its connector");
@@ -3601,7 +3644,7 @@ SkeletonAnnotations.SVGOverlay.prototype.switchBetweenTerminalAndConnector = fun
  * Delete a node with the given ID. The node can either be a connector or a
  * treenode.
  */
-SkeletonAnnotations.SVGOverlay.prototype.deleteNode = function(nodeId) {
+SkeletonAnnotations.TracingOverlay.prototype.deleteNode = function(nodeId) {
   var node = this.nodes[nodeId];
   var self = this;
 
@@ -3647,6 +3690,7 @@ SkeletonAnnotations.SVGOverlay.prototype.deleteNode = function(nodeId) {
   function deleteConnectorNode(connectornode) {
     self.submit(
         django_url + project.id + '/connector/delete',
+        'POST',
         {pid: project.id,
         connector_id: connectornode.id},
         function(json) {
@@ -3715,7 +3759,7 @@ SkeletonAnnotations.SVGOverlay.prototype.deleteNode = function(nodeId) {
  * @param  {number}  nodeId ID of the virtual node to suppress or unsuppress.
  * @return {boolean}        Whether a toggle was issued (false for real nodes).
  */
-SkeletonAnnotations.SVGOverlay.prototype.toggleVirtualNodeSuppression = function (nodeId) {
+SkeletonAnnotations.TracingOverlay.prototype.toggleVirtualNodeSuppression = function (nodeId) {
   if (SkeletonAnnotations.isRealNode(nodeId)) {
     CATMAID.warn("Can not suppress real nodes.");
     return false;
@@ -3775,7 +3819,7 @@ SkeletonAnnotations.SVGOverlay.prototype.toggleVirtualNodeSuppression = function
  * Return true if the given node ID is part of the given skeleton. Expects the
  * node to be displayed.
  */
-SkeletonAnnotations.SVGOverlay.prototype.nodeIsPartOfSkeleton = function(skeletonID, nodeID) {
+SkeletonAnnotations.TracingOverlay.prototype.nodeIsPartOfSkeleton = function(skeletonID, nodeID) {
   if (!this.nodes[nodeID]) throw new CATMAID.ValueError("Node not loaded");
   return this.nodes[nodeID].skeleton_id === skeletonID;
 };
@@ -3783,14 +3827,14 @@ SkeletonAnnotations.SVGOverlay.prototype.nodeIsPartOfSkeleton = function(skeleto
 /**
  * Handle update of active node with recoloring all nodes.
  */
-SkeletonAnnotations.SVGOverlay.prototype.handleActiveNodeChange = function(node) {
+SkeletonAnnotations.TracingOverlay.prototype.handleActiveNodeChange = function(node) {
   this.recolorAllNodes();
 };
 
 /**
  * Handle the creation of new nodes. Update our view
  */
-SkeletonAnnotations.SVGOverlay.prototype.handleNewNode = function(nodeID, px, py, pz) {
+SkeletonAnnotations.TracingOverlay.prototype.handleNewNode = function(nodeID, px, py, pz) {
   // If we know the new node already, do nothing. We assume it has been taken
   // care of somewhere else.
   if (this.nodes[nodeID]) return;
@@ -3807,7 +3851,7 @@ SkeletonAnnotations.SVGOverlay.prototype.handleNewNode = function(nodeID, px, py
  *
  * @param {number} skeletonID - The ID of the skelton changed.
  */
-SkeletonAnnotations.SVGOverlay.prototype.handleChangedSkeleton = function(skeletonID) {
+SkeletonAnnotations.TracingOverlay.prototype.handleChangedSkeleton = function(skeletonID) {
   this.updateIfKnown(skeletonID);
 };
 
@@ -3817,7 +3861,7 @@ SkeletonAnnotations.SVGOverlay.prototype.handleChangedSkeleton = function(skelet
  *
  * @param {number} skeletonID - The ID of the skelton changed.
  */
-SkeletonAnnotations.SVGOverlay.prototype.handleDeletedSkeleton = function(skeletonID) {
+SkeletonAnnotations.TracingOverlay.prototype.handleDeletedSkeleton = function(skeletonID) {
   var activeSkeletonID = SkeletonAnnotations.getActiveSkeletonId();
   this.updateIfKnown(skeletonID, (function() {
     // Unselect active node, if it was part of the current display
@@ -3833,7 +3877,7 @@ SkeletonAnnotations.SVGOverlay.prototype.handleDeletedSkeleton = function(skelet
  * @param skeletonID {number} The ID of the skelton changed.
  * @param callback {function} An optional callback, executed after a node update
  */
-SkeletonAnnotations.SVGOverlay.prototype.updateIfKnown = function(skeletonID, callback) {
+SkeletonAnnotations.TracingOverlay.prototype.updateIfKnown = function(skeletonID, callback) {
   if (Object.keys(this.nodes).some(this.nodeIsPartOfSkeleton.bind(this, skeletonID))) {
     this.updateNodes(callback);
   }
@@ -3867,6 +3911,7 @@ SkeletonAnnotations.Tag = new (function() {
     atn.promise().then(function(treenode_id) {
       svgOverlay.submit(
         django_url + project.id + '/label/' + atn.type + '/' + atn.id + '/update',
+        'POST',
         {tags: label,
          delete_existing: deleteExisting ? true : false},
         function(json) {
@@ -3885,6 +3930,7 @@ SkeletonAnnotations.Tag = new (function() {
     atn.promise().then(function(treenode_id) {
       svgOverlay.submit(
         django_url + project.id + '/label/' + atn.type + '/' + atn.id + '/remove',
+        'POST',
         {tag: label},
         function(json) {
           CATMAID.info('Tag "' + label + '" removed.');
@@ -3912,7 +3958,7 @@ SkeletonAnnotations.Tag = new (function() {
     }
   };
 
-  this.handle_tagbox = function(atn, svgOverlay) {
+  this.handleTagbox = function(atn, svgOverlay) {
     SkeletonAnnotations.atn.promise().then((function() {
       var atnID = SkeletonAnnotations.getActiveNodeId();
       var stack = project.getStackViewer(atn.stack_viewer_id);
@@ -3968,6 +4014,7 @@ SkeletonAnnotations.Tag = new (function() {
 
       svgOverlay.submit(
           django_url + project.id + '/labels-for-node/' + atn.type  + '/' + atnID,
+          'POST',
           {pid: project.id},
           function(json) {
             input.tagEditor({
@@ -3981,6 +4028,7 @@ SkeletonAnnotations.Tag = new (function() {
             // add autocompletion, only request after tagbox creation
             svgOverlay.submit(
               django_url + project.id + '/labels/',
+              'POST',
               {pid: project.id},
               function(json) {
                 input.autocomplete({source: json});
@@ -3998,6 +4046,7 @@ SkeletonAnnotations.Tag = new (function() {
     atn.promise().then(function() {
       svgOverlay.submit(
           django_url + project.id + '/label/' + atn.type + '/' + atn.id + '/update',
+          'POST',
           {pid: project.id,
            tags: $("#Tags" + atn.id).tagEditorGetTags()},
           function(json) {});
@@ -4018,10 +4067,10 @@ SkeletonAnnotations.Tag = new (function() {
       var self = this;
       svgOverlay.goToNode(atn.id,
           function() {
-            self.handle_tagbox(atn, svgOverlay);
+            self.handleTagbox(atn, svgOverlay);
           });
     } else {
-      this.handle_tagbox(atn, svgOverlay);
+      this.handleTagbox(atn, svgOverlay);
     }
   };
 })();

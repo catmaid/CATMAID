@@ -1,307 +1,216 @@
-div.toolbar_container
-{
-	clear:both;
-	margin:0px;
-	padding:0px;
-	width:100%;
-	border:none;
-	background:url(../images/bar32_bg.gif) repeat left top;
-	background-image:url(../images/bar32_bg.svg), none;
+div.toolbar_container {
+  clear: both;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  border: none;
+  background: url(../images/bar32_bg.gif) repeat left top;
+  background-image: url(../images/bar32_bg.svg), none;
 }
 
-div.toolbar
-{
-	clear:both;
-	margin:0px;
-	padding:0px;
-	width:100%;
-	border:none;
-	/*border-bottom:solid 4px #000000;*/
-	/*background:#000000;*/
-	background:url(../images/bar32_bg.gif) repeat left top;
-	background-image:url(../images/bar32_bg.svg), none;
+div.toolbar {
+  clear: both;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  border: none;
+  background: url(../images/bar32_bg.gif) repeat left top;
+  background-image: url(../images/bar32_bg.svg), none;
 }
 
-div.toolbar div.toolbar_fill
-{
-	margin:0px;
-	padding:0px;
-	height:0px;
-	width:0px;
-	clear:both;
-	overflow:hidden;
+div.toolbar div.toolbar_fill {
+  margin: 0;
+  padding: 0;
+  height: 0;
+  width: 0;
+  clear: both;
+  overflow: hidden;
 }
 
-div.toolbar div.box
-{
-	margin:0px;
-	padding:0px 10px 0px 10px;
-	height:32px;
-	white-space:nowrap;
-	float:left;
-	background:url(../images/bar32_bg.gif) repeat-x left top;
-	background-image:url(../images/bar32_bg.svg), none;
+div.toolbar div.box {
+  margin: 0;
+  padding: 0 10px 0 10px;
+  height: 32px;
+  white-space: nowrap;
+  float: left;
+  background: url(../images/bar32_bg.gif) repeat-x left top;
+  background-image: url(../images/bar32_bg.svg), none;
 }
 
-div.toolbar div.box_right
-{
-	margin:0px;
-	padding:0px 10px 0px 10px;
-	height:32px;
-	white-space:nowrap;
-	float:right;
-	background:url(../images/bar32_bg.gif) repeat-x left top;
-	background-image:url(../images/bar32_bg.svg), none;
+div.toolbar div.box_right {
+  margin: 0;
+  padding: 0 10px 0 10px;
+  height: 32px;
+  white-space: nowrap;
+  float: right;
+  background: url(../images/bar32_bg.gif) repeat-x left top;
+  background-image: url(../images/bar32_bg.svg), none;
 }
 
 div.toolbar div.box p,
-div.toolbar div.box_right p
-{
-	border:none;
-	margin:0px;
-	padding:4px 0px 0px 0px;
-	vertical-align:middle;
-	line-height:20px;
-	float:left;
+div.toolbar div.box_right p {
+  border: none;
+  margin: 0;
+  padding: 4px 0 0 0;
+  vertical-align: middle;
+  line-height: 20px;
+  float: left;
 }
 
 div.toolbar div.box img,
-div.toolbar div.box_right img
-{
-	border:none;
-	margin:0px;
-	padding:0px;
-	vertical-align:bottom;
+div.toolbar div.box_right img {
+  border: none;
+  margin: 0;
+  padding: 0;
+  vertical-align: bottom;
 }
 
 
 div.toolbar div.box a,
 div.toolbar div.box a img,
 div.toolbar div.box_right a,
-div.toolbar div.box_right a img
-{
-	border:none;
+div.toolbar div.box_right a img {
+  border: none;
 }
 
 div.toolbar div.box a.button,
 div.toolbar div.box_right a.button,
 div.toolbar div.box a.button_active,
-div.toolbar div.box_right a.button_active
-{
-	border:none;
-	margin:4px 0px 0px 0px;
-	padding:0px 1em 0px 0px;
-	width:24px;
-	height:24px;
-	cursor:pointer;
-	display:block;
-	float:left;
+div.toolbar div.box_right a.button_active {
+  border: none;
+  margin: 4px 0 0 0;
+  padding: 0 1em 0 0;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  display: block;
+  float: left;
 }
+
 div.toolbar div.box a.button_active,
-div.toolbar div.box_right a.button_active
-{
-	background:url(../images/button_down.gif) no-repeat left center;
-	background-image:url(../images/button_down.svg), none;
+div.toolbar div.box_right a.button_active {
+  background: url(../images/button_down.gif) no-repeat left center;
+  background-image: url(../images/button_down.svg), none;
 }
+
 div.toolbar div.box a.button:hover,
-div.toolbar div.box_right a.button:hover
-{
-	background:url(../images/button_over.gif) no-repeat left center;
-	background-image:url(../images/button_over.svg), none;
+div.toolbar div.box_right a.button:hover {
+  background: url(../images/button_over.gif) no-repeat left center;
+  background-image: url(../images/button_over.svg), none;
 }
 
 div.toolbar div.box input,
 div.toolbar div.box_right input,
 div.toolbar div.box select,
-div.toolbar div.box_right select
-{
-	font-size:11px;
+div.toolbar div.box_right select {
+  font-size: 11px;
 }
 
 
 /* menu */
 
 div.menu div.box,
-div.menu div.box_right
-{
-	padding:0px;
+div.menu div.box_right {
+  padding: 0;
 }
 
-div.toolbar div.menu_item p
-{
-	padding-left:1em;
-	padding-right:1em;
-	cursor:default;
+div.toolbar div.menu_item p {
+  padding-left: 1em;
+  padding-right: 1em;
+  cursor: default;
 }
 
-div.menu_item table
-{
-	border-collapse:collapse;
-	border:none;
+div.menu_item table {
+  border-collapse: collapse;
+  border: none;
 }
 
-div.menu_item tr.menu_item
-{
-	background:none;
-	color:#000000;
+div.menu_item tr.menu_item {
+  background: none;
+  color: #000000;
 }
 
 div.menu_item tr.menu_item_hover,
-div.menu_item tr.menu_item_selected
-{
-	background:#0000FF;
-	color:#FFFFFF;
+div.menu_item tr.menu_item_selected {
+  background: #0000FF;
+  color: #FFFFFF;
 }
+
 div.menu_item tr.menu_item_hover a,
-div.menu_item tr.menu_item_selected a
-{
-	color:#FFFFFF;
+div.menu_item tr.menu_item_selected a {
+  color: #FFFFFF;
 }
-div.menu_item tr.menu_item a
-{
-	color:#000000;
+
+div.menu_item tr.menu_item a {
+  color: #000000;
 }
 
 div.menu_item div.pulldown td,
-div.pulldown_item div.pulldown td
-{
-	padding:0px;
-	padding-left:1em;
-	margin:0px;
+div.pulldown_item div.pulldown td {
+  padding: 0;
+  padding-left: 1em;
+  margin: 0;
 }
 
 div.menu_item div.pulldown td p,
-div.pulldown_item div.pulldown td p
-{
-	margin:0px;
-	/*padding:0.05em 0.25em 0.05em 0.25em;*/
-	padding:0px 4px 1px 4px;
+div.pulldown_item div.pulldown td p {
+  margin: 0;
+  /*padding: 0.05em 0.25em 0.05em 0.25em;*/
+  padding: 0 4px 1px 4px;
 }
 
 div.menu_item div.pulldown,
-div.pulldown_item div.pulldown
-{
-	clear:both;
-	position:relative;
-	top:0px;
-	left:0px;
-	width:0px;
-	height:0px;
-	z-index:99;
-	overflow:visible;
-	display:none;
+div.pulldown_item div.pulldown {
+  clear: both;
+  position: relative;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  z-index: 99;
+  overflow: visible;
+  display: none;
 }
 
-div.pulldown_item div.pulldown
-{
-	top:-2em;
-	left:100%;
+div.pulldown_item div.pulldown {
+  top: -2em;
+  left: 100%;
 }
 
 div.menu_item div.pulldown div.menu_text,
-div.pulldown_item div.pulldown div.menu_text
-{
-	clear:both;
-	padding:0px;
-	margin:0px;
-	position:absolute;
-	top:0px;
-	left:0px;
-	/*
-	border-top:solid 1px #FFFFFF;
-	border-left:solid 1px #FFFFFF;
-	border-bottom:solid 1px #DDDDDD;
-	border-right:solid 1px #DDDDDD;
-	*/
-	border:solid 1px #DDDDDD;
-	background:#FFFFFF;
-	white-space:nowrap;
-	/*
-	filter:alpha(opacity=90);
-	opacity: 0.9;
-	-moz-opacity:0.9;
-	*/
+div.pulldown_item div.pulldown div.menu_text {
+  clear: both;
+  padding: 0;
+  margin: 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  border: solid 1px #DDDDDD;
+  background: #FFFFFF;
+  white-space: nowrap;
 }
 
-div.menu_item tr.menu_item a.hoverlink
-{
-	visibility: hidden;
+div.menu_item tr.menu_item a.hoverlink {
+  visibility: hidden;
 }
 
 div.menu_item tr.menu_item_hover a.hoverlink,
-div.menu_item tr.menu_item_selected a.hoverlink
-{
-	visibility: visible;
-	color: #FFF;
-	text-decoration: none;
+div.menu_item tr.menu_item_selected a.hoverlink {
+  visibility: visible;
+  color: #FFF;
+  text-decoration: none;
 }
 
 div.toolbar div.box p.toolbar_wait,
-div.toolbar div.box_right p.toolbar_wait
-{
-	padding:4px 0px 4px 24px;
-	vertical-align:middle;
-	background:url(../images/wait_bgtransgrey.gif) no-repeat left center;
-	display:none;
+div.toolbar div.box_right p.toolbar_wait {
+  padding: 4px 0 4px 24px;
+  vertical-align: middle;
+  background: url(../images/wait_bgtransgrey.gif) no-repeat left center;
+  display: none;
 }
 
-
-div.toolbar .alert
-{
-	padding:4px 0px 4px 24px;
-	vertical-align:middle;
-	background:url(../images/alert_bgtransgrey.gif) no-repeat right center;
+div.toolbar .alert {
+  padding: 4px 0 4px 24px;
+  vertical-align: middle;
+  background: url(../images/alert_bgtransgrey.gif) no-repeat right center;
 }
-
-/*
-div.toolbar div.menu_item:hover a,
-div.toolbar div.menu_item_hover a {
-	color:#0092E8
-}
-
-table#menu td.menu_item:hover div.pulldown a:link, table#menu td.menu_item_hover div.pulldown a:link,
-table#menu td.menu_item:hover div.pulldown a:visited, table#menu td.menu_item_hover div.pulldown a:visited,
-table#menu td.menu_item:hover div.pulldown a:active, table#menu td.menu_item_hover div.pulldown a:active {
-color:#FF5D02
-}
-
-table#menu td.menu_item:hover div.pulldown a:hover, table#menu td.menu_item_hover div.pulldown a:hover {
-color:#0092E8
-}
-*/
-
-
-
-
-
-
-/*
-div.toolbar div p
-{
-	font-size:26px;
-	border:none;
-	margin:0px;
-	padding:4px 8px 0px 12px;
-	vertical-align:top;
-}
-
-div.toolbar div a.button,
-div.toolbar div a.button_active,
-{
-	margin:0px;
-	padding:0px;
-	cursor:pointer;
-}
-div.toolbar div a.button_active
-{
-	background:url(../images/button_down.gif)  no-repeat left center;
-}
-div.toolbar div a:link,
-div.toolbar div a:visited {}
-div.toolbar div a:focus,
-div.toolbar div a:hover
-{
-	background:url(../images/button_over.gif) no-repeat left center;
-}
-div.toolbar div a:active {}
-*/

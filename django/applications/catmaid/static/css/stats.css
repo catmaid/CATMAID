@@ -1,59 +1,58 @@
 div.project-stats {
-	margin: 4px;
+  margin: 4px;
 }
 
 table.project-stats {
-	margin-right: auto;
+  margin-right: auto;
 }
 
 table.project-stats thead th {
-	padding: 3px 18px 3px 10px;
-	border-bottom: 1px solid black;
-	font-weight: bold;
-	cursor: pointer;
-	* cursor: hand;
+  padding: 3px 18px 3px 10px;
+  border-bottom: 1px solid black;
+  font-weight: bold;
+  cursor: pointer;
 }
 
 table.project-stats tfoot th {
-	padding: 3px 18px 3px 10px;
-	border-top: 1px solid black;
-	font-weight: bold;
+  padding: 3px 18px 3px 10px;
+  border-top: 1px solid black;
+  font-weight: bold;
 }
 
 table.project-stats tr.heading2 td {
-	border-bottom: 1px solid #aaa;
+  border-bottom: 1px solid #aaa;
 }
 
 table.project-stats td {
-	padding: 3px 10px;
+  padding: 3px 10px;
 }
 
 table.project-stats td.center {
-	text-align: center;
+  text-align: center;
 }
 
 .piechart {
-	width:300;
+  width: 300;
 }
 
 .annotation-history {
-	clear: both;
-	padding: 4px;
+  clear: both;
+  padding: 4px;
 }
 
 .axis path,
 .axis line {
-	fill: none;
-	stroke: black;
-	shape-rendering: crispEdges;
+  fill: none;
+  stroke: black;
+  shape-rendering: crispEdges;
 }
 
 .axis text {
-	font-family: sans-serif;
-	font-size: 11px;
+  font-family: sans-serif;
+  font-size: 11px;
 }
 
 .linegroup path,
 .linegroup line {
-	fill: none;
+  fill: none;
 }

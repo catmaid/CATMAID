@@ -1,25 +1,23 @@
-from django.contrib.auth.models import Permission
-from django.conf import settings
-from django.test import TestCase, TransactionTestCase
-from django.test.client import Client
-from django.http import HttpResponse
-from django.db import connection, transaction
-from django.shortcuts import get_object_or_404
-from guardian.shortcuts import assign_perm
-import os
 import re
 import urllib
 import json
-import datetime
 
+from django.conf import settings
+from django.contrib.auth.models import Permission
+from django.db import connection, transaction
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
+from django.test import TestCase, TransactionTestCase
+from django.test.client import Client
+from guardian.shortcuts import assign_perm
+
+from catmaid.fields import Double3D, Integer3D
 from catmaid.models import Project, Stack, ProjectStack
 from catmaid.models import ClassInstance, Log, Message, TextlabelLocation
 from catmaid.models import Treenode, Connector, TreenodeConnector, User, Review, ReviewerWhitelist
 from catmaid.models import Textlabel, TreenodeClassInstance, ClassInstanceClassInstance
-from catmaid.fields import Double3D, Integer3D
 from catmaid.control.common import get_relation_to_id_map, get_class_to_id_map
-from catmaid.control.neuron_annotations import _annotate_entities, create_annotation_query, \
-    delete_annotation_if_unused
+from catmaid.control.neuron_annotations import _annotate_entities, create_annotation_query
 
 
 class TransactionTests(TransactionTestCase):
@@ -268,6 +266,43 @@ class ViewPageTests(TestCase):
         response = self.client.get('/user/password_change/')
         self.assertEqual(response.status_code, 200)
 
+    def test_token_authentication(self):
+        response = self.client.post('/api-token-auth/',
+                {'username': 'test2',
+                 'password': 'test'})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        token = parsed_response['token']
+
+        token_client = Client(enforce_csrf_checks=True)
+        sess_client = Client(enforce_csrf_checks=True)
+        sess_client.login(username='test2', password='test')
+
+        # Check that a Django view rejects an unauthed request...
+        response = token_client.post('/%d/node/user-info' % (self.test_project_id,),
+                {'node_id': 383})
+        self.assertEqual(response.status_code, 403)
+        # ..and an authed session request without CSRF headers...
+        response = sess_client.post('/%d/node/user-info' % (self.test_project_id,),
+                {'node_id': 383})
+        self.assertEqual(response.status_code, 403)
+        # ...but accepts a token auth request without CSRF
+        response = token_client.post('/%d/node/user-info' % (self.test_project_id,),
+                {'node_id': 383},
+                HTTP_X_AUTHORIZATION='Token ' + token)
+        self.assertEqual(response.status_code, 200)
+
+        # Check that a DRF view rejects an unauthed request...
+        response = token_client.post('/%d/annotations/' % (self.test_project_id,))
+        self.assertEqual(response.status_code, 403)
+        # ..and an authed session request without CSRF headers...
+        response = sess_client.post('/%d/annotations/' % (self.test_project_id,))
+        self.assertEqual(response.status_code, 403)
+        # ...but accepts a token auth request without CSRF
+        response = token_client.post('/%d/annotations/' % (self.test_project_id,),
+                HTTP_X_AUTHORIZATION='Token ' + token)
+        self.assertEqual(response.status_code, 200)
+
     def test_user_project_permissions_not_logged_in(self):
         response = self.client.get('/permissions')
         self.assertEqual(response.status_code, 200)
@@ -424,7 +459,7 @@ class ViewPageTests(TestCase):
     def test_project_list(self):
         # Check that, pre-authentication, we can see none of the
         # projects:
-        response = self.client.get('/projects')
+        response = self.client.get('/projects/')
         self.assertEqual(response.status_code, 200)
         result = json.loads(response.content)
         self.assertEqual(len(result), 0)
@@ -436,23 +471,17 @@ class ViewPageTests(TestCase):
 
         # Check that, pre-authentication, we can see two of the
         # projects:
-        response = self.client.get('/projects')
+        response = self.client.get('/projects/')
         self.assertEqual(response.status_code, 200)
         result = json.loads(response.content)
         self.assertEqual(len(result), 1)
 
-        # Check the project:
-        options = result[0]['action']
-        self.assertEqual(len(options), 2)
-
         # Check stacks:
-        stacks = result[0]['action'][0]['action']
+        stacks = result[0]['stacks']
         self.assertEqual(len(stacks), 1)
-        stack = stacks['3']
-        self.assertTrue(re.search(r'javascript:openProjectStack\( *3, *3 *\)', stack['action']))
 
         # Check stacks groups
-        stackgroups = result[0]['action'][1]['action']
+        stackgroups = result[0]['stackgroups']
         self.assertEqual(len(stackgroups), 0)
 
         # Now log in and check that we see a different set of projects:
@@ -464,32 +493,141 @@ class ViewPageTests(TestCase):
             p = Project.objects.get(pk=pid)
             assign_perm('can_browse', test_user, p)
 
-        # We expect three projects, because there are no stacks linked to
-        # project 2. This API should therefore not return it.
-        response = self.client.get('/projects')
+        # We expect four projects, one of them (project 2) is empty.
+        response = self.client.get('/projects/')
         self.assertEqual(response.status_code, 200)
         result = json.loads(response.content)
-        self.assertEqual(len(result), 3)
+        self.assertEqual(len(result), 4)
 
         def get_project(result, pid):
-            rl = [r for r in result if r['pid'] == pid]
+            rl = [r for r in result if r['id'] == pid]
             if len(rl) != 1:
                 raise ValueError("Malformed result")
             return rl[0]
 
         # Check the first project:
-        stacks = get_project(result, 1)['action'][0]['action']
+        stacks = get_project(result, 1)['stacks']
         self.assertEqual(len(stacks), 1)
 
         # Check the second project:
-        stacks = get_project(result, 3)['action'][0]['action']
+        stacks = get_project(result, 3)['stacks']
         self.assertEqual(len(stacks), 1)
-        stack = stacks['3']
-        self.assertTrue(re.search(r'javascript:openProjectStack\( *3, *3 *\)', stack['action']))
 
         # Check the third project:
-        stacks = get_project(result, 5)['action'][0]['action']
+        stacks = get_project(result, 5)['stacks']
         self.assertEqual(len(stacks), 2)
+
+    def test_client_datastores(self):
+        url = '/client/datastores/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        self.assertTrue(parsed_response['permission_error'])
+
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        self.assertTrue(parsed_response['permission_error'])
+
+        # Test basic datastore creation.
+        self.fake_authentication()
+        name = 'test-  %% datastore'
+        response = self.client.post(url, {'name': name})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        self.assertTrue('error' in parsed_response)
+        name = 'test-datastore'
+        response = self.client.post(url, {'name': name})
+        self.assertEqual(response.status_code, 200)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        parsed_response = [p for p in parsed_response if p['name'] == name]
+        self.assertEqual(len(parsed_response), 1)
+        response = self.client.delete(url + name)
+        self.assertEqual(response.status_code, 403)
+
+        # Create data entries.
+        url = url + name + '/'
+        response = self.client.put(
+                url,
+                urllib.urlencode({
+                    'key': 'test a',
+                    'value': '{"json": false'}),
+                content_type='application/x-www-form-urlencoded')
+        self.assertEqual(response.status_code, 400)
+        parsed_response = json.loads(response.content)
+        response = self.client.put(
+                url,
+                urllib.urlencode({
+                    'key': 'test a',
+                    'value': '{"json": true, "scope": "user-instance"}'}),
+                content_type='application/x-www-form-urlencoded')
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        self.assertFalse('error' in parsed_response)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        self.assertEqual(len(parsed_response), 1)
+        self.assertEqual(parsed_response[0]['key'], 'test a')
+
+        # Test that PUTting the same key replaces the value.
+        response = self.client.put(
+                url,
+                urllib.urlencode({
+                    'key': 'test a',
+                    'value': '{"json": true, "scope": "user-instance", "replaced": true}'}),
+                content_type='application/x-www-form-urlencoded')
+        self.assertEqual(response.status_code, 204)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        self.assertEqual(len(parsed_response), 1)
+        value = json.loads(parsed_response[0]['value'])
+        self.assertTrue(value['replaced'])
+
+        response = self.client.put(
+                url,
+                urllib.urlencode({
+                    'key': 'test a',
+                    'project_id': self.test_project_id,
+                    'value': '{"json": true, "scope": "user-project"}'}),
+                content_type='application/x-www-form-urlencoded')
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        self.assertFalse('error' in parsed_response)
+        # Omitting project ID should return only global and user-instance keys.
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        self.assertEqual(len(parsed_response), 1)
+        response = self.client.get(url, {'project_id': self.test_project_id})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        self.assertEqual(len(parsed_response), 2)
+        self.assertEqual(parsed_response[0]['key'], 'test a')
+        self.assertEqual(parsed_response[1]['key'], 'test a')
+
+        # Test that a non-admin user cannot change global data.
+        response = self.client.put(
+                url,
+                urllib.urlencode({
+                    'key': 'test a',
+                    'ignore_user': 'true',
+                    'value': '{"json": true, "scope": "global-instance"}'}),
+                content_type='application/x-www-form-urlencoded')
+        self.assertEqual(response.status_code, 403)
+
+        response = self.client.put(
+                url,
+                urllib.urlencode({
+                    'key': 'test a',
+                    'ignore_user': 'true',
+                    'project_id': self.test_project_id,
+                    'value': '{"json": true, "scope": "global-instance"}'}),
+                content_type='application/x-www-form-urlencoded')
+        self.assertEqual(response.status_code, 403)
 
     def test_rename_neuron(self):
         self.fake_authentication()
@@ -641,13 +779,6 @@ class ViewPageTests(TestCase):
         parsed_response = json.loads(response.content)
         self.assertEqual(expected_result, parsed_response)
 
-    def test_multiple_treenodes(self):
-        pass
-        # self.fake_authentication()
-        # FIXME API does not exist anymore. Investigate
-        # response = self.client.get('/%d/multiple-presynaptic-terminals' % (self.test_project_id,))
-        # self.assertEqual(response.status_code, 200)
-
     def test_list_treenode_table_simple(self):
         self.fake_authentication()
         response = self.client.post(
@@ -705,7 +836,7 @@ class ViewPageTests(TestCase):
         treenode_id = Treenode.objects.order_by("-id")[0].id + 1  # Inexistant
         self.fake_authentication()
         response = self.client.post(
-                '/%d/node/%d/confidence/update' % (self.test_project_id, treenode_id),
+                '/%d/treenodes/%d/confidence' % (self.test_project_id, treenode_id),
                 {'new_confidence': '4'})
         self.assertEqual(response.status_code, 200)
         expected_result = 'No skeleton and neuron for treenode %s' % treenode_id
@@ -716,7 +847,7 @@ class ViewPageTests(TestCase):
         treenode_id = 7
         self.fake_authentication()
         response = self.client.post(
-                '/%d/node/%d/confidence/update' % (self.test_project_id, treenode_id),
+                '/%d/treenodes/%d/confidence' % (self.test_project_id, treenode_id),
                 {'new_confidence': '4'})
         self.assertEqual(response.status_code, 200)
         treenode = Treenode.objects.filter(id=treenode_id).get()
@@ -726,7 +857,7 @@ class ViewPageTests(TestCase):
         self.assertEqual(4, treenode.confidence)
 
         response = self.client.post(
-                '/%d/node/%d/confidence/update' % (self.test_project_id, treenode_id),
+                '/%d/treenodes/%d/confidence' % (self.test_project_id, treenode_id),
                 {'new_confidence': '5'})
         self.assertEqual(response.status_code, 200)
         treenode = Treenode.objects.filter(id=treenode_id).get()
@@ -740,7 +871,7 @@ class ViewPageTests(TestCase):
         treenode_connector_id = 360
         self.fake_authentication()
         response = self.client.post(
-                '/%d/node/%d/confidence/update' % (self.test_project_id, treenode_id),
+                '/%d/treenodes/%d/confidence' % (self.test_project_id, treenode_id),
                 {'new_confidence': '4', 'to_connector': 'true'})
         self.assertEqual(response.status_code, 200)
         connector = TreenodeConnector.objects.filter(id=treenode_connector_id).get()
@@ -750,7 +881,7 @@ class ViewPageTests(TestCase):
         self.assertEqual(4, connector.confidence)
 
         response = self.client.post(
-                '/%d/node/%d/confidence/update' % (self.test_project_id, treenode_id),
+                '/%d/treenodes/%d/confidence' % (self.test_project_id, treenode_id),
                 {'new_confidence': '5', 'to_connector': 'true'})
         self.assertEqual(response.status_code, 200)
         connector = TreenodeConnector.objects.filter(id=treenode_connector_id).get()
@@ -2019,7 +2150,7 @@ class ViewPageTests(TestCase):
             '/%d/skeletons/connectivity' % (self.test_project_id,),
             {'source_skeleton_ids[0]': 235,
              'source_skeleton_ids[1]': 373,
-             'boolean_op': 'logic-OR'})
+             'boolean_op': 'OR'})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {
@@ -2027,6 +2158,21 @@ class ViewPageTests(TestCase):
             "outgoing": {"361": {"skids": {"235": [0, 0, 0, 0, 1]}, "num_nodes": 9},
                          "373": {"skids": {"235": [0, 0, 0, 0, 2]}, "num_nodes": 5}},
             "incoming": {"235": {"skids": {"373": [0, 0, 0, 0, 2]}, "num_nodes": 28}},
+            "incoming_reviewers": []}
+        self.assertEqual(expected_result, parsed_response)
+
+        # Test for conjunctive connectivity.
+        response = self.client.post(
+            '/%d/skeletons/connectivity' % (self.test_project_id,),
+            {'source_skeleton_ids[0]': 235,
+             'source_skeleton_ids[1]': 373,
+             'boolean_op': 'AND'})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = {
+            "outgoing_reviewers": [],
+            "outgoing": {},
+            "incoming": {},
             "incoming_reviewers": []}
         self.assertEqual(expected_result, parsed_response)
 
@@ -2373,6 +2519,39 @@ class ViewPageTests(TestCase):
         parsed_response.sort(key=distsort)
         self.assertEqual(parsed_response, expected_result)
 
+    def test_skeleton_find_labels(self):
+        self.fake_authentication()
+
+        # Create labels.
+        treenode_id = 387
+        response = self.client.post(
+                '/%d/label/treenode/%d/update' % (self.test_project_id, treenode_id),
+                {'tags': 'testlabel'})
+        self.assertEqual(response.status_code, 200)
+        treenode_id = 393
+        response = self.client.post(
+                '/%d/label/treenode/%d/update' % (self.test_project_id, treenode_id),
+                {'tags': 'Testlabel'})
+        self.assertEqual(response.status_code, 200)
+        # Label in other skeleton than should be ignored.
+        treenode_id = 403
+        response = self.client.post(
+                '/%d/label/treenode/%d/update' % (self.test_project_id, treenode_id),
+                {'tags': 'Testlabel'})
+        self.assertEqual(response.status_code, 200)
+
+        skeleton_id = 361
+        treenode_id = 367
+        response = self.client.post(
+                '/%d/skeletons/%d/find-labels' % (self.test_project_id, skeleton_id),
+                {'treenode_id': treenode_id,
+                 'label_regex': '[Tt]estlabel'})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = [[393, [6910.0, 990.0, 0.0], 3, ["Testlabel"]],
+                           [387, [9030.0, 1480.0, 0.0], 4, ["testlabel"]]]
+        self.assertEqual(expected_result, parsed_response)
+
     def test_skeleton_ancestry(self):
         skeleton_id = 361
 
@@ -2494,13 +2673,45 @@ class ViewPageTests(TestCase):
                 "skeleton_id": 361}
         self.assertEqual(expected_result, parsed_response)
 
-    def test_node_find_end_of_linear_branch(self):
+    def test_node_find_previous_branch(self):
         self.fake_authentication()
-        treenode_id = 391
+        treenode_id = 257
 
         response = self.client.post(
-                '/%d/node/next_branch_or_end' % self.test_project_id, {
-                    'tnid': treenode_id})
+                '/%d/treenodes/%d/previous-branch-or-root' % (self.test_project_id, treenode_id),
+                {'alt': 0})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        # Response should contain one branch.
+        expected_result = [253, 3685.0, 2160.0, 0.0]
+        self.assertEqual(expected_result, parsed_response)
+
+        treenode_id = 253
+        response = self.client.post(
+                '/%d/treenodes/%d/previous-branch-or-root' % (self.test_project_id, treenode_id),
+                {'alt': 0})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        # Response should contain one branch.
+        expected_result = [237, 1065.0, 3035.0, 0.0]
+        self.assertEqual(expected_result, parsed_response)
+
+        treenode_id = 237
+        response = self.client.post(
+                '/%d/treenodes/%d/previous-branch-or-root' % (self.test_project_id, treenode_id),
+                {'alt': 0})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        # Response should contain one branch.
+        expected_result = [237, 1065.0, 3035.0, 0.0]
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_node_find_next_branch(self):
+        self.fake_authentication()
+
+        treenode_id = 391
+        response = self.client.post(
+                '/%d/treenodes/%d/next-branch-or-end' % (self.test_project_id, treenode_id))
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         # Response should contain one branch.
@@ -2509,13 +2720,9 @@ class ViewPageTests(TestCase):
                             [399, 5670.0, 640.0, 0.0]]]
         self.assertEqual(expected_result, parsed_response)
 
-    def test_node_find_next_branch(self):
-        self.fake_authentication()
         treenode_id = 253
-
         response = self.client.post(
-                '/%d/node/next_branch_or_end' % self.test_project_id, {
-                    'tnid': treenode_id})
+                '/%d/treenodes/%d/next-branch-or-end' % (self.test_project_id, treenode_id))
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         # Response should contain two branches, and the larger branch headed by
@@ -2526,6 +2733,91 @@ class ViewPageTests(TestCase):
                            [[255, 3850.0, 1790.0, 0.0],
                             [255, 3850.0, 1790.0, 0.0],
                             [261, 2820.0, 1345.0, 0.0]]]
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_treenode_find_children(self):
+        self.fake_authentication()
+
+        treenode_id = 387
+        response = self.client.post(
+                '/%d/treenodes/%d/children' % (self.test_project_id, treenode_id))
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = []
+        self.assertEqual(expected_result, parsed_response)
+
+        treenode_id = 385
+        response = self.client.post(
+                '/%d/treenodes/%d/children' % (self.test_project_id, treenode_id))
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = [[[387, 9030.0, 1480.0, 0.0]]]
+        self.assertEqual(expected_result, parsed_response)
+
+        treenode_id = 367
+        response = self.client.post(
+                '/%d/treenodes/%d/children' % (self.test_project_id, treenode_id))
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = [[383, 7850.0, 1970.0, 0.0], [391, 6740.0, 1530.0, 0.0]]
+        parsed_response = [p[0] for p in parsed_response]
+        for (expected, parsed) in zip(sorted(expected_result), sorted(parsed_response)):
+             self.assertEqual(expected, parsed)
+
+    def test_node_user_info(self):
+        self.fake_authentication()
+
+        treenode_id = 367
+        response = self.client.post(
+                '/%d/node/user-info' % (self.test_project_id),
+                {'node_id': treenode_id})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = {"reviewers": [],
+                           "creation_time": "2011-09-27T07:57:17.808000",
+                           "edition_time": "2011-12-05T13:51:36.955000",
+                           "user": 3,
+                           "review_times": [],
+                           "editor": 3}
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_node_get_location(self):
+        self.fake_authentication()
+
+        treenode_id = 383
+        response = self.client.post(
+                '/%d/node/get_location' % (self.test_project_id),
+                {'tnid': treenode_id})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = [383, 7850.0, 1970.0, 0.0]
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_node_find_labels(self):
+        self.fake_authentication()
+
+        # Create labels.
+        treenode_id = 387
+        response = self.client.post(
+                '/%d/label/treenode/%d/update' % (self.test_project_id, treenode_id),
+                {'tags': 'testlabel'})
+        self.assertEqual(response.status_code, 200)
+        treenode_id = 403
+        response = self.client.post(
+                '/%d/label/treenode/%d/update' % (self.test_project_id, treenode_id),
+                {'tags': 'Testlabel'})
+        self.assertEqual(response.status_code, 200)
+
+        response = self.client.post(
+                '/%d/nodes/find-labels' % (self.test_project_id, ),
+                {'x': 8810,
+                 'y': 1790,
+                 'z': 0,
+                 'label_regex': '[Tt]estlabel'})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = [[387, [9030.0, 1480.0, 0.0], 380.131556174964, ["testlabel"]],
+                           [403, [7840.0, 2380.0, 0.0], 1135.3413583588, ["Testlabel"]]]
         self.assertEqual(expected_result, parsed_response)
 
     def test_node_update_single_treenode(self):
@@ -2839,7 +3131,7 @@ class ViewPageTests(TestCase):
 
         # Confidence split
         # Change confidence that affects 1 edge from 235 to 373
-        response = self.client.post('/%d/node/289/confidence/update' % self.test_project_id,
+        response = self.client.post('/%d/treenodes/289/confidence' % self.test_project_id,
             {'new_confidence': 3})
         self.assertEqual(response.status_code, 200)
         # Add confidence criteria, but not one that should affect the graph.
@@ -3080,6 +3372,65 @@ class ViewPageTests(TestCase):
         expected_result = [{'reviewer_id': int(r), 'accept_after': t}
                 for r,t in whitelist.iteritems()]
         self.assertJSONEqual(response.content, expected_result)
+
+    def test_suppressed_virtual_nodes(self):
+        self.fake_authentication()
+
+        response = self.client.post(
+                '/%d/treenode/create' % (self.test_project_id, ),
+                {'x': 1,
+                 'y': -1,
+                 'z': 0})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        parent_id = parsed_response['treenode_id']
+        skeleton_id = parsed_response['skeleton_id']
+
+        response = self.client.post(
+                '/%d/treenode/create' % (self.test_project_id, ),
+                {'x': 3,
+                 'y': -3,
+                 'z': 2,
+                 'parent_id': parent_id})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        child_id = parsed_response['treenode_id']
+
+        # Initially no nodes should be supppressed
+        response = self.client.get(
+                '/%d/treenodes/%d/suppressed-virtual/' % (self.test_project_id, child_id))
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = []
+        self.assertEqual(expected_result, parsed_response)
+
+        # Reject attempt to suppress root node
+        response = self.client.post(
+                '/%d/treenodes/%d/suppressed-virtual/' % (self.test_project_id, parent_id),
+                {'location_coordinate': 1,
+                 'orientation': 0})
+        self.assertEqual(response.status_code, 400)
+
+        # Reject coordinate outside edge
+        response = self.client.post(
+                '/%d/treenodes/%d/suppressed-virtual/' % (self.test_project_id, child_id),
+                {'location_coordinate': 4,
+                 'orientation': 0})
+        self.assertEqual(response.status_code, 400)
+
+        # Create virtual node
+        response = self.client.post(
+                '/%d/treenodes/%d/suppressed-virtual/' % (self.test_project_id, child_id),
+                {'location_coordinate': 2,
+                 'orientation': 0})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        suppressed_id = parsed_response['id']
+
+        # Delete virtual node
+        response = self.client.delete(
+                '/%d/treenodes/%d/suppressed-virtual/%d' % (self.test_project_id, child_id, suppressed_id))
+        self.assertEqual(response.status_code, 204)
 
 
 class TreenodeTests(TestCase):

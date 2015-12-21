@@ -23,7 +23,7 @@
             return;
           }
           var text = 'Synapses ' + ('presynaptic_to' === relation ? 'post' : 'pre') +
-              'synaptic to neuron' + (skids1.length > 1 ? 's' : '') + ' ' + skids1.map(NeuronNameService.getInstance().getName).join(', ');
+              'synaptic to neuron' + (skids1.length > 1 ? 's' : '') + ' ' + skids1.map(CATMAID.NeuronNameService.getInstance().getName).join(', ');
           show_table(text, json);
         });
   };
@@ -111,9 +111,9 @@
 
     connectors.forEach(function(row) {
       rows.push([row[0],
-                row[2], NeuronNameService.getInstance().getName(row[3]),
+                row[2], CATMAID.NeuronNameService.getInstance().getName(row[3]),
                 row[4], CATMAID.User.safe_get(row[5]).login,
-                row[7], NeuronNameService.getInstance().getName(row[8]),
+                row[7], CATMAID.NeuronNameService.getInstance().getName(row[8]),
                 row[9], CATMAID.User.safe_get(row[10]).login]);
       // Store all locations (overwriting can be ignored, it is the same data)
       locations[row[0]] = row[1];

@@ -29,7 +29,7 @@ def get_data_view_type_comment( request ):
         except:
             text = "Sorry, the configuration help text couldn't be retrieved."
     result = { 'comment':text }
-    return HttpResponse(json.dumps(result), content_type="text/json")
+    return HttpResponse(json.dumps(result), content_type="application/json")
 
 def dataview_to_dict( dataview ):
     """ Creates a dicitonary of the dataviews' properties.
@@ -56,7 +56,7 @@ def get_available_data_views( request ):
     all_views = DataView.objects.order_by("position")
     dataviews = map(dataview_to_dict, all_views)
 
-    return HttpResponse(json.dumps(makeJSON_legacy_list(dataviews)), content_type="text/json")
+    return HttpResponse(json.dumps(makeJSON_legacy_list(dataviews)), content_type="application/json")
 
 def get_default_properties( request ):
     """ Return the properies of the default data view.
@@ -64,7 +64,7 @@ def get_default_properties( request ):
     default = DataView.objects.filter(is_default=True)[0]
     default = dataview_to_dict( default )
 
-    return HttpResponse(json.dumps(default), content_type="text/json")
+    return HttpResponse(json.dumps(default), content_type="application/json")
 
 def get_default_data_view( request ):
     """ Return the data view that is marked as the default. If there

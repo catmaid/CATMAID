@@ -1,0 +1,2 @@
+--quiet
+--ignore=adjoining-classes,box-model,duplicate-background-images,floats,ids,important,known-properties,overqualified-elements,qualified-headings,unique-headings,universal-selector

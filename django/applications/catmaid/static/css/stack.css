@@ -1,182 +1,165 @@
-div.sliceView
-{
-	position:relative;
-	margin:0px;
-    sliceViewtop:0px;
-	right:0px;
-	bottom:0px;
-	left:0px;
-	padding:0px;
-	background:#000000;
-	overflow:hidden;
+.sliceView {
+  position: relative;
+  margin: 0;
+  sliceViewtop: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  padding: 0;
+  background: #000000;
+  overflow: hidden;
 }
 
-div.sliceView .sliceTiles
-{
-	position:absolute;
-	top:0px;
-	left:0px;
-	border:none;
-	margin:0px;
-	padding:0px;
-	white-space:nowrap;
-	transform:translateZ(0px);
+.sliceView .sliceTiles {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border: none;
+  margin: 0;
+  padding: 0;
+  white-space: nowrap;
+  transform: translateZ(0px);
 }
 
-div.sliceView div.sliceTiles img
-{
-	position:absolute;
-	border:none;
-	margin:0px;
-	padding:0px;
-	transform:translateZ(0px);
+.sliceView div.sliceTiles img {
+  position: absolute;
+  border: none;
+  margin: 0;
+  padding: 0;
+  transform: translateZ(0px);
 }
 
-div.sliceView div.sliceTiles.transpose img
-{
-	transform:rotate3d(1, 1, 0, 180deg);
+.sliceView div.sliceTiles.transpose img {
+  transform: rotate3d(1, 1, 0, 180deg);
 }
 
-div.sliceView div.sliceTiles.interpolation-mode-nearest img
-{
-	image-rendering: optimizeSpeed;             /*               */
-	image-rendering: -moz-crisp-edges;          /* Firefox       */
-	image-rendering: -o-crisp-edges;            /* Opera         */
-	image-rendering: pixelated;                 /* Chrome        */
-	image-rendering: optimize-contrast;         /* CSS3 Proposed */
-	-ms-interpolation-mode: nearest-neighbor;   /* IE8+          */
+.sliceView div.sliceTiles.interpolation-mode-nearest img {
+  image-rendering: optimizeSpeed;             /*               */
+  image-rendering: -moz-crisp-edges;          /* Firefox       */
+  image-rendering: -o-crisp-edges;            /* Opera         */
+  image-rendering: pixelated;                 /* Chrome        */
+  image-rendering: optimize-contrast;         /* CSS3 Proposed */
+  -ms-interpolation-mode: nearest-neighbor;   /* IE8+          */
 }
 
 div.smallMapView,
-div.smallMapView_hidden
-{
-	position:absolute;
-	bottom:0px;
-	right:0px;
-	overflow:hidden;
-	margin:0px;
-	padding:0px;
-	max-width:192px;
-	max-height:192px;
-	border:none 0px;
-	border-top:solid 4px #000000;
-	border-left:solid 4px #000000;
-	background:#000000;
-	z-index:6;
-}
-div.smallMapView_hidden
-{
-	width:16px;
-	height:16px;
+div.smallMapView_hidden {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  max-width: 192px;
+  max-height: 192px;
+  border: none 0;
+  border-top: solid 4px #000000;
+  border-left: solid 4px #000000;
+  background: #000000;
+  z-index: 6;
 }
 
-body
-{
-	border:none;
-	margin:0px;
-	padding:0px;
-	color:#000000;
-	font-family:Arial, Helvetica, sans-serif;
-	font-size:11px;
-	line-height:14px;
+div.smallMapView_hidden {
+  width: 16px;
+  height: 16px;
+}
+
+body {
+  border: none;
+  margin: 0;
+  padding: 0;
+  color: #000000;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 11px;
+  line-height: 14px;
 }
 
 div.smallMapView div.smallMapToggle,
-div.smallMapView_hidden div.smallMapToggle
-{
-	position:absolute;
-	left:0px;
-	top:0px;
-	width:16px;
-	height:16px;
-	overflow:hidden;
-	background:#FF0000 url(../images/smallmapclose.gif) no-repeat left top;
+div.smallMapView_hidden div.smallMapToggle {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 16px;
+  height: 16px;
+  overflow: hidden;
+  background: #FF0000 url(../images/smallmapclose.gif) no-repeat left top;
 }
-div.smallMapView_hidden div.smallMapToggle
-{
-	background:#FF0000 url(../images/smallmapopen.gif) no-repeat left top;
+
+div.smallMapView_hidden div.smallMapToggle {
+  background: #FF0000 url(../images/smallmapopen.gif) no-repeat left top;
 }
 
 div.smallMapView img.smallMapMap,
-div.smallMapView_hidden img.smallMapMap
-{
-	border:none;
-	margin:0px;
-	padding:0px;
-	cursor:pointer;
+div.smallMapView_hidden img.smallMapMap {
+  border: none;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
 }
 
 div.smallMapView div.smallMapRect,
-div.smallMapView_hidden div.smallMapRect
-{
-	position:absolute;
-	top:0px;
-	left:0px;
-	margin:0px;
-	padding:0px;
-	border:solid 2px #0000FF;
-	background:url(../images/blue20.png);
-	overflow:hidden;
+div.smallMapView_hidden div.smallMapRect {
+  position: absolute;
+  top: 0;
+  left: 0;
+  margin: 0;
+  padding: 0;
+  border: solid 2px #0000FF;
+  background: url(../images/blue20.png);
+  overflow: hidden;
 }
 
 div.smallMapView div.smallMapRect div,
-div.smallMapView_hidden div.smallMapRect div
-{
-	margin:0px;
-	padding:0px;
-	border:none;
-	width:100%;
-	height:100%;
-	background:#0000FF;
-	opacity:.25;
+div.smallMapView_hidden div.smallMapRect div {
+  margin: 0;
+  padding: 0;
+  border: none;
+  width: 100%;
+  height: 100%;
+  background: #0000FF;
+  opacity: .25;
 }
 
-div.TilelayerControl
-{
-	border: solid 1px #00F;
-	margin: 0;
-	padding: 8px;
-	position:relative;
-    top:10px;
-    left:10px;
-    width: 40em;
-    min-width: 40%;
-    max-width: 80%;
-    height: 65%;
-    overflow-x: hidden;
-    overflow-y: auto;
-    color:#FFFFFF;
-    background: #000;
-    opacity: 0.8;
+div.TileLayerControl {
+  border: solid 1px #00F;
+  margin: 0;
+  padding: 8px;
+  position: relative;
+  top: 10px;
+  left: 10px;
+  width: 40em;
+  min-width: 40%;
+  max-width: 80%;
+  height: 65%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  color: #FFFFFF;
+  background: #000;
+  opacity: 0.8;
 }
 
-div.TilelayerControl .setting
-{
-	float: none;
+div.TileLayerControl .setting {
+  float: none;
 }
 
-div.TilelayerControl ol
-{
-	list-style-type: none;
-	margin: 0;
-	padding: 1em 0;
-	clear: both;
+div.TileLayerControl ol {
+  list-style-type: none;
+  margin: 0;
+  padding: 1em 0;
+  clear: both;
 }
 
-div.TilelayerControl .layerControl
-{
-	margin: 0 4px 6px 4px;
-	padding: 0.4em;
-	counter-increment: order-counter;
+div.TileLayerControl .layerControl {
+  margin: 0 4px 6px 4px;
+  padding: 0.4em;
+  counter-increment: order-counter;
 }
 
-.layerControl.orderable
-{
-	background: #111;
+.layerControl.orderable {
+  background: #111;
 }
 
-li.layerControl::before
-{
+li.layerControl: :before {
   content: counter(order-counter);
   margin-right: 5px;
   margin-top: 0.25em;
@@ -188,276 +171,252 @@ li.layerControl::before
   float: left;
 }
 
-div.TilelayerControl h4
-{
-	margin: 0.5em 0;
+div.TileLayerControl h4 {
+  margin: 0.5em 0;
 }
 
-div.TilelayerControl .layerClose
-{
-	float: right;
-	margin: 0.3em;
-	cursor: pointer;
+div.TileLayerControl .layerClose {
+  float: right;
+  margin: 0.3em;
+  cursor: pointer;
 }
 
-.layerControl .setting
-{
-	float: none;
-	margin: 0.5em 0;
+.layerControl .setting {
+  float: none;
+  margin: 0.5em 0;
 }
 
-div.TilelayerControl .hSliderView
-{
-	float: none;
-	display: inline-block;
-	vertical-align: middle;
+div.TileLayerControl .hSliderView {
+  float: none;
+  display: inline-block;
+  vertical-align: middle;
 }
 
-li.layerControl ol
-{
-	margin-left: 3em;
-	padding: 0 1em;
-	list-style-type: decimal;
+li.layerControl ol {
+  margin-left: 3em;
+  padding: 0 1em;
+  list-style-type: decimal;
 }
 
-div.TilelayerControl li.highlight
-{
-	min-height: 1em;
-	border: solid 1px #00F;
+div.TileLayerControl li.highlight {
+  min-height: 1em;
+  border: solid 1px #00F;
 }
 
-.layerControl .layerFilterControl input.remove
-{
-	position: absolute;
-	left: 0.5em;
+.layerControl .layerFilterControl input.remove {
+  position: absolute;
+  left: 0.5em;
 }
 
-.layerControl .layerFilterControl h5
-{
-	margin: 0;
+.layerControl .layerFilterControl h5 {
+  margin: 0;
 }
 
 div.stackControlToggle,
-div.stackControlToggle_hidden
-{
-	position:absolute;
-	bottom:0px;
-	left:0px;
-	overflow:hidden;
-	margin:0px;
-	padding:0px;
-	width:16px;
-	height:16px;
-	border:none 0px;
-	border-top:solid 4px #000000;
-	border-right:solid 4px #000000;
-	background:#0000FF url(../images/slice_control_toggle_hide.svg) no-repeat center;
-	z-index:6;
+div.stackControlToggle_hidden {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  width: 16px;
+  height: 16px;
+  border: none 0;
+  border-top: solid 4px #000000;
+  border-right: solid 4px #000000;
+  background: #0000FF url(../images/slice_control_toggle_hide.svg) no-repeat center;
+  z-index: 6;
 }
 
-div.stackControlToggle_hidden
-{
-	background:#0000FF url(../images/slice_control_toggle_show.svg) no-repeat center;
+div.stackControlToggle_hidden {
+  background: #0000FF url(../images/slice_control_toggle_show.svg) no-repeat center;
 }
 
-div.sliceView div.sliceMouseCatcher
-{
-	position:absolute;
-	top:0px;
-	left:0px;
-	margin:0px;
-	padding:0px;
-	width:100%;
-	height:100%;
-	z-index:5;
-	cursor:move;
+.sliceView div.sliceMouseCatcher {
+  position: absolute;
+  top: 0;
+  left: 0;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 5;
+  cursor: move;
 }
 
-div.sliceView div.sliceBenchmark
-{
-	position:absolute;
-	left:32px;
-	bottom:32px;
-	height:0.5em;
-	width:100px;
-	border:solid 2px #0000FF;
-	border-top:none;
-	overflow:visible;
-	margin:0px;
-	padding:0px;
-	vertical-align:bottom;
-	z-index:3;
+.sliceView div.sliceBenchmark {
+  position: absolute;
+  left: 32px;
+  bottom: 32px;
+  height: 0.5em;
+  width: 100px;
+  border: solid 2px #0000FF;
+  border-top: none;
+  overflow: visible;
+  margin: 0;
+  padding: 0;
+  vertical-align: bottom;
+  z-index: 3;
 }
 
-div.sliceView div.sliceBenchmark p
-{
-	border:none;
-	margin:0px;
-	margin-top:-12px;
-	padding:3px 6px 3px 14px;
-	color:#FFFFFF;
-	/*font-weight:bold;*/
-	background:url(../images/blue20.png);
-	overflow:hidden;
+.sliceView div.sliceBenchmark p {
+  border: none;
+  margin: 0;
+  margin-top: -12px;
+  padding: 3px 6px 3px 14px;
+  color: #FFFFFF;
+  background: url(../images/blue20.png);
+  overflow: hidden;
 }
 
-div.sliceView div.sliceBenchmark p span
-{
-	padding:3px 6px 3px 6px;
-	background:#0000FF;
+.sliceView div.sliceBenchmark p span {
+  padding: 3px 6px 3px 6px;
+  background: #0000FF;
 }
 
-div.sliceView div.metadata
-{
-	position:absolute;
-	right:10px;
-	top:42px;
-	height:0.5em;
-	width:auto;
-	border:none;
-	overflow:visible;
-	margin:0px;
-	padding:0px;
-	vertical-align:bottom;
-	z-index:3;
+.sliceView div.metadata {
+  position: absolute;
+  right: 10px;
+  top: 42px;
+  height: 0.5em;
+  width: auto;
+  border: none;
+  overflow: visible;
+  margin: 0;
+  padding: 0;
+  vertical-align: bottom;
+  z-index: 3;
 }
 
-div.sliceView div.metadata p
-{
-	border:none;
-	margin:0px;
-	margin-top:-12px;
-	padding:3px 6px 3px 14px;
-	color:#FFFFFF;
-	background:url(../images/blue20.png);
-	overflow:hidden;
+.sliceView div.metadata p {
+  border: none;
+  margin: 0;
+  margin-top: -12px;
+  padding: 3px 6px 3px 14px;
+  color: #FFFFFF;
+  background: url(../images/blue20.png);
+  overflow: hidden;
 }
 
-div.sliceView div.indicatorbar
-{
-    position:absolute;
-    right:5px;
-    top:25px;
-    height:0.5em;
-    width:auto;
-    border:none;
-    overflow:visible;
-    margin:0px;
-    padding:0px;
-    vertical-align:bottom;
-    z-index:10;
+.sliceView div.indicatorbar {
+  position: absolute;
+  right: 5px;
+  top: 25px;
+  height: 0.5em;
+  width: auto;
+  border: none;
+  overflow: visible;
+  margin: 0;
+  padding: 0;
+  vertical-align: bottom;
+  z-index: 10;
 }
 
-div.sliceView p.neuronname
-{
-	position:absolute;
-	right:60px;
-	top:0px;
-	width:auto;
-	border:none;
-	margin:0px;
-	padding:3px 6px 3px 6px;
-	vertical-align:bottom;
-	z-index:7;
-	color:#ffffff;
+.sliceView p.neuronname {
+  position: absolute;
+  right: 60px;
+  top: 0;
+  width: auto;
+  border: none;
+  margin: 0;
+  padding: 3px 6px 3px 6px;
+  vertical-align: bottom;
+  z-index: 7;
+  color: #ffffff;
+  background-color: #060;
+}
+
+.sliceView p.neuronname:empty {
+  display: none;
 }
 
 div.stackInfo,
-div.stackInfo_selected
-{
-	position:absolute;
-	left:0px;
-	top:0px;
-	margin:0px;
-	padding:0px;
-	width:100%;
-	color:#FFFFFF;
-	background:url(../images/black20.png);
-	overflow:hidden;
-	z-index:6;
+div.stackInfo_selected {
+  position: absolute;
+  left: 0;
+  top: 0;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  color: #FFFFFF;
+  background: url(../images/black20.png);
+  overflow: hidden;
+  z-index: 6;
 }
-div.stackInfo_selected
-{
-	background:url(../images/blue20.png);
+
+div.stackInfo_selected {
+  background: url(../images/blue20.png);
 }
 
 div.stackInfo p,
-div.stackInfo_selected p
-{
-	margin:0px;
-	padding:3px 6px 3px 6px;
-	background:#A0A0A0;
-	color:#FFFFFF;
+div.stackInfo_selected p {
+  margin: 0;
+  padding: 3px 6px 3px 6px;
+  background: #A0A0A0;
+  color: #FFFFFF;
 }
-div.stackInfo_selected p
-{
-	background:#0000FF;
+
+div.stackInfo_selected p {
+  background: #0000FF;
 }
 
 div.stackInfo p.stackTitle,
-div.stackInfo_selected p.stackTitle
-{
-	float:left;
+div.stackInfo_selected p.stackTitle {
+  float: left;
 }
 
 div.stackInfo p.stackClose,
-div.stackInfo_selected p.stackClose
-{
-	cursor:pointer;
-	float:right;
+div.stackInfo_selected p.stackClose {
+  cursor: pointer;
+  float: right;
 }
 
-div.sliceView div.cropBox,
-div.sliceView div.cropBoxNonActive
-{
-	position:absolute;
-	top:0px;
-	left:0px;
-	margin:0px;
-	padding:0px;
-	border:solid 1px #0000FF;
-	background:url(../images/blue20.png);
-	overflow:visible;
-	z-index:3;
+.sliceView div.cropBox,
+.sliceView div.cropBoxNonActive {
+  position: absolute;
+  top: 0;
+  left: 0;
+  margin: 0;
+  padding: 0;
+  border: solid 1px #0000FF;
+  background: url(../images/blue20.png);
+  overflow: visible;
+  z-index: 3;
 }
 
-div.sliceView div.cropBoxNonActive
-{
-	opacity:.5;
+.sliceView div.cropBoxNonActive {
+  opacity: .5;
 }
 
-div.sliceView div.cropBox p.world,
-div.sliceView div.cropBox p.screen,
-div.sliceView div.cropBox p.close
-{
-	position:absolute;
-	right:-1px;
-	bottom:-24px;
-	margin:0px;
-	padding:2px;
-	background:#0000FF;
-	color:#FFFFFF;
-	white-space:nowrap;
+.sliceView div.cropBox p.world,
+.sliceView div.cropBox p.screen,
+.sliceView div.cropBox p.close {
+  position: absolute;
+  right: -1px;
+  bottom: -24px;
+  margin: 0;
+  padding: 2px;
+  background: #0000FF;
+  color: #FFFFFF;
+  white-space: nowrap;
 }
 
-div.sliceView div.cropBoxNonActive p.world,
-div.sliceView div.cropBoxNonActive p.screen,
-div.sliceView div.cropBoxNonActive p.close
-{
+.sliceView div.cropBoxNonActive p.world,
+.sliceView div.cropBoxNonActive p.screen,
+.sliceView div.cropBoxNonActive p.close {
     visibility: hidden;
 }
 
-div.sliceView div.cropBox p.screen
-{
-	bottom:-47px;
+.sliceView div.cropBox p.screen {
+  bottom: -47px;
 }
 
-div.sliceView div.cropBox p.close
-{
-	top: -22px;
-	height: 12px;
-	z-index:6;
-	cursor: pointer;
+.sliceView div.cropBox p.close {
+  top: -22px;
+  height: 12px;
+  z-index: 6;
+  cursor: pointer;
 }
 
 .clear {
@@ -465,6 +424,6 @@ div.sliceView div.cropBox p.close
 }
 
 div.sliceTiles > * {
-	-webkit-transform: translateZ(0);	/* Pre-chrome36 */
-	will-change: top, left;			/* Post-chrome36 */
+  transform: translateZ(0);
+  will-change: top, left;     /* Post-chrome36 */
 }

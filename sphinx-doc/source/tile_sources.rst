@@ -203,7 +203,7 @@ Tile source types are listed by the enumeration integer ID referenced by
 
    URL format::
 
-    <sourceBaseURL>z/<pixelPosition.z>/box/<col * tileWidth>,<row * tileHeight>,<tileWidth>,<tileHeight>,<2^-zoomLevel>/<fileExtension>-image
+    <sourceBaseURL>largeDataTileSource/<tileWidth>/<tileHeight>/<zoomLevel>/<pixelPosition.z>/<row>/<col>.<fileExtension>
 
 8. DVID ``imagetile`` tiles
 ***************************
@@ -256,7 +256,7 @@ Frontend Retrieval
 ------------------
 
 The front end implements tile source URL generation in
-``django/applications/catmaid/static/js/tilesource.js``. To define a new tile
+``django/applications/catmaid/static/js/tile-source.js``. To define a new tile
 source type, follow the convention of the existing tiles sources by creating
 a function that returns an object with the appropriate ``getTileURL``,
 ``getOverviewURL``, and ``getOverviewLayer`` methods. The overview URL should

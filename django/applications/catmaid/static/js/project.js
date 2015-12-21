@@ -493,7 +493,7 @@
       }
       fakeEvent.target = CATMAID.UI.getTargetElement(e || event);
       var n = fakeEvent.target.nodeName.toLowerCase();
-      var fromATextField = false;
+      var fromATextField = fakeEvent.target.getAttribute('contenteditable');
       if (n === "input") {
         var inputType = fakeEvent.target.type.toLowerCase();
         if (inputType !== 'checkbox' && inputType !== 'button') {
@@ -504,7 +504,7 @@
         // Don't intercept command-key events on Mac.
         return true;
       }
-      if (!(fromATextField || n == "textarea" || n == "area")) //!< @todo exclude all useful keyboard input elements e.g. contenteditable...
+      if (!(fromATextField || n == "textarea" || n == "area"))
       {
         /* Note that there are two different
            conventions for return values here: the

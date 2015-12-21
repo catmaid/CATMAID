@@ -16,7 +16,7 @@ relevant:
   the popup
 - Any errors that occur in the javascript console. In Chrome, this console can
   be opened by pressing <kbd>CONTROL</kbd>+<kbd>SHIFT</kbd>+<kbd>J</kbd>
-  (<kbd>&#8984;</kbd>+<kbd>SHIFT</kbd>+<kbd>J</kbd> in OS X), or by going
+  (<kbd>&#8984;</kbd>+<kbd>ALT</kbd>+<kbd>J</kbd> in OS X), or by going
   through the menu to Tools > Javascript Console.
 
 # Contributing to CATMAID
@@ -24,4 +24,4 @@ relevant:
 CATMAID welcomes contributions. For information on how to begin developing with
 CATMAID or how to get in touch with other developers, refer to the documentation:
 
-http://www.catmaid.org/contributing.html
+http://www.catmaid.org/page/contributing.html

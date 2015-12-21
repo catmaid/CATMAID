@@ -27,7 +27,7 @@ def _process(query, minus1name):
         result['values'].append(row[1])
         s = (names[row[0]], row[1]) if -1 != row[0] else (minus1name, row[1])
         result['users'].append('%s (%d)' % s)
-    return HttpResponse(json.dumps(result), content_type='text/json')
+    return HttpResponse(json.dumps(result), content_type='application/json')
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -79,7 +79,7 @@ def stats_summary(request, project_id=None):
             creation_time__month=startdate.month,
             creation_time__day=startdate.day,
             class_column__class_name=class_name).count()
-    return HttpResponse(json.dumps(result), content_type='text/json')
+    return HttpResponse(json.dumps(result), content_type='application/json')
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -112,7 +112,7 @@ def stats_history(request, project_id=None):
         'date': stat['date'],
         'count': stat['count']} for stat in stats]
 
-    return HttpResponse(json.dumps(stats), content_type='text/json')
+    return HttpResponse(json.dumps(stats), content_type='application/json')
 
 def stats_user_activity(request, project_id=None):
     username = request.GET.get('username', None)
@@ -146,7 +146,7 @@ def stats_user_activity(request, project_id=None):
     prelinks = [time.mktime(ele['creation_time'].timetuple()) for ele in stats_prelink]
     postlinks = [time.mktime(ele['creation_time'].timetuple()) for ele in stats_postlink]
     return HttpResponse(json.dumps({'skeleton_nodes': timepoints,
-         'presynaptic': prelinks, 'postsynaptic': postlinks}), content_type='text/json')
+         'presynaptic': prelinks, 'postsynaptic': postlinks}), content_type='application/json')
 
 def stats_user_history(request, project_id=None):
     # Get the start date for the query, defaulting to 10 days ago.
@@ -267,5 +267,5 @@ def stats_user_history(request, project_id=None):
     return HttpResponse(json.dumps({
         'stats_table': stats_table,
         'days': days,
-        'daysformatted': daysformatted}), content_type='text/json')
+        'daysformatted': daysformatted}), content_type='application/json')
 

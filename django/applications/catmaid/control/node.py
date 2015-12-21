@@ -3,26 +3,18 @@ import re
 
 from collections import defaultdict
 from datetime import datetime
-import itertools as itertools
 
 from django.conf import settings
 from django.db import connection
 from django.http import HttpResponse
-from django.contrib.auth.models import User
 
 from rest_framework.decorators import api_view
 
-from catmaid.models import UserRole, Treenode, TreenodeConnector, Connector, \
-        Location, ClassInstanceClassInstance, Review
+from catmaid.models import UserRole, Treenode, Connector, \
+        ClassInstanceClassInstance, Review
 from catmaid.control.authentication import requires_user_role, \
         can_edit_all_or_fail, user_domain
-from catmaid.control.common import get_relation_to_id_map, insert_into_log
-from catmaid.control.treenode import can_edit_treenode_or_fail
-
-try:
-    import networkx as nx
-except:
-    pass
+from catmaid.control.common import get_relation_to_id_map
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -407,36 +399,7 @@ def update_location_reviewer(request, project_id=None, node_id=None):
     return HttpResponse(json.dumps({
         'reviewer_id': request.user.id,
         'review_time': r.review_time.isoformat(),
-    }), content_type='text/json')
-
-
-@requires_user_role(UserRole.Annotate)
-def update_confidence(request, project_id=None, node_id=0):
-    tnid = int(node_id)
-    can_edit_treenode_or_fail(request.user, project_id, tnid)
-
-    new_confidence = int(request.POST.get('new_confidence', 0))
-    if new_confidence < 1 or new_confidence > 5:
-        return HttpResponse(json.dumps({'error': 'Confidence not in range 1-5 inclusive.'}))
-    to_connector = request.POST.get('to_connector', 'false') == 'true'
-    if to_connector:
-        # Could be more than one. The GUI doesn't allow for specifying to which one.
-        rows_affected = TreenodeConnector.objects.filter(treenode=tnid).update(confidence=new_confidence)
-    else:
-        rows_affected = Treenode.objects.filter(id=tnid).update(confidence=new_confidence,editor=request.user)
-
-    if rows_affected > 0:
-        location = Location.objects.filter(id=tnid).values_list('location_x',
-                'location_y', 'location_z')[0]
-        insert_into_log(project_id, request.user.id, "change_confidence", location, "Changed to %s" % new_confidence)
-        return HttpResponse(json.dumps({'message': 'success'}), content_type='text/json')
-
-    # Else, signal error
-    if to_connector:
-        return HttpResponse(json.dumps({'error': 'Failed to update confidence between treenode %s and connector.' % tnid}))
-    else:
-        return HttpResponse(json.dumps({'error': 'Failed to update confidence at treenode %s.' % tnid}))
-
+    }), content_type='application/json')
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -585,25 +548,6 @@ def node_nearest(request, project_id=None):
         raise Exception(response_on_error + ':' + str(e))
 
 
-def _skeleton_as_graph(skeleton_id):
-    # Fetch all nodes of the skeleton
-    cursor = connection.cursor()
-    cursor.execute('''
-        SELECT id, parent_id
-        FROM treenode
-        WHERE skeleton_id=%s''', [skeleton_id])
-    # Create a directed graph of the skeleton
-    graph = nx.DiGraph()
-    for row in cursor.fetchall():
-        # row[0]: id
-        # row[1]: parent_id
-        graph.add_node(row[0])
-        if row[1]:
-            # Create directional edge from parent to child
-            graph.add_edge(row[1], row[0])
-    return graph
-
-
 def _fetch_location(location_id):
     return _fetch_locations([location_id])[0]
 
@@ -627,133 +571,6 @@ def get_location(request, project_id=None):
         return HttpResponse(json.dumps(_fetch_location(tnid)))
     except Exception as e:
         raise Exception('Could not obtain the location of node with id #%s' % tnid)
-
-
-def _find_first_interesting_node(sequence):
-    """ Find the first node that:
-    1. Has confidence lower than 5
-    2. Has a tag
-    3. Has any connector (e.g. receives/makes synapse, markes as abutting, ...)
-    Otherwise return the last node.
-    """
-    if not sequence:
-        raise Exception('No nodes ahead!')
-
-    if 1 == len(sequence):
-        return sequence[0]
-
-    cursor = connection.cursor()
-    cursor.execute('''
-    SELECT t.id, t.confidence, tc.relation_id, tci.relation_id
-    FROM treenode t
-         LEFT OUTER JOIN treenode_connector tc ON (tc.treenode_id = t.id)
-         LEFT OUTER JOIN treenode_class_instance tci ON (tci.treenode_id = t.id)
-    WHERE t.id IN (%s)
-    ''' % ",".join(map(str, sequence)))
-
-    nodes = {row[0]: row for row in cursor.fetchall()}
-    for nodeID in sequence:
-        if nodeID in nodes:
-            props = nodes[nodeID]
-            # [1]: confidence
-            # [2]: a treenode_connector.relation_id, e.g. presynaptic_to or postsynaptic_to
-            # [3]: a treenode_class_instance.relation_id, e.g. labeled_as
-            # 2 and 3 may be None
-            if props[1] < 5 or props[2] or props[3]:
-                return nodeID
-        else:
-            raise Exception('Nodes of this skeleton changed while inspecting them.')
-
-    return sequence[-1]
-
-
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
-def find_previous_branchnode_or_root(request, project_id=None):
-    try:
-        tnid = int(request.POST['tnid'])
-        alt = 1 == int(request.POST['alt'])
-        skid = Treenode.objects.get(pk=tnid).skeleton_id
-        graph = _skeleton_as_graph(skid)
-        # Travel upstream until finding a parent node with more than one child
-        # or reaching the root node
-        seq = [] # Does not include the starting node tnid
-        while True:
-            parents = graph.predecessors(tnid)
-            if parents: # list of parents is not empty
-                tnid = parents[0] # Can ony have one parent
-                seq.append(tnid)
-                if 1 != len(graph.successors(tnid)):
-                    break # Found a branch node
-            else:
-                break # Found the root node
-
-        if seq and alt:
-            tnid = _find_first_interesting_node(seq)
-
-        return HttpResponse(json.dumps(_fetch_location(tnid)))
-    except Exception as e:
-        raise Exception('Could not obtain previous branch node or root:' + str(e))
-
-
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
-def find_next_branchnode_or_end(request, project_id=None):
-    try:
-        tnid = int(request.POST['tnid'])
-        skid = Treenode.objects.get(pk=tnid).skeleton_id
-        graph = _skeleton_as_graph(skid)
-
-        children = graph.successors(tnid)
-        branches = []
-        for childNodeID in children:
-            # Travel downstream until finding a child node with more than one
-            # child or reaching an end node
-            seq = [childNodeID] # Does not include the starting node tnid
-            branchEnd = childNodeID
-            while True:
-                branchChildren = graph.successors(branchEnd)
-                if 1 == len(branchChildren):
-                    branchEnd = branchChildren[0]
-                    seq.append(branchEnd)
-                else:
-                    break # Found an end node or a branch node
-
-            branches.append([childNodeID,
-                             _find_first_interesting_node(seq),
-                             branchEnd])
-
-        # If more than one branch exists, sort based on downstream arbor size.
-        if len(children) > 1:
-            branches.sort(
-                   key=lambda b: len(nx.algorithms.traversal.depth_first_search.dfs_successors(graph, b[0])),
-                   reverse=True)
-
-        # Leaf nodes will have no branches
-        if len(children) > 0:
-            # Create a dict of node ID -> node location
-            nodeIDsFlat = list(itertools.chain.from_iterable(branches))
-            nodeLocations = {row[0]: row for row in _fetch_locations(nodeIDsFlat)}
-
-        branches = [[nodeLocations[id] for id in branch] for branch in branches]
-        return HttpResponse(json.dumps(branches))
-    except Exception as e:
-        raise Exception('Could not obtain next branch node or leaf: ' + str(e))
-
-
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
-def find_children(request, project_id=None):
-    try:
-        tnid = int(request.POST['tnid'])
-        cursor = connection.cursor()
-        cursor.execute('''
-            SELECT id, location_x, location_y, location_z
-            FROM Treenode
-            WHERE parent_id = %s
-            ''', (tnid,))
-
-        children = [[row] for row in cursor.fetchall()]
-        return HttpResponse(json.dumps(children), content_type='text/json')
-    except Exception as e:
-        raise Exception('Could not obtain next branch node or leaf: ' + str(e))
 
 
 @requires_user_role([UserRole.Browse])

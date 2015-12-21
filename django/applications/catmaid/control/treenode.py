@@ -1,6 +1,8 @@
 import decimal
+import itertools
 import json
 import math
+import networkx as nx
 import re
 
 from collections import defaultdict
@@ -10,13 +12,14 @@ from django.http import HttpResponse
 
 from rest_framework.decorators import api_view
 
-from catmaid.models import UserRole, Treenode, BrokenSlice, ClassInstance, \
-        ClassInstanceClassInstance
+from catmaid.models import UserRole, Treenode, ClassInstance, \
+        TreenodeConnector, Location
 from catmaid.control.authentication import requires_user_role, \
         can_edit_class_instance_or_fail, can_edit_or_fail
 from catmaid.control.common import get_relation_to_id_map, \
         get_class_to_id_map, insert_into_log, _create_relation
 from catmaid.control.neuron import _delete_if_empty
+from catmaid.control.node import _fetch_location, _fetch_locations
 from catmaid.util import Point3D, is_collinear
 
 
@@ -557,3 +560,178 @@ def treenode_info(request, project_id=None, treenode_id=None):
     """
     info = _treenode_info(int(project_id), int(treenode_id))
     return HttpResponse(json.dumps(info))
+
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def find_children(request, project_id=None, treenode_id=None):
+    try:
+        tnid = int(treenode_id)
+        cursor = connection.cursor()
+        cursor.execute('''
+            SELECT id, location_x, location_y, location_z
+            FROM treenode
+            WHERE parent_id = %s
+            ''', (tnid,))
+
+        children = [[row] for row in cursor.fetchall()]
+        return HttpResponse(json.dumps(children), content_type='application/json')
+    except Exception as e:
+        raise Exception('Could not obtain next branch node or leaf: ' + str(e))
+
+
+@requires_user_role(UserRole.Annotate)
+def update_confidence(request, project_id=None, treenode_id=None):
+    tnid = int(treenode_id)
+    can_edit_treenode_or_fail(request.user, project_id, tnid)
+
+    new_confidence = int(request.POST.get('new_confidence', 0))
+    if new_confidence < 1 or new_confidence > 5:
+        return HttpResponse(json.dumps({'error': 'Confidence not in range 1-5 inclusive.'}))
+    to_connector = request.POST.get('to_connector', 'false') == 'true'
+    if to_connector:
+        # Could be more than one. The GUI doesn't allow for specifying to which one.
+        rows_affected = TreenodeConnector.objects.filter(treenode=tnid).update(confidence=new_confidence)
+    else:
+        rows_affected = Treenode.objects.filter(id=tnid).update(confidence=new_confidence, editor=request.user)
+
+    if rows_affected > 0:
+        location = Location.objects.filter(id=tnid).values_list('location_x',
+                'location_y', 'location_z')[0]
+        insert_into_log(project_id, request.user.id, "change_confidence", location, "Changed to %s" % new_confidence)
+        return HttpResponse(json.dumps({'message': 'success'}), content_type='application/json')
+
+    # Else, signal error
+    if to_connector:
+        return HttpResponse(json.dumps({'error': 'Failed to update confidence between treenode %s and connector.' % tnid}))
+    else:
+        return HttpResponse(json.dumps({'error': 'Failed to update confidence at treenode %s.' % tnid}))
+
+
+
+def _skeleton_as_graph(skeleton_id):
+    # Fetch all nodes of the skeleton
+    cursor = connection.cursor()
+    cursor.execute('''
+        SELECT id, parent_id
+        FROM treenode
+        WHERE skeleton_id=%s''', [skeleton_id])
+    # Create a directed graph of the skeleton
+    graph = nx.DiGraph()
+    for row in cursor.fetchall():
+        # row[0]: id
+        # row[1]: parent_id
+        graph.add_node(row[0])
+        if row[1]:
+            # Create directional edge from parent to child
+            graph.add_edge(row[1], row[0])
+    return graph
+
+
+def _find_first_interesting_node(sequence):
+    """ Find the first node that:
+    1. Has confidence lower than 5
+    2. Has a tag
+    3. Has any connector (e.g. receives/makes synapse, markes as abutting, ...)
+    Otherwise return the last node.
+    """
+    if not sequence:
+        raise Exception('No nodes ahead!')
+
+    if 1 == len(sequence):
+        return sequence[0]
+
+    cursor = connection.cursor()
+    cursor.execute('''
+    SELECT t.id, t.confidence, tc.relation_id, tci.relation_id
+    FROM treenode t
+         LEFT OUTER JOIN treenode_connector tc ON (tc.treenode_id = t.id)
+         LEFT OUTER JOIN treenode_class_instance tci ON (tci.treenode_id = t.id)
+    WHERE t.id IN (%s)
+    ''' % ",".join(map(str, sequence)))
+
+    nodes = {row[0]: row for row in cursor.fetchall()}
+    for node_id in sequence:
+        if node_id in nodes:
+            props = nodes[node_id]
+            # [1]: confidence
+            # [2]: a treenode_connector.relation_id, e.g. presynaptic_to or postsynaptic_to
+            # [3]: a treenode_class_instance.relation_id, e.g. labeled_as
+            # 2 and 3 may be None
+            if props[1] < 5 or props[2] or props[3]:
+                return node_id
+        else:
+            raise Exception('Nodes of this skeleton changed while inspecting them.')
+
+    return sequence[-1]
+
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def find_previous_branchnode_or_root(request, project_id=None, treenode_id=None):
+    try:
+        tnid = int(treenode_id)
+        alt = 1 == int(request.POST['alt'])
+        skid = Treenode.objects.get(pk=tnid).skeleton_id
+        graph = _skeleton_as_graph(skid)
+        # Travel upstream until finding a parent node with more than one child
+        # or reaching the root node
+        seq = [] # Does not include the starting node tnid
+        while True:
+            parents = graph.predecessors(tnid)
+            if parents: # list of parents is not empty
+                tnid = parents[0] # Can ony have one parent
+                seq.append(tnid)
+                if 1 != len(graph.successors(tnid)):
+                    break # Found a branch node
+            else:
+                break # Found the root node
+
+        if seq and alt:
+            tnid = _find_first_interesting_node(seq)
+
+        return HttpResponse(json.dumps(_fetch_location(tnid)))
+    except Exception as e:
+        raise Exception('Could not obtain previous branch node or root:' + str(e))
+
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def find_next_branchnode_or_end(request, project_id=None, treenode_id=None):
+    try:
+        tnid = int(treenode_id)
+        skid = Treenode.objects.get(pk=tnid).skeleton_id
+        graph = _skeleton_as_graph(skid)
+
+        children = graph.successors(tnid)
+        branches = []
+        for child_node_id in children:
+            # Travel downstream until finding a child node with more than one
+            # child or reaching an end node
+            seq = [child_node_id] # Does not include the starting node tnid
+            branch_end = child_node_id
+            while True:
+                branchChildren = graph.successors(branch_end)
+                if 1 == len(branchChildren):
+                    branch_end = branchChildren[0]
+                    seq.append(branch_end)
+                else:
+                    break # Found an end node or a branch node
+
+            branches.append([child_node_id,
+                             _find_first_interesting_node(seq),
+                             branch_end])
+
+        # If more than one branch exists, sort based on downstream arbor size.
+        if len(children) > 1:
+            branches.sort(
+                   key=lambda b: len(nx.algorithms.traversal.depth_first_search.dfs_successors(graph, b[0])),
+                   reverse=True)
+
+        # Leaf nodes will have no branches
+        if len(children) > 0:
+            # Create a dict of node ID -> node location
+            node_ids_flat = list(itertools.chain.from_iterable(branches))
+            node_locations = {row[0]: row for row in _fetch_locations(node_ids_flat)}
+
+        branches = [[node_locations[id] for id in branch] for branch in branches]
+        return HttpResponse(json.dumps(branches))
+    except Exception as e:
+        raise Exception('Could not obtain next branch node or leaf: ' + str(e))

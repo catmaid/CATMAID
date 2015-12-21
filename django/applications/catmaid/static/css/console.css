@@ -1,47 +1,42 @@
-div.console
-{
-	position:absolute;
-	left:0px;
-	bottom:32px;
-	margin:0px;
-	padding:0px;
-	width:100%;
-	min-height:29px; /* Should match global_bottom in init.js */
-	background-color:#F0F0F0;
-	border:none;
-	overflow-x: hidden;
-	z-index:10;
+div.console {
+  position: absolute;
+  left: 0;
+  bottom: 32px;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 29px; /* Should match global_bottom in init.js */
+  background-color: #F0F0F0;
+  border: none;
+  overflow-x: hidden;
+  z-index: 10;
 }
 
-div.console pre
-{
-	height:13px;
-	width:auto;
-	margin:8px;
-	overflow-x:hidden;
-	text-overflow:ellipsis;
-	font-family:monospace;
-	font-size:9px;
-	color:#000000;
+div.console pre {
+  height: 13px;
+  width: auto;
+  margin: 8px;
+  overflow-x: hidden;
+  text-overflow: ellipsis;
+  font-family: monospace;
+  font-size: 9px;
+  color: #000000;
 }
 
-div.console #coordinates
-{
-	float:right;
-	margin-top:8px;
-	margin-right:8px;
-	margin-left:6px;
-	font-family:sans-serif;
-	font-size:15px;
+div.console #coordinates {
+  float: right;
+  margin-top: 8px;
+  margin-right: 8px;
+  margin-left: 6px;
+  font-family: sans-serif;
+  font-size: 15px;
 }
 
-div.console:hover pre
-{
-	height:auto;
-	white-space:pre-wrap
+div.console:hover pre {
+  height: auto;
+  white-space: pre-wrap
 }
 
-div.console:hover #coordinates
-{
-	display:none;
+div.console:hover #coordinates {
+  display: none;
 }

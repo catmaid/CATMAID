@@ -6,9 +6,10 @@ User Documentation
 
    introduction
    screenshots
+   tools
+   tracing_neurons
+   api
+   user_faq
    importing_data
    data_views
-   tracing_neurons
-   tools
-   user_faq
    othertools

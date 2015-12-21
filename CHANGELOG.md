@@ -1,3 +1,181 @@
+## 2015.12.21
+
+Contributors: Albert Cardona, Andrew Champion, Eric Trautman, Tom Kazimiers
+
+### Features and enhancements
+
+Selection table:
+
+- A new option ("Append with batch color") allows to override the color and
+  opacity of appended skeletons with the current batch color and batch opacity.
+  It is deselected by default.
+
+- Clearing the table doesn't ask for confirmation anymore. This has been removed
+  for consistency with other widgets and because of the now available option to
+  save/open skeleton lists.
+
+
+New widget "Synapse Distribution Plot":
+
+- For one or more neurons, plot distances of postsynaptic sites relative
+	to an axon initial segment, represented by a skeleton node that is either
+	computed or given via text tags.
+  Each row represents the inputs contributed by a presynaptic arbor.
+  Presynaptic arbors (rows) are sorted from more to less synapses.
+  Presynaptic arbors can be filtered (i.e. hidden away) by a threshold
+  on the number of inputs each provides, or by being listed in another
+  widget that has selected skeletons.
+	Individual synapses take by default the color of the postsynaptic arbor
+	(that is, the arbors added via "Append"), but can be colored as well
+	according to neuron colors in another widget.
+  Click on an individual postsynaptic site to go to the corresponding
+  skeleton node.
+  Click on the legend to jump to the skeleton node representing the
+  axon initial segment, relative to which all distance measurements
+  where made. All presynaptic neurons are available in a separate
+  skeleton source for each widget to pull neurons from.
+
+
+New widget "Synapse Fraction":
+
+- For one or more neurons, render a normalized stacked bar chart with
+  the number of synapses for/from each partner skeletons (directly either
+	upstream or downstream). Can group partner skeletons: add groups by
+	selecting a skeleton source (another widget listing skeletons).
+	Click on the legend to edit (title, color) the group, or remove it.
+	Click on the legend to go to the nearest node in the partner skeleton.
+	To open this new widget, open a connectivity widget and push the
+	button named "Open partner chart".
+
+
+Settings widget:
+
+- Persistent settings are now scoped, so that default settings may be
+  configured for an entire CATMAID instance ("global"), for each project
+  ("project"), for each user ("user"), and for each user for each project
+  ("session"). Only administrators have access to change project settings,
+  and only superusers have access to change global settings. This allows,
+  for example, administrators to set up recommended defaults for projects so
+  that users only need to adjust their settings where their preferences differ
+  from the project defaults. A selection box for which scope to adjust is
+  at the top of the settings widget. Persistent settings will display
+  information about scopes and defaults when hovering over them with the cursor.
+
+- Administrators may also lock persistent settings so that global or project
+  defaults can not be changed by users.
+
+
+Graph widget:
+
+- In the main tab, a new remove button removes skeletons in the selected
+  skeleton source from the graph.
+
+
+3D Viewer:
+
+- Added new buttons under the "Export" tab to export connectors and synapses
+  as CSV. And Skeletons are now exported to CSV with a new column, the radius
+	at each skeleton node, and another new column for the neuron name as
+	rendered by the NeuronNameService (controlled by the Settings).
+	The connectors CSV contains, for each row, the connector ID, the treenode ID,
+	the skeleton ID and the relation ID, mimicking the treenode_connector table.
+	The synapses CSV exports two files:
+	  1. The skeleton ID vs the neuron name
+		2. The list of synaptic relations of any arbor visible in the 3D Viewer,
+		   with columns for the presynaptic skeleton ID, its treenode ID emitting
+			 the synapse, the postsynaptic skeleton ID, and its treenode ID that
+			 receives the synapse.
+
+
+Review system:
+
+- Creation, deletion, and edition of synapses and relations now causes related
+  nodes to become unreviewed. Changes to presynaptic relations or the connector
+  itself cause all related treenodes to become unreviewed, while changes to
+  postsynaptic relations affect only that specific related treenode. Changes
+  to other connection relations (abutment, etc.) behave like presynaptic
+  relations, propagating to all related treenodes.
+
+
+Skeleton source subscriptions:
+
+- So far some widgets allowed to synchronize their skeleton list along with
+  individual property changes. This was done through a "Sync to" selection which
+  pushed this information to other widgets. This has now been replaced with a
+  subscription option. Many widgets allow now to react to changes in skeleton
+  lists in other widgets. Widgets supporting this got a new small chain icon in
+  their title bar with which a subscription management user interface can be
+  shown and hidden. Widgets that contain multiple sources, like the connectivity
+  matrix, have one icon per source. A hover title will show which one to use for
+  each source.
+
+- The UI allows to add subscriptions to multiple sources which can then be
+  combined through set operations. Currently sources are combined in a strict
+  left-associative fashion from top to bottom of the list. When "Override
+  existing" is checked, widget local skeletons are not used when subscriptions
+  are refreshed and will subsequently be removed. Otherwise, the local set is
+  united with the first subscription before all other subscription sources are
+  applied.
+
+- The scope of individual subscriptions can be adjusted: By default each
+  subscription reacts to skeletons added, removed and updated in a source. The
+  "Filter" selection allows to listen to only one of these events. For instance,
+  subscribing to the active skeleton with the "Only additions" filter, allows to
+  collect skeletons selected active skeletons without removing them again from
+  a widget.
+
+- By default, only selected skeletons are subscribed to. This means if a
+  skeleton becomes unselected in a source it is removed from the target widget.
+  If the "Only selected" checkbox is unchecked, also unselected skeletons are
+  added to a target widget. They are removed when skeletons are removed from the
+  source and their selection state is synced.
+
+- All widget still feature the "From [Source] Append/Clear/Refresh" work-flow.
+  The subscription UI's "Pull" button does the same as the regular "Append"
+  button: a one-time sync from a source.
+
+
+Miscellaneous:
+
+- Many tracing widgets now allow a user to hide their controls. A little gear
+  icon in their title bar toggles their visibility.
+
+- Rather than only specifying annotations that are used as successive
+  fallbacks for labeling neurons, neuron labels can now be specified as
+  arbitrary combinations of annotation-based components using a format string.
+  This is still configured in the annotations section of the settings widget.
+
+- Volumes can now be edited when clicked on in the volume widget. This will also
+  display the edited volume as layer in the active stack viewer.
+
+- Moving a node in the tracing overlay now updates its position in the database
+  as soon as the mouse is released, rather than waiting until the section
+  changes.
+
+- Changes to the CATMAID API are now documented in `API_CHANGELOG.md`.
+
+- A docker image of a running CATMAID instance is now available for
+  evaluating or developing CATMAID without needing to perform a complete
+  install. The latest release is available via the "stable" tag, and the
+  current development version is available via the "latest" tag. To try it:
+
+      docker run -p 8080:80 aschampion/catmaid
+
+  Then point your browser to http://localhost:8080. The default superuser has
+  username "admin" and password "admin".
+
+
+### Bug fixes
+
+- API testing URL generated by Swagger (used for the API documentation at /apis)
+  now respect a sub-directory that CATMAID might run from.
+
+- Fixed near active node shading in the 3D viewer.
+
+- Pre- and post-synaptic edges in the tracing overlay now update when dragging
+  a related treenode.
+
+
 ## 2015.11.16
 
 Contributors: Albert Cardona, Andrew Champion, Tom Kazimiers

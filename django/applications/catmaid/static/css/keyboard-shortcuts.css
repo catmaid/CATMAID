@@ -1,24 +1,52 @@
-/* Taken from: http://meta.stackoverflow.com/questions/1939/kbd-elements-are-way-intrusive/2049#2049 */
-
-/*
-kbd {
-      background:#EEEEEE none repeat scroll 0 0;
-      border-color:#CCCCCC #AAAAAA #888888 #BBBBBB;
-      border-style:solid;
-      border-width:1px 1px 2px 2px;
-      color:#000000;
-      padding:2px 1px;
-      margin: 5px;
-      line-height: 300%;
-      font-size: larger;
-}
-*/
-
-kbd {
-      font-size:larger;
-}
-
 #keyboard-shortcuts-window {
-      padding-left: 10px;
-      line-height: 150%;
+  padding-left: 10px;
+  line-height: 150%;
+}
+
+dl.keyboardShortcuts {
+  margin: 0.1em;
+}
+
+dl.keyboardShortcuts:after {
+  content: "";
+  display: block;
+  clear: left;
+}
+
+dl.keyboardShortcuts dd,
+dl.keyboardShortcuts dt {
+  margin-bottom: 0.25em;
+  float: left;
+  line-height: 1.3em;
+  vertical-align: middle;
+}
+
+dl.keyboardShortcuts dt {
+  font-weight: bold;
+  clear: left;
+  width: 50px;
+  text-align: right;
+  margin-right: 4px;
+}
+
+dl.keyboardShortcuts dd {
+  margin-left: 0.5em;
+  margin-top: 0.1em;
+  width: 80%;
+  padding-top: 0.1em;
+}
+
+dl.keyboardShortcuts kbd {
+  background-color: #f7f7f7;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.2),0 0 0 2px #fff inset;
+  color: #333;
+  display: inline-block;
+  font-family: Arial,Helvetica,sans-serif;
+  font-size: 11px;
+  line-height: 1.4;
+  margin: 0 .1em;
+  padding: .075em .4em;
+  text-shadow: 0 1px 0 #fff;
 }

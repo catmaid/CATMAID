@@ -70,7 +70,7 @@ def create_link(request, project_id=None):
     ).save()
 
     result['message'] = 'success'
-    return HttpResponse(json.dumps(result), content_type='text/json')
+    return HttpResponse(json.dumps(result), content_type='application/json')
 
 
 @requires_user_role(UserRole.Annotate)

@@ -66,11 +66,12 @@
     this.set("minX", options.minX || 0);
     this.set("minY", options.minY || 0);
     this.set("minZ", options.minZ || 0);
-    this.set("maxX", options.minX || 1);
-    this.set("maxY", options.minY || 1);
-    this.set("maxZ", options.minZ || 1);
+    this.set("maxX", options.maxX || 1);
+    this.set("maxY", options.maxY || 1);
+    this.set("maxZ", options.maxZ || 1);
     this.set("title", options.title || "Box volume");
     this.set("comment", options.comment || undefined);
+    this.set("id", options.id || null);
   };
 
   CATMAID.BoxVolume.prototype = Object.create(CATMAID.Volume.prototype);

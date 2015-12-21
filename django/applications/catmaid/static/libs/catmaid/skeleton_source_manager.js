@@ -20,16 +20,37 @@
 
     // Register with neuron manager to get updates about deleted neurons
     CATMAID.neuronController.on(CATMAID.neuronController.EVENT_SKELETON_DELETED,
-      function(skeletonID) { this.removeSkeletons([skeletonID]); }, this);
+        this.removeSkeleton, this);
+
+    // Register to active node changes to highlight skeleton in sources
+    SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
+        this.handleActiveNodeChange, this);
   };
 
   SkeletonSourceManager.prototype = {};
 
+  /**
+   * Add a new source to this manager. It is references by its name
+   * [source.getName()], which therefore should be unique.
+   */
   SkeletonSourceManager.prototype.add = function(source) {
     this.sources[source.getName()] = source;
     this.orderedSources.push(source.getName());
   };
 
+  SkeletonSourceManager.prototype.destroy = function() {
+    CATMAID.neuronController.off(CATMAID.neuronController.EVENT_SKELETONS_JOINED,
+        this.replaceSkeleton);
+    CATMAID.neuronController.off(CATMAID.neuronController.EVENT_SKELETON_DELETED,
+        this.removeSkeleton);
+    SkeletonAnnotations.off(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
+        this.handleActiveNodeChange);
+  };
+
+  /**
+   * Remove a source from this manager. It is references by its name
+   * [source.getName()], which therefore should be unique.
+   */
   SkeletonSourceManager.prototype.remove = function(source) {
     delete this.sources[source.getName()];
     var orderIndex = this.orderedSources.indexOf(source.getName());
@@ -37,20 +58,310 @@
       this.orderedSources.splice(orderIndex, 1);
     }
     this.updateGUI();
-    Object.keys(this.sources).forEach(function(name) {
-      var s = this.sources[name];
-      if (s.linkTarget === source) delete s.linkTarget;
-    }, this);
   };
 
+  /**
+   * Get a textual representation of all subscriptions of a source.
+   */
+  SkeletonSourceManager.prototype.getSubscriptionExpression = function(source) {
+    var subscriptions = source.getSourceSubscriptions();
+    if (subscriptions && subscriptions.length > 0) {
+      // Special case where only one final element is part of the expression
+      if (source.ignoreLocal && 1 === subscriptions.length) {
+        return 'Widget skeletons = filtered subscription skeletons';
+      }
+      return 'Widget skeletons = ' + subscriptions.reduce(function(o, s, i) {
+        var name = 'S' + (i + 1);
+        if (0 === i) {
+          var union = CATMAID.SkeletonSource.operations[CATMAID.SkeletonSource.UNION];
+          return source.ignoreLocal ? name : ('(local ' + union + ' ' + name + ')');
+        } else {
+          return '(' + o + ' ' + CATMAID.SkeletonSource.operations[s.op] + ' ' + name + ')';
+        }
+      }, undefined);
+
+    } else {
+      return null;
+    }
+  };
+
+  var defaultSourceControlOptions = {
+    showColorOption: true,
+    showGroupOption: true,
+    colors: true,
+    selectionBased: true,
+    groups: false,
+    ignoreLocal: false
+  };
+
+  /**
+   * Create a complete set of source management controls.
+   */
+  SkeletonSourceManager.prototype.createSourceControls = function(source, options) {
+    options = options || defaultSourceControlOptions;
+    // The panel wraps both controls and source list
+    var panel = document.createElement('div');
+
+
+    var controls = document.createElement('div');
+    panel.appendChild(controls);
+
+    // Source select
+    var from = document.createElement('label');
+    var fromSelect = this.createUnboundSelect(source.getName());
+    from.appendChild(document.createTextNode('From'));
+    from.appendChild(fromSelect);
+    controls.appendChild(from);
+
+    // Color checkbox
+    var colorsCb = document.createElement('input');
+    colorsCb.setAttribute('type', 'checkbox');
+    if (options.colors) {
+      colorsCb.setAttribute('checked', 'checked');
+    }
+    var colors = document.createElement('label');
+    colors.appendChild(colorsCb);
+    colors.appendChild(document.createTextNode('Use colors'));
+
+    if (options.showColorOption) {
+      controls.appendChild(colors);
+    }
+
+    // Selection basis checkbox
+    var selectedCb = document.createElement('input');
+    selectedCb.setAttribute('type', 'checkbox');
+    if (options.selectionBased) {
+      selectedCb.setAttribute('checked', 'checked');
+    }
+    var selected = document.createElement('label');
+    selected.appendChild(selectedCb);
+    selected.appendChild(document.createTextNode('Only selected'));
+    controls.appendChild(selected);
+
+    // Groups
+    /*
+    var groupsCb = document.createElement('input');
+    groupsCb.setAttribute('type', 'checkbox');
+    if (options.groups) {
+      groupsCb.setAttribute('checked', 'checked');
+    }
+    var groups = document.createElement('label');
+    groups.appendChild(groupsCb);
+    groups.appendChild(document.createTextNode('As group'));
+
+    if (options.showColorOption) {
+      controls.appendChild(groups);
+    }
+    */
+
+    // Pull button
+    var append = document.createElement('button');
+    append.appendChild(document.createTextNode('Pull'));
+    controls.appendChild(append);
+    append.onclick = (function(e) {
+      var fromSource = this.getSource(fromSelect.value);
+      if (fromSource) {
+        var models = fromSource.getSelectedSkeletonModels();
+        source.append(models);
+      }
+    }).bind(this);
+
+    // Select default value in a select element
+    var selectDefault = function(select, value) {
+      for (var i=0, max=select.options.length; i<max; ++i) {
+        var o = select.options[i];
+        if (!value || o.value === value) {
+          o.defaultSelected = o.selected = true;
+          break;
+        }
+      }
+      return select;
+    };
+
+    // Subscriptions: combination operation
+    var createOpSelector = function(value) {
+      var opSelect = document.createElement('select');
+      opSelect.options.add(new Option('Union', CATMAID.SkeletonSource.UNION));
+      opSelect.options.add(new Option('Intersection', CATMAID.SkeletonSource.INTERSECTION));
+      opSelect.options.add(new Option('Difference', CATMAID.SkeletonSource.DIFFERENCE));
+      var defaultValue = (undefined === value) ? CATMAID.SkeletonSource.UNION : value;
+      selectDefault(opSelect, defaultValue);
+      return opSelect;
+    };
+    var opSelect = createOpSelector();
+    var op = document.createElement('label');
+    op.appendChild(document.createTextNode('Operator'));
+    op.setAttribute('title', 'All operators are left-associative');
+    op.appendChild(opSelect);
+    controls.appendChild(op);
+
+    // Subscriptions: subscription mode
+    var createModeSelector = function(value) {
+      var modeSelect = document.createElement('select');
+      modeSelect.options.add(new Option('None', 'all'));
+      modeSelect.options.add(new Option('Only additions', 'additions-only'));
+      modeSelect.options.add(new Option('Only removals', 'removals-only'));
+      modeSelect.options.add(new Option('Only updates', 'updates-only'));
+      selectDefault(modeSelect, value);
+      return modeSelect;
+    };
+    var modeSelect = createModeSelector('all');
+    var mode = document.createElement('label');
+    mode.appendChild(document.createTextNode('Filter'));
+    mode.appendChild(modeSelect);
+    controls.appendChild(mode);
+
+    // Subscriptions: go
+    var subscribe = document.createElement('button');
+    subscribe.appendChild(document.createTextNode('Subscribe'));
+    controls.appendChild(subscribe);
+
+    // Ignore local checkbox
+    var ignoreLocalCb = document.createElement('input');
+    ignoreLocalCb.setAttribute('type', 'checkbox');
+    if (source.ignoreLocal) {
+      ignoreLocalCb.setAttribute('checked', 'checked');
+    }
+    var ignoreLocal = document.createElement('label');
+    ignoreLocal.appendChild(ignoreLocalCb);
+    ignoreLocal.appendChild(document.createTextNode('Override existing'));
+    ignoreLocal.setAttribute('title', 'If unchecked, subscriptions will be ' +
+        'applied starting from the local model set.');
+    controls.appendChild(ignoreLocal);
+
+    var helpButton = document.createElement('span');
+    helpButton.setAttribute('class', 'extra-button');
+    controls.appendChild(helpButton);
+    var help = document.createElement('a');
+    help.appendChild(document.createTextNode('?'));
+    help.href = CATMAID.makeDocURL('user_faq.html#faq-source-subscriptions');
+    help.target = '_blank';
+    helpButton.appendChild(help);
+
+
+    var listContainer = document.createElement('div');
+    panel.appendChild(listContainer);
+    panel.style.width = "100%";
+
+    // Add a list entry for every source subscribed plus the this source
+    var subscriptions = source.getSourceSubscriptions() || [];
+
+    if (subscriptions.length < 1) {
+      // Disable operators
+    }
+
+    // Populate a datatable
+    var table = document.createElement('table');
+    table.style.width = "100%";
+    listContainer.appendChild(table);
+    var datatable = $(table).DataTable({
+      dom: "ti",
+      data: subscriptions,
+      infoCallback: this.getSubscriptionExpression.bind(this, source),
+      autoWidth: false,
+      columns: [{
+        "width": "10px",
+        "render": function(data, type, row, meta) {
+          return '<span class="ui-icon ui-icon-close action-remove" alt="Remove" title="Remove"></span>';
+        }
+      }, {
+        "data": "source.getName()"
+      }, {
+        "width": "10%",
+        "render": function(data, type, row, meta) {
+          var checked = row.colors ? 'checked="checked"' : '';
+          return '<label><input type="checkbox" ' + checked + ' />Colors</label>';
+        }
+      }, {
+        "width": "10%",
+        "render": function(data, type, row, meta) {
+          if (0 === meta.row) {
+            return (!row.target || row.target.ignoreLocal) ?
+              '-' : "Union with local";
+          } else {
+            var opSelector = createOpSelector(row.op);
+            opSelector.setAttribute('class', 'action-changeop');
+            return opSelector.outerHTML;
+          }
+        }
+      }, {
+        "width": "10%",
+        "render": function(data, type, row, meta) {
+          var modeSelector = createModeSelector(row.mode);
+          modeSelector.setAttribute('class', 'action-changemode');
+          return modeSelector.outerHTML;
+        }
+      }],
+      language: {
+        "zeroRecords": "No skeleton sources subscribed to"
+      }
+    });
+
+    $(table).on("click", "td .action-remove", source, function(e) {
+      var tr = $(this).closest("tr");
+      var subscription = datatable.row(tr).data();
+      e.data.removeSubscription(subscription);
+      datatable.row(tr).remove().draw();
+    });
+    $(table).on("change", "td .action-changeop", source, function(e) {
+      var tr = $(this).closest("tr");
+      var subscription = datatable.row(tr).data();
+      subscription.op = this.value;
+      subscription.target.loadSubscriptions();
+    });
+    $(table).on("change", "td .action-changemode", source, function(e) {
+      var tr = $(this).closest("tr");
+      var subscription = datatable.row(tr).data();
+      subscription.setMode(this.value);
+      subscription.target.loadSubscriptions();
+    });
+
+    ignoreLocalCb.onchange = function(e) {
+      source.ignoreLocal = this.checked;
+      datatable.rows(0).invalidate().draw();
+    };
+
+    // Add subscription handler
+    subscribe.onclick = (function(e) {
+      var fromSource = this.getSource(fromSelect.value);
+      if (fromSource) {
+        var group;
+        /*
+        if (groupsCb.checked) {
+          // TODO: ask for group name
+          group = "Testgroup";
+        }
+        */
+        var syncColors = colorsCb.checked;
+        var op = opSelect.value;
+        var mode = modeSelect.value;
+        var selectionBased = selectedCb.checked;
+        // Create and store new subscription
+        var subscription = new CATMAID.SkeletonSourceSubscription(
+            fromSource, syncColors, selectionBased, op, mode, group);
+        source.addSubscription(subscription);
+        // Update UI
+        datatable.row.add(subscription).draw();
+      }
+    }).bind(this);
+
+    return panel;
+  };
+
+  /**
+   * Create a list of Option instances, one for each registered source. This is
+   * useful to create select elements for all managed sources.
+   */
   SkeletonSourceManager.prototype.createOptions = function() {
     return Object.keys(this.sources).sort().map(function(name) {
       return new Option(name, name);
     }, this);
   };
 
-  /** Updates all existing 'select' GUI elements listing sources.
-   *  Assumes names are unique. */
+  /**
+   * Updates all existing 'select' GUI elements listing sources. Assumes names
+   * are unique.
+   */
   SkeletonSourceManager.prototype.updateGUI = function() {
     var options = this.createOptions.bind(this);
     var sources = this.sources;
@@ -190,12 +501,27 @@
       }, {});
   };
 
+  /**
+   * React to a node change event by selecting this node in all souces.
+   */
+  SkeletonSourceManager.prototype.handleActiveNodeChange = function(node, skeletonChanged) {
+    // (de)highlight in SkeletonSource instances if any if different from the last
+    // activated skeleton
+    if (skeletonChanged) {
+      this.highlight(SkeletonAnnotations.activeSkeleton, node.skeleton_id);
+    }
+  };
+
   SkeletonSourceManager.prototype.highlight = function(caller, skeleton_id) {
     Object.keys(this.sources).forEach(function(name) {
       var source = this.sources[name];
       if (source === caller) return;
       source.highlight(skeleton_id);
     }, this);
+  };
+
+  SkeletonSourceManager.prototype.removeSkeleton = function(skeletonID) {
+    return this.removeSkeletons([skeletonID]);
   };
 
   SkeletonSourceManager.prototype.removeSkeletons = function(skeleton_ids) {
@@ -242,7 +568,16 @@
   CATMAID.SkeletonSourceManager = SkeletonSourceManager;
 
   // Create a default instance within the CATMAID namespace
-  CATMAID.skeletonListSources = new SkeletonSourceManager();
+  var singleton;
+  Object.defineProperty(CATMAID, "skeletonListSources", {
+    get: function() {
+      if (!singleton) {
+        singleton = new SkeletonSourceManager();
+      }
+      return singleton;
+    },
+    set: function() { /* No setting */ }
+  });
 
   /**
    * Helper function to  test if to values are the same.

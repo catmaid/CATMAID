@@ -3,15 +3,11 @@ from numpy import array, float32
 from numpy.linalg import norm
 import networkx as nx
 from collections import namedtuple
+from scipy.sparse.csgraph import dijkstra
 
 from catmaid.control.common import get_relation_to_id_map
 from catmaid.models import Treenode, TreenodeConnector, ClassInstance, Relation
 
-
-try:
-    from scipy.sparse.csgraph import dijkstra
-except:
-    pass
 
 def synapse_clustering( skeleton_id, h_list ):
 

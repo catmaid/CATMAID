@@ -1,0 +1,16 @@
+.sliceView div.canvasOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  margin: 0;
+  padding: 0;
+}
+
+div.canvasControls {
+  position: absolute;
+  top: 40px;
+  right: 30px;
+  margin: 0;
+  padding: 0;
+  border: solid 2px #FF0000;
+}

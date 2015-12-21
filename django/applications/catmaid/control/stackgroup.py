@@ -26,4 +26,4 @@ def get_stackgroup_info(request, project_id, stackgroup_id):
             'relation': l.relation.relation_name
         } for l in stackgroup_links]
     }
-    return HttpResponse(json.dumps(result), content_type="text/json")
+    return HttpResponse(json.dumps(result), content_type="application/json")

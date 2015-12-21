@@ -68,8 +68,8 @@
   };
 
   /**
-   * Returns a display-friendly representation of the user where or not it is in
-   * the user cache.
+   * Returns a display-friendly representation of the user whether or not it is
+   * in the user cache.
    */
   User.safeToString = function (id) {
     var u = User.prototype.users[id];
@@ -144,8 +144,6 @@
    */
   Userprofile.prototype.getOptions = function() {
     return {
-      inverse_mouse_wheel: true,
-      display_stack_reference_lines: true,
       independent_ontology_workspace_is_default: false,
       show_text_label_tool: false,
       show_tagging_tool: false,
@@ -154,11 +152,6 @@
       show_tracing_tool: false,
       show_ontology_tool: false,
       show_roi_tool: false,
-      tracing_overlay_screen_scaling: true,
-      tracing_overlay_scale: true,
-      prefer_webgl_layers: true,
-      use_cursor_following_zoom: true,
-      tile_linear_interpolation: true
     };
   };
 

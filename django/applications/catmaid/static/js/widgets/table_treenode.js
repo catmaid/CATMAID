@@ -108,6 +108,12 @@ TreenodeTable.prototype.getSelectedSkeletonModels = function() {
 
 TreenodeTable.prototype.getSkeletonModels = TreenodeTable.prototype.getSelectedSkeletonModels;
 
+TreenodeTable.prototype.getSkeletonModel = function(id) {
+  if (id in this.models) {
+    return this.models[id].clone();
+  }
+};
+
 TreenodeTable.prototype.refresh = function() {
   var skeleton_ids = Object.keys(this.models);
   if (skeleton_ids.length > 0) {

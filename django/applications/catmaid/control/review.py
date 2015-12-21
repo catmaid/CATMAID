@@ -154,7 +154,7 @@ def reviewer_whitelist(request, project_id=None):
     if not request.user.is_authenticated() or request.user.is_anonymous():
         return HttpResponse(json.dumps({'success': "The reviewer whitelist " +
                 "of  the anonymous user won't be updated"}),
-                content_type='text/json')
+                content_type='application/json')
 
     if request.method == 'GET':
         # Retrieve whitelist
@@ -162,7 +162,7 @@ def reviewer_whitelist(request, project_id=None):
                 user_id=request.user.id).values('reviewer_id', 'accept_after')
         # DjangoJSONEncoder is required to properly encode datetime to ECMA-262
         return HttpResponse(json.dumps(list(whitelist), cls=DjangoJSONEncoder),
-                content_type='text/json')
+                content_type='application/json')
 
     # Since this is a collections resource replacing all objects, PUT would be
     # correct, but POST is used for consistency with the rest of the API.
@@ -177,4 +177,4 @@ def reviewer_whitelist(request, project_id=None):
 
         return HttpResponse(
                 json.dumps({'success': 'Updated review whitelist'}),
-                content_type='text/json')
+                content_type='application/json')

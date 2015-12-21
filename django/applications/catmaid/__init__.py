@@ -8,8 +8,6 @@ required_setting_fields = {
         "VERSION": str,
         "CATMAID_URL": str,
         "ONTOLOGY_DUMMY_PROJECT_ID": int,
-        "PROFILE_DEFAULT_INVERSE_MOUSE_WHEEL": bool,
-        "PROFILE_DISPLAY_STACK_REFERENCE_LINES": bool,
         "PROFILE_INDEPENDENT_ONTOLOGY_WORKSPACE_IS_DEFAULT": bool,
         "PROFILE_SHOW_TEXT_LABEL_TOOL": bool,
         "PROFILE_SHOW_TAGGING_TOOL": bool,
@@ -18,10 +16,6 @@ required_setting_fields = {
         "PROFILE_SHOW_TRACING_TOOL": bool,
         "PROFILE_SHOW_ONTOLOGY_TOOL": bool,
         "PROFILE_SHOW_ROI_TOOL": bool,
-        "PROFILE_TRACING_OVERLAY_SCREEN_SCALING": bool,
-        "PROFILE_TRACING_OVERLAY_SCALE": float,
-        "PROFILE_PREFER_WEBGL_LAYERS": bool,
-        "PROFILE_USE_CURSOR_FOLLOWING_ZOOM": bool,
         "ROI_AUTO_CREATE_IMAGE": bool,
         "NODE_LIST_MAXIMUM_COUNT": int,
         "IMPORTER_DEFAULT_TILE_WIDTH": int,
@@ -48,6 +42,13 @@ def validate_configuration():
         if type(getattr(settings, field)) != data_type:
             raise ImproperlyConfigured("Please make sure settings field %s "
                     "is of type %s" % (field, data_type))
+
+    # Make sure swagger (API doc) knows about a potential sub-directory
+    if not hasattr(settings, 'SWAGGER_SETTINGS'):
+        settings.SWAGGER_SETTINGS = {}
+    if 'api_path' not in settings.SWAGGER_SETTINGS:
+        settings.SWAGGER_SETTINGS['api_path'] = settings.CATMAID_URL
+
 
 def get_system_user():
     """Return a User instance of a superuser. This is either the superuser

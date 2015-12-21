@@ -1,11 +1,9 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
-  CircuitGraphPlot,
   cytoscape,
   fetchSkeletons,
   InstanceRegistry,
-  NeuronNameService,
   project,
   requestQueue,
   session,
@@ -285,7 +283,7 @@
   GroupGraph.prototype.destroy = function() {
     this.unregisterInstance();
     this.unregisterSource();
-    NeuronNameService.getInstance().unregister(this);
+    CATMAID.NeuronNameService.getInstance().unregister(this);
   };
 
   GroupGraph.prototype.nextGroupID = function() {
@@ -720,7 +718,7 @@
       var models = node.data('skeletons');
       // skip groups
       if (1 === models.length) {
-        var name = NeuronNameService.getInstance().getName(models[0].id);
+        var name = CATMAID.NeuronNameService.getInstance().getName(models[0].id);
         if (this.subgraphs[models[0].id]) {
           var label = node.data('label');
           var i_ = label.lastIndexOf(' [');
@@ -780,7 +778,7 @@
             model = models[skeleton_id];
         return {data: {id: nodeID, // MUST be a string, or fails
                         skeletons: [model.clone()],
-                        label: NeuronNameService.getInstance().getName(model.id),
+                        label: CATMAID.NeuronNameService.getInstance().getName(model.id),
                         node_count: 0,
                         shape: "ellipse",
                         color: '#' + model.color.getHexString()}};
@@ -832,7 +830,7 @@
           ap = new CATMAID.ArborParser().init('compact-arbor', m),
           mode = this.subgraphs[skid],
           parts = {},
-          name = NeuronNameService.getInstance().getName(skid),
+          name = CATMAID.NeuronNameService.getInstance().getName(skid),
           color = '#' + models[skid].color.getHexString(),
           common = {skeletons: [models[skid]],
                     shape: "ellipse",
@@ -1149,9 +1147,13 @@
 
     // Add all other edges
     json.edges.forEach((function(e) {
+      var n1 = e[0], n2 = e[1];
       // Skip edges that are part of subgraphs
-      if (this.subgraphs[e[0]] || this.subgraphs[e[1]]) return;
-      elements.edges.push(asEdge(e));
+      if (this.subgraphs[n1] || this.subgraphs[n2]) return;
+      // Only allow edges that link existing models
+      if (n1 in models && n2 in models) {
+        elements.edges.push(asEdge(e));
+      }
     }).bind(this));
 
     // Group neurons, if any groups exist, skipping splitted neurons
@@ -1258,6 +1260,15 @@
     if (this.cy) this.cy.elements("node").remove();
   };
 
+  GroupGraph.prototype.removeSource = function () {
+    var models = CATMAID.skeletonListSources.getSelectedSkeletonModels(this);
+    if (0 === models.length) {
+      CATMAID.info('Selected source is empty.');
+      return;
+    }
+    this.removeSkeletons(Object.keys(models));
+  };
+
   GroupGraph.prototype.removeSkeletons = function(skeleton_ids) {
     // Convert array values into object keys
     var skids = skeleton_ids.reduce(function(o, skid) {
@@ -1316,7 +1327,7 @@
           // Update node properties
 
           if (new_model.baseName) {
-            var name = NeuronNameService.getInstance().getName(new_model.id),
+            var name = CATMAID.NeuronNameService.getInstance().getName(new_model.id),
                 name = name ? name : new_model.baseName,
                 label = node.data('label');
             if (subgraphs[new_model.id] && label.length > 0) {
@@ -1496,7 +1507,7 @@
 
   GroupGraph.prototype.load = function(models) {
     // Register with name service before we attempt to load the graph
-    NeuronNameService.getInstance().registerAll(this, models, (function() {
+    CATMAID.NeuronNameService.getInstance().registerAll(this, models, (function() {
       this._load(models);
     }).bind(this));
   };
@@ -1744,7 +1755,8 @@
     var count = Object.keys(origins).length;
     this.cy.nodes().each((function(i, node) {
       if (node.visible() && node.selected()) {
-        node.data('skeletons').forEach(function(sk) { origins[sk.id] = true; });
+        // Collect node IDs so that groups can be evaluated dynamically
+        origins[node.id()] = true;
       }
     }).bind(this));
     if (count === Object.keys(origins).length) {
@@ -2473,7 +2485,7 @@
       return;
     }
     WindowMaker.create('circuit-graph-plot');
-    var GP = CircuitGraphPlot.prototype.getLastInstance(),
+    var GP = CATMAID.CircuitGraphPlot.prototype.getLastInstance(),
         m = this.createAdjacencyMatrix();
     GP.plot(m.ids, m.names, m.skeletons, m.AdjM);
   };
@@ -2588,6 +2600,9 @@
         var gedge = gedges[id];
         if (gedge) {
           // Just append the synapse count to the already existing edge
+          gedge.data.confidence = gedge.data.confidence.map(function (count, conf) {
+            return count + d.confidence[conf];
+          });
           gedge.data.weight += d.weight;
           gedge.data.label = gedge.data.weight;
         } else {
@@ -3110,10 +3125,10 @@
       var props = edge.data();
       if (props.directed) {
         var count = _filterSynapses(props.confidence, edge_confidence_threshold);
-        props.weight = count;
+        edge.data('weight', count);
         edge.data('label', count);
         edge.data('weight', count);
-        if (props.weight < edge_threshold) edge.hide();
+        if (count < edge_threshold) edge.hide();
         else edge.show();
       }
     });

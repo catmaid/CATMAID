@@ -25,8 +25,10 @@
 
     <!-- Front end initialization -->
 		<script type="text/javascript">
-			CATMAID.configure("{{ CATMAID_URL }}", "{{ STATIC_URL|escapejs }}",
-					"{{ STATIC_EXTENSION_URL|escapejs }}");
+			CATMAID.configure("{{ CATMAID_URL }}",
+							  "{{ STATIC_URL|escapejs }}",
+							  "{{ STATIC_EXTENSION_URL|escapejs }}",
+							  "{% csrf_cookie_name %}");
 			CATMAID.CLIENT_VERSION = "{% catmaid_version %}";
 		</script>
 

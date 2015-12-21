@@ -389,4 +389,48 @@ CATMAID.tools = CATMAID.tools || {};
     };
   })();
 
+  /**
+   * Returns a new object having a field named after the parameter object's id
+   * field and referencing it.
+   */
+  tools.idMap = function(obj) {
+    var o = {};
+    o[obj.id] = obj;
+    return o;
+  };
+
+  /**
+   * Returns a new object having a field named after the id field of all objects
+   * in the list parameter.
+   */
+  tools.listToIdMap = (function() {
+
+    var build = function(o, e) {
+      o[e.id] = e;
+      return o;
+    };
+
+    return function(list) {
+      return list.reduce(build, {});
+    };
+  })();
+
+  // Speed up calls to hasOwnProperty
+  var hasOwnProperty = Object.prototype.hasOwnProperty;
+
+  /**
+   * Returns true if the given object has any fields and false otherwise.
+   * See also: http://stackoverflow.com/questions/4994201
+   */
+  tools.isEmpty = function(obj) {
+    // Null and undefined are "empty"
+    if (obj == null) return true; // jshint ignore:line
+
+    for (var key in obj) {
+      if (hasOwnProperty.call(obj, key)) return false;
+    }
+
+    return true;
+  };
+
 })(CATMAID.tools);

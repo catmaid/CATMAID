@@ -67,3 +67,7 @@ def catmaid_version():
     current Git commit is not available.
     """
     return settings.VERSION
+
+@register.simple_tag
+def csrf_cookie_name():
+	return settings.CSRF_COOKIE_NAME

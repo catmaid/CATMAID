@@ -36,6 +36,22 @@ var requestQueue = new RequestQueue();
     return str.indexOf(suffix, str.length - suffix.length) !== -1;
   };
 
+  var getCookie = function(name) {
+      var cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+          var cookies = document.cookie.split(';');
+          for (var i = 0; i < cookies.length; i++) {
+              var cookie = jQuery.trim(cookies[i]);
+              // Does this cookie string begin with the name we want?
+              if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                  cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                  break;
+              }
+          }
+      }
+      return cookieValue;
+  };
+
   /**
    * Set up the front-end environment. Both URLs are stored so that they contain
    * a trailing slash.
@@ -44,8 +60,10 @@ var requestQueue = new RequestQueue();
    * @param {string} staticURL - The URL pointing to CATMAID's static files.
    * @param {string} staticExtURL - Optional, the relative URL pointing to
    *    CATMAID's static extension files.
+   * @param {string} csrfCookieName - The name of the cookie containing the
+   *    CSRF token to be sent to the backend with XHRs.
    */
-  CATMAID.configure = function(backendURL, staticURL, staticExtURL) {
+  CATMAID.configure = function(backendURL, staticURL, staticExtURL, csrfCookieName) {
     validateString(backendURL, "back-end URL");
     validateString(staticURL, "static URL");
     if (typeof staticExtURL === 'undefined') staticExtURL = '';
@@ -70,6 +88,15 @@ var requestQueue = new RequestQueue();
       writable: false,
       value: endsWith(staticExtURL, "/") ? staticExtURL : staticExtURL + "/"
     });
+
+    Object.defineProperty(CATMAID, "csrfCookieName", {
+      enumerable: false,
+      configurable: true,
+      writable: false,
+      value: csrfCookieName
+    });
+
+    CATMAID.setupCsrfProtection();
   };
 
   /**
@@ -119,10 +146,58 @@ var requestQueue = new RequestQueue();
    */
   CATMAID.makeDocURL = function(path) {
     validateString(path, "relative path for URL creation");
-    var version = "stable";
+    var version = CATMAID.getVersionRelease();
     return "http://catmaid.readthedocs.org/en/" + version + "/" +
       (startsWith(path, "/") ? path.substr(1) : path);
-
   };
+
+  /**
+   * Create a release changelog URL for the GitHub repo.
+   *
+   * @returns {string}    - The complete URL.
+   */
+  CATMAID.makeChangelogURL = function() {
+    var version = CATMAID.getVersionRelease();
+    if ('stable' === version) {
+      return "https://github.com/catmaid/CATMAID/releases/latest";
+    } else {
+      return "https://github.com/catmaid/CATMAID/releases/tag/" + version;
+    }
+  };
+
+  /**
+   * Infer the CATMAID release from the client version.
+   *
+   * @return {string} The release version, or "stable" if none could be guessed.
+   */
+  CATMAID.getVersionRelease = function () {
+    var version = CATMAID.CLIENT_VERSION.split('-')[0];
+    if (version.length === 0 || version.split('.').length !== 3)
+      version = "stable";
+    return version;
+  };
+
+  /**
+   * Setup CSRF protection on AJAX requests made through requestQueue or
+   * jQuery's ajax method.
+   */
+  CATMAID.setupCsrfProtection = function () {
+    var csrfCookie = CATMAID.csrfCookieName ?
+        getCookie(CATMAID.csrfCookieName) :
+        undefined;
+
+    window.requestQueue = new RequestQueue(CATMAID.backendURL, csrfCookie);
+    $.ajaxPrefilter(function (options, origOptions, jqXHR) {
+      if (0 === options.url.indexOf(CATMAID.backendURL) &&
+          !RequestQueue.csrfSafe(options.type)) {
+        jqXHR.setRequestHeader('X-CSRFToken', csrfCookie);
+      }
+    });
+  };
+
+  /**
+   * A general noop function.
+   */
+  CATMAID.noop = function() {};
 
 })(CATMAID);

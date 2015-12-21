@@ -105,7 +105,7 @@
     this.overview = new CATMAID.Overview( this );
     this._view.appendChild( this.overview.getView() );
 
-    this.tilelayercontrol = new CATMAID.TilelayerControl( this );
+    this.tilelayercontrol = new CATMAID.TileLayerControl( this );
     $(this.tilelayercontrol.getView()).hide();
     this._view.appendChild( this.tilelayercontrol.getView() );
 
@@ -131,7 +131,7 @@
         event.cancelBubble = true;
       if ( e && e.stopPropagation )
         e.stopPropagation();
-      var state = $(this).siblings('.TilelayerControl').toggle().is(':visible');
+      var state = $(this).siblings('.TileLayerControl').toggle().is(':visible');
       $(this).attr('class', state ? 'stackControlToggle' : 'stackControlToggle_hidden');
     };
     this._view.appendChild( controlToggle );
@@ -153,7 +153,7 @@
     this._vert.style.opacity = this._horr.style.opacity = "0.5";
     this._view.appendChild( this._vert );
     this._view.appendChild( this._horr );
-    this.showReferenceLines( userprofile ? userprofile.display_stack_reference_lines : false );
+    this.showReferenceLines(StackViewer.Settings.session.display_stack_reference_lines);
 
     if (primaryStack.metadata.length > 0) {
       this.addLayer('Stack metadata', new CATMAID.MetadataLayer(this, primaryStack.metadata));
@@ -741,6 +741,18 @@
     this._vert.style.visibility = show ? "visible" : "hidden";
     this._horr.style.visibility = show ? "visible" : "hidden";
   };
+
+  StackViewer.Settings = new CATMAID.Settings(
+      'stack-viewer',
+      {
+        version: 0,
+        entries: {
+          display_stack_reference_lines: {
+            default: false
+          }
+        },
+        migrations: {}
+      });
 
   /** known scale bar sizes in nanometers */
   StackViewer.SCALE_BAR_SIZES = [

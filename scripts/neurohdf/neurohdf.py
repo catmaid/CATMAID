@@ -333,4 +333,4 @@ def skeleton_neurohdf(request, project_id=None, skeleton_id=None):
         'format_version': 0.1,
         'url': neurohdf_url
     }
-    return HttpResponse(json.dumps(result), mimetype="text/json")
+    return HttpResponse(json.dumps(result), mimetype="application/json")

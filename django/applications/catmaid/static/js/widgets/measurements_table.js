@@ -3,7 +3,6 @@
 /* global
   fetchSkeletons,
   InstanceRegistry,
-  NeuronNameService,
   project,
 */
 
@@ -34,7 +33,7 @@
     this.table = null;
     this.unregisterInstance();
     this.unregisterSource();
-    NeuronNameService.getInstance().unregister(this);
+    CATMAID.NeuronNameService.getInstance().unregister(this);
   };
 
   SkeletonMeasurementsTable.prototype.append = function(models) {
@@ -51,7 +50,7 @@
 
     if (0 === Object.keys(new_models).length) return;
 
-    NeuronNameService.getInstance().registerAll(this, new_models,
+    CATMAID.NeuronNameService.getInstance().registerAll(this, new_models,
         (function() {
           this.load(new_models, this.sigma, this.table.fnAddData.bind(this.table));
         }).bind(this));
@@ -81,7 +80,7 @@
               be = arbor.findBranchAndEndNodes(),
               n_branching = be.n_branches,
               n_ends = be.ends.length;
-          var name = NeuronNameService.getInstance().getName(skid);
+          var name = CATMAID.NeuronNameService.getInstance().getName(skid);
           rows.push([SkeletonMeasurementsTable.prototype._makeStringLink(name, skid), skid,
                      raw_cable, smooth_cable, lower_bound_cable,
                      n_inputs, n_outputs, n_presynaptic_sites,
@@ -199,7 +198,7 @@
 
   SkeletonMeasurementsTable.prototype.updateNeuronNames = function() {
       this.table.fnGetData().forEach(function(row, i) {
-          this.table.fnUpdate(this._makeStringLink(NeuronNameService.getInstance().getName(row[1]), row[1]), i, 0);
+          this.table.fnUpdate(this._makeStringLink(CATMAID.NeuronNameService.getInstance().getName(row[1]), row[1]), i, 0);
       }, this);
   };
 

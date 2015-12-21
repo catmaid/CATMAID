@@ -1,0 +1,27 @@
+div.resize_handle_h {
+  margin: 0;
+  padding: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  overflow: hidden;
+  width: 4px;
+  height: 100%;
+  background: url(../images/resize_handle_h.gif) repeat-y left top;
+  cursor: e-resize;
+  z-index: 8;
+}
+
+div.resize_handle_v {
+  margin: 0;
+  padding: 0;
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  overflow: hidden;
+  height: 4px;
+  width: 100%;
+  background: url(../images/resize_handle_v.gif) repeat-x left top;
+  cursor: s-resize;
+  z-index: 8;
+}

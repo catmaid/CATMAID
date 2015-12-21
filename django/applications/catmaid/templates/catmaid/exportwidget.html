@@ -364,7 +364,7 @@
                 this.skeletons[skid] = skeleton;
                 // Detect if all skeletons have completed callbacks
                 if (skids.length === Object.keys(this.skeletons).length) {
-                  var blob = new Blob([JSON.stringify(this)], {type: "text/json"});
+                  var blob = new Blob([JSON.stringify(this)], {type: "application/json"});
                   saveAs(blob, 'tree_geometry.json');
                 }
               }).bind(result, skid, skids)));

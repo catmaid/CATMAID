@@ -8,12 +8,15 @@
 
   "use strict";
 
+  var resizeOnRender = null;
+
   var activeOptions = null;
   var activeColor = null;
   var activeAlpha = null;
 
   function onClose(colorPicker) {
     $(colorPicker.color.options.input).colorPicker("destroy");
+    resizeOnRender = null;
     activeOptions = null;
     activeColor = null;
     activeAlpha = null;
@@ -36,20 +39,31 @@
   }
 
   function onShow(colorPicker) {
-    // Fix position
-    var cp = $(colorPicker.nodes.colorPicker);
-    var pos = {left: parseFloat(cp.css('left')), top: parseFloat(cp.css('top'))};
-    var dim = {x: cp.width(), y: cp.height()};
-    var win = {width: $(window).width(), height: $(window).height()};
-    var newLeft = pos.left < 0 ? 0 :
-      ((pos.left + dim.x) > win.width ? win.width - dim.x : pos.left);
-    var newTop = pos.top < 0 ? 0 :
-      ((pos.top + dim.y) > win.height ? win.height - dim.y : pos.top);
+    // Create a new resize callback which will be executed after the first
+    // rendering, when the widget is set up completely.
+    resizeOnRender = function() {
+      // Fix position
+      var cp = $(colorPicker.nodes.colorPicker);
+      var pos = {left: parseFloat(cp.css('left')), top: parseFloat(cp.css('top'))};
+      var dim = {x: cp.width(), y: cp.height()};
+      var win = {width: $(window).width(), height: $(window).height()};
+      var newLeft = pos.left < 0 ? 0 :
+        ((pos.left + dim.x) > win.width ? win.width - dim.x : pos.left);
+      var newTop = pos.top < 0 ? 0 :
+        ((pos.top + dim.y) > win.height ? win.height - dim.y : pos.top);
 
-    cp.css({
-      left: newLeft,
-      top: newTop
-    });
+      cp.css({
+        left: newLeft,
+        top: newTop
+      });
+    };
+  }
+
+  function onRender(colors, mode) {
+    if (resizeOnRender) {
+      CATMAID.tools.callIfFn(resizeOnRender);
+      resizeOnRender = null;
+    }
   }
 
   /**
@@ -71,7 +85,8 @@
         draggable: true,
         beforeHideCallback: onClose,
         convertCallback: onConvert,
-        afterShowCallback: onShow
+        afterShowCallback: onShow,
+        renderCallback: onRender
       };
       var $element = $(element).colorPicker(config);
       $element.focus();
@@ -126,6 +141,7 @@
      * Hide color picker for a specific DOM element.
      */
     hide: function(element) {
+      resizeOnRender = null;
       // Detach event handlers
       $(element).colorPicker("destroy");
       // Hide color picker

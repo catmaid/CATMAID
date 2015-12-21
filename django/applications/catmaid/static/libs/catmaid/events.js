@@ -38,7 +38,8 @@
     /**
      * Unregister a callback from an event. If a context is given, the callback
      * is only unregistered, if the context matches the context of the stored
-     * callback.
+     * callback. Note if a prototype method is used for a callback, a context
+     * should be supplied to only remove the handler use in question.
      */
     off: function(event, callback, context) {
       if (this.hasOwnProperty('events') && this.events.has(event)) {
@@ -75,6 +76,18 @@
     },
 
     /**
+     * Remove all listeners from all events available for the current context.
+     */
+    clearAllEvents: function() {
+      var result = false;
+      if (this.hasOwnProperty('events')) {
+        this.events.clear();
+      }
+      return result;
+    },
+
+
+    /**
      * Triggers the given event and calls all its listeners.
      */
     trigger: function(event) {
@@ -99,6 +112,7 @@
     this.on = Event.on;
     this.off = Event.off;
     this.clear = Event.clear;
+    this.clearAllEvents = Event.clearAllEvents;
     this.trigger = Event.trigger;
 
     return this;

@@ -1,11 +1,19 @@
 .. _basic-installation:
 
+.. note::
+
+   These instructions describe installing CATMAID from source for
+   long-term use. If you want to quickly try CATMAID for evaluation or
+   demonstration purposes, consider using the :ref:`docker image <docker>`.
+
 Basic Installation Instructions
 ===============================
 
 These installation instructions have been tested on the most
 recent stable release of Ubuntu (14.04 precise), so may need
 some minor changes for other Debian-based distributions.
+For installation on Mac OS X, first read these
+:ref:`additional instructions <installation-osx>`.
 
 Introduction
 ------------

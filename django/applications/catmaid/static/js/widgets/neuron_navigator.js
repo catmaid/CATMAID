@@ -7,7 +7,6 @@
   checkPermission,
   ConnectorTable,
   InstanceRegistry,
-  NeuronNameService,
   NeuronDendrogram,
   project,
   requestQueue,
@@ -49,7 +48,7 @@
   {
     this.unregisterInstance();
     this.unregisterSource();
-    NeuronNameService.getInstance().unregister(this);
+    CATMAID.NeuronNameService.getInstance().unregister(this);
 
     // Unregister from event stream
     CATMAID.neuronController.off(CATMAID.neuronController.EVENT_SKELETON_CHANGED,
@@ -71,6 +70,11 @@
   NeuronNavigator.prototype.hasSkeleton = function(skeleton_id)
   {
     return this.current_node.hasSkeleton(skeleton_id);
+  };
+
+  NeuronNavigator.prototype.getSkeletonModels = function()
+  {
+    return this.current_node.getSkeletonModels();
   };
 
   NeuronNavigator.prototype.getSelectedSkeletonModels = function()
@@ -162,6 +166,8 @@
       return;
     }
 
+    var oldModels = this.current_node ? this.getSkeletonModels() : {};
+
     // Find all nodes that will be removed after this selection
     var current_nodes = this.get_node_list(this.current_node);
     var new_nodes = this.get_node_list(node);
@@ -207,8 +213,20 @@
     // Get the current filter set and add content based on it
     node.add_content($content, this.current_node.get_filter_set());
 
-    // Update sync link
-    this.updateLink(this.getSelectedSkeletonModels());
+    var newModels = this.current_node ? this.getSkeletonModels() : {};
+
+    for (var mId in oldModels) {
+      if (mId in newModels) { delete oldModels[mId]; }
+    }
+    for (var mId in newModels) {
+      if (mId in oldModels) { delete newModels[mId]; }
+    }
+    if (!CATMAID.tools.isEmpty(oldModels)) {
+      this.triggerRemove(oldModels);
+    }
+    if (!CATMAID.tools.isEmpty(newModels)) {
+      this.triggerAdd(newModels);
+    }
   };
 
   /**
@@ -224,7 +242,7 @@
     WindowMaker.create('neuron-navigator', NN);
     // Register the new navigator with the neuron name service
     NN.registered_neurons = CATMAID.tools.deepCopy(this.registered_neurons);
-    NeuronNameService.getInstance().registerAll(NN,
+    CATMAID.NeuronNameService.getInstance().registerAll(NN,
         Object.keys(NN.registered_neurons).reduce(function(m, n) {
           m[n] = {};
           return m;
@@ -272,7 +290,7 @@
       // Register with the neuron name service to get notified about updates
       var model = {};
       model[skeleton_id] = {};
-      NeuronNameService.getInstance().registerAll(this, model);
+      CATMAID.NeuronNameService.getInstance().registerAll(this, model);
       this.registered_neurons[skeleton_id] = 1;
     }
   };
@@ -291,7 +309,7 @@
     if (1 === n_references) {
       // Unregister with the neuron name service, because this was the last node
       // referencing it.
-      NeuronNameService.getInstance().unregister(this, [skeleton_id]);
+      CATMAID.NeuronNameService.getInstance().unregister(this, [skeleton_id]);
       delete this.registered_neurons[skeleton_id];
     } else {
       // Decrement reference counter
@@ -371,6 +389,15 @@
    */
   NeuronNavigator.Node.prototype.hasSkeleton = function(skeleton_id) {
     return false;
+  };
+
+  /**
+   * Default implementation for getting information for the skeleton source
+   * interface. It can be overridden by base classes.
+   */
+  NeuronNavigator.Node.prototype.getSkeletonModels = function()
+  {
+    return {};
   };
 
   /**
@@ -1136,39 +1163,33 @@
         }
 
         // Request data from back-end
-        $.ajax({
-            "dataType": 'json',
-            "cache": false,
-            "type": "POST",
-            "url": django_url + project.id + '/annotations/query-targets',
-            "data": params,
-            "success": function(json) {
-                // Format result so that DataTables can understand it
-                var result = {
-                  draw: data.draw,
-                  recordsTotal: json.totalRecords,
-                  recordsFiltered: json.totalRecords,
-                  data: json.entities
-                };
+        requestQueue.register(django_url + project.id + '/annotations/query-targets',
+            'POST', params, CATMAID.jsonResponseHandler(function(json) {
+              // Format result so that DataTables can understand it
+              var result = {
+                draw: data.draw,
+                recordsTotal: json.totalRecords,
+                recordsFiltered: json.totalRecords,
+                data: json.entities
+              };
 
-                if (json.error) {
-                  if (-1 !== json.error.indexOf('invalid regular expression')) {
-                    searchInput.css('background-color', 'salmon');
-                    CATMAID.warn(json.error);
-                  } else {
-                    CATMAID.error(json.error, json.detail);
-                  }
-                  result.error = json.error;
+              if (json.error) {
+                if (-1 !== json.error.indexOf('invalid regular expression')) {
+                  searchInput.css('background-color', 'salmon');
+                  CATMAID.warn(json.error);
+                } else {
+                  CATMAID.error(json.error, json.detail);
                 }
+                result.error = json.error;
+              }
 
-                // Let datatables know about new data
-                dtCallback(result);
+              // Let datatables know about new data
+              dtCallback(result);
 
-                if (callback && !json.error ) {
-                  callback(json);
-                }
-            }
-        });
+              if (callback && !json.error ) {
+                callback(json);
+              }
+            }));
       },
       "lengthMenu": [
           this.possibleLengths,
@@ -1263,7 +1284,7 @@
     // Add a change handler for the check boxes in each row
     $('#' + table_id).on('change', 'tbody td.selector_column input', (function() {
       // Update sync link
-      this.navigator.updateLink(this.navigator.getSelectedSkeletonModels());
+      this.navigator.triggerChange(this.navigator.getSelectedSkeletonModels());
     }).bind(this));
 
     // Add double click handler for table cells containing a select check box
@@ -1364,13 +1385,30 @@
   };
 
   /**
+   * Returns a skeleton model dictionary.
+   */
+  NeuronNavigator.NeuronListMixin.prototype.getSkeletonModels = function() {
+    return this.get_entities().reduce((function(o, n) {
+      n.skeleton_ids.forEach(function(skid) {
+        var model = new CATMAID.SkeletonModel(skid, n.name,
+            new THREE.Color().setRGB(1, 1, 0));
+        model.selected = this.listed_neurons[n.id].selected;
+        o[skid] = model;
+      });
+      return o;
+    }).bind(this), {});
+  };
+
+  /**
    * Retruns a skeleton model dictionary.
    */
   NeuronNavigator.NeuronListMixin.prototype.getSelectedSkeletonModels = function() {
     return this.get_entities(true).reduce((function(o, n) {
       n.skeleton_ids.forEach(function(skid) {
-        o[skid] = new CATMAID.SkeletonModel(skid, n.name,
+        var model = new CATMAID.SkeletonModel(skid, n.name,
             new THREE.Color().setRGB(1, 1, 0));
+        model.selected = true;
+        o[skid] = model;
       });
       return o;
     }).bind(this), {});
@@ -1379,20 +1417,25 @@
 
   /**
    * If passed true, this function returns a list of selected entities in the
-   * neuron list. Otherweise, a list of unselected entities is returned.
+   * neuron list. If passed false, a list of unselected entities is returned. If
+   * passed undefined, all entities are returned.
    */
   NeuronNavigator.NeuronListMixin.prototype.get_entities = function(checked)
   {
     if (!this.listed_neurons) return [];
 
-    var checked_neuron_IDs = $('#navigator_neuronlist_table' + this.navigator.widgetID + ' tbody input')
-      .filter(function(i, cb) { return cb.checked; })
-      .toArray()
-      .reduce(function(o, cb) { o[cb.getAttribute('neuron_id')] = true; return o; }, {});
+    if (undefined === checked) {
+      return this.listed_neurons;
+    } else {
+      var checked_neuron_IDs = $('#navigator_neuronlist_table' + this.navigator.widgetID + ' tbody input')
+        .filter(function(i, cb) { return cb.checked === checked; })
+        .toArray()
+        .reduce(function(o, cb) { o[cb.getAttribute('neuron_id')] = true; return o; }, {});
 
-    return this.listed_neurons.filter(function(neuron) {
-      return neuron.id in checked_neuron_IDs;
-    });
+      return this.listed_neurons.filter(function(neuron) {
+        return neuron.id in checked_neuron_IDs;
+      });
+    }
   };
 
   /**
@@ -1850,7 +1893,7 @@
     rename_button.onclick = (function() {
       var new_name = prompt("Rename", this.neuron_name);
       if (!new_name) return;
-      NeuronNameService.getInstance().renameNeuron(this.neuron_id, this.skeleton_ids, new_name, (function() {
+      CATMAID.NeuronNameService.getInstance().renameNeuron(this.neuron_id, this.skeleton_ids, new_name, (function() {
           $('div.nodeneuronname', container).html('Name: ' + new_name);
           this.neuron_name = new_name;
       }).bind(this));
@@ -2126,7 +2169,7 @@
   /**
    * Retruns a skeleton model dictionary.
    */
-  NeuronNavigator.NeuronNode.prototype.getSelectedSkeletonModels = function() {
+  NeuronNavigator.NeuronNode.prototype.getSkeletonModels = function() {
     return this.skeleton_ids.reduce((function(o, skid) {
       o[skid] = new CATMAID.SkeletonModel(skid, this.neuron_name,
           new THREE.Color().setRGB(1, 1, 0));
@@ -2134,6 +2177,8 @@
     }).bind(this), {});
   };
 
+  NeuronNavigator.NeuronNode.prototype.getSelectedSkeletonModels =
+      NeuronNavigator.NeuronNode.prototype.getSkeletonModels;
 
   /**
    * This mixin introduces fields and functions to work with the currently active

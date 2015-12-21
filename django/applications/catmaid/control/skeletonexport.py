@@ -64,7 +64,7 @@ def export_skeleton_response(request, project_id=None, skeleton_id=None, format=
     if format == 'swc':
         return HttpResponse(get_swc_string(treenode_qs), content_type='text/plain')
     elif format == 'json':
-        return HttpResponse(get_json_string(treenode_qs), content_type='text/json')
+        return HttpResponse(get_json_string(treenode_qs), content_type='application/json')
     else:
         raise Exception, "Unknown format ('%s') in export_skeleton_response" % (format,)
 
@@ -148,12 +148,12 @@ def compact_skeleton(request, project_id=None, skeleton_id=None, with_connectors
 def compact_arbor(request, project_id=None, skeleton_id=None, with_nodes=None, with_connectors=None, with_tags=None):
     """
     Performance-critical function. Do not edit unless to improve performance.
-    Returns, in JSON, [[nodes], [outputs], [inputs], {nodeID: [tags]}],
-    with inputs and outputs being empty when 0 == with_connectors,
+    Returns, in JSON, [[nodes], [connections], {nodeID: [tags]}],
+    with connections being empty when 0 == with_connectors,
     and the dict of node tags being empty 0 == with_tags, respectively.
 
     The difference between this function and the compact_skeleton function is that
-    the connectors contain the whole chain from the skeleton of interest to the
+    the connections contain the whole chain from the skeleton of interest to the
     partner skeleton:
     [treenode_id, confidence,
      connector_id,
@@ -355,7 +355,11 @@ def _skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=True, lean=
             # 'presynaptic_to' has an 'r' at position 1:
             for row in cursor.fetchall():
                 x, y, z = imap(float, (row[3], row[4], row[5]))
-                connectors.append((row[0], row[1], 0 if 'r' == row[2][1] else 1, x, y, z, row[6]))
+                connectors.append((row[0],
+                                   row[1],
+                                   0 if 'r' == row[2][1] else 1,
+                                   x, y, z,
+                                   row[6] if all_field else None))
             return name, nodes, tags, connectors, reviews
 
     return name, nodes, tags, connectors, reviews
@@ -903,7 +907,7 @@ def export_review_skeleton(request, project_id=None, skeleton_id=None):
 
     segments = _export_review_skeleton(project_id, skeleton_id, subarbor_node_id)
     return HttpResponse(json.dumps(segments, cls=DjangoJSONEncoder),
-            content_type='text/json')
+            content_type='application/json')
 
 @requires_user_role(UserRole.Browse)
 def skeleton_connectors_by_partner(request, project_id):

@@ -16,10 +16,10 @@ h5py==2.5.0
 jsonfield==1.0.0
 kombu==3.0.12
 Markdown==2.6.2
-matplotlib==1.3.1
+matplotlib==1.4.0
 mock==1.0.1
 networkx==1.7
-numpy==1.9.2
+numpy==1.10.1
 pgmagick==0.6.0
 pillow==2.3.0
 psycopg2==2.6.1
@@ -27,7 +27,7 @@ Pygments==2.0.2
 python-dateutil==2.1
 python-libuuid==0.9.0
 PyYAML==3.10
-scipy==0.13.2
+scipy==0.14.1
 south==1.0.2
 Sphinx==1.3.1
 sqlparse==0.1.3

@@ -1,42 +1,38 @@
-div.sliceView div.sliceSVGOverlay
-{
-  position:absolute;
-  top:0px;
-  left:0px;
-  margin:0px;
-  padding:0px;
-  /*cursor:pointer;
-  border:solid 2px #0000FF;*/
- 
+.sliceView div.sliceTracingOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  margin: 0;
+  padding: 0;
 }
 
-.tagEditor
-{
+.tagEditor {
   margin: 4px 0;
   padding: 0;
 }
 
-.tagEditor li
-{
-  display: inline;
+.tagEditor li {
+  display: inline-block;
   background-image: url(../images/minus_small.png);
   background-color: #eef;
   background-position: right center;
   background-repeat: no-repeat;
   list-style-type: none;
   padding: 0 18px 0 6px;
-  margin: 0 4px;  
+  margin: 0 4px;
   cursor: pointer;
   -moz-border-radius: 5px;
   -webkit-border-radius: 5px;
+  border-radius: 5px;
 }
 
-.tagEditor li:hover
-{
+.tagEditor li: hover {
   background-color: #eee;
 }
 
-svg.screen-scale line, svg.screen-scale marker, svg.screen-scale circle {
+svg.screen-scale line,
+svg.screen-scale marker,
+svg.screen-scale circle {
   vector-effect: non-scaling-stroke;
 }
 

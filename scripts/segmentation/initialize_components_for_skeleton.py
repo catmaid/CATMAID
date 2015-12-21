@@ -67,4 +67,4 @@ def initialize_components_for_skeleton(request, project_id=None, stack_id=None):
         )
         new_component.save()
 
-    return HttpResponse(json.dumps({'status': 'success'}), mimetype="application/json")
+    return HttpResponse(json.dumps({'status': 'success'}), content_type="application/json")

@@ -67,4 +67,4 @@ def generate_mesh(request, project_id=None, stack_id=None):
     writer.SetFileTypeToBinary()
     writer.Write()
 
-    return HttpResponse(json.dumps(True), mimetype="application/json")
+    return HttpResponse(json.dumps(True), content_type="application/json")

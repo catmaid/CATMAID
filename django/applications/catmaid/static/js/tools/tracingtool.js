@@ -491,51 +491,51 @@
       actions.push( action );
     };
 
-      this.addAction( new CATMAID.Action({
-          helpText: "Switch to skeleton tracing mode",
-          buttonName: "skeleton",
-          buttonID: 'trace_button_skeleton',
-          keyShortcuts: { ";": [ 186 ] },
-          run: function (e) {
-            SkeletonAnnotations.setTracingMode(SkeletonAnnotations.MODES.SKELETON);
-            return true;
-          }
-      } ) );
-
-      this.addAction( new CATMAID.Action({
-        helpText: "Switch to synapse dropping mode",
-        buttonName: "synapse",
-        buttonID: 'trace_button_synapse',
+    this.addAction( new CATMAID.Action({
+        helpText: "Switch to skeleton tracing mode",
+        buttonName: "skeleton",
+        buttonID: 'trace_button_skeleton',
+        keyShortcuts: { ";": [ 186 ] },
         run: function (e) {
-          if (!mayEdit())
-            return false;
-          SkeletonAnnotations.setTracingMode(SkeletonAnnotations.MODES.SYNAPSE);
+          SkeletonAnnotations.setTracingMode(SkeletonAnnotations.MODES.SKELETON);
           return true;
         }
-      } ) );
+    } ) );
 
-      /** Return a function that attempts to tag the active treenode or connector,
-       * and display an alert when no node is active.
-       */
-      var tagFn = function(tag) {
-        return function(e) {
-          if (!mayEdit()) return false;
-          if (e.altKey || e.ctrlKey || e.metaKey) return false;
-          var modifier = e.shiftKey;
-          if (null === SkeletonAnnotations.getActiveNodeId()) {
-            alert('Must activate a treenode or connector before '
-                + (modifier ? 'removing the tag' : 'tagging with') + ' "' + tag + '"!');
-            return true;
-          }
-          // If any modifier key is pressed, remove the tag
-          if (modifier) {
-            SkeletonAnnotations.Tag.removeATNLabel(tag, activeTracingLayer.svgOverlay);
-          } else {
-            SkeletonAnnotations.Tag.tagATNwithLabel(tag, activeTracingLayer.svgOverlay, false);
-          }
+    this.addAction( new CATMAID.Action({
+      helpText: "Switch to synapse dropping mode",
+      buttonName: "synapse",
+      buttonID: 'trace_button_synapse',
+      run: function (e) {
+        if (!mayEdit())
+          return false;
+        SkeletonAnnotations.setTracingMode(SkeletonAnnotations.MODES.SYNAPSE);
+        return true;
+      }
+    } ) );
+
+    /** Return a function that attempts to tag the active treenode or connector,
+     * and display an alert when no node is active.
+     */
+    var tagFn = function(tag) {
+      return function(e) {
+        if (!mayEdit()) return false;
+        if (e.altKey || e.ctrlKey || e.metaKey) return false;
+        var modifier = e.shiftKey;
+        if (null === SkeletonAnnotations.getActiveNodeId()) {
+          alert('Must activate a treenode or connector before '
+              + (modifier ? 'removing the tag' : 'tagging with') + ' "' + tag + '"!');
           return true;
-        };
+        }
+        // If any modifier key is pressed, remove the tag
+        if (modifier) {
+          SkeletonAnnotations.Tag.removeATNLabel(tag, activeTracingLayer.svgOverlay);
+        } else {
+          SkeletonAnnotations.Tag.tagATNwithLabel(tag, activeTracingLayer.svgOverlay, false);
+        }
+        return true;
       };
+    };
 
     this.addAction( new CATMAID.Action({
       helpText: "Add ends Tag (<kbd>Shift</kbd>: Remove) for the active node",

@@ -96,17 +96,7 @@ var requestQueue = new RequestQueue();
       value: csrfCookieName
     });
 
-    var csrfCookie = CATMAID.csrfCookieName ?
-        getCookie(CATMAID.csrfCookieName) :
-        undefined;
-
-    window.requestQueue = new RequestQueue(CATMAID.backendURL, csrfCookie);
-    $.ajaxPrefilter(function (options, origOptions, jqXHR) {
-      if (0 === options.url.indexOf(CATMAID.backendURL) &&
-          !RequestQueue.csrfSafe(options.type)) {
-        jqXHR.setRequestHeader('X-CSRFToken', csrfCookie);
-      }
-    });
+    CATMAID.setupCsrfProtection();
   };
 
   /**
@@ -185,6 +175,24 @@ var requestQueue = new RequestQueue();
     if (version.length === 0 || version.split('.').length !== 3)
       version = "stable";
     return version;
+  };
+
+  /**
+   * Setup CSRF protection on AJAX requests made through requestQueue or
+   * jQuery's ajax method.
+   */
+  CATMAID.setupCsrfProtection = function () {
+    var csrfCookie = CATMAID.csrfCookieName ?
+        getCookie(CATMAID.csrfCookieName) :
+        undefined;
+
+    window.requestQueue = new RequestQueue(CATMAID.backendURL, csrfCookie);
+    $.ajaxPrefilter(function (options, origOptions, jqXHR) {
+      if (0 === options.url.indexOf(CATMAID.backendURL) &&
+          !RequestQueue.csrfSafe(options.type)) {
+        jqXHR.setRequestHeader('X-CSRFToken', csrfCookie);
+      }
+    });
   };
 
   /**

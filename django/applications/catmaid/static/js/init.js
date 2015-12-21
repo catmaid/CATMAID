@@ -287,12 +287,8 @@ function handle_profile_update(e) {
   $('#toolbox_edit').replaceWith(new_edit_actions);
   $('#toolbox_edit').hide();
 
-  // Re-configure to force update of the CSRF cookie.
-  // TODO: this is kludge.
-  CATMAID.configure(CATMAID.backendURL,
-                    CATMAID.staticURL,
-                    CATMAID.staticExtURL,
-                    CATMAID.csrfCookieName);
+  // Re-configure CSRF protection to update the CSRF cookie.
+  CATMAID.setupCsrfProtection();
 
   // Update all datastores to reflect the current user before triggering
   // any events. This is necessary so that settings are correct when

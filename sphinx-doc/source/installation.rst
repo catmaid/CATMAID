@@ -108,9 +108,9 @@ shells, for example, you will need to activate it by running::
 
 .. note::
 
-    On Ubuntu versions before 14.04 a rather old version of Pip is shipped.
-    This is the tool we use to install Python packages within the virtualenv, so
-    let's update it first::
+    Many distributions ship with an outdated version of Pip.
+    This is the tool we use to install Python packages within the virtualenv,
+    so let's update it first::
 
         python -m pip install -U pip
 

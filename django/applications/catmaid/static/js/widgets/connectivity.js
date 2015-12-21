@@ -350,11 +350,11 @@
             var selected = false;
             for (var skid in self.incoming) {
               if (skid in self.skeletons || skid in oldPartnerModels) { continue; }
-              newModels[skid] = true;
+              newModels[skid] = {};
             }
             for (var skid in self.outgoing) {
               if (skid in self.skeletons || skid in oldPartnerModels) { continue; }
-              newModels[skid] = true;
+              newModels[skid] = {};
             }
 
             // Make all partners known to the name service

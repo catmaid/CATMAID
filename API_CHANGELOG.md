@@ -2,7 +2,7 @@ This changelog notes changes to API endpoints that are documented and listed
 through Swagger. Changes to undocumented, internal CATMAID APIs are not
 included in this changelog.
 
-## Under development
+## 2015.12.21
 
 The CATMAID API now authorizes requests using an API token tied to your
 account instead of your username and password. To obtain this token,

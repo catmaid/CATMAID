@@ -2,11 +2,11 @@ import json
 import re
 
 from collections import defaultdict
-from datetime import datetime
 
 from django.conf import settings
 from django.db import connection
 from django.http import HttpResponse
+from django.utils import timezone
 
 from rest_framework.decorators import api_view
 
@@ -393,7 +393,7 @@ def update_location_reviewer(request, project_id=None, node_id=None):
         # Find the skeleton
         r.skeleton = Treenode.objects.get(pk=node_id).skeleton
 
-    r.review_time = datetime.now()
+    r.review_time = timezone.now()
     r.save()
 
     return HttpResponse(json.dumps({
@@ -465,7 +465,7 @@ def node_update(request, project_id=None):
             nodes[key[0]][i] = node = {}
         node[j] = value
 
-    now = datetime.now()
+    now = timezone.now()
     _update(Treenode, 'treenode', nodes['t'], now, request.user)
     _update(Connector, 'connector', nodes['c'], now, request.user)
 

@@ -5,6 +5,7 @@ from django.db import models
 from django.db.models import Q
 from django.db.models.signals import pre_save, post_save, post_syncdb
 from django.dispatch import receiver
+from django.utils import timezone
 from datetime import datetime
 from jsonfield import JSONField
 import sys
@@ -140,8 +141,8 @@ class Concept(models.Model):
     class Meta:
         db_table = "concept"
     user = models.ForeignKey(User)
-    creation_time = models.DateTimeField(default=datetime.now)
-    edition_time = models.DateTimeField(default=datetime.now)
+    creation_time = models.DateTimeField(default=timezone.now)
+    edition_time = models.DateTimeField(default=timezone.now)
     project = models.ForeignKey(Project)
 
 def create_concept_sub_table(table_name):
@@ -165,8 +166,8 @@ class Class(models.Model):
         db_table = "class"
     # Repeat the columns inherited from 'concept'
     user = models.ForeignKey(User)
-    creation_time = models.DateTimeField(default=datetime.now)
-    edition_time = models.DateTimeField(default=datetime.now)
+    creation_time = models.DateTimeField(default=timezone.now)
+    edition_time = models.DateTimeField(default=timezone.now)
     project = models.ForeignKey(Project)
     # Now new columns:
     class_name = models.CharField(max_length=255)
@@ -184,8 +185,8 @@ class ClassInstance(models.Model):
         db_table = "class_instance"
     # Repeat the columns inherited from 'concept'
     user = models.ForeignKey(User)
-    creation_time = models.DateTimeField(default=datetime.now)
-    edition_time = models.DateTimeField(default=datetime.now)
+    creation_time = models.DateTimeField(default=timezone.now)
+    edition_time = models.DateTimeField(default=timezone.now)
     project = models.ForeignKey(Project)
     # Now new columns:
     class_column = models.ForeignKey(Class, db_column="class_id") # underscore since class is a keyword
@@ -321,8 +322,8 @@ class Relation(models.Model):
         db_table = "relation"
     # Repeat the columns inherited from 'concept'
     user = models.ForeignKey(User)
-    creation_time = models.DateTimeField(default=datetime.now)
-    edition_time = models.DateTimeField(default=datetime.now)
+    creation_time = models.DateTimeField(default=timezone.now)
+    edition_time = models.DateTimeField(default=timezone.now)
     project = models.ForeignKey(Project)
     # Now new columns:
     relation_name = models.CharField(max_length=255)
@@ -335,8 +336,8 @@ class RelationInstance(models.Model):
         db_table = "relation_instance"
     # Repeat the columns inherited from 'concept'
     user = models.ForeignKey(User)
-    creation_time = models.DateTimeField(default=datetime.now)
-    edition_time = models.DateTimeField(default=datetime.now)
+    creation_time = models.DateTimeField(default=timezone.now)
+    edition_time = models.DateTimeField(default=timezone.now)
     project = models.ForeignKey(Project)
     # Now new columns:
     relation = models.ForeignKey(Relation)
@@ -346,8 +347,8 @@ class ClassInstanceClassInstance(models.Model):
         db_table = "class_instance_class_instance"
     # Repeat the columns inherited from 'relation_instance'
     user = models.ForeignKey(User)
-    creation_time = models.DateTimeField(default=datetime.now)
-    edition_time = models.DateTimeField(default=datetime.now)
+    creation_time = models.DateTimeField(default=timezone.now)
+    edition_time = models.DateTimeField(default=timezone.now)
     project = models.ForeignKey(Project)
     relation = models.ForeignKey(Relation)
     # Now new columns:
@@ -369,8 +370,8 @@ class ClassClass(models.Model):
         db_table = "class_class"
     # Repeat the columns inherited from 'relation_instance'
     user = models.ForeignKey(User)
-    creation_time = models.DateTimeField(default=datetime.now)
-    edition_time = models.DateTimeField(default=datetime.now)
+    creation_time = models.DateTimeField(default=timezone.now)
+    edition_time = models.DateTimeField(default=timezone.now)
     project = models.ForeignKey(Project)
     relation = models.ForeignKey(Relation)
     # Now new columns:
@@ -383,7 +384,7 @@ class Message(models.Model):
     class Meta:
         db_table = "message"
     user = models.ForeignKey(User)
-    time = models.DateTimeField(default=datetime.now)
+    time = models.DateTimeField(default=timezone.now)
     read = models.BooleanField(default=False)
     title = models.TextField()
     text = models.TextField(default='New message', blank=True, null=True)
@@ -435,8 +436,8 @@ class UserFocusedModel(models.Model):
     objects = UserFocusedManager()
     user = models.ForeignKey(User)
     project = models.ForeignKey(Project)
-    creation_time = models.DateTimeField(default=datetime.now)
-    edition_time = models.DateTimeField(default=datetime.now)
+    creation_time = models.DateTimeField(default=timezone.now)
+    edition_time = models.DateTimeField(default=timezone.now)
     class Meta:
         abstract = True
 
@@ -452,8 +453,8 @@ class Textlabel(models.Model):
     font_size = models.FloatField(default=32)
     project = models.ForeignKey(Project)
     scaling = models.BooleanField(default=True)
-    creation_time = models.DateTimeField(default=datetime.now)
-    edition_time = models.DateTimeField(default=datetime.now)
+    creation_time = models.DateTimeField(default=timezone.now)
+    edition_time = models.DateTimeField(default=timezone.now)
     deleted = models.BooleanField(default=False)
 
 class TextlabelLocation(models.Model):
@@ -542,7 +543,7 @@ class Review(models.Model):
         db_table = "review"
     project = models.ForeignKey(Project)
     reviewer = models.ForeignKey(User)
-    review_time = models.DateTimeField(default=datetime.now)
+    review_time = models.DateTimeField(default=timezone.now)
     skeleton = models.ForeignKey(ClassInstance)
     treenode = models.ForeignKey(Treenode)
 
@@ -556,7 +557,7 @@ class ReviewerWhitelist(models.Model):
     project = models.ForeignKey(Project)
     user = models.ForeignKey(User)
     reviewer = models.ForeignKey(User, related_name='+')
-    accept_after = models.DateTimeField(default=datetime.min)
+    accept_after = models.DateTimeField(default=datetime.utcfromtimestamp(0))
 
 class Volume(UserFocusedModel):
     """A three-dimensional volume in project space. Implemented as PostGIS
@@ -599,8 +600,8 @@ class Restriction(models.Model):
         db_table = "restriction"
     # Repeat the columns inherited from 'concept'
     user = models.ForeignKey(User)
-    creation_time = models.DateTimeField(default=datetime.now)
-    edition_time = models.DateTimeField(default=datetime.now)
+    creation_time = models.DateTimeField(default=timezone.now)
+    edition_time = models.DateTimeField(default=timezone.now)
     project = models.ForeignKey(Project)
     # Now new columns:
     enabled = models.BooleanField(default=True)
@@ -622,8 +623,8 @@ class CardinalityRestriction(models.Model):
         db_table = "cardinality_restriction"
     # Repeat the columns inherited from 'restriction'
     user = models.ForeignKey(User)
-    creation_time = models.DateTimeField(default=datetime.now)
-    edition_time = models.DateTimeField(default=datetime.now)
+    creation_time = models.DateTimeField(default=timezone.now)
+    edition_time = models.DateTimeField(default=timezone.now)
     project = models.ForeignKey(Project)
     enabled = models.BooleanField(default=True)
     restricted_link = models.ForeignKey(ClassClass)
@@ -734,8 +735,8 @@ class StackClassInstance(models.Model):
         db_table = "stack_class_instance"
     # Repeat the columns inherited from 'relation_instance'
     user = models.ForeignKey(User)
-    creation_time = models.DateTimeField(default=datetime.now)
-    edition_time = models.DateTimeField(default=datetime.now)
+    creation_time = models.DateTimeField(default=timezone.now)
+    edition_time = models.DateTimeField(default=timezone.now)
     project = models.ForeignKey(Project)
     relation = models.ForeignKey(Relation)
     # Now new columns:
@@ -1012,7 +1013,7 @@ class ChangeRequest(UserFocusedModel):
         try:
             exec(self.approve_action)
             self.status = ChangeRequest.APPROVED
-            self.completion_time = datetime.now()
+            self.completion_time = timezone.now()
             self.save()
 
             # Send a message and an e-mail to the requester.
@@ -1029,7 +1030,7 @@ class ChangeRequest(UserFocusedModel):
         try:
             exec(self.reject_action)
             self.status = ChangeRequest.REJECTED
-            self.completion_time = datetime.now()
+            self.completion_time = timezone.now()
             self.save()
 
             # Send a message and an e-mail to the requester.

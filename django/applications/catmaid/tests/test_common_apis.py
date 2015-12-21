@@ -785,34 +785,34 @@ class ViewPageTests(TestCase):
                 '/%d/treenode/table/%d/content' % (self.test_project_id, 235))
         self.assertEqual(response.status_code, 200)
         expected_result = [[
-                [417, 415, 5, 4990.0, 4200.0, 0.0, -1.0, 3, 1323111096.0],
-                [415, 289, 5, 5810.0, 3950.0, 0.0, -1.0, 3, 1323111096.0],
-                [289, 285, 5, 6210.0, 3480.0, 0.0, -1.0, 3, 1323111096.0],
-                [285, 283, 5, 6100.0, 2980.0, 0.0, -1.0, 3, 1323111096.0],
-                [283, 281, 5, 5985.0, 2745.0, 0.0, -1.0, 3, 1323111096.0],
-                [281, 279, 5, 5675.0, 2635.0, 0.0, -1.0, 3, 1323111096.0],
-                [279, 267, 5, 5530.0, 2465.0, 0.0, -1.0, 3, 1323111096.0],
-                [277, 275, 5, 6090.0, 1550.0, 0.0, -1.0, 3, 1323111096.0],
-                [275, 273, 5, 5800.0, 1560.0, 0.0, -1.0, 3, 1323111096.0],
-                [273, 271, 5, 5265.0, 1610.0, 0.0, -1.0, 3, 1323111096.0],
-                [271, 269, 5, 5090.0, 1675.0, 0.0, -1.0, 3, 1323111096.0],
-                [269, 265, 5, 4820.0, 1900.0, 0.0, -1.0, 3, 1323111096.0],
-                [267, 265, 5, 5400.0, 2200.0, 0.0, -1.0, 3, 1323111096.0],
-                [265, 263, 5, 4570.0, 2125.0, 0.0, -1.0, 3, 1323111096.0],
-                [263, 253, 5, 3915.0, 2105.0, 0.0, -1.0, 3, 1323111096.0],
-                [261, 259, 5, 2820.0, 1345.0, 0.0, -1.0, 3, 1323111096.0],
-                [259, 257, 5, 3445.0, 1385.0, 0.0, -1.0, 3, 1323111096.0],
-                [257, 255, 5, 3825.0, 1480.0, 0.0, -1.0, 3, 1323111096.0],
-                [255, 253, 5, 3850.0, 1790.0, 0.0, -1.0, 3, 1323111096.0],
-                [253, 251, 5, 3685.0, 2160.0, 0.0, -1.0, 3, 1323111096.0],
-                [251, 249, 5, 3380.0, 2330.0, 0.0, -1.0, 3, 1323111096.0],
-                [249, 247, 5, 2815.0, 2590.0, 0.0, -1.0, 3, 1323111096.0],
-                [247, 245, 5, 2610.0, 2700.0, 0.0, -1.0, 3, 1323111096.0],
-                [245, 243, 5, 1970.0, 2595.0, 0.0, -1.0, 3, 1323111096.0],
-                [243, 241, 5, 1780.0, 2570.0, 0.0, -1.0, 3, 1323111096.0],
-                [241, 239, 5, 1340.0, 2660.0, 0.0, -1.0, 3, 1323111096.0],
-                [239, 237, 5, 1135.0, 2800.0, 0.0, -1.0, 3, 1323111096.0],
-                [237, None, 5, 1065.0, 3035.0, 0.0, -1.0, 3, 1323111096.0]],
+                [417, 415, 5, 4990.0, 4200.0, 0.0, -1.0, 3, 1323093096.0],
+                [415, 289, 5, 5810.0, 3950.0, 0.0, -1.0, 3, 1323093096.0],
+                [289, 285, 5, 6210.0, 3480.0, 0.0, -1.0, 3, 1323093096.0],
+                [285, 283, 5, 6100.0, 2980.0, 0.0, -1.0, 3, 1323093096.0],
+                [283, 281, 5, 5985.0, 2745.0, 0.0, -1.0, 3, 1323093096.0],
+                [281, 279, 5, 5675.0, 2635.0, 0.0, -1.0, 3, 1323093096.0],
+                [279, 267, 5, 5530.0, 2465.0, 0.0, -1.0, 3, 1323093096.0],
+                [277, 275, 5, 6090.0, 1550.0, 0.0, -1.0, 3, 1323093096.0],
+                [275, 273, 5, 5800.0, 1560.0, 0.0, -1.0, 3, 1323093096.0],
+                [273, 271, 5, 5265.0, 1610.0, 0.0, -1.0, 3, 1323093096.0],
+                [271, 269, 5, 5090.0, 1675.0, 0.0, -1.0, 3, 1323093096.0],
+                [269, 265, 5, 4820.0, 1900.0, 0.0, -1.0, 3, 1323093096.0],
+                [267, 265, 5, 5400.0, 2200.0, 0.0, -1.0, 3, 1323093096.0],
+                [265, 263, 5, 4570.0, 2125.0, 0.0, -1.0, 3, 1323093096.0],
+                [263, 253, 5, 3915.0, 2105.0, 0.0, -1.0, 3, 1323093096.0],
+                [261, 259, 5, 2820.0, 1345.0, 0.0, -1.0, 3, 1323093096.0],
+                [259, 257, 5, 3445.0, 1385.0, 0.0, -1.0, 3, 1323093096.0],
+                [257, 255, 5, 3825.0, 1480.0, 0.0, -1.0, 3, 1323093096.0],
+                [255, 253, 5, 3850.0, 1790.0, 0.0, -1.0, 3, 1323093096.0],
+                [253, 251, 5, 3685.0, 2160.0, 0.0, -1.0, 3, 1323093096.0],
+                [251, 249, 5, 3380.0, 2330.0, 0.0, -1.0, 3, 1323093096.0],
+                [249, 247, 5, 2815.0, 2590.0, 0.0, -1.0, 3, 1323093096.0],
+                [247, 245, 5, 2610.0, 2700.0, 0.0, -1.0, 3, 1323093096.0],
+                [245, 243, 5, 1970.0, 2595.0, 0.0, -1.0, 3, 1323093096.0],
+                [243, 241, 5, 1780.0, 2570.0, 0.0, -1.0, 3, 1323093096.0],
+                [241, 239, 5, 1340.0, 2660.0, 0.0, -1.0, 3, 1323093096.0],
+                [239, 237, 5, 1135.0, 2800.0, 0.0, -1.0, 3, 1323093096.0],
+                [237, None, 5, 1065.0, 3035.0, 0.0, -1.0, 3, 1323093096.0]],
             [], [[261, 'TODO']]]
         parsed_response = json.loads(response.content)
 
@@ -2435,24 +2435,21 @@ class ViewPageTests(TestCase):
                     'action': '',
                     'id': 3,
                     'text': 'Contents of message 3.',
-                    'time': '2014-10-05 11:12:01.360422',
-                    'time_formatted': '2014-10-05 11:12:01 EDT',
+                    'time': '2014-10-05 11:12:01.360422+00:00',
                     'title': 'Message 3'
                 },
                 '1': {
                     'action': 'http://www.example.com/message2',
                     'id': 2,
                     'text': 'Contents of message 2.',
-                    'time': '2011-12-20 16:46:01.360422',
-                    'time_formatted': '2011-12-20 16:46:01 EST',
+                    'time': '2011-12-20 16:46:01.360422+00:00',
                     'title': 'Message 2'
                 },
                 '2': {
                     'action': 'http://www.example.com/message1',
                     'id': 1,
                     'text': 'Contents of message 1.',
-                    'time': '2011-12-19 16:46:01',
-                    'time_formatted': '2011-12-19 16:46:01 EST',
+                    'time': '2011-12-19 16:46:01+00:00',
                     'title': 'Message 1'
                 },
                 '3': {
@@ -2477,10 +2474,10 @@ class ViewPageTests(TestCase):
         distsort = lambda end: end[2]
         parsed_response.sort(key=distsort)
         expected_result = \
-                [[237, [1065.0, 3035.0, 0.0],  4, u'2011-09-27T07:49:15.802'],
-                 [261, [2820.0, 1345.0, 0.0], 10, u'2011-09-27T07:49:25.549'],
-                 [277, [6090.0, 1550.0, 0.0], 13, u'2011-09-27T07:49:33.770'],
-                 [417, [4990.0, 4200.0, 0.0], 16, u'2011-10-07T07:02:15.176']]
+                [[237, [1065.0, 3035.0, 0.0],  4, u'2011-09-27T07:49:15.802Z'],
+                 [261, [2820.0, 1345.0, 0.0], 10, u'2011-09-27T07:49:25.549Z'],
+                 [277, [6090.0, 1550.0, 0.0], 13, u'2011-09-27T07:49:33.770Z'],
+                 [417, [4990.0, 4200.0, 0.0], 16, u'2011-10-07T07:02:15.176Z']]
         self.assertEqual(parsed_response, expected_result)
 
         # Tag soma and try again
@@ -2774,8 +2771,8 @@ class ViewPageTests(TestCase):
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {"reviewers": [],
-                           "creation_time": "2011-09-27T07:57:17.808000",
-                           "edition_time": "2011-12-05T13:51:36.955000",
+                           "creation_time": "2011-09-27T07:57:17.808000+00:00",
+                           "edition_time": "2011-12-05T13:51:36.955000+00:00",
                            "user": 3,
                            "review_times": [],
                            "editor": 3}
@@ -3240,7 +3237,7 @@ class ViewPageTests(TestCase):
         self.assertJSONEqual(response.content, expected_result)
 
         # Add reviews
-        review_time = "2014-03-17T00:00:00"
+        review_time = "2014-03-17T00:00:00Z"
         Review.objects.create(project_id=self.test_project_id, reviewer_id=3,
             review_time=review_time, skeleton_id=skeleton_id, treenode_id=2396)
         Review.objects.create(project_id=self.test_project_id, reviewer_id=2,
@@ -3284,7 +3281,7 @@ class ViewPageTests(TestCase):
         self.assertJSONEqual(response.content, expected_result)
 
         # Add reviews
-        review_time = "2014-03-17T00:00:00"
+        review_time = "2014-03-17T00:00:00Z"
         Review.objects.create(project_id=self.test_project_id, reviewer_id=3,
             review_time=review_time, skeleton_id=skeleton_id, treenode_id=2396)
         Review.objects.create(project_id=self.test_project_id, reviewer_id=2,
@@ -3303,7 +3300,7 @@ class ViewPageTests(TestCase):
         # NOTE: this duplication does not happen in practice because
         # update_location_reviewer updates the timestamp of the existing
         # review. This is just to demonstrate what edge case behavior is.
-        review_time = "2014-03-18T00:00:00"
+        review_time = "2014-03-18T00:00:00Z"
         Review.objects.create(project_id=self.test_project_id, reviewer_id=2,
             review_time=review_time, skeleton_id=skeleton_id, treenode_id=2396)
         Review.objects.create(project_id=self.test_project_id, reviewer_id=3,
@@ -3335,7 +3332,7 @@ class ViewPageTests(TestCase):
         expected_result = {}
         self.assertEqual(expected_result, parsed_response)
 
-        review_time = "2014-03-17T18:14:34.851"
+        review_time = "2014-03-17T18:14:34.851Z"
         Review.objects.create(project_id=self.test_project_id, reviewer_id=3,
             review_time=review_time, skeleton_id=skeleton_id, treenode_id=253)
         Review.objects.create(project_id=self.test_project_id, reviewer_id=2,
@@ -3362,8 +3359,8 @@ class ViewPageTests(TestCase):
 
         # Test replacing whitelist.
         whitelist = {
-                '1': "2014-03-17T00:00:00",
-                '2': "2014-03-18T00:00:00"}
+                '1': "2014-03-17T00:00:00Z",
+                '2': "2014-03-18T00:00:00Z"}
         response = self.client.post(url, whitelist)
         self.assertEqual(response.status_code, 200)
 

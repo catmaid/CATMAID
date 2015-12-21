@@ -917,11 +917,12 @@ function handle_message( status, text, xml )
 
             delete e [ i ];
           } else {
+            var timeFormatted = (new Date(e[i].time)).toLocaleString();
             e[ i ].action = django_url + 'messages/mark_read?id=' + e[ i ].id;
-            e[ i ].note = e[ i ].time_formatted;
+            e[ i ].note = timeFormatted;
             ++n;
             var dt = document.createElement( "dt" );
-            dt.appendChild( document.createTextNode( e[ i ].time_formatted ) );
+            dt.appendChild( document.createTextNode( timeFormatted ) );
             var dd1 = document.createElement( "dd" );
             var dd1a = document.createElement( "a" );
             dd1a.href = e[ i ].action;

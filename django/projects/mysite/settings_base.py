@@ -124,6 +124,10 @@ ONTOLOGY_DUMMY_PROJECT_ID = -1
 
 SOUTH_DATABASE_ADAPTERS = {'default': 'south.db.postgresql_psycopg2'}
 
+# Store datetimes as UTC by default. If stored datetimes have a timezone or
+# offset, interpret it.
+USE_TZ = True
+
 # The current site in the django_site database table. This is used so that
 # applications can hook into specific site(s) and a single database can manage
 # content of multiple sites.

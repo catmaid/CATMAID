@@ -27,8 +27,7 @@ def get_latest_unread_date(request):
 def list_messages(request, project_id=None):
     messages = Message.objects.filter(
         user=request.user,
-        read=False).extra(select={
-        'time_formatted': 'to_char("time", \'YYYY-MM-DD HH24:MI:SS TZ\')'})\
+        read=False)\
     .order_by('-time')
 
     def message_to_dict(message):
@@ -37,11 +36,7 @@ def list_messages(request, project_id=None):
             'title': message.title,
             'action': message.action,
             'text': message.text,
-            # time does not correspond exactly to PHP version, lacks
-            # timezone postfix. Can't find docs anywhere on how to get it.
-            # Doesn't seem to be used though, luckily.
-            'time': str(message.time),
-            'time_formatted': message.time_formatted
+            'time': str(message.time)
         }
 
     messages = map(message_to_dict, messages)

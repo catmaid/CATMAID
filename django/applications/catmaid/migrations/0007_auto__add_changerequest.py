@@ -3,6 +3,7 @@ import datetime
 from south.db import db
 from south.v2 import SchemaMigration
 from django.db import models
+from django.utils import timezone
 from catmaid.models import create_concept_sub_table
 
 class Migration(SchemaMigration):
@@ -25,22 +26,22 @@ class Migration(SchemaMigration):
         
         # Adding field 'SliceContoursHighres.creation_time'
         db.add_column('catmaid_slicecontourshighres', 'creation_time',
-                      self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now),
+                      self.gf('django.db.models.fields.DateTimeField')(default=timezone.now),
                       keep_default=False)
 
         # Adding field 'SliceContoursHighres.edition_time'
         db.add_column('catmaid_slicecontourshighres', 'edition_time',
-                      self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now),
+                      self.gf('django.db.models.fields.DateTimeField')(default=timezone.now),
                       keep_default=False)
 
         # Adding field 'SliceContours.creation_time'
         db.add_column('catmaid_slicecontours', 'creation_time',
-                      self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now),
+                      self.gf('django.db.models.fields.DateTimeField')(default=timezone.now),
                       keep_default=False)
 
         # Adding field 'SliceContours.edition_time'
         db.add_column('catmaid_slicecontours', 'edition_time',
-                      self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now),
+                      self.gf('django.db.models.fields.DateTimeField')(default=timezone.now),
                       keep_default=False)
 
     def backwards(self, orm):

@@ -223,6 +223,8 @@ transport, much less when HTTP2/SPDY and modern compression-aware browsers are
 involved. However, abbreviated property names or array-packed values are
 acceptable for the responses of performance-critical endpoints.
 
+Date and time response values should be in UTC and formatted as ISO 8601.
+
 Javascript
 ##########
 

@@ -14,7 +14,7 @@ class Migration(SchemaMigration):
             ('project', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['catmaid.Project'])),
             ('user', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['auth.User'])),
             ('reviewer', self.gf('django.db.models.fields.related.ForeignKey')(related_name='+', to=orm['auth.User'])),
-            ('accept_after', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime(1, 1, 1, 0, 0))),
+            ('accept_after', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.utcfromtimestamp(0))),
         ))
         db.send_create_signal(u'catmaid', ['ReviewerWhitelist'])
 
@@ -335,7 +335,7 @@ class Migration(SchemaMigration):
         },
         u'catmaid.reviewerwhitelist': {
             'Meta': {'unique_together': "(('project', 'user', 'reviewer'),)", 'object_name': 'ReviewerWhitelist', 'db_table': "'reviewer_whitelist'"},
-            'accept_after': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(1, 1, 1, 0, 0)'}),
+            'accept_after': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.utcfromtimestamp(0)'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'project': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['catmaid.Project']"}),
             'reviewer': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'+'", 'to': u"orm['auth.User']"}),

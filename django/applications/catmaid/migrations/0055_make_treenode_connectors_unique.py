@@ -366,7 +366,7 @@ class Migration(SchemaMigration):
         },
         u'catmaid.reviewerwhitelist': {
             'Meta': {'unique_together': "(('project', 'user', 'reviewer'),)", 'object_name': 'ReviewerWhitelist', 'db_table': "'reviewer_whitelist'"},
-            'accept_after': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(1, 1, 1, 0, 0)'}),
+            'accept_after': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.utcfromtimestamp(0)'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'project': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['catmaid.Project']"}),
             'reviewer': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'+'", 'to': u"orm['auth.User']"}),

@@ -199,7 +199,6 @@ function CMWRootNode()
   this.close = function()
   {
     child = null;
-    return;
   };
 }
 
@@ -222,7 +221,6 @@ CMWRootNode.prototype.closeAllChildren = function()
     // Refresh list of windows still open
     windows = this.getWindows();
   }
-  return;
 };
 
 
@@ -413,14 +411,12 @@ function CMWHSplitNode( child1, child2 )
   {
     child1.catchDrag();
     child2.catchDrag();
-    return;
   };
 
   this.releaseDrag = function()
   {
     child1.releaseDrag();
     child2.releaseDrag();
-    return;
   };
 
   this.toXML = function( tabs )
@@ -623,14 +619,12 @@ function CMWVSplitNode( child1, child2 )
   {
     child1.catchDrag();
     child2.catchDrag();
-    return;
   };
 
   this.releaseDrag = function()
   {
     child1.releaseDrag();
     child2.releaseDrag();
-    return;
   };
 
   this.toXML = function( tabs )
@@ -822,7 +816,7 @@ function CMWWindow( title )
       eventCatcher.className = "eventCatcher" + s;
     }
     return false;
-    };
+  };
 
   eventCatcher.onmouseout = function()
   {
@@ -875,7 +869,6 @@ function CMWWindow( title )
   this.addListener = function( listener )
   {
     listeners.push( listener );
-    return;
   };
 
   this.removeListener = function( listener )
@@ -888,7 +881,6 @@ function CMWWindow( title )
         break;
       }
     }
-    return;
   };
 
   /**

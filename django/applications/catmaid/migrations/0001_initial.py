@@ -1066,15 +1066,6 @@ ALTER SEQUENCE project_id_seq OWNED BY project.id;
 
 
 --
--- Name: project_required_relations; Type: VIEW; Schema: public; Owner: -
---
-
-CREATE VIEW project_required_relations AS
- SELECT "*VALUES*".column1 AS relation_name
-   FROM (VALUES ('has_view'::text), ('has_channel'::text)) "*VALUES*";
-
-
---
 -- Name: project_stack; Type: TABLE; Schema: public; Owner: -; Tablespace:
 --
 
@@ -1235,34 +1226,10 @@ CREATE TABLE stack (
 --
 
 CREATE TABLE stack_class_instance (
-    id integer NOT NULL,
-    user_id integer NOT NULL,
-    project_id integer NOT NULL,
-    creation_time timestamp with time zone NOT NULL,
-    edition_time timestamp with time zone NOT NULL,
-    relation_id integer NOT NULL,
-    stack_id integer NOT NULL,
-    class_instance_id integer NOT NULL
-);
-
-
---
--- Name: stack_class_instance_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE stack_class_instance_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: stack_class_instance_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE stack_class_instance_id_seq OWNED BY stack_class_instance.id;
+    stack_id integer,
+    class_instance_id integer
+)
+INHERITS (relation_instance);
 
 
 --
@@ -1820,7 +1787,21 @@ ALTER TABLE ONLY stack ALTER COLUMN id SET DEFAULT nextval('stack_id_seq'::regcl
 -- Name: id; Type: DEFAULT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY stack_class_instance ALTER COLUMN id SET DEFAULT nextval('stack_class_instance_id_seq'::regclass);
+ALTER TABLE ONLY stack_class_instance ALTER COLUMN id SET DEFAULT nextval('concept_id_seq'::regclass);
+
+
+--
+-- Name: creation_time; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY stack_class_instance ALTER COLUMN creation_time SET DEFAULT now();
+
+
+--
+-- Name: edition_time; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY stack_class_instance ALTER COLUMN edition_time SET DEFAULT now();
 
 
 --
@@ -2140,14 +2121,6 @@ ALTER TABLE ONLY reviewer_whitelist
 
 
 --
--- Name: stack_class_instance_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace:
---
-
-ALTER TABLE ONLY stack_class_instance
-    ADD CONSTRAINT stack_class_instance_pkey PRIMARY KEY (id);
-
-
---
 -- Name: stack_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace:
 --
 
@@ -2196,7 +2169,7 @@ ALTER TABLE ONLY treenode_connector
 
 
 --
--- Name: treenode_connector_project_id_1371fb03c2a814c_uniq; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace:
+-- Name: treenode_connector_project_id; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace:
 --
 
 ALTER TABLE ONLY treenode_connector
@@ -2588,41 +2561,6 @@ CREATE INDEX reviewer_whitelist_reviewer_id ON reviewer_whitelist USING btree (r
 --
 
 CREATE INDEX reviewer_whitelist_user_id ON reviewer_whitelist USING btree (user_id);
-
-
---
--- Name: stack_class_instance_class_instance_id; Type: INDEX; Schema: public; Owner: -; Tablespace:
---
-
-CREATE INDEX stack_class_instance_class_instance_id ON stack_class_instance USING btree (class_instance_id);
-
-
---
--- Name: stack_class_instance_project_id; Type: INDEX; Schema: public; Owner: -; Tablespace:
---
-
-CREATE INDEX stack_class_instance_project_id ON stack_class_instance USING btree (project_id);
-
-
---
--- Name: stack_class_instance_relation_id; Type: INDEX; Schema: public; Owner: -; Tablespace:
---
-
-CREATE INDEX stack_class_instance_relation_id ON stack_class_instance USING btree (relation_id);
-
-
---
--- Name: stack_class_instance_stack_id; Type: INDEX; Schema: public; Owner: -; Tablespace:
---
-
-CREATE INDEX stack_class_instance_stack_id ON stack_class_instance USING btree (stack_id);
-
-
---
--- Name: stack_class_instance_user_id; Type: INDEX; Schema: public; Owner: -; Tablespace:
---
-
-CREATE INDEX stack_class_instance_user_id ON stack_class_instance USING btree (user_id);
 
 
 --
@@ -3022,14 +2960,6 @@ ALTER TABLE ONLY suppressed_virtual_treenode
 
 
 --
--- Name: stack_ci_class_instance_id_refs_id; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY stack_class_instance
-    ADD CONSTRAINT stack_ci_class_instance_id_refs_id FOREIGN KEY (class_instance_id) REFERENCES class_instance(id) DEFERRABLE INITIALLY DEFERRED;
-
-
---
 -- Name: connector_class_instance_connector_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3102,19 +3032,19 @@ ALTER TABLE ONLY textlabel
 
 
 --
+-- Name: project_stack_project_id_refs_id; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY project_stack
+    ADD CONSTRAINT project_stack_project_id_refs_id FOREIGN KEY (project_id) REFERENCES project(id) DEFERRABLE INITIALLY DEFERRED;
+
+
+--
 -- Name: review_project_id_refs_id; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY review
     ADD CONSTRAINT review_project_id_refs_id FOREIGN KEY (project_id) REFERENCES project(id) DEFERRABLE INITIALLY DEFERRED;
-
-
---
--- Name: stack_project_id_refs_id; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY stack_class_instance
-    ADD CONSTRAINT stack_project_id_refs_id FOREIGN KEY (project_id) REFERENCES project(id) DEFERRABLE INITIALLY DEFERRED;
 
 
 --
@@ -3134,19 +3064,11 @@ ALTER TABLE ONLY catmaid_volume
 
 
 --
--- Name: suppresed_vnodes_project_id_refs_id; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: suppressed_vnodes_project_id_refs_id; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY suppressed_virtual_treenode
-    ADD CONSTRAINT suppresed_vnodes_project_id_refs_id FOREIGN KEY (project_id) REFERENCES project(id) DEFERRABLE INITIALLY DEFERRED;
-
-
---
--- Name: project_stack_project_id_refs_id; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY project_stack
-    ADD CONSTRAINT project_stack_project_id_refs_id FOREIGN KEY (project_id) REFERENCES project(id) DEFERRABLE INITIALLY DEFERRED;
+    ADD CONSTRAINT suppressed_vnodes_project_id_refs_id FOREIGN KEY (project_id) REFERENCES project(id) DEFERRABLE INITIALLY DEFERRED;
 
 
 --
@@ -3174,14 +3096,6 @@ ALTER TABLE ONLY region_of_interest
 
 
 --
--- Name: stack_ci_relation_id_refs_id; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY stack_class_instance
-    ADD CONSTRAINT stack_ci_relation_id_refs_id FOREIGN KEY (relation_id) REFERENCES relation(id) DEFERRABLE INITIALLY DEFERRED;
-
-
---
 -- Name: restricted_link_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3206,11 +3120,11 @@ ALTER TABLE ONLY review
 
 
 --
--- Name: skeleton_id_refs_id; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: review_skeleton_id_refs_id; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY review
-    ADD CONSTRAINT skeleton_id_refs_id FOREIGN KEY (skeleton_id) REFERENCES class_instance(id) DEFERRABLE INITIALLY DEFERRED;
+    ADD CONSTRAINT review_skeleton_id_refs_id FOREIGN KEY (skeleton_id) REFERENCES class_instance(id) DEFERRABLE INITIALLY DEFERRED;
 
 
 --
@@ -3222,11 +3136,19 @@ ALTER TABLE ONLY project_stack
 
 
 --
--- Name: overlay_stack_id_refs_id; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: stack_ci_stack_id_refs_id; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY "overlay"
-    ADD CONSTRAINT overlay_stack_id_refs_id FOREIGN KEY (stack_id) REFERENCES stack(id) DEFERRABLE INITIALLY DEFERRED;
+ALTER TABLE ONLY stack_class_instance
+    ADD CONSTRAINT stack_ci_stack_id_refs_id FOREIGN KEY (stack_id) REFERENCES stack(id) DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: stack_class_instance_stack_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY stack_class_instance
+    ADD CONSTRAINT stack_class_instance_stack_id_fkey FOREIGN KEY (stack_id) REFERENCES stack(id);
 
 
 --
@@ -3238,11 +3160,11 @@ ALTER TABLE ONLY broken_slice
 
 
 --
--- Name: stack_ci_stack_id_refs_id; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: overlay_stack_id_refs_id; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY stack_class_instance
-    ADD CONSTRAINT stack_ci_stack_id_refs_id FOREIGN KEY (stack_id) REFERENCES stack(id) DEFERRABLE INITIALLY DEFERRED;
+ALTER TABLE ONLY "overlay"
+    ADD CONSTRAINT overlay_stack_id_refs_id FOREIGN KEY (stack_id) REFERENCES stack(id) DEFERRABLE INITIALLY DEFERRED;
 
 
 --
@@ -3318,7 +3240,7 @@ ALTER TABLE ONLY message
 
 
 --
--- Name: reviewe_whitelist_user_id_refs_id; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: reviewer_whitelist_user_id_refs_id; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY reviewer_whitelist
@@ -3326,11 +3248,11 @@ ALTER TABLE ONLY reviewer_whitelist
 
 
 --
--- Name: suppred_vnodes_user_id_refs_id; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: suppressed_vnodes_user_id_refs_id; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY suppressed_virtual_treenode
-    ADD CONSTRAINT suppresed_vnodes_user_id_refs_idFOREIGN KEY (user_id) REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED;
+    ADD CONSTRAINT suppressed_vnodes_user_id_refs_id FOREIGN KEY (user_id) REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED;
 
 
 --
@@ -3339,14 +3261,6 @@ ALTER TABLE ONLY suppressed_virtual_treenode
 
 ALTER TABLE ONLY client_data
     ADD CONSTRAINT client_data_user_id_refs_id FOREIGN KEY (user_id) REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED;
-
-
---
--- Name: stack_user_id_refs_id; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY stack_class_instance
-    ADD CONSTRAINT stack_user_id_refs_id FOREIGN KEY (user_id) REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED;
 
 
 --
@@ -3370,6 +3284,7 @@ GRANT ALL ON SCHEMA public TO PUBLIC;
 --
 -- PostgreSQL database dump complete
 --
+
 """
 
 initial_state_operations = [

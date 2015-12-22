@@ -51,7 +51,11 @@ def check_old_version(sender, **kwargs):
         raise ImproperlyConfigured("Can not apply initial database migration. "
                 "You seem to update from an existing CATMAID version. Please "
                 "make sure this existing version was updated to version "
-                "2015.12.21 (with all migrations applied) and try again.")
+                "2015.12.21 (with all migrations applied) and then move on to "
+                "the next version. Note that you have to fake the initial "
+                "migration of the newer version, i.e. before you do the "
+                "regular update steps call 'manage.py migrate catmaid --fake "
+                "0001_initial'.")
 
 def validate_environment(sender, **kwargs):
     """Make sure CATMAID is set up correctly."""

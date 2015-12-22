@@ -56,9 +56,11 @@ class Project(models.Model):
         return self.title
 
 def on_project_save(sender, instance, created, **kwargs):
-    """ Make sure all required classes and relations are set up.
+    """ Make sure all required classes and relations are set up for all
+    projects but the ontology dummy projects.
     """
-    if created and sender == Project:
+    is_not_dummy = instance.id != settings.ONTOLOGY_DUMMY_PROJECT_ID
+    if created and sender == Project and is_not_dummy:
         from control.project import validate_project_setup
         from catmaid import get_system_user
         user = get_system_user()

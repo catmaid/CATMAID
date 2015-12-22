@@ -1388,15 +1388,24 @@
    * Returns a skeleton model dictionary.
    */
   NeuronNavigator.NeuronListMixin.prototype.getSkeletonModels = function() {
-    return this.get_entities().reduce((function(o, n) {
+    var models = this.get_entities().reduce((function(o, n) {
       n.skeleton_ids.forEach(function(skid) {
         var model = new CATMAID.SkeletonModel(skid, n.name,
             new THREE.Color().setRGB(1, 1, 0));
-        model.selected = this.listed_neurons[n.id].selected;
-        o[skid] = model;
-      });
+        model.selected = false;
+        this[skid] = model;
+      }, o);
       return o;
     }).bind(this), {});
+
+    // Mark selected ones
+    this.get_entities(true).forEach(function(n) {
+      n.skeleton_ids.forEach(function(skid) {
+        this[skid].selected = true;
+      }, this);
+    }, models);
+
+    return models;
   };
 
   /**

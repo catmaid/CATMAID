@@ -5,13 +5,14 @@ from collections import defaultdict
 from django import forms
 from django.db.models import Q
 from django.conf import settings
-from django.contrib.formtools.wizard.views import SessionWizardView
 from django.forms.widgets import CheckboxSelectMultiple
 from django.http import HttpResponse
 from django.views.generic.base import TemplateView
 from django.shortcuts import get_object_or_404, render_to_response
 from django.contrib.contenttypes.models import ContentType
 from django.template.context import RequestContext
+
+from formtools.wizard.views import SessionWizardView
 
 from catmaid.control.common import get_class_to_id_map, \
         get_relation_to_id_map, insert_into_log
@@ -371,10 +372,11 @@ def show_classification_editor( request, workspace_pid=None, project_id=None, li
     workspace_pid = int(workspace_pid)
     project = Project.objects.get(id=project_id)
     workspace = Project.objects.get(id=workspace_pid)
-    context = RequestContext(request, {
+    context = {
         'project': project,
         'workspace': workspace,
-    })
+        'user': request.user,
+    }
     # First, check if the classification system is correctly set-up
     setup_okay = check_classification_setup(workspace_pid)
     if not setup_okay:
@@ -430,8 +432,8 @@ def show_classification_editor( request, workspace_pid=None, project_id=None, li
                 page_type = 'select_graph'
                 link_id = -1
 
-    rendered_block = render_block_to_string( template_name,
-        'classification-content', {}, context )
+    rendered_block = render_block_to_string(template_name,
+        'classification-content', {}, RequestContext(request, context))
     return HttpResponse(json.dumps({
         'content': rendered_block,
         'page': page_type,

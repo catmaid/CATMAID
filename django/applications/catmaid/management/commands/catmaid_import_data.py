@@ -1,6 +1,6 @@
 from optparse import make_option
 from django.core import serializers
-from django.core.management.base import NoArgsCommand, CommandError
+from django.core.management.base import BaseCommand, CommandError
 from django.db import connection, transaction
 from catmaid.control.annotationadmin import copy_annotations
 from catmaid.models import Project, User
@@ -62,32 +62,32 @@ class InternalImporter:
                 o['import_treenodes'], o['import_connectors'],
                 o['import_annotations'], o['import_tags'])
 
-class Command(NoArgsCommand):
+class Command(BaseCommand):
     help = "Import new or existing data into an existing CATMAID project"
-    option_list = NoArgsCommand.option_list + (
-        make_option('--source', dest='source', default=None,
-            help='The ID of the source project'),
-        make_option('--target', dest='target', default=None,
-            help='The ID of the target project'),
-        make_option('--user', dest='user', default=None,
-            help='The ID of the owner of all created objects'),
-        make_option('--treenodes', dest='import_treenodes', default=True,
-            action='store_true', help='Import treenodes from source'),
-        make_option('--notreenodes', dest='import_treenodes',
-            action='store_false', help='Don\'t import treenodes from source'),
-        make_option('--connectors', dest='import_connectors', default=True,
-            action='store_true', help='Import connectors from source'),
-        make_option('--noconnectors', dest='import_connectors',
-            action='store_false', help='Don\'t import connectors from source'),
-        make_option('--annotations', dest='import_annotations', default=True,
-            action='store_true', help='Import annotations from source'),
-        make_option('--noannotations', dest='import_annotations',
-            action='store_false', help='Don\'t import annotations from source'),
-        make_option('--tags', dest='import_tags', default=True,
-            action='store_true', help='Import tags from source'),
-        make_option('--notags', dest='import_tags',
-            action='store_false', help='Don\'t import tags from source'),
-        )
+
+    def add_arguments(self, parser):
+        parser.add_argument('--source', dest='source', default=None,
+            help='The ID of the source project')
+        parser.add_argument('--target', dest='target', default=None,
+            help='The ID of the target project')
+        parser.add_argument('--user', dest='user', default=None,
+            help='The ID of the owner of all created objects')
+        parser.add_argument('--treenodes', dest='import_treenodes', default=True,
+            action='store_true', help='Import treenodes from source')
+        parser.add_argument('--notreenodes', dest='import_treenodes',
+            action='store_false', help='Don\'t import treenodes from source')
+        parser.add_argument('--connectors', dest='import_connectors', default=True,
+            action='store_true', help='Import connectors from source')
+        parser.add_argument('--noconnectors', dest='import_connectors',
+            action='store_false', help='Don\'t import connectors from source')
+        parser.add_argument('--annotations', dest='import_annotations', default=True,
+            action='store_true', help='Import annotations from source')
+        parser.add_argument('--noannotations', dest='import_annotations',
+            action='store_false', help='Don\'t import annotations from source')
+        parser.add_argument('--tags', dest='import_tags', default=True,
+            action='store_true', help='Import tags from source')
+        parser.add_argument('--notags', dest='import_tags',
+            action='store_false', help='Don\'t import tags from source')
 
     def ask_for_project(self, title):
         """ Return a valid project object.
@@ -127,7 +127,7 @@ class Command(NoArgsCommand):
             if u:
                 return u
 
-    def handle_noargs(self, **options):
+    def handle(self, *args, **options):
         # Give some information about the import
         will_import = []
         wont_import = []

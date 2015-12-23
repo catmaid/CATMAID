@@ -40,7 +40,7 @@ before_script:
   # Enable debug mode so that static files can be served by runserver
   - sed -i -e "s?^\(DEBUG = \).*?\1True?g" projects/mysite/settings.py
   # Enable pipeline to more closely mimic a production configuration
-  - sed -i -e "s?^\(PIPELINE_ENABLED = \).*?\1True?g" projects/mysite/settings.py
+  - sed -i -e "s?^\(DEBUG = True\).*?\1\nPIPELINE['PIPELINE_ENABLED'] = True?g" projects/mysite/settings.py
   - cat projects/mysite/settings.py
   - cd ..
 script:

@@ -4,8 +4,9 @@ from itertools import combinations
 from django import forms
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
-from django.contrib.formtools.wizard.views import SessionWizardView
 from django.shortcuts import render_to_response
+
+from formtools.wizard.views import SessionWizardView
 
 from catmaid.control.classification import get_classification_links_qs, \
         link_existing_classification

@@ -8,9 +8,9 @@ from catmaid.fields import *
 class Command(NoArgsCommand):
     help = "Create 3 example projects in CATMAID, if they don't already exist"
 
-    option_list = NoArgsCommand.option_list + (
-        make_option('--user', dest='user_id', help='The ID of the project to setup tracing for'),
-        )
+    def add_arguments(self, parser):
+        parser.add_argument('--user', dest='user_id', required=True,
+                help='The ID of the project to setup tracing for')
 
     def handle_noargs(self, **options):
 

@@ -1,6 +1,6 @@
 from django.db import connection
 from django.conf import settings
-from django.core.management.base import NoArgsCommand, CommandError
+from django.core.management.base import BaseCommand, CommandError
 
 from optparse import make_option
 
@@ -8,16 +8,15 @@ from performancetests import PerformanceTest
 from performancetests.models import TestView
 
 
-class Command(NoArgsCommand):
+class Command(BaseCommand):
     help = "Test all available test views and save generated TestResult objects."
 
-    option_list = NoArgsCommand.option_list + (
-        make_option('--dont-save', dest='saveresults',
+    def add_arguments(self, parser):
+        parser.add_argument('--dont-save', dest='saveresults',
             default=True, action='store_false',
-            help='Don\'t save generated test results to the database'),
-        )
+            help='Don\'t save generated test results to the database')
 
-    def handle_noargs(self, **options):
+    def handle(self, *args, **options):
         # Make sure we have all neaded parameters available
         if not hasattr(settings, 'PERFORMANCETESTS_TEMPLATE_DB'):
             raise CommandError('Could not find required setting PERFORMANCETESTS_TEMPLATE_DB')

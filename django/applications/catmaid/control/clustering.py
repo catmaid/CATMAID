@@ -7,8 +7,9 @@ from django import forms
 from django.forms.formsets import formset_factory
 from django.forms.widgets import CheckboxSelectMultiple
 from django.shortcuts import render_to_response
-from django.contrib.formtools.wizard.views import SessionWizardView
 from django.template.context import RequestContext
+
+from formtools.wizard.views import SessionWizardView
 
 from catmaid.models import Class
 from catmaid.control.classification import ClassInstanceProxy, \

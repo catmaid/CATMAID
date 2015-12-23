@@ -1,11 +1,11 @@
 {% extends "admin/base_site.html" %}
-{% load compressed %}
+{% load pipeline %}
 {% load i18n %}
 
 {% block extrahead %}
 
-{% compressed_css 'libraries' %}
-{% compressed_js 'jquery-lib' %}
+{% stylesheet 'libraries' %}
+{% javascript 'jquery-lib' %}
 
 {% endblock %}
 

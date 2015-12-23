@@ -6,20 +6,20 @@ own files:
 
 Libraries: To add a new library, add a new entry into the libraries_js
 dictionary and, if needed, add the libraries CSS files to sourcefiles
-tuple of the 'library' entry in the ``PIPELINE_CSS`` dictionary.
+tuple of the 'library' entry in the ``STYLESHEETS`` dictionary.
 
 CATMAID files: By default all CSS files in the ``static/css`` directory are
 included as well as all JavaScript files in ``static/js`` and CATMAID's
 subdirectories in it. However, if you want to add new files explicitly, add
-CSS to the source_filenames tuple in the 'catmaid' entry of the ``PIPELINE_CSS``
-dictionary. JavaScript files go into the 'catmaid' entry of the ``PIPELINE_JS``
+CSS to the source_filenames tuple in the 'catmaid' entry of the ``STYLESHEETS``
+dictionary. JavaScript files go into the 'catmaid' entry of the ``JAVASCRIPT``
 dictonary at the end of this file.
 """
 
 from collections import OrderedDict
 
 
-PIPELINE_CSS = {
+STYLESHEETS = {
     'libraries': {
         'source_filenames': (
             'libs/jquery/themes/smoothness/jquery-ui.css',
@@ -74,10 +74,10 @@ libraries_js = {
                 'neuron_controller.js', 'skeleton_source.js', '*.js'],
 }
 
-PIPELINE_JS = OrderedDict()
+JAVASCRIPT = OrderedDict()
 
 for k, v in libraries_js.iteritems():
-    PIPELINE_JS[k + '-lib'] = {
+    JAVASCRIPT[k + '-lib'] = {
         'source_filenames': ['libs/%s/%s' % (k, f) for f in v],
         'output_filename': 'js/libs/%s-lib.js' % k,
     }
@@ -98,14 +98,14 @@ non_pipeline_js = {
 # Even non-pipeline files have to be made known to pipeline, because it takes
 # care of collecting them into the STATIC_ROOT directory.
 for k, v in non_pipeline_js.iteritems():
-    PIPELINE_JS[k] = {
+    JAVASCRIPT[k] = {
         'source_filenames': (v,),
         'output_filename': v
     }
 
 
 # Regular CATMAID front-end files
-PIPELINE_JS['catmaid'] = {
+JAVASCRIPT['catmaid'] = {
     'source_filenames': (
         'js/CATMAID.js',
         'js/dom.js',
@@ -136,9 +136,3 @@ PIPELINE_JS['catmaid'] = {
     ),
     'output_filename': 'js/catmaid.js',
 }
-
-# Make a list of files that should be included directly (bypassing pipeline)
-# and a list of pipeline identifiers for all others.
-NON_COMPRESSED_FILES = non_pipeline_js.values()
-NON_COMPRESSED_FILE_IDS = non_pipeline_js.keys()
-COMPRESSED_FILE_IDS = filter(lambda f: f not in NON_COMPRESSED_FILE_IDS, PIPELINE_JS.keys())

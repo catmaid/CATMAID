@@ -3,7 +3,7 @@
 
 {% extends "admin/base_site.html" %}
 {% load admin_static %}
-{% load compressed %}
+{% load pipeline %}
 {% load i18n %}
 
 {% block extrastyle %}
@@ -27,8 +27,8 @@
 {% endblock %}
 
 {% block extrahead %}
-	{% compressed_css 'libraries' %}
-	{% compressed_js 'jquery-lib' %}
+	{% stylesheet 'libraries' %}
+	{% javascript 'jquery-lib' %}
   <script>
   $(function() {
     $("#source-tabs").tabs();

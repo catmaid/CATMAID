@@ -1,4 +1,4 @@
-{% load compressed %}
+{% load pipeline %}
 
 <!DOCTYPE html>
 <html>
@@ -13,7 +13,7 @@
     </script>
 
     {% for f in COMPRESSED_FILE_IDS %}
-          {% compressed_js f %}
+          {% javascript f %}
     {% endfor %}
     {% for f in NON_COMPRESSED_FILES %}
       <script type="application/javascript" src="{{ STATIC_URL }}{{ f }}"></script>

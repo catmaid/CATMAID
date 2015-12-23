@@ -1,4 +1,4 @@
-{% load compressed %}
+{% load pipeline %}
 {% load common %}
 
 <!DOCTYPE html>
@@ -13,13 +13,13 @@
 			var django_url = "{{ CATMAID_URL }}";
 		</script>
 
-		{% compressed_css 'libraries' %}
-		{% compressed_css 'catmaid' %}
+		{% stylesheet 'libraries' %}
+		{% stylesheet 'catmaid' %}
 
     <!-- Regular CATMAID components -->
     {% for f in COMPRESSED_FILE_IDS %}
         {% if f != 'catmaid' %}
-            {% compressed_js f %}
+            {% javascript f %}
         {% endif %}
     {% endfor %}
 
@@ -32,7 +32,7 @@
 			CATMAID.CLIENT_VERSION = "{% catmaid_version %}";
 		</script>
 
-	{% compressed_js 'catmaid' %}
+	{% javascript 'catmaid' %}
 
     {% for f in NON_COMPRESSED_FILES %}
       <script type="application/javascript" src="{{ STATIC_URL }}{{ f }}"></script>

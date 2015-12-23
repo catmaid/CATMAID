@@ -5,7 +5,6 @@ distribute==0.7.3
 Django==1.7.11
 django-adminplus==0.3
 django-celery==3.1.17
-django-devserver==0.8.0
 django-guardian==1.2.5
 django-pipeline==1.6.4
 git+https://github.com/aschampion/django-rest-swagger@057c47315cddbfebcc31150308fb9c972c2f7cd2#egg=django-rest-swagger

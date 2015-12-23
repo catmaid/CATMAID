@@ -51,7 +51,6 @@ INSTALLED_APPS = (
     'django.contrib.admin.apps.SimpleAdminConfig',
     'django.contrib.staticfiles',
     'django.contrib.gis',
-    'devserver',
     'djcelery',
     'taggit',
     'adminplus',

@@ -82,7 +82,7 @@ def get_skeleton_as_dataarray(project_id=None, skeleton_id=None):
     treenode_skeletonid = np.zeros( (treenode_count,), dtype = np.uint32 )
     treenode_creationtime = np.zeros( (treenode_count,), dtype = np.uint32 )
     treenode_modificationtime = np.zeros( (treenode_count,), dtype = np.uint32 )
-    
+
     treenode_connectivity = np.zeros( (treenode_count, 2), dtype = np.uint32 )
     treenode_connectivity_type = np.zeros( (treenode_count,), dtype = np.uint32 )
     treenode_connectivity_skeletonid = np.zeros( (treenode_count,), dtype = np.uint32 )
@@ -316,7 +316,7 @@ def microcircuit_neurohdf(request, project_id=None):
         'format_version': 0.1,
         'url': neurohdf_url
     }
-    return HttpResponse(json.dumps(result), mimetype="text/plain")
+    return HttpResponse(json.dumps(result), content_type="text/plain")
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -333,4 +333,4 @@ def skeleton_neurohdf(request, project_id=None, skeleton_id=None):
         'format_version': 0.1,
         'url': neurohdf_url
     }
-    return HttpResponse(json.dumps(result), mimetype="application/json")
+    return HttpResponse(json.dumps(result), content_type="application/json")

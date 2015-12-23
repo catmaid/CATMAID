@@ -3,7 +3,7 @@ from django.contrib.gis.db import models as spatial_models
 from django.core.validators import RegexValidator
 from django.db import models
 from django.db.models import Q
-from django.db.models.signals import pre_save, post_save, post_syncdb
+from django.db.models.signals import pre_save, post_save, post_migrate
 from django.dispatch import receiver
 from django.utils import timezone
 from datetime import datetime
@@ -56,9 +56,11 @@ class Project(models.Model):
         return self.title
 
 def on_project_save(sender, instance, created, **kwargs):
-    """ Make sure all required classes and relations are set up.
+    """ Make sure all required classes and relations are set up for all
+    projects but the ontology dummy projects.
     """
-    if created and sender == Project:
+    is_not_dummy = instance.id != settings.ONTOLOGY_DUMMY_PROJECT_ID
+    if created and sender == Project and is_not_dummy:
         from control.project import validate_project_setup
         from catmaid import get_system_user
         user = get_system_user()
@@ -418,7 +420,7 @@ class UserFocusedManager(models.Manager):
     # TODO: should there be a parameter or separate function that allows the caller to specify read-only vs. read-write objects?
 
     def for_user(self, user):
-        fullSet = super(UserFocusedManager, self).get_query_set()
+        fullSet = super(UserFocusedManager, self).get_queryset()
 
         if user.is_superuser:
             return fullSet
@@ -943,18 +945,18 @@ def add_user_to_default_groups(sender, instance, created, **kwargs):
 post_save.connect(add_user_to_default_groups, sender=User)
 
 # Prevent interactive question about wanting a superuser created.  (This code
-# has to go in this "models" module so that it gets processed by the "syncdb"
+# has to go in this "models" module so that it gets processed by the "migrate"
 # command during database creation.)
 #
 # From http://stackoverflow.com/questions/1466827/ --
 
 from django.contrib.auth import models as auth_models
-from django.contrib.auth.management import create_superuser
+from django.contrib.auth.management.commands import createsuperuser
 
-post_syncdb.disconnect(
-    create_superuser,
+post_migrate.disconnect(
+    createsuperuser,
     sender=auth_models,
-    dispatch_uid='django.contrib.auth.management.create_superuser')
+    dispatch_uid='django.contrib.auth.management.commands.createsuperuser')
 
 
 class ChangeRequest(UserFocusedModel):

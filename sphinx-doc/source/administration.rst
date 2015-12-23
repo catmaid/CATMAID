@@ -45,7 +45,6 @@ Update Python packages::
 
 Synchronize the Django environment with the database::
 
-   ./projects/mysite/manage.py syncdb
    ./projects/mysite/manage.py migrate
 
 Collect new and changed static files::
@@ -62,6 +61,14 @@ clone the virtualenv by calling::
 
    Updating PostGIS on your host system could cause CATMAID to stop working. See
    :ref:`here <faq-postgis-update-problems>` for how to fix this.
+
+.. note::
+
+   Updating from a CATMAID release before 2015.12.21 (with applied database
+   migrations) requires to update to release 2015.12.21 first, apply all
+   database migrations and then continue with the release you actually want.
+   With the newer version, you have to then fake the initial migration:
+   ``manage.py migrate catmaid --fake 0001_initial``.
 
 Backup an restore the database
 ------------------------------

@@ -3,6 +3,8 @@ import os.path
 import yaml
 import urllib
 
+from collections import OrderedDict
+
 from django import forms
 from django.db.models import Count
 from django.conf import settings
@@ -11,7 +13,6 @@ from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.formtools.wizard.views import SessionWizardView
 from django.shortcuts import render_to_response
-from django.utils.datastructures import SortedDict
 
 from guardian.models import Permission
 from guardian.shortcuts import get_perms_for_model, assign
@@ -520,7 +521,7 @@ def get_elements_with_perms_cls(element, cls, attach_perms=False):
 
 def get_element_permissions(element, cls):
     elem_perms = get_elements_with_perms_cls(element, cls, True)
-    elem_perms = SortedDict(elem_perms)
+    elem_perms = OrderedDict(elem_perms)
     elem_perms.keyOrder.sort(key=lambda elem: elem.get_name())
     return elem_perms
 

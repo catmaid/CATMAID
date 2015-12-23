@@ -54,6 +54,7 @@ class BrokenSliceModelForm(forms.ModelForm):
 
     class Meta:
         model = BrokenSlice
+        fields = '__all__'
 
 
 class BrokenSliceAdmin(GuardedModelAdmin):
@@ -260,6 +261,7 @@ class DataViewAdminForm(forms.ModelForm):
     """
     class Meta:
         model = DataView
+        fields = '__all__'
 
     def __init__(self, *args, **kwargs):
         super(DataViewAdminForm, self).__init__(*args, **kwargs)

@@ -38,7 +38,7 @@ RUN service postgresql start \
     && /bin/bash -c "source /usr/share/virtualenvwrapper/virtualenvwrapper.sh \
     && workon catmaid \
     && cd /home/django/projects/mysite \
-    && python manage.py syncdb --migrate --noinput \
+    && python manage.py migrate --noinput \
     && python manage.py collectstatic --clear --link --noinput \
     && cat /home/scripts/docker/create_superuser.py | python manage.py shell \
     && python manage.py catmaid_insert_example_projects --user=1"

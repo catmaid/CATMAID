@@ -1,5 +1,32 @@
 ## Under development
 
+### Notes
+
+Starting with this release CATMAID uses a new database migration system. To
+update an existing CATMAID instance safely, please follow these steps:
+
+1. Make sure you have CATMAID updated to the last release (2015.12.21),
+   including all database migrations and up-to-date Python packages.
+2. Upgrade to this version (or paternally a newer one) and update all Python
+   packages (in within your virtualenv):
+
+   pip install -r requirements.txt
+
+3. Fake the new initial migration by running:
+
+   python manage.py migrate catmaid --fake 0001_initial
+
+4. In the future no syncdb step is required anymore. Continue with the rest of
+   the regular update procedure:
+
+   python manage.py migrate
+   python manage.py collectstatic [-l]
+
+This procedure will only be required for upgrading an existing instance to a
+release newer than 2015.12.21. It won't be needed to migrate from newer
+releases.
+
+
 ### Features and enhancements
 
 

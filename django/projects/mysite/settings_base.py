@@ -46,7 +46,9 @@ INSTALLED_APPS = (
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.sites',
-    'django.contrib.admin',
+    # Instead of 'django.contrib.admin', in order to disable the automatic
+    # auto-discovery, which would interfer with django-adminplus.
+    'django.contrib.admin.apps.SimpleAdminConfig',
     'django.contrib.staticfiles',
     'django.contrib.gis',
     'devserver',
@@ -56,7 +58,6 @@ INSTALLED_APPS = (
     'catmaid',
     'performancetests',
     'guardian',
-    'south',
     'pipeline',
     'rest_framework',
     'rest_framework.authtoken',

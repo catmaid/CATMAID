@@ -59,10 +59,10 @@ different message broker for larger setups. There is more information on
 the limitations of and alternatives to this approach in
 `Celery's documentation <http://docs.celeryproject.org/en/latest/getting-started/brokers/django.html>`_.
 
-To initialize Celery, call the syncdb sub-command of your ``manage.py``
+To initialize Celery, call the migrate command of your ``manage.py``
 (from within the virtualenv)::
 
-    python manage.py syncdb
+    python manage.py migrate
 
 This will create some tables for Celery and django-kumbo in the Django
 data base. You should then be able to run the Celery daemon (also from

@@ -216,12 +216,8 @@ instructions assume that you've changed into that directory::
 
     cd /home/alice/catmaid/django/projects/mysite
 
-Now create some required tables with::
-
-    ./manage.py syncdb
-
-And bring the database schema up to date for applications that
-mange changes to their tables with South::
+Now create all required tables and bring the database schema up to date
+for applications that mange changes to their tables with South::
 
     ./manage.py migrate
 

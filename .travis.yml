@@ -37,6 +37,10 @@ before_script:
   - cat configuration.py
   - python create_configuration.py
   - sed -i -e "s?^\(ALLOWED_HOSTS = \).*?\1['*']?g" projects/mysite/settings.py
+  # Enable debug mode so that static files can be served by runserver
+  - sed -i -e "s?^\(DEBUG = \).*?\1True?g" projects/mysite/settings.py
+  # Enable pipeline to more closely mimic a production configuration
+  - sed -i -e "s?^\(PIPELINE_ENABLED = \).*?\1True?g" projects/mysite/settings.py
   - cat projects/mysite/settings.py
   - cd ..
 script:
@@ -45,7 +49,7 @@ script:
   - $TRAVIS_BUILD_DIR/node_modules/.bin/csslint .
   - cd $TRAVIS_BUILD_DIR
   - cd django/projects/mysite
-  - python manage.py syncdb --migrate --noinput
+  - python manage.py migrate --noinput
   - python manage.py collectstatic --link --noinput
   - coverage run manage.py test catmaid.tests
   # Remove login requirement from QUnit test page

@@ -211,4 +211,4 @@ class CATMAIDConfig(AppConfig):
 
         user = get_system_user()
         for p in Project.objects.all():
-            project.validate_project_setup(p.id, user.id)
+            p.validate_project_setup(user.id)

@@ -53,6 +53,30 @@ class Project(models.Model):
             ("can_browse", "Can browse projects")
         )
 
+    # All classes needed by the tracing system alongside their
+    # descriptions.
+    needed_classes = {
+        'stackgroup': "An identifier for a group of stacks",
+    }
+
+    # All relations needed by the tracing system alongside their
+    # descriptions.
+    needed_relations = {
+        'has_channel': "A stack group can have assosiated channels",
+        'has_view': "A stack group can have assosiated orthogonal views",
+    }
+
+    def validate_project_setup(self, user_id):
+        """Will create needed class and relations if they don't exist.
+        """
+        for nc, desc in self.needed_classes.iteritems():
+            Class.objects.get_or_create(project_id=self.id,
+                    class_name=nc, defaults={'user_id': user_id})
+
+        for nr, desc in self.needed_relations.iteritems():
+            Relation.objects.get_or_create(project_id=self.id,
+                    relation_name=nr, defaults={'user_id': user_id})
+
     def __unicode__(self):
         return self.title
 
@@ -62,10 +86,9 @@ def on_project_save(sender, instance, created, **kwargs):
     """
     is_not_dummy = instance.id != settings.ONTOLOGY_DUMMY_PROJECT_ID
     if created and sender == Project and is_not_dummy:
-        from .control.project import validate_project_setup
         from .apps import get_system_user
         user = get_system_user()
-        validate_project_setup(instance.id, user.id)
+        instance.validate_project_setup(user.id)
 
 # Validate project when they are saved
 post_save.connect(on_project_save, sender=Project)

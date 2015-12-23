@@ -2,13 +2,14 @@
 from __future__ import unicode_literals
 
 from django.db import models, migrations
-import datetime
+from datetime import datetime
 import django.core.validators
 import catmaid.fields
 import django.contrib.gis.db.models.fields
 import jsonfield.fields
 import catmaid.control.user
 from django.conf import settings
+from django.utils import timezone
 import taggit.managers
 
 # This is the database schema of CATMAID 2015.12.21 without owner information.
@@ -3303,8 +3304,8 @@ initial_state_operations = [
         name='CardinalityRestriction',
         fields=[
             ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-            ('creation_time', models.DateTimeField(default=datetime.datetime.now)),
-            ('edition_time', models.DateTimeField(default=datetime.datetime.now)),
+            ('creation_time', models.DateTimeField(default=timezone.now)),
+            ('edition_time', models.DateTimeField(default=timezone.now)),
             ('enabled', models.BooleanField(default=True)),
             ('cardinality_type', models.IntegerField()),
             ('value', models.IntegerField()),
@@ -3318,8 +3319,8 @@ initial_state_operations = [
         name='ChangeRequest',
         fields=[
             ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-            ('creation_time', models.DateTimeField(default=datetime.datetime.now)),
-            ('edition_time', models.DateTimeField(default=datetime.datetime.now)),
+            ('creation_time', models.DateTimeField(default=timezone.now)),
+            ('edition_time', models.DateTimeField(default=timezone.now)),
             ('type', models.CharField(max_length=32)),
             ('description', models.TextField()),
             ('status', models.IntegerField(default=0)),
@@ -3338,8 +3339,8 @@ initial_state_operations = [
         name='Class',
         fields=[
             ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-            ('creation_time', models.DateTimeField(default=datetime.datetime.now)),
-            ('edition_time', models.DateTimeField(default=datetime.datetime.now)),
+            ('creation_time', models.DateTimeField(default=timezone.now)),
+            ('edition_time', models.DateTimeField(default=timezone.now)),
             ('class_name', models.CharField(max_length=255)),
             ('description', models.TextField()),
         ],
@@ -3352,8 +3353,8 @@ initial_state_operations = [
         name='ClassClass',
         fields=[
             ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-            ('creation_time', models.DateTimeField(default=datetime.datetime.now)),
-            ('edition_time', models.DateTimeField(default=datetime.datetime.now)),
+            ('creation_time', models.DateTimeField(default=timezone.now)),
+            ('edition_time', models.DateTimeField(default=timezone.now)),
             ('class_a', models.ForeignKey(related_name='classes_a', db_column=b'class_a', to='catmaid.Class')),
             ('class_b', models.ForeignKey(related_name='classes_b', db_column=b'class_b', to='catmaid.Class')),
         ],
@@ -3366,8 +3367,8 @@ initial_state_operations = [
         name='ClassInstance',
         fields=[
             ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-            ('creation_time', models.DateTimeField(default=datetime.datetime.now)),
-            ('edition_time', models.DateTimeField(default=datetime.datetime.now)),
+            ('creation_time', models.DateTimeField(default=timezone.now)),
+            ('edition_time', models.DateTimeField(default=timezone.now)),
             ('name', models.CharField(max_length=255)),
             ('class_column', models.ForeignKey(to='catmaid.Class', db_column=b'class_id')),
         ],
@@ -3380,8 +3381,8 @@ initial_state_operations = [
         name='ClassInstanceClassInstance',
         fields=[
             ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-            ('creation_time', models.DateTimeField(default=datetime.datetime.now)),
-            ('edition_time', models.DateTimeField(default=datetime.datetime.now)),
+            ('creation_time', models.DateTimeField(default=timezone.now)),
+            ('edition_time', models.DateTimeField(default=timezone.now)),
             ('class_instance_a', models.ForeignKey(related_name='cici_via_a', db_column=b'class_instance_a', to='catmaid.ClassInstance')),
             ('class_instance_b', models.ForeignKey(related_name='cici_via_b', db_column=b'class_instance_b', to='catmaid.ClassInstance')),
         ],
@@ -3417,8 +3418,8 @@ initial_state_operations = [
         name='Concept',
         fields=[
             ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-            ('creation_time', models.DateTimeField(default=datetime.datetime.now)),
-            ('edition_time', models.DateTimeField(default=datetime.datetime.now)),
+            ('creation_time', models.DateTimeField(default=timezone.now)),
+            ('edition_time', models.DateTimeField(default=timezone.now)),
         ],
         options={
             'db_table': 'concept',
@@ -3429,8 +3430,8 @@ initial_state_operations = [
         name='Connector',
         fields=[
             ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-            ('creation_time', models.DateTimeField(default=datetime.datetime.now)),
-            ('edition_time', models.DateTimeField(default=datetime.datetime.now)),
+            ('creation_time', models.DateTimeField(default=timezone.now)),
+            ('edition_time', models.DateTimeField(default=timezone.now)),
             ('location_x', models.FloatField()),
             ('location_y', models.FloatField()),
             ('location_z', models.FloatField()),
@@ -3446,8 +3447,8 @@ initial_state_operations = [
         name='ConnectorClassInstance',
         fields=[
             ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-            ('creation_time', models.DateTimeField(default=datetime.datetime.now)),
-            ('edition_time', models.DateTimeField(default=datetime.datetime.now)),
+            ('creation_time', models.DateTimeField(default=timezone.now)),
+            ('edition_time', models.DateTimeField(default=timezone.now)),
             ('class_instance', models.ForeignKey(to='catmaid.ClassInstance')),
             ('connector', models.ForeignKey(to='catmaid.Connector')),
         ],
@@ -3490,8 +3491,8 @@ initial_state_operations = [
         name='Location',
         fields=[
             ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-            ('creation_time', models.DateTimeField(default=datetime.datetime.now)),
-            ('edition_time', models.DateTimeField(default=datetime.datetime.now)),
+            ('creation_time', models.DateTimeField(default=timezone.now)),
+            ('edition_time', models.DateTimeField(default=timezone.now)),
             ('location_x', models.FloatField()),
             ('location_y', models.FloatField()),
             ('location_z', models.FloatField()),
@@ -3506,8 +3507,8 @@ initial_state_operations = [
         name='Log',
         fields=[
             ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-            ('creation_time', models.DateTimeField(default=datetime.datetime.now)),
-            ('edition_time', models.DateTimeField(default=datetime.datetime.now)),
+            ('creation_time', models.DateTimeField(default=timezone.now)),
+            ('edition_time', models.DateTimeField(default=timezone.now)),
             ('operation_type', models.CharField(max_length=255)),
             ('location', catmaid.fields.Double3DField()),
             ('freetext', models.TextField()),
@@ -3521,7 +3522,7 @@ initial_state_operations = [
         name='Message',
         fields=[
             ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-            ('time', models.DateTimeField(default=datetime.datetime.now)),
+            ('time', models.DateTimeField(default=timezone.now)),
             ('read', models.BooleanField(default=False)),
             ('title', models.TextField()),
             ('text', models.TextField(default=b'New message', null=True, blank=True)),
@@ -3581,8 +3582,8 @@ initial_state_operations = [
         name='RegionOfInterest',
         fields=[
             ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-            ('creation_time', models.DateTimeField(default=datetime.datetime.now)),
-            ('edition_time', models.DateTimeField(default=datetime.datetime.now)),
+            ('creation_time', models.DateTimeField(default=timezone.now)),
+            ('edition_time', models.DateTimeField(default=timezone.now)),
             ('location_x', models.FloatField()),
             ('location_y', models.FloatField()),
             ('location_z', models.FloatField()),
@@ -3602,8 +3603,8 @@ initial_state_operations = [
         name='RegionOfInterestClassInstance',
         fields=[
             ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-            ('creation_time', models.DateTimeField(default=datetime.datetime.now)),
-            ('edition_time', models.DateTimeField(default=datetime.datetime.now)),
+            ('creation_time', models.DateTimeField(default=timezone.now)),
+            ('edition_time', models.DateTimeField(default=timezone.now)),
             ('class_instance', models.ForeignKey(to='catmaid.ClassInstance')),
             ('project', models.ForeignKey(to='catmaid.Project')),
             ('region_of_interest', models.ForeignKey(to='catmaid.RegionOfInterest')),
@@ -3617,8 +3618,8 @@ initial_state_operations = [
         name='Relation',
         fields=[
             ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-            ('creation_time', models.DateTimeField(default=datetime.datetime.now)),
-            ('edition_time', models.DateTimeField(default=datetime.datetime.now)),
+            ('creation_time', models.DateTimeField(default=timezone.now)),
+            ('edition_time', models.DateTimeField(default=timezone.now)),
             ('relation_name', models.CharField(max_length=255)),
             ('uri', models.TextField()),
             ('description', models.TextField()),
@@ -3635,8 +3636,8 @@ initial_state_operations = [
         name='RelationInstance',
         fields=[
             ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-            ('creation_time', models.DateTimeField(default=datetime.datetime.now)),
-            ('edition_time', models.DateTimeField(default=datetime.datetime.now)),
+            ('creation_time', models.DateTimeField(default=timezone.now)),
+            ('edition_time', models.DateTimeField(default=timezone.now)),
             ('project', models.ForeignKey(to='catmaid.Project')),
             ('relation', models.ForeignKey(to='catmaid.Relation')),
             ('user', models.ForeignKey(to=settings.AUTH_USER_MODEL)),
@@ -3650,8 +3651,8 @@ initial_state_operations = [
         name='Restriction',
         fields=[
             ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-            ('creation_time', models.DateTimeField(default=datetime.datetime.now)),
-            ('edition_time', models.DateTimeField(default=datetime.datetime.now)),
+            ('creation_time', models.DateTimeField(default=timezone.now)),
+            ('edition_time', models.DateTimeField(default=timezone.now)),
             ('enabled', models.BooleanField(default=True)),
             ('project', models.ForeignKey(to='catmaid.Project')),
             ('restricted_link', models.ForeignKey(to='catmaid.ClassClass')),
@@ -3666,7 +3667,7 @@ initial_state_operations = [
         name='Review',
         fields=[
             ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-            ('review_time', models.DateTimeField(default=datetime.datetime.now)),
+            ('review_time', models.DateTimeField(default=timezone.now)),
             ('project', models.ForeignKey(to='catmaid.Project')),
             ('reviewer', models.ForeignKey(to=settings.AUTH_USER_MODEL)),
             ('skeleton', models.ForeignKey(to='catmaid.ClassInstance')),
@@ -3680,7 +3681,7 @@ initial_state_operations = [
         name='ReviewerWhitelist',
         fields=[
             ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-            ('accept_after', models.DateTimeField(default=datetime.datetime(1, 1, 1, 0, 0))),
+            ('accept_after', models.DateTimeField(default=datetime.utcfromtimestamp(0))),
             ('project', models.ForeignKey(to='catmaid.Project')),
             ('reviewer', models.ForeignKey(related_name='+', to=settings.AUTH_USER_MODEL)),
             ('user', models.ForeignKey(to=settings.AUTH_USER_MODEL)),
@@ -3717,8 +3718,8 @@ initial_state_operations = [
         name='StackClassInstance',
         fields=[
             ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-            ('creation_time', models.DateTimeField(default=datetime.datetime.now)),
-            ('edition_time', models.DateTimeField(default=datetime.datetime.now)),
+            ('creation_time', models.DateTimeField(default=timezone.now)),
+            ('edition_time', models.DateTimeField(default=timezone.now)),
             ('class_instance', models.ForeignKey(to='catmaid.ClassInstance')),
             ('project', models.ForeignKey(to='catmaid.Project')),
             ('relation', models.ForeignKey(to='catmaid.Relation')),
@@ -3734,8 +3735,8 @@ initial_state_operations = [
         name='SuppressedVirtualTreenode',
         fields=[
             ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-            ('creation_time', models.DateTimeField(default=datetime.datetime.now)),
-            ('edition_time', models.DateTimeField(default=datetime.datetime.now)),
+            ('creation_time', models.DateTimeField(default=timezone.now)),
+            ('edition_time', models.DateTimeField(default=timezone.now)),
             ('location_coordinate', models.FloatField()),
             ('orientation', models.SmallIntegerField(choices=[(0, b'z'), (1, b'y'), (2, b'x')])),
         ],
@@ -3755,8 +3756,8 @@ initial_state_operations = [
             ('font_style', models.TextField(null=True)),
             ('font_size', models.FloatField(default=32)),
             ('scaling', models.BooleanField(default=True)),
-            ('creation_time', models.DateTimeField(default=datetime.datetime.now)),
-            ('edition_time', models.DateTimeField(default=datetime.datetime.now)),
+            ('creation_time', models.DateTimeField(default=timezone.now)),
+            ('edition_time', models.DateTimeField(default=timezone.now)),
             ('deleted', models.BooleanField(default=False)),
             ('project', models.ForeignKey(to='catmaid.Project')),
         ],
@@ -3782,8 +3783,8 @@ initial_state_operations = [
         name='Treenode',
         fields=[
             ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-            ('creation_time', models.DateTimeField(default=datetime.datetime.now)),
-            ('edition_time', models.DateTimeField(default=datetime.datetime.now)),
+            ('creation_time', models.DateTimeField(default=timezone.now)),
+            ('edition_time', models.DateTimeField(default=timezone.now)),
             ('location_x', models.FloatField()),
             ('location_y', models.FloatField()),
             ('location_z', models.FloatField()),
@@ -3804,8 +3805,8 @@ initial_state_operations = [
         name='TreenodeClassInstance',
         fields=[
             ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-            ('creation_time', models.DateTimeField(default=datetime.datetime.now)),
-            ('edition_time', models.DateTimeField(default=datetime.datetime.now)),
+            ('creation_time', models.DateTimeField(default=timezone.now)),
+            ('edition_time', models.DateTimeField(default=timezone.now)),
             ('class_instance', models.ForeignKey(to='catmaid.ClassInstance')),
             ('project', models.ForeignKey(to='catmaid.Project')),
             ('relation', models.ForeignKey(to='catmaid.Relation')),
@@ -3821,8 +3822,8 @@ initial_state_operations = [
         name='TreenodeConnector',
         fields=[
             ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-            ('creation_time', models.DateTimeField(default=datetime.datetime.now)),
-            ('edition_time', models.DateTimeField(default=datetime.datetime.now)),
+            ('creation_time', models.DateTimeField(default=timezone.now)),
+            ('edition_time', models.DateTimeField(default=timezone.now)),
             ('confidence', models.IntegerField(default=5)),
             ('connector', models.ForeignKey(to='catmaid.Connector')),
             ('project', models.ForeignKey(to='catmaid.Project')),
@@ -3859,8 +3860,8 @@ initial_state_operations = [
         name='Volume',
         fields=[
             ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-            ('creation_time', models.DateTimeField(default=datetime.datetime.now)),
-            ('edition_time', models.DateTimeField(default=datetime.datetime.now)),
+            ('creation_time', models.DateTimeField(default=timezone.now)),
+            ('edition_time', models.DateTimeField(default=timezone.now)),
             ('name', models.CharField(max_length=255)),
             ('comment', models.TextField(null=True, blank=True)),
             ('geometry', django.contrib.gis.db.models.fields.GeometryField(srid=0, dim=3)),

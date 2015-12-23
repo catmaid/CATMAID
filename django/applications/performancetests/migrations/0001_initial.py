@@ -2,7 +2,7 @@
 from __future__ import unicode_literals
 
 from django.db import models, migrations
-import datetime
+from django.utils import timezone
 import jsonfield.fields
 
 
@@ -17,7 +17,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('title', models.TextField()),
-                ('creation_time', models.DateTimeField(default=datetime.datetime.now)),
+                ('creation_time', models.DateTimeField(default=timezone.now)),
             ],
             options={
             },
@@ -30,7 +30,7 @@ class Migration(migrations.Migration):
                 ('time', models.FloatField()),
                 ('result_code', models.IntegerField()),
                 ('result', models.TextField()),
-                ('creation_time', models.DateTimeField(default=datetime.datetime.now)),
+                ('creation_time', models.DateTimeField(default=timezone.now)),
                 ('version', models.CharField(max_length=50, blank=True)),
             ],
             options={
@@ -44,7 +44,7 @@ class Migration(migrations.Migration):
                 ('method', models.CharField(max_length=50)),
                 ('url', models.TextField()),
                 ('data', jsonfield.fields.JSONField(default={}, blank=True)),
-                ('creation_time', models.DateTimeField(default=datetime.datetime.now)),
+                ('creation_time', models.DateTimeField(default=timezone.now)),
             ],
             options={
             },

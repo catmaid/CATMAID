@@ -1,4 +1,13 @@
+from __future__ import absolute_import
+
+from datetime import datetime
+import sys
+import re
+import urllib
+
 from django import forms
+from django.conf import settings
+from django.contrib.auth.models import User, Group
 from django.contrib.gis.db import models as spatial_models
 from django.core.validators import RegexValidator
 from django.db import connection, models
@@ -6,27 +15,20 @@ from django.db.models import Q
 from django.db.models.signals import pre_save, post_save, post_migrate
 from django.dispatch import receiver
 from django.utils import timezone
-from datetime import datetime
+
 from jsonfield import JSONField
-import sys
-import re
-import urllib
-
-from django.conf import settings
-from django.contrib.auth.models import User, Group
-
-from fields import Double3DField, Integer3DField, RGBAField
-
 from guardian.shortcuts import get_objects_for_user
-
 from taggit.managers import TaggableManager
 
-from control.user import distinct_user_color
+from .fields import Double3DField, Integer3DField, RGBAField
+
+from .control.user import distinct_user_color
+
 
 CELL_BODY_CHOICES = (
     ('u', 'Unknown'),
     ('l', 'Local'),
-    ('n', 'Non-Local' ))
+    ('n', 'Non-Local'))
 
 
 class UserRole(object):
@@ -36,6 +38,12 @@ class UserRole(object):
 
 
 class Project(models.Model):
+    title = models.TextField()
+    comment = models.TextField(blank=True, null=True)
+    stacks = models.ManyToManyField("Stack",
+                                    through='ProjectStack')
+    tags = TaggableManager(blank=True)
+
     class Meta:
         db_table = "project"
         managed = True
@@ -44,11 +52,6 @@ class Project(models.Model):
             ("can_annotate", "Can annotate projects"),
             ("can_browse", "Can browse projects")
         )
-    title = models.TextField()
-    comment = models.TextField(blank=True, null=True)
-    stacks = models.ManyToManyField("Stack",
-                                    through='ProjectStack')
-    tags = TaggableManager(blank=True)
 
     def __unicode__(self):
         return self.title
@@ -59,17 +62,16 @@ def on_project_save(sender, instance, created, **kwargs):
     """
     is_not_dummy = instance.id != settings.ONTOLOGY_DUMMY_PROJECT_ID
     if created and sender == Project and is_not_dummy:
-        from control.project import validate_project_setup
-        from catmaid import get_system_user
+        from .control.project import validate_project_setup
+        from . import get_system_user
         user = get_system_user()
         validate_project_setup(instance.id, user.id)
 
 # Validate project when they are saved
 post_save.connect(on_project_save, sender=Project)
 
+
 class Stack(models.Model):
-    class Meta:
-        db_table = "stack"
     title = models.TextField(help_text="Descriptive title of this stack.")
     dimension = Integer3DField(help_text="The pixel dimensionality of the "
             "stack.")
@@ -108,23 +110,27 @@ class Stack(models.Model):
             help_text="Arbitrary text that is displayed alongside the stack.")
     tags = TaggableManager(blank=True)
 
+    class Meta:
+        db_table = "stack"
+
     def __unicode__(self):
         return self.title
 
+
 class ProjectStack(models.Model):
-    class Meta:
-        db_table = "project_stack"
     project = models.ForeignKey(Project)
     stack = models.ForeignKey(Stack)
     translation = Double3DField(default=(0, 0, 0))
     orientation = models.IntegerField(choices=((0, 'xy'), (1, 'xz'), (2, 'zy')), default=0)
 
+    class Meta:
+        db_table = "project_stack"
+
     def __unicode__(self):
         return self.project.title + " -- " + self.stack.title
 
+
 class Overlay(models.Model):
-    class Meta:
-        db_table = "overlay"
     title = models.TextField()
     stack = models.ForeignKey(Stack)
     image_base = models.TextField()
@@ -134,16 +140,21 @@ class Overlay(models.Model):
     tile_height = models.IntegerField(default=512)
     tile_source_type = models.IntegerField(default=1)
 
+    class Meta:
+        db_table = "overlay"
+
     def __unicode__(self):
         return str(self.id) + ": " + self.stack.title + " with " + self.title
 
+
 class Concept(models.Model):
-    class Meta:
-        db_table = "concept"
     user = models.ForeignKey(User)
     creation_time = models.DateTimeField(default=timezone.now)
     edition_time = models.DateTimeField(default=timezone.now)
     project = models.ForeignKey(Project)
+
+    class Meta:
+        db_table = "concept"
 
 def create_concept_sub_table(table_name):
     db = connection.cursor()
@@ -162,9 +173,8 @@ def create_concept_sub_table(table_name):
                     BEFORE UPDATE ON %s
                     FOR EACH ROW EXECUTE PROCEDURE on_edit()''' % (table_name, table_name));
 
+
 class Class(models.Model):
-    class Meta:
-        db_table = "class"
     # Repeat the columns inherited from 'concept'
     user = models.ForeignKey(User)
     creation_time = models.DateTimeField(default=timezone.now)
@@ -174,16 +184,19 @@ class Class(models.Model):
     class_name = models.CharField(max_length=255)
     description = models.TextField()
 
+    class Meta:
+        db_table = "class"
+
     def __unicode__(self):
         return self.class_name
 
-class ConnectivityDirection:
+
+class ConnectivityDirection(object):
     PRESYNAPTIC_PARTNERS = 0
     POSTSYNAPTIC_PARTNERS = 1
 
+
 class ClassInstance(models.Model):
-    class Meta:
-        db_table = "class_instance"
     # Repeat the columns inherited from 'concept'
     user = models.ForeignKey(User)
     creation_time = models.DateTimeField(default=timezone.now)
@@ -192,6 +205,9 @@ class ClassInstance(models.Model):
     # Now new columns:
     class_column = models.ForeignKey(Class, db_column="class_id") # underscore since class is a keyword
     name = models.CharField(max_length=255)
+
+    class Meta:
+        db_table = "class_instance"
 
     def get_connected_neurons(self, project_id, direction, skeletons):
 
@@ -207,7 +223,7 @@ class ClassInstance(models.Model):
         relations = dict((r.relation_name, r.id) for r in Relation.objects.filter(project=project_id))
         classes = dict((c.class_name, c.id) for c in Class.objects.filter(project=project_id))
 
-        connected_skeletons_dict={}
+        connected_skeletons_dict = {}
         # Find connectivity for each skeleton and add neuron name
         for skeleton in skeletons:
             qs_tc = TreenodeConnector.objects.filter(
@@ -217,9 +233,9 @@ class ClassInstance(models.Model):
             ).select_related('connector')
 
             # extract all connector ids
-            connector_ids=[]
+            connector_ids = []
             for tc in qs_tc:
-                connector_ids.append( tc.connector_id )
+                connector_ids.append(tc.connector_id)
             # find all syn_to_con connections
             qs_tc = TreenodeConnector.objects.filter(
                 project=project_id,
@@ -227,17 +243,17 @@ class ClassInstance(models.Model):
                 relation=relations[syn_to_con+'synaptic_to']
             )
             # extract all skeleton ids
-            first_indirection_skeletons=[]
+            first_indirection_skeletons = []
             for tc in qs_tc:
-                first_indirection_skeletons.append( tc.skeleton_id )
+                first_indirection_skeletons.append(tc.skeleton_id)
 
             qs = ClassInstanceClassInstance.objects.filter(
                 relation__relation_name='model_of',
                 project=project_id,
                 class_instance_a__in=first_indirection_skeletons).select_related("class_instance_b")
-            neuronOfSkeleton={}
+            neuron_of_skeleton = {}
             for ele in qs:
-                neuronOfSkeleton[ele.class_instance_a.id]={
+                neuron_of_skeleton[ele.class_instance_a.id] = {
                     'neuroname':ele.class_instance_b.name,
                     'neuroid':ele.class_instance_b.id
                 }
@@ -247,13 +263,13 @@ class ClassInstance(models.Model):
 
                 if skeleton_id in connected_skeletons_dict:
                     # if already existing, increase count
-                    connected_skeletons_dict[skeleton_id]['id__count']+=1
+                    connected_skeletons_dict[skeleton_id]['id__count'] += 1
                 else:
-                    connected_skeletons_dict[skeleton_id]={
-                        'id': neuronOfSkeleton[skeleton_id]['neuroid'],
+                    connected_skeletons_dict[skeleton_id] = {
+                        'id': neuron_of_skeleton[skeleton_id]['neuroid'],
                         'id__count': 1, # connectivity count
                         'skeleton_id': skeleton_id,
-                        'name': '{0} / skeleton {1}'.format(neuronOfSkeleton[skeleton_id]['neuroname'], skeleton_id) }
+                        'name': '{0} / skeleton {1}'.format(neuron_of_skeleton[skeleton_id]['neuroname'], skeleton_id)}
 
         # sort by count
         from operator import itemgetter
@@ -282,6 +298,7 @@ class ClassInstance(models.Model):
             return qs[0].name
         elif qs:
             raise Exception, "Multiple cell body locations found for neuron '%s'" % (self.name,)
+
     def set_cell_body_location(self, new_location):
         # FIXME: for the moment, just hardcode the user ID:
         user = User.objects.get(pk=3)
@@ -293,7 +310,7 @@ class ClassInstance(models.Model):
             cici_via_b__class_instance_a=self).delete()
         if new_location != 'Unknown':
             location = ClassInstance()
-            location.name=new_location
+            location.name = new_location
             location.project = self.project
             location.user = user
             location.class_column = Class.objects.get(class_name='cell_body_location', project=self.project)
@@ -306,21 +323,22 @@ class ClassInstance(models.Model):
             cici.user = user
             cici.project = self.project
             cici.save()
+
     def lines_as_str(self):
         # FIXME: not expected to work yet
         return ', '.join([unicode(x) for x in self.lines.all()])
+
     def to_dict(self):
         # FIXME: not expected to work yet
         return {'id': self.id,
                 'trakem2_id': self.trakem2_id,
                 'lineage' : 'unknown',
                 'neurotransmitters': [],
-                'cell_body_location': [ self.cell_body, Neuron.cell_body_choices_dict[self.cell_body] ],
+                'cell_body_location': [self.cell_body, Neuron.cell_body_choices_dict[self.cell_body]],
                 'name': self.name}
 
+
 class Relation(models.Model):
-    class Meta:
-        db_table = "relation"
     # Repeat the columns inherited from 'concept'
     user = models.ForeignKey(User)
     creation_time = models.DateTimeField(default=timezone.now)
@@ -332,9 +350,11 @@ class Relation(models.Model):
     description = models.TextField()
     isreciprocal = models.BooleanField(default=False)
 
-class RelationInstance(models.Model):
     class Meta:
-        db_table = "relation_instance"
+        db_table = "relation"
+
+
+class RelationInstance(models.Model):
     # Repeat the columns inherited from 'concept'
     user = models.ForeignKey(User)
     creation_time = models.DateTimeField(default=timezone.now)
@@ -343,9 +363,11 @@ class RelationInstance(models.Model):
     # Now new columns:
     relation = models.ForeignKey(Relation)
 
-class ClassInstanceClassInstance(models.Model):
     class Meta:
-        db_table = "class_instance_class_instance"
+        db_table = "relation_instance"
+
+
+class ClassInstanceClassInstance(models.Model):
     # Repeat the columns inherited from 'relation_instance'
     user = models.ForeignKey(User)
     creation_time = models.DateTimeField(default=timezone.now)
@@ -360,15 +382,19 @@ class ClassInstanceClassInstance(models.Model):
                                          related_name='cici_via_b',
                                          db_column='class_instance_b')
 
-class BrokenSlice(models.Model):
     class Meta:
-        db_table = "broken_slice"
+        db_table = "class_instance_class_instance"
+
+
+class BrokenSlice(models.Model):
     stack = models.ForeignKey(Stack)
     index = models.IntegerField()
 
-class ClassClass(models.Model):
     class Meta:
-        db_table = "class_class"
+        db_table = "broken_slice"
+
+
+class ClassClass(models.Model):
     # Repeat the columns inherited from 'relation_instance'
     user = models.ForeignKey(User)
     creation_time = models.DateTimeField(default=timezone.now)
@@ -381,9 +407,11 @@ class ClassClass(models.Model):
     class_b = models.ForeignKey(Class, related_name='classes_b',
                                 db_column='class_b')
 
-class Message(models.Model):
     class Meta:
-        db_table = "message"
+        db_table = "class_class"
+
+
+class Message(models.Model):
     user = models.ForeignKey(User)
     time = models.DateTimeField(default=timezone.now)
     read = models.BooleanField(default=False)
@@ -391,20 +419,20 @@ class Message(models.Model):
     text = models.TextField(default='New message', blank=True, null=True)
     action = models.TextField(blank=True, null=True)
 
+    class Meta:
+        db_table = "message"
+
 
 class ClientDatastore(models.Model):
-    class Meta:
-        db_table = "client_datastore"
     name = models.CharField(max_length=255, unique=True, validators=[
             RegexValidator(r'^[\w-]+$',
                            'Only alphanumeric characters and hyphens are allowed.')])
 
+    class Meta:
+        db_table = "client_datastore"
+
 
 class ClientData(models.Model):
-    class Meta:
-        db_table = "client_data"
-        # This quadruple is effectively a multicolumn primary key.
-        unique_together = (('datastore', 'key', 'project', 'user'))
     datastore = models.ForeignKey(ClientDatastore)
     project = models.ForeignKey(Project, blank=True, null=True)
     user = models.ForeignKey(User, blank=True, null=True)
@@ -414,23 +442,28 @@ class ClientData(models.Model):
     # Django 1.9/Postgres 9.4.
     value = JSONField(default={})
 
+    class Meta:
+        db_table = "client_data"
+        # This quadruple is effectively a multicolumn primary key.
+        unique_together = (('datastore', 'key', 'project', 'user'))
+
 
 class UserFocusedManager(models.Manager):
     # TODO: should there be a parameter or separate function that allows the caller to specify read-only vs. read-write objects?
 
     def for_user(self, user):
-        fullSet = super(UserFocusedManager, self).get_queryset()
+        full_set = super(UserFocusedManager, self).get_queryset()
 
         if user.is_superuser:
-            return fullSet
+            return full_set
         else:
             # Get the projects that the user can see.
-            adminProjects = get_objects_for_user(user, 'can_administer', Project)
-            otherProjects = get_objects_for_user(user, ['can_annotate', 'can_browse'], Project, any_perm = True)
-            otherProjects = [a for a in otherProjects if a not in adminProjects]
+            admin_projects = get_objects_for_user(user, 'can_administer', Project)
+            other_projects = get_objects_for_user(user, ['can_annotate', 'can_browse'], Project, any_perm=True)
+            other_projects = [a for a in other_projects if a not in admin_projects]
 
             # Now filter to the data to which the user has access.
-            return fullSet.filter(Q(project__in = adminProjects) | (Q(project__in = otherProjects) & Q(user = user)))
+            return full_set.filter(Q(project__in=admin_projects) | (Q(project__in=other_projects) & Q(user=user)))
 
 
 class UserFocusedModel(models.Model):
@@ -439,13 +472,12 @@ class UserFocusedModel(models.Model):
     project = models.ForeignKey(Project)
     creation_time = models.DateTimeField(default=timezone.now)
     edition_time = models.DateTimeField(default=timezone.now)
+
     class Meta:
         abstract = True
 
 
 class Textlabel(models.Model):
-    class Meta:
-        db_table = "textlabel"
     type = models.CharField(max_length=32)
     text = models.TextField(default="Edit this text ...")
     colour = RGBAField(default=(1, 0.5, 0, 1))
@@ -458,24 +490,30 @@ class Textlabel(models.Model):
     edition_time = models.DateTimeField(default=timezone.now)
     deleted = models.BooleanField(default=False)
 
-class TextlabelLocation(models.Model):
     class Meta:
-        db_table = "textlabel_location"
+        db_table = "textlabel"
+
+
+class TextlabelLocation(models.Model):
     textlabel = models.ForeignKey(Textlabel)
     location = Double3DField()
     deleted = models.BooleanField(default=False)
 
-class Location(UserFocusedModel):
     class Meta:
-        db_table = "location"
+        db_table = "textlabel_location"
+
+
+class Location(UserFocusedModel):
     editor = models.ForeignKey(User, related_name='location_editor', db_column='editor_id')
     location_x = models.FloatField()
     location_y = models.FloatField()
     location_z = models.FloatField()
 
-class Treenode(UserFocusedModel):
     class Meta:
-        db_table = "treenode"
+        db_table = "location"
+
+
+class Treenode(UserFocusedModel):
     editor = models.ForeignKey(User, related_name='treenode_editor', db_column='editor_id')
     location_x = models.FloatField()
     location_y = models.FloatField()
@@ -485,47 +523,53 @@ class Treenode(UserFocusedModel):
     confidence = models.IntegerField(default=5)
     skeleton = models.ForeignKey(ClassInstance)
 
+    class Meta:
+        db_table = "treenode"
+
 
 class SuppressedVirtualTreenode(UserFocusedModel):
-    class Meta:
-        db_table = "suppressed_virtual_treenode"
     child = models.ForeignKey(Treenode)
     location_coordinate = models.FloatField()
     orientation = models.SmallIntegerField(choices=((0, 'z'), (1, 'y'), (2, 'x')))
 
+    class Meta:
+        db_table = "suppressed_virtual_treenode"
+
 
 class Connector(UserFocusedModel):
-    class Meta:
-        db_table = "connector"
     editor = models.ForeignKey(User, related_name='connector_editor', db_column='editor_id')
     location_x = models.FloatField()
     location_y = models.FloatField()
     location_z = models.FloatField()
     confidence = models.IntegerField(default=5)
 
+    class Meta:
+        db_table = "connector"
+
 
 class TreenodeClassInstance(UserFocusedModel):
-    class Meta:
-        db_table = "treenode_class_instance"
     # Repeat the columns inherited from 'relation_instance'
     relation = models.ForeignKey(Relation)
     # Now new columns:
     treenode = models.ForeignKey(Treenode)
     class_instance = models.ForeignKey(ClassInstance)
 
-class ConnectorClassInstance(UserFocusedModel):
     class Meta:
-        db_table = "connector_class_instance"
+        db_table = "treenode_class_instance"
+
+
+class ConnectorClassInstance(UserFocusedModel):
     # Repeat the columns inherited from 'relation_instance'
     relation = models.ForeignKey(Relation)
     # Now new columns:
     connector = models.ForeignKey(Connector)
     class_instance = models.ForeignKey(ClassInstance)
 
-class TreenodeConnector(UserFocusedModel):
     class Meta:
-        db_table = "treenode_connector"
-        unique_together = (('project', 'treenode', 'connector', 'relation'),)
+        db_table = "connector_class_instance"
+
+
+class TreenodeConnector(UserFocusedModel):
     # Repeat the columns inherited from 'relation_instance'
     relation = models.ForeignKey(Relation)
     # Now new columns:
@@ -533,6 +577,11 @@ class TreenodeConnector(UserFocusedModel):
     connector = models.ForeignKey(Connector)
     skeleton = models.ForeignKey(ClassInstance)
     confidence = models.IntegerField(default=5)
+
+    class Meta:
+        db_table = "treenode_connector"
+        unique_together = (('project', 'treenode', 'connector', 'relation'),)
+
 
 class Review(models.Model):
     """ This model represents the review of a user of one particular tree node
@@ -540,25 +589,29 @@ class Review(models.Model):
     skeleton and the project. However, both of them are included for
     performance reasons (to avoid a join in the database for retrieval).
     """
-    class Meta:
-        db_table = "review"
     project = models.ForeignKey(Project)
     reviewer = models.ForeignKey(User)
     review_time = models.DateTimeField(default=timezone.now)
     skeleton = models.ForeignKey(ClassInstance)
     treenode = models.ForeignKey(Treenode)
 
+    class Meta:
+        db_table = "review"
+
+
 class ReviewerWhitelist(models.Model):
     """ This model represents that a user trusts the reviews of a partciular
     reviewer for a specific project created after a specified time.
     """
-    class Meta:
-        db_table = "reviewer_whitelist"
-        unique_together = ('project', 'user', 'reviewer')
     project = models.ForeignKey(Project)
     user = models.ForeignKey(User)
     reviewer = models.ForeignKey(User, related_name='+')
     accept_after = models.DateTimeField(default=datetime.utcfromtimestamp(0))
+
+    class Meta:
+        db_table = "reviewer_whitelist"
+        unique_together = ('project', 'user', 'reviewer')
+
 
 class Volume(UserFocusedModel):
     """A three-dimensional volume in project space. Implemented as PostGIS
@@ -572,9 +625,8 @@ class Volume(UserFocusedModel):
     # Override default manager with a GeoManager instance
     objects = spatial_models.GeoManager()
 
+
 class RegionOfInterest(UserFocusedModel):
-    class Meta:
-        db_table = "region_of_interest"
     # Repeat the columns inherited from 'location'
     editor = models.ForeignKey(User, related_name='roi_editor', db_column='editor_id')
     location_x = models.FloatField()
@@ -585,20 +637,24 @@ class RegionOfInterest(UserFocusedModel):
     zoom_level = models.IntegerField()
     width = models.FloatField()
     height = models.FloatField()
-    rotation_cw =models.FloatField()
+    rotation_cw = models.FloatField()
+
+    class Meta:
+        db_table = "region_of_interest"
+
 
 class RegionOfInterestClassInstance(UserFocusedModel):
-    class Meta:
-        db_table = "region_of_interest_class_instance"
     # Repeat the columns inherited from 'relation_instance'
     relation = models.ForeignKey(Relation)
     # Now new columns:
     region_of_interest = models.ForeignKey(RegionOfInterest)
     class_instance = models.ForeignKey(ClassInstance)
 
-class Restriction(models.Model):
     class Meta:
-        db_table = "restriction"
+        db_table = "region_of_interest_class_instance"
+
+
+class Restriction(models.Model):
     # Repeat the columns inherited from 'concept'
     user = models.ForeignKey(User)
     creation_time = models.DateTimeField(default=timezone.now)
@@ -607,6 +663,10 @@ class Restriction(models.Model):
     # Now new columns:
     enabled = models.BooleanField(default=True)
     restricted_link = models.ForeignKey(ClassClass)
+
+    class Meta:
+        db_table = "restriction"
+
 
 class CardinalityRestriction(models.Model):
     """ A restriction that guards the number of class instances
@@ -620,8 +680,6 @@ class CardinalityRestriction(models.Model):
     4: The maximum number of class instances for each sub-type is defined
     5: The minimum number of class instances for each sub-type is defined
     """
-    class Meta:
-        db_table = "cardinality_restriction"
     # Repeat the columns inherited from 'restriction'
     user = models.ForeignKey(User)
     creation_time = models.DateTimeField(default=timezone.now)
@@ -630,8 +688,11 @@ class CardinalityRestriction(models.Model):
     enabled = models.BooleanField(default=True)
     restricted_link = models.ForeignKey(ClassClass)
     # Now new columns:
-    cardinality_type = models.IntegerField();
-    value = models.IntegerField();
+    cardinality_type = models.IntegerField()
+    value = models.IntegerField()
+
+    class Meta:
+        db_table = "cardinality_restriction"
 
     @staticmethod
     def get_supported_types():
@@ -731,9 +792,8 @@ class CardinalityRestriction(models.Model):
         else:
             raise Exception("Unsupported cardinality type.")
 
+
 class StackClassInstance(models.Model):
-    class Meta:
-        db_table = "stack_class_instance"
     # Repeat the columns inherited from 'relation_instance'
     user = models.ForeignKey(User)
     creation_time = models.DateTimeField(default=timezone.now)
@@ -743,6 +803,9 @@ class StackClassInstance(models.Model):
     # Now new columns:
     stack = models.ForeignKey(Stack)
     class_instance = models.ForeignKey(ClassInstance)
+
+    class Meta:
+        db_table = "stack_class_instance"
 
 
 class StackStackGroupManager(models.Manager):
@@ -756,8 +819,9 @@ class StackStackGroupManager(models.Manager):
 
 class StackStackGroup(StackClassInstance):
     objects = StackStackGroupManager()
+
     class Meta:
-        proxy=True
+        proxy = True
 
 
 class StackGroupManager(models.Manager):
@@ -771,8 +835,9 @@ class StackGroupManager(models.Manager):
 
 class StackGroup(ClassInstance):
     objects = StackGroupManager()
+
     class Meta:
-        proxy=True
+        proxy = True
 
     def __unicode__(self):
         return self.name
@@ -780,25 +845,27 @@ class StackGroup(ClassInstance):
 # ------------------------------------------------------------------------
 # Now the non-Django tables:
 
-SORT_ORDERS_TUPLES = [ ( 'name', ('name', False, 'Neuron name') ),
-                       ( 'namer', ('name', True, 'Neuron name (reversed)') ),
-                       ( 'gal4', ('gal4', False, 'GAL4 lines') ),
-                       ( 'gal4r', ('gal4', True, 'GAL4 lines (reversed)') ),
-                       ( 'cellbody', ('cell_body', False, 'Cell body location') ),
-                       ( 'cellbodyr' , ('cell_body', True, 'Cell body location (reversed)') ) ]
+SORT_ORDERS_TUPLES = [('name', ('name', False, 'Neuron name')),
+                      ('namer', ('name', True, 'Neuron name (reversed)')),
+                      ('gal4', ('gal4', False, 'GAL4 lines')),
+                      ('gal4r', ('gal4', True, 'GAL4 lines (reversed)')),
+                      ('cellbody', ('cell_body', False, 'Cell body location')),
+                      ('cellbodyr', ('cell_body', True, 'Cell body location (reversed)'))]
 SORT_ORDERS_DICT = dict(SORT_ORDERS_TUPLES)
-SORT_ORDERS_CHOICES = tuple((x[0],SORT_ORDERS_DICT[x[0]][2]) for x in SORT_ORDERS_TUPLES)
+SORT_ORDERS_CHOICES = tuple((x[0], SORT_ORDERS_DICT[x[0]][2]) for x in SORT_ORDERS_TUPLES)
+
 
 class NeuronSearch(forms.Form):
-    search = forms.CharField(max_length=100,required=False)
+    search = forms.CharField(max_length=100, required=False)
     cell_body_location = forms.ChoiceField(
-        choices=((('a','Any'),)+CELL_BODY_CHOICES))
+        choices=((('a', 'Any'),)+CELL_BODY_CHOICES))
     order_by = forms.ChoiceField(SORT_ORDERS_CHOICES)
+
     def minimal_search_path(self):
         result = ""
-        parameters = [ ( 'search', '/find/', '' ),
-                       ( 'order_by', '/sorted/', 'name' ),
-                       ( 'cell_body_location', '/cell_body_location/', "-1" ) ]
+        parameters = [('search', '/find/', ''),
+                      ('order_by', '/sorted/', 'name'),
+                      ('cell_body_location', '/cell_body_location/', "-1")]
         for p in parameters:
             if self.cleaned_data[p[0]] != p[2]:
                 result += p[1] + urllib.quote(str(self.cleaned_data[p[0]]))
@@ -806,23 +873,34 @@ class NeuronSearch(forms.Form):
 
 
 class Log(UserFocusedModel):
-    class Meta:
-        db_table = "log"
     operation_type = models.CharField(max_length=255)
     location = Double3DField()
     freetext = models.TextField()
 
-class DataViewType(models.Model):
     class Meta:
-        db_table = "data_view_type"
+        db_table = "log"
+
+
+class DataViewType(models.Model):
     title = models.TextField()
     code_type = models.TextField()
     comment = models.TextField(blank=True, null=True)
 
+    class Meta:
+        db_table = "data_view_type"
+
     def __unicode__(self):
         return self.title
 
+
 class DataView(models.Model):
+    title = models.TextField()
+    data_view_type = models.ForeignKey(DataViewType)
+    config = models.TextField(default="{}")
+    is_default = models.BooleanField(default=False)
+    position = models.IntegerField(default=0)
+    comment = models.TextField(default="", blank=True, null=True)
+
     class Meta:
         db_table = "data_view"
         ordering = ('position',)
@@ -830,12 +908,6 @@ class DataView(models.Model):
             ("can_administer_dataviews", "Can administer data views"),
             ("can_browse_dataviews", "Can browse data views")
         )
-    title = models.TextField()
-    data_view_type = models.ForeignKey(DataViewType)
-    config = models.TextField(default="{}")
-    is_default = models.BooleanField(default=False)
-    position = models.IntegerField(default=0)
-    comment = models.TextField(default="",blank=True,null=True)
 
     def save(self, *args, **kwargs):
         """ Does a post-save action: Make sure (only) one data view
@@ -861,11 +933,12 @@ class DataView(models.Model):
                 dv.save()
         elif len(default_views) > 1:
             # Mark all except the first one as not default
-            for n,dv in enumerate(default_views):
+            for n, dv in enumerate(default_views):
                 if n == 0:
                     continue
                 dv.is_default = False
                 dv.save()
+
 
 class UserProfile(models.Model):
     """ A class that stores a set of custom user preferences.
@@ -893,6 +966,18 @@ class UserProfile(models.Model):
     def __unicode__(self):
         return self.user.username
 
+    # Fix a problem with duplicate keys when new users are added.
+    # From <http://stackoverflow.com/questions/6117373/django-userprofile-m2m-field-in-admin-error>
+    def save(self, *args, **kwargs):
+        if not self.pk:
+            try:
+                p = UserProfile.objects.get(user=self.user)
+                self.pk = p.pk
+            except UserProfile.DoesNotExist:
+                pass
+
+        super(UserProfile, self).save(*args, **kwargs)
+
     def as_dict(self):
         """ Return a dictionary containing a user's profile information.
         """
@@ -907,18 +992,6 @@ class UserProfile(models.Model):
         pdict['show_ontology_tool'] = self.show_ontology_tool
         pdict['show_roi_tool'] = self.show_roi_tool
         return pdict
-
-    # Fix a problem with duplicate keys when new users are added.
-    # From <http://stackoverflow.com/questions/6117373/django-userprofile-m2m-field-in-admin-error>
-    def save(self, *args, **kwargs):
-        if not self.pk:
-            try:
-                p = UserProfile.objects.get(user=self.user)
-                self.pk = p.pk
-            except UserProfile.DoesNotExist:
-                pass
-
-        super(UserProfile, self).save(*args, **kwargs)
 
 def create_user_profile(sender, instance, created, **kwargs):
     """ Create the UserProfile when a new User is saved.
@@ -964,12 +1037,9 @@ class ChangeRequest(UserFocusedModel):
     REJECTED = 2
     INVALID = 3
 
-    class Meta:
-        db_table = "change_request"
-
-    type = models.CharField(max_length = 32)
+    type = models.CharField(max_length=32)
     description = models.TextField()
-    status = models.IntegerField(default = OPEN)
+    status = models.IntegerField(default=OPEN)
     recipient = models.ForeignKey(User, related_name='change_recipient', db_column='recipient_id')
     location = Double3DField()
     treenode = models.ForeignKey(Treenode)
@@ -977,7 +1047,10 @@ class ChangeRequest(UserFocusedModel):
     validate_action = models.TextField()
     approve_action = models.TextField()
     reject_action = models.TextField()
-    completion_time = models.DateTimeField(default = None, null = True)
+    completion_time = models.DateTimeField(default=None, null=True)
+
+    class Meta:
+        db_table = "change_request"
 
     # TODO: get the project from the treenode/connector so it doesn't have to specified when creating a request
 
@@ -1059,7 +1132,7 @@ def send_email_to_change_request_recipient(sender, instance, created, **kwargs):
         message = instance.user.get_full_name() + ' has sent you a ' + instance.type.lower() + ' request.  Please check your notifications.'
         notify_user(instance.recipient, title, message)
 
-post_save.connect(send_email_to_change_request_recipient, sender = ChangeRequest)
+post_save.connect(send_email_to_change_request_recipient, sender=ChangeRequest)
 
 
 def notify_user(user, title, message):

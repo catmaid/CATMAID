@@ -481,8 +481,10 @@ class UserFocusedManager(models.Manager):
             return full_set
         else:
             # Get the projects that the user can see.
-            admin_projects = get_objects_for_user(user, 'can_administer', Project)
-            other_projects = get_objects_for_user(user, ['can_annotate', 'can_browse'], Project, any_perm=True)
+            admin_projects = get_objects_for_user(user, 'can_administer', Project,
+                                                 accept_global_perms=False)
+            other_projects = get_objects_for_user(user, ['can_annotate', 'can_browse'],
+                                                 Project, any_perm = True, accept_global_perms=False)
             other_projects = [a for a in other_projects if a not in admin_projects]
 
             # Now filter to the data to which the user has access.

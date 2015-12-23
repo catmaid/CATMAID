@@ -74,7 +74,8 @@ def get_project_qs_for_user(user):
     browsable by the given user.
     """
     perms=['can_administer', 'can_annotate', 'can_browse']
-    return get_objects_for_user(user, perms, Project, any_perm=True)
+    return get_objects_for_user(user, perms, Project, any_perm=True,
+                                 accept_global_perms=False)
 
 @api_view(['GET'])
 def projects(request):

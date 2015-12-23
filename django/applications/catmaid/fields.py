@@ -3,8 +3,6 @@ from django import forms
 from django.db import models
 from widgets import Double3DWidget, Integer3DWidget, RGBAWidget
 
-from south.modelsinspector import add_introspection_rules
-
 # ------------------------------------------------------------------------
 # Classes to support the integer3d compound type:
 
@@ -55,9 +53,6 @@ class Integer3DField(models.Field):
     def get_db_prep_value(self, value, connection, prepared=False):
         value = self.to_python(value)
         return "(%d,%d,%d)" % (value.x, value.y, value.z)
-
-add_introspection_rules([([Integer3DField], [], {})],
-                        [r'^catmaid\.fields\.Integer3DField'])
 
 # ------------------------------------------------------------------------
 # Classes to support the double3d compound type:
@@ -110,9 +105,6 @@ class Double3DField(models.Field):
     def get_db_prep_value(self, value, connection, prepared=False):
         value = self.to_python(value)
         return "(%f,%f,%f)" % (value.x, value.y, value.z)
-
-add_introspection_rules([([Double3DField], [], {})],
-                        [r'^catmaid\.fields\.Double3DField'])
 
 # ------------------------------------------------------------------------
 # Classes to support the rgba compound type:
@@ -174,9 +166,6 @@ class RGBAField(models.Field):
         value = self.to_python(value)
         return "(%f,%f,%f,%f)" % (value.r, value.g, value.b, value.a)
 
-add_introspection_rules([([RGBAField], [], {})],
-                        [r'^catmaid\.fields\.RGBAField'])
-
 # ------------------------------------------------------------------------
 
 # from https://github.com/aino/django-arrayfields/blob/master/arrayfields/fields.py
@@ -198,12 +187,6 @@ class ArrayFieldBase(models.Field):
         if isinstance(value, basestring):
             value = json.loads(value)
         return value
-
-    def south_field_triple(self):
-        from south.modelsinspector import introspector
-        name = '%s.%s' % (self.__class__.__module__ , self.__class__.__name__)
-        args, kwargs = introspector(self)
-        return name, args, kwargs
 
 
 class IntegerArrayField(ArrayFieldBase):

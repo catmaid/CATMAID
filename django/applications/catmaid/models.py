@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.gis.db import models as spatial_models
 from django.core.validators import RegexValidator
-from django.db import models
+from django.db import connection, models
 from django.db.models import Q
 from django.db.models.signals import pre_save, post_save, post_migrate
 from django.dispatch import receiver
@@ -20,8 +20,6 @@ from fields import Double3DField, Integer3DField, RGBAField
 from guardian.shortcuts import get_objects_for_user
 
 from taggit.managers import TaggableManager
-
-from south.db import db
 
 from control.user import distinct_user_color
 
@@ -148,6 +146,7 @@ class Concept(models.Model):
     project = models.ForeignKey(Project)
 
 def create_concept_sub_table(table_name):
+    db = connection.cursor()
     db.execute('''CREATE TABLE %s () INHERITS (concept)''' % table_name);
     db.execute('''CREATE SEQUENCE %s_id_seq
                     START WITH 1

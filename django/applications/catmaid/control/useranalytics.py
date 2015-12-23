@@ -1,8 +1,8 @@
 import numpy as np
-
-from datetime import timedelta, datetime
+from datetime import timedelta
 
 from django.http import HttpResponse
+from django.utils import timezone
 
 from catmaid.models import Connector, Treenode, Review
 from catmaid.control.user_evaluation import _parse_date
@@ -59,7 +59,7 @@ def plot_useranalytics(request):
     print userid, start_date, end_date
 
     if request.user.is_superuser:
-        end = _parse_date(end_date) if end_date else datetime.now()
+        end = _parse_date(end_date) if end_date else timezone.now()
         start = _parse_date(start_date) if start_date else end - timedelta(end.isoweekday() + 7)
         f = generateReport( userid, 10, start, end )
     else:
@@ -116,7 +116,7 @@ def eventsPerInterval(times, start_date, end_date, interval='day'):
     for t in times:
         i = int((t - start_date).total_seconds() * intervalsPerSecond)
         timebins[i] += 1
-    
+
     return timebins, timeaxis
 
 def activeTimes( alltimes, gapThresh ):
@@ -209,7 +209,7 @@ def singleDayActiveness( activebouts, increment, start_hour, end_hour ):
     daysConsidered = (activebouts[-1].end - activebouts[0].start).days + 1
 
     # Get start of current day
-    starttime = datetime.now()
+    starttime = timezone.now()
     # FIXME: replace doesn't replace in place, but returns a new object
     starttime.replace(hour=start_hour,minute=0,second=0,microsecond=0)
     # Create time axis list with entry for every <increment> minutes between

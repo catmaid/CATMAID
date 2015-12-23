@@ -6,6 +6,7 @@ from dateutil import parser as dateparser
 from django.http import HttpResponse
 from django.db.models.aggregates import Count
 from django.db import connection
+from django.utils import timezone
 
 from catmaid.control.authentication import requires_user_role
 from catmaid.control.common import get_relation_to_id_map
@@ -86,8 +87,8 @@ def stats_summary(request, project_id=None):
 def stats_history(request, project_id=None):
     # Get the start and end dates for the query, defaulting to the last 30
     # days.
-    start_date = request.GET.get('start_date', datetime.now() - timedelta(30))
-    end_date = request.GET.get('end_date', datetime.now())
+    start_date = request.GET.get('start_date', timezone.now() - timedelta(30))
+    end_date = request.GET.get('end_date', timezone.now())
 
     # Look up all tree nodes for the project in the given date range.
     # Also add a computed field which is just the day of the last edited
@@ -155,7 +156,7 @@ def stats_user_history(request, project_id=None):
         start_date = dateparser.parse(start_date)
         print(start_date)
     else:
-        start_date = datetime.now() - timedelta(10)
+        start_date = timezone.now() - timedelta(10)
     # Get the end date for the query, defaulting to now.
     end_date = request.GET.get('end_date', None)
     if end_date:
@@ -163,7 +164,7 @@ def stats_user_history(request, project_id=None):
         # events.
         end_date = dateparser.parse(end_date) + timedelta(days=1) - timedelta(seconds=1)
     else:
-        end_date = datetime.now()
+        end_date = timezone.now()
     # Calculate number of days between (including) start and end
     daydelta = (end_date + timedelta(days=1) - start_date).days
 

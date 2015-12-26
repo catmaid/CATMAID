@@ -1411,28 +1411,6 @@ def reset_own_reviewer_ids(request, project_id=None, skeleton_id=None):
     return HttpResponse(json.dumps({'status': 'success'}), content_type='application/json')
 
 
-@requires_user_role(UserRole.Annotate)
-def fetch_treenodes(request, project_id=None, skeleton_id=None, with_reviewers=None):
-    """ Fetch the topology only, optionally with the reviewer IDs. """
-    skeleton_id = int(skeleton_id)
-
-    cursor = connection.cursor()
-    cursor.execute('''
-    SELECT id, parent_id
-    FROM treenode
-    WHERE skeleton_id = %s
-    ''' % skeleton_id)
-
-    if with_reviewers:
-        reviews = get_treenodes_to_reviews(skeleton_ids=[skeleton_id])
-        treenode_data = tuple([r[0], r[1], reviews.get(r[0], [])] \
-                for r in cursor.fetchall())
-    else:
-        treenode_data = tuple(cursor.fetchall())
-
-    return HttpResponse(json.dumps(treenode_data))
-
-
 @requires_user_role(UserRole.Browse)
 def annotation_list(request, project_id=None):
     """ Returns a JSON serialized object that contains information about the

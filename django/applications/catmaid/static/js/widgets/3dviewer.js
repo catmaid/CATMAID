@@ -1573,7 +1573,7 @@
     this.staticContent.dispose();
 
     // remove meshes
-    this.scene.remove(this.staticContent.box);
+    if (this.staticContent.box) this.scene.remove(this.staticContent.box);
     this.scene.remove(this.staticContent.floor);
     if (this.staticContent.zplane) this.scene.remove(this.staticContent.zplane);
     this.staticContent.missing_sections.forEach(function(m) { this.remove(m); }, this.scene);
@@ -1696,7 +1696,7 @@
 
   WebGLApplication.prototype.Space.prototype.StaticContent = function(dimensions, stack, center) {
     // Space elements
-    this.box = this.createBoundingBox(stack);
+    this.box = this.createBoundingBox(project.focusedStackViewer.primaryStack);
     this.floor = this.createFloor(center, dimensions);
 
     this.zplane = null;
@@ -1723,8 +1723,10 @@
 
   WebGLApplication.prototype.Space.prototype.StaticContent.prototype.dispose = function() {
     // dispose ornaments
-    this.box.geometry.dispose();
-    this.box.material.dispose();
+    if (this.box) {
+      this.box.geometry.dispose();
+      this.box.material.dispose();
+    }
     this.floor.geometry.dispose();
     this.floor.material.dispose();
     this.missing_sections.forEach(function(s) {
@@ -1894,14 +1896,14 @@
 
   /** Adjust visibility of static content according to the persistent options. */
   WebGLApplication.prototype.Space.prototype.StaticContent.prototype.adjust = function(options, space) {
-    if (options.show_missing_sections) {
-      if (0 === this.missing_sections.length) {
-        this.missing_sections = this.createMissingSections(space, options.missing_section_height);
-        this.missing_sections.forEach(function(m) { this.add(m); }, space.scene);
-      }
-    } else {
+    if (0 !== this.missing_sections.length) {
       this.missing_sections.forEach(function(m) { this.remove(m); }, space.scene);
       this.missing_sections = [];
+    }
+    if (options.show_missing_sections) {
+      this.missing_sections = this.createMissingSections(project.focusedStackViewer.primaryStack,
+                                                         options.missing_section_height);
+      this.missing_sections.forEach(function(m) { this.add(m); }, space.scene);
     }
 
     if (options.show_background) {
@@ -1912,7 +1914,17 @@
 
     this.floor.visible = options.show_floor;
 
-    this.box.visible = options.show_box;
+    if (this.box) {
+      space.scene.remove(this.box);
+      this.box.geometry.dispose();
+      this.box.material.dispose();
+      this.box = null;
+    }
+    if (options.show_box) {
+      this.box = this.createBoundingBox(project.focusedStackViewer.primaryStack);
+      this.box.visible = options.show_box;
+      space.scene.add(this.box);
+    }
 
     if (options.show_zplane) {
       this.createZPlane(space, project.focusedStackViewer);
@@ -1986,9 +1998,8 @@
   };
 
   /** Returns an array of meshes representing the missing sections. */
-  WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createMissingSections = function(space, missing_section_height) {
-    var stack = space.stack,
-        geometry = this.createPlaneGeometry(stack),
+  WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createMissingSections = function(stack, missing_section_height) {
+    var geometry = this.createPlaneGeometry(stack),
         materials = [new THREE.MeshBasicMaterial( { color: 0x151349, opacity:0.6, transparent: true, side: THREE.DoubleSide } ),
                      new THREE.MeshBasicMaterial( { color: 0x00ffff, wireframe: true, wireframeLinewidth: 5, side: THREE.DoubleSide } )];
 
@@ -2006,7 +2017,7 @@
         break;
     }
 
-    return space.stack.broken_slices.reduce(function(missing_sections, sliceStackZ) {
+    return stack.broken_slices.reduce(function(missing_sections, sliceStackZ) {
       var x = stack.stackToProjectX(sliceStackZ, 0, 0),
           y = stack.stackToProjectY(sliceStackZ, 0, 0),
           z = stack.stackToProjectZ(sliceStackZ, 0, 0);

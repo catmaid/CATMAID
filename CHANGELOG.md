@@ -29,7 +29,10 @@ releases.
 
 ### Features and enhancements
 
+3D Viewer:
 
+- Stack bounding boxes and missing sections now update when stack viewer focus
+  changes.
 
 
 ### Bug fixes

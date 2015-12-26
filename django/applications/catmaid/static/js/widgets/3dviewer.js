@@ -1737,9 +1737,9 @@
       this.zplane.geometry.dispose();
       this.zplane.material.dispose();
     }
-   
+
     // dispose shared geometries
-    [this.labelspheregeometry, this.radiusSphere, this.icoSphere, this.cylinder].forEach(function(g) { 
+    [this.labelspheregeometry, this.radiusSphere, this.icoSphere, this.cylinder].forEach(function(g) {
       g.dispose();
     });
     this.textGeometryCache.destroy();
@@ -2675,7 +2675,7 @@
 
     this.attach = function(view, domElement) {
       domElement.CATMAID_view = view;
-    
+
       domElement.addEventListener('wheel', this.MouseWheel, false);
       domElement.addEventListener('mousemove', this.MouseMove, false);
       domElement.addEventListener('mouseup', this.MouseUp, false);
@@ -3029,7 +3029,7 @@
 
   /** An object to represent a skeleton in the WebGL space.
    *  The skeleton consists of three geometries:
-   *    (1) one for the edges between nodes, represented as a list of contiguous pairs of points; 
+   *    (1) one for the edges between nodes, represented as a list of contiguous pairs of points;
    *    (2) one for the edges representing presynaptic relations to connectors;
    *    (3) one for the edges representing postsynaptic relations to connectors.
    *  Each geometry has its own mesh material and can be switched independently.
@@ -3762,7 +3762,7 @@
       this.geometry['neurite'].colors = [];
       this.line_material.vertexColors = THREE.NoColors;
       this.line_material.needsUpdate = true;
-      
+
       this.actor['neurite'].material.color = this.actorColor;
       this.actor['neurite'].material.opacity = this.opacity;
       this.actor['neurite'].material.transparent = this.opacity !== 1;
@@ -3885,7 +3885,7 @@
     } else if ('by-amount' === options.connector_color) {
 
       var skids = skeletons.map(function(skeleton) { return skeleton.id; });
-      
+
       if (skids.length > 1) $.blockUI();
 
       requestQueue.register(django_url + project.id + "/skeleton/connectors-by-partner",

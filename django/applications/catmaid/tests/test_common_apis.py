@@ -2056,6 +2056,49 @@ class ViewPageTests(TestCase):
 
         self.assertEqual(new_skeleton_id, get_object_or_404(TreenodeConnector, id=2405).skeleton_id)
 
+    def test_skeleton_contributor_statistics(self):
+        self.fake_authentication()
+
+        response = self.client.post(
+            '/%d/skeleton/contributor_statistics_multiple' % (self.test_project_id,),
+            {'skids[0]': 235})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_response = {
+                "pre_contributors": {"3": 3},
+                "multiuser_review_minutes": 0,
+                "node_contributors": {"3": 28},
+                "construction_minutes": 1,
+                "n_nodes": 28,
+                "min_review_minutes": 0,
+                "n_pre": 3,
+                "post_contributors": {},
+                "n_post": 0}
+        self.assertEqual(parsed_response, expected_response)
+
+        response = self.client.post(
+            '/%d/skeleton/%d/contributor_statistics' % (self.test_project_id, 235))
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        self.assertEqual(parsed_response, expected_response)
+
+        response = self.client.post(
+            '/%d/skeleton/contributor_statistics_multiple' % (self.test_project_id,),
+            {'skids[0]': 235, 'skids[1]': 361})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_response = {
+                "pre_contributors": {"3": 3},
+                "multiuser_review_minutes": 0,
+                "node_contributors": {"3": 37},
+                "construction_minutes": 1,
+                "n_nodes": 37,
+                "min_review_minutes": 0,
+                "n_pre": 3,
+                "post_contributors": {"3": 1},
+                "n_post": 1}
+        self.assertEqual(parsed_response, expected_response)
+
     def test_split_skeleton(self):
         self.fake_authentication()
 

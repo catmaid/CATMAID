@@ -3514,6 +3514,29 @@ class ViewPageTests(TestCase):
         self.assertItemsEqual(parsed_response[1], expected_response[1])
         self.assertEqual(parsed_response[2], expected_response[2])
 
+    def test_export_compact_arbor_with_minutes(self):
+        self.fake_authentication()
+
+        skeleton_id = 373
+        response = self.client.post(
+                '/%d/%d/1/1/1/compact-arbor-with-minutes' % (self.test_project_id, skeleton_id))
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_response = [
+                [[377, None, 3, 7620.0, 2890.0, 0.0, -1.0, 5],
+                 [403, 377, 3, 7840.0, 2380.0, 0.0, -1.0, 5],
+                 [405, 377, 3, 7390.0, 3510.0, 0.0, -1.0, 5],
+                 [407, 405, 3, 7080.0, 3960.0, 0.0, -1.0, 5],
+                 [409, 407, 3, 6630.0, 4330.0, 0.0, -1.0, 5]],
+                [[377, 5, 356, 5, 285, 235, 1, 0],
+                 [409, 5, 421, 5, 415, 235, 1, 0]],
+                {"uncertain end": [403]},
+                {"21951837": [377, 403, 405, 407, 409]}]
+        self.assertItemsEqual(parsed_response[0], expected_response[0])
+        self.assertItemsEqual(parsed_response[1], expected_response[1])
+        self.assertEqual(parsed_response[2], expected_response[2])
+        self.assertEqual(parsed_response[3], expected_response[3])
+
 
 class TreenodeTests(TestCase):
     fixtures = ['catmaid_testdata']

@@ -1,5 +1,6 @@
 import json
 import networkx as nx
+import pytz
 from itertools import imap
 from functools import partial
 from collections import defaultdict
@@ -250,7 +251,7 @@ def compact_arbor(request, project_id=None, skeleton_id=None, with_nodes=None, w
 def treenode_time_bins(request, project_id=None, skeleton_id=None):
     """ Return a map of time bins (minutes) vs. list of nodes. """
     minutes = defaultdict(list)
-    epoch = datetime.utcfromtimestamp(0)
+    epoch = datetime.utcfromtimestamp(0).replace(tzinfo=pytz.utc)
 
     for row in Treenode.objects.filter(skeleton_id=int(skeleton_id)).values_list('id', 'creation_time'):
         minutes[int((row[1] - epoch).total_seconds() / 60)].append(row[0])

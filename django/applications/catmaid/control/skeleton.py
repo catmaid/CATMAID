@@ -1,4 +1,3 @@
-import decimal
 import json
 import networkx as nx
 import pytz
@@ -7,7 +6,6 @@ from operator import itemgetter
 from datetime import datetime, timedelta
 from collections import defaultdict
 from itertools import chain
-from functools import partial
 
 from django.core.serializers.json import DjangoJSONEncoder
 from django.http import HttpResponse, Http404
@@ -30,7 +28,7 @@ from catmaid.control.common import insert_into_log, get_class_to_id_map, \
 from catmaid.control.neuron import _delete_if_empty
 from catmaid.control.neuron_annotations import create_annotation_query, \
         _annotate_entities, _update_neuron_annotations
-from catmaid.control.review import get_treenodes_to_reviews, get_review_status
+from catmaid.control.review import get_review_status
 from catmaid.control.tree_util import find_root, reroot, edge_count_to_root
 
 

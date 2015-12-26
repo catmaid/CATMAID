@@ -3535,7 +3535,8 @@ class ViewPageTests(TestCase):
         self.assertItemsEqual(parsed_response[0], expected_response[0])
         self.assertItemsEqual(parsed_response[1], expected_response[1])
         self.assertEqual(parsed_response[2], expected_response[2])
-        self.assertEqual(parsed_response[3], expected_response[3])
+        for k, v in expected_response[3].iteritems():
+            self.assertItemsEqual(parsed_response[3][k], v)
 
 
 class TreenodeTests(TestCase):

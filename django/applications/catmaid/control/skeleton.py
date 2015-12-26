@@ -1,6 +1,7 @@
 import decimal
 import json
 import networkx as nx
+import pytz
 import re
 from operator import itemgetter
 from datetime import datetime, timedelta
@@ -294,7 +295,7 @@ def contributor_statistics_multiple(request, project_id=None, skeleton_ids=None)
     n_time_bins = 0
     n_review_bins = 0
     n_multi_review_bins = 0
-    epoch = datetime.utcfromtimestamp(0)
+    epoch = datetime.utcfromtimestamp(0).replace(tzinfo=pytz.utc)
 
     if not skeleton_ids:
         skeleton_ids = tuple(int(v) for k,v in request.POST.iteritems() if k.startswith('skids['))
@@ -315,8 +316,8 @@ def contributor_statistics_multiple(request, project_id=None, skeleton_ids=None)
     # Process last one
     if time_bins:
         n_time_bins += len(time_bins)
-    
-    
+
+
     # Take into account that multiple people may have reviewed the same nodes
     # Therefore measure the time for the user that has the most nodes reviewed,
     # then add the nodes not reviewed by that user but reviewed by the rest

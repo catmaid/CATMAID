@@ -19,7 +19,7 @@
   /**
    * Enumerate the user and project scopes for unique key-value entries provided
    * by the datastore.
-   * @type {[string]}
+   * @type {string[]}
    */
   DataStore.SCOPES = [
     'USER_PROJECT',

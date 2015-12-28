@@ -1030,7 +1030,7 @@
         catmaidTracingOverlay.ensureFocused();
       };
 
-      /** 
+      /**
        * Here 'this' is c's SVG node, and node is the Node instance
        */
       this.mc_click = function(d) {

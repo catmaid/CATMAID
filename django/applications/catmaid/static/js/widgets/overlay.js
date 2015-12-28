@@ -551,7 +551,7 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, options) {
   /* Padding beyond screen borders in X and Y for fetching data and updating
    * nodes, in screen space pixel coordinates. */
   this.padding = 256;
- 
+
   /* old_x and old_y record the x and y position of the stack viewer the
      last time that an updateNodes request was made.  When panning
      the stack viewer, these are used to tell whether the user has panned
@@ -2087,7 +2087,7 @@ SkeletonAnnotations.TracingOverlay.prototype.redraw = function(force, completion
     // Don't upate if the center didn't move horizontally, but do if
     var dx = this.old_x - stackViewer.x;
     doNotUpdate = dx <= padS && dx >= -padS;
-    
+
     if ( doNotUpdate ) {
       // Don't upate if the center didn't move certically, but do if
       var dy = this.old_y - stackViewer.y;

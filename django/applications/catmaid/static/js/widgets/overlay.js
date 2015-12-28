@@ -6,8 +6,6 @@
   OverlayLabel,
   project,
   requestQueue,
-  session,
-  SkeletonElements,
   submitterFn,
   user_groups,
   userprofile

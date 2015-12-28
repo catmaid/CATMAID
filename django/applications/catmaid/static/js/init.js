@@ -1132,23 +1132,6 @@ function handle_load_dataview(status, text, xml) {
   }
 }
 
-/*
- * resize the view and its content on window.onresize event
- */
-function global_resize( e )
-{
-  var top = document.getElementById( "toolbar_container" ).offsetHeight;
-  var height = Math.max( 0, CATMAID.ui.getFrameHeight() - top - global_bottom );
-  var width = CATMAID.ui.getFrameWidth();
-
-  var content = document.getElementById( "content" );
-  content.style.top = top + "px";
-  content.style.width = width + "px";
-  content.style.height = height + "px";
-
-  return true;
-}
-
 /**
  * Initialize CATMAID.
  *
@@ -1391,8 +1374,6 @@ var realInit = function()
   document.getElementById( "input_fontcolourgreen" ).appendChild( input_fontcolourgreen.getView() );
   var input_fontcolourblue = new Input( "fontcolourblue", 3, function( e ){ return true; }, 0 );
   document.getElementById( "input_fontcolourblue" ).appendChild( input_fontcolourblue.getView() );
-
-  CATMAID.ui.registerEvent( "onresize", global_resize );
 
   rootWindow = new CMWRootNode();
   CATMAID.ui.registerEvent( "onresize", resize );

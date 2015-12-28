@@ -52,10 +52,12 @@ function mayView() {
 }
 
 /**
- * queue a login-request on pressing return
- * to be used as onkeydown-handler in the account and password input fields
+ * Queue a login request on pressing return.
+ * Used as onkeydown-handler in the account and password input fields.
+ *
+ * @param  {Object}  e Key event.
+ * @return {boolean}   False if enter was pressed, true otherwise.
  */
-
 function login_oninputreturn(e) {
   if (CATMAID.ui.getKey(e) == 13) {
     login(document.getElementById("account").value, document.getElementById("password").value);
@@ -65,17 +67,20 @@ function login_oninputreturn(e) {
 }
 
 /**
- * queue a login-request optionally using account and password,
- * freeze the window to wait for an answer
+ * Queue a login request optionally using account and password,
+ * freeze the window to wait for an answer.
  *
- * if account or password are set, a new session is instantiated or an error occurs
- * if account and password are not set, an existing session is tried to be recognised
+ * If account or password are set, a new session is instantiated or an error occurs.
+ * If account and password are not set, an existing session is tried to be recognised.
+ *
+ * @param  {string}   account
+ * @param  {string}   password
+ * @param  {function} completionCallback
  */
-
 function login(
-    account,    //!< string account
-    password,   //!< string password
-    completionCallback  //!< function callback
+    account,
+    password,
+    completionCallback
 )
 {
   var loginCompletion = function ( status, text, xml ) {
@@ -103,14 +108,16 @@ function login(
 }
 
 /**
- * handle a login-request answer
- * if the answer was session data, establish a session, update the projects menu
- * if the answer was an error, display an error alert,
- * if the answer was a notice, do nothing
+ * Handle a login request answer.
+ * If the answer was session data, establish a session, update the projects menu.
+ * If the answer was an error, display an error alert.
+ * If the answer was a notice, do nothing.
  *
- * free the window
+ * @param  {number}    status             XHR response status.
+ * @param  {string}    text               XHR response content.
+ * @param  {Object}    xml                XHR response XML (unused).
+ * @param  {function=} completionCallback Completion callback (no arguments).
  */
-
 function handle_login(status, text, xml, completionCallback) {
   if (status == 200 && text) {
     var e = JSON.parse(text);
@@ -224,10 +231,9 @@ function getAuthenticationToken() {
 }
 
 /**
- * queue a logout-request
- * freeze the window to wait for an answer
+ * Queue a logout request.
+ * Freeze the window to wait for an answer.
  */
-
 function logout() {
   if (msg_timeout) window.clearTimeout(msg_timeout);
 
@@ -236,10 +242,12 @@ function logout() {
 }
 
 /**
- * handle a logout-request answer
- * update the project menu
+ * Handle a logout request response.
+ * Update the project menu.
  *
- * free the window
+ * @param  {number}    status             XHR response status.
+ * @param  {string}    text               XHR response content.
+ * @param  {Object}    xml                XHR response XML (unused).
  */
 function handle_logout(status, text, xml) {
   session = undefined;
@@ -260,8 +268,10 @@ function handle_logout(status, text, xml) {
 }
 
 /**
- * Update profile dependend information. This is e.g. the visibility of
- * tools in the toolbar.
+ * Update profile dependent information, e.g., the visibility of tools in the
+ * toolbar.
+ *
+ * @param  {Object} e The parsed JSON response object.
  */
 function handle_profile_update(e) {
   try {
@@ -299,11 +309,10 @@ function handle_profile_update(e) {
 }
 
 /**
- * queue a project-menu-update-request to the request queue
+ * Queue a project-menu-update request.
  *
- * the answer depends on the session, which was instantiated by setting a cookie
+ * @param  {function=} completionCallback Completion callback (no arguments).
  */
-
 function updateProjects(completionCallback) {
   // Whatever happened, get details of which projects this user (or no
   // user) is allowed to edit:
@@ -433,9 +442,12 @@ function updateProjectListFromCacheDelayed()
 }
 
 /**
- * Retrieves stack menu information from the back-end and
- * executes a callback on success. This callback is passed
- * the returned JSON object containing the stack information.
+ * Retrieve stack menu information from the back-end and
+ * executes a callback on success.
+ *
+ * @param  {number}            project_id  ID of the project to retrieve
+ * @param  {function(object)=} callback    Callback to receive the response
+ *                                         stack information object.
  */
 function getStackMenuInfo(project_id, callback) {
     requestQueue.register(django_url + project_id + '/stacks',
@@ -715,6 +727,10 @@ function handle_openProjectStack( e, stackViewer )
 
 /**
  * Open the given a specific stack group in a project.
+ *
+ * @param  {number}    pid       ID of the project to open.
+ * @param  {number}    sgid      ID of the stack group to open.
+ * @param  {function=} successFn Callback on success (unused).
  */
 function openStackGroup(pid, sgid, successFn) {
   CATMAID.fetch(pid + "/stackgroup/" + sgid + "/info", "GET")
@@ -839,7 +855,7 @@ CATMAID.Init.checkVersion = function () {
 window.setTimeout(CATMAID.Init.checkVersion, CATMAID.Init.CHECK_VERSION_TIMEOUT_INTERVAL);
 
 /**
- * Check, if there are new messages for the current user.
+ * Check if there are new messages for the current user.
  */
 var check_messages = (function() {
 
@@ -871,15 +887,18 @@ var check_messages = (function() {
 })();
 
 /**
- * look for user messages
+ * Retrieve user messages.
  */
-
 function get_messages() {
   requestQueue.register(django_url + 'messages/list', 'GET', undefined, handle_message);
 }
 
 /**
- * handle a user message
+ * Handle use message request response.
+ *
+ * @param  {number}    status             XHR response status.
+ * @param  {string}    text               XHR response content.
+ * @param  {Object}    xml                XHR response XML (unused).
  */
 function handle_message( status, text, xml )
 {
@@ -953,9 +972,10 @@ function handle_message( status, text, xml )
 }
 
 /**
- * mark a message as read
+ * Mark a message as read
+ *
+ * @param  {number} id ID of the message to mark as read.
  */
-
 function read_message(id) {
   requestQueue.register(django_url + 'messages/mark_read', 'POST', {
     id: id
@@ -963,7 +983,7 @@ function read_message(id) {
 }
 
 /**
- * Look for data views.
+ * Retrieve data views.
  */
 function dataviews() {
   requestQueue.register(django_url + 'dataviews/list', 'GET', undefined, handle_dataviews);
@@ -1130,8 +1150,13 @@ function global_resize( e )
 }
 
 /**
- * initialise everything
- * to be called by the onload-handler of document.body
+ * Initialize CATMAID.
+ *
+ * Check browser capabilities.
+ * Parse deep link from the URL if necessary.
+ * Setup UI and windowing system.
+ *
+ * Called by the onload-handler of document.body.
  */
 var realInit = function()
 {
@@ -1384,7 +1409,9 @@ var realInit = function()
 };
 
 /**
- * resize the view and its content on window.onresize event
+ * Resize the main content and root window.
+ *
+ * Called by the window.onresize event.
  */
 var resize = function( e )
 {

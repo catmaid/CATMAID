@@ -850,7 +850,7 @@ var WindowMaker = new function()
     annotate.style.marginLeft = '1em';
     annotate.onclick = ST.annotate_skeleton_list.bind(ST);
     buttons.appendChild(annotate);
-    
+
     var c = appendSelect(buttons, null, 'Color scheme ',
         ['CATMAID',
          'category10',
@@ -864,7 +864,7 @@ var WindowMaker = new function()
     random.setAttribute("value", "Colorize");
     random.onclick = function() { ST.colorizeWith(c.options[c.selectedIndex].text); };
     buttons.appendChild(random);
-    
+
     var measure = document.createElement('input');
     measure.setAttribute('type', 'button');
     measure.setAttribute('value', 'Measure');
@@ -904,7 +904,7 @@ var WindowMaker = new function()
 
     win.getFrame().appendChild(buttons);
     content.appendChild(container);
-    
+
     var tab = document.createElement('table');
     tab.setAttribute("id", "skeleton-table" + ST.widgetID);
     tab.setAttribute("class", "skeleton-table");
@@ -1223,7 +1223,7 @@ var WindowMaker = new function()
         storedViewsSelect.selectedIndex = 0;
       }
     }
-    
+
     var shadingMenu = document.createElement('select');
     shadingMenu.setAttribute("id", "skeletons_shading" + WA.widgetID);
     [['none', 'None'],
@@ -1575,7 +1575,7 @@ var WindowMaker = new function()
     var bar = document.createElement('div');
     bar.setAttribute("id", "synapse_fractions_buttons" + SF.widgetID);
     bar.setAttribute('class', 'buttonpanel');
-    
+
     var tabs = appendTabs(bar, SF.widgetID, ['Main', 'Filter', 'Color', 'Partner groups']);
 
     var partners_source = CATMAID.skeletonListSources.createPushSelect(SF, "filter");
@@ -1919,7 +1919,7 @@ var WindowMaker = new function()
     appendToTab(tabs['Subgraphs'],
         [[document.createTextNode('Select node(s) and split by: ')],
          ['Axon & dendrite', GG.splitAxonAndDendrite.bind(GG)],
-         ['Axon, backbone dendrite & dendritic terminals', GG.splitAxonAndTwoPartDendrite.bind(GG)], 
+         ['Axon, backbone dendrite & dendritic terminals', GG.splitAxonAndTwoPartDendrite.bind(GG)],
          ['Synapse clusters', GG.splitBySynapseClustering.bind(GG)],
          ['Tag', GG.splitByTag.bind(GG)],
          ['Reset', GG.unsplit.bind(GG)]]);
@@ -2081,7 +2081,7 @@ var WindowMaker = new function()
 
 
   var createMorphologyPlotWindow = function() {
-  
+
     var MA = new MorphologyPlot();
 
     var win = new CMWWindow(MA.getName());
@@ -2183,7 +2183,7 @@ var WindowMaker = new function()
   };
 
   var createVennDiagramWindow = function() {
-  
+
     var VD = new VennDiagram();
 
     var win = new CMWWindow(VD.getName());
@@ -2282,7 +2282,7 @@ var WindowMaker = new function()
     var container = createContainer("segments_table_widget");
     content.appendChild(container);
 
-    
+
     var graph = document.createElement('div');
     graph.setAttribute("id", "segmentstable-div");
     graph.style.height = "100%";
@@ -2648,7 +2648,7 @@ var WindowMaker = new function()
           var option = document.createElement("option");
             option.text = operation_type_array[i];
             option.value = operation_type_array[i];
-            sync.appendChild(option);            
+            sync.appendChild(option);
         }
         contentbutton.appendChild(sync);
         content.appendChild( contentbutton );
@@ -3253,8 +3253,8 @@ var WindowMaker = new function()
 
     return {window: win, widget: null};
   };
-  
-  
+
+
   var createNotificationsWindow = function()
   {
     var win = new CMWWindow( "Notifications" );
@@ -3272,11 +3272,11 @@ var WindowMaker = new function()
             '<th>description</th>' +
             '<th>status' +
               '<select name="search_type" id="search_type" class="search_init">' +
-                '<option value="">Any</option>' + 
-                '<option value="0">Open</option>' + 
+                '<option value="">Any</option>' +
+                '<option value="0">Open</option>' +
                 '<option value="1">Approved</option>' +
-                '<option value="2">Rejected</option>' + 
-                '<option value="3">Invalid</option>' + 
+                '<option value="2">Rejected</option>' +
+                '<option value="3">Invalid</option>' +
               '</select>' +
             '</th>' +
             '<th>x</th>' +
@@ -3315,17 +3315,17 @@ var WindowMaker = new function()
     addLogic(win);
 
     NotificationsTable.init();
-    
+
     return {window: win, widget: null};
   };
-  
+
   var createNeuronAnnotationsWindow = function()
   {
     var NA = new CATMAID.NeuronAnnotations();
     var win = new CMWWindow(NA.getName());
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";
-    
+
     var queryFields = document.createElement('div');
     queryFields.setAttribute('id', 'neuron_annotations_query_fields' + NA.widgetID);
     queryFields.setAttribute('class', 'buttonpanel');
@@ -3387,7 +3387,7 @@ var WindowMaker = new function()
     // Replace {{NA-ID}} with the actual widget ID
     queryFields.innerHTML = queryFields_html.replace(/{{NA-ID}}/g, NA.widgetID);
     content.appendChild(queryFields);
-    
+
     var container = createContainer("neuron_annotations_query_results" + NA.widgetID);
     // Create container HTML and use {{NA-ID}} as template for the
     // actual NA.widgetID which will be replaced afterwards.
@@ -3440,7 +3440,7 @@ var WindowMaker = new function()
     content.appendChild(no_results);
     $(no_results).hide();
 
-    
+
     // Wire it up.
     addListener(win, container, queryFields.id, NA.destroy.bind(NA));
     addLogic(win);
@@ -3513,7 +3513,7 @@ var WindowMaker = new function()
         NA.updateAnnotationFiltering();
       }
     });
-    
+
     $( "#neuron_query_by_start_date" + NA.widgetID ).datepicker(
         { dateFormat: "yy-mm-dd" });
     $( "#neuron_query_by_end_date" + NA.widgetID ).datepicker(
@@ -3580,7 +3580,7 @@ var WindowMaker = new function()
 
     return {window: win, widget: SW};
   };
-  
+
   var creators = {
     "keyboard-shortcuts": createKeyboardShortcutsWindow,
     "search": createSearchWindow,

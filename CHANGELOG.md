@@ -7,10 +7,12 @@ update an existing CATMAID instance safely, please follow these steps:
 
 1. Make sure you have CATMAID updated to the last release (2015.12.21),
    including all database migrations and up-to-date Python packages.
-2. Upgrade to this version (or paternally a newer one) and update all Python
-   packages (in within your virtualenv):
+2. Upgrade to this version (or a newer one) and update pip and all Python
+   packages (in within your virtualenv), South can be removed afterwards:
 
+   pip install -U pip
    pip install -r requirements.txt
+   pip uninstall south
 
 3. Fake the new initial migration by running:
 

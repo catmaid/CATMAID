@@ -261,13 +261,14 @@ var WindowMaker = new function()
    * Construct elements from an array of parameters and append them to a tab
    * element.
    * @param  {Element}     tab   The tab to which to append constructed elements.
-   * @param  {[[]|object]} elems An array of parameters from which to construct
+   * @param  {Array.<(Object|Array)>} elems
+   *                             An array of parameters from which to construct
    *                             elements. The elements of the array are either
    *                             arrays of parameters, in which case the length
    *                             of the array is used to choose element type, or
    *                             an object specifying parameters, in which case
    *                             the `type` property specifies element type.
-   * @return {[Element]}         An array of the constructed elements.
+   * @return {Element[]}         An array of the constructed elements.
    */
   var appendToTab = function(tab, elems) {
     return elems.map(function(e) {

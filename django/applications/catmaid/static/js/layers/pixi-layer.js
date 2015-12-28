@@ -428,7 +428,7 @@
 
   /**
    * Retrieve the set of active filters for this layer.
-   * @return {[]} The collection of active filter objects.
+   * @return {Array} The collection of active filter objects.
    */
   PixiLayer.prototype.getFilters = function () {
     return this.filters;
@@ -481,7 +481,7 @@
    * @param {string} displayName      Display name of this filter in interfaces.
    * @param {function(new:PIXI.AbstractFilter)} pixiConstructor
    *                                  Constructor for the underlying Pixi filter.
-   * @param {[]} params               Parameters to display in control UI and
+   * @param {Array}   params               Parameters to display in control UI and
    *                                  their mapping to Pixi properties.
    * @param {CATMAID.TileLayer} layer The layer to which this filter belongs.
    */
@@ -497,8 +497,8 @@
 
   /**
    * Set a filter parameter.
-   * @param {[type]} key   Name of the parameter to set.
-   * @param {[type]} value New value for the parameter.
+   * @param {string} key   Name of the parameter to set.
+   * @param {Object} value New value for the parameter.
    */
   PixiLayer.FilterWrapper.prototype.setParam = function (key, value) {
     this.pixiFilter[key] = value;

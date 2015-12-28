@@ -255,8 +255,8 @@
    * Scaled stack coordinates of the current view's top left corner for the given
    * stack.
    *
-   * @param  {Stack} stack  Target stack for the scaled view coordinates.
-   * @return {xc, yc, z, s} Top left view scaled coordinates in the target stack.
+   * @param  {Stack} stack    Target stack for the scaled view coordinates.
+   * @return {{xc, yc, z, s}} Top left view scaled coordinates in the target stack.
    */
   StackViewer.prototype.scaledPositionInStack = function (stack) {
     if (stack.id === this.primaryStack.id) {
@@ -283,7 +283,7 @@
    * Write the limiting coordinates of the current stack view's bounding box
    * into stackBox.  Faster than creating a new box.
    *
-   *  @param stackBox {min {x, y, z}, max{x, y, z}}
+   *  @param stackBox {{min: {x, y, z}, max: {x, y, z}}}
    */
   StackViewer.prototype.stackViewBox = function (stackBox) {
     var w2 = this.viewWidth / this.scale / 2;
@@ -304,7 +304,7 @@
   /**
    * Create the bounding box of the current stack view.
    *
-   *  @return {min {x, y, z}, max{x, y, z}}
+   *  @return {{min: {x, y, z}, max: {x, y, z}}}
    */
   StackViewer.prototype.createStackViewBox = function () {
     return this.stackViewBox({min: {}, max: {}});
@@ -316,7 +316,7 @@
    * plus some excess padding space into stackBox.  Faster than creating a
    * new box.
    *
-   *  @param stackBox {min {x, y, z}, max{x, y, z}}
+   *  @param stackBox {{min: {x, y, z}, max: {x, y, z}}}
    *  @param padScreenX x-padding in screen coordinates
    *  @param padScreenY y-padding in screen coordinates
    *  @param padScreenZ z-padding in screen coordinates (==stack coordinates as z is not scaled)
@@ -426,7 +426,7 @@
 
   /**
    * Get offset translation.
-   * @return {[number]} Offset translation as [x, y, z].
+   * @return {number[]} Offset translation as [x, y, z].
    */
   StackViewer.prototype.getOffset = function () {
     return this._offset.slice(); // Clone array.
@@ -434,7 +434,7 @@
 
   /**
    * Set offset translation and update UI as necessary.
-   * @param {[number]} offset Translation as [x, y, z].
+   * @param {number[]} offset Translation as [x, y, z].
    */
   StackViewer.prototype.setOffset = function (offset) {
     this._offset = offset;
@@ -593,7 +593,7 @@
 
   /**
    * Get an array of layer keys in their rendering order (back to front).
-   * @return {[]} An array of layer keys.
+   * @return {string[]} An array of layer keys.
    */
   StackViewer.prototype.getLayerOrder = function () {
     return this._layerOrder;

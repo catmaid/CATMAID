@@ -35,7 +35,7 @@
     this.visible = visibility;
     this.isOrderable = true;
 
-    /** @type {[[Element]]} Contains all tiles in a 2D toroidal array */
+    /** @type {Element[][]} Contains all tiles in a 2D toroidal array */
     this._tiles = [];
     /** @type {number} Current origin row in the tiles array. */
     this._tileOrigR = 0;
@@ -367,7 +367,7 @@
   /**
    * Loads tiles at specified indices, but does not display them, so that
    * they are cached for future viewing.
-   * @param  {[[]]}                     tileIndices      an array of tile
+   * @param  {number[][]}               tileIndices      an array of tile
    *                                                     indices like:
    *                                                     [c, r, z, s]
    * @param  {function(number, number)} progressCallback
@@ -409,7 +409,7 @@
   /**
    * Loads tiles for views centered at specified project locations, but does
    * not display them, so that they are cached for future viewing.
-   * @param  {[[]]}                     locations        an array of project
+   * @param  {number[][]}               locations        an array of project
    *                                                     coords like:
    *                                                     [x, y, z]
    * @param  {function(number, number)} progressCallback

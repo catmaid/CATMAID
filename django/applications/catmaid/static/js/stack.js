@@ -265,8 +265,8 @@
      * projectBox.  This method is faster than createStackToProjectBox because
      * it does not generate new objects (Firefox 20%, Chromium 100% !)
      *
-     *  @param stackBox {min {x, y, z}, max{x, y, z}}
-     *  @param projectBox {min {x, y, z}, max{x, y, z}}
+     *  @param stackBox   {{min: {x, y, z}, max: {x, y, z}}}
+     *  @param projectBox {{min: {x, y, z}, max: {x, y, z}}}
      */
     this.stackToProjectBox = function( stackBox, projectBox )
     {
@@ -286,7 +286,7 @@
      * Create a new box from an orthogonal box by transferring its limiting
      * coordinates from stack to project coordinates.
      *
-     *  @param stackBox {min {x, y, z}, max{x, y, z}}
+     *  @param stackBox {{min: {x, y, z}, max: {x, y, z}}}
      */
     this.createStackToProjectBox = function( stackBox )
     {
@@ -295,7 +295,7 @@
 
     /**
      * Create a new stack box representing the extents of the stack.
-     * @return {min {x, y, z}, max{x, y, z}} extents of the stack in stack coordinates
+     * @return {{min: {x, y, z}, max: {x, y, z}}} extents of the stack in stack coordinates
      */
     this.createStackExtentsBox = function () {
       return {

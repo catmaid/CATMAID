@@ -276,19 +276,6 @@
       this.dToSecBefore = -1;
       this.dToSecAfter = 1;
 
-      /** Update the local x,y coordinates of the node
-       * and for its SVG object c well. */
-      this.setXY = function(xnew, ynew) {
-        this.x = xnew;
-        this.y = ynew;
-        if (this.c) {
-          this.c.attr({
-            x: xnew,
-            y: ynew
-          });
-        }
-      };
-
       /** Create the SVG circle elements if and only if the zdiff is zero, that is, if the node lays on the current section. */
       this.createCircle = function() {
         if (!this.shouldDisplay()) {

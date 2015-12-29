@@ -410,6 +410,31 @@
         return color;
       };
 
+      /**
+       * Return a color depending upon some conditions, such as whether the zdiff
+       * with the current section is positive, negative, or zero, and whether the
+       * node belongs to the active skeleton.
+       */
+      this.colorFromZDiff = function() {
+        // zdiff is in sections, therefore the current section is at [0, 1) --
+        // notice 0 is inclusive and 1 is exclusive.
+        if (this.zdiff >= 1) {
+          return SkeletonAnnotations.inactive_skeleton_color_above;
+        } else if (this.zdiff < 0) {
+          return SkeletonAnnotations.inactive_skeleton_color_below;
+        } else if (SkeletonAnnotations.getActiveSkeletonId() === this.skeleton_id) {
+          if (SkeletonAnnotations.isRealNode(this.id)) {
+            return SkeletonAnnotations.active_skeleton_color;
+          } else {
+            return SkeletonAnnotations.active_skeleton_color_virtual;
+          }
+        } else if (SkeletonAnnotations.isRealNode(this.id)) {
+          return SkeletonAnnotations.inactive_skeleton_color;
+        } else {
+          return SkeletonAnnotations.inactive_skeleton_color_virtual;
+        }
+      };
+
       this.updateColors = function() {
         if (this.c) {
           var fillcolor = this.color();
@@ -503,31 +528,6 @@
 
         if (this.mustDrawLineWith(this.parent)) {
           this.drawLineToParent();
-        }
-      };
-
-      /**
-       * Return a color depending upon some conditions, such as whether the zdiff
-       * with the current section is positive, negative, or zero, and whether the
-       * node belongs to the active skeleton.
-       */
-      this.colorFromZDiff = function() {
-        // zdiff is in sections, therefore the current section is at [0, 1) --
-        // notice 0 is inclusive and 1 is exclusive.
-        if (this.zdiff >= 1) {
-          return SkeletonAnnotations.inactive_skeleton_color_above;
-        } else if (this.zdiff < 0) {
-          return SkeletonAnnotations.inactive_skeleton_color_below;
-        } else if (SkeletonAnnotations.getActiveSkeletonId() === this.skeleton_id) {
-          if (SkeletonAnnotations.isRealNode(this.id)) {
-            return SkeletonAnnotations.active_skeleton_color;
-          } else {
-            return SkeletonAnnotations.active_skeleton_color_virtual;
-          }
-        } else if (SkeletonAnnotations.isRealNode(this.id)) {
-          return SkeletonAnnotations.inactive_skeleton_color;
-        } else {
-          return SkeletonAnnotations.inactive_skeleton_color_virtual;
         }
       };
 
@@ -857,23 +857,24 @@
         this.undirgroup = null;
       };
 
-      this.colorFromZDiff = function()
-      {
-        // zdiff is in sections, therefore the current section is at [0, 1) -- notice 0 is inclusive and 1 is exclusive.
-        if (this.zdiff >= 1) {
-          return "rgb(0,0,255)";
-        } else if (this.zdiff < 0) {
-          return "rgb(255,0,0)";
-        } else {
-          return "rgb(235,117,0)";
-        }
-      };
-
       this.color = function() {
         if (SkeletonAnnotations.getActiveNodeId() === this.id) {
           return "rgb(0,255,0)";
         }
         if (this.zdiff >= 0 && this.zdiff < 1) {
+          return "rgb(235,117,0)";
+        }
+      };
+
+      this.colorFromZDiff = function()
+      {
+        // zdiff is in sections, therefore the current section is at [0, 1)
+        // -- notice 0 is inclusive and 1 is exclusive.
+        if (this.zdiff >= 1) {
+          return "rgb(0,0,255)";
+        } else if (this.zdiff < 0) {
+          return "rgb(255,0,0)";
+        } else {
           return "rgb(235,117,0)";
         }
       };

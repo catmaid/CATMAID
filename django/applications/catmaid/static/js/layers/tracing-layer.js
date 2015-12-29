@@ -7,15 +7,18 @@
 
   /**
    * The tracing layer that hosts the tracing data
+   *
+   * @param {StackViewer} stackViewer Stack viewer containing this layer.
+   * @param {Object=}     options     Options passed to the tracing overlay.
    */
-  function TracingLayer( stack, options )
+  function TracingLayer( stackViewer, options )
   {
     options = options || {};
 
     var self = this;
 
     self.opacity = options.opacity || 1.0; // in the range [0,1]
-    this.tracingOverlay = new SkeletonAnnotations.TracingOverlay(stack, options);
+    this.tracingOverlay = new SkeletonAnnotations.TracingOverlay(stackViewer, options);
 
     /**
      * Return friendly name of this layer.

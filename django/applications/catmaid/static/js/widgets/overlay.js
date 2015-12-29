@@ -817,10 +817,10 @@ SkeletonAnnotations.TracingOverlay.prototype.renameNeuron = function(skeletonID)
       'POST',
       {},
       function(json) {
-          var new_name = prompt("Change neuron name", json['neuronname']);
+          var new_name = prompt("Change neuron name", json.neuronname);
           if (!new_name) return;
           CATMAID.NeuronNameService.getInstance().renameNeuron(
-              json['neuronid'], [skeletonID], new_name);
+              json.neuronid, [skeletonID], new_name);
       });
 };
 
@@ -1435,7 +1435,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeLink = function (from
       undefined,
       function(json) {
         var from_model = SkeletonAnnotations.activeSkeleton.createModel();
-        var to_skid = json['skeleton_id'];
+        var to_skid = json.skeleton_id;
         // Make sure the user has permissions to edit both the from and the to
         // skeleton.
         self.executeIfSkeletonEditable(from_model.id, function() {
@@ -1473,7 +1473,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeLink = function (from
             var merge_multiple_nodes = function() {
               var to_color = new THREE.Color().setRGB(1, 0, 1);
               var to_model = new CATMAID.SkeletonModel(
-                  to_skid, json['neuron_name'], to_color);
+                  to_skid, json.neuron_name, to_color);
               var dialog = new CATMAID.SplitMergeDialog({
                 model1: from_model,
                 model2: to_model

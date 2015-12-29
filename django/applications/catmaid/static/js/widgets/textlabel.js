@@ -92,7 +92,7 @@ function TextlabelTool()
       switch ( CATMAID.ui.getMouseButton( e ) )
       {
         case 1:
-          // tracingLayer.svgOverlay.whenclicked( e );
+          // tracingLayer.tracingOverlay.whenclicked( e );
             // needs shift in addition
             if( e.shiftKey ) {
                 var m = CATMAID.ui.getMouse(e, self.prototype.mouseCatcher);

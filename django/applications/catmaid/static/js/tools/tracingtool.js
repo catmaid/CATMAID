@@ -39,7 +39,7 @@
 
     this.deselectActiveNode = function()
     {
-      activeTracingLayer.svgOverlay.activateNode(null);
+      activeTracingLayer.tracingOverlay.activateNode(null);
     };
 
     var setupSubTools = function()
@@ -82,14 +82,14 @@
     {
       value = Boolean(value);
       getTracingLayers(excludeActive).forEach(function(layer) {
-        layer.svgOverlay.suspended = value;
+        layer.tracingOverlay.suspended = value;
       });
     };
 
     var updateNodesInTracingLayers = function(excludeActive)
     {
       getTracingLayers(excludeActive).forEach(function(layer) {
-        layer.svgOverlay.updateNodes();
+        layer.tracingOverlay.updateNodes();
       });
     };
 
@@ -103,7 +103,7 @@
 
     var disableLayerUpdate = function() {
       CATMAID.warn("Temporary disabling node update until panning is over");
-      activeTracingLayer.svgOverlay.suspended = true;
+      activeTracingLayer.tracingOverlay.suspended = true;
     };
 
     /**
@@ -120,7 +120,7 @@
           switch ( CATMAID.ui.getMouseButton( e ) )
           {
             case 1:
-              layer.svgOverlay.whenclicked( e );
+              layer.tracingOverlay.whenclicked( e );
               break;
             case 2:
               // Put all tracing layers, except active, in "don't update" mode
@@ -129,7 +129,7 @@
               // Attach to the node limit hit event to disable node updates
               // temporary if the limit was hit. This allows for smoother panning
               // when many nodes are visible.
-              layer.svgOverlay.on(layer.svgOverlay.EVENT_HIT_NODE_DISPLAY_LIMIT,
+              layer.tracingOverlay.on(layer.tracingOverlay.EVENT_HIT_NODE_DISPLAY_LIMIT,
                   disableLayerUpdate, layer);
               // Cancel any existing update timeout, if there is one
               if (updateTimeout) {
@@ -146,9 +146,9 @@
                   CATMAID.ui.releaseEvents();
                   CATMAID.ui.removeEvent( "onmousemove", updateStatusBar );
                   CATMAID.ui.removeEvent( "onmouseup", onmouseup );
-                  layer.svgOverlay.off(layer.svgOverlay.EVENT_HIT_NODE_DISPLAY_LIMIT,
+                  layer.tracingOverlay.off(layer.tracingOverlay.EVENT_HIT_NODE_DISPLAY_LIMIT,
                       disableLayerUpdate, layer);
-                  if (layer.svgOverlay.suspended) {
+                  if (layer.tracingOverlay.suspended) {
                     // Wait a second before updating the view, just in case the user
                     // continues to pan to not hit the node limit again. Then make
                     // sure the next update is not stopped.
@@ -177,7 +177,7 @@
       };
 
       // Assign bindings to view
-      var view = layer.svgOverlay.view;
+      var view = layer.tracingOverlay.view;
       for (var fn in stackViewerBindings) {
         view[fn] = stackViewerBindings[fn];
       }
@@ -256,7 +256,7 @@
       var layer = prepareStackViewer(parentStackViewer);
 
       // Set this layer as mouse catcher in Navigator
-      var view = layer.svgOverlay.view;
+      var view = layer.tracingOverlay.view;
       self.prototype.setMouseCatcher(view);
 
       // Register stack viewer with prototype, after the mouse catcher has been set.
@@ -269,7 +269,7 @@
       // Force an update and skeleton tracing mode if stack viewer or layer changed
       if (activeTracingLayer !== layer || activeStackViewer !== parentStackViewer) {
         SkeletonAnnotations.setTracingMode(SkeletonAnnotations.MODES.SKELETON);
-        layer.svgOverlay.updateNodes();
+        layer.tracingOverlay.updateNodes();
       }
 
       activeStackViewer = parentStackViewer;
@@ -433,7 +433,7 @@
 
 
     var updateStatusBar = function( e ) {
-      var m = CATMAID.ui.getMouse(e, activeTracingLayer.svgOverlay.view, true);
+      var m = CATMAID.ui.getMouse(e, activeTracingLayer.tracingOverlay.view, true);
       var offX, offY, pos_x, pos_y;
       if (m) {
         offX = m.offsetX;
@@ -529,9 +529,9 @@
         }
         // If any modifier key is pressed, remove the tag
         if (modifier) {
-          SkeletonAnnotations.Tag.removeATNLabel(tag, activeTracingLayer.svgOverlay);
+          SkeletonAnnotations.Tag.removeATNLabel(tag, activeTracingLayer.tracingOverlay);
         } else {
-          SkeletonAnnotations.Tag.tagATNwithLabel(tag, activeTracingLayer.svgOverlay, false);
+          SkeletonAnnotations.Tag.tagATNwithLabel(tag, activeTracingLayer.tracingOverlay, false);
         }
         return true;
       };
@@ -579,7 +579,7 @@
           var skid = SkeletonAnnotations.getActiveSkeletonId();
           if (Number.isInteger(skid)) CATMAID.WebGLApplication.prototype.staticReloadSkeletons([skid]);
         } else {
-          activeTracingLayer.svgOverlay.moveToAndSelectNode(SkeletonAnnotations.getActiveNodeId());
+          activeTracingLayer.tracingOverlay.moveToAndSelectNode(SkeletonAnnotations.getActiveNodeId());
         }
         return true;
       }
@@ -591,7 +591,7 @@
       run: function (e) {
         if (!mayView())
           return false;
-        activeTracingLayer.svgOverlay.goToNextOpenEndNode(SkeletonAnnotations.getActiveNodeId(), e.shiftKey, e.altKey);
+        activeTracingLayer.tracingOverlay.goToNextOpenEndNode(SkeletonAnnotations.getActiveNodeId(), e.shiftKey, e.altKey);
         return true;
       }
     } ) );
@@ -602,7 +602,7 @@
       run: function (e) {
         if (!mayView())
           return false;
-        activeTracingLayer.svgOverlay.goToNextBranchOrEndNode(SkeletonAnnotations.getActiveNodeId(), e);
+        activeTracingLayer.tracingOverlay.goToNextBranchOrEndNode(SkeletonAnnotations.getActiveNodeId(), e);
         return true;
       }
     } ) );
@@ -613,7 +613,7 @@
       run: function (e) {
         if (!mayView())
           return false;
-        activeTracingLayer.svgOverlay.goToPreviousBranchOrRootNode(SkeletonAnnotations.getActiveNodeId(), e);
+        activeTracingLayer.tracingOverlay.goToPreviousBranchOrRootNode(SkeletonAnnotations.getActiveNodeId(), e);
         return true;
       }
     } ) );
@@ -625,7 +625,7 @@
       run: function (e) {
         if (!mayView())
           return false;
-        activeTracingLayer.svgOverlay.activateNode(null);
+        activeTracingLayer.tracingOverlay.activateNode(null);
         return true;
       }
     }) );
@@ -636,7 +636,7 @@
       run: function (e) {
         if (!mayView())
           return false;
-        activeTracingLayer.svgOverlay.goToParentNode(SkeletonAnnotations.getActiveNodeId(), (e.ctrlKey || e.metaKey));
+        activeTracingLayer.tracingOverlay.goToParentNode(SkeletonAnnotations.getActiveNodeId(), (e.ctrlKey || e.metaKey));
         return true;
       }
     }) );
@@ -647,7 +647,7 @@
       run: function (e) {
         if (!mayView())
           return false;
-        activeTracingLayer.svgOverlay.goToChildNode(SkeletonAnnotations.getActiveNodeId(), e.shiftKey, (e.ctrlKey || e.metaKey));
+        activeTracingLayer.tracingOverlay.goToChildNode(SkeletonAnnotations.getActiveNodeId(), e.shiftKey, (e.ctrlKey || e.metaKey));
         return true;
       }
     }) );
@@ -658,7 +658,7 @@
       run: function (e) {
         if (!mayView())
           return false;
-        activeTracingLayer.svgOverlay.editRadius(SkeletonAnnotations.getActiveNodeId(),
+        activeTracingLayer.tracingOverlay.editRadius(SkeletonAnnotations.getActiveNodeId(),
             e.shiftKey);
         return true;
       }
@@ -670,7 +670,7 @@
       run: function (e) {
         if (!mayView())
           return false;
-        activeTracingLayer.svgOverlay.measureRadius();
+        activeTracingLayer.tracingOverlay.measureRadius();
         return true;
       }
     }) );
@@ -681,7 +681,7 @@
       run: function (e) {
         if (!mayView())
           return false;
-        activeTracingLayer.svgOverlay.goToLastEditedNode(SkeletonAnnotations.getActiveSkeletonId());
+        activeTracingLayer.tracingOverlay.goToLastEditedNode(SkeletonAnnotations.getActiveSkeletonId());
         return true;
       }
     }) );
@@ -698,21 +698,21 @@
               function (skids) { CATMAID.SelectionTable.getLastFocused().addSkeletons(skids); };
           var atnID = SkeletonAnnotations.getActiveNodeId();
 
-          activeTracingLayer.svgOverlay.selectRadius(
+          activeTracingLayer.tracingOverlay.selectRadius(
               atnID,
               true,
               function (radius) {
                 if (typeof radius === 'undefined') return;
 
                 var respectVirtualNodes = true;
-                var node = activeTracingLayer.svgOverlay.nodes[atnID];
-                var selectedIDs = activeTracingLayer.svgOverlay.findAllNodesWithinRadius(
+                var node = activeTracingLayer.tracingOverlay.nodes[atnID];
+                var selectedIDs = activeTracingLayer.tracingOverlay.findAllNodesWithinRadius(
                     activeStackViewer.primaryStack.stackToProjectX(node.z, node.y, node.x),
                     activeStackViewer.primaryStack.stackToProjectY(node.z, node.y, node.x),
                     activeStackViewer.primaryStack.stackToProjectZ(node.z, node.y, node.x),
                     radius, respectVirtualNodes);
                 selectedIDs = selectedIDs.map(function (nodeID) {
-                    return activeTracingLayer.svgOverlay.nodes[nodeID].skeleton_id;
+                    return activeTracingLayer.tracingOverlay.nodes[nodeID].skeleton_id;
                 }).filter(function (s) { return !isNaN(s); });
 
                 selectionCallback(selectedIDs);
@@ -736,7 +736,7 @@
       run: function (e) {
         if (!mayEdit())
           return false;
-        activeTracingLayer.svgOverlay.splitSkeleton(SkeletonAnnotations.getActiveNodeId());
+        activeTracingLayer.tracingOverlay.splitSkeleton(SkeletonAnnotations.getActiveNodeId());
         return true;
       }
     }) );
@@ -749,7 +749,7 @@
       run: function (e) {
         if (!mayEdit())
           return false;
-        activeTracingLayer.svgOverlay.rerootSkeleton(SkeletonAnnotations.getActiveNodeId());
+        activeTracingLayer.tracingOverlay.rerootSkeleton(SkeletonAnnotations.getActiveNodeId());
         return true;
       }
     }) );
@@ -764,8 +764,8 @@
           return false;
         show_labels = !show_labels;
         getTracingLayers().forEach(function(layer) {
-          if (show_labels) layer.svgOverlay.showLabels();
-          else layer.svgOverlay.hideLabels();
+          if (show_labels) layer.tracingOverlay.showLabels();
+          else layer.tracingOverlay.hideLabels();
         });
         return true;
       }
@@ -789,7 +789,7 @@
       run: function (e) {
         if (!mayView())
           return false;
-        activeTracingLayer.svgOverlay.switchBetweenTerminalAndConnector();
+        activeTracingLayer.tracingOverlay.switchBetweenTerminalAndConnector();
         return true;
       }
     }) );
@@ -802,10 +802,10 @@
           return false;
         if (e.shiftKey) {
           // Delete all tags
-          SkeletonAnnotations.Tag.tagATNwithLabel('', activeTracingLayer.svgOverlay, true);
+          SkeletonAnnotations.Tag.tagATNwithLabel('', activeTracingLayer.tracingOverlay, true);
           return true;
         } else if (! (e.ctrlKey || e.metaKey)) {
-          SkeletonAnnotations.Tag.tagATN(activeTracingLayer.svgOverlay);
+          SkeletonAnnotations.Tag.tagATN(activeTracingLayer.tracingOverlay);
           return true;
         } else {
           return false;
@@ -840,8 +840,8 @@
           var layerOrder = activeStackViewer.getLayerOrder();
           // TODO: Don't use internal objects of the tracing overlay, i.e. find
           // a better way to get the current mouse position.
-          var x = activeTracingLayer.svgOverlay.coords.lastX;
-          var y = activeTracingLayer.svgOverlay.coords.lastY;
+          var x = activeTracingLayer.tracingOverlay.coords.lastX;
+          var y = activeTracingLayer.tracingOverlay.coords.lastY;
           // Only allow nodes that are screen space 50px or closer
           var r = 50.0 / activeStackViewer.scale;
           for (var i=0, max=layerOrder.length; i<max; ++i) {
@@ -861,7 +861,7 @@
             // If no layer found a node close by, ask the tracing layer for the
             // closest node without any bounds.
             var respectVirtualNodes = true;
-            activeTracingLayer.svgOverlay.activateNearestNode(respectVirtualNodes);
+            activeTracingLayer.tracingOverlay.activateNearestNode(respectVirtualNodes);
           }
           return true;
         } else {
@@ -879,7 +879,7 @@
         var insert = e.altKey;
         var link = e.shiftKey;
         var postLink = e.altKey;
-        activeTracingLayer.svgOverlay.createNewOrExtendActiveSkeleton(insert, link, postLink);
+        activeTracingLayer.tracingOverlay.createNewOrExtendActiveSkeleton(insert, link, postLink);
         return true;
       }
     }) );
@@ -890,7 +890,7 @@
       run: function (e) {
         if (!mayEdit())
           return false;
-        activeTracingLayer.svgOverlay.deleteNode(SkeletonAnnotations.getActiveNodeId());
+        activeTracingLayer.tracingOverlay.deleteNode(SkeletonAnnotations.getActiveNodeId());
         return true;
       }
     }) );
@@ -901,7 +901,7 @@
       run: function (e) {
         if (!mayView())
           return false;
-        activeTracingLayer.svgOverlay.printTreenodeInfo(SkeletonAnnotations.getActiveNodeId());
+        activeTracingLayer.tracingOverlay.printTreenodeInfo(SkeletonAnnotations.getActiveNodeId());
         return true;
       }
     }) );
@@ -912,7 +912,7 @@
       run: function (e) {
         if (!mayEdit())
           return false;
-        activeTracingLayer.svgOverlay.setConfidence(1, e.altKey);
+        activeTracingLayer.tracingOverlay.setConfidence(1, e.altKey);
         return true;
       }
     }) );
@@ -923,7 +923,7 @@
       run: function (e) {
         if (!mayEdit())
           return false;
-        activeTracingLayer.svgOverlay.setConfidence(2, e.altKey);
+        activeTracingLayer.tracingOverlay.setConfidence(2, e.altKey);
         return true;
       }
     }) );
@@ -934,7 +934,7 @@
       run: function (e) {
         if (!mayEdit())
           return false;
-        activeTracingLayer.svgOverlay.setConfidence(3, e.altKey);
+        activeTracingLayer.tracingOverlay.setConfidence(3, e.altKey);
         return true;
       }
     }) );
@@ -945,7 +945,7 @@
       run: function (e) {
         if (!mayEdit())
           return false;
-        activeTracingLayer.svgOverlay.setConfidence(4, e.altKey);
+        activeTracingLayer.tracingOverlay.setConfidence(4, e.altKey);
         return true;
       }
     }) );
@@ -956,7 +956,7 @@
       run: function (e) {
         if (!mayEdit())
           return false;
-        activeTracingLayer.svgOverlay.setConfidence(5, e.altKey);
+        activeTracingLayer.tracingOverlay.setConfidence(5, e.altKey);
         return true;
       }
     }) );
@@ -1004,7 +1004,7 @@
             if (!mayEdit()) {
                 return false;
             }
-            activeTracingLayer.svgOverlay.renameNeuron(SkeletonAnnotations.getActiveSkeletonId());
+            activeTracingLayer.tracingOverlay.renameNeuron(SkeletonAnnotations.getActiveSkeletonId());
             return true;
         }
     }) );
@@ -1065,7 +1065,7 @@
       helpText: "Find the nearest matching tagged node (<kbd>Ctrl</kbd>: repeat last tag query; Subsequent <kbd>Shift</kbd>+<kbd>\\</kbd>: cycle to next nearest)",
       keyShortcuts: { '\\': [ 220 ] },
       run: function (e) {
-        activeTracingLayer.svgOverlay.goToNearestMatchingTag(e.shiftKey, e.ctrlKey);
+        activeTracingLayer.tracingOverlay.goToNearestMatchingTag(e.shiftKey, e.ctrlKey);
         return true;
       }
     }));
@@ -1080,7 +1080,7 @@
     this.handleKeyPress = function( e ) {
       var keyAction = keyCodeToAction[e.keyCode];
       if (keyAction) {
-        activeTracingLayer.svgOverlay.ensureFocused();
+        activeTracingLayer.tracingOverlay.ensureFocused();
         return keyAction.run(e);
       } else {
         return false;
@@ -1112,8 +1112,8 @@
     // register() take care of bindings.
     project.getStackViewers().forEach(function(s) {
       var layer = prepareStackViewer(s);
-      layer.svgOverlay.updateNodes(layer.forceRedraw.bind(layer));
-      s.getView().appendChild(layer.svgOverlay.view);
+      layer.tracingOverlay.updateNodes(layer.forceRedraw.bind(layer));
+      s.getView().appendChild(layer.tracingOverlay.view);
     }, this);
 
     // Listen to creation and removal of new stack views in current project.

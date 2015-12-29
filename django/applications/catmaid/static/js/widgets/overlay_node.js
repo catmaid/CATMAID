@@ -219,26 +219,25 @@
       this.reserve_size = reserve_size;
     };
 
-    ptype.ElementPool.prototype = (function() {
-      return {
-        reset : function() {
+    $.extend(ptype.ElementPool.prototype, {
+        reset: function() {
           this.nextIndex = 0;
         },
 
-        obliterateFn : function(element) {
+        obliterateFn: function(element) {
           element.obliterate();
         },
 
-        disableFn : function(element) {
+        disableFn: function(element) {
           element.disable();
         },
 
-        clear : function() {
+        clear: function() {
           this.pool.splice(0).forEach(this.obliterateFn);
           this.reset();
         },
 
-        disableBeyond : function(new_length) {
+        disableBeyond: function(new_length) {
           if (new_length < this.pool.length) {
             // Drop elements beyond new length plus reserve
             if (this.pool.length > new_length + this.reserve_size) {
@@ -249,18 +248,17 @@
           }
         },
 
-        next : function() {
+        next: function() {
           return this.nextIndex < this.pool.length ?
             this.pool[this.nextIndex++] : null;
         },
 
         /** Append a new element at the end, implying that all other elements are in use. */
-        push : function(element) {
+        push: function(element) {
           this.pool.push(element);
           this.nextIndex += 1;
         }
-      };
-    })();
+      });
 
 
     /** A prototype for both Treenode and Connector. */

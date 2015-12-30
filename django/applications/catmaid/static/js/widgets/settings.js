@@ -514,6 +514,24 @@
 
 
       var dsNodeColors = CATMAID.DOM.addSettingsContainer(ds, "Skeleton colors", true);
+      dsNodeColors.append(CATMAID.DOM.createCheckboxSetting(
+          'Hide skeletons not in the skeleton source subscriptions',
+          project.getStackViewers().every(function(sv) {
+            var overlay = SkeletonAnnotations.getTracingOverlay(sv.getId());
+            return overlay && overlay.graphics.overlayGlobals.hideOtherSkeletons;
+          }),
+          'If checked, skeletons not present in the subscribed skeleton ' +
+          'sources will not be displayed in the tracing overlay.',
+          function () {
+            var checked = this.checked;
+            project.getStackViewers().forEach(function(sv) {
+              var overlay = SkeletonAnnotations.getTracingOverlay(sv.getId());
+              if (overlay) {
+                overlay.graphics.overlayGlobals.hideOtherSkeletons = checked;
+                overlay.redraw(true);
+              }
+            });
+          }));
       // Node color settings: Title vs. SkeletonAnnotations field.
       var colors = new Map([
         ['Active node', 'atn_fillcolor'],

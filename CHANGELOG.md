@@ -29,6 +29,20 @@ releases.
 
 ### Features and enhancements
 
+Tracing overlay:
+
+- Colors of skeleton nodes and edges in the tracing overlay can now be
+  configured to follow colors from selection tables. To configure which
+  skeleton sources to use to select colors, click the skeleton source control
+  icon (the gear) in the title bar of the stack viewer.
+
+- Visibility of skeletons in the tracing overlay can also be controlled by
+  skeleton source subscriptions. To enable this, check "Hide skeletons not
+  in the skeleton source subscriptions" in the Settings widget under Tracing
+  Overlay > Skeleton colors. Note that it the tracing overlay may not update
+  the visibility of some skeletons until a navigation action is performed.
+
+
 3D Viewer:
 
 - Stack bounding boxes and missing sections now update when stack viewer focus

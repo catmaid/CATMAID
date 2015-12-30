@@ -30,6 +30,18 @@
   -ms-interpolation-mode: nearest-neighbor;   /* IE8+          */
 }
 
+.stackViewer .windowButton {
+  background-color: #CDCDCD;
+  height: 19px;
+  margin: 0 0.2em;
+}
+
+.stackViewer .sourcepanel {
+  position: relative;
+  background-color: #FFF;
+  z-index: 6;
+}
+
 div.smallMapView,
 div.smallMapView_hidden {
   position: absolute;

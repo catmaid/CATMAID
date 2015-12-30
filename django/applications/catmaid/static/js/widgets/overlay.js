@@ -571,6 +571,25 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, options) {
   this.view.style.cursor ="url(" + STATIC_URL_JS + "images/svg-circle.cur) 15 15, crosshair";
   this.view.onmousemove = this.createViewMouseMoveFn(this.stackViewer, this.coords);
 
+  this._skeletonDisplaySource = new CATMAID.BasicSkeletonSource(
+      'Tracing overlay (' + this.stackViewer.primaryStack.title + ')');
+  this._skeletonDisplaySource.unregisterSource();
+  this._skeletonDisplaySource.ignoreLocal = true;
+  this._sourceToggleEl = CATMAID.DOM.addSourceControlsToggle(
+      stackViewer.getWindow(),
+      this._skeletonDisplaySource,
+      'Show and hide skeleton source controls for tracing overlay.',
+      {showPullOption: false,
+       showIgnoreLocal: false});
+  ['EVENT_MODELS_ADDED',
+   'EVENT_MODELS_REMOVED',
+   'EVENT_MODELS_CHANGED'].forEach(function (event) {
+    this._skeletonDisplaySource.on(
+        this._skeletonDisplaySource[event],
+        this.recolorAllNodes,
+        this);
+  }, this);
+
   this.paper = d3.select(this.view)
                   .append('svg')
                   .attr({
@@ -580,7 +599,7 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, options) {
   // If the equal ratio between stack, SVG viewBox and overlay DIV size is not
   // maintained, this additional attribute would be necessary:
   // this.paper.attr('preserveAspectRatio', 'xMinYMin meet')
-  this.graphics = CATMAID.SkeletonElementsFactory.createSkeletonElements(this.paper, stackViewer.getId());
+  this.graphics = CATMAID.SkeletonElementsFactory.createSkeletonElements(this.paper, stackViewer.getId(), this._skeletonDisplaySource.skeletonModels);
   this.graphics.setActiveNodeRadiusVisibility(SkeletonAnnotations.TracingOverlay.Settings.session.display_active_node_radius);
 
   // Listen to change and delete events of skeletons
@@ -919,6 +938,9 @@ SkeletonAnnotations.TracingOverlay.prototype.destroy = function() {
     this.view.onmousemove = null;
     this.view.onmousedown = null;
     this.view = null;
+  }
+  if (this._sourceToggleEl && this._sourceToggleEl.parentNode) {
+    this._sourceToggleEl.parentNode.removeChild(this._sourceToggleEl);
   }
 
   // Unregister from neuron controller

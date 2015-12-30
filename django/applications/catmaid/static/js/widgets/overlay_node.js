@@ -43,22 +43,28 @@
       /**
        * Create a new SkeletonInstance and return it.
        */
-      createSkeletonElements: function(paper, defSuffix) {
+      createSkeletonElements: function(paper, defSuffix, skeletonDisplayModels) {
         // Add prototype
         SkeletonElements.prototype = createSkeletonElementsPrototype();
 
-        return new SkeletonElements(paper, defSuffix);
+        return new SkeletonElements(paper, defSuffix, skeletonDisplayModels);
       }
     };
   })();
 
   /** Namespace where SVG element instances are created, cached and edited. */
-  var SkeletonElements = function(paper, defSuffix)
+  var SkeletonElements = function(paper, defSuffix, skeletonDisplayModels)
   {
     // Allow a suffix for SVG definition IDs
     this.USE_HREF_SUFFIX = defSuffix || '';
     // Create definitions for reused elements and markers
     var defs = paper.append('defs');
+
+    this.overlayGlobals = {
+      paper: paper,
+      skeletonDisplayModels: skeletonDisplayModels || {},
+      hideOtherSkeletons: false
+    };
 
     // Let (concrete) element classes initialize any shared SVG definitions
     // required by their instances. Even though called statically, initDefs is an
@@ -177,7 +183,7 @@
       if (node) {
         node.reInit(id, parent, parent_id, radius, x, y, z, zdiff, confidence, skeleton_id, can_edit);
       } else {
-        node = new this.Node(paper, id, parent, parent_id, radius, x, y, z, zdiff, confidence, skeleton_id, can_edit, defSuffix);
+        node = new this.Node(this.overlayGlobals, id, parent, parent_id, radius, x, y, z, zdiff, confidence, skeleton_id, can_edit, defSuffix);
         this.cache.nodePool.push(node);
       }
       return node;
@@ -199,7 +205,7 @@
       if (connector) {
         connector.reInit(id, x, y, z, zdiff, confidence, subtype, can_edit);
       } else {
-        connector = new this.ConnectorNode(paper, id, x, y, z, zdiff, confidence, subtype, can_edit, defSuffix);
+        connector = new this.ConnectorNode(this.overlayGlobals, id, x, y, z, zdiff, confidence, subtype, can_edit, defSuffix);
         connector.createArrow = this.createArrow;
         this.cache.connectorPool.push(connector);
       }
@@ -282,7 +288,7 @@
         // c may already exist if the node is being reused
         if (!this.c) {
           // create a circle object
-          this.c = this.paper.select('.nodes').append('use')
+          this.c = this.overlayGlobals.paper.select('.nodes').append('use')
                               .attr('xlink:href', '#' + this.USE_HREF + this.hrefSuffix)
                               .attr('x', this.x)
                               .attr('y', this.y)
@@ -311,7 +317,7 @@
             this.shouldDisplay() &&
             this.radius > 0) {
           if (!this.radiusGraphics) {
-            this.radiusGraphics = this.paper.select('.lines').append('circle');
+            this.radiusGraphics = this.overlayGlobals.paper.select('.lines').append('circle');
           }
 
           var fillcolor = this.color();
@@ -387,10 +393,22 @@
         this.children[childNode.id] = childNode;
       };
 
-      /** Set the node fill color depending on its distance from the
-      * current slice, whether it's the active node, the root node, or in
-      * an active skeleton. */
+      this.shouldDisplay = function () {
+        return this.zdiff >= 0 && this.zdiff < 1 &&
+            (!this.overlayGlobals.hideOtherSkeletons ||
+             this.overlayGlobals.skeletonDisplayModels.hasOwnProperty(this.skeleton_id));
+      };
+
+      /**
+       * Return the node color depending on its distance from the current slice,
+       * whether it's the active node, the root node, a leaf node, or in
+       * an active skeleton.
+       *
+       * @return {string}           CSS color description like 'rgb(0,0,0)'.
+       */
       this.color = function() {
+        var model = this.overlayGlobals.skeletonDisplayModels[this.skeleton_id];
+        if (model) return this.colorCustom(model.color);
         var color;
         if (SkeletonAnnotations.getActiveNodeId() === this.id) {
           // The active node is always in green:
@@ -409,11 +427,37 @@
       };
 
       /**
-       * Return a color depending upon some conditions, such as whether the zdiff
-       * with the current section is positive, negative, or zero, and whether the
-       * node belongs to the active skeleton.
+       * Return the node color as a function of its skeleton model's color
+       * depending on its distance from the current slice, whether it is the
+       * active node, the root node, a leaf node, or in an active skeleton.
+       *
+       * @param  {THREE.Color} baseColor Node's skeleton model base color.
+       * @return {string}                CSS color description like 'rgb(0,0,0)'.
+       */
+      this.colorCustom = function (baseColor) {
+        if (SkeletonAnnotations.getActiveNodeId() === this.id) {
+          // The active node is always in green:
+          return SkeletonAnnotations.getActiveNodeColor();
+        } else if (this.isroot) {
+          return baseColor.clone().offsetHSL(0, 0, 0.25).getStyle();
+        } else if (0 === this.numberOfChildren) {
+          return baseColor.clone().offsetHSL(0, 0, -0.25).getStyle();
+        } else {
+          // If none of the above applies, just colour according to the z difference.
+          return this.colorCustomFromZDiff(baseColor);
+        }
+      };
+
+      /**
+       * Return a color depending upon some conditions, such as whether the
+       * zdiff with the current section is positive, negative, or zero, and
+       * whether the node belongs to the active skeleton.
+       *
+       * @return {string}           CSS color description like 'rgb(0,0,0)'.
        */
       this.colorFromZDiff = function() {
+        var model = this.overlayGlobals.skeletonDisplayModels[this.skeleton_id];
+        if (model) return this.colorCustomFromZDiff(model.color);
         // zdiff is in sections, therefore the current section is at [0, 1) --
         // notice 0 is inclusive and 1 is exclusive.
         if (this.zdiff >= 1) {
@@ -428,6 +472,35 @@
           }
         } else if (SkeletonAnnotations.isRealNode(this.id)) {
           return SkeletonAnnotations.inactive_skeleton_color;
+        } else {
+          return SkeletonAnnotations.inactive_skeleton_color_virtual;
+        }
+      };
+
+      /**
+       * Return a color as a function of the node's skeleton model's color
+       * depending upon some conditions, such as whether the zdiff with the
+       * current section is positive, negative, or zero, and whether the node
+       * belongs to the active skeleton.
+       *
+       * @param  {THREE.Color} baseColor Node's skeleton model base color.
+       * @return {string}                CSS color description like 'rgb(0,0,0)'.
+       */
+      this.colorCustomFromZDiff = function (baseColor) {
+        // zdiff is in sections, therefore the current section is at [0, 1) --
+        // notice 0 is inclusive and 1 is exclusive.
+        if (this.zdiff >= 1) {
+          return baseColor.clone().offsetHSL(0.1, 0, 0).getStyle();
+        } else if (this.zdiff < 0) {
+          return baseColor.clone().offsetHSL(-0.1, 0, 0).getStyle();
+        } else if (SkeletonAnnotations.getActiveSkeletonId() === this.skeleton_id) {
+          if (SkeletonAnnotations.isRealNode(this.id)) {
+            return SkeletonAnnotations.active_skeleton_color;
+          } else {
+            return SkeletonAnnotations.active_skeleton_color_virtual;
+          }
+        } else if (SkeletonAnnotations.isRealNode(this.id)) {
+          return baseColor.getStyle();
         } else {
           return SkeletonAnnotations.inactive_skeleton_color_virtual;
         }
@@ -459,7 +532,7 @@
         var lineColor = this.colorFromZDiff();
 
         if (!this.line) {
-          this.line = this.paper.select('.lines').append('line');
+          this.line = this.overlayGlobals.paper.select('.lines').append('line');
           this.line.toBack();
           this.line.datum(this.id);
           this.line.on('click', ptype.mouseEventManager.edge_mc_click);
@@ -534,7 +607,7 @@
 
       /** Prepare node for removal from cache. */
       this.obliterate = function() {
-        this.paper = null;
+        this.overlayGlobals = null;
         this.id = null;
         this.parent = null;
         this.parent_id = null;
@@ -632,7 +705,7 @@
         var self = this;
         // Create a circle object that represents the surrounding circle
         var color = "rgb(255,255,0)";
-        var c = this.paper.select('.nodes').append('circle')
+        var c = this.overlayGlobals.paper.select('.nodes').append('circle')
           .attr({
             cx: this.x,
             cy: this.y,
@@ -643,7 +716,7 @@
           });
         // Create a line from the node to mouse if requested
         if (drawLine) {
-          var line = this.paper.select('.lines').append('line')
+          var line = this.overlayGlobals.paper.select('.lines').append('line')
             .attr({
               x1: this.x,
               y1: this.y,
@@ -654,7 +727,7 @@
             });
         }
         // Create an adhoc mouse catcher
-        var mc = this.paper.select('.nodes').append('circle')
+        var mc = this.overlayGlobals.paper.select('.nodes').append('circle')
           .attr({
             cx: this.x,
             cy: this.y,
@@ -664,7 +737,7 @@
             opacity: 0
           });
         // Create a label to measure current radius of the circle.
-        var label = this.paper.append('g').classed('radiuslabel', true).attr({
+        var label = this.overlayGlobals.paper.append('g').classed('radiuslabel', true).attr({
             'pointer-events': 'none'});
         var fontSize = parseFloat(ptype.ArrowLine.prototype.confidenceFontSize) * 0.75;
         var pad = fontSize * 0.5;
@@ -767,7 +840,7 @@
     ptype.AbstractTreenode.prototype = ptype.NodePrototype;
 
     ptype.Node = function(
-      paper,
+      overlayGlobals,
       id,         // unique id for the node from the database
       parent,     // the parent node (may be null if the node is not loaded)
       parent_id,  // is null only for the root node
@@ -781,7 +854,7 @@
       can_edit,   // whether the user can edit (move, remove) this node
       hrefSuffix) // a suffix that is appended to the ID of the referenced geometry
     {
-      this.paper = paper;
+      this.overlayGlobals = overlayGlobals;
       this.id = id;
       this.type = SkeletonAnnotations.TYPE_NODE;
       this.parent = parent;
@@ -828,7 +901,7 @@
       };
 
       this.obliterate = function() {
-        this.paper = null;
+        this.overlayGlobals = null;
         this.id = null;
         if (this.c) {
           ptype.mouseEventManager.forget(this.c, SkeletonAnnotations.TYPE_CONNECTORNODE);
@@ -959,7 +1032,7 @@
     ptype.AbstractConnectorNode.prototype = ptype.NodePrototype;
 
     ptype.ConnectorNode = function(
-      paper,
+      overlayGlobals,
       id,         // unique id for the node from the database
       x,          // the x coordinate in oriented project coordinates
       y,          // the y coordinate in oriented project coordinates
@@ -970,7 +1043,7 @@
       can_edit,   // whether the logged in user has permissions to edit this node -- the server will in any case enforce permissions; this is for proper GUI flow
       hrefSuffix) // a suffix that is appended to the ID of the referenced geometry
     {
-      this.paper = paper;
+      this.overlayGlobals = overlayGlobals;
       this.id = id;
       this.type = SkeletonAnnotations.TYPE_CONNECTORNODE;
       this.subtype = subtype;

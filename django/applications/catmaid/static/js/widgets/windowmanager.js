@@ -18,6 +18,8 @@ function CMWNode(){}
 
 CMWNode.CMWNodeUniqueId = 0;
 
+CMWNode.FRAME_CLASS = 'CMWFrame';
+
 CMWNode.prototype.uniqueId = function()
 {
   return CMWNode.CMWNodeUniqueId++;
@@ -249,7 +251,7 @@ function CMWHSplitNode( child1, child2 )
   child2.setParent( this );
 
   var frame = document.createElement( "div" );
-  frame.className = "sliceView";
+  frame.className = CMWNode.FRAME_CLASS;
   frame.style.position = "absolute";
   frame.id = "CMW" + id;
   frame.style.top = "0px";
@@ -455,7 +457,7 @@ function CMWVSplitNode( child1, child2 )
   child2.setParent( this );
 
   var frame = document.createElement( "div" );
-  frame.className = "sliceView";
+  frame.className = CMWNode.FRAME_CLASS;
   frame.style.position = "absolute";
   frame.id = "CMW" + id;
   frame.style.top = "0px";
@@ -754,7 +756,7 @@ function CMWWindow( title )
   titleBar.appendChild( closeHandle );
 
   var frame = document.createElement( "div" );
-  frame.className = "sliceView";
+  frame.className = CMWNode.FRAME_CLASS;
   frame.style.position = "absolute";
   frame.id = "CMW" + id;
   frame.style.top = "0px";

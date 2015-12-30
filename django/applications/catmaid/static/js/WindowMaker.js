@@ -13,13 +13,7 @@ var WindowMaker = new function()
   var createContainer = function(id) {
     var container = document.createElement("div");
     container.setAttribute("id", id);
-    container.setAttribute("class", "sliceView windowContent");
-    container.style.position = "relative";
-    container.style.bottom = "0px";
-    container.style.width = "100%";
-    container.style.height = "100%";
-    container.style.overflow = "auto";
-    container.style.backgroundColor = "#ffffff";
+    container.setAttribute("class", "windowContent");
     return container;
   };
 

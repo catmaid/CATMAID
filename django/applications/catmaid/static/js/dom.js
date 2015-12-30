@@ -180,7 +180,7 @@
   DOM.addButtonDisplayToggle = function(win, title) {
     title = title || 'Show and hide widget controls';
     DOM.addCaptionButton(win, 'ui-icon ui-icon-gear', title, function() {
-      var frame = $(this).closest('.sliceView');
+      var frame = $(this).closest('.' + CMWNode.FRAME_CLASS);
       var panels = $('.buttonpanel', frame);
       if (panels.length > 0) {
        // Toggle display of first button panel found

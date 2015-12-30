@@ -57,6 +57,7 @@
 
     this._stackWindow = new CMWWindow( primaryStack.title );
     this._view = this._stackWindow.getFrame();
+    this._view.classList.add('stackViewer');
     this._layersView = document.createElement("div");
     this._view.appendChild(this._layersView);
 
@@ -110,7 +111,7 @@
     this._view.appendChild( this.tilelayercontrol.getView() );
 
     // Ask for confirmation before closing the stack via the close button
-    $(this._view).find('.stackClose').get(0).onmousedown = function (e) {
+    $(this._stackWindow.getFrame()).find('.stackClose').get(0).onmousedown = function (e) {
       if (self._project.getStackViewers().length > 1 || confirm('Closing this window will exit the project. Proceed?'))
         self._stackWindow.close(e);
       else e.stopPropagation();
@@ -548,8 +549,8 @@
   };
 
   StackViewer.prototype.resize = function () {
-    var width = this.viewWidth = this._stackWindow.getFrame().offsetWidth;
-    var height = this.viewHeight = this._stackWindow.getFrame().offsetHeight;
+    var width = this.viewWidth = this._view.offsetWidth;
+    var height = this.viewHeight = this._view.offsetHeight;
 
     this._layers.forEach(function (layer) {
       layer.resize(width, height);

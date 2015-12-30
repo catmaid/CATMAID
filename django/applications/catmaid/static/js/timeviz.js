@@ -7,26 +7,36 @@
 
     var TimeVisualization = function() {
       this.smoothSkeletons = true;
+      this.smoothingSigma = 200; // nm
+      this.rotationSpeed = 0.001;
+      this.interval = 1;
       this.source = new CATMAID.BasicSkeletonSource("Time Visualization");
-      this.startTime = 0;
-      this.endTime = 0;
     };
 
+    /**
+     * Load all skeletons of a given project.
+     *
+     * @return A promise that is resolved once all skeletons are loaded.
+     */
     TimeVisualization.prototype.load = function(projectId) {
       var self = this;
       return new Promise(function(resolve, reject) {
         // Get a list of all skeletons created in the time frame of interest and
         // add them to the skeleton source.
-        CATMAID.fetch(projectId + '/skeletons/', 'GET', {
+        CATMAID.fetch(projectId + '/skeletons/by-mean-creation-time', 'GET', {
           project_id: projectId
         }).then(function(json) {
-          var models = json.reduce(function(o, skid) {
+          var creationTimes = {};
+          var models = json.reduce(function(o, e) {
+            var skid = e[0];
             var m = new CATMAID.SkeletonModel(skid);
             m.selected = false;
             o[skid] = m;
+            creationTimes[skid] = e[1];
             return o;
           }, {});
           self.source.append(models);
+          self.meanCreationTimes = creationTimes;
           resolve();
         }).catch(reject);
       });

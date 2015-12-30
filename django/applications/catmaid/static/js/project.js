@@ -62,13 +62,6 @@
 
       self.setFocusedStackViewer( stackViewer );
 
-      // only set the tool for the first stack viewer
-      if ( stackViewers.length == 1 ) {
-        if ( !tool )
-          tool = new CATMAID.Navigator();
-        self.setTool( tool );
-      }
-
       // Announce that a new stack view was added
       this.trigger(Project.EVENT_STACKVIEW_ADDED, stackViewer);
     };

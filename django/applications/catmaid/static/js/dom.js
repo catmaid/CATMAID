@@ -170,6 +170,8 @@
     }
 
     $('.stackTitle', win.getFrame()).after(wrapper);
+
+    return wrapper;
   };
 
   /**
@@ -228,7 +230,7 @@
     // Make a update function that can be referred to from handlers
     var update = toggle.bind(window, true);
 
-    DOM.addCaptionButton(win, 'ui-icon ui-icon-link', title, function() {
+    return DOM.addCaptionButton(win, 'ui-icon ui-icon-link', title, function() {
       // Do a regular toggle update by default
       var opened = toggle();
 

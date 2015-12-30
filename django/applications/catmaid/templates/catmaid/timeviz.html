@@ -47,19 +47,10 @@
 
         CATMAID.fetch(projectId + '/stack/' + stackId + '/info', 'GET')
           .then(function(json) {
-            return new CATMAID.Stack(
-                json.sid,
-                json.stitle,
-                json.dimension,
-                json.resolution,
-                json.translation,    //!< @todo replace by an affine transform
-                json.broken_slices,
-                json.trakem2_project,
-                json.num_zoom_levels,
-                -2,
-                '',
-                json.metadata,
-                json.orientation );
+            return new CATMAID.Stack(json.sid, json.stitle, json.dimension,
+                json.resolution, json.translation, json.broken_slices,
+                json.trakem2_project, json.num_zoom_levels, -2, '',
+                json.metadata, json.orientation );
           })
           .then(function(stack) {
             // FIXME: This is needed at the moment to init a project

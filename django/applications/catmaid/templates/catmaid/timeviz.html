@@ -60,10 +60,13 @@
             var stackViewer = new CATMAID.StackViewer(project, stack);
             project.addStackViewer(stackViewer);
 
-            var viz = new CATMAID.TimeVisualization(project, stack);
-            var width = window.innerWidth;
-            var height = window.innerHeight - 4; // FIXME: Use complete space
-            viz.init(document.body, width, height);
+            var viz = new CATMAID.TimeVisualization(project.id);
+            viz.load(project.id).then(function() {
+              var width = window.innerWidth;
+              var height = window.innerHeight - 4; // FIXME: Use complete space
+
+              viz.init(document.body, width, height);
+            });
           });
       });
     </script>

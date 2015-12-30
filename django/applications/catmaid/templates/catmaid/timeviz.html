@@ -3,42 +3,43 @@
 
 <!DOCTYPE html>
 <html class="mod-no-js">
-	<head>
-		<meta charset="UTF-8">
-		<title>CATMAID</title>
-		<link rel="shortcut icon" type="image/ico" href="{{STATIC_URL}}/favicon.ico"/>
 
-		<script type="text/javascript">
-			var STATIC_URL_JS = '{{ STATIC_URL|escapejs }}';
-			var django_url = "{{ CATMAID_URL }}";
-		</script>
+  <head>
+    <meta charset="UTF-8">
+    <title>CATMAID</title>
+    <link rel="shortcut icon" type="image/ico" href="{{STATIC_URL}}/favicon.ico"/>
 
-		{% compressed_css 'libraries' %}
-		{% compressed_css 'catmaid' %}
+    <script type="text/javascript">
+      var STATIC_URL_JS = '{{ STATIC_URL|escapejs }}';
+      var django_url = "{{ CATMAID_URL }}";
+    </script>
+
+    {% compressed_css 'libraries' %}
+    {% compressed_css 'catmaid' %}
 
     <!-- Regular CATMAID components -->
     {% for f in COMPRESSED_FILE_IDS %}
-        {% if f != 'catmaid' %}
-            {% compressed_js f %}
-        {% endif %}
+      {% if f != 'catmaid' %}
+        {% compressed_js f %}
+      {% endif %}
     {% endfor %}
 
     <!-- Front end initialization -->
-		<script type="text/javascript">
-			CATMAID.configure("{{ CATMAID_URL }}",
-							  "{{ STATIC_URL|escapejs }}",
-							  "{{ STATIC_EXTENSION_URL|escapejs }}",
-							  "{% csrf_cookie_name %}");
-			CATMAID.CLIENT_VERSION = "{% catmaid_version %}";
-		</script>
+    <script type="text/javascript">
+      CATMAID.configure("{{ CATMAID_URL }}",
+                "{{ STATIC_URL|escapejs }}",
+                "{{ STATIC_EXTENSION_URL|escapejs }}",
+                "{% csrf_cookie_name %}");
+      CATMAID.CLIENT_VERSION = "{% catmaid_version %}";
+    </script>
 
-	{% compressed_js 'catmaid' %}
+    {% compressed_js 'catmaid' %}
 
     {% for f in NON_COMPRESSED_FILES %}
       <script type="application/javascript" src="{{ STATIC_URL }}{{ f }}"></script>
     {% endfor %}
+  </head>
 
-	<body>
-        Test
-	</body>
+  <body>
+  </body>
 </html>

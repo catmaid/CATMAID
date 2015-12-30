@@ -217,6 +217,7 @@ urlpatterns += patterns('catmaid.control.suppressed_virtual_treenode',
 # General skeleton access
 urlpatterns += patterns('catmaid.control.skeleton',
     (r'^(?P<project_id>\d+)/skeletons/$', 'list_skeletons'),
+    (r'^(?P<project_id>\d+)/skeletons/by-mean-creation-time$', 'list_skeletons_by_mean_creation_time'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/node_count$', 'node_count'),
     (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/neuronname$', 'neuronname'),
     (r'^(?P<project_id>\d+)/skeleton/neuronnames$', 'neuronnames'),

@@ -13,6 +13,7 @@ from django.http import HttpResponse, Http404
 from django.shortcuts import get_object_or_404
 from django.db import connection
 from django.db.models import Q
+from django.utils import timezone
 from django.views.decorators.cache import never_cache
 
 from rest_framework.decorators import api_view
@@ -1701,6 +1702,31 @@ def _list_skeletons(project_id,
     cursor = connection.cursor()
     cursor.execute(query, params)
     return [r[0] for r in cursor.fetchall()]
+
+
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def list_skeletons_by_mean_creation_time(request, project_id=None):
+    """List all skeletons and their mean node creation time."""
+    from_date = request.GET.get('from', None)
+    from_date = dateutil.parser.parse(from_date) if from_date else datetime.utcfromtimestamp(0).replace(tzinfo=pytz.utc)
+    to_date = request.GET.get('to', None)
+    to_date = dateutil.parser.parse(to_date) if to_date else timezone.now()
+
+    cursor = connection.cursor()
+    cursor.execute('''
+            SELECT sub.skeleton_id, sub.mean_creation_time::text
+            FROM (
+                SELECT
+                  t.skeleton_id,
+                  TO_TIMESTAMP(AVG(EXTRACT(epoch FROM t.creation_time))) AS mean_creation_time
+                FROM treenode t
+                GROUP BY t.skeleton_id
+            ) AS sub
+            WHERE sub.mean_creation_time >= %s AND sub.mean_creation_time < %s
+            ORDER BY sub.mean_creation_time ASC
+            ''', (from_date.isoformat(), to_date.isoformat()))
+    return HttpResponse(json.dumps(cursor.fetchall()), content_type='application/json')
+
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def adjacency_matrix(request, project_id=None):

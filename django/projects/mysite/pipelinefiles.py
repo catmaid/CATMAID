@@ -137,6 +137,13 @@ PIPELINE_JS['catmaid'] = {
     'output_filename': 'js/catmaid.js',
 }
 
+PIPELINE_JS['timeviz'] = {
+    'source_filenames': (
+        'js/timeviz.js',
+    ),
+    'output_filename': 'js/timeviz.js',
+}
+
 # Make a list of files that should be included directly (bypassing pipeline)
 # and a list of pipeline identifiers for all others.
 NON_COMPRESSED_FILES = non_pipeline_js.values()

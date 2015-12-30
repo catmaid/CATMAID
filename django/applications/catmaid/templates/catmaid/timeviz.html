@@ -38,6 +38,15 @@
     {% for f in NON_COMPRESSED_FILES %}
       <script type="application/javascript" src="{{ STATIC_URL }}{{ f }}"></script>
     {% endfor %}
+
+    <script>
+      // Attach time visualization to body
+      document.addEventListener("DOMContentLoaded", function() {
+        var viz = new CATMAID.TimeVisualization();
+        var ui = viz.getView();
+        document.body.appendChild(ui);
+      });
+    </script>
   </head>
 
   <body>

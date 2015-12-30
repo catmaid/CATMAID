@@ -1549,13 +1549,17 @@ def list_skeletons(request, project_id):
           description: Filter for user ID of the skeletons' reviewer.
           type: integer
           paramType: query
-        - name: from_date
-          description: Filter for skeletons with nodes created after this date.
+        - name: from
+          description: |
+            Filter for skeletons with nodes created (if created_by is provided)
+            or reviewed (if reviewed_by is provided) after this date.
           type: string
           format: date
           paramType: query
-        - name: to_date
-          description: Filter for skeletons with nodes created before this date.
+        - name: to
+          description: |
+            Filter for skeletons with nodes created (if created_by is provided)
+            or reviewed (if reviewed_by is provided) before this date.
           type: string
           format: date
           paramType: query

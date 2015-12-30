@@ -56,8 +56,9 @@
       var viewer = new CATMAID.WebGLApplication();
       viewer.init(width, height, viewerId);
 
-      // Activate smoothing
       viewer.options.smooth_skeletons = this.smoothSkeletons;
+      viewer.options.smooth_skeletons_sigma = this.smoothingSigma;
+      viewer.options.animation_rotation_speed = this.rotationSpeed;
 
       viewer.append(this.source.getSkeletonModels());
 

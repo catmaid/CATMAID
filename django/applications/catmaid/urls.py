@@ -27,6 +27,13 @@ urlpatterns = patterns('',
     url(r'^version$', 'catmaid.control.common.get_catmaid_version')
 )
 
+# Add the main index.html page at the root:
+urlpatterns += patterns('',
+    url(r'^timeviz$',
+        ensure_csrf_cookie(CatmaidView.as_view(template_name='catmaid/timeviz.html')),
+        name="timviz"),
+)
+
 # Authentication and permissions
 urlpatterns += patterns('catmaid.control.authentication',
     (r'^accounts/login$', 'login_user'),

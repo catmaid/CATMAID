@@ -1565,6 +1565,21 @@ def list_skeletons(request, project_id):
           type: string
           format: date
           paramType: query
+        - name: from_mean
+          description: |
+            Filter for skeletons with mean node creation time after this date
+            (ISO 8601). WARNING: extremely slow and server-intensive query.
+          type: string
+          format: date
+          paramType: query
+        - name: to_mean
+          description: |
+            Filter for skeletons with mean node creation time before this date
+            (ISO 8601) plus one day. WARNING: extremely slow and
+            server-intensive query.
+          type: string
+          format: date
+          paramType: query
         - name: nodecount_gt
           description: |
             Filter for skeletons with more nodes than this threshold. Removes
@@ -1582,6 +1597,8 @@ def list_skeletons(request, project_id):
     reviewed_by = request.GET.get('reviewed_by', None)
     from_date = request.GET.get('from', None)
     to_date = request.GET.get('to', None)
+    from_mean_date = request.GET.get('from_mean', None)
+    to_mean_date = request.GET.get('to_mean', None)
     nodecount_gt = int(request.GET.get('nodecount_gt', 0))
 
     # Sanitize
@@ -1593,12 +1610,23 @@ def list_skeletons(request, project_id):
         from_date = dateutil.parser.parse(from_date)
     if to_date:
         to_date = dateutil.parser.parse(to_date)
+    if from_mean_date:
+        from_mean_date = dateutil.parser.parse(from_mean_date)
+    if to_mean_date:
+        to_mean_date = dateutil.parser.parse(to_mean_date)
 
-    response = _list_skeletons(project_id, created_by, reviewed_by, from_date, to_date, nodecount_gt)
+    response = _list_skeletons(project_id,
+                               created_by, reviewed_by,
+                               from_date, to_date,
+                               from_mean_date, to_mean_date,
+                               nodecount_gt)
     return HttpResponse(json.dumps(response), content_type="application/json")
 
-def _list_skeletons(project_id, created_by=None, reviewed_by=None, from_date=None,
-          to_date=None, nodecount_gt=0):
+def _list_skeletons(project_id,
+                    created_by=None, reviewed_by=None,
+                    from_date=None, to_date=None,
+                    from_mean_date=None, to_mean_date=None,
+                    nodecount_gt=0):
     """ Returns a list of skeleton IDs of which nodes exist that fulfill the
     given constraints (if any). It can be constrained who created nodes in this
     skeleton during a given period of time. Having nodes that are reviewed by
@@ -1643,16 +1671,32 @@ def _list_skeletons(project_id, created_by=None, reviewed_by=None, from_date=Non
             params.append(to_date.isoformat())
             query += " AND t.creation_time < %s"
 
-    if nodecount_gt > 0:
-        params.append(nodecount_gt)
+    if from_mean_date or to_mean_date or nodecount_gt > 0:
+        query_fields = ''
+        if from_mean_date or to_mean_date:
+            query_fields += ', TO_TIMESTAMP(AVG(EXTRACT(epoch FROM t.creation_time))) AS mean_creation_time'
+        if nodecount_gt > 0:
+            query_fields += ', COUNT(*) AS count'
+
         query = '''
             SELECT sub.skeleton_id
             FROM (
-                SELECT t.skeleton_id AS skeleton_id, COUNT(*) AS count
+                SELECT t.skeleton_id AS skeleton_id %s
                 FROM (%s) q JOIN treenode t ON q.skeleton_id = t.skeleton_id
                 GROUP BY t.skeleton_id
-            ) AS sub WHERE sub.count > %%s
-        ''' % query
+            ) AS sub WHERE true
+        ''' % (query_fields, query)
+
+        if from_mean_date:
+            params.append(from_mean_date.isoformat())
+            query += ' AND sub.mean_creation_time >= %s'
+        if to_mean_date:
+            to_mean_date = to_mean_date + timedelta(days=1)
+            params.append(to_mean_date.isoformat())
+            query += ' AND sub.mean_creation_time < %s'
+        if nodecount_gt > 0:
+            params.append(nodecount_gt)
+            query += ' AND sub.count > %s'
 
     cursor = connection.cursor()
     cursor.execute(query, params)

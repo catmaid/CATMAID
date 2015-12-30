@@ -3150,6 +3150,16 @@ class ViewPageTests(TestCase):
         # Also check response length to be sure there were no duplicates.
         self.assertEqual(len(expected_result), len(parsed_response))
 
+        # Query skeletons by mean node creation time, filter by nodecount to
+        # remove skeleton 373
+        response = self.client.get(url, {'nodecount_gt': 6, 'from_mean': '2011-09-26', 'to_mean': '2011-09-27'})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = frozenset([361])
+        self.assertEqual(expected_result, frozenset(parsed_response))
+        # Also check response length to be sure there were no duplicates.
+        self.assertEqual(len(expected_result), len(parsed_response))
+
     def test_skeleton_graph(self):
         self.fake_authentication()
 

@@ -680,6 +680,15 @@ function handle_openProjectStack( e, stackViewer )
 
       project.addStackViewer( stackViewer );
 
+      // Select the navigator tool for the first stack
+      if (1 === project.getStackViewers().length) {
+        var tool = project.getTool();
+        if (!tool) {
+          tool = new CATMAID.Navigator();
+        }
+        project.setTool( tool );
+      }
+
       // refresh the overview handler to also register the mouse events on the buttons
       stackViewer.tilelayercontrol.refresh();
     } else {

@@ -11,7 +11,9 @@ None.
 
 ### Modifications
 
-None.
+`GET /{project_id}/skeletons/`:
+
+- `from` and `to` params now accept ISO 8601 formatted datetimes.
 
 
 ### Deprecations

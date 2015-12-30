@@ -3137,13 +3137,13 @@ class ViewPageTests(TestCase):
         self.assertEqual(expected_result, parsed_response)
 
         # Query skeletons of user 2 on a date where no neuron was created
-        response = self.client.get(url, {'created_by': 2, 'to': '19990505'})
+        response = self.client.get(url, {'created_by': 2, 'to': '1999-05-05'})
         parsed_response = json.loads(response.content)
         expected_result = []
         self.assertEqual(expected_result, parsed_response)
 
         # Query skeletons of user 3 on a date where neurons where created
-        response = self.client.get(url, {'created_by': 3, 'from': '20111209', 'to': '20111210'})
+        response = self.client.get(url, {'created_by': 3, 'from': '2011-12-09', 'to': '2011-12-10'})
         parsed_response = json.loads(response.content)
         expected_result = frozenset([2411, 2388])
         self.assertEqual(expected_result, frozenset(parsed_response))

@@ -1,3 +1,4 @@
+import dateutil.parser
 import json
 import networkx as nx
 import pytz
@@ -1552,14 +1553,15 @@ def list_skeletons(request, project_id):
         - name: from
           description: |
             Filter for skeletons with nodes created (if created_by is provided)
-            or reviewed (if reviewed_by is provided) after this date.
+            or reviewed (if reviewed_by is provided) after this date (ISO 8601).
           type: string
           format: date
           paramType: query
         - name: to
           description: |
             Filter for skeletons with nodes created (if created_by is provided)
-            or reviewed (if reviewed_by is provided) before this date.
+            or reviewed (if reviewed_by is provided) before this date (ISO 8601)
+            plus one day.
           type: string
           format: date
           paramType: query
@@ -1588,9 +1590,9 @@ def list_skeletons(request, project_id):
     if created_by:
         created_by = int(created_by)
     if from_date:
-        from_date = datetime.strptime(from_date, '%Y%m%d')
+        from_date = dateutil.parser.parse(from_date)
     if to_date:
-        to_date = datetime.strptime(to_date, '%Y%m%d')
+        to_date = dateutil.parser.parse(to_date)
 
     response = _list_skeletons(project_id, created_by, reviewed_by, from_date, to_date, nodecount_gt)
     return HttpResponse(json.dumps(response), content_type="application/json")

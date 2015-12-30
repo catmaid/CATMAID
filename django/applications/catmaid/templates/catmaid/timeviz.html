@@ -42,9 +42,38 @@
     <script>
       // Attach time visualization to body
       document.addEventListener("DOMContentLoaded", function() {
-        var viz = new CATMAID.TimeVisualization();
-        var ui = viz.getView();
-        document.body.appendChild(ui);
+        var projectId = 1;
+        var stackId = 1;
+
+        CATMAID.fetch(projectId + '/stack/' + stackId + '/info', 'GET')
+          .then(function(json) {
+            return new CATMAID.Stack(
+                json.sid,
+                json.stitle,
+                json.dimension,
+                json.resolution,
+                json.translation,    //!< @todo replace by an affine transform
+                json.broken_slices,
+                json.trakem2_project,
+                json.num_zoom_levels,
+                -2,
+                '',
+                json.metadata,
+                json.orientation );
+          })
+          .then(function(stack) {
+            // FIXME: This is needed at the moment to init a project
+            rootWindow = new CMWRootNode();
+            project = new CATMAID.Project(projectId);
+
+            var stackViewer = new CATMAID.StackViewer(project, stack);
+            project.addStackViewer(stackViewer);
+
+            var viz = new CATMAID.TimeVisualization(project, stack);
+            var width = window.innerWidth;
+            var height = window.innerHeight - 4; // FIXME: Use complete space
+            viz.init(document.body, width, height);
+          });
       });
     </script>
   </head>

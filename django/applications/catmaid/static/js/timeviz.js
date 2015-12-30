@@ -5,15 +5,24 @@
 
     "use strict";
 
-    var TimeVisualization = function() {
-
+    var TimeVisualization = function(project, stack) {
     };
 
     /**
-     * Get a DOM element representing this visualization.
+     * Initialize the visualization in a given DOM container.
      */
-    TimeVisualization.prototype.getView = function() {
-      return document.createTextNode("test");
+    TimeVisualization.prototype.init = function(parent, width, height) {
+      var viewerId = '3dviewer';
+
+      var container = document.createElement('div');
+      container.setAttribute('id', viewerId);
+      // 3D viewer needs an already existing DOM element
+      parent.appendChild(container);
+
+      var viewer = new CATMAID.WebGLApplication();
+      viewer.init(width, height, viewerId);
+
+      return this;
     };
 
     // Export visualization

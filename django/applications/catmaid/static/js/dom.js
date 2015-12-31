@@ -196,7 +196,7 @@
    * Inject an extra button into the caption of a window. This button allows to
    * show and hide skeleton source controls for a widget.
    */
-  DOM.addSourceControlsToggle = function(win, source, title) {
+  DOM.addSourceControlsToggle = function(win, source, title, options) {
     title = title || 'Show and hide skeleton source controls';
 
     // A toggle function that also allows to recreate the UI.
@@ -213,7 +213,7 @@
 
       if (show || recreate) {
         // Create new panel
-        panel = CATMAID.skeletonListSources.createSourceControls(source);
+        panel = CATMAID.skeletonListSources.createSourceControls(source, options);
         panel.setAttribute('class', 'sourcepanel');
         // Add as first element after caption and event catcher
         var eventCatcher = frame.querySelector('.eventCatcher');

@@ -88,17 +88,18 @@
   var defaultSourceControlOptions = {
     showColorOption: true,
     showGroupOption: true,
+    showPullOption: true,
     colors: true,
     selectionBased: true,
     groups: false,
-    ignoreLocal: false
+    showIgnoreLocal: true
   };
 
   /**
    * Create a complete set of source management controls.
    */
   SkeletonSourceManager.prototype.createSourceControls = function(source, options) {
-    options = options || defaultSourceControlOptions;
+    options = $.extend({}, defaultSourceControlOptions, options || {});
     // The panel wraps both controls and source list
     var panel = document.createElement('div');
 
@@ -154,17 +155,19 @@
     }
     */
 
-    // Pull button
-    var append = document.createElement('button');
-    append.appendChild(document.createTextNode('Pull'));
-    controls.appendChild(append);
-    append.onclick = (function(e) {
-      var fromSource = this.getSource(fromSelect.value);
-      if (fromSource) {
-        var models = fromSource.getSelectedSkeletonModels();
-        source.append(models);
-      }
-    }).bind(this);
+    if (options.showPullOption) {
+      // Pull button
+      var append = document.createElement('button');
+      append.appendChild(document.createTextNode('Pull'));
+      controls.appendChild(append);
+      append.onclick = (function(e) {
+        var fromSource = this.getSource(fromSelect.value);
+        if (fromSource) {
+          var models = fromSource.getSelectedSkeletonModels();
+          source.append(models);
+        }
+      }).bind(this);
+    }
 
     // Select default value in a select element
     var selectDefault = function(select, value) {
@@ -216,18 +219,25 @@
     subscribe.appendChild(document.createTextNode('Subscribe'));
     controls.appendChild(subscribe);
 
-    // Ignore local checkbox
-    var ignoreLocalCb = document.createElement('input');
-    ignoreLocalCb.setAttribute('type', 'checkbox');
-    if (source.ignoreLocal) {
-      ignoreLocalCb.setAttribute('checked', 'checked');
+    if (options.showIgnoreLocal) {
+      // Ignore local checkbox
+      var ignoreLocalCb = document.createElement('input');
+      ignoreLocalCb.setAttribute('type', 'checkbox');
+      if (source.ignoreLocal) {
+        ignoreLocalCb.setAttribute('checked', 'checked');
+      }
+      var ignoreLocal = document.createElement('label');
+      ignoreLocal.appendChild(ignoreLocalCb);
+      ignoreLocal.appendChild(document.createTextNode('Override existing'));
+      ignoreLocal.setAttribute('title', 'If unchecked, subscriptions will be ' +
+          'applied starting from the local model set.');
+      controls.appendChild(ignoreLocal);
+
+      ignoreLocalCb.onchange = function(e) {
+        source.ignoreLocal = this.checked;
+        datatable.rows(0).invalidate().draw();
+      };
     }
-    var ignoreLocal = document.createElement('label');
-    ignoreLocal.appendChild(ignoreLocalCb);
-    ignoreLocal.appendChild(document.createTextNode('Override existing'));
-    ignoreLocal.setAttribute('title', 'If unchecked, subscriptions will be ' +
-        'applied starting from the local model set.');
-    controls.appendChild(ignoreLocal);
 
     var helpButton = document.createElement('span');
     helpButton.setAttribute('class', 'extra-button');
@@ -315,11 +325,6 @@
       subscription.setMode(this.value);
       subscription.target.loadSubscriptions();
     });
-
-    ignoreLocalCb.onchange = function(e) {
-      source.ignoreLocal = this.checked;
-      datatable.rows(0).invalidate().draw();
-    };
 
     // Add subscription handler
     subscribe.onclick = (function(e) {

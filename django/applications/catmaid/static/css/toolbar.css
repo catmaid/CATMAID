@@ -114,6 +114,10 @@ div.menu div.box_right {
   padding: 0;
 }
 
+div.menu div.box_right {
+  margin-right: 4px;
+}
+
 div.toolbar div.menu_item p {
   padding-left: 1em;
   padding-right: 1em;

@@ -97,10 +97,14 @@ dd {
 }
 
 #spinner {
-	position: absolute;
-  right: 20px;
-  top: 4px;
   display: none;
+}
+
+#spinner_box {
+  width: 20px;
+  height: 20px;
+  padding: 6px 10px;
+  position: relative;
 }
 
 #content {

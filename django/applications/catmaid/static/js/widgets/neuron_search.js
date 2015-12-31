@@ -482,6 +482,13 @@
               var removedModels = this.getSkeletonModels();
               // Unregister last result set from neuron name service
               CATMAID.NeuronNameService.getInstance().unregister(this);
+
+              // Mark entities as unselected if initialized, reuse current
+              // selection state otherwise.
+              var selectionMap = this.entity_selection_map;
+              var selected = initialize ? function() { return false; } :
+                  function(id) { return !!this[id]; }.bind(selectionMap);
+
               // Empty selection map and store results
               this.entity_selection_map = {};
               this.entityMap = {};
@@ -491,10 +498,8 @@
               this.total_n_results = e.entities.length;
               // Get new models for notification
               var addedModels = this.getSkeletonModels();
-
-              // Mark entities as unselected
               this.queryResults[0].forEach((function(entity) {
-                this.entity_selection_map[entity.id] = false;
+                this.entity_selection_map[entity.id] = selected(entity.id);
                 this.entityMap[entity.id] = entity;
               }).bind(this));
 

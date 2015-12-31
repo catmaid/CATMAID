@@ -442,6 +442,9 @@
         if (this.line) {
           var linecolor = this.colorFromZDiff();
           this.line.attr({stroke: linecolor});
+          if (this.number_text) {
+            this.number_text.attr({fill: linecolor});
+          }
         }
       };
 

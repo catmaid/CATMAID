@@ -358,6 +358,9 @@
           this.annotationMapping = null;
         }, this);
 
+        // Make sure current sorting is applied
+        this.reapplyOrder();
+
         // Add skeletons
         CATMAID.NeuronNameService.getInstance().registerAll(this, models,
             this.gui.update.bind(this.gui));
@@ -777,20 +780,9 @@
         var dir = data.order[0].dir;
         if (!this.table.order || this.table.order[0][0] !== col ||
             this.table.order[0][1] !== dir) {
-          var desc = dir === 'desc';
-          // Use only first level sort
-          if (2 === col) { // Name
-            this.table.sortByName(desc);
-          } else if (3 === col) { // Review
-            this.table.sortByReview(desc);
-          } else if (4 === col) { // Selected
-            this.table.sortBySelected(desc);
-          } else if (9 === col) { // Color
-            this.table.sortByColor(desc);
-          }
-
           // Save new ordering
           this.table.order = [[col, dir]];
+          this.table.reapplyOrder();
         }
 
         // Filtering
@@ -1081,6 +1073,25 @@
 
     if (update) {
       this.gui.update();
+    }
+  };
+
+  /**
+   * Re-apply current order to skeleton list.
+   */
+  SelectionTable.prototype.reapplyOrder = function() {
+    var col = this.order[0][0];
+    var desc = 'desc' === this.order[0][1];
+
+    // Use only first level sort
+    if (2 === col) { // Name
+      this.sortByName(desc);
+    } else if (3 === col) { // Review
+      this.sortByReview(desc);
+    } else if (4 === col) { // Selected
+      this.sortBySelected(desc);
+    } else if (9 === col) { // Color
+      this.sortByColor(desc);
     }
   };
 

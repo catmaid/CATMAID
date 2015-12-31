@@ -408,9 +408,9 @@
         s = s + this.widgetID + '_' + i;
       }
       // Don't use empty names
-      var name = $('input[' + a + ']').val().trim();
+      var name = $('input[' + a + ']', $widget).val().trim();
       if (name) {
-        annotations.push([name, $('input[' + s + ']').is(':checked')]);
+        annotations.push([name, $('input[' + s + ']', $widget).is(':checked')]);
       }
     }
 

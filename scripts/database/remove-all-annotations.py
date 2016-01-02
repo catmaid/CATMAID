@@ -6,20 +6,22 @@
 # You may need to install psycopg2, e.g. with:
 #   sudo apt-get install python-psycopg2
 
+from __future__ import print_function
+
 import sys
 import psycopg2
 import os
 from common import db_connection, conf
 
 if len(sys.argv) != 1:
-    print >> sys.stderr, "Usage:", sys.argv[0]
+    print("Usage:", sys.argv[0], file=sys.stderr)
     sys.exit(1)
 
 c = db_connection.cursor()
 
-print """Warning: this script removes all annotations from all projects
-in the database '%s'""" % (conf['database'],)
-print "To continue, type 'Yes' followed by Enter."
+print("""Warning: this script removes all annotations from all projects
+in the database '%s'""" % (conf['database'],),)
+print("To continue, type 'Yes' followed by Enter.")
 reply = raw_input()
 if reply != 'Yes':
     sys.exit(2)

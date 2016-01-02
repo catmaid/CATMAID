@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import json
 import networkx as nx
 import pytz
@@ -25,7 +27,7 @@ from tree_util import edge_count_to_root, partition
 try:
     from exportneuroml import neuroml_single_cell, neuroml_network
 except ImportError:
-    print "NeuroML is not loading"
+    print("NeuroML is not loading")
 
 
 def get_treenodes_qs(project_id=None, skeleton_id=None, with_labels=True):

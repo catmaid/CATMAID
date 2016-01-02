@@ -1,6 +1,7 @@
 # This fabric file will launch a standalone instance running catmaid
 
-from __future__ import with_statement
+from __future__ import print_statement, with_statement
+
 from fabric.api import *
 from fabric.contrib.console import confirm
 from fabric.contrib.files import exists
@@ -27,7 +28,7 @@ def buildApp():
 
         # check if it exists already
         if not 'catmaidgroup' in [group.name for group in conn.get_all_security_groups()]:
-            print 'Create CATMAID security group'
+            print('Create CATMAID security group')
             web = conn.create_security_group('catmaidgroup', 'CATMAID security group')
             web.authorize('tcp', 80, 80, '0.0.0.0/0')
             web.authorize('tcp', 22, 22, '0.0.0.0/0')
@@ -35,16 +36,16 @@ def buildApp():
             security_groups=['catmaidgroup'])
         instance = reservation.instances[0]
 
-        print 'Starting instance %s' % (instance)
+        print('Starting instance %s' % (instance))
         while not instance.update() == 'running':
             time.sleep(1)
             sys.stdout.write('.')
             sys.stdout.flush()
-            
+
         # instance.add_tag('Name', 'incf_catmaid')
-        print 'Instance started: %s' % instance.__dict__['id']
-        print 'Public DNS: %s\n' % instance.__dict__['public_dns_name']
-        print '-> Write this public DNS to your configuration.py file (env.host_string)'
+        print('Instance started: %s' % instance.__dict__['id'])
+        print('Public DNS: %s\n' % instance.__dict__['public_dns_name'])
+        print('-> Write this public DNS to your configuration.py file (env.host_string)')
 
 # Basic packages for building, version control
 def installBasePackages():
@@ -55,8 +56,8 @@ def installBasePackages():
         run("sudo apt-get -y --force-yes upgrade", pty = True)        
         packagelist = ['git', 'apache2', 'build-essential', 'g++', 'libapache2-mod-php5', 'php5-pgsql', 'imagemagick', \
                        'python-psycopg2', 'python-yaml', 'python-tz', 'postgresql', 'pgadmin3','phppgadmin','postgresql-contrib']
-        for each_package in packagelist: 
-            print each_package
+        for each_package in packagelist:
+            print(each_package)
             run('sudo apt-get -y --force-yes install %s' % each_package, pty = True)
 
 def generateConfigFiles():
@@ -141,12 +142,12 @@ def installDjangoBackend():
         ]
 
         for each_package in packagelist:
-            print each_package
+            print(each_package)
             run('sudo apt-get -y --force-yes install %s' % each_package, pty = True)
 
         packagelist = ['python-numpy', 'python-h5py' ,'graphicsmagick', 'libimage-exiftool-perl']
         for each_package in packagelist:
-            print each_package
+            print(each_package)
             run('sudo apt-get -y --force-yes build-dep %s' % each_package, pty = True)
 
         run('sudo apt-get install libapache2-mod-wsgi')	

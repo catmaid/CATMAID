@@ -9,6 +9,8 @@
 #  * change the dimensions.z field of each stack in the stack
 #    table
 
+from __future__ import print_function
+
 import glob, os, re, sys, subprocess
 
 layers_missing_z = [
@@ -43,9 +45,9 @@ directory_mapping.reverse()
 
 for t in directory_mapping:
     if t[0] != t[1]:
-        print "Will rename", t[0], "to", t[1]
+        print("Will rename", t[0], "to", t[1])
         subprocess.check_call(["mv", str(t[0]), str(t[1])])
 
 for l in layers_missing:
-    print "Will create directory for missing layer", l
+    print("Will create directory for missing layer", l)
     os.mkdir(str(l))

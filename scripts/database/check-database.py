@@ -15,12 +15,14 @@
 # username: catmaid_user
 # password: password_of_your_catmaid_user
 
+from __future__ import print_function
+
 import sys, os
 from common import db_connection
 from subprocess import check_call
 
 if len(sys.argv) != 1:
-    print >> sys.stderr, "Usage: %s" % (sys.argv[0],)
+    print("Usage: %s" % (sys.argv[0],), file=sys.stderr)
     sys.exit(1)
 
 c = db_connection.cursor()
@@ -46,7 +48,7 @@ SELECT DISTINCT tci.class_instance_id
 skeletons_with_at_least_one_treenode = set(x[0] for x in c.fetchall())
 
 for skeleton_id in sorted((all_skeletons - skeletons_with_at_least_one_treenode)):
-    print "[skeleton %d] is empty (has no treenodes)" % (skeleton_id,)
+    print("[skeleton %d] is empty (has no treenodes)" % (skeleton_id,))
 
 # ------------------------------------------------------------------------
 
@@ -63,7 +65,7 @@ SELECT tc.treenode_id, tci.class_instance_id, tc.id, tc.connector_id, tc.skeleto
 
 for tid, skid, tcid, cid, tc_skid in c.fetchall():
     context = "[treenode %d <-> connector %d]" % (tid, cid)
-    print context, "The treenode is an element_of skeleton %d, but the skeleton_id column of treenode_connector is set to %d" % (skid, tc_skid)
+    print(context, "The treenode is an element_of skeleton %d, but the skeleton_id column of treenode_connector is set to %d" % (skid, tc_skid))
 
 # ------------------------------------------------------------------------
 
@@ -102,10 +104,10 @@ for skeleton_id, project_id, project_title in c.fetchall():
     ids_and_parents_redundant = set(tuple(row) for row in c.fetchall())
 
     for treenode_id, parent in (ids_and_parents - ids_and_parents_redundant):
-        print context, "treenode_id", treenode_id, "with parent", parent, "was only found via element_of"
+        print(context, "treenode_id", treenode_id, "with parent", parent, "was only found via element_of")
 
     for treenode_id, parent in (ids_and_parents_redundant - ids_and_parents):
-        print context, "treenode_id", treenode_id, "with parent", parent, "was only found via skeleton_id"
+        print(context, "treenode_id", treenode_id, "with parent", parent, "was only found via skeleton_id")
 
     parents = set(t[1] for t in ids_and_parents)
 
@@ -113,16 +115,16 @@ for skeleton_id, project_id, project_title in c.fetchall():
 
         root_nodes = [t[0] for t in ids_and_parents if not t[1]]
         if len(root_nodes) == 0:
-            print context, "There were no root nodes"
+            print(context, "There were no root nodes")
         if len(root_nodes) > 1:
-            print context, "There were multiple (%d) root nodes" % (len(root_nodes),)
+            print(context, "There were multiple (%d) root nodes" % (len(root_nodes),))
             isolated_root_nodes = 0
             for root_node_id in root_nodes:
                 if root_node_id not in parents:
-                    print context, "No other node had root node %d as a parent" % (root_node_id,)
+                    print(context, "No other node had root node %d as a parent" % (root_node_id,))
                     isolated_root_nodes += 1
             if isolated_root_nodes != (len(root_nodes) - 1):
-                print context, "!! Not automatically fixable."
+                print(context, "!! Not automatically fixable.")
 
 # Check there are no treenodes that are not element_of exactly one skeleton:
 
@@ -133,7 +135,7 @@ c.execute("""SELECT t.id, tci.class_instance_id
 
 for treenode_id, skeleton_id in c.fetchall():
     if not skeleton_id:
-        print "The treenode %d was not an element_of any skeleton" % (treenode_id,)
+        print("The treenode %d was not an element_of any skeleton" % (treenode_id,))
 
 c.close()
 db_connection.close()

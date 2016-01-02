@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import json
 
 from datetime import datetime, timedelta
@@ -340,7 +342,7 @@ def _evaluate(project_id, user_id, start_date, end_date, max_gap, min_nodes):
                 # user did not contribute at all to this chunk
                 continue
             appended = epoch_ops.appended[user_id]
-            print appended
+            print(appended)
             d.append({'skeleton_id': skid,
                       'reviewer_id': epoch_ops.reviewer_id,
                       'timepoint': epoch_ops.creation_date_range[user_id]['end'].strftime('%Y-%m-%d'),

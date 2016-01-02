@@ -153,7 +153,6 @@ def tagged_projects(parser, token):
 
 @register.filter
 def has_tag(project, tags):
-    # print project, project.tags.all()[0].name, tags
     for tag in project.tags.all():
         if tag.name in tags:
             return True

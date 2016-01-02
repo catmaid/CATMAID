@@ -204,7 +204,6 @@ class Skeleton(object):
         """
         sum = 0
         for ID_from, ID_to, d  in self.graph.edges(data=True):
-            # print d['delta_creation_time'].seconds
             if d['delta_creation_time'].seconds < threshold:
                 sum += d['delta_creation_time'].seconds
         return sum
@@ -290,7 +289,6 @@ class SkeletonGroup(object):
 def confidence_filtering( skeleton, confidence_threshold ):
     for u,v,d in skeleton.graph.edges_iter(data=True):
         if d['confidence'] <= confidence_threshold:
-            # print 'skeletonid', skeleton_id, 'remove', u,v
             skeleton.graph.remove_edge( u, v )
 
 def edgecount_filtering( skeleton, edgecount ):

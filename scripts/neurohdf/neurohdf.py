@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import json
 import time
 
@@ -149,7 +151,7 @@ def get_skeleton_as_dataarray(project_id=None, skeleton_id=None):
             treenode_connector_connectivity_type.append( ConnectivityPostsynaptic['id'] )
             found_synapse=True
         else:
-            print >> std.err, "non-synaptic relation found: ", tc.relation.relation_name
+            print("non-synaptic relation found: ", tc.relation.relation_name, file=sys.stderr)
             continue
         treenode_connector_connectivity.append( [tc.treenode_id,tc.connector_id] ) # !!!
         # also need other connector node information

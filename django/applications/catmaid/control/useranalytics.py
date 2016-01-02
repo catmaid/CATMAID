@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import numpy as np
 from datetime import timedelta
 
@@ -56,7 +58,7 @@ def plot_useranalytics(request):
     start_date = request.GET.get('start')
     end_date = request.GET.get('end')
 
-    print userid, start_date, end_date
+    print(userid, start_date, end_date)
 
     if request.user.is_superuser:
         end = _parse_date(end_date) if end_date else timezone.now()

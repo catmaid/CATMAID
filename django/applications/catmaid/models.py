@@ -1,4 +1,4 @@
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
 from datetime import datetime
 import sys
@@ -1148,4 +1148,4 @@ def notify_user(user, title, message):
     try:
         user.email_user('[CATMAID] ' + title, message)
     except Exception as e:
-        print >> sys.stderr, 'Failed to send e-mail (', str(e), ')'
+        print('Failed to send e-mail (', str(e), ')', file=sys.stderr)

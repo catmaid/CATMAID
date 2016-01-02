@@ -1092,13 +1092,11 @@ class ViewPageTests(TestCase):
         self.fake_authentication()
 
         most_recent_node_id = 2423
-
-        skeleton_id = 2411
         treenode_id = 2415
 
         response = self.client.post(
                 '/%d/node/most_recent' % self.test_project_id,
-                {'skeleton_id': skeleton_id, 'treenode_id': treenode_id})
+                {'treenode_id': treenode_id})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {

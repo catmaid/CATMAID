@@ -416,7 +416,8 @@ def most_recent_treenode(request, project_id=None):
              .extra(select={'most_recent': 'greatest(treenode.creation_time, treenode.edition_time)'})\
              .extra(order_by=['-most_recent', '-treenode.id'])[0] # [0] generates a LIMIT 1
     except IndexError:
-        return HttpResponse(json.dumps({'error': 'No skeleton and neuron found for treenode %s' % treenode_id}))
+        # No treenode edited by the user exists in this skeleton.
+        return HttpResponse(json.dumps({}), content_type='application/json')
 
     return HttpResponse(json.dumps({
         'id': tn.id,
@@ -427,7 +428,7 @@ def most_recent_treenode(request, project_id=None):
         #'most_recent': str(tn.most_recent) + tn.most_recent.strftime('%z'),
         #'most_recent': tn.most_recent.strftime('%Y-%m-%d %H:%M:%S.%f'),
         #'type': 'treenode'
-    }))
+    }), content_type='application/json')
 
 
 def _update(Kind, table, nodes, now, user):

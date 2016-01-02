@@ -676,7 +676,7 @@
     }) );
 
     this.addAction( new CATMAID.Action({
-      helpText: "Go to last edited node in this skeleton",
+      helpText: "Go to last node edited by you in this skeleton",
       keyShortcuts: { "H": [ 72 ] },
       run: function (e) {
         if (!mayView())

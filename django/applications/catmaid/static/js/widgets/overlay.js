@@ -3355,11 +3355,15 @@ SkeletonAnnotations.TracingOverlay.prototype.goToLastEditedNode = function(skele
   this.submit(
     django_url + project.id + '/node/most_recent',
     'POST',
-    {pid: project.id,
-     treenode_id: SkeletonAnnotations.getActiveNodeId()},
-    function (jso) {
-      self.moveTo(jso.z, jso.y, jso.x,
-        function() { self.selectNode(jso.id); });
+    {treenode_id: SkeletonAnnotations.getActiveNodeId()},
+    function (json) {
+      if (json.id) {
+        self.moveTo(json.z, json.y, json.x,
+          function() { self.selectNode(json.id); });
+      } else {
+        CATMAID.msg('Information',
+            'You are not the most recent editor of any nodes in this skeleton.');
+      }
     });
 };
 

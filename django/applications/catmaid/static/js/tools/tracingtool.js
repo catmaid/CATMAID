@@ -1428,12 +1428,9 @@
     }),
 
     new CATMAID.Action({
-      helpText: "Show search window",
+      helpText: "Search",
       buttonID: "data_button_search",
       buttonName: 'search',
-      keyShortcuts: {
-        '/': [ 191, 47 ]
-      },
       run: function (e) {
         WindowMaker.show('search');
         return true;

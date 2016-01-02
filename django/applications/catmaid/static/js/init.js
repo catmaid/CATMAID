@@ -1,7 +1,10 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
-/** @type {Object} Global access to window and project control events and variables. */
+/**
+ * Global access to window and project control events and variables.
+ * @namespace
+ */
 CATMAID.Init = {};
 CATMAID.asEventSource(CATMAID.Init);
 CATMAID.Init.EVENT_PROJECT_CHANGED = "init_project_changed";
@@ -22,18 +25,32 @@ var project_menu;
 var stack_menu;
 
 var message_menu;
-// A menu for user related links
+/**
+ * A menu for user related links.
+ * @type {Menu}
+ */
 var user_menu;
 
 var session;
 var msg_timeout;
-var MSG_TIMEOUT_INTERVAL = 60000; //!< length of the message lookup interval in milliseconds
-/** Frequency (in milliseconds) to check client CATMAID version against server version. */
+/**
+ * Length (in milliseconds) of the message lookup interval.
+ * @type {Number}
+ */
+var MSG_TIMEOUT_INTERVAL = 60000;
+/**
+ * Interval (in milliseconds) to check client CATMAID version against server
+ * version.
+ * @type {Number}
+ */
 CATMAID.Init.CHECK_VERSION_TIMEOUT_INTERVAL = 15*60*1000;
 
 var rootWindow;
 
-// an object to store user profile properties
+/**
+ * An object to store profile properties of the current user.
+ * @type {CATMAID.Userprofile}
+ */
 var userprofile = null;
 
 var user_permissions = null;

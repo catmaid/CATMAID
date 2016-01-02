@@ -35,15 +35,30 @@
     this.visible = visibility;
     this.isOrderable = true;
 
-    /** @type {Element[][]} Contains all tiles in a 2D toroidal array */
+    /**
+     * Contains all tiles in a 2D toroidal array
+     * @type {Element[][]}
+     */
     this._tiles = [];
-    /** @type {number} Current origin row in the tiles array. */
+    /**
+     * Current origin row in the tiles array.
+     * @type {Number}
+     */
     this._tileOrigR = 0;
-    /** @type {number} Current origin column in the tiles array. */
+    /**
+     * Current origin column in the tiles array.
+     * @type {Number}
+     */
     this._tileOrigC = 0;
-    /** @type {number} Current stack tile row of the tiles array origin. */
+    /**
+     * Current stack tile row of the tiles array origin.
+     * @type {Number}
+     */
     this._tileFirstR = 0;
-    /** @type {number} Current stack tile column of the tiles array origin. */
+    /**
+     * Current stack tile column of the tiles array origin.
+     * @type {Number}
+     */
     this._tileFirstC = 0;
     this._tilesBuffer = [];
     this._buffering = false;
@@ -52,8 +67,11 @@
     this.tilesContainer = document.createElement('div');
     this.tilesContainer.className = 'sliceTiles';
 
-    /** @type {boolean} True to use linear tile texture interpolation, false to
-                        use nearest neighbor. */
+    /**
+     * True to use linear tile texture interpolation, false to use nearest
+     * neighbor.
+     * @type {boolean}
+     */
     this._interpolationMode = linearInterpolation;
     this.tilesContainer.classList.add('interpolation-mode-' + (this._interpolationMode ? 'linear' : 'nearest'));
 

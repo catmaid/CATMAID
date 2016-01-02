@@ -37,10 +37,8 @@ before_script:
   - cat configuration.py
   - python create_configuration.py
   - sed -i -e "s?^\(ALLOWED_HOSTS = \).*?\1['*']?g" projects/mysite/settings.py
-  # Enable debug mode so that static files can be served by runserver
-  - sed -i -e "s?^\(DEBUG = \).*?\1True?g" projects/mysite/settings.py
-  # Enable pipeline to more closely mimic a production configuration
-  - sed -i -e "s?^\(DEBUG = True\).*?\1\nPIPELINE['PIPELINE_ENABLED'] = True?g" projects/mysite/settings.py
+  # Enable static file serving without DEBUG = True
+  - echo "SERVE_STATIC = True" >> projects/mysite/settings.py
   - cat projects/mysite/settings.py
   - cd ..
 script:

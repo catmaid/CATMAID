@@ -28,7 +28,8 @@ urlpatterns += patterns('',
     url(r'^api-token-auth/', ObtainAuthToken.as_view()),
 )
 
-if settings.DEBUG:
+
+if settings.DEBUG or settings.SERVE_STATIC:
     urlpatterns += patterns('',
         (r'^static/(?P<path>.*)$', 'django.views.static.serve', {'document_root': settings.STATIC_ROOT}),
         # Access to static estensions in debug mode, remove leading slash.

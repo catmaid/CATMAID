@@ -251,6 +251,11 @@ TEST_RUNNER = 'custom_testrunner.TestSuiteRunner'
 # commit name.
 PERFORMANCETEST_SCM_URL = "https://github.com/catmaid/CATMAID/commit/{version}"
 
+# This setting allows the WSGI back-end to serve static files. It is highly
+# discouraged to use this in production as it is very in-efficient and
+# potentially insecure. It is used only to simplify continuous integration.
+SERVE_STATIC = False
+
 # Additional static files can be loaded by CATMAID if they are placed in the
 # folder defined by STATIC_EXTENSION_ROOT. These files are not respected by
 # Pipeline to allow updating them without running collectstatic. To use this

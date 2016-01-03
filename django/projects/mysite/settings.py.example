@@ -59,10 +59,6 @@ STATIC_ROOT =  'CATMAIDPATH/django/static'
 # system time zone.
 TIME_ZONE = 'CATMAID_TIMEZONE'
 
-# Language code for this installation. All choices can be found here:
-# http://www.i18nguy.com/unicode/language-identifiers.html
-LANGUAGE_CODE = 'en-gb'
-
 # This is used as a security measure by Django by validating a request's Host
 # header. This setting is required when DEBUG is False. A dot in front of the
 # host name indicated that also subdomains are allowed.

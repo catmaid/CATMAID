@@ -12,6 +12,10 @@ ADMINS = (
     # ('Your Name', 'your_email@domain.com'),
 )
 
+# At the moment CATMAID doesn't support internationalization and all strings are
+# expected to be in English.
+LANGUAGE_CODE = 'en-gb'
+
 # A tuple in the same format as ADMINS of people who get broken-link
 # notifications when SEND_BROKEN_LINKS_EMAILS=True.
 MANAGERS = ADMINS

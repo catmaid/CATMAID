@@ -28,6 +28,8 @@ This procedure will only be required for upgrading an existing instance to a
 release newer than 2015.12.21. It won't be needed to migrate from newer
 releases.
 
+The following variables can be removed from settings.py files: TEMPLATE_DIRS,
+TEMPLATE_DEBUG
 
 ### Features and enhancements
 

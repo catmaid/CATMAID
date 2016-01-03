@@ -6,6 +6,13 @@ import django.conf.global_settings as DEFAULT_SETTINGS
 import utils
 import pipelinefiles
 
+# Make Django root folder available
+PROJECT_ROOT = utils.relative('..', '..')
+# Add all subdirectories of project, applications and lib to sys.path
+for subdirectory in ('projects', 'applications', 'lib'):
+    full_path = os.path.join(PROJECT_ROOT, subdirectory)
+    sys.path.insert(0, full_path)
+
 # A list of people who get code error notifications. They will get an email
 # if DEBUG=False and a view raises an exception.
 ADMINS = (
@@ -23,12 +30,6 @@ MANAGERS = ADMINS
 # If you set this to False, Django will make some optimizations so as not
 # to load the internationalization machinery.
 USE_I18N = True
-
-# List of callables that know how to import templates from various sources.
-TEMPLATE_LOADERS = (
-    'django.template.loaders.filesystem.Loader',
-    'django.template.loaders.app_directories.Loader'
-)
 
 MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -99,11 +100,29 @@ LOGGING = {
     },
 }
 
-# Use the default template context processors. If custom ones should be
-# added, please append it to the tuple to make sure the default processors
-# are still available. See this page for further detail:
-# http://blog.madpython.com/2010/04/07/django-context-processors-best-practice/
-TEMPLATE_CONTEXT_PROCESSORS = DEFAULT_SETTINGS.TEMPLATE_CONTEXT_PROCESSORS
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [ # Extra folders
+            os.path.join(PROJECT_ROOT, 'templates'),
+        ],
+        'OPTIONS': {
+            'loaders': [ # Make sure extra templates are loaded first
+                'django.template.loaders.filesystem.Loader',
+                'django.template.loaders.app_directories.Loader'
+            ],
+            'context_processors': [
+                'django.contrib.auth.context_processors.auth',
+                'django.template.context_processors.debug',
+                'django.template.context_processors.i18n',
+                'django.template.context_processors.media',
+                'django.template.context_processors.static',
+                'django.template.context_processors.tz',
+                'django.contrib.messages.context_processors.messages'
+	    ],
+        }
+    },
+]
 
 # The URL requests are redirected after login
 LOGIN_REDIRECT_URL = '/'
@@ -236,13 +255,6 @@ VERSION = utils.get_version()
 # DVID_URL = 'http://emdata2.int.janelia.org:7000'
 # DVID_FORMAT = 'jpg:80'
 # DVID_SHOW_NONDISPLAYABLE_REPOS = True
-
-# Make Django root folder available
-PROJECT_ROOT = utils.relative('..', '..')
-# Add all subdirectories of project, applications and lib to sys.path
-for subdirectory in ('projects', 'applications', 'lib'):
-    full_path = os.path.join(PROJECT_ROOT, subdirectory)
-    sys.path.insert(0, full_path)
 
 # In order to make Django work with the unmanaged models from djsopnet in tests,
 # we use a custom testing runner to detect when running in a testing

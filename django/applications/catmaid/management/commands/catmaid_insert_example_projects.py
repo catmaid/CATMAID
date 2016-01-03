@@ -1,11 +1,11 @@
-from django.core.management.base import NoArgsCommand, CommandError
+from django.core.management.base import BaseCommand, CommandError
 from optparse import make_option
 from django.core.management import call_command
 
 from catmaid.models import *
 from catmaid.fields import *
 
-class Command(NoArgsCommand):
+class Command(BaseCommand):
     help = "Create 3 example projects in CATMAID, if they don't already exist"
 
     def add_arguments(self, parser):

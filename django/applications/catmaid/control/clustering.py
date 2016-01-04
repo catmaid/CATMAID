@@ -6,7 +6,7 @@ from numpy import array as nparray
 from django import forms
 from django.forms.formsets import formset_factory
 from django.forms.widgets import CheckboxSelectMultiple
-from django.shortcuts import render_to_response
+from django.shortcuts import render
 from django.template.context import RequestContext
 
 from formtools.wizard.views import SessionWizardView
@@ -189,18 +189,15 @@ class ClusteringWizard(SessionWizardView):
         # available to the client.
         dendrogram_json = json.dumps(dendrogram)
 
-        # Get the default request context and add custom data
-        context = RequestContext(self.request)
-        context.update({
+        return render(request, 'catmaid/clustering/display.html', context, {
             'ontologies': ontologies,
             'graphs': graphs,
             'features': features,
             'bin_matrix': display_bin_matrix,
             'metric': metric,
             'dst_matrix': display_dst_matrix,
-            'dendrogram_json': dendrogram_json})
-
-        return render_to_response('catmaid/clustering/display.html', context)
+            'dendrogram_json': dendrogram_json,
+        })
 
 def setup_clustering(request, workspace_pid=None):
     workspace_pid = int(workspace_pid)

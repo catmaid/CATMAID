@@ -75,15 +75,6 @@ def insert_into_log(project_id, user_id, op_type, location=None, freetext=None):
     new_log.save()
 
 
-# Tip from: http://lincolnloop.com/blog/2008/may/10/getting-requestcontext-your-templates/
-# Required because we need a RequestContext, not just a Context - the
-# former looks at TEMPLATE_CONTEXT_PROCESSORS, while the latter doesn't.
-
-def my_render_to_response(req, *args, **kwargs):
-    kwargs['context_instance'] = RequestContext(req)
-    return render_to_response(*args, **kwargs)
-
-
 def json_error_response(message):
     """
     When an operation fails we should return a JSON dictionary

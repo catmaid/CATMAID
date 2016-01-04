@@ -8,7 +8,7 @@ from django.conf import settings
 from django.forms.widgets import CheckboxSelectMultiple
 from django.http import HttpResponse
 from django.views.generic.base import TemplateView
-from django.shortcuts import get_object_or_404, render_to_response
+from django.shortcuts import get_object_or_404, render
 from django.contrib.contenttypes.models import ContentType
 from django.template.context import RequestContext
 
@@ -465,14 +465,14 @@ def add_classification_graph(request, workspace_pid=None, project_id=None):
     link_graph_form = link_form()
     num_root_classes = get_root_classes_count(workspace_pid)
 
-    return render_to_response("catmaid/classification/new_graph.html", {
+    return render(request, "catmaid/classification/new_graph.html", {
         'project': project,
         'workspace': workspace,
         'new_graph_form': new_graph_form,
         'link_graph_form': link_graph_form,
         'num_root_classes': num_root_classes,
         'CATMAID_URL': settings.CATMAID_URL
-    }, context_instance=RequestContext(request))
+    })
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def link_classification_graph(request, workspace_pid=None, project_id=None):
@@ -498,14 +498,14 @@ def link_classification_graph(request, workspace_pid=None, project_id=None):
     new_graph_form = new_graph_form_class()
     num_root_classes = get_root_classes_count(workspace_pid)
 
-    return render_to_response("catmaid/classification/new_graph.html", {
+    return render(request, "catmaid/classification/new_graph.html", {
         'project': project,
         'workspace': workspace,
         'new_graph_form': new_graph_form,
         'link_graph_form': link_graph_form,
         'num_root_classes': num_root_classes,
         'CATMAID_URL': settings.CATMAID_URL
-    }, context_instance=RequestContext(request))
+    })
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def select_classification_graph(request, workspace_pid=None, project_id=None):
@@ -526,12 +526,12 @@ def select_classification_graph(request, workspace_pid=None, project_id=None):
         num_roots = len(root_links_q)
         form = link_form()
 
-        return render_to_response("catmaid/classification/select_graph.html", {
+        return render(request, "catmaid/classification/select_graph.html", {
             'project': project,
             'workspace': workspace,
             'select_graph_form': new_graph_form,
             'num_graphs': num_roots,
-        }, context_instance=RequestContext(request))
+        })
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def remove_classification_graph(request, workspace_pid, project_id=None, link_id=None):
@@ -1626,9 +1626,7 @@ class ClassificationSearchWizard(SessionWizardView):
         # Build project index
         project_index = dict([(p.id, p) for p in Project.objects.all()])
 
-        # Get the default request context and add custom data
-        context = RequestContext(self.request)
-        context.update({
+        return render(request, 'catmaid/classification/search_report.html', {
             'project_ids': project_ids,
             'matching_graphs': matching_graphs,
             'cg_to_pids': cg_to_pids,
@@ -1642,8 +1640,6 @@ class ClassificationSearchWizard(SessionWizardView):
             'pid_to_sids': pid_to_sids,
         })
 
-        return render_to_response('catmaid/classification/search_report.html',
-                                  context)
 
 class FeatureSetupForm(forms.Form):
     """ This form displays all available classification_root based ontologies

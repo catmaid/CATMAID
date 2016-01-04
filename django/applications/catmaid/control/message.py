@@ -2,9 +2,10 @@ import json
 
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
 
 from catmaid.models import Message, ChangeRequest
-from catmaid.control.common import my_render_to_response, makeJSON_legacy_list
+from catmaid.control.common import makeJSON_legacy_list
 
 
 @login_required
@@ -67,7 +68,7 @@ def read_message(request, project_id=None):
             redirect = 'history.back()'
             redir_link = 'history.back()'
 
-        return my_render_to_response(request, 'catmaid/read_message.html', {
+        return render(request, 'catmaid/read_message.html', {
             'url': request.build_absolute_uri(),
             'redirect': redirect,
             'redir_link': redir_link})
@@ -79,5 +80,5 @@ def read_message(request, project_id=None):
             error = e.message
         else:
             error = 'Unknown error.'
-        return my_render_to_response(request, 'catmaid/error.html', {'error': error})
+        return render(request, 'catmaid/error.html', {'error': error})
 

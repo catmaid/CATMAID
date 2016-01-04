@@ -1,38 +1,38 @@
-{% load compressed %}
+{% load pipeline %}
 {% load common %}
 
 <!DOCTYPE html>
 <html class="mod-no-js">
-	<head>
-		<meta charset="UTF-8">
-		<title>CATMAID</title>
-		<link rel="shortcut icon" type="image/ico" href="{{STATIC_URL}}/favicon.ico"/>
+  <head>
+    <meta charset="UTF-8">
+    <title>CATMAID</title>
+    <link rel="shortcut icon" type="image/ico" href="{{STATIC_URL}}/favicon.ico"/>
 
-		<script type="text/javascript">
-			var STATIC_URL_JS = '{{ STATIC_URL|escapejs }}';
-			var django_url = "{{ CATMAID_URL }}";
-		</script>
+    <script type="text/javascript">
+      var STATIC_URL_JS = '{{ STATIC_URL|escapejs }}';
+      var django_url = "{{ CATMAID_URL }}";
+    </script>
 
-		{% compressed_css 'libraries' %}
-		{% compressed_css 'catmaid' %}
+    {% stylesheet 'libraries' %}
+    {% stylesheet 'catmaid' %}
 
     <!-- Regular CATMAID components -->
     {% for f in COMPRESSED_FILE_IDS %}
         {% if f != 'catmaid' %}
-            {% compressed_js f %}
+            {% javascript f %}
         {% endif %}
     {% endfor %}
 
     <!-- Front end initialization -->
-		<script type="text/javascript">
-			CATMAID.configure("{{ CATMAID_URL }}",
-							  "{{ STATIC_URL|escapejs }}",
-							  "{{ STATIC_EXTENSION_URL|escapejs }}",
-							  "{% csrf_cookie_name %}");
-			CATMAID.CLIENT_VERSION = "{% catmaid_version %}";
-		</script>
+    <script type="text/javascript">
+      CATMAID.configure("{{ CATMAID_URL }}",
+                "{{ STATIC_URL|escapejs }}",
+                "{{ STATIC_EXTENSION_URL|escapejs }}",
+                "{% csrf_cookie_name %}");
+      CATMAID.CLIENT_VERSION = "{% catmaid_version %}";
+    </script>
 
-	{% compressed_js 'catmaid' %}
+    {% javascript 'catmaid' %}
 
     {% for f in NON_COMPRESSED_FILES %}
       <script type="application/javascript" src="{{ STATIC_URL }}{{ f }}"></script>
@@ -42,201 +42,201 @@
     {% for f in STATIC_EXTENSION_FILES %}
       <script type="text/javascript" src="{{ STATIC_EXTENSION_URL }}{{ f }}"></script>
     {% endfor %}
-	</head>
+  </head>
 
-	<body onload="realInit();"><a></a>
-		<!-- Toolbars
-		***********************************************************************
-		-->
-		<div id="toolbar_container" class="toolbar_container">
-			<!-- Project and Login
-			*******************************************************************
-			-->
-			<div id="toolbar_login" class="toolbar">
-				<div class="menu">
-					<div id="home_box" class="box">
-						<div class="menu_item" style="float:left" onmouseover="this.lastChild.style.display = 'block';" onmouseout="this.lastChild.style.display = 'none';">
-							<p><a href="" onclick="rootWindow.closeAllChildren(); return false;">Home</a></p>
-							<div class="pulldown" id="dataview_menu"></div></div>
-					</div>
-					<div id="projectmenu_box" class="box">
-						<div class="menu_item" style="float:left" onmouseover="this.lastChild.style.display = 'block';" onmouseout="this.lastChild.style.display = 'none';"><p><a>Projects</a></p>
-							<div class="pulldown" id="project_menu"></div></div>
-					</div>
-					<div id="stackmenu_box" class="box" style="display:none">
-						<div class="menu_item" style="float:left" onmouseover="this.lastChild.style.display = 'block';" onmouseout="this.lastChild.style.display = 'none';"><p><a>Stacks</a></p>
-							<div class="pulldown" id="stack_menu"></div></div>
-					</div>
-					<div id="message_box" class="box" style="display:none">
-						<div class="menu_item" onclick="showMessages();" onmouseover="this.lastChild.style.display = 'block';" onmouseout="this.lastChild.style.display = 'none';"><p id="message_menu_text"><a>Messages</a>&nbsp;&nbsp;</p>
-							<div class="pulldown" id="message_menu"></div></div>
-					</div>
-				</div>
+  <body onload="realInit();"><a></a>
+    <!-- Toolbars
+    ***********************************************************************
+    -->
+    <div id="toolbar_container" class="toolbar_container">
+      <!-- Project and Login
+      *******************************************************************
+      -->
+      <div id="toolbar_login" class="toolbar">
+        <div class="menu">
+          <div id="home_box" class="box">
+            <div class="menu_item" style="float:left" onmouseover="this.lastChild.style.display = 'block';" onmouseout="this.lastChild.style.display = 'none';">
+              <p><a href="" onclick="rootWindow.closeAllChildren(); return false;">Home</a></p>
+              <div class="pulldown" id="dataview_menu"></div></div>
+          </div>
+          <div id="projectmenu_box" class="box">
+            <div class="menu_item" style="float:left" onmouseover="this.lastChild.style.display = 'block';" onmouseout="this.lastChild.style.display = 'none';"><p><a>Projects</a></p>
+              <div class="pulldown" id="project_menu"></div></div>
+          </div>
+          <div id="stackmenu_box" class="box" style="display:none">
+            <div class="menu_item" style="float:left" onmouseover="this.lastChild.style.display = 'block';" onmouseout="this.lastChild.style.display = 'none';"><p><a>Stacks</a></p>
+              <div class="pulldown" id="stack_menu"></div></div>
+          </div>
+          <div id="message_box" class="box" style="display:none">
+            <div class="menu_item" onclick="showMessages();" onmouseover="this.lastChild.style.display = 'block';" onmouseout="this.lastChild.style.display = 'none';"><p id="message_menu_text"><a>Messages</a>&nbsp;&nbsp;</p>
+              <div class="pulldown" id="message_menu"></div></div>
+          </div>
+        </div>
 
-				<div class="box" id="toolbox_project" style="display:none"></div>
-				<div class="box" id="toolbox_edit" style="display:none"></div>
-				<div class="box" id="toolbox_segmentation" style="display:none"></div>
-				<div class="box" id="toolbox_ontology" style="display:none"></div>
-				<div class="box" id="toolbox_data" style="display:none"></div>
+        <div class="box" id="toolbox_project" style="display:none"></div>
+        <div class="box" id="toolbox_edit" style="display:none"></div>
+        <div class="box" id="toolbox_segmentation" style="display:none"></div>
+        <div class="box" id="toolbox_ontology" style="display:none"></div>
+        <div class="box" id="toolbox_data" style="display:none"></div>
 
-				<div id="spinner_box" class="box_right">
-				    <div id="spinner"><img src="{{ STATIC_URL }}images/wait_bgtransgrey.gif" alt="spinner" /></div>
-				</div>
-				<div class="menu">
-				<div id="logout_box" class="box_right" style="display:none"><p><a id="logout" name="logout" title="Logout" onclick="logout();" href="#">Logout</a></p></div>
-				<div id="login_box" class="box_right" style="display:none"><p>account&nbsp;</p><p><input type="text" id="account" name="account" size="8" /></p><p>&nbsp;&nbsp;password&nbsp;</p><p><input type="password" id="password" name="password" size="8" /></p><p>&nbsp;&nbsp;<a id="login" name="login" title="Login" href="#" onclick="login( document.getElementById( 'account' ).value, document.getElementById( 'password' ).value );">Login</a></p></div>
-				<div id="session_box" class="box_right" style="display:none">
-					<div class="menu_item" onmouseover="this.lastChild.style.display = 'block';"
-							 onmouseout="this.lastChild.style.display = 'none';">
-						<p><a>You are <span id="session_longname">&nbsp;</span>.</a></p>
-						<div class="pulldown" id="user_menu"></div></div>
-				</div>
-				</div>
-				<div class="box_right" id="toolbox_show" style="display:none">
-					<a href="#" class="button_active" id="show_button_text" onclick="project.toggleShow( 'text' );"><img src="{{ STATIC_URL }}images/show_text.gif" alt="show textlabels" title="show textlabels" /></a>
-					<!--<a href="#" class="button_active" id="show_button_trace" onclick="project.toggleShow( 'trace' );"><img src="{{ STATIC_URL }}images/show_trace.gif" alt="show traces" title="show traces" /></a>//-->
-				</div>
-				<div class="toolbar_fill"></div>
-			</div>
-			<!--
-			*******************************************************************
-			-->
-			
-			<!-- Navigation
-			*******************************************************************
-			-->
-			<div id="toolbar_nav" class="toolbar" style="display:none">
-				<div class="box"><p>x&nbsp;</p><p><input type="text" id="x" name="x" size="5" /><img src="{{ STATIC_URL }}images/input_topdown.svg" onerror="this.onerror = null; this.src = '{{ STATIC_URL }}images/input_topdown.gif'" alt="" usemap="#xmap" /></p></div>
-				<div class="box"><p>y&nbsp;</p><p><input type="text" id="y" name="y" size="5" /><img src="{{ STATIC_URL }}images/input_topdown.svg" onerror="this.onerror = null; this.src = '{{ STATIC_URL }}images/input_topdown.gif'" alt="" usemap="#ymap" /></p></div>
-				<div id="sliders_box"></div>
-				<div class="box" id="zoom_level_box"><p>zoom-level</p><div id="slider_s"></div><p>&nbsp;&nbsp;</p></div>
-				<div class="box_right"><p><a id="a_url" name="a_url" title="This is the URL to this view. You can bookmark it or send it to the people." href="" target="_blank">URL to this view</a></p></div>
-				<div class="toolbar_fill"></div>
-			</div>
-			<!--
-			*******************************************************************
-			-->
+        <div id="spinner_box" class="box_right">
+            <div id="spinner"><img src="{{ STATIC_URL }}images/wait_bgtransgrey.gif" alt="spinner" /></div>
+        </div>
+        <div class="menu">
+        <div id="logout_box" class="box_right" style="display:none"><p><a id="logout" name="logout" title="Logout" onclick="logout();" href="#">Logout</a></p></div>
+        <div id="login_box" class="box_right" style="display:none"><p>account&nbsp;</p><p><input type="text" id="account" name="account" size="8" /></p><p>&nbsp;&nbsp;password&nbsp;</p><p><input type="password" id="password" name="password" size="8" /></p><p>&nbsp;&nbsp;<a id="login" name="login" title="Login" href="#" onclick="login( document.getElementById( 'account' ).value, document.getElementById( 'password' ).value );">Login</a></p></div>
+        <div id="session_box" class="box_right" style="display:none">
+          <div class="menu_item" onmouseover="this.lastChild.style.display = 'block';"
+               onmouseout="this.lastChild.style.display = 'none';">
+            <p><a>You are <span id="session_longname">&nbsp;</span>.</a></p>
+            <div class="pulldown" id="user_menu"></div></div>
+        </div>
+        </div>
+        <div class="box_right" id="toolbox_show" style="display:none">
+          <a href="#" class="button_active" id="show_button_text" onclick="project.toggleShow( 'text' );"><img src="{{ STATIC_URL }}images/show_text.gif" alt="show textlabels" title="show textlabels" /></a>
+          <!--<a href="#" class="button_active" id="show_button_trace" onclick="project.toggleShow( 'trace' );"><img src="{{ STATIC_URL }}images/show_trace.gif" alt="show traces" title="show traces" /></a>//-->
+        </div>
+        <div class="toolbar_fill"></div>
+      </div>
+      <!--
+      *******************************************************************
+      -->
 
-			<!-- Segmentation Tool
-			*******************************************************************
-			-->
-			<div id="toolbar_segmentation" class="toolbar" style="display:none;">
-				<div id="sliders_box_segmentation"></div>
-				<div class="toolbar_fill"></div>
-			</div>
-			
-			<!-- Textlabels
-			*******************************************************************
-			-->
-			<div id="toolbar_text" class="toolbar" style="display:none">
-				<div class="box"><p>size&nbsp;</p><p id="input_fontsize"></p></div>
-				<div class="box"><p>bold&nbsp;</p><p><input type="checkbox" id="fontstylebold" name="fontstylebold" checked="checked" /></p></div>
-				<div class="box"><p>colour&nbsp;</p><p>&nbsp;red&nbsp;</p><p id="input_fontcolourred"></p><p>&nbsp;green&nbsp;</p><p id="input_fontcolourgreen"></p><p>&nbsp;blue&nbsp;</p><p id="input_fontcolourblue"></p></div>
-				<div class="box"><p>scaling&nbsp;</p><p><input type="checkbox" id="fontscaling" name="fontscaling" checked="checked" /></p></div>
+      <!-- Navigation
+      *******************************************************************
+      -->
+      <div id="toolbar_nav" class="toolbar" style="display:none">
+        <div class="box"><p>x&nbsp;</p><p><input type="text" id="x" name="x" size="5" /><img src="{{ STATIC_URL }}images/input_topdown.svg" onerror="this.onerror = null; this.src = '{{ STATIC_URL }}images/input_topdown.gif'" alt="" usemap="#xmap" /></p></div>
+        <div class="box"><p>y&nbsp;</p><p><input type="text" id="y" name="y" size="5" /><img src="{{ STATIC_URL }}images/input_topdown.svg" onerror="this.onerror = null; this.src = '{{ STATIC_URL }}images/input_topdown.gif'" alt="" usemap="#ymap" /></p></div>
+        <div id="sliders_box"></div>
+        <div class="box" id="zoom_level_box"><p>zoom-level</p><div id="slider_s"></div><p>&nbsp;&nbsp;</p></div>
+        <div class="box_right"><p><a id="a_url" name="a_url" title="This is the URL to this view. You can bookmark it or send it to the people." href="" target="_blank">URL to this view</a></p></div>
+        <div class="toolbar_fill"></div>
+      </div>
+      <!--
+      *******************************************************************
+      -->
+
+      <!-- Segmentation Tool
+      *******************************************************************
+      -->
+      <div id="toolbar_segmentation" class="toolbar" style="display:none;">
+        <div id="sliders_box_segmentation"></div>
+        <div class="toolbar_fill"></div>
+      </div>
+
+      <!-- Textlabels
+      *******************************************************************
+      -->
+      <div id="toolbar_text" class="toolbar" style="display:none">
+        <div class="box"><p>size&nbsp;</p><p id="input_fontsize"></p></div>
+        <div class="box"><p>bold&nbsp;</p><p><input type="checkbox" id="fontstylebold" name="fontstylebold" checked="checked" /></p></div>
+        <div class="box"><p>colour&nbsp;</p><p>&nbsp;red&nbsp;</p><p id="input_fontcolourred"></p><p>&nbsp;green&nbsp;</p><p id="input_fontcolourgreen"></p><p>&nbsp;blue&nbsp;</p><p id="input_fontcolourblue"></p></div>
+        <div class="box"><p>scaling&nbsp;</p><p><input type="checkbox" id="fontscaling" name="fontscaling" checked="checked" /></p></div>
                 <div class="box"><p>textlabel editable&nbsp;</p><p><input type="checkbox" id="textlabeleditable" name="textlabeleditable" checked="checked" /></p></div>
-				<!--<div class="box_right"><a href="#" class="button" id="button_text_apply" onclick="return false;"><img src="{{ STATIC_URL }}images/apply.gif" alt="apply" title="apply" /></a></div>-->
-				<div class="box_right"><p id="icon_text_apply" class="toolbar_wait">applying ...</p></div>
-				<div class="toolbar_fill"></div>
-			</div>
-			<!--
-			*******************************************************************
-			-->
-			
-			<!-- Tagging
-			*******************************************************************
-			-->
-			<div id="toolbar_tags" class="toolbar" style="display:none">
-				<div class="box"><p>project tags&nbsp;</p><p><input type="text" id="project_tags" name="project_tags" size="35" /></p></div>
-				<div class="box"><p>stack tags&nbsp;</p><p><input type="text" id="stack_tags" name="stack_tags" size="35" /></p></div>
-				<div class="box_right"><a href="#" class="button" id="button_tags_apply" onclick="return false;"><img src="{{ STATIC_URL }}images/apply.gif" alt="apply" title="apply" /></a></div>
-				<div class="toolbar_fill"></div>
-			</div>
-			<!--
-			*******************************************************************
-			-->
+        <!--<div class="box_right"><a href="#" class="button" id="button_text_apply" onclick="return false;"><img src="{{ STATIC_URL }}images/apply.gif" alt="apply" title="apply" /></a></div>-->
+        <div class="box_right"><p id="icon_text_apply" class="toolbar_wait">applying ...</p></div>
+        <div class="toolbar_fill"></div>
+      </div>
+      <!--
+      *******************************************************************
+      -->
 
-			<!-- Region of interest
-			*******************************************************************
-			-->
-			<div id="toolbar_roi" class="toolbar" style="display:none">
-				<div class="box"><p>x&nbsp;</p><p><input type="text" id="box_roi_x" name="box_roi_x" size="5" /><img src="{{ STATIC_URL }}images/input_topdown.gif" alt="" usemap="#box_roi_xmap" /></p></div>
-				<div class="box"><p>y&nbsp;</p><p><input type="text" id="box_roi_y" name="box_roi_y" size="5" /><img src="{{ STATIC_URL }}images/input_topdown.gif" alt="" usemap="#box_roi_ymap" /></p></div>
-				<div class="box"><p>w&nbsp;</p><p><input type="text" id="box_roi_w" name="box_roi_w" size="5" /><img src="{{ STATIC_URL }}images/input_topdown.gif" alt="" usemap="#box_roi_wmap" /></p></div>
-				<div class="box"><p>h&nbsp;</p><p><input type="text" id="box_roi_h" name="box_roi_h" size="5" /><img src="{{ STATIC_URL }}images/input_topdown.gif" alt="" usemap="#box_roi_hmap" /></p></div>
-				<div class="box"><p>r&nbsp;</p><p><input type="text" id="box_roi_r" name="box_roi_r" size="5" /><img src="{{ STATIC_URL }}images/input_topdown.gif" alt="" usemap="#box_roi_rmap" /></p></div>
-				<div class="box_right"><a href="#" class="button" id="button_roi_apply" onclick="return false;"><img src="{{ STATIC_URL }}images/apply.gif" alt="apply" title="apply" /></a></div>
-				<div class="toolbar_fill"></div>
-			</div>
-			<!--
-			*******************************************************************
-			-->
+      <!-- Tagging
+      *******************************************************************
+      -->
+      <div id="toolbar_tags" class="toolbar" style="display:none">
+        <div class="box"><p>project tags&nbsp;</p><p><input type="text" id="project_tags" name="project_tags" size="35" /></p></div>
+        <div class="box"><p>stack tags&nbsp;</p><p><input type="text" id="stack_tags" name="stack_tags" size="35" /></p></div>
+        <div class="box_right"><a href="#" class="button" id="button_tags_apply" onclick="return false;"><img src="{{ STATIC_URL }}images/apply.gif" alt="apply" title="apply" /></a></div>
+        <div class="toolbar_fill"></div>
+      </div>
+      <!--
+      *******************************************************************
+      -->
 
-			<!-- Ontology
-			*******************************************************************
-			-->
-			<div id="toolbar_ontology" class="toolbar" style="display:none">
-				<div id="ontology_workspace" class="box">
-					<p>Work space:&nbsp;</p>
-					<p><input type="radio" id="ontology_workspace_project_specific" name="ontology_space" value="project" checked /></p>
-					<p><label for="ontology_workspace_project_specific">&nbsp;project specific</label></p>
-					<p><input type="radio" name="ontology_space" id="ontology_workspace_project_independent" value="classification" />
-					<p><label for="ontology_workspace_project_independent">&nbsp;project independent</label></p>
-				</div>
-				<div class="toolbar_fill"></div>
-			</div>
-			<!--
-			*******************************************************************
-			-->
-		</div>
+      <!-- Region of interest
+      *******************************************************************
+      -->
+      <div id="toolbar_roi" class="toolbar" style="display:none">
+        <div class="box"><p>x&nbsp;</p><p><input type="text" id="box_roi_x" name="box_roi_x" size="5" /><img src="{{ STATIC_URL }}images/input_topdown.gif" alt="" usemap="#box_roi_xmap" /></p></div>
+        <div class="box"><p>y&nbsp;</p><p><input type="text" id="box_roi_y" name="box_roi_y" size="5" /><img src="{{ STATIC_URL }}images/input_topdown.gif" alt="" usemap="#box_roi_ymap" /></p></div>
+        <div class="box"><p>w&nbsp;</p><p><input type="text" id="box_roi_w" name="box_roi_w" size="5" /><img src="{{ STATIC_URL }}images/input_topdown.gif" alt="" usemap="#box_roi_wmap" /></p></div>
+        <div class="box"><p>h&nbsp;</p><p><input type="text" id="box_roi_h" name="box_roi_h" size="5" /><img src="{{ STATIC_URL }}images/input_topdown.gif" alt="" usemap="#box_roi_hmap" /></p></div>
+        <div class="box"><p>r&nbsp;</p><p><input type="text" id="box_roi_r" name="box_roi_r" size="5" /><img src="{{ STATIC_URL }}images/input_topdown.gif" alt="" usemap="#box_roi_rmap" /></p></div>
+        <div class="box_right"><a href="#" class="button" id="button_roi_apply" onclick="return false;"><img src="{{ STATIC_URL }}images/apply.gif" alt="apply" title="apply" /></a></div>
+        <div class="toolbar_fill"></div>
+      </div>
+      <!--
+      *******************************************************************
+      -->
 
-		<!-- Main screen, project list, forms etc.
-		***********************************************************************
-		-->
-		<div id="content">
-			<div id="data_view"></div>
-			<div id="clientside_data_view">
-				<h1 title="Version: {% catmaid_version %}">CATMAID</h1>
-				<div id="project_list">
+      <!-- Ontology
+      *******************************************************************
+      -->
+      <div id="toolbar_ontology" class="toolbar" style="display:none">
+        <div id="ontology_workspace" class="box">
+          <p>Work space:&nbsp;</p>
+          <p><input type="radio" id="ontology_workspace_project_specific" name="ontology_space" value="project" checked /></p>
+          <p><label for="ontology_workspace_project_specific">&nbsp;project specific</label></p>
+          <p><input type="radio" name="ontology_space" id="ontology_workspace_project_independent" value="classification" />
+          <p><label for="ontology_workspace_project_independent">&nbsp;project independent</label></p>
+        </div>
+        <div class="toolbar_fill"></div>
+      </div>
+      <!--
+      *******************************************************************
+      -->
+    </div>
 
-					<p>Please feel free to open one of the public projects or log in with your account and password.</p>
+    <!-- Main screen, project list, forms etc.
+    ***********************************************************************
+    -->
+    <div id="content">
+      <div id="data_view"></div>
+      <div id="clientside_data_view">
+        <h1 title="Version: {% catmaid_version %}">CATMAID</h1>
+        <div id="project_list">
 
-					<h2 id="projects_h">Projects</h2>
-					<form id="project_filter_form" display="none">Filter projects:
-						<input id="project_filter_text" type="text" onkeyup="updateProjectListFromCacheDelayed();">
-						<span id="project_filter_indicator"></span>
-					</form>
-					<dl id="projects_dl"><dt></dt><dd></dd></dl>
-					<p id="project_list_message"></p>
-				</div>
-			</div>
-		</div>
-		
-		<!-- Dump for elements that should be available in the DOM but not visible for now -->
-		<div id="dump" style="display:none">
-			<!-- Maps for input extension
-			***********************************************************************
-			-->
-			<map id="xmap" name="xmap"><area shape="rect" coords="0,0,13,9" href="javascript:var x = document.getElementById( 'x' ); x.value = parseInt( x.value ) + 1; x.onchange();" alt="+" /><area shape="rect" coords="0,10,13,18" href="javascript:var x = document.getElementById( 'x' ); x.value = parseInt( x.value ) - 1; x.onchange();" alt="-" /></map>
-			<map id="ymap" name="ymap"><area shape="rect" coords="0,0,13,9" href="javascript:var y = document.getElementById( 'y' ); y.value = parseInt( y.value ) + 1; y.onchange();" alt="+" /><area shape="rect" coords="0,10,13,18" href="javascript:var y = document.getElementById( 'y' ); y.value = parseInt( y.value ) - 1; y.onchange();" alt="-" /></map>
-			<map id="box_roi_xmap" name="box_roi_xmap"><area shape="rect" coords="0,0,13,9" href="javascript:var box_roi_x = document.getElementById( 'box_roi_x' ); box_roi_x.value = parseInt( box_roi_x.value ) + 1; box_roi_x.onchange();" alt="+" /><area shape="rect" coords="0,10,13,18" href="javascript:var box_roi_x = document.getElementById( 'box_roi_x' ); box_roi_x.value = parseInt( box_roi_x.value ) - 1; box_roi_x.onchange();" alt="-" /></map>
-			<map id="box_roi_ymap" name="box_roi_ymap"><area shape="rect" coords="0,0,13,9" href="javascript:var box_roi_y = document.getElementById( 'box_roi_y' ); box_roi_y.value = parseInt( box_roi_y.value ) + 1; box_roi_y.onchange();" alt="+" /><area shape="rect" coords="0,10,13,18" href="javascript:var box_roi_y = document.getElementById( 'box_roi_y' ); box_roi_y.value = parseInt( box_roi_y.value ) - 1; box_roi_y.onchange();" alt="-" /></map>
-			<map id="box_roi_wmap" name="box_roi_wmap"><area shape="rect" coords="0,0,13,9" href="javascript:var box_roi_w = document.getElementById( 'box_roi_w' ); box_roi_w.value = parseInt( box_roi_w.value ) + 1; box_roi_w.onchange();" alt="+" /><area shape="rect" coords="0,10,13,18" href="javascript:var box_roi_w = document.getElementById( 'box_roi_w' ); box_roi_w.value = parseInt( box_roi_w.value ) - 1; box_roi_w.onchange();" alt="-" /></map>
-			<map id="box_roi_hmap" name="box_roi_hmap"><area shape="rect" coords="0,0,13,9" href="javascript:var box_roi_h = document.getElementById( 'box_roi_h' ); box_roi_h.value = parseInt( box_roi_h.value ) + 1; box_roi_h.onchange();" alt="+" /><area shape="rect" coords="0,10,13,18" href="javascript:var box_roi_h = document.getElementById( 'box_roi_h' ); box_roi_h.value = parseInt( box_roi_h.value ) - 1; box_roi_h.onchange();" alt="-" /></map>
-			<map id="box_roi_rmap" name="box_roi_rmap"><area shape="rect" coords="0,0,13,9" href="javascript:var box_roi_r = document.getElementById( 'box_roi_r' ); box_roi_r.value = parseInt( box_roi_r.value ) + 1; box_roi_r.onchange();" alt="+" /><area shape="rect" coords="0,10,13,18" href="javascript:var box_roi_r = document.getElementById( 'box_roi_r' ); box_roi_r.value = parseInt( box_roi_r.value ) - 1; box_roi_r.onchange();" alt="-" /></map>
-			<!--
-			***********************************************************************
-			-->
-			<div id="message_context" style="background:#ffffff; position:absolute; bottom:0px; width:100%; overflow:auto"><dl id="message_container" style="margin-top:2em; margin-bottom:2em"><dt>No new messages.</dt><dd></dd></dl></div>
-		</div>
+          <p>Please feel free to open one of the public projects or log in with your account and password.</p>
 
-		<div id="browser_unsupported">
-			<div class="ui-widget-overlay"></div>
-			<div class="message">
-				<h1>CATMAID requires a modern browser.</h1>
-				<p>
-					Your browser does not support some features necessary for CATMAID to work correctly. To use CATMAID please use a recent version of either <a href="https://www.mozilla.org/firefox/">Firefox</a> or <a href="https://www.google.com/chrome/">Chrome</a> with javascript enabled.
-				</p>
-			</div>
-		</div>
-	</body>
+          <h2 id="projects_h">Projects</h2>
+          <form id="project_filter_form" display="none">Filter projects:
+            <input id="project_filter_text" type="text" onkeyup="updateProjectListFromCacheDelayed();">
+            <span id="project_filter_indicator"></span>
+          </form>
+          <dl id="projects_dl"><dt></dt><dd></dd></dl>
+          <p id="project_list_message"></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dump for elements that should be available in the DOM but not visible for now -->
+    <div id="dump" style="display:none">
+      <!-- Maps for input extension
+      ***********************************************************************
+      -->
+      <map id="xmap" name="xmap"><area shape="rect" coords="0,0,13,9" href="javascript:var x = document.getElementById( 'x' ); x.value = parseInt( x.value ) + 1; x.onchange();" alt="+" /><area shape="rect" coords="0,10,13,18" href="javascript:var x = document.getElementById( 'x' ); x.value = parseInt( x.value ) - 1; x.onchange();" alt="-" /></map>
+      <map id="ymap" name="ymap"><area shape="rect" coords="0,0,13,9" href="javascript:var y = document.getElementById( 'y' ); y.value = parseInt( y.value ) + 1; y.onchange();" alt="+" /><area shape="rect" coords="0,10,13,18" href="javascript:var y = document.getElementById( 'y' ); y.value = parseInt( y.value ) - 1; y.onchange();" alt="-" /></map>
+      <map id="box_roi_xmap" name="box_roi_xmap"><area shape="rect" coords="0,0,13,9" href="javascript:var box_roi_x = document.getElementById( 'box_roi_x' ); box_roi_x.value = parseInt( box_roi_x.value ) + 1; box_roi_x.onchange();" alt="+" /><area shape="rect" coords="0,10,13,18" href="javascript:var box_roi_x = document.getElementById( 'box_roi_x' ); box_roi_x.value = parseInt( box_roi_x.value ) - 1; box_roi_x.onchange();" alt="-" /></map>
+      <map id="box_roi_ymap" name="box_roi_ymap"><area shape="rect" coords="0,0,13,9" href="javascript:var box_roi_y = document.getElementById( 'box_roi_y' ); box_roi_y.value = parseInt( box_roi_y.value ) + 1; box_roi_y.onchange();" alt="+" /><area shape="rect" coords="0,10,13,18" href="javascript:var box_roi_y = document.getElementById( 'box_roi_y' ); box_roi_y.value = parseInt( box_roi_y.value ) - 1; box_roi_y.onchange();" alt="-" /></map>
+      <map id="box_roi_wmap" name="box_roi_wmap"><area shape="rect" coords="0,0,13,9" href="javascript:var box_roi_w = document.getElementById( 'box_roi_w' ); box_roi_w.value = parseInt( box_roi_w.value ) + 1; box_roi_w.onchange();" alt="+" /><area shape="rect" coords="0,10,13,18" href="javascript:var box_roi_w = document.getElementById( 'box_roi_w' ); box_roi_w.value = parseInt( box_roi_w.value ) - 1; box_roi_w.onchange();" alt="-" /></map>
+      <map id="box_roi_hmap" name="box_roi_hmap"><area shape="rect" coords="0,0,13,9" href="javascript:var box_roi_h = document.getElementById( 'box_roi_h' ); box_roi_h.value = parseInt( box_roi_h.value ) + 1; box_roi_h.onchange();" alt="+" /><area shape="rect" coords="0,10,13,18" href="javascript:var box_roi_h = document.getElementById( 'box_roi_h' ); box_roi_h.value = parseInt( box_roi_h.value ) - 1; box_roi_h.onchange();" alt="-" /></map>
+      <map id="box_roi_rmap" name="box_roi_rmap"><area shape="rect" coords="0,0,13,9" href="javascript:var box_roi_r = document.getElementById( 'box_roi_r' ); box_roi_r.value = parseInt( box_roi_r.value ) + 1; box_roi_r.onchange();" alt="+" /><area shape="rect" coords="0,10,13,18" href="javascript:var box_roi_r = document.getElementById( 'box_roi_r' ); box_roi_r.value = parseInt( box_roi_r.value ) - 1; box_roi_r.onchange();" alt="-" /></map>
+      <!--
+      ***********************************************************************
+      -->
+      <div id="message_context" style="background:#ffffff; position:absolute; bottom:0px; width:100%; overflow:auto"><dl id="message_container" style="margin-top:2em; margin-bottom:2em"><dt>No new messages.</dt><dd></dd></dl></div>
+    </div>
+
+    <div id="browser_unsupported">
+      <div class="ui-widget-overlay"></div>
+      <div class="message">
+        <h1>CATMAID requires a modern browser.</h1>
+        <p>
+          Your browser does not support some features necessary for CATMAID to work correctly. To use CATMAID please use a recent version of either <a href="https://www.mozilla.org/firefox/">Firefox</a> or <a href="https://www.google.com/chrome/">Chrome</a> with javascript enabled.
+        </p>
+      </div>
+    </div>
+  </body>
 </html>

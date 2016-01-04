@@ -19,7 +19,8 @@ def render_template_block(template, block, context):
     """
     Renders a single block from a template. This template should have previously been rendered.
     """
-    return render_template_block_nodelist(template.nodelist, block, context)
+    return render_template_block_nodelist(template.template.nodelist, block,
+            context)
     
 def render_template_block_nodelist(nodelist, block, context):
     for node in nodelist:
@@ -68,7 +69,6 @@ def direct_block_to_template(request, template, block, extra_context=None, conte
             dictionary[key] = value()
         else:
             dictionary[key] = value
-    c = RequestContext(request, dictionary)
     t = get_template(template)
-    t.render(c)
+    t.render(dictionary, request)
     return HttpResponse(render_template_block(t, block, c), content_type=content_type)

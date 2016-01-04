@@ -24,7 +24,6 @@ from rest_framework.authtoken.serializers import AuthTokenSerializer
 
 from catmaid.models import Project, UserRole, ClassInstance, \
         ClassInstanceClassInstance
-from catmaid.control.common import my_render_to_response
 
 
 def login_user(request):

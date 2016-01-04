@@ -328,7 +328,7 @@ def get_number_of_inverse_links( obj ):
     """
     count = 0
     for r in obj._meta.get_all_related_objects():
-        count += r.model.objects.filter(
+        count += r.related_model.objects.filter(
             **{r.field.name + '__exact': obj.id}).count()
     return count
 

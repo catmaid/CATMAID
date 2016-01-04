@@ -1,11 +1,11 @@
 {% extends "admin/base_site.html" %}
-{% load compressed %}
+{% load pipeline %}
 {% load i18n %}
 
 {% block extrahead %}
-{% compressed_css 'libraries' %}
-{% compressed_js 'jquery-lib' %}
-{% compressed_js 'd3-lib' %}
+{% stylesheet 'libraries' %}
+{% javascript 'jquery-lib' %}
+{% javascript 'd3-lib' %}
 <style>
 
 .axis path,

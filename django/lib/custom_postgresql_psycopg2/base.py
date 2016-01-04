@@ -25,7 +25,7 @@ function last_insert_id is only used for insert statements through the
 ORM.
 """
 
-from django.db.backends.creation import NO_DB_ALIAS
+from django.db.backends.base.base import NO_DB_ALIAS
 
 # CATMAID uses PostGIS, so we need to make sure we wrap the PostGIS backend
 from django.contrib.gis.db.backends.postgis.base import DatabaseWrapper as PostGISDatabaseWrapper

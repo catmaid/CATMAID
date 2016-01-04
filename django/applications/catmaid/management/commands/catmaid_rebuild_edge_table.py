@@ -10,20 +10,19 @@ class DryRunRollback(Exception):
     pass
 
 class Command(BaseCommand):
-    args = '<project_id>'
     help = 'Rebuild the edge table for all skeletons in the specified ' \
         'projects. No skeleton optimization will be done.'
-    option_list = BaseCommand.option_list + (
-        make_option('--dryrun',
-            action='store_true',
-            dest='dryrun',
-            default=False,
-            help='Don\'t actually apply changes'),
-        )
+
+    def add_arguments(self, parser):
+        parser.add_argument('--dryrun', action='store_true', dest='dryrun',
+            default=False, help='Don\'t actually apply changes')
+        parser.add_argument('--project_id', dest='project_id', nargs='+',
+            help='Rebuild edge table for these projects')
 
     @transaction.atomic
     def handle(self, *args, **options):
-        if not args:
+        project_ids = options['project_id']
+        if not project_ids:
             raise CommandError('Please specify at least one project ID as argument')
 
         # Check arguments
@@ -38,7 +37,7 @@ class Command(BaseCommand):
 
         try:
             with transaction.atomic():
-                for project_id in args:
+                for project_id in project_ids:
                     try:
                         project = Project.objects.get(pk=int(project_id))
                         cursor.execute("SELECT count(*) FROM treenode_edge WHERE project_id = %s",

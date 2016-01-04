@@ -5,16 +5,17 @@ from django.db import connection
 from catmaid.models import Project
 
 class Command(BaseCommand):
-    args = '<project_id> <project_id> ...'
     help = '''
         Tests the integrity of the specified projects with several sanity checks
         '''
 
+    def add_arguments(self, parser):
+        parser.add_argument('--project_id', nargs='*', type=int, default=[])
+
     def handle(self, *args, **options):
-        if not len(args):
+        project_ids = options['project_id']
+        if not len(project_ids):
             project_ids = Project.objects.all().values_list('id', flat=True)
-        else:
-            project_ids = map(int, args)
 
         passed = True
         for project_id in project_ids:

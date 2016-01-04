@@ -12,7 +12,7 @@ from django.contrib.gis.db import models as spatial_models
 from django.core.validators import RegexValidator
 from django.db import connection, models
 from django.db.models import Q
-from django.db.models.signals import pre_save, post_save, post_migrate
+from django.db.models.signals import pre_save, post_save
 from django.dispatch import receiver
 from django.utils import timezone
 
@@ -53,6 +53,30 @@ class Project(models.Model):
             ("can_browse", "Can browse projects")
         )
 
+    # All classes needed by the tracing system alongside their
+    # descriptions.
+    needed_classes = {
+        'stackgroup': "An identifier for a group of stacks",
+    }
+
+    # All relations needed by the tracing system alongside their
+    # descriptions.
+    needed_relations = {
+        'has_channel': "A stack group can have assosiated channels",
+        'has_view': "A stack group can have assosiated orthogonal views",
+    }
+
+    def validate_project_setup(self, user_id):
+        """Will create needed class and relations if they don't exist.
+        """
+        for nc, desc in self.needed_classes.iteritems():
+            Class.objects.get_or_create(project_id=self.id,
+                    class_name=nc, defaults={'user_id': user_id})
+
+        for nr, desc in self.needed_relations.iteritems():
+            Relation.objects.get_or_create(project_id=self.id,
+                    relation_name=nr, defaults={'user_id': user_id})
+
     def __unicode__(self):
         return self.title
 
@@ -62,10 +86,9 @@ def on_project_save(sender, instance, created, **kwargs):
     """
     is_not_dummy = instance.id != settings.ONTOLOGY_DUMMY_PROJECT_ID
     if created and sender == Project and is_not_dummy:
-        from .control.project import validate_project_setup
-        from . import get_system_user
+        from .apps import get_system_user
         user = get_system_user()
-        validate_project_setup(instance.id, user.id)
+        instance.validate_project_setup(user.id)
 
 # Validate project when they are saved
 post_save.connect(on_project_save, sender=Project)
@@ -458,8 +481,10 @@ class UserFocusedManager(models.Manager):
             return full_set
         else:
             # Get the projects that the user can see.
-            admin_projects = get_objects_for_user(user, 'can_administer', Project)
-            other_projects = get_objects_for_user(user, ['can_annotate', 'can_browse'], Project, any_perm=True)
+            admin_projects = get_objects_for_user(user, 'can_administer', Project,
+                                                 accept_global_perms=False)
+            other_projects = get_objects_for_user(user, ['can_annotate', 'can_browse'],
+                                                 Project, any_perm = True, accept_global_perms=False)
             other_projects = [a for a in other_projects if a not in admin_projects]
 
             # Now filter to the data to which the user has access.
@@ -1015,20 +1040,6 @@ def add_user_to_default_groups(sender, instance, created, **kwargs):
 
 # Connect the User model's post save signal to default group assignment
 post_save.connect(add_user_to_default_groups, sender=User)
-
-# Prevent interactive question about wanting a superuser created.  (This code
-# has to go in this "models" module so that it gets processed by the "migrate"
-# command during database creation.)
-#
-# From http://stackoverflow.com/questions/1466827/ --
-
-from django.contrib.auth import models as auth_models
-from django.contrib.auth.management.commands import createsuperuser
-
-post_migrate.disconnect(
-    createsuperuser,
-    sender=auth_models,
-    dispatch_uid='django.contrib.auth.management.commands.createsuperuser')
 
 
 class ChangeRequest(UserFocusedModel):

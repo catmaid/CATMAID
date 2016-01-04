@@ -11,8 +11,9 @@ from django.conf import settings
 from django.contrib.auth.models import User, Group
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.contenttypes.models import ContentType
-from django.contrib.formtools.wizard.views import SessionWizardView
 from django.shortcuts import render_to_response
+
+from formtools.wizard.views import SessionWizardView
 
 from guardian.models import Permission
 from guardian.shortcuts import get_perms_for_model, assign

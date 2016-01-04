@@ -130,7 +130,7 @@ def get_data_view( request, data_view_id ):
         if pid in project_ids:
             tag_index[t].add(pid)
 
-    context = Context({
+    context = {
         'data_view': dv,
         'projects': projects,
         'config': config,
@@ -140,6 +140,6 @@ def get_data_view( request, data_view_id ):
         'stack_index': stack_index,
         'stacks_of': stacks_of,
         'STATIC_URL': settings.STATIC_URL,
-    })
+    }
 
     return HttpResponse( template.render( context ) )

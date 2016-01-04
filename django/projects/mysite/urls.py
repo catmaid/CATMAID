@@ -1,14 +1,15 @@
 import re
 
-from django.conf.urls import include, url
-from django.views.static import serve
+from adminplus.sites import AdminSitePlus
+
 from django.conf import settings
+from django.conf.urls import include, url
+from django.contrib import admin
+from django.views.static import serve
 
 from catmaid.control.authentication import ObtainAuthToken
 
-# Uncomment the next two lines to enable the admin:
-from django.contrib import admin
-from adminplus.sites import AdminSitePlus
+# Administration
 admin.site = AdminSitePlus()
 admin.autodiscover()
 

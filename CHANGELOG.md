@@ -16,7 +16,7 @@ update an existing CATMAID instance safely, please follow these steps:
 
 3. Fake the new initial migration by running:
 
-   python manage.py migrate catmaid --fake 0001_initial
+   python manage.py migrate catmaid 0001_initial --fake
 
 4. In the future no syncdb step is required anymore. Continue with the rest of
    the regular update procedure:

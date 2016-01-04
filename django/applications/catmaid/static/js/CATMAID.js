@@ -220,4 +220,8 @@ window.onbeforeunload = function() {
     CATMAID.statusBar.replaceLast(msg);
   };
 
+  // Maintain a single command history, this adds execute, undo and redo
+  // functions to the CATMAID namespace.
+  CATMAID.commands = new CATMAID.CommandHistory();
+
 })(CATMAID);

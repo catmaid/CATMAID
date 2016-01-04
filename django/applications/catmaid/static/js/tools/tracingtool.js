@@ -1320,37 +1320,6 @@
       }
     }),
 
-
-  /*    new CATMAID.Action({
-          helpText: "Adjacency Matrix widget",
-          buttonID: "data_button_connectivity",
-          buttonName: 'adj_matrix',
-          run: function (e) {
-              WindowMaker.show('adjacencymatrix-widget');
-              return true;
-          }
-      }),
-
-    new CATMAID.Action({
-        helpText: "Export widget",
-        buttonID: "data_button_export_widget",
-        buttonName: 'export_widget',
-        run: function (e) {
-            WindowMaker.show('export-widget');
-            return true;
-        }
-    }),
-
-    new CATMAID.Action({
-        helpText: "Graph widget",
-        buttonID: "data_button_graph_widget",
-        buttonName: 'graph_widget',
-        run: function (e) {
-            WindowMaker.show('graph-widget');
-            return true;
-        }
-    }),*/
-
     new CATMAID.Action({
       helpText: "Skeleton Analytics widget",
       buttonID: "button_skeleton_analytics_widget",

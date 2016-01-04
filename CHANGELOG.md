@@ -55,6 +55,7 @@ Tracing overlay:
 
 ### Bug fixes
 
+- The skeleton projection layer can be used again.
 
 
 

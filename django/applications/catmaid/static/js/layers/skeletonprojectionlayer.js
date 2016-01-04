@@ -129,7 +129,8 @@
        this.stackViewer.primaryStack.resolution.y);
     var dynamicScale = screenScale ? (1 / (this.stackViewer.scale * resScale)) : false;
 
-    this.graphics.scale(userprofile.tracing_overlay_scale, resScale, dynamicScale);
+    this.graphics.scale(SkeletonAnnotations.TracingOverlay.Settings.session.scale,
+        resScale, dynamicScale);
 
     // Use project coordinates for the SVG's view box
     this.paper.attr({

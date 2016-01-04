@@ -4,12 +4,25 @@
 (function(CATMAID) {
 
   /**
+   * A general error containing a message of what went wrong.
+   */
+  CATMAID.Error = function(message) {
+    this.name = 'CATMAID error';
+    this.message = message || '(no message)';
+    this.stack = (new Error()).stack;
+  };
+
+  CATMAID.Error.prototype = Object.create(Error.prototype);
+  CATMAID.Error.constructor = CATMAID.Error;
+
+  /**
    * A simple value error type to indicate some sort of input value problem.
    */
   CATMAID.ValueError = function(message) {
-    this.message = message;
+    CATMAID.Error.call(this, message);
   };
 
-  CATMAID.ValueError.prototype = new Error();
+  CATMAID.ValueError.prototype = Object.create(CATMAID.Error.prototype);
+  CATMAID.ValueError.constructor = CATMAID.ValueError;
 
 })(CATMAID);

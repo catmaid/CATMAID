@@ -41,9 +41,13 @@ def volume_collection(request, project_id):
     """
     if request.method == 'GET':
         p = get_object_or_404(Project, pk = project_id)
-        volumes = Volume.objects.filter(project_id=project_id)
-        serializer = VolumeSerializer(volumes, many=True)
-        return Response(serializer.data)
+        # FIXME: Parsing our PostGIS geometry with GeoDjango doesn't work
+        # anymore ince Django 1.8. Therefore, the geometry fields isn't read.
+        # See: https://github.com/catmaid/CATMAID/issues/1250
+        fields = ('id', 'name', 'comment', 'user', 'editor', 'project',
+                'creation_time', 'edition_time')
+        volumes = Volume.objects.filter(project_id=project_id).values(*fields)
+        return Response(volumes)
 
 @api_view(['GET', 'POST'])
 @requires_user_role([UserRole.Browse])

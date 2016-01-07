@@ -3,7 +3,9 @@
   "use strict";
 
   /**
-   * A command wraps an action
+   * A command wraps the execution of a function, it provides an interface for
+   * executing it as well as undoing it. After a command has been instantiated,
+   * it must be initialized
    */
   var Command = function(execute, undo) {
     this.initialized = false;
@@ -21,7 +23,19 @@
   Command.prototype.init = function(execute, undo) {
     this._fn = execute;
     this._undo = undo;
+    this.executed = false;
     this.initialized = true;
+  };
+
+  /**
+   * Mark a command as executed or unexecuted. Optionally with an action being
+   * executed at the end. If a postWork action is set, it will be executed.
+   *
+   * @param {bool}     executed Wether the command has been executed
+   */
+  var done = function(executed) {
+    this.executed = executed;
+    CATMAID.tools.callIfFn(this.postAction);
   };
 
   /**
@@ -32,8 +46,7 @@
     if (!this.initialized) {
       throw new CATMAID.Error('Commands need to be initialized before execution');
     }
-    var result = this._fn();
-    this.executed = true;
+    var result = this._fn(done.bind(this, true), this);
     return result;
   };
 
@@ -45,8 +58,7 @@
     if (!this.executed) {
       throw new CATMAID.Error('Only executed commands can be undone');
     }
-    var result = this._undo();
-    this.executed = false;
+    var result = this._undo(done.bind(this, false), this);
     return result;
   };
 
@@ -111,7 +123,7 @@
    * Execute a command. Commands are expected to return a promise and the
    * history state.
    *
-   * @param {command}  Command instance to be executed
+   * @param {Object} command Command instance to be executed
    * @returns Result of the command's execute function
    */
   CommandHistory.prototype.execute = function(command) {
@@ -147,7 +159,6 @@
     }
     var result = command.execute();
     this._currentCommand += 1;
-
     return result;
   };
 
@@ -175,9 +186,6 @@
    */
   CATMAID.makeCommand = function(cmd) {
     cmd.prototype = Object.create(CATMAID.Command.prototype);
-    cmd.prototype.init = function(_fn, _undo) {
-      CATMAID.Command.call(this, _fn, _undo);
-    };
     cmd.constructor = cmd;
     return cmd;
   };

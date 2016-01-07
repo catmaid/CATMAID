@@ -29,6 +29,19 @@
     // Whether node labels should be shown
     var show_labels = false;
 
+    /**
+     * Set postAction option of a command to update of the active tracing layer,
+     * if it is available.
+     *
+     * @returns input command
+     */
+    var withPostUpdate = function(command) {
+      if (activeTracingLayer) {
+        var overlay = activeTracingLayer.tracingOverlay;
+        command.postAction = overlay.updateNodes.bind(overlay, undefined, undefined, undefined);
+      }
+      return command;
+    };
 
     this.resize = function(width, height) {
       self.prototype.resize( width, height );
@@ -509,11 +522,13 @@
         if (!mayEdit()) return false;
         if (e.altKey || e.ctrlKey || e.metaKey) return false;
         var modifier = e.shiftKey;
-        if (null === SkeletonAnnotations.getActiveNodeId()) {
+        var nodeId = SkeletonAnnotations.getActiveNodeId();
+        if (null === nodeId) {
           alert('Must activate a treenode or connector before '
               + (modifier ? 'removing the tag' : 'tagging with') + ' "' + tag + '"!');
           return true;
         }
+
         // If any modifier key is pressed, remove the tag
         if (modifier) {
           SkeletonAnnotations.Tag.removeATNLabel(tag, activeTracingLayer.tracingOverlay);

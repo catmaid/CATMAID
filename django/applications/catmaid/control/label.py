@@ -234,7 +234,7 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
     return JsonResponse({
         'message': 'success',
         'new_labels': new_labels,
-        'duplicate_labels': [l.name for l in duplicate_labels],
+        'duplicate_labels': [l.class_instance.name for l in duplicate_labels],
         'deleted_labels': deleted_labels,
     })
 

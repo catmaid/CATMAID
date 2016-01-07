@@ -3994,47 +3994,55 @@ SkeletonAnnotations.Tag = new (function() {
   };
 
   this.tagATNwithLabel = function(label, tracingOverlay, deleteExisting) {
-    var atn = SkeletonAnnotations.atn;
-    atn.promise().then(function(treenode_id) {
-      tracingOverlay.submit(
-        django_url + project.id + '/label/' + atn.type + '/' + atn.id + '/update',
-        'POST',
-        {tags: label,
-         delete_existing: !!deleteExisting},
-        function(json) {
-          if ('' === label) {
-            CATMAID.info('Tags removed.');
-          } else {
-            CATMAID.info('Tag ' + label + ' added.');
-          }
-          tracingOverlay.updateNodes();
-      });
+    return SkeletonAnnotations.Tag.tagATNwithLabels([label], tracingOverlay, deleteExisting);
+  };
+
+  this.tagATNwithLabels = function(labels, tracingOverlay, deleteExisting) {
+    var nodeType = SkeletonAnnotations.getActiveNodeType();
+    var nodeId; // Will be set in promise
+
+    var prepare = SkeletonAnnotations.atn.promise().then(function(treenodeId) {
+      nodeId = treenodeId;
+      return tracingOverlay.submit();
+    });
+
+    var result = prepare.then(function() {
+      // If preparation went well, nodeId will be set
+      var command = new CATMAID.AddTagsToNodeCommand(nodeId, nodeType, labels, false);
+      // Make sure a tracing layer update is done after execute and undo
+      command.postAction = tracingOverlay.updateNodes.bind(tracingOverlay,
+         undefined, undefined, undefined);
+      return CATMAID.commands.execute(command);
+    }).then(function(result) {
+      if (result.deletedLabels.length > 0) {
+        CATMAID.info('Tag(s) removed: ' + result.deletedLabels.join(', '));
+      }
+      if (result.newLabels.length > 0) {
+        CATMAID.info('Tag(s) added: ' + result.newLabels.join(', '));
+      }
+      if (result.duplicateLabels.length > 0) {
+        CATMAID.info('These tags exist already: ' + result.duplicateLabels.join(', '));
+      }
     });
   };
 
   this.removeATNLabel = function(label, tracingOverlay) {
     var atn = SkeletonAnnotations.atn;
-    atn.promise().then(function(treenode_id) {
-      tracingOverlay.submit(
-        django_url + project.id + '/label/' + atn.type + '/' + atn.id + '/remove',
-        'POST',
-        {tag: label},
-        function(json) {
-          CATMAID.info('Tag "' + label + '" removed.');
+    return atn.promise().then(function(treenode_id) {
+      tracingOverlay.submit()
+        .then(CATMAID.Labels.remove(project.id, atn.id, atn.type, label))
+        .then(function(result) {
+          CATMAID.info('Tag "' + result.deletedLabels.join(', ') + '" removed.');
           tracingOverlay.updateNodes();
-        },
-        undefined,
-        undefined,
-        function(err) {
+        })
+        .catch(function(err) {
           if ("ValueError" === err.type) {
             CATMAID.msg('Error', err.error ? err.error : "Unspecified");
           } else {
             CATMAID.error(err.error, err.detail);
           }
           return true;
-        },
-        true
-      );
+        });
     });
   };
 
@@ -4070,7 +4078,6 @@ SkeletonAnnotations.Tag = new (function() {
           if ("" === input.tagEditorGetTags()) {
             SkeletonAnnotations.Tag.updateTags(tracingOverlay);
             SkeletonAnnotations.Tag.removeTagbox();
-            CATMAID.info('Tags saved!');
             tracingOverlay.updateNodes();
           }
           event.stopPropagation();
@@ -4082,7 +4089,6 @@ SkeletonAnnotations.Tag = new (function() {
             if ("" === input.val()) {
               SkeletonAnnotations.Tag.updateTags(tracingOverlay);
               SkeletonAnnotations.Tag.removeTagbox();
-              CATMAID.info('Tags saved!');
               tracingOverlay.updateNodes();
             }
           }
@@ -4124,20 +4130,22 @@ SkeletonAnnotations.Tag = new (function() {
     }).bind(this));
   };
 
+  /**
+   * Return whether a string is empty or not.
+   */
+  var isNonEmpty = function(str) {
+    return 0 !== str.trim().length;
+  };
+
   this.updateTags = function(tracingOverlay) {
     var atn = SkeletonAnnotations.atn;
     if (null === atn.id) {
       CATMAID.error("Can't update tags, because there is no active node selected.");
       return;
     }
-    atn.promise().then(function() {
-      tracingOverlay.submit(
-          django_url + project.id + '/label/' + atn.type + '/' + atn.id + '/update',
-          'POST',
-          {pid: project.id,
-           tags: $("#Tags" + atn.id).tagEditorGetTags()},
-          function(json) {});
-    });
+    var tags = $("#Tags" + atn.id).tagEditorGetTags().split(",");
+    tags = tags.filter(isNonEmpty);
+    SkeletonAnnotations.Tag.tagATNwithLabels(tags, tracingOverlay);
   };
 
   this.tagATN = function(tracingOverlay) {

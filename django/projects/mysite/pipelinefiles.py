@@ -125,6 +125,7 @@ JAVASCRIPT['catmaid'] = {
         'js/user.js',
         'js/WindowMaker.js',
         'js/skeleton-model.js',
+        'js/models/*.js',
         'js/tools/navigator.js',
         'js/tools/boxselectiontool.js',
         'js/tools/roitool.js',

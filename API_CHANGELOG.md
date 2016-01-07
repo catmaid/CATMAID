@@ -16,6 +16,11 @@ None.
 - Response object now includes `gapjunctions` and `gapjunctions_reviewers`
   properties for gap junction connectors.
 
+`POST /{project_id}/label/[treenode|connector]/{label_id}/update`:
+
+- Returns now also information about what labels were added, which were
+  duplicates and which labels were deleted.
+
 
 ### Deprecations
 

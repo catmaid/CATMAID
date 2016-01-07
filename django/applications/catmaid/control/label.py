@@ -3,7 +3,7 @@ import json
 from collections import defaultdict
 
 from django.db import connection
-from django.http import HttpResponse, Http404
+from django.http import HttpResponse, Http404, JsonResponse
 from django.shortcuts import get_object_or_404
 
 from rest_framework.decorators import api_view
@@ -148,15 +148,15 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
     # that are not in the new list.
     existingLabels = table.objects.filter(**kwargs).select_related('class_instance__name')
     existing_names = set(ele.class_instance.name for ele in existingLabels)
-    labels_to_delete = table.objects.filter(**kwargs).exclude(class_instance__name__in=new_tags)
+    duplicate_labels = table.objects.filter(**kwargs).exclude(class_instance__name__in=new_tags)
 
+    other_labels = []
+    deleted_labels = []
     if delete_existing_labels:
         # Iterate over all labels that should get deleted to check permission
         # on each one. Remember each label that couldn't be deleted in the
         # other_labels array.
-        other_labels = []
-        deleted_labels = []
-        for l in labels_to_delete:
+        for l in duplicate_labels:
             try:
                 can_edit_or_fail(request.user, l.id, table._meta.db_table)
                 if remove_label(l.id, ntype):
@@ -190,6 +190,7 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
               'relation': labeled_as_relation,
               ntype: node}
 
+    new_labels = []
     for tag_name in new_tags:
         if len(tag_name) > 0 and tag_name not in existing_names:
             # Make sure the tag instance exists
@@ -211,6 +212,7 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
             kwargs['class_instance'] = tag
             tci = table(**kwargs) # creates new TreenodeClassInstance or ConnectorClassInstance
             tci.save()
+            new_labels.append(tag_name)
 
             if node.user != request.user:
                 # Inform the owner of the node that the tag was added and give them the option of removing it.
@@ -229,8 +231,12 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
                 }
                 ChangeRequest(**change_request_params).save()
 
-
-    return HttpResponse(json.dumps({'message': 'success'}), content_type='application/json')
+    return JsonResponse({
+        'message': 'success',
+        'new_labels': new_labels,
+        'duplicate_labels': [l.name for l in duplicate_labels],
+        'deleted_labels': deleted_labels,
+    })
 
 
 def label_exists(label_id, node_type):

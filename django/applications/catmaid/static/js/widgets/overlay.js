@@ -4010,7 +4010,7 @@ SkeletonAnnotations.Tag = new (function() {
         django_url + project.id + '/label/' + atn.type + '/' + atn.id + '/update',
         'POST',
         {tags: label,
-         delete_existing: deleteExisting ? true : false},
+         delete_existing: !!deleteExisting},
         function(json) {
           if ('' === label) {
             CATMAID.info('Tags removed.');

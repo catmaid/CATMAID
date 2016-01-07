@@ -158,6 +158,19 @@
     return this._currentCommand;
   };
 
+  /**
+   * A static command factory to simplify creation of new command types. It
+   * basically implements prototype inheritance.
+   */
+  CATMAID.makeCommand = function(cmd) {
+    cmd.prototype = Object.create(CATMAID.Command.prototype);
+    cmd.prototype.init = function(_fn, _undo) {
+      CATMAID.Command.call(this, _fn, _undo);
+    };
+    cmd.constructor = cmd;
+    return cmd;
+  };
+
   // Export command and history
   CATMAID.Command = Command;
   CATMAID.CommandHistory = CommandHistory;

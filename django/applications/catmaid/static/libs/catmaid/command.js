@@ -7,6 +7,7 @@
    */
   var Command = function(execute, undo) {
     this.initialized = false;
+    this.executed = false;
     this.init(execute, undo);
   };
 
@@ -28,7 +29,12 @@
    * executed handler returns.
    */
   Command.prototype.execute = function() {
-    return this._fn();
+    if (!this.initialized) {
+      throw new CATMAID.Error('Commands need to be initialized before execution');
+    }
+    var result = this._fn();
+    this.executed = true;
+    return result;
   };
 
   /**
@@ -36,7 +42,12 @@
    * handler returns.
    */
   Command.prototype.undo = function() {
-    return this._undo();
+    if (!this.executed) {
+      throw new CATMAID.Error('Only executed commands can be undone');
+    }
+    var result = this._undo();
+    this.executed = false;
+    return result;
   };
 
   /**

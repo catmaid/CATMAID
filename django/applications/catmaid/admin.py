@@ -23,7 +23,7 @@ def add_related_field_wrapper(form, col_name, rel=None):
     admin site instance available in the admin_site field."""
     if not rel:
         rel_model = form.Meta.model
-        rel = rel_model._meta.get_field(col_name).rel
+        rel = rel_model._meta.get_field(col_name).remote_field
 
     form.fields[col_name].widget =  admin.widgets.RelatedFieldWidgetWrapper(
         form.fields[col_name].widget, rel, form.admin_site, can_add_related=True)
@@ -169,7 +169,7 @@ class StackGroupModelForm(StackGroupMemberModelForm):
         super(StackGroupModelForm, self).__init__(*args, **kwargs)
         # This is a hack to create StackGroup proxy models from the inline,
         # instead of ClassInstance model objects.
-        rel = ForeignKey(StackGroup).rel
+        rel = ForeignKey(StackGroup).remote_field
         add_related_field_wrapper(self, 'class_instance', rel)
 
 
@@ -361,7 +361,6 @@ admin.site.register(ProjectStack)
 admin.site.register(StackGroup, StackGroupAdmin)
 
 # Replace the user admin view with custom view
-admin.site.unregister(User)
 admin.site.register(User, CustomUserAdmin)
 # Register additional views
 admin.site.register_view('annotationimporter', 'Annotation data importer',

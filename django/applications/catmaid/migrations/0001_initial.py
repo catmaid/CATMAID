@@ -4245,6 +4245,8 @@ def add_initial_data(apps, schema_editor):
 class Migration(migrations.Migration):
     """Migrate the database to the state of the last South migration"""
 
+    initial = True
+
     dependencies = [
         ('taggit', '0001_initial'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),

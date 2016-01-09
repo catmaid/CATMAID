@@ -31,7 +31,7 @@ class TestResult(models.Model):
     Represents the result of test of the given view. It expects a time and a
     result.
     """
-    view = models.ForeignKey(TestView)
+    view = models.ForeignKey(TestView, on_delete=models.CASCADE)
     time = models.FloatField()
     result_code = models.IntegerField()
     result = models.TextField()

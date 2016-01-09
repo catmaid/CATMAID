@@ -115,7 +115,7 @@ class ProfilingMiddleware(object):
     """
 
     def process_request(self, request):
-        if 'profile' in request.REQUEST:
+        if 'profile' in request.GET or 'profile' in request.POST:
             request.profiler = cProfile.Profile()
             request.profiler.enable()
 

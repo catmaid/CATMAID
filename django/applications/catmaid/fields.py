@@ -183,38 +183,6 @@ class RGBAField(models.Field):
 
 # ------------------------------------------------------------------------
 
-# from https://github.com/aino/django-arrayfields/blob/master/arrayfields/fields.py
-
-import json
-from django.utils.translation import ugettext_lazy as _
-
-class ArrayFieldBase(models.Field):
-    def get_prep_value(self, value):
-        if value == '':
-            value = '{}'
-        return value
-
-    def value_to_string(self, obj):
-        value = self.value_from_object(obj)
-        return json.dumps(value)
-
-    def to_python(self, value):
-        if isinstance(value, basestring):
-            value = json.loads(value)
-        return value
-
-
-class IntegerArrayField(ArrayFieldBase):
-    """
-    An integer array field for PostgreSQL
-    """
-    description = _('Integer array')
-
-    def db_type(self, connection):
-        return 'integer[]'
-
-# ------------------------------------------------------------------------
-
 class Integer3DFormField(forms.MultiValueField):
     widget = Integer3DWidget
 

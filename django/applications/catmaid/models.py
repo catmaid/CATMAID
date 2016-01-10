@@ -8,6 +8,7 @@ from django import forms
 from django.conf import settings
 from django.contrib.auth.models import User, Group
 from django.contrib.gis.db import models as spatial_models
+from django.contrib.postgres.fields import JSONField
 from django.core.validators import RegexValidator
 from django.db import connection, models
 from django.db.models import Q
@@ -15,7 +16,6 @@ from django.db.models.signals import pre_save, post_save
 from django.dispatch import receiver
 from django.utils import timezone
 
-from jsonfield import JSONField
 from guardian.shortcuts import get_objects_for_user
 from taggit.managers import TaggableManager
 
@@ -467,9 +467,6 @@ class ClientData(models.Model):
     project = models.ForeignKey(Project, on_delete=models.CASCADE, blank=True, null=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True)
     key = models.CharField(max_length=255)
-    # TODO: JSONField does not use Postgres JSON type, does not validate that
-    # text content is valid JSON. Replace with Django's JSONField when we reach
-    # Django 1.9.
     value = JSONField(default={})
 
     class Meta:

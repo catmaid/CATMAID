@@ -201,7 +201,7 @@ class ClientDataList(APIView):
             raise ValidationError('A value for the data must be provided.')
         # Validate JSON by reserializing.
         try:
-            value = json.dumps(json.loads(value))
+            value = json.loads(value)
         except ValueError as exc:
             raise ValidationError('Data value is invalid JSON: ' + str(exc))
 

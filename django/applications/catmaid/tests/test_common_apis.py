@@ -654,7 +654,7 @@ class ViewPageTests(TestCase):
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         self.assertEqual(len(parsed_response), 1)
-        value = json.loads(parsed_response[0]['value'])
+        value = parsed_response[0]['value']
         self.assertTrue(value['replaced'])
 
         response = self.client.put(

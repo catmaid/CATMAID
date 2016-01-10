@@ -3390,6 +3390,57 @@ initial_state_operations = [
         bases=(models.Model,),
     ),
     migrations.CreateModel(
+        name='ClassInstanceClassInstanceProxy',
+        fields=[
+        ],
+        options={
+            'proxy': True,
+        },
+        bases=('catmaid.classinstanceclassinstance',),
+    ),
+    migrations.CreateModel(
+        name='ClassInstanceProxy',
+        fields=[
+        ],
+        options={
+            'proxy': True,
+        },
+        bases=('catmaid.classinstance',),
+    ),
+    migrations.CreateModel(
+        name='ClassProxy',
+        fields=[
+        ],
+        options={
+            'proxy': True,
+        },
+        bases=('catmaid.class',),
+    ),
+    migrations.CreateModel(
+        name='GroupProxy',
+        fields=[
+        ],
+        options={
+            'proxy': True,
+        },
+        bases=('auth.group',),
+        managers=[
+            ('objects', django.contrib.auth.models.GroupManager()),
+        ],
+    ),
+    migrations.CreateModel(
+        name='UserProxy',
+        fields=[
+        ],
+        options={
+            'proxy': True,
+        },
+        bases=('auth.user',),
+        managers=[
+            ('objects', django.contrib.auth.models.UserManager()),
+        ],
+    ),
+    migrations.CreateModel(
         name='ClientData',
         fields=[
             ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),

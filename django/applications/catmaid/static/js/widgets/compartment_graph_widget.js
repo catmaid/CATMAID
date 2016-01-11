@@ -2596,9 +2596,6 @@
         var gedge = gedges[id];
         if (gedge) {
           // Just append the synapse count to the already existing edge
-          gedge.data.confidence = gedge.data.confidence.map(function (count, conf) {
-            return count + d.confidence[conf];
-          });
           gedge.data.weight += d.weight;
           gedge.data.label = gedge.data.weight;
         } else {

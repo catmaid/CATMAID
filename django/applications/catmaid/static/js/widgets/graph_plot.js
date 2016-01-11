@@ -255,7 +255,7 @@
           }, {});
           // Populate adjacency matrix, accumulating edge synapse counts for groups
           json.edges.forEach(function(edge) {
-            AdjM[indices[edge[0]]][indices[edge[1]]] += edge[2].reduce(function (s, c) { return s + c; }, 0);
+            AdjM[indices[edge[0]]][indices[edge[1]]] += edge[2];
           });
           // Update data and GUI
           this.plot(this.ids, this.names, this.models, AdjM);

@@ -19,9 +19,6 @@ from catmaid.control.common import get_relation_to_id_map
 from catmaid.control.tree_util import simplify
 
 def basic_graph(project_id, skeleton_ids):
-    def newSynapseCounts():
-        return [0, 0, 0, 0, 0]
-
     if not skeleton_ids:
         raise ValueError("No skeleton IDs provided")
 
@@ -31,18 +28,26 @@ def basic_graph(project_id, skeleton_ids):
     preID, postID = relations['presynaptic_to'], relations['postsynaptic_to']
 
     cursor.execute('''
-    SELECT t1.skeleton_id, t2.skeleton_id, LEAST(t1.confidence, t2.confidence)
-    FROM treenode_connector t1,
-         treenode_connector t2
-    WHERE t1.skeleton_id IN (%s)
-      AND t1.relation_id = %s
-      AND t1.connector_id = t2.connector_id
-      AND t2.relation_id = %s
-    ''' % (','.join(map(str, skeleton_ids)), preID, postID))
+    SELECT tc.connector_id, tc.relation_id, tc.skeleton_id
+    FROM treenode_connector tc
+    WHERE tc.project_id = %s
+      AND tc.skeleton_id IN (%s)
+      AND (tc.relation_id = %s OR tc.relation_id = %s)
+    ''' % (int(project_id), ",".join(str(int(skid)) for skid in skeleton_ids),
+           preID, postID))
 
-    edges = defaultdict(partial(defaultdict, newSynapseCounts))
+    # stores entire query set in memory, linking pre and post
+    connectors = defaultdict(partial(defaultdict, list))
     for row in cursor.fetchall():
-        edges[row[0]][row[1]][row[2] - 1] += 1
+        connectors[row[0]][row[1]].append(row[2])
+
+    # Safe to placeholder, half-complete connectors:
+    # only adds the edge if both pre and post exist
+    edges = defaultdict(partial(defaultdict, int))
+    for c in connectors.itervalues():
+        for pre in c[preID]: # should be one or none
+            for post in c[postID]:
+                edges[pre][post] += 1
 
     return {'edges': tuple((pre, post, count) for pre, edge in edges.iteritems() for post, count in edge.iteritems())}
 
@@ -71,9 +76,6 @@ def basic_graph(project_id, skeleton_ids):
 
 def confidence_split_graph(project_id, skeleton_ids, confidence_threshold):
     """ Assumes 0 < confidence_threshold <= 5. """
-    def newSynapseCounts():
-        return [0, 0, 0, 0, 0]
-
     if not skeleton_ids:
         raise ValueError("No skeleton IDs provided")
 
@@ -85,7 +87,7 @@ def confidence_split_graph(project_id, skeleton_ids, confidence_threshold):
 
     # Fetch synapses of all skeletons
     cursor.execute('''
-    SELECT skeleton_id, treenode_id, connector_id, relation_id, confidence
+    SELECT skeleton_id, treenode_id, connector_id, relation_id
     FROM treenode_connector
     WHERE project_id = %s
       AND skeleton_id IN (%s)
@@ -94,7 +96,7 @@ def confidence_split_graph(project_id, skeleton_ids, confidence_threshold):
 
     stc = defaultdict(list)
     for row in cursor.fetchall():
-        stc[row[0]].append(row[1:]) # skeleton_id vs (treenode_id, connector_id, relation_id, confidence)
+        stc[row[0]].append(row[1:]) # skeleton_id vs (treenode_id, connector_id, relation_id)
 
     # Fetch all treenodes of all skeletons
     cursor.execute('''
@@ -134,11 +136,11 @@ def confidence_split_graph(project_id, skeleton_ids, confidence_threshold):
         nodeIDs.extend(split_by_confidence(current_skid, tree, stc[current_skid], connectors))
 
     # Create the edges of the graph from the connectors, which was populated as a side effect of 'split_by_confidence'
-    edges = defaultdict(partial(defaultdict, newSynapseCounts)) # pre vs post vs count
+    edges = defaultdict(partial(defaultdict, int)) # pre vs post vs count
     for c in connectors.itervalues():
         for pre in c[preID]:
             for post in c[postID]:
-                edges[pre[0]][post[0]][min(pre[1], post[1]) - 1] += 1
+                edges[pre][post] += 1
 
     return {'nodes': nodeIDs,
             'edges': [(pre, post, count) for pre, edge in edges.iteritems() for post, count in edge.iteritems()]}
@@ -146,9 +148,6 @@ def confidence_split_graph(project_id, skeleton_ids, confidence_threshold):
 
 def dual_split_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, expand):
     """ Assumes bandwidth > 0 and some skeleton_id in expand. """
-    def newSynapseCounts():
-        return [0, 0, 0, 0, 0]
-
     cursor = connection.cursor()
     skeleton_ids = set(skeleton_ids)
     expand = set(expand)
@@ -165,7 +164,7 @@ def dual_split_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, 
 
     # Fetch synapses of all skeletons
     cursor.execute('''
-    SELECT skeleton_id, treenode_id, connector_id, relation_id, confidence
+    SELECT skeleton_id, treenode_id, connector_id, relation_id
     FROM treenode_connector
     WHERE project_id = %s
       AND skeleton_id IN (%s)
@@ -222,7 +221,7 @@ def dual_split_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, 
         for skid in not_to_expand:
             nodeIDs.append(skid)
             for c in stc[skid]:
-                connectors[c[1]][c[2]].append((skid, c[3]))
+                connectors[c[1]][c[2]].append(skid)
 
 
     # Now fetch all treenodes of all skeletons to expand
@@ -272,11 +271,11 @@ def dual_split_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, 
 
 
     # Create the edges of the graph
-    edges = defaultdict(partial(defaultdict, newSynapseCounts)) # pre vs post vs count
+    edges = defaultdict(partial(defaultdict, int)) # pre vs post vs count
     for c in connectors.itervalues():
         for pre in c[preID]:
             for post in c[postID]:
-                edges[pre[0]][post[0]][min(pre[1], post[1]) - 1] += 1
+                edges[pre][post] += 1
 
     return {'nodes': nodeIDs,
             'edges': [(pre, post, count) for pre, edge in edges.iteritems() for post, count in edge.iteritems()],
@@ -288,10 +287,10 @@ def populate_connectors(chunkIDs, chunks, cs, connectors):
     # Build up edges via the connectors
     IDchunks = zip(chunkIDs, chunks)
     for c in cs:
-        # c is (treenode_id, connector_id, relation_id, confidence)
+        # c is (treenode_id, connector_id, relation_id)
         for chunkID, chunk in IDchunks:
             if c[0] in chunk:
-                connectors[c[1]][c[2]].append((chunkID, c[3]))
+                connectors[c[1]][c[2]].append(chunkID)
                 break
 
 
@@ -329,7 +328,7 @@ def split_by_both(skeleton_id, digraph, locations, bandwidth, cs, connectors, in
             nodes.append(chunkID)
             continue
 
-        treenode_ids, connector_ids, relation_ids, confidences = zip(*blob)
+        treenode_ids, connector_ids, relation_ids = zip(*blob)
 
         if 0 == len(connector_ids):
             nodes.append(chunkID)
@@ -341,8 +340,8 @@ def split_by_both(skeleton_id, digraph, locations, bandwidth, cs, connectors, in
         # domains is a dictionary of index vs SynapseGroup instance
 
         if 1 == len(domains):
-            for connector_id, relation_id, confidence in izip(connector_ids, relation_ids, confidences):
-                connectors[connector_id][relation_id].append((chunkID, confidence))
+            for connector_id, relation_id in izip(connector_ids, relation_ids):
+                connectors[connector_id][relation_id].append(chunkID)
             nodes.append(chunkID)
             continue
 
@@ -366,8 +365,7 @@ def split_by_both(skeleton_id, digraph, locations, bandwidth, cs, connectors, in
                 domainID = '%s_%s' % (chunkID, index)
                 nodes.append(domainID)
                 for connector_id, relation_id in izip(domain.connector_ids, domain.relations):
-                    confidence = confidences[connector_ids.index(connector_id)]
-                    connectors[connector_id][relation_id].append((domainID, confidence))
+                    connectors[connector_id][relation_id].append(domainID)
             else:
                 domainID = '%s_%s' % (chunkID, node)
                 branch_nodes.append(domainID)
@@ -441,24 +439,6 @@ def skeleton_graph(request, project_id=None):
           type: integer|string
           required: true
         - description: number of synapses constituting this edge
-          $ref: skeleton_graph_edge_count
-          required: true
-      skeleton_graph_edge_count:
-        id: skeleton_graph_edge_count
-        properties:
-        - description: Number of synapses with confidence 1
-          type: integer
-          required: true
-        - description: Number of synapses with confidence 2
-          type: integer
-          required: true
-        - description: Number of synapses with confidence 3
-          type: integer
-          required: true
-        - description: Number of synapses with confidence 4
-          type: integer
-          required: true
-        - description: Number of synapses with confidence 5
           type: integer
           required: true
       skeleton_graph_intraedge:

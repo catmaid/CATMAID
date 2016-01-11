@@ -3121,9 +3121,7 @@ class ViewPageTests(TestCase):
              'skeleton_ids[1]': skeleton_ids[1],
              'skeleton_ids[2]': skeleton_ids[2]})
         parsed_response = json.loads(response.content)
-        expected_result_edges = [
-                [235, 361, [0, 0, 0, 0, 1]],
-                [235, 373, [0, 0, 0, 0, 2]]]
+        expected_result_edges = [[235, 361, 1], [235, 373, 2]]
         # Since order is not important, check length and matches separately.
         self.assertEqual(len(expected_result_edges), len(parsed_response['edges']))
         for row in expected_result_edges:
@@ -3143,9 +3141,7 @@ class ViewPageTests(TestCase):
              'confidence_threshold': 2})
         parsed_response = json.loads(response.content)
         expected_result_nodes = frozenset(['235', '361', '373'])
-        expected_result_edges = [
-                ['235', '361', [0, 0, 0, 0, 1]],
-                ['235', '373', [0, 0, 0, 0, 2]]]
+        expected_result_edges = [['235', '361', 1], ['235', '373', 2]]
         self.assertEqual(expected_result_nodes, frozenset(parsed_response['nodes']))
         # Since order is not important, check length and matches separately.
         self.assertEqual(len(expected_result_edges), len(parsed_response['edges']))
@@ -3161,10 +3157,7 @@ class ViewPageTests(TestCase):
              'confidence_threshold': 4})
         parsed_response = json.loads(response.content)
         expected_result_nodes = frozenset(['235_1', '235_2', '361', '373'])
-        expected_result_edges = [
-                ['235_1', '361', [0, 0, 0, 0, 1]],
-                ['235_1', '373', [0, 0, 0, 0, 1]],
-                ['235_2', '373', [0, 0, 0, 0, 1]]]
+        expected_result_edges = [['235_1', '361', 1], ['235_1', '373', 1], ['235_2', '373', 1]]
         self.assertEqual(expected_result_nodes, frozenset(parsed_response['nodes']))
         # Since order is not important, check length and matches separately.
         self.assertEqual(len(expected_result_edges), len(parsed_response['edges']))
@@ -3184,10 +3177,7 @@ class ViewPageTests(TestCase):
              'bandwidth': 2000})
         parsed_response = json.loads(response.content)
         expected_result_nodes = frozenset(['235_1_1', '235_1_2', '235_2', '361', '373'])
-        expected_result_edges = [
-                ['235_1_1', '361', [0, 0, 0, 0, 1]],
-                ['235_1_1', '373', [0, 0, 0, 0, 1]],
-                ['235_2',   '373', [0, 0, 0, 0, 1]]]
+        expected_result_edges = [['235_1_1', '361', 1], ['235_1_1', '373', 1], ['235_2', '373', 1]]
         self.assertEqual(expected_result_nodes, frozenset(parsed_response['nodes']))
         # Since order is not important, check length and matches separately.
         self.assertEqual(len(expected_result_edges), len(parsed_response['edges']))

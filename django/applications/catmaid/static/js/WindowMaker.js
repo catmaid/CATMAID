@@ -1827,15 +1827,8 @@ var WindowMaker = new function()
     var layout = appendSelect(tabs['Graph'], null, null, GG.layoutStrings);
 
     var edges = document.createElement('select');
-    edges.setAttribute('id', 'graph_edge_threshold' + GG.widgetID);
     for (var i=1; i<101; ++i) edges.appendChild(new Option(i, i));
-
-    var edgeConfidence = document.createElement('select');
-    edgeConfidence.setAttribute('id', 'graph_edge_confidence_threshold' + GG.widgetID);
-    for (var i=1; i<6; ++i) edgeConfidence.appendChild(new Option(i, i));
-    edges.onchange = edgeConfidence.onchange = function() {
-        GG.filterEdges($('#graph_edge_threshold' + GG.widgetID).val(),
-                       $('#graph_edge_confidence_threshold' + GG.widgetID).val()); };
+    edges.onchange = function() { GG.hideEdges(this.value); };
 
     appendToTab(tabs['Graph'],
         [['Re-layout', GG.updateLayout.bind(GG, layout)],
@@ -1844,9 +1837,7 @@ var WindowMaker = new function()
          [color],
          [document.createTextNode(' - Hide edges with less than ')],
          [edges],
-         [document.createTextNode(' synapses ')],
-         [document.createTextNode(' - Filter synapses below confidence ')],
-         [edgeConfidence],
+         [document.createTextNode(' synapses ')]
         ]);
 
     appendToTab(tabs['Selection'],

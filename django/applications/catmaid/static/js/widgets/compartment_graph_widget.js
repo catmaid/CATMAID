@@ -1287,18 +1287,22 @@
     }, {});
 
     var groups = this.groups;
+    var subgraphs = this.subgraphs;
 
     // Inspect each node, remove node if all its skeletons are to be removed
     this.cy.nodes().each(function(i, node) {
       var models = node.data('skeletons'),
           sks = models.filter(function(model) {
-        return !skids[model.id];
-      });
+            return !skids[model.id];
+          });
       if (0 === sks.length) {
         node.remove();
         if (models.length > 1) {
           // Remove the corresponding group
           delete groups[node.id()];
+        } else {
+          // Remove the subgraph if node is split, no effect otherwise.
+          delete subgraphs[models[0].id];
         }
       }
     });
@@ -1948,7 +1952,19 @@
     if (!confirm("Remove " + nodes.length + " selected node" + (nodes.length > 1 ? "s":"") + "?")) return;
     nodes.forEach(function(node) {
       delete this.groups[node.id()]; // ok if not present
+      var skid = node.data('skeletons')[0].id;
       node.remove();
+
+      // If the node is part of a split subgraph, also remove all other nodes
+      // in the subgraph.
+      if (this.subgraphs.hasOwnProperty(skid)) {
+        this.cy.nodes().filter(function (i, splitNode) {
+          return splitNode.data('skeletons').some(function (model) {
+            return model.id === skid;
+          });
+        }).remove();
+        delete this.subgraphs[skid];
+      }
     }, this);
     this.deselectAll();
   };

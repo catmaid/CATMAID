@@ -116,12 +116,15 @@
         if (handleKeyPress(fakeEvent)) {
           return false;
         }
-        var tool = project.getTool();
-        if (tool && tool.handleKeyPress(fakeEvent)) {
-          return false;
-        } else {
-          projectKeyPress = project.handleKeyPress(fakeEvent);
-          return ! projectKeyPress;
+
+        if (project) {
+          var tool = project.getTool();
+          if (tool && tool.handleKeyPress(fakeEvent)) {
+            return false;
+          } else {
+            projectKeyPress = project.handleKeyPress(fakeEvent);
+            return ! projectKeyPress;
+          }
         }
       } else {
         return true;
@@ -130,6 +133,19 @@
 
     // A set of available global actions
     var actions = [
+      new CATMAID.Action({
+        helpText: "Undo last command on history stack",
+        keyShortcuts: {
+          'Z': [ 90 ]
+        },
+        run: function (e) {
+          if (e.ctrlKey) {
+            CATMAID.commands.undo();
+            return true;
+          }
+          return false;
+        }
+      }),
     ];
 
     /**

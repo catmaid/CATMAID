@@ -50,6 +50,7 @@ var SkeletonAnnotations = {
   // Connector nodes can have different subtypes
   SUBTYPE_SYNAPTIC_CONNECTOR : "synaptic-connector",
   SUBTYPE_ABUTTING_CONNECTOR : "abutting-connector",
+  SUBTYPE_GAPJUNCTION_CONNECTOR : "gapjunction-connector",
 
   // Event name constants
   EVENT_ACTIVE_NODE_CHANGED: "tracing_active_node_changed",
@@ -968,11 +969,13 @@ SkeletonAnnotations.TracingOverlay.prototype.selectNode = function(id) {
 
 /**
  * Find connectors pre- and postsynaptic to the given node ID.
- * Returns an array of two arrays, containing IDs of pre and post connectors.
+ * Returns an array of three arrays, containing IDs of pre, post, and
+ * gap junction connectors.
  */
 SkeletonAnnotations.TracingOverlay.prototype.findConnectors = function(node_id) {
   var pre = [];
   var post = [];
+  var gj = [];
   for (var id in this.nodes) {
     if (this.nodes.hasOwnProperty(id)) {
       var node = this.nodes[id];
@@ -981,11 +984,15 @@ SkeletonAnnotations.TracingOverlay.prototype.findConnectors = function(node_id) 
           pre.push(parseInt(id));
         } else if (node.postgroup.hasOwnProperty(node_id)) {
           post.push(parseInt(id));
+        } 
+      } else if (SkeletonAnnotations.SUBTYPE_GAPJUNCTION_CONNECTOR === node.subtype) {
+        if (node.gjgroup.hasOwnProperty(node_id)) {
+          gj.push(parseInt(id));
         }
       }
     }
   }
-  return [pre, post];
+  return [pre, post, gj];
 };
 
 /**
@@ -1035,6 +1042,8 @@ SkeletonAnnotations.TracingOverlay.prototype.activateNode = function(node) {
       var prefix;
       if (SkeletonAnnotations.SUBTYPE_ABUTTING_CONNECTOR === node.subtype) {
         prefix = "Abutting connector node #" + node.id;
+      } else if (SkeletonAnnotations.SUBTYPE_GAPJUNCTION_CONNECTOR === node.subtype) {
+        prefix = "Gap junction connector node #" + node.id;
       } else {
         prefix = "Synaptic connector node #" + node.id;
       }
@@ -1661,6 +1670,34 @@ SkeletonAnnotations.TracingOverlay.prototype.createPresynapticTreenode = functio
 };
 
 /**
+ * Create a new treenode that has a gap junction with the given @connectorID.
+ */
+SkeletonAnnotations.TracingOverlay.prototype.createGapjunctionTreenode = function (
+    connectorID, phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z, afterCreate)
+{
+  // Check that connectorID doesn't already have two gap junction links
+  // and that connectorID doesn't have post- or presynaptic links
+  // (It is also checked in the server on attempting to create a link. 
+  // Here, it is checked for convenience to avoid creating an isolated treenode for no reason.)
+  var connectorNode = this.nodes[connectorID];
+  if (!connectorNode) {
+    CATMAID.error("Connector #" + connectorID + " is not loaded. Browse to " + 
+        "its section and make sure it is selected.");
+    return;
+  }
+  if (Object.keys(connectorNode.gjgroup).length > 1) { 
+    CATMAID.msg("WARNING", "The connector already has two gap junction nodes!");
+    return;
+  }
+  if (Object.keys(connectorNode.pregroup).length > 0 || Object.keys(connectorNode.postgroup).length > 0) {
+    CATMAID.msg("WARNING", "Gap junction can not be added as the connector is part of a synapse!");
+    return;
+  }
+  this.createTreenodeWithLink(connectorID, phys_x, phys_y, phys_z, radius, 
+      confidence, pos_x, pos_y, pos_z, "gapjunction_with", afterCreate)
+};
+
+/**
  * Create a new treenode and link it immediately to the given connector with the
  * specified link_type.
  */
@@ -1889,22 +1926,26 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
   jso[1].forEach(function(a, index, array) {
     // Determine the connector node type. For now eveything with no or only
     // pre or post treenodes is treated as a synapse. If there are only
-    // non-directional connectors, an abutting connector is assumed.
+    // non-directional connectors, an abutting or gap junction connector is assumed.
     var subtype = SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR;
-    if (0 === a[5].length && 0 === a[6].length && 0 !== a[7].length) {
+    if (0 === a[5].length && 0 === a[6].length && 0 === a[7].length && 0 !== a[8].length) {
       subtype = SkeletonAnnotations.SUBTYPE_ABUTTING_CONNECTOR;
+    }
+    if (0 === a[5].length && 0 === a[6].length && 0 !== a[7].length && 0 === a[8].length) {
+      subtype = SkeletonAnnotations.SUBTYPE_GAPJUNCTION_CONNECTOR;
     }
     // a[0]: ID, a[1]: x, a[2]: y, a[3]: z, a[4]: confidence,
     // a[5]: presynaptic nodes as array of arrays with treenode id
     // and confidence, a[6]: postsynaptic nodes as array of arrays with treenode id
-    // and confidence, a[7]: undirected nodes as array of arrays with treenode
-    // id, a[8]: whether the user can edit the connector
+    // and confidence, a[7]: gap junction nodes as array of arrays with treenode id,
+    // a[8]: undirected nodes as array of arrays with treenode id, a[9]: whether
+    // the user can edit the connector
     var z = this.stackViewer.primaryStack.projectToUnclampedStackZ(a[3], a[2], a[1]);
     this.nodes[a[0]] = this.graphics.newConnectorNode(
       a[0],
       this.stackViewer.primaryStack.projectToUnclampedStackX(a[3], a[2], a[1]),
       this.stackViewer.primaryStack.projectToUnclampedStackY(a[3], a[2], a[1]),
-      z, z - this.stackViewer.z, a[4], subtype, a[8]);
+      z, z - this.stackViewer.z, a[4], subtype, a[9]);
   }, this);
 
   // Disable any unused instances
@@ -1951,8 +1992,19 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
                                      'confidence': r[1]};
       }
     }, this);
-    // a[7]: other relation which is an array of arrays of tnid and tc_confidence
+    // a[7]: gap junction relation which is an array of arrays of tnid and tc_confidence
     a[7].forEach(function(r, i, ar) {
+      // r[0]: tnid, r[1]: tc_confidence
+      var tnid = r[0];
+      var node = this.nodes[tnid];
+      if (node) {
+        // link it to gjgroup, to connect it to the connector
+        connector.gjgroup[tnid] = {'treenode': node,
+                                   'confidence': r[1]};
+      }
+    }, this);
+    // a[8]: other relation which is an array of arrays of tnid and tc_confidence
+    a[8].forEach(function(r, i, ar) {
       // r[0]: tnid, r[1]: tc_confidence
       var tnid = r[0];
       var node = this.nodes[tnid];
@@ -2259,7 +2311,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createNodeOrLink = function(insert,
       var respectVirtualNodes = true;
       this.insertNodeInActiveSkeleton(phys_x, phys_y, phys_z, atn, respectVirtualNodes);
     }
-  } else if (link) {
+  } else if (link || postLink) {
     if (null === atn.id) {
       if (SkeletonAnnotations.currentmode === SkeletonAnnotations.MODES.SKELETON) {
         CATMAID.msg('BEWARE', 'You need to activate a treenode first (skeleton tracing mode)!');
@@ -2269,7 +2321,13 @@ SkeletonAnnotations.TracingOverlay.prototype.createNodeOrLink = function(insert,
       if (SkeletonAnnotations.TYPE_NODE === atn.type) {
         var targetTreenode = this.nodes[atn.id];
         var msg, linkType, self = this;
-        if (SkeletonAnnotations.SUBTYPE_ABUTTING_CONNECTOR === SkeletonAnnotations.newConnectorType) {
+        var newConnectorType = SkeletonAnnotations.newConnectorType;
+        if (postLink && !link) {
+          // Create a new gap junction connector
+          msg = "Created gap junction connector with treenode #" + atn.id;
+          linkType = "gapjunction_with";
+          newConnectorType = SkeletonAnnotations.SUBTYPE_GAPJUNCTION_CONNECTOR;
+        } else if (SkeletonAnnotations.SUBTYPE_ABUTTING_CONNECTOR === SkeletonAnnotations.newConnectorType) {
           // Create a new abutting connection
           msg = "Created abutting connector with treenode #" + atn.id;
           linkType = "abutting";
@@ -2284,7 +2342,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createNodeOrLink = function(insert,
         }
         CATMAID.statusBar.replaceLast(msg);
         this.createSingleConnector(phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, 5,
-          SkeletonAnnotations.newConnectorType, function (connectorID) {
+          newConnectorType, function (connectorID) {
             self.createLink(targetTreenode.id, connectorID, linkType);
           });
       } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === atn.type) {
@@ -2298,6 +2356,11 @@ SkeletonAnnotations.TracingOverlay.prototype.createNodeOrLink = function(insert,
           CATMAID.statusBar.replaceLast("Created treenode #" + atn.id + " abutting to active connector");
           this.createTreenodeWithLink(atn.id, phys_x, phys_y, phys_z, -1, 5,
               pos_x, pos_y, pos_z, "abutting", postCreateFn);
+        } else if (SkeletonAnnotations.SUBTYPE_GAPJUNCTION_CONNECTOR === atn.subtype || postLink) {
+          // create new treenode (and skeleton) postsynaptic to activated connector
+          CATMAID.statusBar.replaceLast("Created treenode #" + atn.id + " with gap junction to active connector");
+          this.createGapjunctionTreenode(atn.id, phys_x, phys_y, phys_z, -1, 5,
+              pos_x, pos_y, pos_z, postCreateFn);
         } else {
           return false;
         }
@@ -3645,12 +3708,16 @@ SkeletonAnnotations.TracingOverlay.prototype.switchBetweenTerminalAndConnector =
       var cs = this.findConnectors(ob.id);
       var preIDs = cs[0];
       var postIDs = cs[1];
+      var gjIDs = cs[2];
       if (1 === postIDs.length) {
         this.switchingTreenodeID = ob.id;
         this.switchingConnectorID = postIDs[0];
       } else if (1 === preIDs.length) {
         this.switchingTreenodeID = ob.id;
         this.switchingConnectorID = preIDs[0];
+      } else if (1 === gjIDs.length) {
+        this.switchingTreenodeID = ob.id;
+        this.switchingConnectorID = gjIDs[0];
       } else {
         CATMAID.msg("Oops", "Don't know which connector to switch to");
         this.switchingTreenodeID = null;
@@ -3722,10 +3789,13 @@ SkeletonAnnotations.TracingOverlay.prototype.deleteNode = function(nodeId) {
           // If there was a presynaptic node, select it
           var preIDs  = Object.keys(connectornode.pregroup);
           var postIDs = Object.keys(connectornode.postgroup);
+          var gjIDs = Object.keys(connectornode.gjgroup);
           if (preIDs.length > 0) {
               self.selectNode(preIDs[0]);
           } else if (postIDs.length > 0) {
               self.selectNode(postIDs[0]);
+          } else if (gjIDs.length > 0) {
+              self.selectNode(gjIDs[0]);
           } else {
               self.activateNode(null);
           }
@@ -3764,6 +3834,9 @@ SkeletonAnnotations.TracingOverlay.prototype.deleteNode = function(nodeId) {
           // Then try connectors for which node is presynaptic
           } else if (pp[0].length > 0) {
             self.selectNode(pp[0][0]);
+          // Then try connectors for which node has gap junction with
+          } else if (pp[2].length > 0) {
+            self.selectNode(pp[2][0]);
           } else {
             self.activateNode(null);
           }

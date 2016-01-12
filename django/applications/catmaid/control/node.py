@@ -268,12 +268,14 @@ def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_pr
         # so that repeated tnid entries are overwritten.
         pre = defaultdict(dict)
         post = defaultdict(dict)
+        gj = defaultdict(dict)
         other = defaultdict(dict)
 
         # Process crows (rows with connectors) which could have repeated connectors
         # given the join with treenode_connector
         presynaptic_to = relation_map['presynaptic_to']
         postsynaptic_to = relation_map['postsynaptic_to']
+        gapjunction_with = relation_map['gapjunction_with']
         for row in crows:
             # Collect treeenode IDs related to connectors but not yet in treenode_ids
             # because they lay beyond adjacent sections
@@ -290,6 +292,8 @@ def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_pr
                     pre[cid][tnid] = row[7]
                 elif row[5] == postsynaptic_to:
                     post[cid][tnid] = row[7]
+                elif row[5] == gapjunction_with:
+                    gj[cid][tnid] = row[7]
                 else:
                     other[cid][tnid] = row[7]
 
@@ -305,6 +309,7 @@ def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_pr
             connectors[i] = (cid, c[1], c[2], c[3], c[4],
                     [kv for kv in  pre[cid].iteritems()],
                     [kv for kv in post[cid].iteritems()],
+                    [kv for kv in   gj[cid].iteritems()],
                     [kv for kv in other[cid].iteritems()],
                     is_superuser or c[8] == user_id or c[8] in domain)
 

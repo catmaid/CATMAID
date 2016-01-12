@@ -898,6 +898,10 @@
           this.undirLines.forEach(ptype.ElementPool.prototype.disableFn);
           this.undirLines = null;
         }
+        if (this.gjLines) {
+          this.gjLines.forEach(ptype.ElementPool.prototype.disableFn);
+          this.gjLines = null;
+        }
       };
 
       this.obliterate = function() {
@@ -911,11 +915,13 @@
         this.pregroup = null;
         this.postgroup = null;
         this.undirgroup = null;
+        this.gjgroup = null;
         // Note: mouse event handlers are removed by c.remove()
         this.removeConnectorArrows(); // also removes confidence text associated with edges
         this.preLines = null;
         this.postLines = null;
         this.undirLines = null;
+        this.gjLines = null;
       };
 
       this.disable = function() {
@@ -929,6 +935,7 @@
         this.pregroup = null;
         this.postgroup = null;
         this.undirgroup = null;
+        this.gjgroup = null;
       };
 
       this.color = function() {
@@ -974,7 +981,7 @@
             node = this.pregroup[i].treenode;
             if (this.mustDrawLineWith(node)) {
               if (!this.preLines) this.preLines = [];
-              this.preLines.push(this.createArrow(this, node, this.pregroup[i].confidence, true));
+              this.preLines.push(this.createArrow(this, node, this.pregroup[i].confidence, 1));
             }
           }
         }
@@ -984,7 +991,7 @@
             node = this.postgroup[i].treenode;
             if (this.mustDrawLineWith(node)) {
               if (!this.postLines) this.postLines = [];
-              this.postLines.push(this.createArrow(this, node, this.postgroup[i].confidence, false));
+              this.postLines.push(this.createArrow(this, node, this.postgroup[i].confidence, 0));
             }
           }
         }
@@ -995,6 +1002,16 @@
             if (this.mustDrawLineWith(node)) {
               if (!this.undirLines) this.undirLines = [];
               this.undirLines.push(this.createArrow(this, node, this.undirgroup[i].confidence, undefined));
+            }
+          }
+        }
+
+        for (i in this.gjgroup) {
+          if (this.gjgroup.hasOwnProperty(i)) {
+            node = this.gjgroup[i].treenode;
+            if (this.mustDrawLineWith(node)) {
+              if (!this.gjLines) this.gjLines = [];
+              this.gjLines.push(this.createArrow(this, node, this.gjgroup[i].confidence, 2));
             }
           }
         }
@@ -1012,6 +1029,7 @@
         this.pregroup = {};
         this.postgroup = {};
         this.undirgroup = {};
+        this.gjgroup = {};
         this.needsync = false;
 
         if (this.c) {
@@ -1026,6 +1044,7 @@
         this.preLines = null;
         this.postLines = null;
         this.undirLines = null;
+        this.gjLines = null;
       };
     };
 
@@ -1057,10 +1076,12 @@
       this.pregroup = {}; // set of presynaptic treenodes
       this.postgroup = {}; // set of postsynaptic treenodes
       this.undirgroup = {}; // set of undirected treenodes
+      this.gjgroup = {}; // set of gap junction treenodes
       this.c = null; // The SVG circle for drawing
       this.preLines = null; // Array of ArrowLine to the presynaptic nodes
       this.postLines = null; // Array of ArrowLine to the postsynaptic nodes
       this.undirLines = null; // Array of undirected ArraowLine
+      this.gjLines = null; // Array of gap junction ArrowLine
       this.hrefSuffix = hrefSuffix;
     };
 
@@ -1104,7 +1125,7 @@
           return;
         }
         var node = catmaidTracingOverlay.nodes[d];
-        if (e.shiftKey) {
+        if (e.shiftKey || e.altKey) {
           var atnID = SkeletonAnnotations.getActiveNodeId();
           if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
             return catmaidTracingOverlay.deleteNode(node.id);
@@ -1115,7 +1136,17 @@
             // to existing treenode or connectornode
             if (atnType === SkeletonAnnotations.TYPE_CONNECTORNODE) {
               var atnSubType = SkeletonAnnotations.getActiveNodeSubType();
-              if (atnSubType === SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR) {
+              if ((e.altKey && !e.shiftKey) ||
+                  atnSubType === SkeletonAnnotations.SUBTYPE_GAPJUNCTION_CONNECTOR) {
+                if (!mayEdit()) {
+                  CATMAID.error("You lack permissions to declare node #" + node.id +
+                      " as having a gap junction with connector #" + atnID);
+                  return;
+                }
+                // careful, atnID is a connector
+                SkeletonAnnotations.atn.subtype = SkeletonAnnotations.SUBTYPE_GAPJUNCTION_CONNECTOR;
+                catmaidTracingOverlay.createLink(node.id, atnID, "gapjunction_with");
+              }  else if (atnSubType === SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR) {
                 if (!mayEdit()) {
                   CATMAID.error("You lack permissions to declare node #" + node.id +
                       " as postsynaptic to connector #" + atnID);
@@ -1199,7 +1230,8 @@
               if (conn.type === SkeletonAnnotations.TYPE_CONNECTORNODE) {
                 if (node.id in conn.postgroup ||
                     node.id in conn.pregroup ||
-                    node.id in conn.undirgroup) {
+                    node.id in conn.undirgroup ||
+                    node.id in conn.gjgroup) {
                   conn.drawEdges(true);
                 }
               }
@@ -1257,7 +1289,7 @@
         e.preventDefault();
 
         // If not trying to join or remove a node, but merely click on it to drag it or select it:
-        if (!e.shiftKey && !e.ctrlKey && !e.metaKey) {
+        if (!e.shiftKey && !e.altKey && !e.ctrlKey && !e.metaKey) {
           catmaidTracingOverlay.activateNode(node);
         }
 
@@ -1292,7 +1324,7 @@
         }
         // return some log information when clicked on the node
         // this usually refers here to the c object
-        if (e.shiftKey) {
+        if (e.shiftKey || e.altKey) {
           if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
             return catmaidTracingOverlay.deleteNode(connectornode.id);
           }
@@ -1304,7 +1336,11 @@
               alert("Can not join two connector nodes!");
             } else if (atnType === SkeletonAnnotations.TYPE_NODE) {
               var linkType;
-              if (SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR === connectornode.subtype) {
+              if ((e.altKey && !e.shiftKey) ||
+                  connectornode.subtype === SkeletonAnnotations.SUBTYPE_GAPJUNCTION_CONNECTOR) {
+                linkType = "gapjunction_with";
+                connectornode.subtype = SkeletonAnnotations.SUBTYPE_GAPJUNCTION_CONNECTOR;
+              } else if (SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR === connectornode.subtype) {
                 linkType = (e.altKey ? 'post' : 'pre') + "synaptic_to";
               } else if (SkeletonAnnotations.SUBTYPE_ABUTTING_CONNECTOR === connectornode.subtype) {
                 linkType = "abutting";
@@ -1312,7 +1348,7 @@
                 CATMAID.error("The selected connector is of unknown type: " + connectornode.subtype);
                 return;
               }
-              catmaidTracingOverlay.createLink(atnID, connectornode.id, linkType);
+              catmaidTracingOverlay.createLink(atnID, connectornode.id, linkType, function() { alert(1)});
               CATMAID.statusBar.replaceLast("Joined node #" + atnID + " with connector #" + connectornode.id);
             }
           } else {
@@ -1380,6 +1416,7 @@
     ptype.ArrowLine.prototype = new (function() {
       this.PRE_COLOR = "rgb(200,0,0)";
       this.POST_COLOR = "rgb(0,217,232)";
+      this.GJ_COLOR = "rgb(159,37,194)";
       this.OTHER_COLOR = "rgb(0,200,0)";
       this.BASE_EDGE_WIDTH = 2;
       this.CATCH_SCALE = 3;
@@ -1434,7 +1471,10 @@
         if (d.is_pre === undefined) {
           relation_name = 'abutting';
           title = 'Abutting';
-        } else if (d.is_pre) {
+        } else if (d.is_pre === 2) {
+          relation_name = 'gapjunction_with';
+          title = 'Gap junction';
+        } else if (d.is_pre === 1) {
           relation_name = 'presynaptic_to';
           title = 'Presynaptic';
         } else {
@@ -1482,6 +1522,7 @@
 
         var stroke_color;
         if (undefined === is_pre) stroke_color = this.OTHER_COLOR;
+        else if (2 === is_pre) stroke_color = this.GJ_COLOR;
         else stroke_color = is_pre ? this.PRE_COLOR : this.POST_COLOR;
 
         if (confidence < 5) {
@@ -1495,7 +1536,10 @@
         if (undefined === is_pre) {
           opts['marker-end'] = 'none';
         } else {
-          var def = is_pre ? 'markerArrowPre' : 'markerArrowPost';
+          var def;
+          if (is_pre == 2) def = 'markerArrowGj';
+          else if (is_pre == 1) def = 'markerArrowPre'
+          else def = 'markerArrowPost';
           opts['marker-end'] = 'url(#' + def + this.hrefSuffix + ')';
         }
         this.line.attr(opts);
@@ -1537,7 +1581,7 @@
 
       this.init = function(connector, node, confidence, is_pre) {
         this.catcher.datum({connector_id: connector.id, treenode_id: node.id, is_pre: is_pre});
-        if (is_pre) {
+        if (1 == is_pre) {
           this.update(node.x, node.y, connector.x, connector.y, is_pre, confidence, connector.NODE_RADIUS*node.scaling);
         } else {
           this.update(connector.x, connector.y, node.x, node.y, is_pre, confidence, node.NODE_RADIUS*node.scaling);
@@ -1567,9 +1611,10 @@
         // connectors are created, one for each color.
         this.markerDefs = [
           defs.append('marker'),
+          defs.append('marker'),
           defs.append('marker')];
-        var ids = ['markerArrowPost', 'markerArrowPre'];
-        var colors = [this.POST_COLOR, this.PRE_COLOR];
+        var ids = ['markerArrowPost', 'markerArrowPre', 'markerArrowGj'];
+        var colors = [this.POST_COLOR, this.PRE_COLOR, this.GJ_COLOR];
         this.markerDefs.forEach(function (m, i) {
             m.attr({
             id: ids[i] + (hrefSuffix || ''),
@@ -1581,7 +1626,7 @@
             refY: '5',
             orient: 'auto'
           }).append('path').attr({
-            d: 'M 0 0 L 10 5 L 0 10 z',
+            d: (ids[i] === 'markerArrowGj') ? 'M 0 0 L 5 0 L 5 10 L 0 10 z' : 'M 0 0 L 10 5 L 0 10 z',
             fill: colors[i]
           });
         });

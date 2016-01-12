@@ -965,7 +965,7 @@
           });
 
         } else {
-          CATMAID.info("No subgraph possible for '" + name + "' and tag '" + this.tag.regex + "'");
+          CATMAID.info("No subgraph possible for '" + name + "' and tag '" + this.tag_title + "'");
         }
       } else if (mode > 0) {
         // Synapse clustering: mode is the bandwidth

@@ -156,26 +156,16 @@ SkeletonAnnotations.atn.promise = function()
   var overlay = SkeletonAnnotations.getTracingOverlay(this.stack_viewer_id);
   var nodePromise = overlay.promiseNode(overlay.nodes[this.id]);
   var isNewSkeleton = !this.skeleton_id;
-  function AtnPromise(atn) {
-    // Override prototype's
-    this.then = function(fn) {
-      nodePromise.then(function(result) {
-        // Set ID of active node, expect ID as result
-        if (atn.id !== result) {
-          atn.id = result;
-          SkeletonAnnotations.trigger(
-              SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED, atn, isNewSkeleton);
-        }
-        // Call the orginal callback
-        if (fn) {
-          fn(result);
-        }
-      });
-    };
-  }
-  AtnPromise.prototype = nodePromise;
 
-  return new AtnPromise(this);
+  return nodePromise.then((function(result) {
+    // Set ID of active node, expect ID as result
+    if (this.id !== result) {
+      this.id = result;
+      SkeletonAnnotations.trigger(
+          SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED, this, isNewSkeleton);
+    }
+    return result;
+  }).bind(this));
 };
 
 /**

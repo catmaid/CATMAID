@@ -1198,6 +1198,8 @@
       if (node.data('branch')) {
         node.css('height', 15);
         node.css('width', 15);
+        // ... and hide their title, if any
+        node.css('text-opacity', 0);
       }
     });
 

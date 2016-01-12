@@ -245,8 +245,6 @@
       document.getElementById( "content" ).style.display = "none";
       document.body.appendChild( view );
       CATMAID.ui.registerEvent( "onresize", resize );
-
-      document.onkeydown = onkeydown;
     };
 
     /**
@@ -268,7 +266,6 @@
       }
       catch ( error ) {}
       self.id = 0;
-      document.onkeydown = null;
       document.getElementById( "content" ).style.display = "block";
       document.getElementById( "stackmenu_box" ).style.display = "none";
       document.getElementById( "stack_menu" ).style.display = "none";
@@ -442,86 +439,6 @@
         return keyAction.run(e);
       } else {
         return false;
-      }
-    };
-
-    var onkeydown = function( e )
-    {
-      var projectKeyPress;
-      var key;
-      var shift;
-      var alt;
-      var ctrl;
-      var meta;
-      var keyAction;
-
-      /* The code here used to modify 'e' and pass it
-         on, but Firefox no longer allows this.  So, create
-         a fake event object instead, and pass that down. */
-      var fakeEvent = {};
-
-      if ( e )
-      {
-        if ( e.keyCode ) {
-          key = e.keyCode;
-        } else if ( e.charCode ) {
-          key = e.charCode;
-        } else {
-          key = e.which;
-        }
-        fakeEvent.keyCode = key;
-        fakeEvent.shiftKey = e.shiftKey;
-        fakeEvent.altKey = e.altKey;
-        fakeEvent.ctrlKey = e.ctrlKey;
-        fakeEvent.metaKey = e.metaKey;
-        shift = e.shiftKey;
-        alt = e.altKey;
-        ctrl = e.ctrlKey;
-        meta = e.metaKey;
-      }
-      else if ( event && event.keyCode )
-      {
-        fakeEvent.keyCode = event.keyCode;
-        fakeEvent.shiftKey = event.shiftKey;
-        fakeEvent.altKey = event.altKey;
-        fakeEvent.ctrlKey = event.ctrlKey;
-        fakeEvent.metaKey = event.metaKey;
-        shift = event.shiftKey;
-        alt = event.altKey;
-        ctrl = event.ctrlKey;
-        meta = event.metaKey;
-      }
-      fakeEvent.target = CATMAID.UI.getTargetElement(e || event);
-      var n = fakeEvent.target.nodeName.toLowerCase();
-      var fromATextField = fakeEvent.target.getAttribute('contenteditable');
-      if (n === "input") {
-        var inputType = fakeEvent.target.type.toLowerCase();
-        if (inputType !== 'checkbox' && inputType !== 'button') {
-          fromATextField = true;
-        }
-      }
-      if (meta) {
-        // Don't intercept command-key events on Mac.
-        return true;
-      }
-      if (!(fromATextField || n == "textarea" || n == "area"))
-      {
-        /* Note that there are two different
-           conventions for return values here: the
-           handleKeyPress() methods return true if the
-           event has been dealt with (i.e. it should
-           not be propagated) but the onkeydown
-           function should only return true if the
-           event should carry on for default
-           processing. */
-        if (tool && tool.handleKeyPress(fakeEvent)) {
-          return false;
-        } else {
-          projectKeyPress = self.handleKeyPress(fakeEvent);
-          return ! projectKeyPress;
-        }
-      } else {
-        return true;
       }
     };
 

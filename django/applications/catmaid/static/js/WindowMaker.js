@@ -3020,7 +3020,7 @@ var WindowMaker = new function()
     content.style.backgroundColor = "#ffffff";
 
     var container = createContainer("ontology-search" + OS.widgetID);
-    container.setAttribute('class', 'ontology_search');
+    container.classList.add('ontology_search');
 
     // Add container to DOM
     content.appendChild(container);
@@ -3537,7 +3537,7 @@ var WindowMaker = new function()
     content.style.backgroundColor = "#ffffff";
 
     var container = createContainer("neuron-navigator" + NN.widgetID);
-    container.setAttribute('class', 'navigator_widget');
+    container.classList.add('navigator_widget');
 
     // Add container to DOM
     content.appendChild(container);

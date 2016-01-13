@@ -92,6 +92,7 @@ non_pipeline_js = {
     'cola': 'libs/cytoscapejs/cola.js',
     'springy': 'libs/cytoscapejs/springy.js',
     'foograph': 'libs/cytoscapejs/foograph.js',
+    'geometry': 'libs/geometry/geometry.js',
     'rhill-voronoi-core': 'libs/cytoscapejs/rhill-voronoi-core.js'
 }
 

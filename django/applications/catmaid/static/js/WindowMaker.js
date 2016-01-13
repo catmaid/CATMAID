@@ -2840,7 +2840,7 @@ var WindowMaker = new function()
         content.appendChild( contentbutton );
 
         var container = createContainer( "connectivity_widget" + widgetID );
-        container.setAttribute('class', 'connectivity_widget');
+        container.classList.add('connectivity_widget');
         content.appendChild( container );
 
         addListener(win, container, 'skeleton_connectivity_buttons' + widgetID, SC.destroy.bind(SC));

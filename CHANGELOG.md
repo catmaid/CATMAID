@@ -53,6 +53,17 @@ Tracing overlay:
   changes.
 
 
+Skeleton Projection layer:
+
+- Instead of supporting only the display of the active skeleton, the projection
+  layer can now subscribe to other skeleton sources and display multiple
+  skeleton projections at the same time. The used source can be selected in the
+  Settings Widget. This way, for instance, a Selection Table could provide input
+  to the projection layer and effectively control which skeletons will be
+  projected.  And Through its own subscriptions, the Selection Table could even
+  provide a dynamic list that includes the active node.
+
+
 ### Bug fixes
 
 - The skeleton projection layer can be used again.

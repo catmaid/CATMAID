@@ -580,7 +580,7 @@
 
 
       var dsSkeletonProjection = CATMAID.DOM.addSettingsContainer(ds,
-          "Active skeleton projection", true);
+          "Skeleton projection layer", true);
 
       // Figure out if all displayed stack viewers have a skeleton projection
       // layer
@@ -593,6 +593,14 @@
           "projections of the active skeleton to the tracing display.",
           updateSkeletonProjectionDisplay);
       dsSkeletonProjection.append(skpVisible);
+
+      var skpSource = $(CATMAID.skeletonListSources.createUnboundSelect(
+          'Skeleton projection layer'));
+      var currentSource = CATMAID.SkeletonProjectionLayer.options.source ||
+        SkeletonAnnotations.activeSkeleton;
+      skpSource.val(currentSource.getName());
+      skpSource.on('change', updateSkeletonProjectionDisplay);
+      dsSkeletonProjection.append(CATMAID.DOM.createLabeledControl('Source', skpSource));
 
       var skpShading = $('<select/>');
       var skpShadingOptions = [
@@ -686,7 +694,7 @@
           "strahlerShadingMin": skpMinStrahler.find('input').val(),
           "strahlerShadingMax": skpMaxStrahler.find('input').val(),
           "distanceFalloff": skpDistanceFalloff.find('input').val(),
-          "initialNode": SkeletonAnnotations.atn
+          "source": CATMAID.skeletonListSources.getSource(skpSource.val())
         };
       }
 
@@ -701,7 +709,6 @@
             if (layer) {
               // Update existing instance
               layer.updateOptions(options, false);
-              layer.update(options.initialNode);
             } else {
               // Create new if not already present
               layer = new CATMAID.SkeletonProjectionLayer(sv, options);

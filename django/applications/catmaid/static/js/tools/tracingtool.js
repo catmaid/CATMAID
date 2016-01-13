@@ -447,9 +447,8 @@
 
       function add(sv) {
         if (sv.getLayer(key)) return;
-        sv.addLayer(key, new CATMAID.SkeletonProjectionLayer(sv, {
-          initialNode: SkeletonAnnotations.atn
-        }));
+        // Add new layer, defaulting to the active skelton source for input
+        sv.addLayer(key, new CATMAID.SkeletonProjectionLayer(sv));
       }
       function remove(sv) {
         if (!sv.getLayer(key)) return;

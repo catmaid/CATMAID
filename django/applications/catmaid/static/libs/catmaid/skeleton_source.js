@@ -114,6 +114,13 @@
   };
 
   /**
+   * Convenience method to remove all subscriptions at once.
+   */
+  SkeletonSource.prototype.removeAllSubscriptions = function() {
+    this.subscriptions.forEach(this.removeSubscription.bind(this));
+  };
+
+  /**
    * Get all skeleton sources this source has subscribed to.
    */
   SkeletonSource.prototype.getSourceSubscriptions = function() {

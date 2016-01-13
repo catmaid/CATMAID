@@ -26,6 +26,7 @@
   var WebGLApplication = function() {
     this.widgetID = this.registerInstance();
     this.registerSource();
+    this.APPEND_WARNING_THRESHOLD = 1000;
     // Indicates whether init has been called
     this.initialized = false;
     // Indicates if there is an animation running

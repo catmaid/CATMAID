@@ -19,6 +19,7 @@
   var SelectionTable = function() {
     this.widgetID = this.registerInstance();
     this.registerSource();
+    this.APPEND_WARNING_THRESHOLD = 1000;
 
     this.skeletons = [];
     this.skeleton_ids = {}; // skeleton_id vs index in skeleton array
@@ -453,7 +454,7 @@
       this.triggerRemove(removedModels);
     }
   };
-   
+
   /** Set the color of all skeletons based on the state of the "Color" pulldown menu. */
   SelectionTable.prototype.randomizeColorsOfSelected = function() {
     this.next_color_index = 0; // reset
@@ -502,7 +503,7 @@
       }
     }
   };
-   
+
   SelectionTable.prototype.getSkeletonModel = function( id ) {
     if (id in this.skeleton_ids) {
       return this.skeletons[this.skeleton_ids[id]].clone();

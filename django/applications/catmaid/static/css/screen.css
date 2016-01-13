@@ -1013,7 +1013,8 @@ table.skeleton-table .sorting_desc_disabled::after {
 }
 
 div.selection-table.windowContent {
-  margin-top: 1em;
+  box-sizing: border-box;
+  padding-top: 1em;
 }
 
 .help {

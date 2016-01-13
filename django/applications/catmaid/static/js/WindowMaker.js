@@ -40,7 +40,8 @@ var WindowMaker = new function()
             break;
           case CMWWindow.RESIZE:
             if( button_bar !== undefined ) {
-                container.style.height = ( win.getContentHeight() - $('#' + button_bar).height() ) + "px";
+              var $bar = $('#' + button_bar);
+              container.style.height = (win.getContentHeight() - ($bar.is(':visible') ? $bar.height() : 0)) + "px";
             } else {
                 container.style.height = ( win.getContentHeight() ) + "px";
             }

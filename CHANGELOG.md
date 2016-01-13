@@ -55,7 +55,9 @@ Tracing overlay:
 
 ### Bug fixes
 
-- The skeleton projection layer can be used again.
+- The skeleton projection layer can be used again and now renders lines with the
+  same width as the tracing layer. This width can be configured in the settings
+  widget.
 
 
 

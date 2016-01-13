@@ -116,11 +116,12 @@
   };
 
   SkeletonProjectionLayer.prototype.redraw = function(completionCallback) {
+
     // Get current field of view in stack space
     var stackViewBox = this.stackViewer.createStackViewBox();
     var projectViewBox = this.stackViewer.primaryStack.createStackToProjectBox(stackViewBox);
 
-    var screenScale = userprofile.tracing_overlay_screen_scaling;
+    var screenScale = SkeletonAnnotations.TracingOverlay.Settings.session.screen_scaling;
     this.paper.classed('screen-scale', screenScale);
     // All SVG elements scale automatcally, if the viewport on the SVG data
     // changes. If in screen scale mode, where the size of all elements should
@@ -131,6 +132,16 @@
 
     this.graphics.scale(SkeletonAnnotations.TracingOverlay.Settings.session.scale,
         resScale, dynamicScale);
+
+    // In case of a zoom level change and screen scaling is selected, update
+    // edge width.
+    if (this.currentNodeID && this.stackViewer.s !== this.lastScale) {
+      // Remember current zoom level
+      this.lastScale = this.stackViewer.s;
+      // Update edge width
+      var edgeWidth = this.graphics.ArrowLine.prototype.EDGE_WIDTH || 2;
+      this.paper.selectAll('line').attr('stroke-width', edgeWidth);
+    }
 
     // Use project coordinates for the SVG's view box
     this.paper.attr({

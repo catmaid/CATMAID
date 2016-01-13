@@ -733,6 +733,7 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2, model_o
     WHERE t1.skeleton_id IN (%s)
       AND t1.relation_id = %s
       AND t1.connector_id = t2.connector_id
+      AND t1.id != t2.id
       AND t2.relation_id = %s
     ''' % (','.join(map(str, skeleton_ids)), int(relation_id_1), int(relation_id_2)))
 
@@ -790,12 +791,14 @@ def _skeleton_info_raw(project_id, skeletons, op):
     WHERE project_id=%s
       AND (relation_name='presynaptic_to'
         OR relation_name='postsynaptic_to'
+        OR relation_name='gapjunction_with'
         OR relation_name='model_of')''' % project_id)
     relation_ids = dict(cursor.fetchall())
 
     # Obtain partner skeletons and their info
     incoming, incoming_reviewers = _connected_skeletons(skeletons, op, relation_ids['postsynaptic_to'], relation_ids['presynaptic_to'], relation_ids['model_of'], cursor)
     outgoing, outgoing_reviewers = _connected_skeletons(skeletons, op, relation_ids['presynaptic_to'], relation_ids['postsynaptic_to'], relation_ids['model_of'], cursor)
+    gapjunctions, gapjunctions_reviewers = _connected_skeletons(skeletons, op, relation_ids['gapjunction_with'], relation_ids['gapjunction_with'], relation_ids['model_of'], cursor)
 
     def prepare(partners):
         for partnerID in partners.keys():
@@ -809,8 +812,9 @@ def _skeleton_info_raw(project_id, skeletons, op):
 
     prepare(incoming)
     prepare(outgoing)
+    prepare(gapjunctions)
 
-    return incoming, outgoing, incoming_reviewers, outgoing_reviewers
+    return incoming, outgoing, gapjunctions, incoming_reviewers, outgoing_reviewers, gapjunctions_reviewers
 
 @api_view(['POST'])
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -911,13 +915,15 @@ def skeleton_info_raw(request, project_id=None):
     op = str(request.POST.get('boolean_op')) # values: AND, OR
     op = {'AND': 'AND', 'OR': 'OR'}[op] # sanitize
 
-    incoming, outgoing, incoming_reviewers, outgoing_reviewers = _skeleton_info_raw(project_id, skeletons, op)
+    incoming, outgoing, gapjunctions, incoming_reviewers, outgoing_reviewers, gapjunctions_reviewers = _skeleton_info_raw(project_id, skeletons, op)
 
     return HttpResponse(json.dumps({
                 'incoming': incoming,
                 'outgoing': outgoing,
+                'gapjunctions': gapjunctions,
                 'incoming_reviewers': incoming_reviewers,
-                'outgoing_reviewers': outgoing_reviewers}),
+                'outgoing_reviewers': outgoing_reviewers,
+                'gapjunctions_reviewers': gapjunctions_reviewers}),
             content_type='application/json')
 
 

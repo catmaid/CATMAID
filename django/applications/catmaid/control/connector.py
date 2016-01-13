@@ -70,9 +70,9 @@ def one_to_many_synapses(request, project_id=None):
     if not skids:
         raise ValueError("No skeleton IDs for 'many' provided")
 
-    relation_name = request.POST.get('relation') # expecting presynaptic_to or postsynaptic_to
+    relation_name = request.POST.get('relation') # expecting presynaptic_to, postsynaptic_to, or gapjunction_with
 
-    rows = _many_to_many_synapses([skid], skids, relation_name)
+    rows = _many_to_many_synapses([skid], skids, relation_name, project_id)
     return HttpResponse(json.dumps(rows))
 
 
@@ -89,21 +89,25 @@ def many_to_many_synapses(request, project_id=None):
     if not skids2:
         raise ValueError("No skeleton IDs for second list 'many' provided")
 
-    relation_name = request.POST.get('relation') # expecting presynaptic_to or postsynaptic_to
+    relation_name = request.POST.get('relation') # expecting presynaptic_to, postsynaptic_to, or gapjunction_with
 
-    rows = _many_to_many_synapses(skids1, skids2, relation_name)
+    rows = _many_to_many_synapses(skids1, skids2, relation_name, project_id)
     return HttpResponse(json.dumps(rows))
 
 
-def _many_to_many_synapses(skids1, skids2, relation_name):
+def _many_to_many_synapses(skids1, skids2, relation_name, project_id):
     """
     Return all rows that connect skeletons of one set with another set with a
     specific relation.
     """
-    if relation_name not in ('postsynaptic_to', 'presynaptic_to'):
+    if relation_name not in ('postsynaptic_to', 'presynaptic_to', 'gapjunction_with'):
         raise Exception("Cannot accept a relation named '%s'" % relation_name)
 
     cursor = connection.cursor()
+    
+    relations = get_relation_to_id_map(project_id, cursor=cursor)
+    gapjunction_id = relations.get('gapjunction_with') or -1
+    
     cursor.execute('''
     SELECT tc1.connector_id, c.location_x, c.location_y, c.location_z,
            tc1.treenode_id, tc1.skeleton_id, tc1.confidence, tc1.user_id,
@@ -122,12 +126,14 @@ def _many_to_many_synapses(skids1, skids2, relation_name):
       AND tc1.connector_id = tc2.connector_id
       AND tc1.relation_id = r1.id
       AND r1.relation_name = '%s'
-      AND tc1.relation_id != tc2.relation_id
+      AND (tc1.relation_id != tc2.relation_id OR tc1.relation_id = %d)
+      AND tc1.id != tc2.id
       AND tc1.treenode_id = t1.id
       AND tc2.treenode_id = t2.id
     ''' % (','.join(map(str, skids1)),
            ','.join(map(str, skids2)),
-           relation_name))
+           relation_name,
+           gapjunction_id))
 
     return tuple((row[0], (row[1], row[2], row[3]),
                   row[4], row[5], row[6], row[7],

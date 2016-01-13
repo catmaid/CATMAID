@@ -581,6 +581,11 @@ def split_skeleton(request, project_id=None):
         relation__relation_name__endswith = 'synaptic_to',
         treenode__in=change_list,
     ).update(skeleton=new_skeleton)
+    tcgj = TreenodeConnector.objects.filter(
+        relation__relation_name = 'gapjunction_with',
+        treenode__in=change_list,
+    ).update(skeleton=new_skeleton)
+    
     # setting new root treenode's parent to null
     Treenode.objects.filter(id=treenode_id).update(parent=None, editor=request.user)
 

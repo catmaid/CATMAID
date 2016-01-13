@@ -1348,7 +1348,7 @@
                 CATMAID.error("The selected connector is of unknown type: " + connectornode.subtype);
                 return;
               }
-              catmaidTracingOverlay.createLink(atnID, connectornode.id, linkType, function() { alert(1)});
+              catmaidTracingOverlay.createLink(atnID, connectornode.id, linkType);
               CATMAID.statusBar.replaceLast("Joined node #" + atnID + " with connector #" + connectornode.id);
             }
           } else {

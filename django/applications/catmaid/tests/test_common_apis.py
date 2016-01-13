@@ -3232,6 +3232,34 @@ class ViewPageTests(TestCase):
         for row in expected_result_edges:
             self.assertTrue(row in parsed_response['edges'])
 
+        # Should not include edges involving skeletons not in the set
+        # See https://github.com/catmaid/CATMAID/issues/1249
+        response = self.client.post(
+            '/%d/skeletons/confidence-compartment-subgraph' % self.test_project_id,
+            {'skeleton_ids[0]': skeleton_ids[0],
+             'skeleton_ids[1]': skeleton_ids[1]})
+        parsed_response = json.loads(response.content)
+        expected_result_edges = [
+                [235, 361, [0, 0, 0, 0, 1]]]
+        # Since order is not important, check length and matches separately.
+        self.assertEqual(len(expected_result_edges), len(parsed_response['edges']))
+        for row in expected_result_edges:
+            self.assertTrue(row in parsed_response['edges'])
+        # ...also with confidence splitting...
+        response = self.client.post(
+            '/%d/skeletons/confidence-compartment-subgraph' % self.test_project_id,
+            {'skeleton_ids[0]': skeleton_ids[0],
+             'skeleton_ids[1]': skeleton_ids[2],
+             'confidence_threshold': 4})
+        parsed_response = json.loads(response.content)
+        expected_result_edges = [
+                ['235_1', '373', [0, 0, 0, 0, 1]],
+                ['235_2', '373', [0, 0, 0, 0, 1]]]
+        # Since order is not important, check length and matches separately.
+        self.assertEqual(len(expected_result_edges), len(parsed_response['edges']))
+        for row in expected_result_edges:
+            self.assertTrue(row in parsed_response['edges'])
+
     def test_annotation_creation(self):
         self.fake_authentication()
 

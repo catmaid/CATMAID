@@ -34,11 +34,14 @@ def basic_graph(project_id, skeleton_ids):
     SELECT t1.skeleton_id, t2.skeleton_id, LEAST(t1.confidence, t2.confidence)
     FROM treenode_connector t1,
          treenode_connector t2
-    WHERE t1.skeleton_id IN (%s)
-      AND t1.relation_id = %s
+    WHERE t1.skeleton_id IN (%(skids)s)
+      AND t1.relation_id = %(pre)s
       AND t1.connector_id = t2.connector_id
-      AND t2.relation_id = %s
-    ''' % (','.join(map(str, skeleton_ids)), preID, postID))
+      AND t2.skeleton_id IN (%(skids)s)
+      AND t2.relation_id = %(post)s
+    ''' % {'skids': ','.join(map(str, skeleton_ids)),
+           'pre': preID,
+           'post': postID})
 
     edges = defaultdict(partial(defaultdict, newSynapseCounts))
     for row in cursor.fetchall():

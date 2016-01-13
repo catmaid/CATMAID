@@ -19,7 +19,7 @@
   };
 
   VolumeManagerWidget.prototype.getName = function() {
-    return "Volume Manger";
+    return "Volume Manager";
   };
 
   VolumeManagerWidget.prototype.getWidgetConfiguration = function() {

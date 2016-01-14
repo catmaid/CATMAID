@@ -70,6 +70,8 @@ Skeleton Projection layer:
   same width as the tracing layer. This width can be configured in the settings
   widget.
 
+- Color pickers will now update the color of color picker enabled DOM elements
+  again.
 
 
 ## 2015.12.21

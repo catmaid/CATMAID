@@ -117,6 +117,8 @@
       if (!subscribedSource || (subscribedSource && subscribedSource !== source)) {
         this.replaceSupscription(source);
       }
+      // Re-create SVG
+      this.update();
     }
   };
 
@@ -133,7 +135,6 @@
     };
     CATMAID.SkeletonProjectionLayer.updateDefaultOptions(options);
     this.updateOptions(options);
-    this.update();
   };
 
   /**

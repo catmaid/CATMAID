@@ -1307,7 +1307,7 @@ var WindowMaker = new function()
           {
             type: 'numeric',
             label: 'Custom Tags (regex):',
-            title: 'Display handle spheres for nodes with tags matching this regex.',
+            title: 'Display handle spheres for nodes with tags matching this regex (must refresh 3D viewer after changing).',
             value: o.custom_tag_spheres_regex,
             onchangeFn: function () { WA.options.custom_tag_spheres_regex = this.value; },
             length: 10

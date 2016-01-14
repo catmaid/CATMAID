@@ -1538,7 +1538,7 @@
         } else {
           var def;
           if (is_pre == 2) def = 'markerArrowGj';
-          else if (is_pre == 1) def = 'markerArrowPre'
+          else if (is_pre == 1) def = 'markerArrowPre';
           else def = 'markerArrowPost';
           opts['marker-end'] = 'url(#' + def + this.hrefSuffix + ')';
         }

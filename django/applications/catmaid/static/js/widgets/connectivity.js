@@ -560,7 +560,7 @@
      * threshold columns.
      */
     var gapjunctionTable = function(visible) {
-      gapjunctions.toggleClass('table_container_hidden', !visible)
+      gapjunctions.toggleClass('table_container_hidden', !visible);
       incoming.toggleClass('gapjunction_visible', visible);
       outgoing.toggleClass('gapjunction_visible', visible);
       gapjunctions.toggleClass('gapjunction_visible', visible);

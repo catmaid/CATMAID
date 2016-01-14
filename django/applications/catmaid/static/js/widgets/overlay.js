@@ -1694,7 +1694,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createGapjunctionTreenode = functio
     return;
   }
   this.createTreenodeWithLink(connectorID, phys_x, phys_y, phys_z, radius, 
-      confidence, pos_x, pos_y, pos_z, "gapjunction_with", afterCreate)
+      confidence, pos_x, pos_y, pos_z, "gapjunction_with", afterCreate);
 };
 
 /**

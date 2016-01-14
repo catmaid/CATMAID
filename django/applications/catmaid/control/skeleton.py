@@ -798,7 +798,7 @@ def _skeleton_info_raw(project_id, skeletons, op):
     # Obtain partner skeletons and their info
     incoming, incoming_reviewers = _connected_skeletons(skeletons, op, relation_ids['postsynaptic_to'], relation_ids['presynaptic_to'], relation_ids['model_of'], cursor)
     outgoing, outgoing_reviewers = _connected_skeletons(skeletons, op, relation_ids['presynaptic_to'], relation_ids['postsynaptic_to'], relation_ids['model_of'], cursor)
-    gapjunctions, gapjunctions_reviewers = _connected_skeletons(skeletons, op, relation_ids['gapjunction_with'], relation_ids['gapjunction_with'], relation_ids['model_of'], cursor)
+    gapjunctions, gapjunctions_reviewers = _connected_skeletons(skeletons, op, relation_ids.get('gapjunction_with', -1), relation_ids.get('gapjunction_with', -1), relation_ids['model_of'], cursor)
 
     def prepare(partners):
         for partnerID in partners.keys():

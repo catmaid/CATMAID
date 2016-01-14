@@ -106,7 +106,7 @@ def _many_to_many_synapses(skids1, skids2, relation_name, project_id):
     cursor = connection.cursor()
     
     relations = get_relation_to_id_map(project_id, cursor=cursor)
-    gapjunction_id = relations.get('gapjunction_with') or -1
+    gapjunction_id = relations.get('gapjunction_with', -1)
     
     cursor.execute('''
     SELECT tc1.connector_id, c.location_x, c.location_y, c.location_z,

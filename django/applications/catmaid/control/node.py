@@ -275,7 +275,7 @@ def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_pr
         # given the join with treenode_connector
         presynaptic_to = relation_map['presynaptic_to']
         postsynaptic_to = relation_map['postsynaptic_to']
-        gapjunction_with = relation_map['gapjunction_with']
+        gapjunction_with = relation_map.get('gapjunction_with', -1)
         for row in crows:
             # Collect treeenode IDs related to connectors but not yet in treenode_ids
             # because they lay beyond adjacent sections

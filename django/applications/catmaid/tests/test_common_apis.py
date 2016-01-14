@@ -2199,7 +2199,9 @@ class ViewPageTests(TestCase):
             "outgoing": {"361": {"skids": {"235": [0, 0, 0, 0, 1]}, "num_nodes": 9},
                          "373": {"skids": {"235": [0, 0, 0, 0, 2]}, "num_nodes": 5}},
             "incoming": {"235": {"skids": {"373": [0, 0, 0, 0, 2]}, "num_nodes": 28}},
-            "incoming_reviewers": []}
+            "incoming_reviewers": [],
+            "gapjunctions": {},
+            "gapjunctions_reviewers": []}
         self.assertEqual(expected_result, parsed_response)
 
         # Test for conjunctive connectivity.
@@ -2214,7 +2216,9 @@ class ViewPageTests(TestCase):
             "outgoing_reviewers": [],
             "outgoing": {},
             "incoming": {},
-            "incoming_reviewers": []}
+            "incoming_reviewers": [],
+            "gapjunctions": {},
+            "gapjunctions_reviewers": []}
         self.assertEqual(expected_result, parsed_response)
 
     def test_treenode_info_nonexisting_treenode_failure(self):
@@ -2994,7 +2998,7 @@ class ViewPageTests(TestCase):
                 [2423, 2415, 4140, 6460, 0, 5, -1, 2411, True],
         ]
         expected_c_result = [
-                [2400, 3400, 5620, 0, 5, [[2394, 5], [2415, 5]], [[2374, 5]], [], True],
+                [2400, 3400, 5620, 0, 5, [[2394, 5], [2415, 5]], [[2374, 5]], [], [], True],
         ]
         response = self.client.post('/%d/node/list' % (self.test_project_id,), {
             'z1': 0,
@@ -3037,8 +3041,8 @@ class ViewPageTests(TestCase):
                 [2423, 2415, 4140, 6460, 0, 5, -1, 2411, 3]
         ]
         expected_c_result = [
-                [356, 6730.0, 2700.0, 0.0, 5, [[285, 5]], [[377, 5], [367, 5]], [], True],
-                [421, 6260.0, 3990.0, 0.0, 5, [[415, 5]], [[409, 5]], [], True]
+                [356, 6730.0, 2700.0, 0.0, 5, [[285, 5]], [[377, 5], [367, 5]], [], [], True],
+                [421, 6260.0, 3990.0, 0.0, 5, [[415, 5]], [[409, 5]], [], [], True]
         ]
 
         response = self.client.post('/%d/node/list' % (self.test_project_id,), {

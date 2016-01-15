@@ -4117,28 +4117,26 @@ SkeletonAnnotations.Tag = new (function() {
       SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
           this.handleATNChange, this);
 
-      tracingOverlay.submit(
-          django_url + project.id + '/labels-for-node/' + atn.type  + '/' + atnID,
-          'POST',
-          {pid: project.id},
-          function(json) {
-            input.tagEditor({
-              items: json,
-              confirmRemoval: false,
-              completeOnSeparator: true
-            });
-            input.focus();
+      var nodeId = atn.id, nodeType = atn.type;
+      tracingOverlay.submit().then(function() {
+        return CATMAID.Labels.forNode(project.id, nodeId, nodeType);
+      }).then(function(labels) {
+        input.tagEditor({
+          items: labels,
+          confirmRemoval: false,
+          completeOnSeparator: true
+        });
+        input.focus();
 
-            // TODO autocompletion should only be invoked after typing at least one character
-            // add autocompletion, only request after tagbox creation
-            tracingOverlay.submit(
-              django_url + project.id + '/labels/',
-              'POST',
-              {pid: project.id},
-              function(json) {
-                input.autocomplete({source: json});
-              });
-          });
+        // TODO autocompletion should only be invoked after typing at least one character
+        // add autocompletion, only request after tagbox creation
+        tracingOverlay.submit().then(function() {
+          return CATMAID.Labels.listAll(project.id);
+        }).then(function(labels) {
+          input.autocomplete({source: labels});
+        });
+      });
+
     }).bind(this));
   };
 

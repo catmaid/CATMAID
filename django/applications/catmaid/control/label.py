@@ -63,10 +63,9 @@ def labels_all(request, project_id=None):
       description: Labels used in this project
       required: true
     """
-    qs = ClassInstance.objects.filter(
-        class_column__class_name='label',
-        project=project_id)
-    return HttpResponse(json.dumps([l.name for l in qs]), content_type='application/json')
+    labels = ClassInstance.objects.filter(class_column__class_name='label',
+        project=project_id).values_list('name', flat=True)
+    return HttpResponse(json.dumps(labels), content_type='application/json')
 
 @api_view(['GET'])
 @requires_user_role([UserRole.Annotate, UserRole.Browse])

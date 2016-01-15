@@ -3392,6 +3392,30 @@ class ViewPageTests(TestCase):
         del expected_result[0]['sequence'][-1]
         self.assertJSONEqual(response.content, expected_result)
 
+    def test_skeleton_connectors_by_partner(self):
+        self.fake_authentication()
+
+        response = self.client.post(
+                '/%d/skeleton/connectors-by-partner' % self.test_project_id,
+                {'skids[0]': 235, 'skids[1]': 373})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        [[[c.sort() for c in p.itervalues()] for p in t.itervalues()] for t in parsed_response.itervalues()]
+        expected_result = {
+            '235': {
+                'presynaptic_to': {
+                    '373': [356, 421],
+                    '361': [356]
+                }
+            },
+            '373': {
+                'postsynaptic_to': {
+                    '235': [356, 421]
+                }
+            }
+        }
+        self.assertEqual(expected_result, parsed_response)
+
     def test_export_skeleton_reviews(self):
         self.fake_authentication()
 

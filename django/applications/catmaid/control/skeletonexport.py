@@ -941,7 +941,8 @@ def skeleton_connectors_by_partner(request, project_id):
     partners = defaultdict(partial(defaultdict, partial(defaultdict, list)))
 
     for row in cursor.fetchall():
-        partners[row[0]][relations[row[1]]][row[2]].append(row[3])
+        relation_name = 'presynaptic_to' if row[1] == pre else 'postsynaptic_to'
+        partners[row[0]][relation_name][row[2]].append(row[3])
 
     return HttpResponse(json.dumps(partners))
 

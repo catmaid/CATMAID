@@ -1,5 +1,7 @@
 ## Under development
 
+Contributors: Albert Cardona, Andrew Champion, Daniel Witvliet, Tom Kazimiers
+
 ### Notes
 
 Starting with this release CATMAID uses a new database migration system. To

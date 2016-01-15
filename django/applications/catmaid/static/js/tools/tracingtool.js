@@ -404,6 +404,8 @@
                     clearTopbars('Connector ' + node.id + ' (no presynatpic partner)');
                   }
                 }));
+          } else if (SkeletonAnnotations.SUBTYPE_GAPJUNCTION_CONNECTOR === node.subtype) {
+            clearTopbars('Gap junction connector #' + node.id);
           } else {
             clearTopbars('Abutting connector #' + node.id);
           }

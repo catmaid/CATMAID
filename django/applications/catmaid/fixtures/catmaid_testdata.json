@@ -4385,7 +4385,21 @@
       "relation_name": "postsynaptic_to", 
       "user": 1
     }
-  }, 
+  },  
+  {
+    "pk": 25, 
+    "model": "catmaid.relation", 
+    "fields": {
+      "description": null, 
+      "isreciprocal": false, 
+      "creation_time": "2010-08-26T15:21:35.859Z", 
+      "uri": null, 
+      "edition_time": "2010-08-26T15:21:35.859Z", 
+      "project": 3, 
+      "relation_name": "gapjunction_with", 
+      "user": 1
+    }
+  },
   {
     "pk": 35, 
     "model": "catmaid.relation", 

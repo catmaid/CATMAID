@@ -611,6 +611,9 @@ div#classification_graph_object img.roiimage {
   width: 50%;
   vertical-align: top;
 }
+.connectivity_widget .table_container_half.gapjunction_visible {
+  width: 33%;
+}
 
 .connectivity_widget .table_container_wide {
   width: 100%;
@@ -619,6 +622,10 @@ div#classification_graph_object img.roiimage {
 
 .connectivity_widget .table_container_wide:last-child {
   margin-bottom: 0;
+}
+.connectivity_widget .table_container_hidden,
+.connectivity_widget .column_hidden {
+  display: none;
 }
 
 .connectivity_widget .content {

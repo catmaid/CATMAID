@@ -30,6 +30,7 @@ needed_relations = {
     'postsynaptic_to': "Something is postsynaptic to something else.",
     'annotated_with': "Something is annotated by something else.",
     'abutting': "Two things abut against each other",
+    'gapjunction_with': "Something has a gap junction with something else", 
 }
 
 def check_tracing_setup_view(request, project_id=None):

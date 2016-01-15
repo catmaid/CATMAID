@@ -382,7 +382,7 @@
       }),
 
       new CATMAID.Action({
-        helpText: "Hide all layers except image tile layer (while held)",
+        helpText: "Hide all layers except image tile layers (while held)",
         keyShortcuts: {
           "SPACE": [ 32 ]
         },
@@ -398,9 +398,11 @@
           var layerOpacities = stackLayers.map(function (layers) {
             var opacities = {};
             layers.forEach(function (layer, k) {
-              if (k !== 'TileLayer') {
+              if (layer.isHideable) {
                 opacities[k] = layer.getOpacity();
                 layer.setOpacity(0);
+                // Redrawing the layer is necessary to hide WebGL layers.
+                layer.redraw();
               }
             });
             return opacities;
@@ -419,6 +421,8 @@
                 target.onkeyup = oldListener;
                 self.hideLayersHeld = false;
               });
+              // Redraw everything to show, e.g., WebGL layers.
+              project.getStackViewers().forEach(function (s) { s.redraw(); });
             } else if (oldListener) oldListener(e);
           };
           return true;

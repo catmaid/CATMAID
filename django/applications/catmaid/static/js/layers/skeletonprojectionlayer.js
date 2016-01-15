@@ -10,6 +10,7 @@
    */
   var SkeletonProjectionLayer = function(stackViewer, options) {
     this.stackViewer = stackViewer;
+    this.isHideable = true;
     // The currently displayed skeleton, node and arbor parser
     this.currentProjections = new Map();
     this.currentReferenceNodes = new Map();

@@ -77,6 +77,12 @@ Skeleton Projection layer:
   provide a dynamic list that includes the active node.
 
 
+Miscellaneous:
+
+- Which layers are hidden when Space is held is now configurable by checkboxes
+  in the Stack Viewer's layer controls.
+
+
 ### Bug fixes
 
 - The skeleton projection layer can be used again and now renders lines with the

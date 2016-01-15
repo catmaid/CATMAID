@@ -34,6 +34,7 @@
     this.opacity = opacity; // in the range [0,1]
     this.visible = visibility;
     this.isOrderable = true;
+    this.isHideable = false;
 
     /**
      * Contains all tiles in a 2D toroidal array

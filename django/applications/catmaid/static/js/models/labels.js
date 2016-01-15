@@ -8,6 +8,34 @@
   var Labels = {
 
     /**
+     * Get labels for a specific node.
+     *
+     * @param {integer} projectId        The project the node is part of
+     * @param {integer} nodeId           Id of node
+     * @param {string}  nodeType         Either 'treenode' or 'connector'
+     *
+     * @returns {Object} Promise that is resolved with an object mapping label
+     *                   IDs to label names.
+     */
+    forNode: function(projectId, nodeId, nodeType) {
+      var url = CATMAID.makeURL(projectId + '/labels/' + nodeType  + '/' + nodeId + '/');
+      return CATMAID.fetch(url, 'GET');
+    },
+
+    /**
+     * Get all labels in a project.
+     *
+     * @param {integer} projectId        The project the node is part of
+     *
+     * @returns {Object} Promise that is resolved with an object mapping label
+     *                   IDs to label names.
+     */
+    listAll: function(projectId) {
+      var url = CATMAID.makeURL(projectId + '/labels/');
+      return CATMAID.fetch(url, 'GET');
+    },
+
+    /**
      * Update the label set of a specific node.
      *
      * @param {integer} projectId        The project the node is part of

@@ -6,8 +6,8 @@ included in this changelog.
 
 ### Additions
 
-None.
-
+- `GET /{project_id}/labels/[treenode|connector]/{label_id}/`:
+  Returns a list of labels for a node.
 
 ### Modifications
 
@@ -21,9 +21,10 @@ None.
 - Returns now also information about what labels were added, which were
   duplicates and which labels were deleted.
 
-- `POST /{project_id}/label/[treenode|connector]/{label_id}/remove`:
-  Returns now also information about which label label was eventually removed.
-  If nothing went wrong the field deleted_link should have the input label ID.
+`POST /{project_id}/label/[treenode|connector]/{label_id}/remove`:
+
+- Returns now also information about which label label was eventually removed.
+  If nothing went wrong the field deleted_link has the input label ID.
 
 
 ### Deprecations
@@ -33,7 +34,9 @@ None.
 
 ### Removals
 
-None.
+-`[POST|GET] /{project_id}/label-for-node/[treenode|connector]/{label_id}`:
+  Has been replaced with:
+  `GET /{project_id}/labels/[treenode|connector]/{label_id}/`
 
 
 ## 2015.12.21

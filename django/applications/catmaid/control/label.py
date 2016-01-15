@@ -44,16 +44,18 @@ def label_remove(request, project_id=None):
                 'deleted_labels': [label.id],
                 'message': 'success'
             })
-    return JsonResponse({
-      'error': 'Only super users can delete labels'
-    })
+    return JsonResponse({'error': 'Only super users can delete labels'})
 
-@api_view(['GET', 'POST'])
+@api_view(['GET'])
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def labels_all(request, project_id=None):
     """List all labels (front-end node *tags*) in use.
 
     ---
+    parameters:
+    - name: project_id
+      description: Project containing node of interest
+      required: true
     type:
     - type: array
       items:
@@ -64,25 +66,47 @@ def labels_all(request, project_id=None):
     qs = ClassInstance.objects.filter(
         class_column__class_name='label',
         project=project_id)
-    return HttpResponse(json.dumps(list(x.name for x in qs)), content_type="text/plain")
+    return HttpResponse(json.dumps([l.name for l in qs]), content_type='application/json')
 
+@api_view(['GET'])
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
-def labels_for_node(request, project_id=None, ntype=None, location_id=None):
-    if ntype == 'treenode':
+def labels_for_node(request, project_id=None, node_type=None, node_id=None):
+    """List all labels (front-end node *tags*) attached to a particular node.
+
+    ---
+    parameters:
+    - name: project_id
+      description: Project containing node of interest
+      required: true
+    - name: node_type
+      description: Either 'connector', 'treenode' or 'location'
+      required: true
+    - name: node_id
+      description: ID of node to list labels for
+      required: true
+    type:
+    - type: arry
+      items:
+        type: string
+      description: Labels used on a particular node
+      required: true
+    """
+    if node_type == 'treenode':
         qs = TreenodeClassInstance.objects.filter(
             relation__relation_name='labeled_as',
             class_instance__class_column__class_name='label',
-            treenode=location_id,
+            treenode=node_id,
             project=project_id).select_related('class_instance__name')
-    elif ntype == 'location' or ntype == 'connector':
+    elif node_type == 'location' or node_type == 'connector':
         qs = ConnectorClassInstance.objects.filter(
             relation__relation_name='labeled_as',
             class_instance__class_column__class_name='label',
-            connector=location_id,
+            connector=node_id,
             project=project_id).select_related('class_instance__name')
     else:
-        raise Http404('Unknown node type: "%s"' % (ntype,))
-    return HttpResponse(json.dumps(list(x.class_instance.name for x in qs)), content_type="text/plain")
+        raise Http404('Unknown node type: "%s"' % (node_type,))
+
+    return JsonResponse([l.class_instance.name for l in qs], safe=False)
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def labels_for_nodes(request, project_id=None):
@@ -152,7 +176,7 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
     # that are not in the new list.
     existingLabels = table.objects.filter(**kwargs).select_related('class_instance__name')
     existing_names = set(ele.class_instance.name for ele in existingLabels)
-    duplicate_labels = table.objects.filter(**kwargs).exclude(class_instance__name__in=new_tags)
+    duplicate_labels = table.objects.filter(**kwargs).exclude(class_instance__name__in=new_tags).select_related('class_instance__name')
 
     other_labels = []
     deleted_labels = []
@@ -240,7 +264,7 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
         'new_labels': new_labels,
         'duplicate_labels': [l.class_instance.name for l in duplicate_labels
                              if l not in deleted_labels],
-        'deleted_labels': [l.class_instance.name  for l in deleted_labels],
+        'deleted_labels': [l.class_instance.name for l in deleted_labels],
     })
 
 

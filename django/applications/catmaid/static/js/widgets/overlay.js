@@ -4008,7 +4008,7 @@ SkeletonAnnotations.Tag = new (function() {
 
     var result = prepare.then(function() {
       // If preparation went well, nodeId will be set
-      var command = new CATMAID.AddTagsToNodeCommand(nodeId, nodeType, labels, false);
+      var command = new CATMAID.AddTagsToNodeCommand(nodeId, nodeType, labels, deleteExisting);
       // Make sure a tracing layer update is done after execute and undo
       command.postAction = tracingOverlay.updateNodes.bind(tracingOverlay,
          undefined, undefined, undefined);
@@ -4155,7 +4155,9 @@ SkeletonAnnotations.Tag = new (function() {
     }
     var tags = $("#Tags" + atn.id).tagEditorGetTags().split(",");
     tags = tags.filter(isNonEmpty);
-    SkeletonAnnotations.Tag.tagATNwithLabels(tags, tracingOverlay);
+    // Since the tag box represents all tags at once, all tags not in this list
+    // can be removed.
+    SkeletonAnnotations.Tag.tagATNwithLabels(tags, tracingOverlay, true);
   };
 
   this.tagATN = function(tracingOverlay) {

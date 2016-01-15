@@ -47,7 +47,20 @@ Tracing overlay:
   the visibility of some skeletons until a navigation action is performed.
 
 
+Gap junctions:
+
+- A new non-directional connector type for gap junctions can now be created
+  when tracing by Alt + clicking in the tracing overlay. Edges for gap
+  junctions are displayed in purple.
+
+- Gap junction partners can optionally be displayed in a separate table in the
+  Connectivity Widget by checking "Show gap junctions". This table has its
+  own selections for confidence and count thresholds.
+
+
 3D Viewer:
+
+- Gap junctions are displayed like synapse edges in purple.
 
 - Stack bounding boxes and missing sections now update when stack viewer focus
   changes.

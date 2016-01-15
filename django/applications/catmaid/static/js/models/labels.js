@@ -50,7 +50,7 @@
      */
     remove: function(projectId, nodeId, nodeType, label) {
       var url = CATMAID.makeURL(projectId + '/label/' + nodeType + '/' + nodeId + '/remove');
-      return CATMAID.fetch(url, 'POST', {tag: label}, function(json) {
+      return CATMAID.fetch(url, 'POST', {tag: label}).then(function(json) {
         return {
           'deletedLabels': [label],
         };

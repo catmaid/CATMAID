@@ -21,6 +21,10 @@ None.
 - Returns now also information about what labels were added, which were
   duplicates and which labels were deleted.
 
+- `POST /{project_id}/label/[treenode|connector]/{label_id}/remove`:
+  Returns now also information about which label label was eventually removed.
+  If nothing went wrong the field deleted_link should have the input label ID.
+
 
 ### Deprecations
 

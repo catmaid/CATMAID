@@ -40,9 +40,13 @@ def label_remove(request, project_id=None):
             raise ValueError("Only unreferenced labels are allowed to be removed")
         else:
             label.delete()
-            return HttpResponse(json.dumps({'message': 'success'}), content_type="text/plain")
-    return HttpResponse(json.dumps({'error': 'Only super users can delete labels'}),
-                        content_type="text/plain")
+            return JsonResponse({
+                'deleted_labels': [label.id],
+                'message': 'success'
+            })
+    return JsonResponse({
+      'error': 'Only super users can delete labels'
+    })
 
 @api_view(['GET', 'POST'])
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -269,11 +273,14 @@ def remove_label_link(request, project_id, ntype, location_id):
                          (location_id, label))
 
     if remove_label(link_id, ntype):
-        return HttpResponse(json.dumps({'message': 'success'}),
-                            content_type="text/plain")
+        return JsonResponse({
+            'deleted_link': link_id,
+            'message': 'success'
+        })
     else:
-        return HttpResponse(json.dumps({'error': 'Could not remove label'}),
-                            content_type="text/plain")
+        return JsonResponse({
+            'error': 'Could not remove label'
+        })
 
 def remove_label(label_id, node_type):
     # This removes an exact instance of a tag being applied to a node/connector, it does not look up the tag by name.

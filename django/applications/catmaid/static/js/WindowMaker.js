@@ -3404,7 +3404,10 @@ var WindowMaker = new function()
       '<div id="neuron_annotations_query_footer{{NA-ID}}" ' +
           'class="neuron_annotations_query_footer">' +
         '<input type="button" id="neuron_annotations_annotate{{NA-ID}}" ' +
-            'value="Annotate..." />' +
+            'value="Annotate" />' +
+        '<input type="button" id="neuron_annotations_export_csv{{NA-ID}}" ' +
+            'value="Export CSV" title="Export selected neuron IDs and names. ' +
+            'Annotations are exported if displayed."/>' +
         '<label>' +
           '<input type="checkbox" id="neuron_search_show_annotations{{NA-ID}}" />' +
           'Show annotations' +
@@ -3478,6 +3481,7 @@ var WindowMaker = new function()
         CATMAID.annotate_entities(selected_entity_ids,
             this.refresh_annotations.bind(this));
     }).bind(NA);
+    $('#neuron_annotations_export_csv' + NA.widgetID)[0].onclick = NA.exportCSV.bind(NA);
     $('#neuron_search_show_annotations' + NA.widgetID)
       .prop('checked', NA.displayAnnotations)
       .on('change', NA, function(e) {

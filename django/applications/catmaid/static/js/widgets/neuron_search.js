@@ -1047,6 +1047,58 @@
     }
   };
 
+  /**
+   * Return name property of an object.
+   */
+  var getName = function(o) {
+    return o.name;
+  };
+
+  /**
+   * Return a quoted version of the input.
+   */
+  var quote = function(o) {
+    return '"' + o + '"';
+  };
+
+  /**
+   * Return the comma joined version of a list.
+   */
+  var joinList = function(l) {
+    return l.join(', ');
+  };
+
+  /**
+   * Export selected neurons in search result as CSV. The first column will be
+   * the neuron ID and the second column the neuron name. If annotations are
+   * displayed, they are exported as a third column
+   */
+  NeuronAnnotations.prototype.exportCSV = function() {
+    // Get IDs of selected entities
+    var selectedNeurons = this.get_selected_neurons();
+    // Cancel if there are no neurons selected
+    if (0 === selectedNeurons.length) {
+      CATMAID.warn('No neurons selected, nothing to export');
+      return true;
+    }
+
+    var makeCsvLine = this.displayAnnotations ?
+      function(n) {
+        // Prepare annotations so that they are represented as a single string,
+        // with each annotation quoted also on its own.
+        var annotations = (n.annotations || []).map(getName).map(quote).join(', ');
+        return [n.id, quote(n.name), quote(annotations)];
+      } :
+      function(n) {
+        return [n.id, quote(n.name)];
+      };
+
+    var csv = selectedNeurons.map(makeCsvLine).map(joinList).join('\n');
+
+    var blob = new Blob([csv], {type: 'text/plain'});
+    saveAs(blob, 'catmaid_neuron_search.csv');
+  };
+
   // Make neuron search widget available in CATMAID namespace
   CATMAID.NeuronAnnotations = NeuronAnnotations;
 

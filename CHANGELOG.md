@@ -79,6 +79,13 @@ Skeleton Projection layer:
   provide a dynamic list that includes the active node.
 
 
+Neuron Search:
+
+- A search result can now be exported as CSV. Only selected rows are exported.
+  The resulting CSV will contain neuron IDs and neuron names. If annotations are
+  displayed, a third column includes annotations.
+
+
 Miscellaneous:
 
 - Which layers are hidden when Space is held is now configurable by checkboxes

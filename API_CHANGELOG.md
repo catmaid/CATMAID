@@ -11,7 +11,10 @@ None.
 
 ### Modifications
 
-None.
+`POST /{project_id}/skeletons/connectivity`:
+
+- Response object now includes `gapjunctions` and `gapjunctions_reviewers`
+  properties for gap junction connectors.
 
 
 ### Deprecations

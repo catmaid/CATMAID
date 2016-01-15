@@ -585,7 +585,7 @@ def split_skeleton(request, project_id=None):
         relation__relation_name = 'gapjunction_with',
         treenode__in=change_list,
     ).update(skeleton=new_skeleton)
-    
+
     # setting new root treenode's parent to null
     Treenode.objects.filter(id=treenode_id).update(parent=None, editor=request.user)
 
@@ -896,6 +896,10 @@ def skeleton_info_raw(request, project_id=None):
         $ref: skeleton_info_raw_partners
         description: Downstream synaptic partners
         required: true
+      gapjunctions:
+        $ref: skeleton_info_raw_partners
+        description: Gap junction partners
+        required: true
       incoming_reviewers:
         description: IDs of reviewers who have reviewed any upstream partners.
         required: true
@@ -904,6 +908,12 @@ def skeleton_info_raw(request, project_id=None):
           type: integer
       outgoing_reviewers:
         description: IDs of reviewers who have reviewed any downstream partners.
+        required: true
+        type: array
+        items:
+          type: integer
+      gapjunctions_reviewers:
+        description: IDs of reviewers who have reviewed any gap junction partners.
         required: true
         type: array
         items:

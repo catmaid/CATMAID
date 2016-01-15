@@ -4027,22 +4027,32 @@ SkeletonAnnotations.Tag = new (function() {
   };
 
   this.removeATNLabel = function(label, tracingOverlay) {
-    var atn = SkeletonAnnotations.atn;
-    return atn.promise().then(function(treenode_id) {
-      tracingOverlay.submit()
-        .then(CATMAID.Labels.remove(project.id, atn.id, atn.type, label))
-        .then(function(result) {
-          CATMAID.info('Tag "' + result.deletedLabels.join(', ') + '" removed.');
-          tracingOverlay.updateNodes();
-        })
-        .catch(function(err) {
-          if ("ValueError" === err.type) {
-            CATMAID.msg('Error', err.error ? err.error : "Unspecified");
-          } else {
-            CATMAID.error(err.error, err.detail);
-          }
-          return true;
-        });
+    var nodeType = SkeletonAnnotations.getActiveNodeType();
+    var nodeId; // Will be set in promise
+
+    var prepare = SkeletonAnnotations.atn.promise().then(function(treenodeId) {
+      nodeId = treenodeId;
+      tracingOverlay.submit();
+    });
+
+    return prepare.then(function() {
+      var command = new CATMAID.RemoveTagFromNodeCommand(nodeId, nodeType, label, false);
+      // Make sure a tracing layer update is done after execute and undo
+      command.postAction = tracingOverlay.updateNodes.bind(tracingOverlay,
+         undefined, undefined, undefined);
+      return CATMAID.commands.execute(command);
+    }).then(function(result) {
+      CATMAID.info('Tag "' + result.deletedLabels.join(', ') + '" removed.');
+      tracingOverlay.updateNodes();
+    }).catch(function(err) {
+      if ("ValueError" === err.type) {
+        CATMAID.msg('Error', err.error ? err.error : "Unspecified");
+      } else if (err.error) {
+        CATMAID.error(err.error, err.detail);
+      } else {
+        CATMAID.error(err);
+      }
+      return true;
     });
   };
 

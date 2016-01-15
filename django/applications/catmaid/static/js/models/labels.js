@@ -101,4 +101,39 @@
     this.init(exec, undo);
   });
 
+  /**
+   * This command will remove a tag from a particular neuron. If the tag was
+   * actually removed, its undo() method will re-add the tag.
+   */
+  CATMAID.RemoveTagFromNodeCommand = CATMAID.makeCommand(function(nodeId, nodeType, tag) {
+
+    var exec = function(done, command) {
+      var removeLabel = CATMAID.Labels.remove(project.id, nodeId, nodeType, tag);
+      // After the label has been removed, store undo parameters in command and
+      // mark command execution as done.
+      return removeLabel.then(function(result) {
+        command._deletedLabels = result.deletedLabels;
+        done();
+        return result;
+      });
+    };
+
+    var undo = function(done, command) {
+      // Fail if expected undo parameters are not available from command
+      if (undefined === command._deletedLabels) {
+        throw new CATMAID.ValueError('Can\'t undo deletion of tag, history data not available');
+      }
+
+      // If the list of added tags is empty, undo will do nothing. This can
+      // happen due to multiple reasons, e.g. lack of permissions or the tag
+      // existed before. Othewise, remove all added tags.
+      var addLabel = (command._deletedLabels.length === 0) ? Promise.resolve() :
+          CATMAID.Labels.update(project.id, nodeId, nodeType, command._deletedLabels);
+
+      return addLabel.then(done);
+    };
+
+    this.init(exec, undo);
+  });
+
 })(CATMAID);

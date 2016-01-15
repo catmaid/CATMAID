@@ -66,11 +66,11 @@
    * restored that existed for this node just before the new tag was added.
    * This information will only be aquired if the command is executed.
    */
-  CATMAID.AddTagsToNodeCommand = CATMAID.makeCommand(function(nodeId, nodeType,
+  CATMAID.AddTagsToNodeCommand = CATMAID.makeCommand(function(projectId, nodeId, nodeType,
         tags, deleteExisting) {
 
     var exec = function(done, command) {
-      var addLabel = CATMAID.Labels.update(project.id, nodeId, nodeType,
+      var addLabel = CATMAID.Labels.update(projectId, nodeId, nodeType,
           tags, deleteExisting);
       // After the label has been added, store undo parameters in command and
       // mark command execution as done.
@@ -92,7 +92,7 @@
       // existed before. Othewise, remove all added tags.
       var removeLabel = 0 === command._addedTags.length ? Promise.resolve() :
         Promise.all(command._addedTags.map(function(t) {
-          return CATMAID.Labels.remove(project.id, nodeId, nodeType, t);
+          return CATMAID.Labels.remove(projectId, nodeId, nodeType, t);
         }));
 
       return removeLabel.then(done);
@@ -105,10 +105,11 @@
    * This command will remove a tag from a particular neuron. If the tag was
    * actually removed, its undo() method will re-add the tag.
    */
-  CATMAID.RemoveTagFromNodeCommand = CATMAID.makeCommand(function(nodeId, nodeType, tag) {
+  CATMAID.RemoveTagFromNodeCommand = CATMAID.makeCommand(function(projectId, nodeId,
+        nodeType, tag) {
 
     var exec = function(done, command) {
-      var removeLabel = CATMAID.Labels.remove(project.id, nodeId, nodeType, tag);
+      var removeLabel = CATMAID.Labels.remove(projectId, nodeId, nodeType, tag);
       // After the label has been removed, store undo parameters in command and
       // mark command execution as done.
       return removeLabel.then(function(result) {
@@ -128,7 +129,7 @@
       // happen due to multiple reasons, e.g. lack of permissions or the tag
       // existed before. Othewise, remove all added tags.
       var addLabel = (command._deletedLabels.length === 0) ? Promise.resolve() :
-          CATMAID.Labels.update(project.id, nodeId, nodeType, command._deletedLabels);
+          CATMAID.Labels.update(projectId, nodeId, nodeType, command._deletedLabels);
 
       return addLabel.then(done);
     };

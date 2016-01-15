@@ -4008,7 +4008,8 @@ SkeletonAnnotations.Tag = new (function() {
 
     var result = prepare.then(function() {
       // If preparation went well, nodeId will be set
-      var command = new CATMAID.AddTagsToNodeCommand(nodeId, nodeType, labels, deleteExisting);
+      var command = new CATMAID.AddTagsToNodeCommand(project.id, nodeId,
+          nodeType, labels, deleteExisting);
       // Make sure a tracing layer update is done after execute and undo
       command.postAction = tracingOverlay.updateNodes.bind(tracingOverlay,
          undefined, undefined, undefined);
@@ -4036,7 +4037,8 @@ SkeletonAnnotations.Tag = new (function() {
     });
 
     return prepare.then(function() {
-      var command = new CATMAID.RemoveTagFromNodeCommand(nodeId, nodeType, label, false);
+      var command = new CATMAID.RemoveTagFromNodeCommand(project.id, nodeId,
+          nodeType, label, false);
       // Make sure a tracing layer update is done after execute and undo
       command.postAction = tracingOverlay.updateNodes.bind(tracingOverlay,
          undefined, undefined, undefined);

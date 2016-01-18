@@ -4608,6 +4608,8 @@
         this.space.content.meshes.forEach(function(mesh) {
           mesh.material = material;
         });
+        this.options.meshes_color = '#' + color.getHexString();
+        this.options.meshes_opacity = alpha;
         this.space.render();
       }
     }).bind(this);

@@ -22,9 +22,21 @@
             alert(json.error);
             return;
           }
-          var text = 'Synapses ' + ('presynaptic_to' === relation ? 'post' : 'pre') +
-              'synaptic to neuron' + (skids1.length > 1 ? 's' : '') + ' ' + skids1.map(CATMAID.NeuronNameService.getInstance().getName).join(', ');
-          show_table(text, json);
+          var text;
+          if ('presynaptic_to' === relation) {
+            text = 'Synapses presynaptic to';
+          } else if ('postsynaptic_to' === relation) {
+            text = 'Synapses postsynaptic to';
+          } else if ('gapjunction_with' === relation) {
+            text = 'Gap junctions with';
+          }
+          if (text !== undefined) {
+            text += ' neuron' + (skids1.length > 1 ? 's' : '') + ' '
+                 + skids1.map(CATMAID.NeuronNameService.getInstance().getName).join(', ');
+            show_table(text, json, relation);
+          } else {
+            alert('Unsupported relation: ' + relation);
+          }
         });
   };
 
@@ -100,10 +112,21 @@
     });
   };
 
-  var show_table = function(header, connectors) {
+  var show_table = function(header, connectors, relation) {
     WindowMaker.show('create-connector-selection');
     // Write the label
     $('#connector-selection-label').text(header);
+    
+    // Set proper table titles
+    if (relation == 'presynaptic_to' || relation == 'postsynaptic_to' || relation === undefined) {
+      $('#connectorselectiontable th.typeheader').html(function() {
+        return $(this).html().replace("Neuron 1", "Presyn. neuron").replace("Neuron 2", "Postsyn. neuron");
+      });
+    } else {
+      $('#connectorselectiontable th.typeheader').html(function() {
+        return $(this).html().replace("Presyn. neuron", "Neuron 1").replace("Postsyn. neuron", "Neuron 2");
+      });
+    }
 
     // Split up the JSON reply
     var locations = {}; // keys are connector IDs

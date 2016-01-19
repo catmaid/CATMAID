@@ -189,7 +189,7 @@ class ClusteringWizard(SessionWizardView):
         # available to the client.
         dendrogram_json = json.dumps(dendrogram)
 
-        return render(request, 'catmaid/clustering/display.html', context, {
+        return render(self.request, 'catmaid/clustering/display.html', {
             'ontologies': ontologies,
             'graphs': graphs,
             'features': features,

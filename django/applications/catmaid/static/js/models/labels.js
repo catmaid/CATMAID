@@ -126,7 +126,8 @@
       return removeLabel.then(done);
     };
 
-    this.init(exec, undo);
+    var title = "Add tag(s) " + tags.join(", ") + " to node " + nodeId;
+    this.init(title, exec, undo);
   });
 
   /**
@@ -162,7 +163,8 @@
       return addLabel.then(done);
     };
 
-    this.init(exec, undo);
+    var title = "Remove tag " + tag + " from node " + nodeId;
+    this.init(title, exec, undo);
   });
 
 })(CATMAID);

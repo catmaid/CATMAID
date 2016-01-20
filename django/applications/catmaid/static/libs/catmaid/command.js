@@ -7,10 +7,10 @@
    * executing it as well as undoing it. After a command has been instantiated,
    * it must be initialized
    */
-  var Command = function(execute, undo) {
+  var Command = function(name, execute, undo) {
     this.initialized = false;
     this.executed = false;
-    this.init(execute, undo);
+    this.init(name, execute, undo);
   };
 
   /**
@@ -20,7 +20,8 @@
    * @param {function} undo    The inverse operation to make the
    *                           original action undone.
    */
-  Command.prototype.init = function(execute, undo) {
+  Command.prototype.init = function(name, execute, undo) {
+    this._name = name;
     this._fn = execute;
     this._undo = undo;
     this.executed = false;
@@ -60,6 +61,13 @@
     }
     var result = this._undo(done.bind(this, false), this);
     return result;
+  };
+
+  /**
+   * Get a (potentially) specific name for this command.
+   */
+  Command.prototype.getName = function() {
+    return this._name;
   };
 
   /**
@@ -169,6 +177,17 @@
    */
   CommandHistory.prototype.nEntries = function() {
     return this._commandList.length;
+  };
+
+  /**
+   * Get a list of names, representing all commands in order.
+   *
+   * @returns {Object[]} Command representation
+   */
+  CommandHistory.prototype.getCommandNames = function() {
+    return this._commandList.map(function(c) {
+        return c.getName();
+    });
   };
 
   /**

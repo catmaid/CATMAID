@@ -799,7 +799,7 @@
   WebGLApplication.prototype.Options.prototype.createMeshMaterial = function(color, opacity) {
     color = color || new THREE.Color(this.meshes_color);
     if (typeof opacity === 'undefined') opacity = this.meshes_opacity;
-    return new THREE.MeshBasicMaterial({color: color, opacity: opacity,
+    return new THREE.MeshLambertMaterial({color: color, opacity: opacity,
       transparent: opacity !== 1, wireframe: true});
   };
 
@@ -1526,23 +1526,11 @@
 
 
   WebGLApplication.prototype.Space.prototype.createLights = function(dimensions, center, camera) {
-    var ambientLight = new THREE.AmbientLight( 0x505050 );
-
-    var pointLight = new THREE.PointLight( 0xffaa00 );
-    pointLight.position.set(dimensions.max.x, dimensions.max.y, dimensions.min.z - 50);
-
-    var light = new THREE.SpotLight( 0xffffff, 1.5 );
-    light.position.set(center.x, center.y, dimensions.min.z - 50);
-    light.castShadow = true;
-    light.shadowCameraNear = 200;
-    light.shadowCameraFar = camera.far;
-    light.shadowCameraFov = 50;
-    light.shadowBias = -0.00022;
-    light.shadowDarkness = 0.5;
-    light.shadowMapWidth = 2048;
-    light.shadowMapHeight = 2048;
-
-    return [ambientLight, pointLight, light];
+    var ambientLight = new THREE.AmbientLight(0x505050);
+    var height = dimensions.max.y - dimensions.min.y;
+    var hemiLight = new THREE.HemisphereLight( 0xffffff, 0x000000, 1 );
+    hemiLight.position.set( center.x, - center.y - height, center.z);
+    return [ambientLight, hemiLight];
   };
 
   WebGLApplication.prototype.Space.prototype.add = function(mesh) {
@@ -1711,13 +1699,13 @@
     this.cylinder = new THREE.CylinderGeometry(1, 1, 1, 10, 1, false);
     this.textMaterial = new THREE.MeshNormalMaterial();
     // Mesh materials for spheres on nodes tagged with 'uncertain end', 'undertain continuation' or 'TODO'
-    this.labelColors = {uncertain: new THREE.MeshBasicMaterial({color: 0xff8000, opacity:0.6, transparent: true}),
-                        todo:      new THREE.MeshBasicMaterial({color: 0xff0000, opacity:0.6, transparent: true}),
-                        custom:    new THREE.MeshBasicMaterial({color: 0xaa70ff, opacity:0.6, transparent: true})};
+    this.labelColors = {uncertain: new THREE.MeshLambertMaterial({color: 0xff8000, opacity:0.6, transparent: true}),
+                        todo:      new THREE.MeshLambertMaterial({color: 0xff0000, opacity:0.6, transparent: true}),
+                        custom:    new THREE.MeshLambertMaterial({color: 0xaa70ff, opacity:0.6, transparent: true})};
     this.textGeometryCache = new WebGLApplication.prototype.Space.prototype.TextGeometryCache();
-    this.synapticColors = [new THREE.MeshBasicMaterial( { color: 0xff0000, opacity:0.6, transparent:false } ), 
-                           new THREE.MeshBasicMaterial( { color: 0x00f6ff, opacity:0.6, transparent:false } ),
-                           new THREE.MeshBasicMaterial( { color: 0x9f25c2, opacity:0.6, transparent:false } )];
+    this.synapticColors = [new THREE.MeshLambertMaterial( { color: 0xff0000, opacity:0.6, transparent:false } ), 
+                           new THREE.MeshLambertMaterial( { color: 0x00f6ff, opacity:0.6, transparent:false } ),
+                           new THREE.MeshLambertMaterial( { color: 0x9f25c2, opacity:0.6, transparent:false } )];
     this.connectorLineColors = {'presynaptic_to': new THREE.LineBasicMaterial({color: 0xff0000, opacity: 1.0, linewidth: 6}),
                                 'postsynaptic_to': new THREE.LineBasicMaterial({color: 0x00f6ff, opacity: 1.0, linewidth: 6}),
                                 'gapjunction_with': new THREE.LineBasicMaterial({color: 0x9f25c2, opacity: 1.0, linewidth: 6})};
@@ -3776,7 +3764,7 @@
       this.actor['neurite'].material.transparent = this.opacity !== 1;
       this.actor['neurite'].material.needsUpdate = true; // TODO repeated it's the line_material
 
-      var material = new THREE.MeshBasicMaterial({color: this.actorColor, opacity: this.opacity, transparent: this.opacity !== 1});
+      var material = new THREE.MeshLambertMaterial({color: this.actorColor, opacity: this.opacity, transparent: this.opacity !== 1});
 
       for (var k in this.radiusVolumes) {
         if (this.radiusVolumes.hasOwnProperty(k)) {
@@ -4263,7 +4251,7 @@
     var vs = {};
 
     // Reused for all meshes
-    var material = new THREE.MeshBasicMaterial( { color: this.getActorColorAsHex(), opacity:1.0, transparent:false } );
+    var material = new THREE.MeshLambertMaterial( { color: this.getActorColorAsHex(), opacity:1.0, transparent:false } );
     material.opacity = this.skeletonmodel.opacity;
     material.transparent = material.opacity !== 1;
 

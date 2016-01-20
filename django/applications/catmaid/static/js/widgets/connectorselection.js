@@ -118,15 +118,21 @@
     $('#connector-selection-label').text(header);
     
     // Set proper table titles
+    var titles;
     if (relation == 'presynaptic_to' || relation == 'postsynaptic_to' || relation === undefined) {
-      $('#connectorselectiontable th.typeheader').html(function() {
-        return $(this).html().replace("Neuron 1", "Presyn. neuron").replace("Neuron 2", "Postsyn. neuron");
-      });
+      titles = ['Presyn. neuron', 'Postsyn. neuron'];
     } else {
-      $('#connectorselectiontable th.typeheader').html(function() {
-        return $(this).html().replace("Presyn. neuron", "Neuron 1").replace("Postsyn. neuron", "Neuron 2");
-      });
+      titles = ['Neuron 1', 'Neuron 2'];
     }
+    $('#connectorselectiontable thead th.preheader div').html(function() {
+      return titles[0] + $(this).children()[0].outerHTML;
+    });
+    $('#connectorselectiontable thead th.postheader div').html(function() {
+      return titles[1] + $(this).children()[0].outerHTML;
+    });
+    $('#connectorselectiontable tfoot th.preheader').html(titles[0]);
+    $('#connectorselectiontable tfoot th.postheader').html(titles[1]);
+
 
     // Split up the JSON reply
     var locations = {}; // keys are connector IDs

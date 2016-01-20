@@ -126,8 +126,10 @@ def compact_skeleton(request, project_id=None, skeleton_id=None, with_connectors
               AND tc.connector_id = c.id
               AND (tc.relation_id = %s OR tc.relation_id = %s OR tc.relation_id = %s)
         ''' % (skeleton_id, pre, post, gj))
+        
+        relation_index = {pre: 0, post: 1, gj: 2}
 
-        connectors = tuple((row[0], row[1], 1 if row[2] == post else 0 if row[2] != gj else 2, row[3], row[4], row[5]) for row in cursor.fetchall())
+        connectors = tuple((row[0], row[1], relation_index.get(row[2], -1), row[3], row[4], row[5]) for row in cursor.fetchall())
 
     if 0 != with_tags:
         # Fetch all node tags

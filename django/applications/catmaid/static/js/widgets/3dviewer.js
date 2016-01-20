@@ -4354,9 +4354,10 @@
     connectors.forEach(function(con) {
       // con[0]: treenode ID
       // con[1]: connector ID
-      // con[2]: 0 for pre, 1 for post
+      // con[2]: 0 for pre, 1 for post, 2 for gap junction, -1 for other to be skipped
       // indices 3,4,5 are x,y,z for connector
       // indices 4,5,6 are x,y,z for node
+      if (con[2] === -1) return;
       var v1 = new THREE.Vector3(con[3], con[4], con[5]);
       v1.node_id = con[1];
       var v2 = vs[con[0]];

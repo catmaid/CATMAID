@@ -67,6 +67,8 @@ Gap junctions:
 - Stack bounding boxes and missing sections now update when stack viewer focus
   changes.
 
+- A new sphere shading allows for a better depth perception.
+
 
 Skeleton Projection layer:
 

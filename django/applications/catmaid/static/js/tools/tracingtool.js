@@ -1036,6 +1036,18 @@
     }));
 
     this.addAction(new CATMAID.Action({
+      helpText: "Command history",
+      keyShortcuts: {
+        'F9': [ 120 ]
+      },
+      run: function (e) {
+        var dialog = new CATMAID.HistoryDialog();
+        dialog.show();
+        return true;
+      }
+    }));
+
+    this.addAction(new CATMAID.Action({
       helpText: "Toggle skeleton projection layer",
       keyShortcuts: {
         'F10': [ 121 ]

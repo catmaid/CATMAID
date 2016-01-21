@@ -191,20 +191,6 @@ window.onbeforeunload = function() {
   };
 
   /**
-   * Queue a request for the given back-end method along with the given data. It
-   * expects a JSON response. A promise is returned. The URL passed in needs to
-   * be relative to the back-end URL.
-   */
-  CATMAID.fetch = function(relativeURL, method, data)
-  {
-    return new Promise(function(resolve, reject) {
-      var url = CATMAID.makeURL(relativeURL);
-      requestQueue.register(url, method, data,
-          CATMAID.jsonResponseHandler(resolve, reject, true));
-    });
-  };
-
-  /**
    * Convenience function to show an error dialog.
    */
   CATMAID.error = function(msg, detail)

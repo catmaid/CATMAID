@@ -196,6 +196,53 @@ var requestQueue = new RequestQueue();
   };
 
   /**
+   * Check if the passed in response information seems valid and without errors.
+   */
+  CATMAID.validateResponse = function(status, text, xml) {
+    if (status >= 200 && status <= 204 &&
+        (typeof text === 'string' || text instanceof String)) {
+      return text;
+    } else {
+      throw new CATMAID.Error("The server returned an unexpected status: " + status);
+    }
+  };
+
+  /**
+   * Check if the passed in response information seems valid and without
+   * errors and expect the text to be JSON.
+   *
+   * @returns {Object} parsed resonse text
+   */
+  CATMAID.validateJsonResponse = function(status, text, xml) {
+    var response = CATMAID.validateResponse(status, text, xml);
+    // `text` may be empty for no content responses.
+    var json = text.length ? JSON.parse(text) : {};
+    if (json.error) {
+      throw new CATMAID.Error("Unsuccessful request: " + json.error, json.detail);
+    } else {
+      return json;
+    }
+  };
+
+  /**
+   * Queue a request for the given back-end method along with the given data. It
+   * expects a JSON response. A promise is returned. The URL passed in needs to
+   * be relative to the back-end URL.
+   */
+  CATMAID.fetch = function(relativeURL, method, data) {
+    return new Promise(function(resolve, reject) {
+      var url = CATMAID.makeURL(relativeURL);
+      requestQueue.register(url, method, data, function(status, text, xml) {
+        // Validation throws an error for bad requests and wrong JSON data,
+        // which causes the promise to become rejected. So there is no need to
+        // call reject() explicitely.
+        var json = CATMAID.validateJsonResponse(status, text, xml);
+        resolve(json);
+      });
+    });
+  };
+
+  /**
    * A general noop function.
    */
   CATMAID.noop = function() {};

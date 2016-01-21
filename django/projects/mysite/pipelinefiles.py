@@ -71,7 +71,8 @@ libraries_js = {
     'filesaver': ['*.js'],
     'whammy': ['whammy.js'],
     'catmaid': ['request.js', 'CATMAID.js', 'error.js', 'events.js',
-                'neuron_controller.js', 'skeleton_source.js', '*.js'],
+                'neuron_controller.js', 'skeleton_source.js', '*.js',
+                'models/*.js'],
 }
 
 JAVASCRIPT = OrderedDict()
@@ -125,7 +126,6 @@ JAVASCRIPT['catmaid'] = {
         'js/user.js',
         'js/WindowMaker.js',
         'js/skeleton-model.js',
-        'js/models/*.js',
         'js/tools/navigator.js',
         'js/tools/boxselectiontool.js',
         'js/tools/roitool.js',

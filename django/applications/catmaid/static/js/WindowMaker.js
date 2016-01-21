@@ -3658,6 +3658,8 @@ var WindowMaker = new function()
       } else {
         windows.set(name, new Map([[handles.window, handles.widget]]));
       }
+
+      return handles;
     } else {
       alert("No known window with name " + name);
     }

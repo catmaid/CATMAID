@@ -3009,8 +3009,7 @@
 
   /** Copies all except the selection state. */
   GroupGraph.prototype.cloneWidget = function() {
-    WindowMaker.create('graph-widget');
-    var copy = GroupGraph.prototype.getLastInstance();
+    var copy = WindowMaker.create('graph-widget').widget;
     if (this.state) copy.state = $.extend(true, {}, this.state);
     copy.setContent(this.copyContent());
   };

@@ -103,6 +103,21 @@ Miscellaneous:
 - Color pickers will now update the color of color picker enabled DOM elements
   again.
 
+- Fixed hiding edges with less than 2 synapses in the Graph Widget resulting
+  in no edges.
+
+- Fixed an issue where cloning the Graph Widget cloned into the wrong widget.
+
+- Fixed an issue preventing removing split neurons from the Graph Widget.
+
+- Fixed an intermittent exception when renaming neurons.
+
+- Fixed a second Neuron Search widget not working properly.
+
+- Adding a neuron to a Selection Table now re-runs the sorting scheme.
+
+- Fixed Connectivity Matrix cloning.
+
 
 ## 2015.12.21
 

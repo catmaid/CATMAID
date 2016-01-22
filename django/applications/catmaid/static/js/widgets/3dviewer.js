@@ -4165,8 +4165,7 @@
     // Takes the coordinates of each node, transforms them into the space,
     // and then adds them to the parallel lists of vertices and vertexIDs
     var vs = this.geometry[type].vertices;
-    vs.push(v1);
-    vs.push(v2);
+    vs.push(v1, v2);
   };
 
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createNodeSphere = function(v, radius, material) {

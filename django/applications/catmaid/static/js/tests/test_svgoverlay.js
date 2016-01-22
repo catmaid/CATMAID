@@ -28,7 +28,7 @@ QUnit.test('SVG overlay test', function( assert ) {
       }, {});
     };
     var orignialGlobalFields = mapFields(window, ["requestQueue",
-        "project", "user_permissions", "django_url"]);
+        "project", "django_url"]);
     var orignalCATMAIDFields = mapFields(CATMAID, ["statusBar"]);
 
     // Set global project to custom mocking object
@@ -37,15 +37,15 @@ QUnit.test('SVG overlay test', function( assert ) {
       getId: function() { return 1; }
     };
 
-    // Set global user permissions to mocking object
-    user_permissions = {
-      'can_annotate': {'1': true}
-    };
-
     // Set global Django URL and configure CATMAID
     /*global django_url:true */
     django_url = '/';
     CATMAID.configure(django_url, django_url);
+
+    // Set global user permissions to mocking object
+    CATMAID.updatePermissions({
+      'can_annotate': {'1': true}
+    });
 
     // Set global status bar mocking object
     CATMAID.statusBar = {
@@ -179,6 +179,7 @@ QUnit.test('SVG overlay test', function( assert ) {
         }
       }
       // Restore original globals and CATMAID fields
+      CATMAID.updatePermissions();
       resetMapping(window, orignialGlobalFields);
       resetMapping(CATMAID, orignalCATMAIDFields);
     }

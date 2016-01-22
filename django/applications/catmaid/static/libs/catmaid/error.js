@@ -26,4 +26,14 @@
   CATMAID.ValueError.prototype = Object.create(CATMAID.Error.prototype);
   CATMAID.ValueError.constructor = CATMAID.ValueError;
 
+  /**
+   * A simple permission error type to indicate some lack of permissions.
+   */
+  CATMAID.PermissionError = function(message, detail) {
+    CATMAID.Error.call(this, message, detail);
+  };
+
+  CATMAID.PermissionError.prototype = Object.create(CATMAID.Error.prototype);
+  CATMAID.PermissionError.constructor = CATMAID.PermissionError;
+
 })(CATMAID);

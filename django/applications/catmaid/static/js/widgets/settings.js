@@ -81,7 +81,7 @@
         {name: 'Your default settings', val: 'user'},
         {name: 'Your settings for this project', val: 'session'}
       ];
-      if (user_permissions.can_administer[project.id]) {
+      if (CATMAID.hasPermission(project.id, 'can_administer')) {
         scopeOptions = [
           {name: 'All users: server defaults', val: 'global'},
           {name: 'All users: project defaults', val: 'project'},

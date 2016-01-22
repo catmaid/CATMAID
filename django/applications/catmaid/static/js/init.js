@@ -53,11 +53,8 @@ var rootWindow;
  */
 var userprofile = null;
 
-var user_permissions = null;
-var user_groups = null;
-
 function checkPermission(p) {
-  return user_permissions && user_permissions[p] && user_permissions[p][project.getId()];
+  return CATMAID.hasPermission(project.getId(), p);
 }
 
 function mayEdit() {
@@ -331,16 +328,7 @@ function handle_profile_update(e) {
  * @param  {function=} completionCallback Completion callback (no arguments).
  */
 function updateProjects(completionCallback) {
-  // Whatever happened, get details of which projects this user (or no
-  // user) is allowed to edit:
-  $.get(django_url + 'permissions', function (data) {
-    if (data.error) {
-      alert(data.error);
-    } else {
-      user_permissions = data[0];
-      user_groups = data[1];
-    }
-  }, 'json');
+  CATMAID.updatePermissions();
 
   project_menu.update(null);
 

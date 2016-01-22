@@ -199,6 +199,21 @@ window.onbeforeunload = function() {
   };
 
   /**
+   * Look at the error type and take appropriate action.
+   */
+  CATMAID.handleError = function(error) {
+    if (error instanceof CATMAID.Error) {
+      if (error instanceof CATMAID.PermissionError) {
+        new CATMAID.LoginDialog(e.error).show();
+      } else {
+        CATMAID.error(error.message, error.detail);
+      }
+    } else {
+      CATMAID.error(error);
+    }
+  };
+
+  /**
    * Make status information available through the front-ends status bar.
    */
   CATMAID.status = function(msg)

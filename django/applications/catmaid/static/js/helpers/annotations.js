@@ -118,7 +118,7 @@
    * Prompt user for annotations to annotate either target objects directly and/or
    * to annotate the neurons of a set of skeletons.
    */
-  CATMAID.annotate = function(entity_ids, skeleton_ids, callback) {
+  CATMAID.annotate = function(entity_ids, skeleton_ids, callback, noCommand) {
 
     // Complain if the user has no annotation permissions for the current project
     if (!checkPermission('can_annotate')) {
@@ -152,9 +152,13 @@
           data.skeleton_ids = skeleton_ids;
       }
 
-      return CATMAID.Annotations.add(project.id, entity_ids, skeleton_ids,
-          annotations, meta_annotations)
-        .then(function(result) {
+      var add = noCommand ?
+          CATMAID.Annotations.add(project.id,
+              entity_ids, skeleton_ids, annotations, meta_annotations) :
+          CATMAID.commands.execute(new CATMAID.AddAnnotationsCommand(project.id,
+              entity_ids, skeleton_ids, annotations, meta_annotations));
+
+      return add.then(function(result) {
           if (result.annotations.length == 1) {
             var name = result.annotation_names[0];
             if (result.used_annotations.length > 0) {

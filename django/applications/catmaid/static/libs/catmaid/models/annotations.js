@@ -120,4 +120,48 @@
   // Export annotation namespace
   CATMAID.Annotations = Annotations;
 
+  /**
+   * Wrap linking new and existing annotations to other class instances.
+   */
+  CATMAID.AddAnnotationsCommand = CATMAID.makeCommand(function(projectId,
+        entityIds, skeletonIds, annotations, metaAnnotations) {
+
+    var exec = function(done, command) {
+      var addAnnotations = CATMAID.Annotations.add(projectId, entityIds, skeletonIds,
+          annotations, metaAnnotations);
+
+      return addAnnotations.then(function(result) {
+        command._createdLinks = result.annotations;
+        done();
+        return result;
+      });
+    };
+
+    var undo = function(done, command) {
+      // Fail if expected undo parameters are not available from command
+      if (undefined === command._createdLinks) {
+        throw new CATMAID.ValueError('Can\'t undo creation of annotation, history data not available');
+      }
+
+      // Build one promise for each link and return a super promise that
+      // resolves once all removal promises are resolved.
+      var promises = command._createdLinks.map(function(annotation) {
+        return CATMAID.Annotations.remove(projectId, annotation.entities, [annotation.id]);
+      });
+      return Promise.all(promises).then(done);
+    };
+
+    // Prepare command label
+    var type = (annotations.length === 1) ? "annotation" : "annoations";
+    var targetInfo = [];
+    if (skeletonIds) { targetInfo.push(" to skeletons " + skeletonIds.join(", ")); }
+    if (entityIds) { targetInfo.push(" to objects " + entityIds.join(", ")); }
+    var metaInfo = (metaAnnotations && metaAnnotations.length > 0) ?
+        (" and meta annotation(s) " + metaAnnotations.join(", ")) : "";
+    var info = "Add " + type + targetInfo.join(' and ') + ": " +
+        annotations.join(", ") + metaInfo;
+
+    this.init(info, exec, undo);
+  });
+
 })(CATMAID);

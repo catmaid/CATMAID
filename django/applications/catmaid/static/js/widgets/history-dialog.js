@@ -65,11 +65,23 @@
       "Undo": function() {
         CATMAID.commands.undo().then(function() {
           self.update();
+        }).catch(function(error) {
+          if (error instanceof CATMAID.ValueError) {
+            CATMAID.warn(error.message);
+          } else {
+            CATMAID.error(error.message, error.detail);
+          }
         });
       },
       "Redo": function() {
         CATMAID.commands.redo().then(function() {
           self.update();
+        }).catch(function(error) {
+          if (error instanceof CATMAID.ValueError) {
+            CATMAID.warn(error.message);
+          } else {
+            CATMAID.error(error.message, error.detail);
+          }
         });
       },
       "Close": function() {

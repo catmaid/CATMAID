@@ -779,19 +779,8 @@
       var widget = event.data;
       var neuron_id = $(this).parent().attr('neuron_id');
       var annotation_id = $(this).parent().attr('annotation_id');
-      var annotation = CATMAID.annotations.getName(annotation_id);
-
-      if (!confirm('Are you sure you want to remove annotation "' + annotation + '"?')) {
-        return;
-      }
-
-      return CATMAID.Annotations.remove(project.id, [neuron_id], [annotation_id])
-          .then((function(data) {
-            var msg = (data.deleted_annotations.length > 0) ?
-              "Removed " + data.deleted_annotations.length + " annotation." :
-              "Couldn not delete annotation";
-            CATMAID.info(msg);
-
+      return CATMAID.confirmAndRemoveAnnotations(project.id,
+          [neuron_id], [annotation_id]).then((function(data) {
             // Update internal representation
             var hasAnnotation = function(r) {
               return r.id == neuron_id && r.annotations.some(function(a) {

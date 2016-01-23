@@ -1253,19 +1253,8 @@
       if (selected_neurons.length > 0) {
         // Get annotation ID
         var annotation_id = parseInt(this.getAttribute('data-annotationid'));
-        var annotation = CATMAID.annotations.getName(annotation_id);
-
-        if (!confirm('Are you sure you want to remove annotation "' + annotation + '"?')) {
-          return;
-        }
-
-        return CATMAID.Annotations.remove(project.id, selected_neurons, [annotation_id])
-            .then(function(data) {
-              var msg = (data.deleted_annotations.length > 0) ?
-                "Removed " + data.deleted_annotations.length + " annotation." :
-                "Couldn not delete annotation";
-              CATMAID.info(msg);
-            }).catch(CATMAID.handleError);
+        return CATMAID.confirmAndRemoveAnnotations(project.id,
+            selected_neurons, [annotation_id]);
       } else {
         CATMAID.warn("Please select at least one neuron to remove the annotation from first!");
       }
@@ -2118,23 +2107,10 @@
     // Add annotation data table based on filters above
     var annotation_datatable = this.add_annotation_list_table(container,
         annotation_table_id, filters, false, true, function(annotation_ids) {
-          annotation_ids = annotation_ids instanceof Array ? annotation_ids : [annotation_ids];
-          var annotations = annotation_ids.map(function(annotation_id) {
-            return CATMAID.annotations.getName(annotation_id);
-          });
-
-          if (!confirm('Are you sure you want to remove annotations "' +
-                annotations.join(', ') + '"?')) {
-            return;
-          }
-
-          return CATMAID.Annotations.remove(project.id, [self.neuron_id], annotation_ids)
-              .then(function(data) {
-                var msg = (data.deleted_annotations.length > 0) ?
-                  "Removed " + data.deleted_annotations.length + " annotation(s)." :
-                  "Couldn not delete any annotation";
-                CATMAID.info(msg);
-              }).catch(CATMAID.handleError);
+          annotation_ids = annotation_ids instanceof Array ?
+              annotation_ids : [annotation_ids];
+          return CATMAID.confirmAndRemoveAnnotations(project.id,
+              [self.neuron_id], annotation_ids);
         }, this.create_ann_post_process_fn(this, container));
 
     // If a user is selected an annotation filter node is created and the event

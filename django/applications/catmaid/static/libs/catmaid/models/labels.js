@@ -22,7 +22,7 @@
      *                   IDs to label names.
      */
     forNode: function(projectId, nodeId, nodeType) {
-      var url = CATMAID.makeURL(projectId + '/labels/' + nodeType  + '/' + nodeId + '/');
+      var url = projectId + '/labels/' + nodeType  + '/' + nodeId + '/';
       return CATMAID.fetch(url, 'GET');
     },
 
@@ -35,7 +35,7 @@
      *                   IDs to label names.
      */
     listAll: function(projectId) {
-      var url = CATMAID.makeURL(projectId + '/labels/');
+      var url = projectId + '/labels/';
       return CATMAID.fetch(url, 'GET');
     },
 
@@ -54,7 +54,7 @@
      *                   the update request returned successfully.
      */
     update: function(projectId, nodeId, nodeType, newLabels, deleteExisting) {
-      var url = CATMAID.makeURL(projectId + '/label/' + nodeType + '/' + nodeId + '/update');
+      var url = projectId + '/label/' + nodeType + '/' + nodeId + '/update';
       var params = {
         tags: newLabels.join(','),
         delete_existing: !!deleteExisting
@@ -81,7 +81,7 @@
      *                   the update request returned successfully.
      */
     remove: function(projectId, nodeId, nodeType, label) {
-      var url = CATMAID.makeURL(projectId + '/label/' + nodeType + '/' + nodeId + '/remove');
+      var url = projectId + '/label/' + nodeType + '/' + nodeId + '/remove';
       return CATMAID.fetch(url, 'POST', {tag: label}).then(function(json) {
         return {
           'deletedLabels': [label],

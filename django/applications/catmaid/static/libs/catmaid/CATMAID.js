@@ -217,7 +217,7 @@ var requestQueue = new RequestQueue();
       projectPermissions = permissions;
       return Promise.resolve();
     } else {
-      return CATMAID.fetch(CATMAID.makeURL('permissions'), 'GET').then(function(json) {
+      return CATMAID.fetch('permissions', 'GET').then(function(json) {
         projectPermissions = json[0];
         groups = json[1];
       }).catch(alert);

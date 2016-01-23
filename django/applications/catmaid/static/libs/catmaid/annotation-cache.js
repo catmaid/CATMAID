@@ -16,10 +16,14 @@
     // Listen to annotation deletions so these annotations can be reomved from
     // the cache.
     CATMAID.Annotations.on(CATMAID.EVENT_ANNOTATIONS_DELETED, this.removeAll, this);
+    CATMAID.Annotations.on(CATMAID.EVENT_ANNOTATIONS_CHANGED,
+        this._handleChangedAnnotations, this);
   };
 
   AnnotationCache.prototype.destroy = function() {
     CATMAID.Annoations.off(CATMAID.EVENT_ANNOTATIONS_DELETED, this.removeAll, this);
+    CATMAID.Annoations.off(CATMAID.EVENT_ANNOTATIONS_CHANGED,
+        this._handleChangedAnnotations, this);
   };
 
   AnnotationCache.prototype.getName = function(id) {
@@ -64,6 +68,13 @@
             }
           }
         }).bind(this));
+  };
+
+  /**
+   * Push changed annotations to the cache.
+   */
+  AnnotationCache.prototype._handleChangedAnnotations = function(changedObjects, annotations) {
+    this.push(annotations);
   };
 
   /**

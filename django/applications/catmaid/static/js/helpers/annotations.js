@@ -151,62 +151,31 @@
       if (skeleton_ids) {
           data.skeleton_ids = skeleton_ids;
       }
-      // Do request
-      requestQueue.register(django_url + project.id + '/annotations/add',
-          'POST', data, function(status, text, xml) {
-            if (status === 200) {
-              var e = $.parseJSON(text);
-              if (e.error) {
-                new CATMAID.ErrorDialog(e.error, e.detail).show();
-              } else {
-                var ann_names = e.annotations.map(function(a) { return a.name; });
-                var used_annotations = e.annotations.reduce(function(o, a) {
-                  if (a.entities.length > 0) o.push(a.name);
-                  return o;
-                }, []);
-                if (e.annotations.length == 1)
-                  if (used_annotations.length > 0) {
-                    CATMAID.info('Annotation ' + ann_names[0] + ' added to ' +
-                        e.annotations[0].entities.length +
-                        (e.annotations[0].entities.length > 1 ? ' entities.' : ' entity.'));
-                  } else {
-                    CATMAID.info('Couldn\'t add annotation ' + ann_names[0] + '.');
-                  }
-                else
-                  if (used_annotations.length > 0) {
-                    CATMAID.info('Annotations ' + used_annotations.join(', ') + ' added.');
-                  } else {
-                    CATMAID.info('Couldn\'t add any of the annotations' +
-                        ann_names.join(', ') + '.');
-                  }
-                // Update the annotation cache with new annotations, if any
-                try {
-                  CATMAID.annotations.push(e.annotations);
-                } catch(err) {
-                  new CATMAID.ErrorDialog("There was a problem updating the " +
-                      "annotation cache, please close and re-open the tool",
-                      err).show();
-                }
 
-                // Collect updated entities
-                var changedEntities = e.annotations.reduce(function(ce, a) {
-                  a.entities.forEach(function(e) {
-                    if (-1 === this.indexOf(e)) this.push(e);
-                  }, ce);
-                  return ce;
-                }, []);
-
-                CATMAID.Annotations.trigger(CATMAID.Annotations.EVENT_ANNOTATIONS_CHANGED,
-                    changedEntities);
-
-                // Let the neuron name service update itself and execute the
-                // callbackback after this is done
-                CATMAID.NeuronNameService.getInstance().refresh(function() {
-                  if (callback) callback();
-                });
-              }
+      return CATMAID.Annotations.add(project.id, entity_ids, skeleton_ids,
+          annotations, meta_annotations)
+        .then(function(result) {
+          if (result.annotations.length == 1) {
+            var name = result.annotation_names[0];
+            if (result.used_annotations.length > 0) {
+              CATMAID.info('Annotation ' + name + ' added to ' +
+                  result.annotations[0].entities.length +
+                  (result.annotations[0].entities.length > 1 ? ' entities.' : ' entity.'));
+            } else {
+              CATMAID.info('Couldn\'t add annotation ' + name + '.');
             }
-          });
+          } else {
+            if (result.used_annotations.length > 0) {
+              CATMAID.info('Annotations ' + result.used_annotations.join(', ') + ' added.');
+            } else {
+              CATMAID.info('Couldn\'t add any of the annotations' +
+                  result.annotation_names.join(', ') + '.');
+            }
+          }
+
+          CATMAID.tools.callIfFn(callback);
+        })
+        .catch(CATMAID.handleError);
     });
   };
 

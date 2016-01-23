@@ -1531,22 +1531,22 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeLink = function (from
                 merge();
               } else {
                 // Only show a dialog if the merged in neuron is annotated.
-                CATMAID.retrieve_annotations_for_skeleton(to_skid,
-                    function(to_annotations) {
-                      if (to_annotations.length === 0) {
-                        CATMAID.retrieve_annotations_for_skeleton(
-                            from_model.id, function(from_annotations) {
-                              // Merge annotations from both neurons
-                              function collectAnnotations(o, e) {
-                                o[e.name] = e.users[0].id; return o;
-                              }
-                              var annotationMap = from_annotations.reduce(collectAnnotations, {});
-                              merge(annotationMap);
-                            });
-                      } else {
-                        merge_multiple_nodes();
-                      }
-                    });
+                CATMAID.Annotations.forSkeleton(project.id, to_skid)
+                  .then(function(to_annotations) {
+                    if (to_annotations.length === 0) {
+                      return CATMAID.Annotations.forSkeleton(project.id, from_model.id)
+                        .then(function(from_annotations) {
+                          // Merge annotations from both neurons
+                          function collectAnnotations(o, e) {
+                            o[e.name] = e.users[0].id; return o;
+                          }
+                          var annotationMap = from_annotations.reduce(collectAnnotations, {});
+                          merge(annotationMap);
+                        });
+                    } else {
+                      merge_multiple_nodes();
+                    }
+                  }).catch(CATMAID.handleError);
               }
             };
 

@@ -180,139 +180,20 @@
   };
 
   /**
-   * This neuron annotation namespace method removes an annotation from another
-   * entity. It is not dependent on any context, but asks the user for
-   * confirmation. A callback can be executed in the case of success.
-   */
-  CATMAID.remove_annotation = function(entity_id,
-      annotation_id, callback)
-  {
-    CATMAID.remove_annotation_from_entities([entity_id],
-        annotation_id, callback);
-  };
-
-  /**
-   * This neuron annotation namespace method removes an annotation from a list of
-   * entities. It is not dependent on any context, but asks the user for
-   * confirmation. A callback can be executed in the case of success.
-   */
-  CATMAID.remove_annotation_from_entities = function(entity_ids,
-      annotation_id, callback)
-  {
-    // Complain if the user has no annotation permissions for the current project
-    if (!checkPermission('can_annotate')) {
-      CATMAID.error("You don't have have permission to remove annotations");
-      return;
-    }
-
-    if (!confirm('Are you sure you want to remove annotation "' +
-          CATMAID.annotations.getName(annotation_id) + '"?')) {
-      return;
-    }
-
-    requestQueue.register(django_url + project.id + '/annotations/' +
-        annotation_id + '/remove',
-        'POST', {
-          entity_ids: entity_ids
-        },
-        $.proxy(function(status, text, xml) {
-          if (status === 200) {
-            var e = $.parseJSON(text);
-            if (e.error) {
-              new CATMAID.ErrorDialog(e.error, e.detail).show();
-            } else {
-              // If the actual annotation was removed, update cache
-              if (e.deleted_annotation) CATMAID.annotations.remove(annotation_id);
-
-              // Let the neuron name service update itself
-              CATMAID.NeuronNameService.getInstance().refresh();
-
-              // Use a copy of the entity id list, because we we will use this array also
-              // as a callback parameter. No deep clone required, we expect only numbers
-              // (or strungs).
-              var changed_entities = entity_ids.slice(0);
-
-              // Use a copy of th
-              CATMAID.Annotations.trigger(CATMAID.Annotations.EVENT_ANNOTATIONS_CHANGED,
-                  entity_ids);
-              if (callback) callback(e.message);
-            }
-          }
-        }, this));
-  };
-
-  /**
-   * Removes multiple annotation from a list of entities. It is not dependent on
-   * any context, but asks the user for confirmation. A promise is returned.
-   */
-  CATMAID.remove_annotations_from_entities = function(entity_ids,
-      annotation_ids, callback) {
-    // Complain if the user has no annotation permissions for the current project
-    if (!checkPermission('can_annotate')) {
-      CATMAID.error("You don't have have permission to remove annotations");
-      return;
-    }
-
-    var annotations = annotation_ids.map(function(annotation_id) {
-      return CATMAID.annotations.getName(annotation_id);
-    });
-
-    if (!confirm('Are you sure you want to remove annotations "' +
-          annotations.join(', ') + '"?')) {
-      return;
-    }
-
-    requestQueue.register(django_url + project.id + '/annotations/remove',
-        'POST', {
-          entity_ids: entity_ids,
-          annotation_ids: annotation_ids
-        },
-        CATMAID.jsonResponseHandler(function(json) {
-          // Let the neuron name service update itself
-          CATMAID.NeuronNameService.getInstance().refresh();
-
-          // Use a copy of the entity id list, because we we will use this array also
-          // as a callback parameter. No deep clone required, we expect only numbers
-          // (or strungs).
-          var changed_entities = entity_ids.slice(0);
-
-          // Use a copy of th
-          CATMAID.Annotations.trigger(CATMAID.Annotations.EVENT_ANNOTATIONS_CHANGED,
-              entity_ids);
-          if (callback) callback(json);
-        }));
-  };
-
-  /**
-   * A neuron annotation namespace method to retrieve annotations from the backend
-   * for the neuron modeled by a particular skeleton. If the call was successfull,
-   * the passed handler is called with the annotation set as parameter.
-   */
-  CATMAID.retrieve_annotations_for_skeleton = function(skid, handler) {
-    requestQueue.register(django_url + project.id +  '/annotations/',
-      'POST', {'skeleton_id': skid}, function(status, text) {
-        if (status !== 200) {
-          alert("Unexpected status code: " + status);
-          return false;
-        }
-        if (text && text !== " ") {
-          var json = $.parseJSON(text);
-          if (json.error) {
-            new CATMAID.ErrorDialog(json.error, json.detail).show();
-          } else if (handler) {
-            handler(json.annotations);
-          }
-        }
-      });
-  };
-
-  /**
    * The annotation cache provides annotation names and their IDs.
    */
   var AnnotationCache = function() {
     // Map of annotation name vs its ID and vice versa
     this.annotation_ids = {};
     this.annotation_names = {};
+
+    // Listen to annotation deletions so these annotations can be reomved from
+    // the cache.
+    CATMAID.Annotations.on(CATMAID.EVENT_ANNOTATIONS_DELETED, this.removeAll, this);
+  };
+
+  AnnotationCache.prototype.destroy = function() {
+    CATMAID.Annoations.off(CATMAID.EVENT_ANNOTATIONS_DELETED, this.removeAll, this);
   };
 
   AnnotationCache.prototype.getName = function(id) {
@@ -394,6 +275,13 @@
   };
 
   /**
+   * Remove multiple annotatiosn from the cache.
+   */
+  AnnotationCache.prototype.removeAll = function(annotationIds) {
+    annotationsIds.forEach(this.remove.bind(this));
+  };
+
+  /**
    * Add jQuery autocompletion for all cached annotations to the given input
    * element.
    */
@@ -408,10 +296,5 @@
   // Export the annotation cache constructor and a generally available instance.
   CATMAID.AnnotationCache = AnnotationCache;
   CATMAID.annotations = new AnnotationCache();
-
-  // Collect annotation related events in a dedicated object
-  CATMAID.Annotations = {};
-  CATMAID.Annotations.EVENT_ANNOTATIONS_CHANGED = "annotations_changed";
-  CATMAID.asEventSource(CATMAID.Annotations);
 
 })(CATMAID);

@@ -122,8 +122,7 @@
 
     // Get all annotations for a skeleton and fill the list boxes
     var add_annotations_fn = function(skid, listboxes, disable_unpermitted) {
-      CATMAID.retrieve_annotations_for_skeleton(skid,
-          function(annotations) {
+      CATMAID.Annotations.forSkeleton(project.id, skid).then(function(annotations) {
             // Create annotation check boxes
             annotations.forEach(function(aobj) {
               var create_cb = function(a_info, checked) {
@@ -156,7 +155,7 @@
                 lb.obj.appendChild(document.createTextNode(msg));
               });
             }
-          });
+          }).catch(CATMAID.handleError);
       };
 
     // Create a 3D View that is not a SkeletonSource neither in an instance registry

@@ -779,32 +779,41 @@
       var widget = event.data;
       var neuron_id = $(this).parent().attr('neuron_id');
       var annotation_id = $(this).parent().attr('annotation_id');
-      CATMAID.remove_annotation(neuron_id,
-          annotation_id, (function(message) {
-              // Display message returned by the server
-              CATMAID.info(message);
-              // Update internal representation
-              var hasAnnotation = function(r) {
-                return r.id == neuron_id && r.annotations.some(function(a) {
-                  return a.id == annotation_id;
-                });
-              };
-              var nextAnnotationMatch = function(r) {
-                for (var i=0; i<r.annotations.length; ++i) {
-                  if (r.annotations[i].id == annotation_id) return i;
-                }
-                return null;
-              };
-              this.queryResults[0].filter(hasAnnotation).forEach(function(r) {
-                var i = nextAnnotationMatch(r);
-                if (i !== null) r.annotations.splice(i, 1);
+      var annotation = CATMAID.annotations.getName(annotation_id);
+
+      if (!confirm('Are you sure you want to remove annotation "' + annotation + '"?')) {
+        return;
+      }
+
+      return CATMAID.Annotations.remove(project.id, [neuron_id], [annotation_id])
+          .then((function(data) {
+            var msg = (data.deleted_annotations.length > 0) ?
+              "Removed " + data.deleted_annotations.length + " annotation." :
+              "Couldn not delete annotation";
+            CATMAID.info(msg);
+
+            // Update internal representation
+            var hasAnnotation = function(r) {
+              return r.id == neuron_id && r.annotations.some(function(a) {
+                return a.id == annotation_id;
               });
-              // Remove current annotation from displayed list
-              var result_tr = $('#neuron_annotations_query_results' +
-                  this.widgetID).find('.show_annotation[neuron_id=' +
-                  neuron_id + '][annotation_id=' + annotation_id + ']');
-              result_tr.fadeOut(1000, function() { $(this).remove(); });
-          }).bind(widget));
+            };
+            var nextAnnotationMatch = function(r) {
+              for (var i=0; i<r.annotations.length; ++i) {
+                if (r.annotations[i].id == annotation_id) return i;
+              }
+              return null;
+            };
+            this.queryResults[0].filter(hasAnnotation).forEach(function(r) {
+              var i = nextAnnotationMatch(r);
+              if (i !== null) r.annotations.splice(i, 1);
+            });
+            // Remove current annotation from displayed list
+            var result_tr = $('#neuron_annotations_query_results' +
+                this.widgetID).find('.show_annotation[neuron_id=' +
+                neuron_id + '][annotation_id=' + annotation_id + ']');
+            result_tr.fadeOut(1000, function() { $(this).remove(); });
+          }).bind(widget)).catch(CATMAID.handleError);
     });
 
     // Add click handlers to show an annotation in navigator

@@ -295,6 +295,10 @@
           });
         },
 
+        handleAnnotationChange: function(changedEntities) {
+            this.refresh();
+        },
+
         /**
          * Updates the name representation of every managed neuron and notifies all
          * clients about it.
@@ -542,19 +546,25 @@
 
         /**
          * Listen to the neuron controller's delete event and remove neurons
-         * automatically from the name service.
+         * automatically from the name service. Also register to changed
+         * annotation links so that the name service can update itself.
          */
         registerEventHandlers: function() {
           CATMAID.neuronController.on(CATMAID.neuronController.EVENT_SKELETON_DELETED,
               this.unregisterSingleFromAllClients, instance);
+          CATMAID.Annotations.on(CATMAID.Annotations.EVENT_ANNOTATIONS_CHANGED,
+              this.handleAnnotationChange, instance);
         },
 
         /**
-         * Unregister from the neuron controller's delete event.
+         * Unregister from the neuron controller's delete and the annotation
+         * change events.
          */
         unregisterEventHandlers: function() {
           CATMAID.neuronController.off(CATMAID.neuronController.EVENT_SKELETON_DELETED,
               this.unregisterSingleFromAllClients, instance);
+          CATMAID.Annotations.off(CATMAID.Annotations.EVENT_ANNOTATIONS_CHANGED,
+              this.handleAnnotationChange, instance);
         }
       };
     }

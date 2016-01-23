@@ -71,8 +71,8 @@ libraries_js = {
     'filesaver': ['*.js'],
     'whammy': ['whammy.js'],
     'catmaid': ['request.js', 'CATMAID.js', 'error.js', 'events.js',
-                'neuron_controller.js', 'skeleton_source.js', '*.js',
-                'models/*.js'],
+                'command.js', 'models/*.js', 'neuron_controller.js',
+                'skeleton_source.js', '*.js'],
 }
 
 JAVASCRIPT = OrderedDict()

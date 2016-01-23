@@ -146,13 +146,15 @@
    * @returns Result of the command's undo function
    */
   CommandHistory.prototype.undo = function() {
-    var command = this._commandList[this._currentCommand];
-    if (!command) {
-      throw new CATMAID.Error("Nothing to undo");
-    }
-    var result = command.undo();
-    this._rollbackHistory();
-    return result;
+    return new Promise((function(resolve, reject) {
+      var command = this._commandList[this._currentCommand];
+      if (!command) {
+        throw new CATMAID.ValueError("Nothing to undo");
+      }
+      var result = command.undo();
+      this._rollbackHistory();
+      return result;
+    }).bind(this));
   };
 
   /**
@@ -161,13 +163,15 @@
    * @returns Result of the command's execute function
    */
   CommandHistory.prototype.redo = function() {
-    var command = this._commandList[this._currentCommand + 1];
-    if (!command) {
-      throw new CATMAID.Error("Nothing to redo");
-    }
-    var result = command.execute();
-    this._currentCommand += 1;
-    return result;
+    return new Promise((function(resolve, reject) {
+      var command = this._commandList[this._currentCommand + 1];
+      if (!command) {
+        throw new CATMAID.ValueError("Nothing to redo");
+      }
+      var result = command.execute();
+      this._currentCommand += 1;
+      return result;
+    }).bind(this));
   };
 
   /**

@@ -5,6 +5,10 @@
 
   "use strict";
 
+  /**
+   * This namespace provides functions to work with labels on nodes. All of them
+   * return promises.
+   */
   var Labels = {
 
     /**

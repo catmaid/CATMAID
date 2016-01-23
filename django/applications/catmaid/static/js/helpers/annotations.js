@@ -103,14 +103,14 @@
   };
 
   CATMAID.annotate_neurons_of_skeletons = function(
-      skeleton_ids, callback)
-  {
+      skeleton_ids, callback) {
+
     CATMAID.annotate(null, skeleton_ids, callback);
   };
 
   CATMAID.annotate_entities = function(entity_ids,
-      callback)
-  {
+      callback) {
+
     CATMAID.annotate(entity_ids, null, callback);
   };
 
@@ -118,9 +118,8 @@
    * Prompt user for annotations to annotate either target objects directly and/or
    * to annotate the neurons of a set of skeletons.
    */
-  CATMAID.annotate = function(entity_ids, skeleton_ids,
-      callback)
-  {
+  CATMAID.annotate = function(entity_ids, skeleton_ids, callback) {
+
     // Complain if the user has no annotation permissions for the current project
     if (!checkPermission('can_annotate')) {
       CATMAID.error("You don't have have permission to add annotations");

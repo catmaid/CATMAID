@@ -103,7 +103,8 @@
           return {
             annotations: e.annotations,
             annotation_names: ann_names,
-            used_annotations: used_annotations
+            used_annotations: used_annotations,
+            new_annotations: e.new_annotations
           };
         });
     },

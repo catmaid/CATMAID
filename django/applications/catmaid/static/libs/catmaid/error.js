@@ -9,8 +9,8 @@
   CATMAID.Error = function(message, detail) {
     this.name = 'CATMAID error';
     this.message = message || '(no message)';
-    this.detail= detail || null;
     this.stack = (new Error()).stack;
+    this.detail= detail || this.stack;
   };
 
   CATMAID.Error.prototype = Object.create(Error.prototype);

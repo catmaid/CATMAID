@@ -208,6 +208,8 @@ window.onbeforeunload = function() {
       } else {
         CATMAID.error(error.message, error.detail);
       }
+    } else if (error instanceof Error) {
+      CATMAID.error(error.message, error.stack);
     } else {
       CATMAID.error(error);
     }

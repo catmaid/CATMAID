@@ -141,13 +141,7 @@
         run: function (e) {
           if (e.ctrlKey) {
             CATMAID.commands.undo()
-              .catch(function(error) {
-                if (error instanceof CATMAID.ValueError) {
-                  CATMAID.warn(error.message);
-                } else {
-                  CATMAID.error(error.message, error.detail);
-                }
-              });
+              .catch(CATMAID.handleError);
             return true;
           }
           return false;

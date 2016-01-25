@@ -10,7 +10,8 @@
    * annotations from a set of target objects. An error handler is attached to
    * the returned promise.
    */
-  CATMAID.confirmAndRemoveAnnotations = function(projectId, targetIds, annotationIds) {
+  CATMAID.confirmAndRemoveAnnotations = function(projectId, targetIds, annotationIds,
+      noCommand) {
     var annotations = annotationIds.map(function(annotationId) {
       return CATMAID.annotations.getName(annotationId);
     });
@@ -20,7 +21,12 @@
       return;
     }
 
-    return CATMAID.Annotations.remove(projectId, targetIds, annotationIds)
+    var remove = noCommand ?
+        CATMAID.Annotations.remove(projectId, targetIds, annotationIds) :
+        CATMAID.commands.execute(new CATMAID.RemoveAnnotationsCommand(
+              projectId, targetIds, annotationIds));
+
+    return remove.then(projectId, targetIds, annotationIds)
         .then(function(data) {
           var msg = (data.deleted_links.length > 0) ?
             "Removed " + data.deleted_links.length + " annotation(s)." :

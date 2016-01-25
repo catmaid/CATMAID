@@ -164,4 +164,57 @@
     this.init(info, exec, undo);
   });
 
+  /**
+   * Remove annotations with this command. This can be undone if the execution
+   * the initial execution had an actual removal as effect.
+   */
+  CATMAID.RemoveAnnotationsCommand = CATMAID.makeCommand(function(projectId,
+        targetIds, annotationIds) {
+
+    // Get current annotation id/mapping
+    var annotationMap = annotationIds.reduce(function(o, annotationId) {
+      o[annotationId] = CATMAID.annotations.getName(annotationId);
+      return o;
+    }, {});
+
+    var exec = function(done, command) {
+      var removeAnnotations = CATMAID.Annotations.remove(projectId, targetIds,
+          annotationIds);
+
+      return removeAnnotations.then(function(result) {
+        command._removed_annotations = result.deleted_annotations;
+        done();
+        return result;
+      });
+    };
+
+    var undo = function(done, command) {
+      // Fail if expected undo parameters are not available from command
+      if (undefined === command._removed_annotations) {
+        throw new CATMAID.ValueError('Can\'t undo removal of annotation, history data not available');
+      }
+
+      // Build one promise for each link and return a super promise that
+      // resolves once all removal promises are resolved.
+      var remAnnotationIds = command._removed_annotations;
+      var promises = Object.keys(remAnnotationIds).map(function(annotationId) {
+        var annotation = annotationMap[annotationId];
+        if (!annotation) {
+          throw new CATMAID.ValueError("Can't undo removal of annotation, can't find annotation name for ID " + annotationId);
+        }
+        return CATMAID.Annotations.add(projectId, this[annotationId].targetIds, null,
+            [annotation]);
+      }, remAnnotationIds);
+      return Promise.all(promises).then(done);
+    };
+
+    // Prepare command label
+    var atype = (annotationIds.length > 1) ? "annotations" : "annoation";
+    var otype = (targetIds.length > 1) ? "objects" : "object";
+    var info = "Remove " + atype + " \"" + Object.keys(annotationMap).join("\", \"") +
+         "\" from " + otype + targetIds.join(", ");
+
+    this.init(info, exec, undo);
+  });
+
 })(CATMAID);

@@ -44,7 +44,7 @@
         annotation_ids: annotationIds
       };
       return CATMAID.fetch(url, 'POST', params).then(function(json) {
-        if (json.deleted_annotations && json.deleted_annotations.length > 0) {
+        if (json.deleted_links && json.deleted_links.length > 0) {
           CATMAID.Annotations.trigger(CATMAID.Annotations.EVENT_ANNOTATIONS_DELETED,
               json.deleted_annotations);
         }

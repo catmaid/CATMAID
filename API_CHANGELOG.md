@@ -26,6 +26,13 @@ included in this changelog.
 - Returns now also information about which label label was eventually removed.
   If nothing went wrong the field deleted_link has the input label ID.
 
+`POST /{project_id}/annotations/remove`:
+
+- The return field `deleted_annotations` is now called `deleted_links` and
+  continues to contain a list of class_instance_class_instance IDs that were
+  removed. The new `deleted_annotations` field contains a mapping of removed
+  annotation IDs to the IDs of the object they were removed from.
+
 
 ### Deprecations
 

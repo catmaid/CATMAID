@@ -22,8 +22,8 @@
 
     return CATMAID.Annotations.remove(projectId, targetIds, annotationIds)
         .then(function(data) {
-          var msg = (data.deleted_annotations.length > 0) ?
-            "Removed " + data.deleted_annotations.length + " annotation(s)." :
+          var msg = (data.deleted_links.length > 0) ?
+            "Removed " + data.deleted_links.length + " annotation(s)." :
             "Couldn not delete any annotation";
           CATMAID.info(msg);
         }).catch(CATMAID.handleError);

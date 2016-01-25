@@ -565,18 +565,28 @@ def remove_annotations(request, project_id=None):
         raise ValueError("No entity IDs provided")
 
     # Remove individual annotations
-    deleted_annotations = []
+    deleted_annotations = {}
+    deleted_links = []
     num_left_annotations = {}
     for annotation_id in annotation_ids:
         cicis_to_delete, missed_cicis, deleted, num_left = _remove_annotation(
                 request.user, project_id, entity_ids, annotation_id)
         # Keep track of results
         num_left_annotations[str(annotation_id)] = num_left
+        targetIds = []
         for cici in cicis_to_delete:
-            deleted_annotations.append(cici.id)
+            deleted_links.append(cici.id)
+            # The target is class_instance_a, because we deal with the
+            # "annotated_with" relation.
+            targetIds.append(cici.class_instance_a_id)
+        if targetIds:
+            deleted_annotations[annotation_id] = {
+                'targetIds': targetIds
+            }
 
     return HttpResponse(json.dumps({
         'deleted_annotations': deleted_annotations,
+        'deleted_links': deleted_links,
         'left_uses': num_left_annotations
     }), content_type='application/json')
 

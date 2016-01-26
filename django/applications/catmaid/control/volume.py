@@ -12,6 +12,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
+
 num = '[-+]?[0-9]*\.?[0-9]+'
 bbox_re = r'BOX3D\(({0})\s+({0})\s+({0}),\s*({0})\s+({0})\s+({0})\)'.format(num)
 
@@ -166,8 +167,8 @@ def volume_detail(request, project_id, volume_id):
             'creation_time': volume[6],
             'edition_time': volume[7],
             'bbox': {
-            'min': {'x': bbox[0], 'y': bbox[1], 'z': bbox[2]},
-            'max': {'x': bbox[3], 'y': bbox[4], 'z': bbox[5]}
+                'min': {'x': bbox[0], 'y': bbox[1], 'z': bbox[2]},
+                'max': {'x': bbox[3], 'y': bbox[4], 'z': bbox[5]}
             }
         })
     elif request.method == 'POST':

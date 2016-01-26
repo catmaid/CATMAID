@@ -15,6 +15,88 @@ from rest_framework.response import Response
 num = '[-+]?[0-9]*\.?[0-9]+'
 bbox_re = r'BOX3D\(({0})\s+({0})\s+({0}),\s*({0})\s+({0})\s+({0})\)'.format(num)
 
+def get_volume_instance(project_id, user_id, options):
+    vtype = options.get("type", None)
+    validate_vtype(vtype)
+
+    init = volume_type.get(vtype)
+    return init(project_id, user_id, options)
+
+# Volumes are supposed to create Volume model compatible data in the volume
+# table by using PostGIS volumes.
+
+class BoxVolume:
+
+    def __init__(self, project_id, user_id, options):
+        self.title = options.get("title", None)
+        if not self.title:
+            raise ValueError("Title parameter missing")
+
+        self.user_id = user_id
+        self.project_id = project_id
+        self.comment = options.get("comment", None)
+        self.min_x = get_req_coordinate(options, "min_x")
+        self.min_y = get_req_coordinate(options, "min_y")
+        self.min_z = get_req_coordinate(options, "min_z")
+        self.max_x = get_req_coordinate(options, "max_x")
+        self.max_y = get_req_coordinate(options, "max_y")
+        self.max_z = get_req_coordinate(options, "max_z")
+        self.id = options.get('id', None)
+
+    def save(self):
+        """Create or update a PostGIS box in project space.
+
+        An existing box is updated, if the ID parameter is None.
+        """
+        params = {
+            "uid": self.user_id,
+            "pid": self.project_id,
+            "t": self.title,
+            "c": self.comment,
+            "lx": self.min_x,
+            "ly": self.min_y,
+            "lz": self.min_z,
+            "hx": self.max_x,
+            "hy": self.max_y,
+            "hz": self.max_z,
+            "id": self.id
+        }
+
+        surface = """ST_GeomFromEWKT('POLYHEDRALSURFACE (
+            ((%(lx)s %(ly)s %(lz)s, %(lx)s %(hy)s %(lz)s, %(hx)s %(hy)s %(lz)s,
+              %(hx)s %(ly)s %(lz)s, %(lx)s %(ly)s %(lz)s)),
+            ((%(lx)s %(ly)s %(lz)s, %(lx)s %(hy)s %(lz)s, %(lx)s %(hy)s %(hz)s,
+              %(lx)s %(ly)s %(hz)s, %(lx)s %(ly)s %(lz)s)),
+            ((%(lx)s %(ly)s %(lz)s, %(hx)s %(ly)s %(lz)s, %(hx)s %(ly)s %(hz)s,
+              %(lx)s %(ly)s %(hz)s, %(lx)s %(ly)s %(lz)s)),
+            ((%(hx)s %(hy)s %(hz)s, %(hx)s %(ly)s %(hz)s, %(lx)s %(ly)s %(hz)s,
+              %(lx)s %(hy)s %(hz)s, %(hx)s %(hy)s %(hz)s)),
+            ((%(hx)s %(hy)s %(hz)s, %(hx)s %(ly)s %(hz)s, %(hx)s %(ly)s %(lz)s,
+              %(hx)s %(hy)s %(lz)s, %(hx)s %(hy)s %(hz)s)),
+            ((%(hx)s %(hy)s %(hz)s, %(hx)s %(hy)s %(lz)s, %(lx)s %(hy)s %(lz)s,
+              %(lx)s %(hy)s %(hz)s, %(hx)s %(hy)s %(hz)s)))')"""
+        cursor = connection.cursor()
+        if self.id:
+            cursor.execute("""
+                UPDATE catmaid_volume SET (user_id, project_id, editor_id, name,
+                        comment, edition_time, geometry) =
+                (%(uid)s, %(pid)s, %(uid)s, %(t)s, %(c)s, now(), """ +
+                           surface + """)
+                WHERE id=%(id)s RETURNING id;""", params)
+        else:
+            cursor.execute("""
+                INSERT INTO catmaid_volume (user_id, project_id, editor_id, name,
+                        comment, creation_time, edition_time, geometry)
+                VALUES (%(uid)s, %(pid)s, %(uid)s, %(t)s, %(c)s, now(), now(), """ +
+                           surface + """)
+                RETURNING id;""", params)
+
+        return cursor.fetchone()[0]
+
+volume_type = {
+    "box": BoxVolume,
+}
+
 def get_req_coordinate(request_dict, c):
     """Get a coordinate from a request dictionary or error.
     """
@@ -98,72 +180,13 @@ def update_volume(request, project_id, volume_id):
     if request.method != "POST":
         raise ValueError("Volume updates require a POST request")
 
-    update_volume = volume_type.get(vtype)
-    volume_id = update_volume(project_id, request.user, request.POST)
+    instance = get_volume_instance(project_id, request.user.id, request.POST)
+    volume_id = instance.save()
 
     return Response({
         "success": True,
         "volume_id": volume_id
     })
-
-def create_or_update_box(project_id, user, options):
-    """Create or update a PostGIS box in project space.
-
-    Options are provided as a dictionary. An existing box is updated, if the ID
-    parameter is provided.
-    """
-
-    title = options.get("title", None)
-    if not title:
-        raise ValueError("Title parameter missing")
-
-    params = {
-        "uid": user.id,
-        "pid": project_id,
-        "t": title,
-        "c": options.get("comment", None),
-        "lx": get_req_coordinate(options, "min_x"),
-        "ly": get_req_coordinate(options, "min_y"),
-        "lz": get_req_coordinate(options, "min_z"),
-        "hx": get_req_coordinate(options, "max_x"),
-        "hy": get_req_coordinate(options, "max_y"),
-        "hz": get_req_coordinate(options, "max_z"),
-        "id": options.get('id', None)
-    }
-    surface = """ST_GeomFromEWKT('POLYHEDRALSURFACE (
-                  ((%(lx)s %(ly)s %(lz)s, %(lx)s %(hy)s %(lz)s, %(hx)s %(hy)s %(lz)s,
-                    %(hx)s %(ly)s %(lz)s, %(lx)s %(ly)s %(lz)s)),
-                  ((%(lx)s %(ly)s %(lz)s, %(lx)s %(hy)s %(lz)s, %(lx)s %(hy)s %(hz)s,
-                    %(lx)s %(ly)s %(hz)s, %(lx)s %(ly)s %(lz)s)),
-                  ((%(lx)s %(ly)s %(lz)s, %(hx)s %(ly)s %(lz)s, %(hx)s %(ly)s %(hz)s,
-                    %(lx)s %(ly)s %(hz)s, %(lx)s %(ly)s %(lz)s)),
-                  ((%(hx)s %(hy)s %(hz)s, %(hx)s %(ly)s %(hz)s, %(lx)s %(ly)s %(hz)s,
-                    %(lx)s %(hy)s %(hz)s, %(hx)s %(hy)s %(hz)s)),
-                  ((%(hx)s %(hy)s %(hz)s, %(hx)s %(ly)s %(hz)s, %(hx)s %(ly)s %(lz)s,
-                    %(hx)s %(hy)s %(lz)s, %(hx)s %(hy)s %(hz)s)),
-                  ((%(hx)s %(hy)s %(hz)s, %(hx)s %(hy)s %(lz)s, %(lx)s %(hy)s %(lz)s,
-                    %(lx)s %(hy)s %(hz)s, %(hx)s %(hy)s %(hz)s)))')"""
-    cursor = connection.cursor()
-    if id:
-        cursor.execute("""
-            UPDATE catmaid_volume SET (user_id, project_id, editor_id, name,
-                    comment, edition_time, geometry) =
-            (%(uid)s, %(pid)s, %(uid)s, %(t)s, %(c)s, now(), """ +
-                       surface + """)
-            WHERE id=%(id)s RETURNING id;""", params)
-    else:
-        cursor.execute("""
-            INSERT INTO catmaid_volume (user_id, project_id, editor_id, name,
-                    comment, creation_time, edition_time, geometry)
-            VALUES (%(uid)s, %(pid)s, %(uid)s, %(t)s, %(c)s, now(), now(), """ +
-                       surface + """)
-            RETURNING id;""", params)
-
-    return cursor.fetchone()[0]
-
-volume_type = {
-    "box": create_or_update_box
-}
 
 @api_view(['POST'])
 @requires_user_role([UserRole.Annotate])
@@ -224,11 +247,8 @@ def add_volume(request, project_id):
         type: integer
         required: true
     """
-    vtype = request.POST.get("type", None)
-    validate_vtype(vtype)
-
-    create_volume = volume_type.get(vtype)
-    volume_id = create_volume(project_id, request.user, request.POST)
+    instance = get_volume_instance(project_id, request.user.id, request.POST)
+    volume_id = instance.save()
 
     return Response({
         "success": True,

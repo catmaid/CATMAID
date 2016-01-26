@@ -30,6 +30,11 @@ This procedure will only be required for upgrading an existing instance to a
 release newer than 2015.12.21. It won't be needed to migrate from newer
 releases.
 
+Also note that if you are running an Apache/mod_wsgi setup (or referencing
+django.wsgi), you have to re-generate your configuration with:
+
+  ./django/create_configuration
+
 The following variables can be removed from settings.py files: TEMPLATE_DIRS,
 TEMPLATE_DEBUG
 

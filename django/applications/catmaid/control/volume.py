@@ -98,49 +98,37 @@ def update_volume(request, project_id, volume_id):
     if request.method != "POST":
         raise ValueError("Volume updates require a POST request")
 
-    vtype = request.POST.get("type", None)
-    validate_vtype(vtype)
-    title = request.POST.get("title", None)
-    if not title:
-        raise ValueError("Title parameter missing")
-
-    comment = request.POST.get("comment", None)
-
-    min_x = get_req_coordinate(request.POST, "min_x")
-    min_y = get_req_coordinate(request.POST, "min_y")
-    min_z = get_req_coordinate(request.POST, "min_z")
-    max_x = get_req_coordinate(request.POST, "max_x")
-    max_y = get_req_coordinate(request.POST, "max_y")
-    max_z = get_req_coordinate(request.POST, "max_z")
-
     update_volume = volume_type.get(vtype)
-    volume_id = update_volume(project_id, request.user, title, comment, min_x,
-                         min_y, min_z, max_x, max_y, max_z, volume_id)
+    volume_id = update_volume(project_id, request.user, request.POST)
 
     return Response({
         "success": True,
         "volume_id": volume_id
     })
 
-
-def create_or_update_box(project_id, user, title, comment, minx, miny, minz,
-        maxx, maxy, maxz, id=None):
+def create_or_update_box(project_id, user, options):
     """Create or update a PostGIS box in project space.
 
-    An existing box is updated, if the ID parameter is provided.
+    Options are provided as a dictionary. An existing box is updated, if the ID
+    parameter is provided.
     """
+
+    title = options.get("title", None)
+    if not title:
+        raise ValueError("Title parameter missing")
+
     params = {
         "uid": user.id,
         "pid": project_id,
         "t": title,
-        "c": comment,
-        "lx": minx,
-        "ly": miny,
-        "lz": minz,
-        "hx": maxx,
-        "hy": maxy,
-        "hz": maxz,
-        "id": id
+        "c": options.get("comment", None),
+        "lx": get_req_coordinate(options, "min_x"),
+        "ly": get_req_coordinate(options, "min_y"),
+        "lz": get_req_coordinate(options, "min_z"),
+        "hx": get_req_coordinate(options, "max_x"),
+        "hy": get_req_coordinate(options, "max_y"),
+        "hz": get_req_coordinate(options, "max_z"),
+        "id": options.get('id', None)
     }
     surface = """ST_GeomFromEWKT('POLYHEDRALSURFACE (
                   ((%(lx)s %(ly)s %(lz)s, %(lx)s %(hy)s %(lz)s, %(hx)s %(hy)s %(lz)s,
@@ -239,22 +227,8 @@ def add_volume(request, project_id):
     vtype = request.POST.get("type", None)
     validate_vtype(vtype)
 
-    title = request.POST.get("title", None)
-    if not title:
-        raise ValueError("Title parameter missing")
-
-    comment = request.POST.get("comment", None)
-
-    min_x = get_req_coordinate(request.POST, "min_x")
-    min_y = get_req_coordinate(request.POST, "min_y")
-    min_z = get_req_coordinate(request.POST, "min_z")
-    max_x = get_req_coordinate(request.POST, "max_x")
-    max_y = get_req_coordinate(request.POST, "max_y")
-    max_z = get_req_coordinate(request.POST, "max_z")
-
     create_volume = volume_type.get(vtype)
-    volume_id = create_volume(project_id, request.user, title, comment,
-            min_x, min_y, min_z, max_x, max_y, max_z)
+    volume_id = create_volume(project_id, request.user, request.POST)
 
     return Response({
         "success": True,

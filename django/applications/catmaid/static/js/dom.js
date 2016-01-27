@@ -114,11 +114,14 @@
   /**
    * Helper function to create a select element with options.
    */
-  DOM.createSelectSetting = function(name, options, helptext, handler)
+  DOM.createSelectSetting = function(name, options, helptext, handler, defaultValue)
   {
     var select = $('<select />');
     for (var o in options) {
-      select.append(new Option(o, options[o]));
+      var value = options[o];
+      var selected = (defaultValue === value);
+      var option = new Option(o, value, selected, selected);
+      select.append(option);
     }
     if (handler) {
       select.on('change', handler);

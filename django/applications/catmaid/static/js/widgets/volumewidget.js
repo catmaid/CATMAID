@@ -345,6 +345,11 @@
     "convexhull": {
       name: "Convex hull",
       createSettings: function(volume) {
+        var source = function(e) {
+          var source = CATMAID.skeletonListSources.getSource(this.value);
+          volume.set("neuronSource", source);
+        };
+
         var ruleType = function(e) { };
         var $settings = $('<div />');
         var $content = CATMAID.DOM.addSettingsContainer($settings,
@@ -357,16 +362,16 @@
           return o;
         }, {});
         $content.append(CATMAID.DOM.createSelectSetting("Skeleton source",
-              sourceOptions, "The selection to draw points from"));
+              sourceOptions, "The selection to draw points from", source));
 
         // Get available filter strategeis
-        var pointFilters = Object.keys(CATMAID.PointFilter).reduce(function(o, p) {
+        var nodeFilters = Object.keys(CATMAID.NodeFilter).reduce(function(o, p) {
           o[CATMAID.PointFilter[p].name] = p;
           return o;
         }, {});
 
-        $content.append(CATMAID.DOM.createSelectSetting("Point filter",
-              pointFilters, "Points inside the convex hull"));
+        $content.append(CATMAID.DOM.createSelectSetting("Node filter",
+              nodeFilters, "Nodes inside the convex hull"));
 
         // Get available ules
         var table = document.createElement('table');
@@ -398,11 +403,9 @@
           order: [],
           columns: [
             {
-              data: "name",
               orderable: false,
             },
             {
-              data: "options",
               orderable: false,
             },
           ],

@@ -814,7 +814,7 @@ var WindowMaker = new function()
     update.onclick = ST.update.bind(ST);
     buttons.appendChild(update);
 
-    var fileButton = buttons.appendChild(CATMAID.DOM.createHiddenFileButton(
+    var fileButton = buttons.appendChild(CATMAID.DOM.createFileButton(
           'st-file-dialog-' + ST.widgetID, false, function(evt) {
             ST.loadFromFiles(evt.target.files);
           }));

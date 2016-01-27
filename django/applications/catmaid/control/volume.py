@@ -16,6 +16,22 @@ from rest_framework.response import Response
 num = '[-+]?[0-9]*\.?[0-9]+'
 bbox_re = r'BOX3D\(({0})\s+({0})\s+({0}),\s*({0})\s+({0})\s+({0})\)'.format(num)
 
+def get_req_coordinate(request_dict, c):
+    """Get a coordinate from a request dictionary or error.
+    """
+    v = request_dict.get(c, None)
+    if not v:
+        raise ValueError("Coordinate parameter %s missing." % c)
+    return float(v)
+
+def require_option(obj, field):
+    """Raise an exception if a field is missing
+    """
+    if obj.has_key(field):
+        return obj.get(field)
+    else:
+        raise ValueError("Parameter '{}' is missing".format(field))
+
 def get_volume_instance(project_id, user_id, options):
     vtype = options.get("type", None)
     validate_vtype(vtype)
@@ -23,26 +39,90 @@ def get_volume_instance(project_id, user_id, options):
     init = volume_type.get(vtype)
     return init(project_id, user_id, options)
 
-# Volumes are supposed to create Volume model compatible data in the volume
-# table by using PostGIS volumes.
-
-class BoxVolume:
+class PostGISVolume(object):
+    """Volumes are supposed to create Volume model compatible data in the volume
+    table by using PostGIS volumes.
+    """
 
     def __init__(self, project_id, user_id, options):
-        self.title = options.get("title", None)
-        if not self.title:
-            raise ValueError("Title parameter missing")
-
-        self.user_id = user_id
+        self.id = options.get('id', None)
         self.project_id = project_id
+        self.user_id = user_id
+        self.title = require_option(options, "title")
         self.comment = options.get("comment", None)
+
+class TriangleMeshVolume(PostGISVolume):
+    """A generic triangle mesh, provided from an external source.
+    """
+    def __init__(self, project_id, user_id, options):
+        super(TriangleMeshVolume, self).__init__(project_id, user_id, options)
+        json_mesh = options.get("mesh", None)
+        self.mesh = json.loads(json_mesh) if json_mesh else None
+
+    def save(self):
+
+        params = {
+            "uid": self.user_id,
+            "pid": self.project_id,
+            "t": self.title,
+            "c": self.comment,
+            "id": self.id
+        }
+
+        surface = TriangleMeshVolume.fromLists(self.mesh) if self.mesh else None
+        cursor = connection.cursor()
+        if self.id:
+            # If surface is none, the old value will be used. This makes it
+            # possible to update the volume without overriding its geometry.
+            cursor.execute("""
+                UPDATE catmaid_volume SET (user_id, project_id, editor_id, name,
+                        comment, edition_time, geometry) =
+                (%(uid)s, %(pid)s, %(uid)s, %(t)s, %(c)s, now(), """ +
+                           (surface or "geometry") + """)
+                WHERE id=%(id)s RETURNING id;""", params)
+        else:
+            if not surface:
+                raise ValueError("Can't create new volume without mesh")
+
+            cursor.execute("""
+                INSERT INTO catmaid_volume (user_id, project_id, editor_id, name,
+                        comment, creation_time, edition_time, geometry)
+                VALUES (%(uid)s, %(pid)s, %(uid)s, %(t)s, %(c)s, now(), now(), """ +
+                           surface + """)
+                RETURNING id;""", params)
+
+        return cursor.fetchone()[0]
+
+    @classmethod
+    def fromLists(cls, mesh):
+        """Expect mesh to be a list of two lists: [[points], [triangles]]. The
+        list of points contains lists of three numbers, each one representing a
+        vertex in the mesh. The array of triangles also contains three element
+        lists as items. Each one represents a triangle based on the points in
+        the other array, that are referenced by the triangle index values.
+        """
+        def pg_point(p):
+            return '{} {} {}'.format(p[0], p[1], p[2])
+
+        def pg_face(points, f):
+            p0 = pg_point(points[f[0]])
+            return '(({}, {}, {}, {}))'.format(p0, pg_point(points[f[1]]),
+                 pg_point(points[f[2]]), p0)
+
+        points, faces = mesh
+        triangles = [pg_face(points, f) for f in faces]
+        return "ST_GeomFromEWKT('TIN (%s)')" % ','.join(triangles)
+
+class BoxVolume(PostGISVolume):
+
+    def __init__(self, options):
+        super(BoxVolume, self).__init__(project_id, user_id, options);
         self.min_x = get_req_coordinate(options, "min_x")
         self.min_y = get_req_coordinate(options, "min_y")
         self.min_z = get_req_coordinate(options, "min_z")
         self.max_x = get_req_coordinate(options, "max_x")
         self.max_y = get_req_coordinate(options, "max_y")
         self.max_z = get_req_coordinate(options, "max_z")
-        self.id = options.get('id', None)
 
     def save(self):
         """Create or update a PostGIS box in project space.
@@ -96,15 +176,8 @@ class BoxVolume:
 
 volume_type = {
     "box": BoxVolume,
+    "trimesh": TriangleMeshVolume
 }
-
-def get_req_coordinate(request_dict, c):
-    """Get a coordinate from a request dictionary or error.
-    """
-    v = request_dict.get(c, None)
-    if not v:
-        raise ValueError("Coordinate parameter %s missing." % c)
-    return float(v)
 
 def validate_vtype(vtype):
     """Validate the given type or error.

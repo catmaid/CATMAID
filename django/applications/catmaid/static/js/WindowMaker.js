@@ -17,9 +17,37 @@ var WindowMaker = new function()
     return container;
   };
 
+  /**
+   * Get content height of a window and take into account a potential button
+   * panel. If a button panel ID is provided, its height is substracted from the
+   * window content height.
+   */
+  var getWindowContentHeight = function(win, buttonPanelId) {
+    var height = win.getContentHeight();
+    if( buttonPanelId !== undefined ) {
+      var $bar = $('#' + buttonPanelId);
+      height = height - ($bar.is(':visible') ? $bar.height() : 0);
+    }
+    return height;
+  };
+
   var addListener = function(win, container, button_bar, destroy, resize) {
     win.addListener(
       function(callingWindow, signal) {
+
+        // Keep track of scroll bar pixel position and ratio to total container
+        // height to maintain scoll bar location on resize. From:
+        // http://jsfiddle.net/JamesKyle/RmNap/
+        var contentHeight = getWindowContentHeight(win, button_bar);
+        var $container = $(container);
+        var scrollPosition = $container.scrollTop();
+        var scrollRatio = scrollPosition / contentHeight;
+
+        $container.on("scroll", function() {
+          scrollPosition = $container.scrollTop();
+          scrollRatio = scrollPosition / contentHeight;
+        });
+
         switch (signal) {
           case CMWWindow.CLOSE:
             if (typeof(destroy) === "function") {
@@ -39,17 +67,17 @@ var WindowMaker = new function()
             }
             break;
           case CMWWindow.RESIZE:
-            if( button_bar !== undefined ) {
-              var $bar = $('#' + button_bar);
-              container.style.height = (win.getContentHeight() - ($bar.is(':visible') ? $bar.height() : 0)) + "px";
-            } else {
-                container.style.height = ( win.getContentHeight() ) + "px";
-            }
+            contentHeight = getWindowContentHeight(win, button_bar);
+            container.style.height = contentHeight + "px";
             container.style.width = ( win.getAvailableWidth() + "px" );
 
             if (typeof(resize) === "function") {
               resize();
             }
+
+            // Scoll to last known scroll position, after resize has been
+            // performed, in case a redraw changes the content.
+            $container.scrollTop(contentHeight * scrollRatio);
 
             break;
           case CMWWindow.POINTER_ENTER:

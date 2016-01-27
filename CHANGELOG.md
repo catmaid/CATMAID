@@ -98,6 +98,9 @@ Miscellaneous:
 - Which layers are hidden when Space is held is now configurable by checkboxes
   in the Stack Viewer's layer controls.
 
+- Scroll bar positions in widgets are now maintained when they change their
+  size.
+
 
 ### Bug fixes
 

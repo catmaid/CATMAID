@@ -198,17 +198,6 @@ var WindowMaker = new function()
     return b;
   };
 
-  var appendHiddenFileButton = function(div, id, onchangeFn) {
-    var fb = document.createElement('input');
-    fb.setAttribute('type', 'file');
-    fb.setAttribute('id', id);
-    fb.setAttribute('name', 'files[]');
-    fb.style.display = 'none';
-    fb.onchange = onchangeFn;
-    div.appendChild(fb);
-    return fb;
-  };
-
   var createCheckbox = function(label, value, onclickFn) {
     var cb = document.createElement('input');
     cb.setAttribute('type', 'checkbox');
@@ -825,8 +814,10 @@ var WindowMaker = new function()
     update.onclick = ST.update.bind(ST);
     buttons.appendChild(update);
 
-    var fileButton = appendHiddenFileButton(buttons, 'st-file-dialog-' + ST.widgetID,
-        function(evt) { ST.loadFromFiles(evt.target.files); });
+    var fileButton = buttons.appendChild(CATMAID.DOM.createHiddenFileButton(
+          'st-file-dialog-' + ST.widgetID, false, function(evt) {
+            ST.loadFromFiles(evt.target.files);
+          }));
     var open = document.createElement('input');
     open.setAttribute("type", "button");
     open.setAttribute("value", "Open");
@@ -1804,9 +1795,10 @@ var WindowMaker = new function()
          ['Save', GG.saveJSON.bind(GG)],
          ['Open...', function() { document.querySelector('#gg-file-dialog-' + GG.widgetID).click(); }]]);
 
-    appendHiddenFileButton(tabs['Export'], 'gg-file-dialog-' + GG.widgetID,
-        function(evt) { GG.loadFromJSON(evt.target.files); }
-    );
+    tabs['Export'].appendChild(CATMAID.DOM.createFileButton(
+          'gg-file-dialog-' + GG.widgetID, false, function(evt) {
+            GG.loadFromJSON(evt.target.files);
+          }));
 
     var color = document.createElement('select');
     color.setAttribute('id', 'graph_color_choice' + GG.widgetID);

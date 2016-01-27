@@ -127,6 +127,23 @@
   };
 
   /**
+   * Create a file open button that can be optionally initialized hidden.
+   */
+  DOM.createFileButton = function(id, visible, onchangeFn) {
+    var fb = document.createElement('input');
+    fb.setAttribute('type', 'file');
+    if (id) {
+      fb.setAttribute('id', id);
+    }
+    fb.setAttribute('name', 'files[]');
+    if (!visible) {
+      fb.style.display = 'none';
+    }
+    fb.onchange = onchangeFn;
+    return fb;
+  };
+
+  /**
    * Clones the given form into a dynamically created iframe and submits it
    * there. This can be used to store autocompletion information of a form that
    * actually isn't submitted (where e.g. an AJAX request is done manually).  A

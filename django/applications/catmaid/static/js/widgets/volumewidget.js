@@ -6,7 +6,7 @@
   "use strict";
 
   /**
-   * Manage spatial volumes with this wiefet.
+   * Manage spatial volumes with this widget.
    */
   var VolumeManagerWidget = function(options) {
     options = options || {};
@@ -39,6 +39,22 @@
         add.appendChild(document.createTextNode('Add new volume'));
         add.onclick = this.addVolume.bind(this);
         controls.appendChild(add);
+
+        var hiddenFileButton = CATMAID.DOM.createFileButton(false, false,
+            (function(event) {
+              var files = event.target.files;
+              if (0 === files.length) {
+                CATMAID.error("Choose at least one file!");
+              } else {
+                filesforEach(this.addVolumeFromFile);
+              }
+            }).bind(this));
+        controls.appendChild(hiddenFileButton);
+
+        var openFile = document.createElement('button');
+        openFile.appendChild(document.createTextNode('Add from file'));
+        openFile.onclick = hiddenFileButton.click.bind(hiddenFileButton);
+        controls.appendChild(openFile);
       },
 
       contentID: 'volume_manger_content',
@@ -130,28 +146,41 @@
    * overlay. If no volume ID is given, a new volume is assumed.
    */
   VolumeManagerWidget.prototype.editVolume = function(volume) {
+    var self = this;
     var $content = $('#volume_manger_content');
     // Hide table
     $("div.volume-list", $content).hide();
 
     // Display inline editor for properties of new volume
-    var $addContent =$(document.createElement('div'));
+    var $addContent = $(document.createElement('div'));
     $addContent.addClass('settings-container volume-properties');
 
     var vid = this.datatable ? this.datatable.length + 1 : 1;
-    var volumeType = volumeTypes[this.defaultVolumeType];
-    if (!volumeType) {
-      throw CATMAID.ValueError("Couldn't find volume type: " +
-          this.defaultVolumeType);
-    }
-    if (!volume) {
-      volume = volumeType.createVolume({});
+    var volumeType, volumeHelper;
+    if (volume) {
+      volumeType = getVolumeType(volume);
+      volumeHelper = volumeTypes[volumeType];
+    } else {
+      volumeType = this.defaultVolumeType;
+      volumeHelper = volumeTypes[volumeType];
+      if (!volumeType) {
+        throw CATMAID.ValueError("Couldn't find volume type: " +
+            this.defaultVolumeType);
+      }
+      volume = volumeHelper.createVolume({});
     }
 
     var title = function(e) { volume.title = this.value; };
     var comment = function(e) { volume.comment = this.value; };
-    $addContent.append(CATMAID.DOM.createSelectSetting("Type",
-        { "box": "Box" }, "The geometry type of this volume."));
+    var typeSelect = CATMAID.DOM.createSelectSetting("Type",
+        { "Box": "box", "Convex Hull": "convexhull" },
+        "The geometry type of this volume.", undefined, volumeType);
+    $addContent.append(typeSelect);
+    $('select', typeSelect).on('change', function() {
+      $("div.volume-properties", $content).remove();
+      var volumeHelper = volumeTypes[this.value];
+      self.editVolume(volumeHelper.createVolume({}));
+    });
 
     $addContent.append(CATMAID.DOM.createInputSetting("Name", volume.title,
         "This name will be used whereever CATMAID refers to this volume in " +
@@ -160,9 +189,8 @@
     $addContent.append(CATMAID.DOM.createInputSetting("Comment", volume.comment,
         "Additional information regarding this volume.", comment));
 
-    $addContent.append(volumeType.createSettings(volume));
+    $addContent.append(volumeHelper.createSettings(volume));
 
-    var self = this;
     var closeVolumeEdit;
     var onClose = function() {
       volume.off(volume.EVENT_PROPERTY_CHANGED, volumeChanged);
@@ -223,10 +251,58 @@
   };
 
   /**
+   * Load volumes from a passed in file path. The file format is expected to be
+   * JSON. A list of objects with a type and a properties field.  For instance:
+   *
+   * [{
+   *   "type": "box",
+   *   "properties": {
+   *     "minX": 0,
+   *     "minY": 0,
+   *     "minZ": 0,
+   *     "maxX": 1,
+   *     "maxY": 1,
+   *     "maxZ": 1,
+   *   }
+   * }]
+   *
+   * @param {String} files The file to load
+   */
+  VolumeManagerWidget.prototype.addVolumeFromFile = function(path) {
+      var self = this;
+      var reader = new FileReader();
+      reader.onload = function(e) {
+          var volumes = JSON.parse(e.target.result);
+          // Try to load volumes and record invalid ones
+          var invalidVolumes = volumes.filter(function(v) {
+            var volumeType = volumeTypes[v.type];
+            var properties = v.properties;
+            if (volumeType && properties) {
+              volumeType.createVolume(properties);
+            } else {
+              // Return true for invalid volume types
+              return !volumeType;
+            }
+          });
+      };
+      reader.readAsText(files[0]);
+  };
+
+  /**
    * Add a new  volume. Edit it its properties directly in the widget.
    */
   VolumeManagerWidget.prototype.addVolume = function() {
     this.editVolume(null);
+  };
+
+  var getVolumeType = function(volume) {
+    if (volume instanceof CATMAID.ConvexHullVolume) {
+      return "convexhull";
+    } else if (volume instanceof CATMAID.BoxVolume) {
+      return "box";
+    } else {
+      throw new CATMAID.ValueError("Unknown volume type");
+    }
   };
 
   var volumeTypes = {
@@ -259,6 +335,93 @@
       },
       createVolume: function(options) {
         return new CATMAID.BoxVolume(options);
+      }
+    },
+
+    /**
+     * Convex hulls can be created around a set of points. Points are provided
+     * by point sources which then can be restricted further.
+     */
+    "convexhull": {
+      name: "Convex hull",
+      createSettings: function(volume) {
+        var ruleType = function(e) { };
+        var $settings = $('<div />');
+        var $content = CATMAID.DOM.addSettingsContainer($settings,
+            "Convex hull rule settings", false);
+
+        // The skeleton source
+        var availableSources = CATMAID.skeletonListSources.getSourceNames();
+        var sourceOptions = availableSources.reduce(function(o, name) {
+          o[name] = name;
+          return o;
+        }, {});
+        $content.append(CATMAID.DOM.createSelectSetting("Skeleton source",
+              sourceOptions, "The selection to draw points from"));
+
+        // Get available filter strategeis
+        var pointFilters = Object.keys(CATMAID.PointFilter).reduce(function(o, p) {
+          o[CATMAID.PointFilter[p].name] = p;
+          return o;
+        }, {});
+
+        $content.append(CATMAID.DOM.createSelectSetting("Point filter",
+              pointFilters, "Points inside the convex hull"));
+
+        // Get available ules
+        var table = document.createElement('table');
+        table.style.width = "50%";
+        var header = table.createTHead();
+        var hrow = header.insertRow(0);
+        var columns = ['name', 'options'];
+        columns.forEach(function(c) {
+          hrow.insertCell().appendChild(document.createTextNode(c));
+        });
+
+        var self = this;
+
+        var rules = [];
+
+        var tableContainer = document.createElement('div');
+        tableContainer.appendChild(table);
+        $content.append(tableContainer);
+        var datatable = $(table).DataTable({
+          dom: "tp",
+          ajax: function(data, callback, settings) {
+            callback({
+              draw: data.draw,
+              recordsTotal: rules.length,
+              recordsFiltered: rules.length,
+              data: rules
+            });
+          },
+          order: [],
+          columns: [
+            {
+              data: "name",
+              orderable: false,
+            },
+            {
+              data: "options",
+              orderable: false,
+            },
+          ],
+          language: {
+            emptyTable: "No filters added yet"
+          }
+        });
+
+        // Display a volume if clicked
+        $(table).on('click', 'td', function() {
+          var tr = $(this).closest("tr");
+          var rule = datatable.row(tr).data();
+          //self.loadVolume(volume.id).then(self.editVolume.bind(self));
+        });
+
+        return $settings;
+      },
+      createVolume: function(options) {
+        return new CATMAID.ConvexHullVolume(options);
       }
     }
   };

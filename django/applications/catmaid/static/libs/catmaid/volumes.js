@@ -94,5 +94,80 @@
     };
   };
 
+  /**
+   * A convex hull volume is a mesh generated around a set of points. These
+   * points are not explicitly defined, but generated from a rule set. Such a
+   * rule can for instance by a collection of synapse locations based on a tag.
+   * could be for instance synapses. Different strategies are possible and
+   * therefore they are defined separately. After such a volume has been added,
+   * it is stored on the back-end as triangle mesh. Currently the generating
+   * rules are not not stored along with them.
+   */
+  CATMAID.ConvexHullVolume = function(options) {
+    options = options || {};
+    CATMAID.Volume.call(this, options);
+    this.set("id", options.id || null);
+    this.set("title", options.title || "Convex hull volume");
+    this.set("comment", options.comment || undefined);
+    this.set("pointsource", options.pointsource || undefined);
+    this.set("rules", options.rules || null);
+    this.set("mesh", options.mesh || null);
+  };
+
+  /**
+   * Get a JSON representation of this object.
+   */
+  CATMAID.ConvexHullVolume.prototype.serialize = function() {
+
+    // Create mesh by creating the convex hull around a set of points. These
+    // points are collected through a set of rules for an input set of neurons.
+    var trimesh;
+
+    return {
+      type: "trimesh",
+      title: this.title,
+      comment: this.comment,
+      mesh: trimesh
+    };
+  };
+
+  /**
+   * A skeleton rule filters accepts or reject a skeleton.
+   */
+  CATMAID.SkeletonRule = function(skid, strategies) {
+    this.skid = skid;
+    this.strategies = strategies;
+  };
+
+  CATMAID.PointFilter = {
+    'tags': {
+      name: "Only tagged nodes",
+      filter: function(arbor, node) {
+        return true;
+      }
+    },
+    // Looks for soma tags on root nodes and make sure there is only one root
+    // and only one soma tag in use on a neuron.
+    "nuclei": {
+      name: "Only nuclei",
+    },
+    // Apply filters to all input nodes
+    "filtered nodes": {
+      name: "Only certain filtered nodes",
+    },
+    "subarbor": {
+      name: "Use a sub-arbor starting from a tag",
+    },
+    "single-region": {
+      name: "Use a region",
+    },
+    "binary-split": {
+      name: "Binary split",
+    }
+  };
+
+  CATMAID.ConvexHullVolume.prototype = Object.create(CATMAID.Volume.prototype);
+  CATMAID.ConvexHullVolume.prototype.constructor = CATMAID.ConvexHullVolume;
+
 })(CATMAID);
 

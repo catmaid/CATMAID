@@ -3002,19 +3002,20 @@ SkeletonAnnotations.TracingOverlay.prototype.editRadius = function(treenode_id, 
   function updateRadius(radius, updateMode) {
     // Default update mode to this node only
     updateMode = updateMode || 0;
-    self.promiseNode(treenode_id).then(function(nodeID) {
-      self.submit(
-        django_url + project.id + '/treenode/' + nodeID + '/radius',
-        'POST',
-        {radius: radius,
-         option: updateMode},
-        function(json) {
-          // Refresh 3d views if any
-          CATMAID.WebGLApplication.prototype.staticReloadSkeletons([self.nodes[nodeID].skeleton_id]);
-          // Reinit TracingOverlay to read in the radius of each altered treenode
-          self.updateNodes();
-        });
-    });
+    self.promiseNode(treenode_id).then(function(nodeId) {
+      return self.submit().then(Promise.resolve.bind(Promise, nodeId));
+    }).then(function(nodeId) {
+      return CATMAID.Nodes.updateRadius(project.id, nodeId, radius, updateMode);
+    }).then(function(result) {
+      // TODO: Maybe use an event for this
+      if (result.updatedNodeId) {
+        // Refresh 3d views if any
+        var skeletonId = self.nodes[result.updatedNodeId].skeleton_id;
+        CATMAID.WebGLApplication.prototype.staticReloadSkeletons([skeletonId]);
+        // Reinit TracingOverlay to read in the radius of each altered treenode
+        self.updateNodes();
+      }
+    }).catch(CATMAID.handleError);
   }
 
   function show_dialog(defaultRadius) {

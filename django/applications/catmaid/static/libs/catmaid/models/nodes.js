@@ -28,9 +28,8 @@
 
       return CATMAID.fetch(url, 'POST', params).then(function(json) {
         return {
-          // An object mapping node IDs to their old (!) radius is returned.
-          'updatedNodes': json.updated_nodes,
-					'newRadius': json.new_radius
+          // An object mapping node IDs to their old and new radius is returned.
+          'updatedNodes': json.updated_nodes
         };
       });
     },
@@ -55,9 +54,8 @@
 
       return CATMAID.fetch(url, 'POST', params).then(function(json) {
         return {
-          // An object mapping node IDs to their old (!) radius is returned.
+          // An object mapping node IDs to their old and new radius is returned.
           'updatedNodes': json.updated_nodes,
-					'newRadius': json.new_radius
         };
       });
     }
@@ -78,7 +76,6 @@
         // The returned updatedNodes list contains objects with a node id and
         // the old radius.
         command._updatedNodes = result.updatedNodes;
-        command._newRadius = result.newRadius;
         done();
         return result;
       });
@@ -90,7 +87,12 @@
         throw new CATMAID.ValueError('Can\'t undo radius update, history data not available');
       }
 
-      var updateRadii = CATMAID.Nodes.updateRadii(projectId, command._updatedNodes);
+      var oldRadii = Object.keys(command._updatedNodes).reduce(function(o, n) {
+        o[n] = command._updatedNodes[n].old;
+        return o;
+      }, {});
+
+      var updateRadii = CATMAID.Nodes.updateRadii(projectId, oldRadii);
       return updateRadii.then(done);
     };
 

@@ -3005,7 +3005,8 @@ SkeletonAnnotations.TracingOverlay.prototype.editRadius = function(treenode_id, 
     self.promiseNode(treenode_id).then(function(nodeId) {
       return self.submit().then(Promise.resolve.bind(Promise, nodeId));
     }).then(function(nodeId) {
-      return CATMAID.Nodes.updateRadius(project.id, nodeId, radius, updateMode);
+      return CATMAID.commands.execute(new CATMAID.UpdateNodeRadiusCommand(
+            project.id, nodeId, radius, updateMode));
     }).then(function(result) {
       // TODO: Maybe use an event for this
       if (result.updatedNodeId) {

@@ -354,13 +354,13 @@ def update_node_radii(node_ids, radii, cursor=None):
 	      INNER JOIN (VALUES {}) y(id, new_radius)
 	      ON x.id=y.id FOR UPDATE) target
 	WHERE t.id = target.id
-	RETURNING t.id, target.old_radius;
+	RETURNING t.id, target.old_radius, target.new_radius;
     '''.format(node_radii))
 
     updated_rows = cursor.fetchall()
     if 0 == len(updated_rows):
         raise ValueError('Coudn\'t find treenode #' + treenode_id)
-    return {r[0]:r[1] for r in updated_rows}
+    return {r[0]: {'old': r[1], 'new': r[2]} for r in updated_rows}
 
 @requires_user_role(UserRole.Annotate)
 def update_radii(request, project_id=None):
@@ -370,12 +370,11 @@ def update_radii(request, project_id=None):
     radii = [float(v) for k,v in request.POST.iteritems() \
         if k.startswith('treenode_radii[')]
 
-    old_radii = update_node_radii(cursor, treenode_ids, radii)
+    updated_nodes = update_node_radii(treenode_ids, radii)
 
     return JsonResponse({
         'success': True,
-        'updated_nodes': updated_nodes,
-        'new_radius': radius
+        'updated_nodes': updated_nodes
     })
 
 @requires_user_role(UserRole.Annotate)

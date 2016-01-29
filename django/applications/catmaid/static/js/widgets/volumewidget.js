@@ -372,8 +372,15 @@
           o[name] = name;
           return o;
         }, {});
+        // Set a default source, if there is no source set yet
+        if (!volume.neuronSourceName && availableSources.length > 0) {
+          volume.set("neuronSourceName", availableSources[0]);
+        }
         $content.append(CATMAID.DOM.createSelectSetting("Skeleton source",
-              sourceOptions, "The selection to draw points from", source));
+              sourceOptions, "The selection to draw points from", source,
+              function(e) {
+                volume.set("neuronSourceName", this.value);
+              }, volume.neuronSourceName));
 
         // Get available filter strategeis
         var nodeFilters = Object.keys(CATMAID.NodeFilter).reduce(function(o, p) {

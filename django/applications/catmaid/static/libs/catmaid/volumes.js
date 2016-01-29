@@ -109,7 +109,7 @@
     this.set("id", options.id || null);
     this.set("title", options.title || "Convex hull volume");
     this.set("comment", options.comment || undefined);
-    this.set("neuronSource", options.neuronsource || undefined);
+    this.set("neuronSourceName", options.neuronSourceName || undefined);
     this.set("rules", options.rules || []);
     this.set("mesh", this.createTriangleMesh());
   };
@@ -124,7 +124,10 @@
   CATMAID.ConvexHullVolume.prototype.createTriangleMesh = function() {
     // If there is no neuron source, there is no point. Return an empty mesh
     // representation (no vertices, no faces).
-    if (!this.neuronSource) {
+    var source = this.neuronSourceName ?
+      CATMAID.skeletonListSources.getSource(this.neuronSourceName) : undefined;
+
+    if (!this.source) {
       return [[], []];
     }
 

@@ -12,6 +12,15 @@
   var DOM = {};
 
   /**
+   * Remove all elements from a parent element.
+   */
+  DOM.removeAllChildren = function(element) {
+    while (element.lastChild) {
+      element.removeChild(element.lastChild);
+    }
+  };
+
+  /**
    * Helper function to create a collapsible settings container.
    */
   DOM.addSettingsContainer = function(parent, name, closed)

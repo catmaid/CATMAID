@@ -186,18 +186,34 @@
       }, []);
 
       // Collect nodes in an object to allow fast hash based key existence
-      // checks. Also collect the location of the node.
+      // checks. Also collect the location of the node. Whether OR or AND is
+      // used for merging is specified as option. For the sake of simplicity, a
+      // strict left-associative combination is used.
       var nodeCollection = {};
       var nNodes = 0;
-      var mergeNodeCollection = (function(other, positions) {
+      var mergeNodeCollection = (function(other, positions, mergeMode) {
         var count = 0;
-        for (var node in other) {
-          var existingNode = this[node];
-          if (!existingNode) {
-            var v = positions[node];
-            this[node] = [v.x, v.y, v.z];
-            ++count;
+        if (CATMAID.UNION === mergeMode) {
+          for (var node in other) {
+            var existingNode = this[node];
+            if (!existingNode) {
+              var v = positions[node];
+              this[node] = [v.x, v.y, v.z];
+              ++count;
+            }
           }
+        } else if (CATMAID.INTERSECTION === mergeMode) {
+          for (var node in other) {
+            var existingNode = this[node];
+            // An intersection keeps only nodes that both the target and the
+            // other set have.
+            if (!existingNode) {
+              delete this[node];
+              --count;
+            }
+          }
+        } else {
+          throw new ValueError("Unknown merge mode: " + mergeMode);
         }
         nNodes += count;
       }).bind(nodeCollection);
@@ -224,9 +240,10 @@
           var morphology = skeleton_arbors[skid];
           var nodeCollection = rule.strategy.filter(skid, neuron,
               morphology.arbor, morphology.tags, rule.options);
-          // Merge all point sets for this rule with OR, i.e. collect all
-          // valid points produced by all matching rules over all skeletons.
-          mergeNodeCollection(nodeCollection, morphology.positions);
+          // Merge all point sets for this rule. How this is done exactly (i.e.
+          // OR or AND) is configured separately.
+          mergeNodeCollection(nodeCollection, morphology.positions,
+              rule.mergeMode);
         });
       });
 
@@ -427,8 +444,9 @@
    * not empty the application of this rule will be ignored for all other
    * skeletons.
    */
-  CATMAID.SkeletonFilterRule = function(strategy, options, skid, name) {
+  CATMAID.SkeletonFilterRule = function(strategy, options, skid, name, mergeMode) {
     this.skip = false;
+    this.mergeMode = mergeMode || CATMAID.UNION;
     this.strategy = strategy;
     this.validOnlyForSkid = skid;
     this.validOnlyForName = name;

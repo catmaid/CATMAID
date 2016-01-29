@@ -463,13 +463,12 @@
    * Get a JSON representation of this object.
    */
   CATMAID.ConvexHullVolume.prototype.serialize = function() {
-    this.trimesh = this.createTriangleMesh();
-
+    // Currently, serialization expects the mesh to be generated already.
     return {
       type: "trimesh",
       title: this.title,
       comment: this.comment,
-      mesh: this.trimesh
+      mesh: this.mesh
     };
   };
 

@@ -458,10 +458,20 @@
        * Create an array of handlers: [onVolumeUpdate, onVolumeClose]
        */
       createHandlers: function(volume) {
+        // Give some feedback in case of problems
+        var checkGeneratedMesh = function(volume, mesh) {
+          if (!mesh || 0 === mesh.length) {
+            CATMAID.warn("Neither points nor mesh could be generated");
+          } else if (!mesh[0] || 0 === mesh[0].length) {
+            CATMAID.warn("Couldn't find points for volume generation");
+          } else if (!mesh[1] || 0 === mesh[1].length) {
+            CATMAID.warn("Couldn't generate volume from degenerative points");
+          }
+        };
         var onUpdate = function(field, newValue, oldValue) {
           // Re-create mesh if source, rules or preview changed
           if (field === "neuronSourceName" || field === "rules" || field === "preview") {
-            volume.updateTriangleMesh();
+            volume.updateTriangleMesh(checkGeneratedMesh);
           }
         };
         var onClose = function() {

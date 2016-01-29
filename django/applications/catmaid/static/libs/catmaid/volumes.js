@@ -139,6 +139,9 @@
     var update = (function(mesh, removeMesh) {
       this.set("mesh", mesh);
       this._removePreviewMesh = removeMesh;
+      if (CATMAID.tools.isFn(onSuccess)) {
+        onSuccess(this, mesh);
+      }
     }).bind(this);
 
     // Remove existing preview data, if there is any

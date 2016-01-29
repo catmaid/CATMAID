@@ -222,7 +222,9 @@
     $content.append($addContent);
 
     function volumeChanged(field, newValue, oldValue) {
-      CATMAID.tools.callIfFn(onUpdate);
+      if (CATMAID.tools.isFn(onUpdate)) {
+        onUpdate(field, newValue, oldValue);
+      }
     }
 
     volume.on(volume.EVENT_PROPERTY_CHANGED, volumeChanged);

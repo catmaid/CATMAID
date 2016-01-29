@@ -114,6 +114,9 @@
     this.set("mesh", this.createTriangleMesh());
   };
 
+  CATMAID.ConvexHullVolume.prototype = Object.create(CATMAID.Volume.prototype);
+  CATMAID.ConvexHullVolume.prototype.constructor = CATMAID.ConvexHullVolume;
+
   /**
    * Create a triangle mesh from the filtered nodes of the currently selected
    * neuron source. The current filter rules are taken into account.
@@ -469,9 +472,6 @@
   var defaultFilteRuleSet = [
     new CATMAID.SkeletonFilterRule(CATMAID.NodeFilterStrategy['take-all'])
   ];
-
-  CATMAID.ConvexHullVolume.prototype = Object.create(CATMAID.Volume.prototype);
-  CATMAID.ConvexHullVolume.prototype.constructor = CATMAID.ConvexHullVolume;
 
 })(CATMAID);
 

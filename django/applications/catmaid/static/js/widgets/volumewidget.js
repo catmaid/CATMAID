@@ -383,8 +383,8 @@
               }, volume.neuronSourceName));
 
         // Get available filter strategeis
-        var nodeFilters = Object.keys(CATMAID.NodeFilter).reduce(function(o, p) {
-          o[CATMAID.PointFilter[p].name] = p;
+        var nodeFilters = Object.keys(CATMAID.NodeFilterStrategy).reduce(function(o, p) {
+          o[CATMAID.NodeFilterStrategy[p].name] = p;
           return o;
         }, {});
 

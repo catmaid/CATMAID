@@ -8,7 +8,7 @@ import re
 from collections import defaultdict
 
 from django.db import connection
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 
 from rest_framework.decorators import api_view
 
@@ -317,6 +317,66 @@ def update_parent(request, project_id=None, treenode_id=None):
 
     return HttpResponse(json.dumps({'success': True}))
 
+def update_node_radii(node_ids, radii, cursor=None):
+    """Update radius of a list of nodes, returns old radii.
+
+    Both lists/tupples and single values can be supplied.
+    """
+    # Make sure we deal with lists
+    type_nodes = type(node_ids)
+    if type_nodes not in (list, tuple):
+        node_ids = (node_ids,)
+    # If only one a single radius value is available, use it for every input
+    # node ID.
+    type_radii = type(radii)
+    if type_radii not in (list, tuple):
+        radii = len(node_ids) * (radii,)
+
+    if len(node_ids) != len(radii):
+        raise ValueError("Number of treenode doesn't match number of radii")
+
+    invalid_radii = [r for r in radii if math.isnan(r)]
+    if invalid_radii:
+        raise ValueError("Some radii where not numbers: " +
+                ", ".join(invalid_radii))
+
+    # Make sure we have a database cursor
+    cursor = cursor or connection.cursor()
+
+    # Create a list of the form [(node id, radius), ...]
+    node_radii = "(" + "),(".join(map(lambda (k,v): "{},{}".format(k,v),
+            zip(node_ids, radii))) + ")"
+
+    cursor.execute('''
+	UPDATE treenode t SET radius = target.new_radius
+	FROM (SELECT x.id, x.radius AS old_radius, y.new_radius
+	      FROM treenode x
+	      INNER JOIN (VALUES {}) y(id, new_radius)
+	      ON x.id=y.id FOR UPDATE) target
+	WHERE t.id = target.id
+	RETURNING t.id, target.old_radius;
+    '''.format(node_radii))
+
+    updated_rows = cursor.fetchall()
+    if 0 == len(updated_rows):
+        raise ValueError('Coudn\'t find treenode #' + treenode_id)
+    return {r[0]:r[1] for r in updated_rows}
+
+@requires_user_role(UserRole.Annotate)
+def update_radii(request, project_id=None):
+    """Update the radius of one or more nodes"""
+    treenode_ids = [int(v) for k,v in request.POST.iteritems() \
+        if k.startswith('treenode_ids[')]
+    radii = [float(v) for k,v in request.POST.iteritems() \
+        if k.startswith('treenode_radii[')]
+
+    old_radii = update_node_radii(cursor, treenode_ids, radii)
+
+    return JsonResponse({
+        'success': True,
+        'updated_nodes': updated_nodes,
+        'new_radius': radius
+    })
 
 @requires_user_role(UserRole.Annotate)
 def update_radius(request, project_id=None, treenode_id=None):
@@ -327,11 +387,18 @@ def update_radius(request, project_id=None, treenode_id=None):
     option = int(request.POST.get('option', 0))
     cursor = connection.cursor()
 
+    def create_update_response(updated_nodes, radius):
+        return JsonResponse({
+            'success': True,
+            'updated_nodes': updated_nodes,
+            'new_radius': radius
+        })
+
     if 0 == option:
-        # Update radius only for the treenode
-        Treenode.objects.filter(pk=treenode_id).update(editor=request.user,
-                                                       radius=radius)
-        return HttpResponse(json.dumps({'success': True}))
+        # Update radius only for the passed in treenode and return the old
+        # radius.
+        old_radii = update_node_radii(treenode_id, radius, cursor)
+        return create_update_response(old_radii, radius)
 
     cursor.execute('''
     SELECT id, parent_id, radius
@@ -352,9 +419,8 @@ def update_radius(request, project_id=None, treenode_id=None):
             include.append(child)
             c = children[child]
 
-        Treenode.objects.filter(pk__in=include).update(editor=request.user,
-                                                       radius=radius)
-        return HttpResponse(json.dumps({'success': True}))
+        old_radii = update_node_radii(include, radius, cursor)
+        return create_update_response(old_radii, radius)
 
     if 2 == option:
         # Update radius from treenode_id to prev branch node or root (excluded)
@@ -370,9 +436,8 @@ def update_radius(request, project_id=None, treenode_id=None):
             include.append(parent)
             parent = parents[parent]
 
-        Treenode.objects.filter(pk__in=include).update(editor=request.user,
-                                                       radius=radius)
-        return HttpResponse(json.dumps({'success': True}))
+        old_radii = update_node_radii(include, radius, cursor)
+        return create_update_response(old_radii, radius)
 
     if 3 == option:
         # Update radius from treenode_id to prev node with radius (excluded)
@@ -387,9 +452,8 @@ def update_radius(request, project_id=None, treenode_id=None):
             include.append(parent)
             parent = parents[parent]
 
-        Treenode.objects.filter(pk__in=include).update(editor=request.user,
-                                                       radius=radius)
-        return HttpResponse(json.dumps({'success': True}))
+        old_radii = update_node_radii(include, radius, cursor)
+        return create_update_response(old_radii, radius)
 
     if 4 == option:
         # Update radius from treenode_id to root (included)
@@ -401,18 +465,17 @@ def update_radius(request, project_id=None, treenode_id=None):
             include.append(parent)
             parent = parents[parent]
 
-        Treenode.objects.filter(pk__in=include).update(editor=request.user,
-                                                       radius=radius)
-        return HttpResponse(json.dumps({'success': True}))
+        old_radii = update_node_radii(include, radius, cursor)
+        return create_update_response(old_radii, radius)
 
     if 5 == option:
         # Update radius of all nodes (in a single query)
-        Treenode.objects \
-            .filter(skeleton_id=Treenode.objects \
-                .filter(pk=treenode_id) \
-                .values('skeleton_id')) \
-            .update(editor=request.user, radius=radius)
-        return HttpResponse(json.dumps({'success': True}))
+        skeleton_id = Treenode.objects.filter(pk=treenode_id).values('skeleton_id')
+        include = Treenode.objects.filter(skeleton_id=skeleton_id) \
+                .values_list('id', flat=True)
+
+        old_radii = update_node_radii(include, radius, cursor)
+        return create_update_response(old_radii, radius)
 
 
 # REMARK this function went from 1.6 seconds to 400 ms when de-modelized

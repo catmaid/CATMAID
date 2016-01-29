@@ -387,10 +387,10 @@
           volume.set("neuronSourceName", availableSources[0]);
         }
         $content.append(CATMAID.DOM.createSelectSetting("Skeleton source",
-              sourceOptions, "The selection to draw points from", source,
-              function(e) {
-                volume.set("neuronSourceName", this.value);
-              }, volume.neuronSourceName));
+            sourceOptions, "The selection to draw points from", source,
+            function(e) {
+              volume.set("neuronSourceName", this.value);
+            }, volume.neuronSourceName));
 
         // Get available filter strategeis
         var nodeFilters = Object.keys(CATMAID.NodeFilterStrategy).reduce(function(o, p) {

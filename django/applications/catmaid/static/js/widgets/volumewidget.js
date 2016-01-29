@@ -191,7 +191,11 @@
 
     $addContent.append(volumeHelper.createSettings(volume));
 
-    var closeVolumeEdit;
+    // Create volume update and close handlers (used for preview)
+    var handlers = volumeHelper.createHandlers(volume);
+    var onUpdate = handlers[0];
+    var closeVolumeEdit = handlers[1];
+
     var onClose = function() {
       volume.off(volume.EVENT_PROPERTY_CHANGED, volumeChanged);
       CATMAID.tools.callIfFn(closeVolumeEdit);
@@ -216,32 +220,6 @@
           })));
 
     $content.append($addContent);
-
-    // Add a visualization layer (for now only if a box is created)
-    var onUpdate;
-    if (project.focusedStackViewer) {
-      var stack = project.focusedStackViewer;
-      if ("box" === this.defaultVolumeType) {
-        // TODO: Use a proper layer for this and make this work wirh regular
-        // ortho stacks.
-        var boxTool = new CATMAID.BoxSelectionTool();
-        boxTool.destroy();
-        boxTool.register(stack);
-        boxTool.createCropBoxByWorld(
-            volume.minX, volume.minY, Math.abs(volume.maxX - volume.minX),
-            Math.abs(volume.maxY - volume.minY), 0);
-        onUpdate = function(field, newValue, oldValue) {
-          boxTool.cropBox.top = volume.minY;
-          boxTool.cropBox.bottom = volume.maxY;
-          boxTool.cropBox.left = volume.minX;
-          boxTool.cropBox.right = volume.maxX;
-          boxTool.updateCropBox();
-        };
-        closeVolumeEdit = function() {
-          boxTool.destroy();
-        };
-      }
-    }
 
     function volumeChanged(field, newValue, oldValue) {
       CATMAID.tools.callIfFn(onUpdate);
@@ -335,6 +313,39 @@
       },
       createVolume: function(options) {
         return new CATMAID.BoxVolume(options);
+      },
+      /**
+       * Create an array of handlers: [onVolumeUpdate, onVolumeClose]
+       */
+      createHandlers: function(volume) {
+        var handlers = [null, null];
+        if (project.focusedStackViewer) {
+          var stack = project.focusedStackViewer;
+          // TODO: Use a proper layer for this and make this work wirh regular
+          // ortho stacks.
+          var boxTool = new CATMAID.BoxSelectionTool();
+          boxTool.destroy();
+          boxTool.register(stack);
+          boxTool.createCropBoxByWorld(
+              volume.minX, volume.minY, Math.abs(volume.maxX - volume.minX),
+              Math.abs(volume.maxY - volume.minY), 0);
+
+          var onUpdate = function(field, newValue, oldValue) {
+            boxTool.cropBox.top = volume.minY;
+            boxTool.cropBox.bottom = volume.maxY;
+            boxTool.cropBox.left = volume.minX;
+            boxTool.cropBox.right = volume.maxX;
+            boxTool.updateCropBox();
+          };
+
+          var onCloseVolumeEdit = function() {
+            boxTool.destroy();
+          };
+
+          return [onUpdate, onCloseVolumeEdit];
+        } else {
+          return [null, null];
+        }
       }
     },
 
@@ -425,6 +436,12 @@
       },
       createVolume: function(options) {
         return new CATMAID.ConvexHullVolume(options);
+      },
+      /**
+       * Create an array of handlers: [onVolumeUpdate, onVolumeClose]
+       */
+      createHandlers: function(volume) {
+        return [null, null];
       }
     }
   };

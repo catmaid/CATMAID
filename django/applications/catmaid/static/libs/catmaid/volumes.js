@@ -407,8 +407,7 @@
   /**
    * Create and display meshes in the first available 3D viewer.
    */
-  CATMAID.ConvexHullVolume.showCompartments = function(skeletons, compartments, arbors,
-      onSuccess) {
+  CATMAID.ConvexHullVolume.showCompartments = function(skeletons, compartments, onSuccess) {
     CATMAID.ConvexHullVolume.createTriangleMeshes(skeletons, compartments,
         function(meshes) {
           if (CATMAID.tools.isFn(onSuccess)) {
@@ -421,7 +420,7 @@
   /**
    * Create a convex hull and display it in the first available 3D viewer.
    */
-  CATMAID.ConvexHullVolume.showCompartment = function(skeletons, rules, arbors, onSuccess) {
+  CATMAID.ConvexHullVolume.showCompartment = function(skeletons, rules, onSuccess) {
     CATMAID.ConvexHullVolume.createTriangleMesh(skeletons, rules, function(mesh) {
       if (CATMAID.tools.isFn(onSuccess)) {
         onSuccess(mesh);

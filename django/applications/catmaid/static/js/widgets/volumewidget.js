@@ -397,9 +397,26 @@
           o[CATMAID.NodeFilterStrategy[p].name] = p;
           return o;
         }, {});
-
+        var nodeFilterSettingsContainer = document.createElement('span');
+        var nodeFilterSettings = CATMAID.DOM.createLabeledControl("",
+            nodeFilterSettingsContainer);
+        var updateNodeFilterSettings = function(strategy) {
+            // Show UI for selected filte
+            CATMAID.DOM.removeAllChildren(nodeFilterSettingsContainer);
+            var createSettings = nodeFilterSettingFactories[strategy];
+            if (!createSettings) {
+              throw new CATMAID.ValueError("Couldn't find settings method " +
+                  "for node filter \"" + strategy + "\"");
+            }
+            createSettings(nodeFilterSettingsContainer);
+        };
         $content.append(CATMAID.DOM.createSelectSetting("Node filter",
-              nodeFilters, "Nodes inside the convex hull"));
+          nodeFilters, "Nodes inside the convex hull", function(e) {
+            updateNodeFilterSettings(this.value);
+          }));
+        $content.append(nodeFilterSettings);
+        // Set default filter setting UI
+        updateNodeFilterSettings('take-all');
 
         // Get available ules
         var table = document.createElement('table');
@@ -480,6 +497,20 @@
         };
         return [onUpdate, onClose];
       }
+    }
+  };
+
+  /**
+   * A collection of UI creation methods for individual node filtering
+   * strategies from CATMAID.NodeFilterStrategy members.
+   */
+  var nodeFilterSettingFactories = {
+    'take-all': function(container) {
+      // Take all has not options
+      container.appendChild(document.createTextNode("The take all filter " +
+          "strategy does not provide any additional settings"));
+    },
+    'tags': function(container) {
     }
   };
 

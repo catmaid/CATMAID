@@ -111,7 +111,8 @@
     this.set("comment", options.comment || undefined);
     this.set("neuronSourceName", options.neuronSourceName || undefined);
     this.set("rules", options.rules || []);
-    this.set("mesh", this.createTriangleMesh());
+    this.set("preview", options.rules || true);
+    this.updateTriangleMesh();
   };
 
   CATMAID.ConvexHullVolume.prototype = Object.create(CATMAID.Volume.prototype);
@@ -121,31 +122,42 @@
    * Create a triangle mesh from the filtered nodes of the currently selected
    * neuron source. The current filter rules are taken into account.
    */
-  CATMAID.ConvexHullVolume.prototype.createTriangleMesh = function() {
+  CATMAID.ConvexHullVolume.prototype.updateTriangleMesh = function(onSuccess) {
     // If there is no neuron source, there is no point. Return an empty mesh
     // representation (no vertices, no faces).
     var source = this.neuronSourceName ?
       CATMAID.skeletonListSources.getSource(this.neuronSourceName) : undefined;
 
-    if (!this.source) {
+    if (!source) {
       return [[], []];
     }
 
-    // Collect points
-    var skeletons = this.source.getSelectedSkeletonModels();
-
-    // Apply filters to obtain final set of points
-    var points = this.rules.reduce(function(points, rule) {
-      //
-      return points;
-    }, []);
-
+    // Collect points based on current source list and current rule set
+    var skeletons = source.getSelectedSkeletonModels();
     var rules = this.rules;
+    // On successful mesh generation, the mesh will be stored in the volume.
+    var update = (function(mesh, removeMesh) {
+      this.set("mesh", mesh);
+      this._removePreviewMesh = removeMesh;
+    }).bind(this);
 
-    var container = CATMAID.ConvexHullVolume.createTriangleMeshes(
-        skeletons, rules, function(arbors) {
+    // Remove existing preview data, if there is any
+    this.clearPreviewData();
 
-    });
+    if (this.preview) {
+      CATMAID.ConvexHullVolume.showCompartment(skeletons, rules, update);
+    } else {
+      CATMAID.ConvexHullVolume.createTriangleMesh(skeletons, rules, update);
+    }
+  };
+
+  /**
+   * Since convex hull volumes can be displayed in the 3D viewer, this method
+   * allows to remove added meshes from the 3D viewer.
+   */
+  CATMAID.ConvexHullVolume.prototype.clearPreviewData = function() {
+    // If there is an existing removal function, call it.
+    CATMAID.tools.callIfFn(this._removePreviewMesh);
   };
 
   /**
@@ -365,6 +377,8 @@
    * Display meshes in the passed in object in the first opened 3D viewer. Mesh
    * IDs should be mapped to an array following this format:
    * [[points], [[faces]].
+   *
+   * @returns a function that removes the added meshes when called
    */
   CATMAID.ConvexHullVolume.showMeshesIn3DViewer = function(meshes) {
     var w = CATMAID.WebGLApplication.prototype.getFirstInstance();
@@ -372,6 +386,8 @@
       // Silently fail if no 3D viewer is open
       return;
     }
+
+    var addedObjects = [];
 
     Object.keys(meshes).forEach(function(name) {
       var mesh = meshes[name];
@@ -401,7 +417,18 @@
       wfh.material.linewidth = 2;
       w.space.add(mesh);
       w.space.add(wfh);
-    });
+      this.push(mesh);
+      this.push(wfh);
+    }, addedObjects);
+
+    w.space.render();
+
+    return function() {
+      addedObjects.forEach(function(o) {
+          this.remove(o);
+      }, w.space);
+      w.space.render();
+    };
   };
 
   /**
@@ -410,10 +437,10 @@
   CATMAID.ConvexHullVolume.showCompartments = function(skeletons, compartments, onSuccess) {
     CATMAID.ConvexHullVolume.createTriangleMeshes(skeletons, compartments,
         function(meshes) {
+          var removeMeshes = CATMAID.ConvexHullVolume.showMeshesIn3DViewer(meshes);
           if (CATMAID.tools.isFn(onSuccess)) {
-            onSuccess(meshes);
+            onSuccess(meshes, removeMeshes);
           }
-          CATMAID.ConvexHullVolume.showMeshesIn3DViewer(meshes);
         });
   };
 
@@ -422,10 +449,10 @@
    */
   CATMAID.ConvexHullVolume.showCompartment = function(skeletons, rules, onSuccess) {
     CATMAID.ConvexHullVolume.createTriangleMesh(skeletons, rules, function(mesh) {
+      var removeMeshes = CATMAID.ConvexHullVolume.showMeshesIn3DViewer([mesh]);
       if (CATMAID.tools.isFn(onSuccess)) {
-        onSuccess(mesh);
+        onSuccess(mesh, removeMeshes);
       }
-      CATMAID.ConvexHullVolume.showMeshesIn3DViewer([mesh]);
     });
   };
 

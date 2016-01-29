@@ -368,6 +368,14 @@
         var $content = CATMAID.DOM.addSettingsContainer($settings,
             "Convex hull rule settings", false);
 
+        // Option to control preview
+        var preview = function(e) { volume.set("minX", Number(this.value)); };
+        var preview = CATMAID.DOM.createCheckboxSetting(
+            "Preview in 3D viewer", volume.preview, "If checked the first " +
+            "available 3D viewer will be used to preview the meshes before saving.",
+            function(e) { volume.set("preview", this.checked); });
+        $content.append(preview);
+
         // The skeleton source
         var availableSources = CATMAID.skeletonListSources.getSourceNames();
         var sourceOptions = availableSources.reduce(function(o, name) {
@@ -450,7 +458,17 @@
        * Create an array of handlers: [onVolumeUpdate, onVolumeClose]
        */
       createHandlers: function(volume) {
-        return [null, null];
+        var onUpdate = function(field, newValue, oldValue) {
+          // Re-create mesh if source, rules or preview changed
+          if (field === "neuronSourceName" || field === "rules" || field === "preview") {
+            volume.updateTriangleMesh();
+          }
+        };
+        var onClose = function() {
+          // Remove previewed meshes from 3D viewer
+          volume.clearPreviewData();
+        };
+        return [onUpdate, onClose];
       }
     }
   };

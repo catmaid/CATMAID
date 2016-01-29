@@ -386,7 +386,7 @@
 
         // Get available ules
         var table = document.createElement('table');
-        table.style.width = "50%";
+        table.style.width = "100%";
         var header = table.createTHead();
         var hrow = header.insertRow(0);
         var columns = ['name', 'options'];
@@ -421,7 +421,7 @@
             },
           ],
           language: {
-            emptyTable: "No filters added yet"
+            emptyTable: "No filters added yet (defaults to take all nodes)"
           }
         });
 

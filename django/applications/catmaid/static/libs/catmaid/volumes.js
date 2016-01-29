@@ -111,7 +111,7 @@
     this.set("comment", options.comment || undefined);
     this.set("neuronSource", options.neuronsource || undefined);
     this.set("rules", options.rules || []);
-    this.set("mesh", this.createTriangleMesh())
+    this.set("mesh", this.createTriangleMesh());
   };
 
   /**
@@ -138,8 +138,6 @@
 
     var container = CATMAID.ConvexHullVolume.createTriangleMeshes(
         skeletons, rules, function(arbors) {
-      var container = CATMAID.ConvexHullVolume.createTriangleMeshes(
-          skeletons, arbors, rules);
 
     });
   };
@@ -152,9 +150,13 @@
   var createCompartments = function(skeletons, compartments, skeleton_arbors) {
     var nns = CATMAID.NeuronNameService.getInstance();
     return Object.keys(compartments).reduce(function(o, name) {
+      var rules = compartments[name];
+      if (!rules || 0 === rules.length) {
+        rules = defaultFilteRuleSet;
+      }
       // Extract the set of rules defining this compartment. Also validate
       // skeleton constraints if there are any.
-      var rules = compartments[name].reduce(function(m, rule) {
+      rules = rules.reduce(function(m, rule) {
         var valid = true;
 
         if (rule.skip) {
@@ -184,13 +186,20 @@
       }, []);
 
       // Collect nodes in an object to allow fast hash based key existence
-      // checks.
+      // checks. Also collect the location of the node.
       var nodeCollection = {};
-      var collectNode = (function(node) {
-        var existingNode = this[node];
-        if (!existingNode) {
-          this[node] = true;
+      var nNodes = 0;
+      var mergeNodeCollection = (function(other, positions) {
+        var count = 0;
+        for (var node in other) {
+          var existingNode = this[node];
+          if (!existingNode) {
+            var v = positions[node];
+            this[node] = [v.x, v.y, v.z];
+            ++count;
+          }
         }
+        nNodes += count;
       }).bind(nodeCollection);
 
       // Get final set of points by going through all rules and apply them
@@ -200,7 +209,7 @@
         // Pick source skeleton(s). If a rule requests to be only applied for
         // a particular skeleton, this working set will be limited to this
         // skeleton only.
-        var souceSkeletons;
+        var sourceSkeletons;
         if (rule.validOnlyForSkid) {
           sourceSkeletons = {};
           sourceSkeletons[skid] = skeletons[skid];
@@ -209,24 +218,26 @@
         }
 
         // Apply rules and get back a set of valid nodes for each skeleton
-        Object.keys(sourceSkeletons).map(function(skid) {
+        Object.keys(sourceSkeletons).forEach(function(skid) {
           // Get valid point list from this skeleton with the current filter
           var neuron = skeletons[skid];
           var morphology = skeleton_arbors[skid];
-          return rule.filter(skid, neuron, morphology);
-        }).forEach(function(nodes) {
+          var nodeCollection = rule.strategy.filter(skid, neuron,
+              morphology.arbor, morphology.tags, rule.options);
           // Merge all point sets for this rule with OR, i.e. collect all
           // valid points produced by all matching rules over all skeletons.
-          nodes.forEach(addNode);
+          mergeNodeCollection(nodeCollection, morphology.positions);
         });
       });
 
-      // Get actual positions of final point set
-      var points = Object.keys(nodeCollection).map(function(nodeId) {
-        var v = morphology.positions[nodeId];
-        return [v.x, v.y, v.z];
-      });
-
+      // Get a list of node positions. They are used as input for the convex
+      // hull creation.
+      var points = new Array(nNodes);
+      var added = 0;
+      for (var nodeId in nodeCollection) {
+        points[added] = nodeCollection[nodeId];
+        ++added;
+      }
       if (0 === points.length) {
         console.log("Found zero points for compartment " + name);
         return o;
@@ -235,7 +246,7 @@
       // Compute the convex hull
       var hull = CATMAID.geometryTools.convexHull(points);
 
-      o[name] = hull;
+      o[name] = [points, hull];
       return o;
     }, {});
   };
@@ -295,7 +306,7 @@
    * Create a triangle mesh from the filtered nodes of the currently selected
    * neuron source. The current filter rules are taken into account.
    */
-  CATMAID.ConvexHullVolume.createTriangleMeshes = function(skeletons, rules, onSuccess) {
+  CATMAID.ConvexHullVolume.createTriangleMeshes = function(skeletons, compartments, onSuccess) {
     // Stop if there are no skeletons
     if (skeletons.length === 0) {
       if (CATMAID.tools.isFn(onSuccess)) {
@@ -307,43 +318,92 @@
     // points are collected through a set of rules for an input set of neurons.
     fetchArbors(Object.keys(skeletons), function(arbors) {
       // Create mesh
-      var meshes = createCompartments(skeletons, rules, arbors);
+      var meshes = createCompartments(skeletons, compartments, arbors);
       onSuccess(meshes);
+    });
+  };
+
+  /**
+   * Create a triangle mesh from the filtered nodes of the passed in list of
+   * skeletons. This process can be parameterized with a set of rules.
+   */
+  CATMAID.ConvexHullVolume.createTriangleMesh = function(skeletons, rules, onSuccess) {
+    var name = 'compartment';
+    var compartments = {};
+    compartments[name] = rules;
+    CATMAID.ConvexHullVolume.createTriangleMeshes(skeletons, compartments, function(meshes) {
+      if (CATMAID.tools.isFn(onSuccess)) {
+        onSuccess(meshes[name]);
+      }
+    });
+  };
+
+  /**
+   * Display meshes in the passed in object in the first opened 3D viewer. Mesh
+   * IDs should be mapped to an array following this format:
+   * [[points], [[faces]].
+   */
+  CATMAID.ConvexHullVolume.showMeshesIn3DViewer = function(meshes) {
+    var w = CATMAID.WebGLApplication.prototype.getFirstInstance();
+    if (!w) {
+      // Silently fail if no 3D viewer is open
+      return;
+    }
+
+    Object.keys(meshes).forEach(function(name) {
+      var mesh = meshes[name];
+      var points = mesh[0];
+      var hull = mesh[1];
+      // Make the mesh with the faces specified in the hull array
+      var geom = new THREE.Geometry();
+      points.forEach(function(p) {
+        this.vertices.push(new THREE.Vector3(p[0], p[1], p[2]));
+      }, geom);
+      hull.forEach(function(indices) {
+        this.faces.push(new THREE.Face3(indices[0], indices[1], indices[2]));
+      }, geom);
+      geom.computeFaceNormals();
+      var mesh = new THREE.Mesh(
+          geom,
+          new THREE.MeshLambertMaterial(
+             {color: 0x0000ff,
+              opacity: 1.0,
+              transparent: true,
+              wireframe: false,
+              wireframeLinewidth: 10,
+              morphTargets: true,
+              morphNormals: true}));
+
+      var wfh = new THREE.WireframeHelper(mesh, 0x000000);
+      wfh.material.linewidth = 2;
+      w.space.add(mesh);
+      w.space.add(wfh);
     });
   };
 
   /**
    * Create and display meshes in the first available 3D viewer.
    */
-  CATMAID.ConvexHullVolume.showCompartments = function(skeletons, rules, arbors) {
-    CATMAID.ConvexHullVolume.createTriangleMeshes(skeletons, rules, function(meshes) {
-      var w = CATMAID.WebGLApplication.prototype.getFirstInstance();
-      Object.keys(meshes).forEach(function(name) {
-          // Make the mesh with the faces specified in the hull array
-          var geom = new THREE.Geometry();
-          points.forEach(function(p) {
-            geom.vertices.push(new THREE.Vector3(p[0], p[1], p[2]));
-          });
-          hull.forEach(function(indices) {
-            geom.faces.push(new THREE.Face3(indices[0], indices[1], indices[2]));
-          });
-          geom.computeFaceNormals();
-          var mesh = new THREE.Mesh(
-              geom,
-              new THREE.MeshBasicMaterial(
-                 {color: 0x0000ff,
-                  opacity: 1.0,
-                  transparent: true,
-                  wireframe: false,
-                  wireframeLinewidth: 10,
-                  morphNormals: true}));
+  CATMAID.ConvexHullVolume.showCompartments = function(skeletons, compartments, arbors,
+      onSuccess) {
+    CATMAID.ConvexHullVolume.createTriangleMeshes(skeletons, compartments,
+        function(meshes) {
+          if (CATMAID.tools.isFn(onSuccess)) {
+            onSuccess(meshes);
+          }
+          CATMAID.ConvexHullVolume.showMeshesIn3DViewer(meshes);
+        });
+  };
 
-          var wfh = new THREE.WireframeHelper(mesh, 0x000000);
-          wfh.material.linewidth = 2
-        var pair = meshes[name];
-        w.space.add(pair[0]);
-        w.space.add(pair[1]);
-      });
+  /**
+   * Create a convex hull and display it in the first available 3D viewer.
+   */
+  CATMAID.ConvexHullVolume.showCompartment = function(skeletons, rules, arbors, onSuccess) {
+    CATMAID.ConvexHullVolume.createTriangleMesh(skeletons, rules, function(mesh) {
+      if (CATMAID.tools.isFn(onSuccess)) {
+        onSuccess(mesh);
+      }
+      CATMAID.ConvexHullVolume.showMeshesIn3DViewer([mesh]);
     });
   };
 
@@ -367,74 +427,30 @@
    * not empty the application of this rule will be ignored for all other
    * skeletons.
    */
-  CATMAID.SkeletonRule = function(strategies, skid, name) {
+  CATMAID.SkeletonFilterRule = function(strategy, options, skid, name) {
     this.skip = false;
-    this.strategy = strategies;
+    this.strategy = strategy;
     this.validOnlyForSkid = skid;
     this.validOnlyForName = name;
   };
 
-  CATMAID.NodeFilter = {
-    'tags': {
-      name: "Only tagged nodes",
-      filter: function(arbor, node, options) {
-        return true;
-      }
-    },
-    // Looks for soma tags on root nodes and make sure there is only one root
-    // and only one soma tag in use on a neuron.
-    "nuclei": {
-      name: "Only nuclei",
-    },
-    // Apply filters to all input nodes
-    "filtered nodes": {
-      name: "Only certain filtered nodes",
-    },
-    "subarbor": {
-      name: "Use a sub-arbor starting from a tag",
-    },
-    "single-region": {
-      name: "Use a region",
-    },
-    "binary-split": {
-      name: "Binary split",
-    },
-    "synapse": {
-      name: "Synapses",
-      test: function(skeleton, neuron, morphology, options) {
-        var post = morphology.partners[1];
-        var dendrite = extractDendriticNodes(morphology.arbor, morphology.tags, neuron);
-        return Object.keys(post).filter(function(skid) {
-          if (options.otherNeurons[skid]) {
-            var nodes = post[skid];
-            Object.keys(nodes).forEach(function(node) {
-              if (dendrite[node]) {
-                  targetSet.push(node);
-              }
-            });
-          }
-          return false;
-        });
-      }
-    },
-    // Return only points that are part of particular skeletons
-    "on-skeletons": {
-      name: "Points on specific skeletons",
-      filter: function(skeleton, neuron, morphology, options) {
-        return [];
-      }
-    },
+  /**
+   * Node filter strategies can be used in skeletotn filter rules. They select
+   * individual nodes fom skeletons/arbors.
+   */
+  CATMAID.NodeFilterStrategy = {
     "take-all": {
       name: "Take all nodes of each skeleton",
-      filter: function(skeletonId, neuron, morphology) {
-        // TODO: return all nodes
-        return [];
+      filter: function(skeletonId, neuron, arbor, tags) {
+        return arbor.nodes();
       }
-    },
-    'postsynaptic-to': {
-
     }
   };
+
+  // A default no-op filter rule that takes all nodes.
+  var defaultFilteRuleSet = [
+    new CATMAID.SkeletonFilterRule(CATMAID.NodeFilterStrategy['take-all'])
+  ];
 
   CATMAID.ConvexHullVolume.prototype = Object.create(CATMAID.Volume.prototype);
   CATMAID.ConvexHullVolume.prototype.constructor = CATMAID.ConvexHullVolume;

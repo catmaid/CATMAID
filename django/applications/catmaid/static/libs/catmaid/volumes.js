@@ -468,7 +468,7 @@
       type: "trimesh",
       title: this.title,
       comment: this.comment,
-      mesh: this.mesh
+      mesh: JSON.stringify(this.mesh)
     };
   };
 

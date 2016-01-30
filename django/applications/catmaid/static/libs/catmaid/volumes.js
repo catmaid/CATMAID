@@ -478,10 +478,11 @@
    * not empty the application of this rule will be ignored for all other
    * skeletons.
    */
-  CATMAID.SkeletonFilterRule = function(strategy, options, skid, name, mergeMode) {
+  CATMAID.SkeletonFilterRule = function(strategy, options, mergeMode, skid, name) {
     this.skip = false;
     this.mergeMode = mergeMode || CATMAID.UNION;
     this.strategy = strategy;
+    this.options = options;
     this.validOnlyForSkid = skid;
     this.validOnlyForName = name;
   };

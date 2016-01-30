@@ -400,23 +400,72 @@
         var nodeFilterSettingsContainer = document.createElement('span');
         var nodeFilterSettings = CATMAID.DOM.createLabeledControl("",
             nodeFilterSettingsContainer);
+        var newRuleOptions = null;
+        var newRuleStrategy = null;
+        var newRuleSkeletonID = null;
+        var newRuleSkeletonName = null;
+        var newRuleMergeMode = CATMAID.UNION;
+        var mergeRules = {};
+        mergeRules["Union"] = CATMAID.UNION;
+        mergeRules["Intersection"] = CATMAID.INTERSECTION;
         var updateNodeFilterSettings = function(strategy) {
-            // Show UI for selected filte
-            CATMAID.DOM.removeAllChildren(nodeFilterSettingsContainer);
-            var createSettings = nodeFilterSettingFactories[strategy];
-            if (!createSettings) {
-              throw new CATMAID.ValueError("Couldn't find settings method " +
-                  "for node filter \"" + strategy + "\"");
-            }
-            createSettings(nodeFilterSettingsContainer);
+          newRuleOptions = {};
+          newRuleStrategy = strategy;
+          newRuleSkeletonID = undefined;
+          newRuleSkeletonName = undefined;
+          // Show UI for selected filte
+          CATMAID.DOM.removeAllChildren(nodeFilterSettingsContainer);
+          // Add general settings
+          var $mergeMode = CATMAID.DOM.createSelectSetting("Merge operation", mergeRules,
+              "Rules are applied in a left-associative fashion. This selects which operation to use for this.",
+              function() {
+                newRuleMergeMode = this.value;
+              });
+          var $skeletonId = CATMAID.DOM.createInputSetting(
+              "Apply only to skeleton ID (Optional)", "",
+              "If a valid skeleton ID is provided, this rule will apply to this skeleton exclusively.",
+              function() {
+                newRuleSkeletonID = this.value;
+              });
+          var $skeletonName = CATMAID.DOM.createInputSetting(
+              "... having this name (Optional)", "",
+              "Along with a skeleton ID a name can also be used. If supplied, skeletons are also checked againsts it and only if skeleton ID and name match, the rule will be applied.",
+              function() {
+                newRuleSkeletonName = this.value;
+              });
+          var $nodeFilterSettingsContainer = $(nodeFilterSettingsContainer);
+          $nodeFilterSettingsContainer.append($mergeMode);
+          $nodeFilterSettingsContainer.append($skeletonId);
+          $nodeFilterSettingsContainer.append($skeletonName);
+
+          // Add filter specific settings
+          var createSettings = nodeFilterSettingFactories[strategy];
+          if (!createSettings) {
+            throw new CATMAID.ValueError("Couldn't find settings method " +
+                "for node filter \"" + strategy + "\"");
+          }
+          createSettings(nodeFilterSettingsContainer, newRuleOptions);
         };
         $content.append(CATMAID.DOM.createSelectSetting("Node filter",
           nodeFilters, "Nodes inside the convex hull", function(e) {
             updateNodeFilterSettings(this.value);
           }));
         $content.append(nodeFilterSettings);
+        var addRuleButton = document.createElement('button');
+        addRuleButton.appendChild(document.createTextNode("Add new filter rule"));
+        addRuleButton.onclick = function() {
+          var strategy = CATMAID.NodeFilterStrategy[newRuleStrategy];
+          var rule = new CATMAID.SkeletonFilterRule( strategy,
+              newRuleOptions, newRuleMergeMode, newRuleSkeletonID, newRuleSkeletonName);
+          volume.rules.push(rule);
+          // To trigger events, override with itself
+          volume.set("rules", volume.rules);
+        };
+        $content.append(CATMAID.DOM.createLabeledControl("", addRuleButton,
+              "Adds a filter with the settings above to the current volume"));
         // Set default filter setting UI
         updateNodeFilterSettings('take-all');
+
 
         // Get available ules
         var table = document.createElement('table');
@@ -505,12 +554,15 @@
    * strategies from CATMAID.NodeFilterStrategy members.
    */
   var nodeFilterSettingFactories = {
-    'take-all': function(container) {
+    'take-all': function(container, rule) {
       // Take all has not options
-      container.appendChild(document.createTextNode("The take all filter " +
-          "strategy does not provide any additional settings"));
     },
-    'tags': function(container) {
+    'tags': function(container, rule) {
+      var $tag = CATMAID.DOM.createInputSetting("Tag", "",
+          "A tag that every used node must have", function() {
+            rule.options.tag = this.value;
+          });
+      $(container).append($tag);
     }
   };
 

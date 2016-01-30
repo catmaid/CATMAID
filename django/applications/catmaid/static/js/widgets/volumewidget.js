@@ -549,6 +549,9 @@
           volume.set("rules", volume.rules);
         });
 
+        // Update working volume with default properties set above
+        volume.updateTriangleMesh();
+
         return $settings;
       },
       createVolume: function(options) {

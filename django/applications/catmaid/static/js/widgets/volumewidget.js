@@ -460,6 +460,9 @@
           volume.rules.push(rule);
           // To trigger events, override with itself
           volume.set("rules", volume.rules);
+          // Trigger table update
+          datatable.rows().invalidate();
+          datatable.ajax.reload();
         };
         $content.append(CATMAID.DOM.createLabeledControl("", addRuleButton,
               "Adds a filter with the settings above to the current volume"));
@@ -472,14 +475,12 @@
         table.style.width = "100%";
         var header = table.createTHead();
         var hrow = header.insertRow(0);
-        var columns = ['name', 'options'];
+        var columns = ['On', 'Name', 'Merge mode', 'Options', 'Is skeleton', 'Has name'];
         columns.forEach(function(c) {
           hrow.insertCell().appendChild(document.createTextNode(c));
         });
 
         var self = this;
-
-        var rules = [];
 
         var tableContainer = document.createElement('div');
         tableContainer.appendChild(table);
@@ -487,6 +488,7 @@
         var datatable = $(table).DataTable({
           dom: "tp",
           ajax: function(data, callback, settings) {
+            var rules = volume.rules;
             callback({
               draw: data.draw,
               recordsTotal: rules.length,
@@ -498,21 +500,53 @@
           columns: [
             {
               orderable: false,
+              render: function(data, type, row, meta) {
+                var checked = !row.skip;
+                return '<input type="checkbox" ' + (checked ? 'checked /> ' : '/>');
+              }
             },
             {
               orderable: false,
+              data: "strategy.name"
             },
+            {
+              orderable: false,
+              render: function(data, type, row, meta) {
+                return row.mergeMode === CATMAID.UNION ? "Union" :
+                    (row.mergeMode === CATMAID.INTERSECTION ? "Intersection" : row.mergeMode);
+              }
+            },
+            {
+              orderable: false,
+              render: function(data, type, row, meta) {
+                return row.options ? JSON.stringify(row.options) : "-";
+              }
+            },
+            {
+              orderable: false,
+              render: function(data, type, row, meta) {
+                return row.validOnlyForSkid ? row.validOnlyForSkid : "-";
+              }
+            },
+            {
+              orderable: false,
+              render: function(data, type, row, meta) {
+                return row.validOnlyForName ? row.validOnlyForName : "-";
+              }
+            }
           ],
           language: {
             emptyTable: "No filters added yet (defaults to take all nodes)"
           }
         });
 
-        // Display a volume if clicked
-        $(table).on('click', 'td', function() {
+        // Updated skipping of rules
+        $(table).on('change', 'td', function(e) {
           var tr = $(this).closest("tr");
           var rule = datatable.row(tr).data();
-          //self.loadVolume(volume.id).then(self.editVolume.bind(self));
+          rule.skip = e.target.checked;
+          // Trigger events
+          volume.set("rules", volume.rules);
         });
 
         return $settings;

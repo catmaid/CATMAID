@@ -125,15 +125,15 @@
    */
   DOM.createSelectSetting = function(name, options, helptext, handler, defaultValue)
   {
-    var select = $('<select />');
+    var select = document.createElement('select');
     for (var o in options) {
       var value = options[o];
       var selected = (defaultValue === value);
       var option = new Option(o, value, selected, selected);
-      select.append(option);
+      select.add(option);
     }
     if (handler) {
-      select.on('change', handler);
+      select.onchange = handler;
     }
     return CATMAID.DOM.createLabeledControl(name, select, helptext);
   };

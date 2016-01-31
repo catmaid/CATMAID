@@ -544,9 +544,9 @@
         $(table).on('change', 'td', function(e) {
           var tr = $(this).closest("tr");
           var rule = datatable.row(tr).data();
-          rule.skip = e.target.checked;
+          rule.skip = !e.target.checked;
           // Trigger events
-          volume.set("rules", volume.rules);
+          volume.set("rules", volume.rules, true);
         });
 
         // Update working volume with default properties set above

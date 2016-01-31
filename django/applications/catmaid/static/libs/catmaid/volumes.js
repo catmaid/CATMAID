@@ -20,12 +20,12 @@
   CATMAID.Volume.prototype.EVENT_PROPERTY_CHANGED = "volume_property_changed";
 
   /**
-   * Set a particular field to a given value. If this changes an existing value,
-   * the "property changed" event is triggered.
+   * Set a particular field to a given value. If this changes an existing value
+   * or forceOverride is truthy, the "property changed" event is triggered.
    */
-  CATMAID.Volume.prototype.set = function(field, value) {
+  CATMAID.Volume.prototype.set = function(field, value, forceOverride) {
     var oldValue = this[field];
-    if (oldValue !== value) {
+    if (oldValue !== value || forceOverride) {
       this[field] = value;
       this.trigger(this.EVENT_PROPERTY_CHANGED, field, value, oldValue);
     }

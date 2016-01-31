@@ -601,7 +601,20 @@
     },
     'nuclei': function(container, options) {
       // Nuclei has no additional options
-    }
+    },
+    'subarbor': function(container, options) {
+      var $tag = CATMAID.DOM.createInputSetting("Tag", "",
+          "A tag that every used node must have", function() {
+            options.tag = this.value;
+          });
+      var $expected = CATMAID.DOM.createInputSetting("Expected", "",
+          "Only take sub-arbor if tag is used the expected number of times",
+          function() {
+            options.expected = parseInt(this.value, 10);
+          });
+      $(container).append($tag);
+      $(container).append($expected);
+    },
   };
 
   // A key that references this widget in CATMAID

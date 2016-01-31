@@ -537,6 +537,20 @@
         }
         return somaTaggedNodes.reduce(addToObject, {}) || null;
       }
+    },
+    // Options: tag, expected
+    "subarbor": {
+      name: "Use a sub-arbor starting from a tag",
+      filter: function(skeletonId, neuron, arbor, tags, options) {
+        var cuts = tags[options.tag];
+        if (!cuts || (options.expected && cuts.length !== options.expected)) {
+          console.log("CANNOT extract dendrite for " + neuron.name + ", cuts: " + cuts);
+          return {};
+        }
+        return cuts.reduce(function(nodes, cut) {
+          return $.extend(nodes, arbor.subArbor(cut).nodes());
+        }, {});
+      }
     }
   };
 

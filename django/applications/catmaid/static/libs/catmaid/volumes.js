@@ -553,6 +553,30 @@
           return $.extend(nodes, arbor.subArbor(cut).nodes());
         }, {});
       }
+    },
+    // Options: tagStart, tagEnd
+    "single-region": {
+      name: "Use a region",
+      filter: function(skeletonId, neuron, arbor, tags, options) {
+        var start_cuts = tags[options.tagStart];
+        var end_cuts = tags[options.tagEnd];
+        if (!start_cuts || start_cuts.length !== 1 || !end_cuts || end_cuts.length !== 1) {
+          console.log("CANNOT extract dendrite for " + neuron.name + ", wrong cuts: start_cuts: " + start_cuts + ", end_cuts: " + end_cuts);
+          return null;
+        }
+        var order = arbor.nodesOrderFrom(arbor.root);
+        var start = start_cuts[0];
+        var end = end_cuts[0];
+        if (order[start] > order[end] || start === end) {
+          console.log("CANNOT extract dendrite for " + neuron.name + ", wrong order of cuts: start_cuts: " + start_cuts + ", end_cuts: " + end_cuts);
+          return null;
+        }
+        var sub1 = arbor.subArbor(start);
+        sub1.subArbor(end).nodesArray().forEach(function(node) {
+          delete sub1.edges[node];
+        });
+        return sub1.nodes();
+      }
     }
   };
 

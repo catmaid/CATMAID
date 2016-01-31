@@ -615,6 +615,18 @@
       $(container).append($tag);
       $(container).append($expected);
     },
+    'single-region': function(container, options) {
+      var $tagStart = CATMAID.DOM.createInputSetting("Start tag", "",
+          "A tag used to find a node in a skeleton. The skelen is cut right before (upstream) this node, the remaining part is taken.", function() {
+            options.tagStart = this.value;
+          });
+      var $tagEnd = CATMAID.DOM.createInputSetting("End tag", "",
+          "A tag used to find a node in a skeleton. The skeleton is cut right before (upstream), the remaining part passes through the filter.", function() {
+            options.tagEnd = this.value;
+          });
+      $(container).append($tagStart);
+      $(container).append($tagEnd);
+    },
   };
 
   // A key that references this widget in CATMAID

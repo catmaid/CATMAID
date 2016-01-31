@@ -464,8 +464,7 @@
           datatable.rows().invalidate();
           datatable.ajax.reload();
         };
-        $content.append(CATMAID.DOM.createLabeledControl("", addRuleButton,
-              "Adds a filter with the settings above to the current volume"));
+        $content.append(CATMAID.DOM.createLabeledControl("", addRuleButton));
         // Set default filter setting UI
         updateNodeFilterSettings('take-all');
 

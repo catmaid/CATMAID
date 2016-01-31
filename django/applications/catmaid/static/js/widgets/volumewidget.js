@@ -590,7 +590,7 @@
    */
   var nodeFilterSettingFactories = {
     'take-all': function(container, options) {
-      // Take all has not options
+      // Take all has no additional options
     },
     'tags': function(container, options) {
       var $tag = CATMAID.DOM.createInputSetting("Tag", "",

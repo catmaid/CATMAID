@@ -452,7 +452,8 @@
    */
   CATMAID.ConvexHullVolume.showCompartment = function(skeletons, rules, onSuccess) {
     CATMAID.ConvexHullVolume.createTriangleMesh(skeletons, rules, function(mesh) {
-      var removeMeshes = CATMAID.ConvexHullVolume.showMeshesIn3DViewer([mesh]);
+      var list = mesh ? [mesh] : [];
+      var removeMeshes = CATMAID.ConvexHullVolume.showMeshesIn3DViewer(list);
       if (CATMAID.tools.isFn(onSuccess)) {
         onSuccess(mesh, removeMeshes);
       }

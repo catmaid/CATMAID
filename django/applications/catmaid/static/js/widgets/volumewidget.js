@@ -387,8 +387,7 @@
           volume.set("neuronSourceName", availableSources[0]);
         }
         $content.append(CATMAID.DOM.createSelectSetting("Skeleton source",
-            sourceOptions, "The selection to draw points from", source,
-            function(e) {
+            sourceOptions, "The selection to draw points from", function(e) {
               volume.set("neuronSourceName", this.value);
             }, volume.neuronSourceName));
 

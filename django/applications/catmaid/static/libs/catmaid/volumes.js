@@ -385,7 +385,7 @@
    */
   CATMAID.ConvexHullVolume.showMeshesIn3DViewer = function(meshes) {
     var w = CATMAID.WebGLApplication.prototype.getFirstInstance();
-    if (!w) {
+    if (!w || !w.space) {
       // Silently fail if no 3D viewer is open
       return;
     }

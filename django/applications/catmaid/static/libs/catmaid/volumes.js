@@ -263,8 +263,10 @@
               morphology.arbor, morphology.tags, rule.options);
           // Merge all point sets for this rule. How this is done exactly (i.e.
           // OR or AND) is configured separately.
-          mergeNodeCollection(nodeCollection, morphology.positions,
-              rule.mergeMode);
+          if (nodeCollection) {
+            mergeNodeCollection(nodeCollection, morphology.positions,
+                rule.mergeMode);
+          }
         });
       });
 

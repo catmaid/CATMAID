@@ -591,13 +591,13 @@
    * strategies from CATMAID.NodeFilterStrategy members.
    */
   var nodeFilterSettingFactories = {
-    'take-all': function(container, rule) {
+    'take-all': function(container, options) {
       // Take all has not options
     },
-    'tags': function(container, rule) {
+    'tags': function(container, options) {
       var $tag = CATMAID.DOM.createInputSetting("Tag", "",
           "A tag that every used node must have", function() {
-            rule.options.tag = this.value;
+            options.tag = this.value;
           });
       $(container).append($tag);
     }

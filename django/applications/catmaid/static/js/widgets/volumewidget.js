@@ -598,6 +598,9 @@
             options.tag = this.value;
           });
       $(container).append($tag);
+    },
+    'nuclei': function(container, options) {
+      // Nuclei has no additional options
     }
   };
 

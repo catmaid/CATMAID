@@ -510,6 +510,33 @@
       filter: function(skeletonId, neuron, arbor, tags, options) {
         return tags[options.tag].reduce(addToObject, {}) || null;
       }
+    },
+    // Looks for soma tags on root nodes and make sure there is only one root
+    // and only one soma tag in use on a neuron.
+    "nuclei": {
+      name: "Only nuclei",
+      filter: function(skeletonId, neuron, arbor, tags, options) {
+        // Expect only one use of the soma tag
+        var somaTaggedNodes = tags["soma"];
+        if (!somaTaggedNodes || 1 !== somaTaggedNodes.length) {
+          console.log("Skeleton #" + skeletonId +
+              " does not have exactly one node tagged with 'soma'");
+          return {};
+        }
+        // Expect only one root
+        var nRoots = 0;
+        for (var child in arbor.edges) {
+          if (!arbor.edges[child]) {
+            ++nRoots;
+            if (nRoots > 1) {
+              console.log("Skeleton #" + skeletonId +
+                  " has more than one root node");
+              return {};
+            }
+          }
+        }
+        return somaTaggedNodes.reduce(addToObject, {}) || null;
+      }
     }
   };
 

@@ -488,6 +488,11 @@
     this.validOnlyForName = name;
   };
 
+  var addToObject = function(o, key) {
+    o[key] = true;
+    return o;
+  };
+
   /**
    * Node filter strategies can be used in skeletotn filter rules. They select
    * individual nodes fom skeletons/arbors.
@@ -497,6 +502,13 @@
       name: "Take all nodes of each skeleton",
       filter: function(skeletonId, neuron, arbor, tags) {
         return arbor.nodes();
+      }
+    },
+    // Options: tag
+    'tags': {
+      name: "Only tagged nodes",
+      filter: function(skeletonId, neuron, arbor, tags, options) {
+        return tags[options.tag].reduce(addToObject, {}) || null;
       }
     }
   };

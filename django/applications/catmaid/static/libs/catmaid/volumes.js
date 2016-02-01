@@ -112,6 +112,7 @@
     this.set("neuronSourceName", options.neuronSourceName || undefined);
     this.set("rules", options.rules || []);
     this.set("preview", options.rules || true);
+    this.set("respectRadius", options.respectRadius || true);
     this.updateTriangleMesh();
   };
 
@@ -148,9 +149,9 @@
     this.clearPreviewData();
 
     if (this.preview) {
-      CATMAID.ConvexHullVolume.showCompartment(skeletons, rules, update);
+      CATMAID.ConvexHullVolume.showCompartment(skeletons, rules, this.respectRadius, update);
     } else {
-      CATMAID.ConvexHullVolume.createTriangleMesh(skeletons, rules, update);
+      CATMAID.ConvexHullVolume.createTriangleMesh(skeletons, rules, this.respectRadius, update);
     }
   };
 
@@ -168,7 +169,7 @@
    * compartmenr and generate the convex hull of such synapses, constructed as
    * a mesh.  Returns a map of compartment name vs mesh.
    */
-  var createCompartments = function(skeletons, compartments, skeleton_arbors) {
+  var createCompartments = function(skeletons, compartments, skeleton_arbors, respectRadius) {
     var nns = CATMAID.NeuronNameService.getInstance();
     return Object.keys(compartments).reduce(function(o, name) {
       var rules = compartments[name];
@@ -211,15 +212,17 @@
       // used for merging is specified as option. For the sake of simplicity, a
       // strict left-associative combination is used.
       var nodeCollection = {};
+      var radiiCollection = {};
       var nNodes = 0;
-      var mergeNodeCollection = (function(other, positions, mergeMode) {
+      var mergeNodeCollection = (function(other, positions, radii, mergeMode) {
         var count = 0;
         if (CATMAID.UNION === mergeMode) {
           for (var node in other) {
             var existingNode = this[node];
             if (!existingNode) {
               var v = positions[node];
-              this[node] = [v.x, v.y, v.z];
+              var r = radii[node];
+              this[node] = [[v.x, v.y, v.z], r];
               ++count;
             }
           }
@@ -266,7 +269,7 @@
           // OR or AND) is configured separately.
           if (nodeCollection) {
             mergeNodeCollection(nodeCollection, morphology.positions,
-                rule.mergeMode);
+                morphology.radii, rule.mergeMode);
           }
         });
       });
@@ -276,8 +279,21 @@
       var points = new Array(nNodes);
       var added = 0;
       for (var nodeId in nodeCollection) {
-        points[added] = nodeCollection[nodeId];
+        var pr = nodeCollection[nodeId];
+        var p = pr[0];
+        points[added] = p;
         ++added;
+        // Optionally, 12 points on an icosphere with the node's radis around the
+        // node itself can be added.
+        var radius = pr[1];
+        if (respectRadius && radius && radius > 0) {
+          var radiusPoints = CATMAID.getIcoSpherePoints(p[0], p[1], p[2], radius);
+          for (var i=0; i<radiusPoints.length; ++i) {
+            // Will be appended after pre-allocated slots, so that above logic
+            // still works.
+            points.push(radiusPoints[i]);
+          }
+        }
       }
       if (0 === points.length) {
         console.log("Found zero points for compartment " + name);
@@ -314,6 +330,10 @@
         arbors[skid] = {
           arbor: ap.arbor,
           positions: ap.positions,
+          radii: json[0].reduce(function(o, row) {
+            o[row[0]] = row[6];
+            return o;
+          }, {}),
           tags: json[2],
           partners: json[1].reduce(function(o, row) {
             // 1: treenode
@@ -347,7 +367,8 @@
    * Create a triangle mesh from the filtered nodes of the currently selected
    * neuron source. The current filter rules are taken into account.
    */
-  CATMAID.ConvexHullVolume.createTriangleMeshes = function(skeletons, compartments, onSuccess) {
+  CATMAID.ConvexHullVolume.createTriangleMeshes = function(skeletons, compartments,
+      respectRadius, onSuccess) {
     // Stop if there are no skeletons
     if (skeletons.length === 0) {
       if (CATMAID.tools.isFn(onSuccess)) {
@@ -358,8 +379,7 @@
     // Create mesh by creating the convex hull around a set of points. These
     // points are collected through a set of rules for an input set of neurons.
     fetchArbors(Object.keys(skeletons), function(arbors) {
-      // Create mesh
-      var meshes = createCompartments(skeletons, compartments, arbors);
+      var meshes = createCompartments(skeletons, compartments, arbors, respectRadius);
       onSuccess(meshes);
     });
   };
@@ -368,15 +388,17 @@
    * Create a triangle mesh from the filtered nodes of the passed in list of
    * skeletons. This process can be parameterized with a set of rules.
    */
-  CATMAID.ConvexHullVolume.createTriangleMesh = function(skeletons, rules, onSuccess) {
+  CATMAID.ConvexHullVolume.createTriangleMesh = function(skeletons, rules,
+      respectRadius, onSuccess) {
     var name = 'compartment';
     var compartments = {};
     compartments[name] = rules;
-    CATMAID.ConvexHullVolume.createTriangleMeshes(skeletons, compartments, function(meshes) {
-      if (CATMAID.tools.isFn(onSuccess)) {
-        onSuccess(meshes[name]);
-      }
-    });
+    CATMAID.ConvexHullVolume.createTriangleMeshes(skeletons, compartments,
+        respectRadius, function(meshes) {
+          if (CATMAID.tools.isFn(onSuccess)) {
+            onSuccess(meshes[name]);
+          }
+        });
   };
 
   /**
@@ -440,8 +462,9 @@
   /**
    * Create and display meshes in the first available 3D viewer.
    */
-  CATMAID.ConvexHullVolume.showCompartments = function(skeletons, compartments, onSuccess) {
-    CATMAID.ConvexHullVolume.createTriangleMeshes(skeletons, compartments,
+  CATMAID.ConvexHullVolume.showCompartments = function(skeletons, compartments,
+      respectRadius, onSuccess) {
+    CATMAID.ConvexHullVolume.createTriangleMeshes(skeletons, compartments, respectRadius,
         function(meshes) {
           var removeMeshes = CATMAID.ConvexHullVolume.showMeshesIn3DViewer(meshes);
           if (CATMAID.tools.isFn(onSuccess)) {
@@ -453,8 +476,8 @@
   /**
    * Create a convex hull and display it in the first available 3D viewer.
    */
-  CATMAID.ConvexHullVolume.showCompartment = function(skeletons, rules, onSuccess) {
-    CATMAID.ConvexHullVolume.createTriangleMesh(skeletons, rules, function(mesh) {
+  CATMAID.ConvexHullVolume.showCompartment = function(skeletons, rules, respectRadius, onSuccess) {
+    CATMAID.ConvexHullVolume.createTriangleMesh(skeletons, rules, respectRadius, function(mesh) {
       var list = mesh ? [mesh] : [];
       var removeMeshes = CATMAID.ConvexHullVolume.showMeshesIn3DViewer(list);
       if (CATMAID.tools.isFn(onSuccess)) {
@@ -640,6 +663,53 @@
   var defaultFilteRuleSet = [
     new CATMAID.SkeletonFilterRule(CATMAID.NodeFilterStrategy['take-all'])
   ];
+
+  var unitIcoSpherePoints = (function() {
+    var t = (1.0 + Math.sqrt(5.0)) / 2.0;
+
+    return [
+      [-1,  t,  0],
+      [ 1,  t,  0],
+      [-1, -t,  0],
+      [ 1, -t,  0],
+
+      [ 0, -1,  t],
+      [ 0,  1,  t],
+      [ 0, -1, -t],
+      [ 0,  1, -t],
+
+      [ t,  0, -1],
+      [ t,  0,  1],
+      [-t,  0, -1],
+      [-t,  0,  1]
+    ];
+  })();
+
+  var copyPoint = function(p) {
+    return [p[0], p[1], p[2]];
+  };
+
+  var addToPoint = function(x, y, z, p) {
+    p[0] = p[0] + x;
+    p[1] = p[1] + y;
+    p[2] = p[2] + z;
+    return p;
+  };
+
+  var multiplyComponens = function(m, p) {
+    p[0] = p[0] * m;
+    p[1] = p[1] * m;
+    p[2] = p[2] * m;
+    return p;
+  };
+
+  // create 12 vertices of a icosahedron
+  CATMAID.getIcoSpherePoints = function(x, y, z, radius) {
+    return unitIcoSpherePoints
+      .map(copyPoint)
+      .map(multiplyComponens.bind(null, radius))
+      .map(addToPoint.bind(null, x, y, z));
+  };
 
 })(CATMAID);
 

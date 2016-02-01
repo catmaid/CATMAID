@@ -385,6 +385,11 @@
         if (!volume.neuronSourceName && availableSources.length > 0) {
           volume.set("neuronSourceName", availableSources[0]);
         }
+        $content.append(CATMAID.DOM.createCheckboxSetting("Respect node radius",
+            volume.respectRadius, "If checked, every valid node with a radius will " +
+            "trigger the creation of 12 additional equally distibuted points around it, " +
+            "having a distance of the node's radius.",
+            function(e) { volume.set("respectRadius", this.checked); }));
         $content.append(CATMAID.DOM.createSelectSetting("Skeleton source",
             sourceOptions, "The selection to draw points from", function(e) {
               volume.set("neuronSourceName", this.value);

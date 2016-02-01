@@ -369,7 +369,6 @@
             "Convex hull rule settings", false);
 
         // Option to control preview
-        var preview = function(e) { volume.set("minX", Number(this.value)); };
         var preview = CATMAID.DOM.createCheckboxSetting(
             "Preview in 3D viewer", volume.preview, "If checked the first " +
             "available 3D viewer will be used to preview the meshes before saving.",

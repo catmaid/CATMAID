@@ -574,8 +574,9 @@
           }
         };
         var onUpdate = function(field, newValue, oldValue) {
-          // Re-create mesh if source, rules or preview changed
-          if (field === "neuronSourceName" || field === "rules" || field === "preview") {
+          // Re-create mesh if the updated field is no 'basic' property to avoid
+          // unnecessary re-calculation.
+          if (field !== 'mesh' && field !== "id" && field !== "title" && field !== 'comment') {
             volume.updateTriangleMesh(checkGeneratedMesh);
           }
         };

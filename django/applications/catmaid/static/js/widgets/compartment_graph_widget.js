@@ -1415,10 +1415,11 @@
 
   GroupGraph.prototype.appendAsGroup = function() {
     var models = CATMAID.skeletonListSources.getSelectedSkeletonModels(this);
-    if (0 === models.length) {
+    var nModels = Object.keys(models).length;
+    if (0 === nModels) {
       CATMAID.info('Selected source is empty.');
       return;
-    } else if (1 === models.length) {
+    } else if (1 === nModels) {
       this.append(models);
       return;
     }

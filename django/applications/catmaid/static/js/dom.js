@@ -12,6 +12,15 @@
   var DOM = {};
 
   /**
+   * Remove all elements from a parent element.
+   */
+  DOM.removeAllChildren = function(element) {
+    while (element.lastChild) {
+      element.removeChild(element.lastChild);
+    }
+  };
+
+  /**
    * Helper function to create a collapsible settings container.
    */
   DOM.addSettingsContainer = function(parent, name, closed)
@@ -114,16 +123,36 @@
   /**
    * Helper function to create a select element with options.
    */
-  DOM.createSelectSetting = function(name, options, helptext, handler)
+  DOM.createSelectSetting = function(name, options, helptext, handler, defaultValue)
   {
-    var select = $('<select />');
+    var select = document.createElement('select');
     for (var o in options) {
-      select.append(new Option(o, options[o]));
+      var value = options[o];
+      var selected = (defaultValue === value);
+      var option = new Option(o, value, selected, selected);
+      select.add(option);
     }
     if (handler) {
-      select.on('change', handler);
+      select.onchange = handler;
     }
     return CATMAID.DOM.createLabeledControl(name, select, helptext);
+  };
+
+  /**
+   * Create a file open button that can be optionally initialized hidden.
+   */
+  DOM.createFileButton = function(id, visible, onchangeFn) {
+    var fb = document.createElement('input');
+    fb.setAttribute('type', 'file');
+    if (id) {
+      fb.setAttribute('id', id);
+    }
+    fb.setAttribute('name', 'files[]');
+    if (!visible) {
+      fb.style.display = 'none';
+    }
+    fb.onchange = onchangeFn;
+    return fb;
   };
 
   /**

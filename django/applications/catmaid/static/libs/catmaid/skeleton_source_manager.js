@@ -472,6 +472,10 @@
     return this.sources[name];
   };
 
+  SkeletonSourceManager.prototype.getSourceNames = function() {
+    return Object.keys(this.sources);
+  };
+
   SkeletonSourceManager.prototype.getSelectedSkeletons = function(ref_source) {
     var source = this.getSelectedSource(ref_source);
     if (!source) {

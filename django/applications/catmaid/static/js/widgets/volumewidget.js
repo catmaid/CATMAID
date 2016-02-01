@@ -627,6 +627,24 @@
       $(container).append($tagStart);
       $(container).append($tagEnd);
     },
+    'binary-split': function(container, options) {
+      // Default options
+      options.region = "downstream";
+
+      var $tag = CATMAID.DOM.createInputSetting("Tag", "",
+          "Cut skeleton at tagged node", function() {
+            options.tag = this.value;
+          });
+      var $region = CATMAID.DOM.createSelectSetting("Region",
+          { "Downstream": "downstream", "Upstream": "upstream" },
+          "Select which region relative to the cuts at tagged nodes should be allowed.",
+          function() {
+            options.region = this.value;
+          }, options.region);
+
+      $(container).append($tag);
+      $(container).append($region);
+    },
   };
 
   // A key that references this widget in CATMAID

@@ -577,6 +577,29 @@
         });
         return sub1.nodes();
       }
+    },
+    // Options: tag, region
+    "binary-split": {
+      name: "Binary split",
+      filter: function(skeletonId, neuron, arbor, tags, options) {
+        var cuts = tags[options.tag];
+        if (!cuts || cuts.length !== 1) {
+          console.log("CANNOT extract dendrite for " + neuron.name + ", cuts: " + cuts);
+          return null;
+        }
+        if ("downstream" === options.region) {
+          return arbor.subArbor(cuts[0]).nodes();
+        } else if ("upstream" === options.region) {
+          var dend = arbor.clone();
+          arbor.subArbor(cuts[0]).nodesArray().forEach(function(node) {
+            delete dend.edges[node];
+          });
+          return dend.nodes();
+        } else {
+          console.log("CANNOT extract dendrite for " + neuron.name + ", unknown region: " + neuron.strategy.region);
+          return null;
+        }
+      }
     }
   };
 

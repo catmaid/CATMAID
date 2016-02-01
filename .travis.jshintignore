@@ -10,6 +10,7 @@ django/applications/catmaid/static/libs/cytoscapejs/**
 django/applications/catmaid/static/libs/d3/**
 django/applications/catmaid/static/libs/fabric.js/**
 django/applications/catmaid/static/libs/filesaver/**
+django/applications/catmaid/static/libs/geometry/**
 django/applications/catmaid/static/libs/jquery/**
 django/applications/catmaid/static/libs/jsTree/**
 django/applications/catmaid/static/libs/jsnetworkx/**

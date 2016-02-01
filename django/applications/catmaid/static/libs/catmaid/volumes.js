@@ -260,7 +260,8 @@
           var neuron = skeletons[skid];
           var morphology = skeleton_arbors[skid];
           var nodeCollection = rule.strategy.filter(skid, neuron,
-              morphology.arbor, morphology.tags, rule.options);
+              morphology.arbor, morphology.tags, morphology.partners,
+              rule.options);
           // Merge all point sets for this rule. How this is done exactly (i.e.
           // OR or AND) is configured separately.
           if (nodeCollection) {
@@ -502,14 +503,14 @@
   CATMAID.NodeFilterStrategy = {
     "take-all": {
       name: "Take all nodes of each skeleton",
-      filter: function(skeletonId, neuron, arbor, tags) {
+      filter: function(skeletonId, neuron, arbor, tags, partners) {
         return arbor.nodes();
       }
     },
     // Options: tag
     'tags': {
       name: "Only tagged nodes",
-      filter: function(skeletonId, neuron, arbor, tags, options) {
+      filter: function(skeletonId, neuron, arbor, tags, partners, options) {
         return tags[options.tag].reduce(addToObject, {}) || null;
       }
     },
@@ -517,7 +518,7 @@
     // and only one soma tag in use on a neuron.
     "nuclei": {
       name: "Only nuclei",
-      filter: function(skeletonId, neuron, arbor, tags, options) {
+      filter: function(skeletonId, neuron, arbor, tags, partnes, options) {
         // Expect only one use of the soma tag
         var somaTaggedNodes = tags["soma"];
         if (!somaTaggedNodes || 1 !== somaTaggedNodes.length) {
@@ -543,7 +544,7 @@
     // Options: tag, expected
     "subarbor": {
       name: "Use a sub-arbor starting from a tag",
-      filter: function(skeletonId, neuron, arbor, tags, options) {
+      filter: function(skeletonId, neuron, arbor, tags, partners, options) {
         var cuts = tags[options.tag];
         if (!cuts || (options.expected && cuts.length !== options.expected)) {
           console.log("CANNOT extract dendrite for " + neuron.name + ", cuts: " + cuts);
@@ -557,7 +558,7 @@
     // Options: tagStart, tagEnd
     "single-region": {
       name: "Use a region",
-      filter: function(skeletonId, neuron, arbor, tags, options) {
+      filter: function(skeletonId, neuron, arbor, tags, partners, options) {
         var start_cuts = tags[options.tagStart];
         var end_cuts = tags[options.tagEnd];
         if (!start_cuts || start_cuts.length !== 1 || !end_cuts || end_cuts.length !== 1) {
@@ -581,7 +582,7 @@
     // Options: tag, region
     "binary-split": {
       name: "Binary split",
-      filter: function(skeletonId, neuron, arbor, tags, options) {
+      filter: function(skeletonId, neuron, arbor, tags, partners, options) {
         var cuts = tags[options.tag];
         if (!cuts || cuts.length !== 1) {
           console.log("CANNOT extract dendrite for " + neuron.name + ", cuts: " + cuts);
@@ -599,6 +600,38 @@
           console.log("CANNOT extract dendrite for " + neuron.name + ", unknown region: " + neuron.strategy.region);
           return null;
         }
+      }
+    },
+    // Find the positions of the source skeleton nodes pre- or ppostsynaptic to
+    // another set of skeletons.
+    "synaptic": {
+      name: "Synaptic connections to other neurons",
+      filter: function(skeletonId, neuron, arbor, tags, partners, options) {
+        var selectedPartners;
+        if ('pre' === options.relation) {
+          selectedPartners = partners[0];
+        } else if ('post' === options.relation) {
+          selectedPartners = partners[1];
+        } else {
+          throw new CATMAID.ValuError("Unsupported relation: " + options.relation);
+        }
+
+        var synapticNodes = {};
+        var partnerNeurons = options.otherNeurons;
+
+        // Check if partners in option set are in actual partner set and if
+        // their connection are of the requested type. Collect return all
+        // synaptic nodes of the current skeleton
+        Object.keys(selectedPartners).forEach(function(skid) {
+          if (partnerNeurons[skid]) {
+            var nodes = selectedPartners[skid];
+            for (var nodeId in nodes) {
+              synapticNodes[nodeId] = true;
+            }
+          }
+        });
+
+        return synapticNodes;
       }
     }
   };

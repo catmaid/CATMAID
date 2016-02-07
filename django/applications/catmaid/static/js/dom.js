@@ -275,6 +275,107 @@
     });
   };
 
+  /**
+   * Create a new select element that when clicked (or optionally hovered) shows
+   * a custom list in a DIV container below it. This custom list provides
+   * checkbox elements for each entry
+   *
+   * Main idea from: http://stackoverflow.com/questions/17714705
+   *
+   * @param title {String}   A title showing as the first element of the select
+   * @param options {Object} Field names are displayed, values are values
+   *
+   * @returns a wrapper around the select element
+   */
+  DOM.createCheckboxSelect = function(title, options) {
+    var checkboxes = document.createElement('ul');
+    for (var o in options) {
+      var entry = document.createElement('label');
+      var checkbox = document.createElement('input');
+      checkbox.setAttribute('type', 'checkbox');
+      checkbox.setAttribute('value', options[o]);
+      entry.appendChild(checkbox);
+      entry.appendChild(document.createTextNode(o));
+      checkboxes.appendChild(entry);
+    }
+    checkboxes.onclick = function(e) {
+      // Cancel bubbling
+      e.cancelBubble = true;
+      if (e.stopPropagation) e.stopPropagation();
+    };
+
+    return CATMAID.DOM.createCustomContentSelect(title, checkboxes);
+  };
+
+  /**
+   * Create a new select element that when clicked (or optionally hovered) shows
+   * content in a DIV container below it.
+   *
+   * Main idea from: http://stackoverflow.com/questions/17714705
+   *
+   * @param title {String}   A title showing as the first element of the select
+   * @param content {Object} Content to be displayed when select is clicked
+   *
+   * @returns a wrapper around the select element
+   */
+  DOM.createCustomContentSelect = function(title, content) {
+    // Expandable container
+    var container = document.createElement('span');
+    container.setAttribute('class', 'customselect');
+
+    var selectBox = document.createElement('div');
+    selectBox.setAttribute('class', 'customselect-selectbox');
+
+    var toggleSelect = document.createElement('select');
+    toggleSelect.options.add(new Option(title));
+    selectBox.appendChild(toggleSelect);
+
+    // Hide the selects drop down menu, which is needed for creating our own
+    // drop down as well as for showing thre rest of the panel if the menu is
+    // expanded.
+    var overSelect = document.createElement('div');
+    overSelect.setAttribute('class', 'customselect-overselect');
+    selectBox.appendChild(overSelect);
+
+    container.appendChild(selectBox);
+
+    var customContent = document.createElement('div');
+    customContent.setAttribute('class', 'customselect-content');
+    customContent.style.display = "none";
+    customContent.appendChild(content);
+    container.appendChild(customContent);
+
+    // The function responsible for hiding and showing all controls has a
+    // private state variable and an IIFE is used to encapsulate it (to reduce
+    // closure size).
+    var toggleExpansion = (function() {
+      var expanded = false;
+      return function(e) {
+        var customContent = this.querySelector('div.customselect-content');
+        if (expanded) {
+          customContent.style.display = 'none';
+        } else {
+          customContent.style.display = 'block';
+        }
+        expanded = !expanded;
+      };
+    })();
+
+    // Expand whe the container is clicked
+    container.onclick = toggleExpansion;
+    toggleSelect.onclick = function(e) {
+      toggleExpansion(e);
+      return false; // Don't bubble up
+    };
+
+    // This wrapper is used to make the actual control container expand more
+    // reliable.
+    var wrapper = document.createElement('span');
+    wrapper.appendChild(container);
+
+    return wrapper;
+  };
+
   // Export DOM namespace
   CATMAID.DOM = DOM;
 

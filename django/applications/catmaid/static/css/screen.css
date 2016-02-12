@@ -1095,3 +1095,12 @@ div.selection-table.windowContent {
 .customselect ul label {
   display: list-item;
 }
+
+.placeholder {
+  padding: .5em;
+}
+
+.placeholder img {
+  width: 1em;
+  height: 1em;
+}

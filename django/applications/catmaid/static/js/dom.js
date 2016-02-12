@@ -376,6 +376,41 @@
     return wrapper;
   };
 
+  /**
+   * Create a simple placeholder.
+   */
+  DOM.createPlaceholder= function() {
+    var placeholder = document.createElement('span');
+    placeholder.classList.add('placeholder');
+    var img = document.createElement('img');
+    img.src = CATMAID.makeStaticURL('images/wait_bgtransgrey.gif');
+    placeholder.appendChild(img);
+    return placeholder;
+  };
+
+  /**
+   * Create a placeholder element that will get replaced once async content has
+   * been loaded, i.e. the passed in promise has been resolved. The promise is
+   * expected to return the actual element to be displayed.
+   */
+  DOM.createAsyncPlaceholder= function(promise) {
+    var placeholder = CATMAID.DOM.createPlaceholder();
+    if (!promise || !CATMAID.tools.isFn(promise.then)) {
+      throw new CATMAID.ValueError('Async musst be either a callback or promise');
+    }
+
+    // After promise is fulfilled, replace placeholder
+    promise.then(function(element) {
+      if (placeholder.parentNode) {
+        placeholder.parentNode.replaceChild(element, placeholder);
+      } else {
+        throw new CATMAID.ValueError('Placeholder node doesn\'t have a parent');
+      }
+    }).catch(CATMAID.handleError);
+
+    return placeholder;
+  };
+
   // Export DOM namespace
   CATMAID.DOM = DOM;
 

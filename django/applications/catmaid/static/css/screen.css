@@ -1083,6 +1083,7 @@ div.selection-table.windowContent {
   background: white;
   padding: 4px;
   cursor: default;
+  z-index: 1;
 }
 
 .customselect ul {

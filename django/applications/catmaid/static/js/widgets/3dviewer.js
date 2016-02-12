@@ -1483,6 +1483,10 @@
     this.space.render();
 
     return function() {
+      if (!self || !self.space) {
+        // No need to remove anything if 3D viewer or its space are gone
+        return;
+      }
       addedObjects.forEach(function(o) {
           this.remove(o);
       }, self.space);

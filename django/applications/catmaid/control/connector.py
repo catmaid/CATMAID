@@ -160,7 +160,7 @@ def list_connector(request, project_id=None):
 
     relation_type = int(request.POST.get('relation_type', 0))  # 0: Presyn, 1 Postsyn
     display_start = int(request.POST.get('iDisplayStart', 0))
-    display_length = int(request.POST.get('iDisplayLength', 0))
+    display_length = int(request.POST.get('iDisplayLength', -1))
     sorting_column = int(request.POST.get('iSortCol_0', 0))
     sort_descending = upper(request.POST.get('sSortDir_0', 'DESC')) != 'ASC'
 
@@ -300,7 +300,7 @@ def list_connector(request, project_id=None):
             return empty_result()
 
         # Paging
-        if display_length == 0:
+        if display_length == -1:
             connectors = connectors[display_start:]
             connector_ids = connector_ids[display_start:]
         else:

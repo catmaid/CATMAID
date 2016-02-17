@@ -2518,7 +2518,7 @@ var WindowMaker = new function()
 
   var createSkeletonAnalyticsWindow = function()
   {
-    var SA = new SkeletonAnalytics();
+    var SA = new CATMAID.SkeletonAnalytics();
 
     var win = new CMWWindow(SA.getName());
     var content = win.getFrame();

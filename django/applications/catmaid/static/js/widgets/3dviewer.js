@@ -4741,14 +4741,14 @@
 
     var onchange = (function(rgb, alpha, colorChanged, alphaChanged) {
       $('#' + labelId).text(alpha.toFixed(2));
+      var color = new THREE.Color().setRGB(rgb.r, rgb.g, rgb.b);
+      this.options.meshes_color = '#' + color.getHexString();
+      this.options.meshes_opacity = alpha;
       if (this.options.show_meshes) {
-        var color = new THREE.Color().setRGB(rgb.r, rgb.g, rgb.b);
         var material = this.options.createMeshMaterial(color, alpha);
         this.space.content.meshes.forEach(function(mesh) {
           mesh.material = material;
         });
-        this.options.meshes_color = '#' + color.getHexString();
-        this.options.meshes_opacity = alpha;
         this.space.render();
       }
     }).bind(this);

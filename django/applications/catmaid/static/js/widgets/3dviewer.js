@@ -1580,7 +1580,7 @@
           }
         }).bind(this))
         .catch(CATMAID.handleError);
-    } else {
+    } else if (existingVolume) {
       // Remove volume
       existingVolume.forEach(function(v) {
         this.space.scene.remove(v);

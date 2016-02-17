@@ -1306,9 +1306,27 @@ var WindowMaker = new function()
     };
     var o = CATMAID.WebGLApplication.prototype.OPTIONS;
 
+    var volumeSelection = CATMAID.DOM.createAsyncPlaceholder(
+        CATMAID.fetch(project.id + '/volumes/', 'GET').then(function(json) {
+          var volumes = json.reduce(function(o, volume) {
+            o[volume.name] = volume.id;
+            return o;
+          }, {});
+          // Create actual element based on the returned data
+          var node = CATMAID.DOM.createCheckboxSelect('Volumes', volumes);
+          // Add a selection handler
+          node.onchange = function(e) {
+            var visible = e.srcElement.checked;
+            var volumeId = e.srcElement.value;
+            WA.showVolume(volumeId, visible);
+          };
+          return node;
+        }));
+
     appendToTab(tabs['View settings'],
         [
           ['Meshes ', false, function() { WA.options.show_meshes = this.checked; WA.adjustContent(); }, false],
+          [volumeSelection],
           [WA.createMeshColorButton()],
           ['Active node', true, function() { WA.options.show_active_node = this.checked; WA.adjustContent(); }, false],
           ['Active node on top', false, function() { WA.options.active_node_on_top = this.checked; WA.adjustContent(); }, false],

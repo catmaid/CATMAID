@@ -13,6 +13,8 @@ import loci.formats.meta.*;
 import loci.common.services.ServiceFactory;
 import loci.formats.services.OMEXMLService;
 import ome.xml.model.primitives.PositiveFloat;
+import ome.units.quantity.Length;
+import ome.units.UNITS;
 import loci.plugins.BF;
 import loci.plugins.in.ImporterOptions;
 
@@ -508,12 +510,12 @@ ImagePlus openImage( pathName )
 		r.setId( pathName );
 		MetadataRetrieve retrieve = omexmlService.asRetrieve( r.getMetadataStore() );
 
-		PositiveFloat pw = retrieve.getPixelsPhysicalSizeX( 0 );
-		pw = pw == null ? new PositiveFloat( 1.0 ) : pw;
-		PositiveFloat ph = retrieve.getPixelsPhysicalSizeY( 0 );
-		ph = ph == null ? new PositiveFloat( 1.0 ) : ph;
-		PositiveFloat pd = retrieve.getPixelsPhysicalSizeZ( 0 );
-		pd = pd == null ? new PositiveFloat( 1.0 ) : pd;
+		Length pw = retrieve.getPixelsPhysicalSizeX( 0 );
+		pw = pw == null ? new Length( new Double(1.0), ome.units.UNITS.MICROM ) : pw;
+		Length ph = retrieve.getPixelsPhysicalSizeY( 0 );
+		ph = ph == null ? new Length( new Double(1.0), ome.units.UNITS.MICROM ) : ph;
+		Length pd = retrieve.getPixelsPhysicalSizeZ( 0 );
+		pd = pd == null ? new Length( new Double(1.0), ome.units.UNITS.MICROM ) : pd;
 		Double pt = retrieve.getPixelsTimeIncrement( 0 );
 		pt = pt == null ? new Double( 1.0 ) : pt;
 		
@@ -540,15 +542,20 @@ ImagePlus openImage( pathName )
 				}
 		imp = new ImagePlus( pathName, stack );
 		calibration = imp.getCalibration();
-		calibration.pixelWidth = pw.getValue();
-		calibration.pixelHeight = ph.getValue();
-		calibration.pixelDepth = pd.getValue();
+		calibration.pixelWidth = pw.value(ome.units.UNITS.MICROM).doubleValue();
+		calibration.pixelHeight = ph.value(ome.units.UNITS.MICROM).doubleValue();
+		calibration.pixelDepth = pd.value(ome.units.UNITS.MICROM).doubleValue();
 		calibration.frameInterval = pt.doubleValue();
 		calibration.setUnit( "um" );
 		imp.setDimensions( r.getSizeC(), r.getSizeZ(), r.getSizeT() );
 		imp.setOpenAsHyperStack( true );
 		openedImage = new CompositeImage( imp );
-		openedImage.setMode( CompositeImage.COMPOSITE );
+		// TODO: Use LUTs to color the image
+		if (s > 1) {
+			openedImage.setMode( CompositeImage.COMPOSITE );
+		} else {
+			openedImage.setMode( CompositeImage.GRAYSCALE );
+		}
 	}
 	catch ( FormatException exc )
 	{

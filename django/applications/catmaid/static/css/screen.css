@@ -1084,6 +1084,8 @@ div.selection-table.windowContent {
   padding: 4px;
   cursor: default;
   z-index: 1;
+  overflow: auto;
+  height: 20em;
 }
 
 .customselect ul {

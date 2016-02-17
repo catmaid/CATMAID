@@ -65,6 +65,18 @@ Gap junctions:
   own selections for confidence and count thresholds.
 
 
+Volumes:
+
+- The volume widget can create a new volume type: convex hulls. These can be
+  created around a set of nodes from any skeleton source. Different filters can
+  be combined: filters to allow only nodes that have a certain tag, a sub-arbor
+  relative to such nodes (optionally occurring a definable number of times), a
+  region between two tags tag or nodes that are synaptic to skeletons of another
+  skeleton source. Node radii can optionally be ignored, but they are respected
+  by default. A preview of the current filter set can be displayed in the first
+  available 3D viewer.
+
+
 3D Viewer:
 
 - Gap junctions are displayed like synapse edges in purple.
@@ -73,6 +85,11 @@ Gap junctions:
   changes.
 
 - A new sphere shading allows for a better depth perception.
+
+- Volumes (created in the Volume Widget) can be displayed. A new selection
+  control in the "View settings" tab allows to select individual volumes. They
+  are colored the same way as they regular mesh. Currently, the color isn't
+  updated on purpose to allow the easy creation of differently colored volumes.
 
 
 Skeleton Projection layer:

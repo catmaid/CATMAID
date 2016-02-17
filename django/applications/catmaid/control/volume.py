@@ -210,15 +210,16 @@ def volume_collection(request, project_id):
 def volume_detail(request, project_id, volume_id):
     """Get detailed information on a spatial volume or set its properties..
 
-    The result will contain the bounding box of the volume's geometry. The
-    response might might therefore be relatively large.
+    The result will contain the bounding box of the volume's geometry and the
+    actual geometry encoded in X3D format. The response might might therefore be
+    relatively large.
     """
     p = get_object_or_404(Project, pk = project_id)
     if request.method == 'GET':
         cursor = connection.cursor()
         cursor.execute("""
             SELECT id, project_id, name, comment, user_id, editor_id,
-                creation_time, edition_time, Box3D(geometry)
+                creation_time, edition_time, Box3D(geometry), ST_Asx3D(geometry)
             FROM catmaid_volume v
             WHERE id=%s and project_id=%s""",
             (volume_id, project_id))
@@ -230,7 +231,7 @@ def volume_detail(request, project_id, volume_id):
             raise ValueError("Couldn't create bounding box for geometry")
         bbox = map(float, bbox_matches.groups())
 
-        return Response({
+        volume = {
             'id': volume[0],
             'project_id': volume[1],
             'name': volume[2],
@@ -242,8 +243,11 @@ def volume_detail(request, project_id, volume_id):
             'bbox': {
                 'min': {'x': bbox[0], 'y': bbox[1], 'z': bbox[2]},
                 'max': {'x': bbox[3], 'y': bbox[4], 'z': bbox[5]}
-            }
-        })
+            },
+            'mesh': volume[9]
+        }
+
+        return Response(volume)
     elif request.method == 'POST':
         return update_volume(request, project_id=project_id, volume_id=volume_id)
 

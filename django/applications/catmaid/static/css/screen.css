@@ -1083,6 +1083,9 @@ div.selection-table.windowContent {
   background: white;
   padding: 4px;
   cursor: default;
+  z-index: 1;
+  overflow: auto;
+  height: 20em;
 }
 
 .customselect ul {
@@ -1094,4 +1097,13 @@ div.selection-table.windowContent {
 
 .customselect ul label {
   display: list-item;
+}
+
+.placeholder {
+  padding: .5em;
+}
+
+.placeholder img {
+  width: 1em;
+  height: 1em;
 }

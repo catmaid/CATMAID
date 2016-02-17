@@ -33,6 +33,8 @@
     this.animationRequestId = undefined;
     // The current animation, if any
     this.animation = undefined;
+    // Map loaed volume IDs to an array of Three.js meshes
+    this.loadedVolumes = {};
 
     // Listen to changes of the active node
     SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
@@ -1438,6 +1440,155 @@
     this.space.content.active_node.setVisible(true);
   };
 
+  /**
+   * Display meshes in the passed-in object. Mesh IDs should be mapped to an
+   * array following this format: [[points], [[faces]].
+   *
+   * @returns a function that removes the added meshes when called
+   */
+  WebGLApplication.prototype.showTriangleMeshes = function(meshes) {
+    var addedObjects = [];
+    var self = this;
+
+    Object.keys(meshes).forEach(function(name) {
+      var mesh = meshes[name];
+      var points = mesh[0];
+      var hull = mesh[1];
+      // Make the mesh with the faces specified in the hull array
+      var geom = new THREE.Geometry();
+      points.forEach(function(p) {
+        this.vertices.push(new THREE.Vector3(p[0], p[1], p[2]));
+      }, geom);
+      hull.forEach(function(indices) {
+        this.faces.push(new THREE.Face3(indices[0], indices[1], indices[2]));
+      }, geom);
+      geom.computeFaceNormals();
+      var mesh = new THREE.Mesh(
+          geom,
+          new THREE.MeshLambertMaterial(
+             {color: 0x0000ff,
+              opacity: 1.0,
+              transparent: true,
+              wireframe: false,
+              wireframeLinewidth: 10,
+              morphTargets: true,
+              morphNormals: true}));
+
+      var wfh = new THREE.WireframeHelper(mesh, 0x000000);
+      wfh.material.linewidth = 2;
+      self.space.add(mesh);
+      self.space.add(wfh);
+      this.push(mesh);
+      this.push(wfh);
+    }, addedObjects);
+
+    this.space.render();
+
+    return function() {
+      if (!self || !self.space) {
+        // No need to remove anything if 3D viewer or its space are gone
+        return;
+      }
+      addedObjects.forEach(function(o) {
+          this.remove(o);
+      }, self.space);
+      self.space.render();
+    };
+  };
+
+  /**
+   * Converts simple X3D IndexedFaceSet and IndexedTriangleSet nodes to a VRML
+   * representation.
+   */
+  function x3dToVrml(x3d) {
+    var vrml = x3d;
+    var shapePrefix = "Shape {\n  geometry IndexedFaceSet {\n     ";
+
+    // Indexed triangle set
+    vrml = vrml.replace(/<IndexedTriangleSet\s*index='([-\d\s]*)'\s*>/gi,
+        function(match, indexGroup) {
+          var triIndices = indexGroup.split(" ");
+          var nVertices = triIndices.length;
+          // Mark end of face after each three points. This wouldn't be
+          // required if the Three.js loader would support triangle sets.
+          var indices = new Array(nVertices + Math.floor(nVertices / 3));
+          var offset = 0;
+          for (var i=0; i<triIndices.length; ++i) {
+            indices[i + offset] = triIndices[i];
+            if (0 === (i + 1) % 3) {
+              ++offset;
+              indices[i + offset] = "-1";
+            }
+          }
+
+          return shapePrefix + "    coordIndex [" + indices.join(", ") + "]\n";
+        }).replace(/<\/IndexedTriangleSet>/gi, "  }\n}");
+
+    // Indexed face set
+    vrml = vrml.replace(/<IndexedFaceSet\s*coordIndex='([-\d\s]*)'\s*>/gi,
+        function(match, indexGroup) {
+          var indices = indexGroup.split(" ");
+          return shapePrefix + "    coordIndex [" + indices.join(", ") + "]\n";
+        }).replace(/<\/IndexedFaceSet>/gi, "  }\n}");
+
+    // Coordinates
+    vrml = vrml.replace(/<Coordinate\s*point='([-.\d\s]*)'\s*\/>/gi,
+        function(match, pointGroup) {
+          var points = pointGroup.split(" ");
+          var groupedPoints = new Array(Math.floor(points.length / 3));
+          // Store points in component groups
+          for (var i=0; i<groupedPoints.length; ++i) {
+            var j = 3 * i;
+            groupedPoints[i] = points[j] + " " + points[j+1] + " " + points[j+2];
+          }
+          return "  coord Coordinate {\n    point [" + groupedPoints.join(", ") + "]\n  }";
+        });
+
+    return "#VRML V2.0 utf8\n\n" + vrml;
+  }
+
+  /**
+   * Show or hide a stored volume with a given Id.
+   */
+  WebGLApplication.prototype.showVolume = function(volumeId, visible) {
+    var existingVolume = this.loadedVolumes[volumeId];
+    if (visible) {
+      // Bail out if the volume in question is already visible
+      if (existingVolume) {
+        CATMAID.warn("Volume \"" + volumeId + "\" is already visible.");
+        return;
+      }
+
+      CATMAID.fetch(project.id + '/volumes/' + volumeId + '/', 'GET')
+        .then((function(volume) {
+          // Convert X3D mesh to simple VRML and have Three.js load it
+          var vrml = x3dToVrml(volume.mesh);
+          var loader = new THREE.VRMLLoader();
+          var scene = loader.parse(vrml);
+          if (scene.children) {
+            var material = this.options.createMeshMaterial();
+            var addedMeshes = scene.children.map(function(mesh) {
+              mesh.material = material;
+              this.space.scene.add(mesh);
+              return mesh;
+            }, this);
+            // Store mesh reference
+            this.loadedVolumes[volumeId] = addedMeshes;
+            this.space.render();
+          } else {
+            CATMAID.warn("Couldn't parse volume \"" + volumeId + "\"");
+          }
+        }).bind(this))
+        .catch(CATMAID.handleError);
+    } else {
+      // Remove volume
+      existingVolume.forEach(function(v) {
+        this.space.scene.remove(v);
+      }, this);
+      delete this.loadedVolumes[volumeId];
+      this.space.render();
+    }
+  };
 
   /** Defines the properties of the 3d space and also its static members like the bounding box and the missing sections. */
   WebGLApplication.prototype.Space = function( w, h, container, stack, options ) {

@@ -415,48 +415,7 @@
       return;
     }
 
-    var addedObjects = [];
-
-    Object.keys(meshes).forEach(function(name) {
-      var mesh = meshes[name];
-      var points = mesh[0];
-      var hull = mesh[1];
-      // Make the mesh with the faces specified in the hull array
-      var geom = new THREE.Geometry();
-      points.forEach(function(p) {
-        this.vertices.push(new THREE.Vector3(p[0], p[1], p[2]));
-      }, geom);
-      hull.forEach(function(indices) {
-        this.faces.push(new THREE.Face3(indices[0], indices[1], indices[2]));
-      }, geom);
-      geom.computeFaceNormals();
-      var mesh = new THREE.Mesh(
-          geom,
-          new THREE.MeshLambertMaterial(
-             {color: 0x0000ff,
-              opacity: 1.0,
-              transparent: true,
-              wireframe: false,
-              wireframeLinewidth: 10,
-              morphTargets: true,
-              morphNormals: true}));
-
-      var wfh = new THREE.WireframeHelper(mesh, 0x000000);
-      wfh.material.linewidth = 2;
-      w.space.add(mesh);
-      w.space.add(wfh);
-      this.push(mesh);
-      this.push(wfh);
-    }, addedObjects);
-
-    w.space.render();
-
-    return function() {
-      addedObjects.forEach(function(o) {
-          this.remove(o);
-      }, w.space);
-      w.space.render();
-    };
+    return w.showTriangleMeshes(meshes);
   };
 
   /**

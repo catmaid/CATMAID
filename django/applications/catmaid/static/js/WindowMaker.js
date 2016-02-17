@@ -1309,7 +1309,7 @@ var WindowMaker = new function()
     var volumeSelection = CATMAID.DOM.createAsyncPlaceholder(
         CATMAID.fetch(project.id + '/volumes/', 'GET').then(function(json) {
           var volumes = json.reduce(function(o, volume) {
-            o[volume.name] = volume.id;
+            o[volume.id] = volume.name;
             return o;
           }, {});
           // Create actual element based on the returned data

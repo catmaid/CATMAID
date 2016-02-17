@@ -283,7 +283,7 @@
    * Main idea from: http://stackoverflow.com/questions/17714705
    *
    * @param title {String}   A title showing as the first element of the select
-   * @param options {Object} Field names are displayed, values are values
+   * @param options {Object} Maps values to field names
    *
    * @returns a wrapper around the select element
    */
@@ -293,9 +293,9 @@
       var entry = document.createElement('label');
       var checkbox = document.createElement('input');
       checkbox.setAttribute('type', 'checkbox');
-      checkbox.setAttribute('value', options[o]);
+      checkbox.setAttribute('value', o);
       entry.appendChild(checkbox);
-      entry.appendChild(document.createTextNode(o));
+      entry.appendChild(document.createTextNode(options[o]));
       checkboxes.appendChild(entry);
     }
     checkboxes.onclick = function(e) {

@@ -117,6 +117,8 @@ SkeletonAnalytics.prototype.loadData = function () {
 				});
 			});
 
-			table.fnAddData(rows);
+			if (rows.length > 0) {
+				table.fnAddData(rows);
+			}
 		}), 'skeleton_analytics_update');
 };

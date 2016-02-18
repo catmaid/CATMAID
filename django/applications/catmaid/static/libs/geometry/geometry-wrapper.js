@@ -9,6 +9,6 @@
 *
 * The resulting geometry.js file is committed to CATMAID's git repository.
 */
-window.CATMAID.geometryTools = {
+window.GeometryTools = {
 	convexHull: require("convex-hull")
 };

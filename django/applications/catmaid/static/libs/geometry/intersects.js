@@ -2,7 +2,7 @@
  * Returns a function that can do the test,
  * and which uses the center of the mesh
  * to establish the direction of the ray. */
-CATMAID.geometryTools.intersectsFn = function(mesh) {
+GeometryTools.intersectsFn = function(mesh) {
     // target: centroid of the mesh
     // source: the point to test
     return (function(target, source) {

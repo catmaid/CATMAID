@@ -301,7 +301,7 @@
       }
 
       // Compute the convex hull
-      var hull = CATMAID.geometryTools.convexHull(points);
+      var hull = GeometryTools.convexHull(points);
 
       o[name] = [points, hull];
       return o;

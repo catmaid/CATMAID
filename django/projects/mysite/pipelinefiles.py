@@ -70,7 +70,7 @@ libraries_js = {
     'jsnetworkx': ['*.js'],
     'filesaver': ['*.js'],
     'whammy': ['whammy.js'],
-    'geometry': ['geometry.js' 'intersects.js'], # order matters
+    'geometry': ['geometry.js', 'intersects.js'], # order matters
     'catmaid': ['request.js', 'CATMAID.js', 'constants.js', 'error.js', 'events.js',
                 'neuron_controller.js', 'skeleton_source.js', '*.js'],
 }

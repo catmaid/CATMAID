@@ -96,7 +96,7 @@ function rateLimitingTest(options, n, reqPerWait, wait) {
 
   var timings = [];
   function test() {
-    timings.push(getTileTimings(options, reqPerSec));
+    timings.push(getTileTimings(options, reqPerWait));
     --iterations;
     if (iterations > 0) {
       setTimeout(test, wait);

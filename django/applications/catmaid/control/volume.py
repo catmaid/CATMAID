@@ -271,51 +271,67 @@ def update_volume(request, project_id, volume_id):
 def add_volume(request, project_id):
     """Create a new volume
 
-    The ID of the newly created volume is returned. Currently only boxes are
-    supported.
+    The ID of the newly created volume is returned. Currently, box volumes and
+    triangle meshes are supported. Which one is created depends on the "type"
+    parameter, which can be either set to "box" or to "trimesh".
+
+    If a triangle mesh should be created, the "mesh" parameter is expected to
+    hold the complete volume. It is expected to be a string that encodes two
+    lists in JSON format: [[points], [triangles]]. The list of points contains
+    lists of three numbers, each one representing a vertex in the mesh. The
+    array of triangles also contains three element lists as items. Each one
+    represents a triangle based on the points in the other array, that are
+    referenced by the triangle index values.
     ---
     parameters:
-      - name: minx
-        description: Minimum x coordinate of box
+      - name: type
+        description: Type of volume to create
         paramType: form
-        type: integer
-        required: true
-      - name: miny
-        description: Minimum y coordinate of box
-        paramType: form
-        type: integer
-        required: true
-      - name: minz
-        description: Minimum z coordinate of box
-        paramType: form
-        type: integer
-        required: true
-      - name: maxx
-        description: Maximum x coordinate of box
-        paramType: form
-        type: integer
-        required: true
-      - name: maxy
-        description: Maximum y coordinate of box
-        paramType: form
-        type: integer
-        required: true
-      - name: maxz
-        description: Maximum z coordinate of box
-        paramType: form
-        type: integer
+        type: string
+        enum: ["box", "trimesh"]
         required: true
       - name: title
-        description: Title of box
-        type: string
-        required: true
-      - name: type
-        description: Type of volume (currently only box)
+        description: Title of volume
         type: string
         required: true
       - name: comment
         description: An optional comment
         type: string
+        required: false
+      - name: mesh
+        description: Triangle mesh
+        paramType: form
+        type: string
+        required: false
+      - name: minx
+        description: Minimum x coordinate of box
+        paramType: form
+        type: integer
+        required: false
+      - name: miny
+        description: Minimum y coordinate of box
+        paramType: form
+        type: integer
+        required: false
+      - name: minz
+        description: Minimum z coordinate of box
+        paramType: form
+        type: integer
+        required: false
+      - name: maxx
+        description: Maximum x coordinate of box
+        paramType: form
+        type: integer
+        required: false
+      - name: maxy
+        description: Maximum y coordinate of box
+        paramType: form
+        type: integer
+        required: false
+      - name: maxz
+        description: Maximum z coordinate of box
+        paramType: form
+        type: integer
         required: false
     type:
       'success':

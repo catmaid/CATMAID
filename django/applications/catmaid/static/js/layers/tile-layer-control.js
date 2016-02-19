@@ -142,6 +142,19 @@
       opacitySelect.append(slider.getView());
       container.append(opacitySelect);
 
+      var hidecb = $('<input/>')
+          .attr('type', 'checkbox')
+          .prop('checked', layer.isHideable)
+          .change(function () {
+            var key = $(this).parents('.layerControl').data('key');
+            var layer = stackViewer.getLayer(key);
+            layer.isHideable = !layer.isHideable;
+          });
+      var hidelabel = $('<div/>')
+          .addClass('setting')
+          .append($('<label/>').append(hidecb).append('Hide this layer when SPACE is held'));
+      container.append(hidelabel);
+
       // Blend mode
       if (layer.getAvailableBlendModes) {
         var blendModes = layer.getAvailableBlendModes();

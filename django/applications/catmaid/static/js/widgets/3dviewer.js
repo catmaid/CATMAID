@@ -33,6 +33,8 @@
     this.animationRequestId = undefined;
     // The current animation, if any
     this.animation = undefined;
+    // Map loaed volume IDs to an array of Three.js meshes
+    this.loadedVolumes = {};
 
     // Listen to changes of the active node
     SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
@@ -799,7 +801,7 @@
   WebGLApplication.prototype.Options.prototype.createMeshMaterial = function(color, opacity) {
     color = color || new THREE.Color(this.meshes_color);
     if (typeof opacity === 'undefined') opacity = this.meshes_opacity;
-    return new THREE.MeshBasicMaterial({color: color, opacity: opacity,
+    return new THREE.MeshLambertMaterial({color: color, opacity: opacity,
       transparent: opacity !== 1, wireframe: true});
   };
 
@@ -1438,6 +1440,155 @@
     this.space.content.active_node.setVisible(true);
   };
 
+  /**
+   * Display meshes in the passed-in object. Mesh IDs should be mapped to an
+   * array following this format: [[points], [[faces]].
+   *
+   * @returns a function that removes the added meshes when called
+   */
+  WebGLApplication.prototype.showTriangleMeshes = function(meshes) {
+    var addedObjects = [];
+    var self = this;
+
+    Object.keys(meshes).forEach(function(name) {
+      var mesh = meshes[name];
+      var points = mesh[0];
+      var hull = mesh[1];
+      // Make the mesh with the faces specified in the hull array
+      var geom = new THREE.Geometry();
+      points.forEach(function(p) {
+        this.vertices.push(new THREE.Vector3(p[0], p[1], p[2]));
+      }, geom);
+      hull.forEach(function(indices) {
+        this.faces.push(new THREE.Face3(indices[0], indices[1], indices[2]));
+      }, geom);
+      geom.computeFaceNormals();
+      var mesh = new THREE.Mesh(
+          geom,
+          new THREE.MeshLambertMaterial(
+             {color: 0x0000ff,
+              opacity: 1.0,
+              transparent: true,
+              wireframe: false,
+              wireframeLinewidth: 10,
+              morphTargets: true,
+              morphNormals: true}));
+
+      var wfh = new THREE.WireframeHelper(mesh, 0x000000);
+      wfh.material.linewidth = 2;
+      self.space.add(mesh);
+      self.space.add(wfh);
+      this.push(mesh);
+      this.push(wfh);
+    }, addedObjects);
+
+    this.space.render();
+
+    return function() {
+      if (!self || !self.space) {
+        // No need to remove anything if 3D viewer or its space are gone
+        return;
+      }
+      addedObjects.forEach(function(o) {
+          this.remove(o);
+      }, self.space);
+      self.space.render();
+    };
+  };
+
+  /**
+   * Converts simple X3D IndexedFaceSet and IndexedTriangleSet nodes to a VRML
+   * representation.
+   */
+  function x3dToVrml(x3d) {
+    var vrml = x3d;
+    var shapePrefix = "Shape {\n  geometry IndexedFaceSet {\n     ";
+
+    // Indexed triangle set
+    vrml = vrml.replace(/<IndexedTriangleSet\s*index='([-\d\s]*)'\s*>/gi,
+        function(match, indexGroup) {
+          var triIndices = indexGroup.split(" ");
+          var nVertices = triIndices.length;
+          // Mark end of face after each three points. This wouldn't be
+          // required if the Three.js loader would support triangle sets.
+          var indices = new Array(nVertices + Math.floor(nVertices / 3));
+          var offset = 0;
+          for (var i=0; i<triIndices.length; ++i) {
+            indices[i + offset] = triIndices[i];
+            if (0 === (i + 1) % 3) {
+              ++offset;
+              indices[i + offset] = "-1";
+            }
+          }
+
+          return shapePrefix + "    coordIndex [" + indices.join(", ") + "]\n";
+        }).replace(/<\/IndexedTriangleSet>/gi, "  }\n}");
+
+    // Indexed face set
+    vrml = vrml.replace(/<IndexedFaceSet\s*coordIndex='([-\d\s]*)'\s*>/gi,
+        function(match, indexGroup) {
+          var indices = indexGroup.split(" ");
+          return shapePrefix + "    coordIndex [" + indices.join(", ") + "]\n";
+        }).replace(/<\/IndexedFaceSet>/gi, "  }\n}");
+
+    // Coordinates
+    vrml = vrml.replace(/<Coordinate\s*point='([-.\d\s]*)'\s*\/>/gi,
+        function(match, pointGroup) {
+          var points = pointGroup.split(" ");
+          var groupedPoints = new Array(Math.floor(points.length / 3));
+          // Store points in component groups
+          for (var i=0; i<groupedPoints.length; ++i) {
+            var j = 3 * i;
+            groupedPoints[i] = points[j] + " " + points[j+1] + " " + points[j+2];
+          }
+          return "  coord Coordinate {\n    point [" + groupedPoints.join(", ") + "]\n  }";
+        });
+
+    return "#VRML V2.0 utf8\n\n" + vrml;
+  }
+
+  /**
+   * Show or hide a stored volume with a given Id.
+   */
+  WebGLApplication.prototype.showVolume = function(volumeId, visible) {
+    var existingVolume = this.loadedVolumes[volumeId];
+    if (visible) {
+      // Bail out if the volume in question is already visible
+      if (existingVolume) {
+        CATMAID.warn("Volume \"" + volumeId + "\" is already visible.");
+        return;
+      }
+
+      CATMAID.fetch(project.id + '/volumes/' + volumeId + '/', 'GET')
+        .then((function(volume) {
+          // Convert X3D mesh to simple VRML and have Three.js load it
+          var vrml = x3dToVrml(volume.mesh);
+          var loader = new THREE.VRMLLoader();
+          var scene = loader.parse(vrml);
+          if (scene.children) {
+            var material = this.options.createMeshMaterial();
+            var addedMeshes = scene.children.map(function(mesh) {
+              mesh.material = material;
+              this.space.scene.add(mesh);
+              return mesh;
+            }, this);
+            // Store mesh reference
+            this.loadedVolumes[volumeId] = addedMeshes;
+            this.space.render();
+          } else {
+            CATMAID.warn("Couldn't parse volume \"" + volumeId + "\"");
+          }
+        }).bind(this))
+        .catch(CATMAID.handleError);
+    } else if (existingVolume) {
+      // Remove volume
+      existingVolume.forEach(function(v) {
+        this.space.scene.remove(v);
+      }, this);
+      delete this.loadedVolumes[volumeId];
+      this.space.render();
+    }
+  };
 
   /** Defines the properties of the 3d space and also its static members like the bounding box and the missing sections. */
   WebGLApplication.prototype.Space = function( w, h, container, stack, options ) {
@@ -1526,23 +1677,11 @@
 
 
   WebGLApplication.prototype.Space.prototype.createLights = function(dimensions, center, camera) {
-    var ambientLight = new THREE.AmbientLight( 0x505050 );
-
-    var pointLight = new THREE.PointLight( 0xffaa00 );
-    pointLight.position.set(dimensions.max.x, dimensions.max.y, dimensions.min.z - 50);
-
-    var light = new THREE.SpotLight( 0xffffff, 1.5 );
-    light.position.set(center.x, center.y, dimensions.min.z - 50);
-    light.castShadow = true;
-    light.shadowCameraNear = 200;
-    light.shadowCameraFar = camera.far;
-    light.shadowCameraFov = 50;
-    light.shadowBias = -0.00022;
-    light.shadowDarkness = 0.5;
-    light.shadowMapWidth = 2048;
-    light.shadowMapHeight = 2048;
-
-    return [ambientLight, pointLight, light];
+    var ambientLight = new THREE.AmbientLight(0x505050);
+    var height = dimensions.max.y - dimensions.min.y;
+    var hemiLight = new THREE.HemisphereLight( 0xffffff, 0x000000, 1 );
+    hemiLight.position.set( center.x, - center.y - height, center.z);
+    return [ambientLight, hemiLight];
   };
 
   WebGLApplication.prototype.Space.prototype.add = function(mesh) {
@@ -1711,13 +1850,13 @@
     this.cylinder = new THREE.CylinderGeometry(1, 1, 1, 10, 1, false);
     this.textMaterial = new THREE.MeshNormalMaterial();
     // Mesh materials for spheres on nodes tagged with 'uncertain end', 'undertain continuation' or 'TODO'
-    this.labelColors = {uncertain: new THREE.MeshBasicMaterial({color: 0xff8000, opacity:0.6, transparent: true}),
-                        todo:      new THREE.MeshBasicMaterial({color: 0xff0000, opacity:0.6, transparent: true}),
-                        custom:    new THREE.MeshBasicMaterial({color: 0xaa70ff, opacity:0.6, transparent: true})};
+    this.labelColors = {uncertain: new THREE.MeshLambertMaterial({color: 0xff8000, opacity:0.6, transparent: true}),
+                        todo:      new THREE.MeshLambertMaterial({color: 0xff0000, opacity:0.6, transparent: true}),
+                        custom:    new THREE.MeshLambertMaterial({color: 0xaa70ff, opacity:0.6, transparent: true})};
     this.textGeometryCache = new WebGLApplication.prototype.Space.prototype.TextGeometryCache();
-    this.synapticColors = [new THREE.MeshBasicMaterial( { color: 0xff0000, opacity:0.6, transparent:false } ), 
-                           new THREE.MeshBasicMaterial( { color: 0x00f6ff, opacity:0.6, transparent:false } ),
-                           new THREE.MeshBasicMaterial( { color: 0x9f25c2, opacity:0.6, transparent:false } )];
+    this.synapticColors = [new THREE.MeshLambertMaterial( { color: 0xff0000, opacity:0.6, transparent:false } ), 
+                           new THREE.MeshLambertMaterial( { color: 0x00f6ff, opacity:0.6, transparent:false } ),
+                           new THREE.MeshLambertMaterial( { color: 0x9f25c2, opacity:0.6, transparent:false } )];
     this.connectorLineColors = {'presynaptic_to': new THREE.LineBasicMaterial({color: 0xff0000, opacity: 1.0, linewidth: 6}),
                                 'postsynaptic_to': new THREE.LineBasicMaterial({color: 0x00f6ff, opacity: 1.0, linewidth: 6}),
                                 'gapjunction_with': new THREE.LineBasicMaterial({color: 0x9f25c2, opacity: 1.0, linewidth: 6})};
@@ -3776,7 +3915,7 @@
       this.actor['neurite'].material.transparent = this.opacity !== 1;
       this.actor['neurite'].material.needsUpdate = true; // TODO repeated it's the line_material
 
-      var material = new THREE.MeshBasicMaterial({color: this.actorColor, opacity: this.opacity, transparent: this.opacity !== 1});
+      var material = new THREE.MeshLambertMaterial({color: this.actorColor, opacity: this.opacity, transparent: this.opacity !== 1});
 
       for (var k in this.radiusVolumes) {
         if (this.radiusVolumes.hasOwnProperty(k)) {
@@ -4177,8 +4316,7 @@
     // Takes the coordinates of each node, transforms them into the space,
     // and then adds them to the parallel lists of vertices and vertexIDs
     var vs = this.geometry[type].vertices;
-    vs.push(v1);
-    vs.push(v2);
+    vs.push(v1, v2);
   };
 
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createNodeSphere = function(v, radius, material) {
@@ -4263,7 +4401,7 @@
     var vs = {};
 
     // Reused for all meshes
-    var material = new THREE.MeshBasicMaterial( { color: this.getActorColorAsHex(), opacity:1.0, transparent:false } );
+    var material = new THREE.MeshLambertMaterial( { color: this.getActorColorAsHex(), opacity:1.0, transparent:false } );
     material.opacity = this.skeletonmodel.opacity;
     material.transparent = material.opacity !== 1;
 
@@ -4354,9 +4492,10 @@
     connectors.forEach(function(con) {
       // con[0]: treenode ID
       // con[1]: connector ID
-      // con[2]: 0 for pre, 1 for post
+      // con[2]: 0 for pre, 1 for post, 2 for gap junction, -1 for other to be skipped
       // indices 3,4,5 are x,y,z for connector
       // indices 4,5,6 are x,y,z for node
+      if (con[2] === -1) return;
       var v1 = new THREE.Vector3(con[3], con[4], con[5]);
       v1.node_id = con[1];
       var v2 = vs[con[0]];
@@ -4602,8 +4741,10 @@
 
     var onchange = (function(rgb, alpha, colorChanged, alphaChanged) {
       $('#' + labelId).text(alpha.toFixed(2));
+      var color = new THREE.Color().setRGB(rgb.r, rgb.g, rgb.b);
+      this.options.meshes_color = '#' + color.getHexString();
+      this.options.meshes_opacity = alpha;
       if (this.options.show_meshes) {
-        var color = new THREE.Color().setRGB(rgb.r, rgb.g, rgb.b);
         var material = this.options.createMeshMaterial(color, alpha);
         this.space.content.meshes.forEach(function(mesh) {
           mesh.material = material;

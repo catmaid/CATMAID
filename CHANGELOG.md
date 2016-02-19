@@ -1,5 +1,7 @@
 ## Under development
 
+Contributors: Albert Cardona, Andrew Champion, Daniel Witvliet, Tom Kazimiers
+
 ### Notes
 
 Starting with this release CATMAID uses a new database migration system. To
@@ -27,6 +29,11 @@ update an existing CATMAID instance safely, please follow these steps:
 This procedure will only be required for upgrading an existing instance to a
 release newer than 2015.12.21. It won't be needed to migrate from newer
 releases.
+
+Also note that if you are running an Apache/mod_wsgi setup (or referencing
+django.wsgi), you have to re-generate your configuration with:
+
+  ./django/create_configuration
 
 The following variables can be removed from settings.py files: TEMPLATE_DIRS,
 TEMPLATE_DEBUG
@@ -58,12 +65,31 @@ Gap junctions:
   own selections for confidence and count thresholds.
 
 
+Volumes:
+
+- The volume widget can create a new volume type: convex hulls. These can be
+  created around a set of nodes from any skeleton source. Different filters can
+  be combined: filters to allow only nodes that have a certain tag, a sub-arbor
+  relative to such nodes (optionally occurring a definable number of times), a
+  region between two tags tag or nodes that are synaptic to skeletons of another
+  skeleton source. Node radii can optionally be ignored, but they are respected
+  by default. A preview of the current filter set can be displayed in the first
+  available 3D viewer.
+
+
 3D Viewer:
 
 - Gap junctions are displayed like synapse edges in purple.
 
 - Stack bounding boxes and missing sections now update when stack viewer focus
   changes.
+
+- A new sphere shading allows for a better depth perception.
+
+- Volumes (created in the Volume Widget) can be displayed. A new selection
+  control in the "View settings" tab allows to select individual volumes. They
+  are colored the same way as they regular mesh. Currently, the color isn't
+  updated on purpose to allow the easy creation of differently colored volumes.
 
 
 Skeleton Projection layer:
@@ -77,6 +103,22 @@ Skeleton Projection layer:
   provide a dynamic list that includes the active node.
 
 
+Neuron Search:
+
+- A search result can now be exported as CSV. Only selected rows are exported.
+  The resulting CSV will contain neuron IDs and neuron names. If annotations are
+  displayed, a third column includes annotations.
+
+
+Miscellaneous:
+
+- Which layers are hidden when Space is held is now configurable by checkboxes
+  in the Stack Viewer's layer controls.
+
+- Scroll bar positions in widgets are now maintained when they change their
+  size.
+
+
 ### Bug fixes
 
 - The skeleton projection layer can be used again and now renders lines with the
@@ -85,6 +127,21 @@ Skeleton Projection layer:
 
 - Color pickers will now update the color of color picker enabled DOM elements
   again.
+
+- Fixed hiding edges with less than 2 synapses in the Graph Widget resulting
+  in no edges.
+
+- Fixed an issue where cloning the Graph Widget cloned into the wrong widget.
+
+- Fixed an issue preventing removing split neurons from the Graph Widget.
+
+- Fixed an intermittent exception when renaming neurons.
+
+- Fixed a second Neuron Search widget not working properly.
+
+- Adding a neuron to a Selection Table now re-runs the sorting scheme.
+
+- Fixed Connectivity Matrix cloning.
 
 
 ## 2015.12.21

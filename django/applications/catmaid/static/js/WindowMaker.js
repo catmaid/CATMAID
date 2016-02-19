@@ -17,9 +17,37 @@ var WindowMaker = new function()
     return container;
   };
 
+  /**
+   * Get content height of a window and take into account a potential button
+   * panel. If a button panel ID is provided, its height is substracted from the
+   * window content height.
+   */
+  var getWindowContentHeight = function(win, buttonPanelId) {
+    var height = win.getContentHeight();
+    if( buttonPanelId !== undefined ) {
+      var $bar = $('#' + buttonPanelId);
+      height = height - ($bar.is(':visible') ? $bar.height() : 0);
+    }
+    return height;
+  };
+
   var addListener = function(win, container, button_bar, destroy, resize) {
     win.addListener(
       function(callingWindow, signal) {
+
+        // Keep track of scroll bar pixel position and ratio to total container
+        // height to maintain scoll bar location on resize. From:
+        // http://jsfiddle.net/JamesKyle/RmNap/
+        var contentHeight = getWindowContentHeight(win, button_bar);
+        var $container = $(container);
+        var scrollPosition = $container.scrollTop();
+        var scrollRatio = scrollPosition / contentHeight;
+
+        $container.on("scroll", function() {
+          scrollPosition = $container.scrollTop();
+          scrollRatio = scrollPosition / contentHeight;
+        });
+
         switch (signal) {
           case CMWWindow.CLOSE:
             if (typeof(destroy) === "function") {
@@ -39,17 +67,17 @@ var WindowMaker = new function()
             }
             break;
           case CMWWindow.RESIZE:
-            if( button_bar !== undefined ) {
-              var $bar = $('#' + button_bar);
-              container.style.height = (win.getContentHeight() - ($bar.is(':visible') ? $bar.height() : 0)) + "px";
-            } else {
-                container.style.height = ( win.getContentHeight() ) + "px";
-            }
+            contentHeight = getWindowContentHeight(win, button_bar);
+            container.style.height = contentHeight + "px";
             container.style.width = ( win.getAvailableWidth() + "px" );
 
             if (typeof(resize) === "function") {
               resize();
             }
+
+            // Scoll to last known scroll position, after resize has been
+            // performed, in case a redraw changes the content.
+            $container.scrollTop(contentHeight * scrollRatio);
 
             break;
           case CMWWindow.POINTER_ENTER:
@@ -198,17 +226,6 @@ var WindowMaker = new function()
     return b;
   };
 
-  var appendHiddenFileButton = function(div, id, onchangeFn) {
-    var fb = document.createElement('input');
-    fb.setAttribute('type', 'file');
-    fb.setAttribute('id', id);
-    fb.setAttribute('name', 'files[]');
-    fb.style.display = 'none';
-    fb.onchange = onchangeFn;
-    div.appendChild(fb);
-    return fb;
-  };
-
   var createCheckbox = function(label, value, onclickFn) {
     var cb = document.createElement('input');
     cb.setAttribute('type', 'checkbox');
@@ -331,11 +348,11 @@ var WindowMaker = new function()
           '<tr>' +
             '<th>Connector</th>' +
             '<th>Node 1</th>' +
-            '<th>Presyn. neuron</th>' +
+            '<th class="preheader">Presyn. neuron</th>' +
             '<th>C 1</th>' +
             '<th>Creator 1</th>' +
             '<th>Node 2</th>' +
-            '<th>Postsyn. neuron</th>' +
+            '<th class="postheader">Postsyn. neuron</th>' +
             '<th>C 2</th>' +
             '<th>Creator 2</th>' +
           '</tr>' +
@@ -344,11 +361,11 @@ var WindowMaker = new function()
           '<tr>' +
             '<th>Connector</th>' +
             '<th>Node 1</th>' +
-            '<th>Presyn. neuron</th>' +
+            '<th class="preheader">Presyn. neuron</th>' +
             '<th>C 1</th>' +
             '<th>Creator 1</th>' +
             '<th>Node 2</th>' +
-            '<th>Postsyn. neuron</th>' +
+            '<th class="postheader">Postsyn. neuron</th>' +
             '<th>C 2</th>' +
             '<th>Creator 2</th>' +
           '</tr>' +
@@ -825,8 +842,10 @@ var WindowMaker = new function()
     update.onclick = ST.update.bind(ST);
     buttons.appendChild(update);
 
-    var fileButton = appendHiddenFileButton(buttons, 'st-file-dialog-' + ST.widgetID,
-        function(evt) { ST.loadFromFiles(evt.target.files); });
+    var fileButton = buttons.appendChild(CATMAID.DOM.createFileButton(
+          'st-file-dialog-' + ST.widgetID, false, function(evt) {
+            ST.loadFromFiles(evt.target.files);
+          }));
     var open = document.createElement('input');
     open.setAttribute("type", "button");
     open.setAttribute("value", "Open");
@@ -1133,8 +1152,8 @@ var WindowMaker = new function()
 
     var connectorRestrictionsSl = document.createElement('select');
     connectorRestrictionsSl.options.add(new Option('All connectors', 'none', true, true));
-    connectorRestrictionsSl.options.add(new Option('All shared connectos', 'all-shared'));
-    connectorRestrictionsSl.options.add(new Option('All pre->post connectos', 'all-pre-post'));
+    connectorRestrictionsSl.options.add(new Option('All shared connectors', 'all-shared'));
+    connectorRestrictionsSl.options.add(new Option('All pre->post connectors', 'all-pre-post'));
     connectorRestrictionsSl.options.add(new Option('All group shared', 'all-group-shared'));
     connectorRestrictionsSl.options.add(new Option('All pre->post group shared', 'all-group-shared-pre-post'));
     connectorRestrictionsSl.onchange = function () {
@@ -1287,9 +1306,27 @@ var WindowMaker = new function()
     };
     var o = CATMAID.WebGLApplication.prototype.OPTIONS;
 
+    var volumeSelection = CATMAID.DOM.createAsyncPlaceholder(
+        CATMAID.fetch(project.id + '/volumes/', 'GET').then(function(json) {
+          var volumes = json.reduce(function(o, volume) {
+            o[volume.id] = volume.name;
+            return o;
+          }, {});
+          // Create actual element based on the returned data
+          var node = CATMAID.DOM.createCheckboxSelect('Volumes', volumes);
+          // Add a selection handler
+          node.onchange = function(e) {
+            var visible = e.srcElement.checked;
+            var volumeId = e.srcElement.value;
+            WA.showVolume(volumeId, visible);
+          };
+          return node;
+        }));
+
     appendToTab(tabs['View settings'],
         [
           ['Meshes ', false, function() { WA.options.show_meshes = this.checked; WA.adjustContent(); }, false],
+          [volumeSelection],
           [WA.createMeshColorButton()],
           ['Active node', true, function() { WA.options.show_active_node = this.checked; WA.adjustContent(); }, false],
           ['Active node on top', false, function() { WA.options.active_node_on_top = this.checked; WA.adjustContent(); }, false],
@@ -1804,9 +1841,10 @@ var WindowMaker = new function()
          ['Save', GG.saveJSON.bind(GG)],
          ['Open...', function() { document.querySelector('#gg-file-dialog-' + GG.widgetID).click(); }]]);
 
-    appendHiddenFileButton(tabs['Export'], 'gg-file-dialog-' + GG.widgetID,
-        function(evt) { GG.loadFromJSON(evt.target.files); }
-    );
+    tabs['Export'].appendChild(CATMAID.DOM.createFileButton(
+          'gg-file-dialog-' + GG.widgetID, false, function(evt) {
+            GG.loadFromJSON(evt.target.files);
+          }));
 
     var color = document.createElement('select');
     color.setAttribute('id', 'graph_color_choice' + GG.widgetID);
@@ -2498,7 +2536,7 @@ var WindowMaker = new function()
 
   var createSkeletonAnalyticsWindow = function()
   {
-    var SA = new SkeletonAnalytics();
+    var SA = new CATMAID.SkeletonAnalytics();
 
     var win = new CMWWindow(SA.getName());
     var content = win.getFrame();
@@ -3405,7 +3443,10 @@ var WindowMaker = new function()
       '<div id="neuron_annotations_query_footer{{NA-ID}}" ' +
           'class="neuron_annotations_query_footer">' +
         '<input type="button" id="neuron_annotations_annotate{{NA-ID}}" ' +
-            'value="Annotate..." />' +
+            'value="Annotate" />' +
+        '<input type="button" id="neuron_annotations_export_csv{{NA-ID}}" ' +
+            'value="Export CSV" title="Export selected neuron IDs and names. ' +
+            'Annotations are exported if displayed."/>' +
         '<label>' +
           '<input type="checkbox" id="neuron_search_show_annotations{{NA-ID}}" />' +
           'Show annotations' +
@@ -3479,6 +3520,7 @@ var WindowMaker = new function()
         CATMAID.annotate_entities(selected_entity_ids,
             this.refresh_annotations.bind(this));
     }).bind(NA);
+    $('#neuron_annotations_export_csv' + NA.widgetID)[0].onclick = NA.exportCSV.bind(NA);
     $('#neuron_search_show_annotations' + NA.widgetID)
       .prop('checked', NA.displayAnnotations)
       .on('change', NA, function(e) {
@@ -3655,6 +3697,8 @@ var WindowMaker = new function()
       } else {
         windows.set(name, new Map([[handles.window, handles.widget]]));
       }
+
+      return handles;
     } else {
       alert("No known window with name " + name);
     }

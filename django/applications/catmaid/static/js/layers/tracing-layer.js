@@ -19,6 +19,7 @@
 
     self.opacity = options.opacity || 1.0; // in the range [0,1]
     this.tracingOverlay = new SkeletonAnnotations.TracingOverlay(stackViewer, options);
+    this.isHideable = true;
 
     /**
      * Return friendly name of this layer.

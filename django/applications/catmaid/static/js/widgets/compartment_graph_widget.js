@@ -1415,10 +1415,11 @@
 
   GroupGraph.prototype.appendAsGroup = function() {
     var models = CATMAID.skeletonListSources.getSelectedSkeletonModels(this);
-    if (0 === models.length) {
+    var nModels = Object.keys(models).length;
+    if (0 === nModels) {
       CATMAID.info('Selected source is empty.');
       return;
-    } else if (1 === models.length) {
+    } else if (1 === nModels) {
       this.append(models);
       return;
     }
@@ -3009,8 +3010,7 @@
 
   /** Copies all except the selection state. */
   GroupGraph.prototype.cloneWidget = function() {
-    WindowMaker.create('graph-widget');
-    var copy = GroupGraph.prototype.getLastInstance();
+    var copy = WindowMaker.create('graph-widget').widget;
     if (this.state) copy.state = $.extend(true, {}, this.state);
     copy.setContent(this.copyContent());
   };

@@ -359,12 +359,13 @@
           this.annotationMapping = null;
         }, this);
 
-        // Make sure current sorting is applied
-        this.reapplyOrder();
-
         // Add skeletons
         CATMAID.NeuronNameService.getInstance().registerAll(this, models,
-            this.gui.update.bind(this.gui));
+            (function () {
+              // Make sure current sorting is applied
+              this.reapplyOrder();
+              this.gui.update();
+            }).bind(this));
 
         if (!CATMAID.tools.isEmpty(addedModels)) {
           this.triggerAdd(addedModels);

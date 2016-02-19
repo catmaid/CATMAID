@@ -1058,3 +1058,52 @@ div.selection-table.windowContent {
 .cp-app {
   z-index: 15000;
 }
+
+.customselect {
+  display: inline-block;
+}
+
+.customselect-selectbox {
+  position: relative;
+}
+
+.customselect-selectbox select {
+  width: 100%;
+}
+
+.customselect-overselect {
+  position: absolute;
+  left: 0; right: 0; top: 0; bottom: 0;
+}
+
+.customselect-content {
+  position: absolute;
+  display: none;
+  border: 1px #dadada solid;
+  background: white;
+  padding: 4px;
+  cursor: default;
+  z-index: 1;
+  overflow: auto;
+  max-height: 20em;
+}
+
+.customselect ul {
+  display: inline-block;
+  list-style-type: none;
+  padding: 0 0 0 0 ;
+  margin: 0 0 0 0 ;
+}
+
+.customselect ul label {
+  display: list-item;
+}
+
+.placeholder {
+  padding: .5em;
+}
+
+.placeholder img {
+  width: 1em;
+  height: 1em;
+}

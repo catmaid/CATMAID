@@ -1,9 +1,21 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+/** First install the convex-hull node package:
+*
+* $ npm install convex-hull
+*
+* Then convert this tiny script into a browser-ready file
+* than makes the convex hull function reachable from CATMAID:
+*
+* $ browserify geometry-wrapper.js -o geometry.js
+*
+* The resulting geometry.js file is committed to CATMAID's git repository.
+*/
 window.GeometryTools = {
-	convexHull: require("convex-hull")
+	convexHull: require("convex-hull"),
+	alphaShape: require("alpha-shape")
 };
 
-},{"convex-hull":4}],2:[function(require,module,exports){
+},{"alpha-shape":4,"convex-hull":12}],2:[function(require,module,exports){
 'use strict'
 
 module.exports = affineHull
@@ -55,7 +67,33 @@ function affineHull(points) {
   }
   return index
 }
-},{"robust-orientation":10}],3:[function(require,module,exports){
+},{"robust-orientation":24}],3:[function(require,module,exports){
+'use strict'
+
+module.exports = alphaComplex
+
+var delaunay = require('delaunay-triangulate')
+var circumradius = require('circumradius')
+
+function alphaComplex(alpha, points) {
+  return delaunay(points).filter(function(cell) {
+    var simplex = new Array(cell.length)
+    for(var i=0; i<cell.length; ++i) {
+      simplex[i] = points[cell[i]]
+    }
+    return circumradius(simplex) * alpha < 1
+  })
+}
+},{"circumradius":9,"delaunay-triangulate":16}],4:[function(require,module,exports){
+module.exports = alphaShape
+
+var ac = require('alpha-complex')
+var bnd = require('simplicial-complex-boundary')
+
+function alphaShape(alpha, points) {
+  return bnd(ac(alpha, points))
+}
+},{"alpha-complex":3,"simplicial-complex-boundary":28}],5:[function(require,module,exports){
 /**
  * Bit twiddling hacks for JavaScript.
  *
@@ -261,7 +299,205 @@ exports.nextCombination = function(v) {
 }
 
 
-},{}],4:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
+"use strict"
+
+module.exports = boundary
+
+function boundary(cells) {
+  var n = cells.length
+  var sz = 0
+  for(var i=0; i<n; ++i) {
+    sz += cells[i].length
+  }
+  var result = new Array(sz)
+  var ptr = 0
+  for(var i=0; i<n; ++i) {
+    var c = cells[i]
+    var d = c.length
+    for(var j=0; j<d; ++j) {
+      var b = result[ptr++] = new Array(d-1)
+      for(var k=1; k<d; ++k) {
+        b[k-1] = c[(j+k)%d]
+      }
+    }
+  }
+  return result
+}
+
+},{}],7:[function(require,module,exports){
+'use strict'
+
+module.exports = orientation
+
+function orientation(s) {
+  var p = 1
+  for(var i=1; i<s.length; ++i) {
+    for(var j=0; j<i; ++j) {
+      if(s[i] < s[j]) {
+        p = -p
+      } else if(s[j] === s[i]) {
+        return 0
+      }
+    }
+  }
+  return p
+}
+
+},{}],8:[function(require,module,exports){
+"use strict"
+
+var dup = require("dup")
+var solve = require("robust-linear-solve")
+
+function dot(a, b) {
+  var s = 0.0
+  var d = a.length
+  for(var i=0; i<d; ++i) {
+    s += a[i] * b[i]
+  }
+  return s
+}
+
+function barycentricCircumcenter(points) {
+  var N = points.length
+  if(N === 0) {
+    return []
+  }
+  
+  var D = points[0].length
+  var A = dup([points.length+1, points.length+1], 1.0)
+  var b = dup([points.length+1], 1.0)
+  A[N][N] = 0.0
+  for(var i=0; i<N; ++i) {
+    for(var j=0; j<=i; ++j) {
+      A[j][i] = A[i][j] = 2.0 * dot(points[i], points[j])
+    }
+    b[i] = dot(points[i], points[i])
+  }
+  var x = solve(A, b)
+
+  var denom = 0.0
+  var h = x[N+1]
+  for(var i=0; i<h.length; ++i) {
+    denom += h[i]
+  }
+
+  var y = new Array(N)
+  for(var i=0; i<N; ++i) {
+    var h = x[i]
+    var numer = 0.0
+    for(var j=0; j<h.length; ++j) {
+      numer += h[j]
+    }
+    y[i] =  numer / denom
+  }
+
+  return y
+}
+
+function circumcenter(points) {
+  if(points.length === 0) {
+    return []
+  }
+  var D = points[0].length
+  var result = dup([D])
+  var weights = barycentricCircumcenter(points)
+  for(var i=0; i<points.length; ++i) {
+    for(var j=0; j<D; ++j) {
+      result[j] += points[i][j] * weights[i]
+    }
+  }
+  return result
+}
+
+circumcenter.barycenetric = barycentricCircumcenter
+module.exports = circumcenter
+},{"dup":17,"robust-linear-solve":23}],9:[function(require,module,exports){
+module.exports = circumradius
+
+var circumcenter = require('circumcenter')
+
+function circumradius(points) {
+  var center = circumcenter(points)
+  var avgDist = 0.0
+  for(var i=0; i<points.length; ++i) {
+    var p = points[i]
+    for(var j=0; j<center.length; ++j) {
+      avgDist += Math.pow(p[j] - center[j], 2)
+    }
+  }
+  return Math.sqrt(avgDist / points.length)
+}
+},{"circumcenter":8}],10:[function(require,module,exports){
+module.exports = compareCells
+
+var min = Math.min
+
+function compareInt(a, b) {
+  return a - b
+}
+
+function compareCells(a, b) {
+  var n = a.length
+    , t = a.length - b.length
+  if(t) {
+    return t
+  }
+  switch(n) {
+    case 0:
+      return 0
+    case 1:
+      return a[0] - b[0]
+    case 2:
+      return (a[0]+a[1]-b[0]-b[1]) ||
+             min(a[0],a[1]) - min(b[0],b[1])
+    case 3:
+      var l1 = a[0]+a[1]
+        , m1 = b[0]+b[1]
+      t = l1+a[2] - (m1+b[2])
+      if(t) {
+        return t
+      }
+      var l0 = min(a[0], a[1])
+        , m0 = min(b[0], b[1])
+      return min(l0, a[2]) - min(m0, b[2]) ||
+             min(l0+a[2], l1) - min(m0+b[2], m1)
+    case 4:
+      var aw=a[0], ax=a[1], ay=a[2], az=a[3]
+        , bw=b[0], bx=b[1], by=b[2], bz=b[3]
+      return (aw+ax+ay+az)-(bw+bx+by+bz) ||
+             min(aw,ax,ay,az)-min(bw,bx,by,bz,bw) ||
+             min(aw+ax,aw+ay,aw+az,ax+ay,ax+az,ay+az) -
+               min(bw+bx,bw+by,bw+bz,bx+by,bx+bz,by+bz) ||
+             min(aw+ax+ay,aw+ax+az,aw+ay+az,ax+ay+az) -
+               min(bw+bx+by,bw+bx+bz,bw+by+bz,bx+by+bz)
+    default:
+      var as = a.slice().sort(compareInt)
+      var bs = b.slice().sort(compareInt)
+      for(var i=0; i<n; ++i) {
+        t = as[i] - bs[i]
+        if(t) {
+          return t
+        }
+      }
+      return 0
+  }
+}
+
+},{}],11:[function(require,module,exports){
+'use strict'
+
+var compareCells = require('compare-cell')
+var parity = require('cell-orientation')
+
+module.exports = compareOrientedCells
+
+function compareOrientedCells(a, b) {
+  return compareCells(a, b) || parity(a) - parity(b)
+}
+
+},{"cell-orientation":7,"compare-cell":10}],12:[function(require,module,exports){
 "use strict"
 
 var convexHull1d = require('./lib/ch1d')
@@ -287,7 +523,7 @@ function convexHull(points) {
   }
   return convexHullnd(points, d)
 }
-},{"./lib/ch1d":5,"./lib/ch2d":6,"./lib/chnd":7}],5:[function(require,module,exports){
+},{"./lib/ch1d":13,"./lib/ch2d":14,"./lib/chnd":15}],13:[function(require,module,exports){
 "use strict"
 
 module.exports = convexHull1d
@@ -311,7 +547,7 @@ function convexHull1d(points) {
     return [[lo]]
   }
 }
-},{}],6:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 'use strict'
 
 module.exports = convexHull2D
@@ -334,7 +570,7 @@ function convexHull2D(points) {
   return edges
 }
 
-},{"monotone-convex-hull-2d":9}],7:[function(require,module,exports){
+},{"monotone-convex-hull-2d":19}],15:[function(require,module,exports){
 'use strict'
 
 module.exports = convexHullnD
@@ -395,7 +631,217 @@ function convexHullnD(points, d) {
     return invPermute(nhull, ah)
   }
 }
-},{"affine-hull":2,"incremental-convex-hull":8}],8:[function(require,module,exports){
+},{"affine-hull":2,"incremental-convex-hull":18}],16:[function(require,module,exports){
+"use strict"
+
+var ch = require("incremental-convex-hull")
+var uniq = require("uniq")
+
+module.exports = triangulate
+
+function LiftedPoint(p, i) {
+  this.point = p
+  this.index = i
+}
+
+function compareLifted(a, b) {
+  var ap = a.point
+  var bp = b.point
+  var d = ap.length
+  for(var i=0; i<d; ++i) {
+    var s = bp[i] - ap[i]
+    if(s) {
+      return s
+    }
+  }
+  return 0
+}
+
+function triangulate1D(n, points, includePointAtInfinity) {
+  if(n === 1) {
+    if(includePointAtInfinity) {
+      return [ [-1, 0] ]
+    } else {
+      return []
+    }
+  }
+  var lifted = points.map(function(p, i) {
+    return [ p[0], i ]
+  })
+  lifted.sort(function(a,b) {
+    return a[0] - b[0]
+  })
+  var cells = new Array(n - 1)
+  for(var i=1; i<n; ++i) {
+    var a = lifted[i-1]
+    var b = lifted[i]
+    cells[i-1] = [ a[1], b[1] ]
+  }
+  if(includePointAtInfinity) {
+    cells.push(
+      [ -1, cells[0][1], ],
+      [ cells[n-1][1], -1 ])
+  }
+  return cells
+}
+
+function triangulate(points, includePointAtInfinity) {
+  var n = points.length
+  if(n === 0) {
+    return []
+  }
+  
+  var d = points[0].length
+  if(d < 1) {
+    return []
+  }
+
+  //Special case:  For 1D we can just sort the points
+  if(d === 1) {
+    return triangulate1D(n, points, includePointAtInfinity)
+  }
+  
+  //Lift points, sort
+  var lifted = new Array(n)
+  var upper = 1.0
+  for(var i=0; i<n; ++i) {
+    var p = points[i]
+    var x = new Array(d+1)
+    var l = 0.0
+    for(var j=0; j<d; ++j) {
+      var v = p[j]
+      x[j] = v
+      l += v * v
+    }
+    x[d] = l
+    lifted[i] = new LiftedPoint(x, i)
+    upper = Math.max(l, upper)
+  }
+  uniq(lifted, compareLifted)
+  
+  //Double points
+  n = lifted.length
+
+  //Create new list of points
+  var dpoints = new Array(n + d + 1)
+  var dindex = new Array(n + d + 1)
+
+  //Add steiner points at top
+  var u = (d+1) * (d+1) * upper
+  var y = new Array(d+1)
+  for(var i=0; i<=d; ++i) {
+    y[i] = 0.0
+  }
+  y[d] = u
+
+  dpoints[0] = y.slice()
+  dindex[0] = -1
+
+  for(var i=0; i<=d; ++i) {
+    var x = y.slice()
+    x[i] = 1
+    dpoints[i+1] = x
+    dindex[i+1] = -1
+  }
+
+  //Copy rest of the points over
+  for(var i=0; i<n; ++i) {
+    var h = lifted[i]
+    dpoints[i + d + 1] = h.point
+    dindex[i + d + 1] =  h.index
+  }
+
+  //Construct convex hull
+  var hull = ch(dpoints, false)
+  if(includePointAtInfinity) {
+    hull = hull.filter(function(cell) {
+      var count = 0
+      for(var j=0; j<=d; ++j) {
+        var v = dindex[cell[j]]
+        if(v < 0) {
+          if(++count >= 2) {
+            return false
+          }
+        }
+        cell[j] = v
+      }
+      return true
+    })
+  } else {
+    hull = hull.filter(function(cell) {
+      for(var i=0; i<=d; ++i) {
+        var v = dindex[cell[i]]
+        if(v < 0) {
+          return false
+        }
+        cell[i] = v
+      }
+      return true
+    })
+  }
+
+  if(d & 1) {
+    for(var i=0; i<hull.length; ++i) {
+      var h = hull[i]
+      var x = h[0]
+      h[0] = h[1]
+      h[1] = x
+    }
+  }
+
+  return hull
+}
+},{"incremental-convex-hull":18,"uniq":33}],17:[function(require,module,exports){
+"use strict"
+
+function dupe_array(count, value, i) {
+  var c = count[i]|0
+  if(c <= 0) {
+    return []
+  }
+  var result = new Array(c), j
+  if(i === count.length-1) {
+    for(j=0; j<c; ++j) {
+      result[j] = value
+    }
+  } else {
+    for(j=0; j<c; ++j) {
+      result[j] = dupe_array(count, value, i+1)
+    }
+  }
+  return result
+}
+
+function dupe_number(count, value) {
+  var result, i
+  result = new Array(count)
+  for(i=0; i<count; ++i) {
+    result[i] = value
+  }
+  return result
+}
+
+function dupe(count, value) {
+  if(typeof value === "undefined") {
+    value = 0
+  }
+  switch(typeof count) {
+    case "number":
+      if(count > 0) {
+        return dupe_number(count|0, value)
+      }
+    break
+    case "object":
+      if(typeof (count.length) === "number") {
+        return dupe_array(count, value, 0)
+      }
+    break
+  }
+  return []
+}
+
+module.exports = dupe
+},{}],18:[function(require,module,exports){
 "use strict"
 
 //High level idea:
@@ -842,7 +1288,7 @@ function incrementalConvexHull(points, randomSearch) {
   //Extract boundary cells
   return triangles.boundary()
 }
-},{"robust-orientation":10,"simplicial-complex":14}],9:[function(require,module,exports){
+},{"robust-orientation":24,"simplicial-complex":29}],19:[function(require,module,exports){
 'use strict'
 
 module.exports = monotoneConvexHull2D
@@ -924,7 +1370,251 @@ function monotoneConvexHull2D(points) {
   //Return result
   return result
 }
-},{"robust-orientation":10}],10:[function(require,module,exports){
+},{"robust-orientation":24}],20:[function(require,module,exports){
+'use strict'
+
+var compareCell = require('compare-cell')
+var compareOrientedCell = require('compare-oriented-cell')
+var orientation = require('cell-orientation')
+
+module.exports = reduceCellComplex
+
+function reduceCellComplex(cells) {
+  cells.sort(compareOrientedCell)
+  var n = cells.length
+  var ptr = 0
+  for(var i=0; i<n; ++i) {
+    var c = cells[i]
+    var o = orientation(c)
+    if(o === 0) {
+      continue
+    }
+    if(ptr > 0) {
+      var f = cells[ptr-1]
+      if(compareCell(c, f) === 0 &&
+         orientation(f)    !== o) {
+        ptr -= 1
+        continue
+      }
+    }
+    cells[ptr++] = c
+  }
+  cells.length = ptr
+  return cells
+}
+
+},{"cell-orientation":7,"compare-cell":10,"compare-oriented-cell":11}],21:[function(require,module,exports){
+"use strict"
+
+module.exports = compressExpansion
+
+function compressExpansion(e) {
+  var m = e.length
+  var Q = e[e.length-1]
+  var bottom = m
+  for(var i=m-2; i>=0; --i) {
+    var a = Q
+    var b = e[i]
+    Q = a + b
+    var bv = Q - a
+    var q = b - bv
+    if(q) {
+      e[--bottom] = Q
+      Q = q
+    }
+  }
+  var top = 0
+  for(var i=bottom; i<m; ++i) {
+    var a = e[i]
+    var b = Q
+    Q = a + b
+    var bv = Q - a
+    var q = b - bv
+    if(q) {
+      e[top++] = q
+    }
+  }
+  e[top++] = Q
+  e.length = top
+  return e
+}
+},{}],22:[function(require,module,exports){
+"use strict"
+
+var twoProduct = require("two-product")
+var robustSum = require("robust-sum")
+var robustScale = require("robust-scale")
+var compress = require("robust-compress")
+
+var NUM_EXPANDED = 6
+
+function cofactor(m, c) {
+  var result = new Array(m.length-1)
+  for(var i=1; i<m.length; ++i) {
+    var r = result[i-1] = new Array(m.length-1)
+    for(var j=0,k=0; j<m.length; ++j) {
+      if(j === c) {
+        continue
+      }
+      r[k++] = m[i][j]
+    }
+  }
+  return result
+}
+
+function matrix(n) {
+  var result = new Array(n)
+  for(var i=0; i<n; ++i) {
+    result[i] = new Array(n)
+    for(var j=0; j<n; ++j) {
+      result[i][j] = ["m[", i, "][", j, "]"].join("")
+    }
+  }
+  return result
+}
+
+function sign(n) {
+  if(n & 1) {
+    return "-"
+  }
+  return ""
+}
+
+function generateSum(expr) {
+  if(expr.length === 1) {
+    return expr[0]
+  } else if(expr.length === 2) {
+    return ["sum(", expr[0], ",", expr[1], ")"].join("")
+  } else {
+    var m = expr.length>>1
+    return ["sum(", generateSum(expr.slice(0, m)), ",", generateSum(expr.slice(m)), ")"].join("")
+  }
+}
+
+function determinant(m) {
+  if(m.length === 2) {
+    return ["sum(prod(", m[0][0], ",", m[1][1], "),prod(-", m[0][1], ",", m[1][0], "))"].join("")
+  } else {
+    var expr = []
+    for(var i=0; i<m.length; ++i) {
+      expr.push(["scale(", determinant(cofactor(m, i)), ",", sign(i), m[0][i], ")"].join(""))
+    }
+    return generateSum(expr)
+  }
+}
+
+function compileDeterminant(n) {
+  var proc = new Function("sum", "scale", "prod", "compress", [
+    "function robustDeterminant",n, "(m){return compress(", 
+      determinant(matrix(n)),
+    ")};return robustDeterminant", n].join(""))
+  return proc(robustSum, robustScale, twoProduct, compress)
+}
+
+var CACHE = [
+  function robustDeterminant0() { return [0] },
+  function robustDeterminant1(m) { return [m[0][0]] }
+]
+
+function generateDispatch() {
+  while(CACHE.length < NUM_EXPANDED) {
+    CACHE.push(compileDeterminant(CACHE.length))
+  }
+  var procArgs = []
+  var code = ["function robustDeterminant(m){switch(m.length){"]
+  for(var i=0; i<NUM_EXPANDED; ++i) {
+    procArgs.push("det" + i)
+    code.push("case ", i, ":return det", i, "(m);")
+  }
+  code.push("}\
+var det=CACHE[m.length];\
+if(!det)\
+det=CACHE[m.length]=gen(m.length);\
+return det(m);\
+}\
+return robustDeterminant")
+  procArgs.push("CACHE", "gen", code.join(""))
+  var proc = Function.apply(undefined, procArgs)
+  module.exports = proc.apply(undefined, CACHE.concat([CACHE, compileDeterminant]))
+  for(var i=0; i<CACHE.length; ++i) {
+    module.exports[i] = CACHE[i]
+  }
+}
+
+generateDispatch()
+},{"robust-compress":21,"robust-scale":25,"robust-sum":27,"two-product":30}],23:[function(require,module,exports){
+"use strict"
+
+var determinant = require("robust-determinant")
+
+var NUM_EXPAND = 6
+
+function generateSolver(n) {
+  var funcName = "robustLinearSolve" + n + "d"
+  var code = ["function ", funcName, "(A,b){return ["]
+  for(var i=0; i<n; ++i) {
+    code.push("det([")
+    for(var j=0; j<n; ++j) {
+      if(j > 0) {
+        code.push(",")
+      }
+      code.push("[")
+      for(var k=0; k<n; ++k) {
+        if(k > 0) {
+          code.push(",")
+        }
+        if(k === i) {
+          code.push("+b[", j, "]")
+        } else {
+          code.push("+A[", j, "][", k, "]")
+        }
+      }
+      code.push("]")
+    }
+    code.push("]),")
+  }
+  code.push("det(A)]}return ", funcName)
+  var proc = new Function("det", code.join(""))
+  if(n < 6) {
+    return proc(determinant[n])
+  }
+  return proc(determinant)
+}
+
+function robustLinearSolve0d() {
+  return [ 0 ]
+}
+
+function robustLinearSolve1d(A, b) {
+  return [ [ b[0] ], [ A[0][0] ] ]
+}
+
+var CACHE = [
+  robustLinearSolve0d,
+  robustLinearSolve1d
+]
+
+function generateDispatch() {
+  while(CACHE.length < NUM_EXPAND) {
+    CACHE.push(generateSolver(CACHE.length))
+  }
+  var procArgs = []
+  var code = ["function dispatchLinearSolve(A,b){switch(A.length){"]
+  for(var i=0; i<NUM_EXPAND; ++i) {
+    procArgs.push("s" + i)
+    code.push("case ", i, ":return s", i, "(A,b);")
+  }
+  code.push("}var s=CACHE[A.length];if(!s)s=CACHE[A.length]=g(A.length);return s(A,b)}return dispatchLinearSolve")
+  procArgs.push("CACHE", "g", code.join(""))
+  var proc = Function.apply(undefined, procArgs)
+  module.exports = proc.apply(undefined, CACHE.concat([CACHE, generateSolver]))
+  for(var i=0; i<NUM_EXPAND; ++i) {
+    module.exports[i] = CACHE[i]
+  }
+}
+
+generateDispatch()
+},{"robust-determinant":22}],24:[function(require,module,exports){
 "use strict"
 
 var twoProduct = require("two-product")
@@ -1115,7 +1805,7 @@ function generateOrientationProc() {
 }
 
 generateOrientationProc()
-},{"robust-scale":11,"robust-subtract":12,"robust-sum":13,"two-product":15}],11:[function(require,module,exports){
+},{"robust-scale":25,"robust-subtract":26,"robust-sum":27,"two-product":30}],25:[function(require,module,exports){
 "use strict"
 
 var twoProduct = require("two-product")
@@ -1166,7 +1856,7 @@ function scaleLinearExpansion(e, scale) {
   g.length = count
   return g
 }
-},{"two-product":15,"two-sum":16}],12:[function(require,module,exports){
+},{"two-product":30,"two-sum":31}],26:[function(require,module,exports){
 "use strict"
 
 module.exports = robustSubtract
@@ -1323,7 +2013,7 @@ function robustSubtract(e, f) {
   g.length = count
   return g
 }
-},{}],13:[function(require,module,exports){
+},{}],27:[function(require,module,exports){
 "use strict"
 
 module.exports = linearExpansionSum
@@ -1480,7 +2170,19 @@ function linearExpansionSum(e, f) {
   g.length = count
   return g
 }
-},{}],14:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
+'use strict'
+
+module.exports = boundary
+
+var bnd = require('boundary-cells')
+var reduce = require('reduce-simplicial-complex')
+
+function boundary(cells) {
+  return reduce(bnd(cells))
+}
+
+},{"boundary-cells":6,"reduce-simplicial-complex":20}],29:[function(require,module,exports){
 "use strict"; "use restrict";
 
 var bits      = require("bit-twiddle")
@@ -1824,7 +2526,7 @@ function connectedComponents(cells, vertex_count) {
 }
 exports.connectedComponents = connectedComponents
 
-},{"bit-twiddle":3,"union-find":17}],15:[function(require,module,exports){
+},{"bit-twiddle":5,"union-find":32}],30:[function(require,module,exports){
 "use strict"
 
 module.exports = twoProduct
@@ -1858,7 +2560,7 @@ function twoProduct(a, b, result) {
 
   return [ y, x ]
 }
-},{}],16:[function(require,module,exports){
+},{}],31:[function(require,module,exports){
 "use strict"
 
 module.exports = fastTwoSum
@@ -1876,7 +2578,7 @@ function fastTwoSum(a, b, result) {
 	}
 	return [ar+br, x]
 }
-},{}],17:[function(require,module,exports){
+},{}],32:[function(require,module,exports){
 "use strict"; "use restrict";
 
 module.exports = UnionFind;
@@ -1939,4 +2641,63 @@ proto.link = function(x, y) {
     ++ranks[xr];
   }
 }
+},{}],33:[function(require,module,exports){
+"use strict"
+
+function unique_pred(list, compare) {
+  var ptr = 1
+    , len = list.length
+    , a=list[0], b=list[0]
+  for(var i=1; i<len; ++i) {
+    b = a
+    a = list[i]
+    if(compare(a, b)) {
+      if(i === ptr) {
+        ptr++
+        continue
+      }
+      list[ptr++] = a
+    }
+  }
+  list.length = ptr
+  return list
+}
+
+function unique_eq(list) {
+  var ptr = 1
+    , len = list.length
+    , a=list[0], b = list[0]
+  for(var i=1; i<len; ++i, b=a) {
+    b = a
+    a = list[i]
+    if(a !== b) {
+      if(i === ptr) {
+        ptr++
+        continue
+      }
+      list[ptr++] = a
+    }
+  }
+  list.length = ptr
+  return list
+}
+
+function unique(list, compare, sorted) {
+  if(list.length === 0) {
+    return list
+  }
+  if(compare) {
+    if(!sorted) {
+      list.sort(compare)
+    }
+    return unique_pred(list, compare)
+  }
+  if(!sorted) {
+    list.sort()
+  }
+  return unique_eq(list)
+}
+
+module.exports = unique
+
 },{}]},{},[1]);

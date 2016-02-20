@@ -88,6 +88,11 @@
     this._maxEntries = undefined === maxEntries ? false : maxEntries;
   };
 
+  // Add event support to project and define some event constants
+  CATMAID.asEventSource(CommandHistory.prototype);
+  CommandHistory.EVENT_COMMAND_EXECUTED = 'command_executed';
+  CommandHistory.EVENT_COMMAND_UNDONE = 'command_undone';
+
   /**
    * If a maximum number of history entries is set, this function will remove
    * old entries so that the number of commands stays within bounds.
@@ -137,6 +142,7 @@
   CommandHistory.prototype.execute = function(command) {
     var result = command.execute();
     this._advanceHistory(command);
+    this.trigger(CommandHistory.EVENT_COMMAND_EXECUTED, command, false);
     return result;
   };
 
@@ -153,6 +159,7 @@
       }
       var result = command.undo();
       this._rollbackHistory();
+      this.trigger(CommandHistory.EVENT_COMMAND_UNDONE, command);
       return result;
     }).bind(this));
   };
@@ -170,6 +177,7 @@
       }
       var result = command.execute();
       this._currentCommand += 1;
+      this.trigger(CommandHistory.EVENT_COMMAND_EXECUTED, command, true);
       return result;
     }).bind(this));
   };

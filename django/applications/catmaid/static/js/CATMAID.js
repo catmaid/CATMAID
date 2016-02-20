@@ -226,5 +226,14 @@ window.onbeforeunload = function() {
   // Maintain a single command history, this adds execute, undo and redo
   // functions to the CATMAID namespace.
   CATMAID.commands = new CATMAID.CommandHistory();
+  CATMAID.commands.on(CATMAID.CommandHistory.EVENT_COMMAND_EXECUTED, function(command, redo) {
+    // Don't confirm regular commands to reduce visual noise
+    if (redo) {
+      CATMAID.msg("Command re-executed", command.getName());
+    }
+  });
+  CATMAID.commands.on(CATMAID.CommandHistory.EVENT_COMMAND_UNDONE, function(command) {
+    CATMAID.msg("Command undone", command.getName());
+  });
 
 })(CATMAID);

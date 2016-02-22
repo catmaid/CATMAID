@@ -829,8 +829,8 @@ SkeletonAnnotations.TracingOverlay.prototype.renameNeuron = function(skeletonID)
       function(json) {
           var new_name = prompt("Change neuron name", json.neuronname);
           if (!new_name) return;
-          CATMAID.NeuronNameService.getInstance().renameNeuron(
-              json.neuronid, [skeletonID], new_name);
+          CATMAID.commands.execute(new CATMAID.RenameNeuronCommand(
+                project.id, json.neuronid, new_name));
       });
 };
 

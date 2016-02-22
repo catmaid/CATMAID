@@ -1898,10 +1898,12 @@
     rename_button.onclick = (function() {
       var new_name = prompt("Rename", this.neuron_name);
       if (!new_name) return;
-      CATMAID.NeuronNameService.getInstance().renameNeuron(this.neuron_id, this.skeleton_ids, new_name, (function() {
-          $('div.nodeneuronname', container).html('Name: ' + new_name);
-          this.neuron_name = new_name;
-      }).bind(this));
+      CATMAID.commands.execute(new CATMAID.RenameNeuronCommand(
+            project.id, this.neuron_id, new_name))
+        .then((function(neuronId, newName) {
+          $('div.nodeneuronname', container).html('Name: ' + newName);
+          this.neuron_name = newName;
+        }).bind(this));
     }).bind(this);
 
     var analyze_button = document.createElement('input');

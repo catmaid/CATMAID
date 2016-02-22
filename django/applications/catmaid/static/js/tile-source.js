@@ -101,7 +101,7 @@
     };
 
     this.getOverviewLayer = function( layer ) {
-      return new CATMAID.DummyOverviewLayer();
+      return new CATMAID.ArtificialOverviewLayer(layer);
     };
   };
 
@@ -130,7 +130,7 @@
     };
 
     this.getOverviewLayer = function(layer) {
-      return new CATMAID.DummyOverviewLayer();
+      return new CATMAID.ArtificialOverviewLayer(layer);
     };
   };
 
@@ -218,7 +218,7 @@
     };
 
     this.getOverviewLayer = function( layer ) {
-      return new CATMAID.DummyOverviewLayer();
+      return new CATMAID.ArtificialOverviewLayer(layer);
     };
 
     this.transposeTiles = new Set([CATMAID.Stack.ORIENTATION_ZY]);
@@ -277,7 +277,7 @@
     };
 
     this.getOverviewLayer = function(layer) {
-      return new CATMAID.DummyOverviewLayer();
+      return new CATMAID.ArtificialOverviewLayer(layer);
     };
 
     this.transposeTiles = new Set([CATMAID.Stack.ORIENTATION_ZY]);
@@ -293,28 +293,109 @@
   };
 
   /**
+   * An overview layer that doesn't attempt to get an image, but only shows a
+   * blank area, optionally with a grid on top. This can be used as fallback if
+   * no overview image can be loaded.
+   */
+  CATMAID.ArtificialOverviewLayer = function(layer) {
+    this.backgroundColor = "#000";
+    this.nGridLines = 5;
+    this.gridStyle = "#777";
+
+    this.layer = layer;
+    this.canvas = document.createElement('canvas');
+    this.canvas.classList.add('smallMapMap');
+
+    var maxWidth = 192;
+    var maxHeight = 192;
+
+    // Size canvas to be proportional to image stack data
+    var stack = layer.getStack();
+    if (stack.dimension.x > stack.dimension.y) {
+      this.canvas.width = maxWidth;
+      this.canvas.height = (maxWidth / stack.dimension.x) * stack.dimension.y;
+    } else {
+      this.canvas.width = (maxHeight / stack.dimension.y) * stack.dimension.x;
+      this.canvas.height = maxHeight;
+    }
+
+    var stackViewer = layer.getStackViewer();
+    stackViewer.overview.getView().appendChild(this.canvas);
+    stackViewer.overview.addLayer('tilelayer', this);
+  };
+
+  CATMAID.ArtificialOverviewLayer.prototype.redraw = function() {
+    // Fill context with background color and optionally draw a grid.
+    if (this.canvas) {
+      var ctx = this.canvas.getContext("2d");
+      ctx.fillStyle = this.backgroundColor;
+      ctx.fillRect(0,0, this.canvas.width, this.canvas.height);
+
+      if (this.nGridLines > 0) {
+        var xSpacing = this.canvas.width / (this.nGridLines + 1);
+        var ySpacing = this.canvas.height / (this.nGridLines + 1);
+        ctx.strokeStyle = this.gridStyle;
+        ctx.lineWidth = 0.5;
+        for (var i=1; i<=this.nGridLines; ++i) {
+          // Draw vertical line. According to MDN positioning lines inbetween
+          // exact pixel positions allows for more crips drawing:
+          // https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API/Tutorial/Applying_styles_and_colors
+          var x = Math.round(i * xSpacing) + 0.5;
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x, this.canvas.height);
+          ctx.stroke();
+          // Draw horizontal line
+          var y = Math.round(i * ySpacing) + 0.5;
+          ctx.moveTo(0, y);
+          ctx.lineTo(this.canvas.width, y);
+          ctx.stroke();
+        }
+      }
+    }
+  };
+
+  CATMAID.ArtificialOverviewLayer.prototype.unregister = function() {
+    if (this.canvas && this.canvas.parentNode) {
+      this.canvas.parentNode.removeChild(this.canvas);
+    }
+  };
+
+  /**
    * This is an overview layer that displays a small overview map.
    */
   CATMAID.GenericOverviewLayer = function(layer, baseURL, fileExtension,
                                           getOverviewURL) {
+    // Initialize prototype
+    CATMAID.ArtificialOverviewLayer.call(this, layer);
+
     this.redraw = function() {
       var stack = layer.getStack();
+      var stackViewer = layer.getStackViewer();
       var slicePixelPosition = [stackViewer.scaledPositionInStack(stack).z];
       img.src = getOverviewURL(stack, slicePixelPosition);
     };
 
-    this.unregister = function() {
-      if ( img.parentNode ) {
-        img.parentNode.removeChild( img );
-      }
-    };
-
-    var stackViewer = layer.getStackViewer();
     var img = document.createElement( 'img' );
     img.className = 'smallMapMap';
+
+    // If images can't be loaded, fall-back to the artificial overview layer
+    img.onerror = (function() {
+      CATMAID.ArtificialOverviewLayer.prototype.redraw.call(this);
+    }).bind(this);
+
+    // After the image has been loaded, draw it to the overview canvas
+    img.onload = (function() {
+      if (this.canvas) {
+        var ctx = this.canvas.getContext("2d");
+        ctx.width = img.width;
+        ctx.height = img.height;
+        ctx.drawImage(img, 0, 0);
+      }
+    }).bind(this);
+
     this.redraw(); // sets the img URL
-    stackViewer.overview.getView().appendChild( img );
-    stackViewer.overview.addLayer( 'tilelayer', this );
   };
+
+  CATMAID.GenericOverviewLayer.prototype = Object.create(CATMAID.ArtificialOverviewLayer.prototype);
 
 })(CATMAID);

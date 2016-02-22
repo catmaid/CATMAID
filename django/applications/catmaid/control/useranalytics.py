@@ -1,11 +1,12 @@
 import numpy as np
 from datetime import timedelta
+from dateutil import parser as dateparser
+import pytz
 
 from django.http import HttpResponse
 from django.utils import timezone
 
 from catmaid.models import Connector, Treenode, Review
-from catmaid.control.user_evaluation import _parse_date
 
 
 # Because we don't want to show generated images in a window, we can use
@@ -57,8 +58,8 @@ def plot_useranalytics(request):
     end_date = request.GET.get('end')
 
     if request.user.is_superuser:
-        end = _parse_date(end_date) if end_date else timezone.now()
-        start = _parse_date(start_date) if start_date else end - timedelta(end.isoweekday() + 7)
+        end = dateparser.parse(end_date).replace(tzinfo=pytz.utc) if end_date else timezone.now()
+        start = dateparser.parse(start_date).replace(tzinfo=pytz.utc) if start_date else end - timedelta(end.isoweekday() + 7)
         f = generateReport( userid, 10, start, end )
     else:
         f = figure(1, figsize=(6,6))

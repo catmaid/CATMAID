@@ -130,7 +130,13 @@
       return removeLabel.then(done);
     };
 
-    var title = "Add tag(s) " + tags.join(", ") + " to node " + nodeId;
+    var title;
+    if (deleteExisting) {
+      title = (0 === tags.length) ? ("Remove all tags from node " + nodeId) :
+          ("Replace existing tags of node " + nodeId + " with tags " + tags.join(", "));
+    } else {
+      title = "Add tag(s) " + tags.join(", ") + " to node " + nodeId;
+    }
     this.init(title, exec, undo);
   });
 

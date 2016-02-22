@@ -335,7 +335,7 @@
         var xSpacing = this.canvas.width / (this.nGridLines + 1);
         var ySpacing = this.canvas.height / (this.nGridLines + 1);
         ctx.strokeStyle = this.gridStyle;
-        ctx.lineWidth = 0.5;
+        ctx.lineWidth = 1.0;
         for (var i=1; i<=this.nGridLines; ++i) {
           // Draw vertical line. According to MDN positioning lines inbetween
           // exact pixel positions allows for more crips drawing:

@@ -24,7 +24,7 @@
 Start date: <input type="text" id="start_date" />
 End date: <input type="text" id="end_date" />
 <br />
-<img src="{{ catmaid_url }}useranalytics" id="useranalyticsimg" />
+<img src="{{ CATMAID_URL }}useranalytics" id="useranalyticsimg" />
 
 <script type="text/javascript">
 
@@ -32,7 +32,7 @@ End date: <input type="text" id="end_date" />
     "dataType": 'json',
     "type": "GET",
     "cache": false,
-    "url": '{{ catmaid_url }}user-list',
+    "url": '{{ CATMAID_URL }}user-list',
     "data": {},
     "success": function( json ) {
       var select = document.getElementById("logtable_username");
@@ -60,7 +60,7 @@ End date: <input type="text" id="end_date" />
         var start = format(document.getElementById('start_date').value),
             end = format(document.getElementById('end_date').value);
 
-        document.getElementById("useranalyticsimg").src = "{{ catmaid_url }}useranalytics?userid=" + $('#logtable_username').val() + "&start=" + start + "&end=" + end;
+        document.getElementById("useranalyticsimg").src = "{{ CATMAID_URL }}useranalytics?userid=" + $('#logtable_username').val() + "&start=" + start + "&end=" + end;
       } catch (e) {
         alert(e);
         console.log(e, e.stack);

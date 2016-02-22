@@ -133,6 +133,13 @@
   };
 
   /**
+   * A promise that resolves as soon as there is no command executing. Many
+   * commands have asynchronous components that could take a few moments to
+   * respond.
+   */
+  CommandHistory.prototype.submit = Promise.resolve();
+
+  /**
    * Execute a command. Commands are expected to return a promise and the
    * history state.
    *
@@ -140,10 +147,18 @@
    * @returns Result of the command's execute function
    */
   CommandHistory.prototype.execute = function(command) {
-    var result = command.execute();
-    this._advanceHistory(command);
-    this.trigger(CommandHistory.EVENT_COMMAND_EXECUTED, command, false);
-    return result;
+    var executedCommand = this.submit.then((function() {
+      var result = command.execute();
+      this._advanceHistory(command);
+      this.trigger(CommandHistory.EVENT_COMMAND_EXECUTED, command, false);
+      return result;
+    }).bind(this));
+
+    // Allow errors to happen in command history and ignore them to make next
+    // command executable after this one has either failed or succeeded.
+    this.submit = executedCommand.catch(CATMAID.noop);
+
+    return executedCommand;
   };
 
   /**
@@ -152,7 +167,7 @@
    * @returns Result of the command's undo function
    */
   CommandHistory.prototype.undo = function() {
-    return new Promise((function(resolve, reject) {
+    var executedCommand = this.submit.then((function() {
       var command = this._commandList[this._currentCommand];
       if (!command) {
         throw new CATMAID.ValueError("Nothing to undo");
@@ -162,6 +177,12 @@
       this.trigger(CommandHistory.EVENT_COMMAND_UNDONE, command);
       return result;
     }).bind(this));
+
+    // Allow errors to happen in command history and ignore them to make next
+    // command executable after this one has either failed or succeeded.
+    this.submit = executedCommand.catch(CATMAID.noop);
+
+    return executedCommand;
   };
 
   /**
@@ -170,7 +191,7 @@
    * @returns Result of the command's execute function
    */
   CommandHistory.prototype.redo = function() {
-    return new Promise((function(resolve, reject) {
+    var executedCommand = this.submit.then((function() {
       var command = this._commandList[this._currentCommand + 1];
       if (!command) {
         throw new CATMAID.ValueError("Nothing to redo");
@@ -180,6 +201,12 @@
       this.trigger(CommandHistory.EVENT_COMMAND_EXECUTED, command, true);
       return result;
     }).bind(this));
+
+    // Allow errors to happen in command history and ignore them to make next
+    // command executable after this one has either failed or succeeded.
+    this.submit = executedCommand.catch(CATMAID.noop);
+
+    return executedCommand;
   };
 
   /**

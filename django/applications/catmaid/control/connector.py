@@ -14,12 +14,12 @@ from catmaid.models import Project, Stack, ProjectStack, Connector, \
         ConnectorClassInstance, Treenode, TreenodeConnector, UserRole
 from catmaid.control.authentication import requires_user_role, can_edit_or_fail
 from catmaid.control.common import cursor_fetch_dictionary, \
-        get_relation_to_id_map
+        get_relation_to_id_map, get_request_list
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def graphedge_list(request, project_id=None):
     """ Assumes that first element of skeletonlist is pre, and second is post """
-    skeletonlist = request.POST.getlist('skeletonlist[]')
+    skeletonlist = get_request_list(request.POST, 'skeletonlist[]')
     skeletonlist = map(int, skeletonlist)
     p = get_object_or_404(Project, pk=project_id)
     edge = {}
@@ -66,7 +66,7 @@ def one_to_many_synapses(request, project_id=None):
         raise ValueError("No skeleton ID for 'one' provided")
     skid = int(request.POST.get('skid'));
 
-    skids = tuple(int(v) for k,v in request.POST.iteritems() if k.startswith('skids['))
+    skids = get_request_list(request.POST, 'skids', map_fn=int)
     if not skids:
         raise ValueError("No skeleton IDs for 'many' provided")
 
@@ -82,10 +82,10 @@ def many_to_many_synapses(request, project_id=None):
     Return the list of synapses of a specific kind between one list of
     skeletons and a list of other skeletons.
     """
-    skids1 = tuple(int(v) for k,v in request.POST.iteritems() if k.startswith('skids1['))
+    skids1 = get_request_list(request.POST, 'skids1', map_fn=int)
     if not skids1:
         raise ValueError("No skeleton IDs for first list of 'many' provided")
-    skids2 = tuple(int(v) for k,v in request.POST.iteritems() if k.startswith('skids2['))
+    skids2 = get_request_list(request.POST, 'skids2', map_fn=int)
     if not skids2:
         raise ValueError("No skeleton IDs for second list 'many' provided")
 
@@ -415,7 +415,7 @@ def _connector_skeletons(connector_ids, project_id):
 @requires_user_role([UserRole.Browse, UserRole.Annotate])
 def connector_skeletons(request, project_id=None):
     """ See _connector_skeletons """
-    connector_ids = set(int(v) for k,v in request.POST.iteritems() if k.startswith('connector_ids['))
+    connector_ids = get_request_list(request.POST, 'connector_ids', map_fn=int)
     cs = tuple(_connector_skeletons(connector_ids, project_id).iteritems())
     return HttpResponse(json.dumps(cs))
 
@@ -455,7 +455,7 @@ def _connector_associated_edgetimes(connector_ids, project_id):
 @requires_user_role([UserRole.Browse, UserRole.Annotate])
 def connector_associated_edgetimes(request, project_id=None):
     """ See _connector_associated_edgetimes """
-    connector_ids = set(int(v) for k,v in request.POST.iteritems() if k.startswith('connector_ids['))
+    connector_ids = get_request_list(request.POST, 'connector_ids', map_fn=int)
 
     def default(obj):
         """Default JSON serializer."""
@@ -582,9 +582,10 @@ def connectors_info(request, project_id):
     The list of connectors is optional.
     """
 
-    cids = tuple(str(int(v)) for k,v in request.POST.iteritems() if k.startswith('cids['))
-    skids_pre = tuple(str(int(v)) for k,v in request.POST.iteritems() if k.startswith('pre['))
-    skids_post = tuple(str(int(v)) for k,v in request.POST.iteritems() if k.startswith('post['))
+    int_to_str = lambda x: str(int(x))
+    cids = get_request_list(request.POST, 'cids', map_fn=int_to_str)
+    skids_pre = get_request_list(request.POST, 'pre', map_fn=int_to_str)
+    skids_post = get_request_list(request.POST, 'post', map_fn=int_to_str)
 
     cursor = connection.cursor()
 

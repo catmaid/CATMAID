@@ -641,8 +641,39 @@ def find_children(request, project_id=None, treenode_id=None):
         raise Exception('Could not obtain next branch node or leaf: ' + str(e))
 
 
+@api_view(['POST'])
 @requires_user_role(UserRole.Annotate)
 def update_confidence(request, project_id=None, treenode_id=None):
+    """Update confidence of edge between a node to either its parent or its
+    connectors.
+
+    The connection between a node and its parent or the connectors it is linked
+    to can be rated with a confidence value in the range 1-5. If connector links
+    should be updated, one can limit the affected connections to a specific
+    connector. Returned is an object, mapping updated partners to their old
+    confidences.
+    ---
+    parameters:
+      - name: new_confidence
+        description: New confidence, value in range 1-5
+        type: integer
+        required: true
+      - name: to_connector
+        description: Whether all linked connectors instead of parent should be updated
+        type: boolean
+        required: false
+      - name: partner_id
+        description: Limit update to single connector if to_connector is true
+        type: integer
+        required: false
+    type:
+        message:
+            type: string
+            required: true
+        updated_partners:
+            type: object
+            required: true
+    """
     tnid = int(treenode_id)
     can_edit_treenode_or_fail(request.user, project_id, tnid)
 

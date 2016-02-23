@@ -551,7 +551,7 @@
         }
       }
     });
-    return nearestnode;
+    return {id: nearestnode, distsq: mindistsq};
   };
 
   /**

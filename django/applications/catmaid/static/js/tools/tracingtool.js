@@ -831,24 +831,19 @@
           var y = activeTracingLayer.tracingOverlay.coords.lastY;
           // Only allow nodes that are screen space 50px or closer
           var r = 50.0 / activeStackViewer.scale;
-          for (var i=0, max=layerOrder.length; i<max; ++i) {
+          for (var i = layerOrder.length - 1; i >= 0; --i) {
             // Read layers from top to bottom
-            var l = layers.get(layerOrder[max-i-1]);
+            var l = layers.get(layerOrder[i]);
             if (CATMAID.tools.isFn(l.getClosestNode)) {
-              selectedNode = l.getClosestNode(x, y, r);
-              if (selectedNode) {
-                break;
+              var candidateNode = l.getClosestNode(x, y, r);
+              if (candidateNode && (!selectedNode || candidateNode.distsq < selectedNode.distsq)) {
+                selectedNode = candidateNode;
               }
             }
           }
           if (selectedNode) {
             // If this layer has a node close by, activate it
-            SkeletonAnnotations.staticMoveToAndSelectNode(selectedNode);
-          } else {
-            // If no layer found a node close by, ask the tracing layer for the
-            // closest node without any bounds.
-            var respectVirtualNodes = true;
-            activeTracingLayer.tracingOverlay.activateNearestNode(respectVirtualNodes);
+            SkeletonAnnotations.staticMoveToAndSelectNode(selectedNode.id);
           }
           return true;
         } else {

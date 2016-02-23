@@ -1063,8 +1063,10 @@ SkeletonAnnotations.TracingOverlay.prototype.activateNode = function(node) {
  */
 SkeletonAnnotations.TracingOverlay.prototype.activateNearestNode = function (respectVirtualNodes) {
 
-  var nearestnode = this.findNodeWithinRadius(this.coords.lastX,
-      this.coords.lastY, Number.MAX_VALUE, respectVirtualNodes);
+  var nearestnode = this.getClosestNode(this.coords.lastX,
+                                        this.coords.lastY,
+                                        Number.MAX_VALUE,
+                                        respectVirtualNodes).node;
   if (nearestnode) {
     if (Math.abs(nearestnode.z - this.stackViewer.z) < 0.5) {
       this.activateNode(nearestnode);
@@ -1101,7 +1103,7 @@ SkeletonAnnotations.validNodeTest = function(respectVirtualNodes)
  * Expects x and y in scaled (!) stack coordinates. Can be asked to respect
  * virtual nodes.
  */
-SkeletonAnnotations.TracingOverlay.prototype.findNodeWithinRadius = function (
+SkeletonAnnotations.TracingOverlay.prototype.getClosestNode = function (
     x, y, radius, respectVirtualNodes)
 {
   var xdiff,
@@ -1111,6 +1113,8 @@ SkeletonAnnotations.TracingOverlay.prototype.findNodeWithinRadius = function (
       nearestnode = null,
       node,
       nodeid;
+
+  if (typeof respectVirtualNodes === 'undefined') respectVirtualNodes = true;
 
   // Add an virual node check, if wanted
   var nodeIsValid = SkeletonAnnotations.validNodeTest(respectVirtualNodes);
@@ -1130,7 +1134,9 @@ SkeletonAnnotations.TracingOverlay.prototype.findNodeWithinRadius = function (
       }
     }
   }
-  return nearestnode;
+  return nearestnode ?
+      {id: nearestnode.id, node: nearestnode, distsq: mindistsq} :
+      null;
 };
 
 /**
@@ -2434,8 +2440,10 @@ SkeletonAnnotations.TracingOverlay.prototype.createNewOrExtendActiveSkeleton =
     var searchRadius = this.graphics.Node.prototype.CATCH_RADIUS *
        this.graphics.Node.prototype.scaling;
     var respectVirtualNodes = true;
-    var nearestnode = this.findNodeWithinRadius(this.coords.lastX,
-       this.coords.lastY, searchRadius, respectVirtualNodes);
+    var nearestnode = this.getClosestNode(this.coords.lastX,
+                                          this.coords.lastY,
+                                          searchRadius,
+                                          respectVirtualNodes).node;
 
     if (nearestnode === null) {
       // Crate a new treenode, connector node and/or link

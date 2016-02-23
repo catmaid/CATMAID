@@ -39,6 +39,10 @@
       this.tracingOverlay.updateNodeCoordinatesInDB(completionCallback);
     };
 
+    this.getClosestNode = function (x, y, radius, respectVirtualNodes) {
+      return this.tracingOverlay.getClosestNode(x, y, radius, respectVirtualNodes);
+    };
+
     this.getOpacity = function()
     {
       return self.opacity;

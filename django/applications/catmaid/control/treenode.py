@@ -648,7 +648,8 @@ def update_confidence(request, project_id=None, treenode_id=None):
 
     new_confidence = int(request.POST.get('new_confidence', 0))
     if new_confidence < 1 or new_confidence > 5:
-        return HttpResponse(json.dumps({'error': 'Confidence not in range 1-5 inclusive.'}))
+        raise ValueError('Confidence not in range 1-5 inclusive.')
+
     to_connector = request.POST.get('to_connector', 'false') == 'true'
     if to_connector:
         # Could be more than one. The GUI doesn't allow for specifying to which one.
@@ -660,15 +661,19 @@ def update_confidence(request, project_id=None, treenode_id=None):
         location = Location.objects.filter(id=tnid).values_list('location_x',
                 'location_y', 'location_z')[0]
         insert_into_log(project_id, request.user.id, "change_confidence", location, "Changed to %s" % new_confidence)
-        return HttpResponse(json.dumps({'message': 'success'}), content_type='application/json')
+        return JsonResponse({
+            'message': 'success',
+            'updated_node': tnid,
+            'to_connector': to_connector,
+            'new_confidence': new_confidence,
+        })
 
     # Else, signal error
     if to_connector:
-        return HttpResponse(json.dumps({'error': 'Failed to update confidence between treenode %s and connector.' % tnid}))
+        raise ValueError('Failed to update confidence between treenode %s and '
+                'connector.' % tnid)
     else:
-        return HttpResponse(json.dumps({'error': 'Failed to update confidence at treenode %s.' % tnid}))
-
-
+        raise ValueError('Failed to update confidence at treenode %s.' % tnid)
 
 def _skeleton_as_graph(skeleton_id):
     # Fetch all nodes of the skeleton

@@ -604,6 +604,9 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, options) {
       this.handleActiveNodeChange, this);
   SkeletonAnnotations.on(SkeletonAnnotations.EVENT_NODE_CREATED,
       this.handleNewNode, this);
+
+  CATMAID.Nodes.on(CATMAID.Nodes.EVENT_NODE_CONFIDENCE_CHANGED,
+    this.handleNodeChange, this);
 };
 
 SkeletonAnnotations.TracingOverlay.prototype = {
@@ -944,6 +947,9 @@ SkeletonAnnotations.TracingOverlay.prototype.destroy = function() {
       this.handleActiveNodeChange, this);
   SkeletonAnnotations.off(SkeletonAnnotations.EVENT_NODE_CREATED,
       this.handleNewNode, this);
+
+  CATMAID.Nodes.off(CATMAID.Nodes.EVENT_NODE_CONFIDENCE_CHANGED,
+      this.handleNodeChange, this);
 };
 
 /**
@@ -2637,14 +2643,11 @@ SkeletonAnnotations.TracingOverlay.prototype.setConfidence = function(newConfide
   if (node.parent_id || toConnector) {
     var self = this;
     this.promiseNode(node).then(function(nid) {
-      self.submit(
-          django_url + project.id + '/treenodes/' + nid + '/confidence',
-          'POST',
-          {to_connector: toConnector,
-           new_confidence: newConfidence},
-          function(json) {
-            self.updateNodes();
-          });
+      return self.submit().then(function() {
+        CATMAID.commands.execute(new CATMAID.UpdateConfidenceCommand(
+              project.id, nid, newConfidence, toConnector))
+          .then(self.updateNodes.bind(self, undefined, undefined, undefined));
+      });
     });
   }
 };
@@ -3931,6 +3934,14 @@ SkeletonAnnotations.TracingOverlay.prototype.handleNewNode = function(nodeID, px
   // update if the new node is visible in the current view. However, this
   // would also not help if an edge to or from the node intersects with the
   // current view. Updating always, ensures we catch also this case.
+  this.updateNodes();
+};
+
+/**
+ * Update nodes if called with a node that is currently part of this overlay.
+ */
+SkeletonAnnotations.TracingOverlay.prototype.handleNodeChange = function(nodeId) {
+  if (!this.nodes[nodeId]) return;
   this.updateNodes();
 };
 

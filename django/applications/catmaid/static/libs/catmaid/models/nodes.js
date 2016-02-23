@@ -58,9 +58,39 @@
           'updatedNodes': json.updated_nodes,
         };
       });
+    },
+
+    /**
+     * Update confidence of a node to its parent.
+     *
+     * @returns A new promise that is resolved once the confidence has been
+     *          successfully updated.
+     */
+    updateConfidence: function(projectId, nodeId, newConfidence, toConnector, partnerId) {
+      var url = CATMAID.makeURL(projectId + '/treenodes/' + nodeId + '/confidence');
+      var params = {
+        to_connector: toConnector,
+        new_confidence: newConfidence,
+      };
+      if (partnerId) {
+        params[partner_id] = partnerId;
+      }
+
+      return CATMAID.fetch(url, 'POST', params)
+        .then((function(result) {
+          this.trigger(CATMAID.Nodes.EVENT_NODE_CONFIDENCE_CHANGED, nodeId,
+              newConfidence, result.updated_partners);
+          return {
+            'updatedPartners': result.updated_partners
+          };
+        }).bind(this));
     }
 
   };
+
+  // If annotations are deleted entirely
+  Nodes.EVENT_NODE_CONFIDENCE_CHANGED = "node_confidence_changed";
+  CATMAID.asEventSource(Nodes);
 
   // Export nodes
   CATMAID.Nodes = Nodes;
@@ -120,6 +150,49 @@
       info = "Update radius of node " + nodeId + " to be " + radius + "nm";
     }
     this.init(info, exec, undo);
+  });
+
+  CATMAID.UpdateConfidenceCommand = CATMAID.makeCommand(function(
+        projectId, nodeId, newConfidence, toConnector) {
+    var exec = function(done, command) {
+      var updateConfidence = CATMAID.Nodes.updateConfidence(projectId, nodeId,
+          newConfidence, toConnector);
+
+      return updateConfidence.then(function(result) {
+        // The returned updatedNodes list contains objects with a node id and
+        // the old radius.
+        command._updatedPartners = result.updatedPartners;
+        done();
+        return result;
+      });
+    };
+
+    var undo = function(done, command) {
+      // Fail if expected undo parameters are not available from command
+      if (undefined === command._updatedPartners) {
+        throw new CATMAID.ValueError('Can\'t undo confidence update, ' +
+            'history data not available');
+      }
+
+      var promises = Object.keys(command._updatedPartners).map(function(partnerId) {
+        var oldConfidence = command._updatedPartners[partnerId];
+        return CATMAID.Nodes.updateConfidence(projectId, nodeId, oldConfidence,
+            toConnector, partnerId);
+      });
+
+      return Promise.all(promises);
+    };
+
+    var title;
+    if (toConnector) {
+      title = "Update confidence between node #" + nodeId +
+        " and its linked connectors to " + newConfidence;
+    } else {
+      title = "Update confidence between node #" + nodeId +
+        " and its parent to " + newConfidence;
+    }
+
+    this.init(title, exec, undo);
   });
 
 })(CATMAID);

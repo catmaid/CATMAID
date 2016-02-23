@@ -651,21 +651,47 @@ def update_confidence(request, project_id=None, treenode_id=None):
         raise ValueError('Confidence not in range 1-5 inclusive.')
 
     to_connector = request.POST.get('to_connector', 'false') == 'true'
-    if to_connector:
-        # Could be more than one. The GUI doesn't allow for specifying to which one.
-        rows_affected = TreenodeConnector.objects.filter(treenode=tnid).update(confidence=new_confidence)
-    else:
-        rows_affected = Treenode.objects.filter(id=tnid).update(confidence=new_confidence, editor=request.user)
+    partner_id = request.POST.get('partner_id', None)
+    if partner_id:
+        partner_id = int(partner_id)
 
-    if rows_affected > 0:
+    cursor = connection.cursor()
+    if to_connector:
+        if partner_id:
+            constraints = "WHERE treenode_id = %s AND connector_id = %s" % (tnid, partner_id)
+        else:
+            constraints = "WHERE treenode_id = %s" % tnid
+
+        # Could be more than one. The GUI doesn't allow for specifying to which one.
+        cursor.execute('''
+            UPDATE treenode_connector tc
+            SET confidence = %s
+            FROM (SELECT x.id, x.confidence AS old_confidence
+                  FROM treenode_connector x
+                  {}
+                  ) target
+            WHERE tc.id = target.id
+            RETURNING tc.connector_id, target.old_confidence
+        '''.format(constraints), (new_confidence,))
+    else:
+        cursor.execute('''
+            UPDATE treenode t
+            SET confidence = %s, editor_id = %s
+            FROM (SELECT x.id, x.confidence AS old_confidence
+                  FROM treenode x
+                  WHERE id = %s) target
+            WHERE t.id = target.id
+            RETURNING t.parent_id, target.old_confidence
+        ''', (new_confidence, request.user.id, tnid))
+
+    updated_partners = cursor.fetchall()
+    if len(updated_partners) > 0:
         location = Location.objects.filter(id=tnid).values_list('location_x',
                 'location_y', 'location_z')[0]
         insert_into_log(project_id, request.user.id, "change_confidence", location, "Changed to %s" % new_confidence)
         return JsonResponse({
             'message': 'success',
-            'updated_node': tnid,
-            'to_connector': to_connector,
-            'new_confidence': new_confidence,
+            'updated_partners': {r[0]:r[1] for r in updated_partners}
         })
 
     # Else, signal error

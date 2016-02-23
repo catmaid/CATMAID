@@ -2,6 +2,8 @@
 {% load data_view_config %}
 {% include "catmaid/common_data_view_header.html" %}
 
+{% with show_stackgroups=config|get_or_none:"show_stackgroups"|default_if_none:1 %}
+{% with show_stacks=config|get_or_none:"show_stacks"|default_if_none:1 %}
 {% with catalogue_link=config|get_or_none:"catalogue_link"|default_if_none:1 %}
 {% with sample_images=config|get_or_none:"sample_images"|default_if_none:0 %}
 {% with sample_slice=config|get_or_none:"sample_slice"|default_if_none:"center" %}
@@ -10,9 +12,16 @@
 
 <table>
 {% for p in projects %}
-	{% if stacks_of|get:p.id %}
+	{% if show_stacks and stacks_of|get:p.id or show_stackgroups and stack_groups_of|get:p.id %}
 	<tr>
 		<td class="projectname">{{ p.title }}</td>
+		{% for sg in stackgroups_of|get:p.id|dictsort:'id' %}
+		    <td class="stackname">
+				<a href="?pid={{ p.id }}&tool=navigator&sid0={{ sg.id }}&s0=1"
+					onclick="openStackGroup({{p.id}}, {{sg.id}}, false);return false"
+					title="Stack group #{{ sg.id }}">{{ sg.name }}</a>
+			</td>
+		{% endfor %}
 		{% for s in stacks_of|get:p.id|dictsort:'id' %}
 			{% if sample_images %}
 				<td class="stackimage">
@@ -48,6 +57,8 @@
 {% endfor %}
 </table>
 
+{% endwith %}
+{% endwith %}
 {% endwith %}
 {% endwith %}
 {% endwith %}

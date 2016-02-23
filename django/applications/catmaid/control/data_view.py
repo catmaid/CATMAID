@@ -14,7 +14,7 @@ from taggit.models import TaggedItem
 
 from catmaid.control.common import makeJSON_legacy_list
 from catmaid.control.project import get_project_qs_for_user, extend_projects
-from catmaid.models import DataView, DataViewType, Project, Stack, ProjectStack
+from catmaid.models import DataView, DataViewType, Project, Stack, ProjectStack, StackGroup
 
 def get_data_view_type_comment( request ):
     """ Return the comment of a specific data view type.
@@ -93,22 +93,44 @@ def get_data_view( request, data_view_id ):
     config = json.loads( dv.config )
 
     # Get all the projects that are visible for the current user
-    projects = get_project_qs_for_user(request.user).prefetch_related('stacks')
+    projects = get_project_qs_for_user(request.user)
 
     # If requested, filter projects by tags. Otherwise, get all.
     if "filter_tags" in config:
         filter_tags = config["filter_tags"]
         # Only get projects that have all the filter tags set
+        # TODO: Improve performande by not using an IN query (but a temp table
+        # join) over all filter_tags.
         projects = projects.filter( tags__name__in=filter_tags ).annotate(
             repeat_count=Count("id") ).filter( repeat_count=len(filter_tags) )
+
+    show_stacks = config.get('show_stacks', True)
+    show_stackgroups = config.get('show_stackgroups', True)
+
+    # Make sure we get all needed stacks in the first query
+    if show_stacks:
+        projects = projects.prefetch_related('stacks')
 
     # Build a stack index
     stack_index = defaultdict(list)
     stacks_of = defaultdict(list)
-    for p in projects:
-        for s in p.stacks.all():
-            stack_index[s.id] = s
-            stacks_of[p.id].append(s)
+
+    if show_stacks:
+        for p in projects:
+            for s in p.stacks.all():
+                stack_index[s.id] = s
+                stacks_of[p.id].append(s)
+
+    # Build a stack group index, if stack groups should be made available
+    stackgroup_index = defaultdict(list)
+    stackgroups_of = defaultdict(list)
+    if show_stackgroups:
+        # Get all
+        stackgroups = StackGroup.objects.filter(project__in=projects)
+        for p in projects:
+            for sg in stackgroups:
+                stackgroup_index[sg.id] = sg
+                stackgroups_of[p.id].append(sg)
 
     # Extend the project list with additional information like editabilty
     projects = extend_projects( request.user, projects )
@@ -139,6 +161,8 @@ def get_data_view( request, data_view_id ):
         'project_index': project_index,
         'stack_index': stack_index,
         'stacks_of': stacks_of,
+        'stackgroup_index': stackgroup_index,
+        'stackgroups_of': stackgroups_of,
         'STATIC_URL': settings.STATIC_URL,
     }
 

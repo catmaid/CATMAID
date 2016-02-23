@@ -14,10 +14,29 @@ from catmaid.models import Log, NeuronSearch, CELL_BODY_CHOICES, \
         SORT_ORDERS_DICT, User, Relation, Class, ClassInstance, \
         ClassInstanceClassInstance
 
+def identity(x):
+    """Simple identity."""
+    return x
 
 def get_catmaid_version(request):
     return HttpResponse(json.dumps({'SERVER_VERSION': settings.VERSION}), content_type='application/json')
 
+def get_request_list(request_dict, name, default=None, map_fn=identity):
+    """Look for a list in a request dictionary where individual items are named
+    with or without an index. Traditionally, the CATMAID web front-end sends
+    the list a = [1,2,3] encoded as fields a[0]=1, a[1]=2 and a[2]=3. Using
+    other APIs, like jQuery's $.ajax, will encode the same list as a=1, a=2,
+    a=3. This method helps to parse both transparently.
+    """
+    items = [map_fn(v) for k,v in request_dict.iteritems() if k.startswith(name + '[')]
+    if items:
+        return items
+
+    items = [map_fn(v) for v in request_dict.getlist(name, [])]
+    if items:
+        return items
+
+    return default
 
 def _create_relation(user, project_id, relation_id, instance_a_id, instance_b_id):
     relation = ClassInstanceClassInstance()

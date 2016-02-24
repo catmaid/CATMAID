@@ -270,6 +270,28 @@
     this._renderIfReady();
   };
 
+  /**
+   * Returns a set of set settings for this layer. This will only contain
+   * anything if the tile layer's tile source provides additional settings.
+   */
+  PixiTileLayer.prototype.getLayerSettings = function () {
+   if (this.tileSource && CATMAID.tools.isFn(this.tileSource.getSettings)) {
+     return this.tileSource.getSettings();
+   } else {
+     return [];
+   }
+  };
+
+  /**
+   * Set a layer setting for this layer. The value will only have any effect if
+   * the layer's tile source accepts setting changes.
+   */
+  PixiTileLayer.prototype.setLayerSetting = function(name, value) {
+   if (this.tileSource && CATMAID.tools.isFn(this.tileSource.setSetting)) {
+     return this.tileSource.setSetting(name, value);
+   }
+  };
+
   CATMAID.PixiTileLayer = PixiTileLayer;
 
 })(CATMAID);

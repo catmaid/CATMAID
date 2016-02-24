@@ -125,7 +125,8 @@ class Stack(models.Model):
                      (5, '5: Directory-based image stack'),
                      (6, '6: DVID imageblk voxels'),
                      (7, '7: Render service'),
-                     (8, '8: DVID imagetile tiles')),
+                     (8, '8: DVID imagetile tiles'),
+                     (9, '9: FlixServer tiles')),
             help_text='This represents how the tile data is organized. '
             'See <a href="http://catmaid.org/page/tile_sources.html">tile source '
             'conventions documentation</a>.')

@@ -40,7 +40,8 @@
       '5': CATMAID.LargeDataTileSource,
       '6': CATMAID.DVIDImageblkTileSource,
       '7': CATMAID.RenderServTileSource,
-      '8': CATMAID.DVIDImagetileTileSource
+      '8': CATMAID.DVIDImagetileTileSource,
+      '9': CATMAID.FlixServerTileSource
     };
 
     var TileSource = tileSources[tileSourceType];
@@ -283,6 +284,60 @@
     this.transposeTiles = new Set([CATMAID.Stack.ORIENTATION_ZY]);
   };
 
+  /**
+   * Serve images from Felix FlixServer.
+   */
+  CATMAID.FlixServerTileSource = function(baseURL, fileExtension, tileWidth, tileHeight) {
+    this.color = null;
+    this.minIntensity = null;
+    this.maxIntensity = null;
+    this.gamma = 1.0;
+
+    this.getSettings = function() {
+      return [
+        {name: 'color', displayName: 'Color', type: 'text', value: this.color,
+          help: 'Use one or list of: red, green, blue, cyan, magenta, yellow, white'},
+        {name: 'minIntensity', displayName: 'Min Intensity', type: 'number', range: [0, 65535],
+          value: this.maxIntensity, help: 'Minimum value of display range'},
+        {name: 'maxIntensity', displayName: 'Max Intensity', type: 'number', range: [0, 65535],
+          value: this.maxIntensity, help: 'Maximum value of display range'},
+        {name: 'gamma', displayName: 'Gamma', type: 'text', range: [0, Number.MAX_VALUE],
+          value: this.gamma, help: 'Exponent of non-linear mapping'}
+      ];
+    };
+
+    this.setSetting = function(name, value) {
+      this[name] = value;
+    };
+
+    this.getTileURL = function(project, stack, slicePixelPosition,
+                               col, row, zoomLevel) {
+      var baseName = CATMAID.getTileBaseName(slicePixelPosition);
+      var url = baseURL + baseName + row + '_' + col + '_' + zoomLevel + '.' +
+          fileExtension;
+
+      var params = [];
+      if (this.color) { params.push('color=' + this.color); }
+      if (this.minIntensity) { params.push('min=' + this.minIntensity); }
+      if (this.maxIntensity) { params.push('max=' + this.maxIntensity); }
+      if (this.gamma) { params.push('gamma=' + this.gamma); }
+
+      if (0 < params.length) {
+        url += "?" + params.join("&");
+      }
+
+      return url;
+    };
+
+    this.getOverviewURL = function(stack, slicePixelPosition) {
+      return baseURL + slicePixelPosition[0] + '/small.' + fileExtension;
+    };
+
+    this.getOverviewLayer = function(layer) {
+      return new CATMAID.GenericOverviewLayer(layer, baseURL, fileExtension,
+          this.getOverviewURL);
+    };
+  };
 
   /**
    * This is an overview layer that doesn't display anything.

@@ -155,6 +155,48 @@
           .append($('<label/>').append(hidecb).append('Hide this layer when SPACE is held'));
       container.append(hidelabel);
 
+      // Layer settings
+      if (CATMAID.tools.isFn(layer.getLayerSettings)) {
+        var settings = layer.getLayerSettings();
+        if (0 < settings.length) {
+          var layerSettings = $('<div />');
+          for (var i; i<settings.length; ++i) {
+            var setting = settings[i];
+            var settingElement = $('<div />').addClass('setting');
+            var label = $('<label />').append(setting.displayName);
+            settingElement.append(label);
+            label.attr('title', setting.help);
+            if ('text' === setting.type || 'number' === setting.type) {
+              var input = $('<input />').attr({
+                'type': setting.type,
+                'placeholder': '(none)',
+                'name': setting.name
+              });
+              input.addClass('layerSetting');
+              if (setting.value) {
+                input.attr('value', setting.value);
+              }
+              label.append(input);
+
+            }
+            layerSettings.append(settingElement);
+          }
+
+          container.append(layerSettings);
+          var eventData = { 'layer': layer, 'stackViewer': stackViewer };
+          layerSettings.on('change', 'input.layerSetting', eventData, function(e) {
+            if (CATMAID.tools.isFn(e.data.layer.setLayerSetting)) {
+              var value = this.value.trim();
+              if (0 === value.length) {
+                value = null;
+              }
+              e.data.layer.setLayerSetting(this.name, this.value);
+              e.data.stackViewer.redraw();
+            }
+          });
+        }
+      }
+
       // Blend mode
       if (layer.getAvailableBlendModes) {
         var blendModes = layer.getAvailableBlendModes();

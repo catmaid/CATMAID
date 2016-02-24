@@ -238,6 +238,26 @@ Tile source types are listed by the enumeration integer ID referenced by
        orientation must be transposed to be consistent with other tile source
        types.
 
+9. FlixServer tiles
+*******************
+
+   This type supports loading tiles from a
+   `FlixServer <https://github.com/fzadow/tileserver/`_ instance. This tile
+   server generates images dynamically and supports CATMAID's default tile
+   source URL format::
+
+    <sourceBaseUrl><pixelPosition.z>/<row>_<col>_<zoomLevel>.<fileExtension>
+
+   Additional GET parameters can be used to adjust color, dynamic range and
+   gamma mapping::
+
+    color = (red,green|blue|cyan|magenta|yellow|white) for coloring
+    min/max = [0, 2^16] for specifying the dynamic range
+    gamma = [0, 2^16] for the exponent of a non-linear mapping
+
+   For multi-channel images, a comma separated list can be used as parameter
+   value (e.g. color=cyan,magenta).
+
 Backend Representation
 ----------------------
 

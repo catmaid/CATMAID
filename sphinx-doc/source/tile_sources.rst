@@ -242,7 +242,7 @@ Tile source types are listed by the enumeration integer ID referenced by
 *******************
 
    This type supports loading tiles from a
-   `FlixServer <https://github.com/fzadow/tileserver/`_ instance. This tile
+   `FlixServer <https://github.com/fzadow/tileserver/>`_ instance. This tile
    server generates images dynamically and supports CATMAID's default tile
    source URL format::
 

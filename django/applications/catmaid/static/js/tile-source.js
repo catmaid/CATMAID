@@ -297,9 +297,9 @@
       return [
         {name: 'color', displayName: 'Color', type: 'text', value: this.color,
           help: 'Use one or list of: red, green, blue, cyan, magenta, yellow, white'},
-        {name: 'minIntensity', displayName: 'Min Intensity', type: 'number', range: [0, 65535],
+        {name: 'minIntensity', displayName: 'Min Intensity', type: 'text', range: [0, 65535],
           value: this.maxIntensity, help: 'Minimum value of display range'},
-        {name: 'maxIntensity', displayName: 'Max Intensity', type: 'number', range: [0, 65535],
+        {name: 'maxIntensity', displayName: 'Max Intensity', type: 'text', range: [0, 65535],
           value: this.maxIntensity, help: 'Maximum value of display range'},
         {name: 'gamma', displayName: 'Gamma', type: 'text', range: [0, Number.MAX_VALUE],
           value: this.gamma, help: 'Exponent of non-linear mapping'}

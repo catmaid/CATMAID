@@ -110,7 +110,8 @@ class BrokenSliceAdmin(GuardedModelAdmin):
 class ProjectStackInline(admin.TabularInline):
     model = ProjectStack
     extra = 1
-
+    max_num = 20
+    raw_id_fields = ("stack",)
 
 class ProjectAdmin(GuardedModelAdmin):
     list_display = ('title',)

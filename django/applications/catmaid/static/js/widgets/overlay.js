@@ -59,6 +59,18 @@ var SkeletonAnnotations = {
 
 };
 
+SkeletonAnnotations.Settings = new CATMAID.Settings(
+    'skeleton-annotations',
+    {
+      version: 0,
+      entries: {
+        skip_suppressed_virtual_nodes: {
+          default: false
+        }
+      },
+      migrations: {}
+    });
+
 /**
  * Raise an error if any essential field is falsy.
  */
@@ -83,7 +95,6 @@ SkeletonAnnotations.MODES = Object.freeze({SKELETON: 0, SYNAPSE: 1});
 SkeletonAnnotations.currentmode = SkeletonAnnotations.MODES.skeleton;
 SkeletonAnnotations.newConnectorType = SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR;
 SkeletonAnnotations.setRadiusAfterNodeCreation = false;
-SkeletonAnnotations.skipSuppressedVirtualNodes = false;
 SkeletonAnnotations.defaultNewNeuronName = '';
 // Don't show merging UI for single node skeletons
 SkeletonAnnotations.quickSingleNodeSkeletonMerge = true;
@@ -3245,7 +3256,7 @@ SkeletonAnnotations.TracingOverlay.prototype.getNodeOnSectionAndEdge = function 
     // informmation from the backend.
     var location1 = self.promiseNodeLocation(childID, false);
     var location2 = self.promiseNodeLocation(parentID, false);
-    var suppressed = SkeletonAnnotations.skipSuppressedVirtualNodes ?
+    var suppressed = SkeletonAnnotations.Settings.session.skip_suppressed_virtual_nodes ?
         self.promiseSuppressedVirtualNodes(childID) :
         [];
 

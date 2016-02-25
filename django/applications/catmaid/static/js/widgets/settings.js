@@ -807,15 +807,24 @@
             SkeletonAnnotations.newConnectorType = SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR;
           }
         }));
-      ds.append(CATMAID.DOM.createCheckboxSetting("Respect suppressed virtual nodes during navigation",
-        SkeletonAnnotations.skipSuppressedVirtualNodes, "When navigating " +
-            "parent/child topology, skip virtual nodes that have been " +
-            "marked as suppressed. " +
-            "This has a marginal impact on performance. Suppressed virtual " +
-            "nodes are always respected during review.",
-        function() {
-          SkeletonAnnotations.skipSuppressedVirtualNodes = this.checked;
-        }));
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createCheckboxSetting(
+              "Respect suppressed virtual nodes during navigation",
+              SkeletonAnnotations.Settings[SETTINGS_SCOPE].skip_suppressed_virtual_nodes,
+              "When navigating parent/child topology, skip virtual nodes " +
+              "that have been marked as suppressed. This has a marginal " +
+              "impact on performance. Suppressed virtual nodes are always " +
+              "respected during review.",
+              function() {
+                SkeletonAnnotations.Settings
+                    .set(
+                      'skip_suppressed_virtual_nodes',
+                      this.checked,
+                      SETTINGS_SCOPE);
+              }),
+          SkeletonAnnotations.Settings,
+          'skip_suppressed_virtual_nodes',
+          SETTINGS_SCOPE));
       ds.append($('<div/>').addClass('setting').text());
       ds.append(CATMAID.DOM.createInputSetting("Default new neuron name",
           SkeletonAnnotations.defaultNewNeuronName,

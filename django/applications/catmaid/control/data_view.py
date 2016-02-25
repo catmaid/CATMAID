@@ -127,10 +127,9 @@ def get_data_view( request, data_view_id ):
     if show_stackgroups:
         # Get all
         stackgroups = StackGroup.objects.filter(project__in=projects)
-        for p in projects:
-            for sg in stackgroups:
-                stackgroup_index[sg.id] = sg
-                stackgroups_of[p.id].append(sg)
+        for sg in stackgroups:
+            stackgroup_index[sg.id] = sg
+            stackgroups_of[sg.project_id].append(sg)
 
     # Extend the project list with additional information like editabilty
     projects = extend_projects( request.user, projects )

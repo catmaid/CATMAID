@@ -182,7 +182,7 @@ class ArrangementExperimentProvider(object):
                 'metadata': '',
                 'tile_width': 512,
                 'tile_height': 512,
-                'tile_source_type': 1
+                'tile_source_type': 9
             })
         return stacks
 

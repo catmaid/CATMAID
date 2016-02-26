@@ -9,6 +9,9 @@ included in this changelog.
 - `GET /{project_id}/labels/[treenode|connector]/{label_id}/`:
   Returns a list of labels for a node.
 
+- `GET /{project_id}/connectors/{connector_id}/`:
+  Returns information on a connector and its partners.
+
 ### Modifications
 
 `POST /{project_id}/skeletons/connectivity`:

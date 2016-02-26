@@ -167,6 +167,8 @@ urlpatterns += [
     url(r'^(?P<project_id>\d+)/connector/edgetimes$', connector.connector_associated_edgetimes),
     url(r'^(?P<project_id>\d+)/connector/pre-post-info$', connector.connectors_info),
     url(r'^(?P<project_id>\d+)/connector/user-info$', connector.connector_user_info),
+    url(r'^(?P<project_id>\d+)/connectors/(?P<connector_id>\d+)/$',
+        connector.connector_detail),
 ]
 
 # Neuron access

@@ -1693,7 +1693,9 @@
   };
 
   WebGLApplication.prototype.Space.prototype.render = function() {
-    this.view.render();
+    if (this.view) {
+      this.view.render();
+    }
   };
 
   WebGLApplication.prototype.Space.prototype.destroy = function() {

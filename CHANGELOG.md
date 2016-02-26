@@ -91,6 +91,9 @@ Volumes:
   are colored the same way as they regular mesh. Currently, the color isn't
   updated on purpose to allow the easy creation of differently colored volumes.
 
+- When the current Z plane is displayed, it will now have the section's images
+  data mapped to it. For now the lowest resolution images are used for this,
+  orthogonal stacks are supported as well.
 
 Skeleton Projection layer:
 

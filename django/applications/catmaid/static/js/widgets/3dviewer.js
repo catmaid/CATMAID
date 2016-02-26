@@ -761,6 +761,7 @@
     this.show_background = true;
     this.show_box = true;
     this.show_zplane = false;
+    this.zplane_texture = true;
     this.custom_tag_spheres_regex = '';
     this.connector_filter = false;
     this.shading_method = 'none';
@@ -1880,7 +1881,10 @@
     });
     if (this.zplane) {
       this.zplane.geometry.dispose();
-      this.zplane.material.dispose();
+      // Dispose individual zplane tiles in texture mode.
+      this.zplane.material.materials.forEach(function(m) {
+        m.dispose();
+      });
     }
 
     // dispose shared geometries
@@ -2073,73 +2077,265 @@
     }
 
     if (options.show_zplane) {
-      this.createZPlane(space, project.focusedStackViewer);
+      this.createZPlane(space, project.focusedStackViewer, options.zplane_texture);
     } else {
       if (this.zplane) space.scene.remove(this.zplane);
       this.zplane = null;
     }
   };
 
-  WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createPlaneGeometry = function (stack) {
+  WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createPlaneGeometry =
+      function (stack, tileZoomLevel) {
     var stackPlane = stack.createStackExtentsBox(),
         plane = stack.createStackToProjectBox(stackPlane),
-        geometry = new THREE.Geometry();
+        geometry, pDepth;
 
     var majorDimSeq = ['min', 'max', 'min', 'max'],
         minorDimSeq = ['min', 'min', 'max', 'max'],
         planeDimSeq = minorDimSeq,
-        seq;
+        seq, pWidth, pHeight, pTileWidth, pTileHeight;
 
     switch (stack.orientation) {
       case CATMAID.Stack.ORIENTATION_XY:
+        pDepth = plane.max.z - plane.min.z;
         plane.min.z = plane.max.z = 0;
         seq = {x: majorDimSeq, y: minorDimSeq, z: planeDimSeq};
+        pWidth = plane.max.x - plane.min.x;
+        pHeight = plane.max.y - plane.min.y;
+        pTileWidth = stack.tileSource.tileWidth * stack.resolution.x;
+        pTileHeight = stack.tileSource.tileHeight * stack.resolution.y;
         break;
       case CATMAID.Stack.ORIENTATION_XZ:
+        pDepth = plane.max.y - plane.min.y;
         plane.min.y = plane.max.y = 0;
         seq = {x: majorDimSeq, y: planeDimSeq, z: minorDimSeq};
+        pWidth = plane.max.x - plane.min.x;
+        pHeight = plane.max.z - plane.min.z;
+        pTileWidth = stack.tileSource.tileWidth * stack.resolution.x;
+        pTileHeight = stack.tileSource.tileHeight * stack.resolution.z;
         break;
       case CATMAID.Stack.ORIENTATION_ZY:
+        pDepth = plane.max.x - plane.min.x;
         plane.min.x = plane.max.x = 0;
         seq = {x: planeDimSeq, y: minorDimSeq, z: majorDimSeq};
+        pWidth = plane.max.z - plane.min.z;
+        pHeight = plane.max.y - plane.min.y;
+        pTileWidth = stack.tileSource.tileWidth * stack.resolution.z;
+        pTileHeight = stack.tileSource.tileHeight * stack.resolution.y;
         break;
     }
 
-    for (var i = 0; i < 4; ++i) {
-      geometry.vertices.push( new THREE.Vector3( plane[seq.x[i]].x, plane[seq.y[i]].y, plane[seq.z[i]].z ) );
+    if (tileZoomLevel) {
+      // Scale project tile width to the requested zoom level
+      var scale = Math.pow(2, tileZoomLevel);
+      pTileWidth *= scale;
+      pTileHeight *= scale;
+      // Create two triangles for every tile
+      var tileWidth = stack.tileSource.tileWidth;
+      var tileHeight = stack.tileSource.tileHeight;
+      var nHTiles = getNZoomedParts(stack.dimension.x, tileZoomLevel, tileWidth);
+      var nVTiles = getNZoomedParts(stack.dimension.y, tileZoomLevel, tileHeight);
+
+      // Use THREE's plane geometry so that UVs and normals are set up aleady.
+      var tilePlaneWidth = nHTiles * pTileWidth;
+      var tilePlaneHeight = nVTiles * pTileHeight;
+      geometry = new THREE.PlaneGeometry(tilePlaneWidth, tilePlaneHeight, nHTiles, nVTiles);
+      // Assign incremental material indexes to each face (row first)
+      var l = geometry.faces.length / 2;
+      for (var i = 0; i < l; i++) {
+          var j = 2 * i;
+          geometry.faces[j].materialIndex = i;
+          geometry.faces[j + 1].materialIndex = i;
+          // Set UVs so that our image tiles map nicely on our triangles
+          var uvs1 = geometry.faceVertexUvs[0][j];
+          var uvs2 = geometry.faceVertexUvs[0][j + 1];
+          uvs1[0].set(0,1);
+          uvs1[1].set(0,0);
+          uvs1[2].set(1,1);
+          uvs2[0].set(0,0);
+          uvs2[1].set(1,0);
+          uvs2[2].set(1,1);
+      }
+      // Clamp all tiles in last column to stack width
+      var vertices = geometry.vertices;
+      var v = new THREE.Vector3();
+      var overflowH = tilePlaneWidth - pWidth;
+      var overflowHCoRatio = 1 - overflowH / pTileWidth;
+      for (var i=0; i<nVTiles; ++i) {
+        var tileIndex = (i + 1) * nHTiles - 1;
+        // Each tile has two faces of each three vertices
+        var face2Index = tileIndex * 2 + 1;
+        var face2 = geometry.faces[face2Index];
+        var a = vertices[face2.a];
+        var b = vertices[face2.b];
+        var c = vertices[face2.c];
+        // Move lower right corner of triangle 2 of our face to the stack
+        // boundary.
+        v.copy(a).sub(b).setLength(overflowH);
+        b.add(v);
+        // Make sure the top right corner is updated as well
+        if (0 === i) {
+          c.add(v);
+        }
+        // Adjust UVs accordingly
+        var uvs1 = geometry.faceVertexUvs[0][face2Index - 1];
+        var uvs2 = geometry.faceVertexUvs[0][face2Index];
+        uvs1[2].set(overflowHCoRatio,1);
+        uvs2[1].set(overflowHCoRatio,0);
+        uvs2[2].set(overflowHCoRatio,1);
+      }
+      // Clamp all tiles in last row to stack height
+      var overflowV = tilePlaneHeight - pHeight;
+      var overflowVRatio = overflowV / pTileHeight;
+      for (var i=0; i<nHTiles; ++i) {
+        var tileIndex = (nVTiles - 1) * nHTiles + i;
+        var face2Index = tileIndex * 2 + 1;
+        var face2 = geometry.faces[face2Index];
+        var a = vertices[face2.a];
+        var b = vertices[face2.b];
+        var c = vertices[face2.c];
+        // Move lower right corner of triangle 2 of our face to the stack
+        // boundary.
+        v.copy(c).sub(b).setLength(overflowV);
+        b.add(v);
+        // Make sure the top right corner is updated as well
+        if (0 === i) {
+          a.add(v);
+        }
+        // Adjust UVs accordingly
+        var uvs1 = geometry.faceVertexUvs[0][face2Index - 1];
+        var uvs2 = geometry.faceVertexUvs[0][face2Index];
+        uvs1[1].set(0, overflowVRatio);
+        uvs2[0].set(0, overflowVRatio);
+        uvs2[1].set(1, overflowVRatio);
+      }
+
+      geometry.verticesNeedUpdate = true;
+      geometry.uvsNeedUpdate = true;
+      // Our coordinate system is upside down, we have to rotate the plane to
+      // get our UV mappings and material index where we want them.
+      if (CATMAID.Stack.ORIENTATION_XY === stack.orientation) {
+        geometry.rotateX(Math.PI);
+        geometry.translate(tilePlaneWidth * 0.5,
+                           tilePlaneHeight * 0.5,
+                           0);
+      } else if (CATMAID.Stack.ORIENTATION_XZ === stack.orientation) {
+        geometry.rotateX(-Math.PI / 2);
+        geometry.translate(tilePlaneWidth * 0.5 + plane.min.x,
+                           0,
+                           tilePlaneHeight * 0.5);
+      } else if (CATMAID.Stack.ORIENTATION_ZY === stack.orientation) {
+        geometry.rotateY(-Math.PI / 2);
+        geometry.rotateZ(Math.PI);
+        geometry.translate(0,
+                           tilePlaneHeight * 0.5 + plane.min.y,
+                           tilePlaneWidth * 0.5);
+      }
+    } else {
+      // Push vertices for lower left, lower right, upper left, upper right
+      geometry = new THREE.Geometry();
+      for (var i = 0; i < 4; ++i) {
+        geometry.vertices.push( new THREE.Vector3( plane[seq.x[i]].x,
+              plane[seq.y[i]].y, plane[seq.z[i]].z ) );
+      }
+      geometry.faces.push( new THREE.Face3( 0, 1, 2 ) );
+      geometry.faces.push( new THREE.Face3( 1, 2, 3 ) );
     }
-    geometry.faces.push( new THREE.Face3( 0, 1, 2 ) );
-    geometry.faces.push( new THREE.Face3( 1, 2, 3 ) );
 
     return geometry;
   };
 
-  WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createZPlane = function(space, stackViewer) {
+  WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createZPlane = function(space, stackViewer, useTexture) {
     if (this.zplane) space.scene.remove(this.zplane);
-    var material = new THREE.MeshBasicMaterial( { color: 0x151349, side: THREE.DoubleSide, opacity: 0.5, transparent: true } ),
-        geometry = this.createPlaneGeometry(stackViewer.primaryStack);
+    // Use low res images for now
+    this.zplaneZoomLevel = stackViewer.primaryStack.MAX_S;
+    var geometry = this.createPlaneGeometry(stackViewer.primaryStack, this.zplaneZoomLevel);
 
-    this.zplane = new THREE.Mesh( geometry, material );
+    if (useTexture) {
+      // Every tile in the z plane is made out of two triangles.
+      this.zplaneMaterials = new Array(geometry.faces.length / 2);
+      for (var i=0; i<this.zplaneMaterials.length; ++i) {
+        this.zplaneMaterials[i] = new THREE.MeshPhongMaterial({
+          color: 0x151349,
+          side: THREE.DoubleSide,
+          opacity: 0.5,
+          transparent: true
+        });
+      }
+      this.zplane = new THREE.Mesh(geometry, new THREE.MultiMaterial(this.zplaneMaterials));
+    } else {
+      var material = new THREE.MeshBasicMaterial({
+        color: 0x151349, side: THREE.DoubleSide, opacity: 0.5, transparent: true});
+      this.zplane = new THREE.Mesh(geometry, material);
+    }
+
     space.scene.add(this.zplane);
 
     this.updateZPlanePosition(space, stackViewer);
   };
 
+  var getNZoomedParts = function(width, zoom, part) {
+    return Math.floor((width * Math.pow(2, -zoom) - 1) / part) + 1;
+  };
+
   WebGLApplication.prototype.Space.prototype.StaticContent.prototype.updateZPlanePosition = function(space, stackViewer) {
     if (this.zplane) {
+      var stack = stackViewer.primaryStack;
       var v = new THREE.Vector3(0, 0, 0);
       switch (stackViewer.primaryStack.orientation) {
         case CATMAID.Stack.ORIENTATION_XY:
-          v.z = stackViewer.primaryStack.stackToProjectZ(stackViewer.z, stackViewer.y, stackViewer.x);
+          v.z = stack.stackToProjectZ(stackViewer.z, stackViewer.y, stackViewer.x);
           break;
         case CATMAID.Stack.ORIENTATION_XZ:
-          v.y = stackViewer.primaryStack.stackToProjectY(stackViewer.z, stackViewer.y, stackViewer.x);
+          v.y = stack.stackToProjectY(stackViewer.z, stackViewer.y, stackViewer.x);
           break;
         case CATMAID.Stack.ORIENTATION_ZY:
-          v.x = stackViewer.primaryStack.stackToProjectX(stackViewer.z, stackViewer.y, stackViewer.x);
+          v.x = stack.stackToProjectX(stackViewer.z, stackViewer.y, stackViewer.x);
           break;
       }
       this.zplane.position.copy(v);
+
+      // Also update tile texture
+      if (this.zplaneMaterials) {
+        var tileSource = stack.tileSource;
+        // To get arround potential CORS restrictions load tile into image and
+        // then into texture.
+        var loadTile = function(texture, material, notify) {
+          material.map = texture;
+          texture.needsUpdate = true;
+          material.needsUpdate = true;
+          notify();
+        };
+
+        var counter = this.zplaneMaterials.length;
+        var notify = function() {
+          counter = counter - 1;
+          if (0 === counter) {
+            space.render();
+          }
+        };
+
+        var zoomLevel = this.zplaneZoomLevel;
+        var nCols = getNZoomedParts(stack.dimension.x, zoomLevel, tileSource.tileWidth);
+        for (var i=0; i<this.zplaneMaterials.length; ++i) {
+          var material = this.zplaneMaterials[i];
+          material.color.setHex(0xffffff);
+          material.opacity = 0.8;
+          material.transpaent = true;
+          var image = new Image();
+          image.crossOrigin = true;
+          var texture = new THREE.Texture(image);
+          image.onload = loadTile.bind(this, texture, material, notify);
+
+          var slicePixelPosition = [stackViewer.z];
+          var col = i % nCols;
+          var row = (i - col) / nCols;
+          image.src = tileSource.getTileURL(project.id, stack,
+              slicePixelPosition, col, row, zoomLevel);
+        }
+
+        this.zplane.material.needsUpdate = true;
+      }
     }
   };
 

@@ -2207,7 +2207,9 @@
         var uvs2 = geometry.faceVertexUvs[0][face2Index];
         uvs1[1].set(0, overflowVRatio);
         uvs2[0].set(0, overflowVRatio);
-        uvs2[1].set(1, overflowVRatio);
+        // The tile in the lower right corner has to be treated special, because
+        // its UVs need to be changed in both directions
+        uvs2[1].set((nHTiles - 1 === i) ? overflowHCoRatio : 1, overflowVRatio);
       }
 
       geometry.verticesNeedUpdate = true;

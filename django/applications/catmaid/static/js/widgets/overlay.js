@@ -1580,18 +1580,14 @@ SkeletonAnnotations.TracingOverlay.prototype.createLink = function (fromid, toid
     link_type, afterCreate)
 {
   var self = this;
-  this.promiseNode(fromid).then(function(nodeID) {
-    self.submit(
-        django_url + project.id + '/link/create',
-        'POST',
-        {pid: project.id,
-         from_id: nodeID,
-         link_type: link_type,
-         to_id: toid},
-         function(json) {
-           if (json.warning) CATMAID.warn(json.warning);
-           self.updateNodes(afterCreate);
-         });
+  return this.promiseNode(fromid).then(function(nodeId) {
+    return self.submit.then(function() {
+      var command = new CATMAID.LinkConnectorCommand(project.id, toid, nodeId, link_type);
+      return CATMAID.commands.execute(command).then(function(result) {
+        if (result.warning) CATMAID.warn(result.warning);
+        self.updateNodes(afterCreate);
+      });
+    });
   });
 };
 
@@ -1604,30 +1600,27 @@ SkeletonAnnotations.TracingOverlay.prototype.createSingleConnector = function (
     phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, confval, subtype, completionCallback)
 {
   var self = this;
-  this.submit(
-      django_url + project.id + '/connector/create',
-      'POST',
-      {pid: project.id,
-       confidence: confval,
-       x: phys_x,
-       y: phys_y,
-       z: phys_z},
-      function(jso) {
-        // add treenode to the display and update it
-        var nn = self.graphics.newConnectorNode(jso.connector_id, pos_x, pos_y,
-            pos_z, 0, 5 /* confidence */, subtype, true);
-        self.nodes[jso.connector_id] = nn;
-        nn.createGraphics();
-        // Emit new node event after we added to our local node set to not
-        // trigger a node update.
-        SkeletonAnnotations.trigger(SkeletonAnnotations.EVENT_NODE_CREATED,
-            jso.connector_id, phys_x, phys_y, phys_z);
+  var exec = CATMAID.commands.execute(
+      new CATMAID.CreateConnectorCommand(project.id,
+        phys_x, phys_y, phys_z, confval));
+  return exec.then(function(result) {
+    // add treenode to the display and update it
+    var nn = self.graphics.newConnectorNode(result.newConnectorId, pos_x, pos_y,
+        pos_z, 0, 5 /* confidence */, subtype, true);
+    self.nodes[result.newConnectorId] = nn;
+    nn.createGraphics();
+    // Emit new node event after we added to our local node set to not
+    // trigger a node update.
+    SkeletonAnnotations.trigger(SkeletonAnnotations.EVENT_NODE_CREATED,
+        result.newConnectorId, phys_x, phys_y, phys_z);
 
-        self.activateNode(nn);
-        if (typeof completionCallback !== "undefined") {
-          completionCallback(jso.connector_id);
-        }
-      });
+    self.activateNode(nn);
+    if (typeof completionCallback !== "undefined") {
+      completionCallback(result.connector_id);
+    }
+
+    return result;
+  }).catch(CATMAID.handleError);
 };
 
 /**

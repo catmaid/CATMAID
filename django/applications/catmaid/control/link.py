@@ -9,8 +9,10 @@ from catmaid.control.authentication import requires_user_role, can_edit_or_fail
 
 @requires_user_role(UserRole.Annotate)
 def create_link(request, project_id=None):
-    """ Create a link, currently only a presynaptic_to or postsynaptic_to relationship
-    between a treenode and a connector.
+    """ Create a link between a connector and a treenode
+
+    Currently the following link types (relations) are supported:
+    presynaptic_to, postsynaptic_to, abutting, gapjunction_with.
     """
     from_id = int(request.POST.get('from_id', 0))
     to_id = int(request.POST.get('to_id', 0))
@@ -75,16 +77,19 @@ def create_link(request, project_id=None):
         if (synapse_links.count() != 0):
             return HttpResponse(json.dumps({'error': 'Connector %s is part of a synapse, and gap junction can not be added.' % to_id}))
 
-    TreenodeConnector(
+    link = TreenodeConnector(
         user=request.user,
         project=project,
         relation=relation,
         treenode=from_treenode,  # treenode_id = from_id
         skeleton=from_treenode.skeleton,  # treenode.skeleton_id where treenode.id = from_id
         connector=to_connector  # connector_id = to_id
-    ).save()
+    )
+    link.save()
+    print(link.__dict__)
 
     result['message'] = 'success'
+    result['link_id'] = link.id
     return HttpResponse(json.dumps(result), content_type='application/json')
 
 
@@ -95,16 +100,24 @@ def delete_link(request, project_id=None):
 
     links = TreenodeConnector.objects.filter(
         connector=connector_id,
-        treenode=treenode_id)
+        treenode=treenode_id).select_related('relation')
 
     if links.count() == 0:
-        return HttpResponse(json.dumps({'error': 'Failed to delete connector #%s from geometry domain.' % connector_id}))
+        raise ValueError('Couldn\'t find link between connector {} '
+                'and node {}'.format(connector_id, treenode_id))
+
+    link = links[0]
 
     # Could be done by filtering above when obtaining the links,
     # but then one cannot distinguish between the link not existing
     # and the user_id not matching or not being superuser.
-    can_edit_or_fail(request.user, links[0].id, 'treenode_connector')
+    can_edit_or_fail(request.user, link.id, 'treenode_connector')
 
-    links[0].delete()
-    return HttpResponse(json.dumps({'result': 'Removed treenode to connector link'}))
+    link.delete()
+    return HttpResponse(json.dumps({
+        'link_id': link.id,
+        'link_type_id': link.relation.id,
+        'link_type': ink.relation.relation_name,
+        'result': 'Removed treenode to connector link'
+    }))
 

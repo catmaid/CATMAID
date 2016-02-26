@@ -27,7 +27,8 @@
       max_zoom_level,       //!< {int} that defines the maximum available zoom level
       labelupload_url,      //!< {String} that defines the label upload URL for labels (for tile_source_type==2)
       metadata,         //!< {String} of arbitrary meta data
-      orientation         //!< {Integer} orientation (0: xy, 1: xz, 2: yz)
+      orientation,         //!< {Integer} orientation (0: xy, 1: xz, 2: yz)
+      tileSource
     ) {
 
     // initialize
@@ -73,6 +74,7 @@
     self.labelupload_url = labelupload_url;
     this.metadata = metadata;
     self.orientation = orientation;
+    self.tileSource = tileSource;
 
     /**
      * Project x-coordinate for stack coordinates

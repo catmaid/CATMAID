@@ -642,6 +642,9 @@ function handle_openProjectStack( e, stackViewer )
       labelupload = e.labelupload_url;
     }
 
+    var tilesource = CATMAID.getTileSource(e.tile_source_type,
+        e.image_base, e.file_extension, e.tile_width, e.tile_height);
+
     var stack = new CATMAID.Stack(
         e.sid,
         e.stitle,
@@ -654,7 +657,8 @@ function handle_openProjectStack( e, stackViewer )
         -2,
         labelupload, // TODO: if there is any
         e.metadata,
-        e.orientation );
+        e.orientation,
+        tilesource );
 
     if (!useExistingViewer) {
       stackViewer = new CATMAID.StackViewer(project, stack);
@@ -662,8 +666,6 @@ function handle_openProjectStack( e, stackViewer )
 
     document.getElementById( "toolbox_project" ).style.display = "block";
 
-    var tilesource = CATMAID.getTileSource(e.tile_source_type,
-        e.image_base, e.file_extension, e.tile_width, e.tile_height);
     var tilelayerConstructor = CATMAID.TileLayer.Settings.session.prefer_webgl ?
         CATMAID.PixiTileLayer :
         CATMAID.TileLayer;

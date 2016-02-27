@@ -1334,6 +1334,11 @@ var WindowMaker = new function()
           ['Floor', true, adjustFn('show_floor'), false],
           ['Bounding box', true, adjustFn('show_box'), false],
           ['Z plane', false, adjustFn('show_zplane'), false],
+          ['Z plane zoom level ', o.zplane_zoomlevel, "", function() {
+              WA.options.zplane_zoomlevel = ("max" === this.value) ? this.value :
+                  Math.max(0, this.value);
+              WA.adjustStaticContent();
+            }, 4],
           ['Debug', false, function() { WA.setDebug(this.checked); }, false],
           ['Missing sections', false, adjustFn('show_missing_sections'), false],
           ['with height:', o.missing_section_height, ' %', function() {

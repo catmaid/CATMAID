@@ -762,6 +762,7 @@
     this.show_box = true;
     this.show_zplane = false;
     this.zplane_texture = true;
+    this.zplane_zoomlevel = "max";
     this.custom_tag_spheres_regex = '';
     this.connector_filter = false;
     this.shading_method = 'none';
@@ -2077,7 +2078,8 @@
     }
 
     if (options.show_zplane) {
-      this.createZPlane(space, project.focusedStackViewer, options.zplane_texture);
+      this.createZPlane(space, project.focusedStackViewer,
+          options.zplane_texture ? options.zplane_zoomlevel : null);
     } else {
       if (this.zplane) space.scene.remove(this.zplane);
       this.zplane = null;
@@ -2247,13 +2249,29 @@
     return geometry;
   };
 
-  WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createZPlane = function(space, stackViewer, useTexture) {
+  /**
+   * Destroy an existing z plane and replace it with a new one.
+   *
+   * @param {Object}  space            Space to which the z plane should be added to
+   * @param {Object}  stackViewer      The stack viewer to create z plane for
+   * @param {Integer} textureZoomLevel (Optional) The zoom level used for
+   *                                   image tile texture. If set to "max", the
+   *                                   stack's maximum zoom level is used. If
+   *                                   null/undefined, no texture will be used. 
+   */
+  WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createZPlane =
+      function(space, stackViewer, textureZoomLevel) {
     if (this.zplane) space.scene.remove(this.zplane);
-    // Use low res images for now
-    this.zplaneZoomLevel = stackViewer.primaryStack.MAX_S;
-    var geometry = this.createPlaneGeometry(stackViewer.primaryStack, this.zplaneZoomLevel);
 
-    if (useTexture) {
+    if ("max" === textureZoomLevel) {
+      textureZoomLevel = stackViewer.primaryStack.MAX_S;
+    }
+    // Create geometry for plane
+    var geometry = this.createPlaneGeometry(stackViewer.primaryStack, textureZoomLevel);
+
+    if (textureZoomLevel || 0 === textureZoomLevel) {
+      // Remember zoom level for updates
+      this.zplaneZoomLevel = textureZoomLevel;
       // Every tile in the z plane is made out of two triangles.
       this.zplaneMaterials = new Array(geometry.faces.length / 2);
       for (var i=0; i<this.zplaneMaterials.length; ++i) {
@@ -2269,6 +2287,7 @@
       var material = new THREE.MeshBasicMaterial({
         color: 0x151349, side: THREE.DoubleSide, opacity: 0.5, transparent: true});
       this.zplane = new THREE.Mesh(geometry, material);
+      this.zplaneMaterials = null;
     }
 
     space.scene.add(this.zplane);

@@ -81,6 +81,9 @@ Volumes:
 
 - Gap junctions are displayed like synapse edges in purple.
 
+- Stack related settings (bounding box, missing sections and z planes) are now
+  moved to a tab called "Stacks".
+
 - Stack bounding boxes and missing sections now update when stack viewer focus
   changes.
 
@@ -92,8 +95,8 @@ Volumes:
   updated on purpose to allow the easy creation of differently colored volumes.
 
 - When the current Z plane is displayed, it will now have the section's images
-  data mapped to it. For now the lowest resolution images are used for this,
-  orthogonal stacks are supported as well.
+  data mapped to it. The used zoom level (resolution) and the opacity can be
+  adjusted and orthogonal stacks are supported, too.
 
 Skeleton Projection layer:
 

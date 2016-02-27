@@ -1364,6 +1364,14 @@ var WindowMaker = new function()
                   Math.max(0, this.value);
               WA.adjustStaticContent();
             }, 4],
+          {type: 'numeric', label: 'Z plane opacity', value: o.zplane_opacity, length: 2,
+            title: 'The opacity of displayed Z planes', onchangeFn: function(e) {
+              var value = parseFloat(this.value);
+              if (value) {
+                WA.options.zplane_opacity = value;
+                WA.adjustStaticContent();
+              }
+            }},
           ['Missing sections', false, adjustFn('show_missing_sections'), false],
           ['with height:', o.missing_section_height, ' %', function() {
               WA.options.missing_section_height = Math.max(0, Math.min(this.value, 100));

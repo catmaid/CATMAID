@@ -763,6 +763,7 @@
     this.show_zplane = false;
     this.zplane_texture = true;
     this.zplane_zoomlevel = "max";
+    this.zplane_opacity = 0.8;
     this.custom_tag_spheres_regex = '';
     this.connector_filter = false;
     this.shading_method = 'none';
@@ -2079,7 +2080,8 @@
 
     if (options.show_zplane) {
       this.createZPlane(space, project.focusedStackViewer,
-          options.zplane_texture ? options.zplane_zoomlevel : null);
+          options.zplane_texture ? options.zplane_zoomlevel : null,
+          options.zplane_opacity);
     } else {
       if (this.zplane) space.scene.remove(this.zplane);
       this.zplane = null;
@@ -2230,9 +2232,11 @@
    *                                   image tile texture. If set to "max", the
    *                                   stack's maximum zoom level is used. If
    *                                   null/undefined, no texture will be used. 
+   * @param {Number}  opacity          A value in the range 0-1 representing the
+   *                                   opacity of the z plane.
    */
   WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createZPlane =
-      function(space, stackViewer, textureZoomLevel) {
+      function(space, stackViewer, textureZoomLevel, opacity) {
     if (this.zplane) space.scene.remove(this.zplane);
 
     if ("max" === textureZoomLevel) {
@@ -2248,16 +2252,16 @@
       this.zplaneMaterials = new Array(geometry.faces.length / 2);
       for (var i=0; i<this.zplaneMaterials.length; ++i) {
         this.zplaneMaterials[i] = new THREE.MeshPhongMaterial({
-          color: 0x151349,
+          color: 0xffffff,
           side: THREE.DoubleSide,
-          opacity: 0.5,
+          opacity: opacity,
           transparent: true
         });
       }
       this.zplane = new THREE.Mesh(geometry, new THREE.MultiMaterial(this.zplaneMaterials));
     } else {
       var material = new THREE.MeshBasicMaterial({
-        color: 0x151349, side: THREE.DoubleSide, opacity: 0.5, transparent: true});
+        color: 0x151349, side: THREE.DoubleSide, opacity: opacity, transparent: true});
       this.zplane = new THREE.Mesh(geometry, material);
       this.zplaneMaterials = null;
     }
@@ -2312,9 +2316,6 @@
         var nCols = getNZoomedParts(stack.dimension.x, zoomLevel, tileSource.tileWidth);
         for (var i=0; i<this.zplaneMaterials.length; ++i) {
           var material = this.zplaneMaterials[i];
-          material.color.setHex(0xffffff);
-          material.opacity = 0.8;
-          material.transpaent = true;
           var image = new Image();
           image.crossOrigin = true;
           var texture = new THREE.Texture(image);

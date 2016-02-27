@@ -2141,100 +2141,72 @@
       // Use THREE's plane geometry so that UVs and normals are set up aleady.
       var tilePlaneWidth = nHTiles * pTileWidth;
       var tilePlaneHeight = nVTiles * pTileHeight;
-      geometry = new THREE.PlaneGeometry(tilePlaneWidth, tilePlaneHeight, nHTiles, nVTiles);
-      // Assign incremental material indexes to each face (row first)
-      var l = geometry.faces.length / 2;
-      for (var i = 0; i < l; i++) {
-          var j = 2 * i;
-          geometry.faces[j].materialIndex = i;
-          geometry.faces[j + 1].materialIndex = i;
-          // Set UVs so that our image tiles map nicely on our triangles
-          var uvs1 = geometry.faceVertexUvs[0][j];
-          var uvs2 = geometry.faceVertexUvs[0][j + 1];
-          uvs1[0].set(0,1);
-          uvs1[1].set(0,0);
-          uvs1[2].set(1,1);
-          uvs2[0].set(0,0);
-          uvs2[1].set(1,0);
-          uvs2[2].set(1,1);
+
+      // Get four corners of z plane: lower left, lower right,
+      // upper left, upper right
+      var planeVertices = new Array(4);
+      for (var i = 0; i < 4; ++i) {
+        planeVertices[i] = new THREE.Vector3(plane[seq.x[i]].x,
+            plane[seq.y[i]].y, plane[seq.z[i]].z);
       }
-      // Clamp all tiles in last column to stack width
-      var vertices = geometry.vertices;
-      var v = new THREE.Vector3();
+      var hTileStep = planeVertices[1].clone().sub(planeVertices[0]).setLength(pTileWidth);
+      var vTileStep = planeVertices[0].clone().sub(planeVertices[2]).setLength(pTileHeight);
+
+      // Calculate some required tile overflow information
       var overflowH = tilePlaneWidth - pWidth;
       var overflowHCoRatio = 1 - overflowH / pTileWidth;
-      for (var i=0; i<nVTiles; ++i) {
-        var tileIndex = (i + 1) * nHTiles - 1;
-        // Each tile has two faces of each three vertices
-        var face2Index = tileIndex * 2 + 1;
-        var face2 = geometry.faces[face2Index];
-        var a = vertices[face2.a];
-        var b = vertices[face2.b];
-        var c = vertices[face2.c];
-        // Move lower right corner of triangle 2 of our face to the stack
-        // boundary.
-        v.copy(a).sub(b).setLength(overflowH);
-        b.add(v);
-        // Make sure the top right corner is updated as well
-        if (0 === i) {
-          c.add(v);
-        }
-        // Adjust UVs accordingly
-        var uvs1 = geometry.faceVertexUvs[0][face2Index - 1];
-        var uvs2 = geometry.faceVertexUvs[0][face2Index];
-        uvs1[2].set(overflowHCoRatio,1);
-        uvs2[1].set(overflowHCoRatio,0);
-        uvs2[2].set(overflowHCoRatio,1);
-      }
-      // Clamp all tiles in last row to stack height
       var overflowV = tilePlaneHeight - pHeight;
-      var overflowVRatio = overflowV / pTileHeight;
-      for (var i=0; i<nHTiles; ++i) {
-        var tileIndex = (nVTiles - 1) * nHTiles + i;
-        var face2Index = tileIndex * 2 + 1;
-        var face2 = geometry.faces[face2Index];
-        var a = vertices[face2.a];
-        var b = vertices[face2.b];
-        var c = vertices[face2.c];
-        // Move lower right corner of triangle 2 of our face to the stack
-        // boundary.
-        v.copy(c).sub(b).setLength(overflowV);
-        b.add(v);
-        // Make sure the top right corner is updated as well
-        if (0 === i) {
-          a.add(v);
-        }
-        // Adjust UVs accordingly
-        var uvs1 = geometry.faceVertexUvs[0][face2Index - 1];
-        var uvs2 = geometry.faceVertexUvs[0][face2Index];
-        uvs1[1].set(0, overflowVRatio);
-        uvs2[0].set(0, overflowVRatio);
-        // The tile in the lower right corner has to be treated special, because
-        // its UVs need to be changed in both directions
-        uvs2[1].set((nHTiles - 1 === i) ? overflowHCoRatio : 1, overflowVRatio);
-      }
+      var overflowVCoRatio = 1 - overflowV / pTileHeight;
 
+      // This will become the z plane.
+      geometry = new THREE.PlaneGeometry(tilePlaneWidth, tilePlaneHeight, nHTiles, nVTiles);
+      var tileVertices = new Array(4);
+      for (var r=0; r<nVTiles; ++r) {
+        for (var c=0; c<nHTiles; ++c) {
+          var tileIndex = r * nHTiles + c;
+          var faceIndex = tileIndex * 2;
+          var face1 = geometry.faces[faceIndex];
+          var face2 = geometry.faces[faceIndex + 1];
+          var isLastCol = (c === nHTiles - 1);
+          var isLastRow = (r === nVTiles - 1);
+          var hTileFrac = isLastCol ? overflowHCoRatio : 1;
+          var vTileFrac = isLastRow ? overflowVCoRatio : 1;
+
+          // Move vertices to actual positions and clamp last row as well as
+          // last column to stack bounds.
+          var vertices = geometry.vertices;
+          var ul = vertices[face1.a].copy(planeVertices[0])
+              .addScaledVector(hTileStep, c)
+              .addScaledVector(vTileStep,  -r);
+          var ll = vertices[face1.b].copy(planeVertices[0])
+              .addScaledVector(hTileStep, c)
+              .addScaledVector(vTileStep, -r - vTileFrac);
+          var lr = vertices[face2.b].copy(planeVertices[0])
+              .addScaledVector(hTileStep, c + hTileFrac)
+              .addScaledVector(vTileStep, -r - vTileFrac);
+          var ur = vertices[face2.c].copy(planeVertices[0])
+              .addScaledVector(hTileStep, c + hTileFrac)
+              .addScaledVector(vTileStep, -r);
+
+          // Set different material index for each tile
+          face1.materialIndex = tileIndex;
+          face2.materialIndex = tileIndex;
+
+          // Set UVs so that our image tiles map nicely on our triangles
+          var uvs1 = geometry.faceVertexUvs[0][faceIndex];
+          var uvs2 = geometry.faceVertexUvs[0][faceIndex + 1];
+
+          // Set UVs and clamp UVs of last row and column to stack bounds.
+          uvs1[0].set(0, 1);
+          uvs1[1].set(0, 1 - vTileFrac);
+          uvs1[2].set(hTileFrac, 1);
+          uvs2[0].set(0, 1 - vTileFrac);
+          uvs2[1].set(hTileFrac, 1 - vTileFrac);
+          uvs2[2].set(hTileFrac, vTileFrac);
+        }
+      }
       geometry.verticesNeedUpdate = true;
       geometry.uvsNeedUpdate = true;
-      // Our coordinate system is upside down, we have to rotate the plane to
-      // get our UV mappings and material index where we want them.
-      if (CATMAID.Stack.ORIENTATION_XY === stack.orientation) {
-        geometry.rotateX(Math.PI);
-        geometry.translate(tilePlaneWidth * 0.5,
-                           tilePlaneHeight * 0.5,
-                           0);
-      } else if (CATMAID.Stack.ORIENTATION_XZ === stack.orientation) {
-        geometry.rotateX(-Math.PI / 2);
-        geometry.translate(tilePlaneWidth * 0.5 + plane.min.x,
-                           0,
-                           tilePlaneHeight * 0.5);
-      } else if (CATMAID.Stack.ORIENTATION_ZY === stack.orientation) {
-        geometry.rotateY(-Math.PI / 2);
-        geometry.rotateZ(Math.PI);
-        geometry.translate(0,
-                           tilePlaneHeight * 0.5 + plane.min.y,
-                           tilePlaneWidth * 0.5);
-      }
     } else {
       // Push vertices for lower left, lower right, upper left, upper right
       geometry = new THREE.Geometry();

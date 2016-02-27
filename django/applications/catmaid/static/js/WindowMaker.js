@@ -1356,6 +1356,9 @@ var WindowMaker = new function()
         [
           ['Bounding box', true, adjustFn('show_box'), false],
           ['Z plane', false, adjustFn('show_zplane'), false],
+          {type: 'checkbox', label: 'with stack images', value: true, left: true,
+           onclickFn: adjustFn('zplane_texture'), title: 'If checked, images ' +
+             'of the current section of the active stack will be displayed on a Z plane.'},
           ['Z plane zoom level ', o.zplane_zoomlevel, "", function() {
               WA.options.zplane_zoomlevel = ("max" === this.value) ? this.value :
                   Math.max(0, this.value);

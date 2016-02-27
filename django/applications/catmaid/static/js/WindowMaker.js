@@ -1359,11 +1359,15 @@ var WindowMaker = new function()
           {type: 'checkbox', label: 'with stack images', value: true, left: true,
            onclickFn: adjustFn('zplane_texture'), title: 'If checked, images ' +
              'of the current section of the active stack will be displayed on a Z plane.'},
-          ['Z plane zoom level ', o.zplane_zoomlevel, "", function() {
-              WA.options.zplane_zoomlevel = ("max" === this.value) ? this.value :
-                  Math.max(0, this.value);
-              WA.adjustStaticContent();
-            }, 4],
+          {type: 'numeric', label: 'Z plane zoom level ', value: o.zplane_zoomlevel,
+           title: 'The zoom-level to use (slider value in top toolbar) for image tiles ' +
+           'in a Z plane. If set to "max", the highest zoom-level available will be ' +
+           'which in turn means the worst resolution available.', length: 4,
+           onclickFn: function() {
+             WA.options.zplane_zoomlevel = ("max" === this.value) ? this.value :
+                 Math.max(0, this.value);
+             WA.adjustStaticContent();
+            }},
           {type: 'numeric', label: 'Z plane opacity', value: o.zplane_opacity, length: 2,
             title: 'The opacity of displayed Z planes', onchangeFn: function(e) {
               var value = parseFloat(this.value);

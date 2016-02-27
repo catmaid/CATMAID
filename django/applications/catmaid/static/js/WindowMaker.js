@@ -1130,7 +1130,7 @@ var WindowMaker = new function()
     DOM.addButtonDisplayToggle(win);
 
     var tabs = appendTabs(bar, WA.widgetID, ['Main', 'View', 'Shading',
-        'Skeleton filters', 'View settings', 'Shading parameters',
+        'Skeleton filters', 'View settings', 'Stacks', 'Shading parameters',
         'Animation', 'Export']);
 
     var select_source = CATMAID.skeletonListSources.createSelect(WA);
@@ -1332,19 +1332,7 @@ var WindowMaker = new function()
           ['Active node on top', false, function() { WA.options.active_node_on_top = this.checked; WA.adjustContent(); }, false],
           ['Black background', true, adjustFn('show_background'), false],
           ['Floor', true, adjustFn('show_floor'), false],
-          ['Bounding box', true, adjustFn('show_box'), false],
-          ['Z plane', false, adjustFn('show_zplane'), false],
-          ['Z plane zoom level ', o.zplane_zoomlevel, "", function() {
-              WA.options.zplane_zoomlevel = ("max" === this.value) ? this.value :
-                  Math.max(0, this.value);
-              WA.adjustStaticContent();
-            }, 4],
           ['Debug', false, function() { WA.setDebug(this.checked); }, false],
-          ['Missing sections', false, adjustFn('show_missing_sections'), false],
-          ['with height:', o.missing_section_height, ' %', function() {
-              WA.options.missing_section_height = Math.max(0, Math.min(this.value, 100));
-              WA.adjustStaticContent();
-            }, 4],
           ['Line width', o.skeleton_line_width, null, function() { WA.updateSkeletonLineWidth(this.value); }, 4],
           {
             type: 'numeric',
@@ -1363,6 +1351,22 @@ var WindowMaker = new function()
               WA.adjustContent();
               WA.updateSkeletonNodeHandleScaling(this.value);
         }, 5);
+
+    appendToTab(tabs['Stacks'],
+        [
+          ['Bounding box', true, adjustFn('show_box'), false],
+          ['Z plane', false, adjustFn('show_zplane'), false],
+          ['Z plane zoom level ', o.zplane_zoomlevel, "", function() {
+              WA.options.zplane_zoomlevel = ("max" === this.value) ? this.value :
+                  Math.max(0, this.value);
+              WA.adjustStaticContent();
+            }, 4],
+          ['Missing sections', false, adjustFn('show_missing_sections'), false],
+          ['with height:', o.missing_section_height, ' %', function() {
+              WA.options.missing_section_height = Math.max(0, Math.min(this.value, 100));
+              WA.adjustStaticContent();
+            }, 4]
+        ]);
 
     appendToTab(tabs['Skeleton filters'],
         [

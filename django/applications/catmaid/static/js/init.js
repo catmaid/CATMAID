@@ -640,7 +640,6 @@ function handle_openProjectStack( e, stackViewer )
         e.resolution,
         e.translation,    //!< @todo replace by an affine transform
         e.broken_slices,
-        e.trakem2_project,
         e.num_zoom_levels,
         -2,
         labelupload, // TODO: if there is any

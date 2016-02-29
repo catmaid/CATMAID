@@ -22,7 +22,6 @@
       resolution,         //!< {Array} physical resolution in units/pixel [x, y, z, ...]
       translation,        //!< @todo replace by an affine transform
       skip_planes,        //!< {Array} planes to be excluded from the stack's view [[z,t,...], [z,t,...], ...]
-      trakem2_project,      //!< {boolean} that states if a TrakEM2 project is available for this stack
       num_zoom_levels,      //!< {int} that defines the number of available non-artificial zoom levels
       max_zoom_level,       //!< {int} that defines the maximum available zoom level
       labelupload_url,      //!< {String} that defines the label upload URL for labels (for tile_source_type==2)
@@ -70,7 +69,6 @@
     }
     self.MIN_S = max_zoom_level;
 
-    self.is_trackem2_stack = trakem2_project;
     self.labelupload_url = labelupload_url;
     this.metadata = metadata;
     self.orientation = orientation;

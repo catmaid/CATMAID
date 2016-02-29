@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 import os.path
 from contextlib import closing
 import h5py
@@ -5,13 +7,12 @@ import json
 import httplib
 
 from django.conf import settings
-
-from django.shortcuts import get_object_or_404
 from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
 
-from catmaid.models import UserRole, Project, Stack, ProjectStack, \
+from ..models import UserRole, Project, Stack, ProjectStack, \
         BrokenSlice, Overlay
-from catmaid.control.authentication import requires_user_role
+from .authentication import requires_user_role
 
 
 def get_stack_info(project_id=None, stack_id=None):
@@ -30,9 +31,9 @@ def get_stack_info(project_id=None, stack_id=None):
         return {'error': 'The stack with ID %s is linked multiple times ' \
                          'to the project with ID %s, but there should only be ' \
                          'one link.' % (stack_id, project_id)}
-    ps=ps_all[0]
+    ps = ps_all[0]
 
-    broken_slices = {i:1 for i in  BrokenSlice.objects.filter(stack=stack_id) \
+    broken_slices = {i:1 for i in BrokenSlice.objects.filter(stack=stack_id) \
                      .values_list('index', flat=True)}
     overlay_data = Overlay.objects.filter(stack=stack_id)
 
@@ -43,7 +44,7 @@ def get_stack_info_response(p, s, ps, overlay_data, broken_slices):
     # https://github.com/catmaid/CATMAID/wiki/Convention-for-Stack-Image-Sources
     if int(s.tile_source_type) == 2:
         # request appropriate stack metadata from tile source
-        url=s.image_base.rstrip('/').lstrip('http://')
+        url = s.image_base.rstrip('/').lstrip('http://')
         # Important: Do not use localhost, but 127.0.0.1 instead
         # to prevent an namespace lookup error (gaierror)
         # Important2: Do not put http:// in front!
@@ -58,7 +59,7 @@ def get_stack_info_response(p, s, ps, overlay_data, broken_slices):
     else:
         overlays = []
         for ele in overlay_data:
-            overlays.append( {
+            overlays.append({
                 'id': ele.id,
                 'title': ele.title,
                 'image_base': ele.image_base,
@@ -67,8 +68,8 @@ def get_stack_info_response(p, s, ps, overlay_data, broken_slices):
                 'tile_height': ele.tile_height,
                 'tile_source_type': ele.tile_source_type,
                 'file_extension': ele.file_extension
-                } )
-        result={
+                })
+        result = {
             'sid': s.id,
             'pid': p.id,
             'ptitle': p.title,
@@ -108,8 +109,8 @@ def list_stack_tags(request, project_id=None, stack_id=None):
     """ Return the tags associated with the stack.
     """
     s = get_object_or_404(Stack, pk=stack_id)
-    tags = [ str(t) for t in s.tags.all()]
-    result = {'tags':tags}
+    tags = [str(t) for t in s.tags.all()]
+    result = {'tags': tags}
     return HttpResponse(json.dumps(result, sort_keys=True, indent=4), content_type="application/json")
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -133,7 +134,7 @@ def update_stack_tags(request, project_id=None, stack_id=None, tags=None):
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def stack_info(request, project_id=None, stack_id=None):
-    result=get_stack_info(project_id, stack_id)
+    result = get_stack_info(project_id, stack_id)
     return HttpResponse(json.dumps(result, sort_keys=True, indent=4), content_type="application/json")
 
 
@@ -141,7 +142,7 @@ def stack_info(request, project_id=None, stack_id=None):
 def stack_models(request, project_id=None, stack_id=None):
     """ Retrieve Mesh models for a stack
     """
-    d={}
+    d = {}
     patterns = (('%s_%s.hdf', (project_id, stack_id)),
                 ('%s.hdf', (project_id,)))
 
@@ -156,10 +157,10 @@ def stack_models(request, project_id=None, stack_id=None):
         return HttpResponse(json.dumps(d), content_type="application/json")
 
     with closing(h5py.File(filename, 'r')) as hfile:
-        meshnames=hfile['meshes'].keys()
+        meshnames = hfile['meshes'].keys()
         for name in meshnames:
-            vertlist=hfile['meshes'][name]['vertices'].value.tolist()
-            facelist= hfile['meshes'][name]['faces'].value.tolist()
+            vertlist = hfile['meshes'][name]['vertices'].value.tolist()
+            facelist = hfile['meshes'][name]['faces'].value.tolist()
             d[str(name)] = {
                 'metadata': {
                     'colors': 0,

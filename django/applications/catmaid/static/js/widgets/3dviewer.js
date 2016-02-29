@@ -2263,7 +2263,7 @@
       // Every tile in the z plane is made out of two triangles.
       this.zplaneMaterials = new Array(geometry.faces.length / 2);
       for (var i=0; i<this.zplaneMaterials.length; ++i) {
-        this.zplaneMaterials[i] = new THREE.MeshPhongMaterial({
+        this.zplaneMaterials[i] = new THREE.MeshBasicMaterial({
           color: 0xffffff,
           side: THREE.DoubleSide,
           opacity: opacity,

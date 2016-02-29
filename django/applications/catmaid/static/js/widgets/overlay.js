@@ -417,7 +417,7 @@ SkeletonAnnotations.isRealNode = function(node_id)
 SkeletonAnnotations.getVirtualNodeComponents = function(nodeID)
 {
   // Add an empty string to also be able to work with numbers.
-  return (nodeID + '').match(/vn:(\d+):(\d+):(\d+\.?\d*):(\d+\.?\d*):(\d+\.?\d*)/);
+  return (nodeID + '').match(/vn:(\d+):(\d+):(-?\d+\.?\d*):(-?\d+\.?\d*):(-?\d+\.?\d*)/);
 };
 
 /**

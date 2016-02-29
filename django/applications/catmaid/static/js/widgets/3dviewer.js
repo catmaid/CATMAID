@@ -2139,6 +2139,8 @@
       var tileHeight = stack.tileSource.tileHeight;
       var nHTiles = getNZoomedParts(stack.dimension.x, tileZoomLevel, tileWidth);
       var nVTiles = getNZoomedParts(stack.dimension.y, tileZoomLevel, tileHeight);
+      var transpose = stack.tileSource.transposeTiles &&
+          stack.tileSource.transposeTiles.has(stack.orientation);
 
       // Use THREE's plane geometry so that UVs and normals are set up aleady.
       var tilePlaneWidth = nHTiles * pTileWidth;
@@ -2209,6 +2211,16 @@
       }
       geometry.verticesNeedUpdate = true;
       geometry.uvsNeedUpdate = true;
+
+      // If the stack tiles for this stack are transposed, its dimensions are
+      // swapped and the stack has to be rotated by 90 degees.
+      if (transpose) {
+        // Mirror image diagonally
+        var axis = planeVertices[3].clone().sub(planeVertices[0]).normalize();
+        var rotation = new THREE.Matrix4();
+        rotation.makeRotationAxis(axis, -Math.PI);
+        geometry.applyMatrix(rotation);
+      }
     } else {
       // Push vertices for lower left, lower right, upper left, upper right
       geometry = new THREE.Geometry();

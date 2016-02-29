@@ -14,7 +14,6 @@ from catmaid.control.common import *
 
 from catmaid.control.object import get_annotation_graph
 from catmaid.control.skeletonexport import get_treenodes_qs
-from catmaid.control.stack import get_stack_info
 
 try:
     import numpy as np

@@ -14,7 +14,7 @@ from catmaid.models import UserRole, Project, Stack, ProjectStack, \
 from catmaid.control.authentication import requires_user_role
 
 
-def get_stack_info(project_id=None, stack_id=None, user=None):
+def get_stack_info(project_id=None, stack_id=None):
     """ Returns a dictionary with relevant information for stacks.
     Depending on the tile_source_type, get information from database
     or from tile server directly
@@ -133,7 +133,7 @@ def update_stack_tags(request, project_id=None, stack_id=None, tags=None):
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def stack_info(request, project_id=None, stack_id=None):
-    result=get_stack_info(project_id, stack_id, request.user)
+    result=get_stack_info(project_id, stack_id)
     return HttpResponse(json.dumps(result, sort_keys=True, indent=4), content_type="application/json")
 
 

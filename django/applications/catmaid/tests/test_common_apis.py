@@ -1084,8 +1084,9 @@ class ViewPageTests(TestCase):
                 {'connector_id': connector_id, 'treenode_id': treenode_id})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
-        expected_result = {'error': 'Failed to delete connector #%s from geometry domain.' % connector_id}
-        self.assertEqual(expected_result, parsed_response)
+        expected_result = {'error': 'Couldn\'t find link between connector {0} and node {0}'.format(connector_id)}
+        self.assertIn('error', parsed_response)
+        self.assertEqual(expected_result['error'], parsed_response['error'])
         self.assertEqual(tc_count, TreenodeConnector.objects.all().count())
 
     def test_most_recent_treenode(self):

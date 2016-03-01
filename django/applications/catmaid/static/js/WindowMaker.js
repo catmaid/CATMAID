@@ -2625,6 +2625,7 @@ var WindowMaker = new function()
 
     var createLogTableWindow = function()
     {
+        var widget = CATMAID.LogTable;
         var win = new CMWWindow("Log");
         var content = win.getFrame();
         content.style.backgroundColor = "#ffffff";
@@ -2638,7 +2639,7 @@ var WindowMaker = new function()
         add.setAttribute("type", "button");
         add.setAttribute("id", "update_logtable");
         add.setAttribute("value", "Update table");
-        add.onclick = updateLogTable; // function declared in table_log.js
+        add.onclick = widget.update.bind(widget);
         contentbutton.appendChild(add);
 
         /* users */
@@ -2743,7 +2744,7 @@ var WindowMaker = new function()
 
         addLogic(win);
 
-        LogTable.init( project.getId() );
+        widget.init(project.getId());
 
         return {window: win, widget: null};
     };

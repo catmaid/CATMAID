@@ -142,7 +142,7 @@ urlpatterns += [
 urlpatterns += [
     url(r'^(?P<project_id>\d+)/labels/$', label.labels_all),
     url(r'^(?P<project_id>\d+)/labels-for-nodes$', label.labels_for_nodes),
-    url(r'^(?P<project_id>\d+)/labels-for-node/(?P<ntype>(treenode|location|connector))/(?P<location_id>\d+)$', label.labels_for_node),
+    url(r'^(?P<project_id>\d+)/labels/(?P<node_type>(treenode|location|connector))/(?P<node_id>\d+)/$', label.labels_for_node),
     url(r'^(?P<project_id>\d+)/label/(?P<ntype>(treenode|location|connector))/(?P<location_id>\d+)/update$', label.label_update),
     url(r'^(?P<project_id>\d+)/label/(?P<ntype>(treenode|location|connector))/(?P<location_id>\d+)/remove$', label.remove_label_link),
     url(r'^(?P<project_id>\d+)/label/remove$', label.label_remove),
@@ -167,6 +167,8 @@ urlpatterns += [
     url(r'^(?P<project_id>\d+)/connector/edgetimes$', connector.connector_associated_edgetimes),
     url(r'^(?P<project_id>\d+)/connector/pre-post-info$', connector.connectors_info),
     url(r'^(?P<project_id>\d+)/connector/user-info$', connector.connector_user_info),
+    url(r'^(?P<project_id>\d+)/connectors/(?P<connector_id>\d+)/$',
+        connector.connector_detail),
 ]
 
 # Neuron access
@@ -201,6 +203,7 @@ urlpatterns += [
     url(r'^(?P<project_id>\d+)/treenodes/(?P<treenode_id>\d+)/confidence$', treenode.update_confidence),
     url(r'^(?P<project_id>\d+)/treenode/(?P<treenode_id>\d+)/parent$', treenode.update_parent),
     url(r'^(?P<project_id>\d+)/treenode/(?P<treenode_id>\d+)/radius$', treenode.update_radius),
+    url(r'^(?P<project_id>\d+)/treenodes/radius$', treenode.update_radii),
     url(r'^(?P<project_id>\d+)/treenodes/(?P<treenode_id>\d+)/previous-branch-or-root$', treenode.find_previous_branchnode_or_root),
     url(r'^(?P<project_id>\d+)/treenodes/(?P<treenode_id>\d+)/next-branch-or-end$', treenode.find_next_branchnode_or_end),
 ]

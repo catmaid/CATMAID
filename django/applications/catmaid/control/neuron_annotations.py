@@ -468,11 +468,15 @@ def _annotate_entities(project_id, entity_ids, annotation_map):
             expanded_annotations = {annotation: entity_ids}
 
         # Make sure the annotation's class instance exists.
+        new_annotations = set()
         for a, a_entity_ids in expanded_annotations.iteritems():
             ci, created = ClassInstance.objects.get_or_create(
                     project_id=project_id, name=a,
                     class_column=annotation_class,
                     defaults={'user_id': annotator_id})
+
+            if created:
+                new_annotations.add(ci.id)
 
             newly_annotated = set()
             # Annotate each of the entities. Don't allow duplicates.
@@ -487,7 +491,7 @@ def _annotate_entities(project_id, entity_ids, annotation_map):
             # Remember which entities got newly annotated
             annotation_objects[ci] = newly_annotated
 
-    return annotation_objects
+    return annotation_objects, new_annotations
 
 @requires_user_role(UserRole.Annotate)
 def annotate_entities(request, project_id = None):
@@ -515,13 +519,16 @@ def annotate_entities(request, project_id = None):
 
     # Annotate enties
     annotation_map = {a: request.user.id for a in annotations}
-    annotation_objs = _annotate_entities(project_id, entity_ids, annotation_map)
+    annotation_objs, new_annotations = _annotate_entities(project_id,
+            entity_ids, annotation_map)
     # Annotate annotations
     if meta_annotations:
         annotation_ids = [a.id for a in annotation_objs.keys()]
         meta_annotation_map = {ma: request.user.id for ma in meta_annotations}
-        meta_annotation_objs = _annotate_entities(project_id, annotation_ids,
-                meta_annotation_map)
+        meta_annotation_objs, new_meta_annotations = _annotate_entities(
+                project_id, annotation_ids, meta_annotation_map)
+        # Keep track of new annotations
+        new_annotations.update(new_meta_annotations)
         # Update used annotation objects set
         for ma, me in meta_annotation_objs.items():
             entities = annotation_objs.get(ma)
@@ -532,8 +539,12 @@ def annotate_entities(request, project_id = None):
 
     result = {
         'message': 'success',
-        'annotations': [{'name': a.name, 'id': a.id, 'entities': list(e)} \
-                for a,e in annotation_objs.items()],
+        'annotations': [{
+            'name': a.name,
+            'id': a.id,
+            'entities': list(e)
+        } for a,e in annotation_objs.items()],
+        'new_annotations': list(new_annotations)
     }
 
     return HttpResponse(json.dumps(result), content_type='application/json')
@@ -554,18 +565,28 @@ def remove_annotations(request, project_id=None):
         raise ValueError("No entity IDs provided")
 
     # Remove individual annotations
-    deleted_annotations = []
+    deleted_annotations = {}
+    deleted_links = []
     num_left_annotations = {}
     for annotation_id in annotation_ids:
         cicis_to_delete, missed_cicis, deleted, num_left = _remove_annotation(
                 request.user, project_id, entity_ids, annotation_id)
         # Keep track of results
         num_left_annotations[str(annotation_id)] = num_left
+        targetIds = []
         for cici in cicis_to_delete:
-            deleted_annotations.append(cici.id)
+            deleted_links.append(cici.id)
+            # The target is class_instance_a, because we deal with the
+            # "annotated_with" relation.
+            targetIds.append(cici.class_instance_a_id)
+        if targetIds:
+            deleted_annotations[annotation_id] = {
+                'targetIds': targetIds
+            }
 
     return HttpResponse(json.dumps({
         'deleted_annotations': deleted_annotations,
+        'deleted_links': deleted_links,
         'left_uses': num_left_annotations
     }), content_type='application/json')
 

@@ -167,26 +167,16 @@ SkeletonAnnotations.atn.promise = function()
   var overlay = SkeletonAnnotations.getTracingOverlay(this.stack_viewer_id);
   var nodePromise = overlay.promiseNode(overlay.nodes[this.id]);
   var isNewSkeleton = !this.skeleton_id;
-  function AtnPromise(atn) {
-    // Override prototype's
-    this.then = function(fn) {
-      nodePromise.then(function(result) {
-        // Set ID of active node, expect ID as result
-        if (atn.id !== result) {
-          atn.id = result;
-          SkeletonAnnotations.trigger(
-              SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED, atn, isNewSkeleton);
-        }
-        // Call the orginal callback
-        if (fn) {
-          fn(result);
-        }
-      });
-    };
-  }
-  AtnPromise.prototype = nodePromise;
 
-  return new AtnPromise(this);
+  return nodePromise.then((function(result) {
+    // Set ID of active node, expect ID as result
+    if (this.id !== result) {
+      this.id = result;
+      SkeletonAnnotations.trigger(
+          SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED, this, isNewSkeleton);
+    }
+    return result;
+  }).bind(this));
 };
 
 /**
@@ -625,6 +615,9 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, options) {
       this.handleActiveNodeChange, this);
   SkeletonAnnotations.on(SkeletonAnnotations.EVENT_NODE_CREATED,
       this.handleNewNode, this);
+
+  CATMAID.Nodes.on(CATMAID.Nodes.EVENT_NODE_CONFIDENCE_CHANGED,
+    this.handleNodeChange, this);
 };
 
 SkeletonAnnotations.TracingOverlay.prototype = {
@@ -850,8 +843,8 @@ SkeletonAnnotations.TracingOverlay.prototype.renameNeuron = function(skeletonID)
       function(json) {
           var new_name = prompt("Change neuron name", json.neuronname);
           if (!new_name) return;
-          CATMAID.NeuronNameService.getInstance().renameNeuron(
-              json.neuronid, [skeletonID], new_name);
+          CATMAID.commands.execute(new CATMAID.RenameNeuronCommand(
+                project.id, json.neuronid, new_name));
       });
 };
 
@@ -965,6 +958,9 @@ SkeletonAnnotations.TracingOverlay.prototype.destroy = function() {
       this.handleActiveNodeChange, this);
   SkeletonAnnotations.off(SkeletonAnnotations.EVENT_NODE_CREATED,
       this.handleNewNode, this);
+
+  CATMAID.Nodes.off(CATMAID.Nodes.EVENT_NODE_CONFIDENCE_CHANGED,
+      this.handleNodeChange, this);
 };
 
 /**
@@ -1558,22 +1554,22 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeLink = function (from
                 merge();
               } else {
                 // Only show a dialog if the merged in neuron is annotated.
-                CATMAID.retrieve_annotations_for_skeleton(to_skid,
-                    function(to_annotations) {
-                      if (to_annotations.length === 0) {
-                        CATMAID.retrieve_annotations_for_skeleton(
-                            from_model.id, function(from_annotations) {
-                              // Merge annotations from both neurons
-                              function collectAnnotations(o, e) {
-                                o[e.name] = e.users[0].id; return o;
-                              }
-                              var annotationMap = from_annotations.reduce(collectAnnotations, {});
-                              merge(annotationMap);
-                            });
-                      } else {
-                        merge_multiple_nodes();
-                      }
-                    });
+                CATMAID.Annotations.forSkeleton(project.id, to_skid)
+                  .then(function(to_annotations) {
+                    if (to_annotations.length === 0) {
+                      return CATMAID.Annotations.forSkeleton(project.id, from_model.id)
+                        .then(function(from_annotations) {
+                          // Merge annotations from both neurons
+                          function collectAnnotations(o, e) {
+                            o[e.name] = e.users[0].id; return o;
+                          }
+                          var annotationMap = from_annotations.reduce(collectAnnotations, {});
+                          merge(annotationMap);
+                        });
+                    } else {
+                      merge_multiple_nodes();
+                    }
+                  }).catch(CATMAID.handleError);
               }
             };
 
@@ -1601,18 +1597,14 @@ SkeletonAnnotations.TracingOverlay.prototype.createLink = function (fromid, toid
     link_type, afterCreate)
 {
   var self = this;
-  this.promiseNode(fromid).then(function(nodeID) {
-    self.submit(
-        django_url + project.id + '/link/create',
-        'POST',
-        {pid: project.id,
-         from_id: nodeID,
-         link_type: link_type,
-         to_id: toid},
-         function(json) {
-           if (json.warning) CATMAID.warn(json.warning);
-           self.updateNodes(afterCreate);
-         });
+  return this.promiseNode(fromid).then(function(nodeId) {
+    return self.submit.then(function() {
+      var command = new CATMAID.LinkConnectorCommand(project.id, toid, nodeId, link_type);
+      return CATMAID.commands.execute(command).then(function(result) {
+        if (result.warning) CATMAID.warn(result.warning);
+        self.updateNodes(afterCreate);
+      });
+    });
   });
 };
 
@@ -1625,30 +1617,27 @@ SkeletonAnnotations.TracingOverlay.prototype.createSingleConnector = function (
     phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, confval, subtype, completionCallback)
 {
   var self = this;
-  this.submit(
-      django_url + project.id + '/connector/create',
-      'POST',
-      {pid: project.id,
-       confidence: confval,
-       x: phys_x,
-       y: phys_y,
-       z: phys_z},
-      function(jso) {
-        // add treenode to the display and update it
-        var nn = self.graphics.newConnectorNode(jso.connector_id, pos_x, pos_y,
-            pos_z, 0, 5 /* confidence */, subtype, true);
-        self.nodes[jso.connector_id] = nn;
-        nn.createGraphics();
-        // Emit new node event after we added to our local node set to not
-        // trigger a node update.
-        SkeletonAnnotations.trigger(SkeletonAnnotations.EVENT_NODE_CREATED,
-            jso.connector_id, phys_x, phys_y, phys_z);
+  var exec = CATMAID.commands.execute(
+      new CATMAID.CreateConnectorCommand(project.id,
+        phys_x, phys_y, phys_z, confval));
+  return exec.then(function(result) {
+    // add treenode to the display and update it
+    var nn = self.graphics.newConnectorNode(result.newConnectorId, pos_x, pos_y,
+        pos_z, 0, 5 /* confidence */, subtype, true);
+    self.nodes[result.newConnectorId] = nn;
+    nn.createGraphics();
+    // Emit new node event after we added to our local node set to not
+    // trigger a node update.
+    SkeletonAnnotations.trigger(SkeletonAnnotations.EVENT_NODE_CREATED,
+        result.newConnectorId, phys_x, phys_y, phys_z);
 
-        self.activateNode(nn);
-        if (typeof completionCallback !== "undefined") {
-          completionCallback(jso.connector_id);
-        }
-      });
+    self.activateNode(nn);
+    if (typeof completionCallback !== "undefined") {
+      completionCallback(result.connector_id);
+    }
+
+    return result;
+  }).catch(CATMAID.handleError);
 };
 
 /**
@@ -2666,14 +2655,11 @@ SkeletonAnnotations.TracingOverlay.prototype.setConfidence = function(newConfide
   if (node.parent_id || toConnector) {
     var self = this;
     this.promiseNode(node).then(function(nid) {
-      self.submit(
-          django_url + project.id + '/treenodes/' + nid + '/confidence',
-          'POST',
-          {to_connector: toConnector,
-           new_confidence: newConfidence},
-          function(json) {
-            self.updateNodes();
-          });
+      return self.submit().then(function() {
+        CATMAID.commands.execute(new CATMAID.UpdateConfidenceCommand(
+              project.id, nid, newConfidence, toConnector))
+          .then(self.updateNodes.bind(self, undefined, undefined, undefined));
+      });
     });
   }
 };
@@ -3031,19 +3017,21 @@ SkeletonAnnotations.TracingOverlay.prototype.editRadius = function(treenode_id, 
   function updateRadius(radius, updateMode) {
     // Default update mode to this node only
     updateMode = updateMode || 0;
-    self.promiseNode(treenode_id).then(function(nodeID) {
-      self.submit(
-        django_url + project.id + '/treenode/' + nodeID + '/radius',
-        'POST',
-        {radius: radius,
-         option: updateMode},
-        function(json) {
-          // Refresh 3d views if any
-          CATMAID.WebGLApplication.prototype.staticReloadSkeletons([self.nodes[nodeID].skeleton_id]);
-          // Reinit TracingOverlay to read in the radius of each altered treenode
-          self.updateNodes();
-        });
-    });
+    self.promiseNode(treenode_id).then(function(nodeId) {
+      return self.submit().then(Promise.resolve.bind(Promise, nodeId));
+    }).then(function(nodeId) {
+      return CATMAID.commands.execute(new CATMAID.UpdateNodeRadiusCommand(
+            project.id, nodeId, radius, updateMode));
+    }).then(function(result) {
+      // TODO: Maybe use an event for this
+      if (result.updatedNodeId) {
+        // Refresh 3d views if any
+        var skeletonId = self.nodes[result.updatedNodeId].skeleton_id;
+        CATMAID.WebGLApplication.prototype.staticReloadSkeletons([skeletonId]);
+        // Reinit TracingOverlay to read in the radius of each altered treenode
+        self.updateNodes();
+      }
+    }).catch(CATMAID.handleError);
   }
 
   function show_dialog(defaultRadius) {
@@ -3962,6 +3950,14 @@ SkeletonAnnotations.TracingOverlay.prototype.handleNewNode = function(nodeID, px
 };
 
 /**
+ * Update nodes if called with a node that is currently part of this overlay.
+ */
+SkeletonAnnotations.TracingOverlay.prototype.handleNodeChange = function(nodeId) {
+  if (!this.nodes[nodeId]) return;
+  this.updateNodes();
+};
+
+/**
  * Checks if the given skeleton is part of the current display and reloads all
  * nodes if this is the case.
  *
@@ -4023,47 +4019,67 @@ SkeletonAnnotations.Tag = new (function() {
   };
 
   this.tagATNwithLabel = function(label, tracingOverlay, deleteExisting) {
-    var atn = SkeletonAnnotations.atn;
-    atn.promise().then(function(treenode_id) {
-      tracingOverlay.submit(
-        django_url + project.id + '/label/' + atn.type + '/' + atn.id + '/update',
-        'POST',
-        {tags: label,
-         delete_existing: deleteExisting ? true : false},
-        function(json) {
-          if ('' === label) {
-            CATMAID.info('Tags removed.');
-          } else {
-            CATMAID.info('Tag ' + label + ' added.');
-          }
-          tracingOverlay.updateNodes();
-      });
+    return SkeletonAnnotations.Tag.tagATNwithLabels([label], tracingOverlay, deleteExisting);
+  };
+
+  this.tagATNwithLabels = function(labels, tracingOverlay, deleteExisting) {
+    var nodeType = SkeletonAnnotations.getActiveNodeType();
+    var nodeId; // Will be set in promise
+
+    var prepare = SkeletonAnnotations.atn.promise().then(function(treenodeId) {
+      nodeId = treenodeId;
+      return tracingOverlay.submit();
+    });
+
+    var result = prepare.then(function() {
+      // If preparation went well, nodeId will be set
+      var command = new CATMAID.AddTagsToNodeCommand(project.id, nodeId,
+          nodeType, labels, deleteExisting);
+      // Make sure a tracing layer update is done after execute and undo
+      command.postAction = tracingOverlay.updateNodes.bind(tracingOverlay,
+         undefined, undefined, undefined);
+      return CATMAID.commands.execute(command);
+    }).then(function(result) {
+      if (result.deletedLabels.length > 0) {
+        CATMAID.info('Tag(s) removed: ' + result.deletedLabels.join(', '));
+      }
+      if (result.newLabels.length > 0) {
+        CATMAID.info('Tag(s) added: ' + result.newLabels.join(', '));
+      }
+      if (result.duplicateLabels.length > 0) {
+        CATMAID.info('These tags exist already: ' + result.duplicateLabels.join(', '));
+      }
     });
   };
 
   this.removeATNLabel = function(label, tracingOverlay) {
-    var atn = SkeletonAnnotations.atn;
-    atn.promise().then(function(treenode_id) {
-      tracingOverlay.submit(
-        django_url + project.id + '/label/' + atn.type + '/' + atn.id + '/remove',
-        'POST',
-        {tag: label},
-        function(json) {
-          CATMAID.info('Tag "' + label + '" removed.');
-          tracingOverlay.updateNodes();
-        },
-        undefined,
-        undefined,
-        function(err) {
-          if ("ValueError" === err.type) {
-            CATMAID.msg('Error', err.error ? err.error : "Unspecified");
-          } else {
-            CATMAID.error(err.error, err.detail);
-          }
-          return true;
-        },
-        true
-      );
+    var nodeType = SkeletonAnnotations.getActiveNodeType();
+    var nodeId; // Will be set in promise
+
+    var prepare = SkeletonAnnotations.atn.promise().then(function(treenodeId) {
+      nodeId = treenodeId;
+      tracingOverlay.submit();
+    });
+
+    return prepare.then(function() {
+      var command = new CATMAID.RemoveTagFromNodeCommand(project.id, nodeId,
+          nodeType, label, false);
+      // Make sure a tracing layer update is done after execute and undo
+      command.postAction = tracingOverlay.updateNodes.bind(tracingOverlay,
+         undefined, undefined, undefined);
+      return CATMAID.commands.execute(command);
+    }).then(function(result) {
+      CATMAID.info('Tag "' + result.deletedLabels.join(', ') + '" removed.');
+      tracingOverlay.updateNodes();
+    }).catch(function(err) {
+      if ("ValueError" === err.type) {
+        CATMAID.msg('Error', err.error ? err.error : "Unspecified");
+      } else if (err.error) {
+        CATMAID.error(err.error, err.detail);
+      } else {
+        CATMAID.error(err);
+      }
+      return true;
     });
   };
 
@@ -4099,7 +4115,6 @@ SkeletonAnnotations.Tag = new (function() {
           if ("" === input.tagEditorGetTags()) {
             SkeletonAnnotations.Tag.updateTags(tracingOverlay);
             SkeletonAnnotations.Tag.removeTagbox();
-            CATMAID.info('Tags saved!');
             tracingOverlay.updateNodes();
           }
           event.stopPropagation();
@@ -4111,7 +4126,6 @@ SkeletonAnnotations.Tag = new (function() {
             if ("" === input.val()) {
               SkeletonAnnotations.Tag.updateTags(tracingOverlay);
               SkeletonAnnotations.Tag.removeTagbox();
-              CATMAID.info('Tags saved!');
               tracingOverlay.updateNodes();
             }
           }
@@ -4128,29 +4142,34 @@ SkeletonAnnotations.Tag = new (function() {
       SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
           this.handleATNChange, this);
 
-      tracingOverlay.submit(
-          django_url + project.id + '/labels-for-node/' + atn.type  + '/' + atnID,
-          'POST',
-          {pid: project.id},
-          function(json) {
-            input.tagEditor({
-              items: json,
-              confirmRemoval: false,
-              completeOnSeparator: true
-            });
-            input.focus();
+      var nodeId = atn.id, nodeType = atn.type;
+      tracingOverlay.submit().then(function() {
+        return CATMAID.Labels.forNode(project.id, nodeId, nodeType);
+      }).then(function(labels) {
+        input.tagEditor({
+          items: labels,
+          confirmRemoval: false,
+          completeOnSeparator: true
+        });
+        input.focus();
 
-            // TODO autocompletion should only be invoked after typing at least one character
-            // add autocompletion, only request after tagbox creation
-            tracingOverlay.submit(
-              django_url + project.id + '/labels/',
-              'POST',
-              {pid: project.id},
-              function(json) {
-                input.autocomplete({source: json});
-              });
-          });
+        // TODO autocompletion should only be invoked after typing at least one character
+        // add autocompletion, only request after tagbox creation
+        tracingOverlay.submit().then(function() {
+          return CATMAID.Labels.listAll(project.id);
+        }).then(function(labels) {
+          input.autocomplete({source: labels});
+        });
+      });
+
     }).bind(this));
+  };
+
+  /**
+   * Return whether a string is empty or not.
+   */
+  var isNonEmpty = function(str) {
+    return 0 !== str.trim().length;
   };
 
   this.updateTags = function(tracingOverlay) {
@@ -4159,14 +4178,11 @@ SkeletonAnnotations.Tag = new (function() {
       CATMAID.error("Can't update tags, because there is no active node selected.");
       return;
     }
-    atn.promise().then(function() {
-      tracingOverlay.submit(
-          django_url + project.id + '/label/' + atn.type + '/' + atn.id + '/update',
-          'POST',
-          {pid: project.id,
-           tags: $("#Tags" + atn.id).tagEditorGetTags()},
-          function(json) {});
-    });
+    var tags = $("#Tags" + atn.id).tagEditorGetTags().split(",");
+    tags = tags.filter(isNonEmpty);
+    // Since the tag box represents all tags at once, all tags not in this list
+    // can be removed.
+    SkeletonAnnotations.Tag.tagATNwithLabels(tags, tracingOverlay, true);
   };
 
   this.tagATN = function(tracingOverlay) {

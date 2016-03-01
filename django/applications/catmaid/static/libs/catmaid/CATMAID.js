@@ -97,6 +97,7 @@ var requestQueue = new RequestQueue();
     });
 
     CATMAID.setupCsrfProtection();
+    CATMAID.updatePermissions();
   };
 
   /**
@@ -193,6 +194,127 @@ var requestQueue = new RequestQueue();
         jqXHR.setRequestHeader('X-CSRFToken', csrfCookie);
       }
     });
+  };
+
+  // Disable session permission by default
+  var projectPermissions = null;
+  var groups = [];
+
+  /**
+   * Set permissions on a per-project basis. They can be checked by calls to
+   * CATMAID.requirePermission(). If set to null, permission checks are disabled
+   * and CATMAID.requirePermission() calls will be a no-op.
+   *
+   * @param {Object} permissions Optional, the new permission object, mapping
+   *                             permission names to project IDs. If not
+   *                             provided the back-end is asked for a permission
+   *                             summary.
+   *
+   * @returns Promise that is resolved after permissions have been updated.
+   */
+  CATMAID.updatePermissions = function(permissions) {
+    if (permissions) {
+      projectPermissions = permissions;
+      return Promise.resolve();
+    } else {
+      return CATMAID.fetch('permissions', 'GET').then(function(json) {
+        projectPermissions = json[0];
+        groups = json[1];
+      }).catch(alert);
+    }
+  };
+
+  /**
+   * Check if the passed in response information seems valid and without errors.
+   */
+  CATMAID.validateResponse = function(status, text, xml) {
+    if (status >= 200 && status <= 204 &&
+        (typeof text === 'string' || text instanceof String)) {
+      return text;
+    } else {
+      throw new CATMAID.Error("The server returned an unexpected status: " + status);
+    }
+  };
+
+  /**
+   * Check if the passed in response information seems valid and without
+   * errors and expect the text to be JSON.
+   *
+   * @returns {Object} parsed resonse text
+   */
+  CATMAID.validateJsonResponse = function(status, text, xml) {
+    var response = CATMAID.validateResponse(status, text, xml);
+    // `text` may be empty for no content responses.
+    var json = text.length ? JSON.parse(text) : {};
+    if (json.error) {
+      throw new CATMAID.Error("Unsuccessful request: " + json.error, json.detail);
+    } else {
+      return json;
+    }
+  };
+
+  /**
+   * Queue a request for the given back-end method along with the given data. It
+   * expects a JSON response. A promise is returned. The URL passed in needs to
+   * be relative to the back-end URL.
+   */
+  CATMAID.fetch = function(relativeURL, method, data) {
+    return new Promise(function(resolve, reject) {
+      var url = CATMAID.makeURL(relativeURL);
+      requestQueue.register(url, method, data, function(status, text, xml) {
+        // Validation throws an error for bad requests and wrong JSON data,
+        // which causes the promise to become rejected. So there is no need to
+        // call reject() explicitely.
+        var json = CATMAID.validateJsonResponse(status, text, xml);
+        resolve(json);
+      });
+    });
+  };
+
+  /**
+   * If front-end permission checks are enabled, it can be checked if the
+   * current session allows a certain permission on a paticular project. Returns
+   * true if permission checks are disabled.
+   *
+   * @param {String} permission The permission to test
+   *
+   * @returns True if the permission is given for the passed in project or if
+   *          permission checks are disabled. False otherwise.
+   */
+  CATMAID.hasPermission = function(projectId, permission) {
+    if (null === projectPermissions) {
+      return false;
+    }
+    return projectPermissions && projectPermissions[permission] &&
+      projectPermissions[permission][projectId];
+  };
+
+  // A set of error messages for the lack of particular permissions
+  var permissionErrorMessages = {
+    'can_browse': 'You don\'t have permission to browse this project.',
+    'can_annotate': 'You don\'t have permission to make changes to this project'
+  };
+
+  /**
+   * If front-end permission checks are enabled, throw a CATMAID.PermissionError
+   * if a given permission isn't available for the passed in project ID. This
+   * test can be disabled if permissions are set to null. If front-end end
+   * permission checks are disabled, this is a no-op.
+   *
+   * @param {Id}     projectId  The ID of the project to check permissions for
+   * @param {String} permission The permission to test
+   * @param {String} msg        (Optional) Error message in case of lack of
+   *                            permission
+   *
+   * @returns True, if a permission check was performed. False otherwise (e.g.
+   *          when permission checks are disabled)
+   */
+  CATMAID.requirePermission = function(projectId, permission, msg) {
+    if (!CATMAID.hasPermission) {
+      msg = msg || permissionErrorMessages[permission] || ('Permission "' +
+          permission + '" is not given for project "' + projectId + '"');
+      throw new CATMAID.PermissionError(msg);
+    }
   };
 
   /**

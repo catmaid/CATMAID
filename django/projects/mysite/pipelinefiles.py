@@ -71,8 +71,9 @@ libraries_js = {
     'filesaver': ['*.js'],
     'whammy': ['whammy.js'],
     'geometry': ['geometry.js', 'intersects.js'], # order matters
-    'catmaid': ['request.js', 'CATMAID.js', 'constants.js', 'error.js', 'events.js',
-                'neuron_controller.js', 'skeleton_source.js', '*.js'],
+    'catmaid': ['request.js', 'CATMAID.js', 'error.js', 'events.js',
+                'command.js', 'models/*.js', 'neuron_controller.js',
+                'skeleton_source.js', '*.js'],
 }
 
 JAVASCRIPT = OrderedDict()
@@ -114,6 +115,7 @@ JAVASCRIPT['catmaid'] = {
         'js/action.js',
         'js/tools.js',
         'js/settings-manager.js',
+        'js/helpers/*.js',
         'js/init.js',
         'js/network-api.js',
         'js/project.js',
@@ -133,6 +135,7 @@ JAVASCRIPT['catmaid'] = {
         'js/layers/tile-layer.js',
         'js/layers/pixi-layer.js',
         'js/layers/*.js',
+        'js/widgets/options-dialog.js',
         'js/widgets/*.js',
     ),
     'output_filename': 'js/catmaid.js',

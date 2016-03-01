@@ -208,5 +208,6 @@ def rename_neuron(request, project_id=None, neuron_id=None):
 
     return HttpResponse(json.dumps({
         'success': True,
-        'renamed_neuron': neuron.id
+        'renamed_neuron': neuron.id,
+        'old_name': old_name
     }))

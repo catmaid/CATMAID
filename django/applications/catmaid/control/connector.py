@@ -7,7 +7,9 @@ from datetime import datetime, timedelta
 from django.db import connection
 from django.db.models import Count
 from django.shortcuts import get_object_or_404
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse, Http404
+
+from rest_framework.decorators import api_view
 
 from catmaid.fields import Double3D
 from catmaid.models import Project, Stack, ProjectStack, Connector, \
@@ -666,3 +668,94 @@ def connector_user_info(request, project_id):
         'creation_time': str(info[2].isoformat()),
         'edition_time': str(info[3].isoformat()),
     } for info in cursor.fetchall()]))
+
+@api_view(['GET'])
+@requires_user_role([UserRole.Browse])
+def connector_detail(request, project_id, connector_id):
+    """Get detailed information on a connector and its partners
+    ---
+    models:
+      connector_partner_element:
+        id: connector_partner_element
+        properties:
+          link_id: 
+            type: integer
+            description: ID of link between connector and partner
+            required: true
+          partner_id: 
+            type: integer
+            description: ID of partner
+            required: true
+          confidence: 
+            type: integer
+            description: Confidence of connection between connector and partner
+            required: true
+          skeleton_id: 
+            type: integer
+            description: ID of partner skeleton
+            required: true
+          relation_id: 
+            type: integer
+            description: ID of relation between connector and partner
+            required: true
+          relation_name: 
+            type: integer
+            description: Name of relation between connector and partner
+            required: true
+    type:
+      connector_id:
+        type: integer
+        description: ID of connector
+        required: true
+      x:
+        type: number
+        description: X coordinate of connector location
+        required: true
+      y:
+        type: number
+        description: Y coordinate of connector location
+        required: true
+      z:
+        type: number
+        description: Z coordinate of connector location
+        required: true
+      confidence:
+        type: integer
+        description: Integer in range 1-5 with 1 being most confident
+        required: true
+      partners:
+        type: array
+        description: Partners of this connector
+        items:
+          $ref: connector_partner_element
+    """
+    connector_id = int(connector_id)
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT c.id, c.location_x, c.location_y, c.location_z, c.confidence,
+               json_agg(json_build_object(
+                    'link_id', tc.id,
+                    'partner_id', tc.treenode_id,
+                    'confidence', tc.confidence,
+                    'skeleton_id', tc.skeleton_id,
+                    'relation_id', tc.relation_id,
+                    'relation_name', r.relation_name)) AS partners
+        FROM connector c, treenode_connector tc, relation r
+        WHERE c.id = %s AND c.id = tc.connector_id AND r.id = tc.relation_id
+        GROUP BY c.id
+    """, (connector_id, ))
+    detail = cursor.fetchone()
+    print(detail)
+    partners = []
+
+    if not detail:
+        raise Http404("Connector does not exist: " + str(connector_id))
+
+    return JsonResponse({
+        'connector_id': detail[0],
+        'x': detail[1],
+        'y': detail[2],
+        'z': detail[3],
+        'confidence': detail[4],
+        'partners': [p for p in detail[5]]
+    })

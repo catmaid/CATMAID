@@ -6,8 +6,11 @@ included in this changelog.
 
 ### Additions
 
-None.
+- `GET /{project_id}/labels/[treenode|connector]/{label_id}/`:
+  Returns a list of labels for a node.
 
+- `GET /{project_id}/connectors/{connector_id}/`:
+  Returns information on a connector and its partners.
 
 ### Modifications
 
@@ -15,6 +18,23 @@ None.
 
 - Response object now includes `gapjunctions` and `gapjunctions_reviewers`
   properties for gap junction connectors.
+
+`POST /{project_id}/label/[treenode|connector]/{label_id}/update`:
+
+- Returns now also information about what labels were added, which were
+  duplicates and which labels were deleted.
+
+`POST /{project_id}/label/[treenode|connector]/{label_id}/remove`:
+
+- Returns now also information about which label label was eventually removed.
+  If nothing went wrong the field deleted_link has the input label ID.
+
+`POST /{project_id}/annotations/remove`:
+
+- The return field `deleted_annotations` is now called `deleted_links` and
+  continues to contain a list of class_instance_class_instance IDs that were
+  removed. The new `deleted_annotations` field contains a mapping of removed
+  annotation IDs to the IDs of the object they were removed from.
 
 
 ### Deprecations
@@ -24,7 +44,9 @@ None.
 
 ### Removals
 
-None.
+-`[POST|GET] /{project_id}/label-for-node/[treenode|connector]/{label_id}`:
+  Has been replaced with:
+  `GET /{project_id}/labels/[treenode|connector]/{label_id}/`
 
 
 ## 2015.12.21

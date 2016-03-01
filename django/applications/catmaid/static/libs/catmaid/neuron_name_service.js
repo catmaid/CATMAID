@@ -295,6 +295,15 @@
           });
         },
 
+        handleAnnotationChange: function(changedEntities) {
+            this.refresh();
+        },
+
+        handleNeuronNameChange: function(neuonId, newName) {
+            // TODO: only refresh if neuron is currently managed
+            this.refresh();
+        },
+
         /**
          * Updates the name representation of every managed neuron and notifies all
          * clients about it.
@@ -507,54 +516,30 @@
         },
 
         /**
-         * This is a convenience method to rename a neuron. If the neuron in question
-         * is managed by the name service, an update event will be triggered and all
-         * registered widgets will be notified.
-         */
-        renameNeuron: function(neuronId, skeletonIds, newName, callback)
-        {
-          requestQueue.register(django_url + project.id + '/neurons/' + neuronId + '/rename',
-            'POST', { name: newName },
-            CATMAID.jsonResponseHandler((function(data) {
-              // Update all skeletons of the current neuron that are managed
-              var updatedSkeletons = skeletonIds.filter(function(skid) {
-                if (skid in managedSkeletons) {
-                  // Update skeleton model
-                  managedSkeletons[skid].model.baseName = newName;
-                  return true;
-                }
-                return false;
-              });
-
-              // Only update the names if there was indeed a skeleton update.
-              // Otherwise, execute callback directly.
-              if (updatedSkeletons.length > 0) {
-                // Update the names of the affected skeleton IDs and notify clients if
-                // there was a change. And finally execute the callback.
-                this.refresh(callback);
-              } else {
-                if (callback) {
-                  callback();
-                }
-              }
-            }).bind(this)));
-        },
-
-        /**
          * Listen to the neuron controller's delete event and remove neurons
-         * automatically from the name service.
+         * automatically from the name service. Also register to changed
+         * annotation links so that the name service can update itself.
          */
         registerEventHandlers: function() {
           CATMAID.neuronController.on(CATMAID.neuronController.EVENT_SKELETON_DELETED,
               this.unregisterSingleFromAllClients, instance);
+          CATMAID.Annotations.on(CATMAID.Annotations.EVENT_ANNOTATIONS_CHANGED,
+              this.handleAnnotationChange, instance);
+          CATMAID.Neurons.on(CATMAID.Neurons.EVENT_NEURON_RENAMED,
+              this.handleNeuronNameChange, instance);
         },
 
         /**
-         * Unregister from the neuron controller's delete event.
+         * Unregister from the neuron controller's delete and the annotation
+         * change events.
          */
         unregisterEventHandlers: function() {
           CATMAID.neuronController.off(CATMAID.neuronController.EVENT_SKELETON_DELETED,
               this.unregisterSingleFromAllClients, instance);
+          CATMAID.Annotations.off(CATMAID.Annotations.EVENT_ANNOTATIONS_CHANGED,
+              this.handleAnnotationChange, instance);
+          CATMAID.Neurons.off(CATMAID.Neurons.EVENT_NEURON_RENAMED,
+              this.handleNeuronNameChange, instance);
         }
       };
     }

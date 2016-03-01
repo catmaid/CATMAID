@@ -1253,14 +1253,10 @@
       if (selected_neurons.length > 0) {
         // Get annotation ID
         var annotation_id = parseInt(this.getAttribute('data-annotationid'));
-        // Unlink the annotation from the current neuron
-        CATMAID.remove_annotation_from_entities(selected_neurons,
-            annotation_id, function(message) {
-                // Display message returned by the server
-                CATMAID.info(message);
-            });
+        return CATMAID.confirmAndRemoveAnnotations(project.id,
+            selected_neurons, [annotation_id]);
       } else {
-        alert("Please select at least one neuron to remove the annotation from first!");
+        CATMAID.warn("Please select at least one neuron to remove the annotation from first!");
       }
     });
 
@@ -1902,10 +1898,12 @@
     rename_button.onclick = (function() {
       var new_name = prompt("Rename", this.neuron_name);
       if (!new_name) return;
-      CATMAID.NeuronNameService.getInstance().renameNeuron(this.neuron_id, this.skeleton_ids, new_name, (function() {
-          $('div.nodeneuronname', container).html('Name: ' + new_name);
-          this.neuron_name = new_name;
-      }).bind(this));
+      CATMAID.commands.execute(new CATMAID.RenameNeuronCommand(
+            project.id, this.neuron_id, new_name))
+        .then((function(neuronId, newName) {
+          $('div.nodeneuronname', container).html('Name: ' + newName);
+          this.neuron_name = newName;
+        }).bind(this));
     }).bind(this);
 
     var analyze_button = document.createElement('input');
@@ -2111,24 +2109,10 @@
     // Add annotation data table based on filters above
     var annotation_datatable = this.add_annotation_list_table(container,
         annotation_table_id, filters, false, true, function(annotation_ids) {
-          if (annotation_ids instanceof Array) {
-            CATMAID.remove_annotations_from_entities([self.neuron_id],
-                annotation_ids, function(data) {
-                  if (data.deleted_annotations.length > 0) {
-                    CATMAID.info("Removed " + data.deleted_annotations.length +
-                       " annotations.");
-                  } else {
-                    CATMAID.info("Couldn not delete any annotation");
-                  }
-                });
-          } else {
-            // Unlink the annotation from the current neuron
-            CATMAID.remove_annotation(self.neuron_id,
-                annotation_ids, function(message) {
-                    // Display message returned by the server
-                    CATMAID.info(message);
-                });
-          }
+          annotation_ids = annotation_ids instanceof Array ?
+              annotation_ids : [annotation_ids];
+          return CATMAID.confirmAndRemoveAnnotations(project.id,
+              [self.neuron_id], annotation_ids);
         }, this.create_ann_post_process_fn(this, container));
 
     // If a user is selected an annotation filter node is created and the event

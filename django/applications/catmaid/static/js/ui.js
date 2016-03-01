@@ -44,6 +44,125 @@
     focusCatcher.href = "#";
     document.body.appendChild( focusCatcher );
 
+    var onkeydown = function( e )
+    {
+      var projectKeyPress;
+      var key;
+      var shift;
+      var alt;
+      var ctrl;
+      var meta;
+      var keyAction;
+
+      /* The code here used to modify 'e' and pass it
+         on, but Firefox no longer allows this.  So, create
+         a fake event object instead, and pass that down. */
+      var fakeEvent = {};
+
+      if ( e )
+      {
+        if ( e.keyCode ) {
+          key = e.keyCode;
+        } else if ( e.charCode ) {
+          key = e.charCode;
+        } else {
+          key = e.which;
+        }
+        fakeEvent.keyCode = key;
+        fakeEvent.shiftKey = e.shiftKey;
+        fakeEvent.altKey = e.altKey;
+        fakeEvent.ctrlKey = e.ctrlKey;
+        fakeEvent.metaKey = e.metaKey;
+        shift = e.shiftKey;
+        alt = e.altKey;
+        ctrl = e.ctrlKey;
+        meta = e.metaKey;
+      }
+      else if ( event && event.keyCode )
+      {
+        fakeEvent.keyCode = event.keyCode;
+        fakeEvent.shiftKey = event.shiftKey;
+        fakeEvent.altKey = event.altKey;
+        fakeEvent.ctrlKey = event.ctrlKey;
+        fakeEvent.metaKey = event.metaKey;
+        shift = event.shiftKey;
+        alt = event.altKey;
+        ctrl = event.ctrlKey;
+        meta = event.metaKey;
+      }
+      fakeEvent.target = CATMAID.UI.getTargetElement(e || event);
+      var n = fakeEvent.target.nodeName.toLowerCase();
+      var fromATextField = fakeEvent.target.getAttribute('contenteditable');
+      if (n === "input") {
+        var inputType = fakeEvent.target.type.toLowerCase();
+        if (inputType !== 'checkbox' && inputType !== 'button') {
+          fromATextField = true;
+        }
+      }
+      if (meta) {
+        // Don't intercept command-key events on Mac.
+        return true;
+      }
+      if (!(fromATextField || n == "textarea" || n == "area"))
+      {
+        /* Note that there are two different
+           conventions for return values here: the
+           handleKeyPress() methods return true if the
+           event has been dealt with (i.e. it should
+           not be propagated) but the onkeydown
+           function should only return true if the
+           event should carry on for default
+           processing. */
+        if (handleKeyPress(fakeEvent)) {
+          return false;
+        }
+
+        if (project) {
+          var tool = project.getTool();
+          if (tool && tool.handleKeyPress(fakeEvent)) {
+            return false;
+          } else {
+            projectKeyPress = project.handleKeyPress(fakeEvent);
+            return ! projectKeyPress;
+          }
+        }
+      } else {
+        return true;
+      }
+    };
+
+    // A set of available global actions
+    var actions = [
+      new CATMAID.Action({
+        helpText: "Undo last command on history stack",
+        keyShortcuts: {
+          'Z': [ 90 ]
+        },
+        run: function (e) {
+          if (e.ctrlKey) {
+            CATMAID.commands.undo()
+              .catch(CATMAID.handleError);
+            return true;
+          }
+          return false;
+        }
+      }),
+    ];
+
+    /**
+     * This function should return true if there was any action linked to the
+     * key code, or false otherwise.
+     */
+    var keyCodeToAction = CATMAID.getKeyCodeToActionMap(actions);
+    var handleKeyPress = function( e ) {
+      var keyAction = keyCodeToAction[e.keyCode];
+      if (keyAction) {
+        return keyAction.run(e);
+      } else {
+        return false;
+      }
+    };
+
     var updateFrameHeight = function()
     {
       if ( window.innerHeight ) screenHeight = window.innerHeight;
@@ -364,6 +483,9 @@
     eventCatcher.onmousedown = self.onmousedown;
     eventCatcher.onmouseout = eventCatcher.onmouseup = self.onmouseup;
     eventCatcher.onmousemove = self.onmousemove;
+
+    // Register global key listener
+    document.onkeydown = onkeydown;
   };
 
   CATMAID.UI.getFrameHeight = function()

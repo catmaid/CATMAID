@@ -401,13 +401,13 @@ class ViewPageTests(TestCase):
         self.assertEqual(set(returned_node_map['432']),
                          set(["synapse with more targets", "TODO"]))
 
-        response = self.client.post('/%d/labels-for-node/location/%d' % (self.test_project_id,
+        response = self.client.get('/%d/labels/location/%d/' % (self.test_project_id,
                                                                     432))
         returned_labels = json.loads(response.content)
         self.assertEqual(set(returned_labels),
                          set(["synapse with more targets", "TODO"]))
 
-        response = self.client.post('/%d/labels-for-node/treenode/%d' % (self.test_project_id,
+        response = self.client.get('/%d/labels/treenode/%d/' % (self.test_project_id,
                                                                     403))
         returned_labels = json.loads(response.content)
         self.assertEqual(len(returned_labels), 1)
@@ -421,7 +421,7 @@ class ViewPageTests(TestCase):
         self.assertTrue('message' in parsed_response)
         self.assertTrue(parsed_response['message'] == 'success')
 
-        response = self.client.post('/%d/labels-for-node/treenode/%d' % (self.test_project_id,
+        response = self.client.get('/%d/labels/treenode/%d/' % (self.test_project_id,
                                                                     403))
         returned_labels = json.loads(response.content)
         self.assertEqual(len(returned_labels), 2)
@@ -436,7 +436,7 @@ class ViewPageTests(TestCase):
         self.assertTrue('message' in parsed_response)
         self.assertTrue(parsed_response['message'] == 'success')
 
-        response = self.client.post('/%d/labels-for-node/treenode/%d' % (self.test_project_id,
+        response = self.client.get('/%d/labels/treenode/%d/' % (self.test_project_id,
                                                                     403))
         returned_labels = json.loads(response.content)
         self.assertEqual(len(returned_labels), 4)
@@ -450,7 +450,7 @@ class ViewPageTests(TestCase):
         self.assertTrue('message' in parsed_response)
         self.assertTrue(parsed_response['message'] == 'success')
 
-        response = self.client.post('/%d/labels-for-node/treenode/%d' % (self.test_project_id,
+        response = self.client.get('/%d/labels/treenode/%d/' % (self.test_project_id,
                                                                     403))
         returned_labels = json.loads(response.content)
         self.assertEqual(len(returned_labels), 3)

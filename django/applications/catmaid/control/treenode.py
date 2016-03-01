@@ -360,7 +360,7 @@ def update_node_radii(node_ids, radii, cursor=None):
     updated_rows = cursor.fetchall()
     if 0 == len(updated_rows):
         raise ValueError('Coudn\'t find treenode #' + treenode_id)
-    return {r[0]: {'old': r[1], 'new': r[2]} for r in updated_rows}
+    return {r[0]: {'old': r[1], 'new': float(r[2])} for r in updated_rows}
 
 @requires_user_role(UserRole.Annotate)
 def update_radii(request, project_id=None):
@@ -470,8 +470,8 @@ def update_radius(request, project_id=None, treenode_id=None):
     if 5 == option:
         # Update radius of all nodes (in a single query)
         skeleton_id = Treenode.objects.filter(pk=treenode_id).values('skeleton_id')
-        include = Treenode.objects.filter(skeleton_id=skeleton_id) \
-                .values_list('id', flat=True)
+        include = list(Treenode.objects.filter(skeleton_id=skeleton_id) \
+                .values_list('id', flat=True))
 
         old_radii = update_node_radii(include, radius, cursor)
         return create_update_response(old_radii, radius)

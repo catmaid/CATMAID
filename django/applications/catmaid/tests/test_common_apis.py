@@ -2401,12 +2401,24 @@ class ViewPageTests(TestCase):
         self.fake_authentication()
 
         treenode_id = 2417
-        new_r = 5
-        old_r = -1
+        new_r = 5.0
+        old_r = -1.0
         response = self.client.post(
                 '/%d/treenode/%d/radius' % (self.test_project_id, treenode_id),
                 {'radius': new_r, 'option': 5})
         self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_response = {
+            'success': True,
+            'new_radius': new_r,
+            'updated_nodes': {
+                '2415': {'new': 5.0, 'old': -1.0},
+				'2417': {'new': 5.0, 'old': -1.0},
+				'2419': {'new': 5.0, 'old': -1.0},
+				'2423': {'new': 5.0, 'old': -1.0}
+            }
+        }
+        self.assertEqual(expected_response, parsed_response)
 
         expected = [(2419, new_r), (2417, new_r), (2415, new_r), (2423, new_r)]
         for x in expected:

@@ -86,7 +86,6 @@ def create_link(request, project_id=None):
         connector=to_connector  # connector_id = to_id
     )
     link.save()
-    print(link.__dict__)
 
     result['message'] = 'success'
     result['link_id'] = link.id

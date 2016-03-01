@@ -845,7 +845,7 @@ class ViewPageTests(TestCase):
         self.assertEqual(expected_result, parsed_response['error'])
 
     def test_update_confidence_of_treenode(self):
-        treenode_id = 7
+        treenode_id = 11
         self.fake_authentication()
         response = self.client.post(
                 '/%d/treenodes/%d/confidence' % (self.test_project_id, treenode_id),
@@ -853,7 +853,10 @@ class ViewPageTests(TestCase):
         self.assertEqual(response.status_code, 200)
         treenode = Treenode.objects.filter(id=treenode_id).get()
         parsed_response = json.loads(response.content)
-        expected_result = {'message': 'success'}
+        expected_result = {
+            'message': 'success',
+            'updated_partners': { '7': 5 }
+        }
         self.assertEqual(expected_result, parsed_response)
         self.assertEqual(4, treenode.confidence)
 
@@ -863,7 +866,10 @@ class ViewPageTests(TestCase):
         self.assertEqual(response.status_code, 200)
         treenode = Treenode.objects.filter(id=treenode_id).get()
         parsed_response = json.loads(response.content)
-        expected_result = {'message': 'success'}
+        expected_result = {
+            'message': 'success',
+            'updated_partners': { '7': 4 }
+        }
         self.assertEqual(expected_result, parsed_response)
         self.assertEqual(5, treenode.confidence)
 
@@ -877,7 +883,10 @@ class ViewPageTests(TestCase):
         self.assertEqual(response.status_code, 200)
         connector = TreenodeConnector.objects.filter(id=treenode_connector_id).get()
         parsed_response = json.loads(response.content)
-        expected_result = {'message': 'success'}
+        expected_result = {
+            'message': 'success',
+            'updated_partners': {'356': 5}
+        }
         self.assertEqual(expected_result, parsed_response)
         self.assertEqual(4, connector.confidence)
 
@@ -887,7 +896,10 @@ class ViewPageTests(TestCase):
         self.assertEqual(response.status_code, 200)
         connector = TreenodeConnector.objects.filter(id=treenode_connector_id).get()
         parsed_response = json.loads(response.content)
-        expected_result = {'message': 'success'}
+        expected_result = {
+            'message': 'success',
+            'updated_partners': {'356': 4}
+        }
         self.assertEqual(expected_result, parsed_response)
         self.assertEqual(5, connector.confidence)
 

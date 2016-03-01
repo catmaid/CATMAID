@@ -1990,7 +1990,12 @@ class ViewPageTests(TestCase):
                 {'connector_id': connector_id, 'treenode_id': treenode_id})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
-        expected_result = {'result': 'Removed treenode to connector link'}
+        expected_result = {
+            'link_id': 382,
+            'link_type': 'postsynaptic_to',
+            'link_type_id': 24,
+            'result': 'Removed treenode to connector link'
+        }
         self.assertEqual(expected_result, parsed_response)
         self.assertEqual(0, TreenodeConnector.objects.filter(connector=connector_id, treenode=treenode_id).count())
         self.assertEqual(tc_count - 1, TreenodeConnector.objects.all().count())

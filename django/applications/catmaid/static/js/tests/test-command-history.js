@@ -28,7 +28,7 @@ QUnit.test('Command history test', function(assert) {
 
   // Add five noop2 commands and exceed the history limit
   for (var i=0; i<5; ++i) {
-    history.execute(noop2)
+    history.execute(noop2);
   }
 
   assert.strictEqual(history.nEntries(), 5,

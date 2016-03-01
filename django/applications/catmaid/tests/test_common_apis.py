@@ -645,7 +645,8 @@ class ViewPageTests(TestCase):
         parsed_response = json.loads(response.content)
         expected_result = {
             'success': True,
-            'renamed_neuron': neuron_id
+            'renamed_neuron': neuron_id,
+            'old_name': 'branched neuron'
         }
         self.assertEqual(expected_result, parsed_response)
 

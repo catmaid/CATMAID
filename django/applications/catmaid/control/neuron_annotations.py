@@ -433,6 +433,7 @@ def _annotate_entities(project_id, entity_ids, annotation_map):
     counting pattern {nX} with X being a number. This will add an incrementing
     number starting from X for each entity.
     """
+    new_annotations = set()
     r = Relation.objects.get(project_id = project_id,
             relation_name = 'annotated_with')
 
@@ -468,7 +469,6 @@ def _annotate_entities(project_id, entity_ids, annotation_map):
             expanded_annotations = {annotation: entity_ids}
 
         # Make sure the annotation's class instance exists.
-        new_annotations = set()
         for a, a_entity_ids in expanded_annotations.iteritems():
             ci, created = ClassInstance.objects.get_or_create(
                     project_id=project_id, name=a,

@@ -2638,8 +2638,9 @@ class ViewPageTests(TestCase):
                     })
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
-        expected_result = {'message': 'success'}
-        self.assertEqual(expected_result, parsed_response)
+        self.assertIn('message', parsed_response)
+        self.assertIn('link_id', parsed_response)
+        self.assertEqual('success', parsed_response['message'])
 
     def test_create_presynaptic_link_fail_due_to_other_presynaptic_links(self):
         from_id = 237
@@ -2672,8 +2673,9 @@ class ViewPageTests(TestCase):
                     })
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
-        expected_result = {'message': 'success'}
-        self.assertEqual(expected_result, parsed_response)
+        self.assertIn('message', parsed_response)
+        self.assertIn('link_id', parsed_response)
+        self.assertEqual('success', parsed_response['message'])
 
     def test_node_nearest_for_skeleton(self):
         self.fake_authentication()

@@ -113,9 +113,10 @@ def delete_link(request, project_id=None):
     # and the user_id not matching or not being superuser.
     can_edit_or_fail(request.user, link.id, 'treenode_connector')
 
+    deleted_link_id = link.id
     link.delete()
     return HttpResponse(json.dumps({
-        'link_id': link.id,
+        'link_id': deleted_link_id,
         'link_type_id': link.relation.id,
         'link_type': link.relation.relation_name,
         'result': 'Removed treenode to connector link'

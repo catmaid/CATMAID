@@ -1,43 +1,42 @@
+Screenshots and videos
+======================
 
 .. raw:: html
 
-        <iframe width="560" height="315" src="http://www.youtube.com/embed/rQyJV0R-Mp8" frameborder="0" allowfullscreen></iframe>
-
-Screenshots
-===========
-
-The CATMAID User Interface with skeleton annnotations and tags
+        <div class="figure"><iframe width="560" height="315" src="http://www.youtube.com/embed/rQyJV0R-Mp8" frameborder="0" allowfullscreen></iframe>
+        <p class="caption"><span class="caption-text">Stephan Saalfeld talking about CATMAID, TrakEM2 and ImgLib2</span></p></div>
 
 .. figure:: _static/screenshots/ui.png
    :alt: Basic CATMAID user interface
 
-WebGL Neuronal Morphology Viewer
+   The CATMAID User Interface with skeleton annnotations and tags
+
 
 .. figure:: _static/screenshots/webgl.png
    :alt: CATMAID 3D Viewer
 
-
-| WebGL View of *Drosophila* Larval CNS
-| *Tracing by Albert Cardona's lab at HHMI Janelia Research Campus and collaborators.*
+   CATMAID comes with a 3D viewer
 
 .. figure:: _static/screenshots/larval_cns.jpg
    :alt: A big part of Drosophila larval CNS reconstructed with CATMAID
 
-
-Orthogonal Views and Image Filters
+   3D View of *Drosophila* Larval CNS
+   *Tracing by Albert Cardona's lab at HHMI Janelia Research Campus and collaborators.*
 
 .. figure:: _static/screenshots/ortho_views.jpg
    :alt: CATMAID supports orthogonal stacks
 
+   Orthogonal views of the same image stack are supported by CATMAID
 
-The Skeleton Node and Connector Table
 
 .. figure:: _static/screenshots/tables.png
    :alt: Skeleton node and connector table of CATMAID
 
+   CATMAID's Skeleton Node and Connector Table
 
-Selector tool: Mirrored mouse cursor in all open stacks
 
 .. figure:: _static/screenshots/selector-tool-mouse-mirror.png
    :scale: 60 %
    :alt: Selector tool with mirrored cursors in CATMAID
+
+   CATMAID's Selector tool: Mirrored mouse cursor in all open stacks

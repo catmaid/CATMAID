@@ -286,7 +286,8 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.TokenAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ),
-    'VIEW_DESCRIPTION_FUNCTION': 'custom_rest_swagger_googledoc.get_googledocstring'
+    'VIEW_DESCRIPTION_FUNCTION':
+        'custom_rest_swagger_googledoc.get_googledocstring',
 }
 
 SWAGGER_SETTINGS = {

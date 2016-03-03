@@ -13,6 +13,11 @@ from catmaid.control.authentication import ObtainAuthToken
 admin.site = AdminSitePlus()
 admin.autodiscover()
 
+# Customize admin site titles and header
+admin.site.site_header = "CATMAID administration"
+admin.site.site_title = "CATMAID site admin"
+admin.site.index_title = "CATMAID instance"
+
 # CATMAID
 urlpatterns = [
     url(r'^', include('catmaid.urls')),

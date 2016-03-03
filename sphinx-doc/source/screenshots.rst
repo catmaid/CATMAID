@@ -40,3 +40,9 @@ Screenshots and videos
    :alt: Selector tool with mirrored cursors in CATMAID
 
    CATMAID's Selector tool: Mirrored mouse cursor in all open stacks
+
+
+.. figure:: _static/screenshots/catmaid-tile-source-settings.jpg
+   :alt: Tile source settings for a dynamic tile server in CATMAID
+
+   Some tile sources in CATMAID support dynamic settings

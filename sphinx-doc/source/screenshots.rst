@@ -9,28 +9,31 @@ Screenshots
 The CATMAID User Interface with skeleton annnotations and tags
 
 .. figure:: _static/screenshots/ui.png
-
+   :alt: Basic CATMAID user interface
 
 WebGL Neuronal Morphology Viewer
 
 .. figure:: _static/screenshots/webgl.png
-   :alt: WebGL Viewer
+   :alt: CATMAID 3D Viewer
 
 
 | WebGL View of *Drosophila* Larval CNS
 | *Tracing by Albert Cardona's lab at HHMI Janelia Research Campus and collaborators.*
 
 .. figure:: _static/screenshots/larval_cns.jpg
+   :alt: A big part of Drosophila larval CNS reconstructed with CATMAID
 
 
 Orthogonal Views and Image Filters
 
 .. figure:: _static/screenshots/ortho_views.jpg
+   :alt: CATMAID supports orthogonal stacks
 
 
 The Skeleton Node and Connector Table
 
 .. figure:: _static/screenshots/tables.png
+   :alt: Skeleton node and connector table of CATMAID
 
 
 Neuron Catalog
@@ -43,4 +46,4 @@ Selector tool: Mirrored mouse cursor in all open stacks
 
 .. figure:: _static/screenshots/selector-tool-mouse-mirror.png
    :scale: 60 %
-   :alt: Selector tool
+   :alt: Selector tool with mirrored cursors in CATMAID

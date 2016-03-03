@@ -56,8 +56,17 @@ class TriangleMeshVolume(PostGISVolume):
     """
     def __init__(self, project_id, user_id, options):
         super(TriangleMeshVolume, self).__init__(project_id, user_id, options)
-        json_mesh = options.get("mesh", None)
-        self.mesh = json.loads(json_mesh) if json_mesh else None
+        input_mesh = options.get("mesh", None)
+        if input_mesh:
+            mesh_type = type(input_mesh)
+            if list == mesh_type:
+                self.mesh = input_mesh
+            elif str == mesh_type:
+                self.mesh = json.loads(json_mesh)
+            else:
+                raise ValueError("Unknown mesh type: " + mesh_type)
+        else:
+            self.mesh = None
 
     def save(self):
 
@@ -341,7 +350,11 @@ def add_volume(request, project_id):
         type: integer
         required: true
     """
-    instance = get_volume_instance(project_id, request.user.id, request.POST)
+    print request.data
+    # Use DRF's request.data to be able to also be able to parse
+    # application/json content type requets. This can be convenient when
+    # importing meses.
+    instance = get_volume_instance(project_id, request.user.id, request.data)
     volume_id = instance.save()
 
     return Response({

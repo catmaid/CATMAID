@@ -36,12 +36,6 @@ The Skeleton Node and Connector Table
    :alt: Skeleton node and connector table of CATMAID
 
 
-Neuron Catalog
-
-.. figure:: _static/screenshots/neuron_catalog.png
-   :alt: Neuron Catalog
-
-
 Selector tool: Mirrored mouse cursor in all open stacks
 
 .. figure:: _static/screenshots/selector-tool-mouse-mirror.png

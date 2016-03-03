@@ -184,7 +184,7 @@ def validate_vtype(vtype):
     """
     if not vtype:
         raise ValueError("Type parameter missing. It should have one of the "
-                "following options: " + volume_type.keys().join(", "))
+                "following options: " + ", ".join(volume_type.keys()))
     if vtype not in volume_type.keys():
         raise ValueError("Type has to be one of the following: " +
                 volume_type.keys().join(", "))

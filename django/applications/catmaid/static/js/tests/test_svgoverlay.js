@@ -37,15 +37,13 @@ QUnit.test('SVG overlay test', function( assert ) {
       getId: function() { return 1; }
     };
 
-    // Set global Django URL and configure CATMAID
+    // Set global Django URL and configure CATMAID wit override permissions
     /*global django_url:true */
     django_url = '/';
-    CATMAID.configure(django_url, django_url);
-
-    // Set global user permissions to mocking object
-    CATMAID.updatePermissions({
+    var permissions = {
       'can_annotate': {'1': true}
-    });
+    };
+    CATMAID.configure(django_url, django_url, undefined, undefined, permissions);
 
     // Set global status bar mocking object
     CATMAID.statusBar = {

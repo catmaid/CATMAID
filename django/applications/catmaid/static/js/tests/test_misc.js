@@ -3,6 +3,15 @@
 
 QUnit.test('Miscellaneous tests', function( assert ) {
 
+  var originalRequestQueue = window.requestQueue;
+  var server = this.sandbox.useFakeServer();
+
+  var permissionResponse = JSON.stringify([{fake_permission: {"1": true}}]);
+  server.respondWith("GET", "a/permissions",
+    [200, {"Content-Type": "application/json"}, permissionResponse]);
+  server.respondWith("GET", "c/permissions",
+    [200, {"Content-Type": "application/json"}, permissionResponse]);
+
   // Test CATMAID front-end configuration
   (function() {
     CATMAID.configure("a", "b", "c");
@@ -79,6 +88,10 @@ QUnit.test('Miscellaneous tests', function( assert ) {
     assert.strictEqual(CATMAID.makeStaticURL("/c"), "b/c",
         "CATMAID.makeStaticURL creates correct path if input has leading slash");
   })();
+
+  setTimeout(server.respond.bind(server), 0);
+  this.sandbox.restore();
+  window.requestQueue = originalRequestQueue;
 
   // Test CATMAID.fetch()
   (function() {

@@ -62,8 +62,10 @@ var requestQueue = new RequestQueue();
    *    CATMAID's static extension files.
    * @param {string} csrfCookieName - The name of the cookie containing the
    *    CSRF token to be sent to the backend with XHRs.
+   * @param {Object} permissions (Optional) Instead of getting permission from
+   *                                        the back-end, use these instead.
    */
-  CATMAID.configure = function(backendURL, staticURL, staticExtURL, csrfCookieName) {
+  CATMAID.configure = function(backendURL, staticURL, staticExtURL, csrfCookieName, permissions) {
     validateString(backendURL, "back-end URL");
     validateString(staticURL, "static URL");
     if (typeof staticExtURL === 'undefined') staticExtURL = '';
@@ -97,7 +99,7 @@ var requestQueue = new RequestQueue();
     });
 
     CATMAID.setupCsrfProtection();
-    CATMAID.updatePermissions();
+    CATMAID.updatePermissions(permissions);
   };
 
   /**

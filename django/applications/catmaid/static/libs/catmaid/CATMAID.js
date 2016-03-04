@@ -56,14 +56,14 @@ var requestQueue = new RequestQueue();
    * Set up the front-end environment. Both URLs are stored so that they contain
    * a trailing slash.
    *
-   * @param {string} backendURL - The URL pointing to CATMAID's back-end.
-   * @param {string} staticURL - The URL pointing to CATMAID's static files.
-   * @param {string} staticExtURL - Optional, the relative URL pointing to
-   *    CATMAID's static extension files.
-   * @param {string} csrfCookieName - The name of the cookie containing the
-   *    CSRF token to be sent to the backend with XHRs.
-   * @param {Object} permissions (Optional) Instead of getting permission from
-   *                                        the back-end, use these instead.
+   * @param {string} backendURL     The URL pointing to CATMAID's back-end.
+   * @param {string} staticURL      The URL pointing to CATMAID's static files.
+   * @param {string} staticExtURL   Optional, the relative URL pointing to
+   *                                CATMAID's static extension files.
+   * @param {string} csrfCookieName The name of the cookie containing the
+   *                                CSRF token to be sent to the backend with XHRs.
+   * @param {Object} permissions    (Optional) Instead of getting permission from
+   *                                the back-end, use these instead.
    */
   CATMAID.configure = function(backendURL, staticURL, staticExtURL, csrfCookieName, permissions) {
     validateString(backendURL, "back-end URL");

@@ -1362,8 +1362,8 @@ var WindowMaker = new function()
           {type: 'numeric', label: 'Z plane zoom level ', value: o.zplane_zoomlevel,
            title: 'The zoom-level to use (slider value in top toolbar) for image tiles ' +
            'in a Z plane. If set to "max", the highest zoom-level available will be ' +
-           'which in turn means the worst resolution available.', length: 4,
-           onclickFn: function() {
+           'which in turn means the worst resolution available.', length: 2,
+           onchangeFn: function() {
              WA.options.zplane_zoomlevel = ("max" === this.value) ? this.value :
                  Math.max(0, this.value);
              WA.adjustStaticContent();

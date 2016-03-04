@@ -99,7 +99,7 @@
    */
   CommandHistory.prototype.limitHistory = function(maxEntries) {
     if (maxEntries) {
-      var nCommandsToRemove = this._commandList.length > maxEntries;
+      var nCommandsToRemove = this._commandList.length - maxEntries;
       if (nCommandsToRemove > 0) {
         this._commandList.splice(0, nCommandsToRemove);
         this._currentCommand = Math.max(-1, this._currentCommand - nCommandsToRemove);

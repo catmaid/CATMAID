@@ -263,9 +263,14 @@ var requestQueue = new RequestQueue();
       var url = CATMAID.makeURL(relativeURL);
       requestQueue.register(url, method, data, function(status, text, xml) {
         // Validation throws an error for bad requests and wrong JSON data,
-        // which causes the promise to become rejected. So there is no need to
-        // call reject() explicitely.
-        var json = CATMAID.validateJsonResponse(status, text, xml);
+        // which would causes the promise to become rejected automatically if
+        // this wasn't an asynchronously called function. But since this is the
+        // case, we have to call reject() explicitly.
+        try {
+          var json = CATMAID.validateJsonResponse(status, text, xml);
+        } catch (e) {
+          reject(e);
+        }
         resolve(json);
       });
     });

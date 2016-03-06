@@ -291,7 +291,7 @@
     this.color = null;
     this.minIntensity = null;
     this.maxIntensity = null;
-    this.gamma = 1.0;
+    this.gamma = null;
 
     this.getSettings = function() {
       return [

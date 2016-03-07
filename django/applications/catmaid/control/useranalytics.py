@@ -5,8 +5,9 @@ import pytz
 
 from django.http import HttpResponse
 from django.utils import timezone
+from django.shortcuts import get_object_or_404
 
-from catmaid.models import Connector, Treenode, Review
+from catmaid.models import Connector, Project, Treenode, Review
 
 
 # Because we don't want to show generated images in a window, we can use
@@ -54,13 +55,16 @@ def plot_useranalytics(request):
     performance of individual users over time.
     """
     userid = request.GET.get('userid', -1)
+    project_id = request.GET.get('project_id', None)
+    project = get_object_or_404(Project, pk=project_id) if project_id else None
     start_date = request.GET.get('start')
     end_date = request.GET.get('end')
 
-    if request.user.is_superuser:
+    if request.user.is_superuser or \
+            project and request.user.has_perm('can_administer', project):
         end = dateparser.parse(end_date).replace(tzinfo=pytz.utc) if end_date else timezone.now()
         start = dateparser.parse(start_date).replace(tzinfo=pytz.utc) if start_date else end - timedelta(end.isoweekday() + 7)
-        f = generateReport( userid, 10, start, end )
+        f = generateReport( userid, project_id, 10, start, end )
     else:
         f = figure(1, figsize=(6,6))
 
@@ -69,21 +73,30 @@ def plot_useranalytics(request):
     canvas.print_png(response)
     return response
 
-def eventTimes(user_id, start_date, end_date):
+def eventTimes(user_id, project_id, start_date, end_date):
     """ Returns a tuple containing a list of tree node edition times, connector
     edition times and tree node review times within the date range specified
     where the editor/reviewer is the given user.
     """
     dr = (start_date, end_date)
     tns = Treenode.objects.filter(
-        editor_id = user_id,
-        edition_time__range=dr).values_list('edition_time', flat=True)
+        editor_id=user_id,
+        edition_time__range=dr)
     cns = Connector.objects.filter(
-        editor_id = user_id,
-        edition_time__range=dr).values_list('edition_time', flat=True)
+        editor_id=user_id,
+        edition_time__range=dr)
     rns = Review.objects.filter(
-        reviewer_id = user_id,
-        review_time__range=dr).values_list('review_time', flat=True)
+        reviewer_id=user_id,
+        review_time__range=dr)
+
+    if project_id:
+        tns = tns.filter(project_id=project_id)
+        cns = cns.filter(project_id=project_id)
+        rns = rns.filter(project_id=project_id)
+
+    tns = tns.values_list('edition_time', flat=True)
+    cns = cns.values_list('edition_time', flat=True)
+    rns = rns.values_list('review_time', flat=True)
 
     return list(tns), list(cns), list(rns)
 
@@ -282,11 +295,11 @@ def generateErrorImage(msg):
     fig.suptitle(msg)
     return fig
 
-def generateReport( user_id, activeTimeThresh, start_date, end_date ):
+def generateReport( user_id, project_id, activeTimeThresh, start_date, end_date ):
     """ nts: node times
         cts: connector times
         rts: review times """
-    nts, cts, rts = eventTimes( user_id, start_date, end_date )
+    nts, cts, rts = eventTimes( user_id, project_id, start_date, end_date )
 
     # If no nodes have been found, return an image with a descriptive text.
     if len(nts) == 0:

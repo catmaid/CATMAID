@@ -61,11 +61,8 @@ Server Configuration
 
 The AMI is configured to use Nginx + Gunicorn; by default it is
 configured to use 4 synchronous worker threads, which can be
-changed in ``/etc/init/gunicorn-catmaid.conf``.  (You can
+changed in ``/etc/init/gunicorn-catmaid.conf``.  You can
 restart Gunicorn with::
 
     sudo initctl restart gunicorn-catmaid
 
-(We are not sure, at the moment, whether using gevent-based
-greenlet worker threads is safe to use with CATMAID's current
-"database transaction per HTTP request" model.)

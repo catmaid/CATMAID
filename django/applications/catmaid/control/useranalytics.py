@@ -66,7 +66,7 @@ def plot_useranalytics(request):
         start = dateparser.parse(start_date).replace(tzinfo=pytz.utc) if start_date else end - timedelta(end.isoweekday() + 7)
         f = generateReport( userid, project_id, 10, start, end )
     else:
-        f = figure(1, figsize=(6,6))
+        f = generateErrorImage('You lack permissions to view this report.')
 
     canvas = FigureCanvasAgg( f )
     response = HttpResponse(content_type='image/png')

@@ -7,7 +7,7 @@ QUnit.test('Tile layer test', function (assert) {
     var res = {'x': 0.1, 'y': 0.5, 'z': 2.0};
     var trs = {'x': 0, 'y': 0, 'z': 0};
     return new CATMAID.Stack(1, name, dim, res, trs,
-        [], false, 3, 4, "", "", orientation);
+        [], 3, 4, "", "", orientation);
   }
 
   var stack = create_stack("Test Stack", CATMAID.Stack.ORIENTATION_XY);

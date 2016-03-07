@@ -20,7 +20,7 @@
     updateRadius: function(projectId, nodeId, radius, updateMode) {
       CATMAID.requirePermission(projectId, 'can_annotate',
           'You don\'t have have permission to update the radius of a node');
-      var url = CATMAID.makeURL(projectId + '/treenode/' + nodeId + '/radius');
+      var url = projectId + '/treenode/' + nodeId + '/radius';
       var params = {
         radius: radius,
         option: updateMode
@@ -43,7 +43,7 @@
     updateRadii: function(projectId, nodesVsRadii) {
       CATMAID.requirePermission(projectId, 'can_annotate',
           'You don\'t have have permission to update the radius of a node');
-      var url = CATMAID.makeURL(projectId + '/treenodes/radius');
+      var url = projectId + '/treenodes/radius';
       var treenodeIds = Object.keys(nodesVsRadii);
       var params = {
         treenode_ids: treenodeIds,
@@ -67,7 +67,7 @@
      *          successfully updated.
      */
     updateConfidence: function(projectId, nodeId, newConfidence, toConnector, partnerId) {
-      var url = CATMAID.makeURL(projectId + '/treenodes/' + nodeId + '/confidence');
+      var url = projectId + '/treenodes/' + nodeId + '/confidence';
       var params = {
         to_connector: toConnector,
         new_confidence: newConfidence,

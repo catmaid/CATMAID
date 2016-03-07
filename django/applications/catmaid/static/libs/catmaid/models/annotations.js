@@ -18,7 +18,7 @@
      */
     forSkeleton: function(projectId, skeletonId) {
       CATMAID.requirePermission(projectId, 'can_browse');
-      var url = CATMAID.makeURL(projectId + '/annotations/');
+      var url = projectId + '/annotations/';
       var params = {
         'skeleton_id': skeletonId
       };
@@ -38,7 +38,7 @@
     remove: function(projectId, entityIds, annotationIds) {
       CATMAID.requirePermission(projectId, 'can_annotate',
           'You don\'t have have permission to remove annotations');
-      var url = CATMAID.makeURL(projectId + '/annotations/remove');
+      var url = projectId + '/annotations/remove';
       var params = {
         entity_ids: entityIds,
         annotation_ids: annotationIds

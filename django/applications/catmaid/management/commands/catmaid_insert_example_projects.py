@@ -1,5 +1,4 @@
 from django.core.management.base import BaseCommand, CommandError
-from optparse import make_option
 from django.core.management import call_command
 
 from catmaid.models import *
@@ -10,9 +9,9 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('--user', dest='user_id', required=True,
-                help='The ID of the project to setup tracing for')
+                help='The ID of the user to own the example projects')
 
-    def handle_noargs(self, **options):
+    def handle(self, *args, **options):
 
         if not options['user_id']:
             raise CommandError, "You must specify a user ID with --user"
@@ -70,5 +69,5 @@ using this <a href="http://fly.mpi-cbg.de/~saalfeld/download/volume.tar.bz2">sce
         tracing_project = projects['Focussed Ion Beam (FIB)']['project_object']
 
         call_command('catmaid_setup_tracing_for_project',
-                     project_id=tracing_project.id,
-                     user_id=user.id)
+                     '--project_id', str(tracing_project.id),
+                     '--user', str(user.id))

@@ -1,5 +1,4 @@
 from django.core.management.base import BaseCommand, CommandError
-from optparse import make_option
 
 from catmaid.models import *
 from catmaid.control.tracing import setup_tracing
@@ -16,4 +15,4 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         user = User.objects.get(pk=options['user_id'])
         # Set up tracing for the requested project
-        setup_tracing(options['project_id'], user);
+        setup_tracing(options['project_id'], user)

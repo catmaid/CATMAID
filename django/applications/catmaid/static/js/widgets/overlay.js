@@ -1633,7 +1633,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createSingleConnector = function (
 
     self.activateNode(nn);
     if (typeof completionCallback !== "undefined") {
-      completionCallback(result.connector_id);
+      completionCallback(result.newConnectorId);
     }
 
     return result;

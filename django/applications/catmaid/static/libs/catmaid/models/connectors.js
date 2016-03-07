@@ -25,9 +25,9 @@
     create: function(projectId, x, y, z, confidence) {
       CATMAID.requirePermission(projectId, 'can_annotate',
           'You don\'t have have permission to create connectors');
-      var url = CATMAID.makeURL(project.id + '/connector/create');
+      var url = CATMAID.makeURL(projectId + '/connector/create');
       var params = {
-          pid: project.id,
+          pid: projectId,
           confidence: confidence,
           x: x,
           y: y,
@@ -55,7 +55,7 @@
     remove: function(projectId, connectorId) {
       CATMAID.requirePermission(projectId, 'can_annotate',
           'You don\'t have have permission to remove connectors');
-      var url = CATMAID.makeURL(project.id + '/connector/delete');
+      var url = CATMAID.makeURL(projectId + '/connector/delete');
       var params = {
         connector_id: connectorId
       };
@@ -82,7 +82,7 @@
     info: function(projectId, connectorId) {
       CATMAID.requirePermission(projectId, 'can_browse',
           'You don\'t have have permission to remove connectors');
-      var url = CATMAID.makeURL(project.id + '/connector/' + connectorId + '/detail');
+      var url = CATMAID.makeURL(projectId + '/connector/' + connectorId + '/detail');
 
       return CATMAID.fetch(url, 'GET')
         .then(function(result) {
@@ -108,7 +108,7 @@
     createLink: function(projectId, connectorId, nodeId, linkType) {
       CATMAID.requirePermission(projectId, 'can_annotate',
           'You don\'t have have permission to create links');
-      var url = CATMAID.makeURL(project.id + '/link/create');
+      var url = CATMAID.makeURL(projectId + '/link/create');
       var params = {
         pid: projectId,
         from_id: nodeId,
@@ -136,7 +136,7 @@
     removeLink: function(projectId, connectorId, nodeId) {
       CATMAID.requirePermission(projectId, 'can_annotate',
           'You don\'t have have permission to remove links');
-      var url = CATMAID.makeURL(project.id + '/link/delete');
+      var url = CATMAID.makeURL(projectId + '/link/delete');
       var params = {
         pid: projectId,
         connector_id: connectorId,

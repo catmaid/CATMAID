@@ -1,5 +1,16 @@
 .. _ami:
 
+.. warning::
+
+   The CATMAID AMI is not currently maintained and provides an
+   outdated version of CATMAID. Consider
+   :ref:`installing CATMAID from scratch <basic-installation>` or
+   :ref:`using a Docker image <docker>` instead.
+
+   If you are interested in updating the CATMAID AMI, please let us
+   know on the `CATMAID mailing list
+   <https://groups.google.com/forum/#!forum/catmaid>`_.
+
 Creating a CATMAID Instance on EC2
 ==================================
 

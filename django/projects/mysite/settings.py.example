@@ -53,9 +53,9 @@ STATIC_ROOT =  'CATMAIDPATH/django/static'
 TIME_ZONE = 'CATMAID_TIMEZONE'
 
 # This is used as a security measure by Django by validating a request's Host
-# header. This setting is required when DEBUG is False. A dot in front of the
-# host name indicated that also subdomains are allowed.
-ALLOWED_HOSTS = ['.CATMAID_SERVERNAME']
+# header. This setting is required when DEBUG is False. A dot ('.') in front of
+# the host name indicates that also subdomains are allowed.
+ALLOWED_HOSTS = ['CATMAID_SERVERNAME']
 
 # Usually, CATMAID's Django back-end is not accessible on a domain's
 # root ('/'), but rather a sub-directory like 'catmaid'. Django needs

@@ -7,8 +7,9 @@ RUN apt-get install -y software-properties-common \
     && apt-get update -y \
     && apt-get install -y python-pip git \
     && apt-get install -y nginx supervisor uwsgi-plugin-python
-ADD . /home/
+ADD packagelist-ubuntu-14.04-apt.txt /home/
 RUN xargs apt-get install -y < /home/packagelist-ubuntu-14.04-apt.txt
+ADD django/requirements.txt /home/django/
 ENV WORKON_HOME /opt/virtualenvs
 RUN mkdir -p /opt/virtualenvs \
     && /bin/bash -c "source /usr/share/virtualenvwrapper/virtualenvwrapper.sh \
@@ -17,6 +18,7 @@ RUN mkdir -p /opt/virtualenvs \
     && pip install -U pip \
     && pip install -r /home/django/requirements.txt"
 
+ADD . /home/
 # Postgres setup
 RUN sed -i '/# DO NOT DISABLE!/ilocal catmaid catmaid_user  md5' /etc/postgresql/9.3/main/pg_hba.conf \
     && service postgresql start \

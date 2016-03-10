@@ -1086,6 +1086,57 @@ class ViewPageTests(TestCase):
         self.assertEqual(0, Connector.objects.filter(id=connector_id).count())
         self.assertEqual(0, TreenodeConnector.objects.filter(connector=connector).count())
 
+    def test_connector_info(self):
+        self.fake_authentication()
+        response = self.client.post(
+                '/%d/connector/pre-post-info' % self.test_project_id,
+                {'pre[0]': 235, 'post[0]': 373})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = [
+                [356, [6730.0, 2700.0, 0.0],
+                 285, 235, 5, 3, [6100.0, 2980.0, 0.0],
+                 377, 373, 5, 3, [7620.0, 2890.0, 0.0]],
+                [421, [6260.0, 3990.0, 0.0],
+                 415, 235, 5, 3, [5810.0, 3950.0, 0.0],
+                 409, 373, 5, 3, [6630.0, 4330.0, 0.0]]]
+        self.assertEqual(expected_result, parsed_response)
+
+        response = self.client.post(
+                '/%d/connector/pre-post-info' % self.test_project_id,
+                {'pre[0]': 235, 'post[0]': 373, 'cids[0]': 421})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = [
+                [421, [6260.0, 3990.0, 0.0],
+                 415, 235, 5, 3, [5810.0, 3950.0, 0.0],
+                 409, 373, 5, 3, [6630.0, 4330.0, 0.0]]]
+        self.assertEqual(expected_result, parsed_response)
+
+        response = self.client.post(
+                '/%d/connector/pre-post-info' % self.test_project_id,
+                {'pre[0]': 2462, 'post[0]': 2468})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = [
+                [2466, [6420.0, 5565.0, 0.0],
+                 2462, 2462, 5, 3, [6685.0, 5395.0, 0.0],
+                 2464, 2468, 5, 3, [6485.0, 5915.0, 0.0]]]
+
+        self.assertEqual(expected_result, parsed_response)
+
+        response = self.client.post(
+                '/%d/connector/pre-post-info' % self.test_project_id,
+                {'pre[0]': 2462, 'post[0]': 2462})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = [
+                [2463, [7135.0, 5065.0, 0.0],
+                 2462, 2462, 5, 3, [6685.0, 5395.0, 0.0],
+                 2461, 2462, 5, 3, [7680.0, 5345.0, 0.0]]]
+
+        self.assertEqual(expected_result, parsed_response)
+
     def test_delete_link_failure(self):
         self.fake_authentication()
         connector_id = 202020

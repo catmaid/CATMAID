@@ -19,6 +19,8 @@ included in this changelog.
 - Response object now includes `gapjunctions` and `gapjunctions_reviewers`
   properties for gap junction connectors.
 
+- Documentation has correct parameter name: `source_skeleton_ids` not `source`.
+
 `POST /{project_id}/label/[treenode|connector]/{label_id}/update`:
 
 - Returns now also information about what labels were added, which were

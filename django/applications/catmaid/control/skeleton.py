@@ -828,7 +828,7 @@ def skeleton_info_raw(request, project_id=None):
     that are common between the source skeleton set.
     ---
     parameters:
-        - name: source[]
+        - name: source_skeleton_ids[]
           description: IDs of the skeletons whose partners to find
           required: true
           type: array

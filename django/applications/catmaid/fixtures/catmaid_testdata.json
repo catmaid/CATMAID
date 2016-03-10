@@ -3487,6 +3487,126 @@
     }
   }, 
   {
+    "pk": 2462,
+    "model": "catmaid.concept",
+    "fields": {
+      "project": 3,
+      "creation_time": "2016-03-09T18:10:19.640Z",
+      "user": 3,
+      "edition_time": "2016-03-09T18:10:19.633Z"
+    }
+  },
+  {
+    "pk": 2463,
+    "model": "catmaid.concept",
+    "fields": {
+      "project": 3,
+      "creation_time": "2016-03-09T18:10:19.646Z",
+      "user": 3,
+      "edition_time": "2016-03-09T18:10:19.633Z"
+    }
+  },
+  {
+    "pk": 2464,
+    "model": "catmaid.concept",
+    "fields": {
+      "project": 3,
+      "creation_time": "2016-03-09T18:10:19.650Z",
+      "user": 3,
+      "edition_time": "2016-03-09T18:10:19.650Z"
+    }
+  },
+  {
+    "pk": 2465,
+    "model": "catmaid.concept",
+    "fields": {
+      "project": 3,
+      "creation_time": "2016-03-09T18:10:19.668Z",
+      "user": 3,
+      "edition_time": "2016-03-09T18:10:19.668Z"
+    }
+  },
+  {
+    "pk": 2466,
+    "model": "catmaid.concept",
+    "fields": {
+      "project": 3,
+      "creation_time": "2016-03-09T18:10:29.808Z",
+      "user": 3,
+      "edition_time": "2016-03-09T18:10:29.808Z"
+    }
+  },
+  {
+    "pk": 2467,
+    "model": "catmaid.concept",
+    "fields": {
+      "project": 3,
+      "creation_time": "2016-03-09T18:10:33.668Z",
+      "user": 3,
+      "edition_time": "2016-03-09T18:10:33.669Z"
+    }
+  },
+  {
+    "pk": 2468,
+    "model": "catmaid.concept",
+    "fields": {
+      "project": 3,
+      "creation_time": "2016-03-09T18:10:42.849Z",
+      "user": 3,
+      "edition_time": "2016-03-09T18:10:42.844Z"
+    }
+  },
+  {
+    "pk": 2469,
+    "model": "catmaid.concept",
+    "fields": {
+      "project": 3,
+      "creation_time": "2016-03-09T18:10:42.855Z",
+      "user": 3,
+      "edition_time": "2016-03-09T18:10:42.844Z"
+    }
+  },
+  {
+    "pk": 2470,
+    "model": "catmaid.concept",
+    "fields": {
+      "project": 3,
+      "creation_time": "2016-03-09T18:10:42.858Z",
+      "user": 3,
+      "edition_time": "2016-03-09T18:10:42.858Z"
+    }
+  },
+  {
+    "pk": 2471,
+    "model": "catmaid.concept",
+    "fields": {
+      "project": 3,
+      "creation_time": "2016-03-09T18:10:42.878Z",
+      "user": 3,
+      "edition_time": "2016-03-09T18:10:42.878Z"
+    }
+  },
+  {
+    "pk": 2472,
+    "model": "catmaid.concept",
+    "fields": {
+      "project": 3,
+      "creation_time": "2016-03-09T18:10:49.583Z",
+      "user": 3,
+      "edition_time": "2016-03-09T18:10:49.583Z"
+    }
+  },
+  {
+    "pk": 2473,
+    "model": "catmaid.concept",
+    "fields": {
+      "project": 3,
+      "creation_time": "2016-03-09T18:10:50.846Z",
+      "user": 3,
+      "edition_time": "2016-03-09T18:10:50.846Z"
+    }
+  },
+  {
     "pk": 5, 
     "model": "catmaid.class", 
     "fields": {
@@ -4302,6 +4422,54 @@
       "user": 3
     }
   }, 
+  {
+    "pk": 2462,
+    "model": "catmaid.classinstance",
+    "fields": {
+      "class_column": 14,
+      "name": "skeleton 2462",
+      "creation_time": "2016-03-09T18:10:19.640Z",
+      "edition_time": "2016-03-09T18:10:19.633Z",
+      "project": 3,
+      "user": 3
+    }
+  },
+  {
+    "pk": 2463,
+    "model": "catmaid.classinstance",
+    "fields": {
+      "class_column": 5,
+      "name": "neuron 2463",
+      "creation_time": "2016-03-09T18:10:19.646Z",
+      "edition_time": "2016-03-09T18:10:19.633Z",
+      "project": 3,
+      "user": 3
+    }
+  },
+  {
+    "pk": 2468,
+    "model": "catmaid.classinstance",
+    "fields": {
+      "class_column": 14,
+      "name": "skeleton 2468",
+      "creation_time": "2016-03-09T18:10:42.849Z",
+      "edition_time": "2016-03-09T18:10:42.844Z",
+      "project": 3,
+      "user": 3
+    }
+  },
+  {
+    "pk": 2469,
+    "model": "catmaid.classinstance",
+    "fields": {
+      "class_column": 5,
+      "name": "neuron 2469",
+      "creation_time": "2016-03-09T18:10:42.855Z",
+      "edition_time": "2016-03-09T18:10:42.844Z",
+      "project": 3,
+      "user": 3
+    }
+  },
   {
     "pk": 8, 
     "model": "catmaid.relation", 
@@ -6147,6 +6315,72 @@
     }
   }, 
   {
+    "pk": 2464,
+    "model": "catmaid.relationinstance",
+    "fields": {
+      "project": 3,
+      "relation": 10,
+      "creation_time": "2016-03-09T18:10:19.650Z",
+      "user": 3,
+      "edition_time": "2016-03-09T18:10:19.650Z"
+    }
+  },
+  {
+    "pk": 2466,
+    "model": "catmaid.relationinstance",
+    "fields": {
+      "project": 3,
+      "relation": 23,
+      "creation_time": "2016-03-09T18:10:29.808Z",
+      "user": 3,
+      "edition_time": "2016-03-09T18:10:29.808Z"
+    }
+  },
+  {
+    "pk": 2467,
+    "model": "catmaid.relationinstance",
+    "fields": {
+      "project": 3,
+      "relation": 24,
+      "creation_time": "2016-03-09T18:10:33.668Z",
+      "user": 3,
+      "edition_time": "2016-03-09T18:10:33.669Z"
+    }
+  },
+  {
+    "pk": 2470,
+    "model": "catmaid.relationinstance",
+    "fields": {
+      "project": 3,
+      "relation": 10,
+      "creation_time": "2016-03-09T18:10:42.858Z",
+      "user": 3,
+      "edition_time": "2016-03-09T18:10:42.858Z"
+    }
+  },
+  {
+    "pk": 2472,
+    "model": "catmaid.relationinstance",
+    "fields": {
+      "project": 3,
+      "relation": 23,
+      "creation_time": "2016-03-09T18:10:49.583Z",
+      "user": 3,
+      "edition_time": "2016-03-09T18:10:49.583Z"
+    }
+  },
+  {
+    "pk": 2473,
+    "model": "catmaid.relationinstance",
+    "fields": {
+      "project": 3,
+      "relation": 24,
+      "creation_time": "2016-03-09T18:10:50.846Z",
+      "user": 3,
+      "edition_time": "2016-03-09T18:10:50.846Z"
+    }
+  },
+  {
     "pk": 3, 
     "model": "catmaid.classinstanceclassinstance", 
     "fields": {
@@ -6523,6 +6757,32 @@
       "user": 3
     }
   }, 
+  {
+    "pk": 2464,
+    "model": "catmaid.classinstanceclassinstance",
+    "fields": {
+      "class_instance_b": 2463,
+      "class_instance_a": 2462,
+      "creation_time": "2016-03-09T18:10:19.650Z",
+      "edition_time": "2016-03-09T18:10:19.650Z",
+      "project": 3,
+      "relation": 10,
+      "user": 3
+    }
+  },
+  {
+    "pk": 2470,
+    "model": "catmaid.classinstanceclassinstance",
+    "fields": {
+      "class_instance_b": 2469,
+      "class_instance_a": 2468,
+      "creation_time": "2016-03-09T18:10:42.858Z",
+      "edition_time": "2016-03-09T18:10:42.858Z",
+      "project": 3,
+      "relation": 10,
+      "user": 3
+    }
+  },
   {
     "pk": 1, 
     "model": "catmaid.textlabel", 
@@ -7891,6 +8151,118 @@
       "user": 3
     }
   }, 
+  {
+    "pk": 2459,
+    "model": "catmaid.location",
+    "fields": {
+      "location_z": 0.0,
+      "location_x": 7310.0,
+      "location_y": 6415.0,
+      "creation_time": "2016-03-09T18:10:19.652Z",
+      "edition_time": "2016-03-09T18:10:19.652Z",
+      "project": 3,
+      "user": 3,
+      "editor": 3
+    }
+  },
+  {
+    "pk": 2460,
+    "model": "catmaid.location",
+    "fields": {
+      "location_z": 0.0,
+      "location_x": 7280.0,
+      "location_y": 5855.0,
+      "creation_time": "2016-03-09T18:10:20.699Z",
+      "edition_time": "2016-03-09T18:10:20.699Z",
+      "project": 3,
+      "user": 3,
+      "editor": 3
+    }
+  },
+  {
+    "pk": 2461,
+    "model": "catmaid.location",
+    "fields": {
+      "location_z": 0.0,
+      "location_x": 7680.0,
+      "location_y": 5345.0,
+      "creation_time": "2016-03-09T18:10:24.145Z",
+      "edition_time": "2016-03-09T18:10:24.145Z",
+      "project": 3,
+      "user": 3,
+      "editor": 3
+    }
+  },
+  {
+    "pk": 2462,
+    "model": "catmaid.location",
+    "fields": {
+      "location_z": 0.0,
+      "location_x": 6685.0,
+      "location_y": 5395.0,
+      "creation_time": "2016-03-09T18:10:28.168Z",
+      "edition_time": "2016-03-09T18:10:28.168Z",
+      "project": 3,
+      "user": 3,
+      "editor": 3
+    }
+  },
+  {
+    "pk": 2463,
+    "model": "catmaid.location",
+    "fields": {
+      "location_z": 0.0,
+      "location_x": 7135.0,
+      "location_y": 5065.0,
+      "creation_time": "2016-03-09T18:10:29.666Z",
+      "edition_time": "2016-03-09T18:10:29.666Z",
+      "project": 3,
+      "user": 3,
+      "editor": 3
+    }
+  },
+  {
+    "pk": 2464,
+    "model": "catmaid.location",
+    "fields": {
+      "location_z": 0.0,
+      "location_x": 6485.0,
+      "location_y": 5915.0,
+      "creation_time": "2016-03-09T18:10:42.861Z",
+      "edition_time": "2016-03-09T18:10:42.861Z",
+      "project": 3,
+      "user": 3,
+      "editor": 3
+    }
+  },
+  {
+    "pk": 2465,
+    "model": "catmaid.location",
+    "fields": {
+      "location_z": 0.0,
+      "location_x": 6485.0,
+      "location_y": 6345.0,
+      "creation_time": "2016-03-09T18:10:44.212Z",
+      "edition_time": "2016-03-09T18:10:44.212Z",
+      "project": 3,
+      "user": 3,
+      "editor": 3
+    }
+  },
+  {
+    "pk": 2466,
+    "model": "catmaid.location",
+    "fields": {
+      "location_z": 0.0,
+      "location_x": 6420.0,
+      "location_y": 5565.0,
+      "creation_time": "2016-03-09T18:10:49.445Z",
+      "edition_time": "2016-03-09T18:10:49.445Z",
+      "project": 3,
+      "user": 3,
+      "editor": 3
+    }
+  },
   {
     "pk": 7, 
     "model": "catmaid.treenode", 
@@ -9494,6 +9866,114 @@
     }
   }, 
   {
+    "pk": 2459,
+    "model": "catmaid.treenode",
+    "fields": {
+      "confidence": 5,
+      "skeleton": 2462,
+      "parent": null,
+      "location_z": 0.0,
+      "location_x": 7310.0,
+      "location_y": 6415.0,
+      "creation_time": "2016-03-09T18:10:19.652Z",
+      "edition_time": "2016-03-09T18:10:19.652Z",
+      "project": 3,
+      "radius": -1.0,
+      "user": 3,
+      "editor": 3
+    }
+  },
+  {
+    "pk": 2460,
+    "model": "catmaid.treenode",
+    "fields": {
+      "confidence": 5,
+      "skeleton": 2462,
+      "parent": 2459,
+      "location_z": 0.0,
+      "location_x": 7280.0,
+      "location_y": 5855.0,
+      "creation_time": "2016-03-09T18:10:20.699Z",
+      "edition_time": "2016-03-09T18:10:20.699Z",
+      "project": 3,
+      "radius": -1.0,
+      "user": 3,
+      "editor": 3
+    }
+  },
+  {
+    "pk": 2461,
+    "model": "catmaid.treenode",
+    "fields": {
+      "confidence": 5,
+      "skeleton": 2462,
+      "parent": 2460,
+      "location_z": 0.0,
+      "location_x": 7680.0,
+      "location_y": 5345.0,
+      "creation_time": "2016-03-09T18:10:24.145Z",
+      "edition_time": "2016-03-09T18:10:24.145Z",
+      "project": 3,
+      "radius": -1.0,
+      "user": 3,
+      "editor": 3
+    }
+  },
+  {
+    "pk": 2462,
+    "model": "catmaid.treenode",
+    "fields": {
+      "confidence": 5,
+      "skeleton": 2462,
+      "parent": 2460,
+      "location_z": 0.0,
+      "location_x": 6685.0,
+      "location_y": 5395.0,
+      "creation_time": "2016-03-09T18:10:28.168Z",
+      "edition_time": "2016-03-09T18:10:28.168Z",
+      "project": 3,
+      "radius": -1.0,
+      "user": 3,
+      "editor": 3
+    }
+  },
+  {
+    "pk": 2464,
+    "model": "catmaid.treenode",
+    "fields": {
+      "confidence": 5,
+      "skeleton": 2468,
+      "parent": null,
+      "location_z": 0.0,
+      "location_x": 6485.0,
+      "location_y": 5915.0,
+      "creation_time": "2016-03-09T18:10:42.861Z",
+      "edition_time": "2016-03-09T18:10:42.861Z",
+      "project": 3,
+      "radius": -1.0,
+      "user": 3,
+      "editor": 3
+    }
+  },
+  {
+    "pk": 2465,
+    "model": "catmaid.treenode",
+    "fields": {
+      "confidence": 5,
+      "skeleton": 2468,
+      "parent": 2464,
+      "location_z": 0.0,
+      "location_x": 6485.0,
+      "location_y": 6345.0,
+      "creation_time": "2016-03-09T18:10:44.212Z",
+      "edition_time": "2016-03-09T18:10:44.212Z",
+      "project": 3,
+      "radius": -1.0,
+      "user": 3,
+      "editor": 3
+    }
+  },
+  {
     "pk": 356, 
     "model": "catmaid.connector", 
     "fields": {
@@ -9568,6 +10048,36 @@
       "user": 3
     }
   }, 
+  {
+    "pk": 2463,
+    "model": "catmaid.connector",
+    "fields": {
+      "confidence": 5,
+      "location_z": 0.0,
+      "location_x": 7135.0,
+      "location_y": 5065.0,
+      "creation_time": "2016-03-09T18:10:29.666Z",
+      "edition_time": "2016-03-09T18:10:29.666Z",
+      "project": 3,
+      "user": 3,
+      "editor": 3
+    }
+  },
+  {
+    "pk": 2466,
+    "model": "catmaid.connector",
+    "fields": {
+      "confidence": 5,
+      "location_z": 0.0,
+      "location_x": 6420.0,
+      "location_y": 5565.0,
+      "creation_time": "2016-03-09T18:10:49.445Z",
+      "edition_time": "2016-03-09T18:10:49.445Z",
+      "project": 3,
+      "user": 3,
+      "editor": 3
+    }
+  },
   {
     "pk": 8, 
     "model": "catmaid.treenodeclassinstance", 
@@ -10925,6 +11435,66 @@
       "user": 3
     }
   }, 
+  {
+    "pk": 2466,
+    "model": "catmaid.treenodeconnector",
+    "fields": {
+      "connector": 2463,
+      "confidence": 5,
+      "treenode": 2462,
+      "skeleton": 2462,
+      "creation_time": "2016-03-09T18:10:29.808Z",
+      "edition_time": "2016-03-09T18:10:29.808Z",
+      "project": 3,
+      "relation": 23,
+      "user": 3
+    }
+  },
+  {
+    "pk": 2467,
+    "model": "catmaid.treenodeconnector",
+    "fields": {
+      "connector": 2463,
+      "confidence": 5,
+      "treenode": 2461,
+      "skeleton": 2462,
+      "creation_time": "2016-03-09T18:10:33.668Z",
+      "edition_time": "2016-03-09T18:10:33.669Z",
+      "project": 3,
+      "relation": 24,
+      "user": 3
+    }
+  },
+  {
+    "pk": 2472,
+    "model": "catmaid.treenodeconnector",
+    "fields": {
+      "connector": 2466,
+      "confidence": 5,
+      "treenode": 2462,
+      "skeleton": 2462,
+      "creation_time": "2016-03-09T18:10:49.583Z",
+      "edition_time": "2016-03-09T18:10:49.583Z",
+      "project": 3,
+      "relation": 23,
+      "user": 3
+    }
+  },
+  {
+    "pk": 2473,
+    "model": "catmaid.treenodeconnector",
+    "fields": {
+      "connector": 2466,
+      "confidence": 5,
+      "treenode": 2464,
+      "skeleton": 2468,
+      "creation_time": "2016-03-09T18:10:50.846Z",
+      "edition_time": "2016-03-09T18:10:50.846Z",
+      "project": 3,
+      "relation": 24,
+      "user": 3
+    }
+  },
   {
     "pk": 2439, 
     "model": "catmaid.log", 

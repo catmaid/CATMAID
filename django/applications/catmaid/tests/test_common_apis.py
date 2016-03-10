@@ -142,7 +142,7 @@ class RelationQueryTests(TestCase):
     def test_find_all_neurons(self):
         all_neurons = ClassInstance.objects.filter(class_column__class_name='neuron',
                                                    project=self.test_project_id)
-        self.assertEqual(all_neurons.count(), 11)
+        self.assertEqual(all_neurons.count(), 13)
 
     def test_find_downstream_neurons(self):
         upstream = ClassInstance.objects.get(name='branched neuron')
@@ -763,8 +763,8 @@ class ViewPageTests(TestCase):
                 self.assertEqual(t[1], 'test0 (4)')
             elif t[0] == 2:
                 self.assertEqual(t[1], 'test1 (2)')
-            elif t[0] == 83:
-                self.assertEqual(t[1], 'test2 (83)')
+            elif t[0] == 89:
+                self.assertEqual(t[1], 'test2 (89)')
             else:
                 raise Exception("Unexpected value in returned stats: " + str(t))
 
@@ -1900,6 +1900,8 @@ class ViewPageTests(TestCase):
                 {"id":2433, "name":"skeleton 2433", "class_name":"skeleton"},
                 {"id":2440, "name":"skeleton 2440", "class_name":"skeleton"},
                 {"id":2451, "name":"skeleton 2451", "class_name":"skeleton"},
+                {"id":2462, "name":"skeleton 2462", "class_name":"skeleton"},
+                {"id":2468, "name":"skeleton 2468", "class_name":"skeleton"},
                 {"id":361, "name":"skeleton 361", "class_name":"skeleton"},
                 {"id":373, "name":"skeleton 373", "class_name":"skeleton"}]
         self.assertEqual(expected_result, parsed_response)
@@ -3029,9 +3031,17 @@ class ViewPageTests(TestCase):
                 [2417, 2415, 4400, 5730, 0, 5, -1, 2411, True],
                 [2419, 2417, 5040, 5650, 0, 5, -1, 2411, True],
                 [2423, 2415, 4140, 6460, 0, 5, -1, 2411, True],
+                [2459, None, 7310.0, 6415.0, 0.0, 5, -1.0, 2462, True],
+                [2460, 2459, 7280.0, 5855.0, 0.0, 5, -1.0, 2462, True],
+                [2461, 2460, 7680.0, 5345.0, 0.0, 5, -1.0, 2462, True],
+                [2462, 2460, 6685.0, 5395.0, 0.0, 5, -1.0, 2462, True],
+                [2464, None, 6485.0, 5915.0, 0.0, 5, -1.0, 2468, True],
+                [2465, 2464, 6485.0, 6345.0, 0.0, 5, -1.0, 2468, True]
         ]
         expected_c_result = [
                 [2400, 3400, 5620, 0, 5, [[2394, 5], [2415, 5]], [[2374, 5]], [], [], True],
+                [2463, 7135.0, 5065.0, 0.0, 5, [[2462, 5]], [[2461, 5]], [], [], True],
+                [2466, 6420.0, 5565.0, 0.0, 5, [[2462, 5]], [[2464, 5]], [], [], True]
         ]
         response = self.client.post('/%d/node/list' % (self.test_project_id,), {
             'z1': 0,
@@ -3071,11 +3081,17 @@ class ViewPageTests(TestCase):
                 [417, 415, 4990, 4200, 0, 5, -1, 235, True],
                 [2419, 2417, 5040, 5650, 0, 5, -1, 2411, True],
                 [2417, 2415, 4400, 5730, 0, 5, -1, 2411, True],
-                [2423, 2415, 4140, 6460, 0, 5, -1, 2411, 3]
+                [2423, 2415, 4140, 6460, 0, 5, -1, 2411, 3],
+                [2460, 2459, 7280.0, 5855.0, 0.0, 5, -1.0, 2462, True],
+                [2461, 2460, 7680.0, 5345.0, 0.0, 5, -1.0, 2462, True],
+                [2462, 2460, 6685.0, 5395.0, 0.0, 5, -1.0, 2462, True],
+                [2464, None, 6485.0, 5915.0, 0.0, 5, -1.0, 2468, 3]
         ]
         expected_c_result = [
                 [356, 6730.0, 2700.0, 0.0, 5, [[285, 5]], [[377, 5], [367, 5]], [], [], True],
-                [421, 6260.0, 3990.0, 0.0, 5, [[415, 5]], [[409, 5]], [], [], True]
+                [421, 6260.0, 3990.0, 0.0, 5, [[415, 5]], [[409, 5]], [], [], True],
+                [2463, 7135.0, 5065.0, 0.0, 5, [[2462, 5]], [[2461, 5]], [], [], True],
+                [2466, 6420.0, 5565.0, 0.0, 5, [[2462, 5]], [[2464, 5]], [], [], True]
         ]
 
         response = self.client.post('/%d/node/list' % (self.test_project_id,), {
@@ -3160,7 +3176,8 @@ class ViewPageTests(TestCase):
         url = '/%d/skeletons/' % self.test_project_id
         response = self.client.get(url)
         parsed_response = json.loads(response.content)
-        expected_result = frozenset([2388, 235, 373, 2411, 1, 361, 2364, 2451, 2440, 2433])
+        expected_result = frozenset([2388, 235, 373, 2411, 1, 361, 2364, 2451,
+                                     2440, 2433, 2462, 2468])
         self.assertEqual(expected_result, frozenset(parsed_response))
         # Also check response length to be sure there were no duplicates.
         self.assertEqual(len(expected_result), len(parsed_response))

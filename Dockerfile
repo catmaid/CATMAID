@@ -32,7 +32,7 @@ RUN cp /home/django/configuration.py.example /home/django/configuration.py \
     && sed -i -e "s?^\(catmaid_database_username = \).*?\1'catmaid_user'?g" /home/django/configuration.py \
     && sed -i -e "s?^\(catmaid_database_password = \).*?\1'p4ssw0rd'?g" /home/django/configuration.py \
     && sed -i -e "s?^\(catmaid_timezone = \).*?\1'America/New_York'?g" /home/django/configuration.py \
-    && sed -i -e "s?^\(catmaid_servername = \).*?\1'localhost'?g" /home/django/configuration.py \
+    && sed -i -e "s?^\(catmaid_servername = \).*?\1'*'?g" /home/django/configuration.py \
     && cd /home/django && python create_configuration.py \
     && mkdir -p /home/django/static
 # Django's createsuperuser requires input, so use the Django shell instead.

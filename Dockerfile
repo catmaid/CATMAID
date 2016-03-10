@@ -27,7 +27,7 @@ RUN sed -i '/# DO NOT DISABLE!/ilocal catmaid catmaid_user  md5' /etc/postgresql
 # CATMAID setup
 RUN cp /home/django/configuration.py.example /home/django/configuration.py \
     && sed -i -e "s?^\(abs_catmaid_path = \).*?\1'/home'?g" /home/django/configuration.py \
-    && sed -i -e "s?^\(abs_virtualenv_python_library_path = \).*?\1'/opt/virtualenvs/catmaid'?g" /home/django/configuration.py \
+    && sed -i -e "s?^\(abs_virtualenv_python_library_path = \).*?\1'/opt/virtualenvs/catmaid/local/lib/python2.7/site-packages'?g" /home/django/configuration.py \
     && sed -i -e "s?^\(catmaid_database_name = \).*?\1'catmaid'?g" /home/django/configuration.py \
     && sed -i -e "s?^\(catmaid_database_username = \).*?\1'catmaid_user'?g" /home/django/configuration.py \
     && sed -i -e "s?^\(catmaid_database_password = \).*?\1'p4ssw0rd'?g" /home/django/configuration.py \

@@ -204,6 +204,30 @@
   };
 
   /**
+   * Inject a help button into the caption of a window. This button opens a
+   * widget containing the passed help text when clicked.
+   *
+   * @param {CMWWindow} win          Window to which the button with be added.
+   * @param {string}    title        Title of the help window that will open.
+   * @param {string}    helpTextHtml HTML source of the help text.
+   */
+  DOM.addHelpButton = function (win, title, helpTextHtml) {
+    var helpTextFeedback =
+        '<p class="ui-state-highlight ui-widget">' +
+        'Is this documentation incomplete or incorrect? Help out by ' +
+        '<a target="_blank" href="' +
+        CATMAID.makeDocURL('contributing.html#in-client-documentation') +
+        '">letting us know or contributing a fix.</a></p>';
+    DOM.addCaptionButton(win,
+        'ui-icon ui-icon-help',
+        'Show help documentation for this widget',
+        function () {
+          WindowMaker.create('html', {title: title,
+                                      html: helpTextHtml + helpTextFeedback});
+        });
+  };
+
+  /**
    * Inject an extra button into the caption of a window. This button allows to
    * show and hide a windows button panel (a top level element of class
    * buttonpanel).

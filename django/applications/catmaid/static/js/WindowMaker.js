@@ -141,6 +141,11 @@ var WindowMaker = new function()
       }
     }
 
+    // Add a button to open help documentation if it is provided by the widget.
+    if (config.helpText) {
+      DOM.addHelpButton(win, 'Help: ' + instance.getName(), config.helpText);
+    }
+
     // Create controls, if requested
     var controls;
     if (config.controlsID && config.createControls) {
@@ -3657,6 +3662,21 @@ var WindowMaker = new function()
     return {window: win, widget: SW};
   };
 
+  var createHtmlWindow = function (params) {
+    var win = new CMWWindow(params.title);
+    var content = win.getFrame();
+    var container = createContainer();
+    content.appendChild(container);
+    content.style.backgroundColor = "#ffffff";
+
+    addListener(win, container);
+    addLogic(win);
+
+    container.innerHTML = params.html;
+
+    return {window: win, widget: null};
+  };
+
   var creators = {
     "keyboard-shortcuts": createKeyboardShortcutsWindow,
     "search": createSearchWindow,
@@ -3693,6 +3713,7 @@ var WindowMaker = new function()
     "connectivity-matrix": createConnectivityMatrixWindow,
     "synapse-plot": createSynapsePlotWindow,
     "synapse-fractions": createSynapseFractionsWindow,
+    "html": createHtmlWindow,
   };
 
   /** If the window for the given name is already showing, just focus it.

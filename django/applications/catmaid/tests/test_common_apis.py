@@ -1137,6 +1137,37 @@ class ViewPageTests(TestCase):
 
         self.assertEqual(expected_result, parsed_response)
 
+    def test_connector_detail(self):
+        self.fake_authentication()
+        response = self.client.get(
+                '/%d/connectors/%d/' % (self.test_project_id, 421))
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = {
+                'partners': [
+                    {
+                        'confidence': 5,
+                        'skeleton_id': 235,
+                        'link_id': 425,
+                        'relation_name': 'presynaptic_to',
+                        'relation_id': 23,
+                        'partner_id': 415},
+                    {
+                        'confidence': 5,
+                        'skeleton_id': 373,
+                        'link_id': 429,
+                        'relation_name': 'postsynaptic_to',
+                        'relation_id': 24,
+                        'partner_id': 409}
+                ],
+                'confidence': 5,
+                'connector_id': 421,
+                'y': 3990.0,
+                'x': 6260.0,
+                'z': 0.0}
+
+        self.assertEqual(expected_result, parsed_response)
+
     def test_delete_link_failure(self):
         self.fake_authentication()
         connector_id = 202020

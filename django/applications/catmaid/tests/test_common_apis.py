@@ -1168,6 +1168,23 @@ class ViewPageTests(TestCase):
 
         self.assertEqual(expected_result, parsed_response)
 
+    def test_connector_user_info(self):
+        self.fake_authentication()
+        response = self.client.get(
+                '/%d/connector/user-info' % (self.test_project_id,), {
+                    'treenode_id': 415,
+                    'connector_id': 421,
+                    'relation_name': 'presynaptic_to'
+                })
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = [{
+                'creation_time': '2011-10-07T07:02:22.656000+00:00',
+                'user': 3,
+                'edition_time': '2011-12-20T10:46:01.360000+00:00'}]
+
+        self.assertEqual(expected_result, parsed_response)
+
     def test_delete_link_failure(self):
         self.fake_authentication()
         connector_id = 202020

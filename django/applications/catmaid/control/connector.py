@@ -745,8 +745,6 @@ def connector_detail(request, project_id, connector_id):
         GROUP BY c.id
     """, (connector_id, ))
     detail = cursor.fetchone()
-    print(detail)
-    partners = []
 
     if not detail:
         raise Http404("Connector does not exist: " + str(connector_id))

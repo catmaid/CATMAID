@@ -63,7 +63,7 @@
       return CATMAID.fetch(url, 'POST', params)
         .then(function(result) {
           CATMAID.Connectors.trigger(CATMAID.Connectors.EVENT_CONNECTOR_REMOVED,
-              result.result.connector_id);
+              result.connector_id);
           return {
             deletedConnector: result.connector_id
           };

@@ -178,23 +178,27 @@
    */
   CATMAID.CreateConnectorCommand = CATMAID.makeCommand(
       function(projectId, x, y, z, confidence) {
-    var exec = function(done, command) {
+    var exec = function(done, map, command) {
       var create = CATMAID.Connectors.create(projectId, x, y, z, confidence);
 
       return create.then(function(result) {
-        command._createdConnector = result.connector_id;
+        map.add(map.CONNECTOR, result.newConnectorId, command);
+        command.store('connectorId', result.newConnectorId);
         done();
         return result;
       });
     };
 
-    var undo = function(done, command) {
+    var undo = function(done, map, command) {
       // Fail if expected undo parameters are not available from command
-      if (undefined === command._createdConnector) {
-        throw new CATMAID.ValueError('Can\'t undo creation of connector, history data not available');
+      var createdConnectorId = command.get('connectorId');
+
+      if (undefined === createdConnectorId) {
+        throw new CATMAID.ValueError(
+            'Can\'t undo creation of connector, history data not available');
       }
 
-      var remove = CATMAID.Connectors.remove(projectId, command._createdConnector);
+      var remove = CATMAID.Connectors.remove(projectId, createdConnectorId);
       return remove.then(done);
     };
 
@@ -208,29 +212,31 @@
    */
   CATMAID.RemoveConnectorCommand = CATMAID.makeCommand(
       function(projectId, connectorId) {
-    var exec = function(done, command) {
+    var exec = function(done, map, command) {
       // Get connector information
-      var create = CATMAID.Connectors.remove(projectId, connectorId);
+      var remove = CATMAID.Connectors.remove(projectId, connectorId);
 
-      return create.then(function(result) {
-        result._createdConnector = result.connector_id;
+      return remove.then(function(result) {
         // TODO: x, y, z, confidence
+        // command.store('createdConnector', result.connector_id);
         done();
         return result;
       });
     };
 
     var undo = function(done, command) {
+      var createdConnectorId = command.get('createdConnector');
       // Fail if expected undo parameters are not available from command
-      if (undefined === command._createdConnector) {
-        throw new CATMAID.ValueError('Can\'t undo removal of connector, history data not available');
+      if (undefined === createdConnectorId) {
+        throw new CATMAID.ValueError(
+            'Can\'t undo removal of connector, history data not available');
       }
 
-      var remove = CATMAID.Connectors.remove(projectId, command._createdConnector);
+      var remove = CATMAID.Connectors.remove(projectId, createdConnectorId);
       return remove.then(done);
     };
 
-    var title = "Create new connector at (" + x + ", " + y + ", " + z + ")";
+    var title = "Remove connector #" + connectorId;
 
     this.init(title, exec, undo);
   });
@@ -238,23 +244,27 @@
   CATMAID.LinkConnectorCommand = CATMAID.makeCommand(
       function(projectId, connectorId, nodeId, linkType) {
 
-    var exec = function(done, command) {
-      var link = CATMAID.Connectors.createLink(projectId, connectorId,
-          nodeId, linkType);
+    var exec = function(done, map, command) {
+      var link = CATMAID.Connectors.createLink(projectId,
+          map.get(map.CONNECTOR, connectorId),
+          map.get(map.NODE, nodeId), linkType);
       return link.then(function(result) {
-        command._createdLinkId = result.linkId;
+        map.add(map.LINK, result.linkId, command);
         done();
         return result;
       });
     };
 
-    var undo = function(done, command) {
+    var undo = function(done, map, command) {
+      var mConnectorId = map.get(map.CONNECTOR, connectorId);
+      var mNodeId = map.get(map.NODE, nodeId);
       // Fail if expected undo parameters are not available from command
-      if (undefined === command._createdLinkId) {
-        throw new CATMAID.ValueError('Can\'t undo linking of connector, history data not available');
+      if (!(mConnectorId && mNodeId)) {
+        throw new CATMAID.ValueError(
+            'Can\'t undo linking of connector, history data not available');
       }
 
-      var unlink = CATMAID.Connectors.removeLink(projectId, connectorId, nodeId);
+      var unlink = CATMAID.Connectors.removeLink(projectId, mConnectorId, mNodeId);
       return unlink.then(done);
     };
 
@@ -266,25 +276,30 @@
   CATMAID.UnlinkConnectorCommand = CATMAID.makeCommand(
       function(projectId, connectorId, nodeId) {
 
-    var exec = function(done, command) {
-      var link = CATMAID.Connectors.removeLink(projectId, connectorId, nodeId);
+    var exec = function(done, map, command) {
+      var link = CATMAID.Connectors.removeLink(projectId,
+          map.get(map.CONNECTOR, connectorId),
+          map.get(map.NODE, nodeId));
       return link.then(function(result) {
-        command._removedLink = result.linkId;
-        command._removedLinkType = resilt.linkType;
-        command._removedLinkTypeId = resilt.linkTypeId;
+        map.add(map.LINK, result.linkId, command);
+        command.store('linkType', result.linkType);
         done();
         return result;
       });
     };
 
-    var undo = function(done, command) {
+    var undo = function(done, map, command) {
       // Fail if expected undo parameters are not available from command
-      if (undefined === command._createdLinkId) {
-        throw new CATMAID.ValueError('Can\'t undo removing a connector link, history data not available');
+      var connectorId = map.get(map.CONNECTOR, connectorId);
+      var nodeId = map.get(map.NODE, nodeId);
+      var linkType = command.get('linkType');
+      if (!(connectorId && nodeId && linkType)) {
+        throw new CATMAID.ValueError(
+            'Can\'t undo removing a connector link, history data not available');
       }
 
-      var link = CATMAID.Connectors.createLink(projectId,
-          command.connectorId, nodeId, command._removedLinkType);
+      var link = CATMAID.Connectors.createLink(
+          projectId, connectorId, nodeId, linkType);
       return result.then(done);
     };
 

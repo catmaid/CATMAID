@@ -2347,9 +2347,9 @@ SkeletonAnnotations.TracingOverlay.prototype.createNodeOrLink = function(insert,
           return true;
         }
         CATMAID.statusBar.replaceLast(msg);
-        this.createSingleConnector(phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, 5,
-          newConnectorType, function (connectorID) {
-            self.createLink(targetTreenode.id, connectorID, linkType);
+        this.createSingleConnector(phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, 5, newConnectorType)
+          .then(function (connectorId) {
+            return self.createLink(targetTreenode.id, connectorId, linkType);
           });
       } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === atn.type) {
         if (SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR === atn.subtype) {

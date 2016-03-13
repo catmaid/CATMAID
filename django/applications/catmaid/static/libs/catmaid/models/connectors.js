@@ -192,11 +192,7 @@
     var undo = function(done, map, command) {
       // Fail if expected undo parameters are not available from command
       var createdConnectorId = command.get('connectorId');
-
-      if (undefined === createdConnectorId) {
-        throw new CATMAID.ValueError(
-            'Can\'t undo creation of connector, history data not available');
-      }
+      command.validateForUndo(createdConnectorId);
 
       var remove = CATMAID.Connectors.remove(projectId, createdConnectorId);
       return remove.then(done);
@@ -225,12 +221,9 @@
     };
 
     var undo = function(done, command) {
-      var createdConnectorId = command.get('createdConnector');
-      // Fail if expected undo parameters are not available from command
-      if (undefined === createdConnectorId) {
-        throw new CATMAID.ValueError(
-            'Can\'t undo removal of connector, history data not available');
-      }
+      var confidence = command.get('confidence');
+      var x = command.get('x'), y = command.get('y'), z = command.get('z');
+      command.validateForUndo(confidence, x, y, z);
 
       var remove = CATMAID.Connectors.remove(projectId, createdConnectorId);
       return remove.then(done);
@@ -258,11 +251,7 @@
     var undo = function(done, map, command) {
       var mConnectorId = map.get(map.CONNECTOR, connectorId);
       var mNodeId = map.get(map.NODE, nodeId);
-      // Fail if expected undo parameters are not available from command
-      if (!(mConnectorId && mNodeId)) {
-        throw new CATMAID.ValueError(
-            'Can\'t undo linking of connector, history data not available');
-      }
+      command.validateForUndo(mConnectorId, mNodeId);
 
       var unlink = CATMAID.Connectors.removeLink(projectId, mConnectorId, mNodeId);
       return unlink.then(done);
@@ -290,17 +279,14 @@
 
     var undo = function(done, map, command) {
       // Fail if expected undo parameters are not available from command
-      var connectorId = map.get(map.CONNECTOR, connectorId);
-      var nodeId = map.get(map.NODE, nodeId);
+      var mConnectorId = map.get(map.CONNECTOR, connectorId);
+      var mNodeId = map.get(map.NODE, nodeId);
       var linkType = command.get('linkType');
-      if (!(connectorId && nodeId && linkType)) {
-        throw new CATMAID.ValueError(
-            'Can\'t undo removing a connector link, history data not available');
-      }
+      command.validateForUndo(mConnectorId, mNodeId, linkType);
 
       var link = CATMAID.Connectors.createLink(
-          projectId, connectorId, nodeId, linkType);
-      return result.then(done);
+          projectId, mConnectorId, mNodeId, linkType);
+      return link.then(done);
     };
 
     var title = "Remove link between connector " + connectorId + " and node ";

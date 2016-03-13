@@ -107,6 +107,19 @@
   };
 
   /**
+   * If one of the arguments is undefined, an exception is thrown. Otherwise
+   * nothing happens.
+   */
+  Command.prototype.validateForUndo = function() {
+    for (var i=0; i<arguments.length; ++i) {
+      if (undefined === arguments[i]) {
+        var msg = 'Can\'t undo command, history data not available: ' + this._name;
+        throw new CATMAID.ValueError(msg);
+      }
+    }
+  };
+
+  /**
    * A command history keeps track of the serial execution of commands. It can
    * undo already executed commands and redo commands that have been undone are
    * not yet overridden (by the application of a new command).

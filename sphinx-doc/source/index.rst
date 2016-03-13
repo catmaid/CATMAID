@@ -1,5 +1,10 @@
 .. CATMAID documentation master file, created by
    sphinx-quickstart on Sat Dec 10 20:48:29 2011.
+
+.. meta::
+  :robots: index, follow
+  :description: The Collaborative Annotation Toolkit for Massive Amounts of Image Data. Used for image viewing, neuron reoncstruction, ontology based annotations and more.
+
 Welcome to CATMAID
 ==================
 The **C**\ ollaborative **A**\ nnotation **T**\ oolkit for **M**\ assive **A**\ mounts of **I**\ mage **D**\ ata

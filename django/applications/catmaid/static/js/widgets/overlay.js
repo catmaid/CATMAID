@@ -3786,12 +3786,10 @@ SkeletonAnnotations.TracingOverlay.prototype.deleteNode = function(nodeId) {
    * and local objects.
    */
   function deleteConnectorNode(connectornode) {
-    self.submit(
-        django_url + project.id + '/connector/delete',
-        'POST',
-        {pid: project.id,
-        connector_id: connectornode.id},
-        function(json) {
+    self.submit.then(function() {
+      var command = new CATMAID.RemoveConnectorCommand(project.id, connectornode.id);
+      CATMAID.commands.execute(command)
+        .then(function(result) {
           connectornode.needsync = false;
           // If there was a presynaptic node, select it
           var preIDs  = Object.keys(connectornode.pregroup);
@@ -3813,6 +3811,7 @@ SkeletonAnnotations.TracingOverlay.prototype.deleteNode = function(nodeId) {
 
           CATMAID.statusBar.replaceLast("Deleted connector #" + cID);
         });
+    });
   }
 
   /**

@@ -218,20 +218,31 @@
       var remove = CATMAID.Connectors.remove(projectId, connectorId);
 
       return remove.then(function(result) {
-        // TODO: x, y, z, confidence
-        // command.store('createdConnector', result.connector_id);
+        command.store('confidence', result.confidence);
+        command.store('x', result.x);
+        command.store('y', result.y);
+        command.store('z', result.z);
+        command.store('partners', result.partners);
         done();
         return result;
       });
     };
 
-    var undo = function(done, command) {
+    var undo = function(done, map, command) {
       var confidence = command.get('confidence');
+      var partners = command.get('partners');
       var x = command.get('x'), y = command.get('y'), z = command.get('z');
-      command.validateForUndo(confidence, x, y, z);
+      command.validateForUndo(confidence, partners, x, y, z);
 
-      var remove = CATMAID.Connectors.remove(projectId, createdConnectorId);
-      return remove.then(done);
+      var create = CATMAID.Connectors.create(projectId, x, y, z, confidence);
+      var linkPartners = create.then(function(result) {
+        var connectorId = result.newConnectorId;
+        return Promise.all(partners.map(function(p) {
+          return CATMAID.Connectors.createLink(projectId,
+              connectorId, p.id, p.rel);
+        }));
+      });
+      return linkPartners.then(done);
     };
 
     var title = "Remove connector #" + connectorId;

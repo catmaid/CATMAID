@@ -2,6 +2,10 @@
 
   "use strict";
 
+  // A global command counter which is used to provide an unique ID for
+  // each command.
+  var commandCounter = 0;
+
   /**
    * A command wraps the execution of a function, it provides an interface for
    * executing it as well as undoing it. After a command has been instantiated,
@@ -21,11 +25,13 @@
    *                           original action undone.
    */
   Command.prototype.init = function(name, execute, undo) {
+    this._id = commandCounter;
     this._name = name;
     this._fn = execute;
     this._undo = undo;
     this.executed = false;
     this.initialized = true;
+    ++commandCounter;
   };
 
   /**
@@ -68,6 +74,13 @@
    */
   Command.prototype.getName = function() {
     return this._name;
+  };
+
+  /**
+   * Get a unique ID for this command instance, like a hash.
+   */
+  Command.prototype.getId = function() {
+    return this._id;
   };
 
   /**

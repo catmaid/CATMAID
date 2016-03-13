@@ -2524,9 +2524,9 @@ class ViewPageTests(TestCase):
             'new_radius': new_r,
             'updated_nodes': {
                 '2415': {'new': 5.0, 'old': -1.0},
-				'2417': {'new': 5.0, 'old': -1.0},
-				'2419': {'new': 5.0, 'old': -1.0},
-				'2423': {'new': 5.0, 'old': -1.0}
+                '2417': {'new': 5.0, 'old': -1.0},
+                '2419': {'new': 5.0, 'old': -1.0},
+                '2423': {'new': 5.0, 'old': -1.0}
             }
         }
         self.assertEqual(expected_response, parsed_response)

@@ -35,8 +35,8 @@ django.wsgi), you have to re-generate your configuration with:
 
   ./django/create_configuration
 
-The following variables can be removed from settings.py files: TEMPLATE_DIRS,
-TEMPLATE_DEBUG
+The following variables have to be removed from settings.py files:
+TEMPLATE_DIRS, TEMPLATE_DEBUG
 
 ### Features and enhancements
 

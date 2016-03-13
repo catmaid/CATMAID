@@ -117,7 +117,7 @@ def delete_link(request, project_id=None):
     return HttpResponse(json.dumps({
         'link_id': link.id,
         'link_type_id': link.relation.id,
-        'link_type': ink.relation.relation_name,
+        'link_type': link.relation.relation_name,
         'result': 'Removed treenode to connector link'
     }))
 

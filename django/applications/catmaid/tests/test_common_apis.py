@@ -1077,8 +1077,18 @@ class ViewPageTests(TestCase):
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {
-                'message': 'Removed connector and class_instances',
-                'connector_id': 356}
+                'message': u'Removed connector and class_instances',
+                'connector_id': 356,
+                'x': 6730.0,
+                'y': 2700.0,
+                'z': 0.0,
+                'confidence': 5,
+                'partners': [{'id': 285, 'rel': 'presynaptic_to'},
+                             {'id': 367, 'rel': 'postsynaptic_to'},
+                             {'id': 377, 'rel': 'postsynaptic_to'}]
+        }
+
+
         self.assertEqual(expected_result, parsed_response)
 
         self.assertEqual(connector_count - 1, Connector.objects.all().count())

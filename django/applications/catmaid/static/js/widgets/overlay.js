@@ -1636,7 +1636,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createSingleConnector = function (
       completionCallback(result.newConnectorId);
     }
 
-    return result;
+    return result.newConnectorId;
   }).catch(CATMAID.handleError);
 };
 
@@ -2347,9 +2347,9 @@ SkeletonAnnotations.TracingOverlay.prototype.createNodeOrLink = function(insert,
           return true;
         }
         CATMAID.statusBar.replaceLast(msg);
-        this.createSingleConnector(phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, 5,
-          newConnectorType, function (connectorID) {
-            self.createLink(targetTreenode.id, connectorID, linkType);
+        this.createSingleConnector(phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, 5, newConnectorType)
+          .then(function (connectorId) {
+            return self.createLink(targetTreenode.id, connectorId, linkType);
           });
       } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === atn.type) {
         if (SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR === atn.subtype) {
@@ -3786,12 +3786,10 @@ SkeletonAnnotations.TracingOverlay.prototype.deleteNode = function(nodeId) {
    * and local objects.
    */
   function deleteConnectorNode(connectornode) {
-    self.submit(
-        django_url + project.id + '/connector/delete',
-        'POST',
-        {pid: project.id,
-        connector_id: connectornode.id},
-        function(json) {
+    self.submit.then(function() {
+      var command = new CATMAID.RemoveConnectorCommand(project.id, connectornode.id);
+      CATMAID.commands.execute(command)
+        .then(function(result) {
           connectornode.needsync = false;
           // If there was a presynaptic node, select it
           var preIDs  = Object.keys(connectornode.pregroup);
@@ -3813,6 +3811,7 @@ SkeletonAnnotations.TracingOverlay.prototype.deleteNode = function(nodeId) {
 
           CATMAID.statusBar.replaceLast("Deleted connector #" + cID);
         });
+    });
   }
 
   /**

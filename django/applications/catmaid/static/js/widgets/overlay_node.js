@@ -1436,30 +1436,21 @@
         d.suspended = true;
 
         // 'this' will be the the connector's mouse catcher line
-        var catmaidTracingOverlay = SkeletonAnnotations.getTracingOverlayByPaper(this.parentNode.parentNode);
-        requestQueue.register(django_url + project.id + '/link/delete', "POST", {
-          pid: project.id,
-          connector_id: d.connector_id,
-          treenode_id: d.treenode_id
-        }, function (status, text) {
-          if (status !== 200) {
-            alert("The server returned an unexpected status (" + status + ") " + "with error message:\n" + text);
-          } else {
-              if (text && text !== " ") {
-                var e = $.parseJSON(text);
-                if (e.error) {
-                  d.suspended = false;
-                  alert(e.error);
-                } else {
-                  catmaidTracingOverlay.updateNodes(function() {
-                    // Reset deletion flag
-                    d.suspended = false;
-                  });
-                  return true;
-                }
-              }
-          }
-        });
+        var catmaidTracingOverlay = SkeletonAnnotations.getTracingOverlayByPaper(
+            this.parentNode.parentNode);
+        var command = new CATMAID.UnlinkConnectorCommand(
+            project.id, d.connector_id, d.treenode_id);
+        CATMAID.commands.execute(command)
+          .then(function(result) {
+            catmaidTracingOverlay.updateNodes(function() {
+              // Reset deletion flag
+              d.suspended = false;
+            });
+          })
+          .catch(function(error) {
+            d.suspended = false;
+            CATMAID.handleError(error);
+          });
       });
 
       this.mouseover = function (d) {

@@ -38,6 +38,8 @@ django.wsgi), you have to re-generate your configuration with:
 The following variables have to be removed from settings.py files:
 TEMPLATE_DIRS, TEMPLATE_DEBUG
 
+Additionally, PostgreSQL is now required to be of version 9.4.
+
 ### Features and enhancements
 
 Tracing overlay:

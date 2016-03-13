@@ -65,7 +65,12 @@
           CATMAID.Connectors.trigger(CATMAID.Connectors.EVENT_CONNECTOR_REMOVED,
               result.connector_id);
           return {
-            deletedConnector: result.connector_id
+            deletedConnector: result.connector_id,
+            confidence: result.confidence,
+            x: result.x,
+            y: result.y,
+            z: result.z,
+            partners: result.partners
           };
         });
     },

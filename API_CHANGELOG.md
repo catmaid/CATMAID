@@ -36,6 +36,11 @@ included in this changelog.
   removed. The new `deleted_annotations` field contains a mapping of removed
   annotation IDs to the IDs of the object they were removed from.
 
+`POST /{project_id}/connector/delete`:
+
+- The response contains now detailed information about the removed connector,
+  including its partners.
+
 
 ### Deprecations
 

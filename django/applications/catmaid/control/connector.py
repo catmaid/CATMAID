@@ -502,10 +502,27 @@ def create_connector(request, project_id=None):
 def delete_connector(request, project_id=None):
     connector_id = int(request.POST.get("connector_id", 0))
     can_edit_or_fail(request.user, connector_id, 'connector')
-    Connector.objects.filter(id=connector_id).delete()
+    # Get connector and partner information
+    connectors = list(Connector.objects.filter(id=connector_id).prefetch_related(
+            'treenodeconnector_set', 'treenodeconnector_set__relation'))
+    if 1 != len(connectors):
+        raise ValueError("Couldn't find exactly one connector with ID #" +
+                connector_id)
+    connector = connectors[0]
+    partners = [{
+        'id': p.treenode_id,
+        'rel': p.relation.relation_name
+    } for p in connector.treenodeconnector_set.all()]
+    connector.delete()
     return HttpResponse(json.dumps({
         'message': 'Removed connector and class_instances',
-        'connector_id': connector_id}))
+        'connector_id': connector_id,
+        'confidence': connector.confidence,
+        'x': connector.location_x,
+        'y': connector.location_y,
+        'z': connector.location_z,
+        'partners': partners
+    }))
 
 
 @requires_user_role(UserRole.Browse)

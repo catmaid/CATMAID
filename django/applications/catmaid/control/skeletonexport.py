@@ -126,7 +126,7 @@ def compact_skeleton(request, project_id=None, skeleton_id=None, with_connectors
               AND tc.connector_id = c.id
               AND (tc.relation_id = %s OR tc.relation_id = %s OR tc.relation_id = %s)
         ''' % (skeleton_id, pre, post, gj))
-        
+
         relation_index = {pre: 0, post: 1, gj: 2}
 
         connectors = tuple((row[0], row[1], relation_index.get(row[2], -1), row[3], row[4], row[5]) for row in cursor.fetchall())
@@ -961,7 +961,7 @@ def export_skeleton_reviews(request, project_id=None, skeleton_id=None):
 
 @requires_user_role(UserRole.Browse)
 def within_spatial_distance(request, project_id=None):
-    """ Find skeletons within a given Euclidean distance of a treenode. """
+    """ Find skeletons within a given L-infinity distance of a treenode. """
     project_id = int(project_id)
     tnid = request.POST.get('treenode', None)
     if not tnid:

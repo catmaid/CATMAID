@@ -27,7 +27,7 @@
     this._choice = this.appendChoice(null, "history-dialog-history-list",
         [], [], null);
     this._choice.setAttribute("multiple", "yes");
-    this._choice.setAttribute("size", "5");
+    this._choice.setAttribute("size", "9");
     this._choice.style.width = "100%";
     this.update();
   };

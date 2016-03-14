@@ -11,7 +11,6 @@
    * multiple events that one can register to.
    */
   var NeuronController = function() {
-    this.EVENT_SKELETONS_JOINED = "neuron_manager_skeletons_joined";
   };
 
   NeuronController.prototype = {};

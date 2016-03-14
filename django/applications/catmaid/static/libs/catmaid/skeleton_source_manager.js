@@ -14,11 +14,11 @@
     // source created by default.
     this.defaultSelectLastSource = true;
 
-    // Register with neuron manager to get updates two skeletons are joined
-    CATMAID.neuronController.on(CATMAID.neuronController.EVENT_SKELETONS_JOINED,
+    // Register to get updates two skeletons are joined
+    CATMAID.Skeletons.on(CATMAID.Skeletons.EVENT_SKELETONS_JOINED,
         this.replaceSkeleton, this);
 
-    // Register with neuron manager to get updates about deleted neurons
+    // Register to get updates about deleted neurons
     CATMAID.Skeletons.on(CATMAID.Skeletons.EVENT_SKELETON_DELETED,
         this.removeSkeleton, this);
 
@@ -39,7 +39,7 @@
   };
 
   SkeletonSourceManager.prototype.destroy = function() {
-    CATMAID.neuronController.off(CATMAID.neuronController.EVENT_SKELETONS_JOINED,
+    CATMAID.Skeletons.off(CATMAID.Skeletons.EVENT_SKELETONS_JOINED,
         this.replaceSkeleton);
     CATMAID.Skeletons.off(CATMAID.Skeletons.EVENT_SKELETON_DELETED,
         this.removeSkeleton);

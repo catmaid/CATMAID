@@ -2742,7 +2742,7 @@ class ViewPageTests(TestCase):
         treenode_id = 2419
         response = self.client.post(
                 '/%d/skeletons/within-spatial-distance' % (self.test_project_id,),
-                {'treenode': treenode_id, 'distance': 2000, 'size_mode': 0})
+                {'treenode_id': treenode_id, 'distance': 2000, 'size_mode': 0})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = [2468, 2388, 235, 2411, 2364]
@@ -2750,7 +2750,7 @@ class ViewPageTests(TestCase):
 
         response = self.client.post(
                 '/%d/skeletons/within-spatial-distance' % (self.test_project_id,),
-                {'treenode': treenode_id, 'distance': 2000, 'size_mode': 1})
+                {'treenode_id': treenode_id, 'distance': 2000, 'size_mode': 1})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = [2462, 2433, 373]

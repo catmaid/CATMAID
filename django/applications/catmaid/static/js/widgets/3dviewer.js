@@ -661,7 +661,7 @@
         } else {
           query = "within-spatial-distance";
           post = {distance: distance,
-                  treenode: active_node,
+                  treenode_id: active_node,
                   size_mode: skeleton_mode};
         }
       } else {

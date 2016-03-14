@@ -963,7 +963,7 @@ def export_skeleton_reviews(request, project_id=None, skeleton_id=None):
 def within_spatial_distance(request, project_id=None):
     """ Find skeletons within a given L-infinity distance of a treenode. """
     project_id = int(project_id)
-    tnid = request.POST.get('treenode', None)
+    tnid = request.POST.get('treenode_id', None)
     if not tnid:
         raise Exception("Need a treenode!")
     tnid = int(tnid)

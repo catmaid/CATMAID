@@ -57,7 +57,7 @@
   };
 
   /**
-   * Takes three optional arguments; default to 300, 200, true.
+   * Takes three optional arguments; default to 600, 300, true.
    */
   HistoryDialog.prototype.show = function(width, height, modal) {
     var self = this;
@@ -90,7 +90,7 @@
       }
     };
     $(this.dialog).dialog({
-      width: width ? width : 400,
+      width: width ? width : 600,
       height: height ? height : 300,
       modal: modal !== undefined ? modal : true,
       close: function() {

@@ -3,7 +3,7 @@
 
 .. meta::
   :robots: index, follow
-  :description: The Collaborative Annotation Toolkit for Massive Amounts of Image Data. Used for image viewing, neuron reoncstruction, ontology based annotations and more.
+  :description: The Collaborative Annotation Toolkit for Massive Amounts of Image Data. Used for image viewing, neuron reconstruction, ontology based annotations and more.
 
 Welcome to CATMAID
 ==================

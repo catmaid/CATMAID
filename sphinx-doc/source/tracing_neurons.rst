@@ -17,8 +17,8 @@ There are step-by-step instructions below, but as a quick-reference, once you're
 
 (If you're using Mac OS, then in every instance you need to use ⌘ instead of ctrl.)  For help on other keyboard shortcuts, click on the "?" button in the toolbar.
 
-In-depth Instructions
----------------------
+Basic Tracing
+-------------
 
 Before you can start tracing, you need to log in.  You can do
 this in the boxes in the top right hand corner of the page.
@@ -80,13 +80,13 @@ clicking to create a branch.
 You can move any node by clicking on it and dragging it around.
 
 Deleting Nodes
-``````````````
+^^^^^^^^^^^^^^
 To delete a node, hold down :kbd:`Control` (or :kbd:`⌘` on Mac OS) and
 :kbd:`Shift`, and left-click on the node, or activate the node and press
 :kbd:`Delete`.
 
 Navigating between Nodes
-````````````````````````
+^^^^^^^^^^^^^^^^^^^^^^^^
 While you can navigate through nodes in a skeleton by changing slices and
 clicking on nodes, this is cumbersome. Instead, there are many key
 shortcuts to navigate through a skeleton based on its topology and
@@ -103,7 +103,7 @@ children, click the question mark icon in the toolbar to see a list of
 keyboard shortcuts.
 
 Splitting Skeletons
-```````````````````
+^^^^^^^^^^^^^^^^^^^
 
 To split a skeleton into two, select the node at which you want to
 split the skeleton, and then click on the "Split Skeleton" icon in the
@@ -121,14 +121,14 @@ skeleton, but the nodes downstream from that point will be in a
 new skeleton and neuron.
 
 Joining Skeletons
-`````````````````
+^^^^^^^^^^^^^^^^^
 To join one skeleton to another so that they form a single
 skeleton, activate the node in one skeleton where you would like the join
 to occur, then hold down :kbd:`Shift` and left-click on a node in the other
 skeleton.  (You may not join any part of a skeleton to itself.)
 
 Tagging Nodes
-`````````````
+^^^^^^^^^^^^^
 To add a tag to the active node, press :kbd:`T`. You should see
 something like the following:
 
@@ -152,7 +152,7 @@ button in the toolbar:
 .. image:: _static/tracing/tag-toggle.png
 
 Creating Synapses
-`````````````````
+^^^^^^^^^^^^^^^^^
 
 There are two possible ways of creating synapses.  The
 recommended way unless you have many to annotate is the
@@ -202,10 +202,10 @@ normal tracing mode with this button:
 
 .. image:: _static/tracing/synapse-dropping-switch-back.png
 
-Using the treenode table
-````````````````````````
+Exploring Skeletons and Neurons
+-------------------------------
 
-You may need to find a particular node of a treeline, for
+You may need to find a particular node of a skeleton, for
 example if it was tagged with TODO and you need to go back to
 it.  The easiest way to locate particular nodes in a skeleton is
 to select a node in that skeleton and click on the Neuron Navigator

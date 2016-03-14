@@ -162,7 +162,8 @@ Operationg system and infrastructure
 
 * The partition that is hosting the image tiles should be mounted with the
   ``noatime`` option. This makes sure no access time is written every time an
-  image file is read.
+  image file is read. Alternatively, you can use ``chattr`` to set this option
+  for individual files and folders.
 
 * If LDAP is used to authenticate users and to check permissions on the server
   CATMAID is running or the image data is loaded from, LDAP queries should be

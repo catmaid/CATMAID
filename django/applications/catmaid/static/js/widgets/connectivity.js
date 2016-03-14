@@ -26,7 +26,7 @@
     this.currentOrder = [];
 
     // Register for changed and removed skeletons
-    CATMAID.neuronController.on(CATMAID.neuronController.EVENT_SKELETON_CHANGED,
+    CATMAID.Skeletons.on(CATMAID.Skeletons.EVENT_SKELETON_CHANGED,
       this.handleChangedSkeleton, this);
     CATMAID.Skeletons.on(CATMAID.Skeletons.EVENT_SKELETON_DELETED,
       this.handleDeletedSkeleton, this);
@@ -124,7 +124,7 @@
     CATMAID.NeuronNameService.getInstance().unregister(this);
 
     // Unregister from neuron controller
-    CATMAID.neuronController.off(CATMAID.neuronController.EVENT_SKELETON_CHANGED,
+    CATMAID.Skeletons.off(CATMAID.Skeletons.EVENT_SKELETON_CHANGED,
         this.handleChangedSkeleton, this);
     CATMAID.Skeletons.off(CATMAID.Skeletons.EVENT_SKELETON_DELETED,
         this.handleDeletedSkeleton, this);

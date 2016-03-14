@@ -13,6 +13,7 @@
 
   // Provide some basic events
   Skeletons.EVENT_SKELETON_DELETED = "skeleton_deleted";
+  Skeletons.EVENT_SKELETON_CHANGED = "skeleton_changed";
   CATMAID.asEventSource(Skeletons);
 
   // Export Skeleton namespace

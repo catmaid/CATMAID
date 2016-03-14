@@ -27,7 +27,7 @@
     // Map registered neurons to the number of nodes referencing them
     this.registered_neurons = {};
     // Listen to skeleton and annotation change events
-    CATMAID.neuronController.on(CATMAID.neuronController.EVENT_SKELETON_CHANGED,
+    CATMAID.Skeletons.on(CATMAID.Skeletons.EVENT_SKELETON_CHANGED,
       this.handleChangedSkeleton, this);
     CATMAID.Annotations.on(CATMAID.Annotations.EVENT_ANNOTATIONS_CHANGED,
       this.handleChangedAnnotations, this);
@@ -51,7 +51,7 @@
     CATMAID.NeuronNameService.getInstance().unregister(this);
 
     // Unregister from event stream
-    CATMAID.neuronController.off(CATMAID.neuronController.EVENT_SKELETON_CHANGED,
+    CATMAID.Skeletons.off(CATMAID.Skeletons.EVENT_SKELETON_CHANGED,
         this.handleChangedSkeleton, this);
     CATMAID.Annotations.off(CATMAID.Annotations.EVENT_ANNOTATIONS_CHANGED,
         this.handleChangedAnnotations, this);

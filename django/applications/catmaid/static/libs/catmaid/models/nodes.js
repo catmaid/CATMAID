@@ -84,6 +84,40 @@
             'updatedPartners': result.updated_partners
           };
         }).bind(this));
+    },
+
+    /**
+     * Delete a treenode.
+     *
+     * @param {integer} projectID  The project the treenode is part of
+     * @param {integer} treenodeID The treenode to delete
+     *
+     * @returns promise deleting the treenode
+     */
+    remove: function(projectId, nodeId) {
+      CATMAID.requirePermission(projectId, 'can_annotate',
+          'You don\'t have have permission to remove a new node');
+
+      var url = projectId + '/treenode/delete';
+      var params = {
+        treenode_id: nodeId
+      };
+
+      return CATMAID.fetch(url, 'POST', params)
+        .then(function(result) {
+          // Emit deletion event, if the last node was removed and the neuron
+          // deleted. Otherwise, trigger a change event for the neuron.
+          var neuron_id = null;
+          if (result.deleted_neuron) {
+            CATMAID.Skeletons.trigger(CATMAID.Skeletons.EVENT_SKELETON_DELETED,
+                result.skeleton_id);
+          } else {
+            CATMAID.Skeletons.trigger(CATMAID.Skeletons.EVENT_SKELETON_CHANGED,
+                result.skeleton_id);
+          }
+
+          return result;
+        });
     }
 
   };

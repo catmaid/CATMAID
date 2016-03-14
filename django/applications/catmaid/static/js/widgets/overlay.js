@@ -605,7 +605,7 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, options) {
   this.graphics.setActiveNodeRadiusVisibility(SkeletonAnnotations.TracingOverlay.Settings.session.display_active_node_radius);
 
   // Listen to change and delete events of skeletons
-  CATMAID.neuronController.on(CATMAID.neuronController.EVENT_SKELETON_CHANGED,
+  CATMAID.Skeletons.on(CATMAID.Skeletons.EVENT_SKELETON_CHANGED,
     this.handleChangedSkeleton, this);
   CATMAID.Skeletons.on(CATMAID.Skeletons.EVENT_SKELETON_DELETED,
     this.handleDeletedSkeleton, this);
@@ -949,7 +949,7 @@ SkeletonAnnotations.TracingOverlay.prototype.destroy = function() {
   }
 
   // Unregister from neuron controller
-  CATMAID.neuronController.off(CATMAID.neuronController.EVENT_SKELETON_CHANGED,
+  CATMAID.Skeletons.off(CATMAID.Skeletons.EVENT_SKELETON_CHANGED,
       this.handleChangedSkeleton, this);
   CATMAID.Skeletons.off(CATMAID.Skeletons.EVENT_SKELETON_DELETED,
       this.handleDeletedSkeleton, this);
@@ -1508,7 +1508,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeLink = function (from
                   CATMAID.neuronController.trigger(
                       CATMAID.Skeletons.EVENT_SKELETON_DELETED, to_skid);
                   CATMAID.neuronController.trigger(
-                      CATMAID.neuronController.EVENT_SKELETON_CHANGED, from_model.id);
+                      CATMAID.Skeletons.EVENT_SKELETON_CHANGED, from_model.id);
                 },
                 true); // block UI
             };
@@ -3820,8 +3820,7 @@ SkeletonAnnotations.TracingOverlay.prototype.deleteNode = function(nodeId) {
    */
   function deleteTreenode(node, wasActiveNode) {
     // Make sure all other pending tasks are done before the node is deleted.
-    var delFn = CATMAID.neuronController.deleteTreenode.bind(
-        CATMAID.neuronController, project.id, node.id);
+    var delFn = CATMAID.Nodes.remove.bind(CATMAID.Nodes, project.id, node.id);
     self.submit.then(delFn).then(function(json) {
       // nodes not refreshed yet: node still contains the properties of the deleted node
       // ensure the node, if it had any changes, these won't be pushed to the database: doesn't exist anymore

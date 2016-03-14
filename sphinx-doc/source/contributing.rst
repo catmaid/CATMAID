@@ -35,6 +35,8 @@ The frontend is written primarily in Javascript and makes use of a several
 external libraries. Most interfaces are built dynamically through Javascript;
 few HTML templates are used.
 
+.. figure:: _static/architecture.svg
+
 A core philosophy of this architecture is to keep the backend API fast and
 minimal. The primary purpose of the backend is to mediate the database. Complex
 analysis and data processing is performed on the client whenever possible. This

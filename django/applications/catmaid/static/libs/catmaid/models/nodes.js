@@ -87,6 +87,85 @@
     },
 
     /**
+     * Create a new treenode in a skeleton. If no parent is given, a new
+     * skeleton is created.
+     *
+     * @param {integer} projectId  The project space to create the node in
+     * @param {number}  x          The X coordinate of the node's location
+     * @param {number}  y          The Y coordinate of the node's location
+     * @param {number}  z          The Z coordinate of the node's location
+     * @param {integer} parentId   (Optional) Id of the parent node of the new node
+     * @param {number}  radius     (Optional) Radius of the new node
+     * @param {integer} confidence (Optional) Confidence of edge to parent
+     * @param {integer} useNeuron  (Optional) Target neuron ID to double check
+     * @param {string}  neuronName (Optional) Naming pattern for new neuron
+     *
+     * @returns a promise that is resolved once the treenode is created
+     */
+    create: function(projectId, x, y, z, parentId, radius, confidence, useNeuron, neuronName) {
+      CATMAID.requirePermission(projectId, 'can_annotate',
+          'You don\'t have have permission to create a new node');
+
+      var url = projectId + '/treenode/create';
+      var params = {
+        parent_id: parentId,
+        x: x,
+        y: y,
+        z: z,
+        radius: radius,
+        confidence: confidence,
+        useneuron: useNeuron,
+        neuron_name: neuronName
+      };
+
+      return CATMAID.fetch(url, 'POST', params)
+        .then(function(result) {
+          CATMAID.Skeletons.trigger(CATMAID.Skeletons.EVENT_SKELETON_CHANGED,
+              result.skeleton_id);
+          return result;
+        });
+    },
+
+    /**
+     * Insert a new treenode in a skeleton, optionally between two nodes. If no
+     * parent is given, a new skeleton is created.
+     *
+     * @param {integer} projectId  The project space to create the node in
+     * @param {number}  x          The X coordinate of the node's location
+     * @param {number}  y          The Y coordinate of the node's location
+     * @param {number}  z          The Z coordinate of the node's location
+     * @param {integer} parentId   (Optional) Id of the parent node of the new node
+     * @param {integer} childId    (Optional) Id of child to insert in edge
+     * @param {number}  radius     (Optional) Radius of the new node
+     * @param {integer} confidence (Optional) Confidence of edge to parent
+     *
+     * @returns a promise that is resolved once the treenode is created
+     */
+    insert: function(projectId, x, y, z, parentId, childId, radius, confidence, useNeuron) {
+      CATMAID.requirePermission(projectId, 'can_annotate',
+          'You don\'t have have permission to create a new node');
+
+      var url = projectId + '/treenode/insert';
+      var params = {
+        parent_id: node.parent_id,
+        child_id: childId,
+        x: x,
+        y: y,
+        z: z,
+        radius: node.radius,
+        confidence: node.confidence,
+        useneuron: node.useneuron
+      };
+
+      return CATMAID.fetch(url, 'POST', params)
+        .then(function(result) {
+          CATMAID.Skeletons.trigger(CATMAID.Skeletons.EVENT_SKELETON_CHANGED,
+              result.skeleton_id);
+          return result;
+        });
+    },
+
+    /**
      * Delete a treenode.
      *
      * @param {integer} projectID  The project the treenode is part of

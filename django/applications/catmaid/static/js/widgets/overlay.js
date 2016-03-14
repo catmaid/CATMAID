@@ -684,23 +684,13 @@ SkeletonAnnotations.TracingOverlay.prototype.promiseNode = function(node)
     }
 
     var childId = matches[1];
+    var x = self.stackViewer.primaryStack.stackToProjectX(node.z, node.y, node.x);
+    var y = self.stackViewer.primaryStack.stackToProjectY(node.z, node.y, node.x);
+    var z = self.stackViewer.primaryStack.stackToProjectZ(node.z, node.y, node.x);
 
-    // Create new node and update parent relation of child
-    requestQueue.register(
-      django_url + project.id + '/treenode/insert',
-      'POST',
-      {
-        pid: project.id,
-        parent_id: node.parent_id,
-        child_id: childId,
-        x: self.stackViewer.primaryStack.stackToProjectX(node.z, node.y, node.x),
-        y: self.stackViewer.primaryStack.stackToProjectY(node.z, node.y, node.x),
-        z: self.stackViewer.primaryStack.stackToProjectZ(node.z, node.y, node.x),
-        radius: node.radius,
-        confidence: node.confidence,
-        useneuron: node.useneuron
-      },
-      CATMAID.jsonResponseHandler(function(result) {
+    return CATMAID.Nodes.insert(project.id, x, y, z, node.parent_id,
+        childId, node.radius, node.confidence)
+      .then(function(result) {
         var nid = result.treenode_id;
         CATMAID.statusBar.replaceLast("Created new node node #" + nid +
             " as child of node #" + childId);
@@ -715,14 +705,7 @@ SkeletonAnnotations.TracingOverlay.prototype.promiseNode = function(node)
         if (SkeletonAnnotations.getActiveNodeId() == vnid) {
           self.activateNode(node);
         }
-
-        self.updateNodes();
-        // Resolve promise
-        resolve(nid);
-      }, function(err) {
-        // Reject promise in case of error
-        reject(err);
-      }));
+      });
   });
 };
 
@@ -1712,40 +1695,31 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeWithLink = function (
     pos_z, link_type, afterCreate)
 {
   var self = this;
-  this.submit(
-      django_url + project.id + '/treenode/create',
-      'POST',
-      {pid: project.id,
-       parent_id: -1,
-       x: phys_x,
-       y: phys_y,
-       z: phys_z,
-       radius: radius,
-       confidence: confidence,
-       neuron_name: SkeletonAnnotations.defaultNewNeuronName},
-      function (jso) {
-        var nid = parseInt(jso.treenode_id);
-        // always create a new treenode which is the root of a new skeleton
-        var nn = self.graphics.newNode(nid, null, null, radius, pos_x, pos_y,
-            pos_z, 0, 5 /* confidence */, parseInt(jso.skeleton_id), true);
-        // add node to nodes list
-        self.nodes[nid] = nn;
-        nn.createGraphics();
-        // create link : new treenode postsynaptic_to or presynaptic_to
-        // deactivated connectorID
-        self.createLink(nid, connectorID, link_type, function() {
-          // Use a new node reference, because createLink() triggers an update,
-          // which potentially re-initializes node objects.
-          var node = self.nodes[nid];
-          // Emit node creation and  skeleton change events
-          SkeletonAnnotations.trigger(SkeletonAnnotations.EVENT_NODE_CREATED,
-              jso.nid, phys_x, phys_y, phys_z);
-          SkeletonAnnotations.trigger(SkeletonAnnotations.EVENT_SKELETON_CHANGED,
-              node.skeleton_id);
+  CATMAID.Nodes.create(project.id, phys_x, phys_y, phys_z, -1, radius, confidence,
+      undefined, SkeletonAnnotations.defaultNewNeuronName)
+    .then(function(jso) {
+      var nid = parseInt(jso.treenode_id);
+      // always create a new treenode which is the root of a new skeleton
+      var nn = self.graphics.newNode(nid, null, null, radius, pos_x, pos_y,
+          pos_z, 0, 5 /* confidence */, parseInt(jso.skeleton_id), true);
+      // add node to nodes list
+      self.nodes[nid] = nn;
+      nn.createGraphics();
+      // create link : new treenode postsynaptic_to or presynaptic_to
+      // deactivated connectorID
+      self.createLink(nid, connectorID, link_type, function() {
+        // Use a new node reference, because createLink() triggers an update,
+        // which potentially re-initializes node objects.
+        var node = self.nodes[nid];
+        // Emit node creation and  skeleton change events
+        SkeletonAnnotations.trigger(SkeletonAnnotations.EVENT_NODE_CREATED,
+            jso.nid, phys_x, phys_y, phys_z);
+        SkeletonAnnotations.trigger(SkeletonAnnotations.EVENT_SKELETON_CHANGED,
+            node.skeleton_id);
 
-          if (afterCreate) afterCreate(self, node);
-        });
+        if (afterCreate) afterCreate(self, node);
       });
+    });
 };
 
 /**
@@ -1764,62 +1738,45 @@ SkeletonAnnotations.TracingOverlay.prototype.createNode = function (parentID,
 
   var self = this;
 
-  return new Promise(function (resolve, reject) {
+  return CATMAID.Nodes.create(project.id, phys_x, phys_y, phys_z, parentID, radius,
+      confidence, useneuron, neuronname)
+    .then(function(result) {
+      // add treenode to the display and update it
+      var nid = parseInt(result.treenode_id);
+      var skid = parseInt(result.skeleton_id);
 
-    requestQueue.register(
-        django_url + project.id + '/treenode/create',
-        'POST',
-        {pid: project.id,
-         parent_id: parentID,
-         x: phys_x,
-         y: phys_y,
-         z: phys_z,
-         radius: radius,
-         confidence: confidence,
-         useneuron: useneuron,
-         neuron_name: neuronname},
-        CATMAID.jsonResponseHandler(function(result) {
-          // add treenode to the display and update it
-          var nid = parseInt(result.treenode_id);
-          var skid = parseInt(result.skeleton_id);
+      // Trigger change event for skeleton
+      SkeletonAnnotations.trigger(
+            SkeletonAnnotations.EVENT_SKELETON_CHANGED, skid);
 
-          // Trigger change event for skeleton
-          SkeletonAnnotations.trigger(
-                SkeletonAnnotations.EVENT_SKELETON_CHANGED, skid);
+      // The parent will be null if there isn't one or if the parent Node
+      // object is not within the set of retrieved nodes, but the parentID
+      // will be defined.
+      var nn = self.graphics.newNode(nid, self.nodes[parentID], parentID,
+          radius, pos_x, pos_y, pos_z, 0, 5 /* confidence */, skid, true);
 
-          // The parent will be null if there isn't one or if the parent Node
-          // object is not within the set of retrieved nodes, but the parentID
-          // will be defined.
-          var nn = self.graphics.newNode(nid, self.nodes[parentID], parentID,
-              radius, pos_x, pos_y, pos_z, 0, 5 /* confidence */, skid, true);
+      self.nodes[nid] = nn;
+      nn.createGraphics();
 
-          self.nodes[nid] = nn;
-          nn.createGraphics();
+      // Emit new node event after we added to our local node set to not
+      // trigger a node update.
+      SkeletonAnnotations.trigger(SkeletonAnnotations.EVENT_NODE_CREATED,
+          nid, phys_x, phys_y, phys_z);
 
-          // Emit new node event after we added to our local node set to not
-          // trigger a node update.
-          SkeletonAnnotations.trigger(SkeletonAnnotations.EVENT_NODE_CREATED,
-              nid, phys_x, phys_y, phys_z);
+      // Set atn to be the newly created node
+      self.activateNode(nn);
+      // Append to parent and recolor
+      if (parentID) {
+        var parentNode = self.nodes[parentID];
+        if (parentNode) {
+          parentNode.addChildNode(nn);
+          parentNode.updateColors();
+        }
+      }
 
-          // Set atn to be the newly created node
-          self.activateNode(nn);
-          // Append to parent and recolor
-          if (parentID) {
-            var parentNode = self.nodes[parentID];
-            if (parentNode) {
-              parentNode.addChildNode(nn);
-              parentNode.updateColors();
-            }
-          }
-
-          // Invoke callback if necessary
-          if (afterCreate) afterCreate(self, nn);
-          resolve(self, nn);
-        }, function(err) {
-          // Reject promise in case of error
-          reject(err);
-        }));
-  });
+      // Invoke callback if necessary
+      if (afterCreate) afterCreate(self, nn);
+    });
 };
 
 /**

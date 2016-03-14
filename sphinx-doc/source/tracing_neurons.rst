@@ -15,7 +15,7 @@ There are step-by-step instructions below, but as a quick-reference, once you're
 * **mouse wheel**: move up and down layers in the stack
 * **+** and **-**: zoom in and out
 
-(If you're using Mac OS, then in every instance you need to use ⌘ instead of ctrl.)  For help on other keyboard shortcuts, click on the "?" button in the toolbar.
+(If you're using Mac OS, then in every instance you need to use :kbd:`⌘` instead of :kbd:`ctrl`.)  For help on other keyboard shortcuts, click on the "?" button in the toolbar.
 
 Basic Tracing
 -------------

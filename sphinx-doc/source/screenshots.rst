@@ -9,7 +9,7 @@ Screenshots and videos
 .. figure:: _static/screenshots/catmaid-ui.png
    :alt: Basic CATMAID user interface
 
-   The CATMAID User Interface with skeleton annnotations and tags
+   The CATMAID User Interface with skeleton annotations and tags
 
 
 .. figure:: _static/screenshots/catmaid-3d-viewer.png

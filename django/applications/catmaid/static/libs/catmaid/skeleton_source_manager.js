@@ -19,7 +19,7 @@
         this.replaceSkeleton, this);
 
     // Register with neuron manager to get updates about deleted neurons
-    CATMAID.neuronController.on(CATMAID.neuronController.EVENT_SKELETON_DELETED,
+    CATMAID.Skeletons.on(CATMAID.Skeletons.EVENT_SKELETON_DELETED,
         this.removeSkeleton, this);
 
     // Register to active node changes to highlight skeleton in sources
@@ -41,7 +41,7 @@
   SkeletonSourceManager.prototype.destroy = function() {
     CATMAID.neuronController.off(CATMAID.neuronController.EVENT_SKELETONS_JOINED,
         this.replaceSkeleton);
-    CATMAID.neuronController.off(CATMAID.neuronController.EVENT_SKELETON_DELETED,
+    CATMAID.Skeletons.off(CATMAID.Skeletons.EVENT_SKELETON_DELETED,
         this.removeSkeleton);
     SkeletonAnnotations.off(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
         this.handleActiveNodeChange);

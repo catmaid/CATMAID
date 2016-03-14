@@ -6,8 +6,8 @@
   "use strict";
 
   /**
-   * This namespace provides functions to work with neurons. All of them return
-   * promises.
+   * This namespace provides functions to work with neurons. All
+   * of them return promises.
    */
   var Neurons = {
 
@@ -33,12 +33,33 @@
               'renamedNeuron': result.renamed_neuron
             };
           });
-      }
+      },
 
+      /**
+       * Delete a neuron and the skeleton is is modeled by.
+       *
+       * @param {number} projectId The ID of the project the neuron is part of
+       * @param {number} neuronId  The ID of the neuron to delete
+       *
+       * @returns promise deleting the skeleton and neuron
+       */
+      delete: function(projectId, neuronId) {
+        var url = projectId + '/neuron/' + neuronId + '/delete';
+        return CATMAID.fetch(url, 'GET')
+          .then(function(result) {
+            // Emit deletion event for every deleted skeleton
+            result.skeleton_ids.forEach(function(skid) {
+              this.trigger(this.EVENT_SKELETON_DELETED, skid);
+            }, CATMAID.Skeletons);
+            CATMAID.Neurons.trigger(CATMAID.Neurons.EVENT_NEURON_DELETED, neuronId);
+            return result;
+          });
+      }
   };
 
   // Provide some basic events
   Neurons.EVENT_NEURON_RENAMED = "neuron_renamed";
+  Neurons.EVENT_NEURON_DELETED = "neuron_deleted";
   CATMAID.asEventSource(Neurons);
 
   // Export Neuron namespace

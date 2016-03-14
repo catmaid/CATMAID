@@ -11,7 +11,6 @@
    * multiple events that one can register to.
    */
   var NeuronController = function() {
-    this.EVENT_SKELETON_DELETED = "neuron_manager_skeleton_deleted";
     this.EVENT_SKELETON_CHANGED = "neuron_manager_skeleton_changed";
     this.EVENT_SKELETONS_JOINED = "neuron_manager_skeletons_joined";
   };
@@ -19,28 +18,8 @@
   NeuronController.prototype = {};
   CATMAID.asEventSource(NeuronController.prototype);
 
-  /**
-   * Delete a neuron and the skeleton is is modeled by.
-   *
-   * @param {number} projectID - The ID of the project the neuron is part of.
-   * @param {number} neuronID - The ID of the neuron to delete.
-   * @returns promise deleting the skeleton and neuron
-   */
-  NeuronController.prototype.deleteNeuron = function(projectID, neuronID) {
-    return new Promise((function(resolve, reject) {
-      // Try to delete neuron
-      var url = CATMAID.makeURL(projectID + '/neuron/' + neuronID + '/delete');
-      requestQueue.register(url, 'GET', {}, CATMAID.jsonResponseHandler(
-            (function(json) {
-              resolve(json);
-              // Emit deletion event for every deleted skeleton
-              json.skeleton_ids.forEach(function(skid) {
-                this.trigger(this.EVENT_SKELETON_DELETED, skid);
-              }, this);
-            }).bind(this),
-            reject));
-    }).bind(this));
-  };
+
+
 
   /**
    * Delete a treenode.

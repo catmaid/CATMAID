@@ -607,7 +607,7 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, options) {
   // Listen to change and delete events of skeletons
   CATMAID.neuronController.on(CATMAID.neuronController.EVENT_SKELETON_CHANGED,
     this.handleChangedSkeleton, this);
-  CATMAID.neuronController.on(CATMAID.neuronController.EVENT_SKELETON_DELETED,
+  CATMAID.Skeletons.on(CATMAID.Skeletons.EVENT_SKELETON_DELETED,
     this.handleDeletedSkeleton, this);
 
   // Listen to active node change events
@@ -951,7 +951,7 @@ SkeletonAnnotations.TracingOverlay.prototype.destroy = function() {
   // Unregister from neuron controller
   CATMAID.neuronController.off(CATMAID.neuronController.EVENT_SKELETON_CHANGED,
       this.handleChangedSkeleton, this);
-  CATMAID.neuronController.off(CATMAID.neuronController.EVENT_SKELETON_DELETED,
+  CATMAID.Skeletons.off(CATMAID.Skeletons.EVENT_SKELETON_DELETED,
       this.handleDeletedSkeleton, this);
 
   SkeletonAnnotations.off(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
@@ -1506,7 +1506,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeLink = function (from
                   CATMAID.neuronController.trigger(
                       CATMAID.neuronController.EVENT_SKELETONS_JOINED, to_skid, from_model.id);
                   CATMAID.neuronController.trigger(
-                      CATMAID.neuronController.EVENT_SKELETON_DELETED, to_skid);
+                      CATMAID.Skeletons.EVENT_SKELETON_DELETED, to_skid);
                   CATMAID.neuronController.trigger(
                       CATMAID.neuronController.EVENT_SKELETON_CHANGED, from_model.id);
                 },

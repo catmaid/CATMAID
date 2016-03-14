@@ -521,7 +521,7 @@
          * annotation links so that the name service can update itself.
          */
         registerEventHandlers: function() {
-          CATMAID.neuronController.on(CATMAID.neuronController.EVENT_SKELETON_DELETED,
+          CATMAID.Skeletons.on(CATMAID.Skeletons.EVENT_SKELETON_DELETED,
               this.unregisterSingleFromAllClients, instance);
           CATMAID.Annotations.on(CATMAID.Annotations.EVENT_ANNOTATIONS_CHANGED,
               this.handleAnnotationChange, instance);
@@ -534,7 +534,7 @@
          * change events.
          */
         unregisterEventHandlers: function() {
-          CATMAID.neuronController.off(CATMAID.neuronController.EVENT_SKELETON_DELETED,
+          CATMAID.Skeletons.off(CATMAID.Skeletons.EVENT_SKELETON_DELETED,
               this.unregisterSingleFromAllClients, instance);
           CATMAID.Annotations.off(CATMAID.Annotations.EVENT_ANNOTATIONS_CHANGED,
               this.handleAnnotationChange, instance);

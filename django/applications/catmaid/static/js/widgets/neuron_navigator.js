@@ -1952,7 +1952,7 @@
     delete_button.onclick = (function() {
       if (confirm("Are you sure that neuron '" + this.neuron_name +
           "' and its skeleton should get deleted?")) {
-        CATMAID.neuronController.deleteNeuron(project.id, this.neuron_id)
+        CATMAID.Neurons.delete(project.id, this.neuron_id)
           .then((function() {
             // Other widgets like the tracing layer are automatically refreshed
             // due to the change event of the neuron controller.

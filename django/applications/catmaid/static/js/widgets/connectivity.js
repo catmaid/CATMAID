@@ -28,7 +28,7 @@
     // Register for changed and removed skeletons
     CATMAID.neuronController.on(CATMAID.neuronController.EVENT_SKELETON_CHANGED,
       this.handleChangedSkeleton, this);
-    CATMAID.neuronController.on(CATMAID.neuronController.EVENT_SKELETON_DELETED,
+    CATMAID.Skeletons.on(CATMAID.Skeletons.EVENT_SKELETON_DELETED,
       this.handleDeletedSkeleton, this);
   };
 
@@ -126,7 +126,7 @@
     // Unregister from neuron controller
     CATMAID.neuronController.off(CATMAID.neuronController.EVENT_SKELETON_CHANGED,
         this.handleChangedSkeleton, this);
-    CATMAID.neuronController.off(CATMAID.neuronController.EVENT_SKELETON_DELETED,
+    CATMAID.Skeletons.off(CATMAID.Skeletons.EVENT_SKELETON_DELETED,
         this.handleDeletedSkeleton, this);
   };
 

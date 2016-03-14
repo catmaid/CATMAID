@@ -359,4 +359,50 @@
     this.init(title, exec, undo);
   });
 
+  /**
+   * Create a new treenode in a skeleton. If no parent is given, a new
+   * skeleton is created. This command is reversible.
+   *
+   * @param {integer} projectId  The project space to create the node in
+   * @param {number}  x          The X coordinate of the node's location
+   * @param {number}  y          The Y coordinate of the node's location
+   * @param {number}  z          The Z coordinate of the node's location
+   * @param {integer} parentId   (Optional) Id of the parent node of the new node
+   * @param {number}  radius     (Optional) Radius of the new node
+   * @param {integer} confidence (Optional) Confidence of edge to parent
+   * @param {integer} useNeuron  (Optional) Target neuron ID to double check
+   * @param {string}  neuronName (Optional) Naming pattern for new neuron
+   *
+   * @returns a promise that is resolved once the treenode is created
+   */
+  CATMAID.CreateNodeCommand = CATMAID.makeCommand(function(
+        projectId, x, y, z, parentId, radius, confidence, useNeuron, neuronName) {
+
+    var exec = function(done, command, map) {
+      // Get current, mapped version of parent ID
+      var mParentId = map.get(map.NODE, parentId);
+      var create = CATMAID.Nodes.create(projectId, x, y, z, mParentId, radius,
+          confidence, useNeuron, neuronName);
+      return create.then(function(result) {
+        // Store ID of new node created by this command
+        map.add(map.NODE, result.treenode_id, command);
+        command.store('nodeId', result.treenode_id);
+        done();
+        return result;
+      });
+    };
+
+    var undo = function(done, command, map) {
+      var nodeId = map.get(map.NODE, command.get('nodeId'));
+      command.validateForUndo(projectId, nodeId);
+      var removeNode = CATMAID.Nodes.remove(projectId, nodeId);
+      return removeNode.then(done);
+    };
+
+    var title = "Create new node with parent " + parentId + " at (" +
+        x + ", " + y + ", " + z + ")";
+
+    this.init(title, exec, undo);
+  });
+
 })(CATMAID);

@@ -1695,8 +1695,9 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeWithLink = function (
     pos_z, link_type, afterCreate)
 {
   var self = this;
-  CATMAID.Nodes.create(project.id, phys_x, phys_y, phys_z, -1, radius, confidence,
-      undefined, SkeletonAnnotations.defaultNewNeuronName)
+  var command = new CATMAID.CreateNodeCommand(project.id, phys_x, phys_y, phys_z,
+      -1, radius, confidence, undefined, SkeletonAnnotations.defaultNewNeuronName);
+  CATMAID.commands.execute(command)
     .then(function(jso) {
       var nid = parseInt(jso.treenode_id);
       // always create a new treenode which is the root of a new skeleton
@@ -1738,8 +1739,9 @@ SkeletonAnnotations.TracingOverlay.prototype.createNode = function (parentID,
 
   var self = this;
 
-  return CATMAID.Nodes.create(project.id, phys_x, phys_y, phys_z, parentID, radius,
-      confidence, useneuron, neuronname)
+  var command = new CATMAID.CreateNodeCommand(project.id, phys_x, phys_y,
+      phys_z, parentID, radius, confidence, useneuron, neuronname);
+  return CATMAID.commands.execute(command)
     .then(function(result) {
       // add treenode to the display and update it
       var nid = parseInt(result.treenode_id);

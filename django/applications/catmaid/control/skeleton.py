@@ -264,9 +264,45 @@ def find_labels(request, project_id=None, skeleton_id=None):
     return HttpResponse(json.dumps(nearest))
 
 
+@api_view(['POST'])
 @requires_user_role(UserRole.Browse)
 def within_spatial_distance(request, project_id=None):
-    """ Find skeletons within a given L-infinity distance of a treenode. """
+    """Find skeletons within a given L-infinity distance of a treenode.
+
+    Returns at most 100 results.
+    ---
+    parameters:
+        - name: treenode_id
+          description: ID of the origin treenode to search around
+          required: true
+          type: integer
+          paramType: form
+        - name: distance
+          description: L-infinity distance in nanometers within which to search
+          required: false
+          default: 0
+          type: integer
+          paramType: form
+        - name: size_mode
+          description: |
+            Whether to return skeletons with only one node in the search area
+            (1) or more than one node in the search area (0).
+          required: false
+          default: 0
+          type: integer
+          paramType: form
+    type:
+      reached_limit:
+        description: Whether the limit of at most 100 skeletons was reached
+        type: boolean
+        required: true
+      skeletons:
+        description: IDs of skeletons matching the search criteria
+        type: array
+        required: true
+        items:
+          type: integer
+    """
     project_id = int(project_id)
     tnid = request.POST.get('treenode_id', None)
     if not tnid:
@@ -316,7 +352,7 @@ LIMIT %s
     skeletons = tuple(row[0] for row in cursor.fetchall())
 
     return HttpResponse(json.dumps({"skeletons": skeletons,
-                                    "reached_limit": 100 == len(skeletons)}))
+                                    "reached_limit": limit == len(skeletons)}))
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])

@@ -12,6 +12,9 @@ included in this changelog.
 - `GET /{project_id}/connectors/{connector_id}/`:
   Returns information on a connector and its partners.
 
+- `POST /{project_id}/skeletons/within-spatial-distance`:
+  Find skeletons within a given L-infinity distance of a treenode.
+
 ### Modifications
 
 `POST /{project_id}/skeletons/connectivity`:

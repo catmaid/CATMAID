@@ -118,6 +118,22 @@ Neuron Search:
   displayed, a third column includes annotations.
 
 
+Undo:
+
+- Some actions are now stored as so called commands in a history, which can be
+  displayed in a dialog by pressing the F9 key. Commands in this history can are
+  reversible. They can be undone either through the history dialog or by pressing
+  Ctrl+Z.
+
+- Through the history dialog, undone commands can also be redone. Of course,
+  once one diverges from the list of previously undone commands by executing a
+  completely new command (e.g. creating a node), redo is not possible anymore.
+
+- The following actions are recorded into history: tag add/remove/edit,
+  annotation add/remove/edit, node radius edit, neuron rename, confidence
+  change, connector link/unlink and node add/remove.
+
+
 Miscellaneous:
 
 - Which layers are hidden when Space is held is now configurable by checkboxes

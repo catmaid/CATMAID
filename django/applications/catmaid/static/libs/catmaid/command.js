@@ -58,7 +58,7 @@
     if (!this.initialized) {
       throw new CATMAID.Error('Commands need to be initialized before execution');
     }
-    var result = this._fn(done.bind(this, true), mapper || globalMap, this);
+    var result = this._fn(done.bind(this, true), this, mapper || globalMap);
     return result;
   };
 
@@ -74,7 +74,7 @@
     if (!this.executed) {
       throw new CATMAID.Error('Only executed commands can be undone');
     }
-    var result = this._undo(done.bind(this, false), mapper || globalMap, this);
+    var result = this._undo(done.bind(this, false), this, mapper || globalMap);
     return result;
   };
 

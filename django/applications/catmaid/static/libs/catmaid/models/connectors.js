@@ -183,7 +183,7 @@
    */
   CATMAID.CreateConnectorCommand = CATMAID.makeCommand(
       function(projectId, x, y, z, confidence) {
-    var exec = function(done, map, command) {
+    var exec = function(done, command, map) {
       var create = CATMAID.Connectors.create(projectId, x, y, z, confidence);
 
       return create.then(function(result) {
@@ -194,7 +194,7 @@
       });
     };
 
-    var undo = function(done, map, command) {
+    var undo = function(done, command, map) {
       // Fail if expected undo parameters are not available from command
       var createdConnectorId = command.get('connectorId');
       command.validateForUndo(createdConnectorId);
@@ -213,7 +213,7 @@
    */
   CATMAID.RemoveConnectorCommand = CATMAID.makeCommand(
       function(projectId, connectorId) {
-    var exec = function(done, map, command) {
+    var exec = function(done, command, map) {
       // Get connector information
       var remove = CATMAID.Connectors.remove(projectId, connectorId);
 
@@ -228,7 +228,7 @@
       });
     };
 
-    var undo = function(done, map, command) {
+    var undo = function(done, command, map) {
       var confidence = command.get('confidence');
       var partners = command.get('partners');
       var x = command.get('x'), y = command.get('y'), z = command.get('z');
@@ -253,7 +253,7 @@
   CATMAID.LinkConnectorCommand = CATMAID.makeCommand(
       function(projectId, connectorId, nodeId, linkType) {
 
-    var exec = function(done, map, command) {
+    var exec = function(done, command, map) {
       var link = CATMAID.Connectors.createLink(projectId,
           map.get(map.CONNECTOR, connectorId),
           map.get(map.NODE, nodeId), linkType);
@@ -264,7 +264,7 @@
       });
     };
 
-    var undo = function(done, map, command) {
+    var undo = function(done, command, map) {
       var mConnectorId = map.get(map.CONNECTOR, connectorId);
       var mNodeId = map.get(map.NODE, nodeId);
       command.validateForUndo(mConnectorId, mNodeId);
@@ -281,7 +281,7 @@
   CATMAID.UnlinkConnectorCommand = CATMAID.makeCommand(
       function(projectId, connectorId, nodeId) {
 
-    var exec = function(done, map, command) {
+    var exec = function(done, command, map) {
       var link = CATMAID.Connectors.removeLink(projectId,
           map.get(map.CONNECTOR, connectorId),
           map.get(map.NODE, nodeId));
@@ -293,7 +293,7 @@
       });
     };
 
-    var undo = function(done, map, command) {
+    var undo = function(done, command, map) {
       // Fail if expected undo parameters are not available from command
       var mConnectorId = map.get(map.CONNECTOR, connectorId);
       var mNodeId = map.get(map.NODE, nodeId);

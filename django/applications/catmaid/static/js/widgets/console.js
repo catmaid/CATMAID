@@ -81,7 +81,7 @@
       return;
     };
 
-    this.replaceLast = function (text, color) {
+    this.replaceLast = function (obj, color) {
       var sp = document.createElement("pre");
       if (typeof obj == "string") {
         sp.appendChild(document.createTextNode(obj));

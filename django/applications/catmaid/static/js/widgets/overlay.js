@@ -3777,7 +3777,9 @@ SkeletonAnnotations.TracingOverlay.prototype.deleteNode = function(nodeId) {
    */
   function deleteTreenode(node, wasActiveNode) {
     // Make sure all other pending tasks are done before the node is deleted.
-    var delFn = CATMAID.Nodes.remove.bind(CATMAID.Nodes, project.id, node.id);
+    var command = new CATMAID.RemoveNodeCommand(project.id, node.id);
+    var delFn = CATMAID.commands.execute.bind(CATMAID.commands, command);
+
     self.submit.then(delFn).then(function(json) {
       // nodes not refreshed yet: node still contains the properties of the deleted node
       // ensure the node, if it had any changes, these won't be pushed to the database: doesn't exist anymore

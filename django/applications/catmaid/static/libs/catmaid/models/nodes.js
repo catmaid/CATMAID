@@ -308,4 +308,55 @@
     this.init(title, exec, undo);
   });
 
+  /**
+   * Remove a node in an undoable fashion.
+   *
+   * @param {integer} projectId Project the node to remove is part of
+   * @param {integer} nodeId    The node to remove
+   */
+  CATMAID.RemoveNodeCommand = CATMAID.makeCommand(function(
+        projectId, nodeId) {
+
+    var exec = function(done, command, map) {
+      var removeNode = CATMAID.Nodes.remove(projectId, nodeId);
+
+      return removeNode.then(function(result) {
+        // Map ID of removed node to null to able to map the node created during
+        // undo back to the original.
+        map.add(map.NODE, nodeId, command);
+        // Store information required for undo
+        command.store('x', result.x);
+        command.store('y', result.y);
+        command.store('z', result.z);
+        command.store('parentId', result.parent_id);
+        command.store('radius', result.radius);
+        command.store('confidence', result.confidence);
+        done();
+        return result;
+      });
+    };
+
+    var undo = function(done, command, map) {
+      // make sure we get the current ID of the parent, which could have been
+      // modified through a redo operation.
+      var parentId = map.get(map.NODE, command.get('parentId'));
+      // Obtain other parameters and validate
+      var radius = command.get('radius');
+      var confidence = command.get('confidence');
+      var x = command.get('x'), y = command.get('y'), z = command.get('z');
+      command.validateForUndo(confidence, parentId, x, y, z);
+
+      var create = CATMAID.Nodes.create(projectId, x, y, z, parentId, radius, confidence);
+      return create.then(function(result) {
+        // Store ID of new node created by this command
+        map.add(map.NODE, result.treenode_id, command);
+        return result;
+      }).then(done);
+    };
+
+    var title = "Remove node #" + nodeId;
+
+    this.init(title, exec, undo);
+  });
+
 })(CATMAID);

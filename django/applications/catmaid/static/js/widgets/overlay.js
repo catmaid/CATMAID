@@ -1505,9 +1505,9 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeLink = function (from
                   // Trigger join, delete and change events
                   CATMAID.neuronController.trigger(
                       CATMAID.neuronController.EVENT_SKELETONS_JOINED, to_skid, from_model.id);
-                  CATMAID.neuronController.trigger(
+                  CATMAID.Skeletons.trigger(
                       CATMAID.Skeletons.EVENT_SKELETON_DELETED, to_skid);
-                  CATMAID.neuronController.trigger(
+                  CATMAID.Skeletons.trigger(
                       CATMAID.Skeletons.EVENT_SKELETON_CHANGED, from_model.id);
                 },
                 true); // block UI

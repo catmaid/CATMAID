@@ -221,7 +221,7 @@
     var executedCommand = this.submit.then((function() {
       var command = this._commandList[this._currentCommand];
       if (!command) {
-        throw new CATMAID.ValueError("Nothing to undo");
+        throw new CATMAID.CommandHistoryError("Nothing to undo");
       }
       var result = command.undo(this._store);
       this._rollbackHistory();
@@ -251,7 +251,7 @@
     var executedCommand = this.submit.then((function() {
       var command = this._commandList[this._currentCommand + 1];
       if (!command) {
-        throw new CATMAID.ValueError("Nothing to redo");
+        throw new CATMAID.CommandHistoryError("Nothing to redo");
       }
       var result = command.execute(this._store);
       this._currentCommand += 1;

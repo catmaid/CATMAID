@@ -205,6 +205,8 @@ window.onbeforeunload = function() {
     if (error instanceof CATMAID.Error) {
       if (error instanceof CATMAID.PermissionError) {
         new CATMAID.LoginDialog(e.error).show();
+      } else if (error instanceof CATMAID.CommandHistoryError) {
+        CATMAID.warn(error.message);
       } else {
         CATMAID.error(error.message, error.detail);
       }

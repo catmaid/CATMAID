@@ -36,4 +36,14 @@
   CATMAID.PermissionError.prototype = Object.create(CATMAID.Error.prototype);
   CATMAID.PermissionError.constructor = CATMAID.PermissionError;
 
+  /**
+   * An error type to indicate out of range errors in a command history.
+   */
+  CATMAID.CommandHistoryError = function(message, detail) {
+    CATMAID.Error.call(this, message, detail);
+  };
+
+  CATMAID.CommandHistoryError.prototype = Object.create(CATMAID.Error.prototype);
+  CATMAID.CommandHistoryError.constructor = CATMAID.CommandHistoryError;
+
 })(CATMAID);

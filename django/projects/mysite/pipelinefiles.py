@@ -72,8 +72,7 @@ libraries_js = {
     'whammy': ['whammy.js'],
     'geometry': ['geometry.js', 'intersects.js'], # order matters
     'catmaid': ['request.js', 'CATMAID.js', 'error.js', 'events.js',
-                'command.js', 'models/*.js', 'neuron_controller.js',
-                'skeleton_source.js', '*.js'],
+                'command.js', 'models/*.js','skeleton_source.js', '*.js'],
 }
 
 JAVASCRIPT = OrderedDict()

@@ -134,8 +134,8 @@
      * @param {number}  x          The X coordinate of the node's location
      * @param {number}  y          The Y coordinate of the node's location
      * @param {number}  z          The Z coordinate of the node's location
-     * @param {integer} parentId   (Optional) Id of the parent node of the new node
-     * @param {integer} childId    (Optional) Id of child to insert in edge
+     * @param {integer} parentId   Id of the parent node of the new node
+     * @param {integer} childId    Id of child to insert in edge
      * @param {number}  radius     (Optional) Radius of the new node
      * @param {integer} confidence (Optional) Confidence of edge to parent
      *

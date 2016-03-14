@@ -551,9 +551,14 @@ def delete_treenode(request, project_id=None):
         response_on_error = 'Could not delete treenode.'
         Treenode.objects.filter(pk=treenode_id).delete()
         return HttpResponse(json.dumps({
-            'deleted_neuron': deleted_neuron,
+            'x': treenode.location_x,
+            'y': treenode.location_y,
+            'z': treenode.location_z,
             'parent_id': parent_id,
+            'radius': treenode.radius,
+            'confidence': treenode.confidence,
             'skeleton_id': treenode.skeleton_id,
+            'deleted_neuron': deleted_neuron,
             'success': "Removed treenode successfully."
         }))
 

@@ -239,6 +239,7 @@ urlpatterns += [
     url(r'^(?P<project_id>\d+)/skeleton/reroot$', skeleton.reroot_skeleton),
     url(r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/permissions$', skeleton.get_skeleton_permissions),
     url(r'^(?P<project_id>\d+)/skeleton/annotationlist$', skeleton.annotation_list),
+    url(r'^(?P<project_id>\d+)/skeletons/within-spatial-distance$', skeleton.within_spatial_distance),
     url(r'^(?P<project_id>\d+)/skeletongroup/adjacency_matrix$', skeleton.adjacency_matrix),
     url(r'^(?P<project_id>\d+)/skeletongroup/skeletonlist_subgraph', skeleton.skeletonlist_subgraph),
     url(r'^(?P<project_id>\d+)/skeletongroup/all_shared_connectors', skeleton.all_shared_connectors),
@@ -258,7 +259,6 @@ urlpatterns += [
     url(r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/reviewed-nodes$', skeletonexport.export_skeleton_reviews),
     url(r'^(?P<project_id>\d+)/skeletons/measure$', skeletonexport.measure_skeletons),
     url(r'^(?P<project_id>\d+)/skeleton/connectors-by-partner$', skeletonexport.skeleton_connectors_by_partner),
-    url(r'^(?P<project_id>\d+)/skeletons/within-spatial-distance$', skeletonexport.within_spatial_distance),
     url(r'^(?P<project_id>\d+)/skeletons/partners-by-connector$', skeletonexport.partners_by_connector),
 ]
 

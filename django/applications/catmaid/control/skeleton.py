@@ -264,6 +264,61 @@ def find_labels(request, project_id=None, skeleton_id=None):
     return HttpResponse(json.dumps(nearest))
 
 
+@requires_user_role(UserRole.Browse)
+def within_spatial_distance(request, project_id=None):
+    """ Find skeletons within a given L-infinity distance of a treenode. """
+    project_id = int(project_id)
+    tnid = request.POST.get('treenode_id', None)
+    if not tnid:
+        raise Exception("Need a treenode!")
+    tnid = int(tnid)
+    distance = int(request.POST.get('distance', 0))
+    if 0 == distance:
+        return HttpResponse(json.dumps({"skeletons": []}))
+    size_mode = int(request.POST.get("size_mode", 0))
+    having = ""
+
+    if 0 == size_mode:
+        having = "HAVING count(*) > 1"
+    elif 1 == size_mode:
+        having = "HAVING count(*) = 1"
+    # else, no constraint
+
+    cursor = connection.cursor()
+    cursor.execute('SELECT location_x, location_y, location_z FROM treenode WHERE id=%s' % tnid)
+    pos = cursor.fetchone()
+
+    limit = 100
+    x0 = pos[0] - distance
+    x1 = pos[0] + distance
+    y0 = pos[1] - distance
+    y1 = pos[1] + distance
+    z0 = pos[2] - distance
+    z1 = pos[2] + distance
+
+    # Cheap emulation of the distance
+    cursor.execute('''
+SELECT skeleton_id, count(*)
+FROM treenode
+WHERE project_id = %s
+  AND location_x > %s
+  AND location_x < %s
+  AND location_y > %s
+  AND location_y < %s
+  AND location_z > %s
+  AND location_z < %s
+GROUP BY skeleton_id
+%s
+LIMIT %s
+''' % (project_id, x0, x1, y0, y1, z0, z1, having, limit))
+
+
+    skeletons = tuple(row[0] for row in cursor.fetchall())
+
+    return HttpResponse(json.dumps({"skeletons": skeletons,
+                                    "reached_limit": 100 == len(skeletons)}))
+
+
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def skeleton_statistics(request, project_id=None, skeleton_id=None):
     p = get_object_or_404(Project, pk=project_id)

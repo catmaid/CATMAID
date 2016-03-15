@@ -120,6 +120,8 @@
 
       return CATMAID.fetch(url, 'POST', params)
         .then(function(result) {
+          CATMAID.Nodes.trigger(CATMAID.Nodes.EVENT_NODE_CREATED,
+              result.treenode_id, x, y, z);
           CATMAID.Skeletons.trigger(CATMAID.Skeletons.EVENT_SKELETON_CHANGED,
               result.skeleton_id);
           return result;
@@ -160,6 +162,8 @@
 
       return CATMAID.fetch(url, 'POST', params)
         .then(function(result) {
+          CATMAID.Nodes.trigger(CATMAID.Nodes.EVENT_NODE_CREATED,
+              result.treenode_id, x, y, z);
           CATMAID.Skeletons.trigger(CATMAID.Skeletons.EVENT_SKELETON_CHANGED,
               result.skeleton_id);
           return result;
@@ -204,6 +208,7 @@
 
   // If annotations are deleted entirely
   Nodes.EVENT_NODE_CONFIDENCE_CHANGED = "node_confidence_changed";
+  Nodes.EVENT_NODE_CREATED = "node_created";
   CATMAID.asEventSource(Nodes);
 
   // Export nodes

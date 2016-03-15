@@ -54,7 +54,6 @@ var SkeletonAnnotations = {
 
   // Event name constants
   EVENT_ACTIVE_NODE_CHANGED: "tracing_active_node_changed",
-  EVENT_NODE_CREATED: "tracing_node_Create"
 
 };
 
@@ -486,13 +485,17 @@ SkeletonAnnotations.getZOfVirtualNode = SkeletonAnnotations.getVirtualNodeCompon
    */
   SkeletonAnnotations.setNewNodeVolumeWarning = function(volumeID) {
     // Disable existing event oversavation, if any.
-    SkeletonAnnotations.off(SkeletonAnnotations.EVENT_NODE_CREATED,
+    CATMAID.Nodes.off(CATMAID.Nodes.EVENT_NODE_CREATED,
+        newNodeVolumeWarningHandler);
+    CATMAID.Connectors.off(CATMAID.Connectors.EVENT_CONNECTOR_CREATED,
         newNodeVolumeWarningHandler);
 
     if (volumeID) {
       // Add new listener
       newNodeWarningVolumeID = volumeID;
-      SkeletonAnnotations.on(SkeletonAnnotations.EVENT_NODE_CREATED,
+      CATMAID.Nodes.on(CATMAID.Nodes.EVENT_NODE_CREATED,
+          newNodeVolumeWarningHandler);
+      CATMAID.Connectors.on(CATMAID.Connectors.EVENT_CONNECTOR_CREATED,
           newNodeVolumeWarningHandler);
     } else {
       newNodeWarningVolumeID = null;
@@ -608,12 +611,14 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, options) {
     this.handleChangedSkeleton, this);
   CATMAID.Skeletons.on(CATMAID.Skeletons.EVENT_SKELETON_DELETED,
     this.handleDeletedSkeleton, this);
+  CATMAID.Nodes.on(SkeletonAnnotations.EVENT_NODE_CREATED,
+      this.handleNewNode, this);
+  CATMAID.Connectors.on(CATMAID.Connectors.EVENT_CONNECTOR_CREATED,
+      this.handleNewNode, this);
 
   // Listen to active node change events
   SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
       this.handleActiveNodeChange, this);
-  SkeletonAnnotations.on(SkeletonAnnotations.EVENT_NODE_CREATED,
-      this.handleNewNode, this);
 
   CATMAID.Nodes.on(CATMAID.Nodes.EVENT_NODE_CONFIDENCE_CHANGED,
     this.handleNodeChange, this);
@@ -931,16 +936,18 @@ SkeletonAnnotations.TracingOverlay.prototype.destroy = function() {
     this._sourceToggleEl.parentNode.removeChild(this._sourceToggleEl);
   }
 
-  // Unregister from neuron controller
+  // Unregister from models
   CATMAID.Skeletons.off(CATMAID.Skeletons.EVENT_SKELETON_CHANGED,
       this.handleChangedSkeleton, this);
   CATMAID.Skeletons.off(CATMAID.Skeletons.EVENT_SKELETON_DELETED,
       this.handleDeletedSkeleton, this);
+  CATMAID.Neurons.off(CATMAID.Neurons.EVENT_NODE_CREATED,
+      this.handleNewNode, this);
+  CATMAID.Connectors.off(CATMAID.Connectors.EVENT_CONNECTOR_CREATED,
+      this.handleNewNode, this);
 
   SkeletonAnnotations.off(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
       this.handleActiveNodeChange, this);
-  SkeletonAnnotations.off(SkeletonAnnotations.EVENT_NODE_CREATED,
-      this.handleNewNode, this);
 
   CATMAID.Nodes.off(CATMAID.Nodes.EVENT_NODE_CONFIDENCE_CHANGED,
       this.handleNodeChange, this);
@@ -1696,14 +1703,12 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeWithLink = function (
       // create link : new treenode postsynaptic_to or presynaptic_to
       // deactivated connectorID
       self.createLink(nid, connectorID, link_type, function() {
-        // Use a new node reference, because createLink() triggers an update,
-        // which potentially re-initializes node objects.
-        var node = self.nodes[nid];
-        // Emit node creation and  skeleton change events
-        SkeletonAnnotations.trigger(SkeletonAnnotations.EVENT_NODE_CREATED,
-            jso.nid, phys_x, phys_y, phys_z);
-
-        if (afterCreate) afterCreate(self, node);
+        if (afterCreate) {
+          // Use a new node reference, because createLink() triggers an update,
+          // which potentially re-initializes node objects.
+          var node = self.nodes[nid];
+          afterCreate(self, node);
+        }
       });
     });
 };
@@ -1747,7 +1752,8 @@ SkeletonAnnotations.TracingOverlay.prototype.createNode = function (parentID, ch
 
       // Emit new node event after we added to our local node set to not
       // trigger a node update.
-      SkeletonAnnotations.trigger(SkeletonAnnotations.EVENT_NODE_CREATED,
+      // TODO: Move to model
+      CATMAID.Nodes.trigger(CATMAID.Nodes.EVENT_NODE_CREATED,
           nid, phys_x, phys_y, phys_z);
 
       // Set atn to be the newly created node

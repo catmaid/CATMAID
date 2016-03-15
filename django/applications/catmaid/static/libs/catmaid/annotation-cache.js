@@ -15,14 +15,16 @@
 
     // Listen to annotation deletions so these annotations can be reomved from
     // the cache.
-    CATMAID.Annotations.on(CATMAID.EVENT_ANNOTATIONS_DELETED, this.removeAll, this);
-    CATMAID.Annotations.on(CATMAID.EVENT_ANNOTATIONS_CHANGED,
+    CATMAID.Annotations.on(CATMAID.Annotations.EVENT_ANNOTATIONS_DELETED,
+        this.removeAll, this);
+    CATMAID.Annotations.on(CATMAID.Annotations.EVENT_ANNOTATIONS_CHANGED,
         this._handleChangedAnnotations, this);
   };
 
   AnnotationCache.prototype.destroy = function() {
-    CATMAID.Annoations.off(CATMAID.EVENT_ANNOTATIONS_DELETED, this.removeAll, this);
-    CATMAID.Annoations.off(CATMAID.EVENT_ANNOTATIONS_CHANGED,
+    CATMAID.Annoations.off(CATMAID.Annotations.EVENT_ANNOTATIONS_DELETED,
+        this.removeAll, this);
+    CATMAID.Annoations.off(CATMAID.Annotations.EVENT_ANNOTATIONS_CHANGED,
         this._handleChangedAnnotations, this);
   };
 

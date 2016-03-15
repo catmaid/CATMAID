@@ -1594,18 +1594,27 @@ SkeletonAnnotations.TracingOverlay.prototype.createSingleConnector = function (
     phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, confval, subtype, completionCallback)
 {
   var self = this;
-  var exec = CATMAID.commands.execute(
+  // Suspend this layer from updates while this connector is created. It is
+  // updated and unsuspended after the connector was created (or in the case of
+  // error). This is done to manually update the internal nodes array as an
+  // optimization prior to sending the update event.
+  var originalSuspended = this.suspended;
+  this.suspended = true;
+
+  // Create connector
+  var createConnector = CATMAID.commands.execute(
       new CATMAID.CreateConnectorCommand(project.id,
         phys_x, phys_y, phys_z, confval));
-  return exec.then(function(result) {
+  return createConnector.then(function(result) {
     // add treenode to the display and update it
     var nn = self.graphics.newConnectorNode(result.newConnectorId, pos_x, pos_y,
         pos_z, 0, 5 /* confidence */, subtype, true);
     self.nodes[result.newConnectorId] = nn;
     nn.createGraphics();
-    // Emit new node event after we added to our local node set to not
-    // trigger a node update.
-    SkeletonAnnotations.trigger(SkeletonAnnotations.EVENT_NODE_CREATED,
+    // Activate layer and emit new node event after we added to our local node
+    // set to not trigger a node update.
+    self.suspended = originalSuspended;
+    CATMAID.Connectors.trigger(CATMAID.Connectors.EVENT_CONNECTOR_CREATED,
         result.newConnectorId, phys_x, phys_y, phys_z);
 
     self.activateNode(nn);
@@ -1614,7 +1623,10 @@ SkeletonAnnotations.TracingOverlay.prototype.createSingleConnector = function (
     }
 
     return result.newConnectorId;
-  }).catch(CATMAID.handleError);
+  }).catch(function(error) {
+    self.suspended = originalSuspended;
+    CATMAID.handleError(error);
+  });
 };
 
 /**
@@ -1730,6 +1742,13 @@ SkeletonAnnotations.TracingOverlay.prototype.createNode = function (parentID, ch
 
   var self = this;
 
+  // Suspend layer to avoid potentially expecnsive updateNodes() call. An event
+  // is triggered manually after the nodes array was updated by hand. Right
+  // before this, the tracing layer is activated again. In case of error, the
+  // layer is also activated again.
+  var originalSuspended = this.suspended;
+  this.suspended = true;
+
   var command = childId ?
     new CATMAID.InsertNodeCommand(project.id, phys_x, phys_y,
       phys_z, parentID, childId, radius, confidence, useneuron) :
@@ -1750,9 +1769,9 @@ SkeletonAnnotations.TracingOverlay.prototype.createNode = function (parentID, ch
       self.nodes[nid] = nn;
       nn.createGraphics();
 
-      // Emit new node event after we added to our local node set to not
-      // trigger a node update.
-      // TODO: Move to model
+      // Reset layer activation and emit new node event after we added to our
+      // local node set to not trigger a node update.
+      self.suspended = originalSuspended;
       CATMAID.Nodes.trigger(CATMAID.Nodes.EVENT_NODE_CREATED,
           nid, phys_x, phys_y, phys_z);
 
@@ -1769,7 +1788,11 @@ SkeletonAnnotations.TracingOverlay.prototype.createNode = function (parentID, ch
 
       // Invoke callback if necessary
       if (afterCreate) afterCreate(self, nn);
-    });
+    })
+  .catch(function(error) {
+    self.suspended = originalSuspended;
+    CATMAID.handleError(error);
+  });
 };
 
 /**

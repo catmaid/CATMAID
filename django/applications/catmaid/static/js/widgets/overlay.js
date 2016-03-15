@@ -611,7 +611,7 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, options) {
     this.handleChangedSkeleton, this);
   CATMAID.Skeletons.on(CATMAID.Skeletons.EVENT_SKELETON_DELETED,
     this.handleDeletedSkeleton, this);
-  CATMAID.Nodes.on(SkeletonAnnotations.EVENT_NODE_CREATED,
+  CATMAID.Nodes.on(CATMAID.Nodes.EVENT_NODE_CREATED,
       this.handleNewNode, this);
   CATMAID.Connectors.on(CATMAID.Connectors.EVENT_CONNECTOR_CREATED,
       this.handleNewNode, this);

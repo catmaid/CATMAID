@@ -436,7 +436,7 @@ def most_recent_treenode(request, project_id=None):
     }), content_type='application/json')
 
 
-def _update(Kind, table, nodes, now, user):
+def _update(Kind, table, nodes, now, user, return_old):
     if not nodes:
         return
     # 0: id
@@ -444,13 +444,21 @@ def _update(Kind, table, nodes, now, user):
     # 2: Y
     # 3: Z
     can_edit_all_or_fail(user, (node[0] for node in nodes.itervalues()), table)
+    old_values = [] if return_old else None
+
     for node in nodes.itervalues():
-        Kind.objects.filter(id=int(node[0])).update(
-            editor=user,
-            edition_time=now,
-            location_x=float(node[1]),
-            location_y=float(node[2]),
-            location_z=float(node[3]))
+        instance = Kind.objects.get(id=int(node[0]))
+        if return_old:
+            old_values.append((instance.id, instance.location_x,
+                instance.location_y, instance.location_z))
+        instance.editor=user
+        instance.edition_time=now
+        instance.location_x=float(node[1])
+        instance.location_y=float(node[2])
+        instance.location_z=float(node[3])
+        instance.save()
+
+    return old_values
 
 
 @requires_user_role(UserRole.Annotate)
@@ -472,11 +480,15 @@ def node_update(request, project_id=None):
         node[j] = value
 
     now = timezone.now()
-    _update(Treenode, 'treenode', nodes['t'], now, request.user)
-    _update(Connector, 'connector', nodes['c'], now, request.user)
+    old_treenodes = _update(Treenode, 'treenode', nodes['t'], now, request.user, True)
+    old_connectors = _update(Connector, 'connector', nodes['c'], now, request.user, True)
 
     num_updated_nodes = len(nodes['t'].keys()) + len(nodes['c'].keys())
-    return HttpResponse(json.dumps({'updated': num_updated_nodes}))
+    return HttpResponse(json.dumps({
+        'updated': num_updated_nodes,
+        'old_treenodes': old_treenodes,
+        'old_connectors': old_connectors
+    }))
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])

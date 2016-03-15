@@ -202,13 +202,49 @@
 
           return result;
         });
+    },
+
+    /**
+     * Update location of multiple treenodes and multiple connectors.
+     *
+     * @param {integer[]} treenodes  The list of four-element list each
+     *                               containing a treenode ID and 3D location.
+     * @param {integer[]} connectors The list of four-element list each
+     *                               containing a connector ID and 3D location.
+     *
+     * @returns a promise resolving after the update succeeded
+     */
+    update: function(projectId, treenodes, connectors) {
+      CATMAID.requirePermission(projectId, 'can_annotate',
+          'You don\'t have have permission to update nodes');
+
+      var url = projectId + '/node/update';
+      var params = {
+        t: treenodes,
+        c: connectors
+      };
+      return CATMAID.fetch(url, 'POST', params)
+        .then(function(result) {
+          if (result.old_treenodes) {
+            result.old_treenodes.forEach(announceNodeUpdate);
+          }
+          if (result.old_connectors) {
+            result.old_connectors.forEach(announceNodeUpdate);
+          }
+          return result;
+        });
     }
 
   };
 
+  function announceNodeUpdate(node) {
+    CATMAID.Nodes.trigger(CATMAID.Nodes.EVENT_NODE_UPDATED, node[0]);
+  }
+
   // If annotations are deleted entirely
   Nodes.EVENT_NODE_CONFIDENCE_CHANGED = "node_confidence_changed";
   Nodes.EVENT_NODE_CREATED = "node_created";
+  Nodes.EVENT_NODE_UPDATED = "node_updated";
   CATMAID.asEventSource(Nodes);
 
   // Export nodes
@@ -454,6 +490,71 @@
 
     var title = "Inset new node between parent #" + parentId + " and child #" +
         childId + " at (" + x + ", " + y + ", " + z + ")";
+
+    this.init(title, exec, undo);
+  });
+
+  /**
+   * Map a node update list (list of four-element list with the first being the
+   * node ID. The context is expected to be a CommandStore.
+   */
+  function mapNodeUpdateList(node) {
+    /* jshint validthis: true */ // "this" has to be a CommandStore instance
+    return [this.get(this.NODE, node[0]), node[1], node[2], node[3]];
+  }
+
+  /**
+   * Map a connector update list (list of four-element list with the first being
+   * the node ID. The context is expected to be a CommandStore.
+   */
+  function mapConnectorUpdateList(node) {
+    /* jshint validthis: true */ // "this" has to be a CommandStore instance
+    return [this.get(this.CONNECTOR, node[0]), node[1], node[2], node[3]];
+  }
+
+  /**
+   * Update one or more treenodes and connectors.
+   */
+  CATMAID.UpdateNodesCommand = CATMAID.makeCommand(
+      function(projectId, treenodes, connectors) {
+    var exec = function(done, command, map) {
+      var mTreenodes = treenodes ?  treenodes.map(mapNodeUpdateList, map) : undefined;
+      var mConnectors = connectors ? connectors.map(mapConnectorUpdateList, map) : undefined;
+      var update = CATMAID.Nodes.update(projectId, mTreenodes, mConnectors);
+      return update.then(function(result) {
+        // Save updated nodes with their old positions
+        command.store('old_treenodes', result.old_treenodes);
+        command.store('old_connectors', result.old_connectors);
+        done();
+        return result;
+      });
+    };
+
+    var undo = function(done, command, map) {
+      var old_treenodes = command.get('old_treenodes');
+      var old_connectors = command.get('old_connectors');
+      var mTreenodes = old_treenodes ? old_treenodes.map(mapNodeUpdateList, map) : undefined; 
+      var mConnectors = old_connectors ? old_connectors.map(mapConnectorUpdateList, map) : undefined;
+      var update = CATMAID.Nodes.update(projectId, mTreenodes, mConnectors);
+      return update.then(function(result) {
+        done();
+        return result;
+      });
+    };
+
+    var nTreenodes = treenodes ? treenodes.length : 0;
+    var nConnectors = connectors ? connectors.length : 0;
+    var title;
+    if (nTreenodes > 0 && nConnectors > 0) {
+      title = "Update " + nTreenodes + " treenode(s) and " +
+        nConnectors + " connectors";
+    } else if (nTreenodes > 0) {
+      title = "Update " + nTreenodes + " treenode(s)";
+    } else if (nConnectors > 0) {
+      title = "Update " + nConnectors + " connector(s)";
+    } else {
+      title = "No-op: update no treenods and connectors";
+    }
 
     this.init(title, exec, undo);
   });

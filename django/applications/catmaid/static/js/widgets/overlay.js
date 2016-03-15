@@ -613,6 +613,8 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, options) {
     this.handleDeletedSkeleton, this);
   CATMAID.Nodes.on(CATMAID.Nodes.EVENT_NODE_CREATED,
       this.handleNewNode, this);
+  CATMAID.Nodes.on(CATMAID.Nodes.EVENT_NODE_UPDATED,
+      this.handleNodeChange, this);
   CATMAID.Connectors.on(CATMAID.Connectors.EVENT_CONNECTOR_CREATED,
       this.handleNewNode, this);
   CATMAID.Connectors.on(CATMAID.Connectors.EVENT_CONNECTOR_REMOVED,
@@ -949,6 +951,8 @@ SkeletonAnnotations.TracingOverlay.prototype.destroy = function() {
       this.handleDeletedSkeleton, this);
   CATMAID.Nodes.off(CATMAID.Nodes.EVENT_NODE_CREATED,
       this.handleNewNode, this);
+  CATMAID.Nodes.off(CATMAID.Nodes.EVENT_NODE_UPDATED,
+      this.handleNodeChange, this);
   CATMAID.Connectors.off(CATMAID.Connectors.EVENT_CONNECTOR_CREATED,
       this.handleNewNode, this);
   CATMAID.Connectors.off(CATMAID.Connectors.EVENT_CONNECTOR_REMOVED,
@@ -1817,34 +1821,28 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodeCoordinatesInDB = functio
    * synced.
    */
   function promiseUpdate() {
+    var update = {treenode: [],
+                  connector: []};
     /* jshint validthis: true */ // "this" will be bound to the tracing overlay
-    return new Promise((function(resolve, reject) {
-      var update = {treenode: [],
-                    connector: []};
-      var nodeIDs = Object.keys(this.nodes);
-      for (var i = 0; i < nodeIDs.length; ++i) {
-        var node = this.nodes[nodeIDs[i]];
-        // only updated nodes that need sync, e.g.  when they changed position
-        if (node.needsync && SkeletonAnnotations.isRealNode(node.id)) {
-          node.needsync = false;
-          update[node.type].push([node.id,
-                                  this.pix2physX(node.z, node.y, node.x),
-                                  this.pix2physY(node.z, node.y, node.x),
-                                  this.pix2physZ(node.z, node.y, node.x)]);
-        }
+    var nodeIDs = Object.keys(this.nodes);
+    for (var i = 0; i < nodeIDs.length; ++i) {
+      var node = this.nodes[nodeIDs[i]];
+      // only updated nodes that need sync, e.g.  when they changed position
+      if (node.needsync && SkeletonAnnotations.isRealNode(node.id)) {
+        node.needsync = false;
+        update[node.type].push([node.id,
+                                this.pix2physX(node.z, node.y, node.x),
+                                this.pix2physY(node.z, node.y, node.x),
+                                this.pix2physZ(node.z, node.y, node.x)]);
       }
-      if (update.treenode.length > 0 || update.connector.length > 0) {
-        requestQueue.register(
-            django_url + project.id + '/node/update', 'POST',
-            {
-              t: update.treenode,
-              c: update.connector
-            },
-            CATMAID.jsonResponseHandler(resolve, reject));
-      } else {
-        resolve(0);
-      }
-    }).bind(this));
+    }
+    if (update.treenode.length > 0 || update.connector.length > 0) {
+      var command = new CATMAID.UpdateNodesCommand(project.id,
+          update.treenode, update.connector);
+      return CATMAID.commands.execute(command);
+    } else {
+      return Promise.resolve(0);
+    }
   }
 
   // Queue update of real nodes as a promise

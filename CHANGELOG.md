@@ -131,7 +131,7 @@ Undo:
 
 - The following actions are recorded into history: tag add/remove/edit,
   annotation add/remove/edit, node radius edit, neuron rename, confidence
-  change, connector link/unlink and node add/insert/remove.
+  change, connector link/unlink and node add/insert/move/remove/.
 
 
 Miscellaneous:

@@ -406,4 +406,51 @@
     this.init(title, exec, undo);
   });
 
+  /**
+   * Insert a new treenode in a skeleton, optionally between two nodes. If no
+   * parent is given, a new skeleton is created. This action is reversible.
+   *
+   * @param {integer} projectId  The project space to create the node in
+   * @param {number}  x          The X coordinate of the node's location
+   * @param {number}  y          The Y coordinate of the node's location
+   * @param {number}  z          The Z coordinate of the node's location
+   * @param {integer} parentId   Id of the parent node of the new node
+   * @param {integer} childId    Id of child to insert in edge
+   * @param {number}  radius     (Optional) Radius of the new node
+   * @param {integer} confidence (Optional) Confidence of edge to parent
+   * @param {integer} useNeuron  (Optional) Target neuron ID to double check
+   *
+   * @returns a promise that is resolved once the treenode is created
+   */
+  CATMAID.InsertNodeCommand = CATMAID.makeCommand(function(
+      projectId, x, y, z, parentId, childId, radius, confidence, useNeuron) {
+
+    var exec = function(done, command, map) {
+      // Get current, mapped version of parent and child ID
+      var mParentId = map.get(map.NODE, parentId);
+      var mChildId = map.get(map.NODE, childId);
+      var insert = CATMAID.Nodes.insert(projectId, x, y, z, mParentId, mChildId,
+          radius, confidence, useNeuron);
+      return insert.then(function(result) {
+        // Store ID of new node created by this command
+        map.add(map.NODE, result.treenode_id, command);
+        command.store('nodeId', result.treenode_id);
+        done();
+        return result;
+      });
+    };
+
+    var undo = function(done, command, map) {
+      var nodeId = map.get(map.NODE, command.get('nodeId'));
+      command.validateForUndo(projectId, nodeId);
+      var removeNode = CATMAID.Nodes.remove(projectId, nodeId);
+      return removeNode.then(done);
+    };
+
+    var title = "Inset new node between parent #" + parentId + " and child #" +
+        childId + " at (" + x + ", " + y + ", " + z + ")";
+
+    this.init(title, exec, undo);
+  });
+
 })(CATMAID);

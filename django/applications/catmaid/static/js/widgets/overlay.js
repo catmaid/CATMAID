@@ -688,8 +688,9 @@ SkeletonAnnotations.TracingOverlay.prototype.promiseNode = function(node)
     var y = self.stackViewer.primaryStack.stackToProjectY(node.z, node.y, node.x);
     var z = self.stackViewer.primaryStack.stackToProjectZ(node.z, node.y, node.x);
 
-    return CATMAID.Nodes.insert(project.id, x, y, z, node.parent_id,
-        childId, node.radius, node.confidence)
+    var command = new CATMAID.InsertNodeCommand(project.id, x, y, z, node.parent_id,
+        childId, node.radius, node.confidence);
+    return CATMAID.commands.execute(command)
       .then(function(result) {
         var nid = result.treenode_id;
         CATMAID.statusBar.replaceLast("Created new node node #" + nid +
@@ -1244,25 +1245,12 @@ SkeletonAnnotations.TracingOverlay.prototype.insertNodeInActiveSkeleton = functi
     var insertion = this.findNearestSkeletonPoint(phys_x, phys_y, phys_z,
         atn.skeleton_id, additionalNodes, respectVirtualNodes);
     if (insertion.node) {
-
       // Make sure both the insertion node and its parent exist
       this.promiseNodes(insertion.node, insertion.node.parent)
         .then((function(nids) {
-          var isection = nids[0];
-          var isectionParent = nids[1];
-          this.createNode(isectionParent, phys_x, phys_y, phys_z,
+          this.createNode(nids[1], nids[0], phys_x, phys_y, phys_z,
             -1, 5, this.phys2pixX(phys_x), this.phys2pixY(phys_y),
-            this.phys2pixZ(phys_z), function (self, nn) {
-              // Callback after creating the new node to make it the parent of the node
-              // it was inserted before
-              self.submit(
-                django_url + project.id + '/treenode/' + isection + '/parent',
-                'POST',
-                {parent_id: nn.id},
-                function(json) {
-                  self.updateNodes();
-                });
-            });
+            this.phys2pixZ(phys_z));
           }).bind(this));
     }
   }).bind(this);
@@ -1725,9 +1713,10 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeWithLink = function (
 
 /**
  * Create a node and activate it. Expectes the parent node to be real or falsy,
- * i.e. not virtual.
+ * i.e. not virtual. If a child ID is passed in, a new node is created between
+ * this child and the parend node.
  */
-SkeletonAnnotations.TracingOverlay.prototype.createNode = function (parentID,
+SkeletonAnnotations.TracingOverlay.prototype.createNode = function (parentID, childId,
    phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z, afterCreate)
 {
   if (!parentID) { parentID = -1; }
@@ -1739,7 +1728,10 @@ SkeletonAnnotations.TracingOverlay.prototype.createNode = function (parentID,
 
   var self = this;
 
-  var command = new CATMAID.CreateNodeCommand(project.id, phys_x, phys_y,
+  var command = childId ?
+    new CATMAID.InsertNodeCommand(project.id, phys_x, phys_y,
+      phys_z, parentID, childId, radius, confidence, useneuron) :
+    new CATMAID.CreateNodeCommand(project.id, phys_x, phys_y,
       phys_z, parentID, radius, confidence, useneuron, neuronname);
   return CATMAID.commands.execute(command)
     .then(function(result) {
@@ -2348,13 +2340,13 @@ SkeletonAnnotations.TracingOverlay.prototype.createNodeOrLink = function(insert,
               // Make sure the parent exists
               SkeletonAnnotations.atn.promise().then((function(atnId) {
                 CATMAID.statusBar.replaceLast("Created new node as child of node #" + atnId);
-                self.createNode(atnId, phys_x, phys_y, phys_z, -1, 5,
+                self.createNode(atnId, null, phys_x, phys_y, phys_z, -1, 5,
                     pos_x, pos_y, pos_z, postCreateFn).then(resolve, reject);
               }));
             });
           } else {
             // Create root node
-            return this.createNode(null, phys_x, phys_y, phys_z, -1, 5,
+            return this.createNode(null, null, phys_x, phys_y, phys_z, -1, 5,
                 pos_x, pos_y, pos_z, postCreateFn);
           }
         }).bind(this));

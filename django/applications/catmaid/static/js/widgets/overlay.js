@@ -947,7 +947,7 @@ SkeletonAnnotations.TracingOverlay.prototype.destroy = function() {
       this.handleChangedSkeleton, this);
   CATMAID.Skeletons.off(CATMAID.Skeletons.EVENT_SKELETON_DELETED,
       this.handleDeletedSkeleton, this);
-  CATMAID.Neurons.off(CATMAID.Neurons.EVENT_NODE_CREATED,
+  CATMAID.Nodes.off(CATMAID.Nodes.EVENT_NODE_CREATED,
       this.handleNewNode, this);
   CATMAID.Connectors.off(CATMAID.Connectors.EVENT_CONNECTOR_CREATED,
       this.handleNewNode, this);

@@ -3214,6 +3214,12 @@ var WindowMaker = new function()
         keysHTML += '<h4>Tool-specific Key Help</h4>';
         keysHTML += getHelpForActions(tool.getActions());
       }
+
+      if (tool.hasOwnProperty('getUndoHelp')) {
+        keysHTML += '<h4>Undo help</h4>';
+        keysHTML += tool.getUndoHelp();
+      }
+
     }
     keysHTML += '</p>';
 

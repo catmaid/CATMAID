@@ -1096,6 +1096,16 @@
       }
     };
 
+    this.getUndoHelp = function(e) {
+      var result = '<p>The following actions can be undone by pressing <kbd>Ctrl</kbd> + <kbd>Z</kbd> or opening the command history:</p><ul>';
+      result += "<li>Add/insert/remove nodes and edit their radius, confidence</li>";
+      result += "<li>Add/remove connectors, edit their confidence as well as links to/from them</li>";
+      result += "<li>Add/remove/edit annotations, tags</li>";
+      result += "<li>Change neuron name</li>";
+      result += "</ul>";
+      return result;
+    };
+
     this.getMouseHelp = function(e) {
       var result = self.prototype.getMouseHelp();
       result += '<ul>';

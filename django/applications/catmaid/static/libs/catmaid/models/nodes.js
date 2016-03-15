@@ -90,6 +90,26 @@
     },
 
     /**
+     * Override the parent of a particular node.
+     */
+    updateParent: function(projectId, nodeId, newParentId) {
+      CATMAID.requirePermission(projectId, 'can_annotate',
+          'You don\'t have have permission to change node');
+
+      var url = projectId + '/treenode/' + nodeId + '/parent';
+      var params = {
+        parent_id: newParentId
+      };
+
+      return CATMAID.fetch(url, 'POST', params)
+        .then(function(result) {
+          CATMAID.Skeletons.trigger(CATMAID.Skeletons.EVENT_SKELETON_CHANGED,
+              result.skeleton_id);
+          return result;
+        });
+    },
+
+    /**
      * Create a new treenode in a skeleton. If no parent is given, a new
      * skeleton is created.
      *

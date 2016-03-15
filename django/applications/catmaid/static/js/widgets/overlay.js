@@ -54,7 +54,6 @@ var SkeletonAnnotations = {
 
   // Event name constants
   EVENT_ACTIVE_NODE_CHANGED: "tracing_active_node_changed",
-  EVENT_SKELETON_CHANGED: "tracing_skeleton_changed",
   EVENT_NODE_CREATED: "tracing_node_Create"
 
 };
@@ -1703,8 +1702,6 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeWithLink = function (
         // Emit node creation and  skeleton change events
         SkeletonAnnotations.trigger(SkeletonAnnotations.EVENT_NODE_CREATED,
             jso.nid, phys_x, phys_y, phys_z);
-        SkeletonAnnotations.trigger(SkeletonAnnotations.EVENT_SKELETON_CHANGED,
-            node.skeleton_id);
 
         if (afterCreate) afterCreate(self, node);
       });
@@ -1738,10 +1735,6 @@ SkeletonAnnotations.TracingOverlay.prototype.createNode = function (parentID, ch
       // add treenode to the display and update it
       var nid = parseInt(result.treenode_id);
       var skid = parseInt(result.skeleton_id);
-
-      // Trigger change event for skeleton
-      SkeletonAnnotations.trigger(
-            SkeletonAnnotations.EVENT_SKELETON_CHANGED, skid);
 
       // The parent will be null if there isn't one or if the parent Node
       // object is not within the set of retrieved nodes, but the parentID

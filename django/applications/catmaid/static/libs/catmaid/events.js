@@ -23,6 +23,13 @@
      * in the callback), otherwise the event object is used as context.
      */
     on: function(event, callback, context) {
+      // Reject falsy callbacks and events
+      if (!event) {
+        throw new CATMAID.ValueError("Event not valid");
+      }
+      if (!callback) {
+        throw new CATMAID.ValueError("Callback not valid");
+      }
       // Initialize event map on first use
       if (!this.hasOwnProperty('events')) {
         this.events = new Map();
@@ -42,6 +49,13 @@
      * should be supplied to only remove the handler use in question.
      */
     off: function(event, callback, context) {
+      // Reject falsy callbacks and events
+      if (!event) {
+        throw new CATMAID.ValueError("Event not valid");
+      }
+      if (!callback) {
+        throw new CATMAID.ValueError("Callback not valid");
+      }
       if (this.hasOwnProperty('events') && this.events.has(event)) {
         var indexes = [];
         var listeners = this.events.get(event);

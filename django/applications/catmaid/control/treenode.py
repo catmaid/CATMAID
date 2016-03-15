@@ -315,7 +315,12 @@ def update_parent(request, project_id=None, treenode_id=None):
     child.parent_id = parent_id
     child.save()
 
-    return HttpResponse(json.dumps({'success': True}))
+    return JsonResponse({
+        'success': True,
+        'node_id': child.id,
+        'parent_id': child.parent_id,
+        'skeleton_id': child.skeleton_id
+    })
 
 def update_node_radii(node_ids, radii, cursor=None):
     """Update radius of a list of nodes, returns old radii.

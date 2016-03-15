@@ -374,6 +374,14 @@
   });
 
   /**
+   * Map a single node ID. The context is expected to be a CommandStore.
+   */
+  function mapNodeId(nodeId) {
+    /* jshint validthis: true */ // "this" has to be a CommandStore instance
+    return this.get(this.NODE, nodeId);
+  }
+
+  /**
    * Remove a node in an undoable fashion.
    *
    * @param {integer} projectId Project the node to remove is part of
@@ -394,6 +402,7 @@
         command.store('y', result.y);
         command.store('z', result.z);
         command.store('parentId', result.parent_id);
+        command.store('childIds', result.child_ids);
         command.store('radius', result.radius);
         command.store('confidence', result.confidence);
         done();
@@ -402,21 +411,42 @@
     };
 
     var undo = function(done, command, map) {
-      // make sure we get the current ID of the parent, which could have been
-      // modified through a redo operation.
-      var parentId = map.get(map.NODE, command.get('parentId'));
+      // Make sure we get the current IDs of the parent and former children,
+      // which could have been modified through a redo operation.
+      var mParentId = map.get(map.NODE, command.get('parentId'));
       // Obtain other parameters and validate
       var radius = command.get('radius');
       var confidence = command.get('confidence');
       var x = command.get('x'), y = command.get('y'), z = command.get('z');
-      command.validateForUndo(confidence, parentId, x, y, z);
+      command.validateForUndo(confidence, mParentId, x, y, z);
 
-      var create = CATMAID.Nodes.create(projectId, x, y, z, parentId, radius, confidence);
+      // Get IDs of previous children and map them to their current values
+      var mChildIds = command.get('childIds').map(mapNodeId, map);
+
+      // If there were child nodes before the removal, link to them again.
+      var create;
+      if (0 === mChildIds.length) {
+        create = CATMAID.Nodes.create(projectId, x, y, z, mParentId, radius, confidence);
+      } else {
+        // Insert the node between parent and (first) child
+        create = CATMAID.Nodes.insert(projectId, x, y, z, mParentId, mChildIds.shift(), radius, confidence);
+      }
       return create.then(function(result) {
         // Store ID of new node created by this command
         map.add(map.NODE, result.treenode_id, command);
-        return result;
-      }).then(done);
+        var results = [result];
+        // If there are more children, link them as well
+        while (0 < mChildIds.length) {
+          var childId = mChildIds.shift();
+          var promise = CATMAID.Nodes.updateParent(projectId, childId, result.treenode_id);
+          results.push(promise);
+        }
+        return Promise.all(results);
+      }).then(function(results) {
+        done();
+        // Return result of actual node creation
+        return results[0];
+      });
     };
 
     var title = "Remove node #" + nodeId;

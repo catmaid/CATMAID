@@ -497,6 +497,7 @@ def delete_treenode(request, project_id=None):
     deleted_neuron = False
     try:
         if not parent_id:
+            child_ids = []
             # This treenode is root.
             response_on_error = 'Could not retrieve children for ' \
                 'treenode #%s' % treenode_id
@@ -544,23 +545,24 @@ def delete_treenode(request, project_id=None):
             # Treenode is not root, it has a parent and perhaps children.
             # Reconnect all the children to the parent.
             response_on_error = 'Could not update parent id of children nodes'
-            Treenode.objects.filter(parent=treenode) \
-                .update(parent=treenode.parent)
+            child_ids = list(Treenode.objects.filter(parent=treenode).values_list('id', flat=True))
+            Treenode.objects.filter(id__in=child_ids).update(parent=treenode.parent)
 
         # Remove treenode
         response_on_error = 'Could not delete treenode.'
         Treenode.objects.filter(pk=treenode_id).delete()
-        return HttpResponse(json.dumps({
+        return JsonResponse({
             'x': treenode.location_x,
             'y': treenode.location_y,
             'z': treenode.location_z,
             'parent_id': parent_id,
+            'child_ids': child_ids,
             'radius': treenode.radius,
             'confidence': treenode.confidence,
             'skeleton_id': treenode.skeleton_id,
             'deleted_neuron': deleted_neuron,
             'success': "Removed treenode successfully."
-        }))
+        })
 
     except Exception as e:
         raise Exception(response_on_error + ': ' + str(e))

@@ -67,6 +67,9 @@
      *          successfully updated.
      */
     updateConfidence: function(projectId, nodeId, newConfidence, toConnector, partnerId) {
+      CATMAID.requirePermission(projectId, 'can_annotate',
+          'You don\'t have have permission to change the node confidence');
+
       var url = projectId + '/treenodes/' + nodeId + '/confidence';
       var params = {
         to_connector: toConnector,

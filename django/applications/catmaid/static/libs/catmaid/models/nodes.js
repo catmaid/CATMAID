@@ -138,6 +138,7 @@
      * @param {integer} childId    Id of child to insert in edge
      * @param {number}  radius     (Optional) Radius of the new node
      * @param {integer} confidence (Optional) Confidence of edge to parent
+     * @param {integer} useNeuron  (Optional) Target neuron ID to double check
      *
      * @returns a promise that is resolved once the treenode is created
      */
@@ -147,14 +148,14 @@
 
       var url = projectId + '/treenode/insert';
       var params = {
-        parent_id: node.parent_id,
+        parent_id: parentId,
         child_id: childId,
         x: x,
         y: y,
         z: z,
-        radius: node.radius,
-        confidence: node.confidence,
-        useneuron: node.useneuron
+        radius: radius,
+        confidence: confidence,
+        useneuron: useNeuron
       };
 
       return CATMAID.fetch(url, 'POST', params)

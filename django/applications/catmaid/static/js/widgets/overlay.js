@@ -615,6 +615,10 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, options) {
       this.handleNewNode, this);
   CATMAID.Connectors.on(CATMAID.Connectors.EVENT_CONNECTOR_CREATED,
       this.handleNewNode, this);
+  CATMAID.Connectors.on(CATMAID.Connectors.EVENT_LINK_CREATED,
+      this.simpleUpdateNodes, this);
+  CATMAID.Connectors.on(CATMAID.Connectors.EVENT_LINK_REMOVED,
+      this.simpleUpdateNodes, this);
 
   // Listen to active node change events
   SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
@@ -945,6 +949,10 @@ SkeletonAnnotations.TracingOverlay.prototype.destroy = function() {
       this.handleNewNode, this);
   CATMAID.Connectors.off(CATMAID.Connectors.EVENT_CONNECTOR_CREATED,
       this.handleNewNode, this);
+  CATMAID.Connectors.off(CATMAID.Connectors.EVENT_LINK_CREATED,
+      this.simpleUpdateNodes, this);
+  CATMAID.Connectors.off(CATMAID.Connectors.EVENT_LINK_REMOVED,
+      this.simpleUpdateNodes, this);
 
   SkeletonAnnotations.off(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
       this.handleActiveNodeChange, this);
@@ -2465,6 +2473,14 @@ SkeletonAnnotations.TracingOverlay.prototype.show = function () {
 
 SkeletonAnnotations.TracingOverlay.prototype.hide = function () {
   this.view.style.display = "none";
+};
+
+/**
+ * A wrapper around updateNodes without arguments that can be passed around
+ * easier.
+ */
+SkeletonAnnotations.TracingOverlay.prototype.simpleUpdateNodes = function () {
+  this.updateNodes();
 };
 
 /**

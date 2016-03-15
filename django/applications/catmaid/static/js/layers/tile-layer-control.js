@@ -160,7 +160,7 @@
         var settings = layer.getLayerSettings();
         if (0 < settings.length) {
           var layerSettings = $('<div />');
-          for (var i; i<settings.length; ++i) {
+          for (var i=0; i<settings.length; ++i) {
             var setting = settings[i];
             var settingElement = $('<div />').addClass('setting');
             var label = $('<label />').append(setting.displayName);

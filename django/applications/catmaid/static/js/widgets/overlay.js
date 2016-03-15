@@ -615,6 +615,8 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, options) {
       this.handleNewNode, this);
   CATMAID.Connectors.on(CATMAID.Connectors.EVENT_CONNECTOR_CREATED,
       this.handleNewNode, this);
+  CATMAID.Connectors.on(CATMAID.Connectors.EVENT_CONNECTOR_REMOVED,
+      this.handleNodeChange, this);
   CATMAID.Connectors.on(CATMAID.Connectors.EVENT_LINK_CREATED,
       this.simpleUpdateNodes, this);
   CATMAID.Connectors.on(CATMAID.Connectors.EVENT_LINK_REMOVED,
@@ -949,6 +951,8 @@ SkeletonAnnotations.TracingOverlay.prototype.destroy = function() {
       this.handleNewNode, this);
   CATMAID.Connectors.off(CATMAID.Connectors.EVENT_CONNECTOR_CREATED,
       this.handleNewNode, this);
+  CATMAID.Connectors.off(CATMAID.Connectors.EVENT_CONNECTOR_REMOVED,
+      this.handleNodeChange, this);
   CATMAID.Connectors.off(CATMAID.Connectors.EVENT_LINK_CREATED,
       this.simpleUpdateNodes, this);
   CATMAID.Connectors.off(CATMAID.Connectors.EVENT_LINK_REMOVED,

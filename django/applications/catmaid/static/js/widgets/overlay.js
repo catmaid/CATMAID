@@ -2228,12 +2228,6 @@ SkeletonAnnotations.TracingOverlay.prototype.whenclicked = function (e) {
 
   var m = CATMAID.ui.getMouse(e, this.view);
 
-  if (!mayEdit()) {
-    CATMAID.statusBar.replaceLast("You don't have permission.");
-    e.stopPropagation();
-    return;
-  }
-
   var handled = false;
   var atn = SkeletonAnnotations.atn;
   var insert = e.altKey && e.ctrlKey;
@@ -2250,6 +2244,11 @@ SkeletonAnnotations.TracingOverlay.prototype.whenclicked = function (e) {
     this.activateNode(null);
     handled = true;
   } else {
+    if (!mayEdit()) {
+      CATMAID.statusBar.replaceLast("You don't have permission.");
+      e.stopPropagation();
+      return;
+    }
     handled = this.createNodeOrLink(insert, link, postLink);
   }
 

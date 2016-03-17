@@ -1598,7 +1598,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createLink = function (fromid, toid
         if (result.warning) CATMAID.warn(result.warning);
         self.updateNodes(afterCreate);
       });
-    });
+    }, CATMAID.handleError);
   });
 };
 
@@ -2385,7 +2385,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createNodeOrLink = function(insert,
             return this.createNode(null, null, phys_x, phys_y, phys_z, -1, 5,
                 pos_x, pos_y, pos_z, postCreateFn);
           }
-        }).bind(this));
+        }).bind(this), CATMAID.handleError);
       } else if (SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR === atn.subtype) {
         // create new treenode (and skeleton) presynaptic to activated connector
         // if the connector doesn't have a presynaptic node already
@@ -3806,7 +3806,7 @@ SkeletonAnnotations.TracingOverlay.prototype.deleteNode = function(nodeId) {
 
           CATMAID.statusBar.replaceLast("Deleted connector #" + cID);
         });
-    });
+    }, CATMAID.handleError);
   }
 
   /**
@@ -3846,7 +3846,7 @@ SkeletonAnnotations.TracingOverlay.prototype.deleteNode = function(nodeId) {
       }
       // Nodes are refreshed due to the change event the neuron controller emits
       CATMAID.statusBar.replaceLast("Deleted node #" + node.id);
-    });
+    }, CATMAID.handleError);
   }
 
   return true;

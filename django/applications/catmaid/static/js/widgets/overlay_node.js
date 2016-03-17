@@ -177,13 +177,16 @@
       zdiff,      // the difference in Z from the current slice in stack space
       confidence,
       skeleton_id,// the id of the skeleton this node is an element of
+      edition_time, // The last time this node was edited by a user
       can_edit)   // a boolean combining (is_superuser or user owns the node)
     {
       var node = this.cache.nodePool.next();
       if (node) {
-        node.reInit(id, parent, parent_id, radius, x, y, z, zdiff, confidence, skeleton_id, can_edit);
+        node.reInit(id, parent, parent_id, radius, x, y, z, zdiff, confidence,
+            skeleton_id, edition_time, can_edit);
       } else {
-        node = new this.Node(this.overlayGlobals, id, parent, parent_id, radius, x, y, z, zdiff, confidence, skeleton_id, can_edit, defSuffix);
+        node = new this.Node(this.overlayGlobals, id, parent, parent_id, radius,
+            x, y, z, zdiff, confidence, skeleton_id, edition_time, can_edit, defSuffix);
         this.cache.nodePool.push(node);
       }
       return node;
@@ -199,13 +202,15 @@
       zdiff,      // the difference in Z from the current slice in stack space
       confidence,
       subtype,
+      edition_time, // last time this connector wsa edited by a user
       can_edit)   // a boolean combining (is_superuser or user owns the node)
     {
       var connector = this.cache.connectorPool.next();
       if (connector) {
-        connector.reInit(id, x, y, z, zdiff, confidence, subtype, can_edit);
+        connector.reInit(id, x, y, z, zdiff, confidence, subtype, edition_time, can_edit);
       } else {
-        connector = new this.ConnectorNode(this.overlayGlobals, id, x, y, z, zdiff, confidence, subtype, can_edit, defSuffix);
+        connector = new this.ConnectorNode(this.overlayGlobals, id, x, y, z,
+            zdiff, confidence, subtype, edition_time, can_edit, defSuffix);
         connector.createArrow = this.createArrow;
         this.cache.connectorPool.push(connector);
       }
@@ -660,7 +665,7 @@
       };
 
       /** Reset all member variables and reposition SVG circles when existing. */
-      this.reInit = function(id, parent, parent_id, radius, x, y, z, zdiff, confidence, skeleton_id, can_edit) {
+      this.reInit = function(id, parent, parent_id, radius, x, y, z, zdiff, confidence, skeleton_id, edition_time, can_edit) {
         this.id = id;
         this.parent = parent;
         this.parent_id = parent_id;
@@ -674,6 +679,7 @@
         this.confidence = confidence;
         this.skeleton_id = skeleton_id;
         this.isroot = null === parent_id || isNaN(parent_id) || parseInt(parent_id) < 0;
+        this.edition_time = edition_time;
         this.can_edit = can_edit;
         this.needsync = false;
         delete this.suppressed;
@@ -851,6 +857,7 @@
       zdiff,      // the difference in z from the current slice
       confidence, // confidence with the parent
       skeleton_id,// the id of the skeleton this node is an element of
+      edition_time, // Last time this node was edited
       can_edit,   // whether the user can edit (move, remove) this node
       hrefSuffix) // a suffix that is appended to the ID of the referenced geometry
     {
@@ -1017,7 +1024,7 @@
         }
       };
 
-      this.reInit = function(id, x, y, z, zdiff, confidence, subtype, can_edit) {
+      this.reInit = function(id, x, y, z, zdiff, confidence, subtype, edition_time, can_edit) {
         this.id = id;
         this.x = x;
         this.y = y;
@@ -1025,6 +1032,7 @@
         this.zdiff = zdiff;
         this.confidence = confidence;
         this.subtype = subtype;
+        this.edition_time = edition_time;
         this.can_edit = can_edit;
         this.pregroup = {};
         this.postgroup = {};
@@ -1059,6 +1067,7 @@
       zdiff,      // the difference in Z from the current slice in stack space
       confidence, // (TODO: UNUSED)
       subtype,    // the kind of connector node
+      edition_time, // Last time this connector was edited
       can_edit,   // whether the logged in user has permissions to edit this node -- the server will in any case enforce permissions; this is for proper GUI flow
       hrefSuffix) // a suffix that is appended to the ID of the referenced geometry
     {

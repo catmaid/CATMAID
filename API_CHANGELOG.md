@@ -46,6 +46,9 @@ included in this changelog.
 - The response contains now detailed information about the removed connector,
   including its partners.
 
+`POST /{project_id}/node/list`:
+
+- Edition times of nodes and connectors are now returned as well.
 
 ### Deprecations
 

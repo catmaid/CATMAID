@@ -69,6 +69,7 @@ def get_treenodes_classic(cursor, params):
         t1.confidence,
         t1.radius,
         t1.skeleton_id,
+        EXTRACT(EPOCH from t1.edition_time),
         t1.user_id,
         t2.id,
         t2.parent_id,
@@ -78,6 +79,7 @@ def get_treenodes_classic(cursor, params):
         t2.confidence,
         t2.radius,
         t2.skeleton_id,
+        EXTRACT(EPOCH from t2.edition_time),
         t2.user_id
     FROM treenode t1
             INNER JOIN treenode t2 ON
@@ -125,6 +127,7 @@ def get_treenodes_postgis(cursor, params):
         t1.confidence,
         t1.radius,
         t1.skeleton_id,
+        EXTRACT(EPOCH from t1.edition_time),
         t1.user_id,
         t2.id,
         t2.parent_id,
@@ -134,6 +137,7 @@ def get_treenodes_postgis(cursor, params):
         t2.confidence,
         t2.radius,
         t2.skeleton_id,
+        EXTRACT(EPOCH from t2.edition_time),
         t2.user_id
     FROM
       treenode t1,
@@ -194,11 +198,13 @@ def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_pr
             t1id = row[0]
             if t1id not in treenode_ids:
                 treenode_ids.add(t1id)
-                treenodes.append(row[0:8] + (is_superuser or row[8] == user_id or row[8] in domain,))
-            t2id = row[9]
+                can_edit = is_superuser or row[9] == user_id or row[9] in domain
+                treenodes.append(row[0:9] + (can_edit,))
+            t2id = row[10]
             if t2id not in treenode_ids:
                 treenode_ids.add(t2id)
-                treenodes.append(row[9:17] + (is_superuser or row[17] == user_id or row[17] in domain,))
+                can_edit = is_superuser or row[19] == user_id or row[19] in domain
+                treenodes.append(row[10:19] + (can_edit,))
 
 
         # Find connectors related to treenodes in the field of view
@@ -217,6 +223,7 @@ def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_pr
                 tc.relation_id,
                 tc.treenode_id,
                 tc.confidence,
+                EXTRACT(EPOCH from c.edition_time),
                 c.user_id
             FROM treenode_connector tc
             INNER JOIN connector c ON (tc.connector_id = c.id)
@@ -238,6 +245,7 @@ def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_pr
             treenode_connector.relation_id,
             treenode_connector.treenode_id,
             treenode_connector.confidence,
+            EXTRACT(EPOCH from connector.edition_time),
             connector.user_id
         FROM connector LEFT OUTER JOIN treenode_connector
                        ON connector.id = treenode_connector.connector_id
@@ -311,7 +319,8 @@ def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_pr
                     [kv for kv in post[cid].iteritems()],
                     [kv for kv in   gj[cid].iteritems()],
                     [kv for kv in other[cid].iteritems()],
-                    is_superuser or c[8] == user_id or c[8] in domain)
+                    c[8],
+                    is_superuser or c[9] == user_id or c[9] in domain)
 
 
         # Fetch missing treenodes. These are related to connectors
@@ -332,13 +341,15 @@ def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_pr
                 confidence,
                 radius,
                 skeleton_id,
+                EXTRACT(EPOCH from edition_time),
                 user_id
             FROM treenode, (VALUES %s) missingnodes(mnid)
             WHERE id = mnid''' % missing_id_list)
 
             for row in cursor.fetchall():
                 treenodes.append(row)
-                treenode_ids.add(row[0:8] + (is_superuser or row[8] == user_id or row[8] in domain,))
+                treenode_ids.add(row[0:9] + (is_superuser or row[9] == user_id
+                    or row[9] in domain,))
 
         labels = defaultdict(list)
         if includeLabels:

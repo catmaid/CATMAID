@@ -41,6 +41,7 @@ var SkeletonAnnotations = {
     y: null,
     z: null,
     parent_id: null,
+    edition_time: null,
     stack_viewer_id: null
   },
 
@@ -1622,9 +1623,10 @@ SkeletonAnnotations.TracingOverlay.prototype.createSingleConnector = function (
       new CATMAID.CreateConnectorCommand(project.id,
         phys_x, phys_y, phys_z, confval));
   return createConnector.then(function(result) {
+    var editTime = null; // TODO
     // add treenode to the display and update it
     var nn = self.graphics.newConnectorNode(result.newConnectorId, pos_x, pos_y,
-        pos_z, 0, 5 /* confidence */, subtype, true);
+        pos_z, 0, 5 /* confidence */, subtype, editTime, true);
     self.nodes[result.newConnectorId] = nn;
     nn.createGraphics();
     // Activate layer and emit new node event after we added to our local node
@@ -1721,10 +1723,11 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeWithLink = function (
       -1, radius, confidence, undefined, SkeletonAnnotations.defaultNewNeuronName);
   CATMAID.commands.execute(command)
     .then(function(jso) {
+      var editTime = null; // TODO
       var nid = parseInt(jso.treenode_id);
       // always create a new treenode which is the root of a new skeleton
       var nn = self.graphics.newNode(nid, null, null, radius, pos_x, pos_y,
-          pos_z, 0, 5 /* confidence */, parseInt(jso.skeleton_id), true);
+          pos_z, 0, 5 /* confidence */, parseInt(jso.skeleton_id), editTime, true);
       // add node to nodes list
       self.nodes[nid] = nn;
       nn.createGraphics();
@@ -1773,6 +1776,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createNode = function (parentID, ch
   return CATMAID.commands.execute(command)
     .then(function(result) {
       // add treenode to the display and update it
+      var editTime = null; // TODO
       var nid = parseInt(result.treenode_id);
       var skid = parseInt(result.skeleton_id);
 
@@ -1780,7 +1784,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createNode = function (parentID, ch
       // object is not within the set of retrieved nodes, but the parentID
       // will be defined.
       var nn = self.graphics.newNode(nid, self.nodes[parentID], parentID,
-          radius, pos_x, pos_y, pos_z, 0, 5 /* confidence */, skid, true);
+          radius, pos_x, pos_y, pos_z, 0, 5 /* confidence */, skid, editTime, true);
 
       self.nodes[nid] = nn;
       nn.createGraphics();
@@ -1895,7 +1899,8 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
   if (extraNodes) {
     extraNodes.forEach(function(n) {
       this.nodes[n.id] = this.graphics.newNode(n.id, null, n.parent_id, n.radius,
-          n.x, n.y, n.z, n.z - this.stackViewer.z, n.confidence, n.skeleton_id, n.can_edit);
+          n.x, n.y, n.z, n.z - this.stackViewer.z, n.confidence, n.skeleton_id,
+          n.edition_time, n.can_edit);
     }, this);
   }
 
@@ -1908,7 +1913,7 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
       a[0], null, a[1], a[6],
       this.stackViewer.primaryStack.projectToUnclampedStackX(a[4], a[3], a[2]),
       this.stackViewer.primaryStack.projectToUnclampedStackY(a[4], a[3], a[2]),
-      z, z - this.stackViewer.z, a[5], a[7], a[8]);
+      z, z - this.stackViewer.z, a[5], a[7], a[8], a[9]);
   }, this);
 
   // Populate ConnectorNodes
@@ -1934,7 +1939,7 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
       a[0],
       this.stackViewer.primaryStack.projectToUnclampedStackX(a[3], a[2], a[1]),
       this.stackViewer.primaryStack.projectToUnclampedStackY(a[3], a[2], a[1]),
-      z, z - this.stackViewer.z, a[4], subtype, a[9]);
+      z, z - this.stackViewer.z, a[4], subtype, a[9], a[10]);
   }, this);
 
   // Disable any unused instances
@@ -2107,7 +2112,7 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
     var c = 5;
 
     var vn = graphics.newNode(id, parent, parent.id, r, pos[0], pos[1], z, 0, c,
-        child.skeleton_id, child.can_edit);
+        child.skeleton_id, child.edition_time, child.can_edit);
 
     // Update child information of virtual node and parent as if the virtual
     // node was a real node. That is, replace the original child of the parent

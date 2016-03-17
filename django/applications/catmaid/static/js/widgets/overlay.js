@@ -3809,7 +3809,7 @@ SkeletonAnnotations.TracingOverlay.prototype.deleteNode = function(nodeId) {
    */
   function deleteTreenode(node, wasActiveNode) {
     // Make sure all other pending tasks are done before the node is deleted.
-    var command = new CATMAID.RemoveNodeCommand(project.id, node.id);
+    var command = new CATMAID.RemoveNodeCommand(project.id, node.id, self.getState(node.id));
     var delFn = CATMAID.commands.execute.bind(CATMAID.commands, command);
 
     self.submit.then(delFn).then(function(json) {
@@ -3906,6 +3906,49 @@ SkeletonAnnotations.TracingOverlay.prototype.toggleVirtualNodeSuppression = func
   });
 
   return true;
+};
+
+/**
+ * Get a state representation for a node that is understood by the backend. It
+ * looks like this:
+ *
+ *   {
+ *     parent: (<id>, <edition_time>),
+ *     children: ((<child_id>, <child_edition_time>), ...),
+ *     links: ((<connector_id>, <connector_edition_time>, <relation_id>), ...)
+ *   }
+ */
+SkeletonAnnotations.TracingOverlay.prototype.getState = function(nodeId) {
+  var node = this.nodes[nodeId];
+  if (!node) {
+    throw new CATMAID.ValueError("Can't create state: node not found");
+  }
+  var parent;
+  if (node.parent_id) {
+    parent = this.nodes[node.parent_id];
+    if (!parent) {
+      throw new CATMAID.ValueError("Can't create state: parent node not found");
+    }
+  }
+  var children = [];
+  for (var cid in node.children) {
+    cid = SkeletonAnnotations.isRealNode(cid) ? cid :
+        SkeletonAnnotations.getChildOfVirtualNode(cid);
+    children.push([cid, node.children[cid].edition_time]);
+  }
+  var links = [];
+  for (var cid in node.connectors) {
+    var connector = this.nodes[cid];
+    var link = node.connectors[cid];
+      links.push([cid, connector.edition_time, link.relation_id]);
+  }
+
+  return {
+    'edition_time': node.edition_time,
+    'parent': [node.parent_id, parent ? parent.edition_time : null],
+    'children': children,
+    'links': links
+  };
 };
 
 /**

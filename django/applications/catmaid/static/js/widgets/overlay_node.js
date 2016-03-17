@@ -398,6 +398,10 @@
         this.children[childNode.id] = childNode;
       };
 
+      this.linkConnector = function(connectorId, link) {
+        this.connectors[connectorId] = link;
+      };
+
       this.shouldDisplay = function () {
         return this.zdiff >= 0 && this.zdiff < 1 &&
             (!this.overlayGlobals.hideOtherSkeletons ||
@@ -618,6 +622,7 @@
         this.parent_id = null;
         this.type = null;
         this.children = null;
+        this.connectors = null;
         if (this.c) {
           ptype.mouseEventManager.forget(this.c, SkeletonAnnotations.TYPE_NODE);
           this.c.remove();
@@ -647,6 +652,7 @@
         this.parent_id = this.DISABLED;
         this.children = {};
         this.numberOfChildren = 0;
+        this.connectors = {};
         if (this.c) {
           this.c.datum(null);
           this.c.hide();
@@ -671,6 +677,7 @@
         this.parent_id = parent_id;
         this.children = {};
         this.numberOfChildren = 0;
+        this.connectors = {};
         this.radius = radius; // the radius as stored in the database
         this.x = x;
         this.y = y;
@@ -868,6 +875,7 @@
       this.parent_id = parent_id;
       this.children = {};
       this.numberOfChildren = 0;
+      this.connectors = {};
       this.radius = radius; // the radius as stored in the database
       this.x = x;
       this.y = y;

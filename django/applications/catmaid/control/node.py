@@ -170,6 +170,7 @@ def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_pr
         SELECT relation_name, id FROM relation WHERE project_id=%s
         ''' % project_id)
         relation_map = dict(cursor.fetchall())
+        id_to_relation = {v: k for k, v in relation_map.items()}
 
         response_on_error = 'Failed to query treenodes'
 
@@ -269,21 +270,12 @@ def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_pr
             missing_treenode_ids.add(atnid)
         # A set of unique connector IDs
         connector_ids = set()
-        # The relations between connectors and treenodes, stored
-        # as connector ID keys vs a list of tuples, each with the treenode id,
-        # the type of relation (presynaptic_to or postsynaptic_to), and the confidence.
-        # The list of tuples is generated later from a dict,
-        # so that repeated tnid entries are overwritten.
-        pre = defaultdict(dict)
-        post = defaultdict(dict)
-        gj = defaultdict(dict)
-        other = defaultdict(dict)
 
-        # Process crows (rows with connectors) which could have repeated connectors
-        # given the join with treenode_connector
-        presynaptic_to = relation_map['presynaptic_to']
-        postsynaptic_to = relation_map['postsynaptic_to']
-        gapjunction_with = relation_map.get('gapjunction_with', -1)
+        # Collect links to connectos for each treenode. Each entry maps a
+        # relation ID to a an object containing the relation name, and an object
+        # mapping connector IDs to confidences.
+        links = defaultdict(list)
+        used_relations = set()
         for row in crows:
             # Collect treeenode IDs related to connectors but not yet in treenode_ids
             # because they lay beyond adjacent sections
@@ -296,14 +288,8 @@ def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_pr
                 # row[5]: treenode_relation_id
                 # row[6]: treenode_id (tnid above)
                 # row[7]: tc_confidence
-                if row[5] == presynaptic_to:
-                    pre[cid][tnid] = row[7]
-                elif row[5] == postsynaptic_to:
-                    post[cid][tnid] = row[7]
-                elif row[5] == gapjunction_with:
-                    gj[cid][tnid] = row[7]
-                else:
-                    other[cid][tnid] = row[7]
+                links[cid].append((tnid, row[5], row[7]))
+                used_relations.add(row[5])
 
             # Collect unique connectors
             if cid not in connector_ids:
@@ -314,12 +300,7 @@ def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_pr
         for i in xrange(len(connectors)):
             c = connectors[i]
             cid = c[0]
-            connectors[i] = (cid, c[1], c[2], c[3], c[4],
-                    [kv for kv in  pre[cid].iteritems()],
-                    [kv for kv in post[cid].iteritems()],
-                    [kv for kv in   gj[cid].iteritems()],
-                    [kv for kv in other[cid].iteritems()],
-                    c[8],
+            connectors[i] = (cid, c[1], c[2], c[3], c[4], links[cid], c[8],
                     is_superuser or c[9] == user_id or c[9] in domain)
 
 
@@ -390,7 +371,11 @@ def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_pr
                 for row in cursor.fetchall():
                     labels[row[0]].append(row[1])
 
-        return HttpResponse(json.dumps((treenodes, connectors, labels, n_retrieved_nodes == params['limit']), separators=(',', ':'))) # default separators have spaces in them like (', ', ': '). Must provide two: for list and for dictionary. The point of this: less space, more compact json
+        used_rel_map = {r:id_to_relation[r] for r in used_relations}
+        return HttpResponse(json.dumps((
+            treenodes, connectors, labels,
+            n_retrieved_nodes == params['limit'],
+            used_rel_map), separators=(',', ':'))) # default separators have spaces in them like (', ', ': '). Must provide two: for list and for dictionary. The point of this: less space, more compact json
 
     except Exception as e:
         raise Exception(response_on_error + ':' + str(e))

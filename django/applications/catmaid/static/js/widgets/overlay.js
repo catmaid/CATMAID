@@ -1918,15 +1918,28 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
 
   // Populate ConnectorNodes
   jso[1].forEach(function(a, index, array) {
+    var links = a[5];
     // Determine the connector node type. For now eveything with no or only
     // pre or post treenodes is treated as a synapse. If there are only
     // non-directional connectors, an abutting or gap junction connector is assumed.
     var subtype = SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR;
-    if (0 === a[5].length && 0 === a[6].length && 0 === a[7].length && 0 !== a[8].length) {
-      subtype = SkeletonAnnotations.SUBTYPE_ABUTTING_CONNECTOR;
+    var exclusiveRelation = null;
+    for (var l=0; l<links.length; ++l) {
+      var rid = links[l][1];
+      if (0 === l) {
+        exclusiveRelation = rid;
+      } else if (exclusiveRelation !== rid) {
+        exclusiveRelation = false;
+        break;
+      }
     }
-    if (0 === a[5].length && 0 === a[6].length && 0 !== a[7].length && 0 === a[8].length) {
-      subtype = SkeletonAnnotations.SUBTYPE_GAPJUNCTION_CONNECTOR;
+    if (exclusiveRelation !== null) {
+      var relation_name = jso[4][exclusiveRelation];
+      if (relation_name == "abutting") {
+        subtype = SkeletonAnnotations.SUBTYPE_ABUTTING_CONNECTOR;
+      } else if (relation_name == 'gapjunction_with') {
+        subtype = SkeletonAnnotations.SUBTYPE_GAPJUNCTION_CONNECTOR;
+      }
     }
     // a[0]: ID, a[1]: x, a[2]: y, a[3]: z, a[4]: confidence,
     // a[5]: presynaptic nodes as array of arrays with treenode id
@@ -1939,7 +1952,7 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
       a[0],
       this.stackViewer.primaryStack.projectToUnclampedStackX(a[3], a[2], a[1]),
       this.stackViewer.primaryStack.projectToUnclampedStackY(a[3], a[2], a[1]),
-      z, z - this.stackViewer.z, a[4], subtype, a[9], a[10]);
+      z, z - this.stackViewer.z, a[4], subtype, a[6], a[7]);
   }, this);
 
   // Disable any unused instances
@@ -1959,53 +1972,34 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
     }
   }, this);
 
+  // All relations not in this map, will be part of the 'undirgroup'
+  var groupedRelations = {
+    'presynaptic_to': 'pregroup',
+    'postsynaptic_to': 'postgroup',
+    'gapjunction_with': 'gjgroup'
+  };
+
   // Now that ConnectorNode and Node instances are in place,
-  // set the pre and post relations
+  // set all relations
   jso[1].forEach(function(a, index, array) {
     // a[0] is the ID of the ConnectorNode
     var connector = this.nodes[a[0]];
-    // a[5]: pre relation which is an array of arrays of tnid and tc_confidence
+    // a[5]: all relations, an array of arrays, containing treenode_id,
+    // relation_id, tc_confidence
     a[5].forEach(function(r, i, ar) {
-      // r[0]: tnid, r[1]: tc_confidence
+      // r[0]: tnid, r[1]: relation ID r[2]: tc_confidence
       var tnid = r[0];
       var node = this.nodes[tnid];
       if (node) {
-        // link it to pregroup, to connect it to the connector
-        connector.pregroup[tnid] = {'treenode': node,
-                                    'confidence': r[1]};
-      }
-    }, this);
-    // a[6]: post relation which is an array of arrays of tnid and tc_confidence
-    a[6].forEach(function(r, i, ar) {
-      // r[0]: tnid, r[1]: tc_confidence
-      var tnid = r[0];
-      var node = this.nodes[tnid];
-      if (node) {
-        // link it to postgroup, to connect it to the connector
-        connector.postgroup[tnid] = {'treenode': node,
-                                     'confidence': r[1]};
-      }
-    }, this);
-    // a[7]: gap junction relation which is an array of arrays of tnid and tc_confidence
-    a[7].forEach(function(r, i, ar) {
-      // r[0]: tnid, r[1]: tc_confidence
-      var tnid = r[0];
-      var node = this.nodes[tnid];
-      if (node) {
-        // link it to gjgroup, to connect it to the connector
-        connector.gjgroup[tnid] = {'treenode': node,
-                                   'confidence': r[1]};
-      }
-    }, this);
-    // a[8]: other relation which is an array of arrays of tnid and tc_confidence
-    a[8].forEach(function(r, i, ar) {
-      // r[0]: tnid, r[1]: tc_confidence
-      var tnid = r[0];
-      var node = this.nodes[tnid];
-      if (node) {
-        // link it to postgroup, to connect it to the connector
-        connector.undirgroup[tnid] = {'treenode': node,
-                                      'confidence': r[1]};
+        var relation_name = jso[4][r[1]];
+        var group = groupedRelations[relation_name] || 'undirgroup';
+        var link = {
+          'treenode': node,
+          'relation_id': r[1],
+          'confidence': r[2]
+        };
+        connector[group][tnid] = link;
+        node.linkConnector(connector.id, link);
       }
     }, this);
   }, this);

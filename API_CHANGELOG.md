@@ -50,6 +50,12 @@ included in this changelog.
 
 - Edition times of nodes and connectors are now returned as well.
 
+- Link and connector types are now returned in a more general fashion. Instead
+  of providing four different arrays for pre, post, gap-junction and other
+  connectors (previously index 5, 6, 7, 8), each connector entry now contains
+  one list with all links (index 5), each link is represented as
+  [<treenode_id>, <relation_id>, <link_confidence>].
+
 ### Deprecations
 
 None.

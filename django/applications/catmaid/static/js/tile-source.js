@@ -305,7 +305,7 @@
         {name: 'gamma', displayName: 'Gamma', type: 'text', range: [0, Number.MAX_VALUE],
           value: this.gamma, help: 'Exponent of non-linear mapping, e.g. 1.0, use comma for multiple channels'},
         {name: 'quality', displayName: 'Quality', type: 'number', range: [0, 100],
-          value: this.quality, help: 'Image quality in range 0-1, use comma for multiple channels'}
+          value: this.quality, help: 'Image quality in range 0-100, use comma for multiple channels'}
       ];
     };
 

@@ -292,6 +292,7 @@
     this.minIntensity = null;
     this.maxIntensity = null;
     this.gamma = null;
+    this.quality = null;
 
     this.getSettings = function() {
       return [
@@ -302,7 +303,9 @@
         {name: 'maxIntensity', displayName: 'Max Intensity', type: 'text', range: [0, 65535],
           value: this.maxIntensity, help: 'Maximum value of display range, e.g. 256.0, use comma for muliple channels'},
         {name: 'gamma', displayName: 'Gamma', type: 'text', range: [0, Number.MAX_VALUE],
-          value: this.gamma, help: 'Exponent of non-linear mapping, e.g. 1.0, use comma for multiple channels'}
+          value: this.gamma, help: 'Exponent of non-linear mapping, e.g. 1.0, use comma for multiple channels'},
+        {name: 'quality', displayName: 'Quality', type: 'text', range: [0, 1],
+          value: this.quality, help: 'Image quality in range 0-1, use comma for multiple channels'}
       ];
     };
 
@@ -321,6 +324,7 @@
       if (this.minIntensity) { params.push('min=' + this.minIntensity); }
       if (this.maxIntensity) { params.push('max=' + this.maxIntensity); }
       if (this.gamma) { params.push('gamma=' + this.gamma); }
+      if (this.quality) { params.push('quality=' + this.quality); }
 
       if (0 < params.length) {
         url += "?" + params.join("&");

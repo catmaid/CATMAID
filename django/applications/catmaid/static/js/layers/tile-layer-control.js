@@ -172,11 +172,11 @@
                 'placeholder': '(none)',
                 'name': setting.name
               });
-              if (settings.range && 2 === settings.range.length) {
-                input.attr('min', settings.range[0]);
-                input.attr('max', settings.range[1]);
+              if (setting.range && 2 === setting.range.length) {
+                input.attr('min', setting.range[0]);
+                input.attr('max', setting.range[1]);
               }
-              if (settings.step) {
+              if (setting.step) {
                 input.attr('step', settings.step);
               }
               input.addClass('layerSetting');

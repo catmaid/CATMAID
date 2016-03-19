@@ -204,6 +204,19 @@ def mkcc(c1, rel, c2, project, user):
             defaults={'user': user})
     return link
 
+def mkci(name, cls, project, user):
+    return ClassInstance.objects.create(user=user, project=project,
+            class_column=cls, name=name)
+
+def mkcici(ci1, rel, ci2, project, user, save=True):
+    ci = ClassInstanceClassInstance(user=user,
+            project=project, class_instance_a=ci1,
+            relation=rel, class_instance_b=ci2)
+    if save:
+        ci.save()
+    return ci
+
+
 class Context(object):
     def __init__(self, proejct, user):
         self.p = project
@@ -339,6 +352,12 @@ def import_from_mysql(cursor, project, user, experiment_provider):
     image_properties = ("flag_as_primary", "magnification", "ap", "dv",
         "orientation", "headedness", "image_processing_flags")
 
+    # Classification roots are created for experiments, experiment
+    # classifications and stages. First model this on the ontology level:
+    mkcc(classification_class, is_a_rel, classification_root_class, p, u)
+    for stage_class, _ in stage_classes:
+        mkcc(stage_class, is_a_rel, classification_root_class, p, u)
+
     # Read projects from DB
     effective_exp_fields = exp_properties + ("id",)
     sql = "SELECT {0} FROM main".format(", ".join(effective_exp_fields))
@@ -377,8 +396,7 @@ def import_from_mysql(cursor, project, user, experiment_provider):
             main_id, nexp + 1, len(existing_experiments),
             len(experiments_with_images)))
 
-        experiment = ClassInstance.objects.create(project=project,
-                user=user, class_column=experiment_class, name=group_title)
+        experiment = mkci(group_title, experiment_class, p, u)
         experiments_with_images.append(experiment)
         # Create property instances
         prop_instance_map = {}
@@ -388,11 +406,8 @@ def import_from_mysql(cursor, project, user, experiment_provider):
             prop_class = prop_class_map[ep]
             # If this property is NULL, don't create a new instance
             if name:
-                prop_instance = ClassInstance.objects.create(project=project,
-                        user=user, class_column=prop_class, name=name)
-                prop_link = ClassInstanceClassInstance.objects.create(project=project,
-                        user=user, class_instance_a=prop_instance,
-                        relation=property_of_rel, class_instance_b=experiment)
+                prop_instance = mkci(name, prop_class, p, u)
+                prop_link = mkcici(prop_instance, property_of_rel, experiment, p, u)
                 prop_instance_map[ep] = prop_instance
                 prop_link_map[ep] = prop_link
         log("Properties: " + ", ".join(
@@ -420,11 +435,8 @@ def import_from_mysql(cursor, project, user, experiment_provider):
                 stage_prop = stage_db_props[sp]
                 if stage_prop:
                     pc = stage_prop_class_map[sp]
-                    spc = ClassInstance.objects.create(project=project,
-                            user=user, class_column=pc, name=stage_prop)
-                    sl = ClassInstanceClassInstance.objects.create(project=project,
-                            user=user, class_instance_a=spc,
-                            relation=property_of_rel, class_instance_b=si)
+                    spc = mkci(stage_prop, pc, p, u)
+                    sl = mkcici(spc, property_of_rel, si, p, u)
                     added_stage_properties[sp] = spc
             log("Stage properties (" + stage.class_name + "): " + ",".join(
                 ["%s: %s" % (k,v.name) for k,v in added_stage_properties.items()]), 1)
@@ -475,13 +487,10 @@ def import_from_mysql(cursor, project, user, experiment_provider):
 
             # stack group should have a name like this:
             # AU.10 2 - FBgn0025582 - Int6 (CG9677)
-            stack_group = ClassInstance.objects.create(user=user, project=project,
-                    class_column=stack_group_class, name=group_title)
+            stack_group = mkci(group_title, stack_group_class, p, u)
 
             # Link stack group into experiment
-            experiment_stack = ClassInstanceClassInstance(user=user,
-                    project=project, class_instance_a=stack_group,
-                    relation=part_of_rel, class_instance_b=experiment)
+            experiment_stack = mkcici(stack_group, part_of_rel, experiment, project, user)
 
             for stack in new_stacks:
                 link = StackClassInstance.objects.create(user=user, project=project,
@@ -491,11 +500,8 @@ def import_from_mysql(cursor, project, user, experiment_provider):
 
         log("Stages: " + ",".join(s.name for s in stage_instaces), 1)
 
-        # Classification roots are created for experiments, experiment
-        # classifications and stages. First model this on the ontology level:
-        mkcc(classification_class, is_a_rel, classification_root_class, p, u)
-        for stage_class, _ in stage_classes:
-            mkcc(stage_class, is_a_rel, classification_root_class, p, u)
+
+        # Create classification --- link
 
     log("Found {} experiments with stack info".format(len(experiments_with_images)))
     #raise ValueError("Not finished")

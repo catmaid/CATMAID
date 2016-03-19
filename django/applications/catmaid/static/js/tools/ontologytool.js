@@ -104,11 +104,11 @@ function OntologyTool()
      */
     this.update_workspace_in_widgets = function() {
           if (self.workspace_mode === "classification") {
-              OntologyEditor.change_workspace(-1, true);
+              CATMAID.OntologyEditor.change_workspace(-1, true);
               CATMAID.ClassificationEditor.change_workspace(-1, true);
               ClusteringWidget.change_workspace(-1, true);
           } else {
-              OntologyEditor.change_workspace(project.id, true);
+              CATMAID.OntologyEditor.change_workspace(project.id, true);
               CATMAID.ClassificationEditor.change_workspace(project.id, true);
               ClusteringWidget.change_workspace(project.id, true);
           }

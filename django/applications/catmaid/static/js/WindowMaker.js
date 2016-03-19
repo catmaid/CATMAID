@@ -3089,7 +3089,7 @@ var WindowMaker = new function()
 
     addLogic(win);
 
-    OntologyEditor.init();
+    CATMAID.OntologyEditor.init();
 
     return {window: win, widget: null};
   };

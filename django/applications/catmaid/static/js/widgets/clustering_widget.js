@@ -192,7 +192,7 @@ var ClusteringWidget = new function()
                         "label": "Relate a class to this one",
                         "_class": "wider-context-menu",
                         "action": function (obj) {
-                            return OntologyEditor.create_link_handler(this, pid, obj, tree_id);
+                            return CATMAID.OntologyEditor.create_link_handler(this, pid, obj, tree_id);
                          }
                     },
                     "remove_all_links": {
@@ -203,7 +203,7 @@ var ClusteringWidget = new function()
                         "action": function (obj) {
                             // assure that this was on purpose
                             if (confirm("Are you sure you want to remove all ontology class-class links?")) {
-                                return OntologyEditor.remove_all_links_handler(pid, tree_id);
+                                return CATMAID.OntologyEditor.remove_all_links_handler(pid, tree_id);
                             }
                          }
                     }
@@ -217,7 +217,7 @@ var ClusteringWidget = new function()
                             "separator_after": false,
                             "label": "Cardinality",
                             "action": function (obj) {
-                                return OntologyEditor.create_cardinality_restriction(pid, obj);
+                                return CATMAID.OntologyEditor.create_cardinality_restriction(pid, obj);
                              }
                         },
                         "add_exclusivity_restriction": {
@@ -227,7 +227,7 @@ var ClusteringWidget = new function()
                             "action": function (obj) {
                                 // A exclusivity constraint is a cardinality constraint
                                 // that restricts to exactly one value.
-                                return OntologyEditor.create_cardinality_restriction(pid, obj, 1);
+                                return CATMAID.OntologyEditor.create_cardinality_restriction(pid, obj, 1);
                              }
                         }
                     };
@@ -238,7 +238,7 @@ var ClusteringWidget = new function()
                         "separator_after": false,
                         "label": "Relate a class to this one",
                         "action": function (obj) {
-                            return OntologyEditor.create_link_handler(this, pid, obj, tree_id);
+                            return CATMAID.OntologyEditor.create_link_handler(this, pid, obj, tree_id);
                          }
                     },
                     "add_restriction": {
@@ -273,7 +273,7 @@ var ClusteringWidget = new function()
                                 "_class": "even-wider-context-menu",
                                 "action": function(rid) {
                                     return function (obj) {
-                                        return OntologyEditor.remove_restriction(pid, obj, rid);
+                                        return CATMAID.OntologyEditor.remove_restriction(pid, obj, rid);
                                     };}(restriction.id)
                                 };
                         }
@@ -299,7 +299,7 @@ var ClusteringWidget = new function()
                             // assure that this was on purpose
                             if (confirm("Are you sure you want to remove the class-class link between this class and the class connected with the parent relation?")) {
                                 var cc_id = obj.attr('ccid');
-                                return OntologyEditor.remove_link_handler(pid, cc_id, tree_id);
+                                return CATMAID.OntologyEditor.remove_link_handler(pid, cc_id, tree_id);
                             }
                          }
                     };
@@ -311,7 +311,7 @@ var ClusteringWidget = new function()
                         "label": "Relate a class with this relation",
                         "_class": "wider-context-menu",
                         "action": function (obj) {
-                            return OntologyEditor.create_link_handler(this, pid, obj, tree_id);
+                            return CATMAID.OntologyEditor.create_link_handler(this, pid, obj, tree_id);
                          }
                     },
                     "remove_all_links": {
@@ -324,7 +324,7 @@ var ClusteringWidget = new function()
                             if (confirm("Are you sure you want to remove all ontology class-class links that use this relation?")) {
                                 var rel_id = obj.attr('id').replace("node_", "");
                                 var class_b_id = obj.attr('classbid');
-                                return OntologyEditor.remove_selected_links_handler(pid, rel_id, class_b_id, tree_id);
+                                return CATMAID.OntologyEditor.remove_selected_links_handler(pid, rel_id, class_b_id, tree_id);
                             }
                          }
                     }

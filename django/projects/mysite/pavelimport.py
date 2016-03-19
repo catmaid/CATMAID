@@ -232,11 +232,14 @@ def import_from_mysql(cursor, project, user, experiment_provider):
 
     property_of_rel = mkrel("property_of", p, u)
     is_a_rel = mkrel("is_a", p, u)
+    linked_to = mkrel("linked_to", p, u)
     has_channel_rel = mkrel("has_channel", p, u)
     part_of_rel = mkrel("part_of", p, u)
+    classified_by = mkrel("classified_by", p, u)
 
+    classification_project_class = mkclass("classification_project", p, u)
     classification_root_class = mkclass("classification_root", p, u)
-    dot_classification = mkclass("DOT classification", p, u)
+    dot_classification_class = mkclass("DOT classification", p, u)
     experiment_class = mkclass("Experiment", p, u)
     exp_property_class = mkclass("Experiment property", p, u)
     stage_property_class = mkclass("Stage property", p, u)
@@ -244,9 +247,9 @@ def import_from_mysql(cursor, project, user, experiment_provider):
     stack_group_class = mkclass("stackgroup", p, u)
 
     # For now, the only root remains DOT classification
-    mkcc(dot_classification, is_a_rel, classification_root_class, p, u)
+    mkcc(dot_classification_class, is_a_rel, classification_root_class, p, u)
 
-    mkcc(experiment_class, part_of_rel, dot_classification, p, u)
+    mkcc(experiment_class, part_of_rel, dot_classification_class, p, u)
 
     mkcc(exp_property_class, property_of_rel, experiment_class, p, u)
     mkcc(classification_class, part_of_rel, experiment_class, p, u)
@@ -355,6 +358,12 @@ def import_from_mysql(cursor, project, user, experiment_provider):
     effective_exp_fields = exp_properties + ("id",)
     sql = "SELECT {0} FROM main".format(", ".join(effective_exp_fields))
 
+    # Our classification root
+    dot_classification = mkci("DOT classification", dot_classification_class, p, u)
+    classification_project = mkci("classification_project",
+            classification_project_class, p, u)
+    mkcici(classification_project, classified_by, dot_classification, p, u)
+
     cursor.execute(sql)
     # For each original result, create one new experiment instance with linked
     # exp_properties.
@@ -390,6 +399,8 @@ def import_from_mysql(cursor, project, user, experiment_provider):
             len(experiments_with_images)))
 
         experiment = mkci(group_title, experiment_class, p, u)
+        mkcici(experiment, part_of_rel, dot_classification, p, u)
+
         experiments_with_images.append(experiment)
         # Create property instances
         prop_instance_map = {}
@@ -492,7 +503,6 @@ def import_from_mysql(cursor, project, user, experiment_provider):
             log("No stack info found", 1)
 
         log("Stages: " + ",".join(s.name for s in stage_instaces), 1)
-
 
         # Create classification --- link
 

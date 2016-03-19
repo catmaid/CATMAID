@@ -106,11 +106,11 @@ function OntologyTool()
           if (self.workspace_mode === "classification") {
               CATMAID.OntologyEditor.change_workspace(-1, true);
               CATMAID.ClassificationEditor.change_workspace(-1, true);
-              ClusteringWidget.change_workspace(-1, true);
+              CATMAID.ClusteringWidget.change_workspace(-1, true);
           } else {
               CATMAID.OntologyEditor.change_workspace(project.id, true);
               CATMAID.ClassificationEditor.change_workspace(project.id, true);
-              ClusteringWidget.change_workspace(project.id, true);
+              CATMAID.ClusteringWidget.change_workspace(project.id, true);
           }
     };
 

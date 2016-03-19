@@ -91,7 +91,7 @@
 			</div>
 			{# Smuggle the dendrogram data into the DOM #}
 			<img width="1" height="1" src="{{ STATIC_URL }}images/empty.gif" alt=""
-				onload="ClusteringWidget.render_clustering('{{ dendrogram_json }}');
+				onload="CATMAID.ClusteringWidget.render_clustering('{{ dendrogram_json }}');
 					this.parentNode.removeChild(this);" />
 			<div id="clustering-graph" class="indented"></div>
 		</div>

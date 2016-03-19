@@ -3152,7 +3152,7 @@ var WindowMaker = new function()
 
     addLogic(win);
 
-    ClusteringWidget.init();
+    CATMAID.ClusteringWidget.init();
 
     return {window: win, widget: null};
   };

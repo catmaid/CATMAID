@@ -3,6 +3,7 @@ import json
 from collections import defaultdict
 
 from django import forms
+from django.db import connection
 from django.db.models import Q
 from django.conf import settings
 from django.forms.widgets import CheckboxSelectMultiple
@@ -100,7 +101,8 @@ def get_root_classes_qs(workspace_pid):
     """
     return[ c.class_a.id for c in get_class_links_qs(workspace_pid, 'is_a', 'classification_root') ]
 
-def get_classification_links_qs( workspace_pid, project_ids, inverse=False ):
+def get_classification_links_qs( workspace_pid, project_ids, inverse=False,
+        stack_groups=None, class_map=None, relation_map=None, cursor=None):
     """ Returns a list of CICI links that link a classification graph with a
     project or a list/set of projects (project_ids can be int, list and set).
     The classification system uses a dummy project (usually with ID -1) to
@@ -109,53 +111,57 @@ def get_classification_links_qs( workspace_pid, project_ids, inverse=False ):
     class classification_project (which lives in dummy project -1) and links to
     a classification root. A query set for those links will be returned. If
     <inverse> is set to true, only those classification graph links will be
-    returned that *don't* belong to the project with <project_id>.
+    returned that *don't* belong to the project with <project_id>. Optionally, a
+    list of stack group IDs can be passed in (class instances) which would
+    further constrain classifications to those linked to those stack groups.
     """
+    # Get classification and relation data
+    class_map = class_map or get_class_to_id_map(workspace_pid,
+            ('classification_project', 'classification_root'), cursor)
+    relation_map = relation_map or get_relation_to_id_map(workspace_pid,
+            ('is_a', 'classified_by'), cursor)
+
     # Make sure we deal with a list of project ids
     if not isinstance(project_ids, list) and not isinstance(project_ids, set):
         project_ids = [project_ids]
-
-    # Expect the classification system to be set up and expect one
-    # single 'classification_project' class.
-    classification_project_c_q = Class.objects.filter(
-        project_id = workspace_pid, class_name = 'classification_project')
-    # Return an empty query set if there isn't a classification project class
-    # len() is used on purpose, we need the object later anyway.
-    if len(classification_project_c_q) == 0:
-        return ClassInstanceClassInstance.objects.none()
-    classification_project_c = classification_project_c_q[0]
 
     # Get the query set for the classification project instance to test
     # if there already is such an instance.
     if inverse:
         classification_project_cis_q = ClassInstance.objects.filter(
-            class_column_id=classification_project_c.id).exclude(
+            class_column_id=class_map['classification_project']).exclude(
                 project_id__in=project_ids)
     else:
         classification_project_cis_q = ClassInstance.objects.filter(
             project_id__in=project_ids,
-                class_column_id=classification_project_c.id)
+                class_column_id=class_map['classification_project'])
+
     # Return an empty query set if there aren't classification project
     # instances available.
     if classification_project_cis_q.count() == 0:
         return ClassInstanceClassInstance.objects.none()
 
     # Get a list of all classification root classes and return an empty
-    # list if teher are none
-    root_class_links = get_class_links_qs(workspace_pid, 'is_a', 'classification_root')
-    root_classes = [cc.class_a for cc in root_class_links]
-    if not root_classes:
-        return []
+    # list if there are none.
+    root_class_ids = ClassClass.objects.filter(project_id=workspace_pid,
+            relation_id=relation_map['is_a'],
+            class_b=class_map['classification_root']).values_list('class_a', flat=True)
+    if not root_class_ids:
+        return ClassInstanceClassInstance.objects.none()
+
     # Query to get all root class instances
     root_class_instances = ClassInstance.objects.filter(project_id=workspace_pid,
-        class_column__in=root_classes)
+        class_column_id__in=root_class_ids)
+
     # Query to get the 'classified_by' relation
     classified_by_rel = Relation.objects.filter(project_id=workspace_pid,
         relation_name='classified_by')
+
     # Find all 'classification_project' class instances of all requested
     # projects that link to those root nodes
     cici_q = ClassInstanceClassInstance.objects.filter(project_id=workspace_pid,
-        relation__in=classified_by_rel, class_instance_b__in=root_class_instances,
+        relation_id=relation_map['classified_by'],
+        class_instance_b__in=root_class_instances,
         class_instance_a__in=classification_project_cis_q)
 
     return cici_q
@@ -403,7 +409,9 @@ def show_classification_editor( request, workspace_pid=None, project_id=None, li
             page_type = 'show_graph'
         else:
             # Second, check how many graphs there are.
-            root_links_q = get_classification_links_qs( workspace_pid, project_id )
+            cursor = connection.cursor()
+            root_links_q = get_classification_links_qs( workspace_pid,
+                    project_id, cursor=cursor)
             num_roots = len(root_links_q)
 
             context['num_graphs'] = num_roots
@@ -783,7 +791,7 @@ def list_classification_graph(request, workspace_pid, project_id=None, link_id=N
 
     if link_id is None:
         # Get all links
-        links_q = get_classification_links_qs( workspace_pid, project_id )
+        links_q = get_classification_links_qs(workspace_pid, project_id)
         # Return valid roots
         root_links = [ cici for cici in links_q ]
         num_roots = len(root_links)

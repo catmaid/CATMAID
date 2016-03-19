@@ -229,26 +229,28 @@ def import_from_mysql(cursor, project, user, experiment_provider):
     # relation. The "experiment_property" class in turn is linked to the
     # experiment class with a "property_of" relation.
     p, u = project, user
-    classification_root_class = mkclass("classification_root", p, u)
-    experiment_class = mkclass("Experiment", p, u)
-    exp_property_class = mkclass("Experiment property", p, u)
-    stage_property_class = mkclass("Stage property", p, u)
-    classification_class = mkclass("Ovary classification", p, u)
-    stack_group_class = mkclass("stackgroup", p, u)
+
     property_of_rel = mkrel("property_of", p, u)
     is_a_rel = mkrel("is_a", p, u)
     has_channel_rel = mkrel("has_channel", p, u)
     part_of_rel = mkrel("part_of", p, u)
 
-    property_link = mkcc(exp_property_class, property_of_rel, experiment_class, p, u)
-    classification_link = mkcc(classification_class, part_of_rel, experiment_class, p, u)
-    stacks_link = mkcc(stack_group_class, part_of_rel, experiment_class, p, u)
+    classification_root_class = mkclass("classification_root", p, u)
+    dot_classification = mkclass("DOT classification", p, u)
+    experiment_class = mkclass("Experiment", p, u)
+    exp_property_class = mkclass("Experiment property", p, u)
+    stage_property_class = mkclass("Stage property", p, u)
+    classification_class = mkclass("Ovary classification", p, u)
+    stack_group_class = mkclass("stackgroup", p, u)
 
-    # Experiments act as classification roots, as entry points into
-    # classifications.
-    exp_root_link = ClassClass.objects.get_or_create(project=project,
-            class_a=experiment_class, relation=is_a_rel,
-            class_b=classification_root_class, defaults={'user': user})
+    # For now, the only root remains DOT classification
+    mkcc(dot_classification, is_a_rel, classification_root_class, p, u)
+
+    mkcc(experiment_class, part_of_rel, dot_classification, p, u)
+
+    mkcc(exp_property_class, property_of_rel, experiment_class, p, u)
+    mkcc(classification_class, part_of_rel, experiment_class, p, u)
+    mkcc(stack_group_class, part_of_rel, experiment_class, p, u)
 
     # Get or create property class for each property along with property class
     # 'is_a'-link to the property class.
@@ -263,27 +265,17 @@ def import_from_mysql(cursor, project, user, experiment_provider):
             "probe_source", "transgene", "transgenic_line_id", "assay",
             "sequence_type", "tissue", "category", "384_plate")
     for ep in exp_properties:
-        prop_class, _ = Class.objects.get_or_create(project=project,
-                class_name=ep, defaults={'user': user})
-        identity_link, _ = ClassClass.objects.get_or_create(project=project,
-                class_a=prop_class, relation=is_a_rel, class_b=exp_property_class,
-                defaults={'user': user})
+        prop_class = mkclass(ep, project, user)
+        identity_link = mkcc(prop_class, is_a_rel, exp_property_class, p, u)
         prop_class_map[ep] = prop_class
 
     # These properties can be set on stages
     stage_prop_class_map = {}
     stage_properties = ("intensity", "comment")
     for ep in stage_properties:
-        prop_class, _ = Class.objects.get_or_create(project=project,
-                class_name=ep, defaults={'user': user})
-        identity_link, _ = ClassClass.objects.get_or_create(project=project,
-                class_a=prop_class, relation=is_a_rel,
-                class_b=stage_property_class, defaults={'user': user})
+        prop_class = mkclass(ep, p, u)
+        identity_link = mkcc(prop_class, is_a_rel, stage_property_class, p, u)
         stage_prop_class_map[ep] = prop_class
-
-    # Experiments act as classification roots, as entry points into
-    # classifications.
-    exp_root_link = mkcc(experiment_class, is_a_rel, classification_root_class, p, u)
 
     # Create actual classifciation ontology
     c_presence = mkclass("Presence", p, u, part_of_rel, classification_class)

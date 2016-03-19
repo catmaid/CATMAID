@@ -59,7 +59,7 @@ function OntologyTool()
         buttonName: 'search',
         buttonID: "ontology_search_button",
         run: function (e) {
-            var widget = new OntologySearch();
+            var widget = new CATMAID.OntologySearch();
             widget.workspacePid = self.workspace_mode === "classification" ? -1 : project.id;
             WindowMaker.create('ontology-search', widget);
             //self.update_workspace_in_widgets();

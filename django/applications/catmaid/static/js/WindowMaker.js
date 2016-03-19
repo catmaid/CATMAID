@@ -3097,7 +3097,7 @@ var WindowMaker = new function()
   var createOntologySearchWidget = function(osInstance)
   {
     // If available, a new instance passed as parameter will be used.
-    var OS = osInstance ? osInstance : new OntologySearch();
+    var OS = osInstance ? osInstance : new CATMAID.OntologySearch();
     var win = new CMWWindow(OS.getName());
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";

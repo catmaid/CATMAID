@@ -146,7 +146,7 @@
           } else if (type_of_node === "class") {
             var restriction_types = JSON.parse(obj.attr("restrictions"));
             // create restrictions submenu
-            add_restriction_submenu = {
+            var add_restriction_submenu = {
               "add_cardinality_restriction": {
                 "separator_before": false,
                 "separator_after": false,

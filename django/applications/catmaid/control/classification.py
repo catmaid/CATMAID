@@ -166,7 +166,7 @@ def get_classification_links_qs( workspace_pid, project_ids, inverse=False,
 
     return cici_q
 
-def get_classification_roots( workspace_pid, project_id ):
+def get_classification_roots( workspace_pid, project_id, cursor=None ):
     """ Returns a list of classification graph roots, linked to a
     project. The classification system uses a dummy project with ID -1
     to store its ontologies and class instances. Each project using a
@@ -175,7 +175,7 @@ def get_classification_roots( workspace_pid, project_id ):
     project -1). Those class instances will be returned.
     """
     # Get all links
-    links_q = get_classification_links_qs( workspace_pid, project_id )
+    links_q = get_classification_links_qs( workspace_pid, project_id, cursor )
     # Return valid roots
     return [ cici.class_instance_a for cici in links_q ]
 
@@ -183,8 +183,9 @@ def get_classification_number( project_id ):
     """ Returns the number of classification graphs, linked to a
     project.
     """
-    roots = get_classification_roots(project_id)
-    return len(roots)
+    # Get all links
+    links_q = get_classification_links_qs( project_id )
+    return links_q.count()
 
 class Child:
     """ Keeps information about a potential child node.

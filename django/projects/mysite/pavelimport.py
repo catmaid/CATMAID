@@ -346,9 +346,10 @@ def import_from_mysql(cursor, project, user, experiment_provider):
 
     # Classification roots are created for experiments, experiment
     # classifications and stages. First model this on the ontology level:
-    mkcc(classification_class, is_a_rel, classification_root_class, p, u)
-    for stage_class, _ in stage_classes:
-        mkcc(stage_class, is_a_rel, classification_root_class, p, u)
+    # TODO: Use another class to identify entry points
+    #mkcc(classification_class, is_a_rel, classification_root_class, p, u)
+    #for stage_class, _ in stage_classes:
+    #    mkcc(stage_class, is_a_rel, classification_root_class, p, u)
 
     # Read projects from DB
     effective_exp_fields = exp_properties + ("id",)

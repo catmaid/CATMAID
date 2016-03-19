@@ -628,35 +628,35 @@
     };
 
     this.create_new_instance = function(treeid, pid, parentid, classid, relid, name) {
-    var data = {
-      "operation": "create_node",
-      "parentid": parentid,
-      "classid": classid,
-      "relationid": relid,
-      "objname": name,
-      "pid": pid
-    };
+      var data = {
+        "operation": "create_node",
+        "parentid": parentid,
+        "classid": classid,
+        "relationid": relid,
+        "objname": name,
+        "pid": pid
+      };
 
-    $.ajax({
-      async: false,
-      cache: false,
-      type: 'POST',
-      url: self.get_cls_url(project.id, '/instance-operation'),
-      data: data,
-      dataType: 'json',
-      success: function (data2) {
-      // Deselect all selected nodes first to prevent selection
-      // confusion with the refreshed tree.
-      $(treeid).jstree("deselect_all");
-      // update node id
-      //mynode.attr("id", "node_" + data2.class_instance_id);
-      // reload the node
-      //tree.jstree("refresh", myparent);
-      //tree.jstree("load_node", myparent, function() {}, function() {});
-      // TODO: Refresh only the sub tree, startins from parent
-      $(treeid).jstree("refresh", -1);
-      }
-    });
+      $.ajax({
+        async: false,
+        cache: false,
+        type: 'POST',
+        url: self.get_cls_url(project.id, '/instance-operation'),
+        data: data,
+        dataType: 'json',
+        success: function (data2) {
+        // Deselect all selected nodes first to prevent selection
+        // confusion with the refreshed tree.
+        $(treeid).jstree("deselect_all");
+        // update node id
+        //mynode.attr("id", "node_" + data2.class_instance_id);
+        // reload the node
+        //tree.jstree("refresh", myparent);
+        //tree.jstree("load_node", myparent, function() {}, function() {});
+        // TODO: Refresh only the sub tree, startins from parent
+        $(treeid).jstree("refresh", -1);
+        }
+      });
     };
 
     this.create_error_aware_callback = function( fx )
@@ -677,7 +677,7 @@
      * CATMAID window.
      */
     this.handleContent = function(page_type, container, pid, linkid) {
-       if (page_type == 'new_graph')
+     if (page_type == 'new_graph')
        {
         // Override the submit behaviour if the create graph is displayed
         self.overrideNewGraphSubmit(container, pid);

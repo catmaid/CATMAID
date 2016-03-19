@@ -183,16 +183,16 @@
                     // the action function has to be created wth. of a closure
                     "action": (function(cname, cid, rname, rid) {
                       return function (obj) {
-                        att = {
-                        "state": "open",
-                        "data": cname,
-                        "attr": {
-                          "classid": cid,
-                          "classname": cname,
-                          "relid": rid,
-                          "relname": rname
-                          //"rel": type_of_node,
-                        }
+                        var att = {
+                          "state": "open",
+                          "data": cname,
+                          "attr": {
+                            "classid": cid,
+                            "classname": cname,
+                            "relid": rid,
+                            "relname": rname
+                            //"rel": type_of_node,
+                          }
                         };
                         this.create(obj, "inside", att, null, true);
                       };})(subchild.name, subchild.id, subchild.relname, subchild.relid)

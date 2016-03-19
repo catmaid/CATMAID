@@ -3132,7 +3132,7 @@ var WindowMaker = new function()
 
     addLogic(win);
 
-    ClassificationEditor.init();
+    CATMAID.ClassificationEditor.init();
 
     return {window: win, widget: null};
   };

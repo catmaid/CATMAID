@@ -172,7 +172,7 @@ class ArrangementExperimentProvider(object):
         stacks = []
         for title, suffix in stack_types.iteritems():
             stacks.append({
-                'title': title,
+                'title': "{}_{} ({})".format(plate, pos, title),
                 'image_base':'http://bds.mpi-cbg.de/catmaid/tiles/{0}_{1}/{2}/'.format(
                     plate, pos, suffix),
                 'dimension': dimension,
@@ -186,36 +186,56 @@ class ArrangementExperimentProvider(object):
             })
         return stacks
 
+def mkclass(name, project, user, rel=None, obj_b=None):
+    cls, _ = Class.objects.get_or_create(project=project,
+            class_name=name, defaults={'user': user})
+    if obj_b and rel:
+        mkcc(cls, rel, obj_b, project, user)
+    return cls
+
+def mkrel(name, project, user):
+    rel, _ = Relation.objects.get_or_create(project=project,
+            relation_name=name, defaults={'user': user})
+    return rel
+
+def mkcc(c1, rel, c2, project, user):
+    link, _ = ClassClass.objects.get_or_create(project=project,
+            class_a=c1, relation=rel, class_b=c2,
+            defaults={'user': user})
+    return link
+
+class Context(object):
+    def __init__(self, proejct, user):
+        self.p = project
+        self.u = user
+
 def import_from_mysql(cursor, project, user, experiment_provider):
     # Read all experiments and create a class for each column. Create also a
     # class named "experiment" and "experiment property". Each of the column
-    # based classed will be linked to "experiment property" with an "is_a"
+    # based classes will be linked to "experiment property" with an "is_a"
     # relation. The "experiment_property" class in turn is linked to the
     # experiment class with a "property_of" relation.
-    experiment_class, _ = Class.objects.get_or_create(project=project,
-            class_name="Experiment", defaults={'user': user})
-    exp_property_class, _ = Class.objects.get_or_create(project=project,
-            class_name="Experiment property", defaults={'user': user})
-    stage_property_class, _ = Class.objects.get_or_create(project=project,
-            class_name="Stage property", defaults={'user': user})
-    property_of_rel, _ = Relation.objects.get_or_create(project=project,
-            relation_name="property_of", defaults={'user': user})
-    stage_class, _ = Class.objects.get_or_create(project=project,
-            class_name="Stage", defaults={'user': user})
-    stack_group_class, _ = Class.objects.get_or_create(project=project,
-            class_name="stackgroup", defaults={'user': user})
-    is_a_rel, _ = Relation.objects.get_or_create(project=project,
-            relation_name="is_a", defaults={'user': user})
-    has_channel_rel, _ = Relation.objects.get_or_create(project=project,
-            relation_name="has_channel", defaults={'user': user})
-    part_of_rel, _ = Relation.objects.get_or_create(project=project,
-            relation_name="part_of", defaults={'user': user})
-    property_link, _ = ClassClass.objects.get_or_create(project=project,
-            class_a=exp_property_class, relation=property_of_rel,
-            class_b=experiment_class, defaults={'user': user})
-    stage_link, _ = ClassClass.objects.get_or_create(project=project,
-            class_a=stage_class, relation=part_of_rel,
-            class_b=experiment_class, defaults={'user': user})
+    p, u = project, user
+    classification_root_class = mkclass("classification_root", p, u)
+    experiment_class = mkclass("Experiment", p, u)
+    exp_property_class = mkclass("Experiment property", p, u)
+    stage_property_class = mkclass("Stage property", p, u)
+    classification_class = mkclass("Ovary classification", p, u)
+    stack_group_class = mkclass("stackgroup", p, u)
+    property_of_rel = mkrel("property_of", p, u)
+    is_a_rel = mkrel("is_a", p, u)
+    has_channel_rel = mkrel("has_channel", p, u)
+    part_of_rel = mkrel("part_of", p, u)
+
+    property_link = mkcc(exp_property_class, property_of_rel, experiment_class, p, u)
+    classification_link = mkcc(classification_class, part_of_rel, experiment_class, p, u)
+    stacks_link = mkcc(stack_group_class, part_of_rel, experiment_class, p, u)
+
+    # Experiments act as classification roots, as entry points into
+    # classifications.
+    exp_root_link = ClassClass.objects.get_or_create(project=project,
+            class_a=experiment_class, relation=is_a_rel,
+            class_b=classification_root_class, defaults={'user': user})
 
     # Get or create property class for each property along with property class
     # 'is_a'-link to the property class.
@@ -229,45 +249,92 @@ def import_from_mysql(cursor, project, user, experiment_provider):
             "cluster_id", "gene_id", "access", "species", "fly_strain", "probe",
             "probe_source", "transgene", "transgenic_line_id", "assay",
             "sequence_type", "tissue", "category", "384_plate")
-    for p in exp_properties:
+    for ep in exp_properties:
         prop_class, _ = Class.objects.get_or_create(project=project,
-                class_name=p, defaults={'user': user})
+                class_name=ep, defaults={'user': user})
         identity_link, _ = ClassClass.objects.get_or_create(project=project,
                 class_a=prop_class, relation=is_a_rel, class_b=exp_property_class,
                 defaults={'user': user})
-        prop_class_map[p] = prop_class
+        prop_class_map[ep] = prop_class
 
     # These properties can be set on stages
     stage_prop_class_map = {}
     stage_properties = ("intensity", "comment")
-    for p in stage_properties:
+    for ep in stage_properties:
         prop_class, _ = Class.objects.get_or_create(project=project,
-                class_name=p, defaults={'user': user})
+                class_name=ep, defaults={'user': user})
         identity_link, _ = ClassClass.objects.get_or_create(project=project,
                 class_a=prop_class, relation=is_a_rel,
                 class_b=stage_property_class, defaults={'user': user})
-        stage_prop_class_map[p] = prop_class
+        stage_prop_class_map[ep] = prop_class
+
+    # Experiments act as classification roots, as entry points into
+    # classifications.
+    exp_root_link = mkcc(experiment_class, is_a_rel, classification_root_class, p, u)
+
+    # Create actual classifciation ontology
+    c_presence = mkclass("Presence", p, u, part_of_rel, classification_class)
+    c_not_expressed = mkclass("expressed", p, u, is_a_rel, c_presence)
+    c_not_expressed = mkclass("not expressed", p, u, is_a_rel, c_presence)
+    c_distribution = mkclass("Distribution", p, u, part_of_rel, classification_class)
+    c_uni_loc = mkclass("uniform localization", p, u, is_a_rel, c_distribution)
+    c_subcell_loc = mkclass("subcellular localization pattern", p, u, is_a_rel, c_distribution)
+    c_stage = mkclass("Stage", p, u, part_of_rel, c_distribution)
+    c_cell_type = mkclass("Cell type", p, u, part_of_rel, c_stage)
 
     # Get or create classes for stages
     stage_names = {
-        "Stage 1": 1,
-        "Stage 2-7": 2,
-        "Stage 8": 3,
-        "Stage 9": 4,
-        "Stage 10": 5,
-        "Misc": 6,
+        "Germarium & stage 1 egg chamber": 1,
+        "Stage 2-7 egg chamber": 2,
+        "Stage 8 egg chamber": 3,
+        "Stage 9 egg chamber": 4,
+        "Stage 10 egg chamber": 5,
+        "Misc": 6
     }
 
     def toStageClass(name):
         key = stage_names[name]
-        stage, _ = Class.objects.get_or_create(project=project, class_name=name,
-                defaults={'user': user})
-        stage_link, _ = ClassClass.objects.get_or_create(project=project,
-                class_a=stage, relation=is_a_rel, class_b=stage_class,
-                defaults={'user': user})
+        stage = mkclass(name, project, user, is_a_rel, c_stage)
         return stage, key
+
     # Map stage classes to corresponding keys in original databases
     stage_classes = map(toStageClass, stage_names.keys())
+
+    cell_types = [
+        'female germline stem cell and cytoblast',
+        'presumptive nurse cell and oocyte',
+        'follicle stem cell',
+        'follicle cell',
+        'posterior polar follicle cell',
+        'anterior polar follicle cell',
+        'cap cell',
+        'escort cell',
+        'interfollicular stalk cell',
+        'terminal filament',
+        'border follicle cell',
+        'oocyte',
+        'nurse cell',
+        'centripetally migrating follicle cell',
+        'follicle cell overlaying oocyte',
+    ]
+
+    create_cell_types = lambda x: mkclass(x, p, u, is_a_rel, c_cell_type)
+    cell_type_classes = map(create_cell_types, cell_types)
+
+    cell_type_localizations = [
+        'anterior restriction',
+        'posterior restriction',
+        'cytoplasmic foci',
+        'cortical enrichment',
+        'nuclear foci',
+        'perinuclear',
+        'apical restriction',
+        'basal restriction',
+    ]
+
+    c_localization = mkclass("Localization", p, u, part_of_rel, c_cell_type)
+    create_cell_locs = lambda x: mkclass(x, p, u, is_a_rel, c_localization)
+    cell_type_locs = map(create_cell_locs, cell_type_localizations)
 
     image_properties = ("flag_as_primary", "magnification", "ap", "dv",
         "orientation", "headedness", "image_processing_flags")
@@ -316,9 +383,9 @@ def import_from_mysql(cursor, project, user, experiment_provider):
         # Create property instances
         prop_instance_map = {}
         prop_link_map = {}
-        for p in exp_properties:
-            name = row[p]
-            prop_class = prop_class_map[p]
+        for ep in exp_properties:
+            name = row[ep]
+            prop_class = prop_class_map[ep]
             # If this property is NULL, don't create a new instance
             if name:
                 prop_instance = ClassInstance.objects.create(project=project,
@@ -326,8 +393,8 @@ def import_from_mysql(cursor, project, user, experiment_provider):
                 prop_link = ClassInstanceClassInstance.objects.create(project=project,
                         user=user, class_instance_a=prop_instance,
                         relation=property_of_rel, class_instance_b=experiment)
-                prop_instance_map[p] = prop_instance
-                prop_link_map[p] = prop_link
+                prop_instance_map[ep] = prop_instance
+                prop_link_map[ep] = prop_link
         log("Properties: " + ", ".join(
             ["%s: %s" % (k,v.name) for k,v in prop_instance_map.items()]), 1)
 
@@ -349,16 +416,16 @@ def import_from_mysql(cursor, project, user, experiment_provider):
             added_stage_properties = {}
             # The stage ID is the first after all fields in stage_properties
             stage_id = stage_db_props['id']
-            for n, p in enumerate(stage_properties):
-                stage_prop = stage_db_props[p]
+            for n, sp in enumerate(stage_properties):
+                stage_prop = stage_db_props[sp]
                 if stage_prop:
-                    pc = stage_prop_class_map[p]
-                    sp = ClassInstance.objects.create(project=project,
+                    pc = stage_prop_class_map[sp]
+                    spc = ClassInstance.objects.create(project=project,
                             user=user, class_column=pc, name=stage_prop)
                     sl = ClassInstanceClassInstance.objects.create(project=project,
-                            user=user, class_instance_a=sp,
+                            user=user, class_instance_a=spc,
                             relation=property_of_rel, class_instance_b=si)
-                    added_stage_properties[p] = sp
+                    added_stage_properties[sp] = spc
             log("Stage properties (" + stage.class_name + "): " + ",".join(
                 ["%s: %s" % (k,v.name) for k,v in added_stage_properties.items()]), 1)
 
@@ -422,11 +489,13 @@ def import_from_mysql(cursor, project, user, experiment_provider):
         else:
             log("No stack info found", 1)
 
-
-        #log("Stages: " + ",".join(s.name for s in stage_instaces), 1)
+        log("Stages: " + ",".join(s.name for s in stage_instaces), 1)
 
         # Classification roots are created for experiments, experiment
-        # classifications and stages.
+        # classifications and stages. First model this on the ontology level:
+        mkcc(classification_class, is_a_rel, classification_root_class, p, u)
+        for stage_class, _ in stage_classes:
+            mkcc(stage_class, is_a_rel, classification_root_class, p, u)
 
     log("Found {} experiments with stack info".format(len(experiments_with_images)))
     #raise ValueError("Not finished")

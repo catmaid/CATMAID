@@ -45,16 +45,12 @@
       requestQueue.register(self.get_cls_url(pid, '/show'),
         'GET', undefined, CATMAID.jsonResponseHandler(
           function(e) {
-            if (e.error) {
-              alert(e.error);
-            } else {
-              var container = document.getElementById(content_div_id);
-              container.innerHTML = e.content;
-              self.handleContent( e.page, container, pid );
-              // execute callback if available
-              if (completionCallback)
-                completionCallback();
-            }
+            var container = document.getElementById(content_div_id);
+            container.innerHTML = e.content;
+            self.handleContent( e.page, container, pid );
+            // execute callback if available
+            if (completionCallback)
+              completionCallback();
           }));
     };
 

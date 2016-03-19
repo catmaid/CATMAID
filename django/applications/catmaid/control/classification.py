@@ -672,25 +672,29 @@ def link_existing_classification( workspace_pid, user, project, ontology_root_ci
         class_instance_a = cp_ci,
         class_instance_b = ontology_root_ci)
 
-def collect_reachable_classes( parent_class):
+def collect_reachable_classes(workspace_pid, parent_class, relation_map=None):
     """ Find all classes that are directly linked to <parent_class>
     and that are linked to a super class to which <parent class> is
-    linked with a 'is_a' relation (if available). Collect the link
+    linked with an 'is_a' relation (if available). Collect the link
     of such a class if it doesn't use an 'is_a' relation.
+
+    TODO: This method makes a lot of queries, potentially recursively. This
+    should be done in one single CTE query.
     """
     available_links = []
-    # Get all links to classes directly linked to the parent class
-    cc_q = ClassClass.objects.filter(class_b=parent_class)
-    # Add every link that does't use an 'is_a' relation
+    relation_map = relation_map or get_relation_to_id_map(workspace_pid)
+    # Get all links to classes directly linked to the parent class with any
+    # relation but 'is_a'.
+    cc_q =ClassClass.objects.filter(project=workspace_pid,
+            class_b=parent_class).exclude(relation_id=relation_map['is_a'])
     for cc in cc_q:
-        if cc.relation.relation_name != 'is_a':
-            available_links.append(cc)
+        available_links.append(cc)
     # Get all links from super-classes
     super_cc_q = ClassClass.objects.filter(class_a=parent_class,
-        relation__relation_name='is_a')
+        relation_id=relation_map['is_a'])
     # Collect all reachable classes of each super class
     for cc in super_cc_q:
-        super_links = collect_reachable_classes( cc.class_b )
+        super_links = collect_reachable_classes(workspace_pid, cc.class_b)
         available_links = available_links + super_links
 
     return available_links
@@ -702,7 +706,7 @@ def get_child_classes( workspace_pid, parent_ci ):
     """
     parent_class = parent_ci.class_column
     # Get all possible child classes
-    available_links = collect_reachable_classes( parent_class )
+    available_links = collect_reachable_classes(workspace_pid, parent_class)
     # Create a dictionary where all classes are assigned to a class which
     # is used as a generalization (if possible). The generalization of a
     # class is linked to it with an 'is_a' relation.

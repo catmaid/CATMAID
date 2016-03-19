@@ -272,15 +272,15 @@ def check_classification_setup_view(request, project_id=None):
     all_good = check_classification_setup()
     return HttpResponse(json.dumps({'all_good': all_good}))
 
-def check_classification_setup(workspace_pid):
+def check_classification_setup(workspace_pid, class_map=None, relation_map=None):
     """ Checks if all classes and relations needed by the
     classification system are available. Needed classes are
     'classification_root' and 'classification_project' and the
     nedded relations are 'is_a' and 'classified_by'.
     """
     # Get classification and relation data
-    class_map = get_class_to_id_map(workspace_pid)
-    relation_map = get_relation_to_id_map(workspace_pid)
+    class_map = class_map or get_class_to_id_map(workspace_pid)
+    relation_map = relation_map or get_relation_to_id_map(workspace_pid)
 
     # Check if all is good
     all_good = True
@@ -384,8 +384,11 @@ def show_classification_editor( request, workspace_pid=None, project_id=None, li
         'workspace': workspace,
         'user': request.user,
     }
+    cursor = connection.cursor()
+    class_map = get_class_to_id_map(workspace_pid, cursor=cursor)
+    relation_map = get_relation_to_id_map(workspace_pid, cursor=cursor)
     # First, check if the classification system is correctly set-up
-    setup_okay = check_classification_setup(workspace_pid)
+    setup_okay = check_classification_setup(workspace_pid, class_map, relation_map)
     if not setup_okay:
         template_name = "catmaid/classification/setup.html"
         page_type = 'setup'
@@ -410,7 +413,6 @@ def show_classification_editor( request, workspace_pid=None, project_id=None, li
             page_type = 'show_graph'
         else:
             # Second, check how many graphs there are.
-            cursor = connection.cursor()
             root_links_q = get_classification_links_qs( workspace_pid,
                     project_id, cursor=cursor)
             num_roots = len(root_links_q)
@@ -790,9 +792,14 @@ def list_classification_graph(request, workspace_pid, project_id=None, link_id=N
 
     max_nodes = 5000  # Limit number of nodes retrievable.
 
+    cursor = connection.cursor()
+    relation_map = get_relation_to_id_map(workspace_pid, cursor=cursor)
+    class_map = get_class_to_id_map(workspace_pid, cursor=cursor)
+
     if link_id is None:
         # Get all links
-        links_q = get_classification_links_qs(workspace_pid, project_id)
+        links_q = get_classification_links_qs(workspace_pid, project_id,
+                relation_map=relation_map, class_map=class_map)
         # Return valid roots
         root_links = [ cici for cici in links_q ]
         num_roots = len(root_links)
@@ -984,8 +991,9 @@ def classification_instance_operation(request, workspace_pid=None, project_id=No
         # TODO sanitize
         params[k] = request.POST.get(k, 0)
 
-    relation_map = get_relation_to_id_map(workspace_pid)
-    class_map = get_class_to_id_map(workspace_pid)
+    cursor = connection.cursor()
+    relation_map = get_relation_to_id_map(workspace_pid, cursor=cursor)
+    class_map = get_class_to_id_map(workspace_pid, cursor=cursor)
 
     # We avoid many try/except clauses by setting this string to be the
     # response we return if an exception is thrown.

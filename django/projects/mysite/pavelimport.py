@@ -240,20 +240,26 @@ def import_from_mysql(cursor, project, user, experiment_provider):
     classification_project_class = mkclass("classification_project", p, u)
     classification_root_class = mkclass("classification_root", p, u)
     dot_classification_class = mkclass("DOT classification", p, u)
-    experiment_class = mkclass("Experiment", p, u)
-    exp_property_class = mkclass("Experiment property", p, u)
+    gene_class = mkclass("Gene", p, u)
+    experiment_class = mkclass("In situ experiment", p, u)
     stage_property_class = mkclass("Stage property", p, u)
     classification_class = mkclass("Ovary classification", p, u)
+    exp_properties_class = mkclass("Experiment properties", p, u)
+    exp_property_class = mkclass("Experiment property", p, u)
+    image_data_class = mkclass("Image data", p, u)
     stack_group_class = mkclass("stackgroup", p, u)
 
     # For now, the only root remains DOT classification
     mkcc(dot_classification_class, is_a_rel, classification_root_class, p, u)
 
-    mkcc(experiment_class, part_of_rel, dot_classification_class, p, u)
+    mkcc(gene_class, part_of_rel, dot_classification_class, p, u)
+    mkcc(experiment_class, part_of_rel, gene_class, p, u)
 
-    mkcc(exp_property_class, property_of_rel, experiment_class, p, u)
+    mkcc(exp_properties_class, part_of_rel, experiment_class, p, u)
+    mkcc(exp_property_class, part_of_rel, exp_properties_class, p, u)
     mkcc(classification_class, part_of_rel, experiment_class, p, u)
-    mkcc(stack_group_class, part_of_rel, experiment_class, p, u)
+    mkcc(image_data_class, part_of_rel, experiment_class, p, u)
+    mkcc(stack_group_class, part_of_rel, image_data_class, p, u)
 
     # Get or create property class for each property along with property class
     # 'is_a'-link to the property class.
@@ -370,15 +376,17 @@ def import_from_mysql(cursor, project, user, experiment_provider):
     experiments_with_images = []
     existing_experiments = cursor.fetchall()
     skipped = []
+    genes = defaultdict(list)
     for nexp, row in enumerate(existing_experiments):
 
         main_id = row['id']
 
         # Name should be like:
         # AU.10 2 - FBgn0025582 - Int6 (CG9677)
+        gene_name = row['cgname']
         group_title = "{0} {1} - {2} - {3} ({4})".format(row['plate'],
                 row['pos'], row['flybase_id'], row['flybase_name'],
-                row['cgname'])
+                gene_name)
 
         # Stack information could also be just generated, all properties are
         # known in advance and the URL can be generated.
@@ -398,8 +406,22 @@ def import_from_mysql(cursor, project, user, experiment_provider):
             main_id, nexp + 1, len(existing_experiments),
             len(experiments_with_images)))
 
+        gene_label = gene_name if gene_name else ("Unknown gene: " + group_title)
+        if gene_label in genes:
+            gene = genes[gene_label]
+        else:
+            gene = mkci(gene_label, gene_class, p, u)
+            mkcici(gene, part_of_rel, dot_classification, p, u)
+            genes[gene_label] = gene
+
         experiment = mkci(group_title, experiment_class, p, u)
-        mkcici(experiment, part_of_rel, dot_classification, p, u)
+        mkcici(experiment, part_of_rel, gene, p, u)
+        image_data = mkci("Image data", image_data_class, p, u)
+        mkcici(image_data, part_of_rel, experiment, p, u)
+        experiment_properties = mkci("Experiment properties", exp_properties_class, p, u)
+        mkcici(experiment_properties, part_of_rel, experiment, p, u)
+        ovary_classification = mkci("Ovary classification", classification_class, p, u)
+        mkcici(ovary_classification, part_of_rel, experiment, p, u)
 
         experiments_with_images.append(experiment)
         # Create property instances
@@ -411,7 +433,7 @@ def import_from_mysql(cursor, project, user, experiment_provider):
             # If this property is NULL, don't create a new instance
             if name:
                 prop_instance = mkci(name, prop_class, p, u)
-                prop_link = mkcici(prop_instance, property_of_rel, experiment, p, u)
+                prop_link = mkcici(prop_instance, part_of_rel, experiment_properties, p, u)
                 prop_instance_map[ep] = prop_instance
                 prop_link_map[ep] = prop_link
         log("Properties: " + ", ".join(
@@ -494,7 +516,7 @@ def import_from_mysql(cursor, project, user, experiment_provider):
             stack_group = mkci(group_title, stack_group_class, p, u)
 
             # Link stack group into experiment
-            experiment_stack = mkcici(stack_group, part_of_rel, experiment, project, user)
+            experiment_stack = mkcici(stack_group, part_of_rel, image_data, project, user)
 
             for stack in new_stacks:
                 link = StackClassInstance.objects.create(user=user, project=project,
@@ -504,7 +526,9 @@ def import_from_mysql(cursor, project, user, experiment_provider):
 
         log("Stages: " + ",".join(s.name for s in stage_instaces), 1)
 
-        # Create classification --- link
+        # Create classification --- create and link new elements into
+        # the "ovary classification" class instance.
+        dot_classification = get_classification()
 
     log("Found {} experiments with stack info".format(len(experiments_with_images)))
     #raise ValueError("Not finished")

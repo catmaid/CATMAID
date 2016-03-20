@@ -930,7 +930,7 @@ def list_classification_graph(request, workspace_pid, project_id=None, link_id=N
                 if roi_html:
                     title = "%s %s" % (get_class_name(child.class_column), roi_html)
                 else:
-                    title = get_class_name(child.class_column)
+                    title = child.name if child.name else get_class_name(child.class_column)
                 # Build JSTree data structure
                 data = {'data': {'title': title},
                     'attr': {'id': 'node_%s' % child.id,

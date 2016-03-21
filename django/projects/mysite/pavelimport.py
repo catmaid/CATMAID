@@ -547,7 +547,7 @@ def import_from_mysql(cursor, project, user, experiment_provider):
                 dim=(stack['dimension']['x'], stack['dimension']['y'], stack['dimension']['z'])
                 tile_width=stack['tile_width']
                 tile_height=stack['tile_height']
-                image=base=stack['image_base']
+                image_base=stack['image_base']
                 stack = Stack.objects.create(title=stack['title'], resolution=res,
                         image_base=image_base, dimension=dim,
                         num_zoom_levels=stack['num_zoom_levels'],

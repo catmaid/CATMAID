@@ -6,7 +6,9 @@
 #
 # Experiments
 
+import copy
 import json
+import pprint
 import pymysql.cursors
 import pymysql
 import requests
@@ -204,16 +206,19 @@ def mkcc(c1, rel, c2, project, user):
             defaults={'user': user})
     return link
 
-def mkci(name, cls, project, user):
-    return ClassInstance.objects.create(user=user, project=project,
+def mkci(name, cls, project, user, rel=None, class_instance_b=None):
+    ci, _ = ClassInstance.objects.get_or_create(user=user, project=project,
             class_column=cls, name=name)
+    if rel and class_instance_b:
+        mkcici(ci, rel, class_instance_b, project, user)
+    return ci
+
 
 def mkcici(ci1, rel, ci2, project, user, save=True):
-    ci = ClassInstanceClassInstance(user=user,
+    ci, _ = ClassInstanceClassInstance.objects.get_or_create(user=user,
             project=project, class_instance_a=ci1,
             relation=rel, class_instance_b=ci2)
-    if save:
-        ci.save()
+
     return ci
 
 
@@ -286,16 +291,6 @@ def import_from_mysql(cursor, project, user, experiment_provider):
         identity_link = mkcc(prop_class, is_a_rel, stage_property_class, p, u)
         stage_prop_class_map[ep] = prop_class
 
-    # Create actual classifciation ontology
-    c_presence = mkclass("Presence", p, u, part_of_rel, classification_class)
-    c_not_expressed = mkclass("expressed", p, u, is_a_rel, c_presence)
-    c_not_expressed = mkclass("not expressed", p, u, is_a_rel, c_presence)
-    c_distribution = mkclass("Distribution", p, u, part_of_rel, classification_class)
-    c_uni_loc = mkclass("uniform localization", p, u, is_a_rel, c_distribution)
-    c_subcell_loc = mkclass("subcellular localization pattern", p, u, is_a_rel, c_distribution)
-    c_stage = mkclass("Stage", p, u, part_of_rel, c_distribution)
-    c_cell_type = mkclass("Cell type", p, u, part_of_rel, c_stage)
-
     # Get or create classes for stages
     stage_names = {
         "Germarium & stage 1 egg chamber": 1,
@@ -305,14 +300,6 @@ def import_from_mysql(cursor, project, user, experiment_provider):
         "Stage 10 egg chamber": 5,
         "Misc": 6
     }
-
-    def toStageClass(name):
-        key = stage_names[name]
-        stage = mkclass(name, project, user, is_a_rel, c_stage)
-        return stage, key
-
-    # Map stage classes to corresponding keys in original databases
-    stage_classes = map(toStageClass, stage_names.keys())
 
     cell_types = [
         'female germline stem cell and cytoblast',
@@ -332,9 +319,6 @@ def import_from_mysql(cursor, project, user, experiment_provider):
         'follicle cell overlaying oocyte',
     ]
 
-    create_cell_types = lambda x: mkclass(x, p, u, is_a_rel, c_cell_type)
-    cell_type_classes = map(create_cell_types, cell_types)
-
     cell_type_localizations = [
         'anterior restriction',
         'posterior restriction',
@@ -346,12 +330,52 @@ def import_from_mysql(cursor, project, user, experiment_provider):
         'basal restriction',
     ]
 
-    c_localization = mkclass("Localization", p, u, part_of_rel, c_cell_type)
-    create_cell_locs = lambda x: mkclass(x, p, u, is_a_rel, c_localization)
-    cell_type_locs = map(create_cell_locs, cell_type_localizations)
 
     image_properties = ("flag_as_primary", "magnification", "ap", "dv",
         "orientation", "headedness", "image_processing_flags")
+
+    target_ontology = {
+        'Presence': {
+            'is_a': [
+                'not expressed',
+                'expressed'
+            ]
+        },
+        'Distribution': {
+            'is_a': [
+                'uniform localization',
+                'subcellular localization pattern'
+            ],
+            'part_of': {
+                'Stage': {
+                    'is_a': [
+                        "Germarium & stage 1 egg chamber",
+                        "Stage 2-7 egg chamber",
+                        "Stage 8 egg chamber",
+                        "Stage 9 egg chamber",
+                        "Stage 10 egg chamber",
+                        "Misc"
+                    ],
+                    'part_of': {
+                        'Cell type': {
+                            'is_a': cell_types,
+                            'part_of': {
+                                'Localization': {
+                                    'is_a': cell_type_localizations
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+    # Build DOT ontology
+    ontology = Ontology(target_ontology, cursor, p, u,
+            experiment_class, part_of_rel)
+    pprint.pprint(ontology.ontology, width=1)
 
     # Classification roots are created for experiments, experiment
     # classifications and stages. First model this on the ontology level:
@@ -441,50 +465,52 @@ def import_from_mysql(cursor, project, user, experiment_provider):
 
         # Next create stage instances and link them to experiments. Then link
         # classification trees to them.
-        stage_instaces = []
-        stage_images = {}
-        for stage, key in stage_classes:
-            si = ClassInstance.objects.create(project=project,
-                    user=user, class_column=stage,
-                    name="%s: %s" % (name, stage.class_name))
-            stage_instaces.append(si)
-            # Assign properties, if set
-            stage_original_id = stage_names[stage.class_name]
-            sql = "SELECT " + (",".join(stage_properties)) + ",id FROM annot " + \
-                "WHERE main_id=%s AND stage=%s"
-            cursor.execute(sql, (main_id, stage_original_id))
-            stage_db_props = cursor.fetchone()
-            added_stage_properties = {}
-            # The stage ID is the first after all fields in stage_properties
-            stage_id = stage_db_props['id']
-            for n, sp in enumerate(stage_properties):
-                stage_prop = stage_db_props[sp]
-                if stage_prop:
-                    pc = stage_prop_class_map[sp]
-                    spc = mkci(stage_prop, pc, p, u)
-                    sl = mkcici(spc, property_of_rel, si, p, u)
-                    added_stage_properties[sp] = spc
-            log("Stage properties (" + stage.class_name + "): " + ",".join(
-                ["%s: %s" % (k,v.name) for k,v in added_stage_properties.items()]), 1)
+        link_stage_properties = False
+        if link_stage_properties:
+            stage_instaces = []
+            stage_images = {}
+            for stage, key in stage_classes:
+                si = ClassInstance.objects.create(project=project,
+                        user=user, class_column=stage,
+                        name="%s: %s" % (name, stage.class_name))
+                stage_instaces.append(si)
+                # Assign properties, if set
+                stage_original_id = stage_names[stage.class_name]
+                sql = "SELECT " + (",".join(stage_properties)) + ",id FROM annot " + \
+                    "WHERE main_id=%s AND stage=%s"
+                cursor.execute(sql, (main_id, stage_original_id))
+                stage_db_props = cursor.fetchone()
+                added_stage_properties = {}
+                # The stage ID is the first after all fields in stage_properties
+                stage_id = stage_db_props['id']
+                for n, sp in enumerate(stage_properties):
+                    stage_prop = stage_db_props[sp]
+                    if stage_prop:
+                        pc = stage_prop_class_map[sp]
+                        spc = mkci(stage_prop, pc, p, u)
+                        sl = mkcici(spc, property_of_rel, si, p, u)
+                        added_stage_properties[sp] = spc
+                log("Stage properties (" + stage.class_name + "): " + ",".join(
+                    ["%s: %s" % (k,v.name) for k,v in added_stage_properties.items()]), 1)
 
-            # Add ROIs from image table. There exists a mapping from Felix'
-            # montage creation to original images and to original images
-            # relative all image table entries are a cut out of the original.
-            # This cut-out is rotated and magnified and cut according to the
-            # crop_area table.
-            # TODO: Implement
-            #sql = "SELECT image_path FROM image WHERE annot_id=%s"
-            #cursor.execute(sql, stage_id)
-            #rois = []
-            sql = """
-            SELECT m.id, m.plate, m.pos, a.stage, ca.ant_x, ca.ant_y,
-                   ca.post_y, ca.post_y, ca.lat_x, ca.lat_y, ca.slice_index
-            FROM image i
-            JOIN crop_area ca ON i.id=ca.image_id
-            JOIN annot a ON i.annot_id=a.id
-            JOIN main m ON a.main_id = m.id
-            WHERE annot_id = s
-            """
+                # Add ROIs from image table. There exists a mapping from Felix'
+                # montage creation to original images and to original images
+                # relative all image table entries are a cut out of the original.
+                # This cut-out is rotated and magnified and cut according to the
+                # crop_area table.
+                # TODO: Implement
+                #sql = "SELECT image_path FROM image WHERE annot_id=%s"
+                #cursor.execute(sql, stage_id)
+                #rois = []
+                sql = """
+                SELECT m.id, m.plate, m.pos, a.stage, ca.ant_x, ca.ant_y,
+                       ca.post_y, ca.post_y, ca.lat_x, ca.lat_y, ca.slice_index
+                FROM image i
+                JOIN crop_area ca ON i.id=ca.image_id
+                JOIN annot a ON i.annot_id=a.id
+                JOIN main m ON a.main_id = m.id
+                WHERE annot_id = s
+                """
 
         # Create three image stack per experiment: Ch1, Ch2 and Composite. These
         # are stack references the montage of Felix. Available here:
@@ -524,14 +550,247 @@ def import_from_mysql(cursor, project, user, experiment_provider):
         else:
             log("No stack info found", 1)
 
-        log("Stages: " + ",".join(s.name for s in stage_instaces), 1)
+        if link_stage_properties:
+            log("Stages: " + ",".join(s.name for s in stage_instaces), 1)
 
         # Create classification --- create and link new elements into
-        # the "ovary classification" class instance.
-        dot_classification = get_classification()
+        # the "ovary classification" class instance. Iterate through each stage
+        # for this experiment (stage table and main table linked through annot
+        # table). For each stage get all annotations used from annot_term table
+        # and find them in ontology.
+        annotations = AnnotationTree(ontology, main_id, p, u,
+                ovary_classification, part_of_rel, cursor)
 
     log("Found {} experiments with stack info".format(len(experiments_with_images)))
     #raise ValueError("Not finished")
+
+class Ontology(object):
+
+    def __init__(self, schema, cursor, project, user, root, root_rel):
+        self.ontology = self.load(schema, project, user, root, root_rel)
+
+    def get_class(self, path, instance):
+        node = None
+        w = self.ontology
+        for p in path:
+            new_node = w.get(p)
+            if new_node:
+                node = new_node
+                children = node.get('children')
+                if children:
+                    w = children
+            else:
+                raise ValueError("Class path component not found: " + str(path))
+
+        cls = node.get('values').get(instance).get('class') if node else None
+        return cls
+
+    def load(self, schema, project, user, parent=None, parent_rel=None):
+        result = {}
+
+        # Iterate class names to relations
+        for k, v in schema.iteritems():
+            c = mkclass(k, project, user)
+            if parent and parent_rel:
+                mkcc(c, parent_rel, parent, project, user)
+
+            node = {
+                'class': c,
+                'parent': parent,
+                'parent_rel': parent_rel
+            }
+            result[k] = node
+
+            # Iterate relations
+            if not v:
+                continue
+            for r, p in v.iteritems():
+                rel = mkrel(r, project, user)
+                p_type = type(p)
+                if p_type == list:
+                    children = {}
+                    for child in p:
+                        children[child] = None
+                    p = children
+                    node['values'] = self.load(p, project, user, c, rel)
+                elif p_type != dict:
+                    raise ValueError("Unsupported child type: " + p_type)
+                else:
+                    node['children'] = self.load(p, project, user, c, rel)
+
+        return result
+
+class AnnotationTree(object):
+    def __init__(self, ontology, main_id, project, user, root, part_of, cursor):
+        self.ontology = ontology
+        self.main_id = main_id
+
+        # Presence:
+        #   values: not expressed, expressed
+        #   children: []
+        # Distribution:
+        #   values: unoform loc..., subcellular ...
+        #   children:
+        #     Stage:
+        #       values: Germarium ..., Stage 2-7, ...
+        #       children:
+        #         Cell type:
+        #           values: ...
+        #           children:
+        #             Localization:
+        #               values: ...
+        #               children: []
+
+        class Node:
+            def __init__(self, path, instance):
+                self.path = path
+                self.instance = instance
+                self.cls = ontology.get_class(path, instance)
+                self.class_instance = mkci(instance, self.cls, project, user)
+                self.children = []
+                print("Node", self.class_instance)
+
+        classification = {}
+        classification['Presence'] = {
+            'value': 'expressed'
+        }
+        classification['Distribution'] = {
+            'value': 'subcellular localization pattern',
+            'children': []
+        }
+
+        def linkNewNode(dd):
+            pass
+
+        def addNode(path, instance):
+            #node = Node(path)
+            target = classification
+            for supercls, cls in path:
+                entry = target.get(supecls)
+                if not entry:
+                    entry = {
+                        'value': cls,
+                        'children': {}
+                    }
+                    target[p] = entry
+                target = entry
+
+        # Get all annotations for this experiment
+        sql = """
+            SELECT main.id, term.id, term.go_term, stage.name
+              FROM main, annot, annot_term, term, stage
+             WHERE main.id = annot.main_id
+               AND annot.id = annot_term.annot_id
+               AND annot_term.term_id = term.id
+               AND annot.stage = stage.id
+               AND main.id = %s
+        """
+        cursor.execute(sql, (main_id,))
+        annotations = cursor.fetchall()
+
+        stage_names = {
+           'stage1': "Germarium & stage 1 egg chamber",
+           'stage2_to_7': "Stage 2-7 egg chamber",
+           'stage8': "Stage 8 egg chamber",
+           'stage9': "Stage 9 egg chamber",
+           'stage10': "Stage 10 egg chamber",
+        }
+
+        # Learn about presence
+        # If: stage1 > "no signal at all stages"
+        # Then: DOT > [Presence > Not expressed]
+        # Else: DOT > [Presence > Expressed]
+        cursor.execute(sql + " AND stage.name=%s AND term.go_term=%s",
+                (main_id, "stage1", "no signal at all stages"))
+        presence = 'not expressed' if (1 == len(cursor.fetchall())) else 'expressed'
+        print presence
+        print ontology.get_class(["Presence"], presence)
+        ci_presence = mkci(presence, ontology.get_class(["Presence"], presence),
+                project, user, part_of, root);
+
+        # Learn about distribution
+        # If: stage1 > "ubiquitous signal at all stages"
+        # Then: DOT > [Distribution > uniform localization]
+        # Else: DOT > [Distribution > subcellular localization pattern]
+        cursor.execute(sql + " AND stage.name=%s AND term.go_term=%s",
+                (main_id, "stage1", "ubiquitous signal at all stages"))
+        distribution = 'uniform localization' if (1 == len(cursor.fetchall())) \
+            else 'subcellular localization pattern'
+        ci_distribution = mkci(distribution, ontology.get_class(["Distribution"], distribution),
+                project, user, part_of, root);
+
+        # Fill in stages
+        for stage, stage_name in stage_names.iteritems():
+            cursor.execute(sql + " AND stage.name=%s", (main_id, stage))
+            stage_terms = cursor.fetchall()
+
+            # Ignore stage, if there are no annotations for it
+            if 0 == len(stage_terms):
+                continue
+
+            ci_stage = mkci(stage_name, ontology.get_class(["Distribution",
+                "Stage"], stage_name), project, user, part_of, ci_distribution)
+
+#        for annotation in annotations:
+#            stage = annotation['name']
+#            term_id = annotation['term.id']
+#            term = annotation['go_term']
+#            print(stage, term_id, term)
+#
+#            # If: stage1 > "ubiquitous signal at all stages"
+#            # Then: DOT > [Distribution > uniform localization]
+#            # Else: DOT > [Distribution > subcellular localization pattern]
+#            if stage == "stage1" and term == "ubiquitous signal at all stages":
+#                addNode([['Distribution', 'uniform localization']])
+#                log("Distribution > uniform localization", 1)
+#                continue
+#
+#            # Make sure a stage instance is created for each stage
+#            if stage in stage_names:
+#                stage_name = stage_names[stage]
+#                addNode([['Distribution', stage_name]])
+#
+#                if False:
+#                    addNode([['Distribution', stage_name], []])
+#                    children = classification['Distribution']['children']
+#                    cell_type = distr_children['Cell Type']
+#
+#        self.classification = classification
+
+    def instantiate(self, parent, parent_rel, project, user):
+
+        def traverse(elements, path, ci_parent, ci_parent_rel):
+            # Each element maps a name to a dictionary, e.g.
+            # Distribution: { 'class': <class>, 'children': [<dict>, <dict>] }
+            for ci_name, props in elements.iteritems():
+                # Traverse to children to see if they were created
+                path.append(ci_name)
+
+                path.append(props['class'])
+                # Path will be something like ["Presence", "
+                cls = self.ontology.get_class(path)
+                print (path, ci_parent_rel, ci_parent, ci_name, props, cls)
+                if not cls:
+                    raise ValueError("Couldn't find path in ontology: " + str(path))
+                # Concrete class isn't needed anymore on stack
+                path.pop()
+
+                # Create top level class es (e.g. Concrete distribution)
+                ci = mkci(props['class'], cls, project, user)
+                mkcici(ci, ci_parent_rel, ci_parent, project, user)
+
+                # Traverse children, if any
+                children = props.get('children')
+                if children:
+                    log("Found children: " + str(children), 1)
+                    traverse(children, path, ci, ci_parent_rel)
+
+                path.pop()
+
+        traverse(self.classification, [], parent, parent_rel)
+
+    def set(self, stage, term):
+        pass
 
 def main(options, project, user):
     # Connect to the database

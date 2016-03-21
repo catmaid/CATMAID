@@ -1,14 +1,19 @@
 Publications
 ------------
-* Saalfeld S, Cardona A, Hartenstein V, Tomančák P. `CATMAID: collaborative annotation toolkit for massive amounts of image data <http://bioinformatics.oxfordjournals.org/content/25/15/1984.abstract>`_, **Bioinformatics** 25(15), 2009.
-* Gerhard S, Longair M, Saalfeld S, Tomancak P, Cardona A `Web-based collaborative neural circuit reconstruction with CATMAID <http://www.unidesign.ch/pdf/EuroBioimaging2012-CATMAIDposter.pdf>`_, Poster Presentation, EuroBioimaging, Barcelona 2012.
+*If you use CATMAID, please cite the following papers:*
 
-Neural Circuit Reconstruction Methods
+* Casey M Schneider-Mizell, Stephan Gerhard, Mark Longair, Tom Kazimiers, Feng Li, Maarten F Zwart, Andrew Champion, Frank M Midgley, Richard D Fetter, Stephan Saalfeld, Albert Cardona. `Quantitative neuroanatomy for connectomics in Drosophila <http://elifesciences.org/content/5/e12059v1>`_,  eLife, 2016.
+
+* Stephan Saalfeld, Albert Cardona, Volker Hartenstein, Pavel Tomančák. `CATMAID: collaborative annotation toolkit for massive amounts of image data <http://bioinformatics.oxfordjournals.org/content/25/15/1984.abstract>`_, Bioinformatics, 2009.
+
+Publications using CATMAID
 `````````````````````````````````````
-* Jan Funke, Björn Andres, Fred A. Hamprecht, Albert Cardona, and Matthew Cook. Efficient Automatic 3D-Reconstruction of Branching Neurons from EM Data, IEEE Conference on Computer Vision and Pattern Recognition, 2012
-* Dmitri B Chklovskii, Shiv Vitaladevuni, Louis K Scheffer, `Semi-automated reconstruction of neural circuits using electron microscopy <http://www.google.ch/url?sa=t&rct=j&q=semi-automated%20reconstruction%20of%20neural%20circuits%20using%20electronmicroscopy&source=web&cd=2&ved=0CDMQFjAB&url=http%3A%2F%2Fwww.neuroptikon.org%2Fprojects%2Fdownload%2Fattachments%2F12157120%2FChklovskiiVitaladevuniScheffer10.pdf&ei=msD5TrT9HKmk4gTNgcGNCA&usg=AFQjCNGCM5imyEAXYpqrApCtDwkbZC_SQQ>`_, Current Opinion in Neurobiology, Volume 20, Issue 5, October 2010, Pages 667-675, ISSN 0959-4388, 10.1016/j.conb.2010.08.002.
-* A. Vazquez-Reina, M. Gelbart, D. Huang, J. Lichtman, E. Miller, H. Pfister. `Segmentation Fusion for Connectomics <http://gvi.seas.harvard.edu/paper/segmentation-fusion-connectomics>`_, IEEE ICCV 2011.
+*The following publications used CATMAID for neural circuit reconstruction. Please get in touch with us if your publication is missing.*
 
-Serial section EM alignment methods
-```````````````````````````````````
-* Stephan Saalfeld, Richard Fetter, Albert Cardona & Pavel Tomancak. `Elastic volume reconstruction from series of ultra-thin microscopy sections <http://www.nature.com/nmeth/journal/vaop/ncurrent/full/nmeth.2072.html>`_, Nature Methods 2012.
+* Matthew E. Berck, Avinash Khandelwal, Lindsey Claus, Luis Hernandez-Nunez, Guangwei Si, Christopher J. Tabone, Feng Li, James W. Truman, Richard D. Fetter, Matthieu Louis, Aravinthan D. T. Samuel, Albert Cardona. `The wiring diagram of a glomerular olfactory system <http://www.biorxiv.org/content/early/2016/01/25/037721>`_, bioRxiv, 2016.
+
+* Tomoko Ohyama,  Casey M. Schneider-Mizell,  Richard D. Fetter,  Javier Valdes Aleman, Romain Franconville,  Marta Rivera-Alba,  Brett D. Mensh, Kristin M. Branson, Julie H. Simpson, James W. Truman,  Albert Cardona, Marta Zlatic. `A Multilevel Multimodal Circuit Enhances Action Selection in Drosophila. <http://www.nature.com/nature/journal/v520/n7549/full/nature14297.html>`_ Nature, 2015.
+
+* Ellie S. Heckscher, Aref Arzan Zarin, Serge Faumont, Matthew Q. Clark, Laurina Manning, Akira Fushiki, Casey M. Schneider-Mizell, Richard D. Fetter, James W. Truman, Maarten F. Zwart, Matthias Landgraf, Albert Cardona, Shawn R. Lockery, Chris Q. Doe. `Even-Skipped+ Interneurons Are Core Components of a Sensorimotor Circuit that Maintains Left-Right Symmetric Muscle Contraction Amplitude <http://www.sciencedirect.com/science/article/pii/S0896627315007667>`_, Neuron, 2015.
+
+* Nadine Randel Réza Shahidi Csaba Verasztó Luis A Bezares-Calderón Steffen Schmidt Gáspár Jékely. `Inter-individual stereotypy of the Platynereis larval visual connectome <http://elifesciences.org/content/4/e08069v2>`_, eLife, 2015.

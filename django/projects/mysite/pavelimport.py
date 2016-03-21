@@ -561,7 +561,7 @@ def import_from_mysql(cursor, project, user, experiment_provider):
 
             # stack group should have a name like this:
             # AU.10 2 - FBgn0025582 - Int6 (CG9677)
-            stack_group = mkci(group_title, stack_group_class, p, u)
+            stack_group = mkci("Image data for " + group_title, stack_group_class, p, u)
 
             # Link stack group into experiment
             experiment_stack = mkcici(stack_group, part_of_rel, image_data, project, user)

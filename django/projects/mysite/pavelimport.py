@@ -80,13 +80,13 @@ target_ontology = {
         ]
     },
     'Distribution': {
-        'is_a': [
+        Restriction('is_a', 4, 1): [
             'uniform localization',
             'subcellular localization pattern'
         ],
         'part_of': {
             'Stage': {
-                'is_a': [
+                Restriction('is_a', 4, 1): [
                     "Germarium & stage 1 egg chamber",
                     "Stage 2-7 egg chamber",
                     "Stage 8 egg chamber",
@@ -96,10 +96,10 @@ target_ontology = {
                 ],
                 'part_of': {
                     'Cell type': {
-                        'is_a': cell_types.keys(),
+                        Restriction('is_a', 4, 1): cell_types.keys(),
                         'part_of': {
                             'Localization': {
-                                'is_a': cell_type_localizations.keys()
+                                Restriction('is_a', 4, 1): cell_type_localizations.keys()
                             }
                         }
                     }

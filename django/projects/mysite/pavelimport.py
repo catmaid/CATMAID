@@ -21,6 +21,89 @@ from catmaid.models import (Class, ClassClass, ClassInstance,
 
 requests.packages.urllib3.disable_warnings()
 
+stage_names = {
+    "Germarium & stage 1 egg chamber": 1,
+    "Stage 2-7 egg chamber": 2,
+    "Stage 8 egg chamber": 3,
+    "Stage 9 egg chamber": 4,
+    "Stage 10 egg chamber": 5,
+    "Misc": 6
+}
+
+cell_types = {
+    'female germline stem cell and cytoplast': set(['germline stem cells', 'cytoplast']),
+    'presumptive nurse cell and oocyte': set(['presumptive oocyte', 'presumptive nurse cells']),
+    'follicle stem cell': set(['follicle stem cells']),
+    'follicle cell': set(['follicle cells']),
+    'posterior polar follicle cell': set(['posterior follicle cells']),
+    'anterior polar follicle cell': set(['anterior follicle cells']),
+    'cap cell': set(['cap cells']),
+    'escort cell': set(['escort cells']),
+    'interfollicular stalk cell': set(['interfollicular stalk cells']),
+    'terminal filament': set(['terminal filament']),
+    'border follicle cell': set(['border cells']),
+    'oocyte': set(['oocyte']),
+    'nurse cell': set(['nurse cells']),
+    'centripetally migrating follicle cell': set(['centripetally migrating follicle cells']),
+    'follicle cell overlaying oocyte': set(['follicle cells overlaying the oocyte']),
+}
+
+cell_type_localizations = {
+    'anterior restriction': set(['anterior restriction']),
+    'posterior restriction': set(['posterior restriction']),
+    'cytoplasmic foci': set(['cytoplasmic foci']),
+    'cortical enrichment': set(['cortical enrichment']),
+    'nuclear foci': {'oocyte': set(['oocyte nucleus']),
+                      'nurse cells': set(['nurse cells nuclear foci']),
+                      'follicle cells': set(['nuclear foci'])},
+    'perinuclear': {'nurce cells': set(['nurse cells perinuclear']),
+                    'follicle cells': set(['perinuclear'])},
+    'apical restriction': set(['apical restriction']),
+    'basal restriction': set(['basal restriction']),
+}
+
+
+image_properties = ("flag_as_primary", "magnification", "ap", "dv",
+    "orientation", "headedness", "image_processing_flags")
+
+target_ontology = {
+    'Presence': {
+        'is_a': [
+            'not expressed',
+            'expressed'
+        ]
+    },
+    'Distribution': {
+        'is_a': [
+            'uniform localization',
+            'subcellular localization pattern'
+        ],
+        'part_of': {
+            'Stage': {
+                'is_a': [
+                    "Germarium & stage 1 egg chamber",
+                    "Stage 2-7 egg chamber",
+                    "Stage 8 egg chamber",
+                    "Stage 9 egg chamber",
+                    "Stage 10 egg chamber",
+                    "Misc"
+                ],
+                'part_of': {
+                    'Cell type': {
+                        'is_a': cell_types.keys(),
+                        'part_of': {
+                            'Localization': {
+                                'is_a': cell_type_localizations.keys()
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
 def log(msg, indent=0):
     print("  " * indent + msg)
 
@@ -292,85 +375,6 @@ def import_from_mysql(cursor, project, user, experiment_provider):
         stage_prop_class_map[ep] = prop_class
 
     # Get or create classes for stages
-    stage_names = {
-        "Germarium & stage 1 egg chamber": 1,
-        "Stage 2-7 egg chamber": 2,
-        "Stage 8 egg chamber": 3,
-        "Stage 9 egg chamber": 4,
-        "Stage 10 egg chamber": 5,
-        "Misc": 6
-    }
-
-    cell_types = [
-        'female germline stem cell and cytoblast',
-        'presumptive nurse cell and oocyte',
-        'follicle stem cell',
-        'follicle cell',
-        'posterior polar follicle cell',
-        'anterior polar follicle cell',
-        'cap cell',
-        'escort cell',
-        'interfollicular stalk cell',
-        'terminal filament',
-        'border follicle cell',
-        'oocyte',
-        'nurse cell',
-        'centripetally migrating follicle cell',
-        'follicle cell overlaying oocyte',
-    ]
-
-    cell_type_localizations = [
-        'anterior restriction',
-        'posterior restriction',
-        'cytoplasmic foci',
-        'cortical enrichment',
-        'nuclear foci',
-        'perinuclear',
-        'apical restriction',
-        'basal restriction',
-    ]
-
-
-    image_properties = ("flag_as_primary", "magnification", "ap", "dv",
-        "orientation", "headedness", "image_processing_flags")
-
-    target_ontology = {
-        'Presence': {
-            'is_a': [
-                'not expressed',
-                'expressed'
-            ]
-        },
-        'Distribution': {
-            'is_a': [
-                'uniform localization',
-                'subcellular localization pattern'
-            ],
-            'part_of': {
-                'Stage': {
-                    'is_a': [
-                        "Germarium & stage 1 egg chamber",
-                        "Stage 2-7 egg chamber",
-                        "Stage 8 egg chamber",
-                        "Stage 9 egg chamber",
-                        "Stage 10 egg chamber",
-                        "Misc"
-                    ],
-                    'part_of': {
-                        'Cell type': {
-                            'is_a': cell_types,
-                            'part_of': {
-                                'Localization': {
-                                    'is_a': cell_type_localizations
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
 
     # Build DOT ontology
     ontology = Ontology(target_ontology, cursor, p, u,
@@ -384,21 +388,21 @@ def import_from_mysql(cursor, project, user, experiment_provider):
     #for stage_class, _ in stage_classes:
     #    mkcc(stage_class, is_a_rel, classification_root_class, p, u)
 
-    # Read projects from DB
-    effective_exp_fields = exp_properties + ("id",)
-    sql = "SELECT {0} FROM main".format(", ".join(effective_exp_fields))
-
     # Our classification root
     dot_classification = mkci("DOT classification", dot_classification_class, p, u)
     classification_project = mkci("classification_project",
             classification_project_class, p, u)
     mkcici(classification_project, classified_by, dot_classification, p, u)
 
+    # Read projects from DB
+    effective_exp_fields = exp_properties + ("id",)
+    sql = "SELECT {0} FROM main".format(", ".join(effective_exp_fields))
     cursor.execute(sql)
     # For each original result, create one new experiment instance with linked
     # exp_properties.
     experiments_with_images = []
     existing_experiments = cursor.fetchall()
+    log("Found {} experiments (unfiltered)".format(len(existing_experiments)))
     skipped = []
     genes = defaultdict(list)
     for nexp, row in enumerate(existing_experiments):
@@ -421,7 +425,11 @@ def import_from_mysql(cursor, project, user, experiment_provider):
             #log("Skipping group '{}', no stack information found".format(group_title))
             continue
 
-        if len(experiments_with_images) > 10:
+        enable_filter = False
+        max_projects = 5
+        whitelist = ("CG1416", "CG2674")
+        if enable_filter and len(experiments_with_images) > max_projects \
+                and gene_name not in whitelist:
             skipped.append(group_title)
             #log("Skipping group '{}', no stack information found".format(group_title))
             continue
@@ -703,8 +711,6 @@ class AnnotationTree(object):
         cursor.execute(sql + " AND stage.name=%s AND term.go_term=%s",
                 (main_id, "stage1", "no signal at all stages"))
         presence = 'not expressed' if (1 == len(cursor.fetchall())) else 'expressed'
-        print presence
-        print ontology.get_class(["Presence"], presence)
         ci_presence = mkci(presence, ontology.get_class(["Presence"], presence),
                 project, user, part_of, root);
 
@@ -719,17 +725,84 @@ class AnnotationTree(object):
         ci_distribution = mkci(distribution, ontology.get_class(["Distribution"], distribution),
                 project, user, part_of, root);
 
+        stage_term_sql = """
+            SELECT DISTINCT t1.go_term, t2.go_term
+              FROM main, annot a1, annot a2 , annot_term at1, annot_term at2,
+                   term t1, term t2, stage, term_2_term tt
+             WHERE main.id = a1.main_id
+               AND main.id = a2.main_id
+               AND a1.id = at1.annot_id
+               AND a2.id = at2.annot_id
+               AND a1.stage = stage.id
+               AND a2.stage = stage.id
+               AND at1.term_id = t1.id
+               AND at2.term_id = t2.id
+               AND t1.id = tt.term1_id
+               AND t2.id = tt.term2_id
+               AND tt.rel_type = "part of"
+               AND main.id = %s
+               AND stage.name = %s
+        """
+
         # Fill in stages
         for stage, stage_name in stage_names.iteritems():
-            cursor.execute(sql + " AND stage.name=%s", (main_id, stage))
-            stage_terms = cursor.fetchall()
+            log("Checking classification stage: " + stage_name, 2)
+            cursor.execute(stage_term_sql, (main_id, stage))
+            stage_term_records = cursor.fetchall()
+            print stage_term_records
 
             # Ignore stage, if there are no annotations for it
-            if 0 == len(stage_terms):
+            if 0 == len(stage_term_records):
                 continue
+
+            inv_stage_term_mapping = defaultdict(set)
+            for e in stage_term_records:
+                inv_stage_term_mapping[e['go_term']].add(e['t2.go_term'])
+            inv_stage_term_mapping = dict(inv_stage_term_mapping)
 
             ci_stage = mkci(stage_name, ontology.get_class(["Distribution",
                 "Stage"], stage_name), project, user, part_of, ci_distribution)
+
+            stage_terms = set([t['go_term'] for t in stage_term_records])
+            log("Terms: " + str(stage_terms), 2)
+
+            created_cell_types = []
+            for ct, dot_terms in cell_types.iteritems():
+                for term in stage_terms.intersection(dot_terms):
+                    log("Create cell type: " + term, 3)
+                    cls = ontology.get_class(["Distribution", "Stage", "Cell type"], ct)
+                    ci_celltype = mkci(ct, cls, project, user, part_of, ci_stage )
+                    created_cell_types.append(ci_celltype)
+
+                    # Add localization
+                    components = inv_stage_term_mapping.get(term)
+                    if not components:
+                        log("No linked term for: " + term, 4)
+                        continue
+                    for c in components:
+                        log("Check localization: " + str(c), 4)
+                        dot_localizations = cell_type_localizations.get(c)
+                        if not dot_localizations:
+                            log("Couldn't find localization classes: " + term, 4)
+                        elif type(dot_localizations) == dict:
+                            constraints = dot_localizations.get(term)
+                            if constraints:
+                                children = inv_stage_term_mapping.get(term)
+                                if constraints.intersection(children):
+                                    cls_loc = ontology.get_class(["Distribution", "Stage",
+                                        "Cell type", "Localization"], c)
+                                    ci_loc =  mkci(c, cls_loc, project, user,
+                                            part_of, ci_celltype)
+                                    log("Created location: " + c, 4)
+                            else:
+                                log("Term {} not supported by localization {}".format(term, c))
+                        else:
+                            locs = components.intersection(dot_localizations)
+                            for loc_term in locs:
+                                log("Create localization: " + loc_term, 4)
+
+            log("Created cell types: " + ", ".join(
+                [c.name for c in created_cell_types]), 2)
 
 #        for annotation in annotations:
 #            stage = annotation['name']

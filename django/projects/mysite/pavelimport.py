@@ -17,7 +17,7 @@ import re, os, sys
 from collections import defaultdict
 from catmaid.models import (Class, ClassClass, ClassInstance,
         ClassInstanceClassInstance, Relation, Stack, ProjectStack,
-        StackClassInstance)
+        StackClassInstance, CardinalityRestriction)
 
 requests.packages.urllib3.disable_warnings()
 
@@ -66,9 +66,15 @@ cell_type_localizations = {
 image_properties = ("flag_as_primary", "magnification", "ap", "dv",
     "orientation", "headedness", "image_processing_flags")
 
+class Restriction(object):
+    def __init__(self, name, cardinality_type, value):
+        self.name = name
+        self.cardinality_type = cardinality_type
+        self.value = value
+
 target_ontology = {
     'Presence': {
-        'is_a': [
+        Restriction('is_a', 3, 1): [
             'not expressed',
             'expressed'
         ]
@@ -282,6 +288,12 @@ def mkrel(name, project, user):
     rel, _ = Relation.objects.get_or_create(project=project,
             relation_name=name, defaults={'user': user})
     return rel
+
+def mkrestr(link, cardinality_type, value, project, user):
+    restr, _ = CardinalityRestriction.objects.get_or_create(project=project,
+            restricted_link=link, cardinality_type=cardinality_type,
+            value=value, defaults={'user': user})
+    return restr
 
 def mkcc(c1, rel, c2, project, user):
     link, _ = ClassClass.objects.get_or_create(project=project,
@@ -599,8 +611,9 @@ class Ontology(object):
         # Iterate class names to relations
         for k, v in schema.iteritems():
             c = mkclass(k, project, user)
+            cc = None
             if parent and parent_rel:
-                mkcc(c, parent_rel, parent, project, user)
+                cc = mkcc(c, parent_rel, parent, project, user)
 
             node = {
                 'class': c,
@@ -613,7 +626,12 @@ class Ontology(object):
             if not v:
                 continue
             for r, p in v.iteritems():
-                rel = mkrel(r, project, user)
+                if type(r) == Restriction:
+                    rel = mkrel(r.name, project, user)
+                    if cc:
+                        res = mkrestr(cc, r.cardinality_type, r.value, project, user)
+                else:
+                    rel = mkrel(r, project, user)
                 p_type = type(p)
                 if p_type == list:
                     children = {}

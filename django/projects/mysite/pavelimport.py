@@ -392,7 +392,7 @@ def import_from_mysql(cursor, project, user, experiment_provider):
 
     # Build DOT ontology
     ontology = Ontology(target_ontology, cursor, p, u,
-            experiment_class, part_of_rel)
+            classification_class, part_of_rel)
     pprint.pprint(ontology.ontology, width=1)
 
     # Classification roots are created for experiments, experiment

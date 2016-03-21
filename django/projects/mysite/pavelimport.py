@@ -301,20 +301,22 @@ def mkcc(c1, rel, c2, project, user):
             defaults={'user': user})
     return link
 
-def mkci(name, cls, project, user, rel=None, class_instance_b=None):
-    ci, _ = ClassInstance.objects.get_or_create(user=user, project=project,
-            class_column=cls, name=name)
+def mkci(name, cls, project, user, rel=None, class_instance_b=None, save=True):
+    ci = ClassInstance(user=user, project=project, class_column=cls, name=name)
+    if save:
+        ci.save()
     if rel and class_instance_b:
-        mkcici(ci, rel, class_instance_b, project, user)
+        mkcici(ci, rel, class_instance_b, project, user, save)
     return ci
 
 
 def mkcici(ci1, rel, ci2, project, user, save=True):
-    ci, _ = ClassInstanceClassInstance.objects.get_or_create(user=user,
+    cici = ClassInstanceClassInstance(user=user,
             project=project, class_instance_a=ci1,
             relation=rel, class_instance_b=ci2)
-
-    return ci
+    if save:
+        cici.save()
+    return cici
 
 
 class Context(object):

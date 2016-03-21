@@ -699,27 +699,14 @@ def collect_reachable_classes(workspace_pid, parent_class, relation_map=None):
 
     return available_links
 
-def get_child_classes( workspace_pid, parent_ci, relation_map=None ):
+def get_child_classes( workspace_pid, parent_ci ):
     """ Gets all possible child classes out of the linked ontology in
     the semantic space. If the addition of a child-class woult violate
     a restriction, it isn't used.
     """
-    relation_map = relation_map or get_relation_to_id_map(workspace_id)
     parent_class = parent_ci.class_column
     # Get all possible child classes
     available_links = collect_reachable_classes(workspace_pid, parent_class)
-
-    link_restrictions_q = Restriction.objects.filter(
-        restricted_link__in=[cc.id for cc in available_links]
-        ).values_list('restricted_link', 'id')
-    link_restrictions = dict()
-    for k,v in link_restrictions_q:
-        restictions = link_restrictions_q[k]
-        if not restictions:
-            restictions = []
-            link_restrictions[k] = restictions
-        restictions.append(v)
-
     # Create a dictionary where all classes are assigned to a class which
     # is used as a generalization (if possible). The generalization of a
     # class is linked to it with an 'is_a' relation.
@@ -729,9 +716,8 @@ def get_child_classes( workspace_pid, parent_ci, relation_map=None ):
         # Iterate all links that might be relevant for this element
         for link in links:
             # Get all restrictions for the current link
-            r = link_restrictions.get(link)
-            if r:
-                restrictions.extend(restrictions)
+            restrictions_q = Restriction.objects.filter(restricted_link=link)
+            restrictions = restrictions + [ r for r in restrictions_q]
 
         if len(restrictions) == 0:
             disabled = False
@@ -739,15 +725,15 @@ def get_child_classes( workspace_pid, parent_ci, relation_map=None ):
             # If there are restrictions, test if they would be violated
             # by adding the current class
             disabled = False
-            for r_id in restrictions:
+            for r in restrictions:
                 # Find out type of the restriction
-                cr_q = CardinalityRestriction.objects.filter(id=r_id)
+                cr_q = CardinalityRestriction.objects.filter(id=r.id)
                 if cr_q.count() > 0:
                     # It is a cardinality restriction
                     disabled = cr_q[0].would_violate( parent_ci, c )
                 else:
                     # Unknown restriction
-                    raise Exception("Couldn't identify the restriction with ID %d." % (r_id))
+                    raise Exception("Couldn't identify the restriction with ID %d." % (r.id))
 
         # Create child class data structure
         current_child = Child(c, rel, disabled)
@@ -755,29 +741,18 @@ def get_child_classes( workspace_pid, parent_ci, relation_map=None ):
             child_types[key] = []
         child_types[key].append(current_child)
 
-    subjects = [cc.class_a for cc in available_links]
-    sub_class_links_q = ClassClass.objects.filter(project_id=workspace_pid,
-            relation_id=relation_map['is_a'], class_a__in=subjects)
-    sub_class_links = {}
-    for scl in sub_class_links_q:
-        links = sub_class_links[scl.class_a_id]
-        if not links:
-            links = []
-            sub_class_links[scl.class_a_id] = links
-        links.append(scl)
-
     for cc in available_links:
         c = cc.class_a
         r = cc.relation
         # Test if the current child class has sub-types
-        links = sub_class_links.get(c)
-        if links:
+        sub_class_links = get_class_links_qs( workspace_pid, 'is_a', c )
+        if sub_class_links.count() == 0:
+            # Add class to generic 'Element' group
+            add_class( 'Elememt', [cc], c, r )
+        else:
             # On entry for each 'is_a' link (usually one)
             for scc in sub_class_links:
                 add_class( c.class_name, [cc, scc], scc.class_a, r )
-        else:
-            # Add class to generic 'Element' group
-            add_class( 'Elememt', [cc], c, r )
 
     return child_types
 
@@ -891,7 +866,7 @@ def list_classification_graph(request, workspace_pid, project_id=None, link_id=N
             #child = Child( root_id, root_name, "classification_root", 'root')
             #add_template_fields( [child] )
             response_on_error = 'Could not select child classes.'
-            child_types = get_child_classes( workspace_pid, cls_graph, relation_map )
+            child_types = get_child_classes( workspace_pid, cls_graph )
             child_types_jstree = child_types_to_jstree_dict( child_types )
 
             # Get ROI information
@@ -941,7 +916,7 @@ def list_classification_graph(request, workspace_pid, project_id=None, link_id=N
             #add_template_fields( child_nodes )
 
             # Get child types
-            child_types = get_child_classes(workspace_pid, parent_ci, relation_map)
+            child_types = get_child_classes( workspace_pid, parent_ci )
 
             child_data = []
             for child_link in child_links:
@@ -949,7 +924,7 @@ def list_classification_graph(request, workspace_pid, project_id=None, link_id=N
                 roi_html, roi_links = get_rois(child)
                 roi_json = json.dumps( [r.id for r in roi_links] )
                 # Get sub-child information
-                subchild_types = get_child_classes(workspace_pid, child, relation_map)
+                subchild_types = get_child_classes( workspace_pid, child )
                 subchild_types_jstree = child_types_to_jstree_dict( subchild_types )
                 # Build title
                 if roi_html:

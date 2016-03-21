@@ -1919,7 +1919,13 @@ class ViewPageTests(TestCase):
             'success': 'Removed treenode successfully.',
             'parent_id': None,
             'deleted_neuron': True,
-            'skeleton_id': 2433
+            'skeleton_id': 2433,
+            'child_ids': [],
+            'confidence': 5,
+            'radius': -1.0,
+            'x': 5290.0,
+            'y': 3930.0,
+            'z': 279.0
         }
         self.assertEqual(expected_result, parsed_response)
         self.assertEqual(0, Treenode.objects.filter(id=treenode_id).count())

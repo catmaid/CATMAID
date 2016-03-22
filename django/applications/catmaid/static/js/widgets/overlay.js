@@ -3909,33 +3909,32 @@ SkeletonAnnotations.TracingOverlay.prototype.toggleVirtualNodeSuppression = func
 };
 
 /**
- * Get a state representation for a node that is understood by the backend. It
- * looks like this:
- *
- *   {
- *     parent: (<id>, <edition_time>),
- *     children: ((<child_id>, <child_edition_time>), ...),
- *     links: ((<connector_id>, <connector_edition_time>, <relation_id>), ...)
- *   }
+ * Get a state representation for a node that is understood by the back-end.
  */
 SkeletonAnnotations.TracingOverlay.prototype.getState = function(nodeId) {
   var node = this.nodes[nodeId];
   if (!node) {
     throw new CATMAID.ValueError("Can't create state: node not found");
   }
-  var parent;
+
+  var parentId;
+  var parentEditTime;
   if (node.parent_id) {
-    parent = this.nodes[node.parent_id];
-    if (!parent) {
+    parentId = node.parent_id;
+    var parentNode = this.nodes[parentId];
+    if (!parentNode) {
       throw new CATMAID.ValueError("Can't create state: parent node not found");
     }
+    parentEditTime = parentNode.edition_time;
   }
+
   var children = [];
   for (var cid in node.children) {
     cid = SkeletonAnnotations.isRealNode(cid) ? cid :
         SkeletonAnnotations.getChildOfVirtualNode(cid);
     children.push([cid, node.children[cid].edition_time]);
   }
+
   var links = [];
   for (var cid in node.connectors) {
     var connector = this.nodes[cid];
@@ -3943,12 +3942,21 @@ SkeletonAnnotations.TracingOverlay.prototype.getState = function(nodeId) {
       links.push([cid, connector.edition_time, link.relation_id]);
   }
 
-  return {
-    'edition_time': node.edition_time,
-    'parent': [node.parent_id, parent ? parent.edition_time : null],
-    'children': children,
-    'links': links
-  };
+  return new CATMAID.NodeState(nodeId, node.edition_time, parentId,
+      parentEditTime, children, links);
+};
+
+/**
+ * Create A simplified state that will only contain id and edition time of the
+ * provided node.
+ */
+SkeletonAnnotations.TracingOverlay.prototype.getNewNodeState = function(parentId) {
+  var node = this.nodes[parentId];
+  if (!node) {
+    throw new CATMAID.ValueError("Can't create state: node not found");
+  }
+
+  return new CATMAID.NewNodeState(parentId, node.edition_time);
 };
 
 /**

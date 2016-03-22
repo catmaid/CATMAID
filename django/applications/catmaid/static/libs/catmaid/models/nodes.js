@@ -208,7 +208,7 @@
       var url = projectId + '/treenode/delete';
       var params = {
         treenode_id: nodeId,
-        state: JSON.stringify(state)
+        state: state.serialize()
       };
 
       return CATMAID.fetch(url, 'POST', params)

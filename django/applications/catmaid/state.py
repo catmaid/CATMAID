@@ -6,7 +6,7 @@ from django.db import connection
 
 was_edited = """
     SELECT 1 FROM treenode t
-    WHERE t.id = %s AND EXTRACT(epoch FROM t.edition_time)::numeric = %s
+    WHERE t.id = %s AND (t.edition_time - '%s'::timestamptz < '1 ms'::interval)
 """
 is_parent = """
     SELECT 1 FROM treenode t

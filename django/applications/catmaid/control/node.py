@@ -3,6 +3,7 @@ import re
 
 from collections import defaultdict
 
+from django.core.serializers.json import DjangoJSONEncoder
 from django.conf import settings
 from django.db import connection
 from django.http import HttpResponse
@@ -69,7 +70,7 @@ def get_treenodes_classic(cursor, params):
         t1.confidence,
         t1.radius,
         t1.skeleton_id,
-        EXTRACT(EPOCH from t1.edition_time),
+        t1.edition_time,
         t1.user_id,
         t2.id,
         t2.parent_id,
@@ -79,7 +80,7 @@ def get_treenodes_classic(cursor, params):
         t2.confidence,
         t2.radius,
         t2.skeleton_id,
-        EXTRACT(EPOCH from t2.edition_time),
+        t2.edition_time,
         t2.user_id
     FROM treenode t1
             INNER JOIN treenode t2 ON
@@ -127,7 +128,7 @@ def get_treenodes_postgis(cursor, params):
         t1.confidence,
         t1.radius,
         t1.skeleton_id,
-        EXTRACT(EPOCH from t1.edition_time),
+        t1.edition_time,
         t1.user_id,
         t2.id,
         t2.parent_id,
@@ -137,7 +138,7 @@ def get_treenodes_postgis(cursor, params):
         t2.confidence,
         t2.radius,
         t2.skeleton_id,
-        EXTRACT(EPOCH from t2.edition_time),
+        t2.edition_time,
         t2.user_id
     FROM
       treenode t1,
@@ -224,7 +225,7 @@ def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_pr
                 tc.relation_id,
                 tc.treenode_id,
                 tc.confidence,
-                EXTRACT(EPOCH from c.edition_time),
+                c.edition_time,
                 c.user_id
             FROM treenode_connector tc
             INNER JOIN connector c ON (tc.connector_id = c.id)
@@ -246,7 +247,7 @@ def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_pr
             treenode_connector.relation_id,
             treenode_connector.treenode_id,
             treenode_connector.confidence,
-            EXTRACT(EPOCH from connector.edition_time),
+            connector.edition_time,
             connector.user_id
         FROM connector LEFT OUTER JOIN treenode_connector
                        ON connector.id = treenode_connector.connector_id
@@ -322,7 +323,7 @@ def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_pr
                 confidence,
                 radius,
                 skeleton_id,
-                EXTRACT(EPOCH from edition_time),
+                edition_time,
                 user_id
             FROM treenode, (VALUES %s) missingnodes(mnid)
             WHERE id = mnid''' % missing_id_list)
@@ -375,7 +376,9 @@ def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_pr
         return HttpResponse(json.dumps((
             treenodes, connectors, labels,
             n_retrieved_nodes == params['limit'],
-            used_rel_map), separators=(',', ':'))) # default separators have spaces in them like (', ', ': '). Must provide two: for list and for dictionary. The point of this: less space, more compact json
+            used_rel_map),
+            cls=DjangoJSONEncoder,
+            separators=(',', ':'))) # default separators have spaces in them like (', ', ': '). Must provide two: for list and for dictionary. The point of this: less space, more compact json
 
     except Exception as e:
         raise Exception(response_on_error + ':' + str(e))

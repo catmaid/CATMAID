@@ -440,9 +440,8 @@ def import_from_mysql(cursor, project, user, experiment_provider):
             continue
 
         enable_filter = True
-        max_projects = 0
-        #whitelist = ("CG1416", "CG2674", "CG11147")
-        whitelist = ("CG11147",)
+        max_projects = 10
+        whitelist = ("CG1416", "CG2674", "CG11147")
         if enable_filter and len(experiments_with_images) > max_projects \
                 and gene_name not in whitelist:
             skipped.append(group_title)

@@ -784,9 +784,14 @@ class AnnotationTree(object):
 
 
             # Get all right hand terms for this tage
-            stage_term_map = {t['term1']:t['term2'] for t in stage_term_records}
+            stage_term_map = defaultdict(set)
+            for t in stage_term_records:
+                stage_term_map[t['term1']].add(t['term2'])
+            inv_stage_term_map = defaultdict(set)
+            for t in stage_term_records:
+                stage_term_map[t['term2']].add(t['term1'])
             stage_lh_terms = set(stage_term_map.keys())
-            stage_rh_terms = set(stage_term_map.values())
+            stage_rh_terms = set(inv_stage_term_map.keys())
             stage_terms = stage_lh_terms.union(stage_rh_terms)
             log("Left hand terms (used): " + ', '.join(stage_lh_terms), 2)
             log("Right hand terms (ignored): " + ', '.join(stage_rh_terms), 2)
@@ -799,9 +804,10 @@ class AnnotationTree(object):
             ci_stage = None
             created_cell_types = []
             for ct, ct_constraints in cell_types.iteritems():
-                # Find cell types that match our current stage term set
+                # Find cell types that match our current stage term set, one is
+                # enough to match.
                 matched_terms = test_set.intersection(ct_constraints)
-                if len(matched_terms) == len(ct_constraints):
+                if len(matched_terms) > 0:
                     if not ci_stage:
                         ci_stage = mkci(stage_name, ontology.get_class(["Distribution",
                             "Stage"], stage_name), project, user, part_of, ci_distribution)
@@ -811,22 +817,39 @@ class AnnotationTree(object):
                     ci_celltype = mkci(ct, cls, project, user, part_of, ci_stage )
                     created_cell_types.append(ci_celltype)
 
-                    # TODO test only stage terms of current cell type
-                    if False:
-                        for ctl, constraints in cell_type_localizations.iteritems():
-                            if type(constraints) == dict:
-                                constraints = constraints.get(term)
-                            if not constraints:
-                                log('Ignoring Cell Type Localization, due to missing constraints for CTL "{}" and term "{}"'.format(ctl, term), 4)
+                    # TODO: Test only stage terms of current cell type. This is done
+                    # by checking all matched terms for their relations in the DV.
+                    #
+                    # This is maybe not possible with relations only. This would
+                    # break if a partner isn't actually linked.
+                    for ctl, constraints in cell_type_localizations.iteritems():
+                        if type(constraints) == dict:
+                            working_set = set()
+                            for m in matched_terms:
+                                if m in constraints:
+                                    working_set = working_set.union(constraints.get(m))
+                            if not working_set:
                                 continue
+                            constraints = working_set
+                        if not constraints:
+                            log('Ignoring Cell Type Localization, due to missing constraints for CTL "{}" and term "{}"'.format(ctl, term), 4)
+                            continue
 
+                        # Constraints ar OR combined
+                        valid_localization = False
+                        for constraint in constraints:
+                            partners = stage_term_map.get(constraint)
+                            # Test if constraint is connected to matched classes
+                            if partners and matched_terms.intersection(partners):
+                                valid_localization = True
+                                break
 
-                            if child_type_has_localization(constraints, stage_terms):
-                                ctl_cls = ontology.get_class(["Distribution", "Stage",
-                                    "Cell type", "Localization"], ctl)
-                                ci_loc =  mkci(ctl, ctl_cls, project, user,
-                                        part_of, ci_celltype)
-                                log("Created location: " + ctl, 4)
+                        if valid_localization:
+                            ctl_cls = ontology.get_class(["Distribution", "Stage",
+                                "Cell type", "Localization"], ctl)
+                            ci_loc =  mkci(ctl, ctl_cls, project, user,
+                                    part_of, ci_celltype)
+                            log("Created location: " + ctl, 4)
 
             log("Created cell types: " + ", ".join(
                 [c.name for c in created_cell_types]), 2)

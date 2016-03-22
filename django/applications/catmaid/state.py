@@ -64,8 +64,46 @@ def list_to_table(l, n=1):
 def has_only_truthy_values(element):
     return element[0] and element[1]
 
-def validate_node_state(node_id, state, lock, cursor=None):
-    """Raise an error if there are nodes that
+def parse_state(state):
+    """Expect a JSON string and returned the parsed object."""
+    if not state:
+        raise ValueError("No state provided")
+
+    if type(state) in (str, unicode):
+        state = json.loads(state, parse_float=decimal.Decimal)
+
+    return state
+
+def validate_parent_node_state(parent_id, state, lock=True, cursor=None):
+    """Raise an error if there are nodes that don't match the expectations
+    provided by the passded in state.
+
+    Expect state to be a dictionary of of the following form, can be provided
+    as a JSON string:
+    {
+      parent: (<id>, <edition_time>)
+    }
+    """
+    state = parse_state(state)
+    if 'parent' not in state:
+        raise ValueError("No valid state provided, missing parent property")
+    parent = state['parent']
+    if 'edition_time' not in parent:
+        raise ValueError("No valid state provided, missing parent node edition time")
+    edition_time = parent['edition_time']
+
+    state_checks = [was_edited % (parent_id, edition_time)]
+
+    cursor = cursor or connection.cursor()
+    check_state(state_checks, cursor)
+
+    # Acquire lock on parent
+    if lock:
+        lock_node(parent_id, cursor)
+
+def validate_node_state(node_id, state, lock=True, cursor=None):
+    """Raise an error if there are nodes that don't match the expectations
+    provided by the passded in state.
 
     Expect state to be a dictionary of of the following form, can be provided
     as a JSON string:
@@ -75,12 +113,7 @@ def validate_node_state(node_id, state, lock, cursor=None):
       links: ((<connector_id>, <connector_edition_time>, <relation_id>), ...)
     }
     """
-    if not state:
-        raise ValueError("No state provided")
-
-    if type(state) in (str, unicode):
-        state = json.loads(state, parse_float=decimal.Decimal)
-    print state
+    state = parse_state(state)
 
     if 'edition_time' not in state:
         raise ValueError("No valid state provided, missing edition time")
@@ -119,6 +152,19 @@ def validate_node_state(node_id, state, lock, cursor=None):
 
     # Collect results
     cursor = cursor or connection.cursor()
+    check_state(state_checks, cursor)
+
+    # Acquire lock on treenode
+    if lock:
+        lock_node(node_id, cursor)
+
+def lock_node(node_id, cursor):
+    cursor.execute("""
+        SELECT id FROM treenode WHERE id=%s FOR UPDATE
+    """, (node_id,))
+
+def check_state(state_checks, cursor):
+    """Raise an error if state checks can't be passed."""
     cursor.execute("(" + ") INTERSECT (".join(state_checks) + ")")
     state_check_results = cursor.fetchall()
 
@@ -126,9 +172,3 @@ def validate_node_state(node_id, state, lock, cursor=None):
     # each result equals one.
     if not state_check_results or 1 != len(state_check_results) or 1 != state_check_results[0][0]:
         raise ValueError("The provided state differs from the database state")
-
-    # Acquire lock on treenode
-    if lock:
-        cursor.execute("""
-            SELECT id FROM treenode WHERE id=%s FOR UPDATE
-        """, (node_id,))

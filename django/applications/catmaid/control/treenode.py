@@ -11,6 +11,7 @@ from django.http import HttpResponse, JsonResponse
 
 from rest_framework.decorators import api_view
 
+from catmaid import state
 from catmaid.models import UserRole, Treenode, ClassInstance, \
         TreenodeConnector, Location
 from catmaid.control.authentication import requires_user_role, \
@@ -20,7 +21,6 @@ from catmaid.control.common import get_relation_to_id_map, \
 from catmaid.control.neuron import _delete_if_empty
 from catmaid.control.node import _fetch_location, _fetch_locations
 from catmaid.util import Point3D, is_collinear
-from catmaid.state import validate_node_state
 
 
 def can_edit_treenode_or_fail(user, project_id, treenode_id):
@@ -495,7 +495,7 @@ def delete_treenode(request, project_id=None):
     # the skeleton of the treenode is modeling.
     can_edit_treenode_or_fail(request.user, project_id, treenode_id)
     # Make sure the back-end is in the expected state
-    validate_node_state(treenode_id, request.POST.get('state'), True)
+    state.validate_node_state(treenode_id, request.POST.get('state'), True)
 
     treenode = Treenode.objects.get(pk=treenode_id)
     parent_id = treenode.parent_id

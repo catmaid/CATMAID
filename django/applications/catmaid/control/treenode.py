@@ -68,15 +68,22 @@ def create_treenode(request, project_id=None):
     for p in string_values.keys():
         params[p] = request.POST.get(p, string_values[p])
 
-    treenode_id, skeleton_id = _create_treenode(project_id, request.user, request.user,
-            params['x'], params['y'], params['z'], params['radius'],
-            params['confidence'], params['useneuron'], params['parent_id'],
-            neuron_name=request.POST.get('neuron_name', None))
+    # Make sure the back-end is in the expected state if the node should have a
+    # parent and will therefore become part of another skeleton.
+    parent_id = params['parent_id']
+    if parent_id and parent_id != -1:
+        state.validate_parent_node_state(parent_id, request.POST.get('state'), True)
 
-    return HttpResponse(json.dumps({
+    treenode_id, skeleton_id, edition_time = _create_treenode(project_id,
+            request.user, request.user, params['x'], params['y'], params['z'],
+            params['radius'], params['confidence'], params['useneuron'],
+            params['parent_id'], neuron_name=request.POST.get('neuron_name', None))
+
+    return JsonResponse({
         'treenode_id': treenode_id,
-        'skeleton_id': skeleton_id
-    }))
+        'skeleton_id': skeleton_id,
+        'edition_time': edition_time
+    })
 
 @requires_user_role(UserRole.Annotate)
 def insert_treenode(request, project_id=None):
@@ -130,18 +137,19 @@ def insert_treenode(request, project_id=None):
         user, time = child.user, child.creation_time
 
     # Create new treenode
-    treenode_id, skeleton_id = _create_treenode(project_id, user, request.user,
-            params['x'], params['y'], params['z'], params['radius'],
-            params['confidence'], -1, params['parent_id'], time)
+    treenode_id, skeleton_id, edition_time = _create_treenode(project_id,
+            user, request.user, params['x'], params['y'], params['z'],
+            params['radius'], params['confidence'], -1, params['parent_id'], time)
 
     # Update parent of child to new treenode
     child.parent_id = treenode_id
     child.save()
 
-    return HttpResponse(json.dumps({
+    return JsonResponse({
         'treenode_id': treenode_id,
-        'skeleton_id': skeleton_id
-    }))
+        'skeleton_id': skeleton_id,
+        'edition_time': edition_time
+    })
 
 def _create_treenode(project_id, creator, editor, x, y, z, radius, confidence,
                      neuron_id, parent_id, creation_time=None, neuron_name=None):
@@ -195,7 +203,7 @@ def _create_treenode(project_id, creator, editor, x, y, z, radius, confidence,
             response_on_error = 'Could not insert new treenode!'
             new_treenode = insert_new_treenode(parent_id, parent_skeleton_id)
 
-            return (new_treenode.id, parent_skeleton_id)
+            return (new_treenode.id, parent_skeleton_id, new_treenode.edition_time)
         else:
             # No parent node: We must create a new root node, which needs a
             # skeleton and a neuron to belong to.
@@ -228,7 +236,7 @@ def _create_treenode(project_id, creator, editor, x, y, z, radius, confidence,
                 response_on_error = 'Could not insert new treenode!'
                 new_treenode = insert_new_treenode(None, new_skeleton.id)
 
-                return (new_treenode.id, new_skeleton.id)
+                return (new_treenode.id, new_skeleton.id, new_treenode.edition_time)
             else:
                 # A neuron does not exist, therefore we put the new skeleton
                 # into a new neuron.
@@ -292,7 +300,7 @@ def _create_treenode(project_id, creator, editor, x, y, z, radius, confidence,
                                 new_location, 'Create neuron %d and skeleton '
                                 '%d' % (new_neuron.id, new_skeleton.id))
 
-                return (new_treenode.id, new_skeleton.id)
+                return (new_treenode.id, new_skeleton.id, new_treenode.edition_time)
 
     except Exception as e:
         import traceback

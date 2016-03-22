@@ -119,6 +119,10 @@ def validate_node_state(node_id, state, lock=True, cursor=None):
         raise ValueError("No valid state provided, missing edition time")
     node = [node_id, state['edition_time']]
     parent, children, links = state['parent'], state['children'], state['links']
+
+    if 2 != len(parent):
+        raise ValueError("No valid state provided, invalid parent")
+
     parent_id = parent[0]
 
     if parent_id and -1 != parent_id and not parent[1]:

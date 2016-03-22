@@ -201,7 +201,7 @@
      *
      * @returns promise deleting the treenode
      */
-    remove: function(projectId, nodeId, state) {
+    remove: function(state, projectId, nodeId) {
       CATMAID.requirePermission(projectId, 'can_annotate',
           'You don\'t have have permission to remove a new node');
 
@@ -389,10 +389,10 @@
    * @param {integer} nodeId    The node to remove
    */
   CATMAID.RemoveNodeCommand = CATMAID.makeCommand(function(
-        projectId, nodeId, state) {
+        state, projectId, nodeId) {
 
     var exec = function(done, command, map) {
-      var removeNode = CATMAID.Nodes.remove(projectId, nodeId, state);
+      var removeNode = CATMAID.Nodes.remove(state, projectId, nodeId);
 
       return removeNode.then(function(result) {
         // Map ID of removed node to null to able to map the node created during

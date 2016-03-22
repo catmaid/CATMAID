@@ -3809,7 +3809,7 @@ SkeletonAnnotations.TracingOverlay.prototype.deleteNode = function(nodeId) {
    */
   function deleteTreenode(node, wasActiveNode) {
     // Make sure all other pending tasks are done before the node is deleted.
-    var command = new CATMAID.RemoveNodeCommand(project.id, node.id, self.getState(node.id));
+    var command = new CATMAID.RemoveNodeCommand(self.getState(node.id), project.id, node.id);
     var delFn = CATMAID.commands.execute.bind(CATMAID.commands, command);
 
     self.submit.then(delFn).then(function(json) {

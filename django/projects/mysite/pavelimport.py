@@ -21,7 +21,7 @@ from catmaid.models import (Class, ClassClass, ClassInstance,
 
 requests.packages.urllib3.disable_warnings()
 
-stage_names = {
+stage_ids = {
     "Germarium & stage 1 egg chamber": 1,
     "Stage 2-7 egg chamber": 2,
     "Stage 8 egg chamber": 3,
@@ -418,7 +418,7 @@ def import_from_mysql(cursor, project, user, experiment_provider):
     existing_experiments = cursor.fetchall()
     log("Found {} experiments (unfiltered)".format(len(existing_experiments)))
     skipped = []
-    genes = defaultdict(list)
+    genes = {}
     for nexp, row in enumerate(existing_experiments):
 
         main_id = row['id']
@@ -439,16 +439,17 @@ def import_from_mysql(cursor, project, user, experiment_provider):
             #log("Skipping group '{}', no stack information found".format(group_title))
             continue
 
-        enable_filter = False
-        max_projects = 5
-        whitelist = ("CG1416", "CG2674")
+        enable_filter = True
+        max_projects = 0
+        #whitelist = ("CG1416", "CG2674", "CG11147")
+        whitelist = ("CG11147",)
         if enable_filter and len(experiments_with_images) > max_projects \
                 and gene_name not in whitelist:
             skipped.append(group_title)
             #log("Skipping group '{}', no stack information found".format(group_title))
             continue
 
-        log("Experiment '{}' (oid: {}) - {}/{} - {}".format(group_title,
+        log("Experiment '{}' (main id: {}) - {}/{} - {}".format(group_title,
             main_id, nexp + 1, len(existing_experiments),
             len(experiments_with_images)))
 
@@ -718,7 +719,7 @@ class AnnotationTree(object):
 
         stage_names = {
            'stage1': "Germarium & stage 1 egg chamber",
-           'stage2_to_7': "Stage 2-7 egg chamber",
+           'stage2-7': "Stage 2-7 egg chamber",
            'stage8': "Stage 8 egg chamber",
            'stage9': "Stage 9 egg chamber",
            'stage10': "Stage 10 egg chamber",
@@ -746,80 +747,87 @@ class AnnotationTree(object):
                 project, user, part_of, root);
 
         stage_term_sql = """
-            SELECT DISTINCT t1.go_term, t2.go_term
-              FROM main, annot a1, annot a2 , annot_term at1, annot_term at2,
-                   term t1, term t2, stage, term_2_term tt
-             WHERE main.id = a1.main_id
-               AND main.id = a2.main_id
-               AND a1.id = at1.annot_id
-               AND a2.id = at2.annot_id
-               AND a1.stage = stage.id
-               AND a2.stage = stage.id
-               AND at1.term_id = t1.id
-               AND at2.term_id = t2.id
-               AND t1.id = tt.term1_id
-               AND t2.id = tt.term2_id
-               AND tt.rel_type = "part of"
-               AND main.id = %s
-               AND stage.name = %s
+            SELECT s.name as stage, t1.go_term as term1, t1.id as term1_id,
+                   a.id as annot_id, tt.rel_type as rel, t2.go_term as term2,
+                   t2.id as term2_id
+              FROM main m, term t1, annot_term at, annot a, stage s,
+                   term_2_term tt LEFT JOIN term t2 ON tt.term1_id=t2.id
+             WHERE a.id=at.annot_id
+               AND at.term_id=t1.id
+               AND a.main_id=m.id
+               AND tt.term2_id=t1.id
+               AND s.id=a.stage
+               AND m.id=%s
+               AND s.name=%s
         """
 
-        # Fill in stages
+        #stage_term_sql = """
+        #    SELECT DISTINCT est_id, plate, go_term, stage.name, t1.id
+        #      FROM main, stage, annot a1, annot_term at1, term t1
+        #     WHERE at1.annot_id = a1.id
+        #       AND at1.term_id=t1.id
+        #       AND stage.id = a1.stage
+        #       AND main.id = %s
+        #       AND stage.name = %s
+        #"""
+
+        # Look at all possible stages
         for stage, stage_name in stage_names.iteritems():
-            log("Checking classification stage: " + stage_name, 2)
+            log("Checking classification stage: {} ({})".format(stage, stage_name), 2)
             cursor.execute(stage_term_sql, (main_id, stage))
             stage_term_records = cursor.fetchall()
-            print stage_term_records
+            pprint.pprint(stage_term_records, width=1)
 
             # Ignore stage, if there are no annotations for it
             if 0 == len(stage_term_records):
+                log("Fund no linked terms for stage: " + stage, 3)
                 continue
 
-            inv_stage_term_mapping = defaultdict(set)
-            for e in stage_term_records:
-                inv_stage_term_mapping[e['go_term']].add(e['t2.go_term'])
-            inv_stage_term_mapping = dict(inv_stage_term_mapping)
 
-            ci_stage = mkci(stage_name, ontology.get_class(["Distribution",
-                "Stage"], stage_name), project, user, part_of, ci_distribution)
+            # Get all right hand terms for this tage
+            stage_term_map = {t['term1']:t['term2'] for t in stage_term_records}
+            stage_lh_terms = set(stage_term_map.keys())
+            stage_rh_terms = set(stage_term_map.values())
+            stage_terms = stage_lh_terms.union(stage_rh_terms)
+            log("Left hand terms (used): " + ', '.join(stage_lh_terms), 2)
+            log("Right hand terms (ignored): " + ', '.join(stage_rh_terms), 2)
+            test_set = stage_lh_terms
 
-            stage_terms = set([t['go_term'] for t in stage_term_records])
-            log("Terms: " + str(stage_terms), 2)
-
+            #stage_cell_type_terms = {}
+            #for t in stage_term_records:
+            #    stage = stage_cell_type_terms[t['stage']]
+            #    stage[t[''
+            ci_stage = None
             created_cell_types = []
-            for ct, dot_terms in cell_types.iteritems():
-                for term in stage_terms.intersection(dot_terms):
-                    log("Create cell type: " + term, 3)
+            for ct, ct_constraints in cell_types.iteritems():
+                # Find cell types that match our current stage term set
+                matched_terms = test_set.intersection(ct_constraints)
+                if len(matched_terms) == len(ct_constraints):
+                    if not ci_stage:
+                        ci_stage = mkci(stage_name, ontology.get_class(["Distribution",
+                            "Stage"], stage_name), project, user, part_of, ci_distribution)
+
+                    log("Create cell type: " + ct, 3)
                     cls = ontology.get_class(["Distribution", "Stage", "Cell type"], ct)
                     ci_celltype = mkci(ct, cls, project, user, part_of, ci_stage )
                     created_cell_types.append(ci_celltype)
 
-                    # Add localization
-                    components = inv_stage_term_mapping.get(term)
-                    if not components:
-                        log("No linked term for: " + term, 4)
-                        continue
-                    for c in components:
-                        log("Check localization: " + str(c), 4)
-                        dot_localizations = cell_type_localizations.get(c)
-                        if not dot_localizations:
-                            log("Couldn't find localization classes: " + term, 4)
-                        elif type(dot_localizations) == dict:
-                            constraints = dot_localizations.get(term)
-                            if constraints:
-                                children = inv_stage_term_mapping.get(term)
-                                if constraints.intersection(children):
-                                    cls_loc = ontology.get_class(["Distribution", "Stage",
-                                        "Cell type", "Localization"], c)
-                                    ci_loc =  mkci(c, cls_loc, project, user,
-                                            part_of, ci_celltype)
-                                    log("Created location: " + c, 4)
-                            else:
-                                log("Term {} not supported by localization {}".format(term, c))
-                        else:
-                            locs = components.intersection(dot_localizations)
-                            for loc_term in locs:
-                                log("Create localization: " + loc_term, 4)
+                    # TODO test only stage terms of current cell type
+                    if False:
+                        for ctl, constraints in cell_type_localizations.iteritems():
+                            if type(constraints) == dict:
+                                constraints = constraints.get(term)
+                            if not constraints:
+                                log('Ignoring Cell Type Localization, due to missing constraints for CTL "{}" and term "{}"'.format(ctl, term), 4)
+                                continue
+
+
+                            if child_type_has_localization(constraints, stage_terms):
+                                ctl_cls = ontology.get_class(["Distribution", "Stage",
+                                    "Cell type", "Localization"], ctl)
+                                ci_loc =  mkci(ctl, ctl_cls, project, user,
+                                        part_of, ci_celltype)
+                                log("Created location: " + ctl, 4)
 
             log("Created cell types: " + ", ".join(
                 [c.name for c in created_cell_types]), 2)
@@ -839,7 +847,7 @@ class AnnotationTree(object):
 #                continue
 #
 #            # Make sure a stage instance is created for each stage
-#            if stage in stage_names:
+#            if stage in stage_ids:
 #                stage_name = stage_names[stage]
 #                addNode([['Distribution', stage_name]])
 #

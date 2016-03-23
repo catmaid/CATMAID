@@ -681,15 +681,6 @@ class AnnotationTree(object):
                 print("Node", self.class_instance)
 
         classification = {}
-        classification['Presence'] = {
-            'value': 'expressed',
-            'children': {
-                'Distribution': {
-                    'value': 'subcellular localization pattern',
-                    'children': []
-                }
-            }
-        }
 
         def linkNewNode(dd):
             pass
@@ -736,7 +727,7 @@ class AnnotationTree(object):
                 (main_id, "stage1", "no signal at all stages"))
         presence = 'not expressed' if (1 == len(cursor.fetchall())) else 'expressed'
         ci_presence = mkci(presence, ontology.get_class(["Presence"], presence),
-                project, user, part_of, root);
+                project, user, part_of, root)
 
         # Learn about distribution
         # If: stage1 > "ubiquitous signal at all stages"

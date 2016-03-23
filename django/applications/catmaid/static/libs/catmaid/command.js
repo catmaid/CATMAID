@@ -343,8 +343,9 @@
    * a particular command. The current mapping can be retrieved through the
    * map() method.
    *
-   * @param {anything} value The value to store, can be anything.
-   * @param {type}     type  The type of the value, one of avai
+   * @param {type}     type    The type of the value, one of avai
+   * @param {anything} value   The value to store, can be anything.
+   * @param {Command}  command Command instance requesting to store value
    */
   CommandStore.prototype.add = function(type, value, command) {
     var commandId = command.getId();

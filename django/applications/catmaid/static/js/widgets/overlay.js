@@ -1583,8 +1583,8 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeLink = function (from
 };
 
 /**
- * Asynchronuously, create a link between the nodes @fromid and @toid of type
- * @link_type. It is expected, that both nodes are existant. All nodes are
+ * Asynchronously, create a link between the nodes @fromid and @toid of type
+ * @link_type. It is expected, that both nodes are existent. All nodes are
  * updated after this. If the from-node is virtual, it will be created.
  */
 SkeletonAnnotations.TracingOverlay.prototype.createLink = function (fromid, toid,

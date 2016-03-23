@@ -2019,7 +2019,7 @@ class ViewPageTests(TestCase):
                 {"id":2468, "name":"skeleton 2468", "class_name":"skeleton"},
                 {"id":361, "name":"skeleton 361", "class_name":"skeleton"},
                 {"id":373, "name":"skeleton 373", "class_name":"skeleton"}]
-        self.assertEqual(expected_result, parsed_response)
+        self.assertItemsEqual(expected_result, parsed_response)
 
     def test_search_with_nodes_and_nonode_label(self):
         self.fake_authentication()

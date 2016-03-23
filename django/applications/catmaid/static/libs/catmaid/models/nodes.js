@@ -375,14 +375,6 @@
   });
 
   /**
-   * Map a single node ID. The context is expected to be a CommandStore.
-   */
-  function mapNodeId(nodeId) {
-    /* jshint validthis: true */ // "this" has to be a CommandStore instance
-    return this.get(this.NODE, nodeId);
-  }
-
-  /**
    * Remove a node in an undoable fashion.
    *
    * @param {integer} projectId Project the node to remove is part of
@@ -422,7 +414,7 @@
       command.validateForUndo(confidence, mParentId, x, y, z);
 
       // Get IDs of previous children and map them to their current values
-      var mChildIds = command.get('childIds').map(mapNodeId, map);
+      var mChildIds = command.get('childIds').map(map.getNodeId, map);
 
       // If there were child nodes before the removal, link to them again.
       var create;

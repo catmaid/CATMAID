@@ -383,6 +383,13 @@
     return map.get(value);
   };
 
+  /**
+   * Map a single node ID, a shortcut for get().
+   */
+  CommandStore.prototype.getNodeId = function(nodeId) {
+    return this.get(this.NODE, nodeId);
+  };
+
   // Add some constants to CommandStore's prototype
   var availableTypes = ['CONNECTOR', 'NODE', 'LINK', 'TAG', 'ANNOTATION'];
   availableTypes.forEach(function(c, n) {

@@ -190,8 +190,9 @@ def get_classification_number( project_id ):
 class Child:
     """ Keeps information about a potential child node.
     """
-    def __init__(self, klass, rel, disabled):
-        self.klass = klass
+    def __init__(self, class_id, class_name, rel, disabled):
+        self.class_id = class_id
+        self.class_name = class_name
         self.rel = rel
         self.disabled = disabled
 
@@ -710,19 +711,42 @@ def get_child_classes( workspace_pid, parent_ci, relation_map=None, cursor=None 
     # Collect classes and subclasses
     relevant_link_ids = [cc.id for cc in available_links]
     classes_to_add = []
-    for cc in available_links:
-        ca = cc.class_a
-        r = cc.relation
-        # Test if the current child class has sub-types
-        sub_class_links = get_class_links_qs( workspace_pid, 'is_a', ca.class_name)
-        if 0 == len(sub_class_links):
-            # Collect options without subclasses in generic element container
-            classes_to_add.append(("Element", (cc.id, ), ca, r))
-        else:
-            for scc in sub_class_links:
-                relevant_link_ids.append(scc.id)
-                classes_to_add.append(
-                        (ca.class_name, (cc.id, scc.id), scc.class_a, r))
+
+    # Get sub clases for all available links
+    if available_links:
+        class_a_ids_sql  = ','.join("({})".format(l.class_a_id) for l in available_links)
+        cursor.execute("""
+            SELECT cc.id, cc.class_b, cc.class_a, ca.class_name
+              FROM class cb
+              JOIN (VALUES ({})) v(id) ON cb.id = v.id
+              JOIN class_class cc ON cc.class_b = cb.id
+              JOIN class ca ON cc.class_a = ca.id
+             WHERE cc.project_id = %s
+               AND cc.relation_id = %s
+               AND cc.project_id = cb.project_id
+        """.format(class_a_ids_sql), (workspace_pid, relation_map['is_a']))
+        all_sub_class_links = cursor.fetchall()
+        # Create sub class map
+        sub_class_map = defaultdict(list)
+        for row in all_sub_class_links:
+            sub_class_map[row[1]].append((row[0], row[2], row[3]))
+        # Collect classes to add
+        for cc in available_links:
+            ca = cc.class_a
+            r = cc.relation
+            sub_class_links = sub_class_map.get(cc.class_a_id)
+            if sub_class_links:
+                for scc in sub_class_links:
+                    scc_id = scc[0]
+                    scc_class_a_id = scc[1]
+                    scc_class_a_name = scc[2]
+                    relevant_link_ids.append(scc_id)
+                    classes_to_add.append(
+                            (ca.class_name, (cc.id, scc_id), scc_class_a_id,
+                            scc_class_a_name, r))
+            else:
+                # Collect options without subclasses in generic element container
+                classes_to_add.append(("Element", (cc.id, ), ca.id, ca.class_name, r))
 
     # Get all required link data in one go
     link_restriction_map = dict()
@@ -747,7 +771,7 @@ def get_child_classes( workspace_pid, parent_ci, relation_map=None, cursor=None 
     # is used as a generalization (if possible). The generalization of a
     # class is linked to it with an 'is_a' relation.
     child_types = {}
-    for cls_name, link_ids, cls, rel in classes_to_add:
+    for category, link_ids, class_id, class_name, rel in classes_to_add:
         restrictions = []
         # Iterate all links that might be relevant for this element
         for link_id in link_ids:
@@ -767,17 +791,17 @@ def get_child_classes( workspace_pid, parent_ci, relation_map=None, cursor=None 
                 cr_q = CardinalityRestriction.objects.filter(id=rid)
                 if cr_q.count() > 0:
                     # It is a cardinality restriction
-                    disabled = cr_q[0].would_violate( parent_ci, cls.id )
+                    disabled = cr_q[0].would_violate(parent_ci, class_id)
                 else:
                     # Unknown restriction
                     raise Exception("Couldn't identify the restriction with ID %d." % (rid))
 
         # Create child class data structure
-        current_child = Child(cls, rel, disabled)
-        children = child_types.get(cls_name)
+        current_child = Child(class_id, class_name, rel, disabled)
+        children = child_types.get(category)
         if not children:
             children = []
-            child_types[cls_name] = children
+            child_types[category] = children
         children.append(current_child)
 
     return child_types
@@ -792,7 +816,7 @@ def child_types_to_jstree_dict(child_types):
         children = child_types[ct]
         for c in children:
             # Create class data structure
-            cdata = { 'id': c.klass.id, 'name': c.klass.class_name,
+            cdata = { 'id': c.class_id, 'name': c.class_name,
                 'disabled': c.disabled, 'relname': c.rel.relation_name,
                 'relid': c.rel.id }
             if ct not in json_dict:
@@ -856,17 +880,18 @@ def list_classification_graph(request, workspace_pid, project_id=None, link_id=N
 
     response_on_error = ''
     try:
-        def get_class_name( klass ):
+        def get_class_name(class_id, class_name, relation_map):
+            print("CLASS A", class_id, class_name)
             if superclass_in_name:
-                super_class_links_q = get_class_links_qs( workspace_pid,
-                    'is_a', klass, False )
-                if super_class_links_q.count() > 0:
+                super_class_links_q = ClassClass.objects.filter(project_id=workspace_id,
+                    relation=relation_map['is_a'], class_a_id=class_id)
+                if len(super_class_links_q) > 0:
                     cname = super_class_links_q[0].class_b.class_name
-                    return "%s: %s" % (cname, klass.class_name)
+                    return "%s: %s" % (cname, class_name)
                 else:
-                    return klass.class_name
+                    return class_name
             else:
-                return klass.class_name
+                return class_name
 
         def make_roi_html(roi):
             img_data = (roi.id, settings.STATIC_URL)
@@ -954,9 +979,12 @@ def list_classification_graph(request, workspace_pid, project_id=None, link_id=N
                 subchild_types_jstree = child_types_to_jstree_dict( subchild_types )
                 # Build title
                 if roi_html:
-                    title = "%s %s" % (get_class_name(child.class_column), roi_html)
+                    name = get_class_name(child.class_column.id, child.class_column,
+                            relation_map)
+                    title = "%s %s" % (name, roi_html)
                 else:
-                    title = child.name if child.name else get_class_name(child.class_column)
+                    title = child.name if child.name else get_class_name(
+                        child.class_column.id, child.class_column.class_name, relation_map)
                 # Build JSTree data structure
                 data = {'data': {'title': title},
                     'attr': {'id': 'node_%s' % child.id,
@@ -985,7 +1013,8 @@ def list_classification_graph(request, workspace_pid, project_id=None, link_id=N
                         # Only add items that are not disabled, because
                         # only those items can actually be added.
                         if not child.disabled:
-                            options.append( (child.klass.id, get_class_name(child.klass), child.rel.id) )
+                            name = get_class_name(child.class_id, child.class_name, relation_map)
+                            options.append( (child.class_id, name, child.rel.id) )
                     # Add drop down list if there are options
                     if len(options) > 0:
                         menu_class = 'select_new_classification_instance'

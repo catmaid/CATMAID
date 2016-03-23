@@ -1719,8 +1719,9 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeWithLink = function (
     pos_z, link_type, afterCreate)
 {
   var self = this;
-  var command = new CATMAID.CreateNodeCommand(project.id, phys_x, phys_y, phys_z,
-      -1, radius, confidence, undefined, SkeletonAnnotations.defaultNewNeuronName);
+  var command = new CATMAID.CreateNodeCommand(undefined,
+      project.id, phys_x, phys_y, phys_z, -1, radius, confidence,
+      undefined, SkeletonAnnotations.defaultNewNeuronName);
   CATMAID.commands.execute(command)
     .then(function(jso) {
       var editTime = null; // TODO
@@ -1745,9 +1746,9 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeWithLink = function (
 };
 
 /**
- * Create a node and activate it. Expectes the parent node to be real or falsy,
+ * Create a node and activate it. Expects the parent node to be real or falsy,
  * i.e. not virtual. If a child ID is passed in, a new node is created between
- * this child and the parend node.
+ * this child and the parent node.
  */
 SkeletonAnnotations.TracingOverlay.prototype.createNode = function (parentID, childId,
    phys_x, phys_y, phys_z, radius, confidence, pos_x, pos_y, pos_z, afterCreate)
@@ -1761,17 +1762,19 @@ SkeletonAnnotations.TracingOverlay.prototype.createNode = function (parentID, ch
 
   var self = this;
 
-  // Suspend layer to avoid potentially expecnsive updateNodes() call. An event
+  // Suspend layer to avoid potentially expensive updateNodes() call. An event
   // is triggered manually after the nodes array was updated by hand. Right
   // before this, the tracing layer is activated again. In case of error, the
   // layer is also activated again.
   var originalSuspended = this.suspended;
   this.suspended = true;
 
+  // Use non-type checking inequality, in case a string is provided
+  var state  = (parentID && -1 != parentID) ? this.getParentState(parentID) : undefined;
   var command = childId ?
-    new CATMAID.InsertNodeCommand(project.id, phys_x, phys_y,
+    new CATMAID.InsertNodeCommand(state, project.id, phys_x, phys_y,
       phys_z, parentID, childId, radius, confidence, useneuron) :
-    new CATMAID.CreateNodeCommand(project.id, phys_x, phys_y,
+    new CATMAID.CreateNodeCommand(state, project.id, phys_x, phys_y,
       phys_z, parentID, radius, confidence, useneuron, neuronname);
   return CATMAID.commands.execute(command)
     .then(function(result) {

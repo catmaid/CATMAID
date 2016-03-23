@@ -767,7 +767,7 @@ def get_child_classes( workspace_pid, parent_ci, relation_map=None, cursor=None 
                 cr_q = CardinalityRestriction.objects.filter(id=rid)
                 if cr_q.count() > 0:
                     # It is a cardinality restriction
-                    disabled = cr_q[0].would_violate( parent_ci, cls )
+                    disabled = cr_q[0].would_violate( parent_ci, cls.id )
                 else:
                     # Unknown restriction
                     raise Exception("Couldn't identify the restriction with ID %d." % (rid))
@@ -1170,7 +1170,7 @@ def infer_new_instances( workspace_pid, link, parent_ci ):
                     link.class_a)
                 for sc in sub_class_links:
                     class_to_add = sc.class_a
-                    if not cr.would_violate(parent_ci, class_to_add):
+                    if not cr.would_violate(parent_ci, class_to_add.id):
                         instances_to_add.append( (class_to_add, link.relation, parent_ci) )
         else:
             # Unknown restriction

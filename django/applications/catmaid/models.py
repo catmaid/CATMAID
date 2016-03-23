@@ -730,21 +730,21 @@ class CardinalityRestriction(models.Model):
             4: "Maximum n instances of each sub-type",
             5: "Minimum n instances of each sub-type"}
 
-    def get_num_class_instances(self, ci, ctype=None):
+    def get_num_class_instances(self, ci, class_id=None):
         """ Returns the number of class instances, guarded by this
         restriction.
         """
-        if ctype is None:
+        if class_id is None:
             return ClassInstanceClassInstance.objects.filter(class_instance_b=ci,
                 relation=self.restricted_link.relation).count()
         else:
             return ClassInstanceClassInstance.objects.filter(class_instance_b=ci,
                 relation=self.restricted_link.relation,
-                class_instance_a__class_column=ctype).count()
+                class_instance_a__class_column=class_id).count()
 
-    def would_violate(self, ci, c):
+    def would_violate(self, ci, class_id):
         """ Test if it would violate this restriction if a new instance
-        of <c> is linked to <ci> with the guarded link. Note: This will
+        of <class_id> is linked to <ci> with the guarded link. Note: This will
         return *false as well* if adding a new class instance would bring
         the restriction closer to being not violated. E.g.: if exactly 3
         elements are needed, this method would return false for the firs
@@ -765,7 +765,7 @@ class CardinalityRestriction(models.Model):
             # Type 3 and type 4: exactly <value> number of class instances are
             # allowed for each sub-type. A new instance violates if there are
             # already <value> or more instances of a certain type.
-            num_linked_ci = self.get_num_class_instances(ci, c)
+            num_linked_ci = self.get_num_class_instances(ci, class_id)
             too_much_items = num_linked_ci >= self.value
             return too_much_items
         elif self.cardinality_type == 5:
@@ -797,21 +797,21 @@ class CardinalityRestriction(models.Model):
             # Exactly n for each sub type
             subclass_links_q = get_subclass_links()
             for link in subclass_links_q:
-                num_linked_ci = self.get_num_class_instances(ci, link.class_a)
+                num_linked_ci = self.get_num_class_instances(ci, link.class_a_id)
                 if num_linked_ci != self.value:
                     return True
         elif self.cardinality_type == 4:
             # Max n for each sub type
             subclass_links_q = get_subclass_links()
             for link in subclass_links_q:
-                num_linked_ci = self.get_num_class_instances(ci, link.class_a)
+                num_linked_ci = self.get_num_class_instances(ci, link.class_a_id)
                 if num_linked_ci > self.value:
                     return True
         elif self.cardinality_type == 5:
             # Min n for each sub type
             subclass_links_q = get_subclass_links()
             for link in subclass_links_q:
-                num_linked_ci = self.get_num_class_instances(ci, link.class_a)
+                num_linked_ci = self.get_num_class_instances(ci, link.class_a_id)
                 if num_linked_ci < self.value:
                     return True
             return False

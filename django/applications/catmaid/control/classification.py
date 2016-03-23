@@ -1383,8 +1383,6 @@ def get_graphs_to_features(workspace_pid=None):
     """ This view returns a JSON representation of all classifications in this
     given workspace.
     """
-    from catmaid.control.classification import graph_instanciates_feature
-
     # We want all ontologies represented (which are Class objects) that
     # live under the classification_root node.
     ontologies = [cc.class_a for cc in \

@@ -201,6 +201,7 @@
     /**
      * Delete a treenode.
      *
+     * @param {State}   state      Local state, a complete NodeState is required
      * @param {integer} projectID  The project the treenode is part of
      * @param {integer} treenodeID The treenode to delete
      *

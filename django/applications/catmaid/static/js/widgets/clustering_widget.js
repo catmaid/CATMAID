@@ -71,20 +71,29 @@
       }
 
       // additional functionality for the classification selection form
-      var master_cb = $("#select-all", container);
-      if (master_cb.length > 0) {
-        var slave_cbs = $("#clustering-setup-form input[type=checkbox][class=autoselectable]",
-          container);
-
-        master_cb.click( function() {
-          var val = master_cb.attr("checked") == "checked";
-          slave_cbs.attr("checked", val);
+      var selectAllCb = $("#select-all", container);
+      if (selectAllCb.length > 0) {
+        selectAllCb.click( function() {
+          var cbSelector = "#clustering-setup-form input[type=checkbox][class=autoselectable]";
+          var val = this.checked;
+          var inputGraphCbSelection = $(cbSelector, $(this).closest("#clustering_widget"));
+          inputGraphCbSelection.prop("checked", val);
         });
 
-        slave_cbs.click( function() {
-          master_cb.attr("checked", $.grep(slave_cbs, function(e) {
-            return $(e).attr("checked");
-          }).length == slave_cbs.length);
+        $(container).on("change", ".autoselectable", function(e) {
+          var cbSelector = "#clustering-setup-form input[type=checkbox][class=autoselectable]";
+          var val = this.checked;
+          if (val) {
+            var inputGraphCbSelection = $(cbSelector, $(this).closest("#clustering_widget"));
+            var allChecked = $.grep(inputGraphCbSelection, function(e) {
+              return e.checked;
+            }).length == inputGraphCbSelection.length;
+            if (allChecked) {
+              $("#select-all", container).prop("checked", true);
+            }
+          } else {
+            $("#select-all", container).prop("checked", false);
+          }
         });
       }
 

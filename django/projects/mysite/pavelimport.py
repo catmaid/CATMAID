@@ -468,7 +468,8 @@ def import_from_mysql(cursor, project, user, experiment_provider):
         mkcici(image_data, part_of_rel, experiment, p, u)
         experiment_properties = mkci("Experiment properties", exp_properties_class, p, u)
         mkcici(experiment_properties, part_of_rel, experiment, p, u)
-        ovary_classification = mkci("Ovary classification", classification_class, p, u)
+        ovary_classification = mkci("Ovary classification for " + str(gene_name),
+                classification_class, p, u)
         mkcici(ovary_classification, part_of_rel, experiment, p, u)
 
         experiments_with_images.append(experiment)

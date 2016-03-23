@@ -5,56 +5,67 @@
 
   "use strict";
 
-  CATMAID.State = function() {};
-
   /**
-   * Serialize a state into JSON. It looks like this for a NodeState:
-   *
-   *   {
-   *     parent: (<id>, <edition_time>),
-   *     children: ((<child_id>, <child_edition_time>), ...),
-   *     links: ((<connector_id>, <connector_edition_time>, <relation_id>), ...)
-   *   }
+   * Some back-end functions require a user to send a state along (e.g. node
+   * removal or creation). In a collaborative environment, clients can never be
+   * sure if the information they see is the most recent one. The back-end
+   * required to make changes off of the most recent version. To represent the
+   * (local) state the client sees the world in, the state generating functions
+   * are used. There is a NodeState and a ParentState where the last one is a
+   * subset of the first one, representing only the parent information of a node
+   * (used e.g. for node creation). Then there is also NoCheckState, which
+   * causes the back-end to disable state checking for a request.
    */
-  CATMAID.State.prototype.serialize = function() {
-    return JSON.stringify(this);
-  };
 
   /**
    * A general state representation for existing nodes.
+   *
+   * {
+   *   parent: (<id>, <edition_time>),
+   *   children: ((<child_id>, <child_edition_time>), ...),
+   *   links: ((<connector_id>, <connector_edition_time>, <relation_id>), ...)
+   * }
    */
-  CATMAID.NodeState = function(nodeId, editionTime, parentId, parentEditTime,
+  CATMAID.getNodeState = function(nodeId, editionTime, parentId, parentEditTime,
       children, links) {
-    this.edition_time = editionTime;
-    this.parent = [parentId, parentEditTime];
-    this.children = children;
-    this.links = links;
+    var state = {
+      "edition_time": editionTime,
+      "parent": [parentId, parentEditTime],
+      "children": children,
+      "links": links,
+    };
+    return JSON.stringify(state);
   };
-
-  CATMAID.NodeState.prototype = Object.create(CATMAID.State.prototype);
-  CATMAID.NodeState.constructor = CATMAID.NodeState;
 
   /**
    * A state representation for new nodes.
    */
-  CATMAID.NewNodeState = function(parentId, parentEditTime) {
-    this.parent = {
-      "id": parentId,
-      "edition_time": parentEditTime
+  CATMAID.getParentState = function(parentId, parentEditTime) {
+    var state = {
+      "parent": [parentId, parentEditTime]
     };
+    return JSON.stringify(state);
   };
 
-  CATMAID.NewNodeState.prototype = Object.create(CATMAID.State.prototype);
-  CATMAID.NewNodeState.constructor = CATMAID.NewNodeState;
+  /**
+   * A state to represent parent and child edition time.
+   */
+  CATMAID.getEdgeState = function(parentId, parentEditTime, childId, childEditTime) {
+    var state = {
+      "parent": [parentId, parentEditTime],
+      "children": [childId, childEditTime]
+    };
+    return JSON.stringify(state);
+  };
 
   /**
    * A dummy state that causes the back-end to not do state checks.
    */
-  CATMAID.NoState = function() {
-    this.nocheck = true;
+  CATMAID.getNoCheckState = function() {
+    var state = {
+      "nocheck": true
+    };
+    return JSON.stringify(state);
   };
-
-  CATMAID.NoState.prototype = Object.create(CATMAID.State.prototype);
-  CATMAID.NoState.constructor = CATMAID.NoState;
 
 })(CATMAID);

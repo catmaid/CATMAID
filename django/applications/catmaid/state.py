@@ -88,9 +88,13 @@ def validate_parent_node_state(parent_id, state, lock=True, cursor=None):
     if 'parent' not in state:
         raise ValueError("No valid state provided, missing parent property")
     parent = state['parent']
-    if 'edition_time' not in parent:
-        raise ValueError("No valid state provided, missing parent node edition time")
-    edition_time = parent['edition_time']
+    if len(parent) != 2:
+        raise ValueError("No valid state provided, missing parent node it and edition time")
+    state_parent_id = parent[0]
+    edition_time = parent[1]
+
+    if state_parent_id != parent_id:
+        raise ValueError("No valid state provided, state parent ID doesn't match request")
 
     state_checks = [was_edited % (parent_id, edition_time)]
 

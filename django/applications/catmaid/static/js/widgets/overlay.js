@@ -3942,7 +3942,7 @@ SkeletonAnnotations.TracingOverlay.prototype.getState = function(nodeId) {
       links.push([cid, connector.edition_time, link.relation_id]);
   }
 
-  return new CATMAID.NodeState(nodeId, node.edition_time, parentId,
+  return CATMAID.getNodeState(nodeId, node.edition_time, parentId,
       parentEditTime, children, links);
 };
 
@@ -3950,13 +3950,13 @@ SkeletonAnnotations.TracingOverlay.prototype.getState = function(nodeId) {
  * Create A simplified state that will only contain id and edition time of the
  * provided node.
  */
-SkeletonAnnotations.TracingOverlay.prototype.getNewNodeState = function(parentId) {
+SkeletonAnnotations.TracingOverlay.prototype.getParentState = function(parentId) {
   var node = this.nodes[parentId];
   if (!node) {
     throw new CATMAID.ValueError("Can't create state: node not found");
   }
 
-  return new CATMAID.NewNodeState(parentId, node.edition_time);
+  return CATMAID.getParentState(parentId, node.edition_time);
 };
 
 /**

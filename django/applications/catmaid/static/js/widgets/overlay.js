@@ -1776,7 +1776,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createNode = function (parentID, ch
   return CATMAID.commands.execute(command)
     .then(function(result) {
       // add treenode to the display and update it
-      var editTime = null; // TODO
+      var editTime = result.edition_time;
       var nid = parseInt(result.treenode_id);
       var skid = parseInt(result.skeleton_id);
 

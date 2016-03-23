@@ -883,6 +883,7 @@
       this.zdiff = zdiff;
       this.confidence = confidence;
       this.skeleton_id = skeleton_id;
+      this.edition_time = edition_time;
       this.can_edit = can_edit;
       this.isroot = null === parent_id || isNaN(parent_id) || parseInt(parent_id) < 0;
       this.c = null; // The SVG circle for drawing and interacting with the node.

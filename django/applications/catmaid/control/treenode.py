@@ -357,14 +357,16 @@ def update_node_radii(node_ids, radii, cursor=None):
 	FROM (SELECT x.id, x.radius AS old_radius, y.new_radius
 	      FROM treenode x
 	      INNER JOIN (VALUES {}) y(id, new_radius)
-	      ON x.id=y.id FOR UPDATE) target
+	      ON x.id=y.id FOR NO KEY UPDATE) target
 	WHERE t.id = target.id
 	RETURNING t.id, target.old_radius, target.new_radius;
     '''.format(node_radii))
 
     updated_rows = cursor.fetchall()
-    if 0 == len(updated_rows):
-        raise ValueError('Coudn\'t find treenode #' + treenode_id)
+    if len(node_ids) != len(updated_rows):
+        raise ValueError('Coudn\'t find treenodes ' +
+                         ','.join(frozenset(node_ids) -
+                                  frozenset([r[0] for r in updated_rows])))
     return {r[0]: {'old': r[1], 'new': float(r[2])} for r in updated_rows}
 
 @requires_user_role(UserRole.Annotate)

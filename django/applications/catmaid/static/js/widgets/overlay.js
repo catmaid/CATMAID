@@ -1741,7 +1741,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeWithLink = function (
           afterCreate(self, node);
         }
       });
-    });
+    }).catch(CATMAID.handleError);
 };
 
 /**

@@ -135,9 +135,9 @@
           return parameters;
           },
           "success": function (e) {
-          if (e.error) {
-            alert(e.error);
-          }
+            if (e.error) {
+              CATMAID.error(e.error, e.detail);
+            }
           }
         },
         "cache": false,
@@ -405,9 +405,9 @@
           $.unblockUI();
           r = $.parseJSON(r);
           if (r['error']) {
-          alert(r['error']);
-          $.jstree.rollback(treebefore);
-          return;
+            CATMAID.error(r['error']);
+            $.jstree.rollback(treebefore);
+            return;
           }
           if(r['status']) {
             $("#annotation_graph_object").jstree("refresh", -1);
@@ -436,9 +436,9 @@
           $.unblockUI();
           r = $.parseJSON(r);
           if (r['error']) {
-          alert(r['error']);
-          $.jstree.rollback(treebefore);
-          return;
+            CATMAID.error(r);
+            $.jstree.rollback(treebefore);
+            return;
           }
           if(r['status']) {
             $("#annotation_graph_object").jstree("refresh", -1);

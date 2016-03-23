@@ -77,29 +77,31 @@ target_ontology = {
         Restriction('is_a', 3, 1): [
             'not expressed',
             'expressed'
-        ]
-    },
-    'Distribution': {
-        Restriction('is_a', 4, 1): [
-            'uniform localization',
-            'subcellular localization pattern'
         ],
         'part_of': {
-            'Stage': {
+            'Distribution': {
                 Restriction('is_a', 4, 1): [
-                    "Germarium & stage 1 egg chamber",
-                    "Stage 2-7 egg chamber",
-                    "Stage 8 egg chamber",
-                    "Stage 9 egg chamber",
-                    "Stage 10 egg chamber",
-                    "Misc"
+                    'uniform localization',
+                    'subcellular localization pattern'
                 ],
                 'part_of': {
-                    'Cell type': {
-                        Restriction('is_a', 4, 1): cell_types.keys(),
+                    'Stage': {
+                        Restriction('is_a', 4, 1): [
+                            "Germarium & stage 1 egg chamber",
+                            "Stage 2-7 egg chamber",
+                            "Stage 8 egg chamber",
+                            "Stage 9 egg chamber",
+                            "Stage 10 egg chamber",
+                            "Misc"
+                        ],
                         'part_of': {
-                            'Localization': {
-                                Restriction('is_a', 4, 1): cell_type_localizations.keys()
+                            'Cell type': {
+                                Restriction('is_a', 4, 1): cell_types.keys(),
+                                'part_of': {
+                                    'Localization': {
+                                        Restriction('is_a', 4, 1): cell_type_localizations.keys()
+                                    }
+                                }
                             }
                         }
                     }
@@ -680,11 +682,13 @@ class AnnotationTree(object):
 
         classification = {}
         classification['Presence'] = {
-            'value': 'expressed'
-        }
-        classification['Distribution'] = {
-            'value': 'subcellular localization pattern',
-            'children': []
+            'value': 'expressed',
+            'children': {
+                'Distribution': {
+                    'value': 'subcellular localization pattern',
+                    'children': []
+                }
+            }
         }
 
         def linkNewNode(dd):
@@ -742,8 +746,9 @@ class AnnotationTree(object):
                 (main_id, "stage1", "ubiquitous signal at all stages"))
         distribution = 'uniform localization' if (1 == len(cursor.fetchall())) \
             else 'subcellular localization pattern'
-        ci_distribution = mkci(distribution, ontology.get_class(["Distribution"], distribution),
-                project, user, part_of, root);
+        ci_distribution = mkci(distribution,
+                ontology.get_class(["Presence", "Distribution"], distribution),
+                project, user, part_of, ci_presence)
 
         stage_term_sql = """
             SELECT s.name as stage, t1.go_term as term1, t1.id as term1_id,
@@ -809,11 +814,12 @@ class AnnotationTree(object):
                 matched_terms = test_set.intersection(ct_constraints)
                 if len(matched_terms) > 0:
                     if not ci_stage:
-                        ci_stage = mkci(stage_name, ontology.get_class(["Distribution",
-                            "Stage"], stage_name), project, user, part_of, ci_distribution)
+                        ci_stage = mkci(stage_name,
+                            ontology.get_class(["Presence", "Distribution", "Stage"],
+                                stage_name), project, user, part_of, ci_distribution)
 
                     log("Create cell type: " + ct, 3)
-                    cls = ontology.get_class(["Distribution", "Stage", "Cell type"], ct)
+                    cls = ontology.get_class(["Presence", "Distribution", "Stage", "Cell type"], ct)
                     ci_celltype = mkci(ct, cls, project, user, part_of, ci_stage )
                     created_cell_types.append(ci_celltype)
 
@@ -845,7 +851,7 @@ class AnnotationTree(object):
                                 break
 
                         if valid_localization:
-                            ctl_cls = ontology.get_class(["Distribution", "Stage",
+                            ctl_cls = ontology.get_class(["Presence", "Distribution", "Stage",
                                 "Cell type", "Localization"], ctl)
                             ci_loc =  mkci(ctl, ctl_cls, project, user,
                                     part_of, ci_celltype)

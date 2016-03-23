@@ -1453,7 +1453,8 @@ def graph_instanciates_feature_simple(graph, feature, idx=0):
         return False
     elif num_links > 1:
         # More than one?
-        raise Exception('Found more than one ontology node link of one class instance.')
+        raise Exception('Found more than one ontology node link of one class instance: ' +
+                ", ".join([str(l.id) for l in link_q ]))
 
     # Continue with checking children, if any
     return graph_instanciates_feature_simple(link_q[0].class_instance_a, feature, idx+1)

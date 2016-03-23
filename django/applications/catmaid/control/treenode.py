@@ -74,15 +74,16 @@ def create_treenode(request, project_id=None):
     if parent_id and parent_id != -1:
         state.validate_parent_node_state(parent_id, request.POST.get('state'), True)
 
-    treenode_id, skeleton_id, edition_time = _create_treenode(project_id,
-            request.user, request.user, params['x'], params['y'], params['z'],
-            params['radius'], params['confidence'], params['useneuron'],
-            params['parent_id'], neuron_name=request.POST.get('neuron_name', None))
+    new_treenode = _create_treenode(project_id, request.user, request.user,
+            params['x'], params['y'], params['z'], params['radius'],
+            params['confidence'], params['useneuron'], params['parent_id'],
+            neuron_name=request.POST.get('neuron_name', None))
 
     return JsonResponse({
-        'treenode_id': treenode_id,
-        'skeleton_id': skeleton_id,
-        'edition_time': edition_time
+        'treenode_id': new_treenode.treenode_id,
+        'skeleton_id': new_treenode.skeleton_id,
+        'edition_time': new_treenode.edition_time,
+        'parent_edition_time': new_treenode.parent_edition_time
     })
 
 @requires_user_role(UserRole.Annotate)
@@ -137,19 +138,32 @@ def insert_treenode(request, project_id=None):
         user, time = child.user, child.creation_time
 
     # Create new treenode
-    treenode_id, skeleton_id, edition_time = _create_treenode(project_id,
+    new_treenode = _create_treenode(project_id,
             user, request.user, params['x'], params['y'], params['z'],
             params['radius'], params['confidence'], -1, params['parent_id'], time)
 
     # Update parent of child to new treenode
-    child.parent_id = treenode_id
+    child.parent_id = new_treenode.treenode_id
     child.save()
 
     return JsonResponse({
-        'treenode_id': treenode_id,
-        'skeleton_id': skeleton_id,
-        'edition_time': edition_time
+        'treenode_id': new_treenode.treenode_id,
+        'skeleton_id': new_treenode.skeleton_id,
+        'edition_time': new_treenode.edition_time,
+        'parent_edition_time': new_treenode.parent_edition_time
     })
+
+
+class NewTreenode(object):
+    """Represent a newly created treenode and all the information that is
+    returned to the client
+    """
+    def __init__(self, treenode_id, edition_time, skeleton_id,
+            parent_edition_time):
+        self.treenode_id = treenode_id
+        self.edition_time = edition_time
+        self.skeleton_id = skeleton_id
+        self.parent_edition_time = parent_edition_time
 
 def _create_treenode(project_id, creator, editor, x, y, z, radius, confidence,
                      neuron_id, parent_id, creation_time=None, neuron_name=None):
@@ -195,15 +209,18 @@ def _create_treenode(project_id, creator, editor, x, y, z, radius, confidence,
             # updates to its skeleton ID while this node is being created.
             cursor = connection.cursor()
             cursor.execute('''
-                SELECT t.skeleton_id FROM treenode t WHERE t.id = %s
-                FOR NO KEY UPDATE OF t
+                SELECT t.skeleton_id, t.edition_time FROM treenode t
+                WHERE t.id = %s FOR NO KEY UPDATE OF t
                 ''', (parent_id,))
-            parent_skeleton_id = cursor.fetchone()[0]
+            parent_node = cursor.fetchone()
+            parent_skeleton_id = parent_node[0]
+            parent_edition_time = parent_node[1]
 
             response_on_error = 'Could not insert new treenode!'
             new_treenode = insert_new_treenode(parent_id, parent_skeleton_id)
 
-            return (new_treenode.id, parent_skeleton_id, new_treenode.edition_time)
+            return NewTreenode(new_treenode.id, new_treenode.edition_time,
+                               parent_skeleton_id, parent_edition_time)
         else:
             # No parent node: We must create a new root node, which needs a
             # skeleton and a neuron to belong to.
@@ -236,7 +253,8 @@ def _create_treenode(project_id, creator, editor, x, y, z, radius, confidence,
                 response_on_error = 'Could not insert new treenode!'
                 new_treenode = insert_new_treenode(None, new_skeleton.id)
 
-                return (new_treenode.id, new_skeleton.id, new_treenode.edition_time)
+                return NewTreenode(new_treenode.id, new_treenode.edition_time,
+                                   new_skeleton.id, None)
             else:
                 # A neuron does not exist, therefore we put the new skeleton
                 # into a new neuron.
@@ -300,7 +318,8 @@ def _create_treenode(project_id, creator, editor, x, y, z, radius, confidence,
                                 new_location, 'Create neuron %d and skeleton '
                                 '%d' % (new_neuron.id, new_skeleton.id))
 
-                return (new_treenode.id, new_skeleton.id, new_treenode.edition_time)
+                return NewTreenode(new_treenode.id, new_treenode.edition_time,
+                                   new_skeleton.id, None)
 
     except Exception as e:
         import traceback

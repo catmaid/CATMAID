@@ -485,10 +485,10 @@
         command.store('nodeId', result.treenode_id);
         // After the node was created, a local neighborhood state has to be
         // generated that will be available to undo.
-        var parentEditTime = result.parent_edit_time;
         var children = [], links = [];
         command.store("state", CATMAID.getNodeState(result.treenode_id,
-              result.edition_time, mParentId, parentEditTime, children, links));
+              result.edition_time, mParentId, result.parent_edition_time,
+              children, links));
         done();
         return result;
       });
@@ -499,7 +499,8 @@
       command.validateForUndo(projectId, nodeId);
       // For removal a complete neighborhood state is required
       var state = command.get("state");
-      var removeNode = CATMAID.Nodes.remove(projectId, nodeId);
+      command.validateForUndo(state);
+      var removeNode = CATMAID.Nodes.remove(state, projectId, nodeId);
       return removeNode.then(done);
     };
 

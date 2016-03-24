@@ -74,7 +74,7 @@ class Restriction(object):
 
 target_ontology = {
     'Presence': {
-        Restriction('is_a', 3, 1): [
+        Restriction('is_a', 0, 1): [
             'not expressed',
             'expressed'
         ],

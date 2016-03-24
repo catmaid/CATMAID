@@ -37,12 +37,13 @@ front-end models and consists of information about the node of interest and its
 neighborhood.
 
 To represent the (local) state the client sees the world in, the state
-generating functions are used. There is a *node state*,  a *parent state* and a
-*neighborhood state*. The first two are subsets of the last one. A node state
-represents a node ID along with an edition time, a parent state encapsulates
-this information about a parent of a node. The neighborhoods state includes
-both, plus information about children and links, both again represented by an
-ID and an edition time. Then there is also a *no chack state*, which causes the
+generating functions are used. There is a *node state*,  a *parent state*, an
+*edge state* and a *neighborhood state*. The first three are subsets of the last
+one. A node state represents a node ID along with an edition time, a parent
+state encapsulates this information about a parent of a node. An edge state
+includes a parent state and a child state. The neighborhoods state includes
+both, plus information about children and links, both again represented by an ID
+and an edition time. Then there is also a *no chack state*, which causes the
 back-end to disable state checking for a request.
 
 Different actions require different states, below you find a list of stateful
@@ -54,7 +55,7 @@ Operation                       Required state
 =============================== =====================================
 Delete node                     Neighborhood state for deleted node
 Create node                     Parent state for new node
-Insert node                     Parent state and child state for new node
+Insert node                     Edge state
 Move node                       Node state
 Edit node radius                Node state
 Edit node confidence            Node state

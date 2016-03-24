@@ -658,19 +658,19 @@ class AnnotationTree(object):
 
         # Presence:
         #   values: not expressed, expressed
-        #   children: []
-        # Distribution:
-        #   values: unoform loc..., subcellular ...
         #   children:
-        #     Stage:
-        #       values: Germarium ..., Stage 2-7, ...
+        #     Distribution:
+        #       values: unoform loc..., subcellular ...
         #       children:
-        #         Cell type:
-        #           values: ...
+        #         Stage:
+        #           values: Germarium ..., Stage 2-7, ...
         #           children:
-        #             Localization:
+        #             Cell type:
         #               values: ...
-        #               children: []
+        #               children:
+        #                 Localization:
+        #                   values: ...
+        #                   children: []
 
         class Node:
             def __init__(self, path, instance):

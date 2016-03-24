@@ -153,15 +153,25 @@ def insert_treenode(request, project_id=None):
             user, request.user, params['x'], params['y'], params['z'],
             params['radius'], params['confidence'], -1, params['parent_id'], time)
 
-    # Update parent of child to new treenode
-    child.parent_id = new_treenode.treenode_id
-    child.save()
+    # Update parent of child to new treenode, do this in raw SQL to also get
+    # the updated edition time
+    cursor = connection.cursor()
+    cursor.execute("""
+        UPDATE treenode SET parent_id = %s
+         WHERE id = %s
+     RETURNING edition_time
+    """, (new_treenode.treenode_id, child.id))
+    result = cursor.fetchone()
+    if not result or 1 != len(result):
+        raise ValueError("Couldn't update parent of inserted node's child: " + child.id)
+    child_edition_time = result[0]
 
     return JsonResponse({
         'treenode_id': new_treenode.treenode_id,
         'skeleton_id': new_treenode.skeleton_id,
         'edition_time': new_treenode.edition_time,
-        'parent_edition_time': new_treenode.parent_edition_time
+        'parent_edition_time': new_treenode.parent_edition_time,
+        'child_edition_time': child_edition_time
     })
 
 

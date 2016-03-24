@@ -135,3 +135,6 @@ A partial listing of libraries or programs that consume the CATMAID HTTP API:
 `RCATMAID <https://github.com/jefferis/rcatmaid>`_
    R bindings for the CATMAID API by
    `Gregory Jefferis <http://www2.mrc-lmb.cam.ac.uk/group-leaders/h-to-m/gregory-jefferis/>`_.
+
+`CATMAID-to-Blender <https://github.com/schlegelp/CATMAID-to-Blender>`_
+   A Blender-Plugin to pull data from CATMAID by Philipp Schlegel

@@ -6,7 +6,7 @@ from django.db import connection
 
 was_edited = """
     SELECT 1 FROM treenode t
-    WHERE t.id = %s AND (t.edition_time - '%s'::timestamptz < '1 ms'::interval)
+    WHERE t.id = %s AND (t.edition_time - %s::timestamptz < '1 ms'::interval)
 """
 is_parent = """
     SELECT 1 FROM treenode t
@@ -31,35 +31,49 @@ all_links = """
     ) sub(c)
 """
 
+class StateCheck:
+    """A simple wraper arround state check SQL and parameters for it"""
+
+    def __init__(self, sql, params):
+        self.sql = sql
+        self.params = params if type(params) in (list, tuple) else (params,)
+
 def make_all_children_query(child_ids, node_id):
     if child_ids:
-        child_query = " LEFT JOIN {} p(id) ON t.id = p.id ".format(
-            list_to_table(child_ids))
+        table_sql, table_args = list_to_table(child_ids, 1)
+        args = table_args
+        child_query = " LEFT JOIN {} p(id) ON t.id = p.id ".format(table_sql)
         constraints = "AND p.id IS NULL"
+        args.append(node_id)
+        return StateCheck(all_children % (child_query, "%s", constraints), args)
     else:
-        child_query = ""
-        constraints = ""
-    return all_children % (child_query, node_id, constraints)
+        return StateCheck(all_children % ("", "%s", ""), [node_id])
 
 def make_all_links_query(connector_ids, node_id):
     if connector_ids:
+        table_sql, table_args = list_to_table(connector_ids, 2)
+        args = table_args
         link_query = """
             LEFT JOIN {} p(cid,rid) ON (l.connector_id = p.cid
             AND l.relation_id = p.rid)
-        """.format(list_to_table(connector_ids, 2))
+        """.format(table_sql)
         constraints = "AND p.cid IS NULL AND p.rid IS NULL"
+        args.append(node_id)
+        return StateCheck(all_links % (link_query, "%s", constraints), args)
     else:
-        link_query = ""
-        constraints = ""
-    return all_links % (link_query, node_id, constraints)
+        return StateCheck(all_links % ("", "%s", ""), [node_id])
 
 def list_to_table(l, n=1):
-    if n < 2:
-        return "(VALUES {})".format(','.join("({})".format(e) for e in l))
+    args = None
+    if n == 1:
+        args = [(e,) for e in l]
     elif n == 2:
-        return "(VALUES {})".format(','.join("({},{})".format(e[0], e[1]) for e in l))
-    else:
-        raise ValueError("Not implemented")
+        args = [(e[0], e[1]) for e in l]
+    if not args:
+        raise ValueError("Could't parse list argument in state check")
+
+    records_list_template = ','.join(['%s'] * len(args))
+    return ("(VALUES {0})".format(records_list_template), args)
 
 def has_only_truthy_values(element):
     return element[0] and element[1]
@@ -96,7 +110,7 @@ def validate_parent_node_state(parent_id, state, lock=True, cursor=None):
     if state_parent_id != parent_id:
         raise ValueError("No valid state provided, state parent ID doesn't match request")
 
-    state_checks = [was_edited % (parent_id, edition_time)]
+    state_checks = [StateCheck(was_edited, (parent_id, edition_time))]
 
     cursor = cursor or connection.cursor()
     check_state(state_checks, cursor)
@@ -139,24 +153,24 @@ def validate_node_state(node_id, state, lock=True, cursor=None):
         raise ValueError("No valid state provided, invalid links")
 
     # Make sure the node itself is valid
-    state_checks = [was_edited % (node[0], node[1])]
+    state_checks = [StateCheck(was_edited, (node[0], node[1]))]
 
     # Collect qurey components, startwith parent relation
     if parent_id and -1 != parent_id:
-        state_checks.append(is_parent % (parent_id, node_id))
-        state_checks.append(was_edited % (parent_id, parent[1]))
+        state_checks.append(StateCheck(is_parent, (parent_id, node_id)))
+        state_checks.append(StateCheck(was_edited, (parent_id, parent[1])))
     else:
-        state_checks.append(is_root % node_id)
+        state_checks.append(StateCheck(is_root, (node_id,)))
 
     # Check chilren
     state_checks.append(make_all_children_query(
-        [c[0] for c in children], node[0]))
-    state_checks.extend((was_edited % (c[0], c[1])) for c in children)
-    state_checks.extend(is_child % (k,node_id) for k,v in children)
+        [int(c[0]) for c in children], node[0]))
+    state_checks.extend(StateCheck(was_edited, (c[0], c[1])) for c in children)
+    state_checks.extend(StateCheck(is_child, (k,node_id)) for k,v in children)
 
     # Check connector links
     state_checks.append(make_all_links_query(
-        [(l[0],l[2]) for l in links], node[0]))
+        [(int(l[0]), int(l[2])) for l in links], node[0]))
 
     # Collect results
     cursor = cursor or connection.cursor()
@@ -173,7 +187,12 @@ def lock_node(node_id, cursor):
 
 def check_state(state_checks, cursor):
     """Raise an error if state checks can't be passed."""
-    cursor.execute("(" + ") INTERSECT (".join(state_checks) + ")")
+    sql_checks = [sc.sql for sc in state_checks]
+    args = []
+    for sc in state_checks:
+        args.extend(p for p in sc.params)
+
+    cursor.execute("(" + ") INTERSECT (".join(sql_checks) + ")", args)
     state_check_results = cursor.fetchall()
 
     # Expect results to have a length of the number of checks made and that

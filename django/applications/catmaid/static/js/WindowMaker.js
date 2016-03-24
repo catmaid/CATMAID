@@ -171,6 +171,10 @@ var WindowMaker = new function()
     addListener(win, content, config.controlsID, destroy, resize);
     addLogic(win);
 
+    if (CATMAID.tools.isFn(config.init)) {
+      config.init.call(instance);
+    }
+
     return {window: win, widget: instance};
   };
 

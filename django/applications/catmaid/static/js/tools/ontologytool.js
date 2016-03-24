@@ -33,7 +33,6 @@
           buttonID: "ontology_button_editor",
           run: function(e) {
               WindowMaker.show('ontology-editor');
-              self.update_workspace_in_widgets();
               return true;
           }
       }));
@@ -44,7 +43,6 @@
           buttonID: "classification_editor_button",
           run: function (e) {
               WindowMaker.show('classification-editor');
-              self.update_workspace_in_widgets();
               return true;
           }
       }));
@@ -55,7 +53,6 @@
           buttonID: "clustering_button",
           run: function (e) {
               WindowMaker.show('clustering-widget');
-              self.update_workspace_in_widgets();
               return true;
           }
       }));
@@ -68,7 +65,6 @@
               var widget = new CATMAID.OntologySearch();
               widget.workspacePid = self.workspace_mode === "classification" ? -1 : project.id;
               WindowMaker.create('ontology-search', widget);
-              //self.update_workspace_in_widgets();
               return true;
           }
       }));
@@ -123,12 +119,11 @@
       /**
        * Updates the workspace toolbar according to the user profile.
        */
-      var update_workspace_toolbar = function() {
+      var initToolbar = function() {
           var use_projects = userprofile.independent_ontology_workspace_is_default ? false : true;
           $("input[name='ontology_space'][value='project']").prop('checked', use_projects);
           $("input[name='ontology_space'][value='classification']").prop('checked', !use_projects);
           self.workspace_mode = use_projects ? "project" : "classification";
-          self.update_workspace_in_widgets();
       };
 
     /**
@@ -177,7 +172,7 @@
       };
 
       // init the workspace bar
-      update_workspace_toolbar();
+      initToolbar();
   }
 
   // Export tool

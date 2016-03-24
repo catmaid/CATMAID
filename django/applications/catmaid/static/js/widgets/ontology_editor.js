@@ -10,8 +10,7 @@
    * semantic space, linked to a project. It also allows creation and
    * removal of relations, classes and class-class links.
    */
-  var OntologyEditor = new function()
-  {
+  var OntologyEditor = function(options) {
     this.workspace_pid = undefined;
     this.trees = [];
     var content_div_id = "ontology_editor_widget";
@@ -31,32 +30,32 @@
             $("span#known_root_names").append(text);
           });
 
-      // Assign a function to the refresh button
-      $("#refresh_ontology_editor").click(function() {
-        OntologyEditor.refresh_trees();
-      });
-
       // change to pid workspace if pid was passed
       if (pid) {
-        OntologyEditor.change_workspace(pid, true);
+        this.change_workspace(pid, true);
+      } else if (userprofile.independent_ontology_workspace_is_default) {
+        this.change_workspace(-1, true);
+      } else {
+        this.change_workspace(project.id, true);
       }
     };
 
     this.register_tree = function(tree_id)
     {
-      OntologyEditor.trees.push(tree_id);
+      this.trees.push(tree_id);
     };
 
     this.load_ontology_tree = function( pid, tree_id, root_class )
     {
       var tree = $(tree_id);
 
-      OntologyEditor.register_tree( tree_id );
+      this.register_tree( tree_id );
 
+      var self = this;
       tree.bind("reload_nodes.jstree",
          function (event, data) {
-         if (OntologyEditor.currentExpandRequest) {
-           openTreePath($(tree_id), OntologyEditor.currentExpandRequest);
+         if (self.currentExpandRequest) {
+           openTreePath($(tree_id), self.currentExpandRequest);
          }
          });
 
@@ -127,7 +126,7 @@
               "label": "Relate a class to this one",
               "_class": "wider-context-menu",
               "action": function (obj) {
-                return OntologyEditor.create_link_handler(this, pid, obj, tree_id);
+                return self.create_link_handler(this, pid, obj, tree_id);
                }
             },
             "remove_all_links": {
@@ -138,7 +137,7 @@
               "action": function (obj) {
                 // assure that this was on purpose
                 if (confirm("Are you sure you want to remove all ontology class-class links?")) {
-                  return OntologyEditor.remove_all_links_handler(pid, tree_id);
+                  return self.remove_all_links_handler(pid, tree_id);
                 }
                }
             }
@@ -152,7 +151,7 @@
                 "separator_after": false,
                 "label": "Cardinality",
                 "action": function (obj) {
-                  return OntologyEditor.create_cardinality_restriction(pid, obj);
+                  return self.create_cardinality_restriction(pid, obj);
                  }
               },
               "add_exclusivity_restriction": {
@@ -162,7 +161,7 @@
                 "action": function (obj) {
                   // A exclusivity constraint is a cardinality constraint
                   // that restricts to exactly one value.
-                  return OntologyEditor.create_cardinality_restriction(pid, obj, 1);
+                  return self.create_cardinality_restriction(pid, obj, 1);
                  }
               }
             };
@@ -173,7 +172,7 @@
               "separator_after": false,
               "label": "Relate a class to this one",
               "action": function (obj) {
-                return OntologyEditor.create_link_handler(this, pid, obj, tree_id);
+                return self.create_link_handler(this, pid, obj, tree_id);
                }
             },
             "add_restriction": {
@@ -208,7 +207,7 @@
                   "_class": "even-wider-context-menu",
                   "action": function(rid) {
                     return function (obj) {
-                      return OntologyEditor.remove_restriction(pid, obj, rid);
+                      return self.remove_restriction(pid, obj, rid);
                     };}(restriction.id)
                   };
               }
@@ -234,7 +233,7 @@
                 // assure that this was on purpose
                 if (confirm("Are you sure you want to remove the class-class link between this class and the class connected with the parent relation?")) {
                   var cc_id = obj.attr('ccid');
-                  return OntologyEditor.remove_link_handler(pid, cc_id, tree_id);
+                  return self.remove_link_handler(pid, cc_id, tree_id);
                 }
                }
             };
@@ -246,7 +245,7 @@
               "label": "Relate a class with this relation",
               "_class": "wider-context-menu",
               "action": function (obj) {
-                return OntologyEditor.create_link_handler(this, pid, obj, tree_id);
+                return self.create_link_handler(this, pid, obj, tree_id);
                }
             },
             "remove_all_links": {
@@ -259,7 +258,7 @@
                 if (confirm("Are you sure you want to remove all ontology class-class links that use this relation?")) {
                   var rel_id = obj.attr('id').replace("node_", "");
                   var class_b_id = obj.attr('classbid');
-                  return OntologyEditor.remove_selected_links_handler(pid, rel_id, class_b_id, tree_id);
+                  return self.remove_selected_links_handler(pid, rel_id, class_b_id, tree_id);
                 }
                }
             }
@@ -334,12 +333,13 @@
     {
       var tree = $(tree_id);
 
-      OntologyEditor.register_tree( tree_id );
+      this.register_tree( tree_id );
 
+      var self = this;
       tree.bind("reload_nodes.jstree",
          function (event, data) {
-         if (OntologyEditor.currentExpandRequest) {
-           openTreePath($(tree_id), OntologyEditor.currentExpandRequest);
+         if (self.currentExpandRequest) {
+           openTreePath($(tree_id), self.currentExpandRequest);
          }
          });
 
@@ -392,7 +392,7 @@
               "separator_after": false,
               "label": "Add new relation",
               "action": function (obj) {
-                return OntologyEditor.create_relation_handler(pid, tree_id);
+                return self.create_relation_handler(pid, tree_id);
                }
             },
             "remove_all_relations": {
@@ -402,7 +402,7 @@
               "action": function (obj) {
                 // assure that this was on purpose
                 if (confirm("Are you sure you want to remove all ontology relations?")) {
-                  return OntologyEditor.remove_all_relations_handler(pid, tree_id);
+                  return self.remove_all_relations_handler(pid, tree_id);
                 }
                }
             }
@@ -416,7 +416,7 @@
               "action": function (obj) {
                 var rel_id = obj.attr('id').replace("node_", "");
                 var rel_name = obj.attr('name');
-                return OntologyEditor.rename_relation_handler(
+                return self.rename_relation_handler(
                   rel_id, rel_name, pid, tree_id);
                }
             },
@@ -428,7 +428,7 @@
                 // assure that this was on purpose
                 if (confirm("Are you sure you want to remove this relation?")) {
                   var rel_id = obj.attr('id').replace("node_", "");
-                  return OntologyEditor.remove_relation_handler(pid, rel_id, tree_id);
+                  return self.remove_relation_handler(pid, rel_id, tree_id);
                 }
                }
             }
@@ -487,12 +487,13 @@
     {
       var tree = $(tree_id);
 
-      OntologyEditor.register_tree( tree_id );
+      this.register_tree( tree_id );
 
+      var self = this;
       tree.bind("reload_nodes.jstree",
          function (event, data) {
-         if (OntologyEditor.currentExpandRequest) {
-           openTreePath($(tree_id), OntologyEditor.currentExpandRequest);
+         if (self.currentExpandRequest) {
+           openTreePath($(tree_id), self.currentExpandRequest);
          }
          });
 
@@ -547,7 +548,7 @@
               "separator_after": false,
               "label": "Add new class",
               "action": function (obj) {
-                return OntologyEditor.create_class_handler(pid, tree_id);
+                return self.create_class_handler(pid, tree_id);
                }
             },
             "remove_all_classes": {
@@ -557,7 +558,7 @@
               "action": function (obj) {
                 // assure that this was on purpose
                 if (confirm("Are you sure you want to remove all ontology classes?")) {
-                  return OntologyEditor.remove_all_classes_handler(pid, tree_id);
+                  return self.remove_all_classes_handler(pid, tree_id);
                 }
                }
             }
@@ -571,7 +572,7 @@
               "action": function (obj) {
                 var class_id = obj.attr('id').replace("node_", "");
                 var class_name = obj.attr('name');
-                return OntologyEditor.rename_class_handler(
+                return self.rename_class_handler(
                   class_id, class_name, pid, tree_id);
                }
             },
@@ -583,7 +584,7 @@
                 // assure that this was on purpose
                 if (confirm("Are you sure you want to remove this class?")) {
                   var class_id = obj.attr('id').replace("node_", "");
-                  return OntologyEditor.remove_class_handler(pid, class_id, tree_id);
+                  return self.remove_class_handler(pid, class_id, tree_id);
                 }
                }
             }
@@ -614,6 +615,7 @@
      * Handles the creation of a relation out of the tree's context menu.
      */
     this.create_relation_handler = function (pid, tree_id) {
+      var self = this;
       $('#ontology_add_dialog #cancel').off("click").on("click",
       function() {
         // clear input box
@@ -624,17 +626,17 @@
       $('#ontology_add_dialog #add').off("click").on("click",
       function() {
         $.unblockUI();
-        OntologyEditor.display_wait_message("Creating relation. Just a moment...");
+        self.display_wait_message("Creating relation. Just a moment...");
         var relname= $('#ontology_add_dialog #relname').val();
         // add relation with Ajax call
         requestQueue.register(django_url + pid + '/ontology/relations/add',
           'POST', { "relname": relname },
           function(status, data, text) {
-            OntologyEditor.hide_wait_message();
-            OntologyEditor.handle_operation_response(status, data, text,
+            self.hide_wait_message();
+            self.handle_operation_response(status, data, text,
               function() {
-                OntologyEditor.refresh_tree(tree_id);
-                OntologyEditor.show_error_status( "Success", "A new relation has been created." );
+                self.refresh_tree(tree_id);
+                self.show_error_status( "Success", "A new relation has been created." );
               });
           });
         // clear input box
@@ -691,9 +693,10 @@
      * Handles the renaming of a relation out of the tree's context menu.
      */
     this.rename_relation_handler = function (rel_id, rel_name, pid, tree_id) {
+      var self = this;
       general_rename_handler("relation", rel_name,
         function(new_name) {
-          OntologyEditor.display_wait_message(
+          self.display_wait_message(
             "Renaming relation. Just a moment...");
           // rename relation with AJAX call
           requestQueue.register(django_url + pid + '/ontology/relations/rename',
@@ -701,11 +704,11 @@
             { "relid": rel_id,
               "newname": new_name, },
             function(status, data, text) {
-              OntologyEditor.hide_wait_message();
-              OntologyEditor.handle_operation_response(status, data, text,
+              self.hide_wait_message();
+              self.handle_operation_response(status, data, text,
                 function() {
-                  OntologyEditor.refresh_tree(tree_id);
-                  OntologyEditor.show_error_status( "Success",
+                  self.refresh_tree(tree_id);
+                  self.show_error_status( "Success",
                     "The relation has been renamed." );
                 });
             });
@@ -716,9 +719,10 @@
      * Handles the renaming of a class out of the tree's context menu.
      */
     this.rename_class_handler = function (class_id, class_name, pid, tree_id) {
+      var self = this;
       general_rename_handler("class", class_name,
         function(new_name) {
-          OntologyEditor.display_wait_message(
+          self.display_wait_message(
             "Renaming class. Just a moment...");
           // rename relation with AJAX call
           requestQueue.register(django_url + pid + '/ontology/classes/rename',
@@ -726,11 +730,11 @@
             { "classid": class_id,
               "newname": new_name, },
             function(status, data, text) {
-              OntologyEditor.hide_wait_message();
-              OntologyEditor.handle_operation_response(status, data, text,
+              self.hide_wait_message();
+              self.handle_operation_response(status, data, text,
                 function() {
-                  OntologyEditor.refresh_tree(tree_id);
-                  OntologyEditor.show_error_status( "Success",
+                  self.refresh_tree(tree_id);
+                  self.show_error_status( "Success",
                     "The class has been renamed." );
                 });
             });
@@ -741,16 +745,17 @@
      * Handles the removal of a relation.
      */
     this.remove_relation_handler = function (pid, relation_id, tree_id) {
-      OntologyEditor.display_wait_message("Removing relation. Just a moment...");
+      var self = this;
+      self.display_wait_message("Removing relation. Just a moment...");
       // make relation with Ajax call
       requestQueue.register(django_url + pid + '/ontology/relations/remove',
         'POST', { "relid": relation_id },
         function(status, data, text) {
-          OntologyEditor.hide_wait_message();
-          OntologyEditor.handle_operation_response(status, data, text,
+          self.hide_wait_message();
+          self.handle_operation_response(status, data, text,
             function() {
-              OntologyEditor.refresh_tree(tree_id);
-              OntologyEditor.show_error_status( "Success", "The relation has been removed." );
+              self.refresh_tree(tree_id);
+              self.show_error_status( "Success", "The relation has been removed." );
             });
         });
     };
@@ -759,31 +764,32 @@
      * Handles the removal of all relations in a project.
      */
     this.remove_all_relations_handler = function(pid, tree_id) {
-      OntologyEditor.display_wait_message("Removing all relations. Just a moment...");
+      var self = this;
+      self.display_wait_message("Removing all relations. Just a moment...");
       // make relation with Ajax call
       requestQueue.register(django_url + pid + '/ontology/relations/removeall',
         'GET', null,
         function(status, data, text) {
-          OntologyEditor.hide_wait_message();
-          OntologyEditor.handle_operation_response(status, data, text,
+          self.hide_wait_message();
+          self.handle_operation_response(status, data, text,
             function( jsonData ) {
               var refresh = true;
               // output some status
               var deleted = jsonData['deleted_relations'].length;
               var not_deleted = jsonData['not_deleted_relations'].length;
               if (not_deleted === 0) {
-                OntologyEditor.show_error_status( "Success", "All " + deleted + " relations have been removed." );
+                self.show_error_status( "Success", "All " + deleted + " relations have been removed." );
               } else if (deleted === 0) {
                 refresh = false;
-                OntologyEditor.show_error_status( "No success", "No relation could be removed due to their use by in some class links." );
+                self.show_error_status( "No success", "No relation could be removed due to their use by in some class links." );
               } else {
                 var total = deleted + not_deleted;
                 var msg = not_deleted + " of " + total + " relations could not be removed due to their use in some class links.";
-                OntologyEditor.show_error_status( "Partial success", msg );
+                self.show_error_status( "Partial success", msg );
               }
               // refresh tree
               if (refresh) {
-                OntologyEditor.refresh_tree(tree_id);
+                self.refresh_tree(tree_id);
               }
             });
         });
@@ -793,6 +799,7 @@
      * Handles the creation of a class out of the tree's context menu.
      */
     this.create_class_handler = function (pid, tree_id) {
+      var self = this;
       $('#ontology_add_dialog #cancel').off("click").on("click",
       function() {
         // clear input box
@@ -803,17 +810,17 @@
       $('#ontology_add_dialog #add').off("click").on("click",
       function() {
         $.unblockUI();
-        OntologyEditor.display_wait_message("Adding class. Just a moment...");
+        self.display_wait_message("Adding class. Just a moment...");
         var classname= $('#ontology_add_dialog #classname').val();
         // add class with Ajax call
         requestQueue.register(django_url + pid + '/ontology/classes/add',
           'POST', { "classname": classname },
           function(status, data, text) {
-            OntologyEditor.hide_wait_message();
-            OntologyEditor.handle_operation_response(status, data, text,
+            self.hide_wait_message();
+            self.handle_operation_response(status, data, text,
               function() {
-                OntologyEditor.refresh_trees();
-                OntologyEditor.show_error_status( "Success", "A new class has been created." );
+                self.refresh_trees();
+                self.show_error_status( "Success", "A new class has been created." );
               });
           });
         // clear input box
@@ -834,16 +841,17 @@
      * Handles the removal of a class.
      */
     this.remove_class_handler = function (pid, class_id, tree_id) {
-      OntologyEditor.display_wait_message("Removing class. Just a moment...");
+      var self = this;
+      self.display_wait_message("Removing class. Just a moment...");
       // remove class with Ajax call
       requestQueue.register(django_url + pid + '/ontology/classes/remove',
         'POST', { "classid": class_id },
         function(status, data, text) {
-          OntologyEditor.hide_wait_message();
-          OntologyEditor.handle_operation_response(status, data, text,
+          self.hide_wait_message();
+          self.handle_operation_response(status, data, text,
             function() {
-              OntologyEditor.refresh_trees();
-              OntologyEditor.show_error_status( "Success", "The class has been removed." );
+              self.refresh_trees();
+              self.show_error_status( "Success", "The class has been removed." );
             });
           });
     };
@@ -852,31 +860,32 @@
      * Handles the removal of all classes.
      */
     this.remove_all_classes_handler = function (pid, class_id, tree_id) {
-      OntologyEditor.display_wait_message("Removing all classes. Just a moment...");
+      var self = this;
+      this.display_wait_message("Removing all classes. Just a moment...");
       // remove classes with Ajax call
       requestQueue.register(django_url + pid + '/ontology/classes/removeall',
         'POST', null,
         function(status, data, text) {
-          OntologyEditor.hide_wait_message();
-          OntologyEditor.handle_operation_response(status, data, text,
+          self.hide_wait_message();
+          self.handle_operation_response(status, data, text,
             function( jsonData ) {
               var refresh = true;
               // output some status
               var deleted = jsonData['deleted_classes'].length;
               var not_deleted = jsonData['not_deleted_classes'].length;
               if (not_deleted === 0) {
-                OntologyEditor.show_error_status( "Success", "All " + deleted + " classes have been removed." );
+                self.show_error_status( "Success", "All " + deleted + " classes have been removed." );
               } else if (deleted === 0) {
                 refresh = false;
-                OntologyEditor.show_error_status( "No success", "No class could be removed due to relations to other classes." );
+                self.show_error_status( "No success", "No class could be removed due to relations to other classes." );
               } else {
                 var total = deleted + not_deleted;
                 var msg = not_deleted + " of " + total + " classes could not be removed due to relations to other classes.";
-                OntologyEditor.show_error_status( "Partial success", msg );
+                self.show_error_status( "Partial success", msg );
               }
               // refresh tree
               if (refresh) {
-                OntologyEditor.refresh_trees();
+                self.refresh_trees();
               }
             });
           });
@@ -888,6 +897,7 @@
      */
     this.create_link_handler = function (caller, pid, obj, tree_id)
     {
+      var self = this;
       var is_relation = (obj.attr("rel") == "relation");
       var classbname;
       if (is_relation) {
@@ -903,7 +913,7 @@
       $('#ontology_add_dialog #add').off("click").on("click",
       function() {
         $.unblockUI();
-        OntologyEditor.display_wait_message("Creating link. Just a moment...");
+        self.display_wait_message("Creating link. Just a moment...");
         // get relation ID and class b ID
         var relid = -1;
         var classbid = -1;
@@ -927,14 +937,14 @@
         requestQueue.register(django_url + pid + '/ontology/links/add',
           'POST', postdata,
           function(status, data, text) {
-            OntologyEditor.hide_wait_message();
-            OntologyEditor.handle_operation_response(status, data, text,
+            self.hide_wait_message();
+            self.handle_operation_response(status, data, text,
               function( jsonData ) {
                 if (!jsonData['class_class_id'])
                 {
                   alert( "Can't understand server response: " + data );
                 }
-                OntologyEditor.refresh_trees();
+                self.refresh_trees();
               });
           });
         //caller.create(obj, "inside", att, null, true);
@@ -944,7 +954,7 @@
         'GET', undefined,
         function(status, data, text) {
           if (status !== 200) {
-            OntologyEditor.show_error_msg( status, text );
+            self.show_error_msg( status, text );
             return;
           }
           var classes = JSON.parse(data);
@@ -983,7 +993,7 @@
               'GET', undefined,
               function(status, data, text) {
                 if (status !== 200) {
-                  OntologyEditor.show_error_msg( status, text );
+                  self.show_error_msg( status, text );
                   return;
                 }
                 var relations = JSON.parse(data);
@@ -1008,21 +1018,22 @@
      * Removes a class-class link.
      */
     this.remove_link_handler = function(pid, link_id, tree_id) {
-      OntologyEditor.display_wait_message("Removing class-class link. Just a moment...");
+      var self = this;
+      this.display_wait_message("Removing class-class link. Just a moment...");
       // remove class with Ajax call
       requestQueue.register(django_url + pid + '/ontology/links/remove',
         'POST', { "ccid": link_id },
         function(status, data, text) {
-          OntologyEditor.hide_wait_message();
-          OntologyEditor.handle_operation_response(status, data, text,
+          self.hide_wait_message();
+          self.handle_operation_response(status, data, text,
             function( jsonData ) {
-              OntologyEditor.refresh_tree(tree_id);
+              self.refresh_tree(tree_id);
               // give out some information
               if (jsonData.deleted_link == link_id) {
-                OntologyEditor.show_error_status( "Success", "The class-class link has been removed." );
+                self.show_error_status( "Success", "The class-class link has been removed." );
               } else {
                 var msg = "Something went wrong: Should have removed link " + link_id + ", but server says link " + jsonData.deleted_link + " got removed.";
-                OntologyEditor.show_error_status( "Problem", msg );
+                self.show_error_status( "Problem", msg );
               }
             });
           });
@@ -1033,21 +1044,22 @@
      * particular relation.
      */
     this.remove_selected_links_handler = function(pid, rel_id, class_b_id, tree_id) {
-      OntologyEditor.display_wait_message("Removing selected class-class links. Just a moment...");
+      var self = this;
+      this.display_wait_message("Removing selected class-class links. Just a moment...");
       // remove class with Ajax call
       requestQueue.register(django_url + pid + '/ontology/links/removeselected',
         'POST', {
            "relid": rel_id,
            "classbid": class_b_id },
         function(status, data, text) {
-          OntologyEditor.hide_wait_message();
-          OntologyEditor.handle_operation_response(status, data, text,
+          self.hide_wait_message();
+          self.handle_operation_response(status, data, text,
             function( jsonData ) {
-              OntologyEditor.refresh_tree(tree_id);
+              self.refresh_tree(tree_id);
               // give out some information
               var num_deleted_links = jsonData.deleted_links.length;
               var msg = num_deleted_links + " class-class link(s) have been removed.";
-              OntologyEditor.show_error_status( "Success", msg );
+              self.show_error_status( "Success", msg );
             });
           });
     };
@@ -1056,19 +1068,20 @@
      * Removes all class-class links that match of a project.
      */
     this.remove_all_links_handler = function(pid, tree_id) {
-      OntologyEditor.display_wait_message("Removing all class-class links. Just a moment...");
+      var self = this;
+      this.display_wait_message("Removing all class-class links. Just a moment...");
       // remove class with Ajax call
       requestQueue.register(django_url + pid + '/ontology/links/removeall',
         'POST', null,
         function(status, data, text) {
-          OntologyEditor.hide_wait_message();
-          OntologyEditor.handle_operation_response(status, data, text,
+          self.hide_wait_message();
+          self.handle_operation_response(status, data, text,
             function( jsonData ) {
-              OntologyEditor.refresh_tree(tree_id);
+              self.refresh_tree(tree_id);
               // give out some information
               var num_deleted_links = jsonData.deleted_links.length;
               var msg = num_deleted_links + " class-class link(s) have been removed.";
-              OntologyEditor.show_error_status( "Success", msg );
+              self.show_error_status( "Success", msg );
             });
           });
     };
@@ -1078,12 +1091,12 @@
      */
     this.handle_operation_response = function(status, data, text, handler) {
       if (status !== 200) {
-        OntologyEditor.show_error_msg( status, text );
+        this.show_error_msg( status, text );
         return;
       }
       var jsonData = $.parseJSON(data);
       if (jsonData.error) {
-        OntologyEditor.show_error_status( "Error", jsonData.error, 5000 );
+        this.show_error_status( "Error", jsonData.error, 5000 );
       } else {
         handler( jsonData );
       }
@@ -1093,6 +1106,7 @@
      * Creates a cardinality restriction
      */
     this.create_cardinality_restriction = function( pid, obj, cardinality ) {
+      var self = this;
       if (!cardinality) {
         // ask user for cardinality and type
         $('#cardinality_restriction_dialog #cancel').off("click").on("click",
@@ -1103,7 +1117,7 @@
         $('#cardinality_restriction_dialog #add').off("click").on("click",
         function() {
           $.unblockUI();
-          OntologyEditor.display_wait_message("Creating restriction. Just a moment...");
+          self.display_wait_message("Creating restriction. Just a moment...");
           // create restriction
           var postdata = {
              "linkid": obj.attr("ccid"),
@@ -1113,8 +1127,8 @@
           requestQueue.register(django_url + pid + '/ontology/restrictions/add',
             'POST', postdata,
             function(status, data, text) {
-              OntologyEditor.hide_wait_message();
-              OntologyEditor.handle_operation_response(status, data, text,
+              self.hide_wait_message();
+              self.handle_operation_response(status, data, text,
                 function( jsonData ) {
                   if (!jsonData['new_restriction'])
                   {
@@ -1122,9 +1136,9 @@
                   } else {
                     var r_id = jsonData.new_restriction;
                     var msg = "A new restriction with ID " + r_id + " has been created.";
-                    OntologyEditor.show_error_status( "Success", msg );
+                    self.show_error_status( "Success", msg );
                   }
-                  OntologyEditor.refresh_trees();
+                  self.refresh_trees();
                 });
             });
         });
@@ -1133,7 +1147,7 @@
           'GET', undefined,
           function(status, data, text) {
             if (status !== 200) {
-              OntologyEditor.show_error_msg( status, text );
+              self.show_error_msg( status, text );
               return;
             }
             var json_data = JSON.parse(data);
@@ -1160,13 +1174,13 @@
              "cardinalitytype": 0,
              "restriction": "cardinality" },
           function(status, data, text) {
-            OntologyEditor.handle_operation_response(status, data, text,
+            self.handle_operation_response(status, data, text,
               function( jsonData ) {
-                OntologyEditor.refresh_trees();
+                self.refresh_trees();
                 // give out some information
                 var r_id = jsonData.new_restriction;
                 var msg = "A new restriction with ID " + r_id + " has been created.";
-                OntologyEditor.show_error_status( "Success", msg );
+                self.show_error_status( "Success", msg );
               });
             });
       }
@@ -1176,17 +1190,18 @@
      * Removes a restriction
      */
     this.remove_restriction = function( pid, obj, rid ) {
+      var self = this;
       // add restriction with Ajax call
       requestQueue.register(django_url + pid + '/ontology/restrictions/remove',
         'POST', { 'restrictionid': rid },
         function(status, data, text) {
-          OntologyEditor.handle_operation_response(status, data, text,
+          self.handle_operation_response(status, data, text,
             function( jsonData ) {
-              OntologyEditor.refresh_trees();
+              self.refresh_trees();
               // give out some information
               var r_id = jsonData.removed_restriction;
               var msg = "The restriction with ID " + r_id + " has been removed.";
-              OntologyEditor.show_error_status( "Success", msg );
+              self.show_error_status( "Success", msg );
             });
           });
     };
@@ -1204,9 +1219,9 @@
      */
     this.refresh_trees = function()
     {
-      for (var i=0; i<OntologyEditor.trees.length; i++)
+      for (var i=0; i<this.trees.length; i++)
       {
-        var tree_id = OntologyEditor.trees[i];
+        var tree_id = this.trees[i];
         var tree = $(tree_id);
         tree.jstree("refresh", -1);
       }
@@ -1218,16 +1233,16 @@
      */
     this.change_workspace = function(pid, force)
     {
-      if (pid != OntologyEditor.workspace_pid || force) {
+      if (pid != this.workspace_pid || force) {
         // Do a quick check that all the containers are available
         // and only load the trees if they are.
         if ($('#' + content_div_id).length > 0) {
-          OntologyEditor.workspace_pid = pid;
-          OntologyEditor.load_ontology_tree( pid,
+          this.workspace_pid = pid;
+          this.load_ontology_tree( pid,
             "#ontology_tree_object" );
-          OntologyEditor.load_ontology_relations_tree( pid,
+          this.load_ontology_relations_tree( pid,
             "#ontology_relations_tree" );
-          OntologyEditor.load_ontology_classes_tree( pid,
+          this.load_ontology_classes_tree( pid,
             "#ontology_classes_tree" );
         }
       }
@@ -1258,9 +1273,67 @@
     this.hide_wait_message = function() {
       $.unblockUI();
     };
-  }();
+  };
+
+  OntologyEditor.prototype.getName = function() {
+    return "Ontology Editor";
+  };
+
+  OntologyEditor.prototype.getWidgetConfiguration = function() {
+    return {
+      contentID: 'ontology_editor_widget',
+
+      /**
+       * Create content, which is basically a DataTable instance, getting Data
+       * from the back-end.
+       */
+      createContent: function(container) {
+        container.innerHTML =
+          '<input type="button" id="refresh_ontology_editor" value="refresh" style="display:block; float:left;" />' +
+          '<br clear="all" />' +
+          '<div id="ontology_known_roots">Known root class names: <span id="known_root_names"></span></div>' +
+          '<div id="ontology_warnings"></div>' +
+          '<div id="ontology_tree_name"><h4>Ontology</h4>' +
+          '<div id="ontology_tree_object"></div></div>' +
+          '<div id="ontology_relations_name"><h4>Relations</h4>' +
+          '<div id="ontology_relations_tree"></div></div>' +
+          '<div id="ontology_classes_name"><h4>Classes</h4>' +
+          '<div id="ontology_classes_tree"></div></div>' +
+          '<div id="ontology_add_dialog" style="display:none; cursor:default">' +
+          '<div id="input_rel"><p>New relation name: <input type="text" id="relname" /></p></div>' +
+          '<div id="input_class"><p>New class name: <input type="text" id="classname" /></p></div>' +
+          '<div id="select_class"><p>Subject: <select id="classid"></p></select></div>' +
+          '<div id="select_rel"></p>Relation: <select id="relid"></select></p></div>' +
+          '<div id="target_rel"><p>Relation: <span id="name"></span></p></div>' +
+          '<div id="target_object"><p>Object: <span id="name"></span></p></div>' +
+          '<p><input type="button" id="cancel" value="Cancel" />' +
+          '<input type="button" id="add" value="Add" /></p></div>' +
+          '<div id="cardinality_restriction_dialog" style="display:none; cursor:default">' +
+          '<p><div id="select_type">Cardinality type: <select id="cardinality_type"></select></div>' +
+          '<div id="input_value">Cardinality value: <input type="text" id="cardinality_val" /></div></p>' +
+          '<p><input type="button" id="cancel" value="Cancel" />' +
+          '<input type="button" id="add" value="Add" /></p></div>';
+      },
+
+      init: function() {
+        // Assign a function to the refresh button
+        var self = this;
+        $("#refresh_ontology_editor").click(function() {
+          self.refresh_trees();
+        });
+
+        this.init();
+      }
+    };
+  };
 
   // Export Ontology Editor
   CATMAID.OntologyEditor = OntologyEditor;
+
+  // Register widget with CATMAID
+  CATMAID.registerWidget({
+    key: "ontology-editor",
+    creator: OntologyEditor
+  });
 
 })(CATMAID);

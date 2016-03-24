@@ -537,9 +537,8 @@
         // Store ID of new node created by this command
         map.add(map.NODE, result.treenode_id, command);
         command.store('nodeId', result.treenode_id);
-        // After the node was created, a local neighborhood state has to be
-        // generated that will be available to undo.
-        var children = [], links = [];
+        // Prepare expected state for undo
+        var children = [[mChildId, result.child_edition_time]], links = [];
         command.store("state", CATMAID.getNodeState(result.treenode_id,
               result.edition_time, mParentId, result.parent_edition_time,
               children, links));

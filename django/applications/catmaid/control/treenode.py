@@ -422,8 +422,12 @@ def update_radii(request, project_id=None):
         if k.startswith('treenode_ids[')]
     radii = [float(v) for k,v in request.POST.iteritems() \
         if k.startswith('treenode_radii[')]
+    # Make sure the back-end is in the expected state
+    cursor = connection.cursor()
+    state.validate_all_nodes(treenode_ids, request.POST.get('state'),
+                             lock=True, cursor=cursor)
 
-    updated_nodes = update_node_radii(treenode_ids, radii)
+    updated_nodes = update_node_radii(treenode_ids, radii, cursor)
 
     return JsonResponse({
         'success': True,
@@ -438,6 +442,9 @@ def update_radius(request, project_id=None, treenode_id=None):
         raise Exception("Radius '%s' is not a number!" % request.POST.get('radius'))
     option = int(request.POST.get('option', 0))
     cursor = connection.cursor()
+    # Make sure the back-end is in the expected state
+    state.validate_node(treenode_id, request.POST.get('state'),
+                        lock=True, cursor=cursor)
 
     def create_update_response(updated_nodes, radius):
         return JsonResponse({

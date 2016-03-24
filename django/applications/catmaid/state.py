@@ -118,6 +118,58 @@ def parse_state(state):
 
     return state
 
+def validate_all_nodes(node_ids, state, lock=True, cursor=None):
+    """Raise an error if the passed in node states doesn't match the actual
+    node's states.
+        <node_id>: {
+            edition_time: <edition_time>
+        },
+        ...
+    }
+    """
+    state = parse_state(state)
+    if type(state) != list:
+        raise ValueError("No valid state provided, expected list")
+
+    node_id_set = set(str(n) for n in node_ids)
+    for node_state in state:
+        node_id = node_state[0]
+        if node_id not in node_id_set:
+            raise ValueError("Couldn't find node in state: " + node_id)
+
+    state_checks = []
+    for node_state in state:
+        state_checks.append(StateCheck(was_edited, (node_state[0], node_state[1])))
+
+    cursor = cursor or connection.cursor()
+    check_state(state_checks, cursor)
+
+    # Acquire lock on parent
+    if lock:
+        lock_nodes(node_ids, cursor)
+
+def validate_node(node_id, state, lock=True, cursor=None):
+    """Raise an error if the passed in node state doesn't match the actual
+    node's state.
+
+    Expect state to be a dictionary of of the following form, can be provided
+    as a JSON string:
+    {
+      edition_time: <edition_time>
+    }
+    """
+    state = parse_state(state)
+    if 'edition_time' not in state:
+        raise ValueError("No valid state provided, missing edition_time property")
+
+    state_checks = [StateCheck(was_edited, (node_id, state['edition_time']))]
+
+    cursor = cursor or connection.cursor()
+    check_state(state_checks, cursor)
+
+    if lock:
+        lock_node(node_id, cursor)
+
 def validate_edge(child_id, parent_id, state, lock=True, cursor=None):
     """Raise an error if either the provided child or parent doesn't match the
     expectations provided by the passded in state.
@@ -257,10 +309,13 @@ def lock_node(node_id, cursor):
     """, (node_id,))
 
 def lock_nodes(node_ids, cursor):
-    node_template = ",".join(("%s",) * len(node_ids))
-    cursor.execute("""
-        SELECT id FROM treenode WHERE id IN ({}) FOR UPDATE
-    """.format(node_template), node_ids)
+    if node_ids:
+        node_template = ",".join(("%s",) * len(node_ids))
+        cursor.execute("""
+            SELECT id FROM treenode WHERE id IN ({}) FOR UPDATE
+        """.format(node_template), node_ids)
+    else:
+        raise ValueError("No nodes to lock")
 
 def check_state(state_checks, cursor):
     """Raise an error if state checks can't be passed."""

@@ -40,6 +40,27 @@
   /**
    * A state representation for new nodes.
    */
+  CATMAID.getNodeState = function(nodeId, editionTime) {
+    var state = {
+      "edition_time": editionTime,
+    };
+    return JSON.stringify(state);
+  };
+
+  /**
+   * A state representation for new multiple nodes.
+   */
+  CATMAID.getMultiNodeState = function(editionTimes) {
+    var state = [];
+    for (var nodeId in editionTimes) {
+      state.push([nodeId, editionTimes[nodeId]]);
+    }
+    return JSON.stringify(state);
+  };
+
+  /**
+   * A state representation for new nodes.
+   */
   CATMAID.getParentState = function(parentId, parentEditTime) {
     var state = {
       "parent": [parentId, parentEditTime]

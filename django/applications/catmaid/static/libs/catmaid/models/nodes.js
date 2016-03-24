@@ -14,16 +14,20 @@
     /**
      * Update the radius of a node.
      *
+     * @param {State}   state      Node state
+     * @param {integer} projectId  The project space of the node to change
+     *
      * @returns A new promise that is resolved once the radius is updated. It
      *          contains all updated nodes along with their old radii.
      */
-    updateRadius: function(projectId, nodeId, radius, updateMode) {
+    updateRadius: function(state, projectId, nodeId, radius, updateMode) {
       CATMAID.requirePermission(projectId, 'can_annotate',
           'You don\'t have have permission to update the radius of a node');
       var url = projectId + '/treenode/' + nodeId + '/radius';
       var params = {
         radius: radius,
-        option: updateMode
+        option: updateMode,
+        state: state
       };
 
       return CATMAID.fetch(url, 'POST', params).then(function(json) {
@@ -37,10 +41,12 @@
     /**
      * Update the radius of a list of nodes.
      *
+     * @param {State} state MultiNodeState with info on all nodes
+     *
      * @returns A new promise that is resolved once the radius is updated. It
      *          contains all updated nodes along with their old radii.
      */
-    updateRadii: function(projectId, nodesVsRadii) {
+    updateRadii: function(state, projectId, nodesVsRadii) {
       CATMAID.requirePermission(projectId, 'can_annotate',
           'You don\'t have have permission to update the radius of a node');
       var url = projectId + '/treenodes/radius';
@@ -49,7 +55,8 @@
         treenode_ids: treenodeIds,
         treenode_radii: treenodeIds.map(function(tnid) {
           return nodesVsRadii[tnid];
-        })
+        }),
+        state: state
       };
 
       return CATMAID.fetch(url, 'POST', params).then(function(json) {
@@ -280,34 +287,39 @@
   // Export nodes
   CATMAID.Nodes = Nodes;
 
-  CATMAID.UpdateNodeRadiusCommand = CATMAID.makeCommand(function(projectId,
-        nodeId, radius, updateMode) {
+  CATMAID.UpdateNodeRadiusCommand = CATMAID.makeCommand(function(
+        state, projectId, nodeId, radius, updateMode) {
 
     var exec = function(done, command) {
-      var updateRadius = CATMAID.Nodes.updateRadius(projectId, nodeId,
+      var updateRadius = CATMAID.Nodes.updateRadius(state, projectId, nodeId,
           radius, updateMode);
 
       return updateRadius.then(function(result) {
         // The returned updatedNodes list contains objects with a node id and
         // the old radius.
-        command._updatedNodes = result.updatedNodes;
+        command.store("updatedNodes", result.updatedNodes);
         done();
         return result;
       });
     };
 
     var undo = function(done, command) {
-      // Fail if expected undo parameters are not available from command
-      if (undefined === command._updatedNodes) {
-        throw new CATMAID.ValueError('Can\'t undo radius update, history data not available');
-      }
+      var updatedNodes = command.get("updatedNodes");
+      command.validateForUndo(updatedNodes);
 
-      var oldRadii = Object.keys(command._updatedNodes).reduce(function(o, n) {
-        o[n] = command._updatedNodes[n].old;
+      var updateNodeIds = Object.keys(updatedNodes);
+      var oldRadii = updateNodeIds.reduce(function(o, n) {
+        o[n] = updatedNodes[n].old;
         return o;
       }, {});
+      // Create state that contains information about all modified nodes
+      var editionTimes = updateNodeIds.reduce(function(o, n) {
+        o[n] = updatedNodes[n].edition_time;
+        return o;
+      }, {});
+      var state = CATMAID.getMultiNodeState(editionTimes);
 
-      var updateRadii = CATMAID.Nodes.updateRadii(projectId, oldRadii);
+      var updateRadii = CATMAID.Nodes.updateRadii(state, projectId, oldRadii);
       return updateRadii.then(done);
     };
 

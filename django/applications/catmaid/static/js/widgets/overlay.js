@@ -3022,7 +3022,7 @@ SkeletonAnnotations.TracingOverlay.prototype.editRadius = function(treenode_id, 
       return self.submit().then(Promise.resolve.bind(Promise, nodeId));
     }).then(function(nodeId) {
       return CATMAID.commands.execute(new CATMAID.UpdateNodeRadiusCommand(
-            project.id, nodeId, radius, updateMode));
+            self.getNodeState(nodeId), project.id, nodeId, radius, updateMode));
     }).then(function(result) {
       // TODO: Maybe use an event for this
       if (result.updatedNodeId) {
@@ -3971,10 +3971,6 @@ SkeletonAnnotations.TracingOverlay.prototype.getParentState = function(parentId)
   return CATMAID.getParentState(parentId, node.edition_time);
 };
 
-/**
- * Create A simplified state that will only contain id and edition time of the
- * provided node.
- */
 SkeletonAnnotations.TracingOverlay.prototype.getEdgeState = function(childId, parentId) {
   var node = this.nodes[parentId];
   if (!node) {
@@ -3995,6 +3991,19 @@ SkeletonAnnotations.TracingOverlay.prototype.getEdgeState = function(childId, pa
   }
 
   return CATMAID.getEdgeState(node.id, node.edition_time, child[0], child[1]);
+};
+
+/**
+ * Create A simplified state that will only contain id and edition time of the
+ * provided node.
+ */
+SkeletonAnnotations.TracingOverlay.prototype.getNodeState = function(nodeId) {
+  var node = this.nodes[nodeId];
+  if (!node) {
+    throw new CATMAID.ValueError("Can't create state: node not found");
+  }
+
+  return CATMAID.getNodeState(nodeId, node.edition_time);
 };
 
 /**

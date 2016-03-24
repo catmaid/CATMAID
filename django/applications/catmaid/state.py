@@ -190,7 +190,7 @@ def validate_parent_node_state(parent_id, state, lock=True, cursor=None):
     if lock:
         lock_node(parent_id, cursor)
 
-def validate_node_state(node_id, state, lock=True, cursor=None):
+def validate_neighborhood(node_id, state, lock=True, cursor=None):
     """Raise an error if there are nodes that don't match the expectations
     provided by the passded in state.
 

@@ -543,7 +543,7 @@ def delete_treenode(request, project_id=None):
     # the skeleton of the treenode is modeling.
     can_edit_treenode_or_fail(request.user, project_id, treenode_id)
     # Make sure the back-end is in the expected state
-    state.validate_node_state(treenode_id, request.POST.get('state'), True)
+    state.validate_neighborhood(treenode_id, request.POST.get('state'), True)
 
     treenode = Treenode.objects.get(pk=treenode_id)
     parent_id = treenode.parent_id

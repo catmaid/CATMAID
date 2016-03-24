@@ -18,7 +18,7 @@
    */
 
   /**
-   * A general state representation for existing nodes.
+   * A general state representation for the neighborhood of an existing nodes.
    *
    * {
    *   parent: (<id>, <edition_time>),
@@ -26,7 +26,7 @@
    *   links: ((<connector_id>, <connector_edition_time>, <relation_id>), ...)
    * }
    */
-  CATMAID.getNodeState = function(nodeId, editionTime, parentId, parentEditTime,
+  CATMAID.getNeighborhoodState = function(nodeId, editionTime, parentId, parentEditTime,
       children, links) {
     var state = {
       "edition_time": editionTime,

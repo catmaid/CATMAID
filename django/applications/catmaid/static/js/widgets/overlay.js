@@ -3954,7 +3954,7 @@ SkeletonAnnotations.TracingOverlay.prototype.getState = function(nodeId) {
       links.push([cid, connector.edition_time, link.relation_id]);
   }
 
-  return CATMAID.getNodeState(nodeId, node.edition_time, parentId,
+  return CATMAID.getNeighborhoodState(nodeId, node.edition_time, parentId,
       parentEditTime, children, links);
 };
 

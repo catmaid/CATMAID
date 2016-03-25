@@ -1292,13 +1292,7 @@
   /** Reload only if present. */
   WebGLApplication.prototype.staticReloadSkeletons = function(skeleton_ids) {
     this.getInstances().forEach(function(instance) {
-      var models = skeleton_ids.filter(instance.hasSkeleton, instance)
-                               .reduce(function(m, skid) {
-                                 if (instance.hasSkeleton(skid)) m[skid] = instance.getSkeletonModel(skid);
-                                 return m;
-                               }, {});
-      instance.space.removeSkeletons(skeleton_ids);
-      instance.updateModels(models);
+      instance.reloadSkeletons(skeleton_ids);
     });
   };
 
@@ -1410,6 +1404,20 @@
 
   WebGLApplication.prototype.hasSkeleton = function(skeleton_id) {
     return skeleton_id in this.space.content.skeletons;
+  };
+
+  /**
+   * Remove and re-add all skeletons from the passed in list of IDs that are
+   * currently loaded.
+   */
+  WebGLApplication.prototype.reloadSkeletons = function(skeleton_ids) {
+    var models = skeleton_ids.filter(this.hasSkeleton, this)
+        .reduce((function(m, skid) {
+           m[skid] = this.getSkeletonModel(skid);
+           return m;
+        }).bind(this), {});
+    this.space.removeSkeletons(skeleton_ids);
+    this.updateModels(models);
   };
 
   WebGLApplication.prototype.removeSkeletons = function(skeleton_ids) {

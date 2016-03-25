@@ -30,12 +30,13 @@
         state: state
       };
 
-      return CATMAID.fetch(url, 'POST', params).then(function(json) {
+      return CATMAID.fetch(url, 'POST', params).then((function(json) {
+        this.trigger(CATMAID.Nodes.EVENT_NODE_RADIUS_CHANGED, json.updated_nodes);
         return {
           // An object mapping node IDs to their old and new radius is returned.
           'updatedNodes': json.updated_nodes
         };
-      });
+      }).bind(this));
     },
 
     /**
@@ -280,6 +281,7 @@
 
   // If annotations are deleted entirely
   Nodes.EVENT_NODE_CONFIDENCE_CHANGED = "node_confidence_changed";
+  Nodes.EVENT_NODE_RADIUS_CHANGED = "node_radius_changed";
   Nodes.EVENT_NODE_CREATED = "node_created";
   Nodes.EVENT_NODE_UPDATED = "node_updated";
   CATMAID.asEventSource(Nodes);

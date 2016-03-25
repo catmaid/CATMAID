@@ -90,25 +90,31 @@ def parse_state(state):
         if type(ref) not in (list, tuple) or len(ref) != 2:
             raise ValueError("Invalid state provided, {} is no list of two elements".format(name))
 
+    def parse_id(name, id):
+        try:
+            return int(id)
+        except TypeError, e:
+            raise ValueError("Invalid state, couldn't parse {} id".format(name))
+
     # Make sure child, parent and link ids are integers
     parent = state.get('parent')
     if parent:
         check_ref('parent', parent)
-        parent[0] = int(parent[0])
+        parent[0] = parse_id('parent', parent[0])
     children = state.get('children')
     if children:
         if type(children) not in (list, tuple):
             raise ValueError("Invald state provided, 'children' is not a list")
         for c in children:
             check_ref("child", c)
-            c[0] = int(c[0])
+            c[0] = parse_id("child", c[0])
     links = state.get('links')
     if links:
         if type(links) not in (list, tuple):
             raise ValueError("Invald state provided, 'links' is not a list")
         for l in links:
             check_ref("link", l)
-            l[0] = int(l[0])
+            l[0] = parse_id("link", l[0])
 
     return state
 

@@ -9,7 +9,7 @@
   {
     var self = this;
     var content_div_id = 'clustering_content';
-    var workspace_pid;
+    this.workspace_pid = null;
 
     /**
      * Creates the base URL, needed for all clustering requests and
@@ -602,8 +602,14 @@
 
     this.init = function()
     {
-      if (workspace_pid)
-        self.refresh();
+      if (!self.workspace_pid) {
+        if (userprofile.independent_ontology_workspace_is_default) {
+          self.workspace_pid = -1;
+        } else {
+          self.workspace_pid = project.id;
+        }
+      }
+      self.refresh();
     };
 
     /**

@@ -1,7 +1,7 @@
 import json
 import scipy.cluster.hierarchy as hier
 import scipy.spatial.distance as dist
-from numpy import array as nparray
+import numpy as np
 
 from django import forms
 from django.forms.formsets import formset_factory
@@ -160,7 +160,7 @@ class ClusteringWizard(SessionWizardView):
             features.append(self.features[int(f_id)])
 
         # Create binary matrix
-        bin_matrix = nparray(create_binary_matrix(graphs, features))
+        bin_matrix = create_binary_matrix(graphs, features)
         # Calculate the distance matrix
         dst_matrix = dist.pdist(bin_matrix, metric)
         # The distance matrix now has no redundancies, but we need the square form
@@ -214,7 +214,7 @@ def create_binary_matrix(graphs, features):
     num_features = len(features)
     num_graphs = len(graphs)
     # Fill matrix with zeros
-    matrix = [ [ 0 for j in range(num_features)] for i in range(num_graphs) ]
+    matrix = np.zeros((num_graphs,num_features), dtype=np.int)
     # Put a one at each position where the tree has
     # a feature defined
     for i in range(num_graphs):

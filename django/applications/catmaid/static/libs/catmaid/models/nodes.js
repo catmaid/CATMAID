@@ -537,6 +537,12 @@
         // Store ID of new node created by this command
         map.add(map.NODE, result.treenode_id, command);
         command.store('nodeId', result.treenode_id);
+        // After the node was created, a local neighborhood state has to be
+        // generated that will be available to undo.
+        var children = [], links = [];
+        command.store("state", CATMAID.getNodeState(result.treenode_id,
+              result.edition_time, mParentId, result.parent_edition_time,
+              children, links));
         done();
         return result;
       });
@@ -544,8 +550,9 @@
 
     var undo = function(done, command, map) {
       var nodeId = map.get(map.NODE, command.get('nodeId'));
-      command.validateForUndo(projectId, nodeId);
-      var removeNode = CATMAID.Nodes.remove(projectId, nodeId);
+      var state = command.get("state");
+      command.validateForUndo(projectId, nodeId, state);
+      var removeNode = CATMAID.Nodes.remove(state, projectId, nodeId);
       return removeNode.then(done);
     };
 

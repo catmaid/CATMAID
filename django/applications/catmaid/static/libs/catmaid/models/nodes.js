@@ -496,10 +496,8 @@
 
     var undo = function(done, command, map) {
       var nodeId = map.get(map.NODE, command.get('nodeId'));
-      command.validateForUndo(projectId, nodeId);
-      // For removal a complete neighborhood state is required
       var state = command.get("state");
-      command.validateForUndo(state);
+      command.validateForUndo(projectId, nodeId, state);
       var removeNode = CATMAID.Nodes.remove(state, projectId, nodeId);
       return removeNode.then(done);
     };

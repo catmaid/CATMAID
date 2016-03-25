@@ -137,11 +137,11 @@ def validate_all_nodes(node_ids, state, lock=True, cursor=None):
     if type(state) != list:
         raise ValueError("No valid state provided, expected list")
 
-    node_id_set = set(str(n) for n in node_ids)
+    node_id_set = set(node_ids)
     for node_state in state:
         node_id = node_state[0]
         if node_id not in node_id_set:
-            raise ValueError("Couldn't find node in state: " + node_id)
+            raise ValueError("Couldn't find node in state: {}".format(node_id))
 
     state_checks = []
     for node_state in state:

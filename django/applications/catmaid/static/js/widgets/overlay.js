@@ -2380,11 +2380,11 @@ SkeletonAnnotations.TracingOverlay.prototype.createNodeOrLink = function(insert,
             var self = this;
             return new Promise(function (resolve, reject) {
               // Make sure the parent exists
-              SkeletonAnnotations.atn.promise().then((function(atnId) {
+              SkeletonAnnotations.atn.promise().then(function(atnId) {
                 CATMAID.statusBar.replaceLast("Created new node as child of node #" + atnId);
                 self.createNode(atnId, null, phys_x, phys_y, phys_z, -1, 5,
                     pos_x, pos_y, pos_z, postCreateFn).then(resolve, reject);
-              }));
+              }, reject);
             });
           } else {
             // Create root node

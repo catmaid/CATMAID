@@ -112,6 +112,47 @@ def parse_state(state):
 
     return state
 
+def validate_edge(child_id, parent_id, state, lock=True, cursor=None):
+    """Raise an error if either the provided child or parent doesn't match the
+    expectations provided by the passded in state.
+
+    Expect state to be a dictionary of of the following form, can be provided
+    as a JSON string:
+    {
+      parent: (<id>, <edition_time>)
+      children: [(<id>, <edition_time>)]
+    }
+    """
+    state = parse_state(state)
+
+    # Check parent
+    if 'parent' not in state:
+        raise ValueError("No valid state provided, missing parent property")
+    parent = state['parent']
+    if len(parent) != 2:
+        raise ValueError("No valid state provided, missing parent node it and edition time")
+    if parent[0] != parent_id:
+        raise ValueError("No valid state provided, state parent ID doesn't match request")
+
+    state_checks = [StateCheck(was_edited, (parent[0], parent[1]))]
+
+    # Check chilren
+    children = state.get('children')
+    if not children:
+        raise ValueError("No valid state provided, missing children property")
+    if not all(has_only_truthy_values(e) for e in children):
+        raise ValueError("No valid state provided, invalid children")
+
+    state_checks.extend(StateCheck(was_edited, (c, ct)) for c,ct in children)
+    state_checks.extend(StateCheck(is_child, (c, parent[0])) for c,_ in children)
+
+    cursor = cursor or connection.cursor()
+    check_state(state_checks, cursor)
+
+    # Acquire lock on parent
+    if lock:
+        lock_nodes((child_id, parent_id), cursor)
+
 def validate_parent_node_state(parent_id, state, lock=True, cursor=None):
     """Raise an error if there are nodes that don't match the expectations
     provided by the passded in state.
@@ -208,6 +249,12 @@ def lock_node(node_id, cursor):
     cursor.execute("""
         SELECT id FROM treenode WHERE id=%s FOR UPDATE
     """, (node_id,))
+
+def lock_nodes(node_ids, cursor):
+    node_template = ",".join(("%s",) * len(node_ids))
+    cursor.execute("""
+        SELECT id FROM treenode WHERE id IN ({}) FOR UPDATE
+    """.format(node_template), node_ids)
 
 def check_state(state_checks, cursor):
     """Raise an error if state checks can't be passed."""

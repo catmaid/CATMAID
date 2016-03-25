@@ -1771,6 +1771,14 @@ SkeletonAnnotations.TracingOverlay.prototype.createNode = function (parentID, ch
 
   // Use non-type checking inequality, in case a string is provided
   var state  = (parentID && -1 != parentID) ? this.getParentState(parentID) : undefined;
+  var state;
+  if (parentID && -1 != parentID) {
+    if (childId && -1 != childId) {
+      state = this.getEdgeState(childId, parentID);
+    } else {
+      state = this.getParentState(parentID);
+    }
+  }
   var command = childId ?
     new CATMAID.InsertNodeCommand(state, project.id, phys_x, phys_y,
       phys_z, parentID, childId, radius, confidence, useneuron) :
@@ -3960,6 +3968,32 @@ SkeletonAnnotations.TracingOverlay.prototype.getParentState = function(parentId)
   }
 
   return CATMAID.getParentState(parentId, node.edition_time);
+};
+
+/**
+ * Create A simplified state that will only contain id and edition time of the
+ * provided node.
+ */
+SkeletonAnnotations.TracingOverlay.prototype.getEdgeState = function(childId, parentId) {
+  var node = this.nodes[parentId];
+  if (!node) {
+    throw new CATMAID.ValueError("Can't create state: parent not found");
+  }
+
+  var child;
+  for (var cid in node.children) {
+    if (cid == childId) {
+      cid = SkeletonAnnotations.isRealNode(cid) ? cid :
+          SkeletonAnnotations.getChildOfVirtualNode(cid);
+      child = [cid, node.children[cid].edition_time];
+      break;
+    }
+  }
+  if (!child) {
+    throw new CATMAID.ValueError("Can't create state: child not found");
+  }
+
+  return CATMAID.getEdgeState(node.id, node.edition_time, child[0], child[1]);
 };
 
 /**

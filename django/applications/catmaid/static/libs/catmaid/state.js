@@ -53,7 +53,7 @@
   CATMAID.getEdgeState = function(parentId, parentEditTime, childId, childEditTime) {
     var state = {
       "parent": [parentId, parentEditTime],
-      "children": [childId, childEditTime]
+      "children": [[childId, childEditTime]]
     };
     return JSON.stringify(state);
   };

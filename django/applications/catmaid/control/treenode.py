@@ -112,6 +112,17 @@ def insert_treenode(request, project_id=None):
     for p in int_values.keys():
         params[p] = int(request.POST.get(p, int_values[p]))
 
+    # Make sure the back-end is in the expected state if the node should have a
+    # parent and will therefore become part of another skeleton.
+    parent_id = params.get('parent_id')
+    child_id = params.get('child_id')
+    if parent_id not in (-1, None):
+        s = request.POST.get('state')
+        if child_id not in (-1, None):
+            state.validate_edge(child_id, parent_id, s, True)
+        else:
+            state.validate_parent_node_state(parent_id, s, True)
+
     # Find child and parent of new treenode
     child = Treenode.objects.get(pk=params['child_id'])
     parent = Treenode.objects.get(pk=params['parent_id'])

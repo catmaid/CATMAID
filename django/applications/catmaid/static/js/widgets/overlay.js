@@ -631,6 +631,8 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, options) {
 
   CATMAID.Nodes.on(CATMAID.Nodes.EVENT_NODE_CONFIDENCE_CHANGED,
     this.handleNodeChange, this);
+  CATMAID.Nodes.on(CATMAID.Nodes.EVENT_NODE_RADIUS_CHANGED,
+      this.simpleUpdateNodes, this);
 };
 
 SkeletonAnnotations.TracingOverlay.prototype = {
@@ -968,6 +970,8 @@ SkeletonAnnotations.TracingOverlay.prototype.destroy = function() {
 
   CATMAID.Nodes.off(CATMAID.Nodes.EVENT_NODE_CONFIDENCE_CHANGED,
       this.handleNodeChange, this);
+  CATMAID.Nodes.off(CATMAID.Nodes.EVENT_NODE_RADIUS_CHANGED,
+      this.simpleUpdateNodes, this);
 };
 
 /**
@@ -3023,15 +3027,6 @@ SkeletonAnnotations.TracingOverlay.prototype.editRadius = function(treenode_id, 
     }).then(function(nodeId) {
       return CATMAID.commands.execute(new CATMAID.UpdateNodeRadiusCommand(
             self.getNodeState(nodeId), project.id, nodeId, radius, updateMode));
-    }).then(function(result) {
-      // TODO: Maybe use an event for this
-      if (result.updatedNodeId) {
-        // Refresh 3d views if any
-        var skeletonId = self.nodes[result.updatedNodeId].skeleton_id;
-        CATMAID.WebGLApplication.prototype.staticReloadSkeletons([skeletonId]);
-        // Reinit TracingOverlay to read in the radius of each altered treenode
-        self.updateNodes();
-      }
     }).catch(CATMAID.handleError);
   }
 

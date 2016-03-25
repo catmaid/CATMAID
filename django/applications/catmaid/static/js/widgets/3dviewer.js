@@ -39,6 +39,9 @@
     // Listen to changes of the active node
     SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
       this.staticUpdateActiveNodePosition, this);
+
+    CATMAID.Nodes.on(CATMAID.Nodes.EVENT_NODE_RADIUS_CHANGED,
+        this.handleRadiusChange, this);
   };
 
   WebGLApplication.prototype = {};
@@ -70,6 +73,8 @@
   WebGLApplication.prototype.destroy = function() {
     SkeletonAnnotations.off(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
         this.staticUpdateActiveNodePosition, this);
+    CATMAID.Nodes.off(CATMAID.Nodes.EVENT_NODE_RADIUS_CHANGED,
+        this.handleRadiusChange, this);
     project.off(CATMAID.Project.EVENT_STACKVIEW_FOCUS_CHANGED, this.adjustStaticContent, this);
     project.off(CATMAID.Project.EVENT_LOCATION_CHANGED, this.handlelLocationChange, this);
     this.unregisterInstance();
@@ -1272,6 +1277,21 @@
     this.space.content.active_node.updatePosition(this.space, this.options);
     if (this.space.content.active_node.mesh.visible) {
       this.space.render();
+    }
+  };
+
+  WebGLApplication.prototype.handleRadiusChange = function(updatedNodes) {
+    if (updatedNodes) {
+      var updatedSkeletonIds = [];
+      // Collect changed skeletons
+      for (var nodeId in updatedNodes) {
+        var skid = updatedNodes[nodeId].skeleton_id;
+        if (skid && -1 == updatedSkeletonIds.indexOf(skid)) {
+          updatedSkeletonIds.push(skid);
+        }
+      }
+      // Update if we display a changed skeleton
+      this.reloadSkeletons(updatedSkeletonIds);
     }
   };
 

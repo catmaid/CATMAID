@@ -97,24 +97,30 @@ def parse_state(state):
             raise ValueError("Invalid state, couldn't parse {} id".format(name))
 
     # Make sure child, parent and link ids are integers
-    parent = state.get('parent')
-    if parent:
-        check_ref('parent', parent)
-        parent[0] = parse_id('parent', parent[0])
-    children = state.get('children')
-    if children:
-        if type(children) not in (list, tuple):
-            raise ValueError("Invald state provided, 'children' is not a list")
-        for c in children:
-            check_ref("child", c)
-            c[0] = parse_id("child", c[0])
-    links = state.get('links')
-    if links:
-        if type(links) not in (list, tuple):
-            raise ValueError("Invald state provided, 'links' is not a list")
-        for l in links:
-            check_ref("link", l)
-            l[0] = parse_id("link", l[0])
+    parsed_state_type = type(state)
+    if parsed_state_type == dict:
+        parent = state.get('parent')
+        if parent:
+            check_ref('parent', parent)
+            parent[0] = parse_id('parent', parent[0])
+        children = state.get('children')
+        if children:
+            if type(children) not in (list, tuple):
+                raise ValueError("Invald state provided, 'children' is not a list")
+            for c in children:
+                check_ref("child", c)
+                c[0] = parse_id("child", c[0])
+        links = state.get('links')
+        if links:
+            if type(links) not in (list, tuple):
+                raise ValueError("Invald state provided, 'links' is not a list")
+            for l in links:
+                check_ref("link", l)
+                l[0] = parse_id("link", l[0])
+    elif parsed_state_type == list:
+        for n in state:
+            check_ref('node', n)
+            n[0] = parse_id('node', n[0])
 
     return state
 

@@ -76,7 +76,7 @@ def list_to_table(l, n=1):
     return ("(VALUES {0})".format(records_list_template), args)
 
 def has_only_truthy_values(element):
-    return element[0] and element[1]
+    return 2 == len(element) and element[0] and element[1]
 
 def parse_state(state):
     """Expect a JSON string and returned the parsed object."""

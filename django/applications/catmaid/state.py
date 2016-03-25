@@ -123,18 +123,18 @@ def validate_parent_node_state(parent_id, state, lock=True, cursor=None):
     }
     """
     state = parse_state(state)
+
+    # Check parent input
     if 'parent' not in state:
         raise ValueError("No valid state provided, missing parent property")
     parent = state['parent']
     if len(parent) != 2:
         raise ValueError("No valid state provided, missing parent node it and edition time")
-    state_parent_id = parent[0]
-    edition_time = parent[1]
 
-    if state_parent_id != parent_id:
+    if parent[0] != parent_id:
         raise ValueError("No valid state provided, state parent ID doesn't match request")
 
-    state_checks = [StateCheck(was_edited, (parent_id, edition_time))]
+    state_checks = [StateCheck(was_edited, (parent[0], parent[1]))]
 
     cursor = cursor or connection.cursor()
     check_state(state_checks, cursor)
@@ -190,7 +190,7 @@ def validate_node_state(node_id, state, lock=True, cursor=None):
     state_checks.append(make_all_children_query(
         [int(c[0]) for c in children], node[0]))
     state_checks.extend(StateCheck(was_edited, (c[0], c[1])) for c in children)
-    state_checks.extend(StateCheck(is_child, (k,node_id)) for k,v in children)
+    state_checks.extend(StateCheck(is_child, (c[0],node_id)) for c in children)
 
     # Check connector links
     state_checks.append(make_all_links_query(

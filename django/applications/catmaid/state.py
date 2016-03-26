@@ -262,6 +262,16 @@ def lock_nodes(node_ids, cursor):
 def is_disabled(state):
     return state and True == state.get('nocheck')
 
+def make_nocheck_state(parsed=False):
+    """Get a state representation that causes skipping of actual state checks.
+
+    If "parsed" is True, a parsed representation will be returned, otherwise a
+    regular JSON reporesentation is used."""
+    state = {'nocheck': True}
+    if not parsed:
+        state = json.dumps(state)
+    return state
+
 def check_state(state, state_checks, cursor):
     """Raise an error if state checks can't be passed."""
     # Skip actual tests if state checking is disabled in state

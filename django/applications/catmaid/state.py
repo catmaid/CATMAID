@@ -3,38 +3,40 @@ import decimal
 
 from django.db import connection
 
-
-was_edited = """
-    SELECT 1 FROM treenode t
-    WHERE t.id = %s AND (t.edition_time - %s::timestamptz < '1 ms'::interval)
-"""
-is_parent = """
-    SELECT 1 FROM treenode t
-    WHERE t.parent_id = %s AND t.id = %s
-"""
-is_child = """
-    SELECT 1 FROM treenode t
-    WHERE t.id = %s AND t.parent_id = %s
-"""
-is_root = """
-    SELECT 1 FROM treenode t
-    WHERE t.parent_id IS NULL AND t.id = %s
-"""
-all_children = """
-    SELECT CASE WHEN sub.c=0 THEN 1 ELSE 0 END FROM (
-        SELECT COUNT(*) FROM treenode t %s WHERE t.parent_id = %s %s
-    ) sub(c)
-"""
-all_links = """
-    SELECT CASE WHEN sub.c=0 THEN 1 ELSE 0 END FROM (
-        SELECT COUNT(*) FROM treenode_connector l %s WHERE l.treenode_id = %s %s
-    ) sub(c)
-"""
+class SQL:
+    was_edited = """
+        SELECT 1 FROM treenode t
+        WHERE t.id = %s AND (t.edition_time - %s::timestamptz < '1 ms'::interval)
+    """
+    is_parent = """
+        SELECT 1 FROM treenode t
+        WHERE t.parent_id = %s AND t.id = %s
+    """
+    is_child = """
+        SELECT 1 FROM treenode t
+        WHERE t.id = %s AND t.parent_id = %s
+    """
+    is_root = """
+        SELECT 1 FROM treenode t
+        WHERE t.parent_id IS NULL AND t.id = %s
+    """
+    all_children = """
+        SELECT CASE WHEN sub.c=0 THEN 1 ELSE 0 END FROM (
+            SELECT COUNT(*) FROM treenode t %s WHERE t.parent_id = %s %s
+        ) sub(c)
+    """
+    all_links = """
+        SELECT CASE WHEN sub.c=0 THEN 1 ELSE 0 END FROM (
+            SELECT COUNT(*) FROM treenode_connector l %s WHERE l.treenode_id = %s %s
+        ) sub(c)
+    """
 
 class StateCheck:
     """A simple wraper arround state check SQL and parameters for it"""
 
     def __init__(self, sql, params):
+        if type(sql) not in (str, unicode):
+            raise ValueError("No SQL string")
         self.sql = sql
         self.params = params if type(params) in (list, tuple) else (params,)
 
@@ -45,9 +47,9 @@ def make_all_children_query(child_ids, node_id):
         child_query = " LEFT JOIN {} p(id) ON t.id = p.id ".format(table_sql)
         constraints = "AND p.id IS NULL"
         args.append(node_id)
-        return StateCheck(all_children % (child_query, "%s", constraints), args)
+        return StateCheck(SQL.all_children % (child_query, "%s", constraints), args)
     else:
-        return StateCheck(all_children % ("", "%s", ""), [node_id])
+        return StateCheck(SQL.all_children % ("", "%s", ""), [node_id])
 
 def make_all_links_query(connector_ids, node_id):
     if connector_ids:
@@ -59,9 +61,9 @@ def make_all_links_query(connector_ids, node_id):
         """.format(table_sql)
         constraints = "AND p.cid IS NULL AND p.rid IS NULL"
         args.append(node_id)
-        return StateCheck(all_links % (link_query, "%s", constraints), args)
+        return StateCheck(SQL.all_links % (link_query, "%s", constraints), args)
     else:
-        return StateCheck(all_links % ("", "%s", ""), [node_id])
+        return StateCheck(SQL.all_links % ("", "%s", ""), [node_id])
 
 def list_to_table(l, n=1):
     args = None
@@ -124,136 +126,80 @@ def parse_state(state):
 
     return state
 
-def validate_all_nodes(node_ids, state, lock=True, cursor=None):
-    """Raise an error if the passed in node states doesn't match the actual
-    node's states.
-        <node_id>: {
-            edition_time: <edition_time>
-        },
-        ...
-    }
-    """
-    state = parse_state(state)
-    if type(state) != list:
-        raise ValueError("No valid state provided, expected list")
-
-    node_id_set = set(node_ids)
-    for node_state in state:
-        node_id = node_state[0]
-        if node_id not in node_id_set:
-            raise ValueError("Couldn't find node in state: {}".format(node_id))
-
+def collect_state_checks(node_id, state, cursor, node=False,
+        parent_edittime=False, is_parent=False, edge=False,
+        children=False, links=False, multinode=False):
+    """Collect state checks for a single node, but don't execute them."""
     state_checks = []
-    for node_state in state:
-        state_checks.append(StateCheck(was_edited, (node_state[0], node_state[1])))
 
-    cursor = cursor or connection.cursor()
-    check_state(state_checks, cursor)
+    if node:
+        if 'edition_time' not in state:
+            raise ValueError("No valid state provided, missing edition time")
+        node = [node_id, state['edition_time']]
 
-    # Acquire lock on parent
-    if lock:
-        lock_nodes(node_ids, cursor)
+        # Make sure the node itself is valid
+        state_checks = [StateCheck(SQL.was_edited, (node[0], node[1]))]
+    else:
+        node = [node_id]
 
-def validate_node(node_id, state, lock=True, cursor=None):
-    """Raise an error if the passed in node state doesn't match the actual
-    node's state.
+    if parent_edittime or is_parent:
+        parent = state.get('parent')
+        if not parent or 2 != len(parent):
+            raise ValueError("No valid state provided, invalid parent")
 
-    Expect state to be a dictionary of of the following form, can be provided
-    as a JSON string:
-    {
-      edition_time: <edition_time>
-    }
-    """
-    state = parse_state(state)
-    if 'edition_time' not in state:
-        raise ValueError("No valid state provided, missing edition_time property")
+        parent_id = parent[0]
 
-    state_checks = [StateCheck(was_edited, (node_id, state['edition_time']))]
+        if parent_id and -1 != parent_id and not parent[1]:
+            raise ValueError("No valid state provided, invalid parent")
 
-    cursor = cursor or connection.cursor()
-    check_state(state_checks, cursor)
+        # Collect qurey components, startwith parent relation
+        if parent_id and -1 != parent_id:
+            if is_parent:
+                if parent_id == node_id:
+                    raise ValueError("No valid state provided, parent is same as node ({})".format(parent_id))
+                state_checks.append(StateCheck(SQL.is_parent, (parent_id, node_id)))
+            state_checks.append(StateCheck(SQL.was_edited, (parent_id, parent[1])))
+        else:
+            state_checks.append(StateCheck(SQL.is_root, (node_id,)))
 
-    if lock:
-        lock_node(node_id, cursor)
+    if children:
+        child_nodes = state['children']
+        if not isinstance(child_nodes, (list, tuple)):
+            raise ValueError("No valid state provided")
+        if not all(has_only_truthy_values(e) for e in child_nodes):
+            raise ValueError("No valid state provided, invalid children")
 
-def validate_edge(child_id, parent_id, state, lock=True, cursor=None):
-    """Raise an error if either the provided child or parent doesn't match the
-    expectations provided by the passded in state.
+        state_checks.append(make_all_children_query(
+            [int(c[0]) for c in child_nodes], node_id))
+        state_checks.extend(StateCheck(SQL.was_edited, (c[0], c[1])) for c in child_nodes)
+        state_checks.extend(StateCheck(SQL.is_child, (c[0],node_id)) for c in child_nodes)
 
-    Expect state to be a dictionary of of the following form, can be provided
-    as a JSON string:
-    {
-      parent: (<id>, <edition_time>)
-      children: [(<id>, <edition_time>)]
-    }
-    """
-    state = parse_state(state)
+    if links:
+        links = state['links']
+        if not isinstance(links, (list, tuple)):
+            raise ValueError("No valid state provided")
+        if not all(has_only_truthy_values(e) for e in links):
+            raise ValueError("No valid state provided, invalid links")
 
-    # Check parent
-    if 'parent' not in state:
-        raise ValueError("No valid state provided, missing parent property")
-    parent = state['parent']
-    if len(parent) != 2:
-        raise ValueError("No valid state provided, missing parent node it and edition time")
-    if parent[0] != parent_id:
-        raise ValueError("No valid state provided, state parent ID doesn't match request")
+        state_checks.append(make_all_links_query(
+            [(int(l[0]), int(l[2])) for l in links], node[0]))
 
-    state_checks = [StateCheck(was_edited, (parent[0], parent[1]))]
+    return state_checks
 
-    # Check chilren
-    children = state.get('children')
-    if not children:
-        raise ValueError("No valid state provided, missing children property")
-    if not all(has_only_truthy_values(e) for e in children):
-        raise ValueError("No valid state provided, invalid children")
+def validate_state(node_ids, state, node=False, is_parent=False,
+        parent_edittime=False, edge=False, children=False, links=False,
+        multinode=False, neighborhood=False, lock=True, cursor=None):
+    """Validate a local state relative to a given node. What tests are performed
+    depends on the mode flags set.
 
-    state_checks.extend(StateCheck(was_edited, (c, ct)) for c,ct in children)
-    state_checks.extend(StateCheck(is_child, (c, parent[0])) for c,_ in children)
-
-    cursor = cursor or connection.cursor()
-    check_state(state_checks, cursor)
-
-    # Acquire lock on parent
-    if lock:
-        lock_nodes((child_id, parent_id), cursor)
-
-def validate_parent_node_state(parent_id, state, lock=True, cursor=None):
-    """Raise an error if there are nodes that don't match the expectations
-    provided by the passded in state.
+    Modes are hierarchical: neighborhood implies node, is_parent,
+    parent_edittime, children and links. A edge implies is_parent,
+    parent_edittime and children. The special mode "multinode" voids others and
+    expects a list of two-element-lists containing node IDs and edition times,
+    which will be checked.
 
     Expect state to be a dictionary of of the following form, can be provided
-    as a JSON string:
-    {
-      parent: (<id>, <edition_time>)
-    }
-    """
-    state = parse_state(state)
-
-    # Check parent input
-    if 'parent' not in state:
-        raise ValueError("No valid state provided, missing parent property")
-    parent = state['parent']
-    if len(parent) != 2:
-        raise ValueError("No valid state provided, missing parent node it and edition time")
-
-    if parent[0] != parent_id:
-        raise ValueError("No valid state provided, state parent ID doesn't match request")
-
-    state_checks = [StateCheck(was_edited, (parent[0], parent[1]))]
-
-    cursor = cursor or connection.cursor()
-    check_state(state_checks, cursor)
-
-    # Acquire lock on parent
-    if lock:
-        lock_node(parent_id, cursor)
-
-def validate_neighborhood(node_id, state, lock=True, cursor=None):
-    """Raise an error if there are nodes that don't match the expectations
-    provided by the passded in state.
-
-    Expect state to be a dictionary of of the following form, can be provided
-    as a JSON string:
+    as a JSON string. Only entry for set flags need to be present:
     {
       parent: (<id>, <edition_time>),
       children: ((<child_id>, <child_edition_time>), ...),
@@ -262,52 +208,42 @@ def validate_neighborhood(node_id, state, lock=True, cursor=None):
     """
     state = parse_state(state)
 
-    if 'edition_time' not in state:
-        raise ValueError("No valid state provided, missing edition time")
-    node = [node_id, state['edition_time']]
-    parent, children, links = state['parent'], state['children'], state['links']
+    # Make sure input nodes are iterable
+    if type(node_ids) not in (list, tuple):
+        node_ids = (node_ids,)
 
-    if 2 != len(parent):
-        raise ValueError("No valid state provided, invalid parent")
+    # Neighborhood implies node and parent checks
+    node = node or neighborhood
+    is_parent = is_parent or neighborhood
+    parent_edittime = parent_edittime or neighborhood or edge
+    children = children or neighborhood or edge
+    links = links or neighborhood
 
-    parent_id = parent[0]
-
-    if parent_id and -1 != parent_id and not parent[1]:
-        raise ValueError("No valid state provided, invalid parent")
-    if not (isinstance(children, (list, tuple)) and isinstance(links, (list, tuple))):
-        raise ValueError("No valid state provided")
-    if not all(has_only_truthy_values(e) for e in children):
-        raise ValueError("No valid state provided, invalid children")
-    if not all(has_only_truthy_values(e) for e in links):
-        raise ValueError("No valid state provided, invalid links")
-
-    # Make sure the node itself is valid
-    state_checks = [StateCheck(was_edited, (node[0], node[1]))]
-
-    # Collect qurey components, startwith parent relation
-    if parent_id and -1 != parent_id:
-        state_checks.append(StateCheck(is_parent, (parent_id, node_id)))
-        state_checks.append(StateCheck(was_edited, (parent_id, parent[1])))
-    else:
-        state_checks.append(StateCheck(is_root, (node_id,)))
-
-    # Check chilren
-    state_checks.append(make_all_children_query(
-        [int(c[0]) for c in children], node[0]))
-    state_checks.extend(StateCheck(was_edited, (c[0], c[1])) for c in children)
-    state_checks.extend(StateCheck(is_child, (c[0],node_id)) for c in children)
-
-    # Check connector links
-    state_checks.append(make_all_links_query(
-        [(int(l[0]), int(l[2])) for l in links], node[0]))
-
-    # Collect results
-    cursor = cursor or connection.cursor()
-    check_state(state_checks, cursor)
+    # Collect state checks and test them, if state checks are not disabled
+    if not is_disabled(state):
+        cursor = cursor or connection.cursor()
+        if multinode:
+            node_id_set = set(node_ids)
+            for node_state in state:
+                node_id = node_state[0]
+                if node_id not in node_id_set:
+                    raise ValueError("Couldn't find node in state: {}".format(node_id))
+            state_checks = []
+            for node_state in state:
+                state_checks.append(StateCheck(SQL.was_edited, (node_state[0], node_state[1])))
+            check_state(state, state_checks, cursor)
+        else:
+            check_sets = [collect_state_checks(n, state, cursor, node=node,
+                    is_parent=is_parent, parent_edittime=parent_edittime,
+                    edge=edge, multinode=multinode, children=children,
+                    links=links) for n in node_ids]
+            state_checks = reduce(lambda x: x + y, check_sets)
+            check_state(state, state_checks, cursor)
 
     # Acquire lock on treenode
     if lock:
-        lock_node(node_id, cursor)
+        cursor = cursor or connection.cursor()
+        lock_nodes(node_ids, cursor)
 
 def lock_node(node_id, cursor):
     cursor.execute("""
@@ -323,8 +259,15 @@ def lock_nodes(node_ids, cursor):
     else:
         raise ValueError("No nodes to lock")
 
-def check_state(state_checks, cursor):
+def is_disabled(state):
+    return state and True == state.get('nocheck')
+
+def check_state(state, state_checks, cursor):
     """Raise an error if state checks can't be passed."""
+    # Skip actual tests if state checking is disabled in state
+    if is_disabled(state):
+        return
+
     sql_checks = [sc.sql for sc in state_checks]
     args = []
     for sc in state_checks:

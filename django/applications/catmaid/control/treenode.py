@@ -72,7 +72,8 @@ def create_treenode(request, project_id=None):
     # parent and will therefore become part of another skeleton.
     parent_id = params['parent_id']
     if parent_id and parent_id != -1:
-        state.validate_parent_node_state(parent_id, request.POST.get('state'), True)
+        state.validate_state(parent_id, request.POST.get('state'),
+                parent_edittime=True, lock=True)
 
     new_treenode = _create_treenode(project_id, request.user, request.user,
             params['x'], params['y'], params['z'], params['radius'],
@@ -119,9 +120,9 @@ def insert_treenode(request, project_id=None):
     if parent_id not in (-1, None):
         s = request.POST.get('state')
         if child_id not in (-1, None):
-            state.validate_edge(child_id, parent_id, s, True)
+            state.validate_state(parent_id, s, edge=True, lock=True)
         else:
-            state.validate_parent_node_state(parent_id, s, True)
+            state.validate_state(parent_id, s, parent_edittime=True, lock=True)
 
     # Find child and parent of new treenode
     child = Treenode.objects.get(pk=params['child_id'])
@@ -353,6 +354,10 @@ def update_parent(request, project_id=None, treenode_id=None):
     treenode_id = int(treenode_id)
     parent_id = int(request.POST.get('parent_id', -1))
 
+    # Make sure the back-end is in the expected state
+    state.validate_state(treenode_id, request.POST.get('state'),
+            neighborhood=True, lock=True, cursor=cursor)
+
     child = Treenode.objects.get(pk=treenode_id)
     parent = Treenode.objects.get(pk=parent_id)
 
@@ -430,8 +435,8 @@ def update_radii(request, project_id=None):
         if k.startswith('treenode_radii[')]
     # Make sure the back-end is in the expected state
     cursor = connection.cursor()
-    state.validate_all_nodes(treenode_ids, request.POST.get('state'),
-                             lock=True, cursor=cursor)
+    state.validate_state(treenode_ids, request.POST.get('state'),
+            multinode=True, lock=True, cursor=cursor)
 
     updated_nodes = update_node_radii(treenode_ids, radii, cursor)
 
@@ -449,8 +454,8 @@ def update_radius(request, project_id=None, treenode_id=None):
     option = int(request.POST.get('option', 0))
     cursor = connection.cursor()
     # Make sure the back-end is in the expected state
-    state.validate_node(treenode_id, request.POST.get('state'),
-                        lock=True, cursor=cursor)
+    state.validate_state(treenode_id, request.POST.get('state'),
+            node=True, lock=True, cursor=cursor)
 
     def create_update_response(updated_nodes, radius):
         return JsonResponse({
@@ -556,7 +561,8 @@ def delete_treenode(request, project_id=None):
     # the skeleton of the treenode is modeling.
     can_edit_treenode_or_fail(request.user, project_id, treenode_id)
     # Make sure the back-end is in the expected state
-    state.validate_neighborhood(treenode_id, request.POST.get('state'), True)
+    state.validate_state(treenode_id, request.POST.get('state'), lock=True,
+            neighborhood=True)
 
     treenode = Treenode.objects.get(pk=treenode_id)
     parent_id = treenode.parent_id

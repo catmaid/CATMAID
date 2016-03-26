@@ -255,6 +255,7 @@ def lock_node(node_id, cursor):
     cursor.execute("""
         SELECT id FROM treenode WHERE id=%s FOR UPDATE
     """, (node_id,))
+    result = cursor.fetchall()
 
 def lock_nodes(node_ids, cursor):
     if node_ids:

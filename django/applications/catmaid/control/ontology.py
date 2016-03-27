@@ -1,4 +1,5 @@
 import json
+import numpy as np
 
 from django.http import HttpResponse
 from django.db import connection
@@ -667,54 +668,18 @@ def get_class_links_qs( project_id, rel_name, class_name, class_is_b=True ):
     return cici_q
 
 def get_by_graphs_instantiated_features(graphs, features):
-    """ Creates one complex query that thest which feature are instanciated in one of
-    the graphs.
-    """
+    # Needs to be imported locally to avoid circular dependencies
+    from catmaid.control.classification import graphs_instanciate_features
+    matrix = np.zeros((len(graphs),len(features)), dtype=np.int)
+    graphs_instanciate_features(graphs, features, matrix)
+    # Find features that are instantiated
+    used_features = set()
+    for ng,g in enumerate(graphs):
+        for nf,f in enumerate(features):
+            if 1 == matrix[ng][nf]:
+                used_features.add(f)
 
-    # Make sure there are features at all
-    if not features:
-        raise ValueError("Need at least one feature to continue")
-
-    # Find maximum feature length
-    max_links = 0
-    for f in features:
-        if len(f.links) > max_links:
-            max_links = len(f.links)
-
-    # Create feature array
-    normalized_features = []
-    for f in features:
-        links = []
-        for i in range(max_links):
-            if i < len(f.links):
-                fl = f.links[i]
-                links.append( '[%s,%s]' % (fl.class_a.id, fl.relation.id))
-            else:
-                links.append( '[-1,-1]' )
-        normalized_features.append(links)
-
-    # Build query with custom ID arrays: An array of graph ids and an array
-    # of features. Those features are arrays of links and those links are
-    # each an array of the class a ID and the relation ID of that link. All
-    # features need to have the same number of links in the array. So if they
-    # have actually less, pad with [-1, -1] elements.
-    query = "SELECT * FROM filter_used_features(ARRAY[%s], ARRAY[%s] );" % \
-        (",".join([str(g.id) for g in graphs]),
-         ",".join(['[%s]' % ','.join(f) for f in normalized_features]))
-
-    # Run query
-    cursor = connection.cursor()
-    cursor.execute(query)
-
-    # Parse result
-    used_features = []
-    rows = cursor.fetchall()
-    for r in rows:
-        # PostgreSQL uses one based indexing, subtract 1 to get 0 based indices
-        idx = r[0] - 1
-        used_features.append( features[idx] )
-
-    return used_features
+    return list(used_features)
 
 def get_features( ontology, workspace_pid, graphs, add_nonleafs=False, only_used_features=False ):
     """ Return a list of Feature instances which represent paths

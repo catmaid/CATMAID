@@ -168,6 +168,8 @@ Miscellaneous:
   if the nearest section is marked as broken, rather than the default behavior
   of displaying the nearest non-broken section.
 
+- Clustering over large sets of ontology based classification is now much faster.
+
 
 ### Bug fixes
 

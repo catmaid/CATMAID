@@ -12,8 +12,8 @@ from django.template.context import RequestContext
 from formtools.wizard.views import SessionWizardView
 
 from catmaid.models import Class
-from catmaid.control.classification import ClassInstanceProxy, \
-        get_root_classes_qs, graph_instanciates_feature
+from catmaid.control.classification import (ClassInstanceProxy,
+    get_root_classes_qs, graph_instanciates_feature, graphs_instanciate_features)
 from catmaid.control.ontology import get_features
 
 metrics = (
@@ -211,20 +211,6 @@ def setup_clustering(request, workspace_pid=None):
 
 def create_binary_matrix(graphs, features):
     """ Creates a binary matrix for the graphs passed."""
-    num_features = len(features)
-    num_graphs = len(graphs)
-    # Fill matrix with zeros
-    matrix = np.zeros((num_graphs,num_features), dtype=np.int)
-    # Put a one at each position where the tree has
-    # a feature defined
-    for i in range(num_graphs):
-        graph = graphs[i]
-        for j in range(num_features):
-            feature = features[j]
-            # Check if a feature (root-leaf path in graph) is part of the
-            # current graph
-            if graph_instanciates_feature(graph, feature):
-                matrix[i][j] = 1
-
-    return matrix
+    matrix = np.zeros((len(graphs),len(features)), dtype=np.int)
+    return graphs_instanciate_features(graphs, features, matrix)
 

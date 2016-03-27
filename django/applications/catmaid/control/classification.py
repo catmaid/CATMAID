@@ -1,4 +1,5 @@
 import json
+import logging
 
 from collections import defaultdict
 
@@ -27,6 +28,7 @@ from catmaid.models import Class, ClassClass, ClassInstance, \
 
 from taggit.models import TaggedItem
 
+logger = logging.getLogger(__name__)
 
 # All needed classes by the classification system alongside their
 # descriptions.
@@ -1456,6 +1458,101 @@ def graph_instanciates_feature_simple(graph, feature, idx=0):
 
     # Continue with checking children, if any
     return graph_instanciates_feature_simple(link_q[0].class_instance_a, feature, idx+1)
+
+def graphs_instanciate_features(graphs, features, target=None, cursor=None):
+    """Test which graphs instantiate which feature of the passed in feature
+    set. If provided, the information is written to the target array, which is
+    expected to be of proper size. Without a target, a new 2D array of
+    dimensions graphs x features is created.
+    """
+    cursor = cursor or connection.cursor()
+    if None == target:
+        target = [[0 for j in range(len(features))] for i in range(len(graphs))]
+    for ng, g in enumerate(graphs):
+        logger.debug("Getting paths for graph g {}".format(g.id))
+        # Get all instantiated paths and sub-paths from graph g
+        cursor.execute("""
+            WITH RECURSIVE linked_classes(id, rel, class_instance_a, class_a, depth, path, cycle) AS (
+                SELECT cici.id, cici.relation_id, cici.class_instance_a, cia.class_id, 1, ARRAY[cici.id], false
+                FROM class_instance_class_instance cici
+                JOIN class_instance cia ON cici.class_instance_a = cia.id
+                WHERE cici.class_instance_b = %s
+              UNION ALL
+                SELECT cici2.id, cici2.relation_id, cici2.class_instance_a, cia2.class_id, lc.depth + 1, path || cici2.id,
+                  cici2.id = ANY(path)
+                FROM class_instance_class_instance cici2
+                JOIN linked_classes lc ON cici2.class_instance_b = lc.class_instance_a AND NOT cycle
+                JOIN class_instance cia2 ON cici2.class_instance_a = cia2.id
+            )
+            SELECT * FROM linked_classes;
+            """, (g.id,))
+        paths = cursor.fetchall()
+        logger.debug("Got all instantiated paths")
+        # Create tree representation, relates are taken care of implicitly.
+        # They are part of a link definition (a class_instance_class_instance
+        # row).
+        root = {}
+        cici_map = {}
+        for p in paths:
+            cici_id = p[0]
+            rel_id = p[1]
+            path = p[5]
+            parent = root
+            map_entry = cici_map.get(cici_id)
+            if not map_entry:
+                cici_map[cici_id] = {
+                    'relation_id': rel_id,
+                    'path': path,
+                    'class_instance_a': p[2],
+                    'class_a': p[3],
+                    'depth': p[4]
+                }
+
+            for pe in path:
+                parent = parent.setdefault(pe, {})
+
+        def check_feature_level(feature, nodes, cici_map, part_index=0):
+            last_index = len(feature.links) - 1
+            if part_index > last_index:
+                raise ValueError("Part index too large")
+            link = feature.links[part_index]
+
+            for link_id, children in nodes.iteritems():
+                node = cici_map.get(link_id)
+                if not node:
+                    raise ValueError("Couldn't find link node")
+                has_class = link.class_a.id == node['class_a']
+                has_relation = link.relation.id == node['relation_id']
+                # If this links is valid according to the ontology, look into
+                # children or return success.
+                if has_class and has_relation:
+                    if part_index < last_index:
+                        instantiated = check_feature_level(feature, children,
+                                cici_map, part_index + 1)
+                        # If the sub-branch was instantiated we can stop now for
+                        # this level. Other branches can't contribute anything.
+                        if instantiated:
+                            return True
+                    else:
+                        # If this was the last element of the feature chain (in
+                        # ontology), we consider this sub-branch to be done.
+                        return True
+
+            # If no branch yielded a positive result, we can only conclude this
+            # level doesn't implement the ontology
+            return False
+
+        for nf, feature in enumerate(features):
+            # Now go through all features and mark the ones instantiated in the
+            # current graph. A feature is essentially a list of links from root to
+            # leaf. A feature is instantiated if there is a path in the last query
+            # uses the classes and links in the feature. This is how a feature link
+            # list looks like:
+            # [CA, R, CB], [CA2, R2, CA2], [CA3, R3, CA3]
+            instantiated = check_feature_level(feature, root, cici_map)
+            target[ng][nf] = 1 if instantiated else 0
+
+    return target
 
 def graph_instanciates_feature_complex(graph, feature):
     """ Creates one complex query that thest if the feature is matched as a

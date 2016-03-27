@@ -44,7 +44,11 @@ class Feature:
             raise ValueError("A feature needs at least one element")
 
     def __str__(self):
+        return self.__unicode__()
+
+    def __unicode__(self):
         return self.name
+
     def __len__(self):
         return len(self.links)
 
@@ -54,6 +58,14 @@ class FeatureLink:
         self.class_b = class_b
         self.relation = relation
         self.super_class = super_class
+
+    def __str__(self):
+        return self.__unicode__()
+
+    def __unicode__(self):
+        return "[CA {}: {} R {}: {} CB {}: SC {}: {}]".format(self.class_a.id,
+                self.class_a, self.relation.id, self.relation, self.class_b.id,
+                self.class_b, self.super_class.id, self.super_class)
 
 def get_known_ontology_roots(request):
     """ Returns an array of all known root class names.

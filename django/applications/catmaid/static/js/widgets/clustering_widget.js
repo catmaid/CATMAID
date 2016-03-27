@@ -38,6 +38,233 @@
         });
     };
 
+    var addBox = function(name, id, content, container, closed) {
+      var box = document.createElement('div');
+      box.setAttribute('id', id);
+      var title = document.createElement('p');
+      title.classList.add('title');
+      var icon = document.createElement('span');
+      icon.classList.add(closed ? 'extend-box-closed' : 'extend-box-open');
+      title.appendChild(icon);
+      title.appendChild(document.createTextNode(name));
+
+      var boxContent = document.createElement('div');
+      boxContent.classList.add('content');
+      boxContent.appendChild(content);
+
+      box.appendChild(title);
+      box.appendChild(boxContent);
+      container.appendChild(box);
+    };
+
+    var addOntologyList = function(container, ontologies) {
+      var ontologyList = document.createElement('ul');
+      ontologyList.classList.add('indented');
+      ontologies.forEach(function(o) {
+        var e = document.createElement('li');
+        e.appendChild(document.createTextNode(o[1]));
+        this.appendChild(e);
+      }, ontologyList);
+      addBox("Ontologies:", "ontologies", ontologyList, container, false);
+    };
+
+    var addFeatureList = function(container, features) {
+      var featureList = document.createElement('table');
+      featureList.classList.add('indented');
+      var trName = document.createElement('tr');
+      var trCount = document.createElement('tr');
+      features.forEach(function(f, i) {
+        var tdName = document.createElement('td');
+        tdName.appendChild(document.createTextNode(f));
+        trName.appendChild(tdName);
+        var tdCount = document.createElement('td');
+        tdCount.appendChild(document.createTextNode(i + 1));
+        trCount.appendChild(tdCount);
+      });
+      featureList.appendChild(trName);
+      featureList.appendChild(trCount);
+      addBox("Features:", "features", featureList, container, false);
+    };
+
+    var addBinaryMatrix = function(container, binaryMatrix, graphs, features) {
+      var bmTable = document.createElement('table');
+      bmTable.classList.add('indented');
+      var trCount = document.createElement('tr');
+      var emptyTd = document.createElement('td');
+      trCount.appendChild(emptyTd);
+      features.forEach(function(f, i) {
+        var tdCount = document.createElement('td');
+        tdCount.appendChild(document.createTextNode(i + 1));
+        trCount.appendChild(tdCount);
+      });
+      bmTable.appendChild(trCount);
+      binaryMatrix.forEach(function(g, i) {
+        var trGraph = document.createElement('tr');
+        var graphId = g.graph;
+        var tdName = document.createElement('td');
+        tdName.appendChild(document.createTextNode(graphs[graphId]));
+        trGraph.appendChild(tdName);
+        for (var j=0, max=g.feature.length; j<max; ++j) {
+          var instantiated = g.feature[j];
+          var tdInstance = document.createElement('td');
+          tdInstance.appendChild(document.createTextNode(instantiated));
+          trGraph.appendChild(tdInstance);
+        }
+        bmTable.appendChild(trGraph);
+      });
+      addBox("Binary matrix:", "binary-matrix", bmTable, container, false);
+    };
+
+    var addDistanceMatrix = function(container, distanceMatrix, metric, graphs) {
+      var distanceDisplay = document.createElement('div');
+      distanceDisplay.classList.add('indented');
+      var metricP = document.createElement('p');
+      metricP.appendChild(document.createTextNode("Distance metrix: " + metric));
+      distanceDisplay.appendChild(metricP);
+
+      var distanceTable = document.createElement('table');
+      distanceTable.setAttribute('id', 'distance_matrix');
+      var graphTr = document.createElement('tr');
+      // Start with one padding cell to compensate for first colum graphs
+      graphTr.appendChild(document.createElement('td'));
+      for (var graphId in graphs) {
+        var graphTd = document.createElement('td');
+        graphTd.appendChild(document.createTextNode(graphs[graphId]));
+        graphTr.appendChild(graphTd);
+      }
+      distanceTable.appendChild(graphTr);
+
+      distanceMatrix.forEach(function(e, i) {
+        var graphId = e.graph;
+        var distTr = document.createElement('tr');
+        var graphTd = document.createElement('td');
+        graphTd.appendChild(document.createTextNode(graphs[graphId]));
+        distTr.appendChild(graphTd);
+        for (var j=0, max=e.distances.length; j<max; ++j) {
+          var distance = Number(e.distances[j]).toFixed(2);
+          var distTd = document.createElement('td');
+          distTd.appendChild(document.createTextNode(distance));
+          if (j < i) {
+            distTd.classList.add('lowertriangle');
+          } else if (j === i) {
+            distTd.classList.add('identity');
+          } else {
+            distTd.classList.add('uppertriangle');
+          }
+          distTr.appendChild(distTd);
+        }
+        distanceTable.appendChild(distTr);
+      });
+
+      distanceDisplay.appendChild(distanceTable);
+
+      addBox("Distance matrix:", "distances", distanceDisplay, container, false);
+    };
+
+    var addDendrogram = function(container, dendrogram) {
+      var block = document.createElement('div');
+      block.classList.add('indented');
+
+      var header = document.createElement('div');
+      header.innerHTML = "<p><em>Note: To display data for every selected classification, " +
+			  "all NaN values (not a number) have been replaced by 1.0. These occur when " +
+        "there is more than one feature vector with zeros only in it.</em></p>" +
+				"<p><a href='#' id='dendrogram_export_link'>Export SVG file</a></p>";
+      block.appendChild(header);
+
+      var graph = document.createElement('div');
+      graph.setAttribute('id', 'clustering-graph');
+      block.appendChild(graph);
+      addBox("Dendrogram:", "clustering", block, container, false);
+
+      addDendrogramGraphic(container, dendrogram);
+    };
+
+    function getValue(obj, key) {
+      var value = obj[key];
+      if (!value) {
+        throw new CATMAID.ValueError('Coudln\'t find expected field: ' + key);
+      }
+      return value;
+    }
+
+    this.displayStep = function(data, container) {
+      if (!data) {
+        throw new CATMAID.ValueError("No data to display");
+      } else if (data['error']) {
+        CATMAID.error(data['error'], data['detail']);
+        return;
+      } else if (!data['step']) {
+        throw new CATMAID.ValueError("Missing step field in result");
+      }
+
+      // Clear container
+      while (container.hasChildNodes()) {
+        container.removeChild(container.lastChild);
+      }
+
+      // Add results
+      if ("result" === data.step) {
+        var results = document.createElement('div');
+        results.setAttribute('id', 'clustering_results');
+
+        // Ontologies
+        var ontologies = getValue(data, 'ontologies');
+        addOntologyList(results, ontologies);
+
+        // Features
+        var features = getValue(data, 'features');
+        addFeatureList(results, features);
+
+        // Binary matrix
+        var binaryMatrix = getValue(data, 'bin_matrix');
+        var graphs = getValue(data, 'graphs');
+        addBinaryMatrix(results, binaryMatrix, graphs, features);
+
+        // Distance matrix
+        var distanceMatrix = getValue(data, 'dst_matrix');
+        var distanceMetric = getValue(data, 'metric');
+        addDistanceMatrix(results, distanceMatrix, distanceMetric, graphs);
+
+        // Dendrogram
+        var dendrogram = getValue(data, "dendrogram");
+        addDendrogram(results, dendrogram);
+
+        // Have an outer wrapper around all results
+        var innerContainer = document.createElement('p');
+        innerContainer.appendChild(results);
+
+        // add collapsing of sections in result view
+        var result_titles = $("div#clustering_results p.title", innerContainer);
+        if (result_titles.length > 0) {
+          result_titles.click( function() {
+            var section = this;
+            $(section).next(".content").animate(
+              { height: "toggle",
+                opacity: "toggle" },
+              { complete: function() {
+                // change open/close indicator box
+                var open_elements = $(".extend-box-open", section);
+                if (open_elements.length > 0) {
+                  open_elements.attr('class', 'extend-box-closed');
+                } else {
+                  $(".extend-box-closed", section).attr('class', 'extend-box-open');
+                }
+                // update the position of the dendrogram handle
+                var canvas = document.getElementById("clustering-canvas");
+                var handle = document.getElementById("dendrogram-handle");
+                if (canvas !== null && handle !== null) {
+                  handle.style.left = (canvas.offsetLeft + canvas.offsetWidth - 10) + "px";
+                  handle.style.top = (canvas.offsetTop + canvas.offsetHeight -20) + "px";
+                }
+              }});
+          });
+        }
+
+        container.appendChild(innerContainer);
+      }
+    };
+
     this.patch_clustering_setup = function( container )
     {
       var form = $("#clustering-setup-form", container);
@@ -54,9 +281,15 @@
             type: "POST",
             url: form.attr('action'),
             data: form.serialize() + "&" + post,
-            success: function(data, textStatus) {
-              container.innerHTML = "<p>" + data + "</p>";
-              ClusteringWidget.patch_clustering_setup( container );
+            success: function(data, textStatus, xhr) {
+              var contentType = xhr.getResponseHeader("Content-Type") || "";
+              if (-1 !== contentType.indexOf('json')) {
+                //var jsonData = JSON.parse(data);
+                self.displayStep(data, container);
+              } else {
+                container.innerHTML = "<p>" + data + "</p>";
+                ClusteringWidget.patch_clustering_setup( container );
+              }
             }
           });
           return false;
@@ -94,33 +327,6 @@
           } else {
             $("#select-all", container).prop("checked", false);
           }
-        });
-      }
-
-      // add collapsing of sections in result view
-      var result_titles = $("div#clustering_results p.title", container);
-      if (result_titles.length > 0) {
-        result_titles.click( function() {
-          var section = this;
-          $(section).next(".content").animate(
-            { height: "toggle",
-              opacity: "toggle" },
-            { complete: function() {
-              // change open/close indicator box
-              var open_elements = $(".extend-box-open", section);
-              if (open_elements.length > 0) {
-                open_elements.attr('class', 'extend-box-closed');
-              } else {
-                $(".extend-box-closed", section).attr('class', 'extend-box-open');
-              }
-              // update the position of the dendrogram handle
-              var canvas = document.getElementById("clustering-canvas");
-              var handle = document.getElementById("dendrogram-handle");
-              if (canvas !== null && handle !== null) {
-                handle.style.left = (canvas.offsetLeft + canvas.offsetWidth - 10) + "px";
-                handle.style.top = (canvas.offsetTop + canvas.offsetHeight -20) + "px";
-              }
-            }});
         });
       }
 
@@ -371,17 +577,15 @@
       });
     };
 
-    this.render_clustering = function(dendrogram)
-    {
+    var addDendrogramGraphic = function(container, dendrogram) {
       // The dendrogram data structure might contain NaN values
       // when empty sets were involved. Replace them by "null"
       // to be able to parse the JSON object.
-      dendrogram = dendrogram.replace(/NaN/g, "null");
-      // Parse JSON data
-      dendrogram = $.parseJSON(dendrogram);
+      // TODO: Does this still work? Still needed?
+      //dendrogram = dendrogram.replace(/NaN/g, "null");
+
       // If the "clustering-graph" div is available, try to to draw
       // a hierarchical clustering graph.
-      var container = $("#clustering-graph");
       var found = container.length !== 0;
       if (found) {
         // Replace the null values with 1.0 (for the maximum Jaccard
@@ -400,7 +604,6 @@
           }
         });
 
-        container = container[0];
         // find maximum dissimilarity and x value
         var max_y = null;
         $.each(dendrogram.dcoord, function(i, val) {
@@ -422,7 +625,7 @@
         canvas.style.width = width + "px";
         canvas.style.height = height + "px";
         container.appendChild(canvas);
-        var r = new Raphael("clustering-canvas");
+        var r = new Raphael(canvas);
         // allow scaling with keeping the aspect ratio
         r.setViewBox(0, 0, width, height, true);
         r.setSize('100%', '100%');

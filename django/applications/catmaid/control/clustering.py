@@ -1,4 +1,5 @@
 import json
+import logging
 import scipy.cluster.hierarchy as hier
 import scipy.spatial.distance as dist
 import numpy as np
@@ -6,6 +7,7 @@ import numpy as np
 from django import forms
 from django.forms.formsets import formset_factory
 from django.forms.widgets import CheckboxSelectMultiple
+from django.http import JsonResponse
 from django.shortcuts import render
 from django.template.context import RequestContext
 
@@ -15,6 +17,9 @@ from catmaid.models import Class
 from catmaid.control.classification import (ClassInstanceProxy,
     get_root_classes_qs, graph_instanciates_feature, graphs_instanciate_features)
 from catmaid.control.ontology import get_features
+
+
+logger = logging.getLogger(__name__)
 
 metrics = (
     ('jaccard', 'Jaccard'),
@@ -160,44 +165,49 @@ class ClusteringWizard(SessionWizardView):
             features.append(self.features[int(f_id)])
 
         # Create binary matrix
+        logger.debug("Clustering: Creating binary matrix")
         bin_matrix = create_binary_matrix(graphs, features)
         # Calculate the distance matrix
+        logger.debug("Clustering: creating distsance matrix")
         dst_matrix = dist.pdist(bin_matrix, metric)
         # The distance matrix now has no redundancies, but we need the square form
         dst_matrix = dist.squareform(dst_matrix)
         # Calculate linkage matrix
+        logger.debug("Clustering: creating linkage matrix")
         linkage_matrix = hier.linkage(bin_matrix, linkage, metric)
         # Obtain the clustering dendrogram data
         graph_names = [ g.name for g in graphs ]
+        logger.debug("Clustering: creating dendrogram")
         dendrogram = hier.dendrogram(linkage_matrix, no_plot=True,
             count_sort=True, labels=graph_names)
 
+        logger.debug("Clustering: creating display graphs")
         # Create a binary_matrix with graphs attached for display
         num_graphs = len(graphs)
         display_bin_matrix = []
         for i in range( num_graphs ):
             display_bin_matrix.append(
-                {'graph': graphs[i], 'feature': bin_matrix[i]})
+                {'graph': graphs[i].id, 'feature': bin_matrix[i].tolist()})
 
         # Create dst_matrix with graphs attached
         display_dst_matrix = []
         for i in range(num_graphs):
             display_dst_matrix.append(
-                {'graph': graphs[i], 'distances': dst_matrix[i]})
+                {'graph': graphs[i].id, 'distances': dst_matrix[i].tolist()})
 
-        # Create a JSON version of the dendrogram to make it
-        # available to the client.
-        dendrogram_json = json.dumps(dendrogram)
-
-        return render(self.request, 'catmaid/clustering/display.html', {
-            'ontologies': ontologies,
-            'graphs': graphs,
-            'features': features,
+        logger.debug("Clustering: creating response")
+        response = JsonResponse({
+            'step': 'result',
+            'ontologies': [(o.id, o.class_name) for o in ontologies],
+            'graphs': {g.id:g.name for g in graphs},
+            'features': [str(f) for f in features],
             'bin_matrix': display_bin_matrix,
             'metric': metric,
             'dst_matrix': display_dst_matrix,
-            'dendrogram_json': dendrogram_json,
+            'dendrogram': dendrogram,
         })
+        logger.debug("Clustering: returning response of {} characters".format(len(response.content)))
+        return response
 
 def setup_clustering(request, workspace_pid=None):
     workspace_pid = int(workspace_pid)

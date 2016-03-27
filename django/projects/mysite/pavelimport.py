@@ -441,7 +441,7 @@ def import_from_mysql(cursor, project, user, experiment_provider):
             #log("Skipping group '{}', no stack information found".format(group_title))
             continue
 
-        enable_filter = True
+        enable_filter = False
         max_projects = 10
         whitelist = ("CG1416", "CG2674", "CG11147")
         if enable_filter and len(experiments_with_images) > max_projects \
@@ -608,6 +608,7 @@ class Ontology(object):
                 raise ValueError("Class path component not found: " + str(path))
 
         cls = node.get('values').get(instance).get('class') if node else None
+        print ("Ontology", cls, cls.id)
         return cls
 
     def load(self, schema, project, user, parent=None, parent_rel=None):

@@ -69,6 +69,7 @@ libraries_js = {
     'jsnetworkx': ['*.js'],
     'filesaver': ['*.js'],
     'whammy': ['whammy.js'],
+    'blazy': ['blazy.min.js'],
     'geometry': ['geometry.js', 'intersects.js'], # order matters
     'catmaid': ['request.js', 'CATMAID.js', 'error.js', 'events.js', 'state.js',
                 'command.js', 'models/*.js','skeleton_source.js', '*.js'],

@@ -14,6 +14,22 @@
   CATMAID.Init.EVENT_PROJECT_CHANGED = "init_project_changed";
   CATMAID.Init.EVENT_USER_CHANGED = "init_user_changed";
 
+  /**
+   * CATMAID's web front-end.
+   */
+  var Client = function() {
+    // Lazy load images in container with ID "content" and class "lazy".
+    this.blazy = new Blazy({
+      selector: ".lazy",
+      container: "#content",
+      loadInvisible: true,
+      errorClass: "missing-image"
+    });
+  };
+
+  // Export Client
+  CATMAID.Client = Client;
+
 })(CATMAID);
 
 var global_bottom = 29;
@@ -1128,6 +1144,8 @@ function handle_load_dataview(status, text, xml) {
     {
       //! add new content
       data_view_container.innerHTML = text;
+      // Revalidate content to lazy-load
+      CATMAID.client.blazy.revalidate();
     } else {
       // create error message
       var error_paragraph = document.createElement( "p" );
@@ -1177,6 +1195,9 @@ var realInit = function()
     document.head.appendChild(script);
     return;
   }
+
+  // Initialize a new CATMAID front-end
+  CATMAID.client = new CATMAID.Client();
 
   //! analyze the URL
   var pid;

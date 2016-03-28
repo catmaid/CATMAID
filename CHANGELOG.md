@@ -53,6 +53,10 @@ Miscellaneous:
 - The delimiter used to separate annotations in a neuron name can now be
   configured in the Annotations section of the Settings Widget.
 
+- Images on CATMAID's front-page are now loaded lazily, i.e. they are only
+  requested and shown once they come into view. This improves performance
+  significantly when displaying many sample images.
+
 
 ### Bug fixes
 

@@ -1468,44 +1468,55 @@ def graphs_instanciate_features(graphs, features, target=None, cursor=None):
     cursor = cursor or connection.cursor()
     if None == target:
         target = [[0 for j in range(len(features))] for i in range(len(graphs))]
+
+    logger.debug("Getting paths for graphs")
+    # Get all instantiated paths and sub-paths from each graph
+    graph_ids = [g.id for g in graphs]
+    graph_template = ",".join(("%s",) * len(graphs))
+    cursor.execute("""
+        WITH RECURSIVE linked_classes(root_id, id, rel, class_instance_a, class_a, depth, path, cycle) AS (
+            SELECT cici.class_instance_b, cici.id, cici.relation_id, cici.class_instance_a, cia.class_id, 1, ARRAY[cici.id], false
+            FROM class_instance_class_instance cici
+            JOIN class_instance cia ON cici.class_instance_a = cia.id
+            WHERE cici.class_instance_b IN ({})
+          UNION ALL
+            SELECT lc.root_id, cici2.id, cici2.relation_id, cici2.class_instance_a, cia2.class_id, lc.depth + 1, path || cici2.id,
+              cici2.id = ANY(path)
+            FROM class_instance_class_instance cici2
+            JOIN linked_classes lc ON cici2.class_instance_b = lc.class_instance_a AND NOT cycle
+            JOIN class_instance cia2 ON cici2.class_instance_a = cia2.id
+        )
+        SELECT * FROM linked_classes;
+        """.format(graph_template), graph_ids)
+    # Build index for paths of each graph
+    all_paths = {}
+    for row in cursor.fetchall():
+        paths = all_paths.get(row[0])
+        if not paths:
+            paths = []
+            all_paths[row[0]] = paths
+        paths.append(row)
+
     for ng, g in enumerate(graphs):
-        logger.debug("Getting paths for graph g {}".format(g.id))
-        # Get all instantiated paths and sub-paths from graph g
-        cursor.execute("""
-            WITH RECURSIVE linked_classes(id, rel, class_instance_a, class_a, depth, path, cycle) AS (
-                SELECT cici.id, cici.relation_id, cici.class_instance_a, cia.class_id, 1, ARRAY[cici.id], false
-                FROM class_instance_class_instance cici
-                JOIN class_instance cia ON cici.class_instance_a = cia.id
-                WHERE cici.class_instance_b = %s
-              UNION ALL
-                SELECT cici2.id, cici2.relation_id, cici2.class_instance_a, cia2.class_id, lc.depth + 1, path || cici2.id,
-                  cici2.id = ANY(path)
-                FROM class_instance_class_instance cici2
-                JOIN linked_classes lc ON cici2.class_instance_b = lc.class_instance_a AND NOT cycle
-                JOIN class_instance cia2 ON cici2.class_instance_a = cia2.id
-            )
-            SELECT * FROM linked_classes;
-            """, (g.id,))
-        paths = cursor.fetchall()
-        logger.debug("Got all instantiated paths")
+        paths = all_paths.get(g.id)
         # Create tree representation, relates are taken care of implicitly.
         # They are part of a link definition (a class_instance_class_instance
         # row).
         root = {}
         cici_map = {}
         for p in paths:
-            cici_id = p[0]
-            rel_id = p[1]
-            path = p[5]
+            cici_id = p[1]
+            rel_id = p[2]
+            path = p[6]
             parent = root
             map_entry = cici_map.get(cici_id)
             if not map_entry:
                 cici_map[cici_id] = {
                     'relation_id': rel_id,
                     'path': path,
-                    'class_instance_a': p[2],
-                    'class_a': p[3],
-                    'depth': p[4]
+                    'class_instance_a': p[3],
+                    'class_a': p[4],
+                    'depth': p[5]
                 }
 
             for pe in path:

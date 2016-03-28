@@ -267,7 +267,7 @@
 
         // Dendrogram
         var dendrogram = getValue(data, "dendrogram");
-        //addDendrogram(results, dendrogram);
+        addDendrogram(results, dendrogram);
 
         // Have an outer wrapper around all results
         var innerContainer = document.createElement('p');

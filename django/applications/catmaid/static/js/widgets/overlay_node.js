@@ -502,7 +502,7 @@
         } else if (SkeletonAnnotations.isRealNode(this.id)) {
           return baseColor.getStyle();
         } else {
-          return SkeletonAnnotations.inactive_skeleton_color_virtual;
+          return baseColor.getStyle();
         }
       };
 

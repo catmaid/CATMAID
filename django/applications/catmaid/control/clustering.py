@@ -181,29 +181,15 @@ class ClusteringWizard(SessionWizardView):
         dendrogram = hier.dendrogram(linkage_matrix, no_plot=True,
             count_sort=True, labels=graph_names)
 
-        logger.debug("Clustering: creating display graphs")
-        # Create a binary_matrix with graphs attached for display
-        num_graphs = len(graphs)
-        display_bin_matrix = []
-        for i in range( num_graphs ):
-            display_bin_matrix.append(
-                {'graph': graphs[i].id, 'feature': bin_matrix[i].tolist()})
-
-        # Create dst_matrix with graphs attached
-        display_dst_matrix = []
-        for i in range(num_graphs):
-            display_dst_matrix.append(
-                {'graph': graphs[i].id, 'distances': dst_matrix[i].tolist()})
-
         logger.debug("Clustering: creating response")
         response = JsonResponse({
             'step': 'result',
             'ontologies': [(o.id, o.class_name) for o in ontologies],
-            'graphs': {g.id:g.name for g in graphs},
+            'graphs': [[g.id, g.name] for g in graphs],
             'features': [str(f) for f in features],
-            'bin_matrix': display_bin_matrix,
+            'bin_matrix': bin_matrix.tolist(),
             'metric': metric,
-            'dst_matrix': display_dst_matrix,
+            'dst_matrix': dst_matrix.tolist(),
             'dendrogram': dendrogram,
         })
         logger.debug("Clustering: returning response of {} characters".format(len(response.content)))

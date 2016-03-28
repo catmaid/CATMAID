@@ -86,33 +86,41 @@
       addBox("Features:", "features", featureList, container, false);
     };
 
+    function prepend(array, e) {
+      array.unshift(e);
+      return array;
+    }
+
     var addBinaryMatrix = function(container, binaryMatrix, graphs, features) {
+      var wrapper = document.createElement('div');
+      wrapper.classList.add('indented');
       var bmTable = document.createElement('table');
-      bmTable.classList.add('indented');
-      var trCount = document.createElement('tr');
-      var emptyTd = document.createElement('td');
-      trCount.appendChild(emptyTd);
-      features.forEach(function(f, i) {
-        var tdCount = document.createElement('td');
-        tdCount.appendChild(document.createTextNode(i + 1));
-        trCount.appendChild(tdCount);
+      bmTable.classList.add("compact");
+      wrapper.appendChild(bmTable);
+
+      var datatable = $(bmTable).DataTable({
+        data: binaryMatrix,
+        dom: "lrptip",
+        pageLength: 25,
+        lengthMenu: [[10, 25, 100, 200, 500, 1000, -1], [10, 25, 100, 200, 500, 1000, "All"]],
+        processing: true,
+        columnDefs: [{
+          targets: "_all",
+          data: function(row, type, set, meta) {
+            return 0 === meta.col ? graphs[meta.row][1] : row[meta.col - 1];
+          },
+          sortable: false,
+        }],
+        columns: prepend(features.map(function(f, i) {
+          return {
+            title: (i + 1) + ""
+          };
+        }), {
+          title: ""
+        })
       });
-      bmTable.appendChild(trCount);
-      binaryMatrix.forEach(function(g, i) {
-        var trGraph = document.createElement('tr');
-        var graphId = g.graph;
-        var tdName = document.createElement('td');
-        tdName.appendChild(document.createTextNode(graphs[graphId]));
-        trGraph.appendChild(tdName);
-        for (var j=0, max=g.feature.length; j<max; ++j) {
-          var instantiated = g.feature[j];
-          var tdInstance = document.createElement('td');
-          tdInstance.appendChild(document.createTextNode(instantiated));
-          trGraph.appendChild(tdInstance);
-        }
-        bmTable.appendChild(trGraph);
-      });
-      addBox("Binary matrix:", "binary-matrix", bmTable, container, false);
+
+      addBox("Binary matrix:", "binary-matrix", wrapper, container, false);
     };
 
     var addDistanceMatrix = function(container, distanceMatrix, metric, graphs) {
@@ -124,6 +132,32 @@
 
       var distanceTable = document.createElement('table');
       distanceTable.setAttribute('id', 'distance_matrix');
+      distanceTable.classList.add("compact");
+      distanceDisplay.appendChild(distanceTable);
+
+      var datatable = $(distanceTable).DataTable({
+        data: distanceMatrix,
+        dom: "lrptip",
+        pageLength: 25,
+        lengthMenu: [[10, 25, 100, 200, 500, 1000, -1], [10, 25, 100, 200, 500, 1000, "All"]],
+        processing: true,
+        columnDefs: [{
+          targets: "_all",
+          data: function(row, type, set, meta) {
+            return 0 === meta.col ? graphs[meta.row][1] : row[meta.col - 1];
+          },
+          sortable: false,
+        }],
+        columns: prepend(graphs.map(function(g, i) {
+          return {
+            title: g[1]
+          };
+        }), {
+          title: ""
+        })
+      });
+
+      /*
       var graphTr = document.createElement('tr');
       // Start with one padding cell to compensate for first colum graphs
       graphTr.appendChild(document.createElement('td'));
@@ -157,6 +191,7 @@
       });
 
       distanceDisplay.appendChild(distanceTable);
+      */
 
       addBox("Distance matrix:", "distances", distanceDisplay, container, false);
     };
@@ -228,7 +263,7 @@
 
         // Dendrogram
         var dendrogram = getValue(data, "dendrogram");
-        addDendrogram(results, dendrogram);
+        //addDendrogram(results, dendrogram);
 
         // Have an outer wrapper around all results
         var innerContainer = document.createElement('p');

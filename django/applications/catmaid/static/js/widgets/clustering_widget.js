@@ -144,7 +144,11 @@
         columnDefs: [{
           targets: "_all",
           data: function(row, type, set, meta) {
-            return 0 === meta.col ? graphs[meta.row][1] : row[meta.col - 1];
+            if (0 === meta.col) {
+              return graphs[meta.row][1];
+            } else {
+              return Number(row[meta.col - 1]).toFixed(2);
+            }
           },
           sortable: false,
         }],

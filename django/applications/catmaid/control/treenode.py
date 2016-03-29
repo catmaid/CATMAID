@@ -17,7 +17,7 @@ from catmaid.models import UserRole, Treenode, ClassInstance, \
 from catmaid.control.authentication import requires_user_role, \
         can_edit_class_instance_or_fail, can_edit_or_fail
 from catmaid.control.common import get_relation_to_id_map, \
-        get_class_to_id_map, insert_into_log, _create_relation
+        get_class_to_id_map, insert_into_log, _create_relation, get_request_list
 from catmaid.control.neuron import _delete_if_empty
 from catmaid.control.node import _fetch_location, _fetch_locations
 from catmaid.util import Point3D, is_collinear
@@ -113,6 +113,12 @@ def insert_treenode(request, project_id=None):
     for p in int_values.keys():
         params[p] = int(request.POST.get(p, int_values[p]))
 
+    # If siblings should be taken over, all children of the parent node will be
+    # come children of the inserted node. This requires extra state
+    # information: the child state for the paren.
+    takeover_child_ids = get_request_list(request.POST,
+            'takeover_child_ids', None, lambda x: int)
+
     # Make sure the back-end is in the expected state if the node should have a
     # parent and will therefore become part of another skeleton.
     parent_id = params.get('parent_id')
@@ -120,9 +126,11 @@ def insert_treenode(request, project_id=None):
     if parent_id not in (-1, None):
         s = request.POST.get('state')
         if child_id not in (-1, None):
-            state.validate_state(parent_id, s, edge=True, lock=True)
+            state.validate_state(parent_id, s, edge=True,
+            children=takeover_siblings, lock=True)
         else:
-            state.validate_state(parent_id, s, parent_edittime=True, lock=True)
+            state.validate_state(parent_id, s, parent_edittime=True,
+            children=takeover_siblings, lock=True)
 
     # Find child and parent of new treenode
     child = Treenode.objects.get(pk=params['child_id'])
@@ -154,25 +162,32 @@ def insert_treenode(request, project_id=None):
             user, request.user, params['x'], params['y'], params['z'],
             params['radius'], params['confidence'], -1, params['parent_id'], time)
 
-    # Update parent of child to new treenode, do this in raw SQL to also get
-    # the updated edition time
+    # Update parent of child to new treenode, do this in raw SQL to also get the
+    # updated edition time Update also takeover children
     cursor = connection.cursor()
+    params = [new_treenode.treenode_id, child.id]
+    if takeover_child_ids:
+        children.extend(takeover_child_ids)
+        child_template = ("%s",) * (takeover_child_ids.length + 1)
+    else:
+        child_template = "%s"
+
     cursor.execute("""
         UPDATE treenode SET parent_id = %s
-         WHERE id = %s
-     RETURNING edition_time
-    """, (new_treenode.treenode_id, child.id))
-    result = cursor.fetchone()
-    if not result or 1 != len(result):
+         WHERE id IN ({})
+     RETURNING id, edition_time
+    """.format(child_template), params)
+    result = cursor.fetchall()
+    if not result or (len(params) - 1) != len(result):
         raise ValueError("Couldn't update parent of inserted node's child: " + child.id)
-    child_edition_time = result[0]
+    child_edition_times = [[k,v] for k,v in result]
 
     return JsonResponse({
         'treenode_id': new_treenode.treenode_id,
         'skeleton_id': new_treenode.skeleton_id,
         'edition_time': new_treenode.edition_time,
         'parent_edition_time': new_treenode.parent_edition_time,
-        'child_edition_time': child_edition_time
+        'child_edition_times': child_edition_times
     })
 
 
@@ -571,7 +586,7 @@ def delete_treenode(request, project_id=None):
     deleted_neuron = False
     try:
         if not parent_id:
-            child_ids = []
+            children = []
             # This treenode is root.
             response_on_error = 'Could not retrieve children for ' \
                 'treenode #%s' % treenode_id
@@ -619,8 +634,15 @@ def delete_treenode(request, project_id=None):
             # Treenode is not root, it has a parent and perhaps children.
             # Reconnect all the children to the parent.
             response_on_error = 'Could not update parent id of children nodes'
-            child_ids = list(Treenode.objects.filter(parent=treenode).values_list('id', flat=True))
-            Treenode.objects.filter(id__in=child_ids).update(parent=treenode.parent)
+            cursor = connection.cursor()
+            cursor.execute("""
+                UPDATE treenode SET parent_id = %s
+                WHERE project_id = %s AND parent_id = %s
+                RETURNING id, edition_time
+            """, (treenode.parent_id, project_id, treenode.id))
+            # Children will be a list of two-element lists, just what we want to
+            # return as child info.
+            children = cursor.fetchall()
 
         # Remove treenode
         response_on_error = 'Could not delete treenode.'
@@ -630,7 +652,7 @@ def delete_treenode(request, project_id=None):
             'y': treenode.location_y,
             'z': treenode.location_z,
             'parent_id': parent_id,
-            'child_ids': child_ids,
+            'children': children,
             'radius': treenode.radius,
             'confidence': treenode.confidence,
             'skeleton_id': treenode.skeleton_id,

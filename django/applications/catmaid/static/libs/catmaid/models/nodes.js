@@ -176,10 +176,14 @@
      * @param {number}  radius     (Optional) Radius of the new node
      * @param {integer} confidence (Optional) Confidence of edge to parent
      * @param {integer} useNeuron  (Optional) Target neuron ID to double check
+     * @param {integer[]} takeoverChildIds (Optional) A list of child IDs of
+     *                                     the current parent that should be
+     *                                     taken over by the inserted node
      *
      * @returns a promise that is resolved once the treenode is created
      */
-    insert: function(state, projectId, x, y, z, parentId, childId, radius, confidence, useNeuron) {
+    insert: function(state, projectId, x, y, z, parentId, childId, radius,
+        confidence, useNeuron, takeoverChildIds) {
       CATMAID.requirePermission(projectId, 'can_annotate',
           'You don\'t have have permission to create a new node');
 
@@ -193,6 +197,7 @@
         radius: radius,
         confidence: confidence,
         useneuron: useNeuron,
+        takeover_child_ids: takeoverChildIds,
         state: state
       };
 

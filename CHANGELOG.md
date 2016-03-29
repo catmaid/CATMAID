@@ -40,6 +40,7 @@ TEMPLATE_DIRS, TEMPLATE_DEBUG
 
 Additionally, PostgreSQL is now required to be of version 9.4.
 
+
 ### Features and enhancements
 
 Tracing overlay:
@@ -100,6 +101,7 @@ Volumes:
   data mapped to it. The used zoom level (resolution) and the opacity can be
   adjusted and orthogonal stacks are supported, too.
 
+
 Skeleton Projection layer:
 
 - Instead of supporting only the display of the active skeleton, the projection
@@ -136,11 +138,21 @@ Undo:
 
 Miscellaneous:
 
+- Dragging a window into the center of another window now creates a tabbed
+  window where both windows share the same area of the screen and can be
+  switched between using tabs at the top of the window. Additional tabs
+  can be added by dragging more windows into the center of the tabbed window.
+  The active tab can be removed from the tabbed window by dragging it to
+  another location in the window layout.
+
 - Which layers are hidden when Space is held is now configurable by checkboxes
   in the Stack Viewer's layer controls.
 
 - Scroll bar positions in widgets are now maintained when they change their
   size.
+
+- Non-superusers can now see user analytics and proficiency reports for
+  projects for which they are administrators.
 
 
 ### Bug fixes

@@ -47,6 +47,8 @@ Connectivity matrix:
 
 Miscellaneous:
 
+- Tracing overlay colors customized in the settings widget are now persistent.
+
 - Alt + Y will always create a new selection table and add the active neuron
   to it. Also works with Shift.
 

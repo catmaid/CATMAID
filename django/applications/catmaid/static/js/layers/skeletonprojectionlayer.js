@@ -697,7 +697,8 @@
       "color": function(layer, color) {
         var falloff = layer.options.distanceFalloff;
         var stackViewer = layer.stackViewer;
-        var from = CATMAID.tools.cssColorToRGB(SkeletonAnnotations.active_skeleton_color);
+        var from = CATMAID.tools.cssColorToRGB(
+            SkeletonAnnotations.TracingOverlay.Settings.session.active_skeleton_color);
         var to = CATMAID.tools.cssColorToRGB(color);
         return function(node, pos, zStack) {
           // Merge colors

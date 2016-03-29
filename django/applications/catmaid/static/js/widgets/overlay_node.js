@@ -427,12 +427,12 @@
         var color;
         if (SkeletonAnnotations.getActiveNodeId() === this.id) {
           // The active node is always in green:
-          color = SkeletonAnnotations.getActiveNodeColor();
+          color = SkeletonAnnotations.TracingOverlay.Settings.session.active_node_color;
         } else if (this.isroot) {
           // The root node should be colored red unless it's active:
-          color = SkeletonAnnotations.root_node_color;
+          color = SkeletonAnnotations.TracingOverlay.Settings.session.root_node_color;
         } else if (0 === this.numberOfChildren) {
-          color = SkeletonAnnotations.leaf_node_color;
+          color = SkeletonAnnotations.TracingOverlay.Settings.session.leaf_node_color;
         } else {
           // If none of the above applies, just colour according to the z difference.
           color = this.colorFromZDiff();
@@ -452,7 +452,7 @@
       this.colorCustom = function (baseColor) {
         if (SkeletonAnnotations.getActiveNodeId() === this.id) {
           // The active node is always in green:
-          return SkeletonAnnotations.getActiveNodeColor();
+          return SkeletonAnnotations.TracingOverlay.Settings.session.active_node_color;
         } else if (this.isroot) {
           return baseColor.clone().offsetHSL(0, 0, 0.25).getStyle();
         } else if (0 === this.numberOfChildren) {
@@ -476,19 +476,19 @@
         // zdiff is in sections, therefore the current section is at [0, 1) --
         // notice 0 is inclusive and 1 is exclusive.
         if (this.zdiff >= 1) {
-          return SkeletonAnnotations.inactive_skeleton_color_above;
+          return SkeletonAnnotations.TracingOverlay.Settings.session.inactive_skeleton_color_above;
         } else if (this.zdiff < 0) {
-          return SkeletonAnnotations.inactive_skeleton_color_below;
+          return SkeletonAnnotations.TracingOverlay.Settings.session.inactive_skeleton_color_below;
         } else if (SkeletonAnnotations.getActiveSkeletonId() === this.skeleton_id) {
           if (SkeletonAnnotations.isRealNode(this.id)) {
-            return SkeletonAnnotations.active_skeleton_color;
+            return SkeletonAnnotations.TracingOverlay.Settings.session.active_skeleton_color;
           } else {
-            return SkeletonAnnotations.active_skeleton_color_virtual;
+            return SkeletonAnnotations.TracingOverlay.Settings.session.active_skeleton_color_virtual;
           }
         } else if (SkeletonAnnotations.isRealNode(this.id)) {
-          return SkeletonAnnotations.inactive_skeleton_color;
+          return SkeletonAnnotations.TracingOverlay.Settings.session.inactive_skeleton_color;
         } else {
-          return SkeletonAnnotations.inactive_skeleton_color_virtual;
+          return SkeletonAnnotations.TracingOverlay.Settings.session.inactive_skeleton_color_virtual;
         }
       };
 
@@ -510,9 +510,9 @@
           return baseColor.clone().offsetHSL(-0.1, 0, 0).getStyle();
         } else if (SkeletonAnnotations.getActiveSkeletonId() === this.skeleton_id) {
           if (SkeletonAnnotations.isRealNode(this.id)) {
-            return SkeletonAnnotations.active_skeleton_color;
+            return SkeletonAnnotations.TracingOverlay.Settings.session.active_skeleton_color;
           } else {
-            return SkeletonAnnotations.active_skeleton_color_virtual;
+            return SkeletonAnnotations.TracingOverlay.Settings.session.active_skeleton_color_virtual;
           }
         } else if (SkeletonAnnotations.isRealNode(this.id)) {
           return baseColor.getStyle();
@@ -812,11 +812,11 @@
               height: bbox.height + pad});
 
           if (line) {
-            var lineColor = SkeletonAnnotations.active_skeleton_color;
+            var lineColor = SkeletonAnnotations.TracingOverlay.Settings.session.active_skeleton_color;
             if (r.z !== 0) {
               lineColor = (r.z < 0) ?
-                  SkeletonAnnotations.inactive_skeleton_color_above :
-                  SkeletonAnnotations.inactive_skeleton_color_below;
+                  SkeletonAnnotations.TracingOverlay.Settings.session.inactive_skeleton_color_above :
+                  SkeletonAnnotations.TracingOverlay.Settings.session.inactive_skeleton_color_below;
             }
             line.attr({x2: nodeX + r.x, y2: nodeY + r.y, stroke: lineColor});
           }

@@ -542,9 +542,10 @@
               }
             });
           }));
+
       // Node color settings: Title vs. SkeletonAnnotations field.
       var colors = new Map([
-        ['Active node', 'atn_fillcolor'],
+        ['Active node', 'active_node_color'],
         ['Active skeleton', 'active_skeleton_color'],
         ['Inactive skeleton', 'inactive_skeleton_color'],
         ['Active virtual node/edge', 'active_skeleton_color_virtual'],
@@ -559,7 +560,7 @@
         colors.forEach(function(field, label) {
           var input = colorControls.get(field);
           var color = $(input).find('input').val();
-          SkeletonAnnotations[field] = color;
+          SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE][field] = color;
         });
         // Update all tracing layers
         project.getStackViewers().forEach(function(sv) {
@@ -570,9 +571,12 @@
 
       var colorControls = new Map();
       colors.forEach(function(field, label) {
-        var color = SkeletonAnnotations[field];
+        var color = SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE][field];
         var input = CATMAID.DOM.createInputSetting(label, color);
-        this.append(input);
+        this.append(wrapSettingsControl(input,
+                                        SkeletonAnnotations.TracingOverlay.Settings,
+                                        field,
+                                        SETTINGS_SCOPE));
         var colorField = $(input).find('input');
         CATMAID.ColorPicker.enable(colorField, {
           initialColor: color,

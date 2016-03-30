@@ -69,6 +69,15 @@
             }));
       }
 
+      control.prepend($('<button class="settingsMetaToggle" />')
+          .button({
+              icons: {
+                primary: "ui-icon-gear"
+              },
+              text: false
+            })
+          .click(function () { meta.toggle(); }));
+
       return control.append(meta);
     };
 

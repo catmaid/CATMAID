@@ -777,7 +777,9 @@ function CMWTabbedNode( children )
 
   this.getWindows = function()
   {
-    return activeChild.getWindows();
+    return children.reduce(function (w, c) {
+      return w.concat(c.getWindows());
+    }, []);
   };
 
   this.redraw = function()

@@ -31,6 +31,13 @@ class SQL:
         ) sub(c)
     """
 
+    @staticmethod
+    def edited(table):
+        return """
+            SELECT 1 FROM {} t
+            WHERE t.id = %s AND (t.edition_time - %s::timestamptz < '1 ms'::interval)
+        """.format(table)
+
 class StateCheck:
     """A simple wraper arround state check SQL and parameters for it"""
 
@@ -51,15 +58,12 @@ def make_all_children_query(child_ids, node_id):
     else:
         return StateCheck(SQL.all_children % ("", "%s", ""), [node_id])
 
-def make_all_links_query(connector_ids, node_id):
-    if connector_ids:
-        table_sql, table_args = list_to_table(connector_ids, 2)
+def make_all_links_query(link_ids, node_id):
+    if link_ids:
+        table_sql, table_args = list_to_table(link_ids, 1)
         args = table_args
-        link_query = """
-            LEFT JOIN {} p(cid,rid) ON (l.connector_id = p.cid
-            AND l.relation_id = p.rid)
-        """.format(table_sql)
-        constraints = "AND p.cid IS NULL AND p.rid IS NULL"
+        link_query = " LEFT JOIN {} p(id) ON l.id = p.id ".format(table_sql)
+        constraints = "AND p.id IS NULL"
         args.append(node_id)
         return StateCheck(SQL.all_links % (link_query, "%s", constraints), args)
     else:
@@ -77,8 +81,8 @@ def list_to_table(l, n=1):
     records_list_template = ','.join(['%s'] * len(args))
     return ("(VALUES {0})".format(records_list_template), args)
 
-def has_only_truthy_values(element):
-    return 2 == len(element) and element[0] and element[1]
+def has_only_truthy_values(element, n=2):
+    return n == len(element) and element[0] and element[1]
 
 def parse_state(state):
     """Expect a JSON string and returned the parsed object."""
@@ -175,14 +179,16 @@ def collect_state_checks(node_id, state, cursor, node=False,
         state_checks.extend(StateCheck(SQL.is_child, (c[0],node_id)) for c in child_nodes)
 
     if links:
-        links = state['links']
+        links = state.get('links')
         if not isinstance(links, (list, tuple)):
-            raise ValueError("No valid state provided")
+            raise ValueError("No valid state provided, can't find list 'links'")
         if not all(has_only_truthy_values(e) for e in links):
             raise ValueError("No valid state provided, invalid links")
 
         state_checks.append(make_all_links_query(
-            [(int(l[0]), int(l[2])) for l in links], node[0]))
+            [int(l[0]) for l in links], node_id))
+        state_checks.extend(StateCheck(SQL.edited('treenode_connector'),
+            (l[0], l[1])) for l in links)
 
     return state_checks
 

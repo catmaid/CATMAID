@@ -101,6 +101,10 @@ Volumes:
   data mapped to it. The used zoom level (resolution) and the opacity can be
   adjusted and orthogonal stacks are supported, too.
 
+- When restricting connectors to those shared by groups, you can now choose
+  to include only those linking pre->post between the two groups in a specific
+  direction.
+
 
 Skeleton Projection layer:
 

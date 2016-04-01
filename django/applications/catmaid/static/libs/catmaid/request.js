@@ -78,6 +78,9 @@ RequestQueue = function(originUrl, csrfToken)
         break;
       case "function":
       case "object":
+        if (null === o[k]) {
+          break;
+        }
         if ( o[ k ].constructor == Array && o[ k ].length > 0 )
           q += encodeArray( o[ k ], r ) + "&";
         else

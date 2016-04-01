@@ -1159,8 +1159,7 @@ var WindowMaker = new function()
     connectorRestrictionsSl.options.add(new Option('All connectors', 'none', true, true));
     connectorRestrictionsSl.options.add(new Option('All shared connectors', 'all-shared'));
     connectorRestrictionsSl.options.add(new Option('All pre->post connectors', 'all-pre-post'));
-    connectorRestrictionsSl.options.add(new Option('All group shared', 'all-group-shared'));
-    connectorRestrictionsSl.options.add(new Option('All pre->post group shared', 'all-group-shared-pre-post'));
+    connectorRestrictionsSl.options.add(new Option('Group shared connectors', 'all-group-shared'));
     connectorRestrictionsSl.onchange = function () {
       WA.setConnectorRestriction(this.value);
     };

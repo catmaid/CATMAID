@@ -1041,12 +1041,13 @@
         var visible = inSource1.length > 0 && inSource2.length > 0;
         // If at least one pre-post-connection between the two groups is required,
         // check for this.
-        if (visible && onlyPrePost) {
+        if (visible && (onlyPrePost[0] || onlyPrePost[1])) {
           var preIn1 = inSource1.some(isPresynaptic);
           var preIn2 = inSource2.some(isPresynaptic);
           var postIn1 = inSource1.some(isPostsynaptic);
           var postIn2 = inSource2.some(isPostsynaptic);
-          visible = (preIn1 && postIn2 ) || (preIn2 && postIn1);
+          visible = (onlyPrePost[0] && preIn1 && postIn2) ||
+                    (onlyPrePost[1] && preIn2 && postIn1);
         }
 
         if (visible) {
@@ -1066,7 +1067,7 @@
    * two skeleton sources that form the groups between which connectors are
    * allowed.
    */
-  WebGLApplication.makeGroupShareConnectorFilter = function(onlyPrePost, callback) {
+  WebGLApplication.makeGroupShareConnectorFilter = function(callback) {
     var source1, source2;
 
     // Add skeleton source message and controls
@@ -1078,6 +1079,10 @@
         'that link neurons from one group to the other will be shown.');
     var source1Input = addSourceInput(dialog.dialog, "Source 1:");
     var source2Input = addSourceInput(dialog.dialog, "Source 2:");
+    var source1PrePost = dialog.appendCheckbox(
+        "Restrict to pre->post from source 1 to source 2");
+    var source2PrePost = dialog.appendCheckbox(
+        "Restrict to pre->post from source 2 to source 1");
 
     // Add handler for initiating the export
     dialog.onOK = function() {
@@ -1095,7 +1100,8 @@
       }
 
       var filter =  WebGLApplication.filterGroupSharedConnectors.bind(
-          this, group1, group2, onlyPrePost);
+          this, group1, group2,
+          [source1PrePost.checked, source2PrePost.checked]);
 
       if (CATMAID.tools.isFn(callback)) {
         callback(filter);
@@ -1108,7 +1114,7 @@
       }
     };
 
-    dialog.show(350, 250, true);
+    dialog.show(350, 320, true);
 
     function addSourceInput(d, name) {
       var select = document.createElement('select');
@@ -1135,10 +1141,8 @@
       this.options.connector_filter = WebGLApplication.filterSharedConnectors;
     } else if ('all-pre-post' === restriction) {
       this.options.connector_filter = WebGLApplication.filterPrePostConnectors;
-    } else if ('all-group-shared' === restriction ||
-        'all-group-shared-pre-post' === restriction) {
-      var onlyPrePost = 'all-group-shared-pre-post' === restriction;
-      WebGLApplication.makeGroupShareConnectorFilter(onlyPrePost, function(filter) {
+    } else if ('all-group-shared' === restriction) {
+      WebGLApplication.makeGroupShareConnectorFilter(function(filter) {
         if (filter) {
           self.options.connector_filter = filter;
           self.refreshRestrictedConnectors();

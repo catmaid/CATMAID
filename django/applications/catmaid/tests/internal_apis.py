@@ -20,6 +20,17 @@ class InternalApiTestsNoDB(TestCase):
         self.assertEqual(get_request_list(q2, 'a', map_fn=int), [1, 2, 3])
         self.assertEqual(get_request_list(q2, 'b'), None)
 
+        # Test list of lists [[1,2],[3,4]]
+        q3 = QueryDict('a[0][0]=1&a[0][1]=2&a[1][0]=3&a[1][1]=4')
+        self.assertEqual(get_request_list(q3, 'a'), [['1', '2'], ['3', '4']])
+        self.assertEqual(get_request_list(q3, 'a', map_fn=int), [[1, 2], [3, 4]])
+        self.assertEqual(get_request_list(q3, 'b'), None)
+
+        # Test list with single list [[1,2, 3]]
+        q4 = QueryDict('a[0][0]=1&a[0][1]=2&a[0][2]=3')
+        self.assertEqual(get_request_list(q4, 'a'), [['1', '2', '3']])
+        self.assertEqual(get_request_list(q4, 'a', map_fn=int), [[1, 2, 3]])
+
 class InternalApiTests(TestCase):
     fixtures = ['catmaid_testdata']
 

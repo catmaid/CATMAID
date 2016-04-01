@@ -21,6 +21,12 @@ def identity(x):
 def get_catmaid_version(request):
     return HttpResponse(json.dumps({'SERVER_VERSION': settings.VERSION}), content_type='application/json')
 
+class parsedict(dict):
+    """This is a simple wrapper, needed primarily by the request list
+    parser.
+    """
+    pass
+
 def get_request_list(request_dict, name, default=None, map_fn=identity):
     """Look for a list in a request dictionary where individual items are named
     with or without an index. Traditionally, the CATMAID web front-end sends
@@ -28,7 +34,51 @@ def get_request_list(request_dict, name, default=None, map_fn=identity):
     other APIs, like jQuery's $.ajax, will encode the same list as a=1, a=2,
     a=3. This method helps to parse both transparently.
     """
-    items = [map_fn(v) for k,v in request_dict.iteritems() if k.startswith(name + '[')]
+
+    def flatten(d, max_index):
+        """Flatten a dict of dicts into lists of lists. Expect all keys to be
+        integers.
+        """
+        k = []
+        for i in xrange(max_index):
+            v = d.get(i)
+            if not v:
+                continue
+            if parsedict == type(v):
+                k.append(flatten(v, max_index))
+            else:
+                k.append(v)
+        return k
+
+    def add_items(items, name):
+        d = parsedict()
+        max_index = -1
+        testname = name + '['
+        namelen = len(testname)
+        for k,v in items:
+            if k.startswith(testname):
+                # name[0][0] -> 0][0
+                index_part = k[namelen:len(k)-1]
+                indices = index_part.split('][')
+                target = d
+                # Fill in all but last index
+                for i in indices[:-1]:
+                    key = int(i)
+                    new_target = target.get(key)
+                    if (key > max_index):
+                        max_index = key
+                    if not new_target:
+                        new_target = parsedict()
+                        target[key] = new_target
+                    target = new_target
+
+                last_index = int(indices[-1])
+                if (last_index > max_index):
+                    max_index = last_index
+                target[last_index] = map_fn(v)
+        return flatten(d, max_index + 1)
+
+    items = add_items(request_dict.iteritems(), name)
     if items:
         return items
 

@@ -416,9 +416,8 @@
       var removeNode = CATMAID.Nodes.remove(state, projectId, nodeId);
 
       return removeNode.then(function(result) {
-        // Map ID of removed node to null to able to map the node created during
-        // undo back to the original.
-        map.add(map.NODE, nodeId, command);
+        map.add(map.NODE, mNode.value, mNode.timestamp, command);
+
         // Store information required for undo
         command.store('x', result.x);
         command.store('y', result.y);
@@ -558,13 +557,12 @@
           mParentId, mChildId, radius, confidence, useNeuron);
       return insert.then(function(result) {
         // Store ID of new node created by this command
-        map.add(map.NODE, result.treenode_id, command);
+        map.add(map.NODE, null, result.treenode_id, result.edition_time);
         command.store('nodeId', result.treenode_id);
-        // Prepare expected state for undo
-        var children = [[mChildId, result.child_edition_time]], links = [];
-        command.store("state", CATMAID.getNeighborhoodState(result.treenode_id,
-              result.edition_time, mParentId, result.parent_edition_time,
-              children, links));
+
+        if (childId) {
+          map.add(map.NODE, umChildId, mChildId, result.child_edition_time);
+        }
         done();
         return result;
       });

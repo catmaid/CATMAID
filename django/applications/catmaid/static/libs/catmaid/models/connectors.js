@@ -258,7 +258,7 @@
           map.get(map.CONNECTOR, connectorId),
           map.get(map.NODE, nodeId), linkType);
       return link.then(function(result) {
-        map.add(map.LINK, result.linkId, command);
+        map.add(map.LINK, result.linkId, result.linkEditTime, command);
         done();
         return result;
       });
@@ -286,7 +286,7 @@
           map.get(map.CONNECTOR, connectorId),
           map.get(map.NODE, nodeId));
       return link.then(function(result) {
-        map.add(map.LINK, result.linkId, command);
+        map.add(map.LINK, result.linkId, result.linkEditTime, command);
         command.store('linkType', result.linkType);
         done();
         return result;

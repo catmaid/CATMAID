@@ -112,7 +112,9 @@ def parse_state(state):
         parent = state.get('parent')
         if parent:
             check_ref('parent', parent)
-            parent[0] = parse_id('parent', parent[0])
+            # Allow parent to be None, as an alternative way to say there is no
+            # parent.
+            parent[0] = None if not parent[0] else parse_id('parent', parent[0])
         children = state.get('children')
         if children:
             if type(children) not in (list, tuple):

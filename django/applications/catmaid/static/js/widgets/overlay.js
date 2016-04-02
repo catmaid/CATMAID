@@ -1863,10 +1863,10 @@ SkeletonAnnotations.TracingOverlay.prototype.createNode = function (parentID, ch
       // Invoke callback if necessary
       if (afterCreate) afterCreate(self, nn);
     })
-  .catch(function(error) {
-    self.suspended = originalSuspended;
-    CATMAID.handleError(error);
-  });
+    .catch(function(error) {
+      self.suspended = originalSuspended;
+      CATMAID.handleError(error);
+    });
 };
 
 /**

@@ -173,9 +173,9 @@ def collect_state_checks(node_id, state, cursor, node=False,
             state_checks.append(StateCheck(SQL.is_root, (node_id,)))
 
     if children:
-        child_nodes = state['children']
+        child_nodes = state.get('children')
         if not isinstance(child_nodes, (list, tuple)):
-            raise ValueError("No valid state provided")
+            raise ValueError("No valid state provided, can't find list 'children'")
         if not all(has_only_truthy_values(e) for e in child_nodes):
             raise ValueError("No valid state provided, invalid children")
 

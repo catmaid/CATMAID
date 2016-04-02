@@ -42,7 +42,7 @@
    */
   CATMAID.getNodeState = function(nodeId, editionTime) {
     var state = {
-      "edition_time": editionTime,
+      "node": [nodeId, editionTime]
     };
     return JSON.stringify(state);
   };

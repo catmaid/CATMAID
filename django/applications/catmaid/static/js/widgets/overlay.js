@@ -751,8 +751,8 @@ SkeletonAnnotations.TracingOverlay.prototype.promiseNode = function(node)
     var y = self.stackViewer.primaryStack.stackToProjectY(node.z, node.y, node.x);
     var z = self.stackViewer.primaryStack.stackToProjectZ(node.z, node.y, node.x);
 
-    var command = new CATMAID.InsertNodeCommand(project.id, x, y, z, node.parent_id,
-        childId, node.radius, node.confidence);
+    var command = new CATMAID.InsertNodeCommand(self.state, project.id, x, y, z,
+        node.parent_id, childId, node.radius, node.confidence);
     return CATMAID.commands.execute(command)
       .then(function(result) {
         var nid = result.treenode_id;
@@ -1772,7 +1772,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeWithLink = function (
     pos_z, link_type, afterCreate)
 {
   var self = this;
-  var command = new CATMAID.CreateNodeCommand(undefined,
+  var command = new CATMAID.CreateNodeCommand(this.state,
       project.id, phys_x, phys_y, phys_z, -1, radius, confidence,
       undefined, SkeletonAnnotations.defaultNewNeuronName);
   CATMAID.commands.execute(command)
@@ -1822,20 +1822,10 @@ SkeletonAnnotations.TracingOverlay.prototype.createNode = function (parentID, ch
   var originalSuspended = this.suspended;
   this.suspended = true;
 
-  // Use non-type checking inequality, in case a string is provided
-  var state  = (parentID && -1 != parentID) ? this.getParentState(parentID) : undefined;
-  var state;
-  if (parentID && -1 != parentID) {
-    if (childId && -1 != childId) {
-      state = this.getEdgeState(childId, parentID);
-    } else {
-      state = this.getParentState(parentID);
-    }
-  }
   var command = childId ?
-    new CATMAID.InsertNodeCommand(state, project.id, phys_x, phys_y,
+    new CATMAID.InsertNodeCommand(this.state, project.id, phys_x, phys_y,
       phys_z, parentID, childId, radius, confidence, useneuron) :
-    new CATMAID.CreateNodeCommand(state, project.id, phys_x, phys_y,
+    new CATMAID.CreateNodeCommand(this.state, project.id, phys_x, phys_y,
       phys_z, parentID, radius, confidence, useneuron, neuronname);
   return CATMAID.commands.execute(command)
     .then(function(result) {
@@ -3866,7 +3856,7 @@ SkeletonAnnotations.TracingOverlay.prototype.deleteNode = function(nodeId) {
    */
   function deleteTreenode(node, wasActiveNode) {
     // Make sure all other pending tasks are done before the node is deleted.
-    var command = new CATMAID.RemoveNodeCommand(self.getState(node.id), project.id, node.id);
+    var command = new CATMAID.RemoveNodeCommand(self.state, project.id, node.id);
     var delFn = CATMAID.commands.execute.bind(CATMAID.commands, command);
 
     self.submit.then(delFn).then(function(json) {

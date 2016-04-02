@@ -519,6 +519,14 @@ SkeletonAnnotations.getZOfVirtualNode = SkeletonAnnotations.getVirtualNodeCompon
 SkeletonAnnotations.activeSkeleton = new CATMAID.ActiveSkeleton();
 
 /**
+ * Convert a tracing layer node to a minimal list representation, useful for
+ * state generation.
+ */
+var nodeToStateList = function(n) {
+  return [n.id, n.edition_time];
+};
+
+/**
  * The constructor for TracingOverlay.
  */
 SkeletonAnnotations.TracingOverlay = function(stackViewer, options) {
@@ -539,6 +547,46 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, options) {
   this.show_labels = options.show_labels || false;
   /** Indicate if this overlay is suspended and won't update nodes on redraw. */
   this.suspended = options.suspended || false;
+  /** An accessor to the internal nodes array to get information about the
+   * layer's current state */
+  var self = this;
+  this.state = new CATMAID.GenericState({
+    getNode: function(nodeId) {
+      var node = self.nodes[nodeId];
+      return nodeToStateList(node);
+    },
+    getParent: function(nodeId) {
+      var node = self.nodes[nodeId];
+      if (!node || !node.parent) {
+        return undefined;
+      }
+      return nodeToStateList(node.parent);
+    },
+    getChildren: function(nodeId) {
+      var node = self.nodes[nodeId];
+      if (!node || !node.children) {
+        return undefined;
+      }
+      var children = [];
+      for (var cid in node.children) {
+        var child = node.children[cid];
+        children.push(nodeToStateList(child));
+      }
+      return children;
+    },
+    getLinks: function(nodeId) {
+      var node = self.nodes[nodeId];
+      if (!node || !node.connectors) {
+        return undefined;
+      }
+      var links = [];
+      for (var cid in node.connectors) {
+        var c = node.connectors[cid];
+        links.push([c.id, c.edition_time]);
+      }
+      return links;
+    },
+  });
 
   /* Variables keeping state for toggling between a terminal and its connector. */
   this.switchingConnectorID = null;

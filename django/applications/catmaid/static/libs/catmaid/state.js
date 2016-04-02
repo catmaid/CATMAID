@@ -63,7 +63,8 @@
    */
   CATMAID.getParentState = function(parentId, parentEditTime) {
     var state = {
-      "parent": [parentId, parentEditTime]
+      // Make sure root nodes get represented properly
+      "parent": [parentId || -1, parentEditTime || ""]
     };
     return JSON.stringify(state);
   };
@@ -88,5 +89,143 @@
     };
     return JSON.stringify(state);
   };
+
+  var testNoCheckState = CATMAID.getNoCheckState();
+  CATMAID.isNoCheckState = function(state) {
+    return testNoCheckState == state;
+  };
+
+  var get_or_error = function(obj, field) {
+    if (obj[field]) {
+      return obj[field];
+    }
+    throw new CATMAID.ValueError("Couldn't read field \"" +
+        field + "\" for state initialization");
+  };
+
+  /**
+   * A generic state doesn't manage nodes itself, but delegates to functions
+   * passed in as parameter on construction. These functions are expected to
+   * return a two-element list for each node: [id, edition_time].
+   */
+  var GenericState = function(options) {
+    this.getNode = get_or_error(options, 'getNode');
+    this.getParent = get_or_error(options, 'getParent');
+    this.getChildren = get_or_error(options, 'getChildren');
+    this.getLinks = get_or_error(options, 'getLinks');
+  };
+
+  GenericState.prototype.makeNodeState = function(nodeId) {
+    var node = this.getNode(nodeId);
+    if (!node) {
+      throw new CATMAID.ValueError("Couldn't find node " + nodeId + " in state");
+    }
+    return CATMAID.getNodeState(node[0], node[1]);
+  };
+
+  GenericState.prototype.makeParentState = function(nodeId) {
+    var parent;
+    if (nodeId) {
+      parent = this.getNode(nodeId);
+      if (!parent) {
+        throw new CATMAID.ValueError("Couldn't find node " + nodeId + " in state");
+      }
+    } else {
+      // If no node ID is passed in, a "no parent" state is created
+      parent = [-1, ""];
+    }
+    return CATMAID.getParentState(parent[0], parent[1]);
+  };
+
+  GenericState.prototype.makeEdgeState = function(nodeId, parentId) {
+    var node = this.getNode(nodeId);
+    var parent = this.getNode(parentId);
+    if (!node) {
+      throw new CATMAID.ValueError("Couldn't find node " + nodeId + " in state");
+    }
+    if (!parent) {
+      throw new CATMAID.ValueError("Couldn't find parent node " + nodeId + " in state");
+    }
+    return CATMAID.getEdgeState(parent[0], parent[1], node[0], node[1]);
+  };
+
+  GenericState.prototype.makeNeighborhoodState = function(nodeId) {
+    var node = this.getNode(nodeId);
+    var parent = this.getParent(nodeId);
+    if (!node) {
+      throw new CATMAID.ValueError("Couldn't find node " + nodeId + " in state");
+    }
+    if (!parent) {
+      throw new CATMAID.ValueError("Couldn't find parent of node " + nodeId + " in state");
+    }
+    return CATMAID.getNeighborhoodState(node[0], node[1], parent[0], parent[1],
+        this.getChildren(nodeId), this.getLinks(nodeId));
+  };
+
+  CATMAID.GenericState = GenericState;
+
+
+  /**
+   * This state represents only a local node centered part. If passed in, node
+   * and parent are expected to be two-element lists with ID and edition time.
+   * Children and links are expected to be lists of such two-element lists.
+   * There is no extra check performed whether the passed in data is correct.
+   */
+  var LocalState = function(node, parent, children, links) {
+    this.node = node;
+    this.parent = parent;
+    this.children = children;
+    this.links = links;
+    this.nodes = {};
+  };
+
+  LocalState.prototype = Object.create(GenericState.prototype);
+  LocalState.constructor = LocalState;
+
+  LocalState.prototype.getNode = function(nodeId) {
+    return (this.node && this.node[0] == nodeId) ? this.node : undefined;
+  };
+
+  LocalState.prototype.makeParentState = function(nodeId) {
+    if (!this.parent) {
+      throw new CATMAID.ValueError("Couldn't find node " + nodeId + " to create parent state");
+    }
+    return CATMAID.getParentState(this.parent[0], this.parent[1]);
+  };
+
+  LocalState.prototype.getParent = function(nodeId) {
+    return this.parent;
+  };
+
+  LocalState.prototype.getChildren = function(nodeId) {
+    return this.children;
+  };
+
+  LocalState.prototype.getLinks = function(nodeId) {
+    return this.links;
+  };
+
+  // Export local state
+  CATMAID.LocalState = LocalState;
+
+  // A function to return undefined, just to be explicit.
+  function returnUndefined() {}
+
+  /**
+   * A no-check implementation returns undefined for all nodes and the created
+   * state serializations trigger the back-end to disable state checking.
+   */
+  var NoCheckState = function() {};
+  NoCheckState.prototype.getNode = returnUndefined;
+  NoCheckState.prototype.getParent = returnUndefined;
+  NoCheckState.prototype.getChildren = returnUndefined;
+  NoCheckState.prototype.getLinks = returnUndefined;
+  NoCheckState.prototype.makeNodeState = CATMAID.getNoCheckState;
+  NoCheckState.prototype.makeParentState = CATMAID.getNoCheckState;
+  NoCheckState.prototype.makeEdgeState = CATMAID.getNoCheckState;
+  NoCheckState.prototype.makeNeighborhoodState = CATMAID.getNoCheckState;
+
+  // Export no-check state
+  CATMAID.NoCheckState = NoCheckState;
 
 })(CATMAID);

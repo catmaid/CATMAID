@@ -725,7 +725,9 @@ def delete_treenode(request, project_id=None):
         })
 
     except Exception as e:
-        raise Exception(response_on_error + ': ' + str(e))
+        import traceback
+        raise Exception("%s: %s %s" % (response_on_error, str(e),
+                                       str(traceback.format_exc())))
 
 
 def _treenode_info(project_id, treenode_id):

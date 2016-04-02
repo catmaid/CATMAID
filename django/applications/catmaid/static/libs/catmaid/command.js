@@ -54,7 +54,7 @@
    *                              command the mapping of original IDs to changed
    *                              IDs. If not provided, a global default map is used.
    */
-  Command.prototype.execute = function(state, mapper) {
+  Command.prototype.execute = function(mapper) {
     if (!this.initialized) {
       throw new CATMAID.Error('Commands need to be initialized before execution');
     }

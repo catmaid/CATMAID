@@ -640,6 +640,11 @@ def delete_treenode(request, project_id=None):
     treenode = Treenode.objects.get(pk=treenode_id)
     parent_id = treenode.parent_id
 
+    # Get information about linked connectors
+    links = list(TreenodeConnector.objects.filter(project_id=project_id,
+            treenode_id=treenode_id).values_list('id', 'relation_id',
+            'connector_id', 'confidence'))
+
     response_on_error = ''
     deleted_neuron = False
     try:
@@ -704,13 +709,14 @@ def delete_treenode(request, project_id=None):
 
         # Remove treenode
         response_on_error = 'Could not delete treenode.'
-        Treenode.objects.filter(pk=treenode_id).delete()
+        Treenode.objects.filter(project_id=project_id, pk=treenode_id).delete()
         return JsonResponse({
             'x': treenode.location_x,
             'y': treenode.location_y,
             'z': treenode.location_z,
             'parent_id': parent_id,
             'children': children,
+            'links': links,
             'radius': treenode.radius,
             'confidence': treenode.confidence,
             'skeleton_id': treenode.skeleton_id,

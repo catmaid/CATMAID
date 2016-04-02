@@ -57,6 +57,11 @@ included in this changelog.
   one list with all links (index 5), each link is represented as
   [<treenode_id>, <relation_id>, <link_confidence>].
 
+`POST /{project_id}/treenode/delete`:
+
+- A list of removed links is now returned as well. Each entry has the following
+  format: [<link-id>, <relation-id>, <connector-id>, <confidecen>].
+
 ### Deprecations
 
 None.

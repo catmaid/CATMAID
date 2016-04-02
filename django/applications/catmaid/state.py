@@ -4,9 +4,13 @@ import decimal
 from django.db import connection
 
 class SQL:
+    # There is unfortunately no abs() for intervals in Postgres
     was_edited = """
-        SELECT 1 FROM treenode t
-        WHERE t.id = %s AND (t.edition_time - %s::timestamptz < '1 ms'::interval)
+        SELECT 1 FROM treenode t,
+        LATERAL (SELECT (t.edition_time - %s::timestamptz) as i) sub
+        WHERE t.id = %s
+        AND sub.i < '1 ms'::interval
+        AND sub.i > '-1 ms'::interval
     """
     is_parent = """
         SELECT 1 FROM treenode t
@@ -142,7 +146,7 @@ def collect_state_checks(node_id, state, cursor, node=False,
         node = [node_id, state['edition_time']]
 
         # Make sure the node itself is valid
-        state_checks = [StateCheck(SQL.was_edited, (node[0], node[1]))]
+        state_checks = [StateCheck(SQL.was_edited, (node[1], node[0]))]
     else:
         node = [node_id]
 
@@ -162,7 +166,7 @@ def collect_state_checks(node_id, state, cursor, node=False,
                 if parent_id == node_id:
                     raise ValueError("No valid state provided, parent is same as node ({})".format(parent_id))
                 state_checks.append(StateCheck(SQL.is_parent, (parent_id, node_id)))
-            state_checks.append(StateCheck(SQL.was_edited, (parent_id, parent[1])))
+            state_checks.append(StateCheck(SQL.was_edited, (parent[1], parent_id)))
         else:
             state_checks.append(StateCheck(SQL.is_root, (node_id,)))
 
@@ -175,7 +179,7 @@ def collect_state_checks(node_id, state, cursor, node=False,
 
         state_checks.append(make_all_children_query(
             [int(c[0]) for c in child_nodes], node_id))
-        state_checks.extend(StateCheck(SQL.was_edited, (c[0], c[1])) for c in child_nodes)
+        state_checks.extend(StateCheck(SQL.was_edited, (c[1], c[0])) for c in child_nodes)
         state_checks.extend(StateCheck(SQL.is_child, (c[0],node_id)) for c in child_nodes)
 
     if links:
@@ -236,7 +240,7 @@ def validate_state(node_ids, state, node=False, is_parent=False,
                     raise ValueError("Couldn't find node in state: {}".format(node_id))
             state_checks = []
             for node_state in state:
-                state_checks.append(StateCheck(SQL.was_edited, (node_state[0], node_state[1])))
+                state_checks.append(StateCheck(SQL.was_edited, (node_state[1], node_state[0])))
             check_state(state, state_checks, cursor)
         else:
             check_sets = [collect_state_checks(n, state, cursor, node=node,

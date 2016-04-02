@@ -449,10 +449,28 @@
       var removeNode = CATMAID.Nodes.remove(execState, projectId, mNode.value);
 
       return removeNode.then(function(result) {
-        map.add(map.NODE, mNode.value, mNode.timestamp, command);
-
-        // TODO: Update mapping of children and links (timestamp changes)
-        // state.update(nodeId, nodeEditTime);
+        // Even though the node and potentially some links were removed, the
+        // previous node and links IDs need to be stored. The reason being that
+        // undo should mep the newly created node to the original values
+        map.add(map.NODE, umNode[0], umNode[1], command);
+        if (result.links) {
+          result.links.forEach(function(l) {
+            // Find removed link in mapped links
+            for (var i=0, max=mLinks.length; i<max; ++i) {
+              var link = mLinks[i];
+              if (link && link[0] == l[0]) {
+                map.add(map.LINK, link[0], link[1], command);
+                break;
+              }
+            }
+          });
+        }
+        // Update mapping of children
+        if (result.children) {
+          result.children.forEach(function(c) {
+            map.add(map.NODE, c[0], c[1], command);
+          });
+        }
 
         // Store information required for undo
         command.store('x', result.x);
@@ -522,7 +540,17 @@
       return create.then(function(result) {
         // Store ID of new node created by this command
         map.add(map.NODE, result.treenode_id, result.edition_time, command);
-        // TODO: Map ID change of children and links
+        // Map ID change of children and links
+        if (result.children) {
+          result.children.forEach(function(c) {
+            map.add(map.LINK, c[0], c[1], command);
+          });
+        }
+        if (result.created_links) {
+          result.created_links.forEach(function(l) {
+            map.add(map.LINK, l[0], l[1], command);
+          });
+        }
         done();
         return result;
       });

@@ -2012,7 +2012,9 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
         var link = {
           'treenode': node,
           'relation_id': r[1],
-          'confidence': r[2]
+          'confidence': r[2],
+          'edition_time': r[3],
+          'id': r[4]
         };
         connector[group][tnid] = link;
         node.linkConnector(connector.id, link);

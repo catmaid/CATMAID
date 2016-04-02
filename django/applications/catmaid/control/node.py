@@ -225,7 +225,8 @@ def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_pr
                 tc.relation_id,
                 tc.treenode_id,
                 tc.confidence,
-                c.edition_time,
+                tc.edition_time,
+                tc.id,
                 c.user_id
             FROM treenode_connector tc
             INNER JOIN connector c ON (tc.connector_id = c.id)
@@ -247,7 +248,8 @@ def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_pr
             treenode_connector.relation_id,
             treenode_connector.treenode_id,
             treenode_connector.confidence,
-            connector.edition_time,
+            treenode_connector.edition_time,
+            treenode_connector.id,
             connector.user_id
         FROM connector LEFT OUTER JOIN treenode_connector
                        ON connector.id = treenode_connector.connector_id
@@ -289,7 +291,9 @@ def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_pr
                 # row[5]: treenode_relation_id
                 # row[6]: treenode_id (tnid above)
                 # row[7]: tc_confidence
-                links[cid].append((tnid, row[5], row[7]))
+                # row[8]: tc_edition_time
+                # row[9]: tc_id
+                links[cid].append((tnid, row[5], row[7], row[8], row[9]))
                 used_relations.add(row[5])
 
             # Collect unique connectors
@@ -302,7 +306,7 @@ def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_pr
             c = connectors[i]
             cid = c[0]
             connectors[i] = (cid, c[1], c[2], c[3], c[4], links[cid], c[8],
-                    is_superuser or c[9] == user_id or c[9] in domain)
+                    is_superuser or c[10] == user_id or c[10] in domain)
 
 
         # Fetch missing treenodes. These are related to connectors

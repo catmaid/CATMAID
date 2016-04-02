@@ -48,7 +48,8 @@ included in this changelog.
 
 `POST /{project_id}/node/list`:
 
-- Edition times of nodes and connectors are now returned as well.
+- Edition times of nodes and connectors-links are now returned, too. Therefore
+  some array indices changed.
 
 - Link and connector types are now returned in a more general fashion. Instead
   of providing four different arrays for pre, post, gap-junction and other

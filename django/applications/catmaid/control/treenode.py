@@ -68,23 +68,37 @@ def create_treenode(request, project_id=None):
     for p in string_values.keys():
         params[p] = request.POST.get(p, string_values[p])
 
+    # Get optional initial links to connectors, expect each entry to be a list
+    # of connector ID, relation ID and confidence.
+    links = get_request_list(request.POST, 'links', [], map_fn=int)
+
     # Make sure the back-end is in the expected state if the node should have a
     # parent and will therefore become part of another skeleton.
-    parent_id = params['parent_id']
-    if parent_id and parent_id != -1:
+    parent_id = int(params['parent_id'])
+    has_parent = parent_id and parent_id != -1
+    has_links = bool(links)
+    if has_parent:
         state.validate_state(parent_id, request.POST.get('state'),
-                parent_edittime=True, lock=True)
+                parent_edittime=has_parent, lock=True)
 
     new_treenode = _create_treenode(project_id, request.user, request.user,
             params['x'], params['y'], params['z'], params['radius'],
             params['confidence'], params['useneuron'], params['parent_id'],
             neuron_name=request.POST.get('neuron_name', None))
 
+    # Create all initial links
+    if links:
+        created_links = _create_connector_link(project_id, request.user.id,
+                new_treenode.treenode_id, new_treenode.skeleton_id, links);
+    else:
+        created_links = []
+
     return JsonResponse({
         'treenode_id': new_treenode.treenode_id,
         'skeleton_id': new_treenode.skeleton_id,
         'edition_time': new_treenode.edition_time,
-        'parent_edition_time': new_treenode.parent_edition_time
+        'parent_edition_time': new_treenode.parent_edition_time,
+        'created_links': created_links
     })
 
 @requires_user_role(UserRole.Annotate)
@@ -118,6 +132,13 @@ def insert_treenode(request, project_id=None):
     # information: the child state for the paren.
     takeover_child_ids = get_request_list(request.POST,
             'takeover_child_ids', None, lambda x: int)
+
+    # Get optional initial links to connectors, expect each entry to be a list
+    # of connector ID and relation ID.
+    try:
+        links = get_request_list(request.POST, 'links', [], lambda x: [int(x[0]), x[1]])
+    except:
+        raise ValueError("Couldn't parse list parameter")
 
     # Make sure the back-end is in the expected state if the node should have a
     # parent and will therefore become part of another skeleton.
@@ -182,14 +203,51 @@ def insert_treenode(request, project_id=None):
         raise ValueError("Couldn't update parent of inserted node's child: " + child.id)
     child_edition_times = [[k,v] for k,v in result]
 
+    # Create all initial links
+    if links:
+        created_links = _create_connector_link(project_id, request.user.id,
+                new_treenode.treenode_id, new_treenode.skeleton_id, links);
+    else:
+        created_links = []
+
     return JsonResponse({
         'treenode_id': new_treenode.treenode_id,
         'skeleton_id': new_treenode.skeleton_id,
         'edition_time': new_treenode.edition_time,
         'parent_edition_time': new_treenode.parent_edition_time,
-        'child_edition_times': child_edition_times
+        'child_edition_times': child_edition_times,
+        'created_links': created_links
     })
 
+def _create_connector_link(project_id, user_id, treenode_id, skeleton_id,
+        links, cursor=None):
+    """Create new connector links for the passded in treenode. What relation and
+    confidence is used to which connector is specified in the "links"
+    paremteter. A list of three-element lists, following the following format:
+    [<connector-id>, <relation-id>, <confidence>]
+    """
+    def make_row(l):
+        # Passed in links are expected to follow this format:
+        # [<connector-id>, <relation-id>, <confidence>]
+        if 3 != len(l):
+            raise ValueError("Invalid link information provided")
+        connector_id, relation_id, confidence = l[0], l[1], l[2]
+        return (user_id, project_id, relation_id, treenode_id, connector_id,
+                skeleton_id, confidence)
+
+    new_link_rows = [make_row(l) for l in links]
+    new_link_data = [x for e in new_link_rows for x in e]
+    cursor = cursor or connection.cursor()
+    link_template = ",".join(("({})".format(",".join(("%s",) * 7)),) * len(links))
+
+    cursor.execute("""
+        INSERT INTO treenode_connector (user_id, project_id, relation_id,
+                    treenode_id, connector_id, skeleton_id, confidence)
+        VALUES {}
+        RETURNING id, edition_time
+        """.format(link_template), new_link_data)
+
+    return cursor.fetchall()
 
 class NewTreenode(object):
     """Represent a newly created treenode and all the information that is

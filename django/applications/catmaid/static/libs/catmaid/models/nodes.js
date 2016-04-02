@@ -179,11 +179,14 @@
      * @param {integer[]} takeoverChildIds (Optional) A list of child IDs of
      *                                     the current parent that should be
      *                                     taken over by the inserted node
+     * @param {integer[][]} links  (Optional) A list of two-element lists
+     *                             [<connector-id>, <relation-id>] for which new
+     *                             connector links will be created.
      *
      * @returns a promise that is resolved once the treenode is created
      */
     insert: function(state, projectId, x, y, z, parentId, childId, radius,
-        confidence, useNeuron, takeoverChildIds) {
+        confidence, useNeuron, takeoverChildIds, links) {
       CATMAID.requirePermission(projectId, 'can_annotate',
           'You don\'t have have permission to create a new node');
 
@@ -198,6 +201,7 @@
         confidence: confidence,
         useneuron: useNeuron,
         takeover_child_ids: takeoverChildIds,
+        links: links,
         state: state
       };
 

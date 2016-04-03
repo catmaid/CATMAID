@@ -237,10 +237,15 @@ def validate_state(node_ids, state, node=False, is_parent=False,
         cursor = cursor or connection.cursor()
         if multinode:
             node_id_set = set(node_ids)
+            unseen = set(node_ids)
             for node_state in state:
                 node_id = node_state[0]
                 if node_id not in node_id_set:
                     raise ValueError("Couldn't find node in state: {}".format(node_id))
+                unseen.remove(node_id)
+            if len(unseen) > 0:
+                raise ValueError("Couldn't find state info on node(s) {}".format(
+                    ", ".join(str(n) for n in unseen)))
             state_checks = []
             for node_state in state:
                 state_checks.append(StateCheck(SQL.was_edited,
@@ -275,7 +280,7 @@ def lock_nodes(node_ids, cursor):
         raise ValueError("No nodes to lock")
 
 def is_disabled(state):
-    return state and True == state.get('nocheck')
+    return state and type(state) == dict and True == state.get('nocheck')
 
 def make_nocheck_state(parsed=False):
     """Get a state representation that causes skipping of actual state checks.

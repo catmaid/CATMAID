@@ -132,6 +132,16 @@ class StateCheckingTest(CatmaidTestCase):
         self.assertEqual(len(checks1), 1)
         self.assertRaises(ValueError, lambda: state.check_state(ps1, checks1, cursor))
 
+        s2 = {
+            # 1/10 second difference
+            'edition_time': '2011-12-05T13:51:36.855Z'
+        }
+        ps2 = state.parse_state(json.dumps(s2))
+
+        checks2 = state.collect_state_checks(247, ps2, cursor, node=True)
+        self.assertEqual(len(checks2), 1)
+        self.assertRaises(ValueError, lambda: state.check_state(ps2, checks2, cursor))
+
     def test_correct_node_state(self):
         s1 = {
             'edition_time': '2011-12-05T13:51:36.955Z'
@@ -143,8 +153,23 @@ class StateCheckingTest(CatmaidTestCase):
 
         state.check_state(ps1, checks1, cursor)
 
-    def test_multinode_state(self):
-        pass
+    def test_correct_multinode_state(self):
+        ps1 = [
+            [247, '2011-12-05T13:51:36.955Z'],
+            [249, '2011-12-05T13:51:36.955Z'],
+            [251, '2011-12-05T13:51:36.955Z']
+        ]
+        s1 = json.dumps(ps1)
+        # Expect this state to validate cleanly
+        state.validate_state([247, 249, 251], s1, multinode=True)
+
+        # Expect wrong input list to cause error
+        self.assertRaises(ValueError,
+                lambda: state.validate_state([247, 249], s1, multinode=True))
+        self.assertRaises(ValueError,
+                lambda: state.validate_state([247, 249, 253], s1, multinode=True))
+        self.assertRaises(ValueError,
+                lambda: state.validate_state([247, 249, 251, 253], s1, multinode=True))
 
     def test_parent_state(self):
         pass

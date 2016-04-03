@@ -39,15 +39,15 @@ class StateCheckingTest(CatmaidTestCase):
         cursor.execute(lock_query)
         locks2 = cursor.fetchall()
         print locks2
-        
+
         intersection = set(locks1) & set(locks2)
         only_before = set(locks1) - intersection
         print "only in before", only_before
         only_after = set(locks2) - intersection
         print "Only in after", only_after
         # Assert only after has the lock is only after the lock call there
-        # TODO: Does it actually work !?!?! 
-        
+        # TODO: Does it actually work !?!?!
+
 
     def test_parsed_nocheck_state_creation(self):
         nocheck_state = state.make_nocheck_state(parsed=True)
@@ -171,14 +171,130 @@ class StateCheckingTest(CatmaidTestCase):
         self.assertRaises(ValueError,
                 lambda: state.validate_state([247, 249, 251, 253], s1, multinode=True))
 
-    def test_parent_state(self):
-        pass
+    def test_wrong_multinode_state(self):
+        ps1 = [
+            [247, '2011-12-05T13:51:36.955Z'],
+            [249, '3011-12-05T13:51:36.955Z'],
+            [251, '2011-12-05T13:51:36.955Z']
+        ]
+        s1 = json.dumps(ps1)
+        self.assertRaises(ValueError,
+                lambda: state.validate_state([247, 249, 251], s1, multinode=True))
 
-    def test_edge_state(self):
-        pass
+        s2 = json.dumps([])
+        self.assertRaises(ValueError,
+                lambda: state.validate_state([247, 249, 251], s2, multinode=True))
 
-    def test_child_state(self):
-        pass
+        s3 = json.dumps({})
+        self.assertRaises(ValueError,
+                lambda: state.validate_state([247, 249, 251], s3, multinode=True))
+
+    def test_correct_parent_state(self):
+        ps1 = {
+            'parent': [249, '2011-12-05T13:51:36.955Z']
+        }
+        s1 = json.dumps(ps1)
+        state.validate_state(251, s1, is_parent=True, parent_edittime=True)
+        state.validate_state(251, s1, is_parent=True, parent_edittime=False)
+        state.validate_state(251, s1, is_parent=False, parent_edittime=True)
+        state.validate_state(247, s1, is_parent=False, parent_edittime=True)
+        self.assertRaises(ValueError,
+                lambda: state.validate_state(247, s1, is_parent=True, parent_edittime=True))
+
+    def test_wrong_parent_state(self):
+        ps1 = {
+            'parent': [249, '1011-12-05T13:51:36.955Z']
+        }
+        s1 = json.dumps(ps1)
+        self.assertRaises(ValueError,
+                lambda: state.validate_state(251, s1, is_parent=True, parent_edittime=True))
+
+        s2 = json.dumps([])
+        self.assertRaises(ValueError,
+                lambda: state.validate_state(251, s1, is_parent=True, parent_edittime=True))
+
+        s3 = json.dumps({})
+        self.assertRaises(ValueError,
+                lambda: state.validate_state(251, s3, is_parent=True, parent_edittime=True))
+
+    def test_correct_edge_state(self):
+        ps1 = {
+            'children': [[251, '2011-12-05T13:51:36.955Z']],
+            'parent': [249, '2011-12-05T13:51:36.955Z']
+        }
+        s1 = json.dumps(ps1)
+        # Expect this state to validate cleanly
+        state.validate_state(249, s1, edge=True)
+
+    def test_wrong_edge_state(self):
+        ps1 = {
+            'children': [[247, '2011-12-05T13:51:36.955Z']],
+            'parent': [249, '2011-12-05T13:51:36.955Z']
+        }
+        s1 = json.dumps(ps1)
+        # Expect this state to validate cleanly
+        self.assertRaises(ValueError, lambda: state.validate_state(249, s1, edge=True))
+
+        ps2 = {
+            'children': [[251, '1011-12-05T13:51:36.955Z']],
+            'parent': [249, '2011-12-05T13:51:36.955Z']
+        }
+        s2 = json.dumps(ps2)
+        # Expect this state to validate cleanly
+        self.assertRaises(ValueError, lambda: state.validate_state(249, s2, edge=True))
+
+        ps3 = {
+            'children': [],
+            'parent': [249, '2011-12-05T13:51:36.955Z']
+        }
+        s3 = json.dumps(ps3)
+        # Expect this state to validate cleanly
+        self.assertRaises(ValueError, lambda: state.validate_state(249, s3, edge=True))
+
+        ps4 = {
+            'children': [[251, '2011-12-05T13:51:36.955Z']],
+            'parent': [249, '2011-12-05T13:51:36.955Z']
+        }
+        s4 = json.dumps(ps4)
+        # Expect this state to validate cleanly
+        self.assertRaises(ValueError, lambda: state.validate_state(251, s4, edge=True))
+
+    def test_correct_child_state(self):
+        ps1 = {
+            'children': [[251, '2011-12-05T13:51:36.955Z']],
+        }
+        s1 = json.dumps(ps1)
+        # Expect this state to validate cleanly
+        state.validate_state(249, s1, children=True)
+
+    def test_wrong_child_state(self):
+        ps1 = {
+            'children': [[247, '2011-12-05T13:51:36.955Z']],
+        }
+        s1 = json.dumps(ps1)
+        # Expect this state to validate cleanly
+        self.assertRaises(ValueError, lambda: state.validate_state(249, s1, children=True))
+
+        ps2 = {
+            'children': [[251, '1011-12-05T13:51:36.955Z']],
+        }
+        s2 = json.dumps(ps2)
+        # Expect this state to validate cleanly
+        self.assertRaises(ValueError, lambda: state.validate_state(249, s2, children=True))
+
+        ps3 = {
+            'children': [],
+        }
+        s3 = json.dumps(ps3)
+        # Expect this state to validate cleanly
+        self.assertRaises(ValueError, lambda: state.validate_state(249, s3, children=True))
+
+        ps4 = {
+            'children': [[251, '2011-12-05T13:51:36.955Z']],
+        }
+        s4 = json.dumps(ps4)
+        # Expect this state to validate cleanly
+        self.assertRaises(ValueError, lambda: state.validate_state(251, s4, children=True))
 
     def test_link_state(self):
         pass

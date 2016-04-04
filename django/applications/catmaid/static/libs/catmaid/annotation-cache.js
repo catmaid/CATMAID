@@ -46,30 +46,18 @@
 
   AnnotationCache.prototype.update = function(callback) {
     requestQueue.register(django_url + project.id + '/annotations/',
-        'POST', {}, (function (status, data, text) {
-          var e = $.parseJSON(data);
-          if (status !== 200) {
-              alert("The server returned an unexpected status (" +
-                status + ") " + "with error message:\n" + text);
-          } else {
-            if (e.error) {
-              new CATMAID.ErrorDialog(e.error, e.detail).show();
-            } else {
-              // Empty cache
-              this.annotation_ids = {};
-              this.annotation_names = {};
-              // Populate cache
-              e.annotations.forEach((function(a) {
-               this.annotation_ids[a.name] = a.id;
-               this.annotation_names[a.id] = a.name;
-              }).bind(this));
-              // Call back, if requested
-              if (callback) {
-                callback();
-              }
-            }
-          }
-        }).bind(this));
+        'POST', {}, CATMAID.jsonResponseHandler(function (json) {
+            // Empty cache
+            this.annotation_ids = {};
+            this.annotation_names = {};
+            // Populate cache
+            json.annotations.forEach(function (a) {
+             this.annotation_ids[a.name] = a.id;
+             this.annotation_names[a.id] = a.name;
+            }, this);
+            // Call back, if requested
+            CATMAID.tools.callIfFn(callback);
+          }).bind(this));
   };
 
   /**

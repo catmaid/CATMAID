@@ -296,11 +296,90 @@ class StateCheckingTest(CatmaidTestCase):
         # Expect this state to validate cleanly
         self.assertRaises(ValueError, lambda: state.validate_state(251, s4, children=True))
 
-    def test_link_state(self):
-        pass
+    def test_correct_link_state(self):
+        ps1 = {
+            'links': [[360, '2011-12-20T10:46:01.360Z'],
+                      [372, '2011-12-20T10:46:01.360Z']],
+        }
+        s1 = json.dumps(ps1)
+        state.validate_state(285, s1, links=True)
 
-    def test_neighborhood_state(self):
-        pass
+    def test_wrong_link_state(self):
+        ps1 = {
+            'links': [[360, '1011-12-20T10:46:01.360Z'],
+                      [372, '2011-12-20T10:46:01.360Z']],
+        }
+        s1 = json.dumps(ps1)
+        # Expect this state to validate cleanly
+        self.assertRaises(ValueError, lambda: state.validate_state(285, s1, links=True))
+
+    def test_correct_neighborhood_state(self):
+        ps1 = {
+            'edition_time': '2011-12-04T13:51:36.955Z',
+            'parent': [283, '2011-12-15T13:51:36.955Z'],
+            'children': [[289, '2011-11-06T13:51:36.955Z']],
+            'links': [[360, '2011-12-20T10:46:01.360Z']],
+        }
+        s1 = json.dumps(ps1)
+        state.validate_state(285, s1, neighborhood=True)
+
+    def test_wrong_neighborhood_state(self):
+        ps1 = {
+            'edition_time': '2011-12-04T13:51:36.955Z',
+            'parent': [283, '2011-12-15T13:51:36.955Z'],
+            'children': [[289, '2011-11-06T13:51:36.955Z']],
+            'links': [[360, '3011-12-20T10:46:01.360Z']],
+        }
+        s1 = json.dumps(ps1)
+        self.assertRaises(ValueError,
+                lambda: state.validate_state(285, s1, neighborhood=True))
+
+        ps2 = {
+            'parent': [283, '2011-12-15T13:51:36.955Z'],
+            'children': [[289, '2011-11-06T13:51:36.955Z']],
+            'links': [[360, '3011-12-20T10:46:01.360Z']],
+        }
+        s2 = json.dumps(ps2)
+        self.assertRaises(ValueError,
+                lambda: state.validate_state(285, s2, neighborhood=True))
+
+        ps3 = {
+            'edition_time': '2011-12-04T13:51:36.955Z',
+            'children': [[289, '2011-11-06T13:51:36.955Z']],
+            'links': [[360, '3011-12-20T10:46:01.360Z']],
+        }
+        s3 = json.dumps(ps3)
+        self.assertRaises(ValueError,
+                lambda: state.validate_state(285, s3, neighborhood=True))
+
+        ps4 = {
+            'edition_time': '2011-12-04T13:51:36.955Z',
+            'parent': [283, '2011-12-15T13:51:36.955Z'],
+            'links': [[360, '3011-12-20T10:46:01.360Z']],
+        }
+        s4 = json.dumps(ps4)
+        self.assertRaises(ValueError,
+                lambda: state.validate_state(285, s4, neighborhood=True))
+
+        ps5 = {
+            'edition_time': '2011-12-04T13:51:36.955Z',
+            'parent': [283, '2011-12-15T13:51:36.955Z'],
+            'children': [[289, '2011-11-06T13:51:36.955Z']],
+        }
+        s5 = json.dumps(ps5)
+        self.assertRaises(ValueError,
+                lambda: state.validate_state(285, s5, neighborhood=True))
+
+        ps6 = {
+            'edition_time': '2011-12-04T13:51:36.955Z',
+            'parent': [283, '2011-12-15T13:51:36.955Z'],
+            'children': [[289, '2011-11-06T13:51:36.955Z']],
+            'links': [],
+        }
+        s6 = json.dumps(ps6)
+        self.assertRaises(ValueError,
+                lambda: state.validate_state(285, s6, neighborhood=True))
+
 
     def test_has_only_truthy_values(self):
         self.assertTrue(state.has_only_truthy_values([True, 1]))

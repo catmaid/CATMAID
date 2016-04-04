@@ -220,7 +220,7 @@ class StateCheckingTest(CatmaidTestCase):
     def test_correct_edge_state(self):
         ps1 = {
             'children': [[251, '2011-12-05T13:51:36.955Z']],
-            'parent': [249, '2011-12-05T13:51:36.955Z']
+            'edition_time': '2011-12-05T13:51:36.955Z'
         }
         s1 = json.dumps(ps1)
         # Expect this state to validate cleanly

@@ -74,7 +74,7 @@
    */
   CATMAID.getEdgeState = function(parentId, parentEditTime, childId, childEditTime) {
     var state = {
-      "parent": [parentId, parentEditTime],
+      "edition_time": parentEditTime,
       "children": [[childId, childEditTime]]
     };
     return JSON.stringify(state);
@@ -191,6 +191,30 @@
       throw new CATMAID.ValueError("Couldn't find node " + nodeId + " to create parent state");
     }
     return CATMAID.getParentState(this.parent[0], this.parent[1]);
+  };
+
+  LocalState.prototype.makeEdgeState = function(childId, parentId) {
+    if (!this.node || this.node[0] != parentId) {
+      throw new CATMAID.ValueError("Couldn't find parent node " + parentId +
+          " to create edge state");
+    }
+    if (!this.children || 0 === this.children.length) {
+      throw new CATMAID.ValueError("Couldn't find child node " + childId +
+          " to create edge state");
+    }
+    var child;
+    for (var i=0; i<this.children.length; ++i) {
+      var currentChild = this.children[i];
+      if (childId == currentChild[0]) {
+        child = currentChild;
+        break;
+      }
+    }
+    if (!child) {
+      throw new CATMAID.ValueError("Couldn't find child node " + childId +
+          " to create edge state");
+    }
+    return CATMAID.getEdgeState(this.node[0], this.node[1], child[0], child[1]);
   };
 
   LocalState.prototype.getParent = function(nodeId) {

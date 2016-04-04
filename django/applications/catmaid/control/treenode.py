@@ -148,10 +148,10 @@ def insert_treenode(request, project_id=None):
         s = request.POST.get('state')
         if child_id not in (-1, None):
             state.validate_state(parent_id, s, edge=True,
-            children=takeover_child_ids, lock=True)
+            children=bool(takeover_child_ids), lock=True)
         else:
-            state.validate_state(parent_id, s, parent_edittime=True,
-            children=takeover_child_ids, lock=True)
+            state.validate_state(parent_id, s, node=True,
+            children=bool(takeover_child_ids), lock=True)
 
     # Find child and parent of new treenode
     child = Treenode.objects.get(pk=params['child_id'])

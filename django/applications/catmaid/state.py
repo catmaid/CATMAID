@@ -197,6 +197,17 @@ def collect_state_checks(node_id, state, cursor, node=False,
         state_checks.extend(StateCheck(SQL.edited('treenode_connector'),
             (l[0], l[1], l[1])) for l in links)
 
+    if edge:
+        child_nodes = state.get('children')
+        if not isinstance(child_nodes, (list, tuple)):
+            raise ValueError("No valid state provided, can't find list 'children'")
+        if not all(has_only_truthy_values(e) for e in child_nodes):
+            raise ValueError("No valid state provided, invalid children")
+
+        state_checks.extend(StateCheck(SQL.was_edited, (c[0], c[1], c[1])) for c in child_nodes)
+        state_checks.extend(StateCheck(SQL.is_child, (c[0],node_id)) for c in child_nodes)
+
+
     return state_checks
 
 def validate_state(node_ids, state, node=False, is_parent=False,
@@ -228,8 +239,8 @@ def validate_state(node_ids, state, node=False, is_parent=False,
     # Neighborhood implies node and parent checks
     node = node or neighborhood
     is_parent = is_parent or neighborhood
-    parent_edittime = parent_edittime or neighborhood or edge
-    children = children or neighborhood or edge
+    parent_edittime = parent_edittime or neighborhood
+    children = children or neighborhood
     links = links or neighborhood
 
     # Collect state checks and test them, if state checks are not disabled

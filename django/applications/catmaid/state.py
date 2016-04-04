@@ -314,7 +314,10 @@ def check_state(state, state_checks, cursor):
     for sc in state_checks:
         args.extend(p for p in sc.params)
 
-    cursor.execute("(" + ") INTERSECT (".join(sql_checks) + ")", args)
+    if sql_checks:
+        cursor.execute("(" + ") INTERSECT (".join(sql_checks) + ")", args)
+    else:
+        cursor.execute("SELECT 1")
     state_check_results = cursor.fetchall()
 
     # Expect results to have a length of the number of checks made and that

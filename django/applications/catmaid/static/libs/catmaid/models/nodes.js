@@ -525,21 +525,13 @@
         create = CATMAID.Nodes.create(undoState, projectId, x, y, z,
             mParentId, radius, confidence, undefined, undefined, mLinks);
       } else {
-        var primaryChild = mChildren.shift();
-        var mChildIds = mChildren.map(function(c) { return c.value; });
-        var undoState;
-        if (mChildIds.length > 0) {
-          // Add child state for each takeover child. Takeover children are
-          // nodes that have been a child of node removed in exec(). We expect
-          // them to not have changed, otherwise undo will be aborted.
-          var parentEditionTime = "";
-          undoState = new CATMAID.LocalState(undefined, [mParentId, mParentEditTime],
-              children, links);
-        } else {
-          undoState = new CATMAID.LocalState(undefined, [mParentId, mParentEditTime]);
-        }
+        var parentEditionTime = "";
+        var undoState = new CATMAID.LocalState([mParentId, mParentEditTime], undefined,
+            mChildren.map(function(c) { return [c.value, c.timestamp]; }), links);
+        var mPrimaryChildId = mChildren[0].value;
+        var takeOverChildIds = mChildren.slice(1).map(function(c) { return c.value; });
         create = CATMAID.Nodes.insert(undoState, projectId, x, y, z, mParentId,
-            primaryChild, radius, confidence, mChildIds, mLinks);
+            mPrimaryChildId, radius, confidence, takeOverChildIds, mLinks);
       }
 
       return create.then(function(result) {
@@ -657,7 +649,7 @@
   CATMAID.InsertNodeCommand = CATMAID.makeCommand(function(
       state, projectId, x, y, z, parentId, childId, radius, confidence, useNeuron) {
 
-    var umParent = state.getParent(nodeId) || [null, null];
+    var umParent = state.getParent(parentId) || [null, null];
     var umParentId = umParent[0];
     var umParentEditTime = umParent[1];
 
@@ -757,7 +749,7 @@
     var undo = function(done, command, map) {
       var old_treenodes = command.get('old_treenodes');
       var old_connectors = command.get('old_connectors');
-      var mTreenodes = old_treenodes ? old_treenodes.map(mapNodeUpdateList, map) : undefined; 
+      var mTreenodes = old_treenodes ? old_treenodes.map(mapNodeUpdateList, map) : undefined;
       var mConnectors = old_connectors ? old_connectors.map(mapConnectorUpdateList, map) : undefined;
       var update = CATMAID.Nodes.update(projectId, mTreenodes, mConnectors);
       return update.then(function(result) {

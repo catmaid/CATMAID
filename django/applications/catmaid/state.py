@@ -142,7 +142,7 @@ def collect_state_checks(node_id, state, cursor, node=False,
     """Collect state checks for a single node, but don't execute them."""
     state_checks = []
 
-    if node:
+    if node or edge:
         if 'edition_time' not in state:
             raise ValueError("No valid state provided, missing edition time")
         node = [node_id, state['edition_time']]

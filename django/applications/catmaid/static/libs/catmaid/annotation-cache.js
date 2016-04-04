@@ -102,10 +102,10 @@
   };
 
   /**
-   * Remove multiple annotatiosn from the cache.
+   * Remove multiple annotations from the cache.
    */
-  AnnotationCache.prototype.removeAll = function(annotationIds) {
-    annotationsIds.forEach(this.remove.bind(this));
+  AnnotationCache.prototype.removeAll = function(annotationIDs) {
+    annotationIDs.forEach(this.remove, this);
   };
 
   /**

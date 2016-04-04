@@ -227,6 +227,17 @@ var requestQueue = new RequestQueue();
   };
 
   /**
+   * Check if the user of the current session has permission on another user. If
+   * a CATMAID user is part of a group that has the name like another user, the
+   * first user is given permission the second one.
+   *
+   * @param {String} username The username of the user in question.
+   */
+  CATMAID.hasPermissionOnUser = function(username) {
+    return groups.indexOf(username) != -1;
+  };
+
+  /**
    * Check if the passed in response information seems valid and without errors.
    */
   CATMAID.validateResponse = function(status, text, xml) {

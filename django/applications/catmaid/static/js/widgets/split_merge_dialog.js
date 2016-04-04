@@ -133,7 +133,7 @@
                 // checkbox.
                 if (disable_unpermitted &&
                     a_info.users[0].id != session.userid &&
-                    user_groups.indexOf(a_info.users[0].name) == -1 &&
+                    !CATMAID.hasPermissionOnUser(a_info.users[0].name) &&
                     !session.is_superuser) {
                   checked = true;
                   disabled = true;

@@ -137,6 +137,60 @@
     return CATMAID.getParentState(parent[0], parent[1]);
   };
 
+  /**
+   * Create a local state representation based on the provided options. This
+   * method allows to specify which children and links to include.
+   */
+  GenericState.prototype.makeLocalState = function(options) {
+    var state = {};
+
+    if (options.nodeId) {
+      var node;
+      var node = this.getNode(options.nodeId);
+      if (!node) {
+        throw new CATMAID.ValueError("Couldn't find node node " +
+            options.nodeId + " in state");
+      }
+      state['edition_time'] = node[1];
+    }
+
+    if (options.parentId) {
+      var parent = this.getNode(options.parentId);
+      if (!parent) {
+        throw new CATMAID.ValueError("Couldn't find parent node " +
+            options.parentId + " in state");
+      }
+      state['parent'] = parent;
+    }
+
+    if (options.childIds && options.childIds.length > 0) {
+      var children = [];
+      for (var i=0; i<options.childIds.length; ++i) {
+        var childId = options.childIds[i];
+        var child = this.getNode(childId);
+        if (!child) {
+          throw new CATMAID.ValueError("Couldn't find child node " + childId + " in state");
+        }
+        children.push(child);
+      }
+      state['children'] = children;
+    }
+
+    if (options.links && options.links.length > 0) {
+      var links = [];
+      for (var i=0; i<options.links.length; ++i) {
+        var link = options.links[i];
+        if (!link) {
+          throw new CATMAID.ValueError("Couldn't find link " + link + " in state");
+        }
+      }
+
+      state['links'] = links;
+    }
+
+    return JSON.stringify(state);
+  };
+
   GenericState.prototype.makeEdgeState = function(nodeId, parentId) {
     var node = this.getNode(nodeId);
     var parent = this.getNode(parentId);

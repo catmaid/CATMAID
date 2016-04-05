@@ -544,7 +544,7 @@
         var mPrimaryChildId = mChildren[0].value;
         var takeOverChildIds = mChildren.slice(1).map(function(c) { return c.value; });
         create = CATMAID.Nodes.insert(undoState, projectId, x, y, z, mParentId,
-            mPrimaryChildId, radius, confidence, takeOverChildIds, mLinks);
+            mPrimaryChildId, radius, confidence, undefined, takeOverChildIds, mLinks);
       }
 
       return create.then(function(result) {

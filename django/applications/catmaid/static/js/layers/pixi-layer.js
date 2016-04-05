@@ -130,7 +130,10 @@
     if (toDequeue < 1) return;
     var remainingQueue = this._loadingQueue.splice(toDequeue);
     this._loadingQueue.forEach(function (url) {
-      this._loader.add(url, {crossOrigin: true}, this._boundResourceLoaded);
+      this._loader.add(url,
+                       {crossOrigin: true,
+                        xhrType: PIXI.loaders.Resource.XHR_RESPONSE_TYPE.BLOB},
+                       this._boundResourceLoaded);
     }, this);
     this._loadingQueue = remainingQueue;
     this._loader.load();

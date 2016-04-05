@@ -136,9 +136,9 @@ def insert_treenode(request, project_id=None):
     # Get optional initial links to connectors, expect each entry to be a list
     # of connector ID and relation ID.
     try:
-        links = get_request_list(request.POST, 'links', [], lambda x: [int(x[0]), x[1]])
-    except:
-        raise ValueError("Couldn't parse list parameter")
+        links = get_request_list(request.POST, 'links', [], lambda x: int(x))
+    except Exception, e:
+        raise ValueError("Couldn't parse list parameter: {}".format(e))
 
     # Make sure the back-end is in the expected state if the node should have a
     # parent and will therefore become part of another skeleton.

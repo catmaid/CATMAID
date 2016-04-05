@@ -330,11 +330,11 @@
    * map() method.
    *
    * @param {type}     type      The type of the value, one of avai
+   * @param {anything} original  Original value that the new value is mapped to
    * @param {anything} value     The value to store, can be anything.
-   * @param {String}   timestamp The value to store, can be anything.
-   * @param {Command}  command   Command instance requesting to store value
+   * @param {String}   timestamp The timestampt to asspciate with value
    */
-  CommandStore.prototype.add = function(type, value, timestamp, command) {
+  CommandStore.prototype.add = function(type, original, value, timestamp) {
     if (!value) {
       throw CATMAID.ValueError("Can't add value to store: invalid value");
     }
@@ -349,23 +349,18 @@
       this.typeMaps.set(type, idMap);
     }
 
-    // Check if this commands was seen already
-    var commandId = command.getId();
-    var initialValue = this.initialValues.get(commandId);
-    if (undefined === initialValue) {
-      initialValue = value;
-      // Remember all seen commands and the initial value
-      this.initialValues.set(commandId, initialValue);
+    if (!original) {
+      original = value;
     }
 
     // Store a mapping for redos, with reference to the initial value, which was
     // originally added by the passed in command (hence redo). If this is the
     // first execution the initial value is the passed in value.
-    var currentMapping = idMap.get(initialValue);
+    var currentMapping = idMap.get(original);
     if (!currentMapping) {
       // Properties get assigned below
       currentMapping = {};
-      idMap.set(initialValue, currentMapping);
+      idMap.set(original, currentMapping);
     }
 
     currentMapping.value = value;

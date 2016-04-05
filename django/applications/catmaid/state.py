@@ -137,12 +137,17 @@ def parse_state(state):
     return state
 
 def collect_state_checks(node_id, state, cursor, node=False,
-        parent_edittime=False, is_parent=False, edge=False,
-        children=False, links=False, multinode=False):
-    """Collect state checks for a single node, but don't execute them."""
+        parent_edittime=False, is_parent=False, children=False,
+        links=False, multinode=False):
+    """Collect state checks for a single node, but don't execute them.
+
+    If <children> is a list of node IDs, only these nodes will be checked if
+    they are valid children. If <children> is the boolean True, a state check is
+    added that tests if the state provided children represent *all* children.
+    """
     state_checks = []
 
-    if node or edge:
+    if node:
         if 'edition_time' not in state:
             raise ValueError("No valid state provided, missing edition time")
         node = [node_id, state['edition_time']]
@@ -180,10 +185,11 @@ def collect_state_checks(node_id, state, cursor, node=False,
         if not all(has_only_truthy_values(e) for e in child_nodes):
             raise ValueError("No valid state provided, invalid children")
 
-        state_checks.append(make_all_children_query(
-            [int(c[0]) for c in child_nodes], node_id))
+        if type(children) == bool:
+            state_checks.append(make_all_children_query(
+                [int(c[0]) for c in child_nodes], node_id))
         state_checks.extend(StateCheck(SQL.was_edited, (c[0], c[1], c[1])) for c in child_nodes)
-        state_checks.extend(StateCheck(SQL.is_child, (c[0],node_id)) for c in child_nodes)
+        state_checks.extend(StateCheck(SQL.is_child, (c[0], node_id)) for c in child_nodes)
 
     if links:
         links = state.get('links')
@@ -197,22 +203,12 @@ def collect_state_checks(node_id, state, cursor, node=False,
         state_checks.extend(StateCheck(SQL.edited('treenode_connector'),
             (l[0], l[1], l[1])) for l in links)
 
-    if edge:
-        child_nodes = state.get('children')
-        if not isinstance(child_nodes, (list, tuple)):
-            raise ValueError("No valid state provided, can't find list 'children'")
-        if not all(has_only_truthy_values(e) for e in child_nodes):
-            raise ValueError("No valid state provided, invalid children")
-
-        state_checks.extend(StateCheck(SQL.was_edited, (c[0], c[1], c[1])) for c in child_nodes)
-        state_checks.extend(StateCheck(SQL.is_child, (c[0],node_id)) for c in child_nodes)
-
 
     return state_checks
 
 def validate_state(node_ids, state, node=False, is_parent=False,
-        parent_edittime=False, edge=False, children=False, links=False,
-        multinode=False, neighborhood=False, lock=True, cursor=None):
+        parent_edittime=False, children=False, links=False, multinode=False,
+        neighborhood=False, lock=True, cursor=None):
     """Validate a local state relative to a given node. What tests are performed
     depends on the mode flags set.
 
@@ -265,8 +261,7 @@ def validate_state(node_ids, state, node=False, is_parent=False,
         else:
             check_sets = [collect_state_checks(n, state, cursor, node=node,
                     is_parent=is_parent, parent_edittime=parent_edittime,
-                    edge=edge, multinode=multinode, children=children,
-                    links=links) for n in node_ids]
+                    multinode=multinode, children=children, links=links) for n in node_ids]
             state_checks = reduce(lambda x: x + y, check_sets)
             check_state(state, state_checks, cursor)
 

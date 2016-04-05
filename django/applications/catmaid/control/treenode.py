@@ -146,12 +146,12 @@ def insert_treenode(request, project_id=None):
     child_id = params.get('child_id')
     if parent_id not in (-1, None):
         s = request.POST.get('state')
-        if child_id not in (-1, None):
-            state.validate_state(parent_id, s, edge=True,
-            children=bool(takeover_child_ids), lock=True)
-        else:
-            state.validate_state(parent_id, s, node=True,
-            children=bool(takeover_child_ids), lock=True)
+        # Testing egular edge insertion is assumed if a child ID is provided
+        partial_child_checks = [] if child_id in (-1, None) else [child_id]
+        if takeover_child_ids:
+            partial_child_checks.extend(takeover_child_ids)
+        state.validate_state(parent_id, s, node=True,
+                children=partial_child_checks, lock=True),
 
     # Find child and parent of new treenode
     child = Treenode.objects.get(pk=params['child_id'])

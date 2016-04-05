@@ -196,10 +196,21 @@
       CATMAID.requirePermission(projectId, 'can_annotate',
           'You don\'t have have permission to create a new node');
 
-        // If a child Id is given, an edge state is required. Without a child, a
-        // parent state suffices.
-      var effectiveState = childId ? state.makeEdgeState(childId, parentId) :
-        state.makeParentState(parentId);
+      // Different parameterization requires different state information.
+      // Without any children (no childId and no takeOverChildIds), only parent
+      // information is required. If there are children, these have to be
+      // provided as well.
+      var stateOptions = {
+        nodeId: parentId,
+        childIds: childId ? [childId] : [],
+        links: []
+      };
+      if (takeoverChildIds) {
+        Array.prototype.push.apply(stateOptions['childIds'], takeoverChildIds);
+      }
+      if (links) {
+        Array.prototype.push.apply(stateOptions['links'], links);
+      }
 
       var url = projectId + '/treenode/insert';
       var params = {
@@ -213,7 +224,7 @@
         useneuron: useNeuron,
         takeover_child_ids: takeoverChildIds,
         links: links,
-        state: effectiveState
+        state: state.makeLocalState(stateOptions)
       };
 
       return CATMAID.fetch(url, 'POST', params)

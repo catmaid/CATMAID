@@ -222,7 +222,7 @@
    * @param  {string} key Texture resource key, usually a URL.
    */
   PixiContext.TextureManager.prototype.dec = function (key) {
-    if (typeof key === 'undefined') return;
+    if (typeof key === 'undefined' || key === null) return;
     var count = this._counts[key];
 
     if (typeof count !== 'undefined') { // Key is already tracked by cache.

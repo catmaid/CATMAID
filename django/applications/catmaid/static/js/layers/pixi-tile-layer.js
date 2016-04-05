@@ -58,7 +58,7 @@
       for (var j = 0; j < this._tiles[0].length; ++j) {
         var tile = this._tiles[i][j];
         if (tile.texture && tile.texture.valid) {
-          CATMAID.PixiContext.GlobalTextureManager.dec(tile.texture.baseTexture.source.src);
+          CATMAID.PixiContext.GlobalTextureManager.dec(tile.texture.baseTexture.imageUrl);
         }
       }
     }
@@ -168,13 +168,13 @@
           var source = this.tileSource.getTileURL(project, this.stack, slicePixelPosition,
               c, r, tileInfo.zoom);
 
-          if (source !== tile.texture.baseTexture.source.src) {
+          if (source !== tile.texture.baseTexture.imageUrl) {
             var texture = PIXI.utils.TextureCache[source];
             if (texture) {
               if (texture.valid) {
                 this._tilesBuffer[i][j] = false;
                 CATMAID.PixiContext.GlobalTextureManager.inc(source);
-                CATMAID.PixiContext.GlobalTextureManager.dec(tile.texture.baseTexture.source.src);
+                CATMAID.PixiContext.GlobalTextureManager.dec(tile.texture.baseTexture.imageUrl);
                 if (texture.baseTexture.scaleMode !== this._pixiInterpolationMode) {
                   texture.baseTexture.scaleMode = this._pixiInterpolationMode;
                   texture.update();
@@ -253,7 +253,7 @@
           if (force || texture && texture.valid) {
             this._tilesBuffer[i][j] = false;
             CATMAID.PixiContext.GlobalTextureManager.inc(source);
-            CATMAID.PixiContext.GlobalTextureManager.dec(tile.texture.baseTexture.source.src);
+            CATMAID.PixiContext.GlobalTextureManager.dec(tile.texture.baseTexture.imageUrl);
             tile.texture = texture || PIXI.Texture.fromImage(source);
             if (tile.texture.baseTexture.scaleMode !== this._pixiInterpolationMode) {
               tile.texture.baseTexture.scaleMode = this._pixiInterpolationMode;

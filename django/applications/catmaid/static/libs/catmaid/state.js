@@ -237,7 +237,22 @@
   LocalState.constructor = LocalState;
 
   LocalState.prototype.getNode = function(nodeId) {
-    return (this.node && this.node[0] == nodeId) ? this.node : undefined;
+    var node;
+    if (this.node && this.node[0] == nodeId) {
+      return this.node;
+    }
+    if (this.parent && this.parent[0] == nodeId) {
+      return this.parent;
+    }
+    if (this.children) {
+      for (var i=0; i<this.children.length; ++i) {
+        var child = this.children[i];
+        if (child[0] == nodeId) {
+          return child;
+        }
+      }
+    }
+    return node;
   };
 
   LocalState.prototype.makeParentState = function(nodeId) {

@@ -158,6 +158,8 @@ Miscellaneous:
 - Non-superusers can now see user analytics and proficiency reports for
   projects for which they are administrators.
 
+- WebGL layers are now compatible with DVID stacks.
+
 
 ### Bug fixes
 

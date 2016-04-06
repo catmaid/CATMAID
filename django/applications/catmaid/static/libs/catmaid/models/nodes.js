@@ -663,20 +663,15 @@
   CATMAID.InsertNodeCommand = CATMAID.makeCommand(function(
       state, projectId, x, y, z, parentId, childId, radius, confidence, useNeuron) {
 
-    var umParent = state.getParent(parentId) || [null, null];
+    var umParent = state.getNode(parentId) || [null, null];
     var umParentId = umParent[0];
     var umParentEditTime = umParent[1];
 
-    var umChild, umChildId, umParentEditTime;
+    var umChild, umChildId, umChildEditTime;
     if (childId) {
-      umChildId = childId;
-      // Find timestamp for selected c
-      var children = state.getChildren(parentId);
-      for (var c in children) {
-        if (c[0] == childId) {
-          umChildEditTime = umChild[1];
-        }
-      }
+      umChild = state.getNode(childId);
+      umChildId = umChild[0];
+      umChildEditTime = umChild[1];
     }
 
     var exec = function(done, command, map) {
@@ -685,37 +680,66 @@
       var mParent = map.getWithTime(map.NODE, umParentId, umParentEditTime);
       var mChild = map.getWithTime(map.NODE, umChildId, umChildEditTime);
 
-      var state = CATMAID.getEdgeState(mParent.value, mParent.timestamp,
-          mChild.value, mChild.timestamp);
-      var insert = CATMAID.Nodes.insert(state, projectId, x, y, z,
+      var execState = new CATMAID.LocalState([mParent.value, mParent.timestamp],
+          null, [[mChild.value, mChild.timestamp]]);
+      var insert = CATMAID.Nodes.insert(execState, projectId, x, y, z,
           mParent.value, mChild.value, radius, confidence, useNeuron);
 
       return insert.then(function(result) {
         // Store ID of new node created by this command
         map.add(map.NODE, null, result.treenode_id, result.edition_time);
         command.store('nodeId', result.treenode_id);
+        command.store('nodeEditTime', result.edition_time);
 
-        if (childId) {
-          map.add(map.NODE, umChildId, mChildId, result.child_edition_time);
+        // Map ID change of children and links
+        if (mChild && result.child_edition_times) {
+          result.child_edition_times.forEach(function(c) {
+            // There should be exactly one updated child having the ID of the
+            // mapped child above.
+            if (c[0] == mChild.value) {
+              map.add(map.NODE, umChildId, c[0], c[1]);
+            }
+          });
         }
+
         done();
         return result;
       });
     };
 
     var undo = function(done, command, map) {
-      var nodeId = map.get(map.NODE, command.get('nodeId'));
-      var state = command.get("state");
-      command.validateForUndo(projectId, nodeId, state);
+      var nodeId = command.get('nodeId');
+      var nodeEditTime = command.get('nodeEditTime');
+      command.validateForUndo(nodeId, nodeEditTime);
 
-      // Prepare expected state for undo
-      var children = [[mChildId, result.child_edition_time]], links = [];
-      command.store("state", CATMAID.getNeighborhoodState(result.treenode_id,
-            result.edition_time, mParentId, result.parent_edition_time,
-            children, links));
+      // Map nodes to current ID and time
+      var mNode = map.getWithTime(map.NODE, nodeId, nodeEditTime);
+      var mParent = map.getWithTime(map.NODE, umParentId, umParentEditTime);
+      var mChild = map.getWithTime(map.NODE, umChildId, umChildEditTime);
 
-      var removeNode = CATMAID.Nodes.remove(state, projectId, nodeId);
-      return removeNode.then(done);
+      // Formulate expectations for back-end, a neighborhood state of the mapped
+      // children, parent and links of the node created originally.
+      var children = childId ? [[mChild.value, mChild.timestamp]] : [];
+      var links = [];
+      var undoState = new CATMAID.LocalState([mNode.value, mNode.timestamp],
+          [mParent.value, mParent.timestamp], children, links);
+
+      var removeNode = CATMAID.Nodes.remove(undoState, projectId, nodeId);
+      return removeNode.then(function(result) {
+
+        // Map ID change of children and links
+        if (mChild && result.children) {
+          result.children.forEach(function(c) {
+            // There should be exactly one updated child having the ID of the
+            // mapped child above.
+            if (c[0] == mChild.value) {
+              map.add(map.NODE, umChildId, c[0], c[1]);
+            }
+          });
+        }
+
+        done();
+      });
     };
 
     var title = "Inset new node between parent #" + parentId + " and child #" +

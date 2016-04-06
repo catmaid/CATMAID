@@ -160,6 +160,10 @@ Miscellaneous:
 
 - WebGL layers are now compatible with DVID stacks.
 
+- Tile layers now have an option in the layer controls to hide the tile layer
+  if the nearest section is marked as broken, rather than the default behavior
+  of displaying the nearest non-broken section.
+
 
 ### Bug fixes
 

@@ -166,7 +166,7 @@
             var label = $('<label />').append(setting.displayName);
             settingElement.append(label);
             label.attr('title', setting.help);
-            if ('text' === setting.type || 'number' === setting.type) {
+            if ('text' === setting.type || 'number' === setting.type || 'checkbox' == setting.type) {
               var input = $('<input />').attr({
                 'type': setting.type,
                 'placeholder': '(none)',
@@ -197,7 +197,8 @@
               if (0 === value.length) {
                 value = null;
               }
-              e.data.layer.setLayerSetting(this.name, this.value);
+              if (this.type === 'checkbox') value = this.checked;
+              e.data.layer.setLayerSetting(this.name, value);
               e.data.stackViewer.redraw();
             }
           });

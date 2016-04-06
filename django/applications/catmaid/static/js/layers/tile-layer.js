@@ -37,6 +37,14 @@
     this.isHideable = false;
 
     /**
+     * Whether to hide this tile layer if the nearest section is marked as
+     * broken, rather than the default behavior of displaying the nearest
+     * non-broken section.
+     * @type {Boolean}
+     */
+    this.hideIfNearestSliceBroken = false;
+
+    /**
      * Contains all tiles in a 2D toroidal array
      * @type {Element[][]}
      */
@@ -185,6 +193,18 @@
         scaledStackPosition.yc,
         scaledStackPosition.z,
         scaledStackPosition.s);
+
+    if (this.hideIfNearestSliceBroken) {
+      // Re-project the stack z without avoiding broken sections to determine
+      // if the nearest section is broken.
+      var linearStackZ = this.stack.projectToLinearStackZ(
+          this.stackViewer.projectCoordinates().z);
+      if (this.stack.isSliceBroken(linearStackZ)) {
+        this.tilesContainer.style.opacity = '0';
+      } else {
+        this.setOpacity(this.opacity);
+      }
+    }
 
     var effectiveTileWidth = this.tileSource.tileWidth * tileInfo.mag;
     var effectiveTileHeight = this.tileSource.tileHeight * tileInfo.mag;
@@ -526,11 +546,20 @@
    * anything if the tile layer's tile source provides additional settings.
    */
   TileLayer.prototype.getLayerSettings = function () {
-   if (this.tileSource && CATMAID.tools.isFn(this.tileSource.getSettings)) {
-     return this.tileSource.getSettings();
-   } else {
-     return [];
-   }
+    var settings = [{
+        name: 'hideIfBroken',
+        displayName: 'Hide if nearest slice is broken',
+        type: 'checkbox',
+        value: 'true',
+        help: 'Hide this tile layer if the nearest section is marked as ' +
+              'broken, rather than the default behavior of displaying the ' +
+              'nearest non-broken section.'}];
+
+    if (this.tileSource && CATMAID.tools.isFn(this.tileSource.getSettings)) {
+      settings = settings.concat(this.tileSource.getSettings());
+    }
+
+    return settings;
   };
 
   /**
@@ -538,9 +567,12 @@
    * the layer's tile source accepts setting changes.
    */
   TileLayer.prototype.setLayerSetting = function(name, value) {
-   if (this.tileSource && CATMAID.tools.isFn(this.tileSource.setSetting)) {
-     return this.tileSource.setSetting(name, value);
-   }
+    if ('hideIfBroken' === name) {
+      this.hideIfNearestSliceBroken = value;
+      if (!this.hideIfNearestSliceBroken) this.setOpacity(this.opacity);
+    } else if (this.tileSource && CATMAID.tools.isFn(this.tileSource.setSetting)) {
+      return this.tileSource.setSetting(name, value);
+    }
   };
 
   /**

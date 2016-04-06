@@ -219,6 +219,8 @@
       };
     }
 
+    this.projectToLinearStackZ = projectToStackZ;
+
 
     /**
      * Stack z-coordinate from project coordinates, without clamping to the
@@ -305,6 +307,16 @@
     };
 
     /**
+     * Return whether a given section number is marked as broken.
+     *
+     * @param  {Number}  section Stack z coordinate of the section to check
+     * @return {Boolean}         True if the section is marked as broken.
+     */
+    self.isSliceBroken = function (section) {
+      return -1 !== self.broken_slices.indexOf(section);
+    };
+
+    /**
      * Return the distance to the closest valid section number before the
      * given one. Or null if there is none.
      */
@@ -313,7 +325,7 @@
       while (true) {
       --adj;
       if (adj < 0) return null;
-      if (-1 === self.broken_slices.indexOf(adj)) return adj - section;
+      if (!self.isSliceBroken(adj)) return adj - section;
       }
     };
 
@@ -326,7 +338,7 @@
       while (true) {
       ++adj;
       if (adj > self.MAX_Z) return null;
-      if (-1 === self.broken_slices.indexOf(adj)) return adj - section;
+      if (!self.isSliceBroken(adj)) return adj - section;
       }
     };
   }

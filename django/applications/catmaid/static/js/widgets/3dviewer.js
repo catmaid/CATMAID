@@ -72,6 +72,7 @@
         this.staticUpdateActiveNodePosition, this);
     project.off(CATMAID.Project.EVENT_STACKVIEW_FOCUS_CHANGED, this.adjustStaticContent, this);
     project.off(CATMAID.Project.EVENT_LOCATION_CHANGED, this.handlelLocationChange, this);
+    this.stopAnimation();
     this.unregisterInstance();
     this.unregisterSource();
     this.space.destroy();

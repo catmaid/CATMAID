@@ -131,7 +131,7 @@ def insert_treenode(request, project_id=None):
     # come children of the inserted node. This requires extra state
     # information: the child state for the paren.
     takeover_child_ids = get_request_list(request.POST,
-            'takeover_child_ids', None, lambda x: int)
+            'takeover_child_ids', None, lambda x: int(x))
 
     # Get optional initial links to connectors, expect each entry to be a list
     # of connector ID and relation ID.
@@ -188,8 +188,8 @@ def insert_treenode(request, project_id=None):
     cursor = connection.cursor()
     params = [new_treenode.treenode_id, child.id]
     if takeover_child_ids:
-        children.extend(takeover_child_ids)
-        child_template = ("%s",) * (takeover_child_ids.length + 1)
+        params.extend(takeover_child_ids)
+        child_template = ",".join(("%s",) * (len(takeover_child_ids) + 1))
     else:
         child_template = "%s"
 

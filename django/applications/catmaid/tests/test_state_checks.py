@@ -229,7 +229,7 @@ class StateCheckingTest(CatmaidTestCase):
     def test_wrong_edge_state(self):
         ps1 = {
             'children': [[247, '2011-12-05T13:51:36.955Z']],
-            'parent': [249, '2011-12-05T13:51:36.955Z']
+            'edition_time': '2011-12-05T13:51:36.955Z'
         }
         s1 = json.dumps(ps1)
         # Expect this state to validate cleanly
@@ -237,7 +237,7 @@ class StateCheckingTest(CatmaidTestCase):
 
         ps2 = {
             'children': [[251, '1011-12-05T13:51:36.955Z']],
-            'parent': [249, '2011-12-05T13:51:36.955Z']
+            'edition_time': '2011-12-05T13:51:36.955Z'
         }
         s2 = json.dumps(ps2)
         # Expect this state to validate cleanly
@@ -245,7 +245,7 @@ class StateCheckingTest(CatmaidTestCase):
 
         ps3 = {
             'children': [],
-            'parent': [249, '2011-12-05T13:51:36.955Z']
+            'edition_time': '2011-12-05T13:51:36.955Z'
         }
         s3 = json.dumps(ps3)
         # Expect this state to validate cleanly
@@ -253,7 +253,7 @@ class StateCheckingTest(CatmaidTestCase):
 
         ps4 = {
             'children': [[251, '2011-12-05T13:51:36.955Z']],
-            'parent': [249, '2011-12-05T13:51:36.955Z']
+            'edition_time': '2011-12-05T13:51:36.955Z'
         }
         s4 = json.dumps(ps4)
         # Expect this state to validate cleanly

@@ -2654,6 +2654,54 @@ class ViewPageTests(TestCase):
         for mi in ('0','1','2','3'):
             self.assertEqual(expected_result[mi], parsed_response[mi])
 
+    def test_skeleton_permissions(self):
+        skeleton_id = 235
+
+        self.fake_authentication()
+        response = self.client.post(
+            '/%d/skeleton/%d/permissions' % (self.test_project_id, skeleton_id,))
+        expected_result = {'can_edit': True}
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        self.assertEqual(parsed_response, expected_result)
+
+        self.fake_authentication('test1', 'test', True)
+        response = self.client.post(
+            '/%d/annotations/add' % (self.test_project_id,),
+            {'annotations[0]': 'locked', 'skeleton_ids[0]': skeleton_id})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        lock_annotation_id = parsed_response['annotations'][0]['id']
+        skeleton_entity_id = parsed_response['annotations'][0]['entities'][0]
+
+        self.fake_authentication()
+        response = self.client.post(
+            '/%d/skeleton/%d/permissions' % (self.test_project_id, skeleton_id,))
+        expected_result = {'can_edit': True} # test2 has permissions for test1
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        self.assertEqual(parsed_response, expected_result)
+
+        self.fake_authentication('test1', 'test', True)
+        response = self.client.post(
+            '/%d/annotations/%d/remove' % (self.test_project_id, lock_annotation_id,),
+            {'entity_ids[0]': skeleton_entity_id})
+        self.assertEqual(response.status_code, 200)
+
+        self.fake_authentication('test0', 'test', True)
+        response = self.client.post(
+            '/%d/annotations/add' % (self.test_project_id,),
+            {'annotations[0]': 'locked', 'skeleton_ids[0]': skeleton_id})
+        self.assertEqual(response.status_code, 200)
+
+        self.fake_authentication()
+        response = self.client.post(
+            '/%d/skeleton/%d/permissions' % (self.test_project_id, skeleton_id,))
+        expected_result = {'can_edit': False} # test2 does not have permission for test0
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        self.assertEqual(parsed_response, expected_result)
+
     def test_skeleton_open_leaves(self):
         skeleton_id = 235
 

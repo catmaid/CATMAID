@@ -445,17 +445,17 @@
     var exec = function(done, command, map) {
 
       // Map nodes to current ID and time
-      var mNode = map.getWithTime(map.NODE, umNode[0], umNode[1]);
-      var mParent = map.getWithTime(map.NODE, umParent[0], umParent[1]);
+      var mNode = map.getWithTime(map.NODE, umNode[0], umNode[1], command);
+      var mParent = map.getWithTime(map.NODE, umParent[0], umParent[1], command);
 
       // Formulate expectations for back-end, a state that includes all mapped
       // children, parent and links of the node created originally.
       var mChildren = umChildren.map(function(c) {
-        var mChild = map.getWithTime(map.NODE, c[0], c[1]);
+        var mChild = map.getWithTime(map.NODE, c[0], c[1], command);
         return [mChild.value, mChild.timestamp];
       });
       var mLinks = umLinks.map(function(l) {
-        var mLink = map.getWithTime(map.LINK, l[0], l[1]);
+        var mLink = map.getWithTime(map.LINK, l[0], l[1], command);
         return [mLink.value, mLink.timestamp];
       });
 
@@ -513,20 +513,20 @@
 
       // Make sure we get the current IDs of the parent and former children,
       // which could have been modified through a redo operation.
-      var mParent = map.getWithTime(map.NODE, umParent[0], umParent[1]);
+      var mParent = map.getWithTime(map.NODE, umParent[0], umParent[1], command);
       var mParentId = mParent.value;
       var mParentEditTime = mParent.timestamp;
 
       // Get IDs of previous children and map them to their current values
       var mChildren = command.get('children').map(function(child) {
-        return this.getNodeWithTime(child[0], child[1]);
+        return this.getNodeWithTime(child[0], child[1], command);
       }, map);
 
       // Re-create removed conncetions, each list element is a list of this
       // form: [<link_id>, <relation-id>, <connector-id>, <link-confidence>]
       var mLinks = links.map(function(link) {
         // Create result element [<connector-id>, <relation-id>, <confidence>]
-        return [this.getNodeId(link[2]), link[1], link[3]];
+        return [this.getNodeId(link[2], command), link[1], link[3]];
       }, map);
 
       // If there were child nodes before the removal, link to them again. The
@@ -602,7 +602,7 @@
       // timestamp. The alternative would be to get the timestamp from the
       // current state. Since this state might change before the command is
       // executed (like changing a section), a copy of the data is used.
-      var mParent = map.getWithTime(map.NODE, umParentId, umParentEditTime);
+      var mParent = map.getWithTime(map.NODE, umParentId, umParentEditTime, command);
       var execState = new CATMAID.LocalState(null, [mParent.value, mParent.timestamp]);
 
       // Create node, error handling has to be done by caller
@@ -625,8 +625,8 @@
       command.validateForUndo(umNodeId, umNodeEditTime);
 
       // Map nodes to current ID and time
-      var mNode = map.getWithTime(map.NODE, umNodeId, umNodeEditTime);
-      var mParent = map.getWithTime(map.NODE, umParentId, umParentEditTime);
+      var mNode = map.getWithTime(map.NODE, umNodeId, umNodeEditTime, command);
+      var mParent = map.getWithTime(map.NODE, umParentId, umParentEditTime, command);
 
       // Formulate expectations for back-end, a neighborhood state of the mapped
       // children, parent and links of the node created originally.
@@ -677,8 +677,8 @@
     var exec = function(done, command, map) {
       // Get current, mapped version of parent and child ID as well as their
       // last timestamp
-      var mParent = map.getWithTime(map.NODE, umParentId, umParentEditTime);
-      var mChild = map.getWithTime(map.NODE, umChildId, umChildEditTime);
+      var mParent = map.getWithTime(map.NODE, umParentId, umParentEditTime, command);
+      var mChild = map.getWithTime(map.NODE, umChildId, umChildEditTime, command);
 
       var execState = new CATMAID.LocalState([mParent.value, mParent.timestamp],
           null, [[mChild.value, mChild.timestamp]]);
@@ -713,9 +713,9 @@
       command.validateForUndo(nodeId, nodeEditTime);
 
       // Map nodes to current ID and time
-      var mNode = map.getWithTime(map.NODE, nodeId, nodeEditTime);
-      var mParent = map.getWithTime(map.NODE, umParentId, umParentEditTime);
-      var mChild = map.getWithTime(map.NODE, umChildId, umChildEditTime);
+      var mNode = map.getWithTime(map.NODE, nodeId, nodeEditTime, command);
+      var mParent = map.getWithTime(map.NODE, umParentId, umParentEditTime, command);
+      var mChild = map.getWithTime(map.NODE, umChildId, umChildEditTime, command);
 
       // Formulate expectations for back-end, a neighborhood state of the mapped
       // children, parent and links of the node created originally.

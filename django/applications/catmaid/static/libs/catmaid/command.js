@@ -32,6 +32,8 @@
     this._store = new Map();
     this.executed = false;
     this.initialized = true;
+    // Keeps track of how often this command has been executed
+    this.nExecuted = 0;
     ++commandCounter;
   };
 
@@ -41,8 +43,11 @@
    *
    * @param {bool}     executed Wether the command has been executed
    */
-  var done = function(executed) {
+  var done = function(executed, undone) {
     this.executed = executed;
+    if (executed) {
+      ++this.nExecuted;
+    }
     CATMAID.tools.callIfFn(this.postAction);
   };
 
@@ -370,11 +375,13 @@
   };
 
   /**
-   * Get mapping for a value of a particular type. If the value isn't found the
-   * input value is returned.
+   * Get mapping for a value of a particular type. If the value isn't found or a
+   * the command has never been executed yet, the input value is returned.
+   * Commands are expected to use the state provided to them for their first
+   * run.
    */
-  CommandStore.prototype.get = function(type, value) {
-    if (!this.typeMaps.has(type)) {
+  CommandStore.prototype.get = function(type, value, command) {
+    if (0 === command.nExecuted || !this.typeMaps.has(type)) {
       return value;
     }
     var map = this.typeMaps.get(type);
@@ -389,9 +396,9 @@
    * Get a value linked to a command store entry. This could for instance be an
    * edition time stamp, which is versioned along with the link target value.
    */
-  CommandStore.prototype.getWithTime = function(type, value, timestamp) {
+  CommandStore.prototype.getWithTime = function(type, value, timestamp, command) {
     var result = {value: value, timestamp: timestamp};
-    if (this.typeMaps.has(type)) {
+    if (0 !== command.nExecuted && this.typeMaps.has(type)) {
       var map = this.typeMaps.get(type);
       if (map.has(value)) {
         var entry = map.get(value);
@@ -405,15 +412,15 @@
   /**
    * Map a single node ID, a shortcut for get().
    */
-  CommandStore.prototype.getNodeId = function(nodeId) {
-    return this.get(this.NODE, nodeId);
+  CommandStore.prototype.getNodeId = function(nodeId, command) {
+    return this.get(this.NODE, nodeId, command);
   };
 
   /**
    * Map a single node ID, a shortcut for getWithData().
    */
-  CommandStore.prototype.getNodeWithTime = function(nodeId, timestamp) {
-    return this.getWithTime(this.NODE, nodeId, timestamp);
+  CommandStore.prototype.getNodeWithTime = function(nodeId, timestamp, command) {
+    return this.getWithTime(this.NODE, nodeId, timestamp, command);
   };
 
   // Add some constants to CommandStore's prototype

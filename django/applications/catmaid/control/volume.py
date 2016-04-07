@@ -64,7 +64,7 @@ class TriangleMeshVolume(PostGISVolume):
             elif str == mesh_type:
                 self.mesh = json.loads(input_mesh)
             else:
-                raise ValueError("Unknown mesh type: " + mesh_type)
+                raise ValueError("Unknown mesh type: " + str(mesh_type))
         else:
             self.mesh = None
 

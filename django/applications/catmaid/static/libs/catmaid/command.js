@@ -350,7 +350,7 @@
     // Get type specific map
     var idMap = this.typeMaps.get(type);
     if (!idMap) {
-      idMap = new Map();
+      idMap = {};
       this.typeMaps.set(type, idMap);
     }
 
@@ -361,11 +361,11 @@
     // Store a mapping for redos, with reference to the initial value, which was
     // originally added by the passed in command (hence redo). If this is the
     // first execution the initial value is the passed in value.
-    var currentMapping = idMap.get(original);
+    var currentMapping = idMap[original];
     if (!currentMapping) {
       // Properties get assigned below
       currentMapping = {};
-      idMap.set(original, currentMapping);
+      idMap[original] = currentMapping;
     }
 
     currentMapping.value = value;
@@ -385,11 +385,8 @@
       return value;
     }
     var map = this.typeMaps.get(type);
-    if (!map.has(value)) {
-      return value;
-    }
-    var entry = map.get(value);
-    return entry.value;
+    var mappedValue = map[value];
+    return value in map ? map[value] : value;
   };
 
   /**
@@ -400,8 +397,8 @@
     var result = {value: value, timestamp: timestamp};
     if (0 !== command.nExecuted && this.typeMaps.has(type)) {
       var map = this.typeMaps.get(type);
-      if (map.has(value)) {
-        var entry = map.get(value);
+      if (value in map) {
+        var entry = map[value];
         result.value = entry.value;
         result.timestamp = entry.timestamp;
       }

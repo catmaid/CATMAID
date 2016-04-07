@@ -205,8 +205,10 @@
   CommandHistory.prototype.execute = function(command) {
     var executedCommand = this.submit.then((function() {
       var result = command.execute(this._store);
-      this._advanceHistory(command);
-      this.trigger(CommandHistory.EVENT_COMMAND_EXECUTED, command, false);
+      result.then((function() {
+        this._advanceHistory(command);
+        this.trigger(CommandHistory.EVENT_COMMAND_EXECUTED, command, false);
+      }).bind(this));
       return result;
     }).bind(this));
 
@@ -229,8 +231,10 @@
         throw new CATMAID.CommandHistoryError("Nothing to undo");
       }
       var result = command.undo(this._store);
-      this._rollbackHistory();
-      this.trigger(CommandHistory.EVENT_COMMAND_UNDONE, command);
+      result.then((function() {
+        this._rollbackHistory();
+        this.trigger(CommandHistory.EVENT_COMMAND_UNDONE, command);
+      }).bind(this));
       return result;
     }).bind(this));
 
@@ -259,8 +263,10 @@
         throw new CATMAID.CommandHistoryError("Nothing to redo");
       }
       var result = command.execute(this._store);
-      this._currentCommand += 1;
-      this.trigger(CommandHistory.EVENT_COMMAND_EXECUTED, command, true);
+      result.then((function() {
+        this._currentCommand += 1;
+        this.trigger(CommandHistory.EVENT_COMMAND_EXECUTED, command, true);
+      }).bind(this));
       return result;
     }).bind(this));
 

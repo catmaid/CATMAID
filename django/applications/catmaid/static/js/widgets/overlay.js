@@ -2800,6 +2800,10 @@ SkeletonAnnotations.TracingOverlay.prototype.goToParentNode = function(treenode_
       CATMAID.error("Could not find node with id #" + treenode_id);
       return;
     }
+    if (node.type === SkeletonAnnotations.TYPE_CONNECTORNODE) {
+      CATMAID.info("Connector nodes do not have parent nodes");
+      return;
+    }
     if (node.isroot) {
       CATMAID.info("This is the root node, can't move to its parent");
       return;

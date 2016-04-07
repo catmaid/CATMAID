@@ -1050,7 +1050,7 @@ SkeletonAnnotations.TracingOverlay.prototype.findConnectors = function(node_id) 
           pre.push(parseInt(id));
         } else if (node.postgroup.hasOwnProperty(node_id)) {
           post.push(parseInt(id));
-        } 
+        }
       } else if (SkeletonAnnotations.SUBTYPE_GAPJUNCTION_CONNECTOR === node.subtype) {
         if (node.gjgroup.hasOwnProperty(node_id)) {
           gj.push(parseInt(id));
@@ -1743,15 +1743,15 @@ SkeletonAnnotations.TracingOverlay.prototype.createGapjunctionTreenode = functio
 {
   // Check that connectorID doesn't already have two gap junction links
   // and that connectorID doesn't have post- or presynaptic links
-  // (It is also checked in the server on attempting to create a link. 
+  // (It is also checked in the server on attempting to create a link.
   // Here, it is checked for convenience to avoid creating an isolated treenode for no reason.)
   var connectorNode = this.nodes[connectorID];
   if (!connectorNode) {
-    CATMAID.error("Connector #" + connectorID + " is not loaded. Browse to " + 
+    CATMAID.error("Connector #" + connectorID + " is not loaded. Browse to " +
         "its section and make sure it is selected.");
     return;
   }
-  if (Object.keys(connectorNode.gjgroup).length > 1) { 
+  if (Object.keys(connectorNode.gjgroup).length > 1) {
     CATMAID.msg("WARNING", "The connector already has two gap junction nodes!");
     return;
   }
@@ -1759,7 +1759,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createGapjunctionTreenode = functio
     CATMAID.msg("WARNING", "Gap junction can not be added as the connector is part of a synapse!");
     return;
   }
-  this.createTreenodeWithLink(connectorID, phys_x, phys_y, phys_z, radius, 
+  this.createTreenodeWithLink(connectorID, phys_x, phys_y, phys_z, radius,
       confidence, pos_x, pos_y, pos_z, "gapjunction_with", afterCreate);
 };
 

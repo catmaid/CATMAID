@@ -1,7 +1,7 @@
 {% extends "catmaid/import/annotations/setup.html" %}
 
 {% block setup_content %}
-    <p>Below you will find a list of all annotation data that will get importet.
+    <p>Below you will find a list of all annotation data that will get imported.
     These are for the most part neurons and their representation alongside meta
     information on them. Once you continue, everthing will be imported.</p>
     <hr />
@@ -30,6 +30,6 @@
           <td>{{ s.nannotationlinks }}</td>
           <td>{{ s.ntags }}</td>
         </tr>
-      {% endfor %} 
+      {% endfor %}
     </table>
 {% endblock %}

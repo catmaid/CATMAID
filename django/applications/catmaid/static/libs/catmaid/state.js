@@ -266,7 +266,6 @@
     this.parent = parent;
     this.children = children;
     this.links = links;
-    this.nodes = {};
   };
 
   LocalState.prototype = Object.create(GenericState.prototype);

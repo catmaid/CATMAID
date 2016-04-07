@@ -27,7 +27,7 @@
       var params = {
         radius: radius,
         option: updateMode,
-        state: state
+        state: state.makeNodeState(nodeId)
       };
 
       return CATMAID.fetch(url, 'POST', params).then((function(json) {
@@ -57,7 +57,7 @@
         treenode_radii: treenodeIds.map(function(tnid) {
           return nodesVsRadii[tnid];
         }),
-        state: state
+        state: state.makeMultiNodeState(treenodeIds)
       };
 
       return CATMAID.fetch(url, 'POST', params).then(function(json) {
@@ -323,37 +323,69 @@
   CATMAID.UpdateNodeRadiusCommand = CATMAID.makeCommand(function(
         state, projectId, nodeId, radius, updateMode) {
 
-    var exec = function(done, command) {
-      var updateRadius = CATMAID.Nodes.updateRadius(state, projectId, nodeId,
+    var umNode = state.getNode(nodeId);
+
+    var exec = function(done, command, map) {
+      // Map nodes to current ID and time
+      var mNode = map.getWithTime(map.NODE, umNode[0], umNode[1], command);
+      var execState = new CATMAID.LocalState([mNode.value, mNode.timestamp]);
+      var updateRadius = CATMAID.Nodes.updateRadius(execState, projectId, nodeId,
           radius, updateMode);
 
       return updateRadius.then(function(result) {
+        var updatedNodes = result.updatedNodes;
         // The returned updatedNodes list contains objects with a node id and
         // the old radius.
-        command.store("updatedNodes", result.updatedNodes);
+        command.store("updatedNodes", updatedNodes);
+        // update stored state of mapped nodes, needed for undo
+        for (var n in updatedNodes) {
+          var node = updatedNodes[n];
+          map.add(map.NODE, n, n, node.edition_time);
+        }
+        // Add original mapping explicitely
+        var updatedNode = result.updatedNodes[mNode.value];
+        if (updatedNode) {
+          map.add(map.NODE, umNode[0], mNode.value, node.edition_time);
+        }
+
         done();
         return result;
       });
     };
 
-    var undo = function(done, command) {
+    var undo = function(done, command, map) {
       var updatedNodes = command.get("updatedNodes");
       command.validateForUndo(updatedNodes);
 
       var updateNodeIds = Object.keys(updatedNodes);
-      var oldRadii = updateNodeIds.reduce(function(o, n) {
-        o[n] = updatedNodes[n].old;
-        return o;
-      }, {});
       // Create state that contains information about all modified nodes
-      var editionTimes = updateNodeIds.reduce(function(o, n) {
-        o[n] = updatedNodes[n].edition_time;
+      var mappedNodes = updateNodeIds.reduce(function(o, n) {
+        var mappedNode = map.getWithTime(map.NODE, n, updatedNodes[n].edition_time, command);
+        o.radii[mappedNode.value] = updatedNodes[n].old;
+        o.state[mappedNode.value] = mappedNode.timestamp;
         return o;
-      }, {});
-      var state = CATMAID.getMultiNodeState(editionTimes);
+      }, {'radii': {}, 'state': {}});
 
-      var updateRadii = CATMAID.Nodes.updateRadii(state, projectId, oldRadii);
-      return updateRadii.then(done);
+      var undoState = new CATMAID.SimpleSetState(mappedNodes.state);
+      var updateRadii = CATMAID.Nodes.updateRadii(undoState, projectId, mappedNodes.radii);
+      return updateRadii.then(function(result) {
+        // Map nodes to current ID and time
+        var mNode = map.getWithTime(map.NODE, umNode[0], umNode[1], command);
+        var updatedNodes = result.updatedNodes;
+        // update stored state of mapped nodes, needed for undo
+        for (var n in updatedNodes) {
+          var node = updatedNodes[n];
+          map.add(map.NODE, n, n, node.edition_time);
+        }
+        // Add original mapping explicitely
+        var updatedNode = result.updatedNodes[mNode.value];
+        if (updatedNode) {
+          map.add(map.NODE, umNode[0], mNode.value, node.edition_time);
+        }
+
+        done();
+        return result;
+      });
     };
 
     var info;
@@ -379,6 +411,7 @@
     } else {
       info = "Update radius of node " + nodeId + " to be " + radius + "nm";
     }
+
     this.init(info, exec, undo);
   });
 

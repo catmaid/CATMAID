@@ -38,11 +38,12 @@
   };
 
   /**
-   * A state representation for new nodes.
+   * A state representation for new nodes. Currently it contains only the
+   * edition time, because the node ID is expected to be sent along with a state
    */
   CATMAID.getNodeState = function(nodeId, editionTime) {
     var state = {
-      "node": [nodeId, editionTime]
+      "edition_time": editionTime
     };
     return JSON.stringify(state);
   };
@@ -121,6 +122,17 @@
       throw new CATMAID.ValueError("Couldn't find node " + nodeId + " in state");
     }
     return CATMAID.getNodeState(node[0], node[1]);
+  };
+
+  GenericState.prototype.makeMultiNodeState = function(nodeIds) {
+    var state = nodeIds.map(function(nodeId) {
+      var node = this.getNode(nodeId);
+      if (!node) {
+        throw new CATMAID.ValueError("Couldn't find node " + nodeId + " in state");
+      }
+      return node;
+    }, this);
+    return JSON.stringify(state);
   };
 
   GenericState.prototype.makeParentState = function(nodeId) {
@@ -218,6 +230,30 @@
 
   CATMAID.GenericState = GenericState;
 
+  /**
+   * This state type doesn't know about parent/child relations, but only maps
+   * node IDs to edition times can create simple single and multi node states
+   * from it.
+   */
+  var SimpleSetState = function(nodes) {
+    this.nodes = nodes;
+  };
+
+  SimpleSetState.prototype = Object.create(GenericState.prototype);
+  SimpleSetState.constructor = SimpleSetState;
+
+  SimpleSetState.prototype.getLinks = CATMAID.noop;
+  SimpleSetState.prototype.getParent = CATMAID.noop;
+  SimpleSetState.prototype.getChildren = CATMAID.noop;
+  SimpleSetState.prototype.getNode = function(nodeId) {
+    var node, timestamp = this.nodes[nodeId];
+    if (timestamp) {
+      node = [nodeId, timestamp];
+    }
+    return node;
+  };
+
+  CATMAID.SimpleSetState = SimpleSetState;
 
   /**
    * This state represents only a local node centered part. If passed in, node

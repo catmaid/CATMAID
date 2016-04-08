@@ -3045,7 +3045,11 @@ class ViewPageTests(TestCase):
                     't[0][3]': z})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
-        expected_result = {'updated': 1}
+        expected_result = {
+            'updated': 1,
+            'old_connectors': None,
+            'old_treenodes': [[289, 6210.0, 3480.0, 0.0]],
+        }
         self.assertEqual(expected_result, parsed_response)
         treenode = Treenode.objects.filter(id=treenode_id)[0]
         self.assertEqual(x, treenode.location_x)
@@ -3238,7 +3242,7 @@ class ViewPageTests(TestCase):
                 'labels': False,})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
-        self.assertEqual(4, len(parsed_response))
+        self.assertEqual(5, len(parsed_response))
         self.assertEqual(len(expected_t_result), len(parsed_response[0]))
         self.assertEqual(len(expected_c_result), len(parsed_response[1]))
         for row in expected_t_result:

@@ -338,16 +338,18 @@
 
   // A function to return undefined, just to be explicit.
   function returnUndefined() {}
+  function returnUndefinedNode() { return [null, null]; }
+  function returnEmptyList() { return []; }
 
   /**
    * A no-check implementation returns undefined for all nodes and the created
    * state serializations trigger the back-end to disable state checking.
    */
   var NoCheckState = function() {};
-  NoCheckState.prototype.getNode = returnUndefined;
-  NoCheckState.prototype.getParent = returnUndefined;
-  NoCheckState.prototype.getChildren = returnUndefined;
-  NoCheckState.prototype.getLinks = returnUndefined;
+  NoCheckState.prototype.getNode = returnUndefinedNode;
+  NoCheckState.prototype.getParent = returnUndefinedNode;
+  NoCheckState.prototype.getChildren = returnEmptyList;
+  NoCheckState.prototype.getLinks = returnEmptyList;
   NoCheckState.prototype.makeNodeState = CATMAID.getNoCheckState;
   NoCheckState.prototype.makeParentState = CATMAID.getNoCheckState;
   NoCheckState.prototype.makeEdgeState = CATMAID.getNoCheckState;

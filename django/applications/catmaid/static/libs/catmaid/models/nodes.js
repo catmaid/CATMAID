@@ -630,6 +630,9 @@
     var umParentId = umParent[0];
     var umParentEditTime = umParent[1];
 
+    // First execution will set the original node that all mapping will refer to
+    var umNodeId, umNodeEditTime;
+
     var exec = function(done, command, map) {
       // Get current, mapped version of parent ID as well as its latest
       // timestamp. The alternative would be to get the timestamp from the
@@ -643,8 +646,13 @@
           mParent.value, radius, confidence, useNeuron, neuronName);
 
       return create.then(function(result) {
+        // First execution will remember the added node for redo mapping
+        if (!umNodeId) {
+          umNodeId = result.treenode_id;
+          umNodeEditTime = result.edition_time;
+        }
         // Store ID of new node created by this command
-        map.add(map.NODE, null, result.treenode_id, result.edition_time);
+        map.add(map.NODE, umNodeId, result.treenode_id, result.edition_time);
         command.store('nodeId', result.treenode_id);
         command.store('nodeEditTime', result.edition_time);
         done();
@@ -707,6 +715,9 @@
       umChildEditTime = umChild[1];
     }
 
+    // First execution will set the original node that all mapping will refer to
+    var umNodeId, umNodeEditTime;
+
     var exec = function(done, command, map) {
       // Get current, mapped version of parent and child ID as well as their
       // last timestamp
@@ -719,8 +730,13 @@
           mParent.value, mChild.value, radius, confidence, useNeuron);
 
       return insert.then(function(result) {
+        // First execution will remember the added node for redo mapping
+        if (!umNodeId) {
+          umNodeId = result.treenode_id;
+          umNodeEditTime = result.edition_time;
+        }
         // Store ID of new node created by this command
-        map.add(map.NODE, null, result.treenode_id, result.edition_time);
+        map.add(map.NODE, umNodeId, result.treenode_id, result.edition_time);
         command.store('nodeId', result.treenode_id);
         command.store('nodeEditTime', result.edition_time);
 

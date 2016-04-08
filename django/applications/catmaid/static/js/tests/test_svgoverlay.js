@@ -67,6 +67,20 @@ QUnit.test('SVG overlay test', function( assert ) {
           needsync: true
         }
       },
+      state: new CATMAID.GenericState({
+        getNode: function(nodeId) {
+          return [nodeId, "fakeEditTime"];
+        },
+        getParent: function(nodeId) {
+          return [nodeId, "fakeEditTime"];
+        },
+        getChildren: function(nodeId) {
+          return [];
+        },
+        getLinks: function(nodeId) {
+          return [];
+        },
+      }),
       selectNode: function() {},
       submit: submitterFn(),
       pix2physX: function() { return 0; },

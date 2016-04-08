@@ -74,7 +74,8 @@
      * @returns A new promise that is resolved once the confidence has been
      *          successfully updated.
      */
-    updateConfidence: function(projectId, nodeId, newConfidence, toConnector, partnerId) {
+    updateConfidence: function(state, projectId, nodeId, newConfidence,
+        toConnector, partnerId) {
       CATMAID.requirePermission(projectId, 'can_annotate',
           'You don\'t have have permission to change the node confidence');
 
@@ -82,6 +83,7 @@
       var params = {
         to_connector: toConnector,
         new_confidence: newConfidence,
+        state: state.makeNodeState(nodeId)
       };
       if (partnerId) {
         params[partner_id] = partnerId;
@@ -416,30 +418,31 @@
   });
 
   CATMAID.UpdateConfidenceCommand = CATMAID.makeCommand(function(
-        projectId, nodeId, newConfidence, toConnector) {
-    var exec = function(done, command) {
-      var updateConfidence = CATMAID.Nodes.updateConfidence(projectId, nodeId,
-          newConfidence, toConnector);
+        state, projectId, nodeId, newConfidence, toConnector) {
+
+    var exec = function(done, command, map) {
+      var execState = CATMAID.NoCheckState();
+      var updateConfidence = CATMAID.Nodes.updateConfidence(state,
+          projectId, nodeId, newConfidence, toConnector);
 
       return updateConfidence.then(function(result) {
-        // The returned updatedNodes list contains objects with a node id and
-        // the old radius.
         command._updatedPartners = result.updatedPartners;
         done();
         return result;
       });
     };
 
-    var undo = function(done, command) {
+    var undo = function(done, command, map) {
       // Fail if expected undo parameters are not available from command
       if (undefined === command._updatedPartners) {
         throw new CATMAID.ValueError('Can\'t undo confidence update, ' +
             'history data not available');
       }
 
+      var undoState = CATMAID.NoCheckState();
       var promises = Object.keys(command._updatedPartners).map(function(partnerId) {
         var oldConfidence = command._updatedPartners[partnerId];
-        return CATMAID.Nodes.updateConfidence(projectId, nodeId, oldConfidence,
+        return CATMAID.Nodes.updateConfidence(undoState, projectId, nodeId, oldConfidence,
             toConnector, partnerId);
       });
 

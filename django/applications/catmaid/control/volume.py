@@ -27,7 +27,7 @@ def get_req_coordinate(request_dict, c):
 def require_option(obj, field):
     """Raise an exception if a field is missing
     """
-    if obj.has_key(field):
+    if field in obj:
         return obj.get(field)
     else:
         raise ValueError("Parameter '{}' is missing".format(field))
@@ -124,8 +124,8 @@ class TriangleMeshVolume(PostGISVolume):
 
 class BoxVolume(PostGISVolume):
 
-    def __init__(self, options):
-        super(BoxVolume, self).__init__(project_id, user_id, options);
+    def __init__(self, project_id, user_id, options):
+        super(BoxVolume, self).__init__(project_id, user_id, options)
         self.min_x = get_req_coordinate(options, "min_x")
         self.min_y = get_req_coordinate(options, "min_y")
         self.min_z = get_req_coordinate(options, "min_z")
@@ -205,7 +205,7 @@ def volume_collection(request, project_id):
     """Get a collection of all available volumes.
     """
     if request.method == 'GET':
-        p = get_object_or_404(Project, pk = project_id)
+        p = get_object_or_404(Project, pk=project_id)
         # FIXME: Parsing our PostGIS geometry with GeoDjango doesn't work
         # anymore since Django 1.8. Therefore, the geometry fields isn't read.
         # See: https://github.com/catmaid/CATMAID/issues/1250
@@ -223,7 +223,7 @@ def volume_detail(request, project_id, volume_id):
     actual geometry encoded in X3D format. The response might might therefore be
     relatively large.
     """
-    p = get_object_or_404(Project, pk = project_id)
+    p = get_object_or_404(Project, pk=project_id)
     if request.method == 'GET':
         cursor = connection.cursor()
         cursor.execute("""
@@ -387,7 +387,7 @@ def intersects(request, project_id, volume_id):
     if request.method != 'GET':
         return
 
-    p = get_object_or_404(Project, pk = project_id)
+    p = get_object_or_404(Project, pk=project_id)
     x = request.GET.get('x', None)
     y = request.GET.get('y', None)
     z = request.GET.get('z', None)

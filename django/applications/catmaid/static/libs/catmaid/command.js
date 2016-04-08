@@ -32,6 +32,8 @@
     this._store = new Map();
     this.executed = false;
     this.initialized = true;
+    // Keeps track of how often this command has been executed
+    this.nExecuted = 0;
     ++commandCounter;
   };
 
@@ -41,8 +43,11 @@
    *
    * @param {bool}     executed Wether the command has been executed
    */
-  var done = function(executed) {
+  var done = function(executed, undone) {
     this.executed = executed;
+    if (executed) {
+      ++this.nExecuted;
+    }
     CATMAID.tools.callIfFn(this.postAction);
   };
 
@@ -200,8 +205,10 @@
   CommandHistory.prototype.execute = function(command) {
     var executedCommand = this.submit.then((function() {
       var result = command.execute(this._store);
-      this._advanceHistory(command);
-      this.trigger(CommandHistory.EVENT_COMMAND_EXECUTED, command, false);
+      result.then((function() {
+        this._advanceHistory(command);
+        this.trigger(CommandHistory.EVENT_COMMAND_EXECUTED, command, false);
+      }).bind(this));
       return result;
     }).bind(this));
 
@@ -224,8 +231,10 @@
         throw new CATMAID.CommandHistoryError("Nothing to undo");
       }
       var result = command.undo(this._store);
-      this._rollbackHistory();
-      this.trigger(CommandHistory.EVENT_COMMAND_UNDONE, command);
+      result.then((function() {
+        this._rollbackHistory();
+        this.trigger(CommandHistory.EVENT_COMMAND_UNDONE, command);
+      }).bind(this));
       return result;
     }).bind(this));
 
@@ -254,8 +263,10 @@
         throw new CATMAID.CommandHistoryError("Nothing to redo");
       }
       var result = command.execute(this._store);
-      this._currentCommand += 1;
-      this.trigger(CommandHistory.EVENT_COMMAND_EXECUTED, command, true);
+      result.then((function() {
+        this._currentCommand += 1;
+        this.trigger(CommandHistory.EVENT_COMMAND_EXECUTED, command, true);
+      }).bind(this));
       return result;
     }).bind(this));
 
@@ -322,20 +333,6 @@
     this.initialValues = new Map();
     // To have a key/value store per type
     this.typeMaps = new Map();
-    // To have a key/value store per command
-    this.commandStore = new Map();
-  };
-
-  /**
-   * Get a mapped ID for another ID. If no mapping exists, the query ID will be
-   * returned.
-   */
-  CommandStore.prototype.get = function(type, id) {
-    var oldId, idMap = this.typeMaps.get(type);
-    if (idMap) {
-      oldId =  idMap.get(id);
-    }
-    return oldId || id;
   };
 
   /**
@@ -343,44 +340,90 @@
    * a particular command. The current mapping can be retrieved through the
    * map() method.
    *
-   * @param {anything} value The value to store, can be anything.
-   * @param {type}     type  The type of the value, one of avai
+   * @param {type}     type      The type of the value, one of avai
+   * @param {anything} original  Original value that the new value is mapped to
+   * @param {anything} value     The value to store, can be anything.
+   * @param {String}   timestamp The timestampt to asspciate with value
    */
-  CommandStore.prototype.add = function(type, value, command) {
-    var commandId = command.getId();
-    var initialValue = this.initialValues.get(commandId);
-    if (undefined === initialValue) {
-      initialValue = value;
-      // Remember all seen commands and the initial value
-      this.initialValues.set(commandId, initialValue);
+  CommandStore.prototype.add = function(type, original, value, timestamp) {
+    if (!value) {
+      throw CATMAID.ValueError("Can't add value to store: invalid value");
+    }
+    if (!timestamp) {
+      throw CATMAID.ValueError("Can't add value to store: invalid timestamp");
     }
 
     // Get type specific map
     var idMap = this.typeMaps.get(type);
     if (!idMap) {
-      idMap = new Map();
+      idMap = {};
       this.typeMaps.set(type, idMap);
     }
 
-    // Store a mapping for redos and the initial value for the first execution
-    idMap.set(initialValue, value);
+    if (!original) {
+      original = value;
+    }
+
+    // Store a mapping for redos, with reference to the initial value, which was
+    // originally added by the passed in command (hence redo). If this is the
+    // first execution the initial value is the passed in value.
+    var currentMapping = idMap[original];
+    if (!currentMapping) {
+      // Properties get assigned below
+      currentMapping = {};
+      idMap[original] = currentMapping;
+    }
+
+    currentMapping.value = value;
+    currentMapping.timestamp = timestamp;
 
     return this;
   };
 
   /**
-   * Get mapping for a value of a particular type. If the value isn't found the
-   * input value is returned.
+   * Get mapping for a value of a particular type. If the value isn't found or a
+   * the command has never been executed yet, the input value is returned.
+   * Commands are expected to use the state provided to them for their first
+   * run.
    */
-  CommandStore.prototype.get = function(type, value) {
-    if (!this.typeMaps.has(type)) {
+  CommandStore.prototype.get = function(type, value, command) {
+    if (0 === command.nExecuted || !this.typeMaps.has(type)) {
       return value;
     }
     var map = this.typeMaps.get(type);
-    if (!map.has(value)) {
-      return value;
+    var mappedValue = map[value];
+    return value in map ? map[value] : value;
+  };
+
+  /**
+   * Get a value linked to a command store entry. This could for instance be an
+   * edition time stamp, which is versioned along with the link target value.
+   */
+  CommandStore.prototype.getWithTime = function(type, value, timestamp, command) {
+    var result = {value: value, timestamp: timestamp};
+    if (0 !== command.nExecuted && this.typeMaps.has(type)) {
+      var map = this.typeMaps.get(type);
+      if (value in map) {
+        var entry = map[value];
+        result.value = entry.value;
+        result.timestamp = entry.timestamp;
+      }
     }
-    return map.get(value);
+    return result;
+  };
+
+  /**
+   * Map a single node ID, a shortcut for get().
+   */
+  CommandStore.prototype.getNodeId = function(nodeId, command) {
+    return this.get(this.NODE, nodeId, command);
+  };
+
+  /**
+   * Map a single node ID, a shortcut for getWithData().
+   */
+  CommandStore.prototype.getNodeWithTime = function(nodeId, timestamp, command) {
+    return this.getWithTime(this.NODE, nodeId, timestamp, command);
   };
 
   // Add some constants to CommandStore's prototype

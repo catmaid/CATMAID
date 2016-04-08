@@ -3,6 +3,7 @@ import re
 
 from collections import defaultdict
 
+from django.core.serializers.json import DjangoJSONEncoder
 from django.conf import settings
 from django.db import connection
 from django.http import HttpResponse
@@ -69,6 +70,7 @@ def get_treenodes_classic(cursor, params):
         t1.confidence,
         t1.radius,
         t1.skeleton_id,
+        t1.edition_time,
         t1.user_id,
         t2.id,
         t2.parent_id,
@@ -78,6 +80,7 @@ def get_treenodes_classic(cursor, params):
         t2.confidence,
         t2.radius,
         t2.skeleton_id,
+        t2.edition_time,
         t2.user_id
     FROM treenode t1
             INNER JOIN treenode t2 ON
@@ -125,6 +128,7 @@ def get_treenodes_postgis(cursor, params):
         t1.confidence,
         t1.radius,
         t1.skeleton_id,
+        t1.edition_time,
         t1.user_id,
         t2.id,
         t2.parent_id,
@@ -134,6 +138,7 @@ def get_treenodes_postgis(cursor, params):
         t2.confidence,
         t2.radius,
         t2.skeleton_id,
+        t2.edition_time,
         t2.user_id
     FROM
       treenode t1,
@@ -166,6 +171,7 @@ def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_pr
         SELECT relation_name, id FROM relation WHERE project_id=%s
         ''' % project_id)
         relation_map = dict(cursor.fetchall())
+        id_to_relation = {v: k for k, v in relation_map.items()}
 
         response_on_error = 'Failed to query treenodes'
 
@@ -194,11 +200,13 @@ def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_pr
             t1id = row[0]
             if t1id not in treenode_ids:
                 treenode_ids.add(t1id)
-                treenodes.append(row[0:8] + (is_superuser or row[8] == user_id or row[8] in domain,))
-            t2id = row[9]
+                can_edit = is_superuser or row[9] == user_id or row[9] in domain
+                treenodes.append(row[0:9] + (can_edit,))
+            t2id = row[10]
             if t2id not in treenode_ids:
                 treenode_ids.add(t2id)
-                treenodes.append(row[9:17] + (is_superuser or row[17] == user_id or row[17] in domain,))
+                can_edit = is_superuser or row[19] == user_id or row[19] in domain
+                treenodes.append(row[10:19] + (can_edit,))
 
 
         # Find connectors related to treenodes in the field of view
@@ -217,6 +225,8 @@ def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_pr
                 tc.relation_id,
                 tc.treenode_id,
                 tc.confidence,
+                tc.edition_time,
+                tc.id,
                 c.user_id
             FROM treenode_connector tc
             INNER JOIN connector c ON (tc.connector_id = c.id)
@@ -238,6 +248,8 @@ def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_pr
             treenode_connector.relation_id,
             treenode_connector.treenode_id,
             treenode_connector.confidence,
+            treenode_connector.edition_time,
+            treenode_connector.id,
             connector.user_id
         FROM connector LEFT OUTER JOIN treenode_connector
                        ON connector.id = treenode_connector.connector_id
@@ -261,21 +273,12 @@ def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_pr
             missing_treenode_ids.add(atnid)
         # A set of unique connector IDs
         connector_ids = set()
-        # The relations between connectors and treenodes, stored
-        # as connector ID keys vs a list of tuples, each with the treenode id,
-        # the type of relation (presynaptic_to or postsynaptic_to), and the confidence.
-        # The list of tuples is generated later from a dict,
-        # so that repeated tnid entries are overwritten.
-        pre = defaultdict(dict)
-        post = defaultdict(dict)
-        gj = defaultdict(dict)
-        other = defaultdict(dict)
 
-        # Process crows (rows with connectors) which could have repeated connectors
-        # given the join with treenode_connector
-        presynaptic_to = relation_map['presynaptic_to']
-        postsynaptic_to = relation_map['postsynaptic_to']
-        gapjunction_with = relation_map.get('gapjunction_with', -1)
+        # Collect links to connectos for each treenode. Each entry maps a
+        # relation ID to a an object containing the relation name, and an object
+        # mapping connector IDs to confidences.
+        links = defaultdict(list)
+        used_relations = set()
         for row in crows:
             # Collect treeenode IDs related to connectors but not yet in treenode_ids
             # because they lay beyond adjacent sections
@@ -288,14 +291,10 @@ def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_pr
                 # row[5]: treenode_relation_id
                 # row[6]: treenode_id (tnid above)
                 # row[7]: tc_confidence
-                if row[5] == presynaptic_to:
-                    pre[cid][tnid] = row[7]
-                elif row[5] == postsynaptic_to:
-                    post[cid][tnid] = row[7]
-                elif row[5] == gapjunction_with:
-                    gj[cid][tnid] = row[7]
-                else:
-                    other[cid][tnid] = row[7]
+                # row[8]: tc_edition_time
+                # row[9]: tc_id
+                links[cid].append((tnid, row[5], row[7], row[8], row[9]))
+                used_relations.add(row[5])
 
             # Collect unique connectors
             if cid not in connector_ids:
@@ -306,12 +305,8 @@ def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_pr
         for i in xrange(len(connectors)):
             c = connectors[i]
             cid = c[0]
-            connectors[i] = (cid, c[1], c[2], c[3], c[4],
-                    [kv for kv in  pre[cid].iteritems()],
-                    [kv for kv in post[cid].iteritems()],
-                    [kv for kv in   gj[cid].iteritems()],
-                    [kv for kv in other[cid].iteritems()],
-                    is_superuser or c[8] == user_id or c[8] in domain)
+            connectors[i] = (cid, c[1], c[2], c[3], c[4], links[cid], c[8],
+                    is_superuser or c[10] == user_id or c[10] in domain)
 
 
         # Fetch missing treenodes. These are related to connectors
@@ -332,13 +327,15 @@ def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_pr
                 confidence,
                 radius,
                 skeleton_id,
+                edition_time,
                 user_id
             FROM treenode, (VALUES %s) missingnodes(mnid)
             WHERE id = mnid''' % missing_id_list)
 
             for row in cursor.fetchall():
                 treenodes.append(row)
-                treenode_ids.add(row[0:8] + (is_superuser or row[8] == user_id or row[8] in domain,))
+                treenode_ids.add(row[0:9] + (is_superuser or row[9] == user_id
+                    or row[9] in domain,))
 
         labels = defaultdict(list)
         if includeLabels:
@@ -379,7 +376,13 @@ def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_pr
                 for row in cursor.fetchall():
                     labels[row[0]].append(row[1])
 
-        return HttpResponse(json.dumps((treenodes, connectors, labels, n_retrieved_nodes == params['limit']), separators=(',', ':'))) # default separators have spaces in them like (', ', ': '). Must provide two: for list and for dictionary. The point of this: less space, more compact json
+        used_rel_map = {r:id_to_relation[r] for r in used_relations}
+        return HttpResponse(json.dumps((
+            treenodes, connectors, labels,
+            n_retrieved_nodes == params['limit'],
+            used_rel_map),
+            cls=DjangoJSONEncoder,
+            separators=(',', ':'))) # default separators have spaces in them like (', ', ': '). Must provide two: for list and for dictionary. The point of this: less space, more compact json
 
     except Exception as e:
         raise Exception(response_on_error + ':' + str(e))

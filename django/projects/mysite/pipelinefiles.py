@@ -71,7 +71,7 @@ libraries_js = {
     'filesaver': ['*.js'],
     'whammy': ['whammy.js'],
     'geometry': ['geometry.js', 'intersects.js'], # order matters
-    'catmaid': ['request.js', 'CATMAID.js', 'error.js', 'events.js',
+    'catmaid': ['request.js', 'CATMAID.js', 'error.js', 'events.js', 'state.js',
                 'command.js', 'models/*.js','skeleton_source.js', '*.js'],
 }
 

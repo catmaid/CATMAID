@@ -6,8 +6,8 @@ QUnit.test('Command history test', function(assert) {
   var makeCounterCommand = function() {
     var counter = 0;
     var IncrementCommand = CATMAID.makeCommand(function() {
-      var exec = function(done, command) { ++counter; done(); return counter; };
-      var undo = function(done, command) { --counter; done(); return counter; };
+      var exec = function(done, command, map) { ++counter; done(); return Promise.resolve(counter); };
+      var undo = function(done, command, map) { --counter; done(); return Promise.resolve(counter); };
 
       this.init("Increment counter", exec, undo);
     });
@@ -19,7 +19,7 @@ QUnit.test('Command history test', function(assert) {
   };
 
   var NoopCommand = CATMAID.makeCommand(function() {
-    var noop = function(done, command) { done(); };
+    var noop = function(done, command) { done(); return Promise.resolve(); };
     this.init("No-op", noop, noop);
   });
 

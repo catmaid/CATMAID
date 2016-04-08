@@ -1,4 +1,3 @@
-import decimal
 import itertools
 import json
 import math
@@ -12,12 +11,13 @@ from django.http import HttpResponse, JsonResponse
 
 from rest_framework.decorators import api_view
 
+from catmaid import state
 from catmaid.models import UserRole, Treenode, ClassInstance, \
         TreenodeConnector, Location
 from catmaid.control.authentication import requires_user_role, \
         can_edit_class_instance_or_fail, can_edit_or_fail
 from catmaid.control.common import get_relation_to_id_map, \
-        get_class_to_id_map, insert_into_log, _create_relation
+        get_class_to_id_map, insert_into_log, _create_relation, get_request_list
 from catmaid.control.neuron import _delete_if_empty
 from catmaid.control.node import _fetch_location, _fetch_locations
 from catmaid.util import Point3D, is_collinear
@@ -68,15 +68,38 @@ def create_treenode(request, project_id=None):
     for p in string_values.keys():
         params[p] = request.POST.get(p, string_values[p])
 
-    treenode_id, skeleton_id = _create_treenode(project_id, request.user, request.user,
+    # Get optional initial links to connectors, expect each entry to be a list
+    # of connector ID, relation ID and confidence.
+    links = get_request_list(request.POST, 'links', [], map_fn=int)
+
+    # Make sure the back-end is in the expected state if the node should have a
+    # parent and will therefore become part of another skeleton.
+    parent_id = int(params['parent_id'])
+    has_parent = parent_id and parent_id != -1
+    has_links = bool(links)
+    if has_parent:
+        state.validate_state(parent_id, request.POST.get('state'),
+                parent_edittime=has_parent, lock=True)
+
+    new_treenode = _create_treenode(project_id, request.user, request.user,
             params['x'], params['y'], params['z'], params['radius'],
             params['confidence'], params['useneuron'], params['parent_id'],
             neuron_name=request.POST.get('neuron_name', None))
 
-    return HttpResponse(json.dumps({
-        'treenode_id': treenode_id,
-        'skeleton_id': skeleton_id
-    }))
+    # Create all initial links
+    if links:
+        created_links = _create_connector_link(project_id, request.user.id,
+                new_treenode.treenode_id, new_treenode.skeleton_id, links);
+    else:
+        created_links = []
+
+    return JsonResponse({
+        'treenode_id': new_treenode.treenode_id,
+        'skeleton_id': new_treenode.skeleton_id,
+        'edition_time': new_treenode.edition_time,
+        'parent_edition_time': new_treenode.parent_edition_time,
+        'created_links': created_links
+    })
 
 @requires_user_role(UserRole.Annotate)
 def insert_treenode(request, project_id=None):
@@ -104,6 +127,32 @@ def insert_treenode(request, project_id=None):
     for p in int_values.keys():
         params[p] = int(request.POST.get(p, int_values[p]))
 
+    # If siblings should be taken over, all children of the parent node will be
+    # come children of the inserted node. This requires extra state
+    # information: the child state for the paren.
+    takeover_child_ids = get_request_list(request.POST,
+            'takeover_child_ids', None, lambda x: int(x))
+
+    # Get optional initial links to connectors, expect each entry to be a list
+    # of connector ID and relation ID.
+    try:
+        links = get_request_list(request.POST, 'links', [], lambda x: int(x))
+    except Exception, e:
+        raise ValueError("Couldn't parse list parameter: {}".format(e))
+
+    # Make sure the back-end is in the expected state if the node should have a
+    # parent and will therefore become part of another skeleton.
+    parent_id = params.get('parent_id')
+    child_id = params.get('child_id')
+    if parent_id not in (-1, None):
+        s = request.POST.get('state')
+        # Testing egular edge insertion is assumed if a child ID is provided
+        partial_child_checks = [] if child_id in (-1, None) else [child_id]
+        if takeover_child_ids:
+            partial_child_checks.extend(takeover_child_ids)
+        state.validate_state(parent_id, s, node=True,
+                children=partial_child_checks or False, lock=True),
+
     # Find child and parent of new treenode
     child = Treenode.objects.get(pk=params['child_id'])
     parent = Treenode.objects.get(pk=params['parent_id'])
@@ -130,18 +179,86 @@ def insert_treenode(request, project_id=None):
         user, time = child.user, child.creation_time
 
     # Create new treenode
-    treenode_id, skeleton_id = _create_treenode(project_id, user, request.user,
-            params['x'], params['y'], params['z'], params['radius'],
-            params['confidence'], -1, params['parent_id'], time)
+    new_treenode = _create_treenode(project_id,
+            user, request.user, params['x'], params['y'], params['z'],
+            params['radius'], params['confidence'], -1, params['parent_id'], time)
 
-    # Update parent of child to new treenode
-    child.parent_id = treenode_id
-    child.save()
+    # Update parent of child to new treenode, do this in raw SQL to also get the
+    # updated edition time Update also takeover children
+    cursor = connection.cursor()
+    params = [new_treenode.treenode_id, child.id]
+    if takeover_child_ids:
+        params.extend(takeover_child_ids)
+        child_template = ",".join(("%s",) * (len(takeover_child_ids) + 1))
+    else:
+        child_template = "%s"
 
-    return HttpResponse(json.dumps({
-        'treenode_id': treenode_id,
-        'skeleton_id': skeleton_id
-    }))
+    cursor.execute("""
+        UPDATE treenode SET parent_id = %s
+         WHERE id IN ({})
+     RETURNING id, edition_time
+    """.format(child_template), params)
+    result = cursor.fetchall()
+    if not result or (len(params) - 1) != len(result):
+        raise ValueError("Couldn't update parent of inserted node's child: " + child.id)
+    child_edition_times = [[k,v] for k,v in result]
+
+    # Create all initial links
+    if links:
+        created_links = _create_connector_link(project_id, request.user.id,
+                new_treenode.treenode_id, new_treenode.skeleton_id, links);
+    else:
+        created_links = []
+
+    return JsonResponse({
+        'treenode_id': new_treenode.treenode_id,
+        'skeleton_id': new_treenode.skeleton_id,
+        'edition_time': new_treenode.edition_time,
+        'parent_edition_time': new_treenode.parent_edition_time,
+        'child_edition_times': child_edition_times,
+        'created_links': created_links
+    })
+
+def _create_connector_link(project_id, user_id, treenode_id, skeleton_id,
+        links, cursor=None):
+    """Create new connector links for the passded in treenode. What relation and
+    confidence is used to which connector is specified in the "links"
+    paremteter. A list of three-element lists, following the following format:
+    [<connector-id>, <relation-id>, <confidence>]
+    """
+    def make_row(l):
+        # Passed in links are expected to follow this format:
+        # [<connector-id>, <relation-id>, <confidence>]
+        if 3 != len(l):
+            raise ValueError("Invalid link information provided")
+        connector_id, relation_id, confidence = l[0], l[1], l[2]
+        return (user_id, project_id, relation_id, treenode_id, connector_id,
+                skeleton_id, confidence)
+
+    new_link_rows = [make_row(l) for l in links]
+    new_link_data = [x for e in new_link_rows for x in e]
+    cursor = cursor or connection.cursor()
+    link_template = ",".join(("({})".format(",".join(("%s",) * 7)),) * len(links))
+
+    cursor.execute("""
+        INSERT INTO treenode_connector (user_id, project_id, relation_id,
+                    treenode_id, connector_id, skeleton_id, confidence)
+        VALUES {}
+        RETURNING id, edition_time
+        """.format(link_template), new_link_data)
+
+    return cursor.fetchall()
+
+class NewTreenode(object):
+    """Represent a newly created treenode and all the information that is
+    returned to the client
+    """
+    def __init__(self, treenode_id, edition_time, skeleton_id,
+            parent_edition_time):
+        self.treenode_id = treenode_id
+        self.edition_time = edition_time
+        self.skeleton_id = skeleton_id
+        self.parent_edition_time = parent_edition_time
 
 def _create_treenode(project_id, creator, editor, x, y, z, radius, confidence,
                      neuron_id, parent_id, creation_time=None, neuron_name=None):
@@ -187,15 +304,18 @@ def _create_treenode(project_id, creator, editor, x, y, z, radius, confidence,
             # updates to its skeleton ID while this node is being created.
             cursor = connection.cursor()
             cursor.execute('''
-                SELECT t.skeleton_id FROM treenode t WHERE t.id = %s
-                FOR NO KEY UPDATE OF t
+                SELECT t.skeleton_id, t.edition_time FROM treenode t
+                WHERE t.id = %s FOR NO KEY UPDATE OF t
                 ''', (parent_id,))
-            parent_skeleton_id = cursor.fetchone()[0]
+            parent_node = cursor.fetchone()
+            parent_skeleton_id = parent_node[0]
+            parent_edition_time = parent_node[1]
 
             response_on_error = 'Could not insert new treenode!'
             new_treenode = insert_new_treenode(parent_id, parent_skeleton_id)
 
-            return (new_treenode.id, parent_skeleton_id)
+            return NewTreenode(new_treenode.id, new_treenode.edition_time,
+                               parent_skeleton_id, parent_edition_time)
         else:
             # No parent node: We must create a new root node, which needs a
             # skeleton and a neuron to belong to.
@@ -228,7 +348,8 @@ def _create_treenode(project_id, creator, editor, x, y, z, radius, confidence,
                 response_on_error = 'Could not insert new treenode!'
                 new_treenode = insert_new_treenode(None, new_skeleton.id)
 
-                return (new_treenode.id, new_skeleton.id)
+                return NewTreenode(new_treenode.id, new_treenode.edition_time,
+                                   new_skeleton.id, None)
             else:
                 # A neuron does not exist, therefore we put the new skeleton
                 # into a new neuron.
@@ -292,7 +413,8 @@ def _create_treenode(project_id, creator, editor, x, y, z, radius, confidence,
                                 new_location, 'Create neuron %d and skeleton '
                                 '%d' % (new_neuron.id, new_skeleton.id))
 
-                return (new_treenode.id, new_skeleton.id)
+                return NewTreenode(new_treenode.id, new_treenode.edition_time,
+                                   new_skeleton.id, None)
 
     except Exception as e:
         import traceback
@@ -304,6 +426,10 @@ def _create_treenode(project_id, creator, editor, x, y, z, radius, confidence,
 def update_parent(request, project_id=None, treenode_id=None):
     treenode_id = int(treenode_id)
     parent_id = int(request.POST.get('parent_id', -1))
+
+    # Make sure the back-end is in the expected state
+    state.validate_state(treenode_id, request.POST.get('state'),
+            neighborhood=True, lock=True, cursor=cursor)
 
     child = Treenode.objects.get(pk=treenode_id)
     parent = Treenode.objects.get(pk=parent_id)
@@ -359,7 +485,8 @@ def update_node_radii(node_ids, radii, cursor=None):
 	      INNER JOIN (VALUES {}) y(id, new_radius)
 	      ON x.id=y.id FOR NO KEY UPDATE) target
 	WHERE t.id = target.id
-	RETURNING t.id, target.old_radius, target.new_radius;
+	RETURNING t.id, target.old_radius, target.new_radius,
+                  t.edition_time, t.skeleton_id;
     '''.format(node_radii))
 
     updated_rows = cursor.fetchall()
@@ -367,7 +494,12 @@ def update_node_radii(node_ids, radii, cursor=None):
         raise ValueError('Coudn\'t find treenodes ' +
                          ','.join(frozenset(node_ids) -
                                   frozenset([r[0] for r in updated_rows])))
-    return {r[0]: {'old': r[1], 'new': float(r[2])} for r in updated_rows}
+    return {r[0]: {
+        'old': r[1],
+        'new': float(r[2]),
+        'edition_time': r[3],
+        'skeleton_id': r[4]
+    } for r in updated_rows}
 
 @requires_user_role(UserRole.Annotate)
 def update_radii(request, project_id=None):
@@ -376,8 +508,12 @@ def update_radii(request, project_id=None):
         if k.startswith('treenode_ids[')]
     radii = [float(v) for k,v in request.POST.iteritems() \
         if k.startswith('treenode_radii[')]
+    # Make sure the back-end is in the expected state
+    cursor = connection.cursor()
+    state.validate_state(treenode_ids, request.POST.get('state'),
+            multinode=True, lock=True, cursor=cursor)
 
-    updated_nodes = update_node_radii(treenode_ids, radii)
+    updated_nodes = update_node_radii(treenode_ids, radii, cursor)
 
     return JsonResponse({
         'success': True,
@@ -392,6 +528,9 @@ def update_radius(request, project_id=None, treenode_id=None):
         raise Exception("Radius '%s' is not a number!" % request.POST.get('radius'))
     option = int(request.POST.get('option', 0))
     cursor = connection.cursor()
+    # Make sure the back-end is in the expected state
+    state.validate_state(treenode_id, request.POST.get('state'),
+            node=True, lock=True, cursor=cursor)
 
     def create_update_response(updated_nodes, radius):
         return JsonResponse({
@@ -496,15 +635,23 @@ def delete_treenode(request, project_id=None):
     # Raise an Exception if the user doesn't have permission to edit the neuron
     # the skeleton of the treenode is modeling.
     can_edit_treenode_or_fail(request.user, project_id, treenode_id)
+    # Make sure the back-end is in the expected state
+    state.validate_state(treenode_id, request.POST.get('state'), lock=True,
+            neighborhood=True)
 
     treenode = Treenode.objects.get(pk=treenode_id)
     parent_id = treenode.parent_id
+
+    # Get information about linked connectors
+    links = list(TreenodeConnector.objects.filter(project_id=project_id,
+            treenode_id=treenode_id).values_list('id', 'relation_id',
+            'connector_id', 'confidence'))
 
     response_on_error = ''
     deleted_neuron = False
     try:
         if not parent_id:
-            child_ids = []
+            children = []
             # This treenode is root.
             response_on_error = 'Could not retrieve children for ' \
                 'treenode #%s' % treenode_id
@@ -552,18 +699,26 @@ def delete_treenode(request, project_id=None):
             # Treenode is not root, it has a parent and perhaps children.
             # Reconnect all the children to the parent.
             response_on_error = 'Could not update parent id of children nodes'
-            child_ids = list(Treenode.objects.filter(parent=treenode).values_list('id', flat=True))
-            Treenode.objects.filter(id__in=child_ids).update(parent=treenode.parent)
+            cursor = connection.cursor()
+            cursor.execute("""
+                UPDATE treenode SET parent_id = %s
+                WHERE project_id = %s AND parent_id = %s
+                RETURNING id, edition_time
+            """, (treenode.parent_id, project_id, treenode.id))
+            # Children will be a list of two-element lists, just what we want to
+            # return as child info.
+            children = cursor.fetchall()
 
         # Remove treenode
         response_on_error = 'Could not delete treenode.'
-        Treenode.objects.filter(pk=treenode_id).delete()
+        Treenode.objects.filter(project_id=project_id, pk=treenode_id).delete()
         return JsonResponse({
             'x': treenode.location_x,
             'y': treenode.location_y,
             'z': treenode.location_z,
             'parent_id': parent_id,
-            'child_ids': child_ids,
+            'children': children,
+            'links': links,
             'radius': treenode.radius,
             'confidence': treenode.confidence,
             'skeleton_id': treenode.skeleton_id,

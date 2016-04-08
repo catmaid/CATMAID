@@ -93,9 +93,9 @@ class PostGISTests(TestCase):
         """Test if joning two skeletons update the edge table correctly.
         """
         # Create two independent skeletons with one treenode each
-        from_treenode_id, from_treenode_skid = treenode._create_treenode(
+        from_treenode_id, from_treenode_skid, _ = treenode._create_treenode(
             self.test_project_id, self.user, self.user, 0, 0, 0, -1, 0, -1, -1)
-        to_treenode_id, to_treenode_skid = treenode._create_treenode(
+        to_treenode_id, to_treenode_skid, _ = treenode._create_treenode(
             self.test_project_id, self.user, self.user, 1, 1, 1, -1, 0, -1, -1)
         annotation_map = {}
 

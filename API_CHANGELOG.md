@@ -46,6 +46,21 @@ included in this changelog.
 - The response contains now detailed information about the removed connector,
   including its partners.
 
+`POST /{project_id}/node/list`:
+
+- Edition times of nodes and connectors-links are now returned, too. Therefore
+  some array indices changed.
+
+- Link and connector types are now returned in a more general fashion. Instead
+  of providing four different arrays for pre, post, gap-junction and other
+  connectors (previously index 5, 6, 7, 8), each connector entry now contains
+  one list with all links (index 5), each link is represented as
+  [<treenode_id>, <relation_id>, <link_confidence>].
+
+`POST /{project_id}/treenode/delete`:
+
+- A list of removed links is now returned as well. Each entry has the following
+  format: [<link-id>, <relation-id>, <connector-id>, <confidecen>].
 
 ### Deprecations
 

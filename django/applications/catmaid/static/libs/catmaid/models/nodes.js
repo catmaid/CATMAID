@@ -14,33 +14,40 @@
     /**
      * Update the radius of a node.
      *
+     * @param {State}   state      Node state
+     * @param {integer} projectId  The project space of the node to change
+     *
      * @returns A new promise that is resolved once the radius is updated. It
      *          contains all updated nodes along with their old radii.
      */
-    updateRadius: function(projectId, nodeId, radius, updateMode) {
+    updateRadius: function(state, projectId, nodeId, radius, updateMode) {
       CATMAID.requirePermission(projectId, 'can_annotate',
           'You don\'t have have permission to update the radius of a node');
       var url = projectId + '/treenode/' + nodeId + '/radius';
       var params = {
         radius: radius,
-        option: updateMode
+        option: updateMode,
+        state: state.makeNodeState(nodeId)
       };
 
-      return CATMAID.fetch(url, 'POST', params).then(function(json) {
+      return CATMAID.fetch(url, 'POST', params).then((function(json) {
+        this.trigger(CATMAID.Nodes.EVENT_NODE_RADIUS_CHANGED, json.updated_nodes);
         return {
           // An object mapping node IDs to their old and new radius is returned.
           'updatedNodes': json.updated_nodes
         };
-      });
+      }).bind(this));
     },
 
     /**
      * Update the radius of a list of nodes.
      *
+     * @param {State} state MultiNodeState with info on all nodes
+     *
      * @returns A new promise that is resolved once the radius is updated. It
      *          contains all updated nodes along with their old radii.
      */
-    updateRadii: function(projectId, nodesVsRadii) {
+    updateRadii: function(state, projectId, nodesVsRadii) {
       CATMAID.requirePermission(projectId, 'can_annotate',
           'You don\'t have have permission to update the radius of a node');
       var url = projectId + '/treenodes/radius';
@@ -49,7 +56,8 @@
         treenode_ids: treenodeIds,
         treenode_radii: treenodeIds.map(function(tnid) {
           return nodesVsRadii[tnid];
-        })
+        }),
+        state: state.makeMultiNodeState(treenodeIds)
       };
 
       return CATMAID.fetch(url, 'POST', params).then(function(json) {
@@ -66,7 +74,8 @@
      * @returns A new promise that is resolved once the confidence has been
      *          successfully updated.
      */
-    updateConfidence: function(projectId, nodeId, newConfidence, toConnector, partnerId) {
+    updateConfidence: function(state, projectId, nodeId, newConfidence,
+        toConnector, partnerId) {
       CATMAID.requirePermission(projectId, 'can_annotate',
           'You don\'t have have permission to change the node confidence');
 
@@ -74,6 +83,7 @@
       var params = {
         to_connector: toConnector,
         new_confidence: newConfidence,
+        state: state.makeNodeState(nodeId)
       };
       if (partnerId) {
         params[partner_id] = partnerId;
@@ -113,6 +123,7 @@
      * Create a new treenode in a skeleton. If no parent is given, a new
      * skeleton is created.
      *
+     * @param {State}   state      A client state to generate local state from
      * @param {integer} projectId  The project space to create the node in
      * @param {number}  x          The X coordinate of the node's location
      * @param {number}  y          The Y coordinate of the node's location
@@ -122,10 +133,14 @@
      * @param {integer} confidence (Optional) Confidence of edge to parent
      * @param {integer} useNeuron  (Optional) Target neuron ID to double check
      * @param {string}  neuronName (Optional) Naming pattern for new neuron
+     * @param {integer[][]} links  (Optional) A list of two-element lists
+     *                             [<connector-id>, <relation-id>] for which new
+     *                             connector links will be created.
      *
      * @returns a promise that is resolved once the treenode is created
      */
-    create: function(projectId, x, y, z, parentId, radius, confidence, useNeuron, neuronName) {
+    create: function(state, projectId, x, y, z, parentId, radius, confidence,
+          useNeuron, neuronName, links) {
       CATMAID.requirePermission(projectId, 'can_annotate',
           'You don\'t have have permission to create a new node');
 
@@ -138,7 +153,9 @@
         radius: radius,
         confidence: confidence,
         useneuron: useNeuron,
-        neuron_name: neuronName
+        neuron_name: neuronName,
+        links: links,
+        state: state.makeParentState(parentId)
       };
 
       return CATMAID.fetch(url, 'POST', params)
@@ -155,6 +172,9 @@
      * Insert a new treenode in a skeleton, optionally between two nodes. If no
      * parent is given, a new skeleton is created.
      *
+     * @param {State}  state       Local state: EdgeState if child is passed in,
+     *                             ParentState if only parent is available,
+     *                             Needs children state with takeoverChildIds
      * @param {integer} projectId  The project space to create the node in
      * @param {number}  x          The X coordinate of the node's location
      * @param {number}  y          The Y coordinate of the node's location
@@ -164,12 +184,35 @@
      * @param {number}  radius     (Optional) Radius of the new node
      * @param {integer} confidence (Optional) Confidence of edge to parent
      * @param {integer} useNeuron  (Optional) Target neuron ID to double check
+     * @param {integer[]} takeoverChildIds (Optional) A list of child IDs of
+     *                                     the current parent that should be
+     *                                     taken over by the inserted node
+     * @param {integer[][]} links  (Optional) A list of two-element lists
+     *                             [<connector-id>, <relation-id>] for which new
+     *                             connector links will be created.
      *
      * @returns a promise that is resolved once the treenode is created
      */
-    insert: function(projectId, x, y, z, parentId, childId, radius, confidence, useNeuron) {
+    insert: function(state, projectId, x, y, z, parentId, childId, radius,
+        confidence, useNeuron, takeoverChildIds, links) {
       CATMAID.requirePermission(projectId, 'can_annotate',
           'You don\'t have have permission to create a new node');
+
+      // Different parameterization requires different state information.
+      // Without any children (no childId and no takeOverChildIds), only parent
+      // information is required. If there are children, these have to be
+      // provided as well.
+      var stateOptions = {
+        nodeId: parentId,
+        childIds: childId ? [childId] : [],
+        links: []
+      };
+      if (takeoverChildIds) {
+        Array.prototype.push.apply(stateOptions['childIds'], takeoverChildIds);
+      }
+      if (links) {
+        Array.prototype.push.apply(stateOptions['links'], links);
+      }
 
       var url = projectId + '/treenode/insert';
       var params = {
@@ -180,7 +223,10 @@
         z: z,
         radius: radius,
         confidence: confidence,
-        useneuron: useNeuron
+        useneuron: useNeuron,
+        takeover_child_ids: takeoverChildIds,
+        links: links,
+        state: state.makeLocalState(stateOptions)
       };
 
       return CATMAID.fetch(url, 'POST', params)
@@ -196,18 +242,20 @@
     /**
      * Delete a treenode.
      *
+     * @param {State}   state      Local state, a complete NodeState is required
      * @param {integer} projectID  The project the treenode is part of
      * @param {integer} treenodeID The treenode to delete
      *
      * @returns promise deleting the treenode
      */
-    remove: function(projectId, nodeId) {
+    remove: function(state, projectId, nodeId) {
       CATMAID.requirePermission(projectId, 'can_annotate',
           'You don\'t have have permission to remove a new node');
 
       var url = projectId + '/treenode/delete';
       var params = {
-        treenode_id: nodeId
+        treenode_id: nodeId,
+        state: state.makeNeighborhoodState(nodeId)
       };
 
       return CATMAID.fetch(url, 'POST', params)
@@ -266,6 +314,7 @@
 
   // If annotations are deleted entirely
   Nodes.EVENT_NODE_CONFIDENCE_CHANGED = "node_confidence_changed";
+  Nodes.EVENT_NODE_RADIUS_CHANGED = "node_radius_changed";
   Nodes.EVENT_NODE_CREATED = "node_created";
   Nodes.EVENT_NODE_UPDATED = "node_updated";
   CATMAID.asEventSource(Nodes);
@@ -273,35 +322,72 @@
   // Export nodes
   CATMAID.Nodes = Nodes;
 
-  CATMAID.UpdateNodeRadiusCommand = CATMAID.makeCommand(function(projectId,
-        nodeId, radius, updateMode) {
+  CATMAID.UpdateNodeRadiusCommand = CATMAID.makeCommand(function(
+        state, projectId, nodeId, radius, updateMode) {
 
-    var exec = function(done, command) {
-      var updateRadius = CATMAID.Nodes.updateRadius(projectId, nodeId,
+    var umNode = state.getNode(nodeId);
+
+    var exec = function(done, command, map) {
+      // Map nodes to current ID and time
+      var mNode = map.getWithTime(map.NODE, umNode[0], umNode[1], command);
+      var execState = new CATMAID.LocalState([mNode.value, mNode.timestamp]);
+      var updateRadius = CATMAID.Nodes.updateRadius(execState, projectId, nodeId,
           radius, updateMode);
 
       return updateRadius.then(function(result) {
+        var updatedNodes = result.updatedNodes;
         // The returned updatedNodes list contains objects with a node id and
         // the old radius.
-        command._updatedNodes = result.updatedNodes;
+        command.store("updatedNodes", updatedNodes);
+        // update stored state of mapped nodes, needed for undo
+        for (var n in updatedNodes) {
+          var node = updatedNodes[n];
+          map.add(map.NODE, n, n, node.edition_time);
+        }
+        // Add original mapping explicitely
+        var updatedNode = result.updatedNodes[mNode.value];
+        if (updatedNode) {
+          map.add(map.NODE, umNode[0], mNode.value, node.edition_time);
+        }
+
         done();
         return result;
       });
     };
 
-    var undo = function(done, command) {
-      // Fail if expected undo parameters are not available from command
-      if (undefined === command._updatedNodes) {
-        throw new CATMAID.ValueError('Can\'t undo radius update, history data not available');
-      }
+    var undo = function(done, command, map) {
+      var updatedNodes = command.get("updatedNodes");
+      command.validateForUndo(updatedNodes);
 
-      var oldRadii = Object.keys(command._updatedNodes).reduce(function(o, n) {
-        o[n] = command._updatedNodes[n].old;
+      var updateNodeIds = Object.keys(updatedNodes);
+      // Create state that contains information about all modified nodes
+      var mappedNodes = updateNodeIds.reduce(function(o, n) {
+        var mappedNode = map.getWithTime(map.NODE, n, updatedNodes[n].edition_time, command);
+        o.radii[mappedNode.value] = updatedNodes[n].old;
+        o.state[mappedNode.value] = mappedNode.timestamp;
         return o;
-      }, {});
+      }, {'radii': {}, 'state': {}});
 
-      var updateRadii = CATMAID.Nodes.updateRadii(projectId, oldRadii);
-      return updateRadii.then(done);
+      var undoState = new CATMAID.SimpleSetState(mappedNodes.state);
+      var updateRadii = CATMAID.Nodes.updateRadii(undoState, projectId, mappedNodes.radii);
+      return updateRadii.then(function(result) {
+        // Map nodes to current ID and time
+        var mNode = map.getWithTime(map.NODE, umNode[0], umNode[1], command);
+        var updatedNodes = result.updatedNodes;
+        // update stored state of mapped nodes, needed for undo
+        for (var n in updatedNodes) {
+          var node = updatedNodes[n];
+          map.add(map.NODE, n, n, node.edition_time);
+        }
+        // Add original mapping explicitely
+        var updatedNode = result.updatedNodes[mNode.value];
+        if (updatedNode) {
+          map.add(map.NODE, umNode[0], mNode.value, node.edition_time);
+        }
+
+        done();
+        return result;
+      });
     };
 
     var info;
@@ -327,34 +413,36 @@
     } else {
       info = "Update radius of node " + nodeId + " to be " + radius + "nm";
     }
+
     this.init(info, exec, undo);
   });
 
   CATMAID.UpdateConfidenceCommand = CATMAID.makeCommand(function(
-        projectId, nodeId, newConfidence, toConnector) {
-    var exec = function(done, command) {
-      var updateConfidence = CATMAID.Nodes.updateConfidence(projectId, nodeId,
-          newConfidence, toConnector);
+        state, projectId, nodeId, newConfidence, toConnector) {
+
+    var exec = function(done, command, map) {
+      var execState = CATMAID.NoCheckState();
+      var updateConfidence = CATMAID.Nodes.updateConfidence(state,
+          projectId, nodeId, newConfidence, toConnector);
 
       return updateConfidence.then(function(result) {
-        // The returned updatedNodes list contains objects with a node id and
-        // the old radius.
         command._updatedPartners = result.updatedPartners;
         done();
         return result;
       });
     };
 
-    var undo = function(done, command) {
+    var undo = function(done, command, map) {
       // Fail if expected undo parameters are not available from command
       if (undefined === command._updatedPartners) {
         throw new CATMAID.ValueError('Can\'t undo confidence update, ' +
             'history data not available');
       }
 
+      var undoState = CATMAID.NoCheckState();
       var promises = Object.keys(command._updatedPartners).map(function(partnerId) {
         var oldConfidence = command._updatedPartners[partnerId];
-        return CATMAID.Nodes.updateConfidence(projectId, nodeId, oldConfidence,
+        return CATMAID.Nodes.updateConfidence(undoState, projectId, nodeId, oldConfidence,
             toConnector, partnerId);
       });
 
@@ -374,35 +462,76 @@
   });
 
   /**
-   * Map a single node ID. The context is expected to be a CommandStore.
-   */
-  function mapNodeId(nodeId) {
-    /* jshint validthis: true */ // "this" has to be a CommandStore instance
-    return this.get(this.NODE, nodeId);
-  }
-
-  /**
    * Remove a node in an undoable fashion.
    *
+   * @param {State}   state     Neighborhood state of node
    * @param {integer} projectId Project the node to remove is part of
    * @param {integer} nodeId    The node to remove
    */
   CATMAID.RemoveNodeCommand = CATMAID.makeCommand(function(
-        projectId, nodeId) {
+        state, projectId, nodeId) {
+
+    // Use passed in state only to extract parent ID and edit time. A new state
+    // will be constructed for actually executing the command (to cover redo).
+    var umNode = state.getNode(nodeId);
+    var umParent = state.getParent(nodeId) || [null, null];
+    var umChildren = state.getChildren(nodeId);
+    var umLinks = state.getLinks(nodeId);
 
     var exec = function(done, command, map) {
-      var removeNode = CATMAID.Nodes.remove(projectId, nodeId);
+
+      // Map nodes to current ID and time
+      var mNode = map.getWithTime(map.NODE, umNode[0], umNode[1], command);
+      var mParent = map.getWithTime(map.NODE, umParent[0], umParent[1], command);
+
+      // Formulate expectations for back-end, a state that includes all mapped
+      // children, parent and links of the node created originally.
+      var mChildren = umChildren.map(function(c) {
+        var mChild = map.getWithTime(map.NODE, c[0], c[1], command);
+        return [mChild.value, mChild.timestamp];
+      });
+      var mLinks = umLinks.map(function(l) {
+        var mLink = map.getWithTime(map.LINK, l[0], l[1], command);
+        return [mLink.value, mLink.timestamp];
+      });
+
+      // Try to delete node with a new local state
+      var execState = new CATMAID.LocalState([mNode.value, mNode.timestamp],
+          [mParent.value, mParent.timestamp], mChildren, mLinks);
+      var removeNode = CATMAID.Nodes.remove(execState, projectId, mNode.value);
 
       return removeNode.then(function(result) {
-        // Map ID of removed node to null to able to map the node created during
-        // undo back to the original.
-        map.add(map.NODE, nodeId, command);
+        // Even though the node and potentially some links were removed, the
+        // previous node and links IDs need to be stored. The reason being that
+        // undo should mep the newly created node to the original values
+        map.add(map.NODE, umNode[0], mNode.value, mNode.timestamp);
+        if (result.links) {
+          result.links.forEach(function(l) {
+            // Find removed link in mapped links
+            for (var i=0, max=mLinks.length; i<max; ++i) {
+              var link = mLinks[i];
+              if (link && link[0] == l[0]) {
+                var umLink = umLinks[i];
+                map.add(map.LINK, umLink[0], link[0], link[1]);
+                break;
+              }
+            }
+          });
+        }
+        // Update mapping of children, their ID shouldn't have changed so that
+        // we can let the map reverse-loopkup the original ID.
+        if (result.children) {
+          result.children.forEach(function(c) {
+            map.add(map.NODE, c[0], c[0], c[1]);
+          });
+        }
+
         // Store information required for undo
         command.store('x', result.x);
         command.store('y', result.y);
         command.store('z', result.z);
-        command.store('parentId', result.parent_id);
-        command.store('childIds', result.child_ids);
+        command.store('children', result.children);
+        command.store('links', result.links);
         command.store('radius', result.radius);
         command.store('confidence', result.confidence);
         done();
@@ -411,41 +540,66 @@
     };
 
     var undo = function(done, command, map) {
-      // Make sure we get the current IDs of the parent and former children,
-      // which could have been modified through a redo operation.
-      var mParentId = map.get(map.NODE, command.get('parentId'));
       // Obtain other parameters and validate
       var radius = command.get('radius');
       var confidence = command.get('confidence');
       var x = command.get('x'), y = command.get('y'), z = command.get('z');
-      command.validateForUndo(confidence, mParentId, x, y, z);
+      var links = command.get('links');
+      command.validateForUndo(confidence, radius, x, y, z, links);
+
+      // Make sure we get the current IDs of the parent and former children,
+      // which could have been modified through a redo operation.
+      var mParent = map.getWithTime(map.NODE, umParent[0], umParent[1], command);
+      var mParentId = mParent.value;
+      var mParentEditTime = mParent.timestamp;
 
       // Get IDs of previous children and map them to their current values
-      var mChildIds = command.get('childIds').map(mapNodeId, map);
+      var mChildren = command.get('children').map(function(child) {
+        return this.getNodeWithTime(child[0], child[1], command);
+      }, map);
 
-      // If there were child nodes before the removal, link to them again.
+      // Re-create removed conncetions, each list element is a list of this
+      // form: [<link_id>, <relation-id>, <connector-id>, <link-confidence>]
+      var mLinks = links.map(function(link) {
+        // Create result element [<connector-id>, <relation-id>, <confidence>]
+        return [this.getNodeId(link[2], command), link[1], link[3]];
+      }, map);
+
+      // If there were child nodes before the removal, link to them again. The
+      // creation state can be used, because the required creation and insertion
+      // states are subsets of the removal state
       var create;
-      if (0 === mChildIds.length) {
-        create = CATMAID.Nodes.create(projectId, x, y, z, mParentId, radius, confidence);
+      if (0 === mChildren.length) {
+        var undoState = new CATMAID.LocalState(undefined, [mParentId, mParentEditTime]);
+        create = CATMAID.Nodes.create(undoState, projectId, x, y, z,
+            mParentId, radius, confidence, undefined, undefined, mLinks);
       } else {
-        // Insert the node between parent and (first) child
-        create = CATMAID.Nodes.insert(projectId, x, y, z, mParentId, mChildIds.shift(), radius, confidence);
+        var parentEditionTime = "";
+        var undoState = new CATMAID.LocalState([mParentId, mParentEditTime], undefined,
+            mChildren.map(function(c) { return [c.value, c.timestamp]; }), links);
+        var mPrimaryChildId = mChildren[0].value;
+        var takeOverChildIds = mChildren.slice(1).map(function(c) { return c.value; });
+        create = CATMAID.Nodes.insert(undoState, projectId, x, y, z, mParentId,
+            mPrimaryChildId, radius, confidence, undefined, takeOverChildIds, mLinks);
       }
+
       return create.then(function(result) {
         // Store ID of new node created by this command
-        map.add(map.NODE, result.treenode_id, command);
-        var results = [result];
-        // If there are more children, link them as well
-        while (0 < mChildIds.length) {
-          var childId = mChildIds.shift();
-          var promise = CATMAID.Nodes.updateParent(projectId, childId, result.treenode_id);
-          results.push(promise);
+        map.add(map.NODE, umNode[0], result.treenode_id, result.edition_time);
+        // Map ID change of children and links
+        if (result.child_edition_times) {
+          result.child_edition_times.forEach(function(c) {
+            map.add(map.NODE, c[0], c[0], c[1]);
+          });
         }
-        return Promise.all(results);
-      }).then(function(results) {
+        if (result.created_links) {
+          result.created_links.forEach(function(l, i) {
+            var umLinkId = umLinks[i][0];
+            map.add(map.LINK, umLinkId, l[0], l[1]);
+          });
+        }
         done();
-        // Return result of actual node creation
-        return results[0];
+        return result;
       });
     };
 
@@ -471,26 +625,60 @@
    * @returns a promise that is resolved once the treenode is created
    */
   CATMAID.CreateNodeCommand = CATMAID.makeCommand(function(
-        projectId, x, y, z, parentId, radius, confidence, useNeuron, neuronName) {
+        state, projectId, x, y, z, parentId, radius, confidence, useNeuron, neuronName) {
+
+    // Use passed in state only to extract parent ID and edit time. A new state
+    // will be constructed for actually executing the command (to cover redo).
+    var umParent = state.getNode(parentId);
+    var umParentId = umParent[0];
+    var umParentEditTime = umParent[1];
+
+    // First execution will set the original node that all mapping will refer to
+    var umNodeId, umNodeEditTime;
 
     var exec = function(done, command, map) {
-      // Get current, mapped version of parent ID
-      var mParentId = map.get(map.NODE, parentId);
-      var create = CATMAID.Nodes.create(projectId, x, y, z, mParentId, radius,
-          confidence, useNeuron, neuronName);
+      // Get current, mapped version of parent ID as well as its latest
+      // timestamp. The alternative would be to get the timestamp from the
+      // current state. Since this state might change before the command is
+      // executed (like changing a section), a copy of the data is used.
+      var mParent = map.getWithTime(map.NODE, umParentId, umParentEditTime, command);
+      var execState = new CATMAID.LocalState(null, [mParent.value, mParent.timestamp]);
+
+      // Create node, error handling has to be done by caller
+      var create = CATMAID.Nodes.create(execState, projectId, x, y, z,
+          mParent.value, radius, confidence, useNeuron, neuronName);
+
       return create.then(function(result) {
+        // First execution will remember the added node for redo mapping
+        if (!umNodeId) {
+          umNodeId = result.treenode_id;
+          umNodeEditTime = result.edition_time;
+        }
         // Store ID of new node created by this command
-        map.add(map.NODE, result.treenode_id, command);
+        map.add(map.NODE, umNodeId, result.treenode_id, result.edition_time);
         command.store('nodeId', result.treenode_id);
+        command.store('nodeEditTime', result.edition_time);
         done();
         return result;
       });
     };
 
     var undo = function(done, command, map) {
-      var nodeId = map.get(map.NODE, command.get('nodeId'));
-      command.validateForUndo(projectId, nodeId);
-      var removeNode = CATMAID.Nodes.remove(projectId, nodeId);
+      var umNodeId = command.get('nodeId');
+      var umNodeEditTime = command.get("nodeEditTime");
+      command.validateForUndo(umNodeId, umNodeEditTime);
+
+      // Map nodes to current ID and time
+      var mNode = map.getWithTime(map.NODE, umNodeId, umNodeEditTime, command);
+      var mParent = map.getWithTime(map.NODE, umParentId, umParentEditTime, command);
+
+      // Formulate expectations for back-end, a neighborhood state of the mapped
+      // children, parent and links of the node created originally.
+      var children = [], links = [];
+      var undoState = new CATMAID.LocalState([mNode.value, mNode.timestamp],
+          [mParent.value, mParent.timestamp], children, links);
+
+      var removeNode = CATMAID.Nodes.remove(undoState, projectId, mNode.value);
       return removeNode.then(done);
     };
 
@@ -517,28 +705,93 @@
    * @returns a promise that is resolved once the treenode is created
    */
   CATMAID.InsertNodeCommand = CATMAID.makeCommand(function(
-      projectId, x, y, z, parentId, childId, radius, confidence, useNeuron) {
+      state, projectId, x, y, z, parentId, childId, radius, confidence, useNeuron) {
+
+    var umParent = state.getNode(parentId) || [null, null];
+    var umParentId = umParent[0];
+    var umParentEditTime = umParent[1];
+
+    var umChild, umChildId, umChildEditTime;
+    if (childId) {
+      umChild = state.getNode(childId);
+      umChildId = umChild[0];
+      umChildEditTime = umChild[1];
+    }
+
+    // First execution will set the original node that all mapping will refer to
+    var umNodeId, umNodeEditTime;
 
     var exec = function(done, command, map) {
-      // Get current, mapped version of parent and child ID
-      var mParentId = map.get(map.NODE, parentId);
-      var mChildId = map.get(map.NODE, childId);
-      var insert = CATMAID.Nodes.insert(projectId, x, y, z, mParentId, mChildId,
-          radius, confidence, useNeuron);
+      // Get current, mapped version of parent and child ID as well as their
+      // last timestamp
+      var mParent = map.getWithTime(map.NODE, umParentId, umParentEditTime, command);
+      var mChild = map.getWithTime(map.NODE, umChildId, umChildEditTime, command);
+
+      var execState = new CATMAID.LocalState([mParent.value, mParent.timestamp],
+          null, [[mChild.value, mChild.timestamp]]);
+      var insert = CATMAID.Nodes.insert(execState, projectId, x, y, z,
+          mParent.value, mChild.value, radius, confidence, useNeuron);
+
       return insert.then(function(result) {
+        // First execution will remember the added node for redo mapping
+        if (!umNodeId) {
+          umNodeId = result.treenode_id;
+          umNodeEditTime = result.edition_time;
+        }
         // Store ID of new node created by this command
-        map.add(map.NODE, result.treenode_id, command);
+        map.add(map.NODE, umNodeId, result.treenode_id, result.edition_time);
         command.store('nodeId', result.treenode_id);
+        command.store('nodeEditTime', result.edition_time);
+
+        // Map ID change of children and links
+        if (mChild && result.child_edition_times) {
+          result.child_edition_times.forEach(function(c) {
+            // There should be exactly one updated child having the ID of the
+            // mapped child above.
+            if (c[0] == mChild.value) {
+              map.add(map.NODE, umChildId, c[0], c[1]);
+            }
+          });
+        }
+
         done();
         return result;
       });
     };
 
     var undo = function(done, command, map) {
-      var nodeId = map.get(map.NODE, command.get('nodeId'));
-      command.validateForUndo(projectId, nodeId);
-      var removeNode = CATMAID.Nodes.remove(projectId, nodeId);
-      return removeNode.then(done);
+      var nodeId = command.get('nodeId');
+      var nodeEditTime = command.get('nodeEditTime');
+      command.validateForUndo(nodeId, nodeEditTime);
+
+      // Map nodes to current ID and time
+      var mNode = map.getWithTime(map.NODE, nodeId, nodeEditTime, command);
+      var mParent = map.getWithTime(map.NODE, umParentId, umParentEditTime, command);
+      var mChild = map.getWithTime(map.NODE, umChildId, umChildEditTime, command);
+
+      // Formulate expectations for back-end, a neighborhood state of the mapped
+      // children, parent and links of the node created originally.
+      var children = childId ? [[mChild.value, mChild.timestamp]] : [];
+      var links = [];
+      var undoState = new CATMAID.LocalState([mNode.value, mNode.timestamp],
+          [mParent.value, mParent.timestamp], children, links);
+
+      var removeNode = CATMAID.Nodes.remove(undoState, projectId, nodeId);
+      return removeNode.then(function(result) {
+
+        // Map ID change of children and links
+        if (mChild && result.children) {
+          result.children.forEach(function(c) {
+            // There should be exactly one updated child having the ID of the
+            // mapped child above.
+            if (c[0] == mChild.value) {
+              map.add(map.NODE, umChildId, c[0], c[1]);
+            }
+          });
+        }
+
+        done();
+      });
     };
 
     var title = "Inset new node between parent #" + parentId + " and child #" +
@@ -551,18 +804,18 @@
    * Map a node update list (list of four-element list with the first being the
    * node ID. The context is expected to be a CommandStore.
    */
-  function mapNodeUpdateList(node) {
+  function mapNodeUpdateList(command, node) {
     /* jshint validthis: true */ // "this" has to be a CommandStore instance
-    return [this.get(this.NODE, node[0]), node[1], node[2], node[3]];
+    return [this.get(this.NODE, node[0], command), node[1], node[2], node[3]];
   }
 
   /**
    * Map a connector update list (list of four-element list with the first being
    * the node ID. The context is expected to be a CommandStore.
    */
-  function mapConnectorUpdateList(node) {
+  function mapConnectorUpdateList(command, node) {
     /* jshint validthis: true */ // "this" has to be a CommandStore instance
-    return [this.get(this.CONNECTOR, node[0]), node[1], node[2], node[3]];
+    return [this.get(this.CONNECTOR, node[0], command), node[1], node[2], node[3]];
   }
 
   /**
@@ -571,7 +824,9 @@
   CATMAID.UpdateNodesCommand = CATMAID.makeCommand(
       function(projectId, treenodes, connectors) {
     var exec = function(done, command, map) {
-      var mTreenodes = treenodes ?  treenodes.map(mapNodeUpdateList, map) : undefined;
+      var toNodeList = mapNodeUpdateList.bind(map, command);
+      var toConnectorList = mapConnectorUpdateList.bind(map, command);
+      var mTreenodes = treenodes ?  treenodes.map(toNodeList) : undefined;
       var mConnectors = connectors ? connectors.map(mapConnectorUpdateList, map) : undefined;
       var update = CATMAID.Nodes.update(projectId, mTreenodes, mConnectors);
       return update.then(function(result) {
@@ -584,10 +839,12 @@
     };
 
     var undo = function(done, command, map) {
+      var toNodeList = mapNodeUpdateList.bind(map, command);
+      var toConnectorList = mapConnectorUpdateList.bind(map, command);
       var old_treenodes = command.get('old_treenodes');
       var old_connectors = command.get('old_connectors');
-      var mTreenodes = old_treenodes ? old_treenodes.map(mapNodeUpdateList, map) : undefined; 
-      var mConnectors = old_connectors ? old_connectors.map(mapConnectorUpdateList, map) : undefined;
+      var mTreenodes = old_treenodes ? old_treenodes.map(toNodeList) : undefined;
+      var mConnectors = old_connectors ? old_connectors.map(toConnectorList) : undefined;
       var update = CATMAID.Nodes.update(projectId, mTreenodes, mConnectors);
       return update.then(function(result) {
         done();

@@ -9,4 +9,5 @@ Developer Documentation
    tile_sources
    dbmigration
    djangounittest
+   models_state_commands
    ami

@@ -224,7 +224,7 @@ class StateCheckingTest(CatmaidTestCase):
         }
         s1 = json.dumps(ps1)
         # Expect this state to validate cleanly
-        state.validate_state(249, s1, edge=True)
+        state.validate_state(249, s1, node=True, children=[251])
 
     def test_wrong_edge_state(self):
         ps1 = {
@@ -233,7 +233,8 @@ class StateCheckingTest(CatmaidTestCase):
         }
         s1 = json.dumps(ps1)
         # Expect this state to validate cleanly
-        self.assertRaises(ValueError, lambda: state.validate_state(249, s1, edge=True))
+        self.assertRaises(ValueError,
+                lambda: state.validate_state(249, s1, node=True, children=[247]))
 
         ps2 = {
             'children': [[251, '1011-12-05T13:51:36.955Z']],
@@ -241,7 +242,8 @@ class StateCheckingTest(CatmaidTestCase):
         }
         s2 = json.dumps(ps2)
         # Expect this state to validate cleanly
-        self.assertRaises(ValueError, lambda: state.validate_state(249, s2, edge=True))
+        self.assertRaises(ValueError,
+                lambda: state.validate_state(249, s2, node=True, children=[251]))
 
         ps3 = {
             'children': [],
@@ -249,7 +251,8 @@ class StateCheckingTest(CatmaidTestCase):
         }
         s3 = json.dumps(ps3)
         # Expect this state to validate cleanly
-        self.assertRaises(ValueError, lambda: state.validate_state(249, s3, edge=True))
+        self.assertRaises(ValueError,
+                lambda: state.validate_state(249, s3, node=True, children=True))
 
         ps4 = {
             'children': [[251, '2011-12-05T13:51:36.955Z']],
@@ -257,7 +260,8 @@ class StateCheckingTest(CatmaidTestCase):
         }
         s4 = json.dumps(ps4)
         # Expect this state to validate cleanly
-        self.assertRaises(ValueError, lambda: state.validate_state(251, s4, edge=True))
+        self.assertRaises(ValueError,
+                lambda: state.validate_state(251, s4, node=True, children=[251]))
 
     def test_correct_child_state(self):
         ps1 = {

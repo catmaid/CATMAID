@@ -2551,7 +2551,30 @@ class ViewPageTests(TestCase):
                          'old': -1.0,
                          'skeleton_id': 2411}}
         }
-        self.assertEqual(expected_response, parsed_response)
+
+        # The response has updated timetamps (since we updated nodes), we have
+        # to compare fields manually to ignore them
+        for k,v in expected_response.iteritems():
+            self.assertIn(k, parsed_response)
+            if 'updated_nodes' == k:
+                continue
+            self.assertEqual(v, parsed_response.get(k))
+        for k,v in expected_response['updated_nodes'].iteritems():
+            self.assertIn(k, parsed_response['updated_nodes'])
+            result_node = parsed_response['updated_nodes'][k]
+            for p,pv in v.iteritems():
+                self.assertIn(p, result_node)
+                result_value = result_node.get(p)
+                if 'edition_time' == p:
+                    # Changes through the updated, and the test can't know the
+                    # value, but only check if it changed
+                    self.assertNotEqual(pv, result_value)
+                else:
+                    self.assertEqual(pv, result_value)
+
+        # Don't expect any more items than the above:
+        self.assertEqual(len(expected_response['updated_nodes']),
+                len(parsed_response['updated_nodes']))
 
         expected = [(2419, new_r), (2417, new_r), (2415, new_r), (2423, new_r)]
         for x in expected:

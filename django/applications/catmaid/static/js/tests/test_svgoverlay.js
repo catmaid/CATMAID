@@ -144,7 +144,7 @@ QUnit.test('SVG overlay test', function( assert ) {
         fakeOverlay, nodeID);
     // Mark the node as deleted in fake backend, once the last request is done
     fakeOverlay.submit.then(function() {
-      delete availableNodes[nodeID]; 
+      delete availableNodes[nodeID];
     });
     // Update the tracing layer immediately after queing the deleting
     SkeletonAnnotations.TracingOverlay.prototype.updateNodeCoordinatesInDB.call(

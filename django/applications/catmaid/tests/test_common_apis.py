@@ -18,6 +18,7 @@ from catmaid.models import Treenode, Connector, TreenodeConnector, User, Review,
 from catmaid.models import Textlabel, TreenodeClassInstance, ClassInstanceClassInstance
 from catmaid.control.common import get_relation_to_id_map, get_class_to_id_map
 from catmaid.control.neuron_annotations import _annotate_entities, create_annotation_query
+from catmaid.state import make_nocheck_state
 
 
 class TransactionTests(TransactionTestCase):
@@ -1660,7 +1661,8 @@ class ViewPageTests(TestCase):
             'z': 15,
             'confidence': 5,
             'parent_id': parent_id,
-            'radius': 2})
+            'radius': 2,
+            'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {'error': 'No skeleton and neuron for treenode %d' % parent_id}
@@ -1676,7 +1678,7 @@ class ViewPageTests(TestCase):
         child_count = Treenode.objects.filter(parent=treenode_id).count()
         response = self.client.post(
                 '/%d/treenode/delete' % self.test_project_id,
-                {'treenode_id': treenode_id})
+                {'treenode_id': treenode_id, 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = "Could not delete root node: You can't delete the " \
@@ -1716,7 +1718,8 @@ class ViewPageTests(TestCase):
             'y': new_node_y,
             'z': new_node_z,
             'child_id': child_id,
-            'parent_id': parent_id})
+            'parent_id': parent_id,
+            'state': make_nocheck_state()})
 
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
@@ -1772,7 +1775,8 @@ class ViewPageTests(TestCase):
             'y': new_node_y,
             'z': new_node_z,
             'child_id': child_id,
-            'parent_id': parent_id})
+            'parent_id': parent_id,
+            'state': make_nocheck_state()})
 
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
@@ -1892,7 +1896,7 @@ class ViewPageTests(TestCase):
         tn_count = Treenode.objects.all().count()
         response = self.client.post(
                 '/%d/treenode/delete' % self.test_project_id,
-                {'treenode_id': treenode_id})
+                {'treenode_id': treenode_id, 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = 'Removed treenode successfully.'
@@ -1912,7 +1916,7 @@ class ViewPageTests(TestCase):
 
         response = self.client.post(
                 '/%d/treenode/delete' % self.test_project_id,
-                {'treenode_id': treenode_id})
+                {'treenode_id': treenode_id, 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {
@@ -1943,7 +1947,7 @@ class ViewPageTests(TestCase):
 
         response = self.client.post(
                 '/%d/treenode/delete' % self.test_project_id,
-                {'treenode_id': treenode_id})
+                {'treenode_id': treenode_id, 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = 'Removed treenode successfully.'
@@ -2516,7 +2520,7 @@ class ViewPageTests(TestCase):
         old_r = -1.0
         response = self.client.post(
                 '/%d/treenode/%d/radius' % (self.test_project_id, treenode_id),
-                {'radius': new_r, 'option': 5})
+                {'radius': new_r, 'option': 5, 'status': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_response = {
@@ -3664,7 +3668,8 @@ class ViewPageTests(TestCase):
                 {'x': 3,
                  'y': -3,
                  'z': 2,
-                 'parent_id': parent_id})
+                 'parent_id': parent_id,
+                 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         child_id = parsed_response['treenode_id']

@@ -2859,6 +2859,26 @@ class ViewPageTests(TestCase):
                 {"name":"neuropile", "id":2323, "class":"root"}]
         self.assertEqual(expected_result, parsed_response)
 
+    def test_skeleton_connectivity_matrix(self):
+        self.fake_authentication()
+
+        skeleton_ids = [235, 361, 373, 2364, 2388, 2411]
+        params = {}
+        for i, k in enumerate(skeleton_ids):
+            params['rows[%d]' % i] = k
+            params['columns[%d]' % i] = k
+        response = self.client.post(
+                '/%d/skeleton/connectivity_matrix' % (self.test_project_id,),
+                params)
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = {
+                '235': {'361': 1, '373': 2},
+                '2388': {'2364': 1},
+                '2411': {'2364': 1}
+        }
+        self.assertEqual(expected_result, parsed_response)
+
     def test_create_postsynaptic_link_success(self):
         from_id = 237
         to_id = 432

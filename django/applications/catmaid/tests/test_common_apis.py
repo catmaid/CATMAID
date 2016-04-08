@@ -2810,6 +2810,25 @@ class ViewPageTests(TestCase):
         expected_result = [2462, 2433, 373]
         self.assertItemsEqual(expected_result, parsed_response['skeletons'])
 
+    def test_skeleton_statistics(self):
+        self.fake_authentication()
+
+        skeleton_id = 235
+        response = self.client.post(
+                '/%d/skeleton/%s/statistics' % (self.test_project_id, skeleton_id,),)
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = {
+                'node_count': 28,
+                'input_count': 0,
+                'output_count': 2,
+                'presynaptic_sites': 3,
+                'postsynaptic_sites': 0,
+                'cable_length': 11243,
+                'measure_construction_time': '0 minutes 20 seconds',
+                'percentage_reviewed': '0.00'}
+        self.assertEqual(expected_result, parsed_response)
+
     def test_skeleton_ancestry(self):
         skeleton_id = 361
 

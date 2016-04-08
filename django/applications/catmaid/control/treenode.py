@@ -151,7 +151,7 @@ def insert_treenode(request, project_id=None):
         if takeover_child_ids:
             partial_child_checks.extend(takeover_child_ids)
         state.validate_state(parent_id, s, node=True,
-                children=partial_child_checks, lock=True),
+                children=partial_child_checks or False, lock=True),
 
     # Find child and parent of new treenode
     child = Treenode.objects.get(pk=params['child_id'])

@@ -804,18 +804,18 @@
    * Map a node update list (list of four-element list with the first being the
    * node ID. The context is expected to be a CommandStore.
    */
-  function mapNodeUpdateList(node) {
+  function mapNodeUpdateList(command, node) {
     /* jshint validthis: true */ // "this" has to be a CommandStore instance
-    return [this.get(this.NODE, node[0]), node[1], node[2], node[3]];
+    return [this.get(this.NODE, node[0], command), node[1], node[2], node[3]];
   }
 
   /**
    * Map a connector update list (list of four-element list with the first being
    * the node ID. The context is expected to be a CommandStore.
    */
-  function mapConnectorUpdateList(node) {
+  function mapConnectorUpdateList(command, node) {
     /* jshint validthis: true */ // "this" has to be a CommandStore instance
-    return [this.get(this.CONNECTOR, node[0]), node[1], node[2], node[3]];
+    return [this.get(this.CONNECTOR, node[0], command), node[1], node[2], node[3]];
   }
 
   /**
@@ -824,7 +824,9 @@
   CATMAID.UpdateNodesCommand = CATMAID.makeCommand(
       function(projectId, treenodes, connectors) {
     var exec = function(done, command, map) {
-      var mTreenodes = treenodes ?  treenodes.map(mapNodeUpdateList, map) : undefined;
+      var toNodeList = mapNodeUpdateList.bind(map, command);
+      var toConnectorList = mapConnectorUpdateList.bind(map, command);
+      var mTreenodes = treenodes ?  treenodes.map(toNodeList) : undefined;
       var mConnectors = connectors ? connectors.map(mapConnectorUpdateList, map) : undefined;
       var update = CATMAID.Nodes.update(projectId, mTreenodes, mConnectors);
       return update.then(function(result) {
@@ -837,10 +839,12 @@
     };
 
     var undo = function(done, command, map) {
+      var toNodeList = mapNodeUpdateList.bind(map, command);
+      var toConnectorList = mapConnectorUpdateList.bind(map, command);
       var old_treenodes = command.get('old_treenodes');
       var old_connectors = command.get('old_connectors');
-      var mTreenodes = old_treenodes ? old_treenodes.map(mapNodeUpdateList, map) : undefined;
-      var mConnectors = old_connectors ? old_connectors.map(mapConnectorUpdateList, map) : undefined;
+      var mTreenodes = old_treenodes ? old_treenodes.map(toNodeList) : undefined;
+      var mConnectors = old_connectors ? old_connectors.map(toConnectorList) : undefined;
       var update = CATMAID.Nodes.update(projectId, mTreenodes, mConnectors);
       return update.then(function(result) {
         done();

@@ -207,7 +207,7 @@ def volume_collection(request, project_id):
     if request.method == 'GET':
         p = get_object_or_404(Project, pk = project_id)
         # FIXME: Parsing our PostGIS geometry with GeoDjango doesn't work
-        # anymore ince Django 1.8. Therefore, the geometry fields isn't read.
+        # anymore since Django 1.8. Therefore, the geometry fields isn't read.
         # See: https://github.com/catmaid/CATMAID/issues/1250
         fields = ('id', 'name', 'comment', 'user', 'editor', 'project',
                 'creation_time', 'edition_time')
@@ -351,8 +351,8 @@ def add_volume(request, project_id):
         required: true
     """
     # Use DRF's request.data to be able to also be able to parse
-    # application/json content type requets. This can be convenient when
-    # importing meses.
+    # application/json content type requests. This can be convenient when
+    # importing meshes.
     instance = get_volume_instance(project_id, request.user.id, request.data)
     volume_id = instance.save()
 
@@ -396,7 +396,7 @@ def intersects(request, project_id, volume_id):
 
     x, y, z = float(x), float(y), float(z)
 
-    # This test works only for boxes, because it only checks bouding box
+    # This test works only for boxes, because it only checks bounding box
     # overlap (&&& operator).
     cursor = connection.cursor()
     cursor.execute("""

@@ -350,7 +350,6 @@ def add_volume(request, project_id):
         type: integer
         required: true
     """
-    print request.data
     # Use DRF's request.data to be able to also be able to parse
     # application/json content type requets. This can be convenient when
     # importing meses.

@@ -2399,7 +2399,7 @@ class ViewPageTests(TestCase):
         old_r = -1
         response = self.client.post(
                 '/%d/treenode/%d/radius' % (self.test_project_id, treenode_id),
-                {'radius': new_r, 'option': 0})
+                {'radius': new_r, 'option': 0, 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
 
         expected = [(259, old_r), (257, new_r), (255, old_r)]
@@ -2415,7 +2415,7 @@ class ViewPageTests(TestCase):
         old_r = -1
         response = self.client.post(
                 '/%d/treenode/%d/radius' % (self.test_project_id, treenode_id),
-                {'radius': new_r, 'option': 1})
+                {'radius': new_r, 'option': 1, 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
 
         expected = [(261, new_r), (259, new_r), (257, new_r),
@@ -2427,7 +2427,7 @@ class ViewPageTests(TestCase):
         treenode_id = 263
         response = self.client.post(
                 '/%d/treenode/%d/radius' % (self.test_project_id, treenode_id),
-                {'radius': new_r, 'option': 1})
+                {'radius': new_r, 'option': 1, 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
 
         expected = [(253, old_r), (263, new_r), (265, new_r),
@@ -2444,7 +2444,7 @@ class ViewPageTests(TestCase):
         old_r = -1
         response = self.client.post(
                 '/%d/treenode/%d/radius' % (self.test_project_id, treenode_id),
-                {'radius': new_r, 'option': 2})
+                {'radius': new_r, 'option': 2, 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
 
         expected = [(261, old_r), (259, old_r), (257, new_r),
@@ -2456,7 +2456,7 @@ class ViewPageTests(TestCase):
         treenode_id = 253
         response = self.client.post(
                 '/%d/treenode/%d/radius' % (self.test_project_id, treenode_id),
-                {'radius': new_r, 'option': 2})
+                {'radius': new_r, 'option': 2, 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
 
         expected = [(255, new_r), (263, old_r), (253, new_r),
@@ -2480,7 +2480,7 @@ class ViewPageTests(TestCase):
         old_r = -1
         response = self.client.post(
                 '/%d/treenode/%d/radius' % (self.test_project_id, treenode_id),
-                {'radius': new_r, 'option': 3})
+                {'radius': new_r, 'option': 3, 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
 
         expected = [(261, old_r), (259, old_r), (257, new_r),
@@ -2490,7 +2490,7 @@ class ViewPageTests(TestCase):
         treenode_id = ancestor.id
         response = self.client.post(
                 '/%d/treenode/%d/radius' % (self.test_project_id, treenode_id),
-                {'radius': new_r, 'option': 3})
+                {'radius': new_r, 'option': 3, 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
 
         expected = [(253, new_r), (251, new_r), (249, new_r),
@@ -2508,7 +2508,7 @@ class ViewPageTests(TestCase):
         old_r = -1
         response = self.client.post(
                 '/%d/treenode/%d/radius' % (self.test_project_id, treenode_id),
-                {'radius': new_r, 'option': 4})
+                {'radius': new_r, 'option': 4, 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
 
         expected = [(261, old_r), (259, old_r), (257, new_r),

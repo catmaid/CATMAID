@@ -491,9 +491,9 @@ def update_node_radii(node_ids, radii, cursor=None):
 
     updated_rows = cursor.fetchall()
     if len(node_ids) != len(updated_rows):
+        missing_ids = frozenset(node_ids) - frozenset([r[0] for r in updated_rows])
         raise ValueError('Coudn\'t find treenodes ' +
-                         ','.join(frozenset(node_ids) -
-                                  frozenset([r[0] for r in updated_rows])))
+                         ','.join([str(ni) for ni in missing_ids]))
     return {r[0]: {
         'old': r[1],
         'new': float(r[2]),

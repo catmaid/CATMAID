@@ -460,7 +460,7 @@ def _update_location(table, nodes, now, user, cursor):
         SET editor_id = %s, location_x = target.x,
             location_y = target.y, location_z = target.z
         FROM (SELECT x.id, x.location_x AS old_loc_x,
-                     x.location_y AS old_loc_y, x.location_y AS old_loc_z,
+                     x.location_y AS old_loc_y, x.location_z AS old_loc_z,
                      y.new_loc_x AS x, y.new_loc_y AS y, y.new_loc_z AS z
               FROM location x
               INNER JOIN (VALUES {}) y(id, new_loc_x, new_loc_y, new_loc_z)

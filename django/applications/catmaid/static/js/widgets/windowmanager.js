@@ -685,17 +685,24 @@ function CMWTabbedNode( children )
   tabContainer.className = "CMWTabs";
 
   var tabs = [];
-  var addTab = function (child) {
+  var addTab = function (child, index) {
     var tab = document.createElement("span");
-    tab.innerText = child.getTitle();
+    tab.innerText = child.getTitle ?
+        child.getTitle() :
+        (child.getWindows().length + ' windows');
     if (child === activeChild) tab.className = "active";
     tab.addEventListener("click", function () { self.activateChild(child); return true; });
-    tabContainer.appendChild(tab);
-    tabs.push(tab);
+    if (typeof index === 'undefined') {
+      tabContainer.appendChild(tab);
+      tabs.push(tab);
+    } else {
+      tabContainer.replaceChild(tab, tabContainer.childNodes[index]);
+      tabs[index] = tab;
+    }
     return tab;
   };
 
-  children.forEach(addTab);
+  children.forEach(function (t) { addTab(t); });
 
   frame.appendChild(tabContainer);
 
@@ -762,7 +769,11 @@ function CMWTabbedNode( children )
     tabs[childIndex].classList.add("active");
 
     var newActiveChildFrame = child.getFrame();
-    frame.replaceChild(newActiveChildFrame, activeChildFrame);
+    if (activeChildFrame.parentNode === frame) {
+      frame.replaceChild(newActiveChildFrame, activeChildFrame);
+    } else {
+      frame.appendChild(newActiveChildFrame);
+    }
     activeChild = child;
     activeChildFrame = newActiveChildFrame;
     activeChildFrame.style.left = "0px";
@@ -772,7 +783,11 @@ function CMWTabbedNode( children )
 
     self.redraw();
 
-    activeChild.focus();
+    if (activeChild.focus) {
+      activeChild.focus();
+    } else {
+      activeChild.getWindows()[0].focus();
+    }
   };
 
   this.getWindows = function()
@@ -797,15 +812,16 @@ function CMWTabbedNode( children )
 
   this.replaceChild = function( newChild, oldChild )
   {
-    // As a monumental hack, because a tabbed node is a terminal container, if
-    // an attempt is made to replace one of its children with a new window
-    // that child in the new window should be replaced with the tabbed node
-    // itself, then the tabbed node replaced in its parent with the new window.
-    var oldParent = parent;
-    newChild.replaceChild(self, oldChild);
-    oldChild.setParent(self);
-    if (!frame.contains(activeChildFrame)) frame.appendChild(activeChildFrame);
-    oldParent.replaceChild(newChild, self);
+    var oldChildInd = children.indexOf(oldChild);
+    if (oldChildInd === -1) return;
+    children[oldChildInd] = newChild;
+    newChild.setParent(self);
+    addTab(newChild, oldChildInd);
+    if (activeChild === oldChild) {
+      self.activateChild(newChild);
+    } else {
+      self.redraw();
+    }
   };
 
   this.getSiblingOf = function( child )
@@ -1062,19 +1078,31 @@ function CMWWindow( title )
 
       if ( eventCatcher.className == "eventCatcherTop" )
       {
-        parent.replaceChild( new CMWVSplitNode( CMWWindow.selectedWindow, self ), self );
+        if ( !e.shiftKey && parent instanceof CMWTabbedNode )
+          parent.getParent().replaceChild( new CMWVSplitNode( CMWWindow.selectedWindow, parent ), parent );
+        else
+          parent.replaceChild( new CMWVSplitNode( CMWWindow.selectedWindow, self ), self );
       }
       else if ( eventCatcher.className == "eventCatcherBottom" )
       {
-        parent.replaceChild( new CMWVSplitNode( self, CMWWindow.selectedWindow ), self );
+        if ( !e.shiftKey && parent instanceof CMWTabbedNode )
+          parent.getParent().replaceChild( new CMWVSplitNode( parent, CMWWindow.selectedWindow ), parent );
+        else
+          parent.replaceChild( new CMWVSplitNode( self, CMWWindow.selectedWindow ), self );
       }
       else if ( eventCatcher.className == "eventCatcherLeft" )
       {
-        parent.replaceChild( new CMWHSplitNode( CMWWindow.selectedWindow, self ), self );
+        if ( !e.shiftKey && parent instanceof CMWTabbedNode )
+          parent.getParent().replaceChild( new CMWHSplitNode( CMWWindow.selectedWindow, parent ), parent );
+        else
+          parent.replaceChild( new CMWHSplitNode( CMWWindow.selectedWindow, self ), self );
       }
       else if ( eventCatcher.className == "eventCatcherRight" )
       {
-        parent.replaceChild( new CMWHSplitNode( self, CMWWindow.selectedWindow ), self );
+        if ( !e.shiftKey && parent instanceof CMWTabbedNode )
+          parent.getParent().replaceChild( new CMWHSplitNode( parent, CMWWindow.selectedWindow ), parent );
+        else
+          parent.replaceChild( new CMWHSplitNode( self, CMWWindow.selectedWindow ), self );
       }
       else if ( eventCatcher.className == "eventCatcherMiddle" )
       {

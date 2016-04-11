@@ -11,6 +11,7 @@ from django.utils import timezone
 
 from rest_framework.decorators import api_view
 
+from catmaid import state
 from catmaid.models import UserRole, Treenode, Connector, \
         ClassInstanceClassInstance, Review
 from catmaid.control.authentication import requires_user_role, \
@@ -483,8 +484,14 @@ def node_update(request, project_id=None):
     treenodes = get_request_list(request.POST, "t") or []
     connectors = get_request_list(request.POST, "c") or []
 
-    now = timezone.now()
     cursor = connection.cursor()
+    nodes = treenodes + connectors
+    if nodes:
+        node_ids = [int(n[0]) for n in nodes]
+        state.validate_state(node_ids, request.POST.get('state'),
+                multinode=True, lock=True, cursor=cursor)
+
+    now = timezone.now()
     old_treenodes = _update_location("treenode", treenodes, now, request.user, cursor)
     old_connectors = _update_location("connector", connectors, now, request.user, cursor)
 

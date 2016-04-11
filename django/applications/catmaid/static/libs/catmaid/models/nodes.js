@@ -278,6 +278,8 @@
     /**
      * Update location of multiple treenodes and multiple connectors.
      *
+     * @param {State}     state      A state instance that provides enough
+     *                               information for a node state for each treenode.
      * @param {integer[]} treenodes  The list of four-element list each
      *                               containing a treenode ID and 3D location.
      * @param {integer[]} connectors The list of four-element list each
@@ -285,14 +287,22 @@
      *
      * @returns a promise resolving after the update succeeded
      */
-    update: function(projectId, treenodes, connectors) {
+    update: function(state, projectId, treenodes, connectors) {
       CATMAID.requirePermission(projectId, 'can_annotate',
           'You don\'t have have permission to update nodes');
+
+      var nodes = treenodes ? treenodes : [];
+      if (connectors) {
+        nodes = nodes.concat(connectors);
+      }
 
       var url = projectId + '/node/update';
       var params = {
         t: treenodes,
-        c: connectors
+        c: connectors,
+        state: state.makeMultiNodeState(nodes.map(function(e) {
+          return e[0];
+        }))
       };
       return CATMAID.fetch(url, 'POST', params)
         .then(function(result) {
@@ -804,49 +814,98 @@
    * Map a node update list (list of four-element list with the first being the
    * node ID. The context is expected to be a CommandStore.
    */
-  function mapNodeUpdateList(command, node) {
-    /* jshint validthis: true */ // "this" has to be a CommandStore instance
-    return [this.get(this.NODE, node[0], command), node[1], node[2], node[3]];
-  }
-
-  /**
-   * Map a connector update list (list of four-element list with the first being
-   * the node ID. The context is expected to be a CommandStore.
-   */
-  function mapConnectorUpdateList(command, node) {
-    /* jshint validthis: true */ // "this" has to be a CommandStore instance
-    return [this.get(this.CONNECTOR, node[0], command), node[1], node[2], node[3]];
+  function mapNodeUpdateList(state, type, map, command, node) {
+    var nodeState = map.getWithTime(type, node[0], node[1], command);
+    state[nodeState.value] = nodeState.timestamp;
+    return [node[0], node[2], node[3], node[4]];
   }
 
   /**
    * Update one or more treenodes and connectors.
    */
   CATMAID.UpdateNodesCommand = CATMAID.makeCommand(
-      function(projectId, treenodes, connectors) {
+      function(state, projectId, treenodes, connectors) {
+    // Expect each treenode to be an array where the first element is the
+    // treenode ID. Map to nodes from state. and create array of the following
+    // form: [<id>, <edition-time>, <x>, <y>, <z>].
+    var toNode = function(e) { return [e[0], state.getNode(e[0])[1], e[1], e[2], e[3]]; };
+    var umNodes = treenodes ? treenodes.map(toNode) : [];
+    var umConnectors = connectors ? connectors.map(toNode) : [];
+
     var exec = function(done, command, map) {
-      var toNodeList = mapNodeUpdateList.bind(map, command);
-      var toConnectorList = mapConnectorUpdateList.bind(map, command);
-      var mTreenodes = treenodes ?  treenodes.map(toNodeList) : undefined;
-      var mConnectors = connectors ? connectors.map(mapConnectorUpdateList, map) : undefined;
-      var update = CATMAID.Nodes.update(projectId, mTreenodes, mConnectors);
+      var state = {};
+      var mapAndRecordNode = mapNodeUpdateList.bind(null, state, map.NODE, map, command);
+      var mapAndRecordConn = mapNodeUpdateList.bind(null, state, map.CONNECTOR, map, command);
+
+      var mTreenodes = umNodes.map(mapAndRecordNode);
+      var mConnectors = umConnectors.map(mapAndRecordConn);
+
+      // Create a new mapped local state and call model function, which will
+      // create multi node state for all treenodes and connectors.
+      var execState = new CATMAID.SimpleSetState(state);
+      var update = CATMAID.Nodes.update(execState, projectId, mTreenodes, mConnectors);
       return update.then(function(result) {
-        // Save updated nodes with their old positions
-        command.store('old_treenodes', result.old_treenodes);
-        command.store('old_connectors', result.old_connectors);
+        var updatedTreenodes = result.old_treenodes;
+        var updatedConnectors = result.old_connectors;
+        // Map updated nodes forward
+        if (updatedTreenodes) {
+          for (var n=0; n<updatedTreenodes.length; ++n) {
+            var node = updatedTreenodes[n];
+            map.add(map.NODE, umNodes[n][0], node[0], node[1]);
+          }
+          command.store('updatedTreenodes', updatedTreenodes);
+        }
+        if (updatedConnectors) {
+          for (var n=0; n<updatedConnectors.length; ++n) {
+            var ctr = updatedConnectors[n];
+            map.add(map.CONNECTOR, umConnectors[n][0], ctr[0], ctr[1]);
+          }
+          command.store('updatedConnectors', updatedConnectors);
+        }
         done();
         return result;
       });
     };
 
     var undo = function(done, command, map) {
-      var toNodeList = mapNodeUpdateList.bind(map, command);
-      var toConnectorList = mapConnectorUpdateList.bind(map, command);
-      var old_treenodes = command.get('old_treenodes');
-      var old_connectors = command.get('old_connectors');
-      var mTreenodes = old_treenodes ? old_treenodes.map(toNodeList) : undefined;
-      var mConnectors = old_connectors ? old_connectors.map(toConnectorList) : undefined;
-      var update = CATMAID.Nodes.update(projectId, mTreenodes, mConnectors);
+      // Get updated treenodes and connectors and validate if any
+      var updatedTreenodes = command.get('updatedTreenodes');
+      var updatedConnectors = command.get('updatedConnectors');
+      if (treenodes && treenodes.length > 0) {
+        command.validateForUndo(updatedTreenodes);
+      }
+      if (connectors && connectors.length > 0) {
+        command.validateForUndo(updatedConnectors);
+      }
+
+      var state = {};
+      var mapAndRecordNode = mapNodeUpdateList.bind(null, state, map.NODE, map, command);
+      var mapAndRecordConn = mapNodeUpdateList.bind(null, state, map.CONNECTOR, map, command);
+
+      // Expect treenodes and connectors of this form: [<id>, <edition-time>, <x>, <y>, <z>]
+      var mTreenodes = updatedTreenodes ? updatedTreenodes.map(mapAndRecordNode) : undefined;
+      var mConnectors = updatedConnectors ? updatedConnectors.map(mapAndRecordConn) : undefined;
+
+      // Create a new mapped local state and call model function, which will
+      // create multi node state for all treenodes and connectors.
+      var undoState = new CATMAID.SimpleSetState(state);
+      var update = CATMAID.Nodes.update(undoState, projectId, mTreenodes, mConnectors);
       return update.then(function(result) {
+        var updatedTreenodes = result.old_treenodes;
+        var updatedConnectors = result.old_connectors;
+        // Map updated nodes forward
+        if (updatedTreenodes) {
+          for (var n=0; n<updatedTreenodes.length; ++n) {
+            var node = updatedTreenodes[n];
+            map.add(map.NODE, umNodes[n][0], node[0], node[1]);
+          }
+        }
+        if (updatedConnectors) {
+          for (var n=0; n<updatedConnectors.length; ++n) {
+            var ctr = updatedConnectors[n];
+            map.add(map.CONNECTOR, umConnectors[n][0], ctr[0], ctr[1]);
+          }
+        }
         done();
         return result;
       });

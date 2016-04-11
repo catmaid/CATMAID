@@ -1896,9 +1896,9 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodeCoordinatesInDB = functio
       }
     }
     if (update.treenode.length > 0 || update.connector.length > 0) {
-      var command = new CATMAID.UpdateNodesCommand(project.id,
-          update.treenode, update.connector);
-      return CATMAID.commands.execute(command);
+      var command = new CATMAID.UpdateNodesCommand(this.state,
+          project.id, update.treenode, update.connector);
+      return CATMAID.commands.execute(command).catch(CATMAID.handleError);
     } else {
       return Promise.resolve(0);
     }

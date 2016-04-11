@@ -6,7 +6,7 @@ from collections import defaultdict
 from django.core.serializers.json import DjangoJSONEncoder
 from django.conf import settings
 from django.db import connection
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
 
 from rest_framework.decorators import api_view
@@ -15,7 +15,7 @@ from catmaid.models import UserRole, Treenode, Connector, \
         ClassInstanceClassInstance, Review
 from catmaid.control.authentication import requires_user_role, \
         can_edit_all_or_fail, user_domain
-from catmaid.control.common import get_relation_to_id_map
+from catmaid.control.common import get_relation_to_id_map, get_request_list
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -439,59 +439,61 @@ def most_recent_treenode(request, project_id=None):
     }), content_type='application/json')
 
 
-def _update(Kind, table, nodes, now, user, return_old):
+def _update_location(table, nodes, now, user, cursor):
     if not nodes:
         return
     # 0: id
     # 1: X
     # 2: Y
     # 3: Z
-    can_edit_all_or_fail(user, (node[0] for node in nodes.itervalues()), table)
-    old_values = [] if return_old else None
+    can_edit_all_or_fail(user, (node[0] for node in nodes), table)
 
-    for node in nodes.itervalues():
-        instance = Kind.objects.get(id=int(node[0]))
-        if return_old:
-            old_values.append((instance.id, instance.location_x,
-                instance.location_y, instance.location_z))
-        instance.editor=user
-        instance.edition_time=now
-        instance.location_x=float(node[1])
-        instance.location_y=float(node[2])
-        instance.location_z=float(node[3])
-        instance.save()
+    # Sanetize node details
+    nodes = [(int(i), float(x), float(y), float(z)) for i,x,y,z in nodes]
 
-    return old_values
+    node_template = "(" + "),(".join(["%s, %s, %s, %s"] * len(nodes)) + ")"
+    node_table = [v for k in nodes for v in k]
+
+
+    cursor.execute("""
+        UPDATE location n
+        SET editor_id = %s, location_x = target.x,
+            location_y = target.y, location_z = target.z
+        FROM (SELECT x.id, x.location_x AS old_loc_x,
+                     x.location_y AS old_loc_y, x.location_y AS old_loc_z,
+                     y.new_loc_x AS x, y.new_loc_y AS y, y.new_loc_z AS z
+              FROM location x
+              INNER JOIN (VALUES {}) y(id, new_loc_x, new_loc_y, new_loc_z)
+              ON x.id = y.id FOR NO KEY UPDATE) target
+        WHERE n.id = target.id
+        RETURNING n.id, n.edition_time, target.old_loc_x, target.old_loc_y,
+                  target.old_loc_z
+    """.format(node_template), [user.id] + node_table)
+
+    updated_rows = cursor.fetchall()
+    if len(nodes) != len(updated_rows):
+        raise ValueError('Coudn\'t update node ' +
+                         ','.join(frozenset([str(r[0]) for r in nodes]) -
+                                  frozenset([str(r[0]) for r in updated_rows])))
+    return updated_rows
 
 
 @requires_user_role(UserRole.Annotate)
 def node_update(request, project_id=None):
-    N = len(request.POST)
-    if 0 != N % 4:
-        raise Exception("Incorrect number of posted items for node_update.")
-
-    pattern = re.compile('^[tc]\[(\d+)\]\[(\d+)\]$')
-
-    nodes = {'t': {}, 'c': {}}
-    for key, value in request.POST.iteritems():
-        i, j = pattern.match(key).groups()
-        i = int(i)
-        j = int(j)
-        node = nodes[key[0]].get(i)
-        if not node:
-            nodes[key[0]][i] = node = {}
-        node[j] = value
+    treenodes = get_request_list(request.POST, "t") or []
+    connectors = get_request_list(request.POST, "c") or []
 
     now = timezone.now()
-    old_treenodes = _update(Treenode, 'treenode', nodes['t'], now, request.user, True)
-    old_connectors = _update(Connector, 'connector', nodes['c'], now, request.user, True)
+    cursor = connection.cursor()
+    old_treenodes = _update_location("treenode", treenodes, now, request.user, cursor)
+    old_connectors = _update_location("connector", connectors, now, request.user, cursor)
 
-    num_updated_nodes = len(nodes['t'].keys()) + len(nodes['c'].keys())
-    return HttpResponse(json.dumps({
+    num_updated_nodes = len(treenodes) + len(connectors)
+    return JsonResponse({
         'updated': num_updated_nodes,
         'old_treenodes': old_treenodes,
         'old_connectors': old_connectors
-    }))
+    })
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])

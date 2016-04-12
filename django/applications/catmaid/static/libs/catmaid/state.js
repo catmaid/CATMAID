@@ -354,6 +354,7 @@
   NoCheckState.prototype.makeParentState = CATMAID.getNoCheckState;
   NoCheckState.prototype.makeEdgeState = CATMAID.getNoCheckState;
   NoCheckState.prototype.makeNeighborhoodState = CATMAID.getNoCheckState;
+  NoCheckState.prototype.makeLocalState = CATMAID.getNoCheckState;
 
   // Export no-check state
   CATMAID.NoCheckState = NoCheckState;

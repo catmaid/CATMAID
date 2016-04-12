@@ -75,7 +75,7 @@
      *          successfully updated.
      */
     updateConfidence: function(state, projectId, nodeId, newConfidence,
-        toConnector, partnerId) {
+        toConnector, partnerIds, partnerConfidences) {
       CATMAID.requirePermission(projectId, 'can_annotate',
           'You don\'t have have permission to change the node confidence');
 
@@ -85,8 +85,11 @@
         new_confidence: newConfidence,
         state: state.makeNodeState(nodeId)
       };
-      if (partnerId) {
-        params[partner_id] = partnerId;
+      if (partnerIds) {
+        params["partner_ids"] = partnerIds;
+      }
+      if (partnerConfidences) {
+        params["partner_confidences"] = partnerConfidences;
       }
 
       return CATMAID.fetch(url, 'POST', params)
@@ -357,7 +360,7 @@
         // Add original mapping explicitely
         var updatedNode = result.updatedNodes[mNode.value];
         if (updatedNode) {
-          map.add(map.NODE, umNode[0], mNode.value, node.edition_time);
+          map.add(map.NODE, umNode[0], mNode.value, updatedNode.edition_time);
         }
 
         done();
@@ -430,33 +433,86 @@
   CATMAID.UpdateConfidenceCommand = CATMAID.makeCommand(function(
         state, projectId, nodeId, newConfidence, toConnector) {
 
+    var umNode = state.getNode(nodeId);
+
     var exec = function(done, command, map) {
-      var execState = CATMAID.NoCheckState();
-      var updateConfidence = CATMAID.Nodes.updateConfidence(state,
-          projectId, nodeId, newConfidence, toConnector);
+      var mNode = map.getWithTime(map.NODE, umNode[0], umNode[1], command);
+      var execState = new CATMAID.LocalState([mNode.value, mNode.timestamp]);
+      var updateConfidence = CATMAID.Nodes.updateConfidence(execState,
+          projectId, mNode.value, newConfidence, toConnector);
 
       return updateConfidence.then(function(result) {
-        command._updatedPartners = result.updatedPartners;
+        var updatedNodes = result.updatedPartners;
+        command.store("updatedNodes", updatedNodes);
+        // update stored state of mapped nodes, needed for undo
+        if (toConnector) {
+          for (var n in updatedNodes) {
+            var node = updatedNodes[n];
+            map.add(map.LINK, n, n, node.edition_time);
+          }
+        } else {
+          // Add original mapping explicitely
+          var updatedNode = updatedNodes[mNode.value];
+          if (updatedNode) {
+            map.add(map.NODE, umNode[0], mNode.value, updatedNode.edition_time);
+          }
+        }
+
         done();
         return result;
       });
     };
 
     var undo = function(done, command, map) {
-      // Fail if expected undo parameters are not available from command
-      if (undefined === command._updatedPartners) {
-        throw new CATMAID.ValueError('Can\'t undo confidence update, ' +
-            'history data not available');
+      var updatedNodes = command.get("updatedNodes");
+      command.validateForUndo(updatedNodes);
+
+      var mNode = map.getWithTime(map.NODE, umNode[0], umNode[1], command);
+      var oldConfidence, partnerIds, partnerConfidences;
+      // If the confidence to connectors is changed, the list of partners is a
+      // list of treenode-connector links. A regular confidence change returns
+      // the changed treenode.
+      if (toConnector) {
+        partnerIds = [];
+        partnerConfidences = [];
+        for (var n in updatedNodes) {
+          var node = updatedNodes[n];
+          var mappedNode = map.get(map.LINK, n, command);
+          partnerIds.push(mappedNode.value);
+          partnerConfidences.push(node.old_confidence);
+        }
+      } else {
+        var updatedNode = updatedNodes[mNode.value];
+        if (!updatedNode) {
+          throw new CATMAID.ValueError("Can't undo confidence update, missing " +
+              "history information");
+        }
+        oldConfidence = updatedNode.old_confidence;
       }
 
-      var undoState = CATMAID.NoCheckState();
-      var promises = Object.keys(command._updatedPartners).map(function(partnerId) {
-        var oldConfidence = command._updatedPartners[partnerId];
-        return CATMAID.Nodes.updateConfidence(undoState, projectId, nodeId, oldConfidence,
-            toConnector, partnerId);
-      });
+      var undoState = new CATMAID.LocalState([mNode.value, mNode.timestamp]);
+      var updateConfidence = CATMAID.Nodes.updateConfidence(undoState,
+          projectId, mNode.value, oldConfidence, toConnector, partnerIds,
+          partnerConfidences);
 
-      return Promise.all(promises);
+      return updateConfidence.then(function(result) {
+        // Update mapping
+        var updatedNodes = result.updatedPartners;
+        // update stored state of mapped nodes, needed for undo
+        if (toConnector) {
+          for (var n in updatedNodes) {
+            var node = updatedNodes[n];
+            map.add(map.LINK, n, n, node.edition_time);
+          }
+        } else {
+          // Add original mapping explicitely
+          var updatedNode = updatedNodes[mNode.value];
+          if (updatedNode) {
+            map.add(map.NODE, umNode[0], mNode.value, updatedNode.edition_time);
+          }
+        }
+        done();
+      });
     };
 
     var title;

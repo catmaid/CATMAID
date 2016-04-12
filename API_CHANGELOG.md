@@ -62,6 +62,20 @@ included in this changelog.
 - A list of removed links is now returned as well. Each entry has the following
   format: [<link-id>, <relation-id>, <connector-id>, <confidecen>].
 
+`POST /{project_id}/treenodes/{treenode_id}/confidence`:
+
+- Edition times of nodes and connectors-links are now returned, too. Each
+  location ID in the returned updated_partners object, is now mapped to an
+  object with an "edition_time" and an "old_confidence" field.
+
+- An optional "partner_ids" parameter is now accepted. If the "to_connectors"
+  parameter is set to true, the "partner_ids" parameter allows to update only
+  the links to the provided connector IDs.
+
+- An optional "partner_confidences" parameter is now accepted. If the
+  "partner_ids" parameter is used, the "partner_confidences" parameter allows to
+  specify an individual confidence for each selected partner.
+
 ### Deprecations
 
 None.

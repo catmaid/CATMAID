@@ -831,9 +831,15 @@ def update_confidence(request, project_id=None, treenode_id=None):
         description: Whether all linked connectors instead of parent should be updated
         type: boolean
         required: false
-      - name: partner_id
-        description: Limit update to single connector if to_connector is true
-        type: integer
+      - name: partner_ids
+        description: Limit update to a set of connectors if to_connector is true
+        type: array
+        items: integer
+        required: false
+      - name: partner_confidences
+        description: Set different confidences to connectors in <partner_ids>
+        type: array
+        items: integer
         required: false
     type:
         message:
@@ -845,34 +851,57 @@ def update_confidence(request, project_id=None, treenode_id=None):
     """
     tnid = int(treenode_id)
     can_edit_treenode_or_fail(request.user, project_id, tnid)
+    cursor = connection.cursor()
 
-    new_confidence = int(request.POST.get('new_confidence', 0))
-    if new_confidence < 1 or new_confidence > 5:
-        raise ValueError('Confidence not in range 1-5 inclusive.')
+    state.validate_state(tnid, request.POST.get('state'),
+            node=True, lock=True, cursor=cursor)
 
     to_connector = request.POST.get('to_connector', 'false') == 'true'
-    partner_id = request.POST.get('partner_id', None)
-    if partner_id:
-        partner_id = int(partner_id)
+    partner_ids = get_request_list(request.POST, 'partner_ids', None, int)
+    partner_confidences = get_request_list(request.POST, 'partner_confidences',
+            None, int)
 
-    cursor = connection.cursor()
+    new_confidence = int(request.POST.get('new_confidence', 0))
+
+    # If partner confidences are specified, make sure there are exactly as many
+    # as there are partners. Otherwise validate passed in confidence
+    if partner_ids and partner_confidences:
+        if len(partner_confidences) != len(partner_ids):
+            raise ValueError("There have to be as many partner confidences as"
+                             "there are partner IDs")
+    else:
+        if new_confidence < 1 or new_confidence > 5:
+            raise ValueError('Confidence not in range 1-5 inclusive.')
+        if partner_ids:
+            # Prepare new confidences for connector query
+            partner_confidences = (new_confidence,) * len(partner_ids)
+
     if to_connector:
-        if partner_id:
-            constraints = "WHERE treenode_id = %s AND connector_id = %s" % (tnid, partner_id)
+        if partner_ids:
+            partner_template = ",".join(("(%s,%s)",) * len(partner_ids))
+            partner_data = [p for v in zip(partner_ids, partner_confidences) for p in v]
+            cursor.execute('''
+                UPDATE treenode_connector tc
+                SET confidence = target.new_confidence
+                FROM (SELECT x.id, x.confidence AS old_confidence,
+                             new_values.confidence AS new_confidence
+                      FROM treenode_connector x
+                      JOIN (VALUES {}) new_values(cid, confidence)
+                      ON x.connector_id = new_values.cid
+                      WHERE x.treenode_id = %s) target
+                WHERE tc.id = target.id
+                RETURNING tc.connector_id, tc.edition_time, target.old_confidence
+            '''.format(partner_template), partner_data + [tnid])
         else:
-            constraints = "WHERE treenode_id = %s" % tnid
-
-        # Could be more than one. The GUI doesn't allow for specifying to which one.
-        cursor.execute('''
-            UPDATE treenode_connector tc
-            SET confidence = %s
-            FROM (SELECT x.id, x.confidence AS old_confidence
-                  FROM treenode_connector x
-                  {}
-                  ) target
-            WHERE tc.id = target.id
-            RETURNING tc.connector_id, target.old_confidence
-        '''.format(constraints), (new_confidence,))
+            cursor.execute('''
+                UPDATE treenode_connector tc
+                SET confidence = %s
+                FROM (SELECT x.id, x.confidence AS old_confidence
+                      FROM treenode_connector x
+                      WHERE treenode_id = %s) target
+                WHERE tc.id = target.id
+                RETURNING tc.connector_id, tc.edition_time, target.old_confidence
+            ''', (new_confidence, tnid))
     else:
         cursor.execute('''
             UPDATE treenode t
@@ -881,17 +910,23 @@ def update_confidence(request, project_id=None, treenode_id=None):
                   FROM treenode x
                   WHERE id = %s) target
             WHERE t.id = target.id
-            RETURNING t.parent_id, target.old_confidence
+            RETURNING t.id, t.edition_time, target.old_confidence
         ''', (new_confidence, request.user.id, tnid))
 
     updated_partners = cursor.fetchall()
     if len(updated_partners) > 0:
-        location = Location.objects.filter(id=tnid).values_list('location_x',
-                'location_y', 'location_z')[0]
-        insert_into_log(project_id, request.user.id, "change_confidence", location, "Changed to %s" % new_confidence)
+        location = Location.objects.filter(id=tnid).values_list(
+                'location_x', 'location_y', 'location_z')[0]
+        insert_into_log(project_id, request.user.id, "change_confidence",
+                location, "Changed to %s" % new_confidence)
         return JsonResponse({
             'message': 'success',
-            'updated_partners': {r[0]:r[1] for r in updated_partners}
+            'updated_partners': {
+                r[0]: {
+                    'edition_time': r[1],
+                    'old_confidence': r[2]
+                } for r in updated_partners
+            }
         })
 
     # Else, signal error

@@ -149,6 +149,10 @@ Miscellaneous:
   The active tab can be removed from the tabbed window by dragging it to
   another location in the window layout.
 
+- There is now a setting to invert the behavior of CTRL when navigating
+  parent/child topology, i.e., when enabled [ and ] will navigate to the
+  next real node by default, while holding CTRL will go to virtual nodes.
+
 - Which layers are hidden when Space is held is now configurable by checkboxes
   in the Stack Viewer's layer controls.
 

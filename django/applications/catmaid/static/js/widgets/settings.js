@@ -818,6 +818,23 @@
         }));
       ds.append(wrapSettingsControl(
           CATMAID.DOM.createCheckboxSetting(
+              "Invert behavior of modifier key to ignore/respect virtual nodes",
+              CATMAID.TracingTool.Settings[SETTINGS_SCOPE].invert_virtual_node_ignore_modifier,
+              "When navigating parent/child topology with " +
+              "<kbd>[</kbd>/<kbd>]</kbd>, invert the behavior of holding " +
+              "<kbd>CTRL</kbd>.",
+              function() {
+                CATMAID.TracingTool.Settings
+                    .set(
+                      'invert_virtual_node_ignore_modifier',
+                      this.checked,
+                      SETTINGS_SCOPE);
+              }),
+          CATMAID.TracingTool.Settings,
+          'invert_virtual_node_ignore_modifier',
+          SETTINGS_SCOPE));
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createCheckboxSetting(
               "Respect suppressed virtual nodes during navigation",
               SkeletonAnnotations.Settings[SETTINGS_SCOPE].skip_suppressed_virtual_nodes,
               "When navigating parent/child topology, skip virtual nodes " +

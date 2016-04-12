@@ -638,7 +638,9 @@
       run: function (e) {
         if (!mayView())
           return false;
-        activeTracingLayer.tracingOverlay.goToParentNode(SkeletonAnnotations.getActiveNodeId(), (e.ctrlKey || e.metaKey));
+        var modifierKey = e.ctrlKey || e.metaKey;
+        if (CATMAID.TracingTool.Settings.session.invert_virtual_node_ignore_modifier) modifierKey = !modifierKey;
+        activeTracingLayer.tracingOverlay.goToParentNode(SkeletonAnnotations.getActiveNodeId(), modifierKey);
         return true;
       }
     }));
@@ -649,7 +651,9 @@
       run: function (e) {
         if (!mayView())
           return false;
-        activeTracingLayer.tracingOverlay.goToChildNode(SkeletonAnnotations.getActiveNodeId(), e.shiftKey, (e.ctrlKey || e.metaKey));
+        var modifierKey = e.ctrlKey || e.metaKey;
+        if (CATMAID.TracingTool.Settings.session.invert_virtual_node_ignore_modifier) modifierKey = !modifierKey;
+        activeTracingLayer.tracingOverlay.goToChildNode(SkeletonAnnotations.getActiveNodeId(), e.shiftKey, modifierKey);
         return true;
       }
     }));
@@ -1599,5 +1603,17 @@
 
   // Make tracing tool in CATMAID namespace
   CATMAID.TracingTool = TracingTool;
+
+  CATMAID.TracingTool.Settings = new CATMAID.Settings(
+      'tracing-tool',
+      {
+        version: 0,
+        entries: {
+          invert_virtual_node_ignore_modifier: {
+            default: false
+          }
+        },
+        migrations: {}
+      });
 
 })(CATMAID);

@@ -228,7 +228,8 @@ def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_pr
                 tc.confidence,
                 tc.edition_time,
                 tc.id,
-                c.user_id
+                c.user_id,
+                c.edition_time
             FROM treenode_connector tc
             INNER JOIN connector c ON (tc.connector_id = c.id)
             INNER JOIN (VALUES %s) vals(v) ON tc.treenode_id = v
@@ -251,7 +252,8 @@ def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_pr
             treenode_connector.confidence,
             treenode_connector.edition_time,
             treenode_connector.id,
-            connector.user_id
+            connector.user_id,
+            connector.edition_time
         FROM connector LEFT OUTER JOIN treenode_connector
                        ON connector.id = treenode_connector.connector_id
         WHERE connector.project_id = %(project_id)s
@@ -306,7 +308,7 @@ def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_pr
         for i in xrange(len(connectors)):
             c = connectors[i]
             cid = c[0]
-            connectors[i] = (cid, c[1], c[2], c[3], c[4], links[cid], c[8],
+            connectors[i] = (cid, c[1], c[2], c[3], c[4], links[cid], c[11],
                     is_superuser or c[10] == user_id or c[10] in domain)
 
 

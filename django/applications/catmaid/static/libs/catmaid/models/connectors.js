@@ -39,7 +39,8 @@
           CATMAID.Connectors.trigger(CATMAID.Connectors.EVENT_CONNECTOR_CREATED,
               result.connector_id, x, y, z);
           return {
-            newConnectorId: result.connector_id
+            newConnectorId: result.connector_id,
+            newConnectorEditTime: result.connector_edition_time
           };
         });
     },

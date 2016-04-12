@@ -495,7 +495,10 @@ def create_connector(request, project_id=None):
         confidence=parsed_confidence)
     new_connector.save()
 
-    return HttpResponse(json.dumps({'connector_id': new_connector.id}))
+    return JsonResponse({
+        'connector_id': new_connector.id,
+        'connector_edition_time': new_connector.edition_time
+    })
 
 
 @requires_user_role(UserRole.Annotate)

@@ -63,11 +63,11 @@ def create_link(request, project_id=None):
                 'connections to the target skeleton' % post_links_to_skeleton
 
         # Enforce only synaptic links
-        gapjunction_links = TreenodeConnector.objects.filter(project=project, connector=to_connector, 
+        gapjunction_links = TreenodeConnector.objects.filter(project=project, connector=to_connector,
             relation__relation_name='gapjunction_with')
         if (gapjunction_links.count() != 0):
             return HttpResponse(json.dumps({'error': 'Connector %s cannot have both a gap junction and a postsynaptic node.' % to_id}))
-  
+
     if link_type == 'gapjunction_with':
         # Enforce only two gap junction links
         gapjunction_links = TreenodeConnector.objects.filter(project=project, connector=to_connector, relation=relation)

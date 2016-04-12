@@ -5,7 +5,7 @@ from django.db import connection
 
 class SQL:
     was_edited = """
-        SELECT 1 FROM treenode t
+        SELECT 1 FROM location t
         WHERE t.id = %s
         AND t.edition_time >=(%s::timestamptz - '1 ms'::interval)
         AND t.edition_time < (%s::timestamptz + '1 ms'::interval)

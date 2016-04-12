@@ -1647,11 +1647,12 @@ SkeletonAnnotations.TracingOverlay.prototype.createLink = function (fromid, toid
   var self = this;
   return this.promiseNode(fromid).then(function(nodeId) {
     return self.submit.then(function() {
-      var command = new CATMAID.LinkConnectorCommand(project.id, toid, nodeId, link_type);
+      var command = new CATMAID.LinkConnectorCommand(self.state, project.id,
+          toid, nodeId, link_type);
       return CATMAID.commands.execute(command).then(function(result) {
         if (result.warning) CATMAID.warn(result.warning);
         self.updateNodes(afterCreate);
-      });
+      }).catch(CATMAID.handleError);
     }, CATMAID.handleError);
   });
 };

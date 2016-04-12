@@ -850,7 +850,7 @@ class ViewPageTests(TestCase):
         self.fake_authentication()
         response = self.client.post(
                 '/%d/treenodes/%d/confidence' % (self.test_project_id, treenode_id),
-                {'new_confidence': '4'})
+                {'new_confidence': '4', 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
         treenode = Treenode.objects.filter(id=treenode_id).get()
         parsed_response = json.loads(response.content)
@@ -880,7 +880,8 @@ class ViewPageTests(TestCase):
         self.fake_authentication()
         response = self.client.post(
                 '/%d/treenodes/%d/confidence' % (self.test_project_id, treenode_id),
-                {'new_confidence': '4', 'to_connector': 'true'})
+                {'new_confidence': '4', 'to_connector': 'true',
+                 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
         connector = TreenodeConnector.objects.filter(id=treenode_connector_id).get()
         parsed_response = json.loads(response.content)
@@ -3167,6 +3168,7 @@ class ViewPageTests(TestCase):
 
         response = self.client.post(
                 '/%d/node/update' % self.test_project_id, {
+                    'state': make_nocheck_state(),
                     't[0][0]': treenode_id,
                     't[0][1]': x,
                     't[0][2]': y,

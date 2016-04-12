@@ -392,7 +392,7 @@
     }
     var map = this.typeMaps.get(type);
     var mappedValue = map[value];
-    return value in map ? map[value] : value;
+    return value in map ? map[value].value : value;
   };
 
   /**

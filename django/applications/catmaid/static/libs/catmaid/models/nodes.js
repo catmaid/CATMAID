@@ -478,7 +478,7 @@
         for (var n in updatedNodes) {
           var node = updatedNodes[n];
           var mappedNode = map.get(map.LINK, n, command);
-          partnerIds.push(mappedNode.value);
+          partnerIds.push(mappedNode);
           partnerConfidences.push(node.old_confidence);
         }
       } else {

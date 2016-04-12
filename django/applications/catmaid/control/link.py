@@ -1,6 +1,6 @@
 import json
 
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.core.exceptions import ObjectDoesNotExist
 
 from catmaid.models import UserRole, Project, Relation, Treenode, Connector, \
@@ -89,7 +89,8 @@ def create_link(request, project_id=None):
 
     result['message'] = 'success'
     result['link_id'] = link.id
-    return HttpResponse(json.dumps(result), content_type='application/json')
+    result['link_edition_time'] = link.edition_time
+    return JsonResponse(result)
 
 
 @requires_user_role(UserRole.Annotate)

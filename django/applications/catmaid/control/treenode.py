@@ -910,7 +910,7 @@ def update_confidence(request, project_id=None, treenode_id=None):
                   FROM treenode x
                   WHERE id = %s) target
             WHERE t.id = target.id
-            RETURNING t.id, t.edition_time, target.old_confidence
+            RETURNING t.parent_id, t.edition_time, target.old_confidence
         ''', (new_confidence, request.user.id, tnid))
 
     updated_partners = cursor.fetchall()

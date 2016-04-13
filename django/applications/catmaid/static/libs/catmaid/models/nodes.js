@@ -452,9 +452,14 @@
           }
         } else {
           // Add original mapping explicitely
-          var updatedNode = updatedNodes[mNode.value];
-          if (updatedNode) {
-            map.add(map.NODE, umNode[0], mNode.value, updatedNode.edition_time);
+          var updatedNodeIds = Object.keys(updatedNodes);
+          if (1 === updatedNodeIds.length) {
+            var updatedNode = updatedNodes[updatedNodeIds[0]];
+            if (updatedNode) {
+              map.add(map.NODE, umNode[0], mNode.value, updatedNode.edition_time);
+            }
+          } else {
+            throw new CATMAID.ValueError("Didn't expect more than one updated node for confidence update");
           }
         }
 
@@ -506,9 +511,14 @@
           }
         } else {
           // Add original mapping explicitely
-          var updatedNode = updatedNodes[mNode.value];
-          if (updatedNode) {
-            map.add(map.NODE, umNode[0], mNode.value, updatedNode.edition_time);
+          var updatedNodeIds = Object.keys(updatedNodes);
+          if (1 === updatedNodeIds.length) {
+            var updatedNode = updatedNodes[updatedNodeIds[0]];
+            if (updatedNode) {
+              map.add(map.NODE, umNode[0], mNode.value, updatedNode.edition_time);
+            }
+          } else {
+            throw new CATMAID.ValueError("Didn't expect more than one updated node for confidence update");
           }
         }
         done();

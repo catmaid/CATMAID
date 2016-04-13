@@ -695,9 +695,12 @@
 
     // Use passed in state only to extract parent ID and edit time. A new state
     // will be constructed for actually executing the command (to cover redo).
-    var umParent = state.getNode(parentId);
-    var umParentId = umParent[0];
-    var umParentEditTime = umParent[1];
+    var umParent, umParentId, umParentEditTime;
+    if (parentId && -1 != parentId) {
+      umParent = state.getNode(parentId);
+      umParentId = umParent[0];
+      umParentEditTime = umParent[1];
+    }
 
     // First execution will set the original node that all mapping will refer to
     var umNodeId, umNodeEditTime;

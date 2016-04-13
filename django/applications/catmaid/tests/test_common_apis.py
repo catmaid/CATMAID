@@ -230,6 +230,20 @@ class ViewPageTests(TestCase):
         assign_perm('can_browse', user, p)
         assign_perm('can_annotate', user, p)
 
+    def test_testdata(self):
+        """Makes sure the test data doesn't contain rows for the base tables
+        location and concept. These are not required for table inheritance and will
+        confuse some functions."""
+        cursor = connection.cursor()
+        cursor.execute("""
+            SELECT COUNT(*) FROM ONLY location;
+        """)
+        self.assertEqual(cursor.fetchone()[0], 0)
+        cursor.execute("""
+            SELECT COUNT(*) FROM ONLY concept;
+        """)
+        self.assertEqual(cursor.fetchone()[0], 0)
+
     def fake_authentication(self, username='test2', password='test', add_default_permissions=False):
         self.client.login(username=username, password=password)
 

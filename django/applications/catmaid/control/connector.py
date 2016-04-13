@@ -536,12 +536,17 @@ def delete_connector(request, project_id=None):
         raise ValueError("Couldn't find exactly one connector with ID #" +
                 connector_id)
     connector = connectors[0]
+    # TODO: Check how many queries here are generated
     partners = [{
         'id': p.treenode_id,
-        'rel': p.relation.relation_name
+        'edition_time': p.treenode.edition_time,
+        'rel': p.relation.relation_name,
+        'rel_id': p.relation.id,
+        'confidence': p.confidence,
+        'link_id': p.id
     } for p in connector.treenodeconnector_set.all()]
     connector.delete()
-    return HttpResponse(json.dumps({
+    return JsonResponse({
         'message': 'Removed connector and class_instances',
         'connector_id': connector_id,
         'confidence': connector.confidence,
@@ -549,7 +554,7 @@ def delete_connector(request, project_id=None):
         'y': connector.location_y,
         'z': connector.location_z,
         'partners': partners
-    }))
+    })
 
 
 @requires_user_role(UserRole.Browse)

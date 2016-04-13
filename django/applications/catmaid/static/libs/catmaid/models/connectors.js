@@ -19,19 +19,30 @@
      * @param {integer} y          The Y coordinate of the connector's location
      * @param {integer} z          The Z coordinate of the connector's location
      * @param {integer} confidence Optional confidence in range 1-5
+     * @param {integer[][]} links  (Optional) A list of two-elment list, each
+     *                             representing treenode ID and a relation ID
+     *                             based on which new links will be created
      *
      * @returns a promise that is resolved once the connector is created
      */
-    create: function(projectId, x, y, z, confidence) {
+    create: function(state, projectId, x, y, z, confidence, links) {
       CATMAID.requirePermission(projectId, 'can_annotate',
           'You don\'t have have permission to create connectors');
       var url = projectId + '/connector/create';
+      var execState;
+      // A state is only required if links should be created
+      if (links) {
+        var partnerIds = links.map(function(l) { return l[0]; });
+        execState = state.makeMultiNodeState(partnerIds);
+      }
       var params = {
           pid: projectId,
           confidence: confidence,
           x: x,
           y: y,
-          z: z
+          z: z,
+          links: links,
+          state: execState
       };
 
       return CATMAID.fetch(url, 'POST', params)
@@ -40,7 +51,8 @@
               result.connector_id, x, y, z);
           return {
             newConnectorId: result.connector_id,
-            newConnectorEditTime: result.connector_edition_time
+            newConnectorEditTime: result.connector_edition_time,
+            createdLinks: result.created_links
           };
         });
     },
@@ -194,7 +206,9 @@
     var umConnectorId, umConnectorEditTime;
 
     var exec = function(done, command, map) {
-      var create = CATMAID.Connectors.create(projectId, x, y, z, confidence);
+      // For a regular connector creation, no state is required
+      var execState = null;
+      var create = CATMAID.Connectors.create(execState, projectId, x, y, z, confidence);
       return create.then(function(result) {
         // First execution will remember the added node for redo mapping
         if (!umConnectorId) {
@@ -248,13 +262,18 @@
         var mLink = map.getWithTime(map.LINK, l[0], l[1], command);
         return [mLink.value, mLink.timestamp];
       });
+      var reverseLinkMapping = {};
+      for (var i=0; i<mLinks.length; ++i) {
+        // They map 1:1, see above
+        reverseLinkMapping[mLinks[i][0]] = umLinks[i];
+      }
 
       // Construct effective state
       var execState = new CATMAID.LocalState([mConnector.value, mConnector.timestamp],
           null, null, mLinks);
 
       // Get connector information
-      var remove = CATMAID.Connectors.remove(execState, projectId, connectorId);
+      var remove = CATMAID.Connectors.remove(execState, projectId, mConnector.value);
 
       return remove.then(function(result) {
         command.store('confidence', result.confidence);
@@ -262,6 +281,7 @@
         command.store('y', result.y);
         command.store('z', result.z);
         command.store('partners', result.partners);
+        command.store('reverseLinkMapping', reverseLinkMapping);
         done();
         return result;
       });
@@ -271,17 +291,56 @@
       var confidence = command.get('confidence');
       var partners = command.get('partners');
       var x = command.get('x'), y = command.get('y'), z = command.get('z');
-      command.validateForUndo(confidence, partners, x, y, z);
+      var reverseLinkMapping = command.get('reverseLinkMapping');
+      command.validateForUndo(confidence, partners, x, y, z, reverseLinkMapping);
 
-      var create = CATMAID.Connectors.create(projectId, x, y, z, confidence);
-      var linkPartners = create.then(function(result) {
-        var connectorId = result.newConnectorId;
-        return Promise.all(partners.map(function(p) {
-          return CATMAID.Connectors.createLink(projectId,
-              connectorId, p.id, p.rel);
-        }));
+      // In case partners where removed during exec(), new initial links have to
+      // be creted, which in turn requires a state for each partner.
+      var undoState, links;
+      if (partners && partners.length > 0) {
+        var partnerInfo = partners.reduce(function(o, p) {
+          command.validateForUndo(p.id, p.edition_time);
+          o['links'].push([p.id, p.rel_id, p.confidence]);
+          o['state'][p.id] = p.edition_time;
+          return o;
+        }, {'links': [], 'state': {}});
+        links = partnerInfo.links;
+        undoState = new CATMAID.SimpleSetState(partnerInfo.state);
+      }
+
+      var create = CATMAID.Connectors.create(undoState, projectId, x, y, z, confidence, links);
+      return create.then(function(result) {
+        // Map new connector and created links
+        map.add(map.CONNECTOR, umConnector[0], result.newConnectorId,
+            result.newConnectorEditTime);
+        var createdLinks = result.createdLinks;
+        for (var i=0; i<createdLinks.length; ++i) {
+          // A link is a list of the form [<link-id>, <link-edition-time>,
+          // <treenode-id>, <relation_id>].
+          var link = createdLinks[i];
+          var linkId = link[0];
+          var treenodeId = link[2];
+          var relationId = link[3];
+
+          // Find original partners by looking for matches of mapped target
+          // treenode ID and relation ID.
+          if (partners) {
+            for (var j=0; j<partners.length; ++j) {
+              var p = partners[j];
+              // Use == to allow also string based comparsion
+              if (p.id == treenodeId && p.rel_id == relationId) {
+                // p.id might not be the originally mapped value. Make sure to
+                // get it, in case it exists.
+                var umLinkId = reverseLinkMapping[p.link_id][0];
+                map.add(map.LINK, umLinkId, linkId, link[1]);
+              }
+            }
+          } else {
+            map.add(map.LINK, link[0], link[0], link[1]);
+          }
+        }
+        done();
       });
-      return linkPartners.then(done);
     };
 
     var title = "Remove connector #" + connectorId;

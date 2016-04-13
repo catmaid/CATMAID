@@ -3453,7 +3453,16 @@ class ViewPageTests(TestCase):
         for row in expected_t_result:
             self.assertTrue(row in parsed_response[0])
         for row in expected_c_result:
-            self.assertTrue(row in parsed_response[1])
+            parsed_row = [r for r in parsed_response[1] if r[0] == row[0]]
+            self.assertEqual(1, len(parsed_row))
+            parsed_row = parsed_row[0]
+            for n,e in enumerate(row):
+                # Treat links separately, because they come in a list of
+                # unspecified different order.
+                if 5 == n:
+                    self.assertItemsEqual(row[n], parsed_row[n])
+                else:
+                    self.assertEqual(e, parsed_row[n])
 
         self.assertEqual({}, parsed_response[2])
         self.assertEqual(False, parsed_response[3])
@@ -3530,7 +3539,16 @@ class ViewPageTests(TestCase):
         for row in expected_t_result:
             self.assertTrue(row in parsed_response[0])
         for row in expected_c_result:
-            self.assertTrue(row in parsed_response[1])
+            parsed_row = [r for r in parsed_response[1] if r[0] == row[0]]
+            self.assertEqual(1, len(parsed_row))
+            parsed_row = parsed_row[0]
+            for n,e in enumerate(row):
+                # Treat links separately, because they come in a list of
+                # unspecified different order.
+                if 5 == n:
+                    self.assertItemsEqual(row[n], parsed_row[n])
+                else:
+                    self.assertEqual(e, parsed_row[n])
         self.assertEqual({}, parsed_response[2])
         self.assertEqual(False, parsed_response[3])
         self.assertEqual(expected_rel_response, parsed_response[4])

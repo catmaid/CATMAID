@@ -133,7 +133,6 @@ class StateCheckingTest(CatmaidTestCase):
         self.assertRaises(ValueError, lambda: state.check_state(ps1, checks1, cursor))
 
         s2 = {
-            # 1/10 second difference
             'edition_time': '2011-12-05T13:51:36.855Z'
         }
         ps2 = state.parse_state(json.dumps(s2))

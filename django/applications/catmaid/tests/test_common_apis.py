@@ -870,22 +870,42 @@ class ViewPageTests(TestCase):
         parsed_response = json.loads(response.content)
         expected_result = {
             'message': 'success',
-            'updated_partners': { '7': 5 }
+            'updated_partners': {
+                '7': {
+                    'edition_time': '2016-04-13T05:57:44.444Z',
+                    'old_confidence': 5
+                }
+            }
         }
-        self.assertEqual(expected_result, parsed_response)
+        self.assertIn('message', parsed_response)
+        self.assertEqual(expected_result.get('message'), parsed_response.get('message'))
+        self.assertIn('updated_partners', parsed_response)
+        self.assertIn('7', parsed_response.get('updated_partners'))
+        self.assertEqual(expected_result.get('updated_partners').get('7').get('old_confidence'),
+                parsed_response.get('updated_partners').get('7').get('old_confidence'))
         self.assertEqual(4, treenode.confidence)
 
         response = self.client.post(
                 '/%d/treenodes/%d/confidence' % (self.test_project_id, treenode_id),
-                {'new_confidence': '5'})
+                {'new_confidence': '5', 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
         treenode = Treenode.objects.filter(id=treenode_id).get()
         parsed_response = json.loads(response.content)
         expected_result = {
             'message': 'success',
-            'updated_partners': { '7': 4 }
+            'updated_partners': {
+                '7': {
+                    'edition_time': '2016-04-13T05:57:44.444Z',
+                    'old_confidence': 4
+                }
+            }
         }
-        self.assertEqual(expected_result, parsed_response)
+        self.assertIn('message', parsed_response)
+        self.assertEqual(expected_result.get('message'), parsed_response.get('message'))
+        self.assertIn('updated_partners', parsed_response)
+        self.assertIn('7', parsed_response.get('updated_partners'))
+        self.assertEqual(expected_result.get('updated_partners').get('7').get('old_confidence'),
+                parsed_response.get('updated_partners').get('7').get('old_confidence'))
         self.assertEqual(5, treenode.confidence)
 
     def test_update_confidence_of_treenode_connector(self):
@@ -901,22 +921,42 @@ class ViewPageTests(TestCase):
         parsed_response = json.loads(response.content)
         expected_result = {
             'message': 'success',
-            'updated_partners': {'356': 5}
+            'updated_partners': {
+                '356': {
+                    'edition_time': '2016-04-13T05:57:44.444Z',
+                    'old_confidence': 5
+                }
+            }
         }
-        self.assertEqual(expected_result, parsed_response)
+        self.assertIn('message', parsed_response)
+        self.assertEqual(expected_result.get('message'), parsed_response.get('message'))
+        self.assertIn('updated_partners', parsed_response)
+        self.assertIn('356', parsed_response.get('updated_partners'))
+        self.assertEqual(expected_result.get('updated_partners').get('356').get('old_confidence'),
+                parsed_response.get('updated_partners').get('356').get('old_confidence'))
         self.assertEqual(4, connector.confidence)
 
         response = self.client.post(
                 '/%d/treenodes/%d/confidence' % (self.test_project_id, treenode_id),
-                {'new_confidence': '5', 'to_connector': 'true'})
+                {'new_confidence': '5', 'to_connector': 'true', 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
         connector = TreenodeConnector.objects.filter(id=treenode_connector_id).get()
         parsed_response = json.loads(response.content)
         expected_result = {
             'message': 'success',
-            'updated_partners': {'356': 4}
+            'updated_partners': {
+                '356': {
+                    'edition_time': '2016-04-13T05:57:44.444Z',
+                    'old_confidence': 4
+                }
+            }
         }
-        self.assertEqual(expected_result, parsed_response)
+        self.assertIn('message', parsed_response)
+        self.assertEqual(expected_result.get('message'), parsed_response.get('message'))
+        self.assertIn('updated_partners', parsed_response)
+        self.assertIn('356', parsed_response.get('updated_partners'))
+        self.assertEqual(expected_result.get('updated_partners').get('356').get('old_confidence'),
+                parsed_response.get('updated_partners').get('356').get('old_confidence'))
         self.assertEqual(5, connector.confidence)
 
     def test_list_connector_empty(self):
@@ -1219,7 +1259,8 @@ class ViewPageTests(TestCase):
         tc_count = TreenodeConnector.objects.all().count()
         response = self.client.post(
                 '/%d/link/delete' % self.test_project_id,
-                {'connector_id': connector_id, 'treenode_id': treenode_id})
+                {'connector_id': connector_id, 'treenode_id': treenode_id,
+                 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {'error': 'Couldn\'t find link between connector {0} and node {0}'.format(connector_id)}
@@ -2124,7 +2165,8 @@ class ViewPageTests(TestCase):
         tc_count = TreenodeConnector.objects.all().count()
         response = self.client.post(
                 '/%d/link/delete' % self.test_project_id,
-                {'connector_id': connector_id, 'treenode_id': treenode_id})
+                {'connector_id': connector_id, 'treenode_id': treenode_id,
+                 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {
@@ -2943,8 +2985,9 @@ class ViewPageTests(TestCase):
                 {
                     'from_id': from_id,
                     'to_id': to_id,
-                    'link_type': link_type
-                    })
+                    'link_type': link_type,
+                    'state': make_nocheck_state()
+                })
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         self.assertIn('message', parsed_response)
@@ -2961,8 +3004,9 @@ class ViewPageTests(TestCase):
                 {
                     'from_id': from_id,
                     'to_id': to_id,
-                    'link_type': link_type
-                    })
+                    'link_type': link_type,
+                    'state': make_nocheck_state()
+                })
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {'error': 'Connector %s does not have zero presynaptic connections.' % to_id}
@@ -2978,8 +3022,9 @@ class ViewPageTests(TestCase):
                 {
                     'from_id': from_id,
                     'to_id': to_id,
-                    'link_type': link_type
-                    })
+                    'link_type': link_type,
+                    'state': make_nocheck_state()
+                })
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         self.assertIn('message', parsed_response)
@@ -3192,9 +3237,20 @@ class ViewPageTests(TestCase):
         expected_result = {
             'updated': 1,
             'old_connectors': None,
-            'old_treenodes': [[289, 6210.0, 3480.0, 0.0]]
+            'old_treenodes': [[289, '2016-04-13T06:20:47.473Z', 6210.0, 3480.0, 0.0]]
         }
-        self.assertEqual(expected_result, parsed_response)
+        self.assertIn('updated', parsed_response)
+        self.assertEqual(expected_result['updated'], parsed_response['updated'])
+        self.assertIn('old_connectors', parsed_response)
+        self.assertEqual(expected_result['old_connectors'], parsed_response['old_connectors'])
+        self.assertIn('old_treenodes', parsed_response)
+        for n, r in enumerate(expected_result.get('old_treenodes')):
+            for i in range(5):
+                # Skip edition time, which changed during last request
+                if 1 == i:
+                    continue
+                self.assertEqual(expected_result.get('old_treenodes')[n][i],
+                    parsed_response.get('old_treenodes')[n][i])
         treenode = Treenode.objects.filter(id=treenode_id)[0]
         self.assertEqual(x, treenode.location_x)
         self.assertEqual(y, treenode.location_y)
@@ -3245,7 +3301,9 @@ class ViewPageTests(TestCase):
             for i,param in enumerate(params):
                 dictionary['%s[%s][%s]' % (types[i], i, param_id)] = params[i]
 
-        param_dict = {}
+        param_dict = {
+            'state': make_nocheck_state()
+        }
         insert_params(param_dict, 0, node_id)
         insert_params(param_dict, 1, x)
         insert_params(param_dict, 2, y)
@@ -3257,12 +3315,30 @@ class ViewPageTests(TestCase):
         parsed_response = json.loads(response.content)
         expected_result = {
             'updated': 4,
-            'old_connectors': [[356, 6730.0, 2700.0, 0.0],
-                [421, 6260.0, 3990.0, 0.0]],
-            'old_treenodes': [[2368, 1820.0, 5390.0, 0.0],
-                [2370, 2140.0, 4620.0, 0.0]]
+            'old_treenodes': [
+                [2368, '2016-04-13T05:40:25.445Z', 1820.0, 5390.0, 0.0],
+                [2370, '2016-04-13T05:40:25.445Z', 2140.0, 4620.0, 0.0]],
+            'old_connectors': [
+                [356, '2016-04-13T05:40:25.445Z', 6730.0, 2700.0, 0.0],
+                [421, '2016-04-13T05:40:25.445Z', 6260.0, 3990.0, 0.0]]
+
         }
-        self.assertEqual(expected_result, parsed_response)
+        self.assertEqual(expected_result.get('updated'), parsed_response.get('updated'))
+        for i in range(2):
+            for j in range(5):
+                # Skip edition time, because it changes through the request
+                if 1 == j:
+                    continue
+                self.assertEqual(expected_result.get('old_treenodes')[i][j],
+                                 parsed_response.get('old_treenodes')[i][j])
+        for i in range(2):
+            for j in range(5):
+                # Skip edition time, because it changes through the request
+                if 1 == j:
+                    continue
+                self.assertEqual(expected_result.get('old_connectors')[i][j],
+                                 parsed_response.get('old_connectors')[i][j])
+
         i = 0
         for n_id in node_id:
             if types[i] == 't':
@@ -3290,7 +3366,9 @@ class ViewPageTests(TestCase):
             for i,param in enumerate(params):
                 dictionary['%s[%s][%s]' % (types[i], i, param_id)] = params[i]
 
-        param_dict = {}
+        param_dict = {
+            'state': make_nocheck_state()
+        }
         insert_params(param_dict, 0, node_id)
         insert_params(param_dict, 1, x)
         insert_params(param_dict, 2, y)
@@ -3326,25 +3404,23 @@ class ViewPageTests(TestCase):
             [2465, 2464, 6485.0, 6345.0, 0.0, 5, -1.0, 2468, '2016-03-09T18:10:44.212Z', True]
         ]
 
-        expected_c_result = [
-            [2400, 3400.0, 5620.0, 0.0, 5, [
-                [2394, 23, 5, u'2011-12-20T10:46:01.360Z', 2405],
-                [2374, 24, 5, u'2011-12-20T10:46:01.360Z', 2410],
-                [2415, 23, 5, u'2011-12-20T10:46:01.360Z', 2429],
-                [2394, 23, 5, u'2011-12-20T10:46:01.360Z', 2405],
-                [2374, 24, 5, u'2011-12-20T10:46:01.360Z', 2410],
-                [2415, 23, 5, u'2011-12-20T10:46:01.360Z', 2429]], '2011-12-20T10:46:01.360Z', True],
-            [2463, 7135.0, 5065.0, 0.0, 5, [
-                [2462, 23, 5, u'2016-03-09T18:10:29.808Z', 2466],
-                [2461, 24, 5, u'2016-03-09T18:10:33.669Z', 2467],
-                [2462, 23, 5, u'2016-03-09T18:10:29.808Z', 2466],
-                [2461, 24, 5, u'2016-03-09T18:10:33.669Z', 2467]], '2016-03-09T18:10:29.808Z', True],
-            [2466, 6420.0, 5565.0, 0.0, 5, [
-                [2462, 23, 5, u'2016-03-09T18:10:49.583Z', 2472],
-                [2464, 24, 5, u'2016-03-09T18:10:50.846Z', 2473],
-                [2462, 23, 5, u'2016-03-09T18:10:49.583Z', 2472],
-                [2464, 24, 5, u'2016-03-09T18:10:50.846Z', 2473]], '2016-03-09T18:10:49.583Z', True]
-        ]
+        expected_c_result = [[2400, 3400.0, 5620.0, 0.0, 5, [[2394, 23, 5, u'2011-12-20T10:46:01.360Z', 2405],
+         [2374, 24, 5, u'2011-12-20T10:46:01.360Z', 2410],
+         [2415, 23, 5, u'2011-12-20T10:46:01.360Z', 2429],
+         [2394, 23, 5, u'2011-12-20T10:46:01.360Z', 2405],
+         [2374, 24, 5, u'2011-12-20T10:46:01.360Z', 2410],
+         [2415, 23, 5, u'2011-12-20T10:46:01.360Z', 2429]],
+         u'2011-12-09T08:01:43.965Z', True],
+         [2463, 7135.0, 5065.0, 0.0, 5, [[2462, 23, 5, u'2016-03-09T18:10:29.808Z', 2466],
+         [2461, 24, 5, u'2016-03-09T18:10:33.669Z', 2467],
+         [2462, 23, 5, u'2016-03-09T18:10:29.808Z', 2466],
+         [2461, 24, 5, u'2016-03-09T18:10:33.669Z', 2467]],
+         u'2016-03-09T18:10:29.666Z', True],
+         [2466, 6420.0, 5565.0, 0.0, 5, [[2462, 23, 5, u'2016-03-09T18:10:49.583Z', 2472],
+         [2464, 24, 5, u'2016-03-09T18:10:50.846Z', 2473],
+         [2462, 23, 5, u'2016-03-09T18:10:49.583Z', 2472],
+         [2464, 24, 5, u'2016-03-09T18:10:50.846Z', 2473]],
+         u'2016-03-09T18:10:49.445Z', True]]
 
         expected_rel_response = {
             '24': 'postsynaptic_to',
@@ -3402,25 +3478,25 @@ class ViewPageTests(TestCase):
 
         expected_c_result = [
             [356, 6730.0, 2700.0, 0.0, 5, [
-                [285, 23, 5, u'2011-12-20T10:46:01.360Z', 360],
-                [377, 24, 5, u'2011-12-20T10:46:01.360Z', 382],
-                [285, 23, 5, u'2011-12-20T10:46:01.360Z', 360],
-                [367, 24, 5, u'2011-12-20T10:46:01.360Z', 372],
-                [377, 24, 5, u'2011-12-20T10:46:01.360Z', 382]], '2011-12-20T10:46:01.360Z', True],
+              [285, 23, 5, '2011-12-20T10:46:01.360Z', 360],
+              [377, 24, 5, '2011-12-20T10:46:01.360Z', 382],
+              [285, 23, 5, '2011-12-20T10:46:01.360Z', 360],
+              [367, 24, 5, '2011-12-20T10:46:01.360Z', 372],
+              [377, 24, 5, '2011-12-20T10:46:01.360Z', 382]], '2011-10-27T10:45:09.870Z', True],
             [421, 6260.0, 3990.0, 0.0, 5, [
-                [415, 23, 5, u'2011-12-20T10:46:01.360Z', 425],
-                [409, 24, 5, u'2011-12-20T10:46:01.360Z', 429],
-                [415, 23, 5, u'2011-12-20T10:46:01.360Z', 425],
-                [409, 24, 5, u'2011-12-20T10:46:01.360Z', 429]], '2011-12-20T10:46:01.360Z', True],
+              [415, 23, 5, '2011-12-20T10:46:01.360Z', 425],
+              [409, 24, 5, '2011-12-20T10:46:01.360Z', 429],
+              [415, 23, 5, '2011-12-20T10:46:01.360Z', 425],
+              [409, 24, 5, '2011-12-20T10:46:01.360Z', 429]], '2011-10-07T07:02:30.396Z', True],
             [2463, 7135.0, 5065.0, 0.0, 5, [
-                [2462, 23, 5, u'2016-03-09T18:10:29.808Z', 2466],
-                [2461, 24, 5, u'2016-03-09T18:10:33.669Z', 2467],
-                [2462, 23, 5, u'2016-03-09T18:10:29.808Z', 2466],
-                [2461, 24, 5, u'2016-03-09T18:10:33.669Z', 2467]],  u'2016-03-09T18:10:29.808Z', True],
+              [2462, 23, 5, '2016-03-09T18:10:29.808Z', 2466],
+              [2461, 24, 5, '2016-03-09T18:10:33.669Z', 2467],
+              [2462, 23, 5, '2016-03-09T18:10:29.808Z', 2466],
+              [2461, 24, 5, '2016-03-09T18:10:33.669Z', 2467]], '2016-03-09T18:10:29.666Z', True],
             [2466, 6420.0, 5565.0, 0.0, 5, [
-                [2462, 23, 5, u'2016-03-09T18:10:49.583Z', 2472],
-                [2462, 23, 5, u'2016-03-09T18:10:49.583Z', 2472],
-                [2464, 24, 5, u'2016-03-09T18:10:50.846Z', 2473]], u'2016-03-09T18:10:49.583Z', True]
+              [2462, 23, 5, '2016-03-09T18:10:49.583Z', 2472],
+              [2462, 23, 5, '2016-03-09T18:10:49.583Z', 2472],
+              [2464, 24, 5, '2016-03-09T18:10:50.846Z', 2473]], '2016-03-09T18:10:49.445Z', True]
         ]
 
         expected_rel_response = {
@@ -3589,11 +3665,11 @@ class ViewPageTests(TestCase):
              'skeleton_ids[2]': skeleton_ids[2],
              'confidence_threshold': 4})
         parsed_response = json.loads(response.content)
-        expected_result_nodes = frozenset(['235_1', '235_2', '361', '373'])
+        expected_result_nodes = frozenset(['235', '361', '373'])
         expected_result_edges = [
-                ['235_1', '361', [0, 0, 0, 0, 1]],
-                ['235_1', '373', [0, 0, 0, 0, 1]],
-                ['235_2', '373', [0, 0, 0, 0, 1]]]
+                ['235', '373', [0, 0, 0, 0, 2]],
+                ['235', '361', [0, 0, 0, 0, 1]]]
+
         self.assertEqual(expected_result_nodes, frozenset(parsed_response['nodes']))
         # Since order is not important, check length and matches separately.
         self.assertEqual(len(expected_result_edges), len(parsed_response['edges']))
@@ -3612,11 +3688,11 @@ class ViewPageTests(TestCase):
              'confidence_threshold': 4,
              'bandwidth': 2000})
         parsed_response = json.loads(response.content)
-        expected_result_nodes = frozenset(['235_1_1', '235_1_2', '235_2', '361', '373'])
+        expected_result_nodes = frozenset(['361', '373', '235_1', '235_2'])
         expected_result_edges = [
-                ['235_1_1', '361', [0, 0, 0, 0, 1]],
-                ['235_1_1', '373', [0, 0, 0, 0, 1]],
-                ['235_2',   '373', [0, 0, 0, 0, 1]]]
+                ['235_1', '373', [0, 0, 0, 0, 2]],
+                ['235_1', '361', [0, 0, 0, 0, 1]]]
+
         self.assertEqual(expected_result_nodes, frozenset(parsed_response['nodes']))
         # Since order is not important, check length and matches separately.
         self.assertEqual(len(expected_result_edges), len(parsed_response['edges']))
@@ -3644,8 +3720,7 @@ class ViewPageTests(TestCase):
              'confidence_threshold': 4})
         parsed_response = json.loads(response.content)
         expected_result_edges = [
-                ['235_1', '373', [0, 0, 0, 0, 1]],
-                ['235_2', '373', [0, 0, 0, 0, 1]]]
+                ['235', '373', [0, 0, 0, 0, 2]]]
         # Since order is not important, check length and matches separately.
         self.assertEqual(len(expected_result_edges), len(parsed_response['edges']))
         for row in expected_result_edges:

@@ -1090,6 +1090,7 @@
       this.z = z;
       this.zdiff = zdiff;
       this.confidence = confidence;
+      this.edition_time = edition_time;
       this.can_edit = can_edit;
       this.pregroup = {}; // set of presynaptic treenodes
       this.postgroup = {}; // set of postsynaptic treenodes

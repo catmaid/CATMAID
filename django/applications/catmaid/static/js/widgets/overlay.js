@@ -576,7 +576,7 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, options) {
     },
     getLinks: function(nodeId, isConnector) {
       var node = self.nodes[nodeId];
-      if (!node || !node.connectors) {
+      if (!node) {
         return undefined;
       }
       var links = [];
@@ -586,7 +586,7 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, options) {
           var l = clinks[i];
           links.push([l.id, l.edition_time]);
         }
-      } else {
+      } else if (node.connectors) {
         for (var cid in node.connectors) {
           var c = node.connectors[cid];
           links.push([c.id, c.edition_time]);

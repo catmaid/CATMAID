@@ -106,10 +106,10 @@ def _many_to_many_synapses(skids1, skids2, relation_name, project_id):
         raise Exception("Cannot accept a relation named '%s'" % relation_name)
 
     cursor = connection.cursor()
-    
+
     relations = get_relation_to_id_map(project_id, cursor=cursor)
     gapjunction_id = relations.get('gapjunction_with', -1)
-    
+
     cursor.execute('''
     SELECT tc1.connector_id, c.location_x, c.location_y, c.location_z,
            tc1.treenode_id, tc1.skeleton_id, tc1.confidence, tc1.user_id,
@@ -698,27 +698,27 @@ def connector_detail(request, project_id, connector_id):
       connector_partner_element:
         id: connector_partner_element
         properties:
-          link_id: 
+          link_id:
             type: integer
             description: ID of link between connector and partner
             required: true
-          partner_id: 
+          partner_id:
             type: integer
             description: ID of partner
             required: true
-          confidence: 
+          confidence:
             type: integer
             description: Confidence of connection between connector and partner
             required: true
-          skeleton_id: 
+          skeleton_id:
             type: integer
             description: ID of partner skeleton
             required: true
-          relation_id: 
+          relation_id:
             type: integer
             description: ID of relation between connector and partner
             required: true
-          relation_name: 
+          relation_name:
             type: integer
             description: Name of relation between connector and partner
             required: true

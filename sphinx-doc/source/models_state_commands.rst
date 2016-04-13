@@ -66,7 +66,8 @@ Update connector links          Connector and link state
 Create/update/remove annotation Node state
 Create/update/remove tag        Node state
 Change neuron name              Neuron state
-Link connector                  Node neighborhood and connector state
+Link connector                  Node and connector state
+Unlink connector                Node and connector state
 =============================== =====================================
 
 

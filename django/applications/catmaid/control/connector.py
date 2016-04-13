@@ -11,6 +11,7 @@ from django.http import HttpResponse, JsonResponse, Http404
 
 from rest_framework.decorators import api_view
 
+from catmaid import state
 from catmaid.fields import Double3D
 from catmaid.models import Project, Stack, ProjectStack, Connector, \
         ConnectorClassInstance, Treenode, TreenodeConnector, UserRole
@@ -505,6 +506,12 @@ def create_connector(request, project_id=None):
 def delete_connector(request, project_id=None):
     connector_id = int(request.POST.get("connector_id", 0))
     can_edit_or_fail(request.user, connector_id, 'connector')
+
+    # Check provided state
+    cursor = connection.cursor()
+    state.validate_state(connector_id, request.POST.get('state'),
+            node=True, c_links=True, lock=True, cursor=cursor)
+
     # Get connector and partner information
     connectors = list(Connector.objects.filter(id=connector_id).prefetch_related(
             'treenodeconnector_set', 'treenodeconnector_set__relation'))

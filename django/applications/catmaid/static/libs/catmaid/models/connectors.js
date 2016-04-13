@@ -53,12 +53,13 @@
      *
      * @returns a promise that resolves once the connector is removed
      */
-    remove: function(projectId, connectorId) {
+    remove: function(state, projectId, connectorId) {
       CATMAID.requirePermission(projectId, 'can_annotate',
           'You don\'t have have permission to remove connectors');
       var url = projectId + '/connector/delete';
       var params = {
-        connector_id: connectorId
+        connector_id: connectorId,
+        state: state.makeNeighborhoodState(connectorId, true)
       };
 
       return CATMAID.fetch(url, 'POST', params)
@@ -187,11 +188,21 @@
    */
   CATMAID.CreateConnectorCommand = CATMAID.makeCommand(
       function(projectId, x, y, z, confidence) {
+
+    // First execution will set the original connector node that all mappings
+    // will refer to.
+    var umConnectorId, umConnectorEditTime;
+
     var exec = function(done, command, map) {
       var create = CATMAID.Connectors.create(projectId, x, y, z, confidence);
-
       return create.then(function(result) {
-        map.add(map.CONNECTOR, result.newConnectorId, command);
+        // First execution will remember the added node for redo mapping
+        if (!umConnectorId) {
+          umConnectorId = result.newConnectorId;
+          umConnectorEditTime = result.newConnectorEditTime;
+        }
+        map.add(map.CONNECTOR, umConnectorId, result.newConnectorId,
+            result.newConnectorEditTime);
         command.store('connectorId', result.newConnectorId);
         done();
         return result;
@@ -199,12 +210,19 @@
     };
 
     var undo = function(done, command, map) {
-      // Fail if expected undo parameters are not available from command
-      var createdConnectorId = command.get('connectorId');
-      command.validateForUndo(createdConnectorId);
-
-      var remove = CATMAID.Connectors.remove(projectId, createdConnectorId);
-      return remove.then(done);
+      command.validateForUndo(umConnectorId, umConnectorEditTime);
+      var mConnector = map.getWithTime(map.CONNECTOR, umConnectorId,
+          umConnectorEditTime, command);
+      command.validateForUndo(mConnector);
+      // Connector removal requires a complete connector state, including all
+      // links (which don't exist for a newly created node).
+      var links = [];
+      var undoState = new CATMAID.LocalState([mConnector.value, mConnector.timestamp],
+          null, null, links);
+      var remove = CATMAID.Connectors.remove(undoState, projectId, mConnector.value);
+      return remove.then(function(result) {
+        done();
+      });
     };
 
     var title = "Create new connector at (" + x + ", " + y + ", " + z + ")";

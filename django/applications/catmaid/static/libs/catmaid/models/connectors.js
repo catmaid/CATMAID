@@ -234,10 +234,27 @@
    * Delete a connector with this command. Can be undone.
    */
   CATMAID.RemoveConnectorCommand = CATMAID.makeCommand(
-      function(projectId, connectorId) {
+      function(state, projectId, connectorId) {
+
+    // Use passed in state only to extract connector and and link states. A new
+    // state will be created for actually executing the command (needed for redo).
+    var umConnector = state.getNode(connectorId);
+    var umLinks = state.getLinks(connectorId, true);
+
     var exec = function(done, command, map) {
+      // Map nodes to current ID and time
+      var mConnector = map.getWithTime(map.CONNECTOR, umConnector[0], umConnector[1], command);
+      var mLinks = umLinks.map(function(l) {
+        var mLink = map.getWithTime(map.LINK, l[0], l[1], command);
+        return [mLink.value, mLink.timestamp];
+      });
+
+      // Construct effective state
+      var execState = new CATMAID.LocalState([mConnector.value, mConnector.timestamp],
+          null, null, mLinks);
+
       // Get connector information
-      var remove = CATMAID.Connectors.remove(projectId, connectorId);
+      var remove = CATMAID.Connectors.remove(execState, projectId, connectorId);
 
       return remove.then(function(result) {
         command.store('confidence', result.confidence);

@@ -3838,7 +3838,7 @@ SkeletonAnnotations.TracingOverlay.prototype.deleteNode = function(nodeId) {
    */
   function deleteConnectorNode(connectornode) {
     self.submit.then(function() {
-      var command = new CATMAID.RemoveConnectorCommand(project.id, connectornode.id);
+      var command = new CATMAID.RemoveConnectorCommand(self.state, project.id, connectornode.id);
       CATMAID.commands.execute(command)
         .then(function(result) {
           connectornode.needsync = false;
@@ -3861,7 +3861,8 @@ SkeletonAnnotations.TracingOverlay.prototype.deleteNode = function(nodeId) {
           self.updateNodes();
 
           CATMAID.statusBar.replaceLast("Deleted connector #" + cID);
-        });
+        })
+        .catch(CATMAID.handleError);
     }, CATMAID.handleError);
   }
 

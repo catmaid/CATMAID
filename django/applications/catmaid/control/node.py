@@ -451,12 +451,11 @@ def _update_location(table, nodes, now, user, cursor):
     # 3: Z
     can_edit_all_or_fail(user, (node[0] for node in nodes), table)
 
-    # Sanetize node details
+    # Sanitize node details
     nodes = [(int(i), float(x), float(y), float(z)) for i,x,y,z in nodes]
 
     node_template = "(" + "),(".join(["%s, %s, %s, %s"] * len(nodes)) + ")"
     node_table = [v for k in nodes for v in k]
-
 
     cursor.execute("""
         UPDATE location n

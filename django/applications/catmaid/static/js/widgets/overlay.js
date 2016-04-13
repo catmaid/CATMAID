@@ -1500,18 +1500,13 @@ SkeletonAnnotations.TracingOverlay.prototype.splitSkeleton = function(nodeID) {
           downstream_set = dialog.get_under_annotation_set();
         }
         // Call backend
-        self.submit(
-            django_url + project.id + '/skeleton/split',
-            'POST',
-            {
-              treenode_id: nodeId,
-              upstream_annotation_map: JSON.stringify(upstream_set),
-              downstream_annotation_map: JSON.stringify(downstream_set),
-            },
-            function () {
-              self.updateNodes(function () { self.selectNode(nodeId); });
-            },
-            true); // block UI
+        self.submit.then(function() {
+          return CATMAID.Skeletons.split(self.state, project.id, nodeId,
+              upstream_set, downstream_set)
+          .then(function(result) {
+            self.updateNodes(function () { self.selectNode(nodeId); });
+          }).catch(CATMAID.handleError);
+        }, CATMAID.handleError, true);
       };
       dialog.show();
     });

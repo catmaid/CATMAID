@@ -1,8 +1,10 @@
 import json
 
+from django.db import connection
 from django.http import HttpResponse, JsonResponse
 from django.core.exceptions import ObjectDoesNotExist
 
+from catmaid import state
 from catmaid.models import UserRole, Project, Relation, Treenode, Connector, \
         TreenodeConnector, ClassInstance
 from catmaid.control.authentication import requires_user_role, can_edit_or_fail
@@ -17,6 +19,11 @@ def create_link(request, project_id=None):
     from_id = int(request.POST.get('from_id', 0))
     to_id = int(request.POST.get('to_id', 0))
     link_type = request.POST.get('link_type', 'none')
+
+    cursor = connection.cursor()
+    # Make sure the back-end is in the expected state
+    state.validate_state([from_id, to_id], request.POST.get('state'),
+            multinode=True, lock=True, cursor=cursor)
 
     try:
         project = Project.objects.get(id=project_id)
@@ -97,6 +104,11 @@ def create_link(request, project_id=None):
 def delete_link(request, project_id=None):
     connector_id = int(request.POST.get('connector_id', 0))
     treenode_id = int(request.POST.get('treenode_id', 0))
+
+    cursor = connection.cursor()
+    # Make sure the back-end is in the expected state
+    state.validate_state([treenode_id, connector_id], request.POST.get('state'),
+            multinode=True, lock=True, cursor=cursor)
 
     links = TreenodeConnector.objects.filter(
         connector=connector_id,

@@ -111,7 +111,7 @@
      * @param {integer} nodeId      The node linked to
      * @param {string}  linkType    Relation to create
      */
-    createLink: function(projectId, connectorId, nodeId, linkType) {
+    createLink: function(state, projectId, connectorId, nodeId, linkType) {
       CATMAID.requirePermission(projectId, 'can_annotate',
           'You don\'t have have permission to create links');
       var url = projectId + '/link/create';
@@ -120,6 +120,7 @@
         from_id: nodeId,
         link_type: linkType,
         to_id: connectorId,
+        state: state.makeMultiNodeState([nodeId, connectorId])
       };
 
       return CATMAID.fetch(url, 'POST', params)
@@ -140,7 +141,7 @@
      * @param {integer} connectorId The linked connector
      * @param {integer} nodeId      The linked node
      */
-    removeLink: function(projectId, connectorId, nodeId) {
+    removeLink: function(state, projectId, connectorId, nodeId) {
       CATMAID.requirePermission(projectId, 'can_annotate',
           'You don\'t have have permission to remove links');
       var url = projectId + '/link/delete';
@@ -148,6 +149,7 @@
         pid: projectId,
         connector_id: connectorId,
         treenode_id: nodeId,
+        state: state.makeMultiNodeState([nodeId, connectorId])
       };
 
       return CATMAID.fetch(url, 'POST', params)
@@ -259,9 +261,16 @@
     var umConnector = state.getNode(connectorId);
 
     var exec = function(done, command, map) {
-      var mNodeId = map.get(map.NODE, umNode[0], command);
-      var mConnectorId = map.get(map.CONNECTOR, umConnector[0], command);
-      var link = CATMAID.Connectors.createLink(projectId, mConnectorId, mNodeId, linkType);
+      var mNode = map.getWithTime(map.NODE, umNode[0], umNode[1], command);
+      var mConnector = map.getWithTime(map.CONNECTOR, umConnector[0], umConnector[1], command);
+
+      var nodes = {};
+      nodes[mNode.value] = mNode.timestamp;
+      nodes[mConnector.value] = mConnector.timestamp;
+      var execState = new CATMAID.SimpleSetState(nodes);
+
+      var link = CATMAID.Connectors.createLink(execState, projectId,
+          mConnector.value, mNode.value, linkType);
       return link.then(function(result) {
         map.add(map.LINK, result.linkId, result.linkEditTime, command);
         done();
@@ -270,11 +279,17 @@
     };
 
     var undo = function(done, command, map) {
-      var mNodeId = map.get(map.NODE, umNode[0], command);
-      var mConnectorId = map.get(map.CONNECTOR, umConnector[0], command);
-      command.validateForUndo(mConnectorId, mNodeId);
+      var mNode = map.getWithTime(map.NODE, umNode[0], umNode[1], command);
+      var mConnector = map.getWithTime(map.CONNECTOR, umConnector[0], umConnector[1], command);
+      command.validateForUndo(mConnector, mNode);
 
-      var unlink = CATMAID.Connectors.removeLink(projectId, mConnectorId, mNodeId);
+      var nodes = {};
+      nodes[mNode.value] = mNode.timestamp;
+      nodes[mConnector.value] = mConnector.timestamp;
+      var undoState = new CATMAID.SimpleSetState(nodes);
+
+      var unlink = CATMAID.Connectors.removeLink(undoState,
+          projectId, mConnector.value, mNode.value);
       return unlink.then(function(result) {
         done();
         return result;

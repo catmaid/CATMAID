@@ -1457,7 +1457,7 @@
         var catmaidTracingOverlay = SkeletonAnnotations.getTracingOverlayByPaper(
             this.parentNode.parentNode);
         var command = new CATMAID.UnlinkConnectorCommand(
-            project.id, d.connector_id, d.treenode_id);
+            catmaidTracingOverlay.state, project.id, d.connector_id, d.treenode_id);
         CATMAID.commands.execute(command)
           .then(function(result) {
             catmaidTracingOverlay.updateNodes(function() {

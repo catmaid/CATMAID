@@ -166,10 +166,12 @@ def collect_state_checks(node_id, state, cursor, node=False,
 
     if parent_edittime or is_parent:
         parent = state.get('parent')
-        if not parent or 2 != len(parent):
+        if not parent:
+            parent_id = None
+        elif 2 != len(parent):
             raise ValueError("No valid state provided, invalid parent")
-
-        parent_id = parent[0]
+        else:
+            parent_id = parent[0]
 
         if parent_id and -1 != parent_id and not parent[1]:
             raise ValueError("No valid state provided, invalid parent")

@@ -33,6 +33,11 @@ class SQL:
             SELECT COUNT(*) FROM treenode_connector l %s WHERE l.treenode_id = %s %s
         ) sub(c)
     """
+    all_links_c = """
+        SELECT CASE WHEN sub.c=0 THEN 1 ELSE 0 END FROM (
+            SELECT COUNT(*) FROM treenode_connector l %s WHERE l.connector_id = %s %s
+        ) sub(c)
+    """
 
     @staticmethod
     def edited(table):
@@ -63,16 +68,17 @@ def make_all_children_query(child_ids, node_id):
     else:
         return StateCheck(SQL.all_children % ("", "%s", ""), [node_id])
 
-def make_all_links_query(link_ids, node_id):
+def make_all_links_query(link_ids, node_id, is_connector=False):
+    template = SQL.all_links_c if is_connector else SQL.all_links
     if link_ids:
         table_sql, table_args = list_to_table(link_ids, 1)
         args = table_args
         link_query = " LEFT JOIN {} p(id) ON l.id = p.id ".format(table_sql)
         constraints = "AND p.id IS NULL"
         args.append(node_id)
-        return StateCheck(SQL.all_links % (link_query, "%s", constraints), args)
+        return StateCheck(template % (link_query, "%s", constraints), args)
     else:
-        return StateCheck(SQL.all_links % ("", "%s", ""), [node_id])
+        return StateCheck(template % ("", "%s", ""), [node_id])
 
 def list_to_table(l, n=1):
     args = None
@@ -139,7 +145,7 @@ def parse_state(state):
 
 def collect_state_checks(node_id, state, cursor, node=False,
         parent_edittime=False, is_parent=False, children=False,
-        links=False, multinode=False):
+        links=False, c_links=False, multinode=False):
     """Collect state checks for a single node, but don't execute them.
 
     If <children> is a list of node IDs, only these nodes will be checked if
@@ -204,12 +210,24 @@ def collect_state_checks(node_id, state, cursor, node=False,
         state_checks.extend(StateCheck(SQL.edited('treenode_connector'),
             (l[0], l[1], l[1])) for l in links)
 
+    if c_links:
+        c_links = state.get('c_links')
+        if not isinstance(c_links, (list, tuple)):
+            raise ValueError("No valid state provided, can't find list 'c_links'")
+        if not all(has_only_truthy_values(e) for e in c_links):
+            raise ValueError("No valid state provided, invalid links")
+
+        state_checks.append(make_all_links_query(
+            [int(l[0]) for l in c_links], node_id, True))
+        state_checks.extend(StateCheck(SQL.edited('treenode_connector'),
+            (l[0], l[1], l[1])) for l in c_links)
+
 
     return state_checks
 
 def validate_state(node_ids, state, node=False, is_parent=False,
-        parent_edittime=False, children=False, links=False, multinode=False,
-        neighborhood=False, lock=True, cursor=None):
+        parent_edittime=False, children=False, links=False, c_links=False,
+        multinode=False, neighborhood=False, lock=True, cursor=None):
     """Validate a local state relative to a given node. What tests are performed
     depends on the mode flags set.
 
@@ -262,7 +280,8 @@ def validate_state(node_ids, state, node=False, is_parent=False,
         else:
             check_sets = [collect_state_checks(n, state, cursor, node=node,
                     is_parent=is_parent, parent_edittime=parent_edittime,
-                    multinode=multinode, children=children, links=links) for n in node_ids]
+                    multinode=multinode, children=children, links=links,
+                    c_links=c_links) for n in node_ids]
             state_checks = reduce(lambda x: x + y, check_sets)
             check_state(state, state_checks, cursor)
 

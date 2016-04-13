@@ -313,8 +313,26 @@ class StateCheckingTest(CatmaidTestCase):
                       [372, '2011-12-20T10:46:01.360Z']],
         }
         s1 = json.dumps(ps1)
-        # Expect this state to validate cleanly
         self.assertRaises(ValueError, lambda: state.validate_state(285, s1, links=True))
+
+    def test_correct_clink_state(self):
+        ps1 = {
+            'c_links': [[360, '2011-12-20T10:46:01.360Z'],
+                        [372, '2011-12-20T10:46:01.360Z'],
+                        [382, '2011-12-20T10:46:01.360Z']],
+        }
+        s1 = json.dumps(ps1)
+        state.validate_state(356, s1, c_links=True)
+
+    def test_correct_clink_state(self):
+        ps1 = {
+            'c_links': [[360, '2011-12-20T10:46:01.360Z'],
+                        [372, '3011-12-20T10:46:01.360Z'],
+                        [382, '2011-12-20T10:46:01.360Z']],
+        }
+        s1 = json.dumps(ps1)
+        self.assertRaises(ValueError, lambda: state.validate_state(356, s1, links=True))
+        self.assertRaises(ValueError, lambda: state.validate_state(358, s1, links=True))
 
     def test_correct_neighborhood_state(self):
         ps1 = {

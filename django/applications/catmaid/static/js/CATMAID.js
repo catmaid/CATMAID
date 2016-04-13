@@ -231,11 +231,11 @@ window.onbeforeunload = function() {
   CATMAID.commands.on(CATMAID.CommandHistory.EVENT_COMMAND_EXECUTED, function(command, redo) {
     // Don't confirm regular commands to reduce visual noise
     if (redo) {
-      CATMAID.msg("Command re-executed", command.getName());
+      CATMAID.msg("Redo successful", command.getName());
     }
   });
   CATMAID.commands.on(CATMAID.CommandHistory.EVENT_COMMAND_UNDONE, function(command) {
-    CATMAID.msg("Command undone", command.getName());
+    CATMAID.msg("Undo successful", command.getName());
   });
 
 })(CATMAID);

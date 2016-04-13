@@ -134,3 +134,64 @@ def delete_link(request, project_id=None):
         'result': 'Removed treenode to connector link'
     }))
 
+def create_connector_link(project_id, user_id, treenode_id, skeleton_id,
+        links, cursor=None):
+    """Create new connector links for the passded in treenode. What relation and
+    confidence is used to which connector is specified in the "links"
+    paremteter. A list of three-element lists, following the following format:
+    [<connector-id>, <relation-id>, <confidence>]
+    """
+    def make_row(l):
+        # Passed in links are expected to follow this format:
+        # [<connector-id>, <relation-id>, <confidence>]
+        if 3 != len(l):
+            raise ValueError("Invalid link information provided")
+        connector_id, relation_id, confidence = l[0], l[1], l[2]
+        return (user_id, project_id, relation_id, treenode_id, connector_id,
+                skeleton_id, confidence)
+
+    new_link_rows = [make_row(l) for l in links]
+    new_link_data = [x for e in new_link_rows for x in e]
+    cursor = cursor or connection.cursor()
+    link_template = ",".join(("({})".format(",".join(("%s",) * 7)),) * len(links))
+
+    cursor.execute("""
+        INSERT INTO treenode_connector (user_id, project_id, relation_id,
+                    treenode_id, connector_id, skeleton_id, confidence)
+        VALUES {}
+        RETURNING id, edition_time
+        """.format(link_template), new_link_data)
+
+    return cursor.fetchall()
+
+def create_treenode_links(project_id, user_id, connector_id, links, cursor=None):
+    """Create new connector links for the passded in treenode. What relation and
+    confidence is used to which connector is specified in the "links"
+    paremteter. A list of three-element lists, following the following format:
+    [<treenode-id>, <relation-id>, <confidence>]
+    """
+    def make_row(l):
+        # Passed in links are expected to follow this format:
+        # [<connector-id>, <relation-id>, <confidence>]
+        if 3 != len(l):
+            raise ValueError("Invalid link information provided")
+        treenode_id, relation_id, confidence = l[0], l[1], l[2]
+        return (user_id, project_id, relation_id, treenode_id, connector_id, confidence)
+
+    new_link_rows = [make_row(l) for l in links]
+    new_link_data = [x for e in new_link_rows for x in e]
+    cursor = cursor or connection.cursor()
+    link_template = ",".join(("({})".format(",".join(("%s",) * 6)),) * len(links))
+
+    cursor.execute("""
+        INSERT INTO treenode_connector (user_id, project_id, relation_id,
+                    treenode_id, connector_id, skeleton_id, confidence)
+        SELECT v.user_id, v.project_id, v.relation_id, v.treenode_id, v.connector_id,
+               t.skeleton_id, v.confidence
+        FROM (VALUES {}) v(user_id, project_id, relation_id, treenode_id, connector_id,
+                confidence)
+        INNER JOIN treenode t ON v.treenode_id = t.id
+        RETURNING id, edition_time, treenode_id, relation_id
+        """.format(link_template), new_link_data)
+
+    return cursor.fetchall()

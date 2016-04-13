@@ -16,6 +16,7 @@ from catmaid.fields import Double3D
 from catmaid.models import Project, Stack, ProjectStack, Connector, \
         ConnectorClassInstance, Treenode, TreenodeConnector, UserRole
 from catmaid.control.authentication import requires_user_role, can_edit_or_fail
+from catmaid.control.link import create_treenode_links
 from catmaid.control.common import cursor_fetch_dictionary, \
         get_relation_to_id_map, get_request_list
 
@@ -482,9 +483,17 @@ def create_connector(request, project_id=None):
     for p in default_values.keys():
         query_parameters[p] = request.POST.get(p, default_values[p])
 
+    project_id = int(project_id)
+
     parsed_confidence = int(query_parameters['confidence'])
     if parsed_confidence < 1 or parsed_confidence > 5:
         return HttpResponse(json.dumps({'error': 'Confidence not in range 1-5 inclusive.'}))
+
+    cursor = connection.cursor()
+
+    # Get optional initial links to connectors, expect each entry to be a list
+    # of connector ID, relation ID and confidence.
+    links = get_request_list(request.POST, 'links', [], map_fn=int)
 
     new_connector = Connector(
         user=request.user,
@@ -496,9 +505,17 @@ def create_connector(request, project_id=None):
         confidence=parsed_confidence)
     new_connector.save()
 
+    # Create all initial links
+    if links:
+        created_links = create_treenode_links(project_id, request.user.id,
+                new_connector.id, links, cursor);
+    else:
+        created_links = []
+
     return JsonResponse({
         'connector_id': new_connector.id,
-        'connector_edition_time': new_connector.edition_time
+        'connector_edition_time': new_connector.edition_time,
+        'created_links': created_links
     })
 
 

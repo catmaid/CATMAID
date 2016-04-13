@@ -20,6 +20,7 @@ from catmaid.control.common import get_relation_to_id_map, \
         get_class_to_id_map, insert_into_log, _create_relation, get_request_list
 from catmaid.control.neuron import _delete_if_empty
 from catmaid.control.node import _fetch_location, _fetch_locations
+from catmaid.control.link import create_connector_link
 from catmaid.util import Point3D, is_collinear
 
 
@@ -88,7 +89,7 @@ def create_treenode(request, project_id=None):
 
     # Create all initial links
     if links:
-        created_links = _create_connector_link(project_id, request.user.id,
+        created_links = create_connector_link(project_id, request.user.id,
                 new_treenode.treenode_id, new_treenode.skeleton_id, links);
     else:
         created_links = []
@@ -205,7 +206,7 @@ def insert_treenode(request, project_id=None):
 
     # Create all initial links
     if links:
-        created_links = _create_connector_link(project_id, request.user.id,
+        created_links = create_connector_link(project_id, request.user.id,
                 new_treenode.treenode_id, new_treenode.skeleton_id, links);
     else:
         created_links = []
@@ -218,36 +219,6 @@ def insert_treenode(request, project_id=None):
         'child_edition_times': child_edition_times,
         'created_links': created_links
     })
-
-def _create_connector_link(project_id, user_id, treenode_id, skeleton_id,
-        links, cursor=None):
-    """Create new connector links for the passded in treenode. What relation and
-    confidence is used to which connector is specified in the "links"
-    paremteter. A list of three-element lists, following the following format:
-    [<connector-id>, <relation-id>, <confidence>]
-    """
-    def make_row(l):
-        # Passed in links are expected to follow this format:
-        # [<connector-id>, <relation-id>, <confidence>]
-        if 3 != len(l):
-            raise ValueError("Invalid link information provided")
-        connector_id, relation_id, confidence = l[0], l[1], l[2]
-        return (user_id, project_id, relation_id, treenode_id, connector_id,
-                skeleton_id, confidence)
-
-    new_link_rows = [make_row(l) for l in links]
-    new_link_data = [x for e in new_link_rows for x in e]
-    cursor = cursor or connection.cursor()
-    link_template = ",".join(("({})".format(",".join(("%s",) * 7)),) * len(links))
-
-    cursor.execute("""
-        INSERT INTO treenode_connector (user_id, project_id, relation_id,
-                    treenode_id, connector_id, skeleton_id, confidence)
-        VALUES {}
-        RETURNING id, edition_time
-        """.format(link_template), new_link_data)
-
-    return cursor.fetchall()
 
 class NewTreenode(object):
     """Represent a newly created treenode and all the information that is

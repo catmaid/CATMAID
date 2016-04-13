@@ -2873,7 +2873,7 @@
       "project": 3,
       "creation_time": "2011-09-27T07:49:36.843Z",
       "user": 3,
-      "edition_time": "2011-12-05T13:51:36.955Z"
+      "edition_time": "2011-12-15T13:51:36.955Z"
     }
   },
   {
@@ -2883,7 +2883,7 @@
       "project": 3,
       "creation_time": "2011-09-27T07:49:37.269Z",
       "user": 3,
-      "edition_time": "2011-12-05T13:51:36.955Z"
+      "edition_time": "2011-12-04T13:51:36.955Z"
     }
   },
   {
@@ -2893,7 +2893,7 @@
       "project": 3,
       "creation_time": "2011-09-27T07:49:38.607Z",
       "user": 3,
-      "edition_time": "2011-12-05T13:51:36.955Z"
+      "edition_time": "2011-11-06T13:51:36.955Z"
     }
   },
   {
@@ -7302,7 +7302,7 @@
     "model": "catmaid.location",
     "fields": {
       "creation_time": "2011-09-27T07:49:36.843Z",
-      "edition_time": "2011-12-05T13:51:36.955Z",
+      "edition_time": "2011-12-15T13:51:36.955Z",
       "project": 3,
       "location_x": 5985.000,
       "location_y": 2745.000,
@@ -7316,7 +7316,7 @@
     "model": "catmaid.location",
     "fields": {
       "creation_time": "2011-09-27T07:49:37.269Z",
-      "edition_time": "2011-12-05T13:51:36.955Z",
+      "edition_time": "2011-12-04T13:51:36.955Z",
       "project": 3,
       "location_x": 6100.000,
       "location_y": 2980.000,
@@ -7330,7 +7330,7 @@
     "model": "catmaid.location",
     "fields": {
       "creation_time": "2011-09-27T07:49:38.607Z",
-      "edition_time": "2011-12-05T13:51:36.955Z",
+      "edition_time": "2011-11-06T13:51:36.955Z",
       "project": 3,
       "location_x": 6210.000,
       "location_y": 3480.000,

@@ -900,6 +900,26 @@
       this.NODE_RADIUS = 8;
       this.CATCH_RADIUS = 0;
 
+      this.linkGroups = ['pregroup', 'postgroup', 'gjgroup', 'unidirgroup'];
+
+      /**
+       * Get al links of a specific connector group or an empty list.
+       */
+      this.expandGroup = function(target, group) {
+        var links = [];
+        var partners = this[group];
+        if (partners) {
+          for (var partner in partners) {
+            links.push(parnters[partner]);
+          }
+        }
+        return links;
+      };
+
+      this.getLinks = function() {
+        return this.linkGroups.reduce(this.expandGroup.bind(this), []);
+      };
+
       /** Disables the ArrowLine object and removes entries from the preLines and postLines. */
       this.removeConnectorArrows = function() {
         if (this.preLines) {

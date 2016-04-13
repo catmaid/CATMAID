@@ -906,14 +906,13 @@
        * Get al links of a specific connector group or an empty list.
        */
       this.expandGroup = function(target, group) {
-        var links = [];
         var partners = this[group];
         if (partners) {
           for (var partner in partners) {
-            links.push(parnters[partner]);
+            target.push(partners[partner]);
           }
         }
-        return links;
+        return target;
       };
 
       this.getLinks = function() {

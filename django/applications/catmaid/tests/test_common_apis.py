@@ -1138,7 +1138,7 @@ class ViewPageTests(TestCase):
         treenode_connector_count = TreenodeConnector.objects.all().count()
         response = self.client.post(
                 '/%d/connector/delete' % self.test_project_id,
-                {'connector_id': connector_id})
+                {'connector_id': connector_id, 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {

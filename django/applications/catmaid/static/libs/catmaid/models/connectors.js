@@ -290,7 +290,7 @@
       var link = CATMAID.Connectors.createLink(execState, projectId,
           mConnector.value, mNode.value, linkType);
       return link.then(function(result) {
-        map.add(map.LINK, result.linkId, result.linkEditTime, command);
+        map.add(map.LINK, umNode[0], result.linkId, result.linkEditTime);
         done();
         return result;
       });

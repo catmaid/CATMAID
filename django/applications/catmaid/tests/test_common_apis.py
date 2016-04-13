@@ -230,6 +230,15 @@ class ViewPageTests(TestCase):
         assign_perm('can_browse', user, p)
         assign_perm('can_annotate', user, p)
 
+        cursor = connection.cursor()
+        # Make sure all counters are set correctly
+        cursor.execute("""
+            SELECT setval('concept_id_seq', coalesce(max("id"), 1), max("id") IS NOT null) FROM concept;
+        """)
+        cursor.execute("""
+            SELECT setval('location_id_seq', coalesce(max("id"), 1), max("id") IS NOT null) FROM location;
+        """)
+
     def test_testdata(self):
         """Makes sure the test data doesn't contain rows for the base tables
         location and concept. These are not required for table inheritance and will

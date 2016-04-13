@@ -1537,31 +1537,15 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeLink = function (from
           self.executeIfSkeletonEditable(to_skid, function() {
             // The function used to instruct the backend to do the merge
             var merge = function(annotation_set) {
-              var data = {
-                  from_id: fromid,
-                  to_id: toid
-              };
-              if (annotation_set) {
-                data.annotation_set = JSON.stringify(annotation_set);
-              }
-              // The call to join will reroot the target skeleton at the shift-clicked treenode
-              self.submit(
-                django_url + project.id + '/skeleton/join',
-                'POST',
-                data,
-                function (json) {
-                  self.updateNodes(function() {
-                    self.selectNode(toid);
-                  });
-                  // Trigger join, delete and change events
-                  CATMAID.Skeletons.trigger(
-                      CATMAID.Skeletons.EVENT_SKELETONS_JOINED, to_skid, from_model.id);
-                  CATMAID.Skeletons.trigger(
-                      CATMAID.Skeletons.EVENT_SKELETON_DELETED, to_skid);
-                  CATMAID.Skeletons.trigger(
-                      CATMAID.Skeletons.EVENT_SKELETON_CHANGED, from_model.id);
-                },
-                true); // block UI
+              self.submit.then(function() {
+                return CATMAID.Skeletons.join(self.state, project.id,
+                    fromid, toid, annotation_set)
+                  .then(function(result) {
+                    // We expect that an update is queued already (based on
+                    // events)
+                    self.selectNode(result.fromid);
+                  }).catch(CATMAID.handleError);
+              }, CATMAID.handleError, true);
             };
 
             // A method to use when the to-skeleton has multiple nodes

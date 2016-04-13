@@ -42,6 +42,46 @@
             treenodeId);
         return json;
       }).bind(this));
+    },
+
+    /**
+     * Join two skeletons by adding an edge between the two passed in nodes.
+     *
+     * @param {State}   state         Multi node state with both treenodes
+     * @param {integer} projectId     The project space to work in
+     * @param {integer} fromId        The skeleton that will be merged
+     * @param {integer} toId          The skeleton that will get more nodes
+     * @param {object}  annotationSet (Optional) Map of annotation name vs
+     *                                annotator ID.
+     *
+     * @returns A new promise that is resolved once both skeletons are joined.
+     */
+    join: function(state, projectId, fromId, toId, annotationSet) {
+
+      CATMAID.requirePermission(projectId, 'can_annotate',
+          'You don\'t have have permission to join skeletons');
+      var url = projectId + '/skeleton/join';
+      var params = {
+        from_id: fromId,
+        to_id: toId,
+        state: state.makeMultiNodeState([fromId, toId])
+      };
+
+      if (annotationSet) {
+        params.annotation_set = JSON.stringify(annotationSet);
+      }
+
+      return CATMAID.fetch(url, 'POST', params).then((function(json) {
+        // Trigger join, delete and change events
+        CATMAID.Skeletons.trigger(
+            CATMAID.Skeletons.EVENT_SKELETONS_JOINED, json.result_skeleton_id,
+                json.deleted_skeleton_id);
+        CATMAID.Skeletons.trigger(
+            CATMAID.Skeletons.EVENT_SKELETON_DELETED, json.deleted_skeleton_id);
+        CATMAID.Skeletons.trigger(
+            CATMAID.Skeletons.EVENT_SKELETON_CHANGED, json.result_skeleton_id);
+        return json;
+      }).bind(this));
     }
 
   };

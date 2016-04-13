@@ -8,7 +8,7 @@ from collections import defaultdict
 from itertools import chain
 
 from django.core.serializers.json import DjangoJSONEncoder
-from django.http import HttpResponse, Http404
+from django.http import HttpResponse, Http404, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.db import connection
 from django.db.models import Q
@@ -1263,15 +1263,18 @@ def join_skeleton(request, project_id=None):
         if annotation_set:
             annotation_set = json.loads(annotation_set)
 
-        _join_skeleton(request.user, from_treenode_id, to_treenode_id,
+        join_info = _join_skeleton(request.user, from_treenode_id, to_treenode_id,
                 project_id, annotation_set)
 
         response_on_error = 'Could not log actions.'
 
-        return HttpResponse(json.dumps({
+        return JsonResponse({
             'message': 'success',
             'fromid': from_treenode_id,
-            'toid': to_treenode_id}))
+            'toid': to_treenode_id,
+            'result_skeleton_id': join_info['from_skeleton_id'],
+            'deleted_skeleton_id': join_info['to_skeleton_id']
+        })
 
     except Exception as e:
         raise Exception(response_on_error + ':' + str(e))
@@ -1393,6 +1396,11 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
                 '%s) into skeleton with ID %s (neuron: %s, annotations: %s)' % \
                 (to_skid, to_neuron['neuronname'], from_skid,
                         from_neuron['neuronname'], ', '.join(annotation_map.keys())))
+
+        return {
+            'from_skeleton_id': from_skid,
+            'to_skeleton_id': to_skid
+        }
 
     except Exception as e:
         raise Exception(response_on_error + ':' + str(e))

@@ -76,6 +76,10 @@ included in this changelog.
   "partner_ids" parameter is used, the "partner_confidences" parameter allows to
   specify an individual confidence for each selected partner.
 
+`POST /{project_id}/skeleton/join`:
+
+- IDs of the result skeleton and the deleted skeleton are now returned.
+
 ### Deprecations
 
 None.

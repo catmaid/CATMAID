@@ -1678,7 +1678,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createSingleConnector = function (
       new CATMAID.CreateConnectorCommand(project.id,
         phys_x, phys_y, phys_z, confval));
   return createConnector.then(function(result) {
-    var editTime = result.edition_time;
+    var editTime = result.newConnectorEditTime;
     // add treenode to the display and update it
     var nn = self.graphics.newConnectorNode(result.newConnectorId, pos_x, pos_y,
         pos_z, 0, 5 /* confidence */, subtype, editTime, true);

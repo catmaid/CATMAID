@@ -23,17 +23,35 @@
    * {
    *   parent: (<id>, <edition_time>),
    *   children: ((<child_id>, <child_edition_time>), ...),
-   *   links: ((<connector_id>, <connector_edition_time>, <relation_id>), ...)
+   *   links: ((<link_id>, <link_edition_time>), ...)
+   * }
+   *
+   * Additionally, connectors can be tested like this. The links will will be
+   * checked from the connector perspective based on the current ID.
+   *
+   * {
+   *   edition_time: <edition_time>
+   *   c_links: ((<link_id>, <link_edition_time>), ...)
    * }
    */
   CATMAID.getNeighborhoodState = function(nodeId, editionTime, parentId, parentEditTime,
-      children, links) {
-    var state = {
-      "edition_time": editionTime,
-      "parent": [parentId, parentEditTime],
-      "children": children,
-      "links": links,
-    };
+      children, links, cLinks) {
+    var state = {};
+    if (editionTime) {
+      state["edition_time"] = editionTime;
+    }
+    if (parentId && parentEditTime) {
+      state["parent"] = [parentId, parentEditTime];
+    }
+    if (children) {
+      state["children"] = children;
+    }
+    if (links) {
+      state['links'] = links;
+    }
+    if (cLinks) {
+      state['c_links'] = cLinks;
+    }
     return JSON.stringify(state);
   };
 
@@ -215,17 +233,23 @@
     return CATMAID.getEdgeState(parent[0], parent[1], node[0], node[1]);
   };
 
-  GenericState.prototype.makeNeighborhoodState = function(nodeId) {
+  GenericState.prototype.makeNeighborhoodState = function(nodeId, isConnector) {
     var node = this.getNode(nodeId);
-    var parent = this.getParent(nodeId);
     if (!node) {
       throw new CATMAID.ValueError("Couldn't find node " + nodeId + " in state");
     }
-    if (!parent) {
-      throw new CATMAID.ValueError("Couldn't find parent of node " + nodeId + " in state");
+    if (isConnector) {
+      var cLinks = this.getLinks(nodeId, true);
+      return CATMAID.getNeighborhoodState(node[0], node[1], null, null, null, null, cLinks);
+    } else {
+      var parent = this.getParent(nodeId);
+      if (!parent && !isConnector) {
+        throw new CATMAID.ValueError("Couldn't find parent of node " + nodeId + " in state");
+      }
+      var links = this.getLinks(nodeId, false);
+      return CATMAID.getNeighborhoodState(node[0], node[1], parent[0], parent[1],
+          this.getChildren(nodeId), links, null);
     }
-    return CATMAID.getNeighborhoodState(node[0], node[1], parent[0], parent[1],
-        this.getChildren(nodeId), this.getLinks(nodeId));
   };
 
   CATMAID.GenericState = GenericState;

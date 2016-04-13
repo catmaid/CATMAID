@@ -574,15 +574,23 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, options) {
       }
       return children;
     },
-    getLinks: function(nodeId) {
+    getLinks: function(nodeId, isConnector) {
       var node = self.nodes[nodeId];
       if (!node || !node.connectors) {
         return undefined;
       }
       var links = [];
-      for (var cid in node.connectors) {
-        var c = node.connectors[cid];
-        links.push([c.id, c.edition_time]);
+      if (isConnector) {
+        var clinks = node.getLinks();
+        for (var i=0; i<clinks.length; ++i) {
+          var l = clinks[i];
+          links.push([l.id, l.edition_time]);
+        }
+      } else {
+        for (var cid in node.connectors) {
+          var c = node.connectors[cid];
+          links.push([c.id, c.edition_time]);
+        }
       }
       return links;
     },

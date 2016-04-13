@@ -9,6 +9,7 @@ class SQL:
         WHERE t.id = %s
         AND t.edition_time >=(%s::timestamptz - '1 ms'::interval)
         AND t.edition_time < (%s::timestamptz + '1 ms'::interval)
+        LIMIT 1
     """
     is_parent = """
         SELECT 1 FROM treenode t

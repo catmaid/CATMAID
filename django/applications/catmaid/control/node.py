@@ -282,21 +282,26 @@ def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_pr
         # mapping connector IDs to confidences.
         links = defaultdict(list)
         used_relations = set()
+        seen_links = set()
         for row in crows:
             # Collect treeenode IDs related to connectors but not yet in treenode_ids
             # because they lay beyond adjacent sections
             tnid = row[6] # The tnid column is index 7 (see SQL statement above)
             cid = row[0] # connector ID
+            tcid = row[9] # treenode connector ID
             if tnid is not None:
                 if tnid not in treenode_ids:
                     missing_treenode_ids.add(tnid)
+                if tcid in seen_links:
+                    continue
+                seen_links.add(tcid)
                 # Collect relations between connectors and treenodes
                 # row[5]: treenode_relation_id
                 # row[6]: treenode_id (tnid above)
                 # row[7]: tc_confidence
                 # row[8]: tc_edition_time
                 # row[9]: tc_id
-                links[cid].append((tnid, row[5], row[7], row[8], row[9]))
+                links[cid].append((tnid, row[5], row[7], row[8], tcid))
                 used_relations.add(row[5])
 
             # Collect unique connectors

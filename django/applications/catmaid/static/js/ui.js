@@ -73,6 +73,7 @@
         fakeEvent.altKey = e.altKey;
         fakeEvent.ctrlKey = e.ctrlKey;
         fakeEvent.metaKey = e.metaKey;
+        fakeEvent.repeat = e.repeat;
         shift = e.shiftKey;
         alt = e.altKey;
         ctrl = e.ctrlKey;
@@ -85,6 +86,7 @@
         fakeEvent.altKey = event.altKey;
         fakeEvent.ctrlKey = event.ctrlKey;
         fakeEvent.metaKey = event.metaKey;
+        fakeEvent.repeat = event.repeat;
         shift = event.shiftKey;
         alt = event.altKey;
         ctrl = event.ctrlKey;
@@ -132,6 +134,8 @@
     };
 
     // A set of available global actions
+    var lastUndoTimestamp = 0;
+    var UNDO_RATE_LIMIT = 500; // In milliseconds.
     var actions = [
       new CATMAID.Action({
         helpText: "Undo last command on history stack",
@@ -140,8 +144,12 @@
         },
         run: function (e) {
           if (e.ctrlKey) {
-            CATMAID.commands.undo()
-              .catch(CATMAID.handleError);
+            var time = Date.now();
+            if (!e.repeat || (time - lastUndoTimestamp) > UNDO_RATE_LIMIT) {
+              lastUndoTimestamp = time;
+              CATMAID.commands.undo()
+                .catch(CATMAID.handleError);
+            }
             return true;
           }
           return false;

@@ -629,18 +629,18 @@ def user_info(request, project_id=None):
     # We expect only one result node
     info = cursor.fetchone()
     if not info:
-        return HttpResponse(json.dumps({
-            'error': 'Object #%s is not a treenode or a connector' % node_id}))
+        return JsonResponse({
+            'error': 'Object #%s is not a treenode or a connector' % node_id})
 
     # Build result
-    return HttpResponse(json.dumps({
+    return JsonResponse({
         'user': info[1],
         'editor': info[2],
         'creation_time': str(info[3].isoformat()),
         'edition_time': str(info[4].isoformat()),
         'reviewers': [r for r in info[5] if r],
         'review_times': [str(rt.isoformat()) for rt in info[6] if rt]
-    }))
+    })
 
 @api_view(['POST'])
 @requires_user_role([UserRole.Browse])

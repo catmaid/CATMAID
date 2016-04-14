@@ -96,5 +96,38 @@
   // Export Skeleton namespace
   CATMAID.Skeletons = Skeletons;
 
+  /**
+   * A command that wraps splitting skeletons. For now, it will block undo.
+   *
+   * @param {State}   state      Neighborhood state for node
+   * @param {integer} projectId  The project space to work in
+   * @param {integer} treenodeId Treenode to split skeleton at
+   * @param {object}  upstream_annot_map Map of annotation names vs annotator
+   *                                     IDs for the upstream split part.
+   * @param {object}  upstream_annot_map Map of annotation names vs annotator
+   *                                     IDs for the downstream split part.
+   */
+  CATMAID.SplitSkeletonCommand = CATMAID.makeCommand(
+      function(state, projectId, treenodeId, upstream_annot_map, downstream_annot_map) {
+
+    var exec = function(done, command, map) {
+      var split = CATMAID.Skeletons.split(state,
+          project.id, treenodeId, upstream_annot_map, downstream_annot_map);
+      return split.then(function(result) {
+        done();
+        return result;
+      });
+    };
+
+    var undo = function(done, command, map) {
+      throw new CATMAID.ValueError("Undo of skeleton split not allowed");
+    };
+
+    var title = "Split skeleton at treenode " + treenodeId;
+
+    this.init(title, exec, undo);
+  });
+
+
 })(CATMAID);
 

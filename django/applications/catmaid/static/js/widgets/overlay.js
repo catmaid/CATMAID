@@ -1501,11 +1501,12 @@ SkeletonAnnotations.TracingOverlay.prototype.splitSkeleton = function(nodeID) {
         }
         // Call backend
         self.submit.then(function() {
-          return CATMAID.Skeletons.split(self.state, project.id, nodeId,
-              upstream_set, downstream_set)
-          .then(function(result) {
-            self.updateNodes(function () { self.selectNode(nodeId); });
-          }).catch(CATMAID.handleError);
+          var command = new CATMAID.SplitSkeletonCommand(self.state,
+              project.id, nodeId, upstream_set, downstream_set);
+          CATMAID.commands.execute(command)
+            .then(function(result) {
+              self.updateNodes(function () { self.selectNode(nodeId); });
+            }).catch(CATMAID.handleError);
         }, CATMAID.handleError, true);
       };
       dialog.show();

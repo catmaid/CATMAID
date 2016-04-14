@@ -128,6 +128,35 @@
     this.init(title, exec, undo);
   });
 
+  /**
+   * Join two skeletons by connecting two treenodes.
+     *
+     * @param {State}   state         Multi node state with both treenodes
+     * @param {integer} projectId     The project space to work in
+     * @param {integer} fromId        The skeleton that will be merged
+     * @param {integer} toId          The skeleton that will get more nodes
+     * @param {object}  annotationSet (Optional) Map of annotation name vs
+     *                                annotator ID.
+   */
+  CATMAID.JoinSkeletonsCommand = CATMAID.makeCommand(
+      function(state, projectId, fromId, toId, annotationSet) {
+
+    var exec = function(done, command, map) {
+      var join = CATMAID.Skeletons.join(state, project.id, fromId, toId, annotationSet);
+      return join.then(function(result) {
+        done();
+        return result;
+      });
+    };
+
+    var undo = function(done, command, map) {
+      throw new CATMAID.ValueError("Undo of skeleton joins is not allowed at the moment");
+    };
+
+    var title = "Join skeleton throuh treenode " + toId + " into " + fromId + ".";
+
+    this.init(title, exec, undo);
+  });
 
 })(CATMAID);
 

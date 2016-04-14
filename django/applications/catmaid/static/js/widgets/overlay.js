@@ -1539,8 +1539,9 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeLink = function (from
             // The function used to instruct the backend to do the merge
             var merge = function(annotation_set) {
               self.submit.then(function() {
-                return CATMAID.Skeletons.join(self.state, project.id,
-                    fromid, toid, annotation_set)
+                var command = new CATMAID.JoinSkeletonsCommand(self.state, project.id,
+                    fromid, toid, annotation_set);
+                CATMAID.commands.execute(command)
                   .then(function(result) {
                     // We expect that an update is queued already (based on
                     // events)

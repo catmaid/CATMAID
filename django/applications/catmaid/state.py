@@ -57,6 +57,9 @@ class StateCheck:
         self.sql = sql
         self.params = params if type(params) in (list, tuple) else (params,)
 
+    def __str__(self):
+        return "SQL: {} Parameters: {}".format(self.sql, self.params)
+
 def make_all_children_query(child_ids, node_id):
     if child_ids:
         table_sql, table_args = list_to_table(child_ids, 1)

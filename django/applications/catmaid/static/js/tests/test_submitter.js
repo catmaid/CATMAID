@@ -78,6 +78,26 @@ QUnit.test('Submitter test', function( assert ) {
     });
   })();
 
+  // Test creation of additional promises queued promises
+  (function() {
+    var done1 = assert.async();
+    var done2 = assert.async();
+    var done3 = assert.async();
+    var submit = submitterFn();
+    submit.then(function() {
+      done1();
+      return new Promise(function(resolve, reject) {
+        done2();
+        resolve();
+        return 42;
+      });
+    });
+    submit.then(function(result) {
+      assert.ok(42, result, "Queuing promises inside an already queued promise works");
+      done3();
+    });
+  })();
+
   /**
   * Creates a promise that will sleep for some time before it is resolved. The
   * promise will write their value to the resilts array passed as argument

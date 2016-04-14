@@ -886,7 +886,7 @@
   function mapNodeUpdateList(state, type, map, command, node) {
     var nodeState = map.getWithTime(type, node[0], node[1], command);
     state[nodeState.value] = nodeState.timestamp;
-    return [node[0], node[2], node[3], node[4]];
+    return [nodeState.value, node[2], node[3], node[4]];
   }
 
   /**

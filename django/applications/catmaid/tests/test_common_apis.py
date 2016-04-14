@@ -1148,9 +1148,28 @@ class ViewPageTests(TestCase):
                 'y': 2700.0,
                 'z': 0.0,
                 'confidence': 5,
-                'partners': [{'id': 285, 'rel': 'presynaptic_to'},
-                             {'id': 367, 'rel': 'postsynaptic_to'},
-                             {'id': 377, 'rel': 'postsynaptic_to'}]
+                'partners': [{
+                    'id': 285,
+                    'link_id': 360,
+                    'rel': 'presynaptic_to',
+                    'rel_id': 23,
+                    'confidence': 5,
+                    'edition_time': '2011-12-04T13:51:36.955Z',
+                },{
+                    'id': 367,
+                    'link_id': 372,
+                    'rel': 'postsynaptic_to',
+                    'rel_id': 24,
+                    'confidence': 5,
+                    'edition_time': '2011-12-05T13:51:36.955Z',
+                }, {
+                    'id': 377,
+                    'link_id': 382,
+                    'rel': 'postsynaptic_to',
+                    'rel_id': 24,
+                    'confidence': 5,
+                    'edition_time': '2011-12-05T13:51:36.955Z',
+                }]
         }
 
 

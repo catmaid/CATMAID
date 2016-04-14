@@ -390,7 +390,8 @@ def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_pr
             n_retrieved_nodes == params['limit'],
             used_rel_map),
             cls=DjangoJSONEncoder,
-            separators=(',', ':'))) # default separators have spaces in them like (', ', ': '). Must provide two: for list and for dictionary. The point of this: less space, more compact json
+            separators=(',', ':')), # default separators have spaces in them like (', ', ': '). Must provide two: for list and for dictionary. The point of this: less space, more compact json
+            content_type='application/json')
 
     except Exception as e:
         raise Exception(response_on_error + ':' + str(e))

@@ -3504,11 +3504,11 @@
     this.geometry[CTYPES[2]] = new THREE.Geometry();
     this.geometry[CTYPES[3]] = new THREE.Geometry();
 
-        this.actor = {}; // has three keys (the CTYPES), each key contains the edges of each type
-        this.actor[CTYPES[0]] = new THREE.LineSegments(this.geometry[CTYPES[0]], this.line_material);
-        this.actor[CTYPES[1]] = new THREE.LineSegments(this.geometry[CTYPES[1]], this.space.staticContent.connectorLineColors[CTYPES[1]]);
-        this.actor[CTYPES[2]] = new THREE.LineSegments(this.geometry[CTYPES[2]], this.space.staticContent.connectorLineColors[CTYPES[2]]);
-        this.actor[CTYPES[3]] = new THREE.LineSegments(this.geometry[CTYPES[3]], this.space.staticContent.connectorLineColors[CTYPES[3]]);
+    this.actor = {}; // has three keys (the CTYPES), each key contains the edges of each type
+    this.actor[CTYPES[0]] = new THREE.LineSegments(this.geometry[CTYPES[0]], this.line_material);
+    this.actor[CTYPES[1]] = new THREE.LineSegments(this.geometry[CTYPES[1]], this.space.staticContent.connectorLineColors[CTYPES[1]]);
+    this.actor[CTYPES[2]] = new THREE.LineSegments(this.geometry[CTYPES[2]], this.space.staticContent.connectorLineColors[CTYPES[2]]);
+    this.actor[CTYPES[3]] = new THREE.LineSegments(this.geometry[CTYPES[3]], this.space.staticContent.connectorLineColors[CTYPES[3]]);
 
     this.specialTagSpheres = {};
     this.synapticSpheres = {};

@@ -3424,7 +3424,7 @@ SkeletonAnnotations.TracingOverlay.prototype.promiseSuppressedVirtualNodes = fun
       requestQueue.register(url, 'GET', undefined, CATMAID.jsonResponseHandler(resolve, reject));
     }).then(function (json) {
       var node = self.nodes[nodeId];
-      if (node) node.suppressed = json.length ? json : undefined;
+      if (node) node.suppressed = json.length ? json : [];
       return json;
     });
   }

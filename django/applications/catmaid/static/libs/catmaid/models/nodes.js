@@ -263,6 +263,8 @@
 
       return CATMAID.fetch(url, 'POST', params)
         .then(function(result) {
+          CATMAID.Nodes.trigger(CATMAID.Nodes.EVENT_NODE_DELETED, nodeId,
+              result.parent_id);
           // Emit deletion event, if the last node was removed and the neuron
           // deleted. Otherwise, trigger a change event for the neuron.
           var neuron_id = null;
@@ -330,6 +332,7 @@
   Nodes.EVENT_NODE_RADIUS_CHANGED = "node_radius_changed";
   Nodes.EVENT_NODE_CREATED = "node_created";
   Nodes.EVENT_NODE_UPDATED = "node_updated";
+  Nodes.EVENT_NODE_DELETED = "node_deleted";
   CATMAID.asEventSource(Nodes);
 
   // Export nodes

@@ -91,7 +91,7 @@ class Migration(migrations.Migration):
     sub-system."""
 
     dependencies = [
-        ('catmaid', '0001_initial'),
+        ('catmaid', '0002_create_settings_datastore'),
     ]
 
     operations = [

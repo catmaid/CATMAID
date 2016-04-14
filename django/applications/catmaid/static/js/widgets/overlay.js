@@ -58,6 +58,21 @@ var SkeletonAnnotations = {
 
 };
 
+/**
+ * If the active node is deleted, the active node will be changed to the passed
+ * in parent (if any). Otherwise, the active node just becomes unselected.
+ */
+SkeletonAnnotations.handleDeletedNode = function(nodeId, parentId) {
+  // Use == to allow string and integer IDs
+  if (nodeId == SkeletonAnnotations.getActiveNodeId()) {
+    SkeletonAnnotations.staticSelectNode(parentId);
+  }
+};
+
+//Make the skeleton annotation object listen to deleted nodes.
+CATMAID.Nodes.on(CATMAID.Nodes.EVENT_NODE_DELETED,
+    SkeletonAnnotations.handleDeletedNode, SkeletonAnnotations);
+
 SkeletonAnnotations.Settings = new CATMAID.Settings(
     'skeleton-annotations',
     {

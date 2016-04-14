@@ -2739,6 +2739,7 @@
         if (!material) {
           material = new THREE.LineBasicMaterial({
             color: mesh.material.color.clone(),
+            opacity: mesh.material.opacity,
             linewidth: l
           });
           this.m[key] = material;

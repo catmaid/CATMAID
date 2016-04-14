@@ -2266,6 +2266,8 @@ class ViewPageTests(TestCase):
         expected_result = {
                 'message': 'success',
                 'fromid': link_from,
+                'result_skeleton_id': 2411,
+                'deleted_skeleton_id': 2388,
                 'toid': link_to}
         self.assertEqual(expected_result, parsed_response)
 

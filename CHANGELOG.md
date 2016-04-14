@@ -16,7 +16,7 @@ update an existing CATMAID instance safely, please follow these steps:
    pip install -r requirements.txt
    pip uninstall south
 
-3. Fake the new initial migration by running:
+3. Fake the new initial migration by running (and only the initial migration):
 
    python manage.py migrate catmaid 0001_initial --fake
 

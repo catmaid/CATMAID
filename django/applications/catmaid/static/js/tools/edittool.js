@@ -120,7 +120,7 @@
           buttonID: "edit_button_ontology",
           buttonName: 'ontology_tools',
           run: function (e) {
-            project.setTool( new OntologyTool() );
+            project.setTool( new CATMAID.OntologyTool() );
             return true;
           }
         }));

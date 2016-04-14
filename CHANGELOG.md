@@ -140,6 +140,16 @@ Undo:
   change, connector link/unlink and node add/insert/move/remove/.
 
 
+Ontologies, classification and clustering:
+
+- Ontology tool widgets don't reset each other anymore if they are loaded.
+
+- The Classification Editor and Ontology Editor open sub-trees now quicker.
+
+- Clustering ontology based classifications is much faster and works for
+  multi-level ontologies on thousands of classification graphs.
+
+
 Miscellaneous:
 
 - Dragging a window into the center of another window now creates a tabbed
@@ -167,6 +177,8 @@ Miscellaneous:
 - Tile layers now have an option in the layer controls to hide the tile layer
   if the nearest section is marked as broken, rather than the default behavior
   of displaying the nearest non-broken section.
+
+- Clustering over large sets of ontology based classification is now much faster.
 
 
 ### Bug fixes

@@ -26,7 +26,11 @@
     {
       // change to pid workspace if pid was passed
       if (pid) {
-        self.change_workspace(pid, true);
+        this.change_workspace(pid, true);
+      } else if (userprofile.independent_ontology_workspace_is_default) {
+        this.change_workspace(-1, true);
+      } else {
+        this.change_workspace(project.id, true);
       }
     };
 
@@ -135,9 +139,9 @@
           return parameters;
           },
           "success": function (e) {
-          if (e.error) {
-            alert(e.error);
-          }
+            if (e.error) {
+              CATMAID.error(e.error, e.detail);
+            }
           }
         },
         "cache": false,
@@ -405,9 +409,9 @@
           $.unblockUI();
           r = $.parseJSON(r);
           if (r['error']) {
-          alert(r['error']);
-          $.jstree.rollback(treebefore);
-          return;
+            CATMAID.error(r['error']);
+            $.jstree.rollback(treebefore);
+            return;
           }
           if(r['status']) {
             $("#annotation_graph_object").jstree("refresh", -1);
@@ -436,9 +440,9 @@
           $.unblockUI();
           r = $.parseJSON(r);
           if (r['error']) {
-          alert(r['error']);
-          $.jstree.rollback(treebefore);
-          return;
+            CATMAID.error(r);
+            $.jstree.rollback(treebefore);
+            return;
           }
           if(r['status']) {
             $("#annotation_graph_object").jstree("refresh", -1);

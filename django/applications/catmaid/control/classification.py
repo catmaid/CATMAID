@@ -123,6 +123,10 @@ def get_classification_links_qs( workspace_pid, project_ids, inverse=False,
     relation_map = relation_map or get_relation_to_id_map(workspace_pid,
             ('is_a', 'classified_by'), cursor)
 
+    # Bail out if there are not the classes we need
+    if 2 != len(class_map) or 2 != len(relation_map):
+        return ClassInstanceClassInstance.objects.none()
+
     # Make sure we deal with a list of project ids
     if not isinstance(project_ids, list) and not isinstance(project_ids, set):
         project_ids = [project_ids]

@@ -761,7 +761,7 @@ SkeletonAnnotations.TracingOverlay.prototype.promiseNode = function(node)
 
     var command = new CATMAID.InsertNodeCommand(self.state, project.id, x, y, z,
         node.parent_id, childId, node.radius, node.confidence);
-    return CATMAID.commands.execute(command)
+    CATMAID.commands.execute(command)
       .then(function(result) {
         var nid = result.treenode_id;
         CATMAID.statusBar.replaceLast("Created new node node #" + nid +
@@ -777,6 +777,8 @@ SkeletonAnnotations.TracingOverlay.prototype.promiseNode = function(node)
         if (SkeletonAnnotations.getActiveNodeId() == vnid) {
           self.activateNode(node);
         }
+        // Resolve outer promise
+        resolve(nid);
       });
   });
 };

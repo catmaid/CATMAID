@@ -1343,6 +1343,15 @@ var WindowMaker = new function()
           ['Debug', false, function() { WA.setDebug(this.checked); }, false],
           ['Line width', o.skeleton_line_width, null, function() { WA.updateSkeletonLineWidth(this.value); }, 4],
           {
+            type: 'checkbox',
+            label: 'Flat neuron material',
+            value: o.neuron_material === 'flat',
+            onclickFn: function() {
+              WA.updateNeuronShading(this.checked ? 'flat' : 'lambert');
+            },
+            title: 'If checked, neurons will ignore light sources and appear "flat"'
+          },
+          {
             type: 'numeric',
             label: 'Custom Tags (regex):',
             title: 'Display handle spheres for nodes with tags matching this regex (must refresh 3D viewer after changing).',

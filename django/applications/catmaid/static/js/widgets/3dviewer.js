@@ -771,6 +771,7 @@
     this.zplane_zoomlevel = "max";
     this.zplane_opacity = 0.8;
     this.custom_tag_spheres_regex = '';
+    this.neuron_material = 'lambert';
     this.connector_filter = false;
     this.shading_method = 'none';
     this.color_method = 'none';
@@ -1872,7 +1873,24 @@
     };
   };
 
-  WebGLApplication.prototype.Space.prototype.StaticContent = function(dimensions, stack, center) {
+  /**
+   * Get the constructor for the material used for skeleton meshes.
+   *
+   * @param {String} neuron_material Expected to be either 'flat' or 'lambert'
+   *
+   * @return a THREE.js constructor for a material
+   */
+  var getSkeletonMaterialType = function(neuron_material) {
+    if ('flat' === neuron_material) {
+      return THREE.MeshBasicMaterial;
+    } else if ('lambert' === neuron_material) {
+      return THREE.MeshLambertMaterial;
+    } else {
+      throw new CATMAID.ValueError("Unknown material identifier: " + neuron_material);
+    }
+  };
+
+  WebGLApplication.prototype.Space.prototype.StaticContent = function(dimensions, stack, center, options) {
     // Space elements
     this.box = this.createBoundingBox(project.focusedStackViewer.primaryStack);
     this.floor = this.createFloor(center, dimensions);
@@ -1887,14 +1905,10 @@
     this.icoSphere = new THREE.IcosahedronGeometry(1, 2);
     this.cylinder = new THREE.CylinderGeometry(1, 1, 1, 10, 1, false);
     this.textMaterial = new THREE.MeshNormalMaterial();
+
     // Mesh materials for spheres on nodes tagged with 'uncertain end', 'undertain continuation' or 'TODO'
-    this.labelColors = {uncertain: new THREE.MeshLambertMaterial({color: 0xff8000, opacity:0.6, transparent: true}),
-                        todo:      new THREE.MeshLambertMaterial({color: 0xff0000, opacity:0.6, transparent: true}),
-                        custom:    new THREE.MeshLambertMaterial({color: 0xaa70ff, opacity:0.6, transparent: true})};
+    this.updateDynamicMaterials(options, false);
     this.textGeometryCache = new WebGLApplication.prototype.Space.prototype.TextGeometryCache();
-    this.synapticColors = [new THREE.MeshLambertMaterial( { color: 0xff0000, opacity:0.6, transparent:false } ), 
-                           new THREE.MeshLambertMaterial( { color: 0x00f6ff, opacity:0.6, transparent:false } ),
-                           new THREE.MeshLambertMaterial( { color: 0x9f25c2, opacity:0.6, transparent:false } )];
     this.connectorLineColors = {'presynaptic_to': new THREE.LineBasicMaterial({color: 0xff0000, opacity: 1.0, linewidth: 6}),
                                 'postsynaptic_to': new THREE.LineBasicMaterial({color: 0x00f6ff, opacity: 1.0, linewidth: 6}),
                                 'gapjunction_with': new THREE.LineBasicMaterial({color: 0x9f25c2, opacity: 1.0, linewidth: 6})};
@@ -1936,6 +1950,36 @@
     this.synapticColors[0].dispose();
     this.synapticColors[1].dispose();
     this.synapticColors[2].dispose();
+  };
+
+  /**
+   * Update shared materials that can be updated during run-time.
+   */
+  WebGLApplication.prototype.Space.prototype.StaticContent.prototype.updateDynamicMaterials = function(options, copyProperties) {
+    // Material constructor depends on current options
+    var Material = getSkeletonMaterialType(options['neuron_material']);
+
+    function makeMaterial(defaultOptions, sourceObj, sourceField) {
+      var properties;
+      if (copyProperties && sourceObj) {
+        properties = {};
+        var sourceMaterial = sourceObj[sourceField];
+        properties['color'] = sourceMaterial.color;
+        properties['opacity'] = sourceMaterial.opacity;
+        properties['transparent'] = sourceMaterial.transparent;
+      } else {
+        properties = defaultOptions;
+      }
+
+      return new Material(properties);
+    }
+
+    this.labelColors = {uncertain: makeMaterial({color: 0xff8000, opacity:0.6, transparent: true}, this.labelColors, 'uncertain'),
+                        todo:      makeMaterial({color: 0xff0000, opacity:0.6, transparent: true}, this.labelColors, 'todo'),
+                        custom:    makeMaterial({color: 0xaa70ff, opacity:0.6, transparent: true}, this.labelColors, 'custom')};
+    this.synapticColors = [makeMaterial({color: 0xff0000, opacity:0.6, transparent:false}, this.synapticColors, 0),
+                           makeMaterial({color: 0x00f6ff, opacity:0.6, transparent:false}, this.synapticColors, 1),
+                           makeMaterial({color: 0x9f25c2, opacity:0.6, transparent:false}, this.synapticColors, 2)];
   };
 
   WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createBoundingBox = function(stack) {
@@ -4153,7 +4197,9 @@
       this.actor['neurite'].material.transparent = this.opacity !== 1;
       this.actor['neurite'].material.needsUpdate = true; // TODO repeated it's the line_material
 
-      var material = new THREE.MeshLambertMaterial({color: this.actorColor, opacity: this.opacity, transparent: this.opacity !== 1});
+
+      var Material = getSkeletonMaterialType(options['neuron_material']);
+      var material = new Material({color: this.actorColor, opacity: this.opacity, transparent: this.opacity !== 1});
 
       for (var k in this.radiusVolumes) {
         if (this.radiusVolumes.hasOwnProperty(k)) {
@@ -4639,7 +4685,8 @@
     var vs = {};
 
     // Reused for all meshes
-    var material = new THREE.MeshLambertMaterial( { color: this.getActorColorAsHex(), opacity:1.0, transparent:false } );
+    var Material = getSkeletonMaterialType(options['neuron_material']);
+    var material = new Material( { color: this.getActorColorAsHex(), opacity:1.0, transparent:false } );
     material.opacity = this.skeletonmodel.opacity;
     material.transparent = material.opacity !== 1;
 
@@ -5043,6 +5090,29 @@
     if (shading_method === this.options.shading_method) {
       this.updateSkeletonColors();
     }
+  };
+
+  /**
+   * This will re-create all skeleton meshes if the shading changed.
+   */
+  WebGLApplication.prototype.updateNeuronShading = function(shading) {
+    if ('flat' !== shading && 'lambert' !== shading) {
+      CATMAID.error("Unknown shading: " + shading);
+      return;
+    }
+
+    // Do nothing if the shading didn't change
+    if (shading === this.options['neuron_material']) {
+      return;
+    }
+
+    // Update shading and update material of all affected geometries
+    this.options['neuron_material'] = shading;
+
+    // Update nodeSphere and cylinder of each skeleton
+    var staticContent = this.space.staticContent;
+    staticContent.updateDynamicMaterials(this.options, true);
+    this.updateSkeletonColors();
   };
 
   /**

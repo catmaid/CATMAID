@@ -120,7 +120,7 @@
     };
 
     var undo = function(done, command, map) {
-      throw new CATMAID.ValueError("Undo of skeleton split not allowed");
+      throw new CATMAID.ValueError("Undo of skeleton splits is not allowed at the moment");
     };
 
     var title = "Split skeleton at treenode " + treenodeId;

@@ -4,6 +4,8 @@
 
 # Mark Longair 2010
 
+from __future__ import print_function
+
 import os
 import re
 
@@ -451,7 +453,7 @@ def insertTree(tree,skeleton_id):
     return None
   aff = tree.getAffineTransform()
   table = {}
-  print 'number of subtreenodes is:', len(tree.getRoot().getSubtreeNodes()), 'for TrakEM2 treeline', tree.getId()
+  print('number of subtreenodes is:', len(tree.getRoot().getSubtreeNodes()), 'for TrakEM2 treeline', tree.getId())
   for nd in tree.getRoot().getSubtreeNodes():
     x, y, z = node_to_coordinates(aff,nd)
     confidence = nd.getConfidence()
@@ -473,12 +475,12 @@ def insertTree(tree,skeleton_id):
     if all_tags:
       for tag in all_tags:
         tag_as_string = tag.toString()
-        print "Trying to add tag: "+tag_as_string
+        print("Trying to add tag: "+tag_as_string)
         insert_tag_for_treenode(tag_as_string,new_id)
 
 def add_recursively(pt,parent_id,depth=0):
   name_with_id = get_project_thing_name(pt)
-  print " "*depth, pt, name_with_id
+  print(" "*depth, pt, name_with_id)
   new_id = None
   pt_type = pt.getType()
   if not parent_id:
@@ -609,27 +611,27 @@ def add_connectors_recursively(pt,depth=0):
   name_with_id = get_project_thing_name(pt)
   pt_type = pt.getType()
   prefix = " "*depth
-  print prefix, pt, name_with_id, '::', pt_type
+  print(prefix, pt, name_with_id, '::', pt_type)
   if pt_type == "connector":
     c = pt.getObject()
-    print prefix, "#########################################"
-    print prefix, "Got connector: ", c, "of type", type(c)
+    print(prefix, "#########################################")
+    print(prefix, "Got connector: ", c, "of type", type(c))
     aff = None
     try:
       aff = c.getAffineTransform()
     except AttributeError:
       pass
     if not aff:
-      print "Connector didn't have getAffineTransform(), probably the type is wrong:", type(c)
+      print("Connector didn't have getAffineTransform(), probably the type is wrong:", type(c))
     elif not c.root:
-      print "Connector had no origin node"
+      print("Connector had no origin node")
     else:
       connector_target_nodes = c.root.getChildrenNodes()
       originNode = ConnectorNode(node_to_coordinates(aff,c.root),c.root.getData()*x_separation)
       targetNodes = [ ConnectorNode(node_to_coordinates(aff,x),x.getData()*x_separation) for x in connector_target_nodes ]
-      print prefix, "Got originNode:", originNode
+      print(prefix, "Got originNode:", originNode)
       for t in targetNodes:
-        print prefix, "Got targetNode:", t
+        print(prefix, "Got targetNode:", t)
       add_synapse( name_with_id, c, [ originNode ], targetNodes )
   else:
     children = pt.getChildren()

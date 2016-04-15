@@ -475,7 +475,7 @@ def export_connectors(request, project_id=None):
                 proc.result)
     json_data = json.dumps({'message': 'The connector archive is currently ' \
             'exporting. You will be notified once it is ready for download.'})
-    return HttpResponse(json_data, content_type='text/json')
+    return HttpResponse(json_data, content_type='application/json')
 
 @requires_user_role(UserRole.Browse)
 def export_treenodes(request, project_id=None):
@@ -489,4 +489,4 @@ def export_treenodes(request, project_id=None):
                 proc.result)
     json_data = json.dumps({'message': 'The treenode archive is currently ' \
             'exporting. You will be notified once it is ready for download.'})
-    return HttpResponse(json_data, content_type='text/json')
+    return HttpResponse(json_data, content_type='application/json')

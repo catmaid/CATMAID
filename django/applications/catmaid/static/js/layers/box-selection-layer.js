@@ -133,6 +133,7 @@
       // internal opacity variable
       var opacity = 1;
       this.visible = true;
+      this.isHideable = true;
 
       // add view to DOM
       if( self.visible )

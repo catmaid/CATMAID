@@ -10,7 +10,7 @@ env:
     - secure: "jS17W1CVlSIcUl0BqQjWpDlncxvOFg3w6HDOCuCp0DlPjMaJcLK3xjPqKE3a4FbTvTWo/q8jxjk4lGkRa5GneZhk/b0UEpQBrfY6NmQF4df0MHA7rRdLoSYAqh96bMKWLWSZ/teEB89wUxX21Zyuft05IvJ0G1s4PazTrZoovcg="
 addons:
   firefox: "38.0"
-  postgresql: 9.3
+  postgresql: 9.4
 before_install:
   - mkdir tmp
   - travis_retry sudo apt-get update -y -qq
@@ -22,7 +22,7 @@ install:
   - pip list
   # Install additional dependencies for Travis
   - pip install coveralls
-  - npm install jshint qunit-phantomjs-runner
+  - npm install jshint qunit-phantomjs-runner csslint jsdoc
 before_script:
   - psql -c 'CREATE DATABASE catmaid;' -U postgres
   - psql -c 'CREATE EXTENSION postgis;' -U postgres catmaid
@@ -37,14 +37,20 @@ before_script:
   - cat configuration.py
   - python create_configuration.py
   - sed -i -e "s?^\(ALLOWED_HOSTS = \).*?\1['*']?g" projects/mysite/settings.py
+  # Enable static file serving without DEBUG = True
+  - echo "SERVE_STATIC = True" >> projects/mysite/settings.py
   - cat projects/mysite/settings.py
   - cd ..
 script:
   - jshint --config=.travis.jshintrc --exclude-path=.travis.jshintignore django/applications
+  - $TRAVIS_BUILD_DIR/node_modules/.bin/jsdoc -r django/applications/catmaid/static/js
+  - cd django/applications/catmaid/static/css
+  - $TRAVIS_BUILD_DIR/node_modules/.bin/csslint .
+  - cd $TRAVIS_BUILD_DIR
   - cd django/projects/mysite
-  - python manage.py syncdb --migrate --noinput
+  - python manage.py migrate --noinput
   - python manage.py collectstatic --link --noinput
-  - coverage run --source=catmaid --omit='*management*,*migrations*,*tests*' manage.py test catmaid.tests
+  - coverage run manage.py test catmaid.tests
   # Remove login requirement from QUnit test page
   - sed -i 's/login_required(\([^)]*\))/\1/g' ../../applications/catmaid/urls.py
   - python manage.py runserver &

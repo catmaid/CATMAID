@@ -3,7 +3,6 @@
 /* global
   CATMAID,
   InstanceRegistry,
-  NeuronNameService,
   project,
   requestQueue,
   session,
@@ -20,6 +19,7 @@
   var SelectionTable = function() {
     this.widgetID = this.registerInstance();
     this.registerSource();
+    this.APPEND_WARNING_THRESHOLD = 1000;
 
     this.skeletons = [];
     this.skeleton_ids = {}; // skeleton_id vs index in skeleton array
@@ -32,6 +32,7 @@
     this.batchOpacity = 1.0;
     this.order = [[0, 'asc']];
     this.annotationFilter = null;
+    this.appendWithBatchColor = false;
     this.gui = new this.GUI(this);
 
     // Listen to change events of the active node and skeletons
@@ -53,35 +54,38 @@
   };
 
   SelectionTable.prototype.destroy = function() {
-    delete this.linkTarget;
-    this.clear(); // clear after clearing linkTarget, so it doesn't get cleared
+    this.clear();
     this.unregisterInstance();
     this.unregisterSource();
-    NeuronNameService.getInstance().unregister(this);
+    CATMAID.NeuronNameService.getInstance().unregister(this);
     if (SelectionTable._lastFocused === this) SelectionTable._lastFocused = null;
     SkeletonAnnotations.off(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
         this.selectActiveNode, this);
   };
 
   SelectionTable.prototype.updateModels = function(models, source_chain) {
-    if (source_chain && (this in source_chain)) return; // break propagation loop
-    if (!source_chain) source_chain = {};
-    source_chain[this] = this;
-
-    var new_models = {};
+    var addedModels = {};
+    var updatedModels = {};
     Object.keys(models).forEach(function(skid) {
       var model = models[skid];
       if (skid in this.skeleton_ids) {
-        this.skeletons[this.skeleton_ids[model.id]] = model.clone();
+        var m = model.clone();
+        this.skeletons[this.skeleton_ids[m.id]] = m;
+        updatedModels[m.id] = m;
       } else {
-        new_models[skid] = model;
+        addedModels[skid] = model;
       }
     }, this);
 
-    if (Object.keys(new_models).length > 0) this.append(new_models);
-    else this.gui.update();
+    if (CATMAID.tools.isEmpty(addedModels)) {
+      this.gui.update();
+    } else {
+      this.append(addedModels);
+    }
 
-    this.updateLink(models, source_chain);
+    if (!CATMAID.tools.isEmpty(updatedModels)) {
+      this.triggerChange(updatedModels);
+    }
   };
 
   SelectionTable.prototype.summary_info = function() {
@@ -140,7 +144,7 @@
           table.style.border = 1;
           table.innerHTML = [
             [(1 === skeleton_ids.length) ? "Neuron name:" : "Number of skeletons:",
-             (1 === skeleton_ids.length) ? NeuronNameService.getInstance().getName(skeleton_ids[0]) : skeleton_ids.length],
+             (1 === skeleton_ids.length) ? CATMAID.NeuronNameService.getInstance().getName(skeleton_ids[0]) : skeleton_ids.length],
             ["Node count: ", json.n_nodes],
             ["Nodes contributed by: ", format(json.node_contributors)],
             ["Number of presynaptic sites: ", json.n_pre],
@@ -222,8 +226,8 @@
         skeleton.setVisible(this.all_visible);
         updated[skeleton.id] = skeleton.clone();
       }, this);
-    if (this.linkTarget && Object.keys(updated).length > 0) {
-      this.updateLink(updated);
+    if (!CATMAID.tools.isEmpty(updated)) {
+      this.triggerChange(updated);
     }
     // Update UI
     this.gui.invalidate();
@@ -240,14 +244,15 @@
     skeletons.forEach(function(skeleton) {
       skeleton[key] = state;
     }, this);
-    if (this.linkTarget && skeletons.length > 0) {
-      this.updateLink(skeletons.reduce(function(o, skeleton) {
-        o[skeleton.id] = skeleton.clone();
-        return o;
-      }, {}));
-    }
     // Update UI
     this.gui.invalidate();
+    // Notify change
+    if (skeletons.length > 0) {
+      var updated = CATMAID.tools.listToIdMap(skeletons.map(function(s) {
+        return s.clone();
+      }));
+      this.triggerChange(updated);
+    }
   };
 
   /** setup button handlers */
@@ -323,6 +328,9 @@
           return !!this[skid];
         }, json);
 
+        var addedModels = {};
+        var updatedModels = {};
+
         valid_skeletons.forEach(function(skeleton_id) {
           // Make sure existing widget settings are respected
           var model = models[skeleton_id];
@@ -331,24 +339,41 @@
           model.pre_visible = this.all_items_visible['pre'];
           model.post_visible = this.all_items_visible['post'];
 
+          if (this.appendWithBatchColor) {
+            model.color.setStyle(this.batchColor);
+            model.opacity = this.batchOpacity;
+          }
+
           if (skeleton_id in this.skeleton_ids) {
             // Update skeleton
             this.skeletons[this.skeleton_ids[skeleton_id]] = model;
+            updatedModels[skeleton_id] = model;
             return;
           }
           this.skeletons.push(model);
           var counts = json[skeleton_id];
           this.reviews[skeleton_id] = parseInt(Math.floor(100 * counts[1] / counts[0]));
           this.skeleton_ids[skeleton_id] = this.skeletons.length -1;
+          addedModels[skeleton_id] = model;
           // Force update of annotations as soon as they are used
           this.annotationMapping = null;
         }, this);
 
         // Add skeletons
-        NeuronNameService.getInstance().registerAll(this, models,
-            this.gui.update.bind(this.gui));
+        CATMAID.NeuronNameService.getInstance().registerAll(this, models,
+            (function () {
+              // Make sure current sorting is applied
+              this.reapplyOrder();
+              this.gui.update();
+            }).bind(this));
 
-        this.updateLink(models);
+        if (!CATMAID.tools.isEmpty(addedModels)) {
+          this.triggerAdd(addedModels);
+        }
+
+        if (!CATMAID.tools.isEmpty(updatedModels)) {
+          this.triggerChange(updatedModels);
+        }
 
         // Notify user if not all skeletons are valid
         var nInvalid = skeleton_ids.length - valid_skeletons.length;
@@ -381,16 +406,26 @@
 
   /** ids: an array of Skeleton IDs. */
   SelectionTable.prototype.removeSkeletons = function(ids) {
+    var removedModels = {};
     if (1 === ids.length) {
-      if (ids[0] in this.skeleton_ids) {
+      var skid = ids[0];
+      if (skid in this.skeleton_ids) {
         // Remove element
-        this.skeletons.splice(this.skeleton_ids[ids[0]], 1);
+        var m = this.skeletons.splice(this.skeleton_ids[skid], 1);
+        if (0 === m.length) {
+          throw new CATMAID.ValueError("No skeleton available for given index");
+        }
+        removedModels[skid] = m[0];
       }
     } else {
       var ids_set = ids.reduce(function(o, id) { o[id] = null; return o; }, {});
       // Recreate skeletons array
       this.skeletons = this.skeletons.filter(function(sk) {
-        return !(sk.id in ids_set);
+        var remove = sk.id in ids_set;
+        if (remove) {
+          removedModels[sk.id] = sk;
+        }
+        return !remove;
       });
     }
 
@@ -402,15 +437,13 @@
 
     this.gui.update();
 
-    if (this.linkTarget) {
-      // Prevent propagation loop by checking if the target has the skeletons anymore
-      if (ids.some(this.linkTarget.hasSkeleton, this.linkTarget)) {
-        this.linkTarget.removeSkeletons(ids);
-      }
+    if (!CATMAID.tools.isEmpty(removedModels)) {
+      this.triggerRemove(removedModels);
     }
   };
 
   SelectionTable.prototype.clear = function(source_chain) {
+    var removedModels = CATMAID.tools.listToIdMap(this.skeletons);
     this.skeletons = [];
     this.skeleton_ids = {};
     this.reviews = {};
@@ -418,9 +451,11 @@
     this.next_color_index = 0;
     this.annotationMapping = null;
 
-    this.clearLink(source_chain);
+    if (!CATMAID.tools.isEmpty(removedModels)) {
+      this.triggerRemove(removedModels);
+    }
   };
-   
+
   /** Set the color of all skeletons based on the state of the "Color" pulldown menu. */
   SelectionTable.prototype.randomizeColorsOfSelected = function() {
     this.next_color_index = 0; // reset
@@ -428,7 +463,10 @@
       skeleton.color = this.pickColor();
       return skeleton.id;
     }, this);
-    this.updateLink(this.getSelectedSkeletonModels());
+
+    if (updatedSkeletonIDs.length > 0) {
+      this.triggerChange(this.getSelectedSkeletonModels());
+    }
     // Update UI
     this.gui.invalidate(updatedSkeletonIDs);
   };
@@ -459,12 +497,14 @@
       skeletons.forEach(function(sk, i) {
         sk.color.setStyle(colorFn(i));
       }, this);
-      this.updateLink(this.getSelectedSkeletonModels());
-      // Update UI
-      this.gui.invalidate();
+      if (skeletons.length > 0) {
+        this.triggerChange(this.getSelectedSkeletonModels());
+        // Update UI
+        this.gui.invalidate();
+      }
     }
   };
-   
+
   SelectionTable.prototype.getSkeletonModel = function( id ) {
     if (id in this.skeleton_ids) {
       return this.skeletons[this.skeleton_ids[id]].clone();
@@ -504,15 +544,16 @@
           o[indices[skid]] = skid;
         });
 
-        var new_models = {};
         self.skeletons = [];
         self.skeleton_ids = {};
+
+        var updated_models = {};
         Object.keys(o).map(Number).sort(function(a, b) { return a - b; }).forEach(function(index) {
           var skid = o[index],
               model = models[skid];
           if (model.baseName !== json[skid]) {
-            new_models[skid] = model;
             model.baseName = json[skid];
+            updated_models[skid] = model;
           }
           self.skeletons.push(models[skid]);
           self.skeleton_ids[skid] = self.skeletons.length -1;
@@ -520,7 +561,11 @@
 
         // Let the user know, if there are now less skeletons than before.
         var removedNeurons = prev_skeleton_ids.length - self.skeletons.length;
+        var removed_models;
         if (removedNeurons > 0) {
+          removed_models = prev_skeleton_ids.reduce(function(o, skid) {
+            var s = models[skid]; if (s) { o[skid] = s; } return o;
+          }, {});
           CATMAID.warn(removedNeurons + " neuron(s) were removed");
         }
 
@@ -541,12 +586,18 @@
               }, this);
               // Update user interface
               self.gui.update();
-              self.updateLink(new_models);
             }));
         } else {
           // Update user interface
           self.gui.update();
-          self.updateLink(new_models);
+        }
+
+        if (!CATMAID.tools.isEmpty(updated_models)) {
+          self.triggerChange(updated_models);
+        }
+
+        if (!CATMAID.tools.isEmpty(removed_models)) {
+          self.triggerRemove(removed_models);
         }
       });
   };
@@ -731,20 +782,9 @@
         var dir = data.order[0].dir;
         if (!this.table.order || this.table.order[0][0] !== col ||
             this.table.order[0][1] !== dir) {
-          var desc = dir === 'desc';
-          // Use only first level sort
-          if (2 === col) { // Name
-            this.table.sortByName(desc);
-          } else if (3 === col) { // Review
-            this.table.sortByReview(desc);
-          } else if (4 === col) { // Selected
-            this.table.sortBySelected(desc);
-          } else if (9 === col) { // Color
-            this.table.sortByColor(desc);
-          }
-
           // Save new ordering
           this.table.order = [[col, dir]];
+          this.table.reapplyOrder();
         }
 
         // Filtering
@@ -797,12 +837,12 @@
           "type": "text",
           "render": {
             "display": function(data, type, row, meta) {
-              var name = NeuronNameService.getInstance().getName(row.skeleton.id);
+              var name = CATMAID.NeuronNameService.getInstance().getName(row.skeleton.id);
               return '<a href="#" class="neuron-selection-link action-select">' +
                 (name ? name : "undefined") + '</a>';
             },
             "_": function(data, type, row, meta) {
-              var name = NeuronNameService.getInstance().getName(row.skeleton.id);
+              var name = CATMAID.NeuronNameService.getInstance().getName(row.skeleton.id);
               return name ? name : "undefined";
             }
           }
@@ -904,7 +944,7 @@
   SelectionTable.prototype.selectSkeleton = function( skeleton, vis ) {
     $('#skeletonselect' + this.widgetID + '-' + skeleton.id).prop('checked', vis);
     skeleton.setVisible(vis);
-    this.notifyLink(skeleton);
+    this.triggerChange(CATMAID.tools.idMap(skeleton));
   };
 
   SelectionTable.prototype.measure = function() {
@@ -987,12 +1027,12 @@
         // expression. Otherwise do a simple search in the neuron name.
         if (this.nameMatch.substr(0, 1) === '/') {
           filteredSkeletons = filteredSkeletons.filter(function(skeleton) {
-            var nameMatch = NeuronNameService.getInstance().getName(skeleton.id).match(this);
+            var nameMatch = CATMAID.NeuronNameService.getInstance().getName(skeleton.id).match(this);
             return nameMatch && nameMatch.length > 0;
           }, new RegExp(this.nameMatch.substr(1)));
         } else {
           filteredSkeletons = filteredSkeletons.filter(function(skeleton) {
-            return -1 !== NeuronNameService.getInstance().getName(skeleton.id).indexOf(this);
+            return -1 !== CATMAID.NeuronNameService.getInstance().getName(skeleton.id).indexOf(this);
           }, this.nameMatch);
         }
       } catch (e) {
@@ -1038,11 +1078,30 @@
     }
   };
 
+  /**
+   * Re-apply current order to skeleton list.
+   */
+  SelectionTable.prototype.reapplyOrder = function() {
+    var col = this.order[0][0];
+    var desc = 'desc' === this.order[0][1];
+
+    // Use only first level sort
+    if (2 === col) { // Name
+      this.sortByName(desc);
+    } else if (3 === col) { // Review
+      this.sortByReview(desc);
+    } else if (4 === col) { // Selected
+      this.sortBySelected(desc);
+    } else if (9 === col) { // Color
+      this.sortByColor(desc);
+    }
+  };
+
   SelectionTable.prototype.sortByName = function(desc) {
     var factor = desc ? -1 : 1;
     this.sort(function(sk1, sk2) {
-      var name1 = NeuronNameService.getInstance().getName(sk1.id).toLowerCase(),
-          name2 = NeuronNameService.getInstance().getName(sk2.id).toLowerCase();
+      var name1 = CATMAID.NeuronNameService.getInstance().getName(sk1.id).toLowerCase(),
+          name2 = CATMAID.NeuronNameService.getInstance().getName(sk2.id).toLowerCase();
       return factor * CATMAID.tools.compareStrings(name1, name2);
     });
   };
@@ -1088,7 +1147,7 @@
     }
 
     if (colorChanged || alphaChanged) {
-      this.notifyLink(skeleton);
+      this.triggerChange(CATMAID.tools.idMap(skeleton));
     }
 
     if (allSelected) {
@@ -1100,8 +1159,8 @@
         var s = table.skeletons[table.skeleton_ids[skid]];
         s.color.copy(color);
         s.opacity = alpha;
-        table.notifyLink(s);
       });
+      table.triggerChange(table.getSelectedSkeletonModels());
     }
 
     this.gui.invalidate([skeletonID]);
@@ -1131,7 +1190,7 @@
     this.gui.invalidate(selectedSkeletonIDs);
     // Update link if models were changed
     if (colorChanged || alphaChanged) {
-      this.updateLink(changedModels);
+      this.triggerChange(changedModels);
     }
   };
 

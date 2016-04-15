@@ -60,7 +60,7 @@ QUnit.test('Tile sources test', function( assert ) {
     assert.ok(ts7 instanceof CATMAID.RenderServTileSource,
             "CATMAID.getTileSource maps type 7 correctly");
     assert.equal(ts7.getTileURL(p, s, spp, c, r, z),
-        "https://example.com/z/3/box/2048,2570,512,514,1/png-image",
+        "https://example.com/largeDataTileSource/512/514/0/3/5/4.png",
         "Tile source 7 produces correct URL");
 
     var ts8 = CATMAID.getTileSource(8, baseURL, fileExt, tw, th);

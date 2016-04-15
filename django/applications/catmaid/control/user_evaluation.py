@@ -1,4 +1,7 @@
+from __future__ import print_function
+
 import json
+import pytz
 
 from datetime import datetime, timedelta
 from collections import defaultdict, namedtuple
@@ -68,13 +71,13 @@ def _evaluate_epochs(epochs, skeleton_id, tree, reviews, relations):
         reviewer_id, nodes = epoch
 
         # Range of the review epoch
-        start_date = datetime.max
-        end_date = datetime.min
+        start_date = datetime.max.replace(tzinfo=pytz.utc)
+        end_date = datetime.min.replace(tzinfo=pytz.utc)
 
         # Range for node creation, per user
         def default_dates():
-            return {'start': datetime.max,
-                    'end': datetime.min}
+            return {'start': datetime.max.replace(tzinfo=pytz.utc),
+                    'end': datetime.min.replace(tzinfo=pytz.utc)}
         user_ranges = defaultdict(default_dates)
 
         # Node counts per user
@@ -340,7 +343,7 @@ def _evaluate(project_id, user_id, start_date, end_date, max_gap, min_nodes):
                 # user did not contribute at all to this chunk
                 continue
             appended = epoch_ops.appended[user_id]
-            print appended
+            print(appended)
             d.append({'skeleton_id': skid,
                       'reviewer_id': epoch_ops.reviewer_id,
                       'timepoint': epoch_ops.creation_date_range[user_id]['end'].strftime('%Y-%m-%d'),

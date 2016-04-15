@@ -30,7 +30,7 @@ def user_list(request):
             "last_name": u.last_name,
             "color": (up.color.r, up.color.g, up.color.b) })
 
-    return HttpResponse(json.dumps(result), content_type='text/json')
+    return HttpResponse(json.dumps(result), content_type='application/json')
 
 @user_passes_test(access_check)
 def user_list_datatable(request):
@@ -107,7 +107,7 @@ def user_list_datatable(request):
             user.id,
         ]]
 
-    return HttpResponse(json.dumps(response), content_type='text/json')
+    return HttpResponse(json.dumps(response), content_type='application/json')
 
 
 initial_colors = ((1, 0, 0, 1),
@@ -141,22 +141,17 @@ def distinct_user_color():
 
 @user_passes_test(access_check)
 def update_user_profile(request):
-    """ Allows users to update some of their user settings, e.g. whether
-    reference lines should be visible. If the request is done by the anonymous
-    user, nothing is updated, but no error is raised.
+    """ Allows users to update some of their user settings.
+
+    If the request is done by the anonymous user, nothing is updated, but
+    no error is raised.
     """
     # Ignore anonymous user
     if not request.user.is_authenticated() or request.user.is_anonymous():
         return HttpResponse(json.dumps({'success': "The user profile of the " +
-                "anonymous user won't be updated"}), content_type='text/json')
+                "anonymous user won't be updated"}), content_type='application/json')
 
-    for var in [{'name': 'inverse_mouse_wheel', 'parse': json.loads},
-                {'name': 'display_stack_reference_lines', 'parse': json.loads},
-                {'name': 'tracing_overlay_screen_scaling', 'parse': json.loads},
-                {'name': 'tracing_overlay_scale', 'parse': float},
-                {'name': 'prefer_webgl_layers', 'parse': json.loads},
-                {'name': 'use_cursor_following_zoom', 'parse': json.loads},
-                {'name': 'tile_linear_interpolation', 'parse': json.loads}]:
+    for var in []:
         request_var = request.POST.get(var['name'], None)
         if request_var:
             request_var = var['parse'](request_var)
@@ -167,4 +162,4 @@ def update_user_profile(request):
     request.user.userprofile.save()
 
     return HttpResponse(json.dumps({'success': 'Updated user profile'}),
-            content_type='text/json')
+            content_type='application/json')

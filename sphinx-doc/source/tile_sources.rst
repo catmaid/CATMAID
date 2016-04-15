@@ -203,7 +203,7 @@ Tile source types are listed by the enumeration integer ID referenced by
 
    URL format::
 
-    <sourceBaseURL>z/<pixelPosition.z>/box/<col * tileWidth>,<row * tileHeight>,<tileWidth>,<tileHeight>,<2^-zoomLevel>/<fileExtension>-image
+    <sourceBaseURL>largeDataTileSource/<tileWidth>/<tileHeight>/<zoomLevel>/<pixelPosition.z>/<row>/<col>.<fileExtension>
 
 8. DVID ``imagetile`` tiles
 ***************************
@@ -238,6 +238,26 @@ Tile source types are listed by the enumeration integer ID referenced by
        orientation must be transposed to be consistent with other tile source
        types.
 
+9. FlixServer tiles
+*******************
+
+   This type supports loading tiles from a
+   `FlixServer <https://github.com/fzadow/tileserver/>`_ instance. This tile
+   server generates images dynamically and supports CATMAID's default tile
+   source URL format::
+
+    <sourceBaseUrl><pixelPosition.z>/<row>_<col>_<zoomLevel>.<fileExtension>
+
+   Additional GET parameters can be used to adjust color, dynamic range and
+   gamma mapping::
+
+    color = (red,green|blue|cyan|magenta|yellow|white) for coloring
+    min/max = [0, 2^16] for specifying the dynamic range
+    gamma = [0, 2^16] for the exponent of a non-linear mapping
+
+   For multi-channel images, a comma separated list can be used as parameter
+   value (e.g. color=cyan,magenta).
+
 Backend Representation
 ----------------------
 
@@ -256,7 +276,7 @@ Frontend Retrieval
 ------------------
 
 The front end implements tile source URL generation in
-``django/applications/catmaid/static/js/tilesource.js``. To define a new tile
+``django/applications/catmaid/static/js/tile-source.js``. To define a new tile
 source type, follow the convention of the existing tiles sources by creating
 a function that returns an object with the appropriate ``getTileURL``,
 ``getOverviewURL``, and ``getOverviewLayer`` methods. The overview URL should

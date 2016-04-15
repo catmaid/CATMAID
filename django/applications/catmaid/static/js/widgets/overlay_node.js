@@ -43,22 +43,28 @@
       /**
        * Create a new SkeletonInstance and return it.
        */
-      createSkeletonElements: function(paper, defSuffix) {
+      createSkeletonElements: function(paper, defSuffix, skeletonDisplayModels) {
         // Add prototype
         SkeletonElements.prototype = createSkeletonElementsPrototype();
 
-        return new SkeletonElements(paper, defSuffix);
+        return new SkeletonElements(paper, defSuffix, skeletonDisplayModels);
       }
     };
   })();
 
   /** Namespace where SVG element instances are created, cached and edited. */
-  var SkeletonElements = function(paper, defSuffix)
+  var SkeletonElements = function(paper, defSuffix, skeletonDisplayModels)
   {
     // Allow a suffix for SVG definition IDs
     this.USE_HREF_SUFFIX = defSuffix || '';
     // Create definitions for reused elements and markers
     var defs = paper.append('defs');
+
+    this.overlayGlobals = {
+      paper: paper,
+      skeletonDisplayModels: skeletonDisplayModels || {},
+      hideOtherSkeletons: false
+    };
 
     // Let (concrete) element classes initialize any shared SVG definitions
     // required by their instances. Even though called statically, initDefs is an
@@ -171,13 +177,16 @@
       zdiff,      // the difference in Z from the current slice in stack space
       confidence,
       skeleton_id,// the id of the skeleton this node is an element of
+      edition_time, // The last time this node was edited by a user
       can_edit)   // a boolean combining (is_superuser or user owns the node)
     {
       var node = this.cache.nodePool.next();
       if (node) {
-        node.reInit(id, parent, parent_id, radius, x, y, z, zdiff, confidence, skeleton_id, can_edit);
+        node.reInit(id, parent, parent_id, radius, x, y, z, zdiff, confidence,
+            skeleton_id, edition_time, can_edit);
       } else {
-        node = new this.Node(paper, id, parent, parent_id, radius, x, y, z, zdiff, confidence, skeleton_id, can_edit, defSuffix);
+        node = new this.Node(this.overlayGlobals, id, parent, parent_id, radius,
+            x, y, z, zdiff, confidence, skeleton_id, edition_time, can_edit, defSuffix);
         this.cache.nodePool.push(node);
       }
       return node;
@@ -193,13 +202,15 @@
       zdiff,      // the difference in Z from the current slice in stack space
       confidence,
       subtype,
+      edition_time, // last time this connector wsa edited by a user
       can_edit)   // a boolean combining (is_superuser or user owns the node)
     {
       var connector = this.cache.connectorPool.next();
       if (connector) {
-        connector.reInit(id, x, y, z, zdiff, confidence, subtype, can_edit);
+        connector.reInit(id, x, y, z, zdiff, confidence, subtype, edition_time, can_edit);
       } else {
-        connector = new this.ConnectorNode(paper, id, x, y, z, zdiff, confidence, subtype, can_edit, defSuffix);
+        connector = new this.ConnectorNode(this.overlayGlobals, id, x, y, z,
+            zdiff, confidence, subtype, edition_time, can_edit, defSuffix);
         connector.createArrow = this.createArrow;
         this.cache.connectorPool.push(connector);
       }
@@ -219,26 +230,25 @@
       this.reserve_size = reserve_size;
     };
 
-    ptype.ElementPool.prototype = (function() {
-      return {
-        reset : function() {
+    $.extend(ptype.ElementPool.prototype, {
+        reset: function() {
           this.nextIndex = 0;
         },
 
-        obliterateFn : function(element) {
+        obliterateFn: function(element) {
           element.obliterate();
         },
 
-        disableFn : function(element) {
+        disableFn: function(element) {
           element.disable();
         },
 
-        clear : function() {
+        clear: function() {
           this.pool.splice(0).forEach(this.obliterateFn);
           this.reset();
         },
 
-        disableBeyond : function(new_length) {
+        disableBeyond: function(new_length) {
           if (new_length < this.pool.length) {
             // Drop elements beyond new length plus reserve
             if (this.pool.length > new_length + this.reserve_size) {
@@ -249,18 +259,17 @@
           }
         },
 
-        next : function() {
+        next: function() {
           return this.nextIndex < this.pool.length ?
             this.pool[this.nextIndex++] : null;
         },
 
         /** Append a new element at the end, implying that all other elements are in use. */
-        push : function(element) {
+        push: function(element) {
           this.pool.push(element);
           this.nextIndex += 1;
         }
-      };
-    })();
+      });
 
 
     /** A prototype for both Treenode and Connector. */
@@ -276,19 +285,6 @@
       this.dToSecBefore = -1;
       this.dToSecAfter = 1;
 
-      /** Update the local x,y coordinates of the node
-       * and for its SVG object c well. */
-      this.setXY = function(xnew, ynew) {
-        this.x = xnew;
-        this.y = ynew;
-        if (this.c) {
-          this.c.attr({
-            x: xnew,
-            y: ynew
-          });
-        }
-      };
-
       /** Create the SVG circle elements if and only if the zdiff is zero, that is, if the node lays on the current section. */
       this.createCircle = function() {
         if (!this.shouldDisplay()) {
@@ -297,7 +293,7 @@
         // c may already exist if the node is being reused
         if (!this.c) {
           // create a circle object
-          this.c = this.paper.select('.nodes').append('use')
+          this.c = this.overlayGlobals.paper.select('.nodes').append('use')
                               .attr('xlink:href', '#' + this.USE_HREF + this.hrefSuffix)
                               .attr('x', this.x)
                               .attr('y', this.y)
@@ -326,7 +322,7 @@
             this.shouldDisplay() &&
             this.radius > 0) {
           if (!this.radiusGraphics) {
-            this.radiusGraphics = this.paper.select('.lines').append('circle');
+            this.radiusGraphics = this.overlayGlobals.paper.select('.lines').append('circle');
           }
 
           var fillcolor = this.color();
@@ -402,10 +398,26 @@
         this.children[childNode.id] = childNode;
       };
 
-      /** Set the node fill color depending on its distance from the
-      * current slice, whether it's the active node, the root node, or in
-      * an active skeleton. */
+      this.linkConnector = function(connectorId, link) {
+        this.connectors[connectorId] = link;
+      };
+
+      this.shouldDisplay = function () {
+        return this.zdiff >= 0 && this.zdiff < 1 &&
+            (!this.overlayGlobals.hideOtherSkeletons ||
+             this.overlayGlobals.skeletonDisplayModels.hasOwnProperty(this.skeleton_id));
+      };
+
+      /**
+       * Return the node color depending on its distance from the current slice,
+       * whether it's the active node, the root node, a leaf node, or in
+       * an active skeleton.
+       *
+       * @return {string}           CSS color description like 'rgb(0,0,0)'.
+       */
       this.color = function() {
+        var model = this.overlayGlobals.skeletonDisplayModels[this.skeleton_id];
+        if (model) return this.colorCustom(model.color);
         var color;
         if (SkeletonAnnotations.getActiveNodeId() === this.id) {
           // The active node is always in green:
@@ -423,6 +435,86 @@
         return color;
       };
 
+      /**
+       * Return the node color as a function of its skeleton model's color
+       * depending on its distance from the current slice, whether it is the
+       * active node, the root node, a leaf node, or in an active skeleton.
+       *
+       * @param  {THREE.Color} baseColor Node's skeleton model base color.
+       * @return {string}                CSS color description like 'rgb(0,0,0)'.
+       */
+      this.colorCustom = function (baseColor) {
+        if (SkeletonAnnotations.getActiveNodeId() === this.id) {
+          // The active node is always in green:
+          return SkeletonAnnotations.getActiveNodeColor();
+        } else if (this.isroot) {
+          return baseColor.clone().offsetHSL(0, 0, 0.25).getStyle();
+        } else if (0 === this.numberOfChildren) {
+          return baseColor.clone().offsetHSL(0, 0, -0.25).getStyle();
+        } else {
+          // If none of the above applies, just colour according to the z difference.
+          return this.colorCustomFromZDiff(baseColor);
+        }
+      };
+
+      /**
+       * Return a color depending upon some conditions, such as whether the
+       * zdiff with the current section is positive, negative, or zero, and
+       * whether the node belongs to the active skeleton.
+       *
+       * @return {string}           CSS color description like 'rgb(0,0,0)'.
+       */
+      this.colorFromZDiff = function() {
+        var model = this.overlayGlobals.skeletonDisplayModels[this.skeleton_id];
+        if (model) return this.colorCustomFromZDiff(model.color);
+        // zdiff is in sections, therefore the current section is at [0, 1) --
+        // notice 0 is inclusive and 1 is exclusive.
+        if (this.zdiff >= 1) {
+          return SkeletonAnnotations.inactive_skeleton_color_above;
+        } else if (this.zdiff < 0) {
+          return SkeletonAnnotations.inactive_skeleton_color_below;
+        } else if (SkeletonAnnotations.getActiveSkeletonId() === this.skeleton_id) {
+          if (SkeletonAnnotations.isRealNode(this.id)) {
+            return SkeletonAnnotations.active_skeleton_color;
+          } else {
+            return SkeletonAnnotations.active_skeleton_color_virtual;
+          }
+        } else if (SkeletonAnnotations.isRealNode(this.id)) {
+          return SkeletonAnnotations.inactive_skeleton_color;
+        } else {
+          return SkeletonAnnotations.inactive_skeleton_color_virtual;
+        }
+      };
+
+      /**
+       * Return a color as a function of the node's skeleton model's color
+       * depending upon some conditions, such as whether the zdiff with the
+       * current section is positive, negative, or zero, and whether the node
+       * belongs to the active skeleton.
+       *
+       * @param  {THREE.Color} baseColor Node's skeleton model base color.
+       * @return {string}                CSS color description like 'rgb(0,0,0)'.
+       */
+      this.colorCustomFromZDiff = function (baseColor) {
+        // zdiff is in sections, therefore the current section is at [0, 1) --
+        // notice 0 is inclusive and 1 is exclusive.
+        if (this.zdiff >= 1) {
+          return baseColor.clone().offsetHSL(0.1, 0, 0).getStyle();
+        } else if (this.zdiff < 0) {
+          return baseColor.clone().offsetHSL(-0.1, 0, 0).getStyle();
+        } else if (SkeletonAnnotations.getActiveSkeletonId() === this.skeleton_id) {
+          if (SkeletonAnnotations.isRealNode(this.id)) {
+            return SkeletonAnnotations.active_skeleton_color;
+          } else {
+            return SkeletonAnnotations.active_skeleton_color_virtual;
+          }
+        } else if (SkeletonAnnotations.isRealNode(this.id)) {
+          return baseColor.getStyle();
+        } else {
+          return baseColor.getStyle();
+        }
+      };
+
       this.updateColors = function() {
         if (this.c) {
           var fillcolor = this.color();
@@ -432,6 +524,9 @@
         if (this.line) {
           var linecolor = this.colorFromZDiff();
           this.line.attr({stroke: linecolor});
+          if (this.number_text) {
+            this.number_text.attr({fill: linecolor});
+          }
         }
       };
 
@@ -446,7 +541,7 @@
         var lineColor = this.colorFromZDiff();
 
         if (!this.line) {
-          this.line = this.paper.select('.lines').append('line');
+          this.line = this.overlayGlobals.paper.select('.lines').append('line');
           this.line.toBack();
           this.line.datum(this.id);
           this.line.on('click', ptype.mouseEventManager.edge_mc_click);
@@ -519,39 +614,15 @@
         }
       };
 
-      /**
-       * Return a color depending upon some conditions, such as whether the zdiff
-       * with the current section is positive, negative, or zero, and whether the
-       * node belongs to the active skeleton.
-       */
-      this.colorFromZDiff = function() {
-        // zdiff is in sections, therefore the current section is at [0, 1) --
-        // notice 0 is inclusive and 1 is exclusive.
-        if (this.zdiff >= 1) {
-          return SkeletonAnnotations.inactive_skeleton_color_above;
-        } else if (this.zdiff < 0) {
-          return SkeletonAnnotations.inactive_skeleton_color_below;
-        } else if (SkeletonAnnotations.getActiveSkeletonId() === this.skeleton_id) {
-          if (SkeletonAnnotations.isRealNode(this.id)) {
-            return SkeletonAnnotations.active_skeleton_color;
-          } else {
-            return SkeletonAnnotations.active_skeleton_color_virtual;
-          }
-        } else if (SkeletonAnnotations.isRealNode(this.id)) {
-          return SkeletonAnnotations.inactive_skeleton_color;
-        } else {
-          return SkeletonAnnotations.inactive_skeleton_color_virtual;
-        }
-      };
-
       /** Prepare node for removal from cache. */
       this.obliterate = function() {
-        this.paper = null;
+        this.overlayGlobals = null;
         this.id = null;
         this.parent = null;
         this.parent_id = null;
         this.type = null;
         this.children = null;
+        this.connectors = null;
         if (this.c) {
           ptype.mouseEventManager.forget(this.c, SkeletonAnnotations.TYPE_NODE);
           this.c.remove();
@@ -581,6 +652,7 @@
         this.parent_id = this.DISABLED;
         this.children = {};
         this.numberOfChildren = 0;
+        this.connectors = {};
         if (this.c) {
           this.c.datum(null);
           this.c.hide();
@@ -599,12 +671,13 @@
       };
 
       /** Reset all member variables and reposition SVG circles when existing. */
-      this.reInit = function(id, parent, parent_id, radius, x, y, z, zdiff, confidence, skeleton_id, can_edit) {
+      this.reInit = function(id, parent, parent_id, radius, x, y, z, zdiff, confidence, skeleton_id, edition_time, can_edit) {
         this.id = id;
         this.parent = parent;
         this.parent_id = parent_id;
         this.children = {};
         this.numberOfChildren = 0;
+        this.connectors = {};
         this.radius = radius; // the radius as stored in the database
         this.x = x;
         this.y = y;
@@ -613,6 +686,7 @@
         this.confidence = confidence;
         this.skeleton_id = skeleton_id;
         this.isroot = null === parent_id || isNaN(parent_id) || parseInt(parent_id) < 0;
+        this.edition_time = edition_time;
         this.can_edit = can_edit;
         this.needsync = false;
         delete this.suppressed;
@@ -644,7 +718,7 @@
         var self = this;
         // Create a circle object that represents the surrounding circle
         var color = "rgb(255,255,0)";
-        var c = this.paper.select('.nodes').append('circle')
+        var c = this.overlayGlobals.paper.select('.nodes').append('circle')
           .attr({
             cx: this.x,
             cy: this.y,
@@ -655,7 +729,7 @@
           });
         // Create a line from the node to mouse if requested
         if (drawLine) {
-          var line = this.paper.select('.lines').append('line')
+          var line = this.overlayGlobals.paper.select('.lines').append('line')
             .attr({
               x1: this.x,
               y1: this.y,
@@ -666,7 +740,7 @@
             });
         }
         // Create an adhoc mouse catcher
-        var mc = this.paper.select('.nodes').append('circle')
+        var mc = this.overlayGlobals.paper.select('.nodes').append('circle')
           .attr({
             cx: this.x,
             cy: this.y,
@@ -676,7 +750,7 @@
             opacity: 0
           });
         // Create a label to measure current radius of the circle.
-        var label = this.paper.append('g').classed('radiuslabel', true).attr({
+        var label = this.overlayGlobals.paper.append('g').classed('radiuslabel', true).attr({
             'pointer-events': 'none'});
         var fontSize = parseFloat(ptype.ArrowLine.prototype.confidenceFontSize) * 0.75;
         var pad = fontSize * 0.5;
@@ -779,7 +853,7 @@
     ptype.AbstractTreenode.prototype = ptype.NodePrototype;
 
     ptype.Node = function(
-      paper,
+      overlayGlobals,
       id,         // unique id for the node from the database
       parent,     // the parent node (may be null if the node is not loaded)
       parent_id,  // is null only for the root node
@@ -790,16 +864,18 @@
       zdiff,      // the difference in z from the current slice
       confidence, // confidence with the parent
       skeleton_id,// the id of the skeleton this node is an element of
+      edition_time, // Last time this node was edited
       can_edit,   // whether the user can edit (move, remove) this node
       hrefSuffix) // a suffix that is appended to the ID of the referenced geometry
     {
-      this.paper = paper;
+      this.overlayGlobals = overlayGlobals;
       this.id = id;
       this.type = SkeletonAnnotations.TYPE_NODE;
       this.parent = parent;
       this.parent_id = parent_id;
       this.children = {};
       this.numberOfChildren = 0;
+      this.connectors = {};
       this.radius = radius; // the radius as stored in the database
       this.x = x;
       this.y = y;
@@ -807,6 +883,7 @@
       this.zdiff = zdiff;
       this.confidence = confidence;
       this.skeleton_id = skeleton_id;
+      this.edition_time = edition_time;
       this.can_edit = can_edit;
       this.isroot = null === parent_id || isNaN(parent_id) || parseInt(parent_id) < 0;
       this.c = null; // The SVG circle for drawing and interacting with the node.
@@ -823,6 +900,25 @@
       this.NODE_RADIUS = 8;
       this.CATCH_RADIUS = 0;
 
+      this.linkGroups = ['pregroup', 'postgroup', 'gjgroup', 'unidirgroup'];
+
+      /**
+       * Get al links of a specific connector group or an empty list.
+       */
+      this.expandGroup = function(target, group) {
+        var partners = this[group];
+        if (partners) {
+          for (var partner in partners) {
+            target.push(partners[partner]);
+          }
+        }
+        return target;
+      };
+
+      this.getLinks = function() {
+        return this.linkGroups.reduce(this.expandGroup.bind(this), []);
+      };
+
       /** Disables the ArrowLine object and removes entries from the preLines and postLines. */
       this.removeConnectorArrows = function() {
         if (this.preLines) {
@@ -837,10 +933,14 @@
           this.undirLines.forEach(ptype.ElementPool.prototype.disableFn);
           this.undirLines = null;
         }
+        if (this.gjLines) {
+          this.gjLines.forEach(ptype.ElementPool.prototype.disableFn);
+          this.gjLines = null;
+        }
       };
 
       this.obliterate = function() {
-        this.paper = null;
+        this.overlayGlobals = null;
         this.id = null;
         if (this.c) {
           ptype.mouseEventManager.forget(this.c, SkeletonAnnotations.TYPE_CONNECTORNODE);
@@ -850,11 +950,13 @@
         this.pregroup = null;
         this.postgroup = null;
         this.undirgroup = null;
+        this.gjgroup = null;
         // Note: mouse event handlers are removed by c.remove()
         this.removeConnectorArrows(); // also removes confidence text associated with edges
         this.preLines = null;
         this.postLines = null;
         this.undirLines = null;
+        this.gjLines = null;
       };
 
       this.disable = function() {
@@ -868,18 +970,7 @@
         this.pregroup = null;
         this.postgroup = null;
         this.undirgroup = null;
-      };
-
-      this.colorFromZDiff = function()
-      {
-        // zdiff is in sections, therefore the current section is at [0, 1) -- notice 0 is inclusive and 1 is exclusive.
-        if (this.zdiff >= 1) {
-          return "rgb(0,0,255)";
-        } else if (this.zdiff < 0) {
-          return "rgb(255,0,0)";
-        } else {
-          return "rgb(235,117,0)";
-        }
+        this.gjgroup = null;
       };
 
       this.color = function() {
@@ -887,6 +978,19 @@
           return "rgb(0,255,0)";
         }
         if (this.zdiff >= 0 && this.zdiff < 1) {
+          return "rgb(235,117,0)";
+        }
+      };
+
+      this.colorFromZDiff = function()
+      {
+        // zdiff is in sections, therefore the current section is at [0, 1)
+        // -- notice 0 is inclusive and 1 is exclusive.
+        if (this.zdiff >= 1) {
+          return "rgb(0,0,255)";
+        } else if (this.zdiff < 0) {
+          return "rgb(255,0,0)";
+        } else {
           return "rgb(235,117,0)";
         }
       };
@@ -912,7 +1016,7 @@
             node = this.pregroup[i].treenode;
             if (this.mustDrawLineWith(node)) {
               if (!this.preLines) this.preLines = [];
-              this.preLines.push(this.createArrow(this, node, this.pregroup[i].confidence, true));
+              this.preLines.push(this.createArrow(this, node, this.pregroup[i].confidence, 1));
             }
           }
         }
@@ -922,7 +1026,7 @@
             node = this.postgroup[i].treenode;
             if (this.mustDrawLineWith(node)) {
               if (!this.postLines) this.postLines = [];
-              this.postLines.push(this.createArrow(this, node, this.postgroup[i].confidence, false));
+              this.postLines.push(this.createArrow(this, node, this.postgroup[i].confidence, 0));
             }
           }
         }
@@ -936,9 +1040,19 @@
             }
           }
         }
+
+        for (i in this.gjgroup) {
+          if (this.gjgroup.hasOwnProperty(i)) {
+            node = this.gjgroup[i].treenode;
+            if (this.mustDrawLineWith(node)) {
+              if (!this.gjLines) this.gjLines = [];
+              this.gjLines.push(this.createArrow(this, node, this.gjgroup[i].confidence, 2));
+            }
+          }
+        }
       };
 
-      this.reInit = function(id, x, y, z, zdiff, confidence, subtype, can_edit) {
+      this.reInit = function(id, x, y, z, zdiff, confidence, subtype, edition_time, can_edit) {
         this.id = id;
         this.x = x;
         this.y = y;
@@ -946,10 +1060,12 @@
         this.zdiff = zdiff;
         this.confidence = confidence;
         this.subtype = subtype;
+        this.edition_time = edition_time;
         this.can_edit = can_edit;
         this.pregroup = {};
         this.postgroup = {};
         this.undirgroup = {};
+        this.gjgroup = {};
         this.needsync = false;
 
         if (this.c) {
@@ -964,13 +1080,14 @@
         this.preLines = null;
         this.postLines = null;
         this.undirLines = null;
+        this.gjLines = null;
       };
     };
 
     ptype.AbstractConnectorNode.prototype = ptype.NodePrototype;
 
     ptype.ConnectorNode = function(
-      paper,
+      overlayGlobals,
       id,         // unique id for the node from the database
       x,          // the x coordinate in oriented project coordinates
       y,          // the y coordinate in oriented project coordinates
@@ -978,10 +1095,11 @@
       zdiff,      // the difference in Z from the current slice in stack space
       confidence, // (TODO: UNUSED)
       subtype,    // the kind of connector node
+      edition_time, // Last time this connector was edited
       can_edit,   // whether the logged in user has permissions to edit this node -- the server will in any case enforce permissions; this is for proper GUI flow
       hrefSuffix) // a suffix that is appended to the ID of the referenced geometry
     {
-      this.paper = paper;
+      this.overlayGlobals = overlayGlobals;
       this.id = id;
       this.type = SkeletonAnnotations.TYPE_CONNECTORNODE;
       this.subtype = subtype;
@@ -991,14 +1109,17 @@
       this.z = z;
       this.zdiff = zdiff;
       this.confidence = confidence;
+      this.edition_time = edition_time;
       this.can_edit = can_edit;
       this.pregroup = {}; // set of presynaptic treenodes
       this.postgroup = {}; // set of postsynaptic treenodes
       this.undirgroup = {}; // set of undirected treenodes
+      this.gjgroup = {}; // set of gap junction treenodes
       this.c = null; // The SVG circle for drawing
       this.preLines = null; // Array of ArrowLine to the presynaptic nodes
       this.postLines = null; // Array of ArrowLine to the postsynaptic nodes
       this.undirLines = null; // Array of undirected ArraowLine
+      this.gjLines = null; // Array of gap junction ArrowLine
       this.hrefSuffix = hrefSuffix;
     };
 
@@ -1026,26 +1147,26 @@
       var mc_dblclick = function(d) {
         d3.event.stopPropagation();
         d3.event.preventDefault();
-        var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.parentNode.parentNode);
-        catmaidSVGOverlay.ensureFocused();
+        var catmaidTracingOverlay = SkeletonAnnotations.getTracingOverlayByPaper(this.parentNode.parentNode);
+        catmaidTracingOverlay.ensureFocused();
       };
 
-      /** 
+      /**
        * Here 'this' is c's SVG node, and node is the Node instance
        */
       this.mc_click = function(d) {
         var e = d3.event;
         e.stopPropagation();
         e.preventDefault();
-        var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.parentNode.parentNode);
-        if (catmaidSVGOverlay.ensureFocused()) {
+        var catmaidTracingOverlay = SkeletonAnnotations.getTracingOverlayByPaper(this.parentNode.parentNode);
+        if (catmaidTracingOverlay.ensureFocused()) {
           return;
         }
-        var node = catmaidSVGOverlay.nodes[d];
-        if (e.shiftKey) {
+        var node = catmaidTracingOverlay.nodes[d];
+        if (e.shiftKey || e.altKey) {
           var atnID = SkeletonAnnotations.getActiveNodeId();
           if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
-            return catmaidSVGOverlay.deleteNode(node.id);
+            return catmaidTracingOverlay.deleteNode(node.id);
           }
           if (atnID) {
             var atnType = SkeletonAnnotations.getActiveNodeType();
@@ -1053,14 +1174,24 @@
             // to existing treenode or connectornode
             if (atnType === SkeletonAnnotations.TYPE_CONNECTORNODE) {
               var atnSubType = SkeletonAnnotations.getActiveNodeSubType();
-              if (atnSubType === SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR) {
+              if ((e.altKey && !e.shiftKey) ||
+                  atnSubType === SkeletonAnnotations.SUBTYPE_GAPJUNCTION_CONNECTOR) {
+                if (!mayEdit()) {
+                  CATMAID.error("You lack permissions to declare node #" + node.id +
+                      " as having a gap junction with connector #" + atnID);
+                  return;
+                }
+                // careful, atnID is a connector
+                SkeletonAnnotations.atn.subtype = SkeletonAnnotations.SUBTYPE_GAPJUNCTION_CONNECTOR;
+                catmaidTracingOverlay.createLink(node.id, atnID, "gapjunction_with");
+              }  else if (atnSubType === SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR) {
                 if (!mayEdit()) {
                   CATMAID.error("You lack permissions to declare node #" + node.id +
                       " as postsynaptic to connector #" + atnID);
                   return;
                 }
                 // careful, atnID is a connector
-                catmaidSVGOverlay.createLink(node.id, atnID, "postsynaptic_to");
+                catmaidTracingOverlay.createLink(node.id, atnID, "postsynaptic_to");
               } else if (atnSubType === SkeletonAnnotations.SUBTYPE_ABUTTING_CONNECTOR) {
                 if (!mayEdit()) {
                   CATMAID.error("You lack permissions to declare node #" + node.id +
@@ -1068,7 +1199,7 @@
                   return;
                 }
                 // careful, atnID is a connector
-                catmaidSVGOverlay.createLink(node.id, atnID, "abutting");
+                catmaidTracingOverlay.createLink(node.id, atnID, "abutting");
               } else {
                 CATMAID.error("Unknown connector subtype: " + atnSubType);
                 return;
@@ -1082,7 +1213,7 @@
                 alert('Can not join node with another node of the same skeleton!');
                 return;
               }
-              catmaidSVGOverlay.createTreenodeLink(atnID, node.id);
+              catmaidTracingOverlay.createTreenodeLink(atnID, node.id);
               // TODO check for error
               CATMAID.statusBar.replaceLast("Joined node #" + atnID + " to node #" + node.id);
             }
@@ -1092,7 +1223,7 @@
           }
         } else {
           // activate this node
-          catmaidSVGOverlay.activateNode(node);
+          catmaidTracingOverlay.activateNode(node);
         }
       };
 
@@ -1109,8 +1240,8 @@
         if (!o) return; // Not properly initialized with mc_start
         if (e.shiftKey) return;
 
-        var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.parentNode.parentNode);
-        var node = catmaidSVGOverlay.nodes[d];
+        var catmaidTracingOverlay = SkeletonAnnotations.getTracingOverlayByPaper(this.parentNode.parentNode);
+        var node = catmaidTracingOverlay.nodes[d];
 
         if (!mayEdit() || !node.can_edit) {
           CATMAID.statusBar.replaceLast("You don't have permission to move node #" + d);
@@ -1127,6 +1258,24 @@
           y: node.y
         });
         node.drawEdges(true); // TODO for connector this is overkill
+        // Update postsynaptic edges from connectors. Suprisingly this brute
+        // approach of iterating through all nodes is sufficiently fast.
+        // TODO: A two-way map would be ergonomic and speed up ops like this.
+        if (node.type === SkeletonAnnotations.TYPE_NODE) {
+          for (var connID in catmaidTracingOverlay.nodes) {
+            if (catmaidTracingOverlay.nodes.hasOwnProperty(connID)) {
+              var conn = catmaidTracingOverlay.nodes[connID];
+              if (conn.type === SkeletonAnnotations.TYPE_CONNECTORNODE) {
+                if (node.id in conn.postgroup ||
+                    node.id in conn.pregroup ||
+                    node.id in conn.undirgroup ||
+                    node.id in conn.gjgroup) {
+                  conn.drawEdges(true);
+                }
+              }
+            }
+          }
+        }
         CATMAID.statusBar.replaceLast("Moving node #" + node.id);
 
         node.needsync = true;
@@ -1137,6 +1286,8 @@
         d3.event.sourceEvent.stopPropagation();
         if (!checkNodeID(this)) return;
         o = null;
+        var catmaidTracingOverlay = SkeletonAnnotations.getTracingOverlayByPaper(this.parentNode.parentNode);
+        catmaidTracingOverlay.updateNodeCoordinatesInDB();
         d3.select(this).attr({
           opacity: 1
         });
@@ -1149,7 +1300,7 @@
           // happen that this is not the case, e.g. if the section was changed
           // before the mouse up event is triggered.
           if (svgNode.parentNode && svgNode.parentNode.parentNode) {
-            var svg = SkeletonAnnotations.getSVGOverlayByPaper(svgNode.parentNode.parentNode);
+            var svg = SkeletonAnnotations.getTracingOverlayByPaper(svgNode.parentNode.parentNode);
             if (svg) {
               svg.updateNodes();
             } else {
@@ -1166,8 +1317,8 @@
       /** Here 'this' is c's SVG node. */
       var mc_start = function(d) {
         var e = d3.event.sourceEvent;
-        var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.parentNode.parentNode);
-        var node = catmaidSVGOverlay.nodes[d];
+        var catmaidTracingOverlay = SkeletonAnnotations.getTracingOverlayByPaper(this.parentNode.parentNode);
+        var node = catmaidTracingOverlay.nodes[d];
         if (is_middle_click(e)) {
           // Allow middle-click panning
           return;
@@ -1176,8 +1327,8 @@
         e.preventDefault();
 
         // If not trying to join or remove a node, but merely click on it to drag it or select it:
-        if (!e.shiftKey && !e.ctrlKey && !e.metaKey) {
-          catmaidSVGOverlay.activateNode(node);
+        if (!e.shiftKey && !e.altKey && !e.ctrlKey && !e.metaKey) {
+          catmaidTracingOverlay.activateNode(node);
         }
 
         o = {ox: node.x,
@@ -1200,20 +1351,20 @@
         var e = d3.event;
         e.stopPropagation();
         e.preventDefault();
-        var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.parentNode.parentNode);
-        if (catmaidSVGOverlay.ensureFocused()) {
+        var catmaidTracingOverlay = SkeletonAnnotations.getTracingOverlayByPaper(this.parentNode.parentNode);
+        if (catmaidTracingOverlay.ensureFocused()) {
           return;
         }
         var atnID = SkeletonAnnotations.getActiveNodeId(),
-            connectornode = catmaidSVGOverlay.nodes[d];
-        if (catmaidSVGOverlay.ensureFocused()) {
+            connectornode = catmaidTracingOverlay.nodes[d];
+        if (catmaidTracingOverlay.ensureFocused()) {
           return;
         }
         // return some log information when clicked on the node
         // this usually refers here to the c object
-        if (e.shiftKey) {
+        if (e.shiftKey || e.altKey) {
           if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
-            return catmaidSVGOverlay.deleteNode(connectornode.id);
+            return catmaidTracingOverlay.deleteNode(connectornode.id);
           }
           if (atnID) {
             var atnType = SkeletonAnnotations.getActiveNodeType();
@@ -1223,7 +1374,11 @@
               alert("Can not join two connector nodes!");
             } else if (atnType === SkeletonAnnotations.TYPE_NODE) {
               var linkType;
-              if (SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR === connectornode.subtype) {
+              if ((e.altKey && !e.shiftKey) ||
+                  connectornode.subtype === SkeletonAnnotations.SUBTYPE_GAPJUNCTION_CONNECTOR) {
+                linkType = "gapjunction_with";
+                connectornode.subtype = SkeletonAnnotations.SUBTYPE_GAPJUNCTION_CONNECTOR;
+              } else if (SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR === connectornode.subtype) {
                 linkType = (e.altKey ? 'post' : 'pre') + "synaptic_to";
               } else if (SkeletonAnnotations.SUBTYPE_ABUTTING_CONNECTOR === connectornode.subtype) {
                 linkType = "abutting";
@@ -1231,7 +1386,7 @@
                 CATMAID.error("The selected connector is of unknown type: " + connectornode.subtype);
                 return;
               }
-              catmaidSVGOverlay.createLink(atnID, connectornode.id, linkType);
+              catmaidTracingOverlay.createLink(atnID, connectornode.id, linkType);
               CATMAID.statusBar.replaceLast("Joined node #" + atnID + " with connector #" + connectornode.id);
             }
           } else {
@@ -1240,22 +1395,22 @@
           }
         } else {
           // activate this node
-          catmaidSVGOverlay.activateNode(connectornode);
+          catmaidTracingOverlay.activateNode(connectornode);
         }
       };
 
       this.edge_mc_click = function (d) {
         var e = d3.event;
-        var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.parentNode.parentNode);
-        if (catmaidSVGOverlay.ensureFocused()) {
+        var catmaidTracingOverlay = SkeletonAnnotations.getTracingOverlayByPaper(this.parentNode.parentNode);
+        if (catmaidTracingOverlay.ensureFocused()) {
           return;
         }
-        var node = catmaidSVGOverlay.nodes[d];
+        var node = catmaidTracingOverlay.nodes[d];
         if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
           e.stopPropagation();
           e.preventDefault();
-          catmaidSVGOverlay.activateNode(node);
-          catmaidSVGOverlay.splitSkeleton(d);
+          catmaidTracingOverlay.activateNode(node);
+          catmaidTracingOverlay.splitSkeleton(d);
         }
       };
 
@@ -1299,6 +1454,7 @@
     ptype.ArrowLine.prototype = new (function() {
       this.PRE_COLOR = "rgb(200,0,0)";
       this.POST_COLOR = "rgb(0,217,232)";
+      this.GJ_COLOR = "rgb(159,37,194)";
       this.OTHER_COLOR = "rgb(0,200,0)";
       this.BASE_EDGE_WIDTH = 2;
       this.CATCH_SCALE = 3;
@@ -1318,30 +1474,21 @@
         d.suspended = true;
 
         // 'this' will be the the connector's mouse catcher line
-        var catmaidSVGOverlay = SkeletonAnnotations.getSVGOverlayByPaper(this.parentNode.parentNode);
-        requestQueue.register(django_url + project.id + '/link/delete', "POST", {
-          pid: project.id,
-          connector_id: d.connector_id,
-          treenode_id: d.treenode_id
-        }, function (status, text) {
-          if (status !== 200) {
-            alert("The server returned an unexpected status (" + status + ") " + "with error message:\n" + text);
-          } else {
-              if (text && text !== " ") {
-                var e = $.parseJSON(text);
-                if (e.error) {
-                  d.suspended = false;
-                  alert(e.error);
-                } else {
-                  catmaidSVGOverlay.updateNodes(function() {
-                    // Reset deletion flag
-                    d.suspended = false;
-                  });
-                  return true;
-                }
-              }
-          }
-        });
+        var catmaidTracingOverlay = SkeletonAnnotations.getTracingOverlayByPaper(
+            this.parentNode.parentNode);
+        var command = new CATMAID.UnlinkConnectorCommand(
+            catmaidTracingOverlay.state, project.id, d.connector_id, d.treenode_id);
+        CATMAID.commands.execute(command)
+          .then(function(result) {
+            catmaidTracingOverlay.updateNodes(function() {
+              // Reset deletion flag
+              d.suspended = false;
+            });
+          })
+          .catch(function(error) {
+            d.suspended = false;
+            CATMAID.handleError(error);
+          });
       });
 
       this.mouseover = function (d) {
@@ -1353,7 +1500,10 @@
         if (d.is_pre === undefined) {
           relation_name = 'abutting';
           title = 'Abutting';
-        } else if (d.is_pre) {
+        } else if (d.is_pre === 2) {
+          relation_name = 'gapjunction_with';
+          title = 'Gap junction';
+        } else if (d.is_pre === 1) {
           relation_name = 'presynaptic_to';
           title = 'Presynaptic';
         } else {
@@ -1401,6 +1551,7 @@
 
         var stroke_color;
         if (undefined === is_pre) stroke_color = this.OTHER_COLOR;
+        else if (2 === is_pre) stroke_color = this.GJ_COLOR;
         else stroke_color = is_pre ? this.PRE_COLOR : this.POST_COLOR;
 
         if (confidence < 5) {
@@ -1414,7 +1565,10 @@
         if (undefined === is_pre) {
           opts['marker-end'] = 'none';
         } else {
-          var def = is_pre ? 'markerArrowPre' : 'markerArrowPost';
+          var def;
+          if (is_pre == 2) def = 'markerArrowGj';
+          else if (is_pre == 1) def = 'markerArrowPre';
+          else def = 'markerArrowPost';
           opts['marker-end'] = 'url(#' + def + this.hrefSuffix + ')';
         }
         this.line.attr(opts);
@@ -1456,7 +1610,7 @@
 
       this.init = function(connector, node, confidence, is_pre) {
         this.catcher.datum({connector_id: connector.id, treenode_id: node.id, is_pre: is_pre});
-        if (is_pre) {
+        if (1 == is_pre) {
           this.update(node.x, node.y, connector.x, connector.y, is_pre, confidence, connector.NODE_RADIUS*node.scaling);
         } else {
           this.update(connector.x, connector.y, node.x, node.y, is_pre, confidence, node.NODE_RADIUS*node.scaling);
@@ -1486,9 +1640,10 @@
         // connectors are created, one for each color.
         this.markerDefs = [
           defs.append('marker'),
+          defs.append('marker'),
           defs.append('marker')];
-        var ids = ['markerArrowPost', 'markerArrowPre'];
-        var colors = [this.POST_COLOR, this.PRE_COLOR];
+        var ids = ['markerArrowPost', 'markerArrowPre', 'markerArrowGj'];
+        var colors = [this.POST_COLOR, this.PRE_COLOR, this.GJ_COLOR];
         this.markerDefs.forEach(function (m, i) {
             m.attr({
             id: ids[i] + (hrefSuffix || ''),
@@ -1500,7 +1655,7 @@
             refY: '5',
             orient: 'auto'
           }).append('path').attr({
-            d: 'M 0 0 L 10 5 L 0 10 z',
+            d: (ids[i] === 'markerArrowGj') ? 'M 0 0 L 5 0 L 5 10 L 0 10 z' : 'M 0 0 L 10 5 L 0 10 z',
             fill: colors[i]
           });
         });

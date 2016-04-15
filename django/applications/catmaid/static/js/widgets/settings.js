@@ -2,7 +2,6 @@
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
   CATMAID,
-  NeuronNameService,
   project,
   requestQueue,
   SkeletonAnnotations,
@@ -23,6 +22,92 @@
    */
   SettingsWidget.prototype.init = function(space)
   {
+
+    /**
+     * Add meta controls and information about settings cascade, scope and
+     * overrides/locking to a settings element.
+     */
+    var wrapSettingsControl = function (control, settings, key, scope) {
+      var valueScope = settings.rendered[scope][key].valueScope;
+      var fromThisScope = valueScope === scope;
+      var overridable = settings.rendered[scope][key].overridable;
+      var meta = $('<ul />');
+
+      if (!fromThisScope) {
+        control.addClass('inherited');
+        meta.append($('<li />').text('This value is inherited from ' + valueScope + ' settings.'));
+      }
+
+      if (!overridable && !fromThisScope) {
+        control.addClass('disabled');
+        control.find('button,input,select').prop('disabled', true);
+        control.find('.ui-slider').slider('option', 'disabled', true);
+        meta.append($('<li />').text('This value is locked by ' + valueScope + ' settings.'));
+      }
+
+      meta.append($('<li />')
+          .text('CATMAID\'s default is "' + settings.schema.entries[key].default + '".'));
+
+      meta = $('<div class="settingsMeta" />').append(meta);
+
+      if (fromThisScope) {
+        meta.append($('<button />')
+            .text('Reset to inherited default')
+            .click(function () {
+              settings.unset(key, scope).then(refresh);
+            }));
+      }
+
+      // Do not allow user-specific scopes to set overridability because it
+      // is confusing.
+      if ((scope === 'global' || scope === 'project') &&
+          (overridable || fromThisScope)) {
+        meta.append($('<button />')
+            .text(overridable ? 'Lock this setting' : 'Unlock this setting')
+            .click(function () {
+              settings.setOverridable(key, !overridable, scope).then(refresh);
+            }));
+      }
+
+      control.prepend($('<button class="settingsMetaToggle" />')
+          .button({
+              icons: {
+                primary: "ui-icon-gear"
+              },
+              text: false
+            })
+          .click(function () { meta.toggle(); }));
+
+      return control.append(meta);
+    };
+
+    /**
+     * Adds a selector for the scope of settings displayed by the widget.
+     */
+    var addSettingsScopeSelect = function (container) {
+      var scopeSelect = $('<select/>');
+      var scopeOptions = [
+        {name: 'Your default settings', val: 'user'},
+        {name: 'Your settings for this project', val: 'session'}
+      ];
+      if (CATMAID.hasPermission(project.id, 'can_administer')) {
+        scopeOptions = [
+          {name: 'All users: server defaults', val: 'global'},
+          {name: 'All users: project defaults', val: 'project'},
+        ].concat(scopeOptions);
+      }
+      scopeOptions.forEach(function(o) {
+        var selected = o.val === SETTINGS_SCOPE;
+        this.append(new Option(o.name + ' (' + o.val + ')', o.val, selected, selected));
+      }, scopeSelect);
+
+      scopeSelect.on('change', function(e) {
+        SETTINGS_SCOPE = this.value;
+        refresh();
+      });
+
+      $(container).append(scopeSelect);
+    };
 
     /**
      * Adds general settings to the given container.
@@ -78,53 +163,70 @@
     {
       var ds = CATMAID.DOM.addSettingsContainer(container, "Stack view");
 
-      ds.append(CATMAID.DOM.createCheckboxSetting("Invert mouse wheel",
-        userprofile.inverse_mouse_wheel, null, function() {
-          userprofile.inverse_mouse_wheel = this.checked;
-          userprofile.saveAll(function () {
-            CATMAID.msg('Success', 'User profile updated successfully.');
-          });
-        }));
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createCheckboxSetting(
+              "Invert mouse wheel",
+              CATMAID.Navigator.Settings[SETTINGS_SCOPE].invert_mouse_wheel,
+              null,
+              function() {
+                CATMAID.Navigator.Settings[SETTINGS_SCOPE].invert_mouse_wheel = this.checked;
+              }),
+          CATMAID.Navigator.Settings,
+          'invert_mouse_wheel',
+          SETTINGS_SCOPE));
 
-      ds.append(CATMAID.DOM.createCheckboxSetting("Display reference lines",
-        userprofile.display_stack_reference_lines, "Show a faint horizontal " +
-        "and vertical line that meet at the current view's center.",
-        function() {
-          userprofile.display_stack_reference_lines = this.checked;
-          userprofile.saveAll(function () {
-            project.getStackViewers().forEach(function(s) {
-              s.showReferenceLines(userprofile.display_stack_reference_lines);
-            });
-            CATMAID.msg('Success', 'User profile updated successfully.');
-          });
-        }));
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createCheckboxSetting(
+              "Display reference lines",
+              CATMAID.StackViewer.Settings[SETTINGS_SCOPE].display_stack_reference_lines,
+              "Show a faint horizontal and vertical line that meet at the " +
+              "current view's center.",
+              function() {
+                CATMAID.StackViewer.Settings
+                    .set(
+                      'display_stack_reference_lines',
+                      this.checked,
+                      SETTINGS_SCOPE)
+                    .then(function () {
+                      project.getStackViewers().forEach(function(s) {
+                        s.showReferenceLines(CATMAID.StackViewer.Settings.session.display_stack_reference_lines);
+                      });
+                    });
+              }),
+          CATMAID.StackViewer.Settings,
+          'display_stack_reference_lines',
+          SETTINGS_SCOPE));
 
       // Cursor following zoom
-      ds.append(CATMAID.DOM.createCheckboxSetting("Use cursor following zoom",
-        userprofile.use_cursor_following_zoom, "Choose whether zooming " +
-        "follows the position of the cursor (checked) or the center of the " +
-        "stack view (unchecked).",
-        function () {
-          userprofile.use_cursor_following_zoom = this.checked;
-          userprofile.saveAll(function () {
-            CATMAID.msg('Success', 'User profile updated successfully.');
-          });
-        }));
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createCheckboxSetting(
+              "Use cursor following zoom",
+              CATMAID.Navigator.Settings[SETTINGS_SCOPE].use_cursor_following_zoom,
+              "Choose whether zooming follows the position of the cursor " +
+              "(checked) or the center of the stack view (unchecked).",
+              function() {
+                CATMAID.Navigator.Settings[SETTINGS_SCOPE].use_cursor_following_zoom = this.checked;
+              }),
+          CATMAID.Navigator.Settings,
+          'use_cursor_following_zoom',
+          SETTINGS_SCOPE));
 
-      // WebGL layers
-      ds.append(CATMAID.DOM.createCheckboxSetting("Prefer WebGL Layers",
-        userprofile.prefer_webgl_layers,
-        'Choose whether to use WebGL or Canvas tile layer rendering when ' +
-        'supported by your tile source and browser. Note that your tile ' +
-        'source server may need to be <a href="http://enable-cors.org/">' +
-        'configured to enable use in WebGL</a>. (Note: you must reload ' +
-        'the page for this setting to take effect.)',
-        function() {
-          userprofile.prefer_webgl_layers = this.checked;
-          userprofile.saveAll(function () {
-            CATMAID.msg('Success', 'User profile updated successfully.');
-          });
-        }));
+      // WebGL tile layers
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createCheckboxSetting(
+              "Prefer WebGL Layers",
+              CATMAID.TileLayer.Settings[SETTINGS_SCOPE].prefer_webgl,
+              'Choose whether to use WebGL or Canvas tile layer rendering when ' +
+              'supported by your tile source and browser. Note that your tile ' +
+              'source server may need to be <a href="http://enable-cors.org/">' +
+              'configured to enable use in WebGL</a>. (Note: you must reload ' +
+              'the page for this setting to take effect.)',
+              function() {
+                CATMAID.TileLayer.Settings[SETTINGS_SCOPE].prefer_webgl = this.checked;
+              }),
+          CATMAID.TileLayer.Settings,
+          'prefer_webgl',
+          SETTINGS_SCOPE));
 
       // Tile interpolation
       var tileInterpolation = $('<select/>');
@@ -133,22 +235,26 @@
         {name: 'Keep images pixelated (nearest)', id: 'nearest'}
       ];
       interpolationModes.forEach(function(o) {
-        var selected = (o.id === (userprofile.tile_linear_interpolation ? 'linear' : 'nearest'));
+        var selected = (o.id === (CATMAID.TileLayer.Settings[SETTINGS_SCOPE].linear_interpolation ? 'linear' : 'nearest'));
         this.append(new Option(o.name, o.id, selected, selected));
       }, tileInterpolation);
 
-      ds.append(CATMAID.DOM.createLabeledControl('Image tile interpolation',
-            tileInterpolation, 'Choose how to interpolate pixel values when ' +
-            'image tiles are magnified.'));
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createLabeledControl(
+              'Image tile interpolation',
+              tileInterpolation,
+              'Choose how to interpolate pixel values when image tiles ' +
+              'are magnified.'),
+          CATMAID.TileLayer.Settings,
+          'linear_interpolation',
+          SETTINGS_SCOPE));
       tileInterpolation.on('change', function(e) {
-        userprofile.tile_linear_interpolation = this.value === 'linear';
-        userprofile.saveAll(function () {
-          CATMAID.msg('Success', 'User profile updated successfully.');
-        });
+        var interp = this.value === 'linear';
+        CATMAID.TileLayer.Settings[SETTINGS_SCOPE].linear_interpolation = interp;
         project.getStackViewers().forEach(function (stackViewer) {
           stackViewer.getLayers().forEach(function (layer) {
             if (layer instanceof CATMAID.TileLayer) {
-              layer.setInterpolationMode(userprofile.tile_linear_interpolation);
+              layer.setInterpolationMode(interp);
             }
           });
         });
@@ -233,15 +339,11 @@
           "setting allows you to change the way neurons are named in these " +
           "widgets. Neurons are usually annotated and below you can choose " +
           "if and how these annotations should be used for labeling a neuron. " +
-          "You can add different representations to a fallback list, in case " +
-          "a desired representation isn't available for a neuron."));
+          "You can add different representations to a list of available " +
+          "components, which are then formatted into a label for the neuron."));
 
-      ds.append(CATMAID.DOM.createCheckboxSetting("Append Skeleton ID",
-        NeuronNameService.getInstance().getAppendSkeletonId(), null, function() {
-          NeuronNameService.getInstance().setAppendSkeletonId(this.checked);
-       }));
       // Get all available options
-      var namingOptions = NeuronNameService.getInstance().getOptions();
+      var namingOptions = CATMAID.NeuronNameService.getInstance().getOptions();
       // Add naming option select box
       var select = $('<select/>');
       namingOptions.forEach(function(o) {
@@ -249,18 +351,18 @@
       }, select);
       ds.append(CATMAID.DOM.createLabeledControl('Neuron label', select));
 
-      // Create 'Add' button and fallback list
-      var fallbackList = $('<select/>').addClass('multiline').attr('size', '4')[0];
-      var addButton = $('<button/>').text('Add labeling').click(function() {
+      // Create 'Add' button and component list
+      var componentList = $('<select/>').addClass('multiline').attr('size', '4')[0];
+      var addButton = $('<button/>').text('Add label component').click(function() {
         var newLabel = select.val();
         // The function to be called to actually add the label
         var addLabeling = function(metaAnnotation) {
           if (metaAnnotation) {
-            NeuronNameService.getInstance().addLabeling(newLabel, metaAnnotation);
+            CATMAID.NeuronNameService.getInstance().addLabeling(newLabel, metaAnnotation);
           } else {
-            NeuronNameService.getInstance().addLabeling(newLabel);
+            CATMAID.NeuronNameService.getInstance().addLabeling(newLabel);
           }
-          updateFallbackList();
+          updateComponentList();
         };
 
         // Get current labeling selection and ask for a meta annotation if
@@ -286,40 +388,51 @@
           addLabeling();
         }
       });
-      var removeButton = $('<button/>').text('Remove labeling').click(function() {
+      var removeButton = $('<button/>').text('Remove label component').click(function() {
         // The last element cannot be removed
-        if (fallbackList.selectedIndex < fallbackList.length - 1) {
-          // We display the fallback list reversed, therefore we need to mirror
+        if (componentList.selectedIndex < componentList.length - 1) {
+          // We display the component list reversed, therefore we need to mirror
           // the index.
-          NeuronNameService.getInstance().removeLabeling(fallbackList.length - fallbackList.selectedIndex - 1);
-          updateFallbackList();
+          CATMAID.NeuronNameService.getInstance().removeLabeling(componentList.length - componentList.selectedIndex - 1);
+          updateComponentList();
         }
       });
       ds.append(CATMAID.DOM.createLabeledControl('', addButton));
-      ds.append(CATMAID.DOM.createLabeledControl('', fallbackList));
+      ds.append(CATMAID.DOM.createLabeledControl('', componentList));
       ds.append(CATMAID.DOM.createLabeledControl('', removeButton));
 
-      var updateFallbackList = function() {
-        $(fallbackList).empty();
-        var options = NeuronNameService.getInstance().getFallbackList().map(function(o, i) {
-          // Add each fallback list element to the select control. The last
+      var updateComponentList = function() {
+        $(componentList).empty();
+        var options = CATMAID.NeuronNameService.getInstance().getComponentList().map(function(o, i) {
+          // Add each component list element to the select control. The last
           // element is disabled by default.
           var optionElement = $('<option/>').attr('value', o.id)
-              .text(o.name);
+              .text(i + ': ' + o.name);
           if (i === 0) {
             optionElement.attr('disabled', 'disabled');
           }
           return optionElement[0];
         });
-        // We want to display the last fall back list element first, so we need
+        // We want to display the last component list element first, so we need
         // to reverse the options, before we add it.
         options.reverse();
         options.forEach(function(o) {
-          fallbackList.appendChild(o);
+          componentList.appendChild(o);
         });
       };
-      // Initialize fallback ist
-      updateFallbackList();
+      // Initialize component list
+      updateComponentList();
+
+      ds.append(CATMAID.DOM.createInputSetting(
+          "Formatted neuron name",
+          CATMAID.NeuronNameService.getInstance().getFormatString(),
+          "Format the neuron label using label components from list above. " +
+          "Reference the Nth component by using \"%N\". " +
+          "Use \"%f\" for a fallback that uses first available component " +
+          "from the top.",
+          function () {
+            CATMAID.NeuronNameService.getInstance().setFormatString($(this).val());
+          }));
 
 
       // Overlay settings
@@ -327,66 +440,107 @@
 
 
       // Active node radius display.
-      var atnRadiusEnabled = project.getStackViewers().every(function(sv) {
-        var overlay = SkeletonAnnotations.getSVGOverlay(sv.getId());
-        return overlay ? overlay.showActiveNodeRadius : true;
-      });
-      var atnRadiusCb = CATMAID.DOM.createCheckboxSetting(
-          "Display radius for active node",
-          atnRadiusEnabled,
-          "Show a radius circle around the active node if its radius is set.",
-          function () {
-            var checked = this.checked;
-            project.getStackViewers().every(function(sv) {
-              var overlay = SkeletonAnnotations.getSVGOverlay(sv.getId());
-              if (overlay) {
-                overlay.setActiveNodeRadiusVisibility(checked);
-              }
-            });
-          });
-      ds.append(atnRadiusCb);
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createCheckboxSetting(
+              "Display radius for active node",
+              SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE].display_active_node_radius,
+              "Show a radius circle around the active node if its radius is set.",
+              function() {
+                SkeletonAnnotations.TracingOverlay.Settings
+                    .set(
+                      'display_active_node_radius',
+                      this.checked,
+                      SETTINGS_SCOPE)
+                    .then(function () {
+                      project.getStackViewers().every(function(sv) {
+                        var overlay = SkeletonAnnotations.getTracingOverlay(sv.getId());
+                        if (overlay) {
+                          overlay.updateActiveNodeRadiusVisibility();
+                        }
+                      });
+                    });
+              }),
+          SkeletonAnnotations.TracingOverlay.Settings,
+          'display_active_node_radius',
+          SETTINGS_SCOPE));
 
 
       // Add explanatory text
       ds.append($('<div/>').addClass('setting').append("Choose how nodes, " +
           "edges, connectors, and labels are scaled in the tracing overlay. " +
-          "This setting can be saved to your user profile and will persist " +
+          "This setting will persist " +
           "across sessions. (Note: changes to text labels, edges and arrows " +
           "will not appear correctly in the stack view until you zoom, switch " +
           "sections or pan.)"));
 
-      ds.append(CATMAID.DOM.createRadioSetting('overlay-scaling', [
-          {id: 'overlay-scaling-screen', desc: 'Fixed screen size',
-              checked: userprofile.tracing_overlay_screen_scaling},
-          {id: 'overlay-scaling-stack', desc: 'Fixed stack size',
-              checked: !userprofile.tracing_overlay_screen_scaling}
-      ], function () {
-        userprofile.tracing_overlay_screen_scaling = this.value === 'overlay-scaling-screen';
-        project.getStackViewers().forEach(function (s) {s.redraw();});
-      }).addClass('setting'));
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createRadioSetting(
+              'overlay-scaling',
+              [{id: 'overlay-scaling-screen', desc: 'Fixed screen size',
+                checked: SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE].screen_scaling},
+               {id: 'overlay-scaling-stack', desc: 'Fixed stack size',
+                checked: !SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE].screen_scaling}],
+              null,
+              function () {
+                SkeletonAnnotations.TracingOverlay.Settings
+                    .set(
+                      'screen_scaling',
+                      this.value === 'overlay-scaling-screen',
+                      SETTINGS_SCOPE)
+                    .then(function () {
+                      project.getStackViewers().forEach(function (s) {s.redraw();});
+                    });
+              }).addClass('setting'),
+          SkeletonAnnotations.TracingOverlay.Settings,
+          'screen_scaling',
+          SETTINGS_SCOPE));
 
-      ds.append(CATMAID.DOM.createLabeledControl(
-          $('<span>Size adjustment: <span id="overlay-scale-value">' +
-              (userprofile.tracing_overlay_scale*100).toFixed() + '</span>%</span>'),
-          $('<div id="overlay-scaling-slider" />').slider({
-              min: -2,
-              max: 2,
-              step: 0.1,
-              value: Math.log(userprofile.tracing_overlay_scale)/Math.LN2,
-              change: function (event, ui) {
-                userprofile.tracing_overlay_scale = Math.pow(2, ui.value);
-                $('#overlay-scale-value').text((userprofile.tracing_overlay_scale*100).toFixed());
-                project.getStackViewers().forEach(function (s) {s.redraw();});
-              }})));
-
-      ds.append($('<button>Save to your profile</button>').click(function () {
-        userprofile.saveAll(function () {
-          CATMAID.msg('Success', 'User profile updated successfully.');
-        });
-      }).addClass('setting'));
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createLabeledControl(
+              $('<span>Size adjustment: <span id="overlay-scale-value">' +
+                  (SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE].scale*100).toFixed() +
+                  '</span>%</span>'),
+              $('<div id="overlay-scaling-slider" />').slider({
+                  min: -2,
+                  max: 2,
+                  step: 0.1,
+                  value: Math.log(SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE].scale)/Math.LN2,
+                  change: function (event, ui) {
+                    SkeletonAnnotations.TracingOverlay.Settings
+                        .set(
+                          'scale',
+                          Math.pow(2, ui.value),
+                          SETTINGS_SCOPE)
+                        .then(function () {
+                          $('#overlay-scale-value').text((
+                              SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE].scale*100).toFixed());
+                          project.getStackViewers().forEach(function (s) {s.redraw();});
+                        });
+                  }})),
+          SkeletonAnnotations.TracingOverlay.Settings,
+          'scale',
+          SETTINGS_SCOPE));
 
 
       var dsNodeColors = CATMAID.DOM.addSettingsContainer(ds, "Skeleton colors", true);
+      dsNodeColors.append(CATMAID.DOM.createCheckboxSetting(
+          'Hide skeletons not in the skeleton source subscriptions',
+          project.getStackViewers().every(function(sv) {
+            var overlay = SkeletonAnnotations.getTracingOverlay(sv.getId());
+            return overlay && overlay.graphics.overlayGlobals.hideOtherSkeletons;
+          }),
+          'If checked, skeletons not present in the subscribed skeleton ' +
+          'sources will not be displayed in the tracing overlay.',
+          function () {
+            var checked = this.checked;
+            project.getStackViewers().forEach(function(sv) {
+              var overlay = SkeletonAnnotations.getTracingOverlay(sv.getId());
+              if (overlay) {
+                overlay.graphics.overlayGlobals.hideOtherSkeletons = checked;
+                overlay.redraw(true);
+              }
+            });
+          }));
       // Node color settings: Title vs. SkeletonAnnotations field.
       var colors = new Map([
         ['Active node', 'atn_fillcolor'],
@@ -408,7 +562,7 @@
         });
         // Update all tracing layers
         project.getStackViewers().forEach(function(sv) {
-          var overlay = SkeletonAnnotations.getSVGOverlay(sv.getId());
+          var overlay = SkeletonAnnotations.getTracingOverlay(sv.getId());
           if (overlay) overlay.recolorAllNodes();
         });
       };
@@ -435,7 +589,7 @@
 
 
       var dsSkeletonProjection = CATMAID.DOM.addSettingsContainer(ds,
-          "Active skeleton projection", true);
+          "Skeleton projection layer", true);
 
       // Figure out if all displayed stack viewers have a skeleton projection
       // layer
@@ -448,6 +602,14 @@
           "projections of the active skeleton to the tracing display.",
           updateSkeletonProjectionDisplay);
       dsSkeletonProjection.append(skpVisible);
+
+      var skpSource = $(CATMAID.skeletonListSources.createUnboundSelect(
+          'Skeleton projection layer'));
+      var currentSource = CATMAID.SkeletonProjectionLayer.options.source ||
+        SkeletonAnnotations.activeSkeleton;
+      skpSource.val(currentSource.getName());
+      skpSource.on('change', updateSkeletonProjectionDisplay);
+      dsSkeletonProjection.append(CATMAID.DOM.createLabeledControl('Source', skpSource));
 
       var skpShading = $('<select/>');
       var skpShadingOptions = [
@@ -541,7 +703,7 @@
           "strahlerShadingMin": skpMinStrahler.find('input').val(),
           "strahlerShadingMax": skpMaxStrahler.find('input').val(),
           "distanceFalloff": skpDistanceFalloff.find('input').val(),
-          "initialNode": SkeletonAnnotations.atn
+          "source": CATMAID.skeletonListSources.getSource(skpSource.val())
         };
       }
 
@@ -556,7 +718,6 @@
             if (layer) {
               // Update existing instance
               layer.updateOptions(options, false);
-              layer.update(options.initialNode);
             } else {
               // Create new if not already present
               layer = new CATMAID.SkeletonProjectionLayer(sv, options);
@@ -655,15 +816,41 @@
             SkeletonAnnotations.newConnectorType = SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR;
           }
         }));
-      ds.append(CATMAID.DOM.createCheckboxSetting("Respect suppressed virtual nodes during navigation",
-        SkeletonAnnotations.skipSuppressedVirtualNodes, "When navigating " +
-            "parent/child topology, skip virtual nodes that have been " +
-            "marked as suppressed. " +
-            "This has a marginal impact on performance. Suppressed virtual " +
-            "nodes are always respected during review.",
-        function() {
-          SkeletonAnnotations.skipSuppressedVirtualNodes = this.checked;
-        }));
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createCheckboxSetting(
+              "Invert behavior of modifier key to ignore/respect virtual nodes",
+              CATMAID.TracingTool.Settings[SETTINGS_SCOPE].invert_virtual_node_ignore_modifier,
+              "When navigating parent/child topology with " +
+              "<kbd>[</kbd>/<kbd>]</kbd>, invert the behavior of holding " +
+              "<kbd>CTRL</kbd>.",
+              function() {
+                CATMAID.TracingTool.Settings
+                    .set(
+                      'invert_virtual_node_ignore_modifier',
+                      this.checked,
+                      SETTINGS_SCOPE);
+              }),
+          CATMAID.TracingTool.Settings,
+          'invert_virtual_node_ignore_modifier',
+          SETTINGS_SCOPE));
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createCheckboxSetting(
+              "Respect suppressed virtual nodes during navigation",
+              SkeletonAnnotations.Settings[SETTINGS_SCOPE].skip_suppressed_virtual_nodes,
+              "When navigating parent/child topology, skip virtual nodes " +
+              "that have been marked as suppressed. This has a marginal " +
+              "impact on performance. Suppressed virtual nodes are always " +
+              "respected during review.",
+              function() {
+                SkeletonAnnotations.Settings
+                    .set(
+                      'skip_suppressed_virtual_nodes',
+                      this.checked,
+                      SETTINGS_SCOPE);
+              }),
+          SkeletonAnnotations.Settings,
+          'skip_suppressed_virtual_nodes',
+          SETTINGS_SCOPE));
       ds.append($('<div/>').addClass('setting').text());
       ds.append(CATMAID.DOM.createInputSetting("Default new neuron name",
           SkeletonAnnotations.defaultNewNeuronName,
@@ -727,30 +914,38 @@
     };
 
 
-    // Add all settings
-    addGeneralSettings(space);
-    addTileLayerSettings(space);
-    addGridSettings(space);
-    addTracingSettings(space);
+    var SETTINGS_SCOPE = 'session';
 
-    // Add collapsing support to all settings containers
-    $("p.title", space).click(function() {
-      var section = this;
-      $(section).next(".content").animate(
-        { height: "toggle",
-          opacity: "toggle" },
-        { complete: function() {
-            // change open/close indicator box
-            var open_elements = $(".extend-box-open", section);
-            if (open_elements.length > 0) {
-                open_elements.attr('class', 'extend-box-closed');
-            } else {
-                $(".extend-box-closed", section).attr('class', 'extend-box-open');
-            }
-        }});
-    });
+    var refresh = (function () {
+      $(space).empty();
 
-    return;
+      addSettingsScopeSelect(space);
+
+      // Add all settings
+      addGeneralSettings(space);
+      addTileLayerSettings(space);
+      addGridSettings(space);
+      addTracingSettings(space);
+
+      // Add collapsing support to all settings containers
+      $("p.title", space).click(function() {
+        var section = this;
+        $(section).next(".content").animate(
+          { height: "toggle",
+            opacity: "toggle" },
+          { complete: function() {
+              // change open/close indicator box
+              var open_elements = $(".extend-box-open", section);
+              if (open_elements.length > 0) {
+                  open_elements.attr('class', 'extend-box-closed');
+              } else {
+                  $(".extend-box-closed", section).attr('class', 'extend-box-open');
+              }
+          }});
+      });
+    }).bind(this);
+
+    refresh();
   };
 
   CATMAID.SettingsWidget = SettingsWidget;

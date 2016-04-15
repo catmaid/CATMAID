@@ -1,29 +1,25 @@
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.core.management.base import NoArgsCommand, CommandError
+from django.core.management.base import BaseCommand, CommandError
 
 from optparse import make_option
 
-class Command(NoArgsCommand):
+class Command(BaseCommand):
     help = "Set the user profile settings of every user to the defaults"
 
-    option_list = NoArgsCommand.option_list + (
-        make_option('--update-anon-user', dest='update-anon-user',
+    def add_arguments(self, parser):
+        parser.add_argument('--update-anon-user', dest='update-anon-user',
             default=False, action='store_true',
-            help='Update also the profile of the anonymous user'),
-        )
+            help='Update also the profile of the anonymous user')
 
-    def handle_noargs(self, **options):
-        update_anon_user = 'update-anon-user' in options
+    def handle(self, *args, **options):
+        update_anon_user = options['update-anon-user']
         for u in User.objects.all():
             # Ignore the anonymous user by default
             if u.id == settings.ANONYMOUS_USER_ID and not update_anon_user:
                 continue
             up = u.userprofile
             # Expect user profiles to be there and add all default settings
-            up.inverse_mouse_wheel = settings.PROFILE_DEFAULT_INVERSE_MOUSE_WHEEL
-            up.display_stack_reference_lines = \
-                settings.PROFILE_DISPLAY_STACK_REFERENCE_LINES
             up.independent_ontology_workspace_is_default = \
                 settings.PROFILE_INDEPENDENT_ONTOLOGY_WORKSPACE_IS_DEFAULT
             up.show_text_label_tool = settings.PROFILE_SHOW_TEXT_LABEL_TOOL

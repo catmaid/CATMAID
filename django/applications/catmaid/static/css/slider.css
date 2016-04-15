@@ -1,115 +1,97 @@
-div.vSliderView
-{
-	position:relative;
-	margin:20px 0px 20px 0px;
-	padding:0px;
-	width:32px;
-	height:256px;
-	z-index:8;
+div.vSliderView {
+  position: relative;
+  margin: 20px 0 20px 0;
+  padding: 0;
+  width: 32px;
+  height: 256px;
+  z-index: 8;
 }
 
-div.vSliderHandle
-{
-	position:absolute;
-	top:0px;
-	left:0px;
-	margin:0px;
-	margin-top:-12px;
-	padding:0px;
-	width:100%;
-	height:24px;
-	cursor:pointer;
-	/*
-	background:#0000FF;
-	*/
+div.vSliderHandle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  margin: 0;
+  margin-top: -12px;
+  padding: 0;
+  width: 100%;
+  height: 24px;
+  cursor: pointer;
 }
 
-div.hSliderView
-{
-	/*position:absolute;*/
-	position:relative;
-	margin:0px 10px 0px 10px;
-	padding:0px;
-	width:128px;
-	height:24px;
-	z-index:8;
-	float:left;
+div.hSliderView {
+  position: relative;
+  margin: 0 10px 0 10px;
+  padding: 0;
+  width: 128px;
+  height: 24px;
+  z-index: 8;
+  float: left;
 }
 
-div.hSliderHandle
-{
-	position:absolute;
-	top:0px;
-	left:0px;
-	margin:0px;
-	margin-left:-5px;
-	padding:0px;
-	width:11px;
-	height:100%;
-	cursor:pointer;
-	z-index:8;
-	background:url(../images/hslider_handle.gif) no-repeat center;
-	background-image:url(../images/hslider_handle.svg), none;
-	/*
-	background:#0000FF;
-	*/
+div.hSliderHandle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  margin: 0;
+  margin-left: -5px;
+  padding: 0;
+  width: 11px;
+  height: 100%;
+  cursor: pointer;
+  z-index: 8;
+  background: url(../images/hslider_handle.gif) no-repeat center;
+  background-image: url(../images/hslider_handle.svg), none;
 }
-
 
 div.vSliderBarTop,
-div.vSliderBarTop_2
-{
-	margin:0px;
-	padding:0px;
-	width:100%;
-	height:50%;
-	overflow:hidden;
+div.vSliderBarTop_2 {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 50%;
+  overflow: hidden;
 }
 
 div.vSliderBarBottom,
-div.vSliderBarBottom_2
-{
-	margin:0px;
-	padding:0px;
-	width:100%;
-	height:50%;
+div.vSliderBarBottom_2 {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 50%;
 }
 
 div.hSliderBarTop,
-div.hSliderBarTop_2
-{
-	position:absolute;
-	top:0px;
-	left:0px;
-	margin:0px;
-	padding:0px;
-	width:50%;
-	height:100%;
-	overflow:hidden;
+div.hSliderBarTop_2 {
+  position: absolute;
+  top: 0;
+  left: 0;
+  margin: 0;
+  padding: 0;
+  width: 50%;
+  height: 100%;
+  overflow: hidden;
 }
 
-div.hSliderBarTop
-{
-	background:url(../images/hslider_bar_left_b.gif) no-repeat left center;
-	background-image:url(../images/hslider_bar_left_b.svg), none;
+div.hSliderBarTop {
+  background: url(../images/hslider_bar_left_b.gif) no-repeat left center;
+  background-image: url(../images/hslider_bar_left_b.svg), none;
 }
 
-div.hSliderBarTop_2
-{
-	background:url(../images/hslider_bar_left_o.gif) no-repeat left center;
-	background-image:url(../images/hslider_bar_left_o.svg), none;
+div.hSliderBarTop_2 {
+  background: url(../images/hslider_bar_left_o.gif) no-repeat left center;
+  background-image: url(../images/hslider_bar_left_o.svg), none;
 }
 
 div.hSliderBarBottom,
-div.hSliderBarBottom_2
-{
-	position:absolute;
-	top:0px;
-	right:0px;
-	margin:0px;
-	padding:0px;
-	width:50%;
-	height:100%;
-	background:url(../images/hslider_bar_right_b.gif) no-repeat right center;
-	background-image:url(../images/hslider_bar_right_b.svg), none;
+div.hSliderBarBottom_2 {
+  position: absolute;
+  top: 0;
+  right: 0;
+  margin: 0;
+  padding: 0;
+  width: 50%;
+  height: 100%;
+  background: url(../images/hslider_bar_right_b.gif) no-repeat right center;
+  background-image: url(../images/hslider_bar_right_b.svg), none;
 }

@@ -1,63 +1,59 @@
 # -*- coding: utf-8 -*-
-from south.utils import datetime_utils as datetime
-from south.db import db
-from south.v2 import SchemaMigration
-from django.db import models
+from __future__ import unicode_literals
+
+from django.db import models, migrations
+from django.utils import timezone
+import jsonfield.fields
 
 
-class Migration(SchemaMigration):
+class Migration(migrations.Migration):
 
-    def forwards(self, orm):
-        # Adding model 'TestView'
-        db.create_table(u'performancetests_testview', (
-            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('method', self.gf('django.db.models.fields.CharField')(max_length=50)),
-            ('url', self.gf('django.db.models.fields.TextField')()),
-            ('data', self.gf('jsonfield.fields.JSONField')(default={}, blank=True)),
-            ('creation_time', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now)),
-        ))
-        db.send_create_signal(u'performancetests', ['TestView'])
+    dependencies = [
+    ]
 
-        # Adding model 'TestResult'
-        db.create_table(u'performancetests_testresult', (
-            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('view', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['performancetests.TestView'])),
-            ('time', self.gf('django.db.models.fields.FloatField')()),
-            ('result_code', self.gf('django.db.models.fields.IntegerField')()),
-            ('result', self.gf('django.db.models.fields.TextField')()),
-            ('creation_time', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now)),
-            ('version', self.gf('django.db.models.fields.CharField')(max_length=50, blank=True)),
-        ))
-        db.send_create_signal(u'performancetests', ['TestResult'])
-
-
-    def backwards(self, orm):
-        # Deleting model 'TestView'
-        db.delete_table(u'performancetests_testview')
-
-        # Deleting model 'TestResult'
-        db.delete_table(u'performancetests_testresult')
-
-
-    models = {
-        u'performancetests.testresult': {
-            'Meta': {'object_name': 'TestResult'},
-            'creation_time': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
-            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'result': ('django.db.models.fields.TextField', [], {}),
-            'result_code': ('django.db.models.fields.IntegerField', [], {}),
-            'time': ('django.db.models.fields.FloatField', [], {}),
-            'version': ('django.db.models.fields.CharField', [], {'max_length': '50', 'blank': 'True'}),
-            'view': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['performancetests.TestView']"})
-        },
-        u'performancetests.testview': {
-            'Meta': {'object_name': 'TestView'},
-            'creation_time': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
-            'data': ('jsonfield.fields.JSONField', [], {'default': '{}', 'blank': 'True'}),
-            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'method': ('django.db.models.fields.CharField', [], {'max_length': '50'}),
-            'url': ('django.db.models.fields.TextField', [], {})
-        }
-    }
-
-    complete_apps = ['performancetests']
+    operations = [
+        migrations.CreateModel(
+            name='Event',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('title', models.TextField()),
+                ('creation_time', models.DateTimeField(default=timezone.now)),
+            ],
+            options={
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='TestResult',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('time', models.FloatField()),
+                ('result_code', models.IntegerField()),
+                ('result', models.TextField()),
+                ('creation_time', models.DateTimeField(default=timezone.now)),
+                ('version', models.CharField(max_length=50, blank=True)),
+            ],
+            options={
+            },
+            bases=(models.Model,),
+        ),
+        migrations.CreateModel(
+            name='TestView',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('method', models.CharField(max_length=50)),
+                ('url', models.TextField()),
+                ('data', jsonfield.fields.JSONField(default={}, blank=True)),
+                ('creation_time', models.DateTimeField(default=timezone.now)),
+            ],
+            options={
+            },
+            bases=(models.Model,),
+        ),
+        migrations.AddField(
+            model_name='testresult',
+            name='view',
+            field=models.ForeignKey(to='performancetests.TestView'),
+            preserve_default=True,
+        ),
+    ]

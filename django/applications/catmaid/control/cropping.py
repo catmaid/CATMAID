@@ -639,7 +639,7 @@ def start_asynch_process( job ):
     result = process_crop_job.delay( job )
 
     # Create closing response
-    closingResponse = HttpResponse(json.dumps(""), content_type="text/json")
+    closingResponse = HttpResponse(json.dumps(""), content_type="application/json")
 
     return closingResponse
 

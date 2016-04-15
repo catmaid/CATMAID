@@ -5,7 +5,7 @@ from gevent import monkey
 monkey.patch_all()
 
 # Import the rest
-from django.core.handlers.wsgi import WSGIHandler as DjangoWSGIApp
+from django.core.wsgi import get_wsgi_application
 from gevent.wsgi import WSGIServer
 import os, sys
 import settings
@@ -18,7 +18,7 @@ port = getattr(settings, 'WSGI_PORT', 8080)
 
 def runserver():
     # Create the server
-    application = DjangoWSGIApp()
+    application = get_wsgi_application()
     address = host, port
     server = WSGIServer( address, application )
     # Run the server

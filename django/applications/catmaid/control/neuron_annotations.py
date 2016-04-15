@@ -433,6 +433,7 @@ def _annotate_entities(project_id, entity_ids, annotation_map):
     counting pattern {nX} with X being a number. This will add an incrementing
     number starting from X for each entity.
     """
+    new_annotations = set()
     r = Relation.objects.get(project_id = project_id,
             relation_name = 'annotated_with')
 
@@ -474,6 +475,9 @@ def _annotate_entities(project_id, entity_ids, annotation_map):
                     class_column=annotation_class,
                     defaults={'user_id': annotator_id})
 
+            if created:
+                new_annotations.add(ci.id)
+
             newly_annotated = set()
             # Annotate each of the entities. Don't allow duplicates.
             for entity_id in a_entity_ids:
@@ -487,7 +491,7 @@ def _annotate_entities(project_id, entity_ids, annotation_map):
             # Remember which entities got newly annotated
             annotation_objects[ci] = newly_annotated
 
-    return annotation_objects
+    return annotation_objects, new_annotations
 
 @requires_user_role(UserRole.Annotate)
 def annotate_entities(request, project_id = None):
@@ -515,13 +519,16 @@ def annotate_entities(request, project_id = None):
 
     # Annotate enties
     annotation_map = {a: request.user.id for a in annotations}
-    annotation_objs = _annotate_entities(project_id, entity_ids, annotation_map)
+    annotation_objs, new_annotations = _annotate_entities(project_id,
+            entity_ids, annotation_map)
     # Annotate annotations
     if meta_annotations:
         annotation_ids = [a.id for a in annotation_objs.keys()]
         meta_annotation_map = {ma: request.user.id for ma in meta_annotations}
-        meta_annotation_objs = _annotate_entities(project_id, annotation_ids,
-                meta_annotation_map)
+        meta_annotation_objs, new_meta_annotations = _annotate_entities(
+                project_id, annotation_ids, meta_annotation_map)
+        # Keep track of new annotations
+        new_annotations.update(new_meta_annotations)
         # Update used annotation objects set
         for ma, me in meta_annotation_objs.items():
             entities = annotation_objs.get(ma)
@@ -532,11 +539,15 @@ def annotate_entities(request, project_id = None):
 
     result = {
         'message': 'success',
-        'annotations': [{'name': a.name, 'id': a.id, 'entities': list(e)} \
-                for a,e in annotation_objs.items()],
+        'annotations': [{
+            'name': a.name,
+            'id': a.id,
+            'entities': list(e)
+        } for a,e in annotation_objs.items()],
+        'new_annotations': list(new_annotations)
     }
 
-    return HttpResponse(json.dumps(result), content_type='text/json')
+    return HttpResponse(json.dumps(result), content_type='application/json')
 
 @requires_user_role(UserRole.Annotate)
 def remove_annotations(request, project_id=None):
@@ -554,20 +565,30 @@ def remove_annotations(request, project_id=None):
         raise ValueError("No entity IDs provided")
 
     # Remove individual annotations
-    deleted_annotations = []
+    deleted_annotations = {}
+    deleted_links = []
     num_left_annotations = {}
     for annotation_id in annotation_ids:
         cicis_to_delete, missed_cicis, deleted, num_left = _remove_annotation(
                 request.user, project_id, entity_ids, annotation_id)
         # Keep track of results
         num_left_annotations[str(annotation_id)] = num_left
+        targetIds = []
         for cici in cicis_to_delete:
-            deleted_annotations.append(cici.id)
+            deleted_links.append(cici.id)
+            # The target is class_instance_a, because we deal with the
+            # "annotated_with" relation.
+            targetIds.append(cici.class_instance_a_id)
+        if targetIds:
+            deleted_annotations[annotation_id] = {
+                'targetIds': targetIds
+            }
 
     return HttpResponse(json.dumps({
         'deleted_annotations': deleted_annotations,
+        'deleted_links': deleted_links,
         'left_uses': num_left_annotations
-    }), content_type='text/json')
+    }), content_type='application/json')
 
 
 @requires_user_role(UserRole.Annotate)
@@ -601,7 +622,7 @@ def remove_annotation(request, project_id=None, annotation_id=None):
         'message': message,
         'deleted_annotation': deleted,
         'left_uses': num_left
-    }), content_type='text/json')
+    }), content_type='application/json')
 
 def _remove_annotation(user, project_id, entity_ids, annotation_id):
     """Remove an annotation made by a certain user in a given project on a set
@@ -833,40 +854,40 @@ def list_annotations(request, project_id=None):
     parameters:
       - name: annotations
         description: A list of (meta) annotations with which which resulting annotations should be annotated with.
-        paramType: query
+        paramType: form
         type: array
         items:
             type: integer
             description: An annotation ID
       - name: annotates
         description: A list of entity IDs (like annotations and neurons) that should be annotated by the result set.
-        paramType: query
+        paramType: form
         type: array
         items:
             type: integer
             description: An entity ID
       - name: parallel_annotations
         description: A list of annotation that have to be used alongside the result set.
-        paramType: query
+        paramType: form
         type: array
         items:
             type: integer
             description: An annotation ID
       - name: user_id
         description: Result annotations have to be used by this user.
-        paramType: query
+        paramType: form
         type: integer
       - name: neuron_id
         description: Result annotations will annotate this neuron.
-        paramType: query
+        paramType: form
         type: integer
       - name: skeleton_id
         description: Result annotations will annotate the neuron modeled by this skeleton.
-        paramType: query
+        paramType: form
         type: integer
       - name: ignored_annotations
         description: A list of annotation names that will be excluded from the result set.
-        paramType: query
+        paramType: form
         type: array
         items:
             type: string
@@ -944,7 +965,7 @@ def list_annotations(request, project_id=None):
         ls.append({'id': uid, 'name': username})
     # Flatten dictionary to list
     annotations = tuple({'name': ids[aid], 'id': aid, 'users': users} for aid, users in annotation_dict.iteritems())
-    return HttpResponse(json.dumps({'annotations': annotations}), content_type="text/json")
+    return HttpResponse(json.dumps({'annotations': annotations}), content_type="application/json")
 
 def _fast_co_annotations(request, project_id, display_start, display_length):
     classIDs = dict(Class.objects.filter(project_id=project_id).values_list('class_name', 'id'))
@@ -1010,7 +1031,7 @@ def _fast_co_annotations(request, project_id, display_start, display_length):
                        row[0]])
 
     response['aaData'] = aaData
-    return HttpResponse(json.dumps(response), content_type='text/json')
+    return HttpResponse(json.dumps(response), content_type='application/json')
 
 
 @requires_user_role([UserRole.Browse])
@@ -1112,7 +1133,7 @@ def list_annotations_datatable(request, project_id=None):
             annotation[4], # Annotator ID
             annotation[0]]) # ID
 
-    return HttpResponse(json.dumps(response), content_type='text/json')
+    return HttpResponse(json.dumps(response), content_type='application/json')
 
 
 @api_view(['POST'])
@@ -1131,7 +1152,7 @@ def annotations_for_skeletons(request, project_id=None):
     parameters:
       - name: skeleton_ids
         description: A list of skeleton IDs which are annotated by the resulting annotations.
-        paramType: query
+        paramType: form
         type: array
         items:
             type: integer

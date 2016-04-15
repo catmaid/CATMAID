@@ -5,7 +5,6 @@ import subprocess
 import compileall
 
 from django.conf import settings
-from .models import TestResult
 
 
 class PerformanceTest(object):
@@ -198,6 +197,7 @@ class PerformanceTest(object):
             # Try to get version information
             version = subprocess.check_output(['git', 'describe'])
 
+            from .models import TestResult
             return TestResult(view=view, time=time_ms, result=response,
                               result_code=response.status_code, version=version)
         finally:

@@ -1,378 +1,356 @@
-html, body
-{
-	border:none;
-	min-width:300px;
-	margin:0px;
-	padding:0px;
-}
-html, body, input, textarea, p, dl, select, button
-{
-	font-family:Arial, Helvetica, sans-serif;
-	font-size:11px;
-	font-weight:normal;
-	line-height:13px;
-}
-h1
-{
-	margin:1.5em 16px 0.5em 20px;
-	font-size:25px;
-	line-height:1.1em;
-	font-weight:normal;
+html,
+body {
+	border: none;
+	min-width: 300px;
+	margin: 0;
+	padding: 0;
 }
 
-h2
-{
-	margin:1.5em 16px 0.5em 20px;
-	font-size:16px;
-	line-height:1.1em;
-	font-weight:bold;
+html,
+body,
+input,
+textarea,
+p,
+dl,
+select,
+button {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 11px;
+	font-weight: normal;
+	line-height: 13px;
 }
 
-p, dl
-{
-	margin:1.5em 16px 0.5em 20px;
+h1 {
+	margin: 1.5em 16px 0.5em 20px;
+	font-size: 25px;
+	line-height: 1.1em;
+	font-weight: normal;
 }
 
-#project_filter_form
-{
-	margin:1.5em 16px 0.5em 20px;
+h2 {
+	margin: 1.5em 16px 0.5em 20px;
+	font-size: 16px;
+	line-height: 1.1em;
+	font-weight: bold;
 }
 
-#project_filter_indicator.filtering
-{
-	padding:4px 24px 4px 0px;
-	vertical-align:middle;
-	background:url(../images/wait_bgwhite.gif) no-repeat right center;
+p,
+dl {
+	margin: 1.5em 16px 0.5em 20px;
+}
+
+#project_filter_form {
+	margin: 1.5em 16px 0.5em 20px;
+}
+
+#project_filter_indicator.filtering {
+	padding: 4px 24px 4px 0;
+	vertical-align: middle;
+	background: url(../images/wait_bgwhite.gif) no-repeat right center;
 }
 
 dt,
-dd
-{
-	margin-bottom:0.5em;
-}
-dl p
-{
-	font-style:italic;
-	margin:0px;
+dd {
+	margin-bottom: 0.5em;
 }
 
-.wait_bgwhite, div.form .wait_bgwhite
-{
-	padding:4px 0px 4px 24px;
-	vertical-align:middle;
-	background:url(../images/wait_bgwhite.gif) no-repeat left center;
+dl p {
+	font-style: italic;
+	margin: 0;
 }
 
-dt
-{
-	font-weight:bold;
-}
-dd
-{
-	margin-left:1em;
+.wait_bgwhite,
+div.form .wait_bgwhite {
+	padding: 4px 0 4px 24px;
+	vertical-align: middle;
+	background: url(../images/wait_bgwhite.gif) no-repeat left center;
 }
 
-div#imprint
-{
-	height:32px;
-	width:100%;
-	background:url(../images/bar32_bg.gif) repeat-x left top;
-	position:absolute;
-	left:0px;
-	bottom:0px;
-	margin:0px;
-	padding:0px;
-	overflow:hidden;
-	border:none;
-	border-top:solid 4px #000000;
-}
-div#imprint p
-{
-	border:none;
-	margin:0px;
-	padding:4px 0px 0px 20px;
-	vertical-align:middle;
-	line-height:20px;
-}
-div#spinner
-{
-	position:absolute;
-  right:20px;
-  top:4px;
-  display:none;
+dt {
+	font-weight: bold;
 }
 
-div#content
-{
-	position:absolute;
-	left:0px;
-	top:0px;
-	bottom:0px;
-	width:100%;
-	overflow:auto;
-	background:#FFFFFF;
+dd {
+	margin-left: 1em;
+}
+
+#imprint {
+	height: 32px;
+	width: 100%;
+	background: url(../images/bar32_bg.gif) repeat-x left top;
+	position: absolute;
+	left: 0;
+	bottom: 0;
+	margin: 0;
+	padding: 0;
+	overflow: hidden;
+	border: none;
+	border-top: solid 4px #000000;
+}
+
+#imprint p {
+	border: none;
+	margin: 0;
+	padding: 4px 0 0 20px;
+	vertical-align: middle;
+	line-height: 20px;
+}
+
+#spinner {
+  display: none;
+}
+
+#spinner_box {
+  width: 20px;
+  height: 20px;
+  padding: 6px 10px;
+  position: relative;
+}
+
+#content {
+	position: absolute;
+	left: 0;
+	top: 0;
+	bottom: 0;
+	width: 100%;
+	overflow: auto;
+	background: #FFFFFF;
 }
 
 /* Hide the browser warning messsage if all features are present */
-html.mod-js.mod-opacity.mod-canvas.mod-svg.mod-webgl.mod-json #browser_unsupported
-{
-  display:none;
+html.mod-js.mod-opacity.mod-canvas.mod-svg.mod-webgl.mod-json #browser_unsupported {
+  display: none;
 }
 
 /* Relative position and z-index on this div are important for .message
  * to show over other elements in IE6 */
-div#browser_unsupported
-{
-  position:relative;
-  z-index:90;
-  width:100%;
-  top:0;
-  left:0;
+#browser_unsupported {
+  position: relative;
+  z-index: 90;
+  width: 100%;
+  top: 0;
+  left: 0;
 }
 
-div#browser_unsupported .message
-{
-  position:fixed;
-  left:30%;
-  top:20%;
-  width:40%;
-  background:#FF8636;
-  color:#000000;
-  z-index:99;
+#browser_unsupported .message {
+  position: fixed;
+  left: 30%;
+  top: 20%;
+  width: 40%;
+  background: #FF8636;
+  color: #000000;
+  z-index: 99;
 }
 
-div#browser_unsupported h1
-{
+#browser_unsupported h1 {
   margin-bottom: 2em;
 }
 
-div#browser_unsupported p
-{
-  padding:0.5em 2em 1.5em 2em;
-  font-size:14px;
-  line-height:1.2;
+#browser_unsupported p {
+  padding: 0.5em 2em 1.5em 2em;
+  font-size: 14px;
+  line-height: 1.2;
 }
 
 /**
  * Forms
  */
-div.form
-{
-	display:none;
+div.form {
+  display: none;
 }
 
-div.form table
-{
-	margin:1.5em 16px 0.5em 20px;
+div.form table {
+  margin: 1.5em 16px 0.5em 20px;
 }
 
-div.form table td
-{
-	padding-right:1em;
-	vertical-align:top;
+div.form table td {
+  padding-right: 1em;
+  vertical-align: top;
 }
 
-div.form p
-{
-	margin:0px;
-	border:dashed 1px #FFFFFF;
-	padding:0.5em 0em 0.5em 0em;
+div.form p {
+  margin: 0;
+  border: dashed 1px #FFFFFF;
+  padding: 0.5em 0 0.5em 0;
 }
 
-div.form textarea, div.form input, div.form select
-{
-	border:dashed 1px #AAAAAA;
-	background:#F4F4F4;
-	padding:0.5em 1em 0.5em 1em;
+div.form textarea,
+div.form input,
+div.form select {
+  border: dashed 1px #AAAAAA;
+  background: #F4F4F4;
+  padding: 0.5em 1em 0.5em 1em;
 }
 
 div#data_view .header {
-	margin:1.5em 16px 0.5em 20px;
+  margin: 1.5em 16px 0.5em 20px;
 }
 
 div#data_view .header img {
-    float: left;
-    height: 2em;
-    margin-top: 0.2em;
-    margin-left: 1em;
+  float: left;
+  height: 2em;
+  margin-top: 0.2em;
+  margin-left: 1em;
 }
 
 div#data_view .header h1 {
-    float: left;
-    margin: 0px;
+  float: left;
+  margin: 0;
 }
 
-div#data_view table
-{
+div#data_view table {
 	margin:1.5em 16px 0.5em 20px;
 	line-height:1.1em;
 	font-weight:normal;
-	border: 0px;
+	border: 0;
 }
 
-div#data_view tr.odd
-{
+div#data_view tr.odd {
 	background-color: #E6E6E6;
 }
 
-div#data_view tr.even
-{
+div#data_view tr.even {
 	background-color: #E2E4FF;
 }
 
-div#data_view td.projectname
-{
+div#data_view td.projectname {
 	font-weight:bold;
 	vertical-align: top;
 }
 
-div#data_view td.stackimage, div#data_view td.odd-stackimage, div#data_view td.even-stackimage
-{
+div#data_view td.stackimage,
+div#data_view td.odd-stackimage,
+div#data_view td.even-stackimage {
 	vertical-align: top;
 	text-align: right;
 }
 
-div#data_view td.odd-stackimage
-{
+div#data_view td.odd-stackimage {
 	background-color: #E6E6E6;
 }
 
-div#data_view td.even-stackimage
-{
+div#data_view td.even-stackimage {
 	background-color: #E2E4FF;
 }
 
-div#data_view td.stackname, div#data_view td.odd-stackname, div#data_view td.even-stackname
-{
+div#data_view td.stackname,
+div#data_view td.odd-stackname,
+div#data_view td.even-stackname {
 	vertical-align: top;
 	text-align: left;
 }
 
-div#data_view td.odd-stackname
-{
+div#data_view td.odd-stackname {
 	background-color: #E6E6E6;
 }
 
-div#data_view td.even-stackname
-{
+div#data_view td.even-stackname {
 	background-color: #E2E4FF;
 }
 
-div#data_view td.head
-{
+div#data_view td.head {
 	vertical-align: top;
 	text-align: center;
-	font-weight:bold;
+	font-weight: bold;
 	background-color: #FFFFFF;
 }
 
-div#data_view .highlight
-{
+div#data_view .highlight {
 	font-weight:bold;
 }
 
-div#data_view figure
-{
-	margin-top: 0px;
-	margin-right: 10px;
-	margin-bottom: 11px;
-	margin-left: 10px;
+div#data_view figure {
+  margin: 0 10px 11px 10px;
 }
 
-div#data_view .comment
-{
+div#data_view .comment {
 	font-style: italic;
 }
 
-div#ontology_editor_widget div#ontology_known_roots
-{
+div#ontology_editor_widget div#ontology_known_roots {
 	margin-top: 10px;
 }
 
-div#ontology_editor_widget span#known_root_names
-{
+div#ontology_editor_widget span#known_root_names {
 	font-style: italic;
 }
 
-div#ontology_editor_widget div#ontology_warnings
-{
-    color: red;
+div#ontology_editor_widget div#ontology_warnings {
+  color: red;
 }
 
-.wider-context-menu
-{
-    min-width: 220px;
+.wider-context-menu {
+  min-width: 220px;
 }
 
-.even-wider-context-menu
-{
-    min-width: 235px;
+.even-wider-context-menu {
+  min-width: 235px;
 }
 
 div#classification_graph_object a {
-    padding-bottom: 2px;
+  padding-bottom: 2px;
 }
 
 div#classification_graph_object a.jstree-hovered,
 div#classification_graph_object a.jstree-clicked {
-    padding-bottom: 1px;
+  padding-bottom: 1px;
 }
 
 div#classification_graph_object li.editnode a {
-    padding-bottom: 3px;
-    color: #767676;
+  padding-bottom: 3px;
+  color: #767676;
 }
 
 div#classification_graph_object li.editnode a.jstree-hovered,
 div#classification_graph_object li.editnode a.jstree-clicked {
-    padding-bottom: 2px;
+  padding-bottom: 2px;
 }
 
 div#classification_graph_object div.select_new_classification_instance {
-    cursor: pointer;
-    background: white;
-    color: #767676;
-    margin-top: 2px;
-    position: absolute;
+  cursor: pointer;
+  background: white;
+  color: #767676;
+  margin-top: 2px;
+  position: absolute;
 }
 
 div#classification_graph_object img.roiimage {
-    margin: -4px;
-    padding-left: 4px;
+  margin: -4px;
+  padding-left: 4px;
 }
 
 #imagepreview {
-    position: absolute;
-    border: 1px solid #ccc;
-    background: #333;
-    padding: 5px;
-    display: none;
-    color: #fff;
+  position: absolute;
+  border: 1px solid #ccc;
+  background: #333;
+  padding: 5px;
+  display: none;
+  color: #fff;
 }
 
 #clustering_content .indented {
-    margin: 1.5em 16px 0.5em 20px;
+  margin: 1.5em 16px 0.5em 20px;
 }
 
 #clustering_content #distance_matrix td.lowertriangle {
-    background-color: #CED8F6;
+  background-color: #CED8F6;
 }
 
 #clustering_content .title {
-	font-weight:bold;
+	font-weight: bold;
 }
 
 /* This is needed to make jQuery's slideToggle() not override
- * the overflow property to 'hidded' and thereby cause jumping. */
+* the overflow property to 'hidded' and thereby cause jumping. */
 #clustering_content .content {
-    position: relative;
-    overflow: visible !important;
+  position: relative;
+  overflow: visible !important;
 }
 
 .extend-box-open,
 .extend-box-closed {
-	width: 0px;
-	height: 0px;
+	width: 0;
+	height: 0;
 	float: left;
 	margin-top: 1px;
 	margin-right: 3px;
@@ -390,80 +368,84 @@ div#classification_graph_object img.roiimage {
 }
 
 .navigator_navi_bar {
-    margin-top: 0.5em;
-    width: 100%
+  margin-top: 0.5em;
+  width: 100%
 }
 
 .navigator_navi_bar .navigator_button {
-    float: right;
-    margin-right: 5px;
+  float: right;
+  margin-right: 5px;
 }
 
 .navigator_content {
-    clear: both;
-    margin-top: 1em;
+  clear: both;
+  margin-top: 1em;
 }
 
 .navigator_content_option {
-    float: left;
-    clear: both;
+  float: left;
+  clear: both;
 }
 
 .navigator_content.multi_table_node .dataTables_wrapper {
-    min-height: 0px;
-    margin-bottom: 1em;
+  min-height: 0;
+  margin-bottom: 1em;
 }
 
 .navigator_content th a {
-    text-decoration: underline !important;
+  text-decoration: underline !important;
 }
 
 .navigator_content th a:hover {
-    text-decoration: none !important;
+  text-decoration: none !important;
 }
 
 .navigator_content td input {
-    margin-left: 0;
+  margin-left: 0;
 }
 
 .neuron_annotations_query_results_table td {
-    padding: 2px;
-    vertical-align: top;
+  padding: 2px;
+  vertical-align: top;
 }
 
 .neuron_annotations_query_results_table label input,
 .neuron_annotations_query_results_table label a {
-    margin-top: 0px;
-    vertical-align: top;
+  margin-top: 0;
+  vertical-align: top;
 }
 
 .neuron_annotations_query_results_table ul {
-    margin-top: 0px;
+  margin-top: 0;
 }
 
 .neuron_annotations_query_results_table th input[type=checkbox] {
-    padding: 3px;
-    width: auto;
-    margin-left: 6px;
-    margin-right: -6px;
-    float: left;
+  padding: 3px;
+  width: auto;
+  margin-left: 6px;
+  margin-right: -6px;
+  float: left;
 }
 
 .neuron_annotations_query_results_table th label {
-    font-weight: normal;
-    padding-left: 5px;
-    padding-right: 5px;
+  font-weight: normal;
+  padding-left: 5px;
+  padding-right: 5px;
 }
 
 .neuron_annotations_query_results_table th input[type=radio] {
-    width: auto;
+  width: auto;
 }
 
 .neuron_annotations_query_results_table li.remove_annotation {
-    white-space: normal;
-    display: inline-block;
-    margin-top: 2px;
-    margin-bottom: 2px;
+  white-space: normal;
+  display: inline-block;
+  margin-top: 2px;
+  margin-bottom: 2px;
+}
+
+.buttonpanel {
+  clear: both;
 }
 
 .buttonpanel input {
@@ -490,6 +472,41 @@ div#classification_graph_object img.roiimage {
 
 .buttonpanel ul.ui-tabs-nav li .ui-tabs-anchor {
   padding: .2em 1em;
+}
+
+.sourcepanel {
+  clear: both;
+  margin-bottom: 1em;
+}
+
+.sourcepanel label,
+.sourcepanel button,
+.sourcepanel select {
+  margin-left: 0.25em;
+  margin-right: 0.25em;
+}
+
+.sourcepanel input[type=checkbox] {
+  position: relative;
+  margin-left: 0;
+  margin-bottom: 0;
+  bottom: -0.2em;
+}
+
+.sourcepanel .extra-button {
+  float: right;
+	font-weight: bold;
+  font-size: larger;
+  margin-top: .5em;
+  margin-right: .5em;
+}
+
+.extra-button a {
+  text-decoration: none;
+}
+
+.extra-button a:hover {
+  text-decoration: underline;
 }
 
 .partner_table {
@@ -594,6 +611,9 @@ div#classification_graph_object img.roiimage {
   width: 50%;
   vertical-align: top;
 }
+.connectivity_widget .table_container_half.gapjunction_visible {
+  width: 33%;
+}
 
 .connectivity_widget .table_container_wide {
   width: 100%;
@@ -602,6 +622,10 @@ div#classification_graph_object img.roiimage {
 
 .connectivity_widget .table_container_wide:last-child {
   margin-bottom: 0;
+}
+.connectivity_widget .table_container_hidden,
+.connectivity_widget .column_hidden {
+  display: none;
 }
 
 .connectivity_widget .content {
@@ -669,8 +693,21 @@ div#classification_graph_object img.roiimage {
   float: right;
 }
 
+#review_segment_table {
+  border-collapse: collapse;
+}
+
+#review_segment_table tr:nth-child(even) {
+  background-color: #EEE;
+}
+
 #review_segment_table tr.highlight {
 	font-weight:bold;
+  border: 1px solid #000;
+}
+
+#review_segment_table tr.active {
+  background-color: #0F0;
 }
 
 #review_segment_table th {
@@ -699,11 +736,20 @@ div#classification_graph_object img.roiimage {
   float: left;
   clear: left;
   padding: 0.1em 0 0.1em 0;
+  position: relative;
+  min-width: 90%;
+  max-width: 90%;
 }
 
 .setting .description {
   width: 15em;
   display: inline-block
+}
+
+.setting .help {
+  width: 40em;
+  margin-top: 0.25em;
+  margin-bottom: 0.5em;
 }
 
 .setting input[type=checkbox] {
@@ -716,12 +762,81 @@ div#classification_graph_object img.roiimage {
 .settings-container {
   clear: both;
   float: left;
-  display: inline-block;
 }
 
+.setting.disabled {
+  color: #555;
+}
+
+.setting .settingsMetaToggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
+/* Settings meta tooltip adapted from:
+   http://jsfiddle.net/greypants/zgCb7/ */
+.setting .settingsMeta {
+  background: #1496bb;
+  bottom: 100%;
+  color: #fff;
+  left: -25px;
+  margin-bottom: 15px;
+  opacity: 1;
+  display: none;
+  padding: 10px;
+  pointer-events: none;
+  position: absolute;
+  width: 100%;
+  -webkit-transform: translateY(10px);
+     -moz-transform: translateY(10px);
+      -ms-transform: translateY(10px);
+       -o-transform: translateY(10px);
+          transform: translateY(10px);
+/*  -webkit-transition: all .15s ease-out;
+     -moz-transition: all .15s ease-out;
+      -ms-transition: all .15s ease-out;
+       -o-transition: all .15s ease-out;
+          transition: all .15s ease-out;*/
+  -webkit-transition-delay: 0s;
+     -moz-transition-delay: 0s;
+      -ms-transition-delay: 0s;
+       -o-transition-delay: 0s;
+          transition-delay: 0s;
+  -webkit-box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.28);
+     -moz-box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.28);
+      -ms-box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.28);
+       -o-box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.28);
+          box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.28);
+}
+
+/* This bridges the gap so you can mouse into the tooltip without it disappearing */
+.setting .settingsMeta:before {
+  bottom: -20px;
+  content: " ";
+  display: block;
+  height: 20px;
+  left: 0;
+  position: absolute;
+  width: 100%;
+}
+
+/* CSS Triangles - see Trevor's post */
+.setting .settingsMeta:after {
+  border-left: solid transparent 10px;
+  border-right: solid transparent 10px;
+  border-top: solid #1496bb 10px;
+  bottom: -10px;
+  content: " ";
+  height: 0;
+  left: 50%;
+  margin-left: -13px;
+  position: absolute;
+  width: 0;
+}
 
 #settings_widget select {
-  min-width:  20em;
+  min-width: 20em;
 }
 
 #settings_widget select.multiline {
@@ -731,7 +846,7 @@ div#classification_graph_object img.roiimage {
 .ontology_search .helptext {
   display: block;
   color: #888;
-  font-style:italic;
+  font-style: italic;
 }
 
 
@@ -854,7 +969,7 @@ table.skeleton-table tr:last-child th::after {
 /* Disable sorting column highlighting */
 table.skeleton-table tr.odd td.sorting_1,
 table.skeleton-table tr.even td.sorting_1 {
-    background: none;
+  background: none;
 }
 
 table.skeleton-table .sorting_asc,
@@ -866,69 +981,70 @@ table.skeleton-table .sorting_desc_disabled {
 }
 
 table.skeleton-table .sorting_disabled {
-    position: relative;
-    top: 4px;
+  position: relative;
+  top: 4px;
 }
 
 table.skeleton-table .sorting_asc::after {
 	content: url('../libs/jquery/datatable/images/sort_asc.png');
-    position: relative;
-    top: 0.5em;
+  position: relative;
+  top: 0.5em;
 }
 
 table.skeleton-table .sorting_desc::after {
 	content: url('../libs/jquery/datatable/images/sort_desc.png');
-    position: relative;
-    top: 0.5em;
+  position: relative;
+  top: 0.5em;
 }
 
 table.skeleton-table .sorting::after {
 	content: url('../libs/jquery/datatable/images/sort_both.png');
-    position: relative;
-    top: 0.5em;
+  position: relative;
+  top: 0.5em;
 }
 
 table.skeleton-table .sorting_asc_disabled::after {
 	content: url('../libs/jquery/datatable/images/sort_asc_disabled.png');
-    position: relative;
-    top: 0.5em;
+  position: relative;
+  top: 0.5em;
 }
 
 table.skeleton-table .sorting_desc_disabled::after {
 	content: url('../libs/jquery/datatable/images/sort_desc_disabled.png');
-    position: relative;
-    top: 0.5em;
+  position: relative;
+  top: 0.5em;
 }
 
 div.selection-table.windowContent {
-    margin-top: 1em;
+  box-sizing: border-box;
+  padding-top: 1em;
 }
 
 .help {
-    color: #999;
-    margin-left: 15em;
+  color: #999;
+  margin-left: 15em;
 }
 
 .checkbox-row .help {
-    margin-left: 0;
+  margin-left: 0;
 }
 
 .setting input,
 .setting select {
-    margin-left: 0;
+  margin-left: 0;
 }
 
 .blockMsg img {
-    margin: 0.5em auto 0.5em auto;
-    display: block;
+  margin: 0.5em auto 0.5em auto;
+  display: block;
 }
 
 .blockMsg span,
 .blockMsg div {
-    margin: 0.5em auto 0.5em auto;
-    font-size: medium;
-    font-weight: bold;
-    display: block;
+  margin: 0.5em auto 0.5em auto;
+  font-size: medium;
+  font-weight: bold;
+  display: block;
 }
 
 .dataTables_wrapper {
@@ -936,5 +1052,54 @@ div.selection-table.windowContent {
 }
 
 .cp-app {
-    z-index: 15000;
+  z-index: 15000;
+}
+
+.customselect {
+  display: inline-block;
+}
+
+.customselect-selectbox {
+  position: relative;
+}
+
+.customselect-selectbox select {
+  width: 100%;
+}
+
+.customselect-overselect {
+  position: absolute;
+  left: 0; right: 0; top: 0; bottom: 0;
+}
+
+.customselect-content {
+  position: absolute;
+  display: none;
+  border: 1px #dadada solid;
+  background: white;
+  padding: 4px;
+  cursor: default;
+  z-index: 1;
+  overflow: auto;
+  max-height: 20em;
+}
+
+.customselect ul {
+  display: inline-block;
+  list-style-type: none;
+  padding: 0 0 0 0 ;
+  margin: 0 0 0 0 ;
+}
+
+.customselect ul label {
+  display: list-item;
+}
+
+.placeholder {
+  padding: .5em;
+}
+
+.placeholder img {
+  width: 1em;
+  height: 1em;
 }

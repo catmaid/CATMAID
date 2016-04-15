@@ -1,0 +1,7 @@
+[run]
+source = catmaid
+
+omit =
+    */management/*
+    */migrations/*
+    */tests/*

@@ -354,11 +354,8 @@ CATMAID.tools = CATMAID.tools || {};
 
     return function (isodate) {
       var date = new Date(isodate);
-      // ES5 interprets all ISO 8601 times without time zone as UTC, while
-      // CATMAID uses local time. Adjust the time accordingly. This is not
-      // robust for users in different time zones, but is the least surprising
-      // behavior possible so long as CATMAID does not account for time zones.
-      date.setTime(date.getTime() + date.getTimezoneOffset() * MINUTE);
+      // ES5 interprets all ISO 8601 times without time zone as UTC, so should
+      // adjust to local time automatically as long as the backend returns UTC.
       var ago = Date.now() - date;
 
       if (ago < MINUTE) {
@@ -388,5 +385,49 @@ CATMAID.tools = CATMAID.tools || {};
       return text.replace(pattern, "\\$&");
     };
   })();
+
+  /**
+   * Returns a new object having a field named after the parameter object's id
+   * field and referencing it.
+   */
+  tools.idMap = function(obj) {
+    var o = {};
+    o[obj.id] = obj;
+    return o;
+  };
+
+  /**
+   * Returns a new object having a field named after the id field of all objects
+   * in the list parameter.
+   */
+  tools.listToIdMap = (function() {
+
+    var build = function(o, e) {
+      o[e.id] = e;
+      return o;
+    };
+
+    return function(list) {
+      return list.reduce(build, {});
+    };
+  })();
+
+  // Speed up calls to hasOwnProperty
+  var hasOwnProperty = Object.prototype.hasOwnProperty;
+
+  /**
+   * Returns true if the given object has any fields and false otherwise.
+   * See also: http://stackoverflow.com/questions/4994201
+   */
+  tools.isEmpty = function(obj) {
+    // Null and undefined are "empty"
+    if (obj == null) return true; // jshint ignore:line
+
+    for (var key in obj) {
+      if (hasOwnProperty.call(obj, key)) return false;
+    }
+
+    return true;
+  };
 
 })(CATMAID.tools);

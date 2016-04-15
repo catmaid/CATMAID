@@ -1,11 +1,12 @@
 Similar Software Tools
 ======================
 
-Interactive skeleton tracing
-----------------------------
+Interactive skeleton tracing and segmentation
+---------------------------------------------
 
 * `TrakEM2 <http://www.plosone.org/article/info%3Adoi%2F10.1371%2Fjournal.pone.0038011>`_
 * `Knossos <http://www.knossostool.org/>`_
+* `NeuTu <https://github.com/janelia-flyem/NeuTu>`_
 * `Reconstruct <http://synapses.clm.utexas.edu/tools/reconstruct/reconstruct.stm>`_
 * `Raveler <http://janelia.org/team-project/fly-em>`_ (*)
 * `Viking <http://prometheus.med.utah.edu/~marclab/marclab_2011_Connectomes_index.html>`_ (*)

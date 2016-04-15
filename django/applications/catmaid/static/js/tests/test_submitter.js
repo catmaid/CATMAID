@@ -38,7 +38,7 @@ QUnit.test('Submitter test', function( assert ) {
       done();
     });
     // Add result check as error callback
-    submit(null, null, null, false, false, function() {
+    submit(null, null, null, null, false, false, function() {
       assert.deepEqual(results, [],
           "Submitter resets if earlier promise fails");
       done();
@@ -75,6 +75,26 @@ QUnit.test('Submitter test', function( assert ) {
       assert.strictEqual(value, 2,
           "Submitter propageds promise return values, if used as a promise.");
       done4();
+    });
+  })();
+
+  // Test creation of additional promises queued promises
+  (function() {
+    var done1 = assert.async();
+    var done2 = assert.async();
+    var done3 = assert.async();
+    var submit = submitterFn();
+    submit.then(function() {
+      done1();
+      return new Promise(function(resolve, reject) {
+        done2();
+        resolve();
+        return 42;
+      });
+    });
+    submit.then(function(result) {
+      assert.ok(42, result, "Queuing promises inside an already queued promise works");
+      done3();
     });
   })();
 

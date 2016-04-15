@@ -26,7 +26,7 @@ def get_all_skeletons_of_neuron(request, project_id=None, neuron_id=None):
         project=p,
         cici_via_a__relation__relation_name='model_of',
         cici_via_a__class_instance_b=neuron)
-    return HttpResponse(json.dumps([x.id for x in qs]), content_type="text/json")
+    return HttpResponse(json.dumps([x.id for x in qs]), content_type="application/json")
 
 def _delete_if_empty(neuron_id):
     """ Delete this neuron if no class_instance is a model_of it;
@@ -208,5 +208,6 @@ def rename_neuron(request, project_id=None, neuron_id=None):
 
     return HttpResponse(json.dumps({
         'success': True,
-        'renamed_neuron': neuron.id
+        'renamed_neuron': neuron.id,
+        'old_name': old_name
     }))

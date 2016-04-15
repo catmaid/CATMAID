@@ -57,6 +57,7 @@
 
     this._stackWindow = new CMWWindow( primaryStack.title );
     this._view = this._stackWindow.getFrame();
+    this._view.classList.add('stackViewer');
     this._layersView = document.createElement("div");
     this._view.appendChild(this._layersView);
 
@@ -105,12 +106,12 @@
     this.overview = new CATMAID.Overview( this );
     this._view.appendChild( this.overview.getView() );
 
-    this.tilelayercontrol = new CATMAID.TilelayerControl( this );
+    this.tilelayercontrol = new CATMAID.TileLayerControl( this );
     $(this.tilelayercontrol.getView()).hide();
     this._view.appendChild( this.tilelayercontrol.getView() );
 
     // Ask for confirmation before closing the stack via the close button
-    $(this._view).find('.stackClose').get(0).onmousedown = function (e) {
+    $(this._stackWindow.getFrame()).find('.stackClose').get(0).onmousedown = function (e) {
       if (self._project.getStackViewers().length > 1 || confirm('Closing this window will exit the project. Proceed?'))
         self._stackWindow.close(e);
       else e.stopPropagation();
@@ -131,7 +132,7 @@
         event.cancelBubble = true;
       if ( e && e.stopPropagation )
         e.stopPropagation();
-      var state = $(this).siblings('.TilelayerControl').toggle().is(':visible');
+      var state = $(this).siblings('.TileLayerControl').toggle().is(':visible');
       $(this).attr('class', state ? 'stackControlToggle' : 'stackControlToggle_hidden');
     };
     this._view.appendChild( controlToggle );
@@ -153,7 +154,7 @@
     this._vert.style.opacity = this._horr.style.opacity = "0.5";
     this._view.appendChild( this._vert );
     this._view.appendChild( this._horr );
-    this.showReferenceLines( userprofile ? userprofile.display_stack_reference_lines : false );
+    this.showReferenceLines(StackViewer.Settings.session.display_stack_reference_lines);
 
     if (primaryStack.metadata.length > 0) {
       this.addLayer('Stack metadata', new CATMAID.MetadataLayer(this, primaryStack.metadata));
@@ -255,8 +256,8 @@
    * Scaled stack coordinates of the current view's top left corner for the given
    * stack.
    *
-   * @param  {Stack} stack  Target stack for the scaled view coordinates.
-   * @return {xc, yc, z, s} Top left view scaled coordinates in the target stack.
+   * @param  {Stack} stack    Target stack for the scaled view coordinates.
+   * @return {{xc, yc, z, s}} Top left view scaled coordinates in the target stack.
    */
   StackViewer.prototype.scaledPositionInStack = function (stack) {
     if (stack.id === this.primaryStack.id) {
@@ -283,7 +284,7 @@
    * Write the limiting coordinates of the current stack view's bounding box
    * into stackBox.  Faster than creating a new box.
    *
-   *  @param stackBox {min {x, y, z}, max{x, y, z}}
+   *  @param stackBox {{min: {x, y, z}, max: {x, y, z}}}
    */
   StackViewer.prototype.stackViewBox = function (stackBox) {
     var w2 = this.viewWidth / this.scale / 2;
@@ -304,7 +305,7 @@
   /**
    * Create the bounding box of the current stack view.
    *
-   *  @return {min {x, y, z}, max{x, y, z}}
+   *  @return {{min: {x, y, z}, max: {x, y, z}}}
    */
   StackViewer.prototype.createStackViewBox = function () {
     return this.stackViewBox({min: {}, max: {}});
@@ -316,7 +317,7 @@
    * plus some excess padding space into stackBox.  Faster than creating a
    * new box.
    *
-   *  @param stackBox {min {x, y, z}, max{x, y, z}}
+   *  @param stackBox {{min: {x, y, z}, max: {x, y, z}}}
    *  @param padScreenX x-padding in screen coordinates
    *  @param padScreenY y-padding in screen coordinates
    *  @param padScreenZ z-padding in screen coordinates (==stack coordinates as z is not scaled)
@@ -426,7 +427,7 @@
 
   /**
    * Get offset translation.
-   * @return {[number]} Offset translation as [x, y, z].
+   * @return {number[]} Offset translation as [x, y, z].
    */
   StackViewer.prototype.getOffset = function () {
     return this._offset.slice(); // Clone array.
@@ -434,7 +435,7 @@
 
   /**
    * Set offset translation and update UI as necessary.
-   * @param {[number]} offset Translation as [x, y, z].
+   * @param {number[]} offset Translation as [x, y, z].
    */
   StackViewer.prototype.setOffset = function (offset) {
     this._offset = offset;
@@ -548,8 +549,8 @@
   };
 
   StackViewer.prototype.resize = function () {
-    var width = this.viewWidth = this._stackWindow.getFrame().offsetWidth;
-    var height = this.viewHeight = this._stackWindow.getFrame().offsetHeight;
+    var width = this.viewWidth = this._view.offsetWidth;
+    var height = this.viewHeight = this._view.offsetHeight;
 
     this._layers.forEach(function (layer) {
       layer.resize(width, height);
@@ -593,7 +594,7 @@
 
   /**
    * Get an array of layer keys in their rendering order (back to front).
-   * @return {[]} An array of layer keys.
+   * @return {string[]} An array of layer keys.
    */
   StackViewer.prototype.getLayerOrder = function () {
     return this._layerOrder;
@@ -741,6 +742,18 @@
     this._vert.style.visibility = show ? "visible" : "hidden";
     this._horr.style.visibility = show ? "visible" : "hidden";
   };
+
+  StackViewer.Settings = new CATMAID.Settings(
+      'stack-viewer',
+      {
+        version: 0,
+        entries: {
+          display_stack_reference_lines: {
+            default: false
+          }
+        },
+        migrations: {}
+      });
 
   /** known scale bar sizes in nanometers */
   StackViewer.SCALE_BAR_SIZES = [

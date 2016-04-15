@@ -1,11 +1,13 @@
 {% extends "admin/base_site.html" %}
-{% load compressed %}
+{% load pipeline %}
 {% load i18n %}
+{% load common %}
 
 {% block extrahead %}
-{% compressed_css 'libraries' %}
-{% compressed_js 'jquery-lib' %}
-{% compressed_js 'd3-lib' %}
+{% stylesheet 'libraries' %}
+{% javascript 'jquery-lib' %}
+{% javascript 'd3-lib' %}
+{% javascript 'catmaid-lib' %}
 <style>
 
 .axis path,
@@ -74,6 +76,14 @@
 <div class="result" id="nodes"></div>
 
 <script type="text/javascript">
+  var STATIC_URL_JS = '{{ STATIC_URL|escapejs }}';
+  var django_url = "{{ CATMAID_URL }}";
+
+  CATMAID.configure("{{ CATMAID_URL }}",
+            "{{ STATIC_URL|escapejs }}",
+            "{{ STATIC_EXTENSION_URL|escapejs }}",
+            "{% csrf_cookie_name %}");
+  CATMAID.CLIENT_VERSION = "{% catmaid_version %}";
 
   var users = {};
 
@@ -81,7 +91,7 @@
     "dataType": 'json',
     "type": "GET",
     "cache": false,
-    "url": '{{ catmaid_url }}user-list',
+    "url": '{{ CATMAID_URL }}user-list',
     "data": {},
     "success": function( json ) {
       var select = document.getElementById("logtable_username");
@@ -98,14 +108,14 @@
 
   $.ajax({
       "dataType": 'json',
-      "type": "POST",
+      "type": "GET",
       "cache": false,
-      "url": '{{ catmaid_url }}projects',
+      "url": '{{ CATMAID_URL }}projects/',
       "data": {},
       "success": function(json) {
         var select = document.getElementById("project");
         json.forEach(function(p) {
-          select.options.add(new Option(p.title, p.pid));
+          select.options.add(new Option(p.title, p.id));
         });
       }
   });
@@ -157,7 +167,7 @@
           "dataType": 'json',
           "type": "POST",
           "cache": false,
-          "url": '{{ catmaid_url }}' + project_id + '/userproficiency',
+          "url": '{{ CATMAID_URL }}' + project_id + '/userproficiency',
           "data": {user_id: user_id,
                    start_date: start,
                    end_date: end,

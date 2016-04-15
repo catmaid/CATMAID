@@ -33,7 +33,7 @@ def export_jsongraph(request, project_id):
         order = 0
 
     while order != 0:
-        incoming, outgoing = _skeleton_info_raw( project_id, request.user.id, skeletonlist, 'logic-OR' )[0:2]
+        incoming, outgoing = _skeleton_info_raw( project_id, request.user.id, skeletonlist, 'OR' )[0:2]
         skeletonlist = set( skeletonlist ).union( set(incoming.keys()) ).union( set(outgoing.keys()) )
         order -= 1
     
@@ -54,4 +54,4 @@ def export_jsongraph(request, project_id):
            'label': str(props['c']) if props['directed'] else None,
            'directed': props['directed'] })
 
-    return HttpResponse(json.dumps(json_graph.node_link_data(newgraph), indent=2), content_type='text/json')
+    return HttpResponse(json.dumps(json_graph.node_link_data(newgraph), indent=2), content_type='application/json')

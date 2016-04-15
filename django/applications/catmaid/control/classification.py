@@ -1,17 +1,20 @@
 import json
+import logging
 
 from collections import defaultdict
 
 from django import forms
+from django.db import connection
 from django.db.models import Q
 from django.conf import settings
-from django.contrib.formtools.wizard.views import SessionWizardView
 from django.forms.widgets import CheckboxSelectMultiple
 from django.http import HttpResponse
 from django.views.generic.base import TemplateView
-from django.shortcuts import get_object_or_404, render_to_response
+from django.shortcuts import get_object_or_404, render
 from django.contrib.contenttypes.models import ContentType
 from django.template.context import RequestContext
+
+from formtools.wizard.views import SessionWizardView
 
 from catmaid.control.common import get_class_to_id_map, \
         get_relation_to_id_map, insert_into_log
@@ -25,6 +28,7 @@ from catmaid.models import Class, ClassClass, ClassInstance, \
 
 from taggit.models import TaggedItem
 
+logger = logging.getLogger(__name__)
 
 # All needed classes by the classification system alongside their
 # descriptions.
@@ -32,7 +36,7 @@ needed_classes = {
     'classification_root':
          "The root node class for classification graphs",
     'classification_project':
-         "A project represention to link to classification graphs"}
+         "A project representation to link to classification graphs"}
 
 # All needed relations by the classification system alongside their
 # descriptions.
@@ -75,7 +79,7 @@ class ClassInstanceClassInstanceProxy(ClassInstanceClassInstance):
             name = self.class_instance_b.class_column.class_name
         result = "{0} ({1})".format(name, str(self.class_instance_b.id))
 
-        # Display referce count if wanted
+        # Display reference count if wanted
         display_refs = True
         if display_refs:
             # Get projects that are linked to this CI (expect it to be
@@ -99,7 +103,8 @@ def get_root_classes_qs(workspace_pid):
     """
     return[ c.class_a.id for c in get_class_links_qs(workspace_pid, 'is_a', 'classification_root') ]
 
-def get_classification_links_qs( workspace_pid, project_ids, inverse=False ):
+def get_classification_links_qs( workspace_pid, project_ids, inverse=False,
+        stack_groups=None, class_map=None, relation_map=None, cursor=None):
     """ Returns a list of CICI links that link a classification graph with a
     project or a list/set of projects (project_ids can be int, list and set).
     The classification system uses a dummy project (usually with ID -1) to
@@ -108,58 +113,68 @@ def get_classification_links_qs( workspace_pid, project_ids, inverse=False ):
     class classification_project (which lives in dummy project -1) and links to
     a classification root. A query set for those links will be returned. If
     <inverse> is set to true, only those classification graph links will be
-    returned that *don't* belong to the project with <project_id>.
+    returned that *don't* belong to the project with <project_id>. Optionally, a
+    list of stack group IDs can be passed in (class instances) which would
+    further constrain classifications to those linked to those stack groups.
     """
+    # Get classification and relation data
+    class_map = class_map or get_class_to_id_map(workspace_pid,
+            ('classification_project', 'classification_root'), cursor)
+    relation_map = relation_map or get_relation_to_id_map(workspace_pid,
+            ('is_a', 'classified_by'), cursor)
+
+    # Bail out if there are not the classes we need
+    all_classes_exist = 'classification_project' in class_map and 'classification_root' in class_map
+    all_relations_exist = 'is_a' in relation_map and 'classified_by' in relation_map
+    if not all_classes_exist or not all_relations_exist:
+        return ClassInstanceClassInstance.objects.none()
+
     # Make sure we deal with a list of project ids
     if not isinstance(project_ids, list) and not isinstance(project_ids, set):
         project_ids = [project_ids]
-
-    # Expect the classification system to be set up and expect one
-    # single 'classification_project' class.
-    classification_project_c_q = Class.objects.filter(
-        project_id = workspace_pid, class_name = 'classification_project')
-    # Return an empty query set if there isn't a classification project class
-    # len() is used on purpose, we need the object later anyway.
-    if len(classification_project_c_q) == 0:
-        return ClassInstanceClassInstance.objects.none()
-    classification_project_c = classification_project_c_q[0]
 
     # Get the query set for the classification project instance to test
     # if there already is such an instance.
     if inverse:
         classification_project_cis_q = ClassInstance.objects.filter(
-            class_column_id=classification_project_c.id).exclude(
+            class_column_id=class_map['classification_project']).exclude(
                 project_id__in=project_ids)
     else:
         classification_project_cis_q = ClassInstance.objects.filter(
             project_id__in=project_ids,
-                class_column_id=classification_project_c.id)
+                class_column_id=class_map['classification_project'])
+
     # Return an empty query set if there aren't classification project
     # instances available.
     if classification_project_cis_q.count() == 0:
         return ClassInstanceClassInstance.objects.none()
 
     # Get a list of all classification root classes and return an empty
-    # list if teher are none
-    root_class_links = get_class_links_qs(workspace_pid, 'is_a', 'classification_root')
-    root_classes = [cc.class_a for cc in root_class_links]
-    if not root_classes:
-        return []
+    # list if there are none.
+    root_class_ids = ClassClass.objects.filter(project_id=workspace_pid,
+            relation_id=relation_map['is_a'],
+            class_b=class_map['classification_root']).values_list('class_a', flat=True)
+    if not root_class_ids:
+        return ClassInstanceClassInstance.objects.none()
+
     # Query to get all root class instances
     root_class_instances = ClassInstance.objects.filter(project_id=workspace_pid,
-        class_column__in=root_classes)
+        class_column_id__in=root_class_ids)
+
     # Query to get the 'classified_by' relation
     classified_by_rel = Relation.objects.filter(project_id=workspace_pid,
         relation_name='classified_by')
+
     # Find all 'classification_project' class instances of all requested
     # projects that link to those root nodes
     cici_q = ClassInstanceClassInstance.objects.filter(project_id=workspace_pid,
-        relation__in=classified_by_rel, class_instance_b__in=root_class_instances,
+        relation_id=relation_map['classified_by'],
+        class_instance_b__in=root_class_instances,
         class_instance_a__in=classification_project_cis_q)
 
     return cici_q
 
-def get_classification_roots( workspace_pid, project_id ):
+def get_classification_roots( workspace_pid, project_id, cursor=None ):
     """ Returns a list of classification graph roots, linked to a
     project. The classification system uses a dummy project with ID -1
     to store its ontologies and class instances. Each project using a
@@ -168,7 +183,7 @@ def get_classification_roots( workspace_pid, project_id ):
     project -1). Those class instances will be returned.
     """
     # Get all links
-    links_q = get_classification_links_qs( workspace_pid, project_id )
+    links_q = get_classification_links_qs( workspace_pid, project_id, cursor )
     # Return valid roots
     return [ cici.class_instance_a for cici in links_q ]
 
@@ -176,14 +191,16 @@ def get_classification_number( project_id ):
     """ Returns the number of classification graphs, linked to a
     project.
     """
-    roots = get_classification_roots(project_id)
-    return len(roots)
+    # Get all links
+    links_q = get_classification_links_qs( project_id )
+    return links_q.count()
 
 class Child:
     """ Keeps information about a potential child node.
     """
-    def __init__(self, klass, rel, disabled):
-        self.klass = klass
+    def __init__(self, class_id, class_name, rel, disabled):
+        self.class_id = class_id
+        self.class_name = class_name
         self.rel = rel
         self.disabled = disabled
 
@@ -191,8 +208,8 @@ def get_child_links( parent_ci ):
     """ Returns all links to children of a node with id <parent_id>. The
     result is limited to a maximum ef <max_nodes> nodes.
     """
-    # Get al a query set for all children that are linked to a parent
-    # that is not linked by a relation named 'classified_by'.
+    # Get a query set for all children that are linked to a parent that is not
+    # linked by a relation named 'classified_by'.
     cici_q = ClassInstanceClassInstance.objects.filter(
         class_instance_b=parent_ci).exclude(
             relation__relation_name='classified_by')
@@ -230,7 +247,7 @@ def link_to_classification( project_id, cls_graph ):
 def create_new_classification( workspace_pid, project_id ):
     """ creates a new classification graph instance. This basically
     means a new class instance is created that is based on a class
-    whilh has a 'is_a' relation to the class 'classification_root'.
+    which has an 'is_a' relation to the class 'classification_root'.
     Such a new class instance will live in the dummy project -1.
     """
     # Get the classification project class
@@ -264,15 +281,15 @@ def check_classification_setup_view(request, project_id=None):
     all_good = check_classification_setup()
     return HttpResponse(json.dumps({'all_good': all_good}))
 
-def check_classification_setup(workspace_pid):
+def check_classification_setup(workspace_pid, class_map=None, relation_map=None):
     """ Checks if all classes and relations needed by the
     classification system are available. Needed classes are
     'classification_root' and 'classification_project' and the
-    nedded relations are 'is_a' and 'classified_by'.
+    needed relations are 'is_a' and 'classified_by'.
     """
     # Get classification and relation data
-    class_map = get_class_to_id_map(workspace_pid)
-    relation_map = get_relation_to_id_map(workspace_pid)
+    class_map = class_map or get_class_to_id_map(workspace_pid)
+    relation_map = relation_map or get_relation_to_id_map(workspace_pid)
 
     # Check if all is good
     all_good = True
@@ -325,7 +342,7 @@ class NewGraphView(TemplateView):
     #ontologies =
 
 def create_new_graph_form( workspace_pid, class_ids=None ):
-    """ Creates a new NewGraphForm python class withan up-to-date
+    """ Creates a new NewGraphForm python class with an up-to-date
     class queryset.
     """
     if not class_ids:
@@ -371,12 +388,16 @@ def show_classification_editor( request, workspace_pid=None, project_id=None, li
     workspace_pid = int(workspace_pid)
     project = Project.objects.get(id=project_id)
     workspace = Project.objects.get(id=workspace_pid)
-    context = RequestContext(request, {
+    context = {
         'project': project,
         'workspace': workspace,
-    })
+        'user': request.user,
+    }
+    cursor = connection.cursor()
+    class_map = get_class_to_id_map(workspace_pid, cursor=cursor)
+    relation_map = get_relation_to_id_map(workspace_pid, cursor=cursor)
     # First, check if the classification system is correctly set-up
-    setup_okay = check_classification_setup(workspace_pid)
+    setup_okay = check_classification_setup(workspace_pid, class_map, relation_map)
     if not setup_okay:
         template_name = "catmaid/classification/setup.html"
         page_type = 'setup'
@@ -401,7 +422,8 @@ def show_classification_editor( request, workspace_pid=None, project_id=None, li
             page_type = 'show_graph'
         else:
             # Second, check how many graphs there are.
-            root_links_q = get_classification_links_qs( workspace_pid, project_id )
+            root_links_q = get_classification_links_qs( workspace_pid,
+                    project_id, cursor=cursor)
             num_roots = len(root_links_q)
 
             context['num_graphs'] = num_roots
@@ -430,8 +452,8 @@ def show_classification_editor( request, workspace_pid=None, project_id=None, li
                 page_type = 'select_graph'
                 link_id = -1
 
-    rendered_block = render_block_to_string( template_name,
-        'classification-content', {}, context )
+    rendered_block = render_block_to_string(template_name,
+        'classification-content', {}, RequestContext(request, context))
     return HttpResponse(json.dumps({
         'content': rendered_block,
         'page': page_type,
@@ -454,7 +476,7 @@ def add_classification_graph(request, workspace_pid=None, project_id=None):
             # Link this graph instance to the project
             link_existing_classification( workspace_pid, request.user,
                 project, ontology_root_ci )
-            return HttpResponse('A new graph has been initalized.')
+            return HttpResponse('A new graph has been initialized.')
     else:
         new_graph_form = new_graph_form_class()
 
@@ -463,14 +485,14 @@ def add_classification_graph(request, workspace_pid=None, project_id=None):
     link_graph_form = link_form()
     num_root_classes = get_root_classes_count(workspace_pid)
 
-    return render_to_response("catmaid/classification/new_graph.html", {
+    return render(request, "catmaid/classification/new_graph.html", {
         'project': project,
         'workspace': workspace,
         'new_graph_form': new_graph_form,
         'link_graph_form': link_graph_form,
         'num_root_classes': num_root_classes,
         'CATMAID_URL': settings.CATMAID_URL
-    }, context_instance=RequestContext(request))
+    })
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def link_classification_graph(request, workspace_pid=None, project_id=None):
@@ -496,14 +518,14 @@ def link_classification_graph(request, workspace_pid=None, project_id=None):
     new_graph_form = new_graph_form_class()
     num_root_classes = get_root_classes_count(workspace_pid)
 
-    return render_to_response("catmaid/classification/new_graph.html", {
+    return render(request, "catmaid/classification/new_graph.html", {
         'project': project,
         'workspace': workspace,
         'new_graph_form': new_graph_form,
         'link_graph_form': link_graph_form,
         'num_root_classes': num_root_classes,
         'CATMAID_URL': settings.CATMAID_URL
-    }, context_instance=RequestContext(request))
+    })
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def select_classification_graph(request, workspace_pid=None, project_id=None):
@@ -524,12 +546,12 @@ def select_classification_graph(request, workspace_pid=None, project_id=None):
         num_roots = len(root_links_q)
         form = link_form()
 
-        return render_to_response("catmaid/classification/select_graph.html", {
+        return render(request, "catmaid/classification/select_graph.html", {
             'project': project,
             'workspace': workspace,
             'select_graph_form': new_graph_form,
             'num_graphs': num_roots,
-        }, context_instance=RequestContext(request))
+        })
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def remove_classification_graph(request, workspace_pid, project_id=None, link_id=None):
@@ -593,7 +615,7 @@ def remove_classification_graph(request, workspace_pid, project_id=None, link_id
     if num_removed_links == 0:
         msg = 'The requested link couldn\'t get removed.'
     elif num_removed_ci == 0:
-        msg = 'All links from this project to the classifiation graph have been removed. There are still ' + str(num_total_refs) + ' link(s) to this classification graph present.'
+        msg = 'All links from this project to the classification graph have been removed. There are still ' + str(num_total_refs) + ' link(s) to this classification graph present.'
     else:
         msg = 'The classification graph has been removed, along with its ' + str(num_removed_ci) + ' class instances.'
 
@@ -610,7 +632,7 @@ def traverse_class_instances(node, func):
 
 
 def init_new_classification( workspace_pid, user, ontology ):
-    """ Intializes a new classification graph which is automatically
+    """ Initializes a new classification graph which is automatically
     linked to the provided project. This graph is based on the passed
     ontology (a root class in the semantic space).
     """
@@ -642,7 +664,7 @@ def link_existing_classification( workspace_pid, user, project, ontology_root_ci
             The classification system appears to be not set up correctly.")
 
     # Create a new 'classification_project' instance for the current project
-    # or use an already presont one (if any).
+    # or use an already present one (if any).
     if cp_ci_q.count() == 0:
         cp_ci = ClassInstance.objects.create(
             user = user,
@@ -659,89 +681,142 @@ def link_existing_classification( workspace_pid, user, project, ontology_root_ci
         class_instance_a = cp_ci,
         class_instance_b = ontology_root_ci)
 
-def collect_reachable_classes( parent_class):
+def collect_reachable_classes(workspace_pid, parent_class, relation_map=None):
     """ Find all classes that are directly linked to <parent_class>
     and that are linked to a super class to which <parent class> is
-    linked with a 'is_a' relation (if available). Collect the link
+    linked with an 'is_a' relation (if available). Collect the link
     of such a class if it doesn't use an 'is_a' relation.
+
+    TODO: This method makes a lot of queries, potentially recursively. This
+    should be done in one single CTE query.
     """
-    available_links = []
-    # Get all links to classes directly linked to the parent class
-    cc_q = ClassClass.objects.filter(class_b=parent_class)
-    # Add every link that does't use an 'is_a' relation
-    for cc in cc_q:
-        if cc.relation.relation_name != 'is_a':
-            available_links.append(cc)
+    relation_map = relation_map or get_relation_to_id_map(workspace_pid)
+    # Get all links to classes directly linked to the parent class with any
+    # relation but 'is_a'.
+    available_links = list(ClassClass.objects.filter(project=workspace_pid,
+            class_b=parent_class).exclude(relation_id=relation_map['is_a']))
     # Get all links from super-classes
     super_cc_q = ClassClass.objects.filter(class_a=parent_class,
-        relation__relation_name='is_a')
+        relation_id=relation_map['is_a'])
     # Collect all reachable classes of each super class
     for cc in super_cc_q:
-        super_links = collect_reachable_classes( cc.class_b )
+        super_links = collect_reachable_classes(workspace_pid, cc.class_b)
         available_links = available_links + super_links
 
     return available_links
 
-def get_child_classes( workspace_pid, parent_ci ):
+def get_child_classes( workspace_pid, parent_ci, relation_map=None, cursor=None ):
     """ Gets all possible child classes out of the linked ontology in
-    the semantic space. If the addition of a child-class woult violate
+    the semantic space. If the addition of a child-class would violate
     a restriction, it isn't used.
     """
+    cursor = cursor or connection.cursor()
+    relation_map = relation_map or get_relation_to_id_map(workspace_pid, cursor=cursor)
     parent_class = parent_ci.class_column
     # Get all possible child classes
-    available_links = collect_reachable_classes( parent_class )
+    available_links = collect_reachable_classes(workspace_pid, parent_class, relation_map)
+
+    # Collect classes and subclasses
+    relevant_link_ids = [cc.id for cc in available_links]
+    classes_to_add = []
+
+    # Get sub classes for all available links
+    if available_links:
+        class_a_ids_sql  = ','.join("({})".format(l.class_a_id) for l in available_links)
+        cursor.execute("""
+            SELECT cc.id, cc.class_b, cc.class_a, ca.class_name
+              FROM class cb
+              JOIN (VALUES ({})) v(id) ON cb.id = v.id
+              JOIN class_class cc ON cc.class_b = cb.id
+              JOIN class ca ON cc.class_a = ca.id
+             WHERE cc.project_id = %s
+               AND cc.relation_id = %s
+               AND cc.project_id = cb.project_id
+        """.format(class_a_ids_sql), (workspace_pid, relation_map['is_a']))
+        all_sub_class_links = cursor.fetchall()
+        # Create sub class map
+        sub_class_map = defaultdict(list)
+        for row in all_sub_class_links:
+            sub_class_map[row[1]].append((row[0], row[2], row[3]))
+        # Collect classes to add
+        for cc in available_links:
+            ca = cc.class_a
+            r = cc.relation
+            sub_class_links = sub_class_map.get(cc.class_a_id)
+            if sub_class_links:
+                for scc in sub_class_links:
+                    scc_id = scc[0]
+                    scc_class_a_id = scc[1]
+                    scc_class_a_name = scc[2]
+                    relevant_link_ids.append(scc_id)
+                    classes_to_add.append(
+                            (ca.class_name, (cc.id, scc_id), scc_class_a_id,
+                            scc_class_a_name, r))
+            else:
+                # Collect options without subclasses in generic element container
+                classes_to_add.append(("Element", (cc.id, ), ca.id, ca.class_name, r))
+
+    # Get all required link data in one go
+    link_restriction_map = dict()
+    if relevant_link_ids:
+        link_ids_sql = ','.join("({})".format(l) for l in relevant_link_ids)
+        cursor.execute("""
+            SELECT r.restricted_link_id, r.id
+              FROM restriction r
+              JOIN (VALUES ({})) link(id) ON r.restricted_link_id=link.id
+        """.format(link_ids_sql))
+        ids = cursor.fetchall()
+        for row in ids:
+            link_id = row[0]
+            restr_id = row[1]
+            restrictions = link_restriction_map.get(link_id)
+            if not restrictions:
+                restrictions = []
+                link_restriction_map[link_id] = restrictions
+            restrictions.append(restr_id)
+
     # Create a dictionary where all classes are assigned to a class which
     # is used as a generalization (if possible). The generalization of a
     # class is linked to it with an 'is_a' relation.
     child_types = {}
-    def add_class( key, links, c, rel ):
+    for category, link_ids, class_id, class_name, rel in classes_to_add:
         restrictions = []
         # Iterate all links that might be relevant for this element
-        for link in links:
+        for link_id in link_ids:
             # Get all restrictions for the current link
-            restrictions_q = Restriction.objects.filter(restricted_link=link)
-            restrictions = restrictions + [ r for r in restrictions_q]
+            link_restrictions = link_restriction_map.get(link_id)
+            if link_restrictions:
+                restrictions.extend(link_restrictions)
 
-        if len(restrictions) == 0:
+        if not restrictions:
             disabled = False
         else:
             # If there are restrictions, test if they would be violated
             # by adding the current class
             disabled = False
-            for r in restrictions:
+            for rid in restrictions:
                 # Find out type of the restriction
-                cr_q = CardinalityRestriction.objects.filter(id=r.id)
+                cr_q = CardinalityRestriction.objects.filter(id=rid)
                 if cr_q.count() > 0:
                     # It is a cardinality restriction
-                    disabled = cr_q[0].would_violate( parent_ci, c )
+                    disabled = cr_q[0].would_violate(parent_ci, class_id)
                 else:
                     # Unknown restriction
-                    raise Exception("Couldn't identify the restriction with ID %d." % (r.id))
+                    raise Exception("Couldn't identify the restriction with ID %d." % (rid))
 
         # Create child class data structure
-        current_child = Child(c, rel, disabled)
-        if key not in child_types:
-            child_types[key] = []
-        child_types[key].append(current_child)
-
-    for cc in available_links:
-        c = cc.class_a
-        r = cc.relation
-        # Test if the current child class has sub-types
-        sub_class_links = get_class_links_qs( workspace_pid, 'is_a', c )
-        if sub_class_links.count() == 0:
-            # Add class to generic 'Element' group
-            add_class( 'Elememt', [cc], c, r )
-        else:
-            # On entry for each 'is_a' link (usually one)
-            for scc in sub_class_links:
-                add_class( c.class_name, [cc, scc], scc.class_a, r )
+        current_child = Child(class_id, class_name, rel, disabled)
+        children = child_types.get(category)
+        if not children:
+            children = []
+            child_types[category] = children
+        children.append(current_child)
 
     return child_types
 
 def child_types_to_jstree_dict(child_types):
     """ Converts a child type directory as created by the
-    get_child_classes function to a dictionany that can be
+    get_child_classes function to a dictionary that can be
     converted into JSON and consumed by jsTree.
     """
     json_dict = {}
@@ -749,7 +824,7 @@ def child_types_to_jstree_dict(child_types):
         children = child_types[ct]
         for c in children:
             # Create class data structure
-            cdata = { 'id': c.klass.id, 'name': c.klass.class_name,
+            cdata = { 'id': c.class_id, 'name': c.class_name,
                 'disabled': c.disabled, 'relname': c.rel.relation_name,
                 'relid': c.rel.id }
             if ct not in json_dict:
@@ -760,7 +835,7 @@ def child_types_to_jstree_dict(child_types):
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def list_classification_graph(request, workspace_pid, project_id=None, link_id=None):
     """ Produces a data structure for each node of a classification graph
-    that is undetstood by jsTree.
+    that is understood by jsTree.
     """
     project_id = int(project_id)
     workspace_pid = int(workspace_pid)
@@ -779,9 +854,14 @@ def list_classification_graph(request, workspace_pid, project_id=None, link_id=N
 
     max_nodes = 5000  # Limit number of nodes retrievable.
 
+    cursor = connection.cursor()
+    relation_map = get_relation_to_id_map(workspace_pid, cursor=cursor)
+    class_map = get_class_to_id_map(workspace_pid, cursor=cursor)
+
     if link_id is None:
         # Get all links
-        links_q = get_classification_links_qs( workspace_pid, project_id )
+        links_q = get_classification_links_qs(workspace_pid, project_id,
+                relation_map=relation_map, class_map=class_map)
         # Return valid roots
         root_links = [ cici for cici in links_q ]
         num_roots = len(root_links)
@@ -808,17 +888,18 @@ def list_classification_graph(request, workspace_pid, project_id=None, link_id=N
 
     response_on_error = ''
     try:
-        def get_class_name( klass ):
+        def get_class_name(class_id, class_name, relation_map):
+            print("CLASS A", class_id, class_name)
             if superclass_in_name:
-                super_class_links_q = get_class_links_qs( workspace_pid,
-                    'is_a', klass, False )
-                if super_class_links_q.count() > 0:
+                super_class_links_q = ClassClass.objects.filter(project_id=workspace_id,
+                    relation=relation_map['is_a'], class_a_id=class_id)
+                if len(super_class_links_q) > 0:
                     cname = super_class_links_q[0].class_b.class_name
-                    return "%s: %s" % (cname, klass.class_name)
+                    return "%s: %s" % (cname, class_name)
                 else:
-                    return klass.class_name
+                    return class_name
             else:
-                return klass.class_name
+                return class_name
 
         def make_roi_html(roi):
             img_data = (roi.id, settings.STATIC_URL)
@@ -844,7 +925,7 @@ def list_classification_graph(request, workspace_pid, project_id=None, link_id=N
             #child = Child( root_id, root_name, "classification_root", 'root')
             #add_template_fields( [child] )
             response_on_error = 'Could not select child classes.'
-            child_types = get_child_classes( workspace_pid, cls_graph )
+            child_types = get_child_classes( workspace_pid, cls_graph, relation_map, cursor )
             child_types_jstree = child_types_to_jstree_dict( child_types )
 
             # Get ROI information
@@ -894,7 +975,7 @@ def list_classification_graph(request, workspace_pid, project_id=None, link_id=N
             #add_template_fields( child_nodes )
 
             # Get child types
-            child_types = get_child_classes( workspace_pid, parent_ci )
+            child_types = get_child_classes(workspace_pid, parent_ci, relation_map, cursor)
 
             child_data = []
             for child_link in child_links:
@@ -902,13 +983,16 @@ def list_classification_graph(request, workspace_pid, project_id=None, link_id=N
                 roi_html, roi_links = get_rois(child)
                 roi_json = json.dumps( [r.id for r in roi_links] )
                 # Get sub-child information
-                subchild_types = get_child_classes( workspace_pid, child )
+                subchild_types = get_child_classes(workspace_pid, child, relation_map, cursor)
                 subchild_types_jstree = child_types_to_jstree_dict( subchild_types )
                 # Build title
                 if roi_html:
-                    title = "%s %s" % (get_class_name(child.class_column), roi_html)
+                    name = get_class_name(child.class_column.id, child.class_column,
+                            relation_map)
+                    title = "%s %s" % (name, roi_html)
                 else:
-                    title = get_class_name(child.class_column)
+                    title = child.name if child.name else get_class_name(
+                        child.class_column.id, child.class_column.class_name, relation_map)
                 # Build JSTree data structure
                 data = {'data': {'title': title},
                     'attr': {'id': 'node_%s' % child.id,
@@ -937,7 +1021,8 @@ def list_classification_graph(request, workspace_pid, project_id=None, link_id=N
                         # Only add items that are not disabled, because
                         # only those items can actually be added.
                         if not child.disabled:
-                            options.append( (child.klass.id, get_class_name(child.klass), child.rel.id) )
+                            name = get_class_name(child.class_id, child.class_name, relation_map)
+                            options.append( (child.class_id, name, child.rel.id) )
                     # Add drop down list if there are options
                     if len(options) > 0:
                         menu_class = 'select_new_classification_instance'
@@ -973,8 +1058,9 @@ def classification_instance_operation(request, workspace_pid=None, project_id=No
         # TODO sanitize
         params[k] = request.POST.get(k, 0)
 
-    relation_map = get_relation_to_id_map(workspace_pid)
-    class_map = get_class_to_id_map(workspace_pid)
+    cursor = connection.cursor()
+    relation_map = get_relation_to_id_map(workspace_pid, cursor=cursor)
+    class_map = get_class_to_id_map(workspace_pid, cursor=cursor)
 
     # We avoid many try/except clauses by setting this string to be the
     # response we return if an exception is thrown.
@@ -1099,7 +1185,7 @@ def classification_instance_operation(request, workspace_pid=None, project_id=No
 
 def infer_new_instances( workspace_pid, link, parent_ci ):
     """ Based on a link within the semantic space and an instantiated
-    class in the classification space, new possible class intances are
+    class in the classification space, new possible class instances are
     inferred and returned as a tuple (class_to_add, relation, parent_ci)
     """
     instances_to_add = []
@@ -1121,7 +1207,7 @@ def infer_new_instances( workspace_pid, link, parent_ci ):
                     link.class_a)
                 for sc in sub_class_links:
                     class_to_add = sc.class_a
-                    if not cr.would_violate(parent_ci, class_to_add):
+                    if not cr.would_violate(parent_ci, class_to_add.id):
                         instances_to_add.append( (class_to_add, link.relation, parent_ci) )
         else:
             # Unknown restriction
@@ -1269,7 +1355,7 @@ def export(request, workspace_pid=None, exclusion_tags=None):
     """ This view returns a JSON representation of all classifications in this
     given workspace.
     """
-    # Split the string of exlusion tags
+    # Split the string of exclusion tags
     if exclusion_tags:
         exclusion_tags = frozenset(exclusion_tags.split(','))
     else:
@@ -1280,7 +1366,7 @@ def export(request, workspace_pid=None, exclusion_tags=None):
     cg_to_pids, pids_to_tags = get_graph_tag_indices(graphs.keys(),
                                                      workspace_pid)
 
-    # As a last step we create a simpler representation of the colqlected data.
+    # As a last step we create a simpler representation of the collected data.
     graph_to_features = {}
     for g,fl in graphs.items():
         # Get and attach tags of linked projects
@@ -1305,8 +1391,6 @@ def get_graphs_to_features(workspace_pid=None):
     """ This view returns a JSON representation of all classifications in this
     given workspace.
     """
-    from catmaid.control.classification import graph_instanciates_feature
-
     # We want all ontologies represented (which are Class objects) that
     # live under the classification_root node.
     ontologies = [cc.class_a for cc in \
@@ -1317,9 +1401,7 @@ def get_graphs_to_features(workspace_pid=None):
     graph_to_features = defaultdict(list)
     for o in ontologies:
         # Get features of the current ontology
-        features = get_features(o, workspace_pid, graphs, add_nonleafs=True,
-                                only_used_features=True)
-        # Now check which graph instaniates which feature
+        features = get_features(o, workspace_pid, graphs, add_nonleafs=True)
         for g in graphs:
             for f in features:
                 if graph_instanciates_feature(g, f):
@@ -1334,7 +1416,7 @@ def link_roi_to_classification(request, project_id=None, workspace_pid=None,
     (ROI) to a class instance in a classification graph. The information
     about the ROI is passed as POST variables.
     """
-    # Find 'linked_to' relatios
+    # Find 'linked_to' relations
     rel = Relation.objects.get(project_id=workspace_pid,
         relation_name="linked_to")
 
@@ -1368,7 +1450,7 @@ def graph_instanciates_feature_simple(graph, feature, idx=0):
 
     # Check for a link to the first feature component
     link_q = ClassInstanceClassInstance.objects.filter(**filters)
-    # Get number of links wth. of len(), because it is doesn't hurt performance
+    # Get number of links wrt. len(), because it is doesn't hurt performance
     # if there are no results, but it improves performance if there is exactly
     # one result (saves one query). More than one link should not happen often.
     num_links = len(link_q)
@@ -1377,10 +1459,117 @@ def graph_instanciates_feature_simple(graph, feature, idx=0):
         return False
     elif num_links > 1:
         # More than one?
-        raise Exception('Found more than one ontology node link of one class instance.')
+        raise Exception('Found more than one ontology node link of one class instance: ' +
+                ", ".join([str(l.id) for l in link_q ]))
 
     # Continue with checking children, if any
     return graph_instanciates_feature_simple(link_q[0].class_instance_a, feature, idx+1)
+
+def graphs_instanciate_features(graphs, features, target=None, cursor=None):
+    """Test which graphs instantiate which feature of the passed in feature
+    set. If provided, the information is written to the target array, which is
+    expected to be of proper size. Without a target, a new 2D array of
+    dimensions graphs x features is created.
+    """
+    cursor = cursor or connection.cursor()
+    if None == target:
+        target = [[0 for j in range(len(features))] for i in range(len(graphs))]
+
+    logger.debug("Getting paths for graphs")
+    # Get all instantiated paths and sub-paths from each graph
+    graph_ids = [g.id for g in graphs]
+    graph_template = ",".join(("%s",) * len(graphs))
+    cursor.execute("""
+        WITH RECURSIVE linked_classes(root_id, id, rel, class_instance_a, class_a, depth, path, cycle) AS (
+            SELECT cici.class_instance_b, cici.id, cici.relation_id, cici.class_instance_a, cia.class_id, 1, ARRAY[cici.id], false
+            FROM class_instance_class_instance cici
+            JOIN class_instance cia ON cici.class_instance_a = cia.id
+            WHERE cici.class_instance_b IN ({})
+          UNION ALL
+            SELECT lc.root_id, cici2.id, cici2.relation_id, cici2.class_instance_a, cia2.class_id, lc.depth + 1, path || cici2.id,
+              cici2.id = ANY(path)
+            FROM class_instance_class_instance cici2
+            JOIN linked_classes lc ON cici2.class_instance_b = lc.class_instance_a AND NOT cycle
+            JOIN class_instance cia2 ON cici2.class_instance_a = cia2.id
+        )
+        SELECT * FROM linked_classes;
+        """.format(graph_template), graph_ids)
+    # Build index for paths of each graph
+    all_paths = {}
+    for row in cursor.fetchall():
+        paths = all_paths.get(row[0])
+        if not paths:
+            paths = []
+            all_paths[row[0]] = paths
+        paths.append(row)
+
+    for ng, g in enumerate(graphs):
+        paths = all_paths.get(g.id)
+        # Create tree representation, relates are taken care of implicitly.
+        # They are part of a link definition (a class_instance_class_instance
+        # row).
+        root = {}
+        cici_map = {}
+        for p in paths:
+            cici_id = p[1]
+            rel_id = p[2]
+            path = p[6]
+            parent = root
+            map_entry = cici_map.get(cici_id)
+            if not map_entry:
+                cici_map[cici_id] = {
+                    'relation_id': rel_id,
+                    'path': path,
+                    'class_instance_a': p[3],
+                    'class_a': p[4],
+                    'depth': p[5]
+                }
+
+            for pe in path:
+                parent = parent.setdefault(pe, {})
+
+        def check_feature_level(feature, nodes, cici_map, part_index=0):
+            last_index = len(feature.links) - 1
+            if part_index > last_index:
+                raise ValueError("Part index too large")
+            link = feature.links[part_index]
+
+            for link_id, children in nodes.iteritems():
+                node = cici_map.get(link_id)
+                if not node:
+                    raise ValueError("Couldn't find link node")
+                has_class = link.class_a.id == node['class_a']
+                has_relation = link.relation.id == node['relation_id']
+                # If this links is valid according to the ontology, look into
+                # children or return success.
+                if has_class and has_relation:
+                    if part_index < last_index:
+                        instantiated = check_feature_level(feature, children,
+                                cici_map, part_index + 1)
+                        # If the sub-branch was instantiated we can stop now for
+                        # this level. Other branches can't contribute anything.
+                        if instantiated:
+                            return True
+                    else:
+                        # If this was the last element of the feature chain (in
+                        # ontology), we consider this sub-branch to be done.
+                        return True
+
+            # If no branch yielded a positive result, we can only conclude this
+            # level doesn't implement the ontology
+            return False
+
+        for nf, feature in enumerate(features):
+            # Now go through all features and mark the ones instantiated in the
+            # current graph. A feature is essentially a list of links from root to
+            # leaf. A feature is instantiated if there is a path in the last query
+            # uses the classes and links in the feature. This is how a feature link
+            # list looks like:
+            # [CA, R, CB], [CA2, R2, CA2], [CA3, R3, CA3]
+            instantiated = check_feature_level(feature, root, cici_map)
+            target[ng][nf] = 1 if instantiated else 0
+
+    return target
 
 def graph_instanciates_feature_complex(graph, feature):
     """ Creates one complex query that thest if the feature is matched as a
@@ -1421,8 +1610,8 @@ def graphs_instanciate_feature(graphlist, feature):
     return graphs_instanciate_feature_complex(graphlist, feature)
 
 def graphs_instanciate_feature_simple(graphs, feature):
-    """ Creates a simple query for each graph to test wheter it instantiates
-    a given featuren.
+    """ Creates a simple query for each graph to test whether it instantiates
+    a given feature.
     """
     for g in graphs:
         # Improvement: graphs could be sorted according to how many
@@ -1432,7 +1621,7 @@ def graphs_instanciate_feature_simple(graphs, feature):
     return False
 
 def graphs_instanciate_feature_complex(graphlist, feature):
-    """ Creates one complex query that thest if the feature is matched as a
+    """ Creates one complex query that tests if the feature is matched as a
     whole.
     """
     # Build Q objects for to query whole feature instantiation at once. Start
@@ -1479,7 +1668,7 @@ class ClassificationSearchWizard(SessionWizardView):
                 "tags that are used to organize all results in rows and " \
                 "columns."
 
-        # Update context with extra information and return ir
+        # Update context with extra information and return it
         context.update(extra_context)
         return context
 
@@ -1493,8 +1682,8 @@ class ClassificationSearchWizard(SessionWizardView):
             class_ids = get_root_classes_qs(self.workspace_pid)
             ontologies = Class.objects.filter(id__in=class_ids)
             graphs = ClassInstanceProxy.objects.filter(class_column__in=ontologies)
-            # Featurs are abstract concepts (classes) and graphs will be
-            # checked which classes they have instanciated.
+            # Features are abstract concepts (classes) and graphs will be
+            # checked which classes they have instantiated.
             raw_features = []
             for o in ontologies:
                 raw_features = raw_features + get_features(o,
@@ -1515,29 +1704,35 @@ class ClassificationSearchWizard(SessionWizardView):
         """ All matching classifications are fetched and organized in a
         result data view.
         """
+
         cleaned_data = [form.cleaned_data for form in form_list]
         selected_feature_ids = cleaned_data[0].get('features')
         # Get selected features and build feature dict to map ontologies to
         # features.
         ontologies_to_features = defaultdict(list)
+        print("Starting clustering with n feature IDs:", len(selected_feature_ids))
         for f_id in selected_feature_ids:
             f = self.features[int(f_id)]
             ontologies_to_features[f.links[0].class_a.class_name].append(f)
 
+        print("Getting root classes")
         # All classification graphs in this workspace will be respected
         ontologies = get_root_classes_qs(self.workspace_pid)
+        print("Getting class instances")
         graphs = ClassInstanceProxy.objects.filter(class_column__in=ontologies)
         # Iterate through all graphs and find those that realize all of the
         # selected features in their respective ontology.
         matching_graphs = []
+        print("Iterating graphs")
         for g in graphs:
             # Lazy evaluate every ontology. If all features of one ontology
-            # matches, the others don't need to be tested, because thez are
+            # matches, the others don't need to be tested, because the are
             # OR combined.
             for o in ontologies_to_features.keys():
                 matches = True
                 # All features of one ontology must match
                 for f in ontologies_to_features[o]:
+                    print("Check if graph {} instantiates feature {}".format(g.id, f.id))
                     if graph_instanciates_feature(g, f):
                         continue
                     else:
@@ -1624,9 +1819,7 @@ class ClassificationSearchWizard(SessionWizardView):
         # Build project index
         project_index = dict([(p.id, p) for p in Project.objects.all()])
 
-        # Get the default request context and add custom data
-        context = RequestContext(self.request)
-        context.update({
+        return render(request, 'catmaid/classification/search_report.html', {
             'project_ids': project_ids,
             'matching_graphs': matching_graphs,
             'cg_to_pids': cg_to_pids,
@@ -1640,8 +1833,6 @@ class ClassificationSearchWizard(SessionWizardView):
             'pid_to_sids': pid_to_sids,
         })
 
-        return render_to_response('catmaid/classification/search_report.html',
-                                  context)
 
 class FeatureSetupForm(forms.Form):
     """ This form displays all available classification_root based ontologies
@@ -1664,7 +1855,7 @@ class LayoutSetupForm(forms.Form):
                                       "DEFAULT_ONTOLOGY_SEARCH_FILTER_TAGS", ""))
     row_tags = forms.CharField(required=False, help_text="A comma-separated "
                                "list of tag names that organize all results "
-                               "in diferent rows.",
+                               "in different rows.",
                                 initial=getattr(settings,
                                     "DEFAULT_ONTOLOGY_SEARCH_ROW_TAGS", ""))
     column_tags = forms.CharField(required=False, help_text="A comma-separated "
@@ -1686,7 +1877,7 @@ def search(request, workspace_pid=None):
 
 
 def ontologies_to_features(workspace_pid):
-    """ Returns a dictonary that maps ontology names to a complete list of
+    """ Returns a dictionary that maps ontology names to a complete list of
     features that represent this ontology.
     """
     ontologies = get_root_classes_qs(workspace_pid)

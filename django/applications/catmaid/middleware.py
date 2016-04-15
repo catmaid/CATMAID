@@ -1,13 +1,49 @@
 import json
 import re
-import os
 import cProfile
+from traceback import format_exc
+from datetime import datetime
 
 from django.http import HttpResponse
 from django.contrib.auth.models import User
 from django.conf import settings
-from traceback import format_exc
-from datetime import datetime
+
+from rest_framework.authentication import TokenAuthentication
+
+
+class AuthenticationHeaderExtensionMiddleware(object):
+    """
+    CATMAID uses the `X-Authorization` HTTP header rather than `Authorization`
+    to prevent conflicts with, e.g., HTTP server basic authentication.
+
+    Have Django overwrite the `Authorization` header with the `X-Authorization`
+    header, if present, so that other middlewares can work normally.
+    """
+    def process_request(self, request):
+        auth = request.META.get('HTTP_X_AUTHORIZATION', b'')
+        if auth:
+            request.META['HTTP_AUTHORIZATION'] = auth
+
+class CsrfBypassTokenAuthenticationMiddleware(object):
+    """
+    Authenticate a user using a HTTP_AUTHORIZATION header token provided by
+    Django Rest Framework's authtoken. If successful, set a protected request
+    property to make Django's CSRF view middleware not enforce the presence
+    of a CSRF header.
+
+    This is necessary to have DRF's token authentication work both with its
+    API views and normal Django views.
+    """
+    def process_request(self, request):
+        try:
+            token_auth = TokenAuthentication().authenticate(request)
+            if token_auth:
+                request.user = token_auth[0]
+                request.auth = token_auth[1]
+                request._dont_enforce_csrf_checks = True
+        except:
+            pass
+
 
 class AnonymousAuthenticationMiddleware(object):
     """ This middleware class tests whether the current user is the
@@ -21,6 +57,7 @@ class AnonymousAuthenticationMiddleware(object):
             request.user.is_anonymous = lambda: False
             request.user.is_authenticated = lambda: False
         return None
+
 
 class AjaxExceptionMiddleware(object):
 
@@ -49,7 +86,7 @@ class BasicModelMapMiddleware(object):
     stacks_pattern = re.compile(r'/.+/stacks')
 
     def process_request(self, request):
-        new_path = (request.path == '/projects') or \
+        new_path = (request.path == '/projects/') or \
                     self.stack_info_pattern.search(request.path) or \
                     self.stacks_pattern.search(request.path)
 

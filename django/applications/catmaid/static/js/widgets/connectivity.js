@@ -2,7 +2,6 @@
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
   InstanceRegistry,
-  NeuronNameService,
   project,
   requestQueue,
   WindowMaker
@@ -21,13 +20,15 @@
     this.tablesSideBySide = true;
     // Do not update automatically by default
     this.autoUpdate = false;
+    // Hide gap junction connections by default
+    this.showGapjunctionTable = false;
     // Ordering of neuron table, by default no ordering is applied
     this.currentOrder = [];
 
     // Register for changed and removed skeletons
-    CATMAID.neuronController.on(CATMAID.neuronController.EVENT_SKELETON_CHANGED,
+    CATMAID.Skeletons.on(CATMAID.Skeletons.EVENT_SKELETON_CHANGED,
       this.handleChangedSkeleton, this);
-    CATMAID.neuronController.on(CATMAID.neuronController.EVENT_SKELETON_DELETED,
+    CATMAID.Skeletons.on(CATMAID.Skeletons.EVENT_SKELETON_DELETED,
       this.handleDeletedSkeleton, this);
   };
 
@@ -47,20 +48,24 @@
     // Incoming an outgoing connections of current neurons
     this.incoming = {};
     this.outgoing = {};
+    this.gapjunctions = {};
     this.reviewers = new Set();
     // Default upstream and downstream tables to be not collapsed
     this.upstreamCollapsed = false;
     this.downstreamCollapsed = false;
+    this.gapjunctionCollapsed = false;
     // Synapse thresholds for current skeleton set.
     // (Count is applied after confidence filtering.)
     this.thresholds = {
       up:   {confidence: {}, count: {}},
-      down: {confidence: {}, count: {}}
+      down: {confidence: {}, count: {}},
+      gj:   {confidence: {}, count: {}}
     };
     // Update all synapse count threshold selection states
     this.allThresholds = {
       up:   {confidence: 1, count: 1},
-      down: {confidence: 1, count: 1}
+      down: {confidence: 1, count: 1},
+      gj:   {confidence: 1, count: 1}
     };
     // Filter partners with fewer nodes than this threshold
     this.hidePartnerThreshold = 1;
@@ -72,52 +77,40 @@
     this.selectAllSelection = {
       'up': false,
       'down': false,
+      'gj': false
     };
   };
 
   /** Appends only to the top list, that is, the set of seed skeletons
    *  for which all pre- and postsynaptic partners are listed. */
   SkeletonConnectivity.prototype.append = function(models) {
-    var skeletons = this.skeletons,
-        added = 0,
-        removed = 0,
-        widgetID = this.widgetID;
-    var new_skeletons = Object.keys(models).reduce(function(o, skid) {
+    var added = {};
+    var updated = {};
+    Object.keys(models).forEach(function(skid) {
       var model = models[skid];
-      if (skid in skeletons) {
-        if (model.selected) {
-          // Update name
-          skeletons[skid] = model.baseName;
-          $('#a-connectivity-table-' + widgetID + '-' + skid).html(
-              NeuronNameService.getInstance().getName(skid));
-        } else {
-          // Remove
-          delete skeletons[skid];
-          ++removed;
-        }
+      if (skid in this.skeletons) {
+        // Update name
+        updated[skid] = model;
+        $('#a-connectivity-table-' + this.widgetID + '-' + skid).html(
+            CATMAID.NeuronNameService.getInstance().getName(skid));
       } else {
-        if (model.selected) {
-          o[skid] = models[skid].baseName;
-          ++added;
-        }
+        added[skid] = model;
+        this.ordered_skeleton_ids.push(parseInt(skid));
       }
-      return o;
-    }, {});
+      // Add or update
+      this.skeletons[skid] = model.baseName;
+    }, this);
 
-    if (0 === removed && 0 === added) {
-      return;
+    if (!CATMAID.tools.isEmpty(updated)) {
+      this.triggerChange(updated);
     }
     
-    // Update existing ones and add new ones
-    $.extend(this.skeletons, new_skeletons);
-    for (var skid in new_skeletons) {
-      this.ordered_skeleton_ids.push(parseInt(skid));
-    }
-
-    // Add skeletons
-    NeuronNameService.getInstance().registerAll(this, models, (function() {
+    // Update names and trigger addition event
+    CATMAID.NeuronNameService.getInstance().registerAll(this, added, (function() {
       this.update();
-      this.updateLink(models);
+      if (!CATMAID.tools.isEmpty(added)) {
+        this.triggerAdd(added);
+      }
     }).bind(this));
   };
 
@@ -128,36 +121,39 @@
   SkeletonConnectivity.prototype.destroy = function() {
     this.unregisterInstance();
     this.unregisterSource();
-    NeuronNameService.getInstance().unregister(this);
+    CATMAID.NeuronNameService.getInstance().unregister(this);
 
     // Unregister from neuron controller
-    CATMAID.neuronController.off(CATMAID.neuronController.EVENT_SKELETON_CHANGED,
+    CATMAID.Skeletons.off(CATMAID.Skeletons.EVENT_SKELETON_CHANGED,
         this.handleChangedSkeleton, this);
-    CATMAID.neuronController.off(CATMAID.neuronController.EVENT_SKELETON_DELETED,
+    CATMAID.Skeletons.off(CATMAID.Skeletons.EVENT_SKELETON_DELETED,
         this.handleDeletedSkeleton, this);
   };
 
   SkeletonConnectivity.prototype.clear = function(source_chain) {
+    var models = this.getSkeletonModels();
     this.init();
     this.update();
-    this.clearLink(source_chain);
+    this.triggerRemove(models);
   };
 
   SkeletonConnectivity.prototype.removeSkeletons = function(skeleton_ids) {
-    var deletedSkeletons = skeleton_ids.filter(function(skid) {
-      delete this.skeletons[skid];
+    // For skeleton IDs, numbers are internally expected
+    skeleton_ids = skeleton_ids.map(Number);
+    var removedModels = skeleton_ids.reduce((function(o, skid) {
       var index = this.ordered_skeleton_ids.indexOf(skid);
       if (index > -1) {
         this.ordered_skeleton_ids.splice(index, 1);
-        return true;
+        o[skid] = this.getSkeletonModel(skid);
+        delete this.skeletons[skid];
       }
-      return false;
-    }, this);
+      return o;
+    }).bind(this), {});
 
     // Only update if skeletons where actually removed
-    if (deletedSkeletons.length > 0) {
+    if (!CATMAID.tools.isEmpty(removedModels)) {
       this.update();
-      this.updateLink(this.getSelectedSkeletonModels());
+      this.triggerRemove(removedModels);
     }
   };
 
@@ -182,6 +178,24 @@
     return Object.keys(this.getSelectedSkeletonModels());
   };
 
+  var makeSkeletonModel = function(skeletonId, pre, post, selected, name) {
+    var color = new THREE.Color();
+    if (pre) {
+      if (post) {
+        color.setRGB(0.8, 0.6, 1); // both
+      } else {
+        color.setRGB(1, 0.4, 0.4); // pre
+      }
+    } else if (post) {
+      color.setRGB(0.5, 1, 1); // post
+    }
+
+    name = name || CATMAID.NeuronNameService.getInstance().getName(skeletonId);
+    var model = new CATMAID.SkeletonModel(skeletonId, name, color);
+    model.selected = !!selected;
+    return model;
+  };
+
   SkeletonConnectivity.prototype.getSkeletonModel = function(skeleton_id) {
     var e_name = $('#a-connectivity-table-' + this.widgetID + '-' + skeleton_id);
     if (0 === e_name.length) return null;
@@ -190,18 +204,18 @@
     var pre = $("#presynaptic_to-show-skeleton-" + this.widgetID + "-" + skeleton_id);
     var post = $("#postsynaptic_to-show-skeleton-" + this.widgetID + "-" + skeleton_id);
 
-    var color = new THREE.Color();
-    if (pre.length > 0) {
-      if (post.length > 0) color.setRGB(0.8, 0.6, 1); // both
-      else color.setRGB(1, 0.4, 0.4); // pre
-    } else if (post.length > 0) color.setRGB(0.5, 1, 1); // post
-
-    var model = new CATMAID.SkeletonModel(skeleton_id, name, color);
-    model.selected = pre.prop('checked') || post.prop('checked');
-    return model;
+    var selected = pre.prop('checked') || post.prop('checked');
+    return makeSkeletonModel(skeleton_id, pre.length > 0, post.length > 0, selected, name);
   };
 
   SkeletonConnectivity.prototype.getSelectedSkeletonModels = function() {
+    return this.getSkeletonModels(true);
+  };
+
+  /**
+   * Get models for all skeletons in this source.
+   */
+  SkeletonConnectivity.prototype.getSkeletonModels = function(onlySelected) {
     var widgetID = this.widgetID;
     var skeletons = this.skeletons;
     // Read out skeletons from neuron list
@@ -209,20 +223,20 @@
       // Test if checked
       var cb = $('input#neuron-selector-' + widgetID + '-' + skid +
           '[type=checkbox]');
-      if (cb.prop('checked')) {
+      var selected = cb.prop('checked');
+      if (!onlySelected || selected) {
         var name = skeletons[skid];
-        o[skid] = new CATMAID.SkeletonModel(skid,
+        var model = new CATMAID.SkeletonModel(skid,
             skeletons[skid], new THREE.Color().setRGB(1, 1, 0));
+        model.selected = selected;
+        o[skid] = model;
       }
       return o;
     }, {});
 
-    var colors = [new THREE.Color().setRGB(1, 0.4, 0.4),
-                  new THREE.Color().setRGB(0.5, 1, 1),
-                  new THREE.Color().setRGB(0.8, 0.6, 1)];
     // Read out all skeletons
     var sks = {};
-    ['presynaptic_to', 'postsynaptic_to'].forEach(function(relation, index) {
+    ['presynaptic_to', 'postsynaptic_to', 'gapjunction_with'].forEach(function(relation, index) {
       $("input[id^='" + relation + "-show-skeleton-" + widgetID + "-']").each(function(i, e) {
         var skid = parseInt(e.value);
         if (!(skid in sks)) sks[skid] = {};
@@ -232,14 +246,13 @@
     // Pick those for which at least one checkbox is checked (if they have more than one)
     Object.keys(sks).forEach(function(skid) {
       var sk = sks[skid];
-      if (true === sk[0] || true === sk[1]) {
-        var index = -1;
-        if (0 in sk) {
-          if (1 in sk) index = 2; // exists in both pre and post
-          else index = 0;
-        } else if (1 in sk) index = 1;
+      var selected = true === sk[0] || true === sk[1];
+      if (!onlySelected || selected) {
+        var pre = 0 in sk;
+        var post = 1 in sk;
         var name = $('#a-connectivity-table-' + widgetID + '-' + skid).text();
-        models[skid] = new CATMAID.SkeletonModel(skid, name, colors[index].clone());
+        var model = makeSkeletonModel(skid, pre, post, selected, name);
+        models[skid] = model;
       }
     });
 
@@ -302,10 +315,18 @@
          'boolean_op': $('#connectivity_operation' + this.widgetID).val()},
         function(status, text) {
           var handle = function(status, text) {
+            // Get current partnerModels
+            var oldPartnerModels = self.getSkeletonModels();
+            for(var skid in skids) {
+              delete oldPartnerModels[skid];
+            }
+
             if (200 !== status) {
               self.incoming = {};
               self.outgoing = {};
+              self.gapjunctions = {};
               self.reviewers.clear();
+              self.triggerRemove(oldPartnerModels);
               new CATMAID.ErrorDialog("Couldn't load connectivity information",
                   "The server returned an unexpected status code: " +
                       status).show();
@@ -316,7 +337,9 @@
               if ('REPLACED' !== json.error) {
                 self.incoming = {};
                 self.outgoing = {};
+                self.gapjunctions = {};
                 self.reviewers.clear();
+                self.triggerRemove(oldPartnerModels);
                 new CATMAID.ErrorDialog("Couldn't load connectivity information",
                     json.error).show();
               }
@@ -327,22 +350,39 @@
             // the connectivity plots in a separate widget.
             self.incoming = json.incoming;
             self.outgoing = json.outgoing;
+            self.gapjunctions = json.gapjunctions;
             self.reviewers.clear();
             json.incoming_reviewers.forEach(self.reviewers.add.bind(self.reviewers));
             json.outgoing_reviewers.forEach(self.reviewers.add.bind(self.reviewers));
+            json.gapjunctions_reviewers.forEach(self.reviewers.add.bind(self.reviewers));
 
             // Register this widget with the name service for all neurons
-            var createPartnerModels = function(partners, result) {
-              for (var skid in partners) {
-                result[skid] = new CATMAID.SkeletonModel(skid, '', null);
-              }
-            };
-            var partnerModels = {};
-            createPartnerModels(self.incoming, partnerModels);
-            createPartnerModels(self.outgoing, partnerModels);
+            var newModels = {};
+            var selected = false;
+            for (var skid in self.incoming) {
+              if (skid in self.skeletons || skid in oldPartnerModels) { continue; }
+              newModels[skid] = {};
+            }
+            for (var skid in self.outgoing) {
+              if (skid in self.skeletons || skid in oldPartnerModels) { continue; }
+              newModels[skid] = {};
+            }
+            for (var skid in self.gapjunctions) {
+              if (skid in self.skeletons || skid in oldPartnerModels) { continue; }
+              newModels[skid] = {};
+            }
 
             // Make all partners known to the name service
-            NeuronNameService.getInstance().registerAll(self, partnerModels, self.redraw.bind(self));
+            CATMAID.NeuronNameService.getInstance().registerAll(self, newModels, function() {
+              self.redraw();
+              // Create model container and announce new models
+              for (var skid in newModels) {
+                newModels[skid] = makeSkeletonModel(skid, skid in self.incoming,
+                    skid in self.outgoing, false);
+              }
+              self.triggerAdd(newModels);
+            });
+
           };
 
           // Handle result and create tables, if possible
@@ -357,44 +397,28 @@
    */
   SkeletonConnectivity.prototype.selectSkeleton = function(skid, selected) {
       this.skeletonSelection[skid] = selected;
-      this.updateVisibility(skid, selected);
       $('#neuron-selector-' + this.widgetID + '-' + skid).prop('checked', selected);
       $('#presynaptic_to-show-skeleton-' + this.widgetID + '-' + skid).prop('checked', selected);
       $('#postsynaptic_to-show-skeleton-' + this.widgetID + '-' + skid).prop('checked', selected);
+      $('#gapjunction_with-show-skeleton-' + this.widgetID + '-' + skid).prop('checked', selected);
 
       // Check the select all box, if all skeletons are selected
       var notSelected = function(skid) { return !this.skeletonSelection[skid]; };
       var allLookedAtSelected = !this.ordered_skeleton_ids.some(notSelected, this);
       $('#neuron-select-all-' + this.widgetID).prop('checked', allLookedAtSelected);
-  };
 
-  /**
-   *  Support function to update the visibility of a neuron in another widget.
-   */
-  SkeletonConnectivity.prototype.updateVisibility = function(skid, visible) {
-      // Tell all linked widgets about this change or return if there are none
-      var linkTarget = this.getLinkTarget();
-      if (!linkTarget) return;
-
-      var model = linkTarget.getSkeletonModel(skid);
-      if (visible) {
-        if (!model) model = this.getSkeletonModel(skid);
-        else model.setVisible(true);
-        linkTarget.updateOneModel(model);
-      } else {
-        if (model) {
-          model.setVisible(false);
-          linkTarget.updateOneModel(model);
-        }
-      }
+      // Announce change
+      var model = this.getSkeletonModel(skid);
+      model.selected = selected;
+      this.triggerChange(CATMAID.tools.idMap(model));
   };
 
   SkeletonConnectivity.prototype.redraw = function() {
 
     // Record the state of checkboxes
-    var checkboxes = [{}, {}],
+    var checkboxes = [{}, {}, {}],
         widgetID = this.widgetID,
-        relations = ['presynaptic_to', 'postsynaptic_to'];
+        relations = ['presynaptic_to', 'postsynaptic_to', 'gapjunction_with'];
     relations.forEach(function(relation, index) {
       $("[id^='" + relation + "-show-skeleton-" + widgetID + "-']").each(function(_, checkbox) {
         checkboxes[index][checkbox.value] = checkbox.checked;
@@ -424,7 +448,7 @@
     $("#connectivity_widget" + this.widgetID)
         .find('a[data-skeleton-id]')
         .each(function (index, element) {
-          this.textContent = NeuronNameService.getInstance().getName(this.getAttribute('data-skeleton-id'));
+          this.textContent = CATMAID.NeuronNameService.getInstance().getName(this.getAttribute('data-skeleton-id'));
     });
 
     $("#connectivity_widget" + this.widgetID)
@@ -432,7 +456,7 @@
         .each(function (index, element) {
           var count = this.firstChild.textContent;
           this.setAttribute('title', count + " synapse(s) for neuron '" +
-              NeuronNameService.getInstance().getName(this.getAttribute('skid')));
+              CATMAID.NeuronNameService.getInstance().getName(this.getAttribute('skid')));
     });
 
     var widgetID = this.widgetID;
@@ -445,7 +469,7 @@
   };
 
   SkeletonConnectivity.prototype.updateReviewSummaries = function () {
-    var partnerSkids = [this.incoming, this.outgoing].reduce(function (skids, partners) {
+    var partnerSkids = [this.incoming, this.outgoing, this.gapjunctions].reduce(function (skids, partners) {
       return skids.concat(Object.keys(partners));
     }, []);
 
@@ -476,7 +500,7 @@
                     this.textContent = counts[0];
               });
 
-              ['incoming', 'outgoing'].forEach(function (partnerSet) {
+              ['incoming', 'outgoing', 'gapjunctions'].forEach(function (partnerSet) {
                 var countSums = Object.keys(self[partnerSet]).reduce(function (nodes, partner) {
                   var count = json[partner];
                   return [nodes[0] + count[0], nodes[1] + count[1]];
@@ -504,7 +528,6 @@
     // Simplify access to this widget's ID in sub functions
     var widgetID = this.widgetID;
     // Simplify access to pre-bound skeleton source and instance registry methods
-    var getLinkTarget = this.getLinkTarget.bind(this);
     var getSkeletonModel = this.getSkeletonModel.bind(this);
 
     /**
@@ -513,7 +536,7 @@
      */
     var createNameElement = function(name, skeleton_id) {
       var a = document.createElement('a');
-      a.appendChild(document.createTextNode(NeuronNameService.getInstance().getName(skeleton_id)));
+      a.appendChild(document.createTextNode(CATMAID.NeuronNameService.getInstance().getName(skeleton_id)));
       a.setAttribute('href', '#');
       a.setAttribute('id', 'a-connectivity-table-' + widgetID + '-' + skeleton_id);
       a.setAttribute('data-skeleton-id', skeleton_id);
@@ -528,6 +551,20 @@
       incoming.toggleClass('table_container_wide', !sideBySide);
       outgoing.toggleClass('table_container_half', sideBySide);
       outgoing.toggleClass('table_container_wide', !sideBySide);
+      gapjunctions.toggleClass('table_container_half', sideBySide);
+      gapjunctions.toggleClass('table_container_wide', !sideBySide);
+    };
+
+    /**
+     * Support function to show or hide the gap junction table and gap junction
+     * threshold columns.
+     */
+    var gapjunctionTable = function(visible) {
+      gapjunctions.toggleClass('table_container_hidden', !visible);
+      incoming.toggleClass('gapjunction_visible', visible);
+      outgoing.toggleClass('gapjunction_visible', visible);
+      gapjunctions.toggleClass('gapjunction_visible', visible);
+      $(".gj_column").toggleClass('column_hidden', !visible);
     };
 
     /**
@@ -597,9 +634,9 @@
       table.append( thead );
       var row = $('<tr />');
       row.append( $('<th />').text("select").attr('rowspan', headerRows));
-      row.append( $('<th />').text(title + "stream neuron").attr('rowspan',
+      row.append( $('<th />').text((title !== 'Gapjunction') ? title + "stream neuron" : "Gap junctions with neuron").attr('rowspan',
           headerRows));
-      row.append( $('<th />').text("syn count").attr('rowspan', 1).attr('colspan',
+      row.append( $('<th />').text((title !== 'Gapjunction') ? "syn count" : "gj count").attr('rowspan', 1).attr('colspan',
           extraCols ? skids.length + 1 : 1));
       row.append( $('<th />').text("reviewed").attr('rowspan', headerRows));
       row.append( $('<th />').text("node count").attr('rowspan', headerRows));
@@ -669,7 +706,7 @@
         var td = document.createElement('td');
         var title = skid ?
             count + " synapse(s) for neuron '" +
-                NeuronNameService.getInstance().getName(skid) + "'." :
+                CATMAID.NeuronNameService.getInstance().getName(skid) + "'." :
             count + " synapses for all selected neurons.";
         td.setAttribute('class', 'syncount');
         // Only add the count as displayed text if it is greater zero. This
@@ -809,41 +846,20 @@
       // Assign 'select all' checkbox handler
       $('#' + name + 'stream-selectall' + widgetID).click(function( event ) {
         event.stopPropagation();
-        var linkTarget = getLinkTarget();
 
         // Remember the check state of this control
         widget.selectAllSelection[name] = this.checked;
         var selfChecked = this.checked;
 
-        var skids = $('tbody input[type="checkbox"]', table).map(function () {
+        // Mark all checkboxes accordingly and set skeleton selection state
+        $('tbody input[type="checkbox"]', table).map(function () {
           this.checked = selfChecked;
           var skid = parseInt(this.value);
           widget.skeletonSelection[skid] = selfChecked;
           return skid;
-        }).get();
+        });
 
-        if (this.checked) {
-         if (linkTarget) {
-           linkTarget.updateModels(skids.reduce(function(o, skid) {
-             // See if the target has the model and update only its selection state
-             var model = linkTarget.getSkeletonModel(skid);
-             if (!model) model = getSkeletonModel(skid);
-             else model.setVisible(true);
-             o[skid] = model;
-             return o;
-           }, {}));
-         }
-       } else {
-         if (linkTarget) {
-           linkTarget.updateModels(skids.reduce(function(o, skid) {
-             var model = linkTarget.getSkeletonModel(skid);
-             if (!model) return o;
-             model.setVisible(false);
-             o[skid] = model;
-             return o;
-           }, {}));
-         }
-       }
+        widget.triggerChange(widget.getSkeletonModels());
       });
     };
 
@@ -897,8 +913,8 @@
     var thresholdHeaders = Object.keys(this.thresholds).reduce((function (dirHeaders, dir) {
       dirHeaders[dir] = Object.keys(this.thresholds[dir]).reduce(function (typeHeaders, type) {
         typeHeaders[type] = $('<th />').text(
-              ('up' === dir ? 'Upstream ' : 'Downstream ') +
-              type + ' threshold').addClass('threshold-header');
+              ('up' === dir ? 'Upstream ' : ('down' == dir ? 'Downstream ' : 'Gap junction ')) +
+              type + ' threshold').addClass('threshold-header' + ('gj' === dir ? ' gj_column column_hidden' : ''));
         return typeHeaders;
       }, {});
       return dirHeaders;
@@ -976,8 +992,9 @@
               .append(selectionCb))
           .append($('<td />').append(
               createNameElement(this.skeletons[skid], skid)))
-          .append(thresholdSelectors.map(function (selector) {
-            return $('<td />').append(selector).attr('class', 'input-container');
+          .append(thresholdSelectors.map(function (selector, i) {
+            return $('<td />').append(selector)
+                .attr('class', 'input-container' + (i > 3 ? ' gj_column column_hidden' : ''));
           }));
       neuronTable.append(row);
     }, this);
@@ -994,6 +1011,8 @@
         {orderable: false},
         {orderable: false},
         null,
+        {orderable: false},
+        {orderable: false},
         {orderable: false},
         {orderable: false},
         {orderable: false},
@@ -1051,8 +1070,9 @@
           .append($('<td />'))
           .append($('<td />'))
           .append($('<td />').text('Sum'))
-          .append(thresholdSelectors.map(function (selector) {
-            return $('<td />').append(selector).attr('class', 'input-container');
+          .append(thresholdSelectors.map(function (selector, i) {
+            return $('<td />').append(selector)
+                .attr('class', 'input-container' + (i > 3 ? ' gj_column column-hideen' : ''));
           })));
       neuronTable.append(row);
     }
@@ -1147,9 +1167,11 @@
     // Create containers for pre and postsynaptic partners
     var incoming = $('<div />');
     var outgoing = $('<div />');
+    var gapjunctions = $('<div />');
     var tables = $('<div />').css('width', '100%').attr('class', 'content')
        .append(incoming)
-       .append(outgoing);
+       .append(outgoing)
+       .append(gapjunctions);
     content.append(tables);
 
     // Add handler to layout toggle
@@ -1158,6 +1180,15 @@
           return function() {
             widget.tablesSideBySide = this.checked;
             layoutTables(this.checked);
+          };
+        })(this)).change();
+
+    // Add handler to gap junction table toggle
+    $('#connectivity-gapjunctiontable-toggle-' + widgetID).unbind('change')
+        .change((function(widget) {
+          return function() {
+            widget.showGapjunctionTable = this.checked;
+            gapjunctionTable(this.checked);
           };
         })(this)).change();
 
@@ -1173,6 +1204,12 @@
         'Down', 'postsynaptic_to', this.hidePartnerThreshold, this.reviewFilter,
         this.downstreamCollapsed, (function() {
           this.downstreamCollapsed = !this.downstreamCollapsed;
+        }).bind(this));
+    var table_gapjunctions = create_table.call(this, this.ordered_skeleton_ids,
+        this.skeletons, this.thresholds.gj, to_sorted_array(this.gapjunctions, this.thresholds.gj.confidence),
+        'Gapjunction', 'gapjunction_with', this.hidePartnerThreshold, this.reviewFilter,
+        this.gapjunctionCollapsed, (function() {
+          this.gapjunctionCollapsed = !this.gapjunctionCollapsed;
         }).bind(this));
 
     // Extend tables with DataTables for sorting, reordering and filtering
@@ -1198,14 +1235,16 @@
 
     incoming.append(table_incoming);
     outgoing.append(table_outgoing);
+    gapjunctions.append(table_gapjunctions);
 
     table_incoming.dataTable(dataTableOptions);
     table_outgoing.dataTable(dataTableOptions);
+    table_gapjunctions.dataTable(dataTableOptions);
 
     $('.dataTables_wrapper', tables).css('min-height', 0);
 
     var widget = this;
-    $.each([table_incoming, table_outgoing], function () {
+    $.each([table_incoming, table_outgoing, table_gapjunctions], function () {
       var self = this;
       $(this).siblings('.connectivity_table_actions')
         // Add custom filter/search input to support regular expressions.
@@ -1244,7 +1283,7 @@
                   // Include neuron name in "syn count" field of first header row.
                   if (0 === rowIndex && 2 === i) {
                     var sk = widget.ordered_skeleton_ids[0];
-                    return '"#Synapses with ' + NeuronNameService.getInstance().getName(sk) + '"';
+                    return '"#Synapses with ' + CATMAID.NeuronNameService.getInstance().getName(sk) + '"';
                   }
                   return c;
                 } :
@@ -1255,7 +1294,7 @@
                       1 < i && (3 + nSkeletons) > i) {
                     var index = parseInt(c.replace(/\"/g, ''), 10);
                     var sk = widget.ordered_skeleton_ids[index - 1];
-                    return '"#Synapses with ' + NeuronNameService.getInstance().getName(sk) + '"';
+                    return '"#Synapses with ' + CATMAID.NeuronNameService.getInstance().getName(sk) + '"';
                   }
                   return c;
                 };
@@ -1288,6 +1327,8 @@
           this.incoming, 'presynaptic_to'));
     outgoing.on('click', 'a[partnerID]', createPartnerClickHandler(
           this.outgoing, 'postsynaptic_to'));
+    gapjunctions.on('click', 'a[partnerID]', createPartnerClickHandler(
+          this.gapjunctions, 'gapjunction_with'));
     function createPartnerClickHandler(partners, relation) {
       return function() {
         var partnerID = $(this).attr('partnerID');
@@ -1308,12 +1349,15 @@
     var nSkeletons = Object.keys(this.skeletons).length;
     add_select_all_fn(this, 'up', table_incoming, nSkeletons);
     add_select_all_fn(this, 'down', table_outgoing, nSkeletons);
+    add_select_all_fn(this, 'gj', table_gapjunctions, nSkeletons);
 
     // Add handler for individual skeleton checkboxes
     incoming.on('click', 'input[data-skeleton-id][type=checkbox]',
        set_as_selected.bind(this, 'up', 'presynaptic_to'));
     outgoing.on('click', 'input[data-skeleton-id][type=checkbox]',
        set_as_selected.bind(this, 'down', 'postsynaptic_to'));
+    gapjunctions.on('click', 'input[data-skeleton-id][type=checkbox]',
+       set_as_selected.bind(this, 'gj', 'gapjunction_with'));
 
     // Add handler for neuron name clicks
     content.off('click', 'a[data-skeleton-id]');
@@ -1364,6 +1408,10 @@
         this.outgoing);
     WindowMaker.create('connectivity-graph-plot', GP);
     GP.draw();
+  };
+
+  SkeletonConnectivity.prototype.openStackedBarChart = function() {
+    var SF = WindowMaker.create("synapse-fractions");
   };
 
   /**

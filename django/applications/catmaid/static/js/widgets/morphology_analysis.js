@@ -4,7 +4,6 @@
   Arbor,
   fetchSkeletons,
   InstanceRegistry,
-  NeuronNameService,
   project,
   SkeletonAnnotations,
 */
@@ -30,7 +29,7 @@ MorphologyPlot.prototype.getName = function() {
 MorphologyPlot.prototype.destroy = function() {
   this.unregisterInstance();
   this.unregisterSource();
-  NeuronNameService.getInstance().unregister(this);
+  CATMAID.NeuronNameService.getInstance().unregister(this);
   
   Object.keys(this).forEach(function(key) { delete this[key]; }, this);
 };
@@ -121,7 +120,10 @@ MorphologyPlot.prototype.append = function(models) {
       function(skeleton_id) { return {}; }, // post
       (function(skeleton_id, json) {
         this.lines[skeleton_id] = {nodes: json[0],
-                                   connectors: json[1]};
+                                   connectors: json[1].filter(function(con) {
+                                     // Filter out non-synaptic connections
+                                     return con[2] === 0 || con[2] === 1;
+                                   })};
       }).bind(this),
       (function(skeleton_id) {
         // Failed loading
@@ -131,7 +133,7 @@ MorphologyPlot.prototype.append = function(models) {
       (function() {
         // Done loading all
         this._populateLines(skeleton_ids);
-        NeuronNameService.getInstance().registerAll(this, models, this.draw.bind(this));
+        CATMAID.NeuronNameService.getInstance().registerAll(this, models, this.draw.bind(this));
       }).bind(this));
 };
 
@@ -171,7 +173,7 @@ MorphologyPlot.prototype._populateLine = function(skeleton_id) {
   });
   var center = this._computeCenter(this.center_mode, arbor, positions, line.connectors);
   if (center.error) {
-    CATMAID.warn(center.error + " for " + NeuronNameService.getInstance().getName(skeleton_id));
+    CATMAID.warn(center.error + " for " + CATMAID.NeuronNameService.getInstance().getName(skeleton_id));
     center = this._computeCenter(center.alternative_mode, arbor, positions, line.connectors);
   }
 
@@ -353,7 +355,7 @@ MorphologyPlot.prototype.draw = function() {
           yMax = Math.max(yMax, d3.max(line.y));
         }
         return {id: id,
-                name: NeuronNameService.getInstance().getName(id),
+                name: CATMAID.NeuronNameService.getInstance().getName(id),
                 hex: '#' + this.models[id].color.getHexString(),
                 xy: zip(line.x, line.y)};
       }, this);
@@ -466,7 +468,7 @@ MorphologyPlot.prototype.createCSV = function() {
                   v[x] = line.y[i];
                   return v;
                 }, {});
-           return NeuronNameService.getInstance().getName(skid) + ',' + xAxis.map(
+           return CATMAID.NeuronNameService.getInstance().getName(skid) + ',' + xAxis.map(
              function(x) {
                var v = values[x];
                return undefined === v ? 0 : v;

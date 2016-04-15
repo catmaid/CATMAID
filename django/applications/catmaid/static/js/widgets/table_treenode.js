@@ -108,6 +108,12 @@ TreenodeTable.prototype.getSelectedSkeletonModels = function() {
 
 TreenodeTable.prototype.getSkeletonModels = TreenodeTable.prototype.getSelectedSkeletonModels;
 
+TreenodeTable.prototype.getSkeletonModel = function(id) {
+  if (id in this.models) {
+    return this.models[id].clone();
+  }
+};
+
 TreenodeTable.prototype.refresh = function() {
   var skeleton_ids = Object.keys(this.models);
   if (skeleton_ids.length > 0) {
@@ -194,9 +200,6 @@ TreenodeTable.prototype._appendSkeletons = function(skeleton_ids) {
           row[9] = users[row[9]].login;
           // Replace epoch seconds with date
           row[10] = formatTime(row[10]);
-          //var d = new Date(0);
-          //d.setUTCSeconds(row[10]);
-          //row[10] = d.toLocaleDateString('en-GB');
           // Append reviewers' names
           var reviewers = reviews[row[0]];
           row.push(reviewers ? reviewers.join(', ') : 'None');

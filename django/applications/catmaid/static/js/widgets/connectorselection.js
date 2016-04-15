@@ -22,9 +22,21 @@
             alert(json.error);
             return;
           }
-          var text = 'Synapses ' + ('presynaptic_to' === relation ? 'post' : 'pre') +
-              'synaptic to neuron' + (skids1.length > 1 ? 's' : '') + ' ' + skids1.map(NeuronNameService.getInstance().getName).join(', ');
-          show_table(text, json);
+          var text;
+          if ('presynaptic_to' === relation) {
+            text = 'Synapses presynaptic to';
+          } else if ('postsynaptic_to' === relation) {
+            text = 'Synapses postsynaptic to';
+          } else if ('gapjunction_with' === relation) {
+            text = 'Gap junctions with';
+          }
+          if (text !== undefined) {
+            text += ' neuron' + (skids1.length > 1 ? 's' : '') + ' '
+                 + skids1.map(CATMAID.NeuronNameService.getInstance().getName).join(', ');
+            show_table(text, json, relation);
+          } else {
+            alert('Unsupported relation: ' + relation);
+          }
         });
   };
 
@@ -100,10 +112,27 @@
     });
   };
 
-  var show_table = function(header, connectors) {
+  var show_table = function(header, connectors, relation) {
     WindowMaker.show('create-connector-selection');
     // Write the label
     $('#connector-selection-label').text(header);
+    
+    // Set proper table titles
+    var titles;
+    if (relation == 'presynaptic_to' || relation == 'postsynaptic_to' || relation === undefined) {
+      titles = ['Presyn. neuron', 'Postsyn. neuron'];
+    } else {
+      titles = ['Neuron 1', 'Neuron 2'];
+    }
+    $('#connectorselectiontable thead th.preheader div').html(function() {
+      return titles[0] + $(this).children()[0].outerHTML;
+    });
+    $('#connectorselectiontable thead th.postheader div').html(function() {
+      return titles[1] + $(this).children()[0].outerHTML;
+    });
+    $('#connectorselectiontable tfoot th.preheader').html(titles[0]);
+    $('#connectorselectiontable tfoot th.postheader').html(titles[1]);
+
 
     // Split up the JSON reply
     var locations = {}; // keys are connector IDs
@@ -111,9 +140,9 @@
 
     connectors.forEach(function(row) {
       rows.push([row[0],
-                row[2], NeuronNameService.getInstance().getName(row[3]),
+                row[2], CATMAID.NeuronNameService.getInstance().getName(row[3]),
                 row[4], CATMAID.User.safe_get(row[5]).login,
-                row[7], NeuronNameService.getInstance().getName(row[8]),
+                row[7], CATMAID.NeuronNameService.getInstance().getName(row[8]),
                 row[9], CATMAID.User.safe_get(row[10]).login]);
       // Store all locations (overwriting can be ignored, it is the same data)
       locations[row[0]] = row[1];

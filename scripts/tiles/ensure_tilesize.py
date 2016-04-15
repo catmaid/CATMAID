@@ -8,13 +8,15 @@
 #
 # [1] http://pypi.python.org/pypi/pgmagick/
 
+from __future__ import print_function
+
 import sys
 import os
 from pgmagick import Image, Geometry, Color, CompositeOperator as co
 
 # Make sure we got the arguments we expect
 if len(sys.argv) != 3:
-    print >> sys.stderr, "Usage: ensure_tilesize.py <FILENAME> <TILESIZE>"
+    print("Usage: ensure_tilesize.py <FILENAME> <TILESIZE>", file=sys.stderr)
     sys.exit(1)
 
 image_path = sys.argv[1]
@@ -22,7 +24,7 @@ tile_size = int(sys.argv[2])
 
 # Make sure the file actually exists
 if not os.path.exists(image_path):
-    print >> sys.stderr, "Could not find file!"
+    print("Could not find file!", file=sys.stderr)
     sys.exit(1)
 
 # Get properties of image
@@ -44,5 +46,5 @@ new_image.composite(image, 0, 0, co.OverCompositeOp)
 # Override original image
 new_image.write(image_name)
 
-print >> sys.stdout, "Corrected " + image_name + " from " + str(image_width) + "x" + str(image_height) + " to " + str(tile_size) + "x" + str(tile_size)
+print("Corrected " + image_name + " from " + str(image_width) + "x" + str(image_height) + " to " + str(tile_size) + "x" + str(tile_size), file=sys.stderr)
 

@@ -1,25 +1,24 @@
-from django.contrib.auth.models import Permission
-from django.conf import settings
-from django.test import TestCase, TransactionTestCase
-from django.test.client import Client
-from django.http import HttpResponse
-from django.db import connection, transaction
-from django.shortcuts import get_object_or_404
-from guardian.shortcuts import assign_perm
-import os
 import re
 import urllib
 import json
-import datetime
 
+from django.conf import settings
+from django.contrib.auth.models import Permission
+from django.db import connection, transaction
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
+from django.test import TestCase, TransactionTestCase
+from django.test.client import Client
+from guardian.shortcuts import assign_perm
+
+from catmaid.fields import Double3D, Integer3D
 from catmaid.models import Project, Stack, ProjectStack
 from catmaid.models import ClassInstance, Log, Message, TextlabelLocation
 from catmaid.models import Treenode, Connector, TreenodeConnector, User, Review, ReviewerWhitelist
 from catmaid.models import Textlabel, TreenodeClassInstance, ClassInstanceClassInstance
-from catmaid.fields import Double3D, Integer3D
 from catmaid.control.common import get_relation_to_id_map, get_class_to_id_map
-from catmaid.control.neuron_annotations import _annotate_entities, create_annotation_query, \
-    delete_annotation_if_unused
+from catmaid.control.neuron_annotations import _annotate_entities, create_annotation_query
+from catmaid.state import make_nocheck_state
 
 
 class TransactionTests(TransactionTestCase):
@@ -144,7 +143,7 @@ class RelationQueryTests(TestCase):
     def test_find_all_neurons(self):
         all_neurons = ClassInstance.objects.filter(class_column__class_name='neuron',
                                                    project=self.test_project_id)
-        self.assertEqual(all_neurons.count(), 11)
+        self.assertEqual(all_neurons.count(), 13)
 
     def test_find_downstream_neurons(self):
         upstream = ClassInstance.objects.get(name='branched neuron')
@@ -231,6 +230,29 @@ class ViewPageTests(TestCase):
         assign_perm('can_browse', user, p)
         assign_perm('can_annotate', user, p)
 
+        cursor = connection.cursor()
+        # Make sure all counters are set correctly
+        cursor.execute("""
+            SELECT setval('concept_id_seq', coalesce(max("id"), 1), max("id") IS NOT null) FROM concept;
+        """)
+        cursor.execute("""
+            SELECT setval('location_id_seq', coalesce(max("id"), 1), max("id") IS NOT null) FROM location;
+        """)
+
+    def test_testdata(self):
+        """Makes sure the test data doesn't contain rows for the base tables
+        location and concept. These are not required for table inheritance and will
+        confuse some functions."""
+        cursor = connection.cursor()
+        cursor.execute("""
+            SELECT COUNT(*) FROM ONLY location;
+        """)
+        self.assertEqual(cursor.fetchone()[0], 0)
+        cursor.execute("""
+            SELECT COUNT(*) FROM ONLY concept;
+        """)
+        self.assertEqual(cursor.fetchone()[0], 0)
+
     def fake_authentication(self, username='test2', password='test', add_default_permissions=False):
         self.client.login(username=username, password=password)
 
@@ -266,6 +288,43 @@ class ViewPageTests(TestCase):
         # Now insert a fake session and expect a successful request
         self.fake_authentication()
         response = self.client.get('/user/password_change/')
+        self.assertEqual(response.status_code, 200)
+
+    def test_token_authentication(self):
+        response = self.client.post('/api-token-auth/',
+                {'username': 'test2',
+                 'password': 'test'})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        token = parsed_response['token']
+
+        token_client = Client(enforce_csrf_checks=True)
+        sess_client = Client(enforce_csrf_checks=True)
+        sess_client.login(username='test2', password='test')
+
+        # Check that a Django view rejects an unauthed request...
+        response = token_client.post('/%d/node/user-info' % (self.test_project_id,),
+                {'node_id': 383})
+        self.assertEqual(response.status_code, 403)
+        # ..and an authed session request without CSRF headers...
+        response = sess_client.post('/%d/node/user-info' % (self.test_project_id,),
+                {'node_id': 383})
+        self.assertEqual(response.status_code, 403)
+        # ...but accepts a token auth request without CSRF
+        response = token_client.post('/%d/node/user-info' % (self.test_project_id,),
+                {'node_id': 383},
+                HTTP_X_AUTHORIZATION='Token ' + token)
+        self.assertEqual(response.status_code, 200)
+
+        # Check that a DRF view rejects an unauthed request...
+        response = token_client.post('/%d/annotations/' % (self.test_project_id,))
+        self.assertEqual(response.status_code, 403)
+        # ..and an authed session request without CSRF headers...
+        response = sess_client.post('/%d/annotations/' % (self.test_project_id,))
+        self.assertEqual(response.status_code, 403)
+        # ...but accepts a token auth request without CSRF
+        response = token_client.post('/%d/annotations/' % (self.test_project_id,),
+                HTTP_X_AUTHORIZATION='Token ' + token)
         self.assertEqual(response.status_code, 200)
 
     def test_user_project_permissions_not_logged_in(self):
@@ -366,13 +425,13 @@ class ViewPageTests(TestCase):
         self.assertEqual(set(returned_node_map['432']),
                          set(["synapse with more targets", "TODO"]))
 
-        response = self.client.post('/%d/labels-for-node/location/%d' % (self.test_project_id,
+        response = self.client.get('/%d/labels/location/%d/' % (self.test_project_id,
                                                                     432))
         returned_labels = json.loads(response.content)
         self.assertEqual(set(returned_labels),
                          set(["synapse with more targets", "TODO"]))
 
-        response = self.client.post('/%d/labels-for-node/treenode/%d' % (self.test_project_id,
+        response = self.client.get('/%d/labels/treenode/%d/' % (self.test_project_id,
                                                                     403))
         returned_labels = json.loads(response.content)
         self.assertEqual(len(returned_labels), 1)
@@ -386,7 +445,7 @@ class ViewPageTests(TestCase):
         self.assertTrue('message' in parsed_response)
         self.assertTrue(parsed_response['message'] == 'success')
 
-        response = self.client.post('/%d/labels-for-node/treenode/%d' % (self.test_project_id,
+        response = self.client.get('/%d/labels/treenode/%d/' % (self.test_project_id,
                                                                     403))
         returned_labels = json.loads(response.content)
         self.assertEqual(len(returned_labels), 2)
@@ -401,7 +460,7 @@ class ViewPageTests(TestCase):
         self.assertTrue('message' in parsed_response)
         self.assertTrue(parsed_response['message'] == 'success')
 
-        response = self.client.post('/%d/labels-for-node/treenode/%d' % (self.test_project_id,
+        response = self.client.get('/%d/labels/treenode/%d/' % (self.test_project_id,
                                                                     403))
         returned_labels = json.loads(response.content)
         self.assertEqual(len(returned_labels), 4)
@@ -415,7 +474,7 @@ class ViewPageTests(TestCase):
         self.assertTrue('message' in parsed_response)
         self.assertTrue(parsed_response['message'] == 'success')
 
-        response = self.client.post('/%d/labels-for-node/treenode/%d' % (self.test_project_id,
+        response = self.client.get('/%d/labels/treenode/%d/' % (self.test_project_id,
                                                                     403))
         returned_labels = json.loads(response.content)
         self.assertEqual(len(returned_labels), 3)
@@ -424,7 +483,7 @@ class ViewPageTests(TestCase):
     def test_project_list(self):
         # Check that, pre-authentication, we can see none of the
         # projects:
-        response = self.client.get('/projects')
+        response = self.client.get('/projects/')
         self.assertEqual(response.status_code, 200)
         result = json.loads(response.content)
         self.assertEqual(len(result), 0)
@@ -436,23 +495,17 @@ class ViewPageTests(TestCase):
 
         # Check that, pre-authentication, we can see two of the
         # projects:
-        response = self.client.get('/projects')
+        response = self.client.get('/projects/')
         self.assertEqual(response.status_code, 200)
         result = json.loads(response.content)
         self.assertEqual(len(result), 1)
 
-        # Check the project:
-        options = result[0]['action']
-        self.assertEqual(len(options), 2)
-
         # Check stacks:
-        stacks = result[0]['action'][0]['action']
+        stacks = result[0]['stacks']
         self.assertEqual(len(stacks), 1)
-        stack = stacks['3']
-        self.assertTrue(re.search(r'javascript:openProjectStack\( *3, *3 *\)', stack['action']))
 
         # Check stacks groups
-        stackgroups = result[0]['action'][1]['action']
+        stackgroups = result[0]['stackgroups']
         self.assertEqual(len(stackgroups), 0)
 
         # Now log in and check that we see a different set of projects:
@@ -464,32 +517,141 @@ class ViewPageTests(TestCase):
             p = Project.objects.get(pk=pid)
             assign_perm('can_browse', test_user, p)
 
-        # We expect three projects, because there are no stacks linked to
-        # project 2. This API should therefore not return it.
-        response = self.client.get('/projects')
+        # We expect four projects, one of them (project 2) is empty.
+        response = self.client.get('/projects/')
         self.assertEqual(response.status_code, 200)
         result = json.loads(response.content)
-        self.assertEqual(len(result), 3)
+        self.assertEqual(len(result), 4)
 
         def get_project(result, pid):
-            rl = [r for r in result if r['pid'] == pid]
+            rl = [r for r in result if r['id'] == pid]
             if len(rl) != 1:
                 raise ValueError("Malformed result")
             return rl[0]
 
         # Check the first project:
-        stacks = get_project(result, 1)['action'][0]['action']
+        stacks = get_project(result, 1)['stacks']
         self.assertEqual(len(stacks), 1)
 
         # Check the second project:
-        stacks = get_project(result, 3)['action'][0]['action']
+        stacks = get_project(result, 3)['stacks']
         self.assertEqual(len(stacks), 1)
-        stack = stacks['3']
-        self.assertTrue(re.search(r'javascript:openProjectStack\( *3, *3 *\)', stack['action']))
 
         # Check the third project:
-        stacks = get_project(result, 5)['action'][0]['action']
+        stacks = get_project(result, 5)['stacks']
         self.assertEqual(len(stacks), 2)
+
+    def test_client_datastores(self):
+        url = '/client/datastores/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        self.assertTrue(parsed_response['permission_error'])
+
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        self.assertTrue(parsed_response['permission_error'])
+
+        # Test basic datastore creation.
+        self.fake_authentication()
+        name = 'test-  %% datastore'
+        response = self.client.post(url, {'name': name})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        self.assertTrue('error' in parsed_response)
+        name = 'test-datastore'
+        response = self.client.post(url, {'name': name})
+        self.assertEqual(response.status_code, 200)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        parsed_response = [p for p in parsed_response if p['name'] == name]
+        self.assertEqual(len(parsed_response), 1)
+        response = self.client.delete(url + name)
+        self.assertEqual(response.status_code, 403)
+
+        # Create data entries.
+        url = url + name + '/'
+        response = self.client.put(
+                url,
+                urllib.urlencode({
+                    'key': 'test a',
+                    'value': '{"json": false'}),
+                content_type='application/x-www-form-urlencoded')
+        self.assertEqual(response.status_code, 400)
+        parsed_response = json.loads(response.content)
+        response = self.client.put(
+                url,
+                urllib.urlencode({
+                    'key': 'test a',
+                    'value': '{"json": true, "scope": "user-instance"}'}),
+                content_type='application/x-www-form-urlencoded')
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        self.assertFalse('error' in parsed_response)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        self.assertEqual(len(parsed_response), 1)
+        self.assertEqual(parsed_response[0]['key'], 'test a')
+
+        # Test that PUTting the same key replaces the value.
+        response = self.client.put(
+                url,
+                urllib.urlencode({
+                    'key': 'test a',
+                    'value': '{"json": true, "scope": "user-instance", "replaced": true}'}),
+                content_type='application/x-www-form-urlencoded')
+        self.assertEqual(response.status_code, 204)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        self.assertEqual(len(parsed_response), 1)
+        value = json.loads(parsed_response[0]['value'])
+        self.assertTrue(value['replaced'])
+
+        response = self.client.put(
+                url,
+                urllib.urlencode({
+                    'key': 'test a',
+                    'project_id': self.test_project_id,
+                    'value': '{"json": true, "scope": "user-project"}'}),
+                content_type='application/x-www-form-urlencoded')
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        self.assertFalse('error' in parsed_response)
+        # Omitting project ID should return only global and user-instance keys.
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        self.assertEqual(len(parsed_response), 1)
+        response = self.client.get(url, {'project_id': self.test_project_id})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        self.assertEqual(len(parsed_response), 2)
+        self.assertEqual(parsed_response[0]['key'], 'test a')
+        self.assertEqual(parsed_response[1]['key'], 'test a')
+
+        # Test that a non-admin user cannot change global data.
+        response = self.client.put(
+                url,
+                urllib.urlencode({
+                    'key': 'test a',
+                    'ignore_user': 'true',
+                    'value': '{"json": true, "scope": "global-instance"}'}),
+                content_type='application/x-www-form-urlencoded')
+        self.assertEqual(response.status_code, 403)
+
+        response = self.client.put(
+                url,
+                urllib.urlencode({
+                    'key': 'test a',
+                    'ignore_user': 'true',
+                    'project_id': self.test_project_id,
+                    'value': '{"json": true, "scope": "global-instance"}'}),
+                content_type='application/x-www-form-urlencoded')
+        self.assertEqual(response.status_code, 403)
 
     def test_rename_neuron(self):
         self.fake_authentication()
@@ -507,7 +669,8 @@ class ViewPageTests(TestCase):
         parsed_response = json.loads(response.content)
         expected_result = {
             'success': True,
-            'renamed_neuron': neuron_id
+            'renamed_neuron': neuron_id,
+            'old_name': 'branched neuron'
         }
         self.assertEqual(expected_result, parsed_response)
 
@@ -624,8 +787,8 @@ class ViewPageTests(TestCase):
                 self.assertEqual(t[1], 'test0 (4)')
             elif t[0] == 2:
                 self.assertEqual(t[1], 'test1 (2)')
-            elif t[0] == 83:
-                self.assertEqual(t[1], 'test2 (83)')
+            elif t[0] == 89:
+                self.assertEqual(t[1], 'test2 (89)')
             else:
                 raise Exception("Unexpected value in returned stats: " + str(t))
 
@@ -641,47 +804,40 @@ class ViewPageTests(TestCase):
         parsed_response = json.loads(response.content)
         self.assertEqual(expected_result, parsed_response)
 
-    def test_multiple_treenodes(self):
-        pass
-        # self.fake_authentication()
-        # FIXME API does not exist anymore. Investigate
-        # response = self.client.get('/%d/multiple-presynaptic-terminals' % (self.test_project_id,))
-        # self.assertEqual(response.status_code, 200)
-
     def test_list_treenode_table_simple(self):
         self.fake_authentication()
         response = self.client.post(
                 '/%d/treenode/table/%d/content' % (self.test_project_id, 235))
         self.assertEqual(response.status_code, 200)
         expected_result = [[
-                [417, 415, 5, 4990.0, 4200.0, 0.0, -1.0, 3, 1323111096.0],
-                [415, 289, 5, 5810.0, 3950.0, 0.0, -1.0, 3, 1323111096.0],
-                [289, 285, 5, 6210.0, 3480.0, 0.0, -1.0, 3, 1323111096.0],
-                [285, 283, 5, 6100.0, 2980.0, 0.0, -1.0, 3, 1323111096.0],
-                [283, 281, 5, 5985.0, 2745.0, 0.0, -1.0, 3, 1323111096.0],
-                [281, 279, 5, 5675.0, 2635.0, 0.0, -1.0, 3, 1323111096.0],
-                [279, 267, 5, 5530.0, 2465.0, 0.0, -1.0, 3, 1323111096.0],
-                [277, 275, 5, 6090.0, 1550.0, 0.0, -1.0, 3, 1323111096.0],
-                [275, 273, 5, 5800.0, 1560.0, 0.0, -1.0, 3, 1323111096.0],
-                [273, 271, 5, 5265.0, 1610.0, 0.0, -1.0, 3, 1323111096.0],
-                [271, 269, 5, 5090.0, 1675.0, 0.0, -1.0, 3, 1323111096.0],
-                [269, 265, 5, 4820.0, 1900.0, 0.0, -1.0, 3, 1323111096.0],
-                [267, 265, 5, 5400.0, 2200.0, 0.0, -1.0, 3, 1323111096.0],
-                [265, 263, 5, 4570.0, 2125.0, 0.0, -1.0, 3, 1323111096.0],
-                [263, 253, 5, 3915.0, 2105.0, 0.0, -1.0, 3, 1323111096.0],
-                [261, 259, 5, 2820.0, 1345.0, 0.0, -1.0, 3, 1323111096.0],
-                [259, 257, 5, 3445.0, 1385.0, 0.0, -1.0, 3, 1323111096.0],
-                [257, 255, 5, 3825.0, 1480.0, 0.0, -1.0, 3, 1323111096.0],
-                [255, 253, 5, 3850.0, 1790.0, 0.0, -1.0, 3, 1323111096.0],
-                [253, 251, 5, 3685.0, 2160.0, 0.0, -1.0, 3, 1323111096.0],
-                [251, 249, 5, 3380.0, 2330.0, 0.0, -1.0, 3, 1323111096.0],
-                [249, 247, 5, 2815.0, 2590.0, 0.0, -1.0, 3, 1323111096.0],
-                [247, 245, 5, 2610.0, 2700.0, 0.0, -1.0, 3, 1323111096.0],
-                [245, 243, 5, 1970.0, 2595.0, 0.0, -1.0, 3, 1323111096.0],
-                [243, 241, 5, 1780.0, 2570.0, 0.0, -1.0, 3, 1323111096.0],
-                [241, 239, 5, 1340.0, 2660.0, 0.0, -1.0, 3, 1323111096.0],
-                [239, 237, 5, 1135.0, 2800.0, 0.0, -1.0, 3, 1323111096.0],
-                [237, None, 5, 1065.0, 3035.0, 0.0, -1.0, 3, 1323111096.0]],
+                [417, 415, 5, 4990.0, 4200.0, 0.0, -1.0, 3, 1323093096.0],
+                [415, 289, 5, 5810.0, 3950.0, 0.0, -1.0, 3, 1323093096.0],
+                [289, 285, 5, 6210.0, 3480.0, 0.0, -1.0, 3, 1320587496.0],
+                [285, 283, 5, 6100.0, 2980.0, 0.0, -1.0, 3, 1323006696.0],
+                [283, 281, 5, 5985.0, 2745.0, 0.0, -1.0, 3, 1323957096.0],
+                [281, 279, 5, 5675.0, 2635.0, 0.0, -1.0, 3, 1323093096.0],
+                [279, 267, 5, 5530.0, 2465.0, 0.0, -1.0, 3, 1323093096.0],
+                [277, 275, 5, 6090.0, 1550.0, 0.0, -1.0, 3, 1323093096.0],
+                [275, 273, 5, 5800.0, 1560.0, 0.0, -1.0, 3, 1323093096.0],
+                [273, 271, 5, 5265.0, 1610.0, 0.0, -1.0, 3, 1323093096.0],
+                [271, 269, 5, 5090.0, 1675.0, 0.0, -1.0, 3, 1323093096.0],
+                [269, 265, 5, 4820.0, 1900.0, 0.0, -1.0, 3, 1323093096.0],
+                [267, 265, 5, 5400.0, 2200.0, 0.0, -1.0, 3, 1323093096.0],
+                [265, 263, 5, 4570.0, 2125.0, 0.0, -1.0, 3, 1323093096.0],
+                [263, 253, 5, 3915.0, 2105.0, 0.0, -1.0, 3, 1323093096.0],
+                [261, 259, 5, 2820.0, 1345.0, 0.0, -1.0, 3, 1323093096.0],
+                [259, 257, 5, 3445.0, 1385.0, 0.0, -1.0, 3, 1323093096.0],
+                [257, 255, 5, 3825.0, 1480.0, 0.0, -1.0, 3, 1323093096.0],
+                [255, 253, 5, 3850.0, 1790.0, 0.0, -1.0, 3, 1323093096.0],
+                [253, 251, 5, 3685.0, 2160.0, 0.0, -1.0, 3, 1323093096.0],
+                [251, 249, 5, 3380.0, 2330.0, 0.0, -1.0, 3, 1323093096.0],
+                [249, 247, 5, 2815.0, 2590.0, 0.0, -1.0, 3, 1323093096.0],
+                [247, 245, 5, 2610.0, 2700.0, 0.0, -1.0, 3, 1323093096.0],
+                [245, 243, 5, 1970.0, 2595.0, 0.0, -1.0, 3, 1323093096.0],
+                [243, 241, 5, 1780.0, 2570.0, 0.0, -1.0, 3, 1323093096.0],
+                [241, 239, 5, 1340.0, 2660.0, 0.0, -1.0, 3, 1323093096.0],
+                [239, 237, 5, 1135.0, 2800.0, 0.0, -1.0, 3, 1323093096.0],
+                [237, None, 5, 1065.0, 3035.0, 0.0, -1.0, 3, 1323093096.0]],
             [], [[261, 'TODO']]]
         parsed_response = json.loads(response.content)
 
@@ -705,7 +861,7 @@ class ViewPageTests(TestCase):
         treenode_id = Treenode.objects.order_by("-id")[0].id + 1  # Inexistant
         self.fake_authentication()
         response = self.client.post(
-                '/%d/node/%d/confidence/update' % (self.test_project_id, treenode_id),
+                '/%d/treenodes/%d/confidence' % (self.test_project_id, treenode_id),
                 {'new_confidence': '4'})
         self.assertEqual(response.status_code, 200)
         expected_result = 'No skeleton and neuron for treenode %s' % treenode_id
@@ -713,26 +869,52 @@ class ViewPageTests(TestCase):
         self.assertEqual(expected_result, parsed_response['error'])
 
     def test_update_confidence_of_treenode(self):
-        treenode_id = 7
+        treenode_id = 11
         self.fake_authentication()
         response = self.client.post(
-                '/%d/node/%d/confidence/update' % (self.test_project_id, treenode_id),
-                {'new_confidence': '4'})
+                '/%d/treenodes/%d/confidence' % (self.test_project_id, treenode_id),
+                {'new_confidence': '4', 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
         treenode = Treenode.objects.filter(id=treenode_id).get()
         parsed_response = json.loads(response.content)
-        expected_result = {'message': 'success'}
-        self.assertEqual(expected_result, parsed_response)
+        expected_result = {
+            'message': 'success',
+            'updated_partners': {
+                '7': {
+                    'edition_time': '2016-04-13T05:57:44.444Z',
+                    'old_confidence': 5
+                }
+            }
+        }
+        self.assertIn('message', parsed_response)
+        self.assertEqual(expected_result.get('message'), parsed_response.get('message'))
+        self.assertIn('updated_partners', parsed_response)
+        self.assertIn('7', parsed_response.get('updated_partners'))
+        self.assertEqual(expected_result.get('updated_partners').get('7').get('old_confidence'),
+                parsed_response.get('updated_partners').get('7').get('old_confidence'))
         self.assertEqual(4, treenode.confidence)
 
         response = self.client.post(
-                '/%d/node/%d/confidence/update' % (self.test_project_id, treenode_id),
-                {'new_confidence': '5'})
+                '/%d/treenodes/%d/confidence' % (self.test_project_id, treenode_id),
+                {'new_confidence': '5', 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
         treenode = Treenode.objects.filter(id=treenode_id).get()
         parsed_response = json.loads(response.content)
-        expected_result = {'message': 'success'}
-        self.assertEqual(expected_result, parsed_response)
+        expected_result = {
+            'message': 'success',
+            'updated_partners': {
+                '7': {
+                    'edition_time': '2016-04-13T05:57:44.444Z',
+                    'old_confidence': 4
+                }
+            }
+        }
+        self.assertIn('message', parsed_response)
+        self.assertEqual(expected_result.get('message'), parsed_response.get('message'))
+        self.assertIn('updated_partners', parsed_response)
+        self.assertIn('7', parsed_response.get('updated_partners'))
+        self.assertEqual(expected_result.get('updated_partners').get('7').get('old_confidence'),
+                parsed_response.get('updated_partners').get('7').get('old_confidence'))
         self.assertEqual(5, treenode.confidence)
 
     def test_update_confidence_of_treenode_connector(self):
@@ -740,23 +922,50 @@ class ViewPageTests(TestCase):
         treenode_connector_id = 360
         self.fake_authentication()
         response = self.client.post(
-                '/%d/node/%d/confidence/update' % (self.test_project_id, treenode_id),
-                {'new_confidence': '4', 'to_connector': 'true'})
+                '/%d/treenodes/%d/confidence' % (self.test_project_id, treenode_id),
+                {'new_confidence': '4', 'to_connector': 'true',
+                 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
         connector = TreenodeConnector.objects.filter(id=treenode_connector_id).get()
         parsed_response = json.loads(response.content)
-        expected_result = {'message': 'success'}
-        self.assertEqual(expected_result, parsed_response)
+        expected_result = {
+            'message': 'success',
+            'updated_partners': {
+                '356': {
+                    'edition_time': '2016-04-13T05:57:44.444Z',
+                    'old_confidence': 5
+                }
+            }
+        }
+        self.assertIn('message', parsed_response)
+        self.assertEqual(expected_result.get('message'), parsed_response.get('message'))
+        self.assertIn('updated_partners', parsed_response)
+        self.assertIn('356', parsed_response.get('updated_partners'))
+        self.assertEqual(expected_result.get('updated_partners').get('356').get('old_confidence'),
+                parsed_response.get('updated_partners').get('356').get('old_confidence'))
         self.assertEqual(4, connector.confidence)
 
         response = self.client.post(
-                '/%d/node/%d/confidence/update' % (self.test_project_id, treenode_id),
-                {'new_confidence': '5', 'to_connector': 'true'})
+                '/%d/treenodes/%d/confidence' % (self.test_project_id, treenode_id),
+                {'new_confidence': '5', 'to_connector': 'true', 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
         connector = TreenodeConnector.objects.filter(id=treenode_connector_id).get()
         parsed_response = json.loads(response.content)
-        expected_result = {'message': 'success'}
-        self.assertEqual(expected_result, parsed_response)
+        expected_result = {
+            'message': 'success',
+            'updated_partners': {
+                '356': {
+                    'edition_time': '2016-04-13T05:57:44.444Z',
+                    'old_confidence': 4
+                }
+            }
+        }
+        self.assertIn('message', parsed_response)
+        self.assertEqual(expected_result.get('message'), parsed_response.get('message'))
+        self.assertIn('updated_partners', parsed_response)
+        self.assertIn('356', parsed_response.get('updated_partners'))
+        self.assertEqual(expected_result.get('updated_partners').get('356').get('old_confidence'),
+                parsed_response.get('updated_partners').get('356').get('old_confidence'))
         self.assertEqual(5, connector.confidence)
 
     def test_list_connector_empty(self):
@@ -929,18 +1138,146 @@ class ViewPageTests(TestCase):
         treenode_connector_count = TreenodeConnector.objects.all().count()
         response = self.client.post(
                 '/%d/connector/delete' % self.test_project_id,
-                {'connector_id': connector_id})
+                {'connector_id': connector_id, 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {
-                'message': 'Removed connector and class_instances',
-                'connector_id': 356}
+                'message': u'Removed connector and class_instances',
+                'connector_id': 356,
+                'x': 6730.0,
+                'y': 2700.0,
+                'z': 0.0,
+                'confidence': 5,
+                'partners': [{
+                    'id': 285,
+                    'link_id': 360,
+                    'rel': 'presynaptic_to',
+                    'rel_id': 23,
+                    'confidence': 5,
+                    'edition_time': '2011-12-04T13:51:36.955Z',
+                },{
+                    'id': 367,
+                    'link_id': 372,
+                    'rel': 'postsynaptic_to',
+                    'rel_id': 24,
+                    'confidence': 5,
+                    'edition_time': '2011-12-05T13:51:36.955Z',
+                }, {
+                    'id': 377,
+                    'link_id': 382,
+                    'rel': 'postsynaptic_to',
+                    'rel_id': 24,
+                    'confidence': 5,
+                    'edition_time': '2011-12-05T13:51:36.955Z',
+                }]
+        }
+
+
         self.assertEqual(expected_result, parsed_response)
 
         self.assertEqual(connector_count - 1, Connector.objects.all().count())
         self.assertEqual(treenode_connector_count - 3, TreenodeConnector.objects.all().count())
         self.assertEqual(0, Connector.objects.filter(id=connector_id).count())
         self.assertEqual(0, TreenodeConnector.objects.filter(connector=connector).count())
+
+    def test_connector_info(self):
+        self.fake_authentication()
+        response = self.client.post(
+                '/%d/connector/pre-post-info' % self.test_project_id,
+                {'pre[0]': 235, 'post[0]': 373})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = [
+                [356, [6730.0, 2700.0, 0.0],
+                 285, 235, 5, 3, [6100.0, 2980.0, 0.0],
+                 377, 373, 5, 3, [7620.0, 2890.0, 0.0]],
+                [421, [6260.0, 3990.0, 0.0],
+                 415, 235, 5, 3, [5810.0, 3950.0, 0.0],
+                 409, 373, 5, 3, [6630.0, 4330.0, 0.0]]]
+        self.assertEqual(expected_result, parsed_response)
+
+        response = self.client.post(
+                '/%d/connector/pre-post-info' % self.test_project_id,
+                {'pre[0]': 235, 'post[0]': 373, 'cids[0]': 421})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = [
+                [421, [6260.0, 3990.0, 0.0],
+                 415, 235, 5, 3, [5810.0, 3950.0, 0.0],
+                 409, 373, 5, 3, [6630.0, 4330.0, 0.0]]]
+        self.assertEqual(expected_result, parsed_response)
+
+        response = self.client.post(
+                '/%d/connector/pre-post-info' % self.test_project_id,
+                {'pre[0]': 2462, 'post[0]': 2468})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = [
+                [2466, [6420.0, 5565.0, 0.0],
+                 2462, 2462, 5, 3, [6685.0, 5395.0, 0.0],
+                 2464, 2468, 5, 3, [6485.0, 5915.0, 0.0]]]
+
+        self.assertEqual(expected_result, parsed_response)
+
+        response = self.client.post(
+                '/%d/connector/pre-post-info' % self.test_project_id,
+                {'pre[0]': 2462, 'post[0]': 2462})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = [
+                [2463, [7135.0, 5065.0, 0.0],
+                 2462, 2462, 5, 3, [6685.0, 5395.0, 0.0],
+                 2461, 2462, 5, 3, [7680.0, 5345.0, 0.0]]]
+
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_connector_detail(self):
+        self.fake_authentication()
+        response = self.client.get(
+                '/%d/connectors/%d/' % (self.test_project_id, 421))
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = {
+                'partners': [
+                    {
+                        'confidence': 5,
+                        'skeleton_id': 235,
+                        'link_id': 425,
+                        'relation_name': 'presynaptic_to',
+                        'relation_id': 23,
+                        'partner_id': 415},
+                    {
+                        'confidence': 5,
+                        'skeleton_id': 373,
+                        'link_id': 429,
+                        'relation_name': 'postsynaptic_to',
+                        'relation_id': 24,
+                        'partner_id': 409}
+                ],
+                'confidence': 5,
+                'connector_id': 421,
+                'y': 3990.0,
+                'x': 6260.0,
+                'z': 0.0}
+
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_connector_user_info(self):
+        self.fake_authentication()
+        response = self.client.get(
+                '/%d/connector/user-info' % (self.test_project_id,), {
+                    'treenode_id': 415,
+                    'connector_id': 421,
+                    'relation_name': 'presynaptic_to'
+                })
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = [{
+                'creation_time': '2011-10-07T07:02:22.656000+00:00',
+                'user': 3,
+                'edition_time': '2011-12-20T10:46:01.360000+00:00'}]
+
+        self.assertEqual(expected_result, parsed_response)
 
     def test_delete_link_failure(self):
         self.fake_authentication()
@@ -950,24 +1287,24 @@ class ViewPageTests(TestCase):
         tc_count = TreenodeConnector.objects.all().count()
         response = self.client.post(
                 '/%d/link/delete' % self.test_project_id,
-                {'connector_id': connector_id, 'treenode_id': treenode_id})
+                {'connector_id': connector_id, 'treenode_id': treenode_id,
+                 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
-        expected_result = {'error': 'Failed to delete connector #%s from geometry domain.' % connector_id}
-        self.assertEqual(expected_result, parsed_response)
+        expected_result = {'error': 'Couldn\'t find link between connector {0} and node {0}'.format(connector_id)}
+        self.assertIn('error', parsed_response)
+        self.assertEqual(expected_result['error'], parsed_response['error'])
         self.assertEqual(tc_count, TreenodeConnector.objects.all().count())
 
     def test_most_recent_treenode(self):
         self.fake_authentication()
 
         most_recent_node_id = 2423
-
-        skeleton_id = 2411
         treenode_id = 2415
 
         response = self.client.post(
                 '/%d/node/most_recent' % self.test_project_id,
-                {'skeleton_id': skeleton_id, 'treenode_id': treenode_id})
+                {'treenode_id': treenode_id})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {
@@ -1408,7 +1745,8 @@ class ViewPageTests(TestCase):
             'z': 15,
             'confidence': 5,
             'parent_id': parent_id,
-            'radius': 2})
+            'radius': 2,
+            'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {'error': 'No skeleton and neuron for treenode %d' % parent_id}
@@ -1424,7 +1762,7 @@ class ViewPageTests(TestCase):
         child_count = Treenode.objects.filter(parent=treenode_id).count()
         response = self.client.post(
                 '/%d/treenode/delete' % self.test_project_id,
-                {'treenode_id': treenode_id})
+                {'treenode_id': treenode_id, 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = "Could not delete root node: You can't delete the " \
@@ -1464,7 +1802,8 @@ class ViewPageTests(TestCase):
             'y': new_node_y,
             'z': new_node_z,
             'child_id': child_id,
-            'parent_id': parent_id})
+            'parent_id': parent_id,
+            'state': make_nocheck_state()})
 
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
@@ -1520,7 +1859,8 @@ class ViewPageTests(TestCase):
             'y': new_node_y,
             'z': new_node_z,
             'child_id': child_id,
-            'parent_id': parent_id})
+            'parent_id': parent_id,
+            'state': make_nocheck_state()})
 
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
@@ -1640,7 +1980,7 @@ class ViewPageTests(TestCase):
         tn_count = Treenode.objects.all().count()
         response = self.client.post(
                 '/%d/treenode/delete' % self.test_project_id,
-                {'treenode_id': treenode_id})
+                {'treenode_id': treenode_id, 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = 'Removed treenode successfully.'
@@ -1660,14 +2000,21 @@ class ViewPageTests(TestCase):
 
         response = self.client.post(
                 '/%d/treenode/delete' % self.test_project_id,
-                {'treenode_id': treenode_id})
+                {'treenode_id': treenode_id, 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {
             'success': 'Removed treenode successfully.',
             'parent_id': None,
             'deleted_neuron': True,
-            'skeleton_id': 2433
+            'skeleton_id': 2433,
+            'children': [],
+            'confidence': 5,
+            'radius': -1.0,
+            'links': [],
+            'x': 5290.0,
+            'y': 3930.0,
+            'z': 279.0
         }
         self.assertEqual(expected_result, parsed_response)
         self.assertEqual(0, Treenode.objects.filter(id=treenode_id).count())
@@ -1691,7 +2038,7 @@ class ViewPageTests(TestCase):
 
         response = self.client.post(
                 '/%d/treenode/delete' % self.test_project_id,
-                {'treenode_id': treenode_id})
+                {'treenode_id': treenode_id, 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = 'Removed treenode successfully.'
@@ -1757,9 +2104,11 @@ class ViewPageTests(TestCase):
                 {"id":2433, "name":"skeleton 2433", "class_name":"skeleton"},
                 {"id":2440, "name":"skeleton 2440", "class_name":"skeleton"},
                 {"id":2451, "name":"skeleton 2451", "class_name":"skeleton"},
+                {"id":2462, "name":"skeleton 2462", "class_name":"skeleton"},
+                {"id":2468, "name":"skeleton 2468", "class_name":"skeleton"},
                 {"id":361, "name":"skeleton 361", "class_name":"skeleton"},
                 {"id":373, "name":"skeleton 373", "class_name":"skeleton"}]
-        self.assertEqual(expected_result, parsed_response)
+        self.assertItemsEqual(expected_result, parsed_response)
 
     def test_search_with_nodes_and_nonode_label(self):
         self.fake_authentication()
@@ -1844,10 +2193,16 @@ class ViewPageTests(TestCase):
         tc_count = TreenodeConnector.objects.all().count()
         response = self.client.post(
                 '/%d/link/delete' % self.test_project_id,
-                {'connector_id': connector_id, 'treenode_id': treenode_id})
+                {'connector_id': connector_id, 'treenode_id': treenode_id,
+                 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
-        expected_result = {'result': 'Removed treenode to connector link'}
+        expected_result = {
+            'link_id': 382,
+            'link_type': 'postsynaptic_to',
+            'link_type_id': 24,
+            'result': 'Removed treenode to connector link'
+        }
         self.assertEqual(expected_result, parsed_response)
         self.assertEqual(0, TreenodeConnector.objects.filter(connector=connector_id, treenode=treenode_id).count())
         self.assertEqual(tc_count - 1, TreenodeConnector.objects.all().count())
@@ -1911,6 +2266,8 @@ class ViewPageTests(TestCase):
         expected_result = {
                 'message': 'success',
                 'fromid': link_from,
+                'result_skeleton_id': 2411,
+                'deleted_skeleton_id': 2388,
                 'toid': link_to}
         self.assertEqual(expected_result, parsed_response)
 
@@ -1924,6 +2281,49 @@ class ViewPageTests(TestCase):
         self.assertEqual(0, ClassInstanceClassInstance.objects.filter(id=2390).count())
 
         self.assertEqual(new_skeleton_id, get_object_or_404(TreenodeConnector, id=2405).skeleton_id)
+
+    def test_skeleton_contributor_statistics(self):
+        self.fake_authentication()
+
+        response = self.client.post(
+            '/%d/skeleton/contributor_statistics_multiple' % (self.test_project_id,),
+            {'skids[0]': 235})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_response = {
+                "pre_contributors": {"3": 3},
+                "multiuser_review_minutes": 0,
+                "node_contributors": {"3": 28},
+                "construction_minutes": 1,
+                "n_nodes": 28,
+                "min_review_minutes": 0,
+                "n_pre": 3,
+                "post_contributors": {},
+                "n_post": 0}
+        self.assertEqual(parsed_response, expected_response)
+
+        response = self.client.post(
+            '/%d/skeleton/%d/contributor_statistics' % (self.test_project_id, 235))
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        self.assertEqual(parsed_response, expected_response)
+
+        response = self.client.post(
+            '/%d/skeleton/contributor_statistics_multiple' % (self.test_project_id,),
+            {'skids[0]': 235, 'skids[1]': 361})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_response = {
+                "pre_contributors": {"3": 3},
+                "multiuser_review_minutes": 0,
+                "node_contributors": {"3": 37},
+                "construction_minutes": 1,
+                "n_nodes": 37,
+                "min_review_minutes": 0,
+                "n_pre": 3,
+                "post_contributors": {"3": 1},
+                "n_post": 1}
+        self.assertEqual(parsed_response, expected_response)
 
     def test_split_skeleton(self):
         self.fake_authentication()
@@ -2019,7 +2419,7 @@ class ViewPageTests(TestCase):
             '/%d/skeletons/connectivity' % (self.test_project_id,),
             {'source_skeleton_ids[0]': 235,
              'source_skeleton_ids[1]': 373,
-             'boolean_op': 'logic-OR'})
+             'boolean_op': 'OR'})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {
@@ -2027,7 +2427,26 @@ class ViewPageTests(TestCase):
             "outgoing": {"361": {"skids": {"235": [0, 0, 0, 0, 1]}, "num_nodes": 9},
                          "373": {"skids": {"235": [0, 0, 0, 0, 2]}, "num_nodes": 5}},
             "incoming": {"235": {"skids": {"373": [0, 0, 0, 0, 2]}, "num_nodes": 28}},
-            "incoming_reviewers": []}
+            "incoming_reviewers": [],
+            "gapjunctions": {},
+            "gapjunctions_reviewers": []}
+        self.assertEqual(expected_result, parsed_response)
+
+        # Test for conjunctive connectivity.
+        response = self.client.post(
+            '/%d/skeletons/connectivity' % (self.test_project_id,),
+            {'source_skeleton_ids[0]': 235,
+             'source_skeleton_ids[1]': 373,
+             'boolean_op': 'AND'})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = {
+            "outgoing_reviewers": [],
+            "outgoing": {},
+            "incoming": {},
+            "incoming_reviewers": [],
+            "gapjunctions": {},
+            "gapjunctions_reviewers": []}
         self.assertEqual(expected_result, parsed_response)
 
     def test_treenode_info_nonexisting_treenode_failure(self):
@@ -2067,7 +2486,7 @@ class ViewPageTests(TestCase):
         old_r = -1
         response = self.client.post(
                 '/%d/treenode/%d/radius' % (self.test_project_id, treenode_id),
-                {'radius': new_r, 'option': 0})
+                {'radius': new_r, 'option': 0, 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
 
         expected = [(259, old_r), (257, new_r), (255, old_r)]
@@ -2083,7 +2502,7 @@ class ViewPageTests(TestCase):
         old_r = -1
         response = self.client.post(
                 '/%d/treenode/%d/radius' % (self.test_project_id, treenode_id),
-                {'radius': new_r, 'option': 1})
+                {'radius': new_r, 'option': 1, 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
 
         expected = [(261, new_r), (259, new_r), (257, new_r),
@@ -2095,7 +2514,7 @@ class ViewPageTests(TestCase):
         treenode_id = 263
         response = self.client.post(
                 '/%d/treenode/%d/radius' % (self.test_project_id, treenode_id),
-                {'radius': new_r, 'option': 1})
+                {'radius': new_r, 'option': 1, 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
 
         expected = [(253, old_r), (263, new_r), (265, new_r),
@@ -2112,7 +2531,7 @@ class ViewPageTests(TestCase):
         old_r = -1
         response = self.client.post(
                 '/%d/treenode/%d/radius' % (self.test_project_id, treenode_id),
-                {'radius': new_r, 'option': 2})
+                {'radius': new_r, 'option': 2, 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
 
         expected = [(261, old_r), (259, old_r), (257, new_r),
@@ -2124,7 +2543,7 @@ class ViewPageTests(TestCase):
         treenode_id = 253
         response = self.client.post(
                 '/%d/treenode/%d/radius' % (self.test_project_id, treenode_id),
-                {'radius': new_r, 'option': 2})
+                {'radius': new_r, 'option': 2, 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
 
         expected = [(255, new_r), (263, old_r), (253, new_r),
@@ -2148,7 +2567,7 @@ class ViewPageTests(TestCase):
         old_r = -1
         response = self.client.post(
                 '/%d/treenode/%d/radius' % (self.test_project_id, treenode_id),
-                {'radius': new_r, 'option': 3})
+                {'radius': new_r, 'option': 3, 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
 
         expected = [(261, old_r), (259, old_r), (257, new_r),
@@ -2158,7 +2577,7 @@ class ViewPageTests(TestCase):
         treenode_id = ancestor.id
         response = self.client.post(
                 '/%d/treenode/%d/radius' % (self.test_project_id, treenode_id),
-                {'radius': new_r, 'option': 3})
+                {'radius': new_r, 'option': 3, 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
 
         expected = [(253, new_r), (251, new_r), (249, new_r),
@@ -2176,7 +2595,7 @@ class ViewPageTests(TestCase):
         old_r = -1
         response = self.client.post(
                 '/%d/treenode/%d/radius' % (self.test_project_id, treenode_id),
-                {'radius': new_r, 'option': 4})
+                {'radius': new_r, 'option': 4, 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
 
         expected = [(261, old_r), (259, old_r), (257, new_r),
@@ -2191,12 +2610,58 @@ class ViewPageTests(TestCase):
         self.fake_authentication()
 
         treenode_id = 2417
-        new_r = 5
-        old_r = -1
+        new_r = 5.0
+        old_r = -1.0
         response = self.client.post(
                 '/%d/treenode/%d/radius' % (self.test_project_id, treenode_id),
-                {'radius': new_r, 'option': 5})
+                {'radius': new_r, 'option': 5, 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_response = {
+            'success': True,
+            'new_radius': new_r,
+            'updated_nodes': {
+                '2415': {'edition_time': u'2016-04-08T15:33:16.133Z',
+                         'new': 5.0,
+                         'old': -1.0,
+                         'skeleton_id': 2411},
+                '2417': {'edition_time': u'2016-04-08T15:33:16.133Z',
+                         'new': 5.0,
+                         'old': -1.0,
+                         'skeleton_id': 2411},
+                '2419': {'edition_time': u'2016-04-08T15:33:16.133Z',
+                         'new': 5.0,
+                         'old': -1.0,
+                         'skeleton_id': 2411},
+                '2423': {'edition_time': u'2016-04-08T15:33:16.133Z',
+                         'new': 5.0,
+                         'old': -1.0,
+                         'skeleton_id': 2411}}
+        }
+
+        # The response has updated timetamps (since we updated nodes), we have
+        # to compare fields manually to ignore them
+        for k,v in expected_response.iteritems():
+            self.assertIn(k, parsed_response)
+            if 'updated_nodes' == k:
+                continue
+            self.assertEqual(v, parsed_response.get(k))
+        for k,v in expected_response['updated_nodes'].iteritems():
+            self.assertIn(k, parsed_response['updated_nodes'])
+            result_node = parsed_response['updated_nodes'][k]
+            for p,pv in v.iteritems():
+                self.assertIn(p, result_node)
+                result_value = result_node.get(p)
+                if 'edition_time' == p:
+                    # Changes through the updated, and the test can't know the
+                    # value, but only check if it changed
+                    self.assertNotEqual(pv, result_value)
+                else:
+                    self.assertEqual(pv, result_value)
+
+        # Don't expect any more items than the above:
+        self.assertEqual(len(expected_response['updated_nodes']),
+                len(parsed_response['updated_nodes']))
 
         expected = [(2419, new_r), (2417, new_r), (2415, new_r), (2423, new_r)]
         for x in expected:
@@ -2289,24 +2754,21 @@ class ViewPageTests(TestCase):
                     'action': '',
                     'id': 3,
                     'text': 'Contents of message 3.',
-                    'time': '2014-10-05 11:12:01.360422',
-                    'time_formatted': '2014-10-05 11:12:01 EDT',
+                    'time': '2014-10-05 11:12:01.360422+00:00',
                     'title': 'Message 3'
                 },
                 '1': {
                     'action': 'http://www.example.com/message2',
                     'id': 2,
                     'text': 'Contents of message 2.',
-                    'time': '2011-12-20 16:46:01.360422',
-                    'time_formatted': '2011-12-20 16:46:01 EST',
+                    'time': '2011-12-20 16:46:01.360422+00:00',
                     'title': 'Message 2'
                 },
                 '2': {
                     'action': 'http://www.example.com/message1',
                     'id': 1,
                     'text': 'Contents of message 1.',
-                    'time': '2011-12-19 16:46:01',
-                    'time_formatted': '2011-12-19 16:46:01 EST',
+                    'time': '2011-12-19 16:46:01+00:00',
                     'title': 'Message 1'
                 },
                 '3': {
@@ -2317,6 +2779,54 @@ class ViewPageTests(TestCase):
         # Check result independent from order
         for mi in ('0','1','2','3'):
             self.assertEqual(expected_result[mi], parsed_response[mi])
+
+    def test_skeleton_permissions(self):
+        skeleton_id = 235
+
+        self.fake_authentication()
+        response = self.client.post(
+            '/%d/skeleton/%d/permissions' % (self.test_project_id, skeleton_id,))
+        expected_result = {'can_edit': True}
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        self.assertEqual(parsed_response, expected_result)
+
+        self.fake_authentication('test1', 'test', True)
+        response = self.client.post(
+            '/%d/annotations/add' % (self.test_project_id,),
+            {'annotations[0]': 'locked', 'skeleton_ids[0]': skeleton_id})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        lock_annotation_id = parsed_response['annotations'][0]['id']
+        skeleton_entity_id = parsed_response['annotations'][0]['entities'][0]
+
+        self.fake_authentication()
+        response = self.client.post(
+            '/%d/skeleton/%d/permissions' % (self.test_project_id, skeleton_id,))
+        expected_result = {'can_edit': True} # test2 has permissions for test1
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        self.assertEqual(parsed_response, expected_result)
+
+        self.fake_authentication('test1', 'test', True)
+        response = self.client.post(
+            '/%d/annotations/%d/remove' % (self.test_project_id, lock_annotation_id,),
+            {'entity_ids[0]': skeleton_entity_id})
+        self.assertEqual(response.status_code, 200)
+
+        self.fake_authentication('test0', 'test', True)
+        response = self.client.post(
+            '/%d/annotations/add' % (self.test_project_id,),
+            {'annotations[0]': 'locked', 'skeleton_ids[0]': skeleton_id})
+        self.assertEqual(response.status_code, 200)
+
+        self.fake_authentication()
+        response = self.client.post(
+            '/%d/skeleton/%d/permissions' % (self.test_project_id, skeleton_id,))
+        expected_result = {'can_edit': False} # test2 does not have permission for test0
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        self.assertEqual(parsed_response, expected_result)
 
     def test_skeleton_open_leaves(self):
         skeleton_id = 235
@@ -2331,10 +2841,10 @@ class ViewPageTests(TestCase):
         distsort = lambda end: end[2]
         parsed_response.sort(key=distsort)
         expected_result = \
-                [[237, [1065.0, 3035.0, 0.0],  4, u'2011-09-27T07:49:15.802'],
-                 [261, [2820.0, 1345.0, 0.0], 10, u'2011-09-27T07:49:25.549'],
-                 [277, [6090.0, 1550.0, 0.0], 13, u'2011-09-27T07:49:33.770'],
-                 [417, [4990.0, 4200.0, 0.0], 16, u'2011-10-07T07:02:15.176']]
+                [[237, [1065.0, 3035.0, 0.0],  4, u'2011-09-27T07:49:15.802Z'],
+                 [261, [2820.0, 1345.0, 0.0], 10, u'2011-09-27T07:49:25.549Z'],
+                 [277, [6090.0, 1550.0, 0.0], 13, u'2011-09-27T07:49:33.770Z'],
+                 [417, [4990.0, 4200.0, 0.0], 16, u'2011-10-07T07:02:15.176Z']]
         self.assertEqual(parsed_response, expected_result)
 
         # Tag soma and try again
@@ -2373,6 +2883,78 @@ class ViewPageTests(TestCase):
         parsed_response.sort(key=distsort)
         self.assertEqual(parsed_response, expected_result)
 
+    def test_skeleton_find_labels(self):
+        self.fake_authentication()
+
+        # Create labels.
+        treenode_id = 387
+        response = self.client.post(
+                '/%d/label/treenode/%d/update' % (self.test_project_id, treenode_id),
+                {'tags': 'testlabel'})
+        self.assertEqual(response.status_code, 200)
+        treenode_id = 393
+        response = self.client.post(
+                '/%d/label/treenode/%d/update' % (self.test_project_id, treenode_id),
+                {'tags': 'Testlabel'})
+        self.assertEqual(response.status_code, 200)
+        # Label in other skeleton than should be ignored.
+        treenode_id = 403
+        response = self.client.post(
+                '/%d/label/treenode/%d/update' % (self.test_project_id, treenode_id),
+                {'tags': 'Testlabel'})
+        self.assertEqual(response.status_code, 200)
+
+        skeleton_id = 361
+        treenode_id = 367
+        response = self.client.post(
+                '/%d/skeletons/%d/find-labels' % (self.test_project_id, skeleton_id),
+                {'treenode_id': treenode_id,
+                 'label_regex': '[Tt]estlabel'})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = [[393, [6910.0, 990.0, 0.0], 3, ["Testlabel"]],
+                           [387, [9030.0, 1480.0, 0.0], 4, ["testlabel"]]]
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_skeleton_within_spatial_distance(self):
+        self.fake_authentication()
+
+        treenode_id = 2419
+        response = self.client.post(
+                '/%d/skeletons/within-spatial-distance' % (self.test_project_id,),
+                {'treenode_id': treenode_id, 'distance': 2000, 'size_mode': 0})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = [2468, 2388, 235, 2411, 2364]
+        self.assertItemsEqual(expected_result, parsed_response['skeletons'])
+
+        response = self.client.post(
+                '/%d/skeletons/within-spatial-distance' % (self.test_project_id,),
+                {'treenode_id': treenode_id, 'distance': 2000, 'size_mode': 1})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = [2462, 2433, 373]
+        self.assertItemsEqual(expected_result, parsed_response['skeletons'])
+
+    def test_skeleton_statistics(self):
+        self.fake_authentication()
+
+        skeleton_id = 235
+        response = self.client.post(
+                '/%d/skeleton/%s/statistics' % (self.test_project_id, skeleton_id,),)
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = {
+                'node_count': 28,
+                'input_count': 0,
+                'output_count': 2,
+                'presynaptic_sites': 3,
+                'postsynaptic_sites': 0,
+                'cable_length': 11243,
+                'measure_construction_time': '0 minutes 20 seconds',
+                'percentage_reviewed': '0.00'}
+        self.assertEqual(expected_result, parsed_response)
+
     def test_skeleton_ancestry(self):
         skeleton_id = 361
 
@@ -2403,6 +2985,26 @@ class ViewPageTests(TestCase):
                 {"name":"neuropile", "id":2323, "class":"root"}]
         self.assertEqual(expected_result, parsed_response)
 
+    def test_skeleton_connectivity_matrix(self):
+        self.fake_authentication()
+
+        skeleton_ids = [235, 361, 373, 2364, 2388, 2411]
+        params = {}
+        for i, k in enumerate(skeleton_ids):
+            params['rows[%d]' % i] = k
+            params['columns[%d]' % i] = k
+        response = self.client.post(
+                '/%d/skeleton/connectivity_matrix' % (self.test_project_id,),
+                params)
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = {
+                '235': {'361': 1, '373': 2},
+                '2388': {'2364': 1},
+                '2411': {'2364': 1}
+        }
+        self.assertEqual(expected_result, parsed_response)
+
     def test_create_postsynaptic_link_success(self):
         from_id = 237
         to_id = 432
@@ -2413,12 +3015,14 @@ class ViewPageTests(TestCase):
                 {
                     'from_id': from_id,
                     'to_id': to_id,
-                    'link_type': link_type
-                    })
+                    'link_type': link_type,
+                    'state': make_nocheck_state()
+                })
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
-        expected_result = {'message': 'success'}
-        self.assertEqual(expected_result, parsed_response)
+        self.assertIn('message', parsed_response)
+        self.assertIn('link_id', parsed_response)
+        self.assertEqual('success', parsed_response['message'])
 
     def test_create_presynaptic_link_fail_due_to_other_presynaptic_links(self):
         from_id = 237
@@ -2430,8 +3034,9 @@ class ViewPageTests(TestCase):
                 {
                     'from_id': from_id,
                     'to_id': to_id,
-                    'link_type': link_type
-                    })
+                    'link_type': link_type,
+                    'state': make_nocheck_state()
+                })
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {'error': 'Connector %s does not have zero presynaptic connections.' % to_id}
@@ -2447,12 +3052,14 @@ class ViewPageTests(TestCase):
                 {
                     'from_id': from_id,
                     'to_id': to_id,
-                    'link_type': link_type
-                    })
+                    'link_type': link_type,
+                    'state': make_nocheck_state()
+                })
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
-        expected_result = {'message': 'success'}
-        self.assertEqual(expected_result, parsed_response)
+        self.assertIn('message', parsed_response)
+        self.assertIn('link_id', parsed_response)
+        self.assertEqual('success', parsed_response['message'])
 
     def test_node_nearest_for_skeleton(self):
         self.fake_authentication()
@@ -2494,13 +3101,45 @@ class ViewPageTests(TestCase):
                 "skeleton_id": 361}
         self.assertEqual(expected_result, parsed_response)
 
-    def test_node_find_end_of_linear_branch(self):
+    def test_node_find_previous_branch(self):
         self.fake_authentication()
-        treenode_id = 391
+        treenode_id = 257
 
         response = self.client.post(
-                '/%d/node/next_branch_or_end' % self.test_project_id, {
-                    'tnid': treenode_id})
+                '/%d/treenodes/%d/previous-branch-or-root' % (self.test_project_id, treenode_id),
+                {'alt': 0})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        # Response should contain one branch.
+        expected_result = [253, 3685.0, 2160.0, 0.0]
+        self.assertEqual(expected_result, parsed_response)
+
+        treenode_id = 253
+        response = self.client.post(
+                '/%d/treenodes/%d/previous-branch-or-root' % (self.test_project_id, treenode_id),
+                {'alt': 0})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        # Response should contain one branch.
+        expected_result = [237, 1065.0, 3035.0, 0.0]
+        self.assertEqual(expected_result, parsed_response)
+
+        treenode_id = 237
+        response = self.client.post(
+                '/%d/treenodes/%d/previous-branch-or-root' % (self.test_project_id, treenode_id),
+                {'alt': 0})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        # Response should contain one branch.
+        expected_result = [237, 1065.0, 3035.0, 0.0]
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_node_find_next_branch(self):
+        self.fake_authentication()
+
+        treenode_id = 391
+        response = self.client.post(
+                '/%d/treenodes/%d/next-branch-or-end' % (self.test_project_id, treenode_id))
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         # Response should contain one branch.
@@ -2509,13 +3148,9 @@ class ViewPageTests(TestCase):
                             [399, 5670.0, 640.0, 0.0]]]
         self.assertEqual(expected_result, parsed_response)
 
-    def test_node_find_next_branch(self):
-        self.fake_authentication()
         treenode_id = 253
-
         response = self.client.post(
-                '/%d/node/next_branch_or_end' % self.test_project_id, {
-                    'tnid': treenode_id})
+                '/%d/treenodes/%d/next-branch-or-end' % (self.test_project_id, treenode_id))
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         # Response should contain two branches, and the larger branch headed by
@@ -2528,6 +3163,91 @@ class ViewPageTests(TestCase):
                             [261, 2820.0, 1345.0, 0.0]]]
         self.assertEqual(expected_result, parsed_response)
 
+    def test_treenode_find_children(self):
+        self.fake_authentication()
+
+        treenode_id = 387
+        response = self.client.post(
+                '/%d/treenodes/%d/children' % (self.test_project_id, treenode_id))
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = []
+        self.assertEqual(expected_result, parsed_response)
+
+        treenode_id = 385
+        response = self.client.post(
+                '/%d/treenodes/%d/children' % (self.test_project_id, treenode_id))
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = [[[387, 9030.0, 1480.0, 0.0]]]
+        self.assertEqual(expected_result, parsed_response)
+
+        treenode_id = 367
+        response = self.client.post(
+                '/%d/treenodes/%d/children' % (self.test_project_id, treenode_id))
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = [[383, 7850.0, 1970.0, 0.0], [391, 6740.0, 1530.0, 0.0]]
+        parsed_response = [p[0] for p in parsed_response]
+        for (expected, parsed) in zip(sorted(expected_result), sorted(parsed_response)):
+             self.assertEqual(expected, parsed)
+
+    def test_node_user_info(self):
+        self.fake_authentication()
+
+        treenode_id = 367
+        response = self.client.post(
+                '/%d/node/user-info' % (self.test_project_id),
+                {'node_id': treenode_id})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = {"reviewers": [],
+                           "creation_time": "2011-09-27T07:57:17.808000+00:00",
+                           "edition_time": "2011-12-05T13:51:36.955000+00:00",
+                           "user": 3,
+                           "review_times": [],
+                           "editor": 3}
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_node_get_location(self):
+        self.fake_authentication()
+
+        treenode_id = 383
+        response = self.client.post(
+                '/%d/node/get_location' % (self.test_project_id),
+                {'tnid': treenode_id})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = [383, 7850.0, 1970.0, 0.0]
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_node_find_labels(self):
+        self.fake_authentication()
+
+        # Create labels.
+        treenode_id = 387
+        response = self.client.post(
+                '/%d/label/treenode/%d/update' % (self.test_project_id, treenode_id),
+                {'tags': 'testlabel'})
+        self.assertEqual(response.status_code, 200)
+        treenode_id = 403
+        response = self.client.post(
+                '/%d/label/treenode/%d/update' % (self.test_project_id, treenode_id),
+                {'tags': 'Testlabel'})
+        self.assertEqual(response.status_code, 200)
+
+        response = self.client.post(
+                '/%d/nodes/find-labels' % (self.test_project_id, ),
+                {'x': 8810,
+                 'y': 1790,
+                 'z': 0,
+                 'label_regex': '[Tt]estlabel'})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = [[387, [9030.0, 1480.0, 0.0], 380.131556174964, ["testlabel"]],
+                           [403, [7840.0, 2380.0, 0.0], 1135.3413583588, ["Testlabel"]]]
+        self.assertEqual(expected_result, parsed_response)
+
     def test_node_update_single_treenode(self):
         self.fake_authentication()
         treenode_id = 289
@@ -2537,14 +3257,30 @@ class ViewPageTests(TestCase):
 
         response = self.client.post(
                 '/%d/node/update' % self.test_project_id, {
+                    'state': make_nocheck_state(),
                     't[0][0]': treenode_id,
                     't[0][1]': x,
                     't[0][2]': y,
                     't[0][3]': z})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
-        expected_result = {'updated': 1}
-        self.assertEqual(expected_result, parsed_response)
+        expected_result = {
+            'updated': 1,
+            'old_connectors': None,
+            'old_treenodes': [[289, '2016-04-13T06:20:47.473Z', 6210.0, 3480.0, 0.0]]
+        }
+        self.assertIn('updated', parsed_response)
+        self.assertEqual(expected_result['updated'], parsed_response['updated'])
+        self.assertIn('old_connectors', parsed_response)
+        self.assertEqual(expected_result['old_connectors'], parsed_response['old_connectors'])
+        self.assertIn('old_treenodes', parsed_response)
+        for n, r in enumerate(expected_result.get('old_treenodes')):
+            for i in range(5):
+                # Skip edition time, which changed during last request
+                if 1 == i:
+                    continue
+                self.assertEqual(expected_result.get('old_treenodes')[n][i],
+                    parsed_response.get('old_treenodes')[n][i])
         treenode = Treenode.objects.filter(id=treenode_id)[0]
         self.assertEqual(x, treenode.location_x)
         self.assertEqual(y, treenode.location_y)
@@ -2595,7 +3331,9 @@ class ViewPageTests(TestCase):
             for i,param in enumerate(params):
                 dictionary['%s[%s][%s]' % (types[i], i, param_id)] = params[i]
 
-        param_dict = {}
+        param_dict = {
+            'state': make_nocheck_state()
+        }
         insert_params(param_dict, 0, node_id)
         insert_params(param_dict, 1, x)
         insert_params(param_dict, 2, y)
@@ -2605,8 +3343,32 @@ class ViewPageTests(TestCase):
                 '/%d/node/update' % self.test_project_id, param_dict)
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
-        expected_result = {'updated': 4}
-        self.assertEqual(expected_result, parsed_response)
+        expected_result = {
+            'updated': 4,
+            'old_treenodes': [
+                [2368, '2016-04-13T05:40:25.445Z', 1820.0, 5390.0, 0.0],
+                [2370, '2016-04-13T05:40:25.445Z', 2140.0, 4620.0, 0.0]],
+            'old_connectors': [
+                [356, '2016-04-13T05:40:25.445Z', 6730.0, 2700.0, 0.0],
+                [421, '2016-04-13T05:40:25.445Z', 6260.0, 3990.0, 0.0]]
+
+        }
+        self.assertEqual(expected_result.get('updated'), parsed_response.get('updated'))
+        for i in range(2):
+            for j in range(5):
+                # Skip edition time, because it changes through the request
+                if 1 == j:
+                    continue
+                self.assertEqual(expected_result.get('old_treenodes')[i][j],
+                                 parsed_response.get('old_treenodes')[i][j])
+        for i in range(2):
+            for j in range(5):
+                # Skip edition time, because it changes through the request
+                if 1 == j:
+                    continue
+                self.assertEqual(expected_result.get('old_connectors')[i][j],
+                                 parsed_response.get('old_connectors')[i][j])
+
         i = 0
         for n_id in node_id:
             if types[i] == 't':
@@ -2634,7 +3396,9 @@ class ViewPageTests(TestCase):
             for i,param in enumerate(params):
                 dictionary['%s[%s][%s]' % (types[i], i, param_id)] = params[i]
 
-        param_dict = {}
+        param_dict = {
+            'state': make_nocheck_state()
+        }
         insert_params(param_dict, 0, node_id)
         insert_params(param_dict, 1, x)
         insert_params(param_dict, 2, y)
@@ -2651,21 +3415,43 @@ class ViewPageTests(TestCase):
     def test_node_list_without_active_node(self):
         self.fake_authentication()
         expected_t_result = [
-                [2372, 2370, 2760, 4600, 0, 5, -1, 2364, False],
-                [2374, 2372, 3310, 5190, 0, 5, -1, 2364, False],
-                [2376, 2374, 3930, 4330, 0, 5, -1, 2364, False],
-                [2378, 2376, 4420, 4880, 0, 5, -1, 2364, False],
-                [2394, 2392, 3110, 6030, 0, 5, -1, 2388, True],
-                [2392, None, 2370, 6080, 0, 5, -1, 2388, True],
-                [2396, 2394, 3680, 6550, 0, 5, -1, 2388, True],
-                [2415, None, 4110, 6080, 0, 5, -1, 2411, True],
-                [2417, 2415, 4400, 5730, 0, 5, -1, 2411, True],
-                [2419, 2417, 5040, 5650, 0, 5, -1, 2411, True],
-                [2423, 2415, 4140, 6460, 0, 5, -1, 2411, True],
+            [2374, 2372, 3310.0, 5190.0, 0.0, 5, -1.0, 2364, '2011-12-05T13:51:36.955Z', False],
+            [2372, 2370, 2760.0, 4600.0, 0.0, 5, -1.0, 2364, '2011-12-05T13:51:36.955Z', False],
+            [2376, 2374, 3930.0, 4330.0, 0.0, 5, -1.0, 2364, '2011-12-05T13:51:36.955Z', False],
+            [2378, 2376, 4420.0, 4880.0, 0.0, 5, -1.0, 2364, '2011-12-05T13:51:36.955Z', False],
+            [2394, 2392, 3110.0, 6030.0, 0.0, 5, -1.0, 2388, '2011-12-09T08:01:48.933Z', True],
+            [2392, None, 2370.0, 6080.0, 0.0, 5, -1.0, 2388, '2011-12-09T08:01:37.575Z', True],
+            [2396, 2394, 3680.0, 6550.0, 0.0, 5, -1.0, 2388, '2011-12-09T08:01:40.583Z', True],
+            [2415, None, 4110.0, 6080.0, 0.0, 5, -1.0, 2411, '2011-12-09T08:01:59.149Z', True],
+            [2417, 2415, 4400.0, 5730.0, 0.0, 5, -1.0, 2411, '2011-12-09T08:02:00.466Z', True],
+            [2423, 2415, 4140.0, 6460.0, 0.0, 5, -1.0, 2411, '2011-12-09T08:02:11.175Z', True],
+            [2419, 2417, 5040.0, 5650.0, 0.0, 5, -1.0, 2411, '2011-12-09T08:02:01.614Z', True],
+            [2459, None, 7310.0, 6415.0, 0.0, 5, -1.0, 2462, '2016-03-09T18:10:19.652Z', True],
+            [2460, 2459, 7280.0, 5855.0, 0.0, 5, -1.0, 2462, '2016-03-09T18:10:20.699Z', True],
+            [2461, 2460, 7680.0, 5345.0, 0.0, 5, -1.0, 2462, '2016-03-09T18:10:24.145Z', True],
+            [2462, 2460, 6685.0, 5395.0, 0.0, 5, -1.0, 2462, '2016-03-09T18:10:28.168Z', True],
+            [2464, None, 6485.0, 5915.0, 0.0, 5, -1.0, 2468, '2016-03-09T18:10:42.861Z', True],
+            [2465, 2464, 6485.0, 6345.0, 0.0, 5, -1.0, 2468, '2016-03-09T18:10:44.212Z', True]
         ]
+
         expected_c_result = [
-                [2400, 3400, 5620, 0, 5, [[2394, 5], [2415, 5]], [[2374, 5]], [], True],
+            [2400, 3400.0, 5620.0, 0.0, 5, [
+                [2374, 24, 5, '2011-12-20T10:46:01.360Z', 2410],
+                [2394, 23, 5, '2011-12-20T10:46:01.360Z', 2405],
+                [2415, 23, 5, '2011-12-20T10:46:01.360Z', 2429]], '2011-12-09T08:01:43.965Z', True],
+            [2463, 7135.0, 5065.0, 0.0, 5, [
+                [2462, 23, 5, '2016-03-09T18:10:29.808Z', 2466],
+                [2461, 24, 5, '2016-03-09T18:10:33.669Z', 2467]], '2016-03-09T18:10:29.666Z', True],
+            [2466, 6420.0, 5565.0, 0.0, 5, [
+                [2462, 23, 5, '2016-03-09T18:10:49.583Z', 2472],
+                [2464, 24, 5, '2016-03-09T18:10:50.846Z', 2473]], '2016-03-09T18:10:49.445Z', True]
         ]
+
+        expected_rel_response = {
+            '24': 'postsynaptic_to',
+            '23': 'presynaptic_to'
+        }
+
         response = self.client.post('/%d/node/list' % (self.test_project_id,), {
             'z1': 0,
             'top': 4625,
@@ -2683,33 +3469,67 @@ class ViewPageTests(TestCase):
         for row in expected_t_result:
             self.assertTrue(row in parsed_response[0])
         for row in expected_c_result:
-            self.assertTrue(row in parsed_response[1])
+            parsed_row = [r for r in parsed_response[1] if r[0] == row[0]]
+            self.assertEqual(1, len(parsed_row))
+            parsed_row = parsed_row[0]
+            for n,e in enumerate(row):
+                # Treat links separately, because they come in a list of
+                # unspecified different order.
+                if 5 == n:
+                    self.assertItemsEqual(row[n], parsed_row[n])
+                else:
+                    self.assertEqual(e, parsed_row[n])
+
+        self.assertEqual({}, parsed_response[2])
+        self.assertEqual(False, parsed_response[3])
+        self.assertEqual(expected_rel_response, parsed_response[4])
 
     def test_node_list_with_active_node(self):
         self.fake_authentication()
         expected_t_result = [
-                [267, 265, 5400, 2200, 0, 5, -1, 235, True],
-                [279, 267, 5530, 2465, 0, 5, -1, 235, True],
-                [281, 279, 5675, 2635, 0, 5, -1, 235, True],
-                [283, 281, 5985, 2745, 0, 5, -1, 235, True],
-                [285, 283, 6100, 2980, 0, 5, -1, 235, True],
-                [289, 285, 6210, 3480, 0, 5, -1, 235, True],
-                [367, None, 7030, 1980, 0, 5, -1, 361, 3],
-                [377, None, 7620, 2890, 0, 5, -1, 373, True],
-                [403, 377, 7840, 2380, 0, 5, -1, 373, True],
-                [405, 377, 7390, 3510, 0, 5, -1, 373, True],
-                [407, 405, 7080, 3960, 0, 5, -1, 373, True],
-                [409, 407, 6630, 4330, 0, 5, -1, 373, True],
-                [415, 289, 5810, 3950, 0, 5, -1, 235, True],
-                [417, 415, 4990, 4200, 0, 5, -1, 235, True],
-                [2419, 2417, 5040, 5650, 0, 5, -1, 2411, True],
-                [2417, 2415, 4400, 5730, 0, 5, -1, 2411, True],
-                [2423, 2415, 4140, 6460, 0, 5, -1, 2411, 3]
+            [279, 267, 5530.0, 2465.0, 0.0, 5, -1.0, 235, u'2011-12-05T13:51:36.955Z', True],
+            [267, 265, 5400.0, 2200.0, 0.0, 5, -1.0, 235, u'2011-12-05T13:51:36.955Z', True],
+            [281, 279, 5675.0, 2635.0, 0.0, 5, -1.0, 235, u'2011-12-05T13:51:36.955Z', True],
+            [283, 281, 5985.0, 2745.0, 0.0, 5, -1.0, 235, u'2011-12-15T13:51:36.955Z', True],
+            [285, 283, 6100.0, 2980.0, 0.0, 5, -1.0, 235, u'2011-12-04T13:51:36.955Z', True],
+            [289, 285, 6210.0, 3480.0, 0.0, 5, -1.0, 235, u'2011-11-06T13:51:36.955Z', True],
+            [415, 289, 5810.0, 3950.0, 0.0, 5, -1.0, 235, u'2011-12-05T13:51:36.955Z', True],
+            [377, None, 7620.0, 2890.0, 0.0, 5, -1.0, 373, u'2011-12-05T13:51:36.955Z', True],
+            [403, 377, 7840.0, 2380.0, 0.0, 5, -1.0, 373, u'2011-12-05T13:51:36.955Z', True],
+            [405, 377, 7390.0, 3510.0, 0.0, 5, -1.0, 373, u'2011-12-05T13:51:36.955Z', True],
+            [407, 405, 7080.0, 3960.0, 0.0, 5, -1.0, 373, u'2011-12-05T13:51:36.955Z', True],
+            [409, 407, 6630.0, 4330.0, 0.0, 5, -1.0, 373, u'2011-12-05T13:51:36.955Z', True],
+            [417, 415, 4990.0, 4200.0, 0.0, 5, -1.0, 235, u'2011-12-05T13:51:36.955Z', True],
+            [2419, 2417, 5040.0, 5650.0, 0.0, 5, -1.0, 2411, u'2011-12-09T08:02:01.614Z', True],
+            [2417, 2415, 4400.0, 5730.0, 0.0, 5, -1.0, 2411, u'2011-12-09T08:02:00.466Z', True],
+            [2461, 2460, 7680.0, 5345.0, 0.0, 5, -1.0, 2462, u'2016-03-09T18:10:24.145Z', True],
+            [2460, 2459, 7280.0, 5855.0, 0.0, 5, -1.0, 2462, u'2016-03-09T18:10:20.699Z', True],
+            [2462, 2460, 6685.0, 5395.0, 0.0, 5, -1.0, 2462, u'2016-03-09T18:10:28.168Z', True],
+            [2464, None, 6485.0, 5915.0, 0.0, 5, -1.0, 2468, u'2016-03-09T18:10:42.861Z', 3],
+            [367, None, 7030.0, 1980.0, 0.0, 5, -1.0, 361, u'2011-12-05T13:51:36.955Z', 3],
+            [2423, 2415, 4140.0, 6460.0, 0.0, 5, -1.0, 2411, u'2011-12-09T08:02:11.175Z', 3]
         ]
+
         expected_c_result = [
-                [356, 6730.0, 2700.0, 0.0, 5, [[285, 5]], [[377, 5], [367, 5]], [], True],
-                [421, 6260.0, 3990.0, 0.0, 5, [[415, 5]], [[409, 5]], [], True]
+            [356, 6730.0, 2700.0, 0.0, 5, [
+                [285, 23, 5, '2011-12-20T10:46:01.360Z', 360],
+                [367, 24, 5, '2011-12-20T10:46:01.360Z', 372],
+                [377, 24, 5, '2011-12-20T10:46:01.360Z', 382]], '2011-10-27T10:45:09.870Z', True],
+            [421, 6260.0, 3990.0, 0.0, 5, [
+                [415, 23, 5, '2011-12-20T10:46:01.360Z', 425],
+                [409, 24, 5, '2011-12-20T10:46:01.360Z', 429]], '2011-10-07T07:02:30.396Z', True],
+            [2463, 7135.0, 5065.0, 0.0, 5, [
+                [2462, 23, 5, '2016-03-09T18:10:29.808Z', 2466],
+                [2461, 24, 5, '2016-03-09T18:10:33.669Z', 2467]], '2016-03-09T18:10:29.666Z', True],
+            [2466, 6420.0, 5565.0, 0.0, 5, [
+                [2462, 23, 5, '2016-03-09T18:10:49.583Z', 2472],
+                [2464, 24, 5, '2016-03-09T18:10:50.846Z', 2473]], '2016-03-09T18:10:49.445Z', True]
         ]
+
+        expected_rel_response = {
+            '24': 'postsynaptic_to',
+            '23': 'presynaptic_to'
+        }
 
         response = self.client.post('/%d/node/list' % (self.test_project_id,), {
                 'z1': 0,
@@ -2722,13 +3542,25 @@ class ViewPageTests(TestCase):
                 'labels': False,})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
-        self.assertEqual(4, len(parsed_response))
+        self.assertEqual(5, len(parsed_response))
         self.assertEqual(len(expected_t_result), len(parsed_response[0]))
         self.assertEqual(len(expected_c_result), len(parsed_response[1]))
         for row in expected_t_result:
             self.assertTrue(row in parsed_response[0])
         for row in expected_c_result:
-            self.assertTrue(row in parsed_response[1])
+            parsed_row = [r for r in parsed_response[1] if r[0] == row[0]]
+            self.assertEqual(1, len(parsed_row))
+            parsed_row = parsed_row[0]
+            for n,e in enumerate(row):
+                # Treat links separately, because they come in a list of
+                # unspecified different order.
+                if 5 == n:
+                    self.assertItemsEqual(row[n], parsed_row[n])
+                else:
+                    self.assertEqual(e, parsed_row[n])
+        self.assertEqual({}, parsed_response[2])
+        self.assertEqual(False, parsed_response[3])
+        self.assertEqual(expected_rel_response, parsed_response[4])
 
     def test_textlabels_empty(self):
         self.fake_authentication()
@@ -2793,7 +3625,8 @@ class ViewPageTests(TestCase):
         url = '/%d/skeletons/' % self.test_project_id
         response = self.client.get(url)
         parsed_response = json.loads(response.content)
-        expected_result = frozenset([2388, 235, 373, 2411, 1, 361, 2364, 2451, 2440, 2433])
+        expected_result = frozenset([2388, 235, 373, 2411, 1, 361, 2364, 2451,
+                                     2440, 2433, 2462, 2468])
         self.assertEqual(expected_result, frozenset(parsed_response))
         # Also check response length to be sure there were no duplicates.
         self.assertEqual(len(expected_result), len(parsed_response))
@@ -2839,7 +3672,7 @@ class ViewPageTests(TestCase):
 
         # Confidence split
         # Change confidence that affects 1 edge from 235 to 373
-        response = self.client.post('/%d/node/289/confidence/update' % self.test_project_id,
+        response = self.client.post('/%d/treenodes/289/confidence' % self.test_project_id,
             {'new_confidence': 3})
         self.assertEqual(response.status_code, 200)
         # Add confidence criteria, but not one that should affect the graph.
@@ -2868,11 +3701,11 @@ class ViewPageTests(TestCase):
              'skeleton_ids[2]': skeleton_ids[2],
              'confidence_threshold': 4})
         parsed_response = json.loads(response.content)
-        expected_result_nodes = frozenset(['235_1', '235_2', '361', '373'])
+        expected_result_nodes = frozenset(['235', '361', '373'])
         expected_result_edges = [
-                ['235_1', '361', [0, 0, 0, 0, 1]],
-                ['235_1', '373', [0, 0, 0, 0, 1]],
-                ['235_2', '373', [0, 0, 0, 0, 1]]]
+                ['235', '373', [0, 0, 0, 0, 2]],
+                ['235', '361', [0, 0, 0, 0, 1]]]
+
         self.assertEqual(expected_result_nodes, frozenset(parsed_response['nodes']))
         # Since order is not important, check length and matches separately.
         self.assertEqual(len(expected_result_edges), len(parsed_response['edges']))
@@ -2891,12 +3724,39 @@ class ViewPageTests(TestCase):
              'confidence_threshold': 4,
              'bandwidth': 2000})
         parsed_response = json.loads(response.content)
-        expected_result_nodes = frozenset(['235_1_1', '235_1_2', '235_2', '361', '373'])
+        expected_result_nodes = frozenset(['361', '373', '235_1', '235_2'])
         expected_result_edges = [
-                ['235_1_1', '361', [0, 0, 0, 0, 1]],
-                ['235_1_1', '373', [0, 0, 0, 0, 1]],
-                ['235_2',   '373', [0, 0, 0, 0, 1]]]
+                ['235_1', '373', [0, 0, 0, 0, 2]],
+                ['235_1', '361', [0, 0, 0, 0, 1]]]
+
         self.assertEqual(expected_result_nodes, frozenset(parsed_response['nodes']))
+        # Since order is not important, check length and matches separately.
+        self.assertEqual(len(expected_result_edges), len(parsed_response['edges']))
+        for row in expected_result_edges:
+            self.assertTrue(row in parsed_response['edges'])
+
+        # Should not include edges involving skeletons not in the set
+        # See https://github.com/catmaid/CATMAID/issues/1249
+        response = self.client.post(
+            '/%d/skeletons/confidence-compartment-subgraph' % self.test_project_id,
+            {'skeleton_ids[0]': skeleton_ids[0],
+             'skeleton_ids[1]': skeleton_ids[1]})
+        parsed_response = json.loads(response.content)
+        expected_result_edges = [
+                [235, 361, [0, 0, 0, 0, 1]]]
+        # Since order is not important, check length and matches separately.
+        self.assertEqual(len(expected_result_edges), len(parsed_response['edges']))
+        for row in expected_result_edges:
+            self.assertTrue(row in parsed_response['edges'])
+        # ...also with confidence splitting...
+        response = self.client.post(
+            '/%d/skeletons/confidence-compartment-subgraph' % self.test_project_id,
+            {'skeleton_ids[0]': skeleton_ids[0],
+             'skeleton_ids[1]': skeleton_ids[2],
+             'confidence_threshold': 4})
+        parsed_response = json.loads(response.content)
+        expected_result_edges = [
+                ['235', '373', [0, 0, 0, 0, 2]]]
         # Since order is not important, check length and matches separately.
         self.assertEqual(len(expected_result_edges), len(parsed_response['edges']))
         for row in expected_result_edges:
@@ -2948,7 +3808,7 @@ class ViewPageTests(TestCase):
         self.assertJSONEqual(response.content, expected_result)
 
         # Add reviews
-        review_time = "2014-03-17T00:00:00"
+        review_time = "2014-03-17T00:00:00Z"
         Review.objects.create(project_id=self.test_project_id, reviewer_id=3,
             review_time=review_time, skeleton_id=skeleton_id, treenode_id=2396)
         Review.objects.create(project_id=self.test_project_id, reviewer_id=2,
@@ -2992,7 +3852,7 @@ class ViewPageTests(TestCase):
         self.assertJSONEqual(response.content, expected_result)
 
         # Add reviews
-        review_time = "2014-03-17T00:00:00"
+        review_time = "2014-03-17T00:00:00Z"
         Review.objects.create(project_id=self.test_project_id, reviewer_id=3,
             review_time=review_time, skeleton_id=skeleton_id, treenode_id=2396)
         Review.objects.create(project_id=self.test_project_id, reviewer_id=2,
@@ -3011,7 +3871,7 @@ class ViewPageTests(TestCase):
         # NOTE: this duplication does not happen in practice because
         # update_location_reviewer updates the timestamp of the existing
         # review. This is just to demonstrate what edge case behavior is.
-        review_time = "2014-03-18T00:00:00"
+        review_time = "2014-03-18T00:00:00Z"
         Review.objects.create(project_id=self.test_project_id, reviewer_id=2,
             review_time=review_time, skeleton_id=skeleton_id, treenode_id=2396)
         Review.objects.create(project_id=self.test_project_id, reviewer_id=3,
@@ -3030,6 +3890,30 @@ class ViewPageTests(TestCase):
         del expected_result[0]['sequence'][-1]
         self.assertJSONEqual(response.content, expected_result)
 
+    def test_skeleton_connectors_by_partner(self):
+        self.fake_authentication()
+
+        response = self.client.post(
+                '/%d/skeleton/connectors-by-partner' % self.test_project_id,
+                {'skids[0]': 235, 'skids[1]': 373})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        [[[c.sort() for c in p.itervalues()] for p in t.itervalues()] for t in parsed_response.itervalues()]
+        expected_result = {
+            '235': {
+                'presynaptic_to': {
+                    '373': [356, 421],
+                    '361': [356]
+                }
+            },
+            '373': {
+                'postsynaptic_to': {
+                    '235': [356, 421]
+                }
+            }
+        }
+        self.assertEqual(expected_result, parsed_response)
+
     def test_export_skeleton_reviews(self):
         self.fake_authentication()
 
@@ -3043,7 +3927,7 @@ class ViewPageTests(TestCase):
         expected_result = {}
         self.assertEqual(expected_result, parsed_response)
 
-        review_time = "2014-03-17T18:14:34.851"
+        review_time = "2014-03-17T18:14:34.851Z"
         Review.objects.create(project_id=self.test_project_id, reviewer_id=3,
             review_time=review_time, skeleton_id=skeleton_id, treenode_id=253)
         Review.objects.create(project_id=self.test_project_id, reviewer_id=2,
@@ -3070,8 +3954,8 @@ class ViewPageTests(TestCase):
 
         # Test replacing whitelist.
         whitelist = {
-                '1': "2014-03-17T00:00:00",
-                '2': "2014-03-18T00:00:00"}
+                '1': "2014-03-17T00:00:00Z",
+                '2': "2014-03-18T00:00:00Z"}
         response = self.client.post(url, whitelist)
         self.assertEqual(response.status_code, 200)
 
@@ -3080,6 +3964,132 @@ class ViewPageTests(TestCase):
         expected_result = [{'reviewer_id': int(r), 'accept_after': t}
                 for r,t in whitelist.iteritems()]
         self.assertJSONEqual(response.content, expected_result)
+
+    def test_suppressed_virtual_nodes(self):
+        self.fake_authentication()
+
+        response = self.client.post(
+                '/%d/treenode/create' % (self.test_project_id, ),
+                {'x': 1,
+                 'y': -1,
+                 'z': 0})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        parent_id = parsed_response['treenode_id']
+        skeleton_id = parsed_response['skeleton_id']
+
+        response = self.client.post(
+                '/%d/treenode/create' % (self.test_project_id, ),
+                {'x': 3,
+                 'y': -3,
+                 'z': 2,
+                 'parent_id': parent_id,
+                 'state': make_nocheck_state()})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        child_id = parsed_response['treenode_id']
+
+        # Initially no nodes should be supppressed
+        response = self.client.get(
+                '/%d/treenodes/%d/suppressed-virtual/' % (self.test_project_id, child_id))
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = []
+        self.assertEqual(expected_result, parsed_response)
+
+        # Reject attempt to suppress root node
+        response = self.client.post(
+                '/%d/treenodes/%d/suppressed-virtual/' % (self.test_project_id, parent_id),
+                {'location_coordinate': 1,
+                 'orientation': 0})
+        self.assertEqual(response.status_code, 400)
+
+        # Reject coordinate outside edge
+        response = self.client.post(
+                '/%d/treenodes/%d/suppressed-virtual/' % (self.test_project_id, child_id),
+                {'location_coordinate': 4,
+                 'orientation': 0})
+        self.assertEqual(response.status_code, 400)
+
+        # Create virtual node
+        response = self.client.post(
+                '/%d/treenodes/%d/suppressed-virtual/' % (self.test_project_id, child_id),
+                {'location_coordinate': 2,
+                 'orientation': 0})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        suppressed_id = parsed_response['id']
+
+        # Delete virtual node
+        response = self.client.delete(
+                '/%d/treenodes/%d/suppressed-virtual/%d' % (self.test_project_id, child_id, suppressed_id))
+        self.assertEqual(response.status_code, 204)
+
+    def test_export_compact_skeleton(self):
+        self.fake_authentication()
+
+        skeleton_id = 373
+        response = self.client.post(
+                '/%d/%d/1/1/compact-skeleton' % (self.test_project_id, skeleton_id))
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_response = [
+                [[377, None, 3, 7620.0, 2890.0, 0.0, -1.0, 5],
+                 [403, 377, 3, 7840.0, 2380.0, 0.0, -1.0, 5],
+                 [405, 377, 3, 7390.0, 3510.0, 0.0, -1.0, 5],
+                 [407, 405, 3, 7080.0, 3960.0, 0.0, -1.0, 5],
+                 [409, 407, 3, 6630.0, 4330.0, 0.0, -1.0, 5]],
+                [[377, 356, 1, 6730.0, 2700.0, 0.0],
+                 [409, 421, 1, 6260.0, 3990.0, 0.0]],
+                {"uncertain end": [403]}]
+        self.assertItemsEqual(parsed_response[0], expected_response[0])
+        self.assertItemsEqual(parsed_response[1], expected_response[1])
+        self.assertEqual(parsed_response[2], expected_response[2])
+
+    def test_export_compact_arbor(self):
+        self.fake_authentication()
+
+        skeleton_id = 373
+        response = self.client.post(
+                '/%d/%d/1/1/1/compact-arbor' % (self.test_project_id, skeleton_id))
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_response = [
+                [[377, None, 3, 7620.0, 2890.0, 0.0, -1.0, 5],
+                 [403, 377, 3, 7840.0, 2380.0, 0.0, -1.0, 5],
+                 [405, 377, 3, 7390.0, 3510.0, 0.0, -1.0, 5],
+                 [407, 405, 3, 7080.0, 3960.0, 0.0, -1.0, 5],
+                 [409, 407, 3, 6630.0, 4330.0, 0.0, -1.0, 5]],
+                [[377, 5, 356, 5, 285, 235, 1, 0],
+                 [409, 5, 421, 5, 415, 235, 1, 0]],
+                {"uncertain end": [403]}]
+        self.assertItemsEqual(parsed_response[0], expected_response[0])
+        self.assertItemsEqual(parsed_response[1], expected_response[1])
+        self.assertEqual(parsed_response[2], expected_response[2])
+
+    def test_export_compact_arbor_with_minutes(self):
+        self.fake_authentication()
+
+        skeleton_id = 373
+        response = self.client.post(
+                '/%d/%d/1/1/1/compact-arbor-with-minutes' % (self.test_project_id, skeleton_id))
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_response = [
+                [[377, None, 3, 7620.0, 2890.0, 0.0, -1.0, 5],
+                 [403, 377, 3, 7840.0, 2380.0, 0.0, -1.0, 5],
+                 [405, 377, 3, 7390.0, 3510.0, 0.0, -1.0, 5],
+                 [407, 405, 3, 7080.0, 3960.0, 0.0, -1.0, 5],
+                 [409, 407, 3, 6630.0, 4330.0, 0.0, -1.0, 5]],
+                [[377, 5, 356, 5, 285, 235, 1, 0],
+                 [409, 5, 421, 5, 415, 235, 1, 0]],
+                {"uncertain end": [403]},
+                {"21951837": [377, 403, 405, 407, 409]}]
+        self.assertItemsEqual(parsed_response[0], expected_response[0])
+        self.assertItemsEqual(parsed_response[1], expected_response[1])
+        self.assertEqual(parsed_response[2], expected_response[2])
+        for k, v in expected_response[3].iteritems():
+            self.assertItemsEqual(parsed_response[3][k], v)
 
 
 class TreenodeTests(TestCase):

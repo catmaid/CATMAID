@@ -23,6 +23,7 @@
     stackViewer.getLayersView().appendChild(this._metadataDisplay);
 
     this.isOrderable = true;
+    this.isHideable = true;
     this.opacity = 1;
   }
 

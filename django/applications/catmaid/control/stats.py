@@ -6,6 +6,7 @@ from dateutil import parser as dateparser
 from django.http import HttpResponse
 from django.db.models.aggregates import Count
 from django.db import connection
+from django.utils import timezone
 
 from catmaid.control.authentication import requires_user_role
 from catmaid.control.common import get_relation_to_id_map
@@ -27,7 +28,7 @@ def _process(query, minus1name):
         result['values'].append(row[1])
         s = (names[row[0]], row[1]) if -1 != row[0] else (minus1name, row[1])
         result['users'].append('%s (%d)' % s)
-    return HttpResponse(json.dumps(result), content_type='text/json')
+    return HttpResponse(json.dumps(result), content_type='application/json')
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -79,15 +80,15 @@ def stats_summary(request, project_id=None):
             creation_time__month=startdate.month,
             creation_time__day=startdate.day,
             class_column__class_name=class_name).count()
-    return HttpResponse(json.dumps(result), content_type='text/json')
+    return HttpResponse(json.dumps(result), content_type='application/json')
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def stats_history(request, project_id=None):
     # Get the start and end dates for the query, defaulting to the last 30
     # days.
-    start_date = request.GET.get('start_date', datetime.now() - timedelta(30))
-    end_date = request.GET.get('end_date', datetime.now())
+    start_date = request.GET.get('start_date', timezone.now() - timedelta(30))
+    end_date = request.GET.get('end_date', timezone.now())
 
     # Look up all tree nodes for the project in the given date range.
     # Also add a computed field which is just the day of the last edited
@@ -112,7 +113,7 @@ def stats_history(request, project_id=None):
         'date': stat['date'],
         'count': stat['count']} for stat in stats]
 
-    return HttpResponse(json.dumps(stats), content_type='text/json')
+    return HttpResponse(json.dumps(stats), content_type='application/json')
 
 def stats_user_activity(request, project_id=None):
     username = request.GET.get('username', None)
@@ -146,7 +147,7 @@ def stats_user_activity(request, project_id=None):
     prelinks = [time.mktime(ele['creation_time'].timetuple()) for ele in stats_prelink]
     postlinks = [time.mktime(ele['creation_time'].timetuple()) for ele in stats_postlink]
     return HttpResponse(json.dumps({'skeleton_nodes': timepoints,
-         'presynaptic': prelinks, 'postsynaptic': postlinks}), content_type='text/json')
+         'presynaptic': prelinks, 'postsynaptic': postlinks}), content_type='application/json')
 
 def stats_user_history(request, project_id=None):
     # Get the start date for the query, defaulting to 10 days ago.
@@ -155,7 +156,7 @@ def stats_user_history(request, project_id=None):
         start_date = dateparser.parse(start_date)
         print(start_date)
     else:
-        start_date = datetime.now() - timedelta(10)
+        start_date = timezone.now() - timedelta(10)
     # Get the end date for the query, defaulting to now.
     end_date = request.GET.get('end_date', None)
     if end_date:
@@ -163,7 +164,7 @@ def stats_user_history(request, project_id=None):
         # events.
         end_date = dateparser.parse(end_date) + timedelta(days=1) - timedelta(seconds=1)
     else:
-        end_date = datetime.now()
+        end_date = timezone.now()
     # Calculate number of days between (including) start and end
     daydelta = (end_date + timedelta(days=1) - start_date).days
 
@@ -267,5 +268,5 @@ def stats_user_history(request, project_id=None):
     return HttpResponse(json.dumps({
         'stats_table': stats_table,
         'days': days,
-        'daysformatted': daysformatted}), content_type='text/json')
+        'daysformatted': daysformatted}), content_type='application/json')
 

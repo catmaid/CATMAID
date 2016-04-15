@@ -1,17 +1,15 @@
-div.projectView
-{
-	position:absolute;
-	margin:0px;
-	padding:0px;
-	overflow:hidden;
+div.projectView {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
 }
 
-div.projectView div.projectDataView
-{
-	position:absolute;
-	margin:0px;
-	padding:0px;
-	overflow:auto;
-	height:100%;
-	background:#FF0000;
+div.projectView div.projectDataView {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  height: 100%;
+  background: #FF0000;
 }

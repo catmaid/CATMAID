@@ -10,10 +10,10 @@
    */
   var SkeletonProjectionLayer = function(stackViewer, options) {
     this.stackViewer = stackViewer;
+    this.isHideable = true;
     // The currently displayed skeleton, node and arbor parser
-    this.currentNodeID = null;
-    this.currentSkeletonID = null;
-    this.currentArborParser = null;
+    this.currentProjections = new Map();
+    this.currentReferenceNodes = new Map();
 
     // Make sure there is an options object
     this.options = {};
@@ -24,6 +24,18 @@
     this.view.style.position = "absolute";
     this.view.style.left = 0;
     this.view.style.top = 0;
+
+    // This layer has its own skeleton source, which is used to subscribe to
+    // other sources. The local skeleton source is configured to override its
+    // skeleton models with subscription input.
+    this.useSourceColors = false;
+    this.selectionBasedSource = true;
+    this.skeletonSource = new CATMAID.BasicSkeletonSource('Skeleton projection layer', {
+      handleAddedModels: this.update.bind(this),
+      handleRemovedModels: this.update.bind(this),
+      handleChangedModels: this._updateModels.bind(this),
+    });
+    this.skeletonSource.ignoreLocal = true;
 
     // Append it to DOM
     stackViewer.getView().appendChild(this.view);
@@ -42,11 +54,13 @@
     // Listen to active node change events
     SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
         this.handleActiveNodeChange, this);
-    // Listen to changes on skeletons
-    SkeletonAnnotations.on(SkeletonAnnotations.EVENT_SKELETON_CHANGED,
-        this.handleChangedSkeleton, this);
 
-    if (options.initialNode) this.update(options.initialNode);
+    // Subscribe to active skeleton by default
+    var initialSource = (options && options.source) ? options.source : SkeletonAnnotations.activeSkeleton;
+    if (initialSource) {
+      this.replaceSupscription(initialSource);
+      this.update();
+    }
   };
 
   /**
@@ -70,7 +84,9 @@
     strahlerShadingMin: 1,
     strahlerShadingMax: -1,
     // Distance reduction per section for distance based shading
-    distanceFalloff: 0.001
+    distanceFalloff: 0.001,
+    // Last used available source
+    source: null
   };
 
   /**
@@ -94,6 +110,69 @@
   SkeletonProjectionLayer.prototype.updateOptions = function(options, setDefaults) {
     mergeOptions(this.options, options || {}, SkeletonProjectionLayer.options,
         setDefaults);
+    // Replace source subscription only if source isn't part of current
+    // subscriptions or if there is no subscribed source at the moment.
+    var source = options ? options.source : null;
+    var subscribedSource = this.getSubscribedSource();
+    if (this.skeletonSource && source) {
+      if (!subscribedSource || (subscribedSource && subscribedSource !== source)) {
+        this.replaceSupscription(source);
+      }
+      // Re-create SVG
+      this.update();
+    }
+  };
+
+  var hasSource = function(subscription) {
+    return subscription.source === this;
+  };
+
+  /**
+   * Reset the default and instance source to the active skeleton.
+   */
+  SkeletonProjectionLayer.prototype._resetSource = function() {
+    var options = {
+      source: SkeletonAnnotations.activeSkeleton
+    };
+    CATMAID.SkeletonProjectionLayer.updateDefaultOptions(options);
+    this.updateOptions(options);
+  };
+
+  /**
+   * Replace the current subsciption with a new one to the given source.
+   *
+   * @param {Object} source The source to subscribe to now
+   */
+  SkeletonProjectionLayer.prototype.replaceSupscription = function(source) {
+    if (source) {
+      // Remove existing subscriptions, but silent removal fall-back to not add
+      // the active skeleton as source just before we add a new one.
+      this.skeletonSource.off(this.skeletonSource.EVENT_SUBSCRIPTION_REMOVED, this._resetSource, this);
+      this.skeletonSource.removeAllSubscriptions();
+      // Add new subscription
+      this.skeletonSource.addSubscription(new CATMAID.SkeletonSourceSubscription(
+            source, this.useSourceColors, this.selectionBasedSource, CATMAID.UNION));
+      // If the subscription gets removed, reset to the default active skeleton
+      this.skeletonSource.on(this.skeletonSource.EVENT_SUBSCRIPTION_REMOVED,
+          this._resetSource, this);
+    } else {
+      this.skeletonSource.removeAllSubscriptions();
+    }
+  };
+
+  /**
+   * Get source the projection layer is currently subscribed to.
+   */
+  SkeletonProjectionLayer.prototype.getSubscribedSource = function() {
+    if (this.skeletonSource) {
+      // Expect exatly one subscription
+      var subscription = this.skeletonSource.getSourceSubscriptions()[0];
+      if (subscription) {
+        return subscription.source;
+      }
+    }
+    // Default to active skeleton
+    return null;
   };
 
   /* Iterface methods */
@@ -115,12 +194,17 @@
     this.redraw();
   };
 
+  /**
+   * Adjust rendering to current field of view. No projections are added or
+   * removed.
+   */
   SkeletonProjectionLayer.prototype.redraw = function(completionCallback) {
+
     // Get current field of view in stack space
     var stackViewBox = this.stackViewer.createStackViewBox();
     var projectViewBox = this.stackViewer.primaryStack.createStackToProjectBox(stackViewBox);
 
-    var screenScale = userprofile.tracing_overlay_screen_scaling;
+    var screenScale = SkeletonAnnotations.TracingOverlay.Settings.session.screen_scaling;
     this.paper.classed('screen-scale', screenScale);
     // All SVG elements scale automatcally, if the viewport on the SVG data
     // changes. If in screen scale mode, where the size of all elements should
@@ -129,7 +213,18 @@
        this.stackViewer.primaryStack.resolution.y);
     var dynamicScale = screenScale ? (1 / (this.stackViewer.scale * resScale)) : false;
 
-    this.graphics.scale(userprofile.tracing_overlay_scale, resScale, dynamicScale);
+    this.graphics.scale(SkeletonAnnotations.TracingOverlay.Settings.session.scale,
+        resScale, dynamicScale);
+
+    // In case of a zoom level change and screen scaling is selected, update
+    // edge width.
+    if (this.currentProjections.size > 0 && this.stackViewer.s !== this.lastScale) {
+      // Remember current zoom level
+      this.lastScale = this.stackViewer.s;
+      // Update edge width
+      var edgeWidth = this.graphics.ArrowLine.prototype.EDGE_WIDTH || 2;
+      this.paper.selectAll('line').attr('stroke-width', edgeWidth);
+    }
 
     // Use project coordinates for the SVG's view box
     this.paper.attr({
@@ -151,79 +246,123 @@
 
     SkeletonAnnotations.off(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
         this.handleActiveNodeChange, this);
-    SkeletonAnnotations.off(SkeletonAnnotations.EVENT_SKELETON_CHANGED,
-        this.handleChangedSkeleton, this);
   };
 
 
   /* Non-interface methods */
 
-  /**
-   * Handle update of active node by redrawing.
-   */
-  SkeletonProjectionLayer.prototype.update = function(node) {
-    var self = this;
-    var newSkeleton = null;
-    if (node && node.id && node.type === SkeletonAnnotations.TYPE_NODE) {
-      // If possible, use a cached skeleton to avoid requesting it with every
-      // node change.
-      var cached = (node.skeleton_id === this.currentSkeletonID) &&
-          this.currentArborParser;
-      var prepare = cached ? Promise.resolve(this.currentArborParser) :
-          this.loadSkeletonOfNode(node);
+  var removeKnownFromMap = function(list, value, key) {
+    if (-1 === list.indexOf(key)) {
+      this.delete(key);
+    }
+  };
 
-      prepare
-        .then(this.createProjection.bind(this, node))
-        .then(this.redraw.bind(this))
-        .catch(CATMAID.error);
-    } else {
-      this.currentNodeID = null;
-      this.currentSkeletonID = null;
-      this.currentArborParser = null;
+  var hasNot = function(item) {
+    return !this.has(item);
+  };
+
+  /**
+   * Update the internal representation of all projections. Missing projections
+   * will be created (e.g. when new skeletons have been added to the source) and
+   * obsolete ones will be removed.
+   */
+  SkeletonProjectionLayer.prototype.update = function() {
+    var self = this;
+    // To unify tests below, we make sure all skeleton IDs are strings
+    var currentSkeletonIds = this.skeletonSource.getSelectedSkeletons().map(String);
+
+    if (0 === currentSkeletonIds.length) {
+      this.currentProjections.clear();
       this.clear();
       this.redraw();
+    } else {
+      // Remove obsolete projections
+      this.currentProjections.forEach(
+          removeKnownFromMap.bind(this.currentProjections, currentSkeletonIds));
+      // Find new skeletons
+      var added = currentSkeletonIds.filter(hasNot.bind(this.currentProjections));
+
+      // If possible, use cached skeletons to avoid requesting them with every
+      // display update.
+      var prepare = (0 === added.length) ? Promise.resolve(self.currentProjections) :
+        this.loadSkeletons(added).then(function(apMap) {
+          var projections = self.currentProjections;
+          apMap.forEach(setMapReverse.bind(projections));
+          return projections;
+        });
+
+      // If there is an active node, use it as reference for its skeleton
+      this.currentReferenceNodes.clear();
+      var activeNodeId = SkeletonAnnotations.getActiveNodeId();
+      if (!SkeletonAnnotations.isRealNode(activeNodeId)) {
+        // Use parent in case of a virtual node. This isn't ideal as long
+        // as edge coloring can't be split between two vertices. It is however
+        // consistent behavior.
+        activeNodeId = SkeletonAnnotations.getParentOfVirtualNode(activeNodeId);
+      }
+      if (activeNodeId) {
+        this.currentReferenceNodes.set(
+            // We normalize all IDs to strings in this module
+            String(SkeletonAnnotations.getActiveSkeletonId()),
+            String(activeNodeId));
+      }
+
+      prepare
+        .then(this.createProjections.bind(this))
+        .then(this.redraw.bind(this))
+        .catch(CATMAID.error);
     }
+  };
+
+  var setMapReverse = function(value, key) {
+    this.set(key, value);
   };
 
   /**
    * Redraw the skeleton if the active node changed.
    */
   SkeletonProjectionLayer.prototype.handleActiveNodeChange = function(node, skeletonChanged) {
-    if ((!node && this.currentNodeID) || (node.id !== this.currentNodeID)) {
-      this.update(node);
+    var nReferenceNodes = this.currentReferenceNodes.size,
+        replacesSelection = node && (nReferenceNodes > 0),
+        firstSelection = node && (nReferenceNodes === 0),
+        lastSelection = !node && (nReferenceNodes > 0),
+        referenceNode = replacesSelection ?
+            this.currentReferenceNodes.entries().next().value : null,
+        differentSkeleton = replacesSelection && node.skeleton_id === referenceNode[0];
+
+    if ((firstSelection || lastSelection || differentSkeleton) ||
+        (replacesSelection && node.id !== referenceNode[1])) {
+      this.update();
     }
+    // TODO: Update colors
   };
 
   /**
-   * Reload skeleton information if the current skeleton changed.
+   * Reload skeleton properties if skeleton models changed.
    */
-  SkeletonProjectionLayer.prototype.handleChangedSkeleton = function(skeletonID) {
-    if (skeletonID === this.currentSkeletonID) {
-      this.currentArborParser = null;
-      this.update(SkeletonAnnotations.atn);
-    }
+  SkeletonProjectionLayer.prototype._updateModels = function(models) {
+    // TODO: If source colors should be used, update coloring
   };
 
   /**
-   * Return promise to load the skeleton of which the given node is part of. If
-   * the skeleton is already loaded, the back-end does't have to be asked.
+   * Return promise to load all requested skeletons. If the skeleton is already
+   * loaded, the back-end does't have to be asked.
    */
-  SkeletonProjectionLayer.prototype.loadSkeletonOfNode = function(node) {
+  SkeletonProjectionLayer.prototype.loadSkeletons = function(skeletonIds) {
     var self = this;
     return new Promise(function(resolve, reject) {
-      if (!node) reject("No node provided");
-      if (!node.skeleton_id) reject("Node has no skeleton");
+      if (!skeletonIds) reject("No skeletons provided");
 
-      var failed = false, ap;
+      var failed = false, targetMap = new Map();
       fetchSkeletons(
-          [node.skeleton_id],
+          skeletonIds,
           function(skid) {
-            // Get arbor with node and connectors, but without tags
+            // Get arbor with nodes and connectors, but without tags
             return django_url + project.id + '/' + skid + '/1/1/0/compact-arbor';
           },
           function(skid) { return {}; },
           function(skid, json) {
-            ap = new CATMAID.ArborParser().init('compact-arbor', json);
+            var ap = new CATMAID.ArborParser().init('compact-arbor', json);
             // Trasnform positons into stack space. This makes lookup later on
             // quicker.
             var stack = self.stackViewer.primaryStack;
@@ -233,6 +372,7 @@
                       stack.projectToStackY(pos.z, pos.y, pos.x),
                       stack.projectToStackZ(pos.z, pos.y, pos.x));
             }
+            targetMap.set(skid, ap);
           },
           function(skid) {
             failed = true;
@@ -241,7 +381,7 @@
             if (failed) {
               reject("Skeletons that failed to load: " + failed);
             } else {
-              resolve(ap);
+              resolve(targetMap);
             }
           });
         });
@@ -251,34 +391,49 @@
    * Empty canvas.
    */
   SkeletonProjectionLayer.prototype.clear = function() {
-    this.paper.selectAll('use').remove();
-    this.paper.selectAll('line').remove();
+    if (this.paper) {
+      this.paper.selectAll('use').remove();
+      this.paper.selectAll('line').remove();
+    }
   };
 
   /**
    * Recreate the SVG display.
+   *
+   * @param {Object} arborParserMap Maps skeleton IDs to arbor parser instances.
    */
-  SkeletonProjectionLayer.prototype.createProjection = function(node, arborParser) {
+  SkeletonProjectionLayer.prototype.createProjections = function(arborParserMap) {
     // Empty space
     this.clear();
 
     // Return, if there is no node
-    if (!arborParser) return;
+    if (!arborParserMap) return;
 
-    // Make sure we deal with a real node
-    var nodeID = SkeletonAnnotations.isRealNode(node.id) ? node.id :
-      SkeletonAnnotations.getParentOfVirtualNode(node.id);
+    var currentStackZ = this.stackViewer.z;
+    arborParserMap.forEach(function(ap, skid) {
+      // Find a good reference node for current Z. Take the closest node to the
+      // current section.
+      var nodeId = this.currentReferenceNodes.has(skid) ?
+        this.currentReferenceNodes.get(skid) : getClosestNodeInZ(ap, currentStackZ);
+      if (null !== nodeId) {
+        // Add projection to D3 paper
+        this._createProjection(nodeId, ap);
+      }
+    }, this);
+  };
 
-    // Store current targets
-    this.currentSkeletonID = node.skeleton_id;
-    this.currentArborParser = arborParser;
-    this.currentNodeID = nodeID;
+  /**
+   * Render SVG output for a given skeleton, represented by an arbor parser with
+   * respect to a given node in this skeleton.
+   *
+   * @param {Object} An arbor parser for a given skeleton
+   */
+  SkeletonProjectionLayer.prototype._createProjection = function(nodeId, arborParser) {
 
     // Get nodes
     var arbor = arborParser.arbor;
-
     var split = {};
-    split[nodeID] = true;
+    split[nodeId] = true;
     var fragments = arbor.split(split);
     var downstream = fragments[0];
     var upstream = fragments[1];
@@ -317,10 +472,10 @@
 
     // If there is also an upstream part, show it as well
     if (upstream) {
-      var parentID = SkeletonAnnotations.isRealNode(node.parent_id) ?
-        node.parent_id : SkeletonAnnotations.getParentOfVirtualNode(node.parent_id);
+      // Get *real* parent node of reference node
+      var parentId = arbor.edges[nodeId];
       // Make sure we look at upstream like we look at downstream
-      upstream = upstream.reroot(parentID);
+      upstream = upstream.reroot(parentId);
 
       // Update render options with upstream color
       renderOptions.color = material.color(this, this.options.upstreamColor);
@@ -329,51 +484,51 @@
       // Render downstream nodes
       upstream.nodesArray().forEach(renderNodes, renderOptions);
     }
+  };
 
-    /**
-     * Render nodes on a D3 paper.
-     */
-    function renderNodes(n, i, nodes) {
-      /* jshint validthis: true */ // `this` is bound to a set of options above
+  /**
+   * Render nodes on a D3 paper.
+   */
+  function renderNodes(n, i, nodes) {
+    /* jshint validthis: true */ // `this` is bound to a set of options above
 
-      // render node that are not in this layer
-      var stack = this.stackViewer.primaryStack;
-      // Positions are already transformed into stack space
-      var pos = this.positions[n];
-      var opacity = this.opacity(n, pos, pos.z);
-      var color = this.color(n, pos, pos.z);
+    // render node that are not in this layer
+    var stack = this.stackViewer.primaryStack;
+    // Positions are already transformed into stack space
+    var pos = this.positions[n];
+    var opacity = this.opacity(n, pos, pos.z);
+    var color = this.color(n, pos, pos.z);
 
-      // Display only nodes and edges not on the current section
-      if (pos.z !== this.stackViewer.z) {
-        if (this.showNodes) {
-          var c = this.paper.select('.nodes').append('use')
-            .attr({
-              'xlink:href': '#' + this.ref,
-              'x': pos.x,
-              'y': pos.y,
-              'fill': color,
-              'opacity': opacity})
-            .classed('overlay-node', true);
-        }
+    // Display only nodes and edges not on the current section
+    if (pos.z !== this.stackViewer.z) {
+      if (this.showNodes) {
+        var c = this.paper.select('.nodes').append('use')
+          .attr({
+            'xlink:href': '#' + this.ref,
+            'x': pos.x,
+            'y': pos.y,
+            'fill': color,
+            'opacity': opacity})
+          .classed('overlay-node', true);
+      }
 
-        if (this.showEdges) {
-          var e = this.edges[n];
-          if (e) {
-            var pos2 = this.positions[e];
-            var edge = this.paper.select('.lines').append('line');
-            edge.toBack();
-            edge.attr({
-                x1: pos.x, y1: pos.y,
-                x2: pos2.x, y2: pos2.y,
-                stroke: color,
-                'stroke-width': this.edgeWidth,
-                'opacity': opacity
-            });
-          }
+      if (this.showEdges) {
+        var e = this.edges[n];
+        if (e) {
+          var pos2 = this.positions[e];
+          var edge = this.paper.select('.lines').append('line');
+          edge.toBack();
+          edge.attr({
+              x1: pos.x, y1: pos.y,
+              x2: pos2.x, y2: pos2.y,
+              stroke: color,
+              'stroke-width': this.edgeWidth,
+              'opacity': opacity
+          });
         }
       }
     }
-  };
+  }
 
   /**
    * Get the node closest to the given position in a certain radius around it,
@@ -381,10 +536,10 @@
    */
   SkeletonProjectionLayer.prototype.getClosestNode = function(x, y, radius) {
     var nearestnode = null;
+    var mindistsq = radius * radius;
     // Find a node close to this location
-    if (this.currentArborParser) {
-      var mindistsq = radius * radius;
-      var positions = this.currentArborParser.positions;
+    this.currentProjections.forEach(function(ap, skid) {
+      var positions = ap.positions;
       for (var nodeID in positions) {
         var pos = positions[nodeID];
         var xdiff = x - pos.x;
@@ -393,6 +548,30 @@
         if (distsq < mindistsq) {
           mindistsq = distsq;
           nearestnode = nodeID;
+        }
+      }
+    });
+    return {id: nearestnode, distsq: mindistsq};
+  };
+
+  /**
+   * Starting from the root, get the closest node to a given Z. Nodes in the
+   * given arbor parser have to be in stack space already.
+   */
+  var getClosestNodeInZ = function(arborParser, z) {
+    var nearestnode = null;
+    var mindist = Number.MAX_VALUE;
+    // Find a node close to this location
+    var positions = arborParser.positions;
+    for (var nodeID in positions) {
+      var pos = positions[nodeID];
+      var zdiff = Math.abs(z - pos.z);
+      if (zdiff < mindist) {
+        mindist = zdiff;
+        nearestnode = nodeID;
+        // Stop if distance is zero
+        if (mindist < 0.0001) {
+          break;
         }
       }
     }

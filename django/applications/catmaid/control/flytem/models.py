@@ -3,16 +3,30 @@ import urllib2
 
 from django.conf import settings
 
+
+def load_json(url):
+    try:
+        json_text = urllib2.urlopen(url).read()
+    except urllib2.HTTPError as e:
+        raise ValueError("Couldn't retrieve render service data from %s. Error: %s" % (url, e))
+    except urllib2.URLError as e:
+        raise ValueError("Couldn't retrieve render service data from %s. Error: %s" % (url, e))
+
+    return json.loads(json_text)
+
+
 class FlyTEMDimension:
     def __init__(self, x, y, z):
         self.x = x
         self.y = y
         self.z = z
 
+
 class FlyTEMProject:
     def __init__(self, id):
         self.id = id
         self.title = id
+
 
 class FlyTEMStack:
     def __init__(self, project_id, stack_id):
@@ -21,41 +35,47 @@ class FlyTEMStack:
         self.title = stack_id
         self.image_base = '%s/project/%s/stack/%s/' % (settings.FLYTEM_SERVICE_URL, project_id, stack_id)
         self.num_zoom_levels = -1
-        self.file_extension = 'jpg'
+
+        # default resolution in case render stack does not have it defined in metadata
         r = settings.FLYTEM_STACK_RESOLUTION
         self.resolution = FlyTEMDimension(r[0], r[1], r[2])
+
+        self.file_extension = 'jpg'
         self.tile_source_type = 7
         self.tile_width = settings.FLYTEM_STACK_TILE_WIDTH
         self.tile_height = settings.FLYTEM_STACK_TILE_HEIGHT
         self.metadata = ''
         self.trakem2_project = False
 
-        try:
+        url = '%s/project/%s/stack/%s' % (settings.FLYTEM_SERVICE_URL, project_id, stack_id)
+        stack_meta_json = load_json(url)
+
+        bounds_json = None
+        if 'stats' in stack_meta_json:
+            stats = stack_meta_json['stats']
+            if 'stackBounds' in stats:
+                bounds_json = stats['stackBounds']
+
+        if bounds_json is None:
             url = '%s/project/%s/stack/%s/bounds' % (settings.FLYTEM_SERVICE_URL, project_id, stack_id)
-            bounds_json = urllib2.urlopen(url).read()
-        except urllib2.HTTPError as e:
-            raise ValueError("Couldn't retrieve FlyTEM project information from %s" % url)
-        except urllib2.URLError as e:
-            raise ValueError("Couldn't retrieve FlyTEM project information from %s" % url)
+            bounds_json = load_json(url)
 
-        bounds_json = json.loads(bounds_json)
+        if 'currentVersion' in stack_meta_json:
+            current_version = stack_meta_json['currentVersion']
+            if 'stackResolutionX' in current_version and 'stackResolutionY' in current_version and 'stackResolutionZ' in current_version:
+                self.resolution = FlyTEMDimension(current_version['stackResolutionX'],
+                                                  current_version['stackResolutionY'],
+                                                  current_version['stackResolutionZ'])
 
-        try:
-            url = '%s/project/%s/stack/%s/zValues' % (settings.FLYTEM_SERVICE_URL, project_id, stack_id)
-            zvalues_json = urllib2.urlopen(url).read()
-        except urllib2.HTTPError as e:
-            raise ValueError("Couldn't retrieve FlyTEM project information from %s" % url)
-        except urllib2.URLError as e:
-            raise ValueError("Couldn't retrieve FlyTEM project information from %s" % url)
-
-        zvalues_json = json.loads(zvalues_json)
+        url = '%s/project/%s/stack/%s/zValues' % (settings.FLYTEM_SERVICE_URL, project_id, stack_id)
+        zvalues_json = load_json(url)
         zvalues = [int(v) for v in zvalues_json]
         zvalues.sort()
 
         # Dimensions
         width = int(bounds_json['maxX'])
         height = int(bounds_json['maxY'])
-        depth = zvalues[-1] + 1
+        depth = int(bounds_json['maxZ']) + 1
         self.dimension = FlyTEMDimension(width, height, depth)
 
         # Broken slices
@@ -68,15 +88,8 @@ class FlyTEMStack:
 
 class FlyTEMProjectStacks:
     def __init__(self):
-        try:
-            url = '%s/stackIds' % settings.FLYTEM_SERVICE_URL
-            project_stacks_json = urllib2.urlopen(url).read()
-        except urllib2.HTTPError as e:
-            raise ValueError("Couldn't retrieve FlyTEM project information from %s" % url)
-        except urllib2.URLError as e:
-            raise ValueError("Couldn't retrieve FlyTEM project information from %s" % url)
-
-        self.data = json.loads(project_stacks_json)
+        url = '%s/stackIds' % settings.FLYTEM_SERVICE_URL
+        self.data = load_json(url)
 
         # Default to XY orientation
         self.orientation = 0

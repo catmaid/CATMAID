@@ -15,6 +15,8 @@
 # username: catmaid_user
 # password: password_of_your_catmaid_user
 
+from __future__ import print_function
+
 import sys
 import psycopg2
 import os
@@ -24,16 +26,16 @@ import re
 try:
 	conf = yaml.load(open(os.path.join(os.environ['HOME'], '.catmaid-db')))
 except:
-	print >> sys.stderr, '''Your ~/.catmaid-db file should look like:
+	print('''Your ~/.catmaid-db file should look like:
 
 host: localhost
 database: catmaid
 username: catmaid_user
-password: password_of_your_catmaid_user'''
+password: password_of_your_catmaid_user''', file=sys.stderr)
 	sys.exit(1)
 
 if len(sys.argv) != 1:
-	print >> sys.stderr, "Usage: change_users_of_public_projects.py"
+	print("Usage: change_users_of_public_projects.py", file=sys.stderr)
 	sys.exit(1)
 
 conn = psycopg2.connect(host=conf['host'], database=conf['database'],
@@ -50,7 +52,7 @@ select = 'SELECT g.id FROM "auth_group" g WHERE g.name = %s'
 c.execute(select, (groupname,) )
 row = c.fetchone()
 if not row:
-	print >> sys.stderr, "Group name " + groupname + " does not exist in the database"
+	print("Group name " + groupname + " does not exist in the database", file=sys.stderr)
 	sys.exit(1)
 else:
 	group_id = int(row[0])
@@ -61,11 +63,11 @@ project_constraints = False
 # Should only public projects be considered?
 only_public_projects = raw_input("Should only public projects be considered? y/[n]: ")
 if only_public_projects in ('y', 'yes', 'Ja', 'Yo'):
-	print "\tOnly public projects will be considered."
+	print("\tOnly public projects will be considered.")
 	only_public_projects = True
 	project_constraints = True
 else:
-	print "\tWill consider public *and* private projects."
+	print("\tWill consider public *and* private projects.")
 	only_public_projects = False
 
 # Get the wanted project selection
@@ -128,7 +130,7 @@ select = 'SELECT ct.id FROM "django_content_type" ct WHERE ct.name = %s AND ct.a
 c.execute( select, ("project", "catmaid", "project") )
 row = c.fetchone()
 if not row:
-	print >> sys.stderr, "Could not find content type ID for CATMAID projects. Exiting."
+	print("Could not find content type ID for CATMAID projects. Exiting.", file=sys.stderr)
 	sys.exit(1)
 else:
 	content_type_id = str(row[0])
@@ -139,7 +141,7 @@ select = 'SELECT ap.id, ap.name FROM "auth_permission" ap WHERE ap.content_type_
 c.execute( select, ( content_type_id, ) )
 rows = c.fetchall()
 if not row:
-	print >> sys.stderr, "Could not find permission options for CATMAID projects. Exiting."
+	print("Could not find permission options for CATMAID projects. Exiting.", file=sys.stderr)
 	sys.exit(1)
 else:
 	print( "Please select the permissions you want to grant to the group:" )
@@ -172,4 +174,4 @@ for project_id in projects:
 conn.commit()
 c.close()
 conn.close()
-print "Done"
+print("Done")

@@ -25,7 +25,7 @@ class UseranalyticsView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super(UseranalyticsView, self).get_context_data(**kwargs)
-        context['catmaid_url'] = settings.CATMAID_URL
+        context['CATMAID_URL'] = settings.CATMAID_URL
         return context
 
 class UserProficiencyView(TemplateView):
@@ -33,7 +33,7 @@ class UserProficiencyView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super(UserProficiencyView, self).get_context_data(**kwargs)
-        context['catmaid_url'] = settings.CATMAID_URL
+        context['CATMAID_URL'] = settings.CATMAID_URL
         return context
 
 class ExportWidgetView(TemplateView):

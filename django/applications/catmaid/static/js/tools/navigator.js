@@ -140,7 +140,7 @@
       if (!w) return false;
       e.preventDefault();
 
-      if (!userprofile.inverse_mouse_wheel) w = -w;
+      if (!Navigator.Settings.session.invert_mouse_wheel) w = -w;
       w /= Math.abs(w); // Normalize w to {-1, 1}.
 
       if (e.ctrlKey || e.metaKey) { // Zoom.
@@ -213,7 +213,7 @@
       var m = CATMAID.UI.getLastMouse();
       var x = m.x - offset.left,
         y = m.y - offset.top;
-      if (userprofile.use_cursor_following_zoom &&
+      if (Navigator.Settings.use_cursor_following_zoom &&
         x >= 0 && x <= self.stackViewer.viewWidth &&
         y >= 0 && y <= self.stackViewer.viewHeight) {
         x /= self.stackViewer.scale;
@@ -290,7 +290,7 @@
     var actions = [
 
       new CATMAID.Action({
-        helpText: "Zoom in (smaller increments with Shift held)",
+        helpText: "Zoom in (smaller increments with <kbd>Shift</kbd> held)",
         keyShortcuts: {
           '+': [ 43, 107, 61, 187 ]
         },
@@ -301,7 +301,7 @@
       }),
 
       new CATMAID.Action({
-        helpText: "Zoom out (smaller increments with Shift held)",
+        helpText: "Zoom out (smaller increments with <kbd>Shift</kbd> held)",
         keyShortcuts: {
           '-': [ 45, 109, 173, 189 ]
         },
@@ -312,7 +312,7 @@
       }),
 
       new CATMAID.Action({
-        helpText: "Move up 1 slice in z (or 10 with Shift held)",
+        helpText: "Move up 1 slice in z (or 10 with <kbd>Shift</kbd> held)",
         keyShortcuts: {
           ',': [ 44, 188 ]
         },
@@ -323,7 +323,7 @@
       }),
 
       new CATMAID.Action({
-        helpText: "Move down 1 slice in z (or 10 with Shift held)",
+        helpText: "Move down 1 slice in z (or 10 with <kbd>Shift</kbd> held)",
         keyShortcuts: {
           '.': [ 190 ]
         },
@@ -334,7 +334,7 @@
       }),
 
       new CATMAID.Action({
-        helpText: "Move left (towards negative x, faster with Shift held)",
+        helpText: "Move left (towards negative x, faster with <kbd>Shift</kbd> held)",
         keyShortcuts: {
           "\u2190": [ arrowKeyCodes.left ]
         },
@@ -346,7 +346,7 @@
       }),
 
       new CATMAID.Action({
-        helpText: "Move right (towards positive x, faster with Shift held)",
+        helpText: "Move right (towards positive x, faster with <kbd>Shift</kbd> held)",
         keyShortcuts: {
           "\u2192": [ arrowKeyCodes.right ]
         },
@@ -358,7 +358,7 @@
       }),
 
       new CATMAID.Action({
-        helpText: "Move up (towards negative y, faster with Shift held)",
+        helpText: "Move up (towards negative y, faster with <kbd>Shift</kbd> held)",
         keyShortcuts: {
           "\u2191": [ arrowKeyCodes.up ]
         },
@@ -370,7 +370,7 @@
       }),
 
       new CATMAID.Action({
-        helpText: "Move down (towards positive y, faster with Shift held)",
+        helpText: "Move down (towards positive y, faster with <kbd>Shift</kbd> held)",
         keyShortcuts: {
           "\u2193": [ arrowKeyCodes.down ]
         },
@@ -382,7 +382,7 @@
       }),
 
       new CATMAID.Action({
-        helpText: "Hide all layers except image tile layer (while held)",
+        helpText: "Hide all layers except image tile layers (while held)",
         keyShortcuts: {
           "SPACE": [ 32 ]
         },
@@ -398,9 +398,11 @@
           var layerOpacities = stackLayers.map(function (layers) {
             var opacities = {};
             layers.forEach(function (layer, k) {
-              if (k !== 'TileLayer') {
+              if (layer.isHideable) {
                 opacities[k] = layer.getOpacity();
                 layer.setOpacity(0);
+                // Redrawing the layer is necessary to hide WebGL layers.
+                layer.redraw();
               }
             });
             return opacities;
@@ -419,6 +421,8 @@
                 target.onkeyup = oldListener;
                 self.hideLayersHeld = false;
               });
+              // Redraw everything to show, e.g., WebGL layers.
+              project.getStackViewers().forEach(function (s) { s.redraw(); });
             } else if (oldListener) oldListener(e);
           };
           return true;
@@ -451,8 +455,8 @@
       self.slider_s.update(
         sExtents.max,
         sExtents.min,
-        { major: (Math.abs(sExtents.max) + Math.abs(sExtents.min)) + 1,
-          minor: (Math.abs(sExtents.max) + Math.abs(sExtents.min))*10 + 1 },
+        { major: sExtents.max - sExtents.min + 1,
+          minor: (sExtents.max - sExtents.min)*10 + 1 },
         self.stackViewer.s,
         self.changeScaleDelayed,
         -0.01);
@@ -541,7 +545,33 @@
         return false;
       }
     };
+
+    this.getMouseHelp = function () {
+      var result = '<ul>';
+      result += '<li><strong>Middle mouse drag:</strong> pan the view</li>';
+      result += '<li><strong>Mouse wheel:</strong> move up/down 1 section in z</li>';
+      result += '<li><strong>Mouse wheel with <kbd>Shift</kbd>:</strong> move up/down 10 sections in z</li>';
+      result += '<li><strong>Mouse wheel with <kbd>Ctrl</kbd>:</strong> zoom in/out to the next integer zoom level</li>';
+      result += '<li><strong>Mouse wheel with <kbd>Ctrl</kbd> and <kbd>Shift</kbd>:</strong> zoom in/out 1/10th of a zoom level</li>';
+      result += '</ul>';
+      return result;
+    };
   }
+
+  Navigator.Settings = new CATMAID.Settings(
+      'navigator',
+      {
+        version: 0,
+        entries: {
+          invert_mouse_wheel: {
+            default: false
+          },
+          use_cursor_following_zoom: {
+            default: true
+          }
+        },
+        migrations: {}
+      });
 
   // Make Navigator available in CATMAID Namespace
   CATMAID.Navigator = Navigator;

@@ -45,7 +45,6 @@ Update Python packages::
 
 Synchronize the Django environment with the database::
 
-   ./projects/mysite/manage.py syncdb
    ./projects/mysite/manage.py migrate
 
 Collect new and changed static files::
@@ -62,6 +61,14 @@ clone the virtualenv by calling::
 
    Updating PostGIS on your host system could cause CATMAID to stop working. See
    :ref:`here <faq-postgis-update-problems>` for how to fix this.
+
+.. note::
+
+   Updating from a CATMAID release before 2015.12.21 (with applied database
+   migrations) requires to update to release 2015.12.21 first, apply all
+   database migrations and then continue with the release you actually want.
+   With the newer version, you have to then fake the initial migration:
+   ``manage.py migrate catmaid --fake 0001_initial``.
 
 Backup an restore the database
 ------------------------------
@@ -112,7 +119,7 @@ and `day of week` with asterisks meaning `any`. For more information see the
 manual pages of ``cron`` and ``crontab``. Because this command is run as `root`
 and the actual ``pg_dump`` call is executed as `postgres` user with the help of
 ``sudo``, no database password is required. If your actual backup command gets
-more complicated than this, it is recommendet to create a script file and call
+more complicated than this, it is recommended to create a script file and call
 this from cron.
 
 
@@ -142,7 +149,7 @@ server. The configuration of all of them can be optimized to experience better
 performance. The following list of suggestions is not exhaustive and if you have
 suggestions we are happy to hear about them.
 
-Operationg system and infrastructure
+Operating system and infrastructure
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 * In conjunction with the shared memory setting of PostgreSQL (see below), one
@@ -155,7 +162,8 @@ Operationg system and infrastructure
 
 * The partition that is hosting the image tiles should be mounted with the
   ``noatime`` option. This makes sure no access time is written every time an
-  image file is read.
+  image file is read. Alternatively, you can use ``chattr`` to set this option
+  for individual files and folders.
 
 * If LDAP is used to authenticate users and to check permissions on the server
   CATMAID is running or the image data is loaded from, LDAP queries should be
@@ -180,7 +188,9 @@ Webserver
   image data. If multiple users load the same image data, it will reduce the
   number of times image data has to be loaded from the hard drive.
 
-* Have the webserver transfer data with GZIP.
+* Have the webserver transfer data with GZIP. Make sure this includes JSON
+  data with the content-type `application/json`. In nginx, you can include
+  this by adding `application/json` to the `gzip_types` setting.
 
 * The webserver should mark image tiles to not expire so that they can be cached
   by a client. If the image data is public, one could let the webserver also set
@@ -206,7 +216,7 @@ Database management system
   Django expects the following parameters for its database connections:
   ``client_encoding: 'UTF8'``,  ``default_transaction_isolation: 'read committed'``
   and ``timezone: 'UTC'`` when ``USE_TZ`` is True, value of ``TIME_ZONE``
-  otherwise (use of ``TIME_ZONE`` is CATMAID's default). All of these settings
+  otherwise (``USE_TZ`` is CATMAID's default). All of these settings
   can be configured in ``postgresql.conf`` or more conveniently per database
   user with `ALTER ROLE <http://www.postgresql.org/docs/current/interactive/sql-alterrole.html>`_.
   If these parameters are not the default, Django will do some additional

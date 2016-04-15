@@ -351,6 +351,8 @@
                 });
                 // Parse connector objects
                 json[1].forEach(function (cn) {
+                  // Skip non-synaptic connectors
+                  if (cn[2] !== 0 && cn[2] !== 1) return;
                   var id = cn[1];
                   if (typeof skeleton.connectors[id] === 'undefined') {
                     skeleton.connectors[id] = {};
@@ -364,7 +366,7 @@
                 this.skeletons[skid] = skeleton;
                 // Detect if all skeletons have completed callbacks
                 if (skids.length === Object.keys(this.skeletons).length) {
-                  var blob = new Blob([JSON.stringify(this)], {type: "text/json"});
+                  var blob = new Blob([JSON.stringify(this)], {type: "application/json"});
                   saveAs(blob, 'tree_geometry.json');
                 }
               }).bind(result, skid, skids)));

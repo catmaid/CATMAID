@@ -1,39 +1,15 @@
 import json
 
-from collections import defaultdict
-
 from guardian.shortcuts import get_objects_for_user
 
-from django.db import connection
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 
-from catmaid.models import UserRole, Class, Project, Stack, Relation, StackGroup
+from catmaid.models import UserRole, Class, Project, Relation, StackGroup
 from catmaid.control.authentication import requires_user_role
 
-# All classes needed by the tracing system alongside their
-# descriptions.
-needed_classes = {
-    'stackgroup': "An identifier for a group of stacks",
-}
+from rest_framework.decorators import api_view
 
-# All relations needed by the tracing system alongside their
-# descriptions.
-needed_relations = {
-    'has_channel': "A stack group can have assosiated channels",
-    'has_view': "A stack group can have assosiated orthogonal views",
-}
-
-def validate_project_setup(project_id, user_id):
-    """Will create needed class and relations if they don't exist.
-    """
-    for nc, desc in needed_classes.iteritems():
-        Class.objects.get_or_create(project_id=project_id,
-                class_name=nc, defaults={'user_id': user_id})
-
-    for nr, desc in needed_relations.iteritems():
-        Relation.objects.get_or_create(project_id=project_id,
-                relation_name=nr, defaults={'user_id': user_id})
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def list_project_tags(request, project_id=None):
@@ -42,7 +18,7 @@ def list_project_tags(request, project_id=None):
     p = get_object_or_404(Project, pk=project_id)
     tags = [ str(t) for t in p.tags.all()]
     result = {'tags':tags}
-    return HttpResponse(json.dumps(result, sort_keys=True, indent=4), content_type="text/json")
+    return HttpResponse(json.dumps(result, sort_keys=True, indent=4), content_type="application/json")
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def update_project_tags(request, project_id=None, tags=None):
@@ -61,7 +37,7 @@ def update_project_tags(request, project_id=None, tags=None):
     p.tags.set(*tags)
 
     # Return an empty closing response
-    return HttpResponse(json.dumps(""), content_type="text/json")
+    return HttpResponse(json.dumps(""), content_type="application/json")
 
 class ExProject:
     """ A wrapper around the Project model to include additional
@@ -98,11 +74,75 @@ def get_project_qs_for_user(user):
     browsable by the given user.
     """
     perms=['can_administer', 'can_annotate', 'can_browse']
-    return get_objects_for_user(user, perms, Project, any_perm=True)
+    return get_objects_for_user(user, perms, Project, any_perm=True,
+                                 accept_global_perms=False)
 
+@api_view(['GET'])
 def projects(request):
-    """ Returns a list of project objects that are visible for the requesting
-    user and that have at least one stack linked to it.
+    """ List projects visible to the requesting user.
+    ---
+    models:
+      project_api_stack_element:
+        id: project_api_stack_element
+        properties:
+          id:
+            type: integer
+            description: Stack ID
+            required: true
+          title:
+            type: string
+            description: Stack title
+            required: true
+          comment:
+            type: string
+            description: Comment on stack
+            required: true
+      project_api_stackgroup_element:
+        id: project_api_stackgroup_element
+        properties:
+          id:
+            type: integer
+            description: Stack group ID
+            required: true
+          title:
+            type: string
+            description: Stack group title
+            required: true
+          comment:
+            type: string
+            description: Comment on stack group
+            required: true
+      project_api_element:
+        id: project_api_element
+        properties:
+          id:
+            type: integer
+            description: Project ID
+            required: true
+          title:
+            type: string
+            description: Project title
+            required: true
+          catalogue:
+            type: boolean
+            description: Indicates if the project has a catalogue entry
+            required: true
+          stacks:
+            type: array
+            items:
+              $ref: project_api_stack_element
+            required: true
+          stackgroups:
+            type: array
+            items:
+              $ref: project_api_stackgroup_element
+            required: true
+    type:
+      projects:
+        type: array
+        items:
+          $ref: project_api_element
+        required: true
     """
 
     # Get all projects that are visisble for the current user
@@ -120,46 +160,32 @@ def projects(request):
             project_stack_groups[group.project_id] = groups
         groups.append(group)
 
-    # Create a dictionary with those results that we can output as JSON:
     result = []
     for p in projects:
-        if not p.stacks.all():
-            continue
-
-        stacks_dict = {}
+        stacks = []
         for s in p.stacks.all():
-            stacks_dict[s.id] = {
+            stacks.append({
+                'id': s.id,
                 'title': s.title,
                 'comment': s.comment,
-                'note': '',
-                'action': 'javascript:openProjectStack(%d,%d)' % (p.id, s.id)}
+            })
 
-        stackgroups_dict = {}
-        stackgroups = project_stack_groups.get(p.id)
-        if stackgroups:
-            for sg in stackgroups:
-                stackgroups_dict[sg.id] = {
+        stackgroups = []
+        available_stackgroups = project_stack_groups.get(p.id)
+        if available_stackgroups:
+            for sg in available_stackgroups:
+                stackgroups.append({
+                    'id': sg.id,
                     'title': sg.name,
                     'comment': '',
-                    'note': '',
-                    'action': 'javascript:openStackGroup(%d,%d)' % (p.id, sg.id)
-                }
+                })
 
         result.append({
-            'pid': p.id,
+            'id': p.id,
             'title': p.title,
             'catalogue': int(p.is_catalogueable),
-            'note': '',
-            'action': [{
-                'title': 'Stacks',
-                'comment': '',
-                'note': '',
-                'action': stacks_dict
-            }, {
-                'title': 'Stack groups',
-                'comment': '',
-                'note': '',
-                'action': stackgroups_dict
-            }]
+            'stacks': stacks,
+            'stackgroups': stackgroups
         })
-    return HttpResponse(json.dumps(result, sort_keys=True, indent=4), content_type="text/json")
+
+    return HttpResponse(json.dumps(result, sort_keys=True, indent=4), content_type="application/json")

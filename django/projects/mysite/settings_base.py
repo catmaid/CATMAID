@@ -4,13 +4,24 @@ import os
 import sys
 import django.conf.global_settings as DEFAULT_SETTINGS
 import utils
-from pipelinefiles import *
+import pipelinefiles
+
+# Make Django root folder available
+PROJECT_ROOT = utils.relative('..', '..')
+# Add all subdirectories of project, applications and lib to sys.path
+for subdirectory in ('projects', 'applications', 'lib'):
+    full_path = os.path.join(PROJECT_ROOT, subdirectory)
+    sys.path.insert(0, full_path)
 
 # A list of people who get code error notifications. They will get an email
 # if DEBUG=False and a view raises an exception.
 ADMINS = (
     # ('Your Name', 'your_email@domain.com'),
 )
+
+# At the moment CATMAID doesn't support internationalization and all strings are
+# expected to be in English.
+LANGUAGE_CODE = 'en-gb'
 
 # A tuple in the same format as ADMINS of people who get broken-link
 # notifications when SEND_BROKEN_LINKS_EMAILS=True.
@@ -20,16 +31,14 @@ MANAGERS = ADMINS
 # to load the internationalization machinery.
 USE_I18N = True
 
-# List of callables that know how to import templates from various sources.
-TEMPLATE_LOADERS = (
-    'django.template.loaders.filesystem.Loader',
-    'django.template.loaders.app_directories.Loader'
-)
-
 MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    # For API tokens. Disable if not using HTTPS:
+    'catmaid.middleware.AuthenticationHeaderExtensionMiddleware',
+    'catmaid.middleware.CsrfBypassTokenAuthenticationMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'catmaid.middleware.AnonymousAuthenticationMiddleware',
     'catmaid.middleware.AjaxExceptionMiddleware',
@@ -42,19 +51,20 @@ INSTALLED_APPS = (
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.sites',
-    'django.contrib.admin',
+    # Instead of 'django.contrib.admin', in order to disable the automatic
+    # auto-discovery, which would interfer with django-adminplus.
+    'django.contrib.admin.apps.SimpleAdminConfig',
     'django.contrib.staticfiles',
     'django.contrib.gis',
-    'devserver',
     'djcelery',
     'taggit',
     'adminplus',
     'catmaid',
     'performancetests',
     'guardian',
-    'south',
     'pipeline',
     'rest_framework',
+    'rest_framework.authtoken',
     'rest_framework_swagger',
     'custom_rest_swagger_apis',
 )
@@ -67,7 +77,7 @@ LOGGING = {
             'format': '%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s'
         },
         'simple': {
-            'format': '%(levelname)s %(message)s'
+            'format': '%(levelname)s %(asctime)s %(message)s'
         },
     },
     'handlers': {
@@ -82,6 +92,11 @@ LOGGING = {
         }
     },
     'loggers': {
+        'catmaid': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
         'catmaid.frontend': {
             'handlers': ['console'],
             'level': 'INFO',
@@ -90,11 +105,29 @@ LOGGING = {
     },
 }
 
-# Use the default template context processors. If custom ones should be
-# added, please append it to the tuple to make sure the default processors
-# are still available. See this page for further detail:
-# http://blog.madpython.com/2010/04/07/django-context-processors-best-practice/
-TEMPLATE_CONTEXT_PROCESSORS = DEFAULT_SETTINGS.TEMPLATE_CONTEXT_PROCESSORS
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [ # Extra folders
+            os.path.join(PROJECT_ROOT, 'templates'),
+        ],
+        'OPTIONS': {
+            'loaders': [ # Make sure extra templates are loaded first
+                'django.template.loaders.filesystem.Loader',
+                'django.template.loaders.app_directories.Loader'
+            ],
+            'context_processors': [
+                'django.contrib.auth.context_processors.auth',
+                'django.template.context_processors.debug',
+                'django.template.context_processors.i18n',
+                'django.template.context_processors.media',
+                'django.template.context_processors.static',
+                'django.template.context_processors.tz',
+                'django.contrib.messages.context_processors.messages'
+	    ],
+        }
+    },
+]
 
 # The URL requests are redirected after login
 LOGIN_REDIRECT_URL = '/'
@@ -105,17 +138,21 @@ LOGIN_URL = '/accounts/login'
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend', # default
     'guardian.backends.ObjectPermissionBackend',
+    # For API tokens. Disable if not using HTTPS:
+    'rest_framework.authentication.TokenAuthentication',
 )
 
-# User-ID of the anonymous (i.e. not-logged-in) user. This is usualld -1.
+# User-ID of the anonymous (i.e. not-logged-in) user. This is usually -1.
 ANONYMOUS_USER_ID = -1
 
 # Project ID of a dummy project that will keep all ontologies and
-# classifications that are shared between multiple projcts (and are
+# classifications that are shared between multiple projects (and are
 # thereby project independent).
 ONTOLOGY_DUMMY_PROJECT_ID = -1
 
-SOUTH_DATABASE_ADAPTERS = {'default': 'south.db.postgresql_psycopg2'}
+# Store datetimes as UTC by default. If stored datetimes have a timezone or
+# offset, interpret it.
+USE_TZ = True
 
 # The current site in the django_site database table. This is used so that
 # applications can hook into specific site(s) and a single database can manage
@@ -123,8 +160,6 @@ SOUTH_DATABASE_ADAPTERS = {'default': 'south.db.postgresql_psycopg2'}
 SITE_ID = 1
 
 # Default user profile settings
-PROFILE_DEFAULT_INVERSE_MOUSE_WHEEL = False
-PROFILE_DISPLAY_STACK_REFERENCE_LINES = False
 PROFILE_INDEPENDENT_ONTOLOGY_WORKSPACE_IS_DEFAULT = False
 PROFILE_SHOW_TEXT_LABEL_TOOL = False
 PROFILE_SHOW_TAGGING_TOOL = False
@@ -133,11 +168,6 @@ PROFILE_SHOW_SEGMENTATION_TOOL = False
 PROFILE_SHOW_TRACING_TOOL = False
 PROFILE_SHOW_ONTOLOGY_TOOL = False
 PROFILE_SHOW_ROI_TOOL = False
-PROFILE_TRACING_OVERLAY_SCREEN_SCALING = True
-PROFILE_TRACING_OVERLAY_SCALE = 1.0
-PROFILE_PREFER_WEBGL_LAYERS = False
-PROFILE_USE_CURSOR_FOLLOWING_ZOOM = True
-PROFILE_TILE_LINEAR_INTERPOLATION = True
 
 # Defines if a cropped image of a ROI should be created
 # automatically when the ROI is created. If set to False
@@ -183,26 +213,35 @@ CELERY_IMPORTS = (
 )
 
 # We use django-pipeline to compress and reference JavaScript and CSS files. To
-# make Pipeline integrate with staticfiles (and therefore collectatic calls)
+# make Pipeline integrate with staticfiles (and therefore collecstatic calls)
 # the STATICFILES_STORAGE variable has to be set to:
 STATICFILES_STORAGE = 'pipeline.storage.PipelineCachedStorage'
 
 # Adding PipelineFinder as asset discovery mechanism allows staticfiles to also
 # discover files that were generated by Pipeline.
 STATICFILES_FINDERS = (
-    'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
-    'pipeline.finders.CachedFileFinder',
-    'pipeline.finders.PipelineFinder',
 )
 
-# Use CSSMin as django-pipeline's CSS compressor
-PIPELINE_CSS_COMPRESSOR = 'pipeline.compressors.cssmin.CSSMinCompressor'
-# Use no JS compresor for now
-PIPELINE_JS_COMPRESSOR = None
-# Don't wrap JS files into anonymous functions. Our code isn't ready for this,
-# yet.
-PIPELINE_DISABLE_WRAPPER = True
+PIPELINE = {
+    # Use CSSMin as django-pipeline's CSS compressor
+    'CSS_COMPRESSOR': 'pipeline.compressors.cssmin.CSSMinCompressor',
+    # Use no JS compresor for now
+    'JS_COMPRESSOR': None,
+    # Don't wrap JS files into anonymous functions. Our code isn't ready for
+    # this, yet.
+    'DISABLE_WRAPPER': True,
+    # All static files that are run through pipeline
+    'STYLESHEETS': pipelinefiles.STYLESHEETS,
+    'JAVASCRIPT': pipelinefiles.JAVASCRIPT
+}
+
+# Make a list of files that should be included directly (bypassing pipeline)
+# and a list of pipeline identifiers for all others.
+NON_COMPRESSED_FILES = pipelinefiles.non_pipeline_js.values()
+NON_COMPRESSED_FILE_IDS = pipelinefiles.non_pipeline_js.keys()
+COMPRESSED_FILE_IDS = filter(lambda f: f not in NON_COMPRESSED_FILE_IDS,
+                             pipelinefiles.JAVASCRIPT.keys())
 
 # Make Git based version of CATMAID available as a settings field
 VERSION = utils.get_version()
@@ -222,13 +261,6 @@ VERSION = utils.get_version()
 # DVID_FORMAT = 'jpg:80'
 # DVID_SHOW_NONDISPLAYABLE_REPOS = True
 
-# Make Django root folder available
-PROJECT_ROOT = utils.relative('..', '..')
-# Add all subdirectories of project, applications and lib to sys.path
-for subdirectory in ('projects', 'applications', 'lib'):
-    full_path = os.path.join(PROJECT_ROOT, subdirectory)
-    sys.path.insert(0, full_path)
-
 # In order to make Django work with the unmanaged models from djsopnet in tests,
 # we use a custom testing runner to detect when running in a testing
 # environment. The custom PostgreSQL database wrapper uses this flag to change
@@ -240,6 +272,11 @@ TEST_RUNNER = 'custom_testrunner.TestSuiteRunner'
 # commit name.
 PERFORMANCETEST_SCM_URL = "https://github.com/catmaid/CATMAID/commit/{version}"
 
+# This setting allows the WSGI back-end to serve static files. It is highly
+# discouraged to use this in production as it is very in-efficient and
+# potentially insecure. It is used only to simplify continuous integration.
+SERVE_STATIC = False
+
 # Additional static files can be loaded by CATMAID if they are placed in the
 # folder defined by STATIC_EXTENSION_ROOT. These files are not respected by
 # Pipeline to allow updating them without running collectstatic. To use this
@@ -250,10 +287,12 @@ STATIC_EXTENSION_ROOT = "/tmp"
 STATIC_EXTENSION_FILES = []
 
 REST_FRAMEWORK = {
-    # CSRF is unnecessary because there is no form-based workflow to
-    # distinguish intentional from hijacked requests.
-    'DEFAULT_AUTHENTICATION_CLASSES': ('custom_rest_authentication.CsrfExemptSessionAuthentication',),
-    'VIEW_DESCRIPTION_FUNCTION': 'custom_rest_swagger_googledoc.get_googledocstring'
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ),
+    'VIEW_DESCRIPTION_FUNCTION':
+        'custom_rest_swagger_googledoc.get_googledocstring',
 }
 
 SWAGGER_SETTINGS = {
@@ -263,7 +302,7 @@ SWAGGER_SETTINGS = {
                        This is an API for accessing project, stack and
                        annotation data for this CATMAID instance. More
                        information is available at
-                       <a href="http://catmaid.org">catmaid.org</a>.
+                       <a href="http://catmaid.org/page/api.html">catmaid.org</a>.
                        ''',
         'contact': 'catmaid@googlegroups.com',
         'license': 'GPLv3',

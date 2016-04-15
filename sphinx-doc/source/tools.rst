@@ -67,7 +67,7 @@ that the current slice is appended to the output for every stack before
 the next Z step is made.
 
 To start the cropping job, one needs to click on the tickmark on the right.
-A confirmation message should appear. You will get a notificiation in the
+A confirmation message should appear. You will get a notification in the
 message view once the sub-stack has been cropped. By default, cropped
 sub-stacks will remain for two weeks on the server. This can be adjusted
 by configuring a periodic task that manages the clean-up. See the section

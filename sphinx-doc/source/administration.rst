@@ -188,7 +188,9 @@ Webserver
   image data. If multiple users load the same image data, it will reduce the
   number of times image data has to be loaded from the hard drive.
 
-* Have the webserver transfer data with GZIP.
+* Have the webserver transfer data with GZIP. Make sure this includes JSON
+  data with the content-type `application/json`. In nginx, you can include
+  this by adding `application/json` to the `gzip_types` setting.
 
 * The webserver should mark image tiles to not expire so that they can be cached
   by a client. If the image data is public, one could let the webserver also set

@@ -150,6 +150,15 @@ Ontologies, classification and clustering:
   multi-level ontologies on thousands of classification graphs.
 
 
+Administration and Performance:
+
+- The return type of many performance-critical queries, like querying nodes
+  for the tracing overlay, is now correctly specified as 'application/json'
+  rather than 'text/html'. Make sure your nginx has gzip enabled for the
+  'application/json' type in its 'gzip_types' setting so that these responses
+  are compressed.
+
+
 Miscellaneous:
 
 - Dragging a window into the center of another window now creates a tabbed

@@ -522,9 +522,9 @@ def get_elements_with_perms_cls(element, cls, attach_perms=False):
 
 def get_element_permissions(element, cls):
     elem_perms = get_elements_with_perms_cls(element, cls, True)
-    elem_perms = OrderedDict(elem_perms)
-    elem_perms.keyOrder.sort(key=lambda elem: elem.get_name())
-    return elem_perms
+    sorted_elem_perms = OrderedDict(sorted(elem_perms.items(),
+                                           key=lambda x: x[0].get_name()))
+    return sorted_elem_perms
 
 def get_element_permission_tuples(element_perms):
     """ Out of list of (element, [permissions] tuples, produce a

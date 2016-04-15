@@ -124,7 +124,9 @@ def get_classification_links_qs( workspace_pid, project_ids, inverse=False,
             ('is_a', 'classified_by'), cursor)
 
     # Bail out if there are not the classes we need
-    if 2 != len(class_map) or 2 != len(relation_map):
+    all_classes_exist = 'classification_project' in class_map and 'classification_root' in class_map
+    all_relations_exist = 'is_a' in relation_map and 'classified_by' in relation_map
+    if not all_classes_exist or not all_relations_exist:
         return ClassInstanceClassInstance.objects.none()
 
     # Make sure we deal with a list of project ids

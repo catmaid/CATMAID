@@ -6,6 +6,7 @@ from itertools import groupby
 
 from guardian.models import UserObjectPermission, GroupObjectPermission
 from guardian.shortcuts import get_perms_for_model
+from guardian.utils import get_anonymous_user
 
 from django import forms
 from django.conf import settings
@@ -77,7 +78,7 @@ def login_user(request):
 def logout_user(request):
     logout(request)
     # Return profile context of anonymous user
-    anon_user = User.objects.get(id=settings.ANONYMOUS_USER_ID)
+    anon_user = get_anonymous_user()
     profile_context = {}
     profile_context['userprofile'] = anon_user.userprofile.as_dict()
     profile_context['success'] = True
@@ -235,12 +236,15 @@ def get_objects_and_perms_for_user(user, codenames, klass, use_groups=True, any_
 def user_project_permissions(request):
     """ If a user is authenticated, this method returns a dictionary that
     stores whether the user has a specific permission on a project. If a user
-    is not authenticated and the request is done by the anonymous user, the
-    permissions for the anonymous user are returned. Otherwise, this dictionary
-    will be empty.
+    is not authenticated, the request is done by Django's anonymous user, which
+    is different from Guardian's anonymous user. In this case, no permissions
+    are returned, because Django's anonymous user does not have a user profile.
+    A middleware should make sure Guardian's anonymous user is used for
+    anonymous requests, because it reports as authenticated and a profile will
+    be returned.
     """
     result = {}
-    if request.user.is_authenticated() or request.user.is_anonymous:
+    if request.user.is_authenticated():
         projectPerms = get_perms_for_model(Project)
         permNames = [perm.codename for perm in projectPerms]
         # Find out what permissions a user actually has for any of those projects.

@@ -17,3 +17,7 @@ Publications using CATMAID
 * Ellie S. Heckscher, Aref Arzan Zarin, Serge Faumont, Matthew Q. Clark, Laurina Manning, Akira Fushiki, Casey M. Schneider-Mizell, Richard D. Fetter, James W. Truman, Maarten F. Zwart, Matthias Landgraf, Albert Cardona, Shawn R. Lockery, Chris Q. Doe. `Even-Skipped+ Interneurons Are Core Components of a Sensorimotor Circuit that Maintains Left-Right Symmetric Muscle Contraction Amplitude <http://www.sciencedirect.com/science/article/pii/S0896627315007667>`_, Neuron, 2015.
 
 * Nadine Randel, Réza Shahidi, Csaba Verasztó, Luis A Bezares-Calderón, Steffen Schmidt, Gáspár Jékely. `Inter-individual stereotypy of the Platynereis larval visual connectome <http://elifesciences.org/content/4/e08069v2>`_, eLife, 2015.
+
+* Réza Shahidi, Elizabeth A Williams, Markus Conzelmann, Albina Asadulina, Csaba Verasztó, Sanja Jasek, Luis A Bezares-Calderón, Gáspár Jékely. `A serial multiplex immunogold labeling method for identifying peptidergic neurons in connectomes <http://lens.elifesciences.org/11147/>`_, eLife, 2015
+
+* Sebastian Dunst, Tom Kazimiers, Felix von Zadow, Helena Jambor, Andreas Sagner, Beate Brankatschk, Ali Mahmoud, Stephanie Spannl, Pavel Tomančák, Suzanne Eaton, Marko Brankatschk. `Endogenously Tagged Rab Proteins: A Resource to Study Membrane Trafficking in Drosophila <http://www.cell.com/developmental-cell/abstract/S1534-5807(15)00218-X>`_, Developmental Cell, 2015

@@ -10,6 +10,8 @@ from django.shortcuts import get_object_or_404
 from django.test import TestCase, TransactionTestCase
 from django.test.client import Client
 from guardian.shortcuts import assign_perm
+from guardian.utils import get_anonymous_user
+from guardian.management import create_anonymous_user
 
 from catmaid.fields import Double3D, Integer3D
 from catmaid.models import Project, Stack, ProjectStack
@@ -224,6 +226,8 @@ class ViewPageTests(TestCase):
         self.client = Client()
 
         p = Project.objects.get(pk=self.test_project_id)
+
+        create_anonymous_user(object())
 
         user = User.objects.get(pk=3)
         # Assign the new user permissions to browse and annotate projects
@@ -489,7 +493,7 @@ class ViewPageTests(TestCase):
         self.assertEqual(len(result), 0)
 
         # Add permission to the anonymous user to browse two projects
-        anon_user = User.objects.get(pk=settings.ANONYMOUS_USER_ID)
+        anon_user = get_anonymous_user()
         p = Project.objects.get(pk=self.test_project_id)
         assign_perm('can_browse', anon_user, p)
 
@@ -728,14 +732,6 @@ class ViewPageTests(TestCase):
                 u'full_name': u'Admin Superuser',
                 u'login': u'admin',
                 u'id': 4
-            },
-            {
-                u'first_name': u'Anonymous',
-                u'last_name': u'User',
-                u'color': [1.0, 0.0, 0.0],
-                u'full_name': u'Anonymous User',
-                u'login': u'AnonymousUser',
-                u'id': -1
             }, {
                 u'first_name': u'Test',
                 u'last_name': u'User 0',
@@ -762,7 +758,17 @@ class ViewPageTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
-        self.assertEqual(expected_result, parsed_response)
+
+        for u in expected_result:
+            self.assertIn(u, parsed_response)
+
+        # The anonymous user is created by Guardian, we don't know its ID
+        self.assertEqual(len(expected_result) + 1, len(parsed_response))
+        found_anon_user = False
+        for u in parsed_response:
+            if u['login'] == 'AnonymousUser':
+                found_anon_user = True
+        self.assertTrue(found_anon_user)
 
     def test_skeleton_root(self):
         self.fake_authentication()
@@ -4145,6 +4151,8 @@ class PermissionTests(TestCase):
         self.test_project_id = 3
         self.client = Client()
 
+        create_anonymous_user(object())
+
         # Set up test API. Because we want to test only general access to the
         # methods, it doesn't matter if we use fake parameters.
         url_params = {
@@ -4200,7 +4208,7 @@ class PermissionTests(TestCase):
 
     def test_can_browse_access(self):
         # Give anonymous user browse permissions for the test project
-        anon_user = User.objects.get(pk=settings.ANONYMOUS_USER_ID)
+        anon_user = get_anonymous_user()
         p = Project.objects.get(pk=self.test_project_id)
         assign_perm('can_browse', anon_user, p)
         # Give anonymous user general browse permissions

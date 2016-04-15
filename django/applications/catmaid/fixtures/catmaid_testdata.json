@@ -1,23 +1,5 @@
 [
   {
-    "pk": -1,
-    "model": "auth.user",
-    "fields": {
-      "username": "AnonymousUser",
-      "first_name": "Anonymous",
-      "last_name": "User",
-      "is_active": true,
-      "is_superuser": false,
-      "is_staff": false,
-      "last_login": "2014-03-17T18:14:34.851Z",
-      "groups": [],
-      "user_permissions": [],
-      "password": "",
-      "email": "",
-      "date_joined": "2014-03-17T18:14:34.851Z"
-    }
-  },
-  {
     "pk": 1,
     "model": "auth.user",
     "fields": {

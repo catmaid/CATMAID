@@ -1,12 +1,22 @@
 import json
 import colorsys
+import django.contrib.auth.views as django_auth_views
 
 from random import random
 from string import upper
 
+from guardian.utils import get_anonymous_user
+
 from django.http import HttpResponse
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth.models import User
+
+
+def not_anonymous(user):
+    """Return true if the the user is neither Django's nor Guardian's anonymous
+    user.
+    """
+    return user.is_authenticated and user != get_anonymous_user()
 
 def access_check(user):
     """ Returns true if users are logged in or if they have the general
@@ -14,7 +24,12 @@ def access_check(user):
     This is used to also allow the not logged in anonymous user to retrieve
     data if it is granted the 'can_browse' permission.
     """
-    return user.is_authenticated() or user.has_perm('catmaid.can_browse')
+    if user.is_authenticated():
+        if user == get_anonymous_user():
+            return user.has_perm('catmaid.can_browse')
+        else:
+            return True
+    return False
 
 @user_passes_test(access_check)
 def user_list(request):
@@ -147,7 +162,7 @@ def update_user_profile(request):
     no error is raised.
     """
     # Ignore anonymous user
-    if not request.user.is_authenticated() or request.user.is_anonymous():
+    if request.user == get_anonymous_user() or not request.user.is_authenticated():
         return HttpResponse(json.dumps({'success': "The user profile of the " +
                 "anonymous user won't be updated"}), content_type='application/json')
 
@@ -163,3 +178,7 @@ def update_user_profile(request):
 
     return HttpResponse(json.dumps({'success': 'Updated user profile'}),
             content_type='application/json')
+
+@user_passes_test(not_anonymous)
+def change_password(request, **kwargs):
+    return django_auth_views.password_change(request, **kwargs)

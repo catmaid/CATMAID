@@ -59,9 +59,9 @@ INSTALLED_APPS = (
     'djcelery',
     'taggit',
     'adminplus',
+    'guardian',
     'catmaid',
     'performancetests',
-    'guardian',
     'pipeline',
     'rest_framework',
     'rest_framework.authtoken',
@@ -141,9 +141,6 @@ AUTHENTICATION_BACKENDS = (
     # For API tokens. Disable if not using HTTPS:
     'rest_framework.authentication.TokenAuthentication',
 )
-
-# User-ID of the anonymous (i.e. not-logged-in) user. This is usually -1.
-ANONYMOUS_USER_ID = -1
 
 # Project ID of a dummy project that will keep all ontologies and
 # classifications that are shared between multiple projects (and are

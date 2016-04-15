@@ -2,7 +2,10 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand, CommandError
 
+from guardian.utils import get_anonymous_user
+
 from optparse import make_option
+
 
 class Command(BaseCommand):
     help = "Set the user profile settings of every user to the defaults"
@@ -14,9 +17,10 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         update_anon_user = options['update-anon-user']
+        anon_user = get_anonymous_user()
         for u in User.objects.all():
             # Ignore the anonymous user by default
-            if u.id == settings.ANONYMOUS_USER_ID and not update_anon_user:
+            if u == anon_user and not update_anon_user:
                 continue
             up = u.userprofile
             # Expect user profiles to be there and add all default settings

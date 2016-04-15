@@ -6,6 +6,8 @@ from django.core.serializers.json import DjangoJSONEncoder
 from django.db import connection
 from django.http import HttpResponse
 
+from guardian.utils import get_anonymous_user
+
 from catmaid.models import UserRole, Review, ReviewerWhitelist
 from catmaid.control.authentication import requires_user_role
 
@@ -151,7 +153,7 @@ def reviewer_whitelist(request, project_id=None):
     reviews they trust for a given project.
     """
     # Ignore anonymous user
-    if not request.user.is_authenticated() or request.user.is_anonymous():
+    if request.user == get_anonymous_user() or not request.user.is_authenticated():
         return HttpResponse(json.dumps({'success': "The reviewer whitelist " +
                 "of  the anonymous user won't be updated"}),
                 content_type='application/json')

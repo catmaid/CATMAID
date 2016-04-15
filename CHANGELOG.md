@@ -168,6 +168,10 @@ Miscellaneous:
   The active tab can be removed from the tabbed window by dragging it to
   another location in the window layout.
 
+- Dragging a window onto the top, left, bottom, or right edge of an already
+  tabbed window while holding SHIFT will add it to that location inside the
+  tab.
+
 - There is now a setting to invert the behavior of CTRL when navigating
   parent/child topology, i.e., when enabled [ and ] will navigate to the
   next real node by default, while holding CTRL will go to virtual nodes.

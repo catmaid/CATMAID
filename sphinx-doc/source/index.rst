@@ -19,6 +19,29 @@ The **C**\ ollaborative **A**\ nnotation **T**\ oolkit for **M**\ assive **A**\ 
 - SVG and WebGL-based neuronal morphology viewer
 - Open source software (`GPLv3 <https://www.tldrlegal.com/l/gpl-3.0>`_)
 
+**User interface**
+
+.. thumbnail:: _static/screenshots/ui-tracing.jpg
+    :class: lightimage
+    :group: index
+    :width: 150px
+    :height: 100px
+    :title: CATMAID user interface showing a typical tracing setup with graph, 3D viewer, plots and connectivity, by Schneider-Mizell and Stephan Gerhard et. al.
+
+.. thumbnail:: _static/screenshots/ui-ortho-views.jpg
+    :class: lightimage
+    :group: index
+    :width: 150px
+    :height: 100px
+    :title: CATMAID user interface showing anisotropic orthogonal stacks and contast astjustment
+
+.. thumbnail:: _static/screenshots/catmaid-selector-tool-mouse-mirror.png
+    :class: lightimage
+    :group: index
+    :width: 150px
+    :height: 100px
+    :title: CATMAID user interface showing multiple channels of a confocal stack
+
 Documentation
 -------------
 

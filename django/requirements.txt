@@ -30,5 +30,6 @@ pytz==2015.7
 PyYAML==3.10
 scipy==0.14.1
 Sphinx==1.3.1
+sphinxcontrib-images==0.7.0
 sqlparse==0.1.3
 wsgiref==0.1.2

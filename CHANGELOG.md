@@ -16,9 +16,21 @@ update an existing CATMAID instance safely, please follow these steps:
    pip install -r requirements.txt
    pip uninstall south
 
-3. Fake the new initial migration by running (and only the initial migration):
+3. Fake initial migrations (and only the initial migrations!) of all used
+   Django applications to register current database state:
 
+   python manage.py migrate admin 0001_initial --fake
+   python manage.py migrate auth 0001_initial --fake
+   python manage.py migrate authtoken 0001_initial --fake
    python manage.py migrate catmaid 0001_initial --fake
+   python manage.py migrate contenttypes 0001_initial --fake
+   python manage.py migrate djcelery 0001_initial --fake
+   python manage.py migrate guardian 0001_initial --fake
+   python manage.py migrate kombu_transport_django 0001_initial --fake
+   python manage.py migrate performancetests 0001_initial --fake
+   python manage.py migrate sessions 0001_initial --fake
+   python manage.py migrate sites 0001_initial --fake
+   python manage.py migrate taggit 0001_initial --fake
 
 4. In the future no syncdb step is required anymore. Continue with the rest of
    the regular update procedure:

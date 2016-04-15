@@ -119,7 +119,7 @@ and `day of week` with asterisks meaning `any`. For more information see the
 manual pages of ``cron`` and ``crontab``. Because this command is run as `root`
 and the actual ``pg_dump`` call is executed as `postgres` user with the help of
 ``sudo``, no database password is required. If your actual backup command gets
-more complicated than this, it is recommendet to create a script file and call
+more complicated than this, it is recommended to create a script file and call
 this from cron.
 
 
@@ -149,7 +149,7 @@ server. The configuration of all of them can be optimized to experience better
 performance. The following list of suggestions is not exhaustive and if you have
 suggestions we are happy to hear about them.
 
-Operationg system and infrastructure
+Operating system and infrastructure
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 * In conjunction with the shared memory setting of PostgreSQL (see below), one

@@ -12,18 +12,31 @@ update an existing CATMAID instance safely, please follow these steps:
 2. Upgrade to this version (or a newer one) and update pip and all Python
    packages (in within your virtualenv), South can be removed afterwards:
 
+   ```
    pip install -U pip
    pip install -r requirements.txt
    pip uninstall south
+   ```
 
-3. Fake initial migrations (and only the initial migrations!) of all used
+3. Remove the following variables from settings.py file (in
+   `django/projects/mysite/`): `TEMPLATE_DIRS`, `TEMPLATE_DEBUG`
+
+4. Fake initial migrations (and only the initial migration!) of the
+   `contenttypes` app and apply its other migrations:
+
+   ```
+   python manage.py migrate contenttypes 0001_initial --fake
+   python manage.py migrate contenttypes
+   ```
+
+5. Fake initial migrations (and only the initial migrations!) of all used
    Django applications to register current database state:
 
+   ```
    python manage.py migrate admin 0001_initial --fake
    python manage.py migrate auth 0001_initial --fake
    python manage.py migrate authtoken 0001_initial --fake
    python manage.py migrate catmaid 0001_initial --fake
-   python manage.py migrate contenttypes 0001_initial --fake
    python manage.py migrate djcelery 0001_initial --fake
    python manage.py migrate guardian 0001_initial --fake
    python manage.py migrate kombu_transport_django 0001_initial --fake
@@ -31,12 +44,15 @@ update an existing CATMAID instance safely, please follow these steps:
    python manage.py migrate sessions 0001_initial --fake
    python manage.py migrate sites 0001_initial --fake
    python manage.py migrate taggit 0001_initial --fake
+   ```
 
-4. In the future no syncdb step is required anymore. Continue with the rest of
+6. In the future no syncdb step is required anymore. Continue with the rest of
    the regular update procedure:
 
+   ```
    python manage.py migrate
    python manage.py collectstatic [-l]
+   ```
 
 This procedure will only be required for upgrading an existing instance to a
 release newer than 2015.12.21. It won't be needed to migrate from newer
@@ -45,10 +61,9 @@ releases.
 Also note that if you are running an Apache/mod_wsgi setup (or referencing
 django.wsgi), you have to re-generate your configuration with:
 
-  ./django/create_configuration
-
-The following variables have to be removed from settings.py files:
-TEMPLATE_DIRS, TEMPLATE_DEBUG
+   ```
+   ./django/create_configuration
+   ```
 
 Additionally, PostgreSQL is now required to be of version 9.4.
 

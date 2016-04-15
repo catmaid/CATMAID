@@ -3,7 +3,7 @@
 # This script fetches treenodes from the database and renders them to
 # stack-sized PNGs
 
-from __future__ import division
+from __future__ import division, print_function
 from math import pi as M_PI  # used by many snippets
 
 import sys
@@ -26,11 +26,11 @@ try:
 
     conf = yaml.load(open(os.path.join(os.environ['HOME'], '.catmaid-db')))
 except:
-    print >> sys.stderr, '''Your ~/.catmaid-db file should look like:
+    print('''Your ~/.catmaid-db file should look like:
 host: localhost
 database: catmaid
 username: catmaid_user
-password: password_of_your_catmaid_user'''
+password: password_of_your_catmaid_user''', file=sys.stderr)
     sys.exit(1)
 
 #if len(sys.argv) != 2:
@@ -52,11 +52,11 @@ select += 'WHERE p.id = %s'
 c.execute(select,(pid,))
 row = c.fetchone()
 if not row:
-	print >> sys.stderr, "No project with id {0} was found".format(pid)
+	print("No project with id {0} was found".format(pid), file=sys.stderr)
 	sys.exit(1)
 
 ptitle, = row
-print "Project found: {0}".format(ptitle)
+print("Project found: {0}".format(ptitle))
 
 ###
 # Export treenodes
@@ -67,7 +67,7 @@ query = "SELECT c.id FROM class c WHERE c.project_id = %s AND c.class_name = '{s
 c.execute(query,(pid,))
 row = c.fetchone()
 if not row:
-    print >> sys.stderr, "No skeleton class was found in project {0}".format(ptitle)
+    print("No skeleton class was found in project {0}".format(ptitle), file=sys.stderr)
     sys.exit(1)
 scid, = row
 
@@ -77,7 +77,7 @@ query = "SELECT r.id FROM relation r WHERE r.project_id = %s AND r.relation_name
 c.execute(query,(pid,))
 row = c.fetchone()
 if not row:
-    print >> sys.stderr, "No element_of relation was found in project {0}".format(ptitle)
+    print("No element_of relation was found in project {0}".format(ptitle), file=sys.stderr)
     sys.exit(1)
 eleofid, = row
 
@@ -86,7 +86,7 @@ query = 'SELECT ci.id FROM class_instance ci WHERE ci.project_id = %s AND ci.cla
 c.execute(query,(pid,scid))
 rows = c.fetchall()
 if len(rows) == 0:
-    print >> sys.stderr, "No skeletons found in project {0}".format(ptitle)
+    print("No skeletons found in project {0}".format(ptitle), file=sys.stderr)
     sys.exit(1)
 
 # fetch skeleton nodes
@@ -143,11 +143,11 @@ def render_points_to_png(width, height, txyz, cxyz, fname):
     cr.save()
 
     for xc, yc, zc in txyz:
-        #print xc/resx, yc/resy
+        #print(xc/resx, yc/resy)
         circle(cr, xc/resx, yc/resy)
 
     for xc, yc, zc in cxyz:
-        #print xc/resx, yc/resy
+        #print(xc/resx, yc/resy)
         circle_con(cr, xc/resx, yc/resy)
 
     cr.restore()

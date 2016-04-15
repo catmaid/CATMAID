@@ -8,20 +8,19 @@ from optparse import make_option
 
 
 class Command(BaseCommand):
-    args = '<project_id>'
     help = 'Prunes skeletons in the specified projects. All unreferenced ' \
         'nodes that are colinear with their child and parent will be removed'
-    option_list = BaseCommand.option_list + (
-        make_option('--dryrun',
-            action='store_true',
-            dest='dryrun',
-            default=False,
-            help='Don\'t actually remove nodes'),
-        )
+
+    def add_arguments(self, parser):
+        parser.add_argument('--dryrun', action='store_true', dest='dryrun',
+            default=False, help='Don\'t actually remove nodes'),
+        parser.add_argument('--project_id', dest='project_id', nargs='+',
+            default=False, help='Prune skeletons in these projects'),
 
     @transaction.atomic
     def handle(self, *args, **options):
-        if not args:
+        project_ids = options['project_id']
+        if not project_ids:
             raise CommandError('Please specify at least one project ID as argument')
 
         # Check arguments
@@ -45,7 +44,7 @@ class Command(BaseCommand):
         cursor.execute(prune_sql)
         self.stdout.write('Successfully loaded required PL/pgSQL functions')
 
-        for project_id in args:
+        for project_id in project_ids:
             try:
                 project = Project.objects.get(pk=int(project_id))
                 self.stdout.write('Starting pruning of all skeletons in project "%s"' % project.id)

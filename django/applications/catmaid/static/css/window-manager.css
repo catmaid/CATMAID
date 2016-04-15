@@ -2,7 +2,8 @@ div.eventCatcher,
 div.eventCatcherTop,
 div.eventCatcherBottom,
 div.eventCatcherLeft,
-div.eventCatcherRight {
+div.eventCatcherRight,
+div.eventCatcherMiddle {
   position: absolute;
   top: 0;
   left: 0;
@@ -33,6 +34,54 @@ div.eventCatcherLeft {
 div.eventCatcherRight {
   background: url(../images/red50-20x20.png) repeat-y right;
   display: block;
+}
+
+div.eventCatcherMiddle {
+  background: url(../images/red50-20x20.png) no-repeat center/33% 33%;
+  display: block;
+}
+
+.CMWFrame,
+.windowContent{
+  position: relative;
+  margin: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  padding: 0;
+}
+
+.CMWFrame {
+  background: #000000;
+  overflow: hidden;
+}
+
+.CMWTabs {
+  background: #FEFEFE;
+}
+
+.CMWTabs span {
+  display: inline-block;
+  margin: 0 4px 0 0;
+  padding: 3px 6px 3px 6px;
+  background: #A0A0A0;
+  color: #FFFFFF;
+  cursor: pointer;
+}
+
+.CMWTabs span:hover {
+  background: #55A;
+}
+
+.CMWTabs span.active {
+  background: #99F;
+}
+
+.windowContent {
+  width: 100%;
+  height: 100%;
+  background: #ffffff;
+  overflow: auto;
 }
 
 div.windowContent[data-msg]:before {

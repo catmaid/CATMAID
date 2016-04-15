@@ -6,6 +6,8 @@
 # such as the skeleton of a neuronal arbor and its synapses
 # in the form of a NetworX graph.
 
+from __future__ import print_function
+
 import urllib
 import urllib2
 import base64
@@ -50,7 +52,7 @@ class Connection:
             return
         r = json.loads(response)
         if type(r) == dict and 'error' in r:
-            print "ERROR:", r['error'], r
+            print("ERROR:", r['error'], r)
         else:
             return r
 
@@ -140,12 +142,12 @@ def skeleton_graph(connection, project_id, skeleton_id):
 
 def test(connection):
     g = skeleton_graph(connection, 4, 17285283)
-    print "Name:", g.name
-    print "Skeleton:", g.skeleton_id
-    print "Number of nodes:", g.number_of_nodes()
-    print "Number of edges:", g.number_of_edges()
-    print "Number of presynaptic relations:", sum(len(c['presynaptic_to']) for c in g.connectors.itervalues())
-    print "Number of postsynaptic relations:", sum(len(c['postsynaptic_to']) for c in g.connectors.itervalues())
+    print("Name:", g.name)
+    print("Skeleton:", g.skeleton_id)
+    print("Number of nodes:", g.number_of_nodes())
+    print("Number of edges:", g.number_of_edges())
+    print("Number of presynaptic relations:", sum(len(c['presynaptic_to']) for c in g.connectors.itervalues()))
+    print("Number of postsynaptic relations:", sum(len(c['postsynaptic_to']) for c in g.connectors.itervalues()))
 
 
 def main():

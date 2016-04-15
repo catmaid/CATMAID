@@ -35,6 +35,8 @@ The frontend is written primarily in Javascript and makes use of a several
 external libraries. Most interfaces are built dynamically through Javascript;
 few HTML templates are used.
 
+.. figure:: _static/architecture.svg
+
 A core philosophy of this architecture is to keep the backend API fast and
 minimal. The primary purpose of the backend is to mediate the database. Complex
 analysis and data processing is performed on the client whenever possible. This
@@ -223,6 +225,8 @@ transport, much less when HTTP2/SPDY and modern compression-aware browsers are
 involved. However, abbreviated property names or array-packed values are
 acceptable for the responses of performance-critical endpoints.
 
+Date and time response values should be in UTC and formatted as ISO 8601.
+
 Javascript
 ##########
 
@@ -353,3 +357,40 @@ example, with the default configuration this would be::
 ... or, for custom configurations::
 
     http://<catmaid_servername>/<catmaid_subdirectory>/tests
+
+Documentation
+-------------
+
+In addition to the backend, HTTP API, and frontend documentation mentioned
+above, CATMAID provides a general documentation manual for users,
+administrators, and developers (including this page) and in-client
+documentation for keyboard shortcuts and widget help.
+
+General Documentation
+#####################
+
+General documentation is part of the CATMAID repository under the ``sphinx-doc``
+folder. This documentation is written in `Sphinx <http://www.sphinx-doc.org/>`_
+ReStructured Text. Documentation from commits pushed to the official CATMAID
+repository are built by `Read the Docs <https://readthedocs.org/>`_ and hosted
+at `catmaid.org <http://catmaid.org>`_.
+
+To build the general documentation from within your pip virtualenv, run::
+
+    cd sphinx-doc
+    make html
+
+The built documentation is now in ``sphinx-doc/build/html/index.html``.
+
+In-Client Documentation
+#######################
+
+Documentation is provided from within the web client through tool-scoped mouse
+and keyboard shortcut documentation (accessed by pressing :kbd:`F1`) and
+per-widget help accessible through the question mark icon in the title bar of
+some widgets.
+
+If you find that widget help documentation is missing, incomplete, confusing,
+or incorrect, you can contribute better documentation by
+`creating an issue on GitHub <https://github.com/catmaid/CATMAID/issues/new>`_
+or editing the ``helpText`` property of the widget and creating a pull request.

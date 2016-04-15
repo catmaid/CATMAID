@@ -7,6 +7,7 @@ from catmaid.models import Class, ClassInstance, ClassInstanceClassInstance, \
          Relation, Connector, Project, Treenode, TreenodeConnector
 
 class Exporter():
+
     def __init__(self, project, options):
         self.project = project
         self.options = options
@@ -190,30 +191,30 @@ class Command(BaseCommand):
         ./manage.py catmaid_export_data --source 1 --required-annotation "Kenyon cells"
     """
     help = "Export CATMAID data into a JSON representation"
-    option_list = BaseCommand.option_list + (
-        make_option('--source', dest='source', default=None,
-            help='The ID of the source project'),
-        make_option('--treenodes', dest='export_treenodes', default=True,
-            action='store_true', help='Export treenodes from source'),
-        make_option('--notreenodes', dest='export_treenodes',
-            action='store_false', help='Don\'t export treenodes from source'),
-        make_option('--connectors', dest='export_connectors', default=True,
-            action='store_true', help='Export connectors from source'),
-        make_option('--noconnectors', dest='export_connectors',
-            action='store_false', help='Don\'t export connectors from source'),
-        make_option('--annotations', dest='export_annotations', default=True,
-            action='store_true', help='Export annotations from source'),
-        make_option('--noannotations', dest='export_annotations',
-            action='store_false', help='Don\'t export annotations from source'),
-        make_option('--tags', dest='export_tags', default=True,
-            action='store_true', help='Export tags from source'),
-        make_option('--notags', dest='export_tags',
-            action='store_false', help='Don\'t export tags from source'),
-        make_option('--required-annotation', dest='required_annotations',
-            action='append', help='Name a required annotation for exported skeletons.'),
-        make_option('--connector-placeholders', dest='connector_placeholders',
-            action='store_true', help='Should placeholder nodes be exported'),
-        )
+
+    def add_arguments(self, parser):
+        parser.add_argument('--source', default=None,
+            help='The ID of the source project')
+        parser.add_argument('--treenodes', dest='export_treenodes', default=True,
+            action='store_true', help='Export treenodes from source')
+        parser.add_argument('--notreenodes', dest='export_treenodes',
+            action='store_false', help='Don\'t export treenodes from source')
+        parser.add_argument('--connectors', dest='export_connectors', default=True,
+            action='store_true', help='Export connectors from source')
+        parser.add_argument('--noconnectors', dest='export_connectors',
+            action='store_false', help='Don\'t export connectors from source')
+        parser.add_argument('--annotations', dest='export_annotations', default=True,
+            action='store_true', help='Export annotations from source')
+        parser.add_argument('--noannotations', dest='export_annotations',
+            action='store_false', help='Don\'t export annotations from source')
+        parser.add_argument('--tags', dest='export_tags', default=True,
+            action='store_true', help='Export tags from source')
+        parser.add_argument('--notags', dest='export_tags',
+            action='store_false', help='Don\'t export tags from source')
+        parser.add_argument('--required-annotation', dest='required_annotations',
+            action='append', help='Name a required annotation for exported skeletons.')
+        parser.add_argument('--connector-placeholders', dest='connector_placeholders',
+            action='store_true', help='Should placeholder nodes be exported')
 
     def ask_for_project(self, title):
         """ Return a valid project object.

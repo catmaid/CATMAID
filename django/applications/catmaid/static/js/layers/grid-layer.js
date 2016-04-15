@@ -14,6 +14,7 @@
     // Make sure there is an options object
     options = options || {};
     this.opacity = 1;
+    this.isHideable = true;
     this.lineColor = options.lineColor || '#FFFFFF';
     this.lineWidth = options.lineWidth || 2;
     // Cell width and cell height in nanometers

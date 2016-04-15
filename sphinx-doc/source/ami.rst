@@ -1,5 +1,16 @@
 .. _ami:
 
+.. warning::
+
+   The CATMAID AMI is not currently maintained and provides an
+   outdated version of CATMAID. Consider
+   :ref:`installing CATMAID from scratch <basic-installation>` or
+   :ref:`using a Docker image <docker>` instead.
+
+   If you are interested in updating the CATMAID AMI, please let us
+   know on the `CATMAID mailing list
+   <https://groups.google.com/forum/#!forum/catmaid>`_.
+
 Creating a CATMAID Instance on EC2
 ==================================
 
@@ -50,11 +61,8 @@ Server Configuration
 
 The AMI is configured to use Nginx + Gunicorn; by default it is
 configured to use 4 synchronous worker threads, which can be
-changed in ``/etc/init/gunicorn-catmaid.conf``.  (You can
+changed in ``/etc/init/gunicorn-catmaid.conf``.  You can
 restart Gunicorn with::
 
     sudo initctl restart gunicorn-catmaid
 
-(We are not sure, at the moment, whether using gevent-based
-greenlet worker threads is safe to use with CATMAID's current
-"database transaction per HTTP request" model.)

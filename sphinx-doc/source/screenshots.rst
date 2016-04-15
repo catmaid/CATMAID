@@ -1,46 +1,74 @@
+Screenshots and videos
+======================
 
 .. raw:: html
 
-        <iframe width="560" height="315" src="http://www.youtube.com/embed/rQyJV0R-Mp8" frameborder="0" allowfullscreen></iframe>
+        <div class="figure"><iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/rQyJV0R-Mp8" frameborder="0" allowfullscreen></iframe>
+        <p class="caption"><span class="caption-text">Stephan Saalfeld talking about CATMAID, TrakEM2 and ImgLib2</span></p></div>
 
-Screenshots
-===========
+.. raw:: html
 
-The CATMAID User Interface with skeleton annnotations and tags
+        <div class="figure"><iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/LTErj96y2Vg" frameborder="0" allowfullscreen></iframe>
+        <p class="caption"><span class="caption-text">Demonstration of some of the neuron shading options in CATMAID's 3D viewer (v2015.12.12)</span></p></div>
 
-.. figure:: _static/screenshots/ui.png
+.. raw:: html
 
+        <div class="figure"><iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/KlQNpNvJUc8" frameborder="0" allowfullscreen></iframe>
+        <p class="caption"><span class="caption-text">This is the central settings widget of CATMAID (v2015.12.12).</span></p></div>
 
-WebGL Neuronal Morphology Viewer
+.. raw:: html
 
-.. figure:: _static/screenshots/webgl.png
-   :alt: WebGL Viewer
+        <div class="figure"><iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/dU5CjzW5tqk" frameborder="0" allowfullscreen></iframe>
+        <p class="caption"><span class="caption-text">Clustering widget for ontology based classification graphs (v2015.12.12)</span></p></div>
 
+.. raw:: html
 
-| WebGL View of *Drosophila* Larval CNS
-| *Tracing by Albert Cardona's lab at HHMI Janelia Research Campus and collaborators.*
+        <div class="figure"><iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/n12pvHd8YT0" frameborder="0" allowfullscreen></iframe>
+        <p class="caption"><span class="caption-text">3D view of the 72 hpf
+        HT9-4 larva showing fully-traced peptidergic neurons identified by
+        siGOLD. This movie was published under a
+        <a hef="https://wiki.creativecommons.org/index.php/Frequently_Asked_Questions">CC-BY Licence</a> and was created by
+        Shaidi et. al. as part of the publication "A serial multiplex immunogold
+        labeling method for identifying peptidergic neurons in connectomes",
+        published 15 Dec 2015 in <a href="http://lens.elifesciences.org/11147/index.html">eLife</a>.</span></p></div>
 
-.. figure:: _static/screenshots/larval_cns.jpg
+.. figure:: _static/screenshots/catmaid-ui.png
+   :alt: Basic CATMAID user interface
 
-
-Orthogonal Views and Image Filters
-
-.. figure:: _static/screenshots/ortho_views.jpg
-
-
-The Skeleton Node and Connector Table
-
-.. figure:: _static/screenshots/tables.png
-
-
-Neuron Catalog
-
-.. figure:: _static/screenshots/neuron_catalog.png
-   :alt: Neuron Catalog
+   The CATMAID User Interface with skeleton annotations and tags
 
 
-Selector tool: Mirrored mouse cursor in all open stacks
+.. figure:: _static/screenshots/catmaid-3d-viewer.png
+   :alt: CATMAID 3D Viewer
 
-.. figure:: _static/screenshots/selector-tool-mouse-mirror.png
+   CATMAID comes with a 3D viewer
+
+.. figure:: _static/screenshots/catmaid-larval-cns.jpg
+   :alt: A big part of Drosophila larval CNS reconstructed with CATMAID
+
+   3D View of *Drosophila* Larval CNS
+   *Tracing by Albert Cardona's lab at HHMI Janelia Research Campus and collaborators.*
+
+.. figure:: _static/screenshots/catmaid-ortho-views.jpg
+   :alt: CATMAID supports orthogonal stacks
+
+   Orthogonal views of the same image stack are supported by CATMAID
+
+
+.. figure:: _static/screenshots/catmaid-tables.png
+   :alt: Skeleton node and connector table of CATMAID
+
+   CATMAID's Skeleton Node and Connector Table
+
+
+.. figure:: _static/screenshots/catmaid-selector-tool-mouse-mirror.png
    :scale: 60 %
-   :alt: Selector tool
+   :alt: Selector tool with mirrored cursors in CATMAID
+
+   CATMAID's Selector tool: Mirrored mouse cursor in all open stacks
+
+
+.. figure:: _static/screenshots/catmaid-tile-source-settings.jpg
+   :alt: Tile source settings for a dynamic tile server in CATMAID
+
+   Some tile sources in CATMAID support dynamic settings

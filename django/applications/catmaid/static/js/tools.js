@@ -354,11 +354,8 @@ CATMAID.tools = CATMAID.tools || {};
 
     return function (isodate) {
       var date = new Date(isodate);
-      // ES5 interprets all ISO 8601 times without time zone as UTC, while
-      // CATMAID uses local time. Adjust the time accordingly. This is not
-      // robust for users in different time zones, but is the least surprising
-      // behavior possible so long as CATMAID does not account for time zones.
-      date.setTime(date.getTime() + date.getTimezoneOffset() * MINUTE);
+      // ES5 interprets all ISO 8601 times without time zone as UTC, so should
+      // adjust to local time automatically as long as the backend returns UTC.
       var ago = Date.now() - date;
 
       if (ago < MINUTE) {

@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
+
 from common import db_connection
 
 import sys
@@ -7,7 +9,7 @@ import sys
 limit = 50
 
 if len(sys.argv) != 2:
-    print >> sys.stderr, "Usage: describe-concept.py <CONCEPT-ID>"
+    print("Usage: describe-concept.py <CONCEPT-ID>", file=sys.stderr)
     sys.exit(1)
 
 cid = int(sys.argv[1])
@@ -22,7 +24,7 @@ select += 'WHERE t.id = %s AND t.tableoid = p.oid AND t.user_id = u.id'
 c.execute(select,(cid,))
 row = c.fetchone()
 if not row:
-    print >> sys.stderr, "No concept with id {0} was found".format(cid)
+    print("No concept with id {0} was found".format(cid), file=sys.stderr)
     sys.exit(1)
 
 table_name, pid, user_id, user_name = row
@@ -34,8 +36,8 @@ c.execute('SELECT id, relation_name FROM relation t WHERE project_id = %s',(pid,
 for r in c.fetchall():
     relations[r[1]] = r[0]
 
-print "== " + table_name + " =="
-print "-- owned by {0} ({1})".format(user_id,user_name)
+print("== " + table_name + " ==")
+print("-- owned by {0} ({1})".format(user_id,user_name))
 
 def get_location(location_id):
     query = 'SELECT (t.location).x, (t.location).y, (t.location).z FROM location t WHERE id = %s'
@@ -64,38 +66,38 @@ def print_all_relationships(cid):
             rows = c.fetchall()
             for row in rows[0:limit]:
                 comb['value'] = row[0]
-                print comb['f'].format(**comb)
+                print(comb['f'].format(**comb))
             if len(rows) > limit:
-                print "  [... further output elided ...]"
+                print("  [... further output elided ...]")
 
 if table_name == 'class_instance':
     c.execute('SELECT c.class_name, c.id, t.name FROM class_instance t, class c '+
                'WHERE c.id = t.class_id AND '+
                't.id = %s', (cid,) )
     class_name, class_id, ci_name = c.fetchone()
-    print "  ... of class: {0} ({1})".format(class_id,class_name)
-    print "  ... with name: "+ci_name
+    print("  ... of class: {0} ({1})".format(class_id,class_name))
+    print("  ... with name: "+ci_name)
     print_all_relationships(cid)
 
 elif table_name == 'connector':
-    print '  ... at position: ', get_location(cid)
+    print('  ... at position: ', get_location(cid))
     print_all_relationships(cid)
 
 elif table_name == 'treenode':
-    print '  ... at position: ', get_location(cid)
-    print '  ... of radius: ', get_treenode_radius(cid)
+    print('  ... at position: ', get_location(cid))
+    print('  ... of radius: ', get_treenode_radius(cid))
     print_all_relationships(cid)
 
 elif table_name == 'class':
     c.execute('SELECT class_name FROM class t WHERE id = %s',(cid,))
-    print '  ... with name: '+c.fetchone()[0]
+    print('  ... with name: '+c.fetchone()[0])
 
 elif table_name == 'relation':
     c.execute('SELECT relation_name FROM relation t WHERE id = %s',(cid,))
-    print '  ... with name: '+c.fetchone()[0]
+    print('  ... with name: '+c.fetchone()[0])
 
 else:
-    print "There's currently no support for entities from the table '{0}'".format(table_name)
+    print("There's currently no support for entities from the table '{0}'".format(table_name))
 
 c.close()
 db_connection.close()

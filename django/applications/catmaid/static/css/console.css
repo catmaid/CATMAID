@@ -23,6 +23,18 @@ div.console pre {
   color: #000000;
 }
 
+div.console .faint {
+  color: #bbb;
+}
+
+div.console a:link, div.console a:visited {
+  text-decoration: none;
+}
+
+div.console a:hover, div.console a:active {
+  text-decoration: underline;
+}
+
 div.console #coordinates {
   float: right;
   margin-top: 8px;

@@ -28,7 +28,7 @@ QUnit.test('SVG overlay test', function( assert ) {
       }, {});
     };
     var orignialGlobalFields = mapFields(window, ["requestQueue",
-        "project", "user_permissions", "django_url"]);
+        "project", "django_url"]);
     var orignalCATMAIDFields = mapFields(CATMAID, ["statusBar"]);
 
     // Set global project to custom mocking object
@@ -37,15 +37,13 @@ QUnit.test('SVG overlay test', function( assert ) {
       getId: function() { return 1; }
     };
 
-    // Set global user permissions to mocking object
-    user_permissions = {
-      'can_annotate': {'1': true}
-    };
-
-    // Set global Django URL and configure CATMAID
+    // Set global Django URL and configure CATMAID wit override permissions
     /*global django_url:true */
     django_url = '/';
-    CATMAID.configure(django_url, django_url);
+    var permissions = {
+      'can_annotate': {'1': true}
+    };
+    CATMAID.configure(django_url, django_url, undefined, undefined, permissions);
 
     // Set global status bar mocking object
     CATMAID.statusBar = {
@@ -69,6 +67,20 @@ QUnit.test('SVG overlay test', function( assert ) {
           needsync: true
         }
       },
+      state: new CATMAID.GenericState({
+        getNode: function(nodeId) {
+          return [nodeId, "fakeEditTime"];
+        },
+        getParent: function(nodeId) {
+          return [nodeId, "fakeEditTime"];
+        },
+        getChildren: function(nodeId) {
+          return [];
+        },
+        getLinks: function(nodeId) {
+          return [];
+        },
+      }),
       selectNode: function() {},
       submit: submitterFn(),
       pix2physX: function() { return 0; },
@@ -132,7 +144,7 @@ QUnit.test('SVG overlay test', function( assert ) {
         fakeOverlay, nodeID);
     // Mark the node as deleted in fake backend, once the last request is done
     fakeOverlay.submit.then(function() {
-      delete availableNodes[nodeID]; 
+      delete availableNodes[nodeID];
     });
     // Update the tracing layer immediately after queing the deleting
     SkeletonAnnotations.TracingOverlay.prototype.updateNodeCoordinatesInDB.call(
@@ -179,6 +191,7 @@ QUnit.test('SVG overlay test', function( assert ) {
         }
       }
       // Restore original globals and CATMAID fields
+      CATMAID.updatePermissions();
       resetMapping(window, orignialGlobalFields);
       resetMapping(CATMAID, orignalCATMAIDFields);
     }

@@ -53,28 +53,41 @@
       view.style.bottom = "0px";
     };
 
-    this.print = function (obj) {
-      if (typeof obj == "string") view.lastChild.appendChild(document.createTextNode(obj));
-      else
-      view.lastChild.appendChild(document.createTextNode(toStr(obj)));
+    this.print = function (obj, color) {
+      var line;
+      if (typeof obj == "string") {
+        line = document.createTextNode(obj);
+      } else {
+        line = document.createTextNode(toStr(obj));
+      }
+      if (color) {
+        line.style.color = color;
+      }
+      view.lastChild.appendChild(line);
       return;
     };
 
-    this.println = function (obj) {
+    this.println = function (obj, color) {
       var sp = document.createElement("pre");
-      if (typeof obj == "string") sp.appendChild(document.createTextNode(obj));
-      else
-      sp.appendChild(document.createTextNode(toStr(obj)));
+      if (typeof obj == "string") {
+        sp.appendChild(document.createTextNode(obj));
+      } else {
+        sp.appendChild(document.createTextNode(toStr(obj)));
+      }
+      if (color) {
+        sp.style.color = color;
+      }
       view.appendChild(sp);
       return;
     };
 
-    this.replaceLast = function (obj) {
+    this.replaceLast = function (obj, color) {
       var sp = document.createElement("pre");
-      if (typeof obj == "string")
+      if (typeof obj == "string") {
         sp.appendChild(document.createTextNode(obj));
-      else
+      } else {
         sp.appendChild(document.createTextNode(toStr(obj)));
+      }
       view.replaceChild(sp, view.lastChild);
       return;
     };

@@ -73,16 +73,19 @@ div.toolbar div.box_right a img {
   border: none;
 }
 
+div.toolbar div.box a {
+  cursor: pointer;
+}
+
 div.toolbar div.box a.button,
 div.toolbar div.box_right a.button,
 div.toolbar div.box a.button_active,
 div.toolbar div.box_right a.button_active {
   border: none;
   margin: 4px 0 0 0;
-  padding: 0 1em 0 0;
+  padding: 0 0.5em 0 0;
   width: 24px;
   height: 24px;
-  cursor: pointer;
   display: block;
   float: left;
 }
@@ -112,6 +115,10 @@ div.toolbar div.box_right select {
 div.menu div.box,
 div.menu div.box_right {
   padding: 0;
+}
+
+div.menu div.box_right {
+  margin-right: 4px;
 }
 
 div.toolbar div.menu_item p {

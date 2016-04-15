@@ -142,6 +142,69 @@
       opacitySelect.append(slider.getView());
       container.append(opacitySelect);
 
+      var hidecb = $('<input/>')
+          .attr('type', 'checkbox')
+          .prop('checked', layer.isHideable)
+          .change(function () {
+            var key = $(this).parents('.layerControl').data('key');
+            var layer = stackViewer.getLayer(key);
+            layer.isHideable = !layer.isHideable;
+          });
+      var hidelabel = $('<div/>')
+          .addClass('setting')
+          .append($('<label/>').append(hidecb).append('Hide this layer when SPACE is held'));
+      container.append(hidelabel);
+
+      // Layer settings
+      if (CATMAID.tools.isFn(layer.getLayerSettings)) {
+        var settings = layer.getLayerSettings();
+        if (0 < settings.length) {
+          var layerSettings = $('<div />');
+          for (var j=0; j<settings.length; ++j) {
+            var setting = settings[j];
+            var settingElement = $('<div />').addClass('setting');
+            var label = $('<label />').append(setting.displayName);
+            settingElement.append(label);
+            label.attr('title', setting.help);
+            if ('text' === setting.type || 'number' === setting.type || 'checkbox' == setting.type) {
+              var input = $('<input />').attr({
+                'type': setting.type,
+                'placeholder': '(none)',
+                'name': setting.name
+              });
+              if (setting.range && 2 === setting.range.length) {
+                input.attr('min', setting.range[0]);
+                input.attr('max', setting.range[1]);
+              }
+              if (setting.step) {
+                input.attr('step', settings.step);
+              }
+              input.addClass('layerSetting');
+              if (setting.value) {
+                input.attr('value', setting.value);
+              }
+              label.append(input);
+
+            }
+            layerSettings.append(settingElement);
+          }
+
+          container.append(layerSettings);
+          var eventData = { 'layer': layer, 'stackViewer': stackViewer };
+          layerSettings.on('change', 'input.layerSetting', eventData, function(e) {
+            if (CATMAID.tools.isFn(e.data.layer.setLayerSetting)) {
+              var value = this.value.trim();
+              if (0 === value.length) {
+                value = null;
+              }
+              if (this.type === 'checkbox') value = this.checked;
+              e.data.layer.setLayerSetting(this.name, value);
+              e.data.stackViewer.redraw();
+            }
+          });
+        }
+      }
+
       // Blend mode
       if (layer.getAvailableBlendModes) {
         var blendModes = layer.getAvailableBlendModes();

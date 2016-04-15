@@ -130,7 +130,10 @@
     if (toDequeue < 1) return;
     var remainingQueue = this._loadingQueue.splice(toDequeue);
     this._loadingQueue.forEach(function (url) {
-      this._loader.add(url, {crossOrigin: true}, this._boundResourceLoaded);
+      this._loader.add(url,
+                       {crossOrigin: true,
+                        xhrType: PIXI.loaders.Resource.XHR_RESPONSE_TYPE.BLOB},
+                       this._boundResourceLoaded);
     }, this);
     this._loadingQueue = remainingQueue;
     this._loader.load();
@@ -219,7 +222,7 @@
    * @param  {string} key Texture resource key, usually a URL.
    */
   PixiContext.TextureManager.prototype.dec = function (key) {
-    if (typeof key === 'undefined') return;
+    if (typeof key === 'undefined' || key === null) return;
     var count = this._counts[key];
 
     if (typeof count !== 'undefined') { // Key is already tracked by cache.
@@ -428,7 +431,7 @@
 
   /**
    * Retrieve the set of active filters for this layer.
-   * @return {[]} The collection of active filter objects.
+   * @return {Array} The collection of active filter objects.
    */
   PixiLayer.prototype.getFilters = function () {
     return this.filters;
@@ -481,7 +484,7 @@
    * @param {string} displayName      Display name of this filter in interfaces.
    * @param {function(new:PIXI.AbstractFilter)} pixiConstructor
    *                                  Constructor for the underlying Pixi filter.
-   * @param {[]} params               Parameters to display in control UI and
+   * @param {Array}   params               Parameters to display in control UI and
    *                                  their mapping to Pixi properties.
    * @param {CATMAID.TileLayer} layer The layer to which this filter belongs.
    */
@@ -497,8 +500,8 @@
 
   /**
    * Set a filter parameter.
-   * @param {[type]} key   Name of the parameter to set.
-   * @param {[type]} value New value for the parameter.
+   * @param {string} key   Name of the parameter to set.
+   * @param {Object} value New value for the parameter.
    */
   PixiLayer.FilterWrapper.prototype.setParam = function (key, value) {
     this.pixiFilter[key] = value;

@@ -824,7 +824,7 @@
     // Recreate subgraphs
     var subnodes = {},
         subedges = {}; // map of {connectorID: {pre: graph node ID,
-                       //                       post: {graph node ID: count}}}
+                       //                       post: {graph node ID: counts binned by confidence}}}
     subgraph_skids.forEach((function(skid) {
       var m = morphology[skid],
           ap = new CATMAID.ArborParser().init('compact-arbor', m),
@@ -965,7 +965,7 @@
           });
 
         } else {
-          CATMAID.info("No subgraph possible for '" + name + "' and tag '" + this.tag.regex + "'");
+          CATMAID.info("No subgraph possible for '" + name + "' and tag '" + this.tag_title + "'");
         }
       } else if (mode > 0) {
         // Synapse clustering: mode is the bandwidth
@@ -1055,6 +1055,7 @@
       m[1].forEach(function(row) {
         // Accumulate connection into the subnode for later use in e.g. grow command
         var treenodeID = row[0],
+            confidence = Math.min(row[1], row[2]),
             other_skid = row[5],
             node_id = findPartID(treenodeID),
             presynaptic = 0 === row[6],
@@ -1091,13 +1092,15 @@
         if (presynaptic) {
           connector.pre = node_id;
           if (undefined === this.subgraphs[targetSkid]) {
-            var count = connector.post[targetSkid];
-            connector.post[targetSkid] = count ? count + 1 : 1;
+            var count = connector.post[targetSkid] || [0, 0, 0, 0, 0];
+            count[confidence - 1] += 1;
+            connector.post[targetSkid] = count;
           }
         } else {
           if (undefined === this.subgraphs[sourceSkid]) connector.pre = sourceSkid;
-          var count = connector.post[node_id];
-          connector.post[node_id] = count ? count + 1 : 1;
+          var count = connector.post[node_id] || [0, 0, 0, 0, 0];
+          count[confidence - 1] += 1;
+          connector.post[node_id] = count;
         }
       }, this);
 
@@ -1125,14 +1128,18 @@
       }
       Object.keys(connector.post).forEach(function(target_id) {
         var count = e[target_id];
-        e[target_id] = (count ? count : 0) + connector.post[target_id];
+        e[target_id] = (count ? count : [0, 0, 0, 0, 0]).map(function (v, i) {
+          return v + connector.post[target_id][i];
+        });
       });
     });
 
+    var edge_confidence_threshold = this.edge_confidence_threshold;
     Object.keys(cedges).forEach(function(source_id) {
       var e = cedges[source_id];
       Object.keys(e).forEach(function(target_id) {
-        var count = e[target_id];
+        var confidence = e[target_id];
+        var count = _filterSynapses(confidence, edge_confidence_threshold);
         elements.edges.push({data: {directed: true,
                                     arrow: 'triangle',
                                     color: edge_color,
@@ -1140,6 +1147,7 @@
                                     id: source_id + '_' + target_id,
                                     source: source_id,
                                     target: target_id,
+                                    confidence: confidence,
                                     label: count,
                                     weight: count}});
       });
@@ -1190,6 +1198,8 @@
       if (node.data('branch')) {
         node.css('height', 15);
         node.css('width', 15);
+        // ... and hide their title, if any
+        node.css('text-opacity', 0);
       }
     });
 
@@ -1277,18 +1287,22 @@
     }, {});
 
     var groups = this.groups;
+    var subgraphs = this.subgraphs;
 
     // Inspect each node, remove node if all its skeletons are to be removed
     this.cy.nodes().each(function(i, node) {
       var models = node.data('skeletons'),
           sks = models.filter(function(model) {
-        return !skids[model.id];
-      });
+            return !skids[model.id];
+          });
       if (0 === sks.length) {
         node.remove();
         if (models.length > 1) {
           // Remove the corresponding group
           delete groups[node.id()];
+        } else {
+          // Remove the subgraph if node is split, no effect otherwise.
+          delete subgraphs[models[0].id];
         }
       }
     });
@@ -1401,10 +1415,11 @@
 
   GroupGraph.prototype.appendAsGroup = function() {
     var models = CATMAID.skeletonListSources.getSelectedSkeletonModels(this);
-    if (0 === models.length) {
+    var nModels = Object.keys(models).length;
+    if (0 === nModels) {
       CATMAID.info('Selected source is empty.');
       return;
-    } else if (1 === models.length) {
+    } else if (1 === nModels) {
       this.append(models);
       return;
     }
@@ -1938,7 +1953,19 @@
     if (!confirm("Remove " + nodes.length + " selected node" + (nodes.length > 1 ? "s":"") + "?")) return;
     nodes.forEach(function(node) {
       delete this.groups[node.id()]; // ok if not present
+      var skid = node.data('skeletons')[0].id;
       node.remove();
+
+      // If the node is part of a split subgraph, also remove all other nodes
+      // in the subgraph.
+      if (this.subgraphs.hasOwnProperty(skid)) {
+        this.cy.nodes().filter(function (i, splitNode) {
+          return splitNode.data('skeletons').some(function (model) {
+            return model.id === skid;
+          });
+        }).remove();
+        delete this.subgraphs[skid];
+      }
     }, this);
     this.deselectAll();
   };
@@ -2983,8 +3010,7 @@
 
   /** Copies all except the selection state. */
   GroupGraph.prototype.cloneWidget = function() {
-    WindowMaker.create('graph-widget');
-    var copy = GroupGraph.prototype.getLastInstance();
+    var copy = WindowMaker.create('graph-widget').widget;
     if (this.state) copy.state = $.extend(true, {}, this.state);
     copy.setContent(this.copyContent());
   };

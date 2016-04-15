@@ -1,15 +1,23 @@
-from django.conf.urls import patterns, url
+from django.conf.urls import url
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.generic import TemplateView
 
+import django.contrib.auth.views as djauth
+
 # For adding explicit grouping resource endpoints in API documentation.
 from rest_framework_swagger.urlparser import UrlParser
 
+from catmaid.control import (authentication, user, log, message, client, common,
+        project, stack, stackgroup, tile, tracing, stats, neuron_annotations as
+        annotations, textlabel, label, link, connector, neuron, node, treenode,
+        suppressed_virtual_treenode, skeleton, skeletonexport, treenodeexport,
+        cropping, data_view, ontology, classification, notifications, roi,
+        clustering, volume, flytem, dvid, useranalytics, user_evaluation,
+        search, graphexport, graph2, circles, analytics, review,
+        wiringdiagram, object, treenodetable)
+
 from catmaid.views import CatmaidView, ExportWidgetView
-from catmaid.control.client import ClientDataList, \
-                                   ClientDatastoreDetail, ClientDatastoreList
-from catmaid.control.suppressed_virtual_treenode import SuppressedVirtualTreenodeDetail, SuppressedVirtualTreenodeList
 
 
 # A regular expression matching floating point and integer numbers
@@ -20,454 +28,433 @@ intlist = r'[0-9]+(,[0-9]+)*'
 # A list of words, not containing commas
 wordlist= r'\w+(,\w+)*'
 
+app_name = 'catmaid'
+
 # Add the main index.html page at the root:
-urlpatterns = patterns('',
-    url(r'^$', ensure_csrf_cookie(CatmaidView.as_view(template_name='catmaid/index.html')),
-        name="home"),
-    url(r'^version$', 'catmaid.control.common.get_catmaid_version')
-)
+urlpatterns = [
+    url(r'^$', ensure_csrf_cookie(CatmaidView.as_view(template_name='catmaid/index.html')), name="home"),
+    url(r'^version$', common.get_catmaid_version)
+]
 
 # Authentication and permissions
-urlpatterns += patterns('catmaid.control.authentication',
-    (r'^accounts/login$', 'login_user'),
-    (r'^accounts/logout$', 'logout_user'),
-    (r'^accounts/(?P<project_id>\d+)/all-usernames$', 'all_usernames'),
-    (r'^permissions$', 'user_project_permissions'),
-    (r'^classinstance/(?P<ci_id>\d+)/permissions$',
-            'get_object_permissions'),
-    (r'^register$', 'register'),
-)
+urlpatterns += [
+    url(r'^accounts/login$', authentication.login_user),
+    url(r'^accounts/logout$', authentication.logout_user),
+    url(r'^accounts/(?P<project_id>\d+)/all-usernames$', authentication.all_usernames),
+    url(r'^permissions$', authentication.user_project_permissions),
+    url(r'^classinstance/(?P<ci_id>\d+)/permissions$', authentication.get_object_permissions),
+    url(r'^register$', authentication.register),
+]
 
 # Users
-urlpatterns += patterns('catmaid.control.user',
-    (r'^user-list$', 'user_list'),
-    (r'^user-table-list$', 'user_list_datatable'),
-    (r'^user-profile/update$', 'update_user_profile'),
-)
+urlpatterns += [
+    url(r'^user-list$', user.user_list),
+    url(r'^user-table-list$', user.user_list_datatable),
+    url(r'^user-profile/update$', user.update_user_profile),
+]
 
 # Django related user URLs
-urlpatterns += patterns('django.contrib.auth.views',
-    url(r'^user/password_change/$', 'password_change', {'post_change_redirect': '/'}),
-)
+urlpatterns += [
+    url(r'^user/password_change/$', djauth.password_change, {'post_change_redirect': '/'}),
+]
 
 # Log
-urlpatterns += patterns('catmaid.control.log',
-    (r'^(?P<project_id>\d+)/logs/list$', 'list_logs'),
-    (r'^log/(?P<level>(info|error|debug))$', 'log_frontent_event'),
-)
+urlpatterns += [
+    url(r'^(?P<project_id>\d+)/logs/list$', log.list_logs),
+    url(r'^log/(?P<level>(info|error|debug))$', log.log_frontent_event),
+]
 
 # Messages
-urlpatterns += patterns('catmaid.control.message',
-    (r'^messages/list$', 'list_messages'),
-    (r'^messages/mark_read$', 'read_message'),
-    (r'^messages/latestunreaddate', 'get_latest_unread_date'),
-)
+urlpatterns += [
+    url(r'^messages/list$', message.list_messages),
+    url(r'^messages/mark_read$', message.read_message),
+    url(r'^messages/latestunreaddate', message.get_latest_unread_date),
+]
 
 # CATMAID client datastore and data access
-urlpatterns += patterns('catmaid.control.client',
-    (r'^client/datastores/$', ClientDatastoreList.as_view()),
-    (r'^client/datastores/(?P<name>[\w-]+)$', ClientDatastoreDetail.as_view()),
-    (r'^client/datastores/(?P<name>[\w-]+)/$', ClientDataList.as_view()),
-)
+urlpatterns += [
+    url(r'^client/datastores/$', client.ClientDatastoreList.as_view()),
+    url(r'^client/datastores/(?P<name>[\w-]+)$', client.ClientDatastoreDetail.as_view()),
+    url(r'^client/datastores/(?P<name>[\w-]+)/$', client.ClientDataList.as_view()),
+]
 
 # General project model access
-urlpatterns += patterns('catmaid.control.project',
-    (r'^projects/$', 'projects'),
-)
+urlpatterns += [
+    url(r'^projects/$', project.projects),
+]
 
 # General stack model access
-urlpatterns += patterns('catmaid.control.stack',
-    (r'^(?P<project_id>\d+)/stacks$', 'stacks'),
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/info$', 'stack_info'),
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/models$', 'stack_models'),
-)
+urlpatterns += [
+    url(r'^(?P<project_id>\d+)/stacks$', stack.stacks),
+    url(r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/info$', stack.stack_info),
+    url(r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/models$', stack.stack_models),
+]
 
 # General stack group access
-urlpatterns += patterns('catmaid.control.stackgroup',
-    (r'^(?P<project_id>\d+)/stackgroup/(?P<stackgroup_id>\d+)/info$', 'get_stackgroup_info'),
-)
+urlpatterns += [
+    url(r'^(?P<project_id>\d+)/stackgroup/(?P<stackgroup_id>\d+)/info$', stackgroup.get_stackgroup_info),
+]
 
 # Tile access
-urlpatterns += patterns('catmaid.control.tile',
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/tile$', 'get_tile'),
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/put_tile$', 'put_tile'),
-)
+urlpatterns += [
+    url(r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/tile$', tile.get_tile),
+    url(r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/put_tile$', tile.put_tile),
+]
 
 # Tracing general
-urlpatterns += patterns('catmaid.control.tracing',
-    (r'^(?P<project_id>\d+)/tracing/setup/rebuild$', 'rebuild_tracing_setup_view'),
-    (r'^(?P<project_id>\d+)/tracing/setup/test$', 'check_tracing_setup_view'),
-)
+urlpatterns += [
+    url(r'^(?P<project_id>\d+)/tracing/setup/rebuild$', tracing.rebuild_tracing_setup_view),
+    url(r'^(?P<project_id>\d+)/tracing/setup/test$', tracing.check_tracing_setup_view),
+]
 
 # Statistics
-urlpatterns += patterns('catmaid.control.stats',
-    (r'^(?P<project_id>\d+)/stats$',
-        TemplateView.as_view(template_name="catmaid/projectstatistics.html")),
-    (r'^(?P<project_id>\d+)/stats/nodecount$', 'stats_nodecount'),
-    (r'^(?P<project_id>\d+)/stats/editor$', 'stats_editor'),
-    (r'^(?P<project_id>\d+)/stats/summary$', 'stats_summary'),
-    (r'^(?P<project_id>\d+)/stats/history$', 'stats_history'),
-    (r'^(?P<project_id>\d+)/stats/user-history$', 'stats_user_history'),
-    (r'^(?P<project_id>\d+)/stats/user-activity$', 'stats_user_activity'),
-)
+urlpatterns += [
+    url(r'^(?P<project_id>\d+)/stats$', TemplateView.as_view(template_name="catmaid/projectstatistics.html")),
+    url(r'^(?P<project_id>\d+)/stats/nodecount$', stats.stats_nodecount),
+    url(r'^(?P<project_id>\d+)/stats/editor$', stats.stats_editor),
+    url(r'^(?P<project_id>\d+)/stats/summary$', stats.stats_summary),
+    url(r'^(?P<project_id>\d+)/stats/history$', stats.stats_history),
+    url(r'^(?P<project_id>\d+)/stats/user-history$', stats.stats_user_history),
+    url(r'^(?P<project_id>\d+)/stats/user-activity$', stats.stats_user_activity),
+]
 
 # Annotations
-urlpatterns += patterns('catmaid.control.neuron_annotations',
-    (r'^(?P<project_id>\d+)/annotations/$', 'list_annotations'),
-    (r'^(?P<project_id>\d+)/annotations/query$', 'annotations_for_entities'),
-    (r'^(?P<project_id>\d+)/annotations/forskeletons$', 'annotations_for_skeletons'),
-    (r'^(?P<project_id>\d+)/annotations/table-list$', 'list_annotations_datatable'),
-    (r'^(?P<project_id>\d+)/annotations/add$', 'annotate_entities'),
-    (r'^(?P<project_id>\d+)/annotations/remove$', 'remove_annotations'),
-    (r'^(?P<project_id>\d+)/annotations/(?P<annotation_id>\d+)/remove$',
-            'remove_annotation'),
-    (r'^(?P<project_id>\d+)/annotations/query-targets$', 'query_annotated_classinstances'),
-)
+urlpatterns += [
+    url(r'^(?P<project_id>\d+)/annotations/$', annotations.list_annotations),
+    url(r'^(?P<project_id>\d+)/annotations/query$', annotations.annotations_for_entities),
+    url(r'^(?P<project_id>\d+)/annotations/forskeletons$', annotations.annotations_for_skeletons),
+    url(r'^(?P<project_id>\d+)/annotations/table-list$', annotations.list_annotations_datatable),
+    url(r'^(?P<project_id>\d+)/annotations/add$', annotations.annotate_entities),
+    url(r'^(?P<project_id>\d+)/annotations/remove$', annotations.remove_annotations),
+    url(r'^(?P<project_id>\d+)/annotations/(?P<annotation_id>\d+)/remove$', annotations.remove_annotation),
+    url(r'^(?P<project_id>\d+)/annotations/query-targets$', annotations.query_annotated_classinstances),
+]
 
 # Text labels
-urlpatterns += patterns('catmaid.control.textlabel',
-    (r'^(?P<project_id>\d+)/textlabel/create$', 'create_textlabel'),
-    (r'^(?P<project_id>\d+)/textlabel/delete$', 'delete_textlabel'),
-    (r'^(?P<project_id>\d+)/textlabel/update$', 'update_textlabel'),
-    (r'^(?P<project_id>\d+)/textlabel/all', 'textlabels'),
-)
+urlpatterns += [
+    url(r'^(?P<project_id>\d+)/textlabel/create$', textlabel.create_textlabel),
+    url(r'^(?P<project_id>\d+)/textlabel/delete$', textlabel.delete_textlabel),
+    url(r'^(?P<project_id>\d+)/textlabel/update$', textlabel.update_textlabel),
+    url(r'^(?P<project_id>\d+)/textlabel/all', textlabel.textlabels),
+]
 
 # Treenode labels
-urlpatterns += patterns('catmaid.control.label',
-    (r'^(?P<project_id>\d+)/labels/$', 'labels_all'),
-    (r'^(?P<project_id>\d+)/labels-for-nodes$', 'labels_for_nodes'),
-    (r'^(?P<project_id>\d+)/labels-for-node/(?P<ntype>(treenode|location|connector))/(?P<location_id>\d+)$', 'labels_for_node'),
-    (r'^(?P<project_id>\d+)/label/(?P<ntype>(treenode|location|connector))/(?P<location_id>\d+)/update$', 'label_update'),
-    (r'^(?P<project_id>\d+)/label/(?P<ntype>(treenode|location|connector))/(?P<location_id>\d+)/remove$', 'remove_label_link'),
-    (r'^(?P<project_id>\d+)/label/remove$', 'label_remove'),
-)
+urlpatterns += [
+    url(r'^(?P<project_id>\d+)/labels/$', label.labels_all),
+    url(r'^(?P<project_id>\d+)/labels-for-nodes$', label.labels_for_nodes),
+    url(r'^(?P<project_id>\d+)/labels/(?P<node_type>(treenode|location|connector))/(?P<node_id>\d+)/$', label.labels_for_node),
+    url(r'^(?P<project_id>\d+)/label/(?P<ntype>(treenode|location|connector))/(?P<location_id>\d+)/update$', label.label_update),
+    url(r'^(?P<project_id>\d+)/label/(?P<ntype>(treenode|location|connector))/(?P<location_id>\d+)/remove$', label.remove_label_link),
+    url(r'^(?P<project_id>\d+)/label/remove$', label.label_remove),
+]
 
 # Links
-urlpatterns += patterns('catmaid.control.link',
-    (r'^(?P<project_id>\d+)/link/create$', 'create_link'),
-    (r'^(?P<project_id>\d+)/link/delete$', 'delete_link'),
-)
+urlpatterns += [
+    url(r'^(?P<project_id>\d+)/link/create$', link.create_link),
+    url(r'^(?P<project_id>\d+)/link/delete$', link.delete_link),
+]
 
 # Connector access
-urlpatterns += patterns('catmaid.control.connector',
-    (r'^(?P<project_id>\d+)/connector/create$', 'create_connector'),
-    (r'^(?P<project_id>\d+)/connector/delete$', 'delete_connector'),
-    (r'^(?P<project_id>\d+)/connector/table/list$', 'list_connector'),
-    (r'^(?P<project_id>\d+)/connector/list/graphedge$', 'graphedge_list'),
-    (r'^(?P<project_id>\d+)/connector/list/one_to_many$', 'one_to_many_synapses'),
-    (r'^(?P<project_id>\d+)/connector/list/many_to_many$', 'many_to_many_synapses'),
-    (r'^(?P<project_id>\d+)/connector/list/completed$', 'list_completed'),
-    (r'^(?P<project_id>\d+)/connector/skeletons$', 'connector_skeletons'),
-    (r'^(?P<project_id>\d+)/connector/edgetimes$', 'connector_associated_edgetimes'),
-    (r'^(?P<project_id>\d+)/connector/pre-post-info$', 'connectors_info'),
-    (r'^(?P<project_id>\d+)/connector/user-info$', 'connector_user_info'),
-)
+urlpatterns += [
+    url(r'^(?P<project_id>\d+)/connector/create$', connector.create_connector),
+    url(r'^(?P<project_id>\d+)/connector/delete$', connector.delete_connector),
+    url(r'^(?P<project_id>\d+)/connector/table/list$', connector.list_connector),
+    url(r'^(?P<project_id>\d+)/connector/list/graphedge$', connector.graphedge_list),
+    url(r'^(?P<project_id>\d+)/connector/list/one_to_many$', connector.one_to_many_synapses),
+    url(r'^(?P<project_id>\d+)/connector/list/many_to_many$', connector.many_to_many_synapses),
+    url(r'^(?P<project_id>\d+)/connector/list/completed$', connector.list_completed),
+    url(r'^(?P<project_id>\d+)/connector/skeletons$', connector.connector_skeletons),
+    url(r'^(?P<project_id>\d+)/connector/edgetimes$', connector.connector_associated_edgetimes),
+    url(r'^(?P<project_id>\d+)/connector/pre-post-info$', connector.connectors_info),
+    url(r'^(?P<project_id>\d+)/connector/user-info$', connector.connector_user_info),
+    url(r'^(?P<project_id>\d+)/connectors/(?P<connector_id>\d+)/$',
+        connector.connector_detail),
+]
 
 # Neuron access
-urlpatterns += patterns('catmaid.control.neuron',
-    (r'^(?P<project_id>\d+)/neuron/(?P<neuron_id>\d+)/get-all-skeletons$', 'get_all_skeletons_of_neuron'),
-    (r'^(?P<project_id>\d+)/neuron/(?P<neuron_id>\d+)/give-to-user$', 'give_neuron_to_other_user'),
-    (r'^(?P<project_id>\d+)/neuron/(?P<neuron_id>\d+)/delete$', 'delete_neuron'),
-    (r'^(?P<project_id>\d+)/neurons/(?P<neuron_id>\d+)/rename$', 'rename_neuron'),
-)
+urlpatterns += [
+    url(r'^(?P<project_id>\d+)/neuron/(?P<neuron_id>\d+)/get-all-skeletons$', neuron.get_all_skeletons_of_neuron),
+    url(r'^(?P<project_id>\d+)/neuron/(?P<neuron_id>\d+)/give-to-user$', neuron.give_neuron_to_other_user),
+    url(r'^(?P<project_id>\d+)/neuron/(?P<neuron_id>\d+)/delete$', neuron.delete_neuron),
+    url(r'^(?P<project_id>\d+)/neurons/(?P<neuron_id>\d+)/rename$', neuron.rename_neuron),
+]
 
 # Node access
 UrlParser.explicit_root_paths |= set(['{project_id}/nodes'])
-urlpatterns += patterns('catmaid.control.node',
-    (r'^(?P<project_id>\d+)/node/(?P<node_id>\d+)/reviewed$', 'update_location_reviewer'),
-    (r'^(?P<project_id>\d+)/node/most_recent$', 'most_recent_treenode'),
-    (r'^(?P<project_id>\d+)/node/nearest$', 'node_nearest'),
-    (r'^(?P<project_id>\d+)/node/update$', 'node_update'),
-    (r'^(?P<project_id>\d+)/node/list$', 'node_list_tuples'),
-    (r'^(?P<project_id>\d+)/node/get_location$', 'get_location'),
-    (r'^(?P<project_id>\d+)/node/user-info$', 'user_info'),
-    (r'^(?P<project_id>\d+)/nodes/find-labels$', 'find_labels'),
-)
+urlpatterns += [
+    url(r'^(?P<project_id>\d+)/node/(?P<node_id>\d+)/reviewed$', node.update_location_reviewer),
+    url(r'^(?P<project_id>\d+)/node/most_recent$', node.most_recent_treenode),
+    url(r'^(?P<project_id>\d+)/node/nearest$', node.node_nearest),
+    url(r'^(?P<project_id>\d+)/node/update$', node.node_update),
+    url(r'^(?P<project_id>\d+)/node/list$', node.node_list_tuples),
+    url(r'^(?P<project_id>\d+)/node/get_location$', node.get_location),
+    url(r'^(?P<project_id>\d+)/node/user-info$', node.user_info),
+    url(r'^(?P<project_id>\d+)/nodes/find-labels$', node.find_labels),
+]
 
 # Treenode access
 UrlParser.explicit_root_paths |= set(['{project_id}/treenodes'])
-urlpatterns += patterns('catmaid.control.treenode',
-    (r'^(?P<project_id>\d+)/treenode/create$', 'create_treenode'),
-    (r'^(?P<project_id>\d+)/treenode/insert$', 'insert_treenode'),
-    (r'^(?P<project_id>\d+)/treenode/delete$', 'delete_treenode'),
-    (r'^(?P<project_id>\d+)/treenodes/(?P<treenode_id>\d+)/info$', 'treenode_info'),
-    (r'^(?P<project_id>\d+)/treenodes/(?P<treenode_id>\d+)/children$', 'find_children'),
-    (r'^(?P<project_id>\d+)/treenodes/(?P<treenode_id>\d+)/confidence$', 'update_confidence'),
-    (r'^(?P<project_id>\d+)/treenode/(?P<treenode_id>\d+)/parent$', 'update_parent'),
-    (r'^(?P<project_id>\d+)/treenode/(?P<treenode_id>\d+)/radius$', 'update_radius'),
-    (r'^(?P<project_id>\d+)/treenodes/(?P<treenode_id>\d+)/previous-branch-or-root$', 'find_previous_branchnode_or_root'),
-    (r'^(?P<project_id>\d+)/treenodes/(?P<treenode_id>\d+)/next-branch-or-end$', 'find_next_branchnode_or_end'),
-)
+urlpatterns += [
+    url(r'^(?P<project_id>\d+)/treenode/create$', treenode.create_treenode),
+    url(r'^(?P<project_id>\d+)/treenode/insert$', treenode.insert_treenode),
+    url(r'^(?P<project_id>\d+)/treenode/delete$', treenode.delete_treenode),
+    url(r'^(?P<project_id>\d+)/treenodes/(?P<treenode_id>\d+)/info$', treenode.treenode_info),
+    url(r'^(?P<project_id>\d+)/treenodes/(?P<treenode_id>\d+)/children$', treenode.find_children),
+    url(r'^(?P<project_id>\d+)/treenodes/(?P<treenode_id>\d+)/confidence$', treenode.update_confidence),
+    url(r'^(?P<project_id>\d+)/treenode/(?P<treenode_id>\d+)/parent$', treenode.update_parent),
+    url(r'^(?P<project_id>\d+)/treenode/(?P<treenode_id>\d+)/radius$', treenode.update_radius),
+    url(r'^(?P<project_id>\d+)/treenodes/radius$', treenode.update_radii),
+    url(r'^(?P<project_id>\d+)/treenodes/(?P<treenode_id>\d+)/previous-branch-or-root$', treenode.find_previous_branchnode_or_root),
+    url(r'^(?P<project_id>\d+)/treenodes/(?P<treenode_id>\d+)/next-branch-or-end$', treenode.find_next_branchnode_or_end),
+]
 
 # Suppressed virtual treenode access
-urlpatterns += patterns('catmaid.control.suppressed_virtual_treenode',
-    (r'^(?P<project_id>\d+)/treenodes/(?P<treenode_id>\d+)/suppressed-virtual/$',
-            SuppressedVirtualTreenodeList.as_view()),
-    (r'^(?P<project_id>\d+)/treenodes/(?P<treenode_id>\d+)/suppressed-virtual/(?P<suppressed_id>\d+)$',
-            SuppressedVirtualTreenodeDetail.as_view()),
-)
+urlpatterns += [
+    url(r'^(?P<project_id>\d+)/treenodes/(?P<treenode_id>\d+)/suppressed-virtual/$',
+            suppressed_virtual_treenode.SuppressedVirtualTreenodeList.as_view()),
+    url(r'^(?P<project_id>\d+)/treenodes/(?P<treenode_id>\d+)/suppressed-virtual/(?P<suppressed_id>\d+)$',
+            suppressed_virtual_treenode.SuppressedVirtualTreenodeDetail.as_view()),
+]
 
 # General skeleton access
-urlpatterns += patterns('catmaid.control.skeleton',
-    (r'^(?P<project_id>\d+)/skeletons/$', 'list_skeletons'),
-    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/node_count$', 'node_count'),
-    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/neuronname$', 'neuronname'),
-    (r'^(?P<project_id>\d+)/skeleton/neuronnames$', 'neuronnames'),
-    (r'^(?P<project_id>\d+)/skeleton/node/(?P<treenode_id>\d+)/node_count$', 'node_count'),
-    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/review/reset-own$', 'reset_own_reviewer_ids'),
-    (r'^(?P<project_id>\d+)/skeletons/connectivity$', 'skeleton_info_raw'),
-    (r'^(?P<project_id>\d+)/skeleton/connectivity_matrix$', 'connectivity_matrix'),
-    (r'^(?P<project_id>\d+)/skeletons/review-status$', 'review_status'),
-    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/statistics$', 'skeleton_statistics'),
-    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/contributor_statistics$', 'contributor_statistics'),
-    (r'^(?P<project_id>\d+)/skeleton/contributor_statistics_multiple$', 'contributor_statistics_multiple'),
-    (r'^(?P<project_id>\d+)/skeletons/(?P<skeleton_id>\d+)/find-labels$', 'find_labels'),
-    (r'^(?P<project_id>\d+)/skeletons/(?P<skeleton_id>\d+)/open-leaves$', 'open_leaves'),
-    (r'^(?P<project_id>\d+)/skeletons/(?P<skeleton_id>\d+)/root$', 'root_for_skeleton'),
-    (r'^(?P<project_id>\d+)/skeleton/split$', 'split_skeleton'),
-    (r'^(?P<project_id>\d+)/skeleton/ancestry$', 'skeleton_ancestry'),
-    (r'^(?P<project_id>\d+)/skeleton/join$', 'join_skeleton'),
-    (r'^(?P<project_id>\d+)/skeleton/reroot$', 'reroot_skeleton'),
-    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/permissions$',
-            'get_skeleton_permissions'),
-    (r'^(?P<project_id>\d+)/skeleton/annotationlist$', 'annotation_list'),
-    (r'^(?P<project_id>\d+)/skeletongroup/adjacency_matrix$', 'adjacency_matrix'),
-    (r'^(?P<project_id>\d+)/skeletongroup/skeletonlist_subgraph', 'skeletonlist_subgraph'),
-    (r'^(?P<project_id>\d+)/skeletongroup/all_shared_connectors', 'all_shared_connectors'),
-)
+urlpatterns += [
+    url(r'^(?P<project_id>\d+)/skeletons/$', skeleton.list_skeletons),
+    url(r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/node_count$', skeleton.node_count),
+    url(r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/neuronname$', skeleton.neuronname),
+    url(r'^(?P<project_id>\d+)/skeleton/neuronnames$', skeleton.neuronnames),
+    url(r'^(?P<project_id>\d+)/skeleton/node/(?P<treenode_id>\d+)/node_count$', skeleton.node_count),
+    url(r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/review/reset-own$', skeleton.reset_own_reviewer_ids),
+    url(r'^(?P<project_id>\d+)/skeletons/connectivity$', skeleton.skeleton_info_raw),
+    url(r'^(?P<project_id>\d+)/skeleton/connectivity_matrix$', skeleton.connectivity_matrix),
+    url(r'^(?P<project_id>\d+)/skeletons/review-status$', skeleton.review_status),
+    url(r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/statistics$', skeleton.skeleton_statistics),
+    url(r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/contributor_statistics$', skeleton.contributor_statistics),
+    url(r'^(?P<project_id>\d+)/skeleton/contributor_statistics_multiple$', skeleton.contributor_statistics_multiple),
+    url(r'^(?P<project_id>\d+)/skeletons/(?P<skeleton_id>\d+)/find-labels$', skeleton.find_labels),
+    url(r'^(?P<project_id>\d+)/skeletons/(?P<skeleton_id>\d+)/open-leaves$', skeleton.open_leaves),
+    url(r'^(?P<project_id>\d+)/skeletons/(?P<skeleton_id>\d+)/root$', skeleton.root_for_skeleton),
+    url(r'^(?P<project_id>\d+)/skeleton/split$', skeleton.split_skeleton),
+    url(r'^(?P<project_id>\d+)/skeleton/ancestry$', skeleton.skeleton_ancestry),
+    url(r'^(?P<project_id>\d+)/skeleton/join$', skeleton.join_skeleton),
+    url(r'^(?P<project_id>\d+)/skeleton/reroot$', skeleton.reroot_skeleton),
+    url(r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/permissions$', skeleton.get_skeleton_permissions),
+    url(r'^(?P<project_id>\d+)/skeleton/annotationlist$', skeleton.annotation_list),
+    url(r'^(?P<project_id>\d+)/skeletons/within-spatial-distance$', skeleton.within_spatial_distance),
+    url(r'^(?P<project_id>\d+)/skeletongroup/adjacency_matrix$', skeleton.adjacency_matrix),
+    url(r'^(?P<project_id>\d+)/skeletongroup/skeletonlist_subgraph', skeleton.skeletonlist_subgraph),
+    url(r'^(?P<project_id>\d+)/skeletongroup/all_shared_connectors', skeleton.all_shared_connectors),
+]
 
 # Skeleton export
-urlpatterns += patterns('catmaid.control.skeletonexport',
-    (r'^(?P<project_id>\d+)/neuroml/neuroml_level3_v181$', 'export_neuroml_level3_v181'),
-    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/swc$', 'skeleton_swc'),
-    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/neuroml$', 'skeletons_neuroml'),
-    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/json$', 'skeleton_with_metadata'),
-    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/compact-json$', 'skeleton_for_3d_viewer'),
-    (r'^(?P<project_id>\d+)/(?P<skeleton_id>\d+)/(?P<with_connectors>\d)/(?P<with_tags>\d)/compact-skeleton$', 'compact_skeleton'),
-    (r'^(?P<project_id>\d+)/(?P<skeleton_id>\d+)/(?P<with_nodes>\d)/(?P<with_connectors>\d)/(?P<with_tags>\d)/compact-arbor$', 'compact_arbor'),
-    (r'^(?P<project_id>\d+)/(?P<skeleton_id>\d+)/(?P<with_nodes>\d)/(?P<with_connectors>\d)/(?P<with_tags>\d)/compact-arbor-with-minutes$', 'compact_arbor_with_minutes'),
-    (r'^(?P<project_id>\d+)/skeletons/(?P<skeleton_id>\d+)/review$', 'export_review_skeleton'),
-    (r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/reviewed-nodes$', 'export_skeleton_reviews'),
-    (r'^(?P<project_id>\d+)/skeletons/measure$', 'measure_skeletons'),
-    (r'^(?P<project_id>\d+)/skeleton/connectors-by-partner$', 'skeleton_connectors_by_partner'),
-    (r'^(?P<project_id>\d+)/skeletons/within-spatial-distance$', 'within_spatial_distance'),
-    (r'^(?P<project_id>\d+)/skeletons/partners-by-connector$', 'partners_by_connector'),
-)
+urlpatterns += [
+    url(r'^(?P<project_id>\d+)/neuroml/neuroml_level3_v181$', skeletonexport.export_neuroml_level3_v181),
+    url(r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/swc$', skeletonexport.skeleton_swc),
+    url(r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/neuroml$', skeletonexport.skeletons_neuroml),
+    url(r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/json$', skeletonexport.skeleton_with_metadata),
+    url(r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/compact-json$', skeletonexport.skeleton_for_3d_viewer),
+    url(r'^(?P<project_id>\d+)/(?P<skeleton_id>\d+)/(?P<with_connectors>\d)/(?P<with_tags>\d)/compact-skeleton$', skeletonexport.compact_skeleton),
+    url(r'^(?P<project_id>\d+)/(?P<skeleton_id>\d+)/(?P<with_nodes>\d)/(?P<with_connectors>\d)/(?P<with_tags>\d)/compact-arbor$', skeletonexport.compact_arbor),
+    url(r'^(?P<project_id>\d+)/(?P<skeleton_id>\d+)/(?P<with_nodes>\d)/(?P<with_connectors>\d)/(?P<with_tags>\d)/compact-arbor-with-minutes$', skeletonexport.compact_arbor_with_minutes),
+    url(r'^(?P<project_id>\d+)/skeletons/(?P<skeleton_id>\d+)/review$', skeletonexport.export_review_skeleton),
+    url(r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/reviewed-nodes$', skeletonexport.export_skeleton_reviews),
+    url(r'^(?P<project_id>\d+)/skeletons/measure$', skeletonexport.measure_skeletons),
+    url(r'^(?P<project_id>\d+)/skeleton/connectors-by-partner$', skeletonexport.skeleton_connectors_by_partner),
+    url(r'^(?P<project_id>\d+)/skeletons/partners-by-connector$', skeletonexport.partners_by_connector),
+]
 
 # Treenode and Connector image stack archive export
-urlpatterns += patterns('catmaid.control.treenodeexport',
-    (r'^(?P<project_id>\d+)/connectorarchive/export$', 'export_connectors'),
-    (r'^(?P<project_id>\d+)/treenodearchive/export$', 'export_treenodes'),
-)
+urlpatterns += [
+    url(r'^(?P<project_id>\d+)/connectorarchive/export$', treenodeexport.export_connectors),
+    url(r'^(?P<project_id>\d+)/treenodearchive/export$', treenodeexport.export_treenodes),
+]
 
 # Cropping
-urlpatterns += patterns('catmaid.control.cropping',
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_ids>%s)/crop/(?P<x_min>%s),(?P<x_max>%s)/(?P<y_min>%s),(?P<y_max>%s)/(?P<z_min>%s),(?P<z_max>%s)/(?P<zoom_level>\d+)/(?P<single_channel>[0|1])/$' % (intlist, num, num, num, num, num, num), 'crop'),
-    (r'^crop/download/(?P<file_path>.*)/$', 'download_crop')
-)
+urlpatterns += [
+    url(r'^(?P<project_id>\d+)/stack/(?P<stack_ids>%s)/crop/(?P<x_min>%s),(?P<x_max>%s)/(?P<y_min>%s),(?P<y_max>%s)/(?P<z_min>%s),(?P<z_max>%s)/(?P<zoom_level>\d+)/(?P<single_channel>[0|1])/$' % (intlist, num, num, num, num, num, num), cropping.crop),
+    url(r'^crop/download/(?P<file_path>.*)/$', cropping.download_crop)
+]
 
 # Tagging
-urlpatterns += patterns('catmaid.control.project',
-    (r'^(?P<project_id>\d+)/tags/list$', 'list_project_tags'),
-    (r'^(?P<project_id>\d+)/tags/clear$', 'update_project_tags'),
-    (r'^(?P<project_id>\d+)/tags/(?P<tags>.*)/update$', 'update_project_tags'),
-)
-urlpatterns += patterns('catmaid.control.stack',
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/tags/list$', 'list_stack_tags'),
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/tags/clear$', 'update_stack_tags'),
-    (r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/tags/(?P<tags>.*)/update$', 'update_stack_tags'),
-)
+urlpatterns += [
+    url(r'^(?P<project_id>\d+)/tags/list$', project.list_project_tags),
+    url(r'^(?P<project_id>\d+)/tags/clear$', project.update_project_tags),
+    url(r'^(?P<project_id>\d+)/tags/(?P<tags>.*)/update$', project.update_project_tags),
+]
+urlpatterns += [
+    url(r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/tags/list$', stack.list_stack_tags),
+    url(r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/tags/clear$', stack.update_stack_tags),
+    url(r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/tags/(?P<tags>.*)/update$', stack.update_stack_tags),
+]
 
 # Data views
-urlpatterns += patterns('catmaid.control.data_view',
-    (r'^dataviews/list$', 'get_available_data_views'),
-    (r'^dataviews/default$', 'get_default_properties'),
-    (r'^dataviews/show/(?P<data_view_id>\d+)$', 'get_data_view'),
-    (r'^dataviews/show/default$', 'get_default_data_view'),
-    (r'^dataviews/type/comment$', 'get_data_view_type_comment'),
-    (r'^dataviews/type/(?P<data_view_id>\d+)$', 'get_data_view_type'),
-)
+urlpatterns += [
+    url(r'^dataviews/list$', data_view.get_available_data_views),
+    url(r'^dataviews/default$', data_view.get_default_properties),
+    url(r'^dataviews/show/(?P<data_view_id>\d+)$', data_view.get_data_view),
+    url(r'^dataviews/show/default$', data_view.get_default_data_view),
+    url(r'^dataviews/type/comment$', data_view.get_data_view_type_comment),
+    url(r'^dataviews/type/(?P<data_view_id>\d+)$', data_view.get_data_view_type),
+]
 
 # Ontologies
-urlpatterns += patterns('catmaid.control.ontology',
-    (r'^ontology/knownroots$', 'get_known_ontology_roots'),
-    (r'^(?P<project_id>%s)/ontology/list$' % (integer),
-        'list_ontology'),
-    (r'^(?P<project_id>%s)/ontology/relations$' % (integer),
-        'get_available_relations'),
-    (r'^(?P<project_id>%s)/ontology/relations/add$' % (integer),
-        'add_relation_to_ontology'),
-    (r'^(?P<project_id>%s)/ontology/relations/rename$' % (integer),
-        'rename_relation'),
-    (r'^(?P<project_id>%s)/ontology/relations/remove$' % (integer),
-        'remove_relation_from_ontology'),
-    (r'^(?P<project_id>%s)/ontology/relations/removeall$' % (integer),
-        'remove_all_relations_from_ontology'),
-    (r'^(?P<project_id>%s)/ontology/relations/list$' % (integer),
-        'list_available_relations'),
-    (r'^(?P<project_id>%s)/ontology/classes$' % (integer),
-        'get_available_classes'),
-    (r'^(?P<project_id>%s)/ontology/classes/add$' % (integer),
-        'add_class_to_ontology'),
-    (r'^(?P<project_id>%s)/ontology/classes/rename$' % (integer),
-        'rename_class'),
-    (r'^(?P<project_id>%s)/ontology/classes/remove$' % (integer),
-        'remove_class_from_ontology'),
-    (r'^(?P<project_id>%s)/ontology/classes/removeall$' % (integer),
-        'remove_all_classes_from_ontology'),
-    (r'^(?P<project_id>%s)/ontology/classes/list$' % (integer),
-        'list_available_classes'),
-    (r'^(?P<project_id>%s)/ontology/links/add$' % (integer),
-        'add_link_to_ontology'),
-    (r'^(?P<project_id>%s)/ontology/links/remove$' % (integer),
-        'remove_link_from_ontology'),
-    (r'^(?P<project_id>%s)/ontology/links/removeselected$' % (integer),
-        'remove_selected_links_from_ontology'),
-    (r'^(?P<project_id>%s)/ontology/links/removeall$' % (integer),
-        'remove_all_links_from_ontology'),
-    (r'^(?P<project_id>%s)/ontology/restrictions/add$' % (integer),
-        'add_restriction'),
-    (r'^(?P<project_id>%s)/ontology/restrictions/remove$' % (integer),
-        'remove_restriction'),
-    (r'^(?P<project_id>%s)/ontology/restrictions/(?P<restriction>[^/]*)/types$' % (integer),
-        'get_restriction_types'),
-)
+urlpatterns += [
+    url(r'^ontology/knownroots$', ontology.get_known_ontology_roots),
+    url(r'^(?P<project_id>%s)/ontology/list$' % (integer), ontology.list_ontology),
+    url(r'^(?P<project_id>%s)/ontology/relations$' % (integer), ontology.get_available_relations),
+    url(r'^(?P<project_id>%s)/ontology/relations/add$' % (integer), ontology.add_relation_to_ontology),
+    url(r'^(?P<project_id>%s)/ontology/relations/rename$' % (integer), ontology.rename_relation),
+    url(r'^(?P<project_id>%s)/ontology/relations/remove$' % (integer), ontology.remove_relation_from_ontology),
+    url(r'^(?P<project_id>%s)/ontology/relations/removeall$' % (integer), ontology.remove_all_relations_from_ontology),
+    url(r'^(?P<project_id>%s)/ontology/relations/list$' % (integer), ontology.list_available_relations),
+    url(r'^(?P<project_id>%s)/ontology/classes$' % (integer), ontology.get_available_classes),
+    url(r'^(?P<project_id>%s)/ontology/classes/add$' % (integer), ontology.add_class_to_ontology),
+    url(r'^(?P<project_id>%s)/ontology/classes/rename$' % (integer), ontology.rename_class),
+    url(r'^(?P<project_id>%s)/ontology/classes/remove$' % (integer), ontology.remove_class_from_ontology),
+    url(r'^(?P<project_id>%s)/ontology/classes/removeall$' % (integer), ontology.remove_all_classes_from_ontology),
+    url(r'^(?P<project_id>%s)/ontology/classes/list$' % (integer), ontology.list_available_classes),
+    url(r'^(?P<project_id>%s)/ontology/links/add$' % (integer), ontology.add_link_to_ontology),
+    url(r'^(?P<project_id>%s)/ontology/links/remove$' % (integer), ontology.remove_link_from_ontology),
+    url(r'^(?P<project_id>%s)/ontology/links/removeselected$' % (integer), ontology.remove_selected_links_from_ontology),
+    url(r'^(?P<project_id>%s)/ontology/links/removeall$' % (integer), ontology.remove_all_links_from_ontology),
+    url(r'^(?P<project_id>%s)/ontology/restrictions/add$' % (integer), ontology.add_restriction),
+    url(r'^(?P<project_id>%s)/ontology/restrictions/remove$' % (integer), ontology.remove_restriction),
+    url(r'^(?P<project_id>%s)/ontology/restrictions/(?P<restriction>[^/]*)/types$' % (integer), ontology.get_restriction_types),
+]
 
 # Classification
-urlpatterns += patterns('catmaid.control.classification',
-    (r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/number$'.format(integer),
-        'get_classification_number'),
-    (r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/show$'.format(integer),
-        'show_classification_editor'),
-    (r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/show/(?P<link_id>\d+)$'.format(integer),
-        'show_classification_editor'),
+urlpatterns += [
+    url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/number$'.format(integer),
+        classification.get_classification_number),
+    url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/show$'.format(integer),
+        classification.show_classification_editor),
+    url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/show/(?P<link_id>\d+)$'.format(integer),
+        classification.show_classification_editor),
     url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/select$'.format(integer),
-        'select_classification_graph', name='select_classification_graph'),
+        classification.select_classification_graph, name='select_classification_graph'),
     url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/setup/test$'.format(integer),
-        'check_classification_setup_view', name='test_classification_setup'),
+        classification.check_classification_setup_view, name='test_classification_setup'),
     url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/setup/rebuild$'.format(integer),
-        'rebuild_classification_setup_view', name='rebuild_classification_setup'),
+        classification.rebuild_classification_setup_view, name='rebuild_classification_setup'),
     url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/new$'.format(integer),
-        'add_classification_graph', name='add_classification_graph'),
+        classification.add_classification_graph, name='add_classification_graph'),
     url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/list$'.format(integer),
-        'list_classification_graph', name='list_classification_graph'),
+        classification.list_classification_graph, name='list_classification_graph'),
     url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/list/(?P<link_id>\d+)$'.format(integer),
-        'list_classification_graph', name='list_classification_graph'),
+        classification.list_classification_graph, name='list_classification_graph'),
     url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/(?P<link_id>\d+)/remove$'.format(integer),
-        'remove_classification_graph', name='remove_classification_graph'),
+        classification.remove_classification_graph, name='remove_classification_graph'),
     url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/instance-operation$'.format(integer),
-        'classification_instance_operation',
-        name='classification_instance_operation'),
+        classification.classification_instance_operation, name='classification_instance_operation'),
     url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/(?P<link_id>\d+)/autofill$'.format(integer),
-        'autofill_classification_graph', name='autofill_classification_graph'),
+        classification.autofill_classification_graph, name='autofill_classification_graph'),
     url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/link$'.format(integer),
-        'link_classification_graph', name='link_classification_graph'),
+        classification.link_classification_graph, name='link_classification_graph'),
     url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/stack/(?P<stack_id>{0})/linkroi/(?P<ci_id>{0})/$'.format(integer),
-        'link_roi_to_classification', name='link_roi_to_classification'),
+        classification.link_roi_to_classification, name='link_roi_to_classification'),
     url(r'^classification/(?P<workspace_pid>{0})/export$'.format(integer),
-        'export', name='export_classification'),
+        classification.export, name='export_classification'),
     url(r'^classification/(?P<workspace_pid>{0})/export/excludetags/(?P<exclusion_tags>{1})/$'.format(integer, wordlist),
-        'export', name='export_classification'),
+        classification.export, name='export_classification'),
     url(r'^classification/(?P<workspace_pid>{0})/search$'.format(integer),
-        'search', name='search_classifications'),
+        classification.search, name='search_classifications'),
     url(r'^classification/(?P<workspace_pid>{0})/export_ontology$'.format(integer),
-        'export_ontology', name='export_ontology'),
-)
+        classification.export_ontology, name='export_ontology'),
+]
 
 # Notifications
-urlpatterns += patterns('catmaid.control.notifications',
-    (r'^(?P<project_id>\d+)/notifications/list$', 'list_notifications'),
-    (r'^(?P<project_id>\d+)/changerequest/approve$', 'approve_change_request'),
-    (r'^(?P<project_id>\d+)/changerequest/reject$', 'reject_change_request'),
-)
+urlpatterns += [
+    url(r'^(?P<project_id>\d+)/notifications/list$', notifications.list_notifications),
+    url(r'^(?P<project_id>\d+)/changerequest/approve$', notifications.approve_change_request),
+    url(r'^(?P<project_id>\d+)/changerequest/reject$', notifications.reject_change_request),
+]
 
 # Regions of interest
-urlpatterns += patterns('catmaid.control.roi',
-    url(r'^(?P<project_id>{0})/roi/(?P<roi_id>{0})/info$'.format(integer),
-        'get_roi_info', name='get_roi_info'),
+urlpatterns += [
+    url(r'^(?P<project_id>{0})/roi/(?P<roi_id>{0})/info$'.format(integer), roi.get_roi_info, name='get_roi_info'),
     url(r'^(?P<project_id>{0})/roi/link/(?P<relation_id>{0})/stack/(?P<stack_id>{0})/ci/(?P<ci_id>{0})/$'.format(integer),
-        'link_roi_to_class_instance', name='link_roi_to_class_instance'),
-    url(r'^(?P<project_id>{0})/roi/(?P<roi_id>{0})/remove$'.format(integer),
-        'remove_roi_link', name='remove_roi_link'),
-    url(r'^(?P<project_id>{0})/roi/(?P<roi_id>{0})/image$'.format(integer),
-        'get_roi_image', name='get_roi_image'),
-    url(r'^(?P<project_id>{0})/roi/add$'.format(integer),
-        'add_roi', name='add_roi'),
-)
+        roi.link_roi_to_class_instance, name='link_roi_to_class_instance'),
+    url(r'^(?P<project_id>{0})/roi/(?P<roi_id>{0})/remove$'.format(integer), roi.remove_roi_link, name='remove_roi_link'),
+    url(r'^(?P<project_id>{0})/roi/(?P<roi_id>{0})/image$'.format(integer), roi.get_roi_image, name='get_roi_image'),
+    url(r'^(?P<project_id>{0})/roi/add$'.format(integer), roi.add_roi, name='add_roi'),
+]
 
 # Clustering
-urlpatterns += patterns('catmaid.control.clustering',
+urlpatterns += [
     url(r'^clustering/(?P<workspace_pid>{0})/setup$'.format(integer),
-        'setup_clustering', name="clustering_setup"),
+        clustering.setup_clustering, name="clustering_setup"),
     url(r'^clustering/(?P<workspace_pid>{0})/show$'.format(integer),
         TemplateView.as_view(template_name="catmaid/clustering/display.html"),
         name="clustering_display"),
-)
+]
 
 # Volumes
-urlpatterns += patterns('catmaid.control.volume',
-   (r'^(?P<project_id>\d+)/volumes/$', 'volume_collection'),
-   (r'^(?P<project_id>\d+)/volumes/add$', 'add_volume'),
-   (r'^(?P<project_id>\d+)/volumes/(?P<volume_id>\d+)/$', 'volume_detail'),
-   (r'^(?P<project_id>\d+)/volumes/(?P<volume_id>\d+)/intersect$', 'intersects'),
-)
+urlpatterns += [
+   url(r'^(?P<project_id>\d+)/volumes/$', volume.volume_collection),
+   url(r'^(?P<project_id>\d+)/volumes/add$', volume.add_volume),
+   url(r'^(?P<project_id>\d+)/volumes/(?P<volume_id>\d+)/$', volume.volume_detail),
+   url(r'^(?P<project_id>\d+)/volumes/(?P<volume_id>\d+)/intersect$', volume.intersects),
+]
 
 # Front-end tests
-urlpatterns += patterns('',
+urlpatterns += [
     url(r'^tests$', login_required(CatmaidView.as_view(template_name="catmaid/tests.html")), name="frontend_tests"),
-)
+]
 
 # Collection of various parts of the CATMAID API. These methods are usually
 # one- or two-liners and having them in a separate statement would not improve
 # readability. Therefore, they are all declared in this general statement.
-urlpatterns += patterns('catmaid.control',
+urlpatterns += [
     # User analytics and proficiency
-    (r'^useranalytics$', 'useranalytics.plot_useranalytics'),
-    (r'^(?P<project_id>\d+)/userproficiency$', 'user_evaluation.evaluate_user'),
+    url(r'^useranalytics$', useranalytics.plot_useranalytics),
+    url(r'^(?P<project_id>\d+)/userproficiency$', user_evaluation.evaluate_user),
 
-    (r'^(?P<project_id>\d+)/exportwidget$', ExportWidgetView.as_view() ),
+    url(r'^(?P<project_id>\d+)/exportwidget$', ExportWidgetView.as_view()),
 
-    (r'^(?P<project_id>\d+)/graphexport/json$', 'graphexport.export_jsongraph' ),
+    url(r'^(?P<project_id>\d+)/graphexport/json$', graphexport.export_jsongraph),
 
     # Graphs
-    (r'^(?P<project_id>\d+)/skeletons/confidence-compartment-subgraph', 'graph2.skeleton_graph'),
+    url(r'^(?P<project_id>\d+)/skeletons/confidence-compartment-subgraph', graph2.skeleton_graph),
 
     # Circles
-    (r'^(?P<project_id>\d+)/graph/circlesofhell', 'circles.circles_of_hell'),
-    (r'^(?P<project_id>\d+)/graph/directedpaths', 'circles.find_directed_paths'),
+    url(r'^(?P<project_id>\d+)/graph/circlesofhell', circles.circles_of_hell),
+    url(r'^(?P<project_id>\d+)/graph/directedpaths', circles.find_directed_paths),
 
     # Analytics
-    (r'^(?P<project_id>\d+)/skeleton/analytics$', 'analytics.analyze_skeletons'),
+    url(r'^(?P<project_id>\d+)/skeleton/analytics$', analytics.analyze_skeletons),
 
     # Review
-    (r'^(?P<project_id>\d+)/user/reviewer-whitelist$', 'review.reviewer_whitelist'),
+    url(r'^(?P<project_id>\d+)/user/reviewer-whitelist$', review.reviewer_whitelist),
 
     # Search
-    (r'^(?P<project_id>\d+)/search$', 'search.search'),
+    url(r'^(?P<project_id>\d+)/search$', search.search),
 
     # Wiring diagram export
-    (r'^(?P<project_id>\d+)/wiringdiagram/json$', 'wiringdiagram.export_wiring_diagram'),
-    (r'^(?P<project_id>\d+)/wiringdiagram/nx_json$', 'wiringdiagram.export_wiring_diagram_nx'),
+    url(r'^(?P<project_id>\d+)/wiringdiagram/json$', wiringdiagram.export_wiring_diagram),
+    url(r'^(?P<project_id>\d+)/wiringdiagram/nx_json$', wiringdiagram.export_wiring_diagram_nx),
 
     # Annotation graph export
-    (r'^(?P<project_id>\d+)/annotationdiagram/nx_json$', 'object.convert_annotations_to_networkx'),
+    url(r'^(?P<project_id>\d+)/annotationdiagram/nx_json$', object.convert_annotations_to_networkx),
 
     # Treenode table
-    (r'^(?P<project_id>\d+)/treenode/table/(?P<skid>\d+)/content$', 'treenodetable.treenode_table_content'),
-)
+    url(r'^(?P<project_id>\d+)/treenode/table/(?P<skid>\d+)/content$', treenodetable.treenode_table_content),
+]
 
 # Patterns for FlyTEM access
-urlpatterns += patterns('catmaid.control.flytem',
-    (r'^flytem/projects/$', 'project.projects'),
-    (r'^(?P<project_id>.+)/user/reviewer-whitelist$', 'review.reviewer_whitelist'),
-    (r'^flytem/(?P<project_id>.+)/stack/(?P<stack_id>.+)/info$', 'stack.stack_info'),
-    (r'^flytem/(?P<project_id>.+)/stacks$', 'stack.stacks'),
-)
+from catmaid.control.flytem import (project as flytemproject,
+        review as flytemreview, stack as flytemstack)
+urlpatterns += [
+    url(r'^flytem/projects/$', flytemproject.projects),
+    url(r'^(?P<project_id>.+)/user/reviewer-whitelist$', flytemreview.reviewer_whitelist),
+    url(r'^flytem/(?P<project_id>.+)/stack/(?P<stack_id>.+)/info$', flytem.stack.stack_info),
+    url(r'^flytem/(?P<project_id>.+)/stacks$', flytemstack.stacks),
+]
 
 # Patterns for DVID access
-urlpatterns += patterns('catmaid.control.dvid',
-    (r'^dvid/projects/$', 'project.projects'),
-    (r'^(?P<project_id>.+)/user/reviewer-whitelist$', 'review.reviewer_whitelist'),
-    (r'^dvid/(?P<project_id>.+)/stack/(?P<stack_id>.+)/info$', 'stack.stack_info'),
-    (r'^dvid/(?P<project_id>.+)/stacks$', 'stack.stacks'),
-)
+from catmaid.control.dvid import (project as dvidproject,
+        review as dvidreview, stack as dvidstack)
+urlpatterns += [
+    url(r'^dvid/projects/$', dvidproject.projects),
+    url(r'^(?P<project_id>.+)/user/reviewer-whitelist$', dvidreview.reviewer_whitelist),
+    url(r'^dvid/(?P<project_id>.+)/stack/(?P<stack_id>.+)/info$', dvidstack.stack_info),
+    url(r'^dvid/(?P<project_id>.+)/stacks$', dvidstack.stacks),
+]

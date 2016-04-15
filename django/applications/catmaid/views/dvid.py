@@ -4,8 +4,9 @@ import urllib2
 from django import forms
 from django.core.exceptions import ValidationError
 from django.contrib import messages
-from django.contrib.formtools.wizard.views import SessionWizardView
 from django.http import HttpResponseRedirect
+
+from formtools.wizard.views import SessionWizardView
 
 from catmaid.models import (
     Stack, Project, ProjectStack, Relation, Class, ClassInstance,

@@ -13,19 +13,41 @@ var WindowMaker = new function()
   var createContainer = function(id) {
     var container = document.createElement("div");
     container.setAttribute("id", id);
-    container.setAttribute("class", "sliceView windowContent");
-    container.style.position = "relative";
-    container.style.bottom = "0px";
-    container.style.width = "100%";
-    container.style.height = "100%";
-    container.style.overflow = "auto";
-    container.style.backgroundColor = "#ffffff";
+    container.setAttribute("class", "windowContent");
     return container;
+  };
+
+  /**
+   * Get content height of a window and take into account a potential button
+   * panel. If a button panel ID is provided, its height is substracted from the
+   * window content height.
+   */
+  var getWindowContentHeight = function(win, buttonPanelId) {
+    var height = win.getContentHeight();
+    if( buttonPanelId !== undefined ) {
+      var $bar = $('#' + buttonPanelId);
+      height = height - ($bar.is(':visible') ? $bar.height() : 0);
+    }
+    return height;
   };
 
   var addListener = function(win, container, button_bar, destroy, resize) {
     win.addListener(
       function(callingWindow, signal) {
+
+        // Keep track of scroll bar pixel position and ratio to total container
+        // height to maintain scoll bar location on resize. From:
+        // http://jsfiddle.net/JamesKyle/RmNap/
+        var contentHeight = getWindowContentHeight(win, button_bar);
+        var $container = $(container);
+        var scrollPosition = $container.scrollTop();
+        var scrollRatio = scrollPosition / contentHeight;
+
+        $container.on("scroll", function() {
+          scrollPosition = $container.scrollTop();
+          scrollRatio = scrollPosition / contentHeight;
+        });
+
         switch (signal) {
           case CMWWindow.CLOSE:
             if (typeof(destroy) === "function") {
@@ -45,16 +67,17 @@ var WindowMaker = new function()
             }
             break;
           case CMWWindow.RESIZE:
-            if( button_bar !== undefined ) {
-                container.style.height = ( win.getContentHeight() - $('#' + button_bar).height() ) + "px";
-            } else {
-                container.style.height = ( win.getContentHeight() ) + "px";
-            }
+            contentHeight = getWindowContentHeight(win, button_bar);
+            container.style.height = contentHeight + "px";
             container.style.width = ( win.getAvailableWidth() + "px" );
 
             if (typeof(resize) === "function") {
               resize();
             }
+
+            // Scoll to last known scroll position, after resize has been
+            // performed, in case a redraw changes the content.
+            $container.scrollTop(contentHeight * scrollRatio);
 
             break;
           case CMWWindow.POINTER_ENTER:
@@ -118,6 +141,11 @@ var WindowMaker = new function()
       }
     }
 
+    // Add a button to open help documentation if it is provided by the widget.
+    if (config.helpText) {
+      DOM.addHelpButton(win, 'Help: ' + instance.getName(), config.helpText);
+    }
+
     // Create controls, if requested
     var controls;
     if (config.controlsID && config.createControls) {
@@ -142,6 +170,10 @@ var WindowMaker = new function()
     var resize = instance.resize ? instance.resize.bind(instance) : undefined;
     addListener(win, content, config.controlsID, destroy, resize);
     addLogic(win);
+
+    if (CATMAID.tools.isFn(config.init)) {
+      config.init.call(instance);
+    }
 
     return {window: win, widget: instance};
   };
@@ -203,17 +235,6 @@ var WindowMaker = new function()
     return b;
   };
 
-  var appendHiddenFileButton = function(div, id, onchangeFn) {
-    var fb = document.createElement('input');
-    fb.setAttribute('type', 'file');
-    fb.setAttribute('id', id);
-    fb.setAttribute('name', 'files[]');
-    fb.style.display = 'none';
-    fb.onchange = onchangeFn;
-    div.appendChild(fb);
-    return fb;
-  };
-
   var createCheckbox = function(label, value, onclickFn) {
     var cb = document.createElement('input');
     cb.setAttribute('type', 'checkbox');
@@ -261,13 +282,14 @@ var WindowMaker = new function()
    * Construct elements from an array of parameters and append them to a tab
    * element.
    * @param  {Element}     tab   The tab to which to append constructed elements.
-   * @param  {[[]|object]} elems An array of parameters from which to construct
+   * @param  {Array.<(Object|Array)>} elems
+   *                             An array of parameters from which to construct
    *                             elements. The elements of the array are either
    *                             arrays of parameters, in which case the length
    *                             of the array is used to choose element type, or
    *                             an object specifying parameters, in which case
    *                             the `type` property specifies element type.
-   * @return {[Element]}         An array of the constructed elements.
+   * @return {Element[]}         An array of the constructed elements.
    */
   var appendToTab = function(tab, elems) {
     return elems.map(function(e) {
@@ -335,11 +357,11 @@ var WindowMaker = new function()
           '<tr>' +
             '<th>Connector</th>' +
             '<th>Node 1</th>' +
-            '<th>Presyn. neuron</th>' +
+            '<th class="preheader">Presyn. neuron</th>' +
             '<th>C 1</th>' +
             '<th>Creator 1</th>' +
             '<th>Node 2</th>' +
-            '<th>Postsyn. neuron</th>' +
+            '<th class="postheader">Postsyn. neuron</th>' +
             '<th>C 2</th>' +
             '<th>Creator 2</th>' +
           '</tr>' +
@@ -348,11 +370,11 @@ var WindowMaker = new function()
           '<tr>' +
             '<th>Connector</th>' +
             '<th>Node 1</th>' +
-            '<th>Presyn. neuron</th>' +
+            '<th class="preheader">Presyn. neuron</th>' +
             '<th>C 1</th>' +
             '<th>Creator 1</th>' +
             '<th>Node 2</th>' +
-            '<th>Postsyn. neuron</th>' +
+            '<th class="postheader">Postsyn. neuron</th>' +
             '<th>C 2</th>' +
             '<th>Creator 2</th>' +
           '</tr>' +
@@ -829,8 +851,10 @@ var WindowMaker = new function()
     update.onclick = ST.update.bind(ST);
     buttons.appendChild(update);
 
-    var fileButton = appendHiddenFileButton(buttons, 'st-file-dialog-' + ST.widgetID,
-        function(evt) { ST.loadFromFiles(evt.target.files); });
+    var fileButton = buttons.appendChild(CATMAID.DOM.createFileButton(
+          'st-file-dialog-' + ST.widgetID, false, function(evt) {
+            ST.loadFromFiles(evt.target.files);
+          }));
     var open = document.createElement('input');
     open.setAttribute("type", "button");
     open.setAttribute("value", "Open");
@@ -849,7 +873,7 @@ var WindowMaker = new function()
     annotate.style.marginLeft = '1em';
     annotate.onclick = ST.annotate_skeleton_list.bind(ST);
     buttons.appendChild(annotate);
-    
+
     var c = appendSelect(buttons, null, 'Color scheme ',
         ['CATMAID',
          'category10',
@@ -863,7 +887,7 @@ var WindowMaker = new function()
     random.setAttribute("value", "Colorize");
     random.onclick = function() { ST.colorizeWith(c.options[c.selectedIndex].text); };
     buttons.appendChild(random);
-    
+
     var measure = document.createElement('input');
     measure.setAttribute('type', 'button');
     measure.setAttribute('value', 'Measure');
@@ -903,7 +927,7 @@ var WindowMaker = new function()
 
     win.getFrame().appendChild(buttons);
     content.appendChild(container);
-    
+
     var tab = document.createElement('table');
     tab.setAttribute("id", "skeleton-table" + ST.widgetID);
     tab.setAttribute("class", "skeleton-table");
@@ -1115,7 +1139,7 @@ var WindowMaker = new function()
     DOM.addButtonDisplayToggle(win);
 
     var tabs = appendTabs(bar, WA.widgetID, ['Main', 'View', 'Shading',
-        'Skeleton filters', 'View settings', 'Shading parameters',
+        'Skeleton filters', 'View settings', 'Stacks', 'Shading parameters',
         'Animation', 'Export']);
 
     var select_source = CATMAID.skeletonListSources.createSelect(WA);
@@ -1137,10 +1161,9 @@ var WindowMaker = new function()
 
     var connectorRestrictionsSl = document.createElement('select');
     connectorRestrictionsSl.options.add(new Option('All connectors', 'none', true, true));
-    connectorRestrictionsSl.options.add(new Option('All shared connectos', 'all-shared'));
-    connectorRestrictionsSl.options.add(new Option('All pre->post connectos', 'all-pre-post'));
-    connectorRestrictionsSl.options.add(new Option('All group shared', 'all-group-shared'));
-    connectorRestrictionsSl.options.add(new Option('All pre->post group shared', 'all-group-shared-pre-post'));
+    connectorRestrictionsSl.options.add(new Option('All shared connectors', 'all-shared'));
+    connectorRestrictionsSl.options.add(new Option('All pre->post connectors', 'all-pre-post'));
+    connectorRestrictionsSl.options.add(new Option('Group shared connectors', 'all-group-shared'));
     connectorRestrictionsSl.onchange = function () {
       WA.setConnectorRestriction(this.value);
     };
@@ -1222,7 +1245,7 @@ var WindowMaker = new function()
         storedViewsSelect.selectedIndex = 0;
       }
     }
-    
+
     var shadingMenu = document.createElement('select');
     shadingMenu.setAttribute("id", "skeletons_shading" + WA.widgetID);
     [['none', 'None'],
@@ -1291,27 +1314,47 @@ var WindowMaker = new function()
     };
     var o = CATMAID.WebGLApplication.prototype.OPTIONS;
 
+    var volumeSelection = CATMAID.DOM.createAsyncPlaceholder(
+        CATMAID.fetch(project.id + '/volumes/', 'GET').then(function(json) {
+          var volumes = json.reduce(function(o, volume) {
+            o[volume.id] = volume.name;
+            return o;
+          }, {});
+          // Create actual element based on the returned data
+          var node = CATMAID.DOM.createCheckboxSelect('Volumes', volumes);
+          // Add a selection handler
+          node.onchange = function(e) {
+            var visible = e.srcElement.checked;
+            var volumeId = e.srcElement.value;
+            WA.showVolume(volumeId, visible);
+          };
+          return node;
+        }));
+
     appendToTab(tabs['View settings'],
         [
           ['Meshes ', false, function() { WA.options.show_meshes = this.checked; WA.adjustContent(); }, false],
+          [volumeSelection],
           [WA.createMeshColorButton()],
           ['Active node', true, function() { WA.options.show_active_node = this.checked; WA.adjustContent(); }, false],
           ['Active node on top', false, function() { WA.options.active_node_on_top = this.checked; WA.adjustContent(); }, false],
           ['Black background', true, adjustFn('show_background'), false],
           ['Floor', true, adjustFn('show_floor'), false],
-          ['Bounding box', true, adjustFn('show_box'), false],
-          ['Z plane', false, adjustFn('show_zplane'), false],
           ['Debug', false, function() { WA.setDebug(this.checked); }, false],
-          ['Missing sections', false, adjustFn('show_missing_sections'), false],
-          ['with height:', o.missing_section_height, ' %', function() {
-              WA.options.missing_section_height = Math.max(0, Math.min(this.value, 100));
-              WA.adjustStaticContent();
-            }, 4],
           ['Line width', o.skeleton_line_width, null, function() { WA.updateSkeletonLineWidth(this.value); }, 4],
+          {
+            type: 'checkbox',
+            label: 'Flat neuron material',
+            value: o.neuron_material === 'flat',
+            onclickFn: function() {
+              WA.updateNeuronShading(this.checked ? 'flat' : 'lambert');
+            },
+            title: 'If checked, neurons will ignore light sources and appear "flat"'
+          },
           {
             type: 'numeric',
             label: 'Custom Tags (regex):',
-            title: 'Display handle spheres for nodes with tags matching this regex.',
+            title: 'Display handle spheres for nodes with tags matching this regex (must refresh 3D viewer after changing).',
             value: o.custom_tag_spheres_regex,
             onchangeFn: function () { WA.options.custom_tag_spheres_regex = this.value; },
             length: 10
@@ -1325,6 +1368,37 @@ var WindowMaker = new function()
               WA.adjustContent();
               WA.updateSkeletonNodeHandleScaling(this.value);
         }, 5);
+
+    appendToTab(tabs['Stacks'],
+        [
+          ['Bounding box', true, adjustFn('show_box'), false],
+          ['Z plane', false, adjustFn('show_zplane'), false],
+          {type: 'checkbox', label: 'with stack images', value: true,
+           onclickFn: adjustFn('zplane_texture'), title: 'If checked, images ' +
+             'of the current section of the active stack will be displayed on a Z plane.'},
+          {type: 'numeric', label: 'Z plane zoom level ', value: o.zplane_zoomlevel,
+           title: 'The zoom-level to use (slider value in top toolbar) for image tiles ' +
+           'in a Z plane. If set to "max", the highest zoom-level available will be ' +
+           'which in turn means the worst resolution available.', length: 2,
+           onchangeFn: function() {
+             WA.options.zplane_zoomlevel = ("max" === this.value) ? this.value :
+                 Math.max(0, this.value);
+             WA.adjustStaticContent();
+            }},
+          {type: 'numeric', label: 'Z plane opacity', value: o.zplane_opacity, length: 2,
+            title: 'The opacity of displayed Z planes', onchangeFn: function(e) {
+              var value = parseFloat(this.value);
+              if (value) {
+                WA.options.zplane_opacity = value;
+                WA.adjustStaticContent();
+              }
+            }},
+          ['Missing sections', false, adjustFn('show_missing_sections'), false],
+          ['with height:', o.missing_section_height, ' %', function() {
+              WA.options.missing_section_height = Math.max(0, Math.min(this.value, 100));
+              WA.adjustStaticContent();
+            }, 4]
+        ]);
 
     appendToTab(tabs['Skeleton filters'],
         [
@@ -1574,7 +1648,7 @@ var WindowMaker = new function()
     var bar = document.createElement('div');
     bar.setAttribute("id", "synapse_fractions_buttons" + SF.widgetID);
     bar.setAttribute('class', 'buttonpanel');
-    
+
     var tabs = appendTabs(bar, SF.widgetID, ['Main', 'Filter', 'Color', 'Partner groups']);
 
     var partners_source = CATMAID.skeletonListSources.createPushSelect(SF, "filter");
@@ -1808,9 +1882,10 @@ var WindowMaker = new function()
          ['Save', GG.saveJSON.bind(GG)],
          ['Open...', function() { document.querySelector('#gg-file-dialog-' + GG.widgetID).click(); }]]);
 
-    appendHiddenFileButton(tabs['Export'], 'gg-file-dialog-' + GG.widgetID,
-        function(evt) { GG.loadFromJSON(evt.target.files); }
-    );
+    tabs['Export'].appendChild(CATMAID.DOM.createFileButton(
+          'gg-file-dialog-' + GG.widgetID, false, function(evt) {
+            GG.loadFromJSON(evt.target.files);
+          }));
 
     var color = document.createElement('select');
     color.setAttribute('id', 'graph_color_choice' + GG.widgetID);
@@ -1918,7 +1993,7 @@ var WindowMaker = new function()
     appendToTab(tabs['Subgraphs'],
         [[document.createTextNode('Select node(s) and split by: ')],
          ['Axon & dendrite', GG.splitAxonAndDendrite.bind(GG)],
-         ['Axon, backbone dendrite & dendritic terminals', GG.splitAxonAndTwoPartDendrite.bind(GG)], 
+         ['Axon, backbone dendrite & dendritic terminals', GG.splitAxonAndTwoPartDendrite.bind(GG)],
          ['Synapse clusters', GG.splitBySynapseClustering.bind(GG)],
          ['Tag', GG.splitByTag.bind(GG)],
          ['Reset', GG.unsplit.bind(GG)]]);
@@ -2080,7 +2155,7 @@ var WindowMaker = new function()
 
 
   var createMorphologyPlotWindow = function() {
-  
+
     var MA = new MorphologyPlot();
 
     var win = new CMWWindow(MA.getName());
@@ -2182,7 +2257,7 @@ var WindowMaker = new function()
   };
 
   var createVennDiagramWindow = function() {
-  
+
     var VD = new VennDiagram();
 
     var win = new CMWWindow(VD.getName());
@@ -2281,7 +2356,7 @@ var WindowMaker = new function()
     var container = createContainer("segments_table_widget");
     content.appendChild(container);
 
-    
+
     var graph = document.createElement('div');
     graph.setAttribute("id", "segmentstable-div");
     graph.style.height = "100%";
@@ -2502,7 +2577,7 @@ var WindowMaker = new function()
 
   var createSkeletonAnalyticsWindow = function()
   {
-    var SA = new SkeletonAnalytics();
+    var SA = new CATMAID.SkeletonAnalytics();
 
     var win = new CMWWindow(SA.getName());
     var content = win.getFrame();
@@ -2567,6 +2642,7 @@ var WindowMaker = new function()
 
     var createLogTableWindow = function()
     {
+        var widget = CATMAID.LogTable;
         var win = new CMWWindow("Log");
         var content = win.getFrame();
         content.style.backgroundColor = "#ffffff";
@@ -2580,7 +2656,7 @@ var WindowMaker = new function()
         add.setAttribute("type", "button");
         add.setAttribute("id", "update_logtable");
         add.setAttribute("value", "Update table");
-        add.onclick = updateLogTable; // function declared in table_log.js
+        add.onclick = widget.update.bind(widget);
         contentbutton.appendChild(add);
 
         /* users */
@@ -2647,7 +2723,7 @@ var WindowMaker = new function()
           var option = document.createElement("option");
             option.text = operation_type_array[i];
             option.value = operation_type_array[i];
-            sync.appendChild(option);            
+            sync.appendChild(option);
         }
         contentbutton.appendChild(sync);
         content.appendChild( contentbutton );
@@ -2685,7 +2761,7 @@ var WindowMaker = new function()
 
         addLogic(win);
 
-        LogTable.init( project.getId() );
+        widget.init(project.getId());
 
         return {window: win, widget: null};
     };
@@ -2842,10 +2918,24 @@ var WindowMaker = new function()
         autoUpdateLabel.appendChild(autoUpdate);
         contentbutton.appendChild(autoUpdateLabel);
 
+        var gapjunctionToggle = document.createElement('input');
+        gapjunctionToggle.setAttribute('id', 'connectivity-gapjunctiontable-toggle-' + widgetID);
+        gapjunctionToggle.setAttribute('type', 'checkbox');
+        if (SC.showGapjunctionTable) {
+          gapjunctionToggle.setAttribute('checked', 'checked');
+        }
+        gapjunctionToggle.onchange = (function() {
+          this.showGapjunctionTable = this.checked;
+        }).bind(SC);
+        var gapjunctionLabel = document.createElement('label');
+        gapjunctionLabel.appendChild(document.createTextNode('Show gap junctions'));
+        gapjunctionLabel.appendChild(gapjunctionToggle);
+        contentbutton.appendChild(gapjunctionLabel);
+
         content.appendChild( contentbutton );
 
         var container = createContainer( "connectivity_widget" + widgetID );
-        container.setAttribute('class', 'connectivity_widget');
+        container.classList.add('connectivity_widget');
         content.appendChild( container );
 
         addListener(win, container, 'skeleton_connectivity_buttons' + widgetID, SC.destroy.bind(SC));
@@ -2971,61 +3061,16 @@ var WindowMaker = new function()
       return {window: win, widget: null};
   };
 
-
-  var createOntologyWidget = function()
-  {
-    var win = new CMWWindow( "Ontology editor" );
-    var content = win.getFrame();
-    content.style.backgroundColor = "#ffffff";
-
-    var container = createContainer( "ontology_editor_widget" );
-    content.appendChild( container );
-
-    container.innerHTML =
-      '<input type="button" id="refresh_ontology_editor" value="refresh" style="display:block; float:left;" />' +
-      '<br clear="all" />' +
-      '<div id="ontology_known_roots">Known root class names: <span id="known_root_names"></span></div>' +
-      '<div id="ontology_warnings"></div>' +
-      '<div id="ontology_tree_name"><h4>Ontology</h4>' +
-      '<div id="ontology_tree_object"></div></div>' +
-      '<div id="ontology_relations_name"><h4>Relations</h4>' +
-      '<div id="ontology_relations_tree"></div></div>' +
-      '<div id="ontology_classes_name"><h4>Classes</h4>' +
-      '<div id="ontology_classes_tree"></div></div>' +
-      '<div id="ontology_add_dialog" style="display:none; cursor:default">' +
-      '<div id="input_rel"><p>New relation name: <input type="text" id="relname" /></p></div>' +
-      '<div id="input_class"><p>New class name: <input type="text" id="classname" /></p></div>' +
-      '<div id="select_class"><p>Subject: <select id="classid"></p></select></div>' +
-      '<div id="select_rel"></p>Relation: <select id="relid"></select></p></div>' +
-      '<div id="target_rel"><p>Relation: <span id="name"></span></p></div>' +
-      '<div id="target_object"><p>Object: <span id="name"></span></p></div>' +
-      '<p><input type="button" id="cancel" value="Cancel" />' +
-      '<input type="button" id="add" value="Add" /></p></div>' +
-      '<div id="cardinality_restriction_dialog" style="display:none; cursor:default">' +
-      '<p><div id="select_type">Cardinality type: <select id="cardinality_type"></select></div>' +
-      '<div id="input_value">Cardinality value: <input type="text" id="cardinality_val" /></div></p>' +
-      '<p><input type="button" id="cancel" value="Cancel" />' +
-      '<input type="button" id="add" value="Add" /></p></div>';
-
-    addListener(win, container);
-
-    addLogic(win);
-
-    OntologyEditor.init();
-
-    return {window: win, widget: null};
-  };
-
   var createOntologySearchWidget = function(osInstance)
   {
     // If available, a new instance passed as parameter will be used.
-    var OS = osInstance ? osInstance : new OntologySearch();
+    var OS = osInstance ? osInstance : new CATMAID.OntologySearch();
     var win = new CMWWindow(OS.getName());
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";
 
     var container = createContainer("ontology-search" + OS.widgetID);
-    container.setAttribute('class', 'ontology_search');
+    container.classList.add('ontology_search');
 
     // Add container to DOM
     content.appendChild(container);
@@ -3054,7 +3099,7 @@ var WindowMaker = new function()
 
     addLogic(win);
 
-    ClassificationEditor.init();
+    CATMAID.ClassificationEditor.init();
 
     return {window: win, widget: null};
   };
@@ -3074,7 +3119,7 @@ var WindowMaker = new function()
 
     addLogic(win);
 
-    ClusteringWidget.init();
+    CATMAID.ClusteringWidget.init();
 
     return {window: win, widget: null};
   };
@@ -3136,6 +3181,12 @@ var WindowMaker = new function()
         keysHTML += '<h4>Tool-specific Key Help</h4>';
         keysHTML += getHelpForActions(tool.getActions());
       }
+
+      if (tool.hasOwnProperty('getUndoHelp')) {
+        keysHTML += '<h4>Undo help</h4>';
+        keysHTML += tool.getUndoHelp();
+      }
+
     }
     keysHTML += '</p>';
 
@@ -3198,7 +3249,7 @@ var WindowMaker = new function()
 
     $(container)
       .append($('<h4 />').text('Contributors'))
-      .append('CATMAID &copy;&nbsp;2007&ndash;2015 ' +
+      .append('CATMAID &copy;&nbsp;2007&ndash;2016 ' +
           '<a href="http://fly.mpi-cbg.de/~saalfeld/">Stephan Saalfeld</a>, ' +
           '<a href="http://www.unidesign.ch/">Stephan Gerhard</a>, ' +
           '<a href="http://longair.net/mark/">Mark Longair</a>, ' +
@@ -3252,8 +3303,8 @@ var WindowMaker = new function()
 
     return {window: win, widget: null};
   };
-  
-  
+
+
   var createNotificationsWindow = function()
   {
     var win = new CMWWindow( "Notifications" );
@@ -3271,11 +3322,11 @@ var WindowMaker = new function()
             '<th>description</th>' +
             '<th>status' +
               '<select name="search_type" id="search_type" class="search_init">' +
-                '<option value="">Any</option>' + 
-                '<option value="0">Open</option>' + 
+                '<option value="">Any</option>' +
+                '<option value="0">Open</option>' +
                 '<option value="1">Approved</option>' +
-                '<option value="2">Rejected</option>' + 
-                '<option value="3">Invalid</option>' + 
+                '<option value="2">Rejected</option>' +
+                '<option value="3">Invalid</option>' +
               '</select>' +
             '</th>' +
             '<th>x</th>' +
@@ -3314,17 +3365,17 @@ var WindowMaker = new function()
     addLogic(win);
 
     NotificationsTable.init();
-    
+
     return {window: win, widget: null};
   };
-  
+
   var createNeuronAnnotationsWindow = function()
   {
     var NA = new CATMAID.NeuronAnnotations();
     var win = new CMWWindow(NA.getName());
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";
-    
+
     var queryFields = document.createElement('div');
     queryFields.setAttribute('id', 'neuron_annotations_query_fields' + NA.widgetID);
     queryFields.setAttribute('class', 'buttonpanel');
@@ -3386,7 +3437,7 @@ var WindowMaker = new function()
     // Replace {{NA-ID}} with the actual widget ID
     queryFields.innerHTML = queryFields_html.replace(/{{NA-ID}}/g, NA.widgetID);
     content.appendChild(queryFields);
-    
+
     var container = createContainer("neuron_annotations_query_results" + NA.widgetID);
     // Create container HTML and use {{NA-ID}} as template for the
     // actual NA.widgetID which will be replaced afterwards.
@@ -3394,7 +3445,10 @@ var WindowMaker = new function()
       '<div id="neuron_annotations_query_footer{{NA-ID}}" ' +
           'class="neuron_annotations_query_footer">' +
         '<input type="button" id="neuron_annotations_annotate{{NA-ID}}" ' +
-            'value="Annotate..." />' +
+            'value="Annotate" />' +
+        '<input type="button" id="neuron_annotations_export_csv{{NA-ID}}" ' +
+            'value="Export CSV" title="Export selected neuron IDs and names. ' +
+            'Annotations are exported if displayed."/>' +
         '<label>' +
           '<input type="checkbox" id="neuron_search_show_annotations{{NA-ID}}" />' +
           'Show annotations' +
@@ -3439,7 +3493,7 @@ var WindowMaker = new function()
     content.appendChild(no_results);
     $(no_results).hide();
 
-    
+
     // Wire it up.
     addListener(win, container, queryFields.id, NA.destroy.bind(NA));
     addLogic(win);
@@ -3468,6 +3522,7 @@ var WindowMaker = new function()
         CATMAID.annotate_entities(selected_entity_ids,
             this.refresh_annotations.bind(this));
     }).bind(NA);
+    $('#neuron_annotations_export_csv' + NA.widgetID)[0].onclick = NA.exportCSV.bind(NA);
     $('#neuron_search_show_annotations' + NA.widgetID)
       .prop('checked', NA.displayAnnotations)
       .on('change', NA, function(e) {
@@ -3512,7 +3567,7 @@ var WindowMaker = new function()
         NA.updateAnnotationFiltering();
       }
     });
-    
+
     $( "#neuron_query_by_start_date" + NA.widgetID ).datepicker(
         { dateFormat: "yy-mm-dd" });
     $( "#neuron_query_by_end_date" + NA.widgetID ).datepicker(
@@ -3542,7 +3597,7 @@ var WindowMaker = new function()
     content.style.backgroundColor = "#ffffff";
 
     var container = createContainer("neuron-navigator" + NN.widgetID);
-    container.setAttribute('class', 'navigator_widget');
+    container.classList.add('navigator_widget');
 
     // Add container to DOM
     content.appendChild(container);
@@ -3579,7 +3634,22 @@ var WindowMaker = new function()
 
     return {window: win, widget: SW};
   };
-  
+
+  var createHtmlWindow = function (params) {
+    var win = new CMWWindow(params.title);
+    var content = win.getFrame();
+    var container = createContainer();
+    content.appendChild(container);
+    content.style.backgroundColor = "#ffffff";
+
+    addListener(win, container);
+    addLogic(win);
+
+    container.innerHTML = params.html;
+
+    return {window: win, widget: null};
+  };
+
   var creators = {
     "keyboard-shortcuts": createKeyboardShortcutsWindow,
     "search": createSearchWindow,
@@ -3600,7 +3670,6 @@ var WindowMaker = new function()
     "connectivity-widget": createConnectivityWindow,
     "adjacencymatrix-widget": createAdjacencyMatrixWindow,
     "skeleton-analytics-widget": createSkeletonAnalyticsWindow,
-    "ontology-editor": createOntologyWidget,
     "ontology-search": createOntologySearchWidget,
     "classification-editor": createClassificationWidget,
     "notifications": createNotificationsWindow,
@@ -3616,6 +3685,7 @@ var WindowMaker = new function()
     "connectivity-matrix": createConnectivityMatrixWindow,
     "synapse-plot": createSynapsePlotWindow,
     "synapse-fractions": createSynapseFractionsWindow,
+    "html": createHtmlWindow,
   };
 
   /** If the window for the given name is already showing, just focus it.
@@ -3644,6 +3714,8 @@ var WindowMaker = new function()
       } else {
         windows.set(name, new Map([[handles.window, handles.widget]]));
       }
+
+      return handles;
     } else {
       alert("No known window with name " + name);
     }

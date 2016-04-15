@@ -1,19 +1,25 @@
 import json
+import logging
 import scipy.cluster.hierarchy as hier
 import scipy.spatial.distance as dist
-from numpy import array as nparray
+import numpy as np
 
 from django import forms
 from django.forms.formsets import formset_factory
 from django.forms.widgets import CheckboxSelectMultiple
-from django.shortcuts import render_to_response
-from django.contrib.formtools.wizard.views import SessionWizardView
+from django.http import JsonResponse
+from django.shortcuts import render
 from django.template.context import RequestContext
 
+from formtools.wizard.views import SessionWizardView
+
 from catmaid.models import Class
-from catmaid.control.classification import ClassInstanceProxy, \
-        get_root_classes_qs, graph_instanciates_feature
+from catmaid.control.classification import (ClassInstanceProxy,
+    get_root_classes_qs, graph_instanciates_feature, graphs_instanciate_features)
 from catmaid.control.ontology import get_features
+
+
+logger = logging.getLogger(__name__)
 
 metrics = (
     ('jaccard', 'Jaccard'),
@@ -159,47 +165,35 @@ class ClusteringWizard(SessionWizardView):
             features.append(self.features[int(f_id)])
 
         # Create binary matrix
-        bin_matrix = nparray(create_binary_matrix(graphs, features))
+        logger.debug("Clustering: Creating binary matrix")
+        bin_matrix = create_binary_matrix(graphs, features)
         # Calculate the distance matrix
+        logger.debug("Clustering: creating distsance matrix")
         dst_matrix = dist.pdist(bin_matrix, metric)
         # The distance matrix now has no redundancies, but we need the square form
         dst_matrix = dist.squareform(dst_matrix)
         # Calculate linkage matrix
+        logger.debug("Clustering: creating linkage matrix")
         linkage_matrix = hier.linkage(bin_matrix, linkage, metric)
         # Obtain the clustering dendrogram data
         graph_names = [ g.name for g in graphs ]
+        logger.debug("Clustering: creating dendrogram")
         dendrogram = hier.dendrogram(linkage_matrix, no_plot=True,
             count_sort=True, labels=graph_names)
 
-        # Create a binary_matrix with graphs attached for display
-        num_graphs = len(graphs)
-        display_bin_matrix = []
-        for i in range( num_graphs ):
-            display_bin_matrix.append(
-                {'graph': graphs[i], 'feature': bin_matrix[i]})
-
-        # Create dst_matrix with graphs attached
-        display_dst_matrix = []
-        for i in range(num_graphs):
-            display_dst_matrix.append(
-                {'graph': graphs[i], 'distances': dst_matrix[i]})
-
-        # Create a JSON version of the dendrogram to make it
-        # available to the client.
-        dendrogram_json = json.dumps(dendrogram)
-
-        # Get the default request context and add custom data
-        context = RequestContext(self.request)
-        context.update({
-            'ontologies': ontologies,
-            'graphs': graphs,
-            'features': features,
-            'bin_matrix': display_bin_matrix,
+        logger.debug("Clustering: creating response")
+        response = JsonResponse({
+            'step': 'result',
+            'ontologies': [(o.id, o.class_name) for o in ontologies],
+            'graphs': [[g.id, g.name] for g in graphs],
+            'features': [str(f) for f in features],
+            'bin_matrix': bin_matrix.tolist(),
             'metric': metric,
-            'dst_matrix': display_dst_matrix,
-            'dendrogram_json': dendrogram_json})
-
-        return render_to_response('catmaid/clustering/display.html', context)
+            'dst_matrix': dst_matrix.tolist(),
+            'dendrogram': dendrogram,
+        })
+        logger.debug("Clustering: returning response of {} characters".format(len(response.content)))
+        return response
 
 def setup_clustering(request, workspace_pid=None):
     workspace_pid = int(workspace_pid)
@@ -213,20 +207,6 @@ def setup_clustering(request, workspace_pid=None):
 
 def create_binary_matrix(graphs, features):
     """ Creates a binary matrix for the graphs passed."""
-    num_features = len(features)
-    num_graphs = len(graphs)
-    # Fill matrix with zeros
-    matrix = [ [ 0 for j in range(num_features)] for i in range(num_graphs) ]
-    # Put a one at each position where the tree has
-    # a feature defined
-    for i in range(num_graphs):
-        graph = graphs[i]
-        for j in range(num_features):
-            feature = features[j]
-            # Check if a feature (root-leaf path in graph) is part of the
-            # current graph
-            if graph_instanciates_feature(graph, feature):
-                matrix[i][j] = 1
-
-    return matrix
+    matrix = np.zeros((len(graphs),len(features)), dtype=np.int)
+    return graphs_instanciate_features(graphs, features, matrix)
 

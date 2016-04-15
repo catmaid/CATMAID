@@ -1,3 +1,236 @@
+## 2016.04.15
+
+Contributors: Albert Cardona, Andrew Champion, Daniel Witvliet, Stephan Gerhard, Tom Kazimiers
+
+### Notes
+
+Starting with this release CATMAID uses a new database migration system. To
+update an existing CATMAID instance safely, please follow these steps:
+
+1. Make sure you have CATMAID updated to the last release (2015.12.21),
+   including all database migrations and up-to-date Python packages.
+2. Upgrade to this version (or a newer one) and update pip and all Python
+   packages (in within your virtualenv), South can be removed afterwards:
+
+   pip install -U pip
+   pip install -r requirements.txt
+   pip uninstall south
+
+3. Fake initial migrations (and only the initial migrations!) of all used
+   Django applications to register current database state:
+
+   python manage.py migrate admin 0001_initial --fake
+   python manage.py migrate auth 0001_initial --fake
+   python manage.py migrate authtoken 0001_initial --fake
+   python manage.py migrate catmaid 0001_initial --fake
+   python manage.py migrate contenttypes 0001_initial --fake
+   python manage.py migrate djcelery 0001_initial --fake
+   python manage.py migrate guardian 0001_initial --fake
+   python manage.py migrate kombu_transport_django 0001_initial --fake
+   python manage.py migrate performancetests 0001_initial --fake
+   python manage.py migrate sessions 0001_initial --fake
+   python manage.py migrate sites 0001_initial --fake
+   python manage.py migrate taggit 0001_initial --fake
+
+4. In the future no syncdb step is required anymore. Continue with the rest of
+   the regular update procedure:
+
+   python manage.py migrate
+   python manage.py collectstatic [-l]
+
+This procedure will only be required for upgrading an existing instance to a
+release newer than 2015.12.21. It won't be needed to migrate from newer
+releases.
+
+Also note that if you are running an Apache/mod_wsgi setup (or referencing
+django.wsgi), you have to re-generate your configuration with:
+
+  ./django/create_configuration
+
+The following variables have to be removed from settings.py files:
+TEMPLATE_DIRS, TEMPLATE_DEBUG
+
+Additionally, PostgreSQL is now required to be of version 9.4.
+
+
+### Features and enhancements
+
+Tracing overlay:
+
+- Colors of skeleton nodes and edges in the tracing overlay can now be
+  configured to follow colors from selection tables. To configure which
+  skeleton sources to use to select colors, click the skeleton source control
+  icon (the gear) in the title bar of the stack viewer.
+
+- Visibility of skeletons in the tracing overlay can also be controlled by
+  skeleton source subscriptions. To enable this, check "Hide skeletons not
+  in the skeleton source subscriptions" in the Settings widget under Tracing
+  Overlay > Skeleton colors. Note that it the tracing overlay may not update
+  the visibility of some skeletons until a navigation action is performed.
+
+
+Gap junctions:
+
+- A new non-directional connector type for gap junctions can now be created
+  when tracing by Alt + clicking in the tracing overlay. Edges for gap
+  junctions are displayed in purple.
+
+- Gap junction partners can optionally be displayed in a separate table in the
+  Connectivity Widget by checking "Show gap junctions". This table has its
+  own selections for confidence and count thresholds.
+
+
+Volumes:
+
+- The volume widget can create a new volume type: convex hulls. These can be
+  created around a set of nodes from any skeleton source. Different filters can
+  be combined: filters to allow only nodes that have a certain tag, a sub-arbor
+  relative to such nodes (optionally occurring a definable number of times), a
+  region between two tags tag or nodes that are synaptic to skeletons of another
+  skeleton source. Node radii can optionally be ignored, but they are respected
+  by default. A preview of the current filter set can be displayed in the first
+  available 3D viewer.
+
+
+3D Viewer:
+
+- Gap junctions are displayed like synapse edges in purple.
+
+- Stack related settings (bounding box, missing sections and z planes) are now
+  moved to a tab called "Stacks".
+
+- Stack bounding boxes and missing sections now update when stack viewer focus
+  changes.
+
+- A new sphere shading allows for a better depth perception.
+
+- Volumes (created in the Volume Widget) can be displayed. A new selection
+  control in the "View settings" tab allows to select individual volumes. They
+  are colored the same way as they regular mesh. Currently, the color isn't
+  updated on purpose to allow the easy creation of differently colored volumes.
+
+- When the current Z plane is displayed, it will now have the section's images
+  data mapped to it. The used zoom level (resolution) and the opacity can be
+  adjusted and orthogonal stacks are supported, too.
+
+- When restricting connectors to those shared by groups, you can now choose
+  to include only those linking pre->post between the two groups in a specific
+  direction.
+
+
+Skeleton Projection layer:
+
+- Instead of supporting only the display of the active skeleton, the projection
+  layer can now subscribe to other skeleton sources and display multiple
+  skeleton projections at the same time. The used source can be selected in the
+  Settings Widget. This way, for instance, a Selection Table could provide input
+  to the projection layer and effectively control which skeletons will be
+  projected.  And Through its own subscriptions, the Selection Table could even
+  provide a dynamic list that includes the active node.
+
+
+Neuron Search:
+
+- A search result can now be exported as CSV. Only selected rows are exported.
+  The resulting CSV will contain neuron IDs and neuron names. If annotations are
+  displayed, a third column includes annotations.
+
+
+Undo:
+
+- Some actions are now stored as so called commands in a history, which can be
+  displayed in a dialog by pressing the F9 key. Commands in this history can are
+  reversible. They can be undone either through the history dialog or by pressing
+  Ctrl+Z.
+
+- Through the history dialog, undone commands can also be redone. Of course,
+  once one diverges from the list of previously undone commands by executing a
+  completely new command (e.g. creating a node), redo is not possible anymore.
+
+- The following actions are recorded into history: tag add/remove/edit,
+  annotation add/remove/edit, node radius edit, neuron rename, confidence
+  change, connector link/unlink and node add/insert/move/remove/.
+
+
+Ontologies, classification and clustering:
+
+- Ontology tool widgets don't reset each other anymore if they are loaded.
+
+- The Classification Editor and Ontology Editor open sub-trees now quicker.
+
+- Clustering ontology based classifications is much faster and works for
+  multi-level ontologies on thousands of classification graphs.
+
+
+Administration and Performance:
+
+- The return type of many performance-critical queries, like querying nodes
+  for the tracing overlay, is now correctly specified as 'application/json'
+  rather than 'text/html'. Make sure your nginx has gzip enabled for the
+  'application/json' type in its 'gzip_types' setting so that these responses
+  are compressed.
+
+
+Miscellaneous:
+
+- Dragging a window into the center of another window now creates a tabbed
+  window where both windows share the same area of the screen and can be
+  switched between using tabs at the top of the window. Additional tabs
+  can be added by dragging more windows into the center of the tabbed window.
+  The active tab can be removed from the tabbed window by dragging it to
+  another location in the window layout.
+
+- Dragging a window onto the top, left, bottom, or right edge of an already
+  tabbed window while holding SHIFT will add it to that location inside the
+  tab.
+
+- There is now a setting to invert the behavior of CTRL when navigating
+  parent/child topology, i.e., when enabled [ and ] will navigate to the
+  next real node by default, while holding CTRL will go to virtual nodes.
+
+- Which layers are hidden when Space is held is now configurable by checkboxes
+  in the Stack Viewer's layer controls.
+
+- Scroll bar positions in widgets are now maintained when they change their
+  size.
+
+- Non-superusers can now see user analytics and proficiency reports for
+  projects for which they are administrators.
+
+- WebGL layers are now compatible with DVID stacks.
+
+- Tile layers now have an option in the layer controls to hide the tile layer
+  if the nearest section is marked as broken, rather than the default behavior
+  of displaying the nearest non-broken section.
+
+- Clustering over large sets of ontology based classification is now much faster.
+
+
+### Bug fixes
+
+- The skeleton projection layer can be used again and now renders lines with the
+  same width as the tracing layer. This width can be configured in the settings
+  widget.
+
+- Color pickers will now update the color of color picker enabled DOM elements
+  again.
+
+- Fixed hiding edges with less than 2 synapses in the Graph Widget resulting
+  in no edges.
+
+- Fixed an issue where cloning the Graph Widget cloned into the wrong widget.
+
+- Fixed an issue preventing removing split neurons from the Graph Widget.
+
+- Fixed an intermittent exception when renaming neurons.
+
+- Fixed a second Neuron Search widget not working properly.
+
+- Adding a neuron to a Selection Table now re-runs the sorting scheme.
+
+- Fixed Connectivity Matrix cloning.
+
+
 ## 2015.12.21
 
 Contributors: Albert Cardona, Andrew Champion, Eric Trautman, Tom Kazimiers

@@ -97,10 +97,14 @@ dd {
 }
 
 #spinner {
-	position: absolute;
-  right: 20px;
-  top: 4px;
   display: none;
+}
+
+#spinner_box {
+  width: 20px;
+  height: 20px;
+  padding: 6px 10px;
+  position: relative;
 }
 
 #content {
@@ -607,6 +611,9 @@ div#classification_graph_object img.roiimage {
   width: 50%;
   vertical-align: top;
 }
+.connectivity_widget .table_container_half.gapjunction_visible {
+  width: 33%;
+}
 
 .connectivity_widget .table_container_wide {
   width: 100%;
@@ -615,6 +622,10 @@ div#classification_graph_object img.roiimage {
 
 .connectivity_widget .table_container_wide:last-child {
   margin-bottom: 0;
+}
+.connectivity_widget .table_container_hidden,
+.connectivity_widget .column_hidden {
+  display: none;
 }
 
 .connectivity_widget .content {
@@ -726,12 +737,19 @@ div#classification_graph_object img.roiimage {
   clear: left;
   padding: 0.1em 0 0.1em 0;
   position: relative;
-  min-width: 60%;
+  min-width: 90%;
+  max-width: 90%;
 }
 
 .setting .description {
   width: 15em;
   display: inline-block
+}
+
+.setting .help {
+  width: 40em;
+  margin-top: 0.25em;
+  margin-bottom: 0.5em;
 }
 
 .setting input[type=checkbox] {
@@ -750,16 +768,21 @@ div#classification_graph_object img.roiimage {
   color: #555;
 }
 
+.setting .settingsMetaToggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
 /* Settings meta tooltip adapted from:
    http://jsfiddle.net/greypants/zgCb7/ */
 .setting .settingsMeta {
   background: #1496bb;
   bottom: 100%;
   color: #fff;
-  /*display: block;*/
   left: -25px;
   margin-bottom: 15px;
-  opacity: 0;
+  opacity: 1;
   display: none;
   padding: 10px;
   pointer-events: none;
@@ -810,22 +833,6 @@ div#classification_graph_object img.roiimage {
   margin-left: -13px;
   position: absolute;
   width: 0;
-}
-
-.setting:hover .settingsMeta {
-  opacity: 1;
-  display: block;
-  pointer-events: auto;
-  -webkit-transform: translateY(0px);
-     -moz-transform: translateY(0px);
-      -ms-transform: translateY(0px);
-       -o-transform: translateY(0px);
-          transform: translateY(0px);
-  -webkit-transition-delay: 1s;
-     -moz-transition-delay: 1s;
-      -ms-transition-delay: 1s;
-       -o-transition-delay: 1s;
-          transition-delay: 1s;
 }
 
 #settings_widget select {
@@ -1009,7 +1016,8 @@ table.skeleton-table .sorting_desc_disabled::after {
 }
 
 div.selection-table.windowContent {
-  margin-top: 1em;
+  box-sizing: border-box;
+  padding-top: 1em;
 }
 
 .help {
@@ -1045,4 +1053,53 @@ div.selection-table.windowContent {
 
 .cp-app {
   z-index: 15000;
+}
+
+.customselect {
+  display: inline-block;
+}
+
+.customselect-selectbox {
+  position: relative;
+}
+
+.customselect-selectbox select {
+  width: 100%;
+}
+
+.customselect-overselect {
+  position: absolute;
+  left: 0; right: 0; top: 0; bottom: 0;
+}
+
+.customselect-content {
+  position: absolute;
+  display: none;
+  border: 1px #dadada solid;
+  background: white;
+  padding: 4px;
+  cursor: default;
+  z-index: 1;
+  overflow: auto;
+  max-height: 20em;
+}
+
+.customselect ul {
+  display: inline-block;
+  list-style-type: none;
+  padding: 0 0 0 0 ;
+  margin: 0 0 0 0 ;
+}
+
+.customselect ul label {
+  display: list-item;
+}
+
+.placeholder {
+  padding: .5em;
+}
+
+.placeholder img {
+  width: 1em;
+  height: 1em;
 }

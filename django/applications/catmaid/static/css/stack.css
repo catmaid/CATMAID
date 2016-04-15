@@ -1,16 +1,4 @@
-.sliceView {
-  position: relative;
-  margin: 0;
-  sliceViewtop: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  padding: 0;
-  background: #000000;
-  overflow: hidden;
-}
-
-.sliceView .sliceTiles {
+.stackViewer .sliceTiles {
   position: absolute;
   top: 0;
   left: 0;
@@ -21,7 +9,7 @@
   transform: translateZ(0px);
 }
 
-.sliceView div.sliceTiles img {
+.stackViewer div.sliceTiles img {
   position: absolute;
   border: none;
   margin: 0;
@@ -29,17 +17,29 @@
   transform: translateZ(0px);
 }
 
-.sliceView div.sliceTiles.transpose img {
+.stackViewer div.sliceTiles.transpose img {
   transform: rotate3d(1, 1, 0, 180deg);
 }
 
-.sliceView div.sliceTiles.interpolation-mode-nearest img {
+.stackViewer div.sliceTiles.interpolation-mode-nearest img {
   image-rendering: optimizeSpeed;             /*               */
   image-rendering: -moz-crisp-edges;          /* Firefox       */
   image-rendering: -o-crisp-edges;            /* Opera         */
   image-rendering: pixelated;                 /* Chrome        */
   image-rendering: optimize-contrast;         /* CSS3 Proposed */
   -ms-interpolation-mode: nearest-neighbor;   /* IE8+          */
+}
+
+.stackViewer .windowButton {
+  background-color: #CDCDCD;
+  height: 19px;
+  margin: 0 0.2em;
+}
+
+.stackViewer .sourcepanel {
+  position: relative;
+  background-color: #FFF;
+  z-index: 6;
 }
 
 div.smallMapView,
@@ -233,7 +233,7 @@ div.stackControlToggle_hidden {
   background: #0000FF url(../images/slice_control_toggle_show.svg) no-repeat center;
 }
 
-.sliceView div.sliceMouseCatcher {
+.stackViewer div.sliceMouseCatcher {
   position: absolute;
   top: 0;
   left: 0;
@@ -245,7 +245,7 @@ div.stackControlToggle_hidden {
   cursor: move;
 }
 
-.sliceView div.sliceBenchmark {
+.stackViewer div.sliceBenchmark {
   position: absolute;
   left: 32px;
   bottom: 32px;
@@ -260,7 +260,7 @@ div.stackControlToggle_hidden {
   z-index: 3;
 }
 
-.sliceView div.sliceBenchmark p {
+.stackViewer div.sliceBenchmark p {
   border: none;
   margin: 0;
   margin-top: -12px;
@@ -270,12 +270,12 @@ div.stackControlToggle_hidden {
   overflow: hidden;
 }
 
-.sliceView div.sliceBenchmark p span {
+.stackViewer div.sliceBenchmark p span {
   padding: 3px 6px 3px 6px;
   background: #0000FF;
 }
 
-.sliceView div.metadata {
+.stackViewer div.metadata {
   position: absolute;
   right: 10px;
   top: 42px;
@@ -289,7 +289,7 @@ div.stackControlToggle_hidden {
   z-index: 3;
 }
 
-.sliceView div.metadata p {
+.stackViewer div.metadata p {
   border: none;
   margin: 0;
   margin-top: -12px;
@@ -299,7 +299,7 @@ div.stackControlToggle_hidden {
   overflow: hidden;
 }
 
-.sliceView div.indicatorbar {
+.stackViewer div.indicatorbar {
   position: absolute;
   right: 5px;
   top: 25px;
@@ -313,7 +313,7 @@ div.stackControlToggle_hidden {
   z-index: 10;
 }
 
-.sliceView p.neuronname {
+.stackViewer p.neuronname {
   position: absolute;
   right: 60px;
   top: 0;
@@ -327,7 +327,7 @@ div.stackControlToggle_hidden {
   background-color: #060;
 }
 
-.sliceView p.neuronname:empty {
+.stackViewer p.neuronname:empty {
   display: none;
 }
 
@@ -372,8 +372,8 @@ div.stackInfo_selected p.stackClose {
   float: right;
 }
 
-.sliceView div.cropBox,
-.sliceView div.cropBoxNonActive {
+.stackViewer div.cropBox,
+.stackViewer div.cropBoxNonActive {
   position: absolute;
   top: 0;
   left: 0;
@@ -385,13 +385,13 @@ div.stackInfo_selected p.stackClose {
   z-index: 3;
 }
 
-.sliceView div.cropBoxNonActive {
+.stackViewer div.cropBoxNonActive {
   opacity: .5;
 }
 
-.sliceView div.cropBox p.world,
-.sliceView div.cropBox p.screen,
-.sliceView div.cropBox p.close {
+.stackViewer div.cropBox p.world,
+.stackViewer div.cropBox p.screen,
+.stackViewer div.cropBox p.close {
   position: absolute;
   right: -1px;
   bottom: -24px;
@@ -402,17 +402,17 @@ div.stackInfo_selected p.stackClose {
   white-space: nowrap;
 }
 
-.sliceView div.cropBoxNonActive p.world,
-.sliceView div.cropBoxNonActive p.screen,
-.sliceView div.cropBoxNonActive p.close {
+.stackViewer div.cropBoxNonActive p.world,
+.stackViewer div.cropBoxNonActive p.screen,
+.stackViewer div.cropBoxNonActive p.close {
     visibility: hidden;
 }
 
-.sliceView div.cropBox p.screen {
+.stackViewer div.cropBox p.screen {
   bottom: -47px;
 }
 
-.sliceView div.cropBox p.close {
+.stackViewer div.cropBox p.close {
   top: -22px;
   height: 12px;
   z-index: 6;

@@ -69,6 +69,15 @@
             }));
       }
 
+      control.prepend($('<button class="settingsMetaToggle" />')
+          .button({
+              icons: {
+                primary: "ui-icon-gear"
+              },
+              text: false
+            })
+          .click(function () { meta.toggle(); }));
+
       return control.append(meta);
     };
 
@@ -81,7 +90,7 @@
         {name: 'Your default settings', val: 'user'},
         {name: 'Your settings for this project', val: 'session'}
       ];
-      if (user_permissions.can_administer[project.id]) {
+      if (CATMAID.hasPermission(project.id, 'can_administer')) {
         scopeOptions = [
           {name: 'All users: server defaults', val: 'global'},
           {name: 'All users: project defaults', val: 'project'},
@@ -514,6 +523,24 @@
 
 
       var dsNodeColors = CATMAID.DOM.addSettingsContainer(ds, "Skeleton colors", true);
+      dsNodeColors.append(CATMAID.DOM.createCheckboxSetting(
+          'Hide skeletons not in the skeleton source subscriptions',
+          project.getStackViewers().every(function(sv) {
+            var overlay = SkeletonAnnotations.getTracingOverlay(sv.getId());
+            return overlay && overlay.graphics.overlayGlobals.hideOtherSkeletons;
+          }),
+          'If checked, skeletons not present in the subscribed skeleton ' +
+          'sources will not be displayed in the tracing overlay.',
+          function () {
+            var checked = this.checked;
+            project.getStackViewers().forEach(function(sv) {
+              var overlay = SkeletonAnnotations.getTracingOverlay(sv.getId());
+              if (overlay) {
+                overlay.graphics.overlayGlobals.hideOtherSkeletons = checked;
+                overlay.redraw(true);
+              }
+            });
+          }));
       // Node color settings: Title vs. SkeletonAnnotations field.
       var colors = new Map([
         ['Active node', 'atn_fillcolor'],
@@ -562,7 +589,7 @@
 
 
       var dsSkeletonProjection = CATMAID.DOM.addSettingsContainer(ds,
-          "Active skeleton projection", true);
+          "Skeleton projection layer", true);
 
       // Figure out if all displayed stack viewers have a skeleton projection
       // layer
@@ -575,6 +602,14 @@
           "projections of the active skeleton to the tracing display.",
           updateSkeletonProjectionDisplay);
       dsSkeletonProjection.append(skpVisible);
+
+      var skpSource = $(CATMAID.skeletonListSources.createUnboundSelect(
+          'Skeleton projection layer'));
+      var currentSource = CATMAID.SkeletonProjectionLayer.options.source ||
+        SkeletonAnnotations.activeSkeleton;
+      skpSource.val(currentSource.getName());
+      skpSource.on('change', updateSkeletonProjectionDisplay);
+      dsSkeletonProjection.append(CATMAID.DOM.createLabeledControl('Source', skpSource));
 
       var skpShading = $('<select/>');
       var skpShadingOptions = [
@@ -668,7 +703,7 @@
           "strahlerShadingMin": skpMinStrahler.find('input').val(),
           "strahlerShadingMax": skpMaxStrahler.find('input').val(),
           "distanceFalloff": skpDistanceFalloff.find('input').val(),
-          "initialNode": SkeletonAnnotations.atn
+          "source": CATMAID.skeletonListSources.getSource(skpSource.val())
         };
       }
 
@@ -683,7 +718,6 @@
             if (layer) {
               // Update existing instance
               layer.updateOptions(options, false);
-              layer.update(options.initialNode);
             } else {
               // Create new if not already present
               layer = new CATMAID.SkeletonProjectionLayer(sv, options);
@@ -782,15 +816,41 @@
             SkeletonAnnotations.newConnectorType = SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR;
           }
         }));
-      ds.append(CATMAID.DOM.createCheckboxSetting("Respect suppressed virtual nodes during navigation",
-        SkeletonAnnotations.skipSuppressedVirtualNodes, "When navigating " +
-            "parent/child topology, skip virtual nodes that have been " +
-            "marked as suppressed. " +
-            "This has a marginal impact on performance. Suppressed virtual " +
-            "nodes are always respected during review.",
-        function() {
-          SkeletonAnnotations.skipSuppressedVirtualNodes = this.checked;
-        }));
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createCheckboxSetting(
+              "Invert behavior of modifier key to ignore/respect virtual nodes",
+              CATMAID.TracingTool.Settings[SETTINGS_SCOPE].invert_virtual_node_ignore_modifier,
+              "When navigating parent/child topology with " +
+              "<kbd>[</kbd>/<kbd>]</kbd>, invert the behavior of holding " +
+              "<kbd>CTRL</kbd>.",
+              function() {
+                CATMAID.TracingTool.Settings
+                    .set(
+                      'invert_virtual_node_ignore_modifier',
+                      this.checked,
+                      SETTINGS_SCOPE);
+              }),
+          CATMAID.TracingTool.Settings,
+          'invert_virtual_node_ignore_modifier',
+          SETTINGS_SCOPE));
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createCheckboxSetting(
+              "Respect suppressed virtual nodes during navigation",
+              SkeletonAnnotations.Settings[SETTINGS_SCOPE].skip_suppressed_virtual_nodes,
+              "When navigating parent/child topology, skip virtual nodes " +
+              "that have been marked as suppressed. This has a marginal " +
+              "impact on performance. Suppressed virtual nodes are always " +
+              "respected during review.",
+              function() {
+                SkeletonAnnotations.Settings
+                    .set(
+                      'skip_suppressed_virtual_nodes',
+                      this.checked,
+                      SETTINGS_SCOPE);
+              }),
+          SkeletonAnnotations.Settings,
+          'skip_suppressed_virtual_nodes',
+          SETTINGS_SCOPE));
       ds.append($('<div/>').addClass('setting').text());
       ds.append(CATMAID.DOM.createInputSetting("Default new neuron name",
           SkeletonAnnotations.defaultNewNeuronName,

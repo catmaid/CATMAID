@@ -21,6 +21,8 @@
 # username: catmaid_user
 # password: password_of_your_catmaid_user
 
+from __future__ import print_function
+
 import sys
 import os
 from common import db_database, db_username, db_password
@@ -30,7 +32,7 @@ from psycopg2 import IntegrityError
 from datetime import datetime
 
 if len(sys.argv) != 2:
-    print >> sys.stderr, "Usage: %s <COMPRESSED-BACKUP>" % (sys.argv[0],)
+    print("Usage: %s <COMPRESSED-BACKUP>" % (sys.argv[0],), file=sys.stderr)
     sys.exit(1)
 
 filename = sys.argv[1]

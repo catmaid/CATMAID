@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import sys
 import psycopg2
 import os
@@ -11,13 +13,13 @@ else:
 try:
     conf = yaml.load(open(path))
 except:
-    print >> sys.stderr, '''Your %s file should look like:
+    print('''Your %s file should look like:
 
 host: localhost
 port: 5432
 database: catmaid
 username: catmaid_user
-password: password_of_your_catmaid_user''' % (path,)
+password: password_of_your_catmaid_user''' % (path,), file=sys.stderr)
     sys.exit(1)
 
 # Make a variable for each of these so that they can be imported:

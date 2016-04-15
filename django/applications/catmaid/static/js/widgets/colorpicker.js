@@ -59,7 +59,7 @@
     };
   }
 
-  function onRender(colors, mode) {
+  function onDisplay(colors, mode, options) {
     if (resizeOnRender) {
       CATMAID.tools.callIfFn(resizeOnRender);
       resizeOnRender = null;
@@ -86,7 +86,7 @@
         beforeHideCallback: onClose,
         convertCallback: onConvert,
         afterShowCallback: onShow,
-        renderCallback: onRender
+        displayCallback: onDisplay
       };
       var $element = $(element).colorPicker(config);
       $element.focus();

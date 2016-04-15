@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import json
 import time
 
@@ -12,7 +14,6 @@ from catmaid.control.common import *
 
 from catmaid.control.object import get_annotation_graph
 from catmaid.control.skeletonexport import get_treenodes_qs
-from catmaid.control.stack import get_stack_info
 
 try:
     import numpy as np
@@ -82,7 +83,7 @@ def get_skeleton_as_dataarray(project_id=None, skeleton_id=None):
     treenode_skeletonid = np.zeros( (treenode_count,), dtype = np.uint32 )
     treenode_creationtime = np.zeros( (treenode_count,), dtype = np.uint32 )
     treenode_modificationtime = np.zeros( (treenode_count,), dtype = np.uint32 )
-    
+
     treenode_connectivity = np.zeros( (treenode_count, 2), dtype = np.uint32 )
     treenode_connectivity_type = np.zeros( (treenode_count,), dtype = np.uint32 )
     treenode_connectivity_skeletonid = np.zeros( (treenode_count,), dtype = np.uint32 )
@@ -149,7 +150,7 @@ def get_skeleton_as_dataarray(project_id=None, skeleton_id=None):
             treenode_connector_connectivity_type.append( ConnectivityPostsynaptic['id'] )
             found_synapse=True
         else:
-            print >> std.err, "non-synaptic relation found: ", tc.relation.relation_name
+            print("non-synaptic relation found: ", tc.relation.relation_name, file=sys.stderr)
             continue
         treenode_connector_connectivity.append( [tc.treenode_id,tc.connector_id] ) # !!!
         # also need other connector node information
@@ -316,7 +317,7 @@ def microcircuit_neurohdf(request, project_id=None):
         'format_version': 0.1,
         'url': neurohdf_url
     }
-    return HttpResponse(json.dumps(result), mimetype="text/plain")
+    return HttpResponse(json.dumps(result), content_type="text/plain")
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -333,4 +334,4 @@ def skeleton_neurohdf(request, project_id=None, skeleton_id=None):
         'format_version': 0.1,
         'url': neurohdf_url
     }
-    return HttpResponse(json.dumps(result), mimetype="application/json")
+    return HttpResponse(json.dumps(result), content_type="application/json")

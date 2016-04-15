@@ -4,12 +4,46 @@
 (function(CATMAID) {
 
   /**
-   * A simple value error type to indicate some sort of input value problem.
+   * A general error containing a message of what went wrong.
    */
-  CATMAID.ValueError = function(message) {
-    this.message = message;
+  CATMAID.Error = function(message, detail) {
+    this.name = 'CATMAID error';
+    this.message = message || '(no message)';
+    this.stack = (new Error()).stack;
+    this.detail= detail || this.stack;
   };
 
-  CATMAID.ValueError.prototype = new Error();
+  CATMAID.Error.prototype = Object.create(Error.prototype);
+  CATMAID.Error.constructor = CATMAID.Error;
+
+  /**
+   * A simple value error type to indicate some sort of input value problem.
+   */
+  CATMAID.ValueError = function(message, detail) {
+    CATMAID.Error.call(this, message, detail);
+  };
+
+  CATMAID.ValueError.prototype = Object.create(CATMAID.Error.prototype);
+  CATMAID.ValueError.constructor = CATMAID.ValueError;
+
+  /**
+   * A simple permission error type to indicate some lack of permissions.
+   */
+  CATMAID.PermissionError = function(message, detail) {
+    CATMAID.Error.call(this, message, detail);
+  };
+
+  CATMAID.PermissionError.prototype = Object.create(CATMAID.Error.prototype);
+  CATMAID.PermissionError.constructor = CATMAID.PermissionError;
+
+  /**
+   * An error type to indicate out of range errors in a command history.
+   */
+  CATMAID.CommandHistoryError = function(message, detail) {
+    CATMAID.Error.call(this, message, detail);
+  };
+
+  CATMAID.CommandHistoryError.prototype = Object.create(CATMAID.Error.prototype);
+  CATMAID.CommandHistoryError.constructor = CATMAID.CommandHistoryError;
 
 })(CATMAID);

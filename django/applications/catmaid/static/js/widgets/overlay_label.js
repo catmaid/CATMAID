@@ -1,17 +1,20 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
-/*
- * Simple wrapper for labels
+/**
+ * Simple wrapper for displaying text labels with SVG in the tracing overlay.
+ *
+ * @param {number|string} id        Unique id for the node from the database.
+ * @param {Object}        paper     The D3 selector this node is drawn to.
+ * @param {number}        x         The x coordinate in project coordinates.
+ * @param {number}        y         The y coordinate in project coordinates.
+ * @param {number}        fontSize  Font size of label.
+ * @param {string}        text      Label text.
  */
-OverlayLabel = function (
-id, // unique id for the node from the database
-paper, // the D3 selector this node is drawn to
-x, // the x coordinate in project coordinates
-y, // y coordinates
-fontSize, // font size of label
-text) {
-  // the database treenode id
+OverlayLabel = function (id, paper, x, y, fontSize, text) {
+
+  "use strict";
+
   this.id = id;
   this.x = x;
   this.y = y;

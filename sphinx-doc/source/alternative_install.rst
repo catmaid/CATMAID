@@ -152,7 +152,7 @@ There, you put the following lines into a file (e.g. run-gevent.py)::
   monkey.patch_all(httplib=True)
 
   # Import the rest
-  from django.core.handlers.wsgi import WSGIHandler as DjangoWSGIApp
+  from django.core.wsgi import get_wsgi_application
   from django.core.management import setup_environ
   from gevent.wsgi import WSGIServer
   import sys
@@ -162,7 +162,7 @@ There, you put the following lines into a file (e.g. run-gevent.py)::
 
   def runserver():
       # Create the server
-      application = DjangoWSGIApp()
+      application = get_wsgi_application()
       address = "127.0.0.1", 8080
       server = WSGIServer( address, application )
       # Run the server

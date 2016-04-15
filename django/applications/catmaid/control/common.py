@@ -14,10 +14,79 @@ from catmaid.models import Log, NeuronSearch, CELL_BODY_CHOICES, \
         SORT_ORDERS_DICT, User, Relation, Class, ClassInstance, \
         ClassInstanceClassInstance
 
+def identity(x):
+    """Simple identity."""
+    return x
 
 def get_catmaid_version(request):
     return HttpResponse(json.dumps({'SERVER_VERSION': settings.VERSION}), content_type='application/json')
 
+class parsedict(dict):
+    """This is a simple wrapper, needed primarily by the request list
+    parser.
+    """
+    pass
+
+def get_request_list(request_dict, name, default=None, map_fn=identity):
+    """Look for a list in a request dictionary where individual items are named
+    with or without an index. Traditionally, the CATMAID web front-end sends
+    the list a = [1,2,3] encoded as fields a[0]=1, a[1]=2 and a[2]=3. Using
+    other APIs, like jQuery's $.ajax, will encode the same list as a=1, a=2,
+    a=3. This method helps to parse both transparently.
+    """
+
+    def flatten(d, max_index):
+        """Flatten a dict of dicts into lists of lists. Expect all keys to be
+        integers.
+        """
+        k = []
+        for i in xrange(max_index):
+            v = d.get(i)
+            if not v:
+                continue
+            if parsedict == type(v):
+                k.append(flatten(v, max_index))
+            else:
+                k.append(v)
+        return k
+
+    def add_items(items, name):
+        d = parsedict()
+        max_index = -1
+        testname = name + '['
+        namelen = len(testname)
+        for k,v in items:
+            if k.startswith(testname):
+                # name[0][0] -> 0][0
+                index_part = k[namelen:len(k)-1]
+                indices = index_part.split('][')
+                target = d
+                # Fill in all but last index
+                for i in indices[:-1]:
+                    key = int(i)
+                    new_target = target.get(key)
+                    if (key > max_index):
+                        max_index = key
+                    if not new_target:
+                        new_target = parsedict()
+                        target[key] = new_target
+                    target = new_target
+
+                last_index = int(indices[-1])
+                if (last_index > max_index):
+                    max_index = last_index
+                target[last_index] = map_fn(v)
+        return flatten(d, max_index + 1)
+
+    items = add_items(request_dict.iteritems(), name)
+    if items:
+        return items
+
+    items = [map_fn(v) for v in request_dict.getlist(name, [])]
+    if items:
+        return items
+
+    return default
 
 def _create_relation(user, project_id, relation_id, instance_a_id, instance_b_id):
     relation = ClassInstanceClassInstance()
@@ -73,15 +142,6 @@ def insert_into_log(project_id, user_id, op_type, location=None, freetext=None):
         new_log.freetext = freetext
 
     new_log.save()
-
-
-# Tip from: http://lincolnloop.com/blog/2008/may/10/getting-requestcontext-your-templates/
-# Required because we need a RequestContext, not just a Context - the
-# former looks at TEMPLATE_CONTEXT_PROCESSORS, while the latter doesn't.
-
-def my_render_to_response(req, *args, **kwargs):
-    kwargs['context_instance'] = RequestContext(req)
-    return render_to_response(*args, **kwargs)
 
 
 def json_error_response(message):

@@ -15,8 +15,7 @@
   /**
    * Constructor for the tracing tool.
    */
-  function TracingTool()
-  {
+  function TracingTool() {
     this.prototype = new CATMAID.Navigator();
     this.toolname = "tracingtool";
 
@@ -30,20 +29,30 @@
     // Whether node labels should be shown
     var show_labels = false;
 
+    /**
+     * Set postAction option of a command to update of the active tracing layer,
+     * if it is available.
+     *
+     * @returns input command
+     */
+    var withPostUpdate = function(command) {
+      if (activeTracingLayer) {
+        var overlay = activeTracingLayer.tracingOverlay;
+        command.postAction = overlay.updateNodes.bind(overlay, undefined, undefined, undefined);
+      }
+      return command;
+    };
 
-    this.resize = function( width, height )
-    {
+    this.resize = function(width, height) {
       self.prototype.resize( width, height );
       return;
     };
 
-    this.deselectActiveNode = function()
-    {
-      activeTracingLayer.svgOverlay.activateNode(null);
+    this.deselectActiveNode = function() {
+      activeTracingLayer.tracingOverlay.activateNode(null);
     };
 
-    var setupSubTools = function()
-    {
+    var setupSubTools = function() {
       var box;
       if ( self.prototype.stackViewer === null ) {
         box = CATMAID.createButtonsFromActions(
@@ -58,8 +67,7 @@
     /**
      * Return a list of all tracing layers, optionally excluding the active one.
      */
-    var getTracingLayers = function(excludeActive)
-    {
+    var getTracingLayers = function(excludeActive) {
       var viewers = project.getStackViewers();
       if (excludeActive) {
         viewers = viewers.filter(function(sv) {
@@ -78,49 +86,44 @@
       });
     };
 
-    var setTracingLayersSuspended = function(value, excludeActive)
-    {
+    var setTracingLayersSuspended = function(value, excludeActive) {
       value = Boolean(value);
       getTracingLayers(excludeActive).forEach(function(layer) {
-        layer.svgOverlay.suspended = value;
+        layer.tracingOverlay.suspended = value;
       });
     };
 
-    var updateNodesInTracingLayers = function(excludeActive)
-    {
+    var updateNodesInTracingLayers = function(excludeActive) {
       getTracingLayers(excludeActive).forEach(function(layer) {
-        layer.svgOverlay.updateNodes();
+        layer.tracingOverlay.updateNodes();
       });
     };
 
     /**
      * Return a unique name for the tracing layer of a given stack viewer.
      */
-    var getTracingLayerName = function(stackViewer)
-    {
+    var getTracingLayerName = function(stackViewer) {
       return "TracingLayer" + stackViewer.getId();
     };
 
     var disableLayerUpdate = function() {
       CATMAID.warn("Temporary disabling node update until panning is over");
-      activeTracingLayer.svgOverlay.suspended = true;
+      activeTracingLayer.tracingOverlay.suspended = true;
     };
 
     /**
      * Create new mouse bindings for the layer's view.
      */
-    function createMouseBindings(stackViewer, layer, mouseCatcher)
-    {
+    function createMouseBindings(stackViewer, layer, mouseCatcher) {
       // A handle to a delayed update
       var updateTimeout;
 
       var proto_onmousedown = mouseCatcher.onmousedown;
       var stackViewerBindings = {
         onmousedown: function( e ) {
-          switch ( CATMAID.ui.getMouseButton( e ) )
-          {
+          switch ( CATMAID.ui.getMouseButton( e ) ) {
             case 1:
-              layer.svgOverlay.whenclicked( e );
+              layer.tracingOverlay.whenclicked( e );
               break;
             case 2:
               // Put all tracing layers, except active, in "don't update" mode
@@ -129,7 +132,7 @@
               // Attach to the node limit hit event to disable node updates
               // temporary if the limit was hit. This allows for smoother panning
               // when many nodes are visible.
-              layer.svgOverlay.on(layer.svgOverlay.EVENT_HIT_NODE_DISPLAY_LIMIT,
+              layer.tracingOverlay.on(layer.tracingOverlay.EVENT_HIT_NODE_DISPLAY_LIMIT,
                   disableLayerUpdate, layer);
               // Cancel any existing update timeout, if there is one
               if (updateTimeout) {
@@ -146,9 +149,9 @@
                   CATMAID.ui.releaseEvents();
                   CATMAID.ui.removeEvent( "onmousemove", updateStatusBar );
                   CATMAID.ui.removeEvent( "onmouseup", onmouseup );
-                  layer.svgOverlay.off(layer.svgOverlay.EVENT_HIT_NODE_DISPLAY_LIMIT,
+                  layer.tracingOverlay.off(layer.tracingOverlay.EVENT_HIT_NODE_DISPLAY_LIMIT,
                       disableLayerUpdate, layer);
-                  if (layer.svgOverlay.suspended) {
+                  if (layer.tracingOverlay.suspended) {
                     // Wait a second before updating the view, just in case the user
                     // continues to pan to not hit the node limit again. Then make
                     // sure the next update is not stopped.
@@ -177,7 +180,7 @@
       };
 
       // Assign bindings to view
-      var view = layer.svgOverlay.view;
+      var view = layer.tracingOverlay.view;
       for (var fn in stackViewerBindings) {
         view[fn] = stackViewerBindings[fn];
       }
@@ -243,8 +246,7 @@
      * install this tool in a stack viewer.
      * register all GUI control elements and event handlers
      */
-    this.register = function( parentStackViewer )
-    {
+    this.register = function( parentStackViewer ) {
       document.getElementById( "toolbox_data" ).style.display = "block";
 
       setupSubTools();
@@ -256,7 +258,7 @@
       var layer = prepareStackViewer(parentStackViewer);
 
       // Set this layer as mouse catcher in Navigator
-      var view = layer.svgOverlay.view;
+      var view = layer.tracingOverlay.view;
       self.prototype.setMouseCatcher(view);
 
       // Register stack viewer with prototype, after the mouse catcher has been set.
@@ -269,7 +271,7 @@
       // Force an update and skeleton tracing mode if stack viewer or layer changed
       if (activeTracingLayer !== layer || activeStackViewer !== parentStackViewer) {
         SkeletonAnnotations.setTracingMode(SkeletonAnnotations.MODES.SKELETON);
-        layer.svgOverlay.updateNodes();
+        layer.tracingOverlay.updateNodes();
       }
 
       activeStackViewer = parentStackViewer;
@@ -307,8 +309,7 @@
     /**
      * unregister all stack viewer related mouse and keyboard controls
      */
-    this.unregister = function()
-    {
+    this.unregister = function() {
       // do it before calling the prototype destroy that sets stack viewer to null
       if (self.prototype.stackViewer) {
         inactivateBindings(self.prototype.stackViewer);
@@ -323,8 +324,7 @@
      * unregister all project related GUI control connections and event
      * handlers, toggle off tool activity signals (like buttons)
      */
-    this.destroy = function()
-    {
+    this.destroy = function() {
       project.off(CATMAID.Project.EVENT_STACKVIEW_ADDED, prepareStackViewer, this);
       project.off(CATMAID.Project.EVENT_STACKVIEW_CLOSED, closeStackViewer, this);
       SkeletonAnnotations.off(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
@@ -417,6 +417,8 @@
                     clearTopbars('Connector ' + node.id + ' (no presynatpic partner)');
                   }
                 }));
+          } else if (SkeletonAnnotations.SUBTYPE_GAPJUNCTION_CONNECTOR === node.subtype) {
+            clearTopbars('Gap junction connector #' + node.id);
           } else {
             clearTopbars('Abutting connector #' + node.id);
           }
@@ -426,14 +428,13 @@
       }
     }
 
-    this.prototype.changeSlice = function( val )
-    {
+    this.prototype.changeSlice = function(val) {
       activeStackViewer.moveToPixel( val, activeStackViewer.y, activeStackViewer.x, activeStackViewer.s );
     };
 
 
-    var updateStatusBar = function( e ) {
-      var m = CATMAID.ui.getMouse(e, activeTracingLayer.svgOverlay.view, true);
+    var updateStatusBar = function(e) {
+      var m = CATMAID.ui.getMouse(e, activeTracingLayer.tracingOverlay.view, true);
       var offX, offY, pos_x, pos_y;
       if (m) {
         offX = m.offsetX;
@@ -461,9 +462,8 @@
 
       function add(sv) {
         if (sv.getLayer(key)) return;
-        sv.addLayer(key, new CATMAID.SkeletonProjectionLayer(sv, {
-          initialNode: SkeletonAnnotations.atn
-        }));
+        // Add new layer, defaulting to the active skelton source for input
+        sv.addLayer(key, new CATMAID.SkeletonProjectionLayer(sv));
       }
       function remove(sv) {
         if (!sv.getLayer(key)) return;
@@ -487,22 +487,22 @@
       return actions;
     };
 
-    this.addAction = function ( action ) {
+    this.addAction = function (action) {
       actions.push( action );
     };
 
-    this.addAction( new CATMAID.Action({
-        helpText: "Switch to skeleton tracing mode",
-        buttonName: "skeleton",
-        buttonID: 'trace_button_skeleton',
-        keyShortcuts: { ";": [ 186 ] },
-        run: function (e) {
-          SkeletonAnnotations.setTracingMode(SkeletonAnnotations.MODES.SKELETON);
-          return true;
-        }
-    } ) );
+    this.addAction(new CATMAID.Action({
+      helpText: "Switch to skeleton tracing mode",
+      buttonName: "skeleton",
+      buttonID: 'trace_button_skeleton',
+      keyShortcuts: { ";": [ 186 ] },
+      run: function (e) {
+        SkeletonAnnotations.setTracingMode(SkeletonAnnotations.MODES.SKELETON);
+        return true;
+      }
+    }));
 
-    this.addAction( new CATMAID.Action({
+    this.addAction(new CATMAID.Action({
       helpText: "Switch to synapse dropping mode",
       buttonName: "synapse",
       buttonID: 'trace_button_synapse',
@@ -512,7 +512,7 @@
         SkeletonAnnotations.setTracingMode(SkeletonAnnotations.MODES.SYNAPSE);
         return true;
       }
-    } ) );
+    }));
 
     /** Return a function that attempts to tag the active treenode or connector,
      * and display an alert when no node is active.
@@ -522,52 +522,54 @@
         if (!mayEdit()) return false;
         if (e.altKey || e.ctrlKey || e.metaKey) return false;
         var modifier = e.shiftKey;
-        if (null === SkeletonAnnotations.getActiveNodeId()) {
+        var nodeId = SkeletonAnnotations.getActiveNodeId();
+        if (null === nodeId) {
           alert('Must activate a treenode or connector before '
               + (modifier ? 'removing the tag' : 'tagging with') + ' "' + tag + '"!');
           return true;
         }
+
         // If any modifier key is pressed, remove the tag
         if (modifier) {
-          SkeletonAnnotations.Tag.removeATNLabel(tag, activeTracingLayer.svgOverlay);
+          SkeletonAnnotations.Tag.removeATNLabel(tag, activeTracingLayer.tracingOverlay);
         } else {
-          SkeletonAnnotations.Tag.tagATNwithLabel(tag, activeTracingLayer.svgOverlay, false);
+          SkeletonAnnotations.Tag.tagATNwithLabel(tag, activeTracingLayer.tracingOverlay, false);
         }
         return true;
       };
     };
 
-    this.addAction( new CATMAID.Action({
+    this.addAction(new CATMAID.Action({
       helpText: "Add ends Tag (<kbd>Shift</kbd>: Remove) for the active node",
       keyShortcuts: { "K": [ 75 ] },
-        run: tagFn('ends')
-    } ) );
+      run: tagFn('ends')
+    }));
 
-    this.addAction( new CATMAID.Action({
+    this.addAction(new CATMAID.Action({
       helpText: "Add 'uncertain end' Tag (<kbd>Shift</kbd>: Remove) for the active node",
       keyShortcuts: { "U": [ 85 ] },
-        run: tagFn('uncertain end')
-    } ) );
+      run: tagFn('uncertain end')
+    }));
 
-    this.addAction( new CATMAID.Action({
+    this.addAction(new CATMAID.Action({
       helpText: "Add 'uncertain continuation' Tag (<kbd>Shift</kbd>: Remove) for the active node",
       keyShortcuts: { "C": [ 67 ] },
-        run: tagFn('uncertain continuation')
-    } ) );
+      run: tagFn('uncertain continuation')
+    }));
 
-    this.addAction( new CATMAID.Action({
+    this.addAction(new CATMAID.Action({
       helpText: "Add 'not a branch' Tag (<kbd>Shift</kbd>: Remove) for the active node",
       keyShortcuts: { "N": [ 78 ] },
-        run: tagFn('not a branch')
-    } ) );
+      run: tagFn('not a branch')
+    }));
 
-    this.addAction( new CATMAID.Action({
+    this.addAction(new CATMAID.Action({
       helpText: "Add 'soma' Tag (<kbd>Shift</kbd>: Remove) for the active node",
       keyShortcuts: { "M": [ 77 ] },
-        run: tagFn('soma')
-    } ) );
+      run: tagFn('soma')
+    }));
 
-    this.addAction( new CATMAID.Action({
+    this.addAction(new CATMAID.Action({
       helpText: "Go to active node",
       buttonName: "goactive",
       buttonID: 'trace_button_goactive',
@@ -579,114 +581,118 @@
           var skid = SkeletonAnnotations.getActiveSkeletonId();
           if (Number.isInteger(skid)) CATMAID.WebGLApplication.prototype.staticReloadSkeletons([skid]);
         } else {
-          activeTracingLayer.svgOverlay.moveToAndSelectNode(SkeletonAnnotations.getActiveNodeId());
+          activeTracingLayer.tracingOverlay.moveToAndSelectNode(SkeletonAnnotations.getActiveNodeId());
         }
         return true;
       }
-    } ) );
+    }));
 
-    this.addAction( new CATMAID.Action({
+    this.addAction(new CATMAID.Action({
       helpText: "Go to nearest open leaf node (subsequent <kbd>Shift</kbd>+<kbd>R</kbd>: cycle through other open leaves; with <kbd>Alt</kbd>: most recent rather than nearest)",
       keyShortcuts: { "R": [ 82 ] },
       run: function (e) {
         if (!mayView())
           return false;
-        activeTracingLayer.svgOverlay.goToNextOpenEndNode(SkeletonAnnotations.getActiveNodeId(), e.shiftKey, e.altKey);
+        activeTracingLayer.tracingOverlay.goToNextOpenEndNode(SkeletonAnnotations.getActiveNodeId(), e.shiftKey, e.altKey);
         return true;
       }
-    } ) );
+    }));
 
-    this.addAction( new CATMAID.Action({
+    this.addAction(new CATMAID.Action({
       helpText: "Go to next branch or end point (with <kbd>Alt</kbd>: stop earlier at node with tag, synapse or low confidence; subsequent <kbd>Shift</kbd>+<kbd>V</kbd>: cycle through other branches)",
       keyShortcuts: { "V": [ 86 ] },
       run: function (e) {
         if (!mayView())
           return false;
-        activeTracingLayer.svgOverlay.goToNextBranchOrEndNode(SkeletonAnnotations.getActiveNodeId(), e);
+        activeTracingLayer.tracingOverlay.goToNextBranchOrEndNode(SkeletonAnnotations.getActiveNodeId(), e);
         return true;
       }
-    } ) );
+    }));
 
-    this.addAction( new CATMAID.Action({
+    this.addAction(new CATMAID.Action({
       helpText: "Go to previous branch or end node (with <kbd>Alt</kbd>: stop earlier at node with tag, synapse or low confidence)",
       keyShortcuts: { "B": [ 66 ] },
       run: function (e) {
         if (!mayView())
           return false;
-        activeTracingLayer.svgOverlay.goToPreviousBranchOrRootNode(SkeletonAnnotations.getActiveNodeId(), e);
+        activeTracingLayer.tracingOverlay.goToPreviousBranchOrRootNode(SkeletonAnnotations.getActiveNodeId(), e);
         return true;
       }
-    } ) );
+    }));
 
 
-    this.addAction( new CATMAID.Action({
+    this.addAction(new CATMAID.Action({
       helpText: "Deselect the active node",
       keyShortcuts: { "D": [ 68 ] },
       run: function (e) {
         if (!mayView())
           return false;
-        activeTracingLayer.svgOverlay.activateNode(null);
+        activeTracingLayer.tracingOverlay.activateNode(null);
         return true;
       }
-    }) );
+    }));
 
-    this.addAction( new CATMAID.Action({
+    this.addAction(new CATMAID.Action({
       helpText: "Go to the parent of the active node (<kbd>Ctrl</kbd>: ignore virtual nodes)",
       keyShortcuts: { "[": [ 219, 56 ] },
       run: function (e) {
         if (!mayView())
           return false;
-        activeTracingLayer.svgOverlay.goToParentNode(SkeletonAnnotations.getActiveNodeId(), (e.ctrlKey || e.metaKey));
+        var modifierKey = e.ctrlKey || e.metaKey;
+        if (CATMAID.TracingTool.Settings.session.invert_virtual_node_ignore_modifier) modifierKey = !modifierKey;
+        activeTracingLayer.tracingOverlay.goToParentNode(SkeletonAnnotations.getActiveNodeId(), modifierKey);
         return true;
       }
-    }) );
+    }));
 
-    this.addAction( new CATMAID.Action({
+    this.addAction(new CATMAID.Action({
       helpText: "Go to the child of the active node (<kbd>Ctrl</kbd>: ignore virtual nodes; Subsequent <kbd>Shift</kbd>+<kbd>]</kbd>: cycle through children)",
       keyShortcuts: { "]": [ 221, 57 ] },
       run: function (e) {
         if (!mayView())
           return false;
-        activeTracingLayer.svgOverlay.goToChildNode(SkeletonAnnotations.getActiveNodeId(), e.shiftKey, (e.ctrlKey || e.metaKey));
+        var modifierKey = e.ctrlKey || e.metaKey;
+        if (CATMAID.TracingTool.Settings.session.invert_virtual_node_ignore_modifier) modifierKey = !modifierKey;
+        activeTracingLayer.tracingOverlay.goToChildNode(SkeletonAnnotations.getActiveNodeId(), e.shiftKey, modifierKey);
         return true;
       }
-    }) );
+    }));
 
-    this.addAction( new CATMAID.Action({
+    this.addAction(new CATMAID.Action({
       helpText: "Edit the radius of the active node (<kbd>Shift</kbd>: without measurment tool)",
       keyShortcuts: { "O": [ 79 ] },
       run: function (e) {
         if (!mayView())
           return false;
-        activeTracingLayer.svgOverlay.editRadius(SkeletonAnnotations.getActiveNodeId(),
+        activeTracingLayer.tracingOverlay.editRadius(SkeletonAnnotations.getActiveNodeId(),
             e.shiftKey);
         return true;
       }
-    }) );
+    }));
 
-    this.addAction( new CATMAID.Action({
+    this.addAction(new CATMAID.Action({
       helpText: "Measure the distance between the cursor and a clicked point",
       keyShortcuts: { "X": [ 88 ] },
       run: function (e) {
         if (!mayView())
           return false;
-        activeTracingLayer.svgOverlay.measureRadius();
+        activeTracingLayer.tracingOverlay.measureRadius();
         return true;
       }
-    }) );
+    }));
 
-    this.addAction( new CATMAID.Action({
-      helpText: "Go to last edited node in this skeleton",
+    this.addAction(new CATMAID.Action({
+      helpText: "Go to last node edited by you in this skeleton",
       keyShortcuts: { "H": [ 72 ] },
       run: function (e) {
         if (!mayView())
           return false;
-        activeTracingLayer.svgOverlay.goToLastEditedNode(SkeletonAnnotations.getActiveSkeletonId());
+        activeTracingLayer.tracingOverlay.goToLastEditedNode(SkeletonAnnotations.getActiveSkeletonId());
         return true;
       }
-    }) );
+    }));
 
-    this.addAction( new CATMAID.Action({
+    this.addAction(new CATMAID.Action({
       helpText: "Append the active skeleton to the last used selection widget (<kbd>Ctrl</kbd>: remove from selection; <kbd>Shift</kbd>: select by radius)",
       keyShortcuts: {
         "Y": [ 89 ]
@@ -698,21 +704,21 @@
               function (skids) { CATMAID.SelectionTable.getLastFocused().addSkeletons(skids); };
           var atnID = SkeletonAnnotations.getActiveNodeId();
 
-          activeTracingLayer.svgOverlay.selectRadius(
+          activeTracingLayer.tracingOverlay.selectRadius(
               atnID,
               true,
               function (radius) {
                 if (typeof radius === 'undefined') return;
 
                 var respectVirtualNodes = true;
-                var node = activeTracingLayer.svgOverlay.nodes[atnID];
-                var selectedIDs = activeTracingLayer.svgOverlay.findAllNodesWithinRadius(
+                var node = activeTracingLayer.tracingOverlay.nodes[atnID];
+                var selectedIDs = activeTracingLayer.tracingOverlay.findAllNodesWithinRadius(
                     activeStackViewer.primaryStack.stackToProjectX(node.z, node.y, node.x),
                     activeStackViewer.primaryStack.stackToProjectY(node.z, node.y, node.x),
                     activeStackViewer.primaryStack.stackToProjectZ(node.z, node.y, node.x),
                     radius, respectVirtualNodes);
                 selectedIDs = selectedIDs.map(function (nodeID) {
-                    return activeTracingLayer.svgOverlay.nodes[nodeID].skeleton_id;
+                    return activeTracingLayer.tracingOverlay.nodes[nodeID].skeleton_id;
                 }).filter(function (s) { return !isNaN(s); });
 
                 selectionCallback(selectedIDs);
@@ -727,21 +733,21 @@
           }
         }
       }
-    }) );
+    }));
 
-    this.addAction( new CATMAID.Action({
+    this.addAction(new CATMAID.Action({
       helpText: "Split this skeleton at the active node",
       buttonName: "skelsplitting",
       buttonID: 'trace_button_skelsplitting',
       run: function (e) {
         if (!mayEdit())
           return false;
-        activeTracingLayer.svgOverlay.splitSkeleton(SkeletonAnnotations.getActiveNodeId());
+        activeTracingLayer.tracingOverlay.splitSkeleton(SkeletonAnnotations.getActiveNodeId());
         return true;
       }
-    }) );
+    }));
 
-    this.addAction( new CATMAID.Action({
+    this.addAction(new CATMAID.Action({
       helpText: "Re-root this skeleton at the active node",
       buttonName: "skelrerooting",
       buttonID: 'trace_button_skelrerooting',
@@ -749,12 +755,12 @@
       run: function (e) {
         if (!mayEdit())
           return false;
-        activeTracingLayer.svgOverlay.rerootSkeleton(SkeletonAnnotations.getActiveNodeId());
+        activeTracingLayer.tracingOverlay.rerootSkeleton(SkeletonAnnotations.getActiveNodeId());
         return true;
       }
-    }) );
+    }));
 
-    this.addAction( new CATMAID.Action({
+    this.addAction(new CATMAID.Action({
       helpText: "Toggle the display of labels",
       buttonName: "togglelabels",
       buttonID: 'trace_button_togglelabels',
@@ -764,14 +770,14 @@
           return false;
         show_labels = !show_labels;
         getTracingLayers().forEach(function(layer) {
-          if (show_labels) layer.svgOverlay.showLabels();
-          else layer.svgOverlay.hideLabels();
+          if (show_labels) layer.tracingOverlay.showLabels();
+          else layer.tracingOverlay.hideLabels();
         });
         return true;
       }
-    }) );
+    }));
 
-    this.addAction( new CATMAID.Action({
+    this.addAction(new CATMAID.Action({
       helpText: "Export to SWC",
       buttonName: "exportswc",
       buttonID: 'trace_button_exportswc',
@@ -781,20 +787,20 @@
         SkeletonAnnotations.exportSWC();
         return true;
       }
-    }) );
+    }));
 
-    this.addAction( new CATMAID.Action({
+    this.addAction(new CATMAID.Action({
       helpText: "Switch between a terminal and its connector",
       keyShortcuts: { "S": [ 83 ] },
       run: function (e) {
         if (!mayView())
           return false;
-        activeTracingLayer.svgOverlay.switchBetweenTerminalAndConnector();
+        activeTracingLayer.tracingOverlay.switchBetweenTerminalAndConnector();
         return true;
       }
-    }) );
+    }));
 
-    this.addAction( new CATMAID.Action({
+    this.addAction(new CATMAID.Action({
       helpText: "Tag the active node",
       keyShortcuts: { "T": [ 84 ] },
       run: function (e) {
@@ -802,32 +808,32 @@
           return false;
         if (e.shiftKey) {
           // Delete all tags
-          SkeletonAnnotations.Tag.tagATNwithLabel('', activeTracingLayer.svgOverlay, true);
+          SkeletonAnnotations.Tag.tagATNwithLabel('', activeTracingLayer.tracingOverlay, true);
           return true;
         } else if (! (e.ctrlKey || e.metaKey)) {
-          SkeletonAnnotations.Tag.tagATN(activeTracingLayer.svgOverlay);
+          SkeletonAnnotations.Tag.tagATN(activeTracingLayer.tracingOverlay);
           return true;
         } else {
           return false;
         }
       }
-    }) );
+    }));
 
-    this.addAction( new CATMAID.Action({
+    this.addAction(new CATMAID.Action({
       helpText: "Add TODO Tag (<kbd>Shift</kbd>: Remove) to the active node",
       keyShortcuts: { "L": [ 76 ] },
       run: tagFn('TODO')
-    }) );
+    }));
 
-    this.addAction( new CATMAID.Action({
+    this.addAction(new CATMAID.Action({
       helpText: "Add 'microtubules end' tag (<kbd>Shift</kbd>: Remove) to the active node",
       keyShortcuts: {
         "F": [ 70 ]
       },
       run: tagFn('microtubules end')
-    }) );
+    }));
 
-    this.addAction( new CATMAID.Action({
+    this.addAction(new CATMAID.Action({
       helpText: "Select the nearest node to the mouse cursor",
       keyShortcuts: { "G": [ 71 ] },
       run: function (e) {
@@ -840,37 +846,32 @@
           var layerOrder = activeStackViewer.getLayerOrder();
           // TODO: Don't use internal objects of the tracing overlay, i.e. find
           // a better way to get the current mouse position.
-          var x = activeTracingLayer.svgOverlay.coords.lastX;
-          var y = activeTracingLayer.svgOverlay.coords.lastY;
+          var x = activeTracingLayer.tracingOverlay.coords.lastX;
+          var y = activeTracingLayer.tracingOverlay.coords.lastY;
           // Only allow nodes that are screen space 50px or closer
           var r = 50.0 / activeStackViewer.scale;
-          for (var i=0, max=layerOrder.length; i<max; ++i) {
+          for (var i = layerOrder.length - 1; i >= 0; --i) {
             // Read layers from top to bottom
-            var l = layers.get(layerOrder[max-i-1]);
+            var l = layers.get(layerOrder[i]);
             if (CATMAID.tools.isFn(l.getClosestNode)) {
-              selectedNode = l.getClosestNode(x, y, r);
-              if (selectedNode) {
-                break;
+              var candidateNode = l.getClosestNode(x, y, r);
+              if (candidateNode && (!selectedNode || candidateNode.distsq < selectedNode.distsq)) {
+                selectedNode = candidateNode;
               }
             }
           }
           if (selectedNode) {
             // If this layer has a node close by, activate it
-            SkeletonAnnotations.staticMoveToAndSelectNode(selectedNode);
-          } else {
-            // If no layer found a node close by, ask the tracing layer for the
-            // closest node without any bounds.
-            var respectVirtualNodes = true;
-            activeTracingLayer.svgOverlay.activateNearestNode(respectVirtualNodes);
+            SkeletonAnnotations.staticMoveToAndSelectNode(selectedNode.id);
           }
           return true;
         } else {
           return false;
         }
       }
-    }) );
+    }));
 
-    this.addAction( new CATMAID.Action({
+    this.addAction(new CATMAID.Action({
       helpText: "Create treenode (<kbd>Shift</kbd> on another node: join), behavior like mouse click",
       keyShortcuts: { 'Z': [ 90 ] },
       run: function (e) {
@@ -879,172 +880,184 @@
         var insert = e.altKey;
         var link = e.shiftKey;
         var postLink = e.altKey;
-        activeTracingLayer.svgOverlay.createNewOrExtendActiveSkeleton(insert, link, postLink);
+        activeTracingLayer.tracingOverlay.createNewOrExtendActiveSkeleton(insert, link, postLink);
         return true;
       }
-    }) );
+    }));
 
-    this.addAction( new CATMAID.Action({
+    this.addAction(new CATMAID.Action({
       helpText: "Delete the active node (or suppress it if it is virtual)",
       keyShortcuts: { 'DEL': [ 46 ] },
       run: function (e) {
         if (!mayEdit())
           return false;
-        activeTracingLayer.svgOverlay.deleteNode(SkeletonAnnotations.getActiveNodeId());
+        activeTracingLayer.tracingOverlay.deleteNode(SkeletonAnnotations.getActiveNodeId());
         return true;
       }
-    }) );
+    }));
 
-    this.addAction( new CATMAID.Action({
+    this.addAction(new CATMAID.Action({
       helpText: "Retrieve information about the active node.",
       keyShortcuts: { 'I': [ 73 ] },
       run: function (e) {
         if (!mayView())
           return false;
-        activeTracingLayer.svgOverlay.printTreenodeInfo(SkeletonAnnotations.getActiveNodeId());
+        activeTracingLayer.tracingOverlay.printTreenodeInfo(SkeletonAnnotations.getActiveNodeId());
         return true;
       }
-    }) );
+    }));
 
-    this.addAction( new CATMAID.Action({
+    this.addAction(new CATMAID.Action({
       helpText: "Set confidence in node link to 1 (Alt: with a connector)",
       keyShortcuts: { '1': [ 49 ] },
       run: function (e) {
         if (!mayEdit())
           return false;
-        activeTracingLayer.svgOverlay.setConfidence(1, e.altKey);
+        activeTracingLayer.tracingOverlay.setConfidence(1, e.altKey);
         return true;
       }
-    }) );
+    }));
 
-    this.addAction( new CATMAID.Action({
+    this.addAction(new CATMAID.Action({
       helpText: "Set confidence in node link to 2 (Alt: with a connector)",
       keyShortcuts: { '2': [ 50 ] },
       run: function (e) {
         if (!mayEdit())
           return false;
-        activeTracingLayer.svgOverlay.setConfidence(2, e.altKey);
+        activeTracingLayer.tracingOverlay.setConfidence(2, e.altKey);
         return true;
       }
-    }) );
+    }));
 
-    this.addAction( new CATMAID.Action({
+    this.addAction(new CATMAID.Action({
       helpText: "Set confidence in node link to 3 (Alt: with a connector)",
       keyShortcuts: { '3': [ 51 ] },
       run: function (e) {
         if (!mayEdit())
           return false;
-        activeTracingLayer.svgOverlay.setConfidence(3, e.altKey);
+        activeTracingLayer.tracingOverlay.setConfidence(3, e.altKey);
         return true;
       }
-    }) );
+    }));
 
-    this.addAction( new CATMAID.Action({
+    this.addAction(new CATMAID.Action({
       helpText: "Set confidence in node link to 4 (Alt: with a connector)",
       keyShortcuts: { '4': [ 52 ] },
       run: function (e) {
         if (!mayEdit())
           return false;
-        activeTracingLayer.svgOverlay.setConfidence(4, e.altKey);
+        activeTracingLayer.tracingOverlay.setConfidence(4, e.altKey);
         return true;
       }
-    }) );
+    }));
 
-    this.addAction( new CATMAID.Action({
+    this.addAction(new CATMAID.Action({
       helpText: "Set confidence in node link to 5 (Alt: with a connector)",
       keyShortcuts: { '5': [ 53 ] },
       run: function (e) {
         if (!mayEdit())
           return false;
-        activeTracingLayer.svgOverlay.setConfidence(5, e.altKey);
+        activeTracingLayer.tracingOverlay.setConfidence(5, e.altKey);
         return true;
       }
-    }) );
+    }));
 
-    this.addAction( new CATMAID.Action({
-        helpText: "Move to previous node in segment for review. At an end node, moves one section beyond for you to check that it really ends.",
-        keyShortcuts: { 'Q': [ 81 ] },
-        run: function (e) {
-            if (!mayEdit())
-                return false;
-            if (CATMAID.ReviewSystem.validSegment())
-                CATMAID.ReviewSystem.moveNodeInSegmentBackward();
-            return true;
+    this.addAction(new CATMAID.Action({
+      helpText: "Move to previous node in segment for review. At an end node, moves one section beyond for you to check that it really ends.",
+      keyShortcuts: { 'Q': [ 81 ] },
+      run: function (e) {
+        if (!mayEdit())
+          return false;
+        if (CATMAID.ReviewSystem.validSegment())
+          CATMAID.ReviewSystem.moveNodeInSegmentBackward();
+        return true;
+      }
+    }));
+
+    this.addAction(new CATMAID.Action({
+      helpText: "Move to next node in segment for review (with <kbd>Shift</kbd>: move to next unreviewed node in the segment)",
+      keyShortcuts: { 'W': [ 87 ] },
+      run: function (e) {
+        if (!mayEdit())
+          return false;
+        if (CATMAID.ReviewSystem.validSegment())
+          CATMAID.ReviewSystem.moveNodeInSegmentForward(e.shiftKey);
+        return true;
+      }
+    }));
+
+    this.addAction(new CATMAID.Action({
+      helpText: "Start reviewing the next skeleton segment.",
+      keyShortcuts: { 'E': [ 69 ] },
+      run: function (e) {
+        if (!mayEdit())
+          return false;
+        if (CATMAID.ReviewSystem.validSegment())
+          CATMAID.ReviewSystem.selectNextSegment();
+        return true;
         }
-    }) );
+    }));
 
-    this.addAction( new CATMAID.Action({
-        helpText: "Move to next node in segment for review (with <kbd>Shift</kbd>: move to next unreviewed node in the segment)",
-        keyShortcuts: { 'W': [ 87 ] },
-        run: function (e) {
-            if (!mayEdit())
-                return false;
-            if (CATMAID.ReviewSystem.validSegment())
-                CATMAID.ReviewSystem.moveNodeInSegmentForward(e.shiftKey);
-            return true;
+    this.addAction(new CATMAID.Action({
+      helpText: "Rename active neuron",
+      keyShortcuts: { 'F2': [ 113 ] },
+      run: function (e) {
+        if (!mayEdit()) {
+          return false;
         }
-    }) );
+        activeTracingLayer.tracingOverlay.renameNeuron(SkeletonAnnotations.getActiveSkeletonId());
+        return true;
+      }
+    }));
 
-    this.addAction( new CATMAID.Action({
-        helpText: "Start reviewing the next skeleton segment.",
-        keyShortcuts: { 'E': [ 69 ] },
-        run: function (e) {
-            if (!mayEdit())
-                return false;
-            if (CATMAID.ReviewSystem.validSegment())
-                CATMAID.ReviewSystem.selectNextSegment();
-            return true;
+    this.addAction(new CATMAID.Action({
+      helpText: "Annotate active neuron",
+      keyShortcuts: { 'F3': [ 114 ] },
+      run: function (e) {
+        if (!mayEdit()) {
+          return false;
         }
-    }) );
+        CATMAID.annotate_neurons_of_skeletons(
+            [SkeletonAnnotations.getActiveSkeletonId()]);
+        return true;
+      }
+    }));
 
-    this.addAction( new CATMAID.Action({
-        helpText: "Rename active neuron",
-        keyShortcuts: { 'F2': [ 113 ] },
-        run: function (e) {
-            if (!mayEdit()) {
-                return false;
-            }
-            activeTracingLayer.svgOverlay.renameNeuron(SkeletonAnnotations.getActiveSkeletonId());
-            return true;
-        }
-    }) );
+    this.addAction(new CATMAID.Action({
+      helpText: "Neuron dendrogram",
+      keyShortcuts: {
+        'F4': [ 115 ]
+      },
+      run: function (e) {
+        WindowMaker.create('neuron-dendrogram');
+        return true;
+      }
+    }));
 
-    this.addAction( new CATMAID.Action({
-        helpText: "Annotate active neuron",
-        keyShortcuts: { 'F3': [ 114 ] },
-        run: function (e) {
-            if (!mayEdit()) {
-                return false;
-            }
-            CATMAID.annotate_neurons_of_skeletons(
-              [SkeletonAnnotations.getActiveSkeletonId()]);
-            return true;
-        }
-    }) );
+    this.addAction(new CATMAID.Action({
+      helpText: "Command history",
+      keyShortcuts: {
+        'F9': [ 120 ]
+      },
+      run: function (e) {
+        var dialog = new CATMAID.HistoryDialog();
+        dialog.show();
+        return true;
+      }
+    }));
 
-    this.addAction( new CATMAID.Action({
-        helpText: "Neuron dendrogram",
-        keyShortcuts: {
-            'F4': [ 115 ]
-        },
-        run: function (e) {
-          WindowMaker.create('neuron-dendrogram');
-          return true;
-        }
-    }) );
+    this.addAction(new CATMAID.Action({
+      helpText: "Toggle skeleton projection layer",
+      keyShortcuts: {
+        'F10': [ 121 ]
+      },
+      run: function (e) {
+        toggleSkeletonProjectionLayers();
+        return true;
+      }
+    }));
 
-    this.addAction( new CATMAID.Action({
-        helpText: "Toggle skeleton projection layer",
-        keyShortcuts: {
-            'F10': [ 121 ]
-        },
-        run: function (e) {
-          toggleSkeletonProjectionLayers();
-          return true;
-        }
-    }) );
-
-    this.addAction( new CATMAID.Action({
+    this.addAction(new CATMAID.Action({
       helpText: "Open the neuron/annotation search widget (with <kbd>Shift</kbd>: activate next selected neuron in search results after active skeleton)",
       keyShortcuts: { '/': [ 191 ] },
       run: function (e) {
@@ -1059,13 +1072,13 @@
         }
         return true;
       }
-    }) );
+    }));
 
-    this.addAction( new CATMAID.Action({
+    this.addAction(new CATMAID.Action({
       helpText: "Find the nearest matching tagged node (<kbd>Ctrl</kbd>: repeat last tag query; Subsequent <kbd>Shift</kbd>+<kbd>\\</kbd>: cycle to next nearest)",
       keyShortcuts: { '\\': [ 220 ] },
       run: function (e) {
-        activeTracingLayer.svgOverlay.goToNearestMatchingTag(e.shiftKey, e.ctrlKey);
+        activeTracingLayer.tracingOverlay.goToNearestMatchingTag(e.shiftKey, e.ctrlKey);
         return true;
       }
     }));
@@ -1077,17 +1090,27 @@
      * This function should return true if there was any action linked to the key
      * code, or false otherwise.
      */
-    this.handleKeyPress = function( e ) {
+    this.handleKeyPress = function(e) {
       var keyAction = keyCodeToAction[e.keyCode];
       if (keyAction) {
-        activeTracingLayer.svgOverlay.ensureFocused();
+        activeTracingLayer.tracingOverlay.ensureFocused();
         return keyAction.run(e);
       } else {
         return false;
       }
     };
 
-    this.getMouseHelp = function( e ) {
+    this.getUndoHelp = function(e) {
+      var result = '<p>The following actions can be undone by pressing <kbd>Ctrl</kbd> + <kbd>Z</kbd> or opening the command history:</p><ul>';
+      result += "<li>Add/insert/move/remove nodes and edit their radius, confidence</li>";
+      result += "<li>Add/remove connectors, edit their confidence as well as links to/from them</li>";
+      result += "<li>Add/remove/edit annotations, tags</li>";
+      result += "<li>Change neuron name</li>";
+      result += "</ul>";
+      return result;
+    };
+
+    this.getMouseHelp = function(e) {
       var result = self.prototype.getMouseHelp();
       result += '<ul>';
       result += '<li><strong>Click on a node:</strong> make that node active</li>';
@@ -1103,8 +1126,7 @@
       return result;
     };
 
-    this.redraw = function()
-    {
+    this.redraw = function() {
       self.prototype.redraw();
     };
 
@@ -1112,8 +1134,8 @@
     // register() take care of bindings.
     project.getStackViewers().forEach(function(s) {
       var layer = prepareStackViewer(s);
-      layer.svgOverlay.updateNodes(layer.forceRedraw.bind(layer));
-      s.getView().appendChild(layer.svgOverlay.view);
+      layer.tracingOverlay.updateNodes(layer.forceRedraw.bind(layer));
+      s.getView().appendChild(layer.tracingOverlay.view);
     }, this);
 
     // Listen to creation and removal of new stack views in current project.
@@ -1158,8 +1180,7 @@
     });
   };
 
-  TracingTool.search = function()
-  {
+  TracingTool.search = function() {
     if( $('#search-box').val() === '' ) {
       return;
     }
@@ -1297,33 +1318,33 @@
   TracingTool.actions = [
 
     new CATMAID.Action({
-        helpText: "Review system",
-        buttonID: "data_button_review",
-        buttonName: 'table_review',
-        run: function (e) {
-            WindowMaker.show('review-system');
-            return true;
-        }
+      helpText: "Review system",
+      buttonID: "data_button_review",
+      buttonName: 'table_review',
+      run: function (e) {
+        WindowMaker.show('review-system');
+        return true;
+      }
     }),
 
     new CATMAID.Action({
-        helpText: "Notifications",
-        buttonID: "data_button_notifications",
-        buttonName: 'table_notifications',
-        run: function (e) {
-            WindowMaker.show('notifications');
-            return true;
-        }
+      helpText: "Notifications",
+      buttonID: "data_button_notifications",
+      buttonName: 'table_notifications',
+      run: function (e) {
+        WindowMaker.show('notifications');
+        return true;
+      }
     }),
 
     new CATMAID.Action({
-        helpText: "Connectivity widget",
-        buttonID: "data_button_connectivity",
-        buttonName: 'table_connectivity',
-        run: function (e) {
-            WindowMaker.create('connectivity-widget');
-            return true;
-        }
+      helpText: "Connectivity widget",
+      buttonID: "data_button_connectivity",
+      buttonName: 'table_connectivity',
+      run: function (e) {
+        WindowMaker.create('connectivity-widget');
+        return true;
+      }
     }),
 
     new CATMAID.Action({
@@ -1331,109 +1352,75 @@
       buttonID: "data_button_connectivity_matrix",
       buttonName: 'adj_matrix',
       run: function (e) {
-          WindowMaker.create('connectivity-matrix');
-          return true;
+        WindowMaker.create('connectivity-matrix');
+        return true;
       }
     }),
 
-
-  /*    new CATMAID.Action({
-          helpText: "Adjacency Matrix widget",
-          buttonID: "data_button_connectivity",
-          buttonName: 'adj_matrix',
-          run: function (e) {
-              WindowMaker.show('adjacencymatrix-widget');
-              return true;
-          }
-      }),
-
     new CATMAID.Action({
-        helpText: "Export widget",
-        buttonID: "data_button_export_widget",
-        buttonName: 'export_widget',
-        run: function (e) {
-            WindowMaker.show('export-widget');
-            return true;
-        }
+      helpText: "Skeleton Analytics widget",
+      buttonID: "button_skeleton_analytics_widget",
+      buttonName: 'skeleton_analytics_widget',
+      run: function (e) {
+        WindowMaker.create('skeleton-analytics-widget');
+        return true;
+      }
     }),
 
     new CATMAID.Action({
-        helpText: "Graph widget",
-        buttonID: "data_button_graph_widget",
-        buttonName: 'graph_widget',
-        run: function (e) {
-            WindowMaker.show('graph-widget');
-            return true;
-        }
-    }),*/
-
-    new CATMAID.Action({
-        helpText: "Skeleton Analytics widget",
-        buttonID: "button_skeleton_analytics_widget",
-        buttonName: 'skeleton_analytics_widget',
-        run: function (e) {
-            WindowMaker.create('skeleton-analytics-widget');
-            return true;
-        }
+      helpText: "Graph widget",
+      buttonID: "data_button_compartment_graph_widget",
+      buttonName: 'graph_widget',
+      run: function (e) {
+        WindowMaker.create('graph-widget');
+        return true;
+      }
     }),
 
     new CATMAID.Action({
-        helpText: "Graph widget",
-        buttonID: "data_button_compartment_graph_widget",
-        buttonName: 'graph_widget',
-        run: function (e) {
-            WindowMaker.create('graph-widget');
-            return true;
-        }
+      helpText: "Circuit Graph Plot",
+      buttonID: "data_button_circuit_graph_plot",
+      buttonName: 'circuit_plot',
+      run: function (e) {
+        WindowMaker.create('circuit-graph-plot');
+        return true;
+      }
     }),
 
     new CATMAID.Action({
-        helpText: "Circuit Graph Plot",
-        buttonID: "data_button_circuit_graph_plot",
-        buttonName: 'circuit_plot',
-        run: function (e) {
-            WindowMaker.create('circuit-graph-plot');
-            return true;
-        }
+      helpText: "Morphology Plot",
+      buttonID: "data_button_morphology_plot",
+      buttonName: 'morphology_plot',
+      run: function (e) {
+        WindowMaker.create('morphology-plot');
+        return true;
+      }
     }),
 
     new CATMAID.Action({
-        helpText: "Morphology Plot",
-        buttonID: "data_button_morphology_plot",
-        buttonName: 'morphology_plot',
-        run: function (e) {
-            WindowMaker.create('morphology-plot');
-            return true;
-        }
+      helpText: "Venn Diagram",
+      buttonID: "venn_diagram_button",
+      buttonName: 'venn',
+      run: function (e) {
+        WindowMaker.create('venn-diagram');
+        return true;
+      }
     }),
 
     new CATMAID.Action({
-        helpText: "Venn Diagram",
-        buttonID: "venn_diagram_button",
-        buttonName: 'venn',
-        run: function (e) {
-            WindowMaker.create('venn-diagram');
-            return true;
-        }
+      helpText: "Selection Table",
+      buttonID: "data_button_neuron_staging_area_widget",
+      buttonName: 'neuron_staging',
+      run: function (e) {
+        WindowMaker.create('neuron-staging-area');
+        return true;
+      }
     }),
 
     new CATMAID.Action({
-        helpText: "Selection Table",
-        buttonID: "data_button_neuron_staging_area_widget",
-        buttonName: 'neuron_staging',
-        run: function (e) {
-            WindowMaker.create('neuron-staging-area');
-            return true;
-        }
-    }),
-
-    new CATMAID.Action({
-      helpText: "Show search window",
+      helpText: "Search",
       buttonID: "data_button_search",
       buttonName: 'search',
-      keyShortcuts: {
-        '/': [ 191, 47 ]
-      },
       run: function (e) {
         WindowMaker.show('search');
         return true;
@@ -1461,13 +1448,13 @@
     }),
 
     new CATMAID.Action({
-        helpText: "Show 3D WebGL view",
-        buttonID: "view_3d_webgl_button",
-        buttonName: '3d-view-webgl',
-        run: function (e) {
-          WindowMaker.create('3d-webgl-view');
-        }
-      }),
+      helpText: "Show 3D WebGL view",
+      buttonID: "view_3d_webgl_button",
+      buttonName: '3d-view-webgl',
+      run: function (e) {
+        WindowMaker.create('3d-webgl-view');
+      }
+    }),
 
     new CATMAID.Action({
       helpText: "Show project statistics",
@@ -1480,36 +1467,36 @@
     }),
 
     new CATMAID.Action({
-        helpText: "Show log",
-        buttonID: "data_button_table_log",
-        buttonName: 'table_log',
-        run: function (e) {
-            WindowMaker.show( 'log-table' );
-            return true;
-        }
+      helpText: "Show log",
+      buttonID: "data_button_table_log",
+      buttonName: 'table_log',
+      run: function (e) {
+        WindowMaker.show( 'log-table' );
+        return true;
+      }
     }),
 
     new CATMAID.Action({
-        helpText: "Export widget",
-        buttonID: "data_button_export_widget",
-        buttonName: 'export_widget',
-        run: function (e) {
-            WindowMaker.show('export-widget');
-            return true;
-        }
+      helpText: "Export widget",
+      buttonID: "data_button_export_widget",
+      buttonName: 'export_widget',
+      run: function (e) {
+        WindowMaker.show('export-widget');
+        return true;
+      }
     }),
 
     new CATMAID.Action({
-        helpText: "Synapse Distribution Plot",
-        buttonID: "data_button_synapse_plot",
-        buttonName: 'synapse_plot',
-        run: function (e) {
-            WindowMaker.create('synapse-plot');
-            return true;
-        }
+      helpText: "Synapse Distribution Plot",
+      buttonID: "data_button_synapse_plot",
+      buttonName: 'synapse_plot',
+      run: function (e) {
+        WindowMaker.create('synapse-plot');
+        return true;
+      }
     }),
 
-     ];
+  ];
 
   /**
    * Show dialog regarding the set-up of the tracing tool. If a user
@@ -1519,8 +1506,7 @@
    * on failure and forces a tool reload on success.
    */
   TracingTool.display_tracing_setup_dialog = function(pid, has_needed_permissions,
-      missing_classes, missing_relations, missing_classinstances, initialize)
-  {
+      missing_classes, missing_relations, missing_classinstances, initialize) {
     var dialog = document.createElement('div');
     dialog.setAttribute("id", "dialog-confirm");
     dialog.setAttribute("title", "Update required");
@@ -1617,5 +1603,17 @@
 
   // Make tracing tool in CATMAID namespace
   CATMAID.TracingTool = TracingTool;
+
+  CATMAID.TracingTool.Settings = new CATMAID.Settings(
+      'tracing-tool',
+      {
+        version: 0,
+        entries: {
+          invert_virtual_node_ignore_modifier: {
+            default: false
+          }
+        },
+        migrations: {}
+      });
 
 })(CATMAID);

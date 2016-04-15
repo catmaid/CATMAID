@@ -12,7 +12,7 @@ lightweight virtual machines.
 After `installing Docker <https://www.docker.com/>`_, download and run the
 CATMAID image:
 
-    docker run -p 8080:80 aschampion/catmaid
+    docker run -p 8080:80 catmaid/catmaid
 
 Navigate your browser to `http://localhost:8080 <http://localhost:8080>`_
 and you should see the CATMAID landing page. You can log in as a superuser

@@ -4,11 +4,15 @@ MAINTAINER Andrew Champion "andrew.champion@gmail.com"
 # Install dependencies
 RUN apt-get install -y software-properties-common \
     && add-apt-repository -y ppa:nginx/stable \
+    && apt-get install -y wget ca-certificates \
+    && wget --quiet -O - https://postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - \
+    && add-apt-repository "deb http://apt.postgresql.org/pub/repos/apt/ trusty-pgdg main" \
     && apt-get update -y \
     && apt-get install -y python-pip git \
     && apt-get install -y nginx supervisor uwsgi-plugin-python
-ADD . /home/
+ADD packagelist-ubuntu-14.04-apt.txt /home/
 RUN xargs apt-get install -y < /home/packagelist-ubuntu-14.04-apt.txt
+ADD django/requirements.txt /home/django/
 ENV WORKON_HOME /opt/virtualenvs
 RUN mkdir -p /opt/virtualenvs \
     && /bin/bash -c "source /usr/share/virtualenvwrapper/virtualenvwrapper.sh \
@@ -17,20 +21,21 @@ RUN mkdir -p /opt/virtualenvs \
     && pip install -U pip \
     && pip install -r /home/django/requirements.txt"
 
+ADD . /home/
 # Postgres setup
-RUN sed -i '/# DO NOT DISABLE!/ilocal catmaid catmaid_user  md5' /etc/postgresql/9.3/main/pg_hba.conf \
+RUN sed -i '/# DO NOT DISABLE!/ilocal catmaid catmaid_user  md5' /etc/postgresql/9.4/main/pg_hba.conf \
     && service postgresql start \
-    && /home/scripts/createuser.sh catmaid catmaid_user p4ssw0rd | sudo -u postgres psql --cluster 9.3/main
+    && /home/scripts/createuser.sh catmaid catmaid_user p4ssw0rd | sudo -u postgres psql --cluster 9.4/main
 
 # CATMAID setup
 RUN cp /home/django/configuration.py.example /home/django/configuration.py \
     && sed -i -e "s?^\(abs_catmaid_path = \).*?\1'/home'?g" /home/django/configuration.py \
-    && sed -i -e "s?^\(abs_virtualenv_python_library_path = \).*?\1'/opt/virtualenvs/catmaid'?g" /home/django/configuration.py \
+    && sed -i -e "s?^\(abs_virtualenv_python_library_path = \).*?\1'/opt/virtualenvs/catmaid/local/lib/python2.7/site-packages'?g" /home/django/configuration.py \
     && sed -i -e "s?^\(catmaid_database_name = \).*?\1'catmaid'?g" /home/django/configuration.py \
     && sed -i -e "s?^\(catmaid_database_username = \).*?\1'catmaid_user'?g" /home/django/configuration.py \
     && sed -i -e "s?^\(catmaid_database_password = \).*?\1'p4ssw0rd'?g" /home/django/configuration.py \
     && sed -i -e "s?^\(catmaid_timezone = \).*?\1'America/New_York'?g" /home/django/configuration.py \
-    && sed -i -e "s?^\(catmaid_servername = \).*?\1'localhost'?g" /home/django/configuration.py \
+    && sed -i -e "s?^\(catmaid_servername = \).*?\1'*'?g" /home/django/configuration.py \
     && cd /home/django && python create_configuration.py \
     && mkdir -p /home/django/static
 # Django's createsuperuser requires input, so use the Django shell instead.
@@ -38,7 +43,7 @@ RUN service postgresql start \
     && /bin/bash -c "source /usr/share/virtualenvwrapper/virtualenvwrapper.sh \
     && workon catmaid \
     && cd /home/django/projects/mysite \
-    && python manage.py syncdb --migrate --noinput \
+    && python manage.py migrate --noinput \
     && python manage.py collectstatic --clear --link --noinput \
     && cat /home/scripts/docker/create_superuser.py | python manage.py shell \
     && python manage.py catmaid_insert_example_projects --user=1"

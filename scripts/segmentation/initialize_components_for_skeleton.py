@@ -5,7 +5,7 @@ def initialize_components_for_skeleton(request, project_id=None, stack_id=None):
     # retrieve all treenodes for the given skeleton
     treenodes_qs, labels_qs, labelconnector_qs = get_treenodes_qs( project_id, skeleton_id )
     # retrieve stack information to transform world coordinates to pixel coordinates
-    stack_info = get_stack_info( project_id, stack_id, request.user )
+    stack_info = get_stack_info( project_id, stack_id )
 
     skeleton = get_object_or_404(ClassInstance, pk=skeleton_id)
     stack = get_object_or_404(Stack, pk=stack_id)
@@ -67,4 +67,4 @@ def initialize_components_for_skeleton(request, project_id=None, stack_id=None):
         )
         new_component.save()
 
-    return HttpResponse(json.dumps({'status': 'success'}), mimetype="application/json")
+    return HttpResponse(json.dumps({'status': 'success'}), content_type="application/json")

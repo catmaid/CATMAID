@@ -22,12 +22,12 @@
       resolution,         //!< {Array} physical resolution in units/pixel [x, y, z, ...]
       translation,        //!< @todo replace by an affine transform
       skip_planes,        //!< {Array} planes to be excluded from the stack's view [[z,t,...], [z,t,...], ...]
-      trakem2_project,      //!< {boolean} that states if a TrakEM2 project is available for this stack
       num_zoom_levels,      //!< {int} that defines the number of available non-artificial zoom levels
       max_zoom_level,       //!< {int} that defines the maximum available zoom level
       labelupload_url,      //!< {String} that defines the label upload URL for labels (for tile_source_type==2)
       metadata,         //!< {String} of arbitrary meta data
-      orientation         //!< {Integer} orientation (0: xy, 1: xz, 2: yz)
+      orientation,         //!< {Integer} orientation (0: xy, 1: xz, 2: yz)
+      tileSource
     ) {
 
     // initialize
@@ -69,10 +69,10 @@
     }
     self.MIN_S = max_zoom_level;
 
-    self.is_trackem2_stack = trakem2_project;
     self.labelupload_url = labelupload_url;
     this.metadata = metadata;
     self.orientation = orientation;
+    self.tileSource = tileSource;
 
     /**
      * Project x-coordinate for stack coordinates
@@ -219,6 +219,8 @@
       };
     }
 
+    this.projectToLinearStackZ = projectToStackZ;
+
 
     /**
      * Stack z-coordinate from project coordinates, without clamping to the
@@ -265,8 +267,8 @@
      * projectBox.  This method is faster than createStackToProjectBox because
      * it does not generate new objects (Firefox 20%, Chromium 100% !)
      *
-     *  @param stackBox {min {x, y, z}, max{x, y, z}}
-     *  @param projectBox {min {x, y, z}, max{x, y, z}}
+     *  @param stackBox   {{min: {x, y, z}, max: {x, y, z}}}
+     *  @param projectBox {{min: {x, y, z}, max: {x, y, z}}}
      */
     this.stackToProjectBox = function( stackBox, projectBox )
     {
@@ -286,7 +288,7 @@
      * Create a new box from an orthogonal box by transferring its limiting
      * coordinates from stack to project coordinates.
      *
-     *  @param stackBox {min {x, y, z}, max{x, y, z}}
+     *  @param stackBox {{min: {x, y, z}, max: {x, y, z}}}
      */
     this.createStackToProjectBox = function( stackBox )
     {
@@ -295,13 +297,23 @@
 
     /**
      * Create a new stack box representing the extents of the stack.
-     * @return {min {x, y, z}, max{x, y, z}} extents of the stack in stack coordinates
+     * @return {{min: {x, y, z}, max: {x, y, z}}} extents of the stack in stack coordinates
      */
     this.createStackExtentsBox = function () {
       return {
         min: {x:     0, y:     0, z:     0},
         max: {x: MAX_X, y: MAX_Y, z: MAX_Z}
       };
+    };
+
+    /**
+     * Return whether a given section number is marked as broken.
+     *
+     * @param  {Number}  section Stack z coordinate of the section to check
+     * @return {Boolean}         True if the section is marked as broken.
+     */
+    self.isSliceBroken = function (section) {
+      return -1 !== self.broken_slices.indexOf(section);
     };
 
     /**
@@ -313,7 +325,7 @@
       while (true) {
       --adj;
       if (adj < 0) return null;
-      if (-1 === self.broken_slices.indexOf(adj)) return adj - section;
+      if (!self.isSliceBroken(adj)) return adj - section;
       }
     };
 
@@ -326,7 +338,7 @@
       while (true) {
       ++adj;
       if (adj > self.MAX_Z) return null;
-      if (-1 === self.broken_slices.indexOf(adj)) return adj - section;
+      if (!self.isSliceBroken(adj)) return adj - section;
       }
     };
   }

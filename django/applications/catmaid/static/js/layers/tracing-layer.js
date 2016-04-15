@@ -7,15 +7,19 @@
 
   /**
    * The tracing layer that hosts the tracing data
+   *
+   * @param {StackViewer} stackViewer Stack viewer containing this layer.
+   * @param {Object=}     options     Options passed to the tracing overlay.
    */
-  function TracingLayer( stack, options )
+  function TracingLayer( stackViewer, options )
   {
     options = options || {};
 
     var self = this;
 
     self.opacity = options.opacity || 1.0; // in the range [0,1]
-    this.svgOverlay = new SkeletonAnnotations.TracingOverlay(stack, options);
+    this.tracingOverlay = new SkeletonAnnotations.TracingOverlay(stackViewer, options);
+    this.isHideable = true;
 
     /**
      * Return friendly name of this layer.
@@ -27,12 +31,16 @@
 
     this.resize = function ( width, height )
     {
-      self.svgOverlay.redraw();
+      self.tracingOverlay.redraw();
     };
 
 
     this.beforeMove = function (completionCallback) {
-      this.svgOverlay.updateNodeCoordinatesInDB(completionCallback);
+      this.tracingOverlay.updateNodeCoordinatesInDB(completionCallback);
+    };
+
+    this.getClosestNode = function (x, y, radius, respectVirtualNodes) {
+      return this.tracingOverlay.getClosestNode(x, y, radius, respectVirtualNodes);
     };
 
     this.getOpacity = function()
@@ -43,13 +51,13 @@
     this.setOpacity = function ( val )
     {
       self.opacity = val;
-      self.svgOverlay.view.style.opacity = val+"";
+      self.tracingOverlay.view.style.opacity = val+"";
     };
 
     /** */
     this.redraw = function( completionCallback )
     {
-      self.svgOverlay.redraw(false, completionCallback);
+      self.tracingOverlay.redraw(false, completionCallback);
     };
 
     /**
@@ -57,18 +65,18 @@
      */
     this.forceRedraw = function(completionCallback)
     {
-      self.svgOverlay.redraw(true, completionCallback);
+      self.tracingOverlay.redraw(true, completionCallback);
     };
 
     this.unregister = function()
     {
       // Remove from DOM, if attached to it
-      var parentElement = this.svgOverlay.view.parentNode;
+      var parentElement = this.tracingOverlay.view.parentNode;
       if (parentElement) {
-        parentElement.removeChild(this.svgOverlay.view);
+        parentElement.removeChild(this.tracingOverlay.view);
       }
 
-      this.svgOverlay.destroy();
+      this.tracingOverlay.destroy();
     };
   }
 

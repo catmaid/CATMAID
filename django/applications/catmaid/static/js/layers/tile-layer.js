@@ -34,16 +34,40 @@
     this.opacity = opacity; // in the range [0,1]
     this.visible = visibility;
     this.isOrderable = true;
+    this.isHideable = false;
 
-    /** @type {[[Element]]} Contains all tiles in a 2D toroidal array */
+    /**
+     * Whether to hide this tile layer if the nearest section is marked as
+     * broken, rather than the default behavior of displaying the nearest
+     * non-broken section.
+     * @type {Boolean}
+     */
+    this.hideIfNearestSliceBroken = false;
+
+    /**
+     * Contains all tiles in a 2D toroidal array
+     * @type {Element[][]}
+     */
     this._tiles = [];
-    /** @type {number} Current origin row in the tiles array. */
+    /**
+     * Current origin row in the tiles array.
+     * @type {Number}
+     */
     this._tileOrigR = 0;
-    /** @type {number} Current origin column in the tiles array. */
+    /**
+     * Current origin column in the tiles array.
+     * @type {Number}
+     */
     this._tileOrigC = 0;
-    /** @type {number} Current stack tile row of the tiles array origin. */
+    /**
+     * Current stack tile row of the tiles array origin.
+     * @type {Number}
+     */
     this._tileFirstR = 0;
-    /** @type {number} Current stack tile column of the tiles array origin. */
+    /**
+     * Current stack tile column of the tiles array origin.
+     * @type {Number}
+     */
     this._tileFirstC = 0;
     this._tilesBuffer = [];
     this._buffering = false;
@@ -52,8 +76,11 @@
     this.tilesContainer = document.createElement('div');
     this.tilesContainer.className = 'sliceTiles';
 
-    /** @type {boolean} True to use linear tile texture interpolation, false to
-                        use nearest neighbor. */
+    /**
+     * True to use linear tile texture interpolation, false to use nearest
+     * neighbor.
+     * @type {boolean}
+     */
     this._interpolationMode = linearInterpolation;
     this.tilesContainer.classList.add('interpolation-mode-' + (this._interpolationMode ? 'linear' : 'nearest'));
 
@@ -166,6 +193,18 @@
         scaledStackPosition.yc,
         scaledStackPosition.z,
         scaledStackPosition.s);
+
+    if (this.hideIfNearestSliceBroken) {
+      // Re-project the stack z without avoiding broken sections to determine
+      // if the nearest section is broken.
+      var linearStackZ = this.stack.projectToLinearStackZ(
+          this.stackViewer.projectCoordinates().z);
+      if (this.stack.isSliceBroken(linearStackZ)) {
+        this.tilesContainer.style.opacity = '0';
+      } else {
+        this.setOpacity(this.opacity);
+      }
+    }
 
     var effectiveTileWidth = this.tileSource.tileWidth * tileInfo.mag;
     var effectiveTileHeight = this.tileSource.tileHeight * tileInfo.mag;
@@ -367,7 +406,7 @@
   /**
    * Loads tiles at specified indices, but does not display them, so that
    * they are cached for future viewing.
-   * @param  {[[]]}                     tileIndices      an array of tile
+   * @param  {number[][]}               tileIndices      an array of tile
    *                                                     indices like:
    *                                                     [c, r, z, s]
    * @param  {function(number, number)} progressCallback
@@ -409,7 +448,7 @@
   /**
    * Loads tiles for views centered at specified project locations, but does
    * not display them, so that they are cached for future viewing.
-   * @param  {[[]]}                     locations        an array of project
+   * @param  {number[][]}               locations        an array of project
    *                                                     coords like:
    *                                                     [x, y, z]
    * @param  {function(number, number)} progressCallback
@@ -500,6 +539,40 @@
       zoom:      zoom,
       mag:       mag
     };
+  };
+
+  /**
+   * Returns a set of set settings for this layer. This will only contain
+   * anything if the tile layer's tile source provides additional settings.
+   */
+  TileLayer.prototype.getLayerSettings = function () {
+    var settings = [{
+        name: 'hideIfBroken',
+        displayName: 'Hide if nearest slice is broken',
+        type: 'checkbox',
+        value: 'true',
+        help: 'Hide this tile layer if the nearest section is marked as ' +
+              'broken, rather than the default behavior of displaying the ' +
+              'nearest non-broken section.'}];
+
+    if (this.tileSource && CATMAID.tools.isFn(this.tileSource.getSettings)) {
+      settings = settings.concat(this.tileSource.getSettings());
+    }
+
+    return settings;
+  };
+
+  /**
+   * Set a layer setting for this layer. The value will only have any effect if
+   * the layer's tile source accepts setting changes.
+   */
+  TileLayer.prototype.setLayerSetting = function(name, value) {
+    if ('hideIfBroken' === name) {
+      this.hideIfNearestSliceBroken = value;
+      if (!this.hideIfNearestSliceBroken) this.setOpacity(this.opacity);
+    } else if (this.tileSource && CATMAID.tools.isFn(this.tileSource.setSetting)) {
+      return this.tileSource.setSetting(name, value);
+    }
   };
 
   /**

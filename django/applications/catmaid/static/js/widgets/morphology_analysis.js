@@ -120,7 +120,10 @@ MorphologyPlot.prototype.append = function(models) {
       function(skeleton_id) { return {}; }, // post
       (function(skeleton_id, json) {
         this.lines[skeleton_id] = {nodes: json[0],
-                                   connectors: json[1]};
+                                   connectors: json[1].filter(function(con) {
+                                     // Filter out non-synaptic connections
+                                     return con[2] === 0 || con[2] === 1;
+                                   })};
       }).bind(this),
       (function(skeleton_id) {
         // Failed loading

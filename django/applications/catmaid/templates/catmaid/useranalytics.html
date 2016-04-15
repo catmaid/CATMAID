@@ -1,11 +1,13 @@
 {% extends "admin/base_site.html" %}
-{% load compressed %}
+{% load pipeline %}
 {% load i18n %}
+{% load common %}
 
 {% block extrahead %}
 
-{% compressed_css 'libraries' %}
-{% compressed_js 'jquery-lib' %}
+{% stylesheet 'libraries' %}
+{% javascript 'jquery-lib' %}
+{% javascript 'catmaid-lib' %}
 
 {% endblock %}
 
@@ -20,19 +22,30 @@
 <h2>User Analytics</h2>
 
 <select id="logtable_username" type=""></select>
+<select id="project">
+  <option value="all">All projects</option>
+</select>
 <button id="refresh" >Refresh</button>
 Start date: <input type="text" id="start_date" />
 End date: <input type="text" id="end_date" />
 <br />
-<img src="{{ catmaid_url }}useranalytics" id="useranalyticsimg" />
+<img src="{{ CATMAID_URL }}useranalytics" id="useranalyticsimg" />
 
 <script type="text/javascript">
+  var STATIC_URL_JS = '{{ STATIC_URL|escapejs }}';
+  var django_url = "{{ CATMAID_URL }}";
+
+  CATMAID.configure("{{ CATMAID_URL }}",
+            "{{ STATIC_URL|escapejs }}",
+            "{{ STATIC_EXTENSION_URL|escapejs }}",
+            "{% csrf_cookie_name %}");
+  CATMAID.CLIENT_VERSION = "{% catmaid_version %}";
 
   $.ajax({
     "dataType": 'json',
     "type": "GET",
     "cache": false,
-    "url": '{{ catmaid_url }}user-list',
+    "url": '{{ CATMAID_URL }}user-list',
     "data": {},
     "success": function( json ) {
       var select = document.getElementById("logtable_username");
@@ -49,6 +62,20 @@ End date: <input type="text" id="end_date" />
     }
   });
 
+  $.ajax({
+      "dataType": 'json',
+      "type": "GET",
+      "cache": false,
+      "url": '{{ CATMAID_URL }}projects/',
+      "data": {},
+      "success": function(json) {
+        var select = document.getElementById("project");
+        json.forEach(function(p) {
+          select.options.add(new Option(p.title, p.id));
+        });
+      }
+  });
+
   $('#refresh').on('click', function() {
       $.blockUI();
       try {
@@ -58,9 +85,15 @@ End date: <input type="text" id="end_date" />
 				};
 
         var start = format(document.getElementById('start_date').value),
-            end = format(document.getElementById('end_date').value);
+            end = format(document.getElementById('end_date').value),
+            project_id = $('#project').val();
 
-        document.getElementById("useranalyticsimg").src = "{{ catmaid_url }}useranalytics?userid=" + $('#logtable_username').val() + "&start=" + start + "&end=" + end;
+        document.getElementById("useranalyticsimg").src =
+            "{{ CATMAID_URL }}useranalytics" +
+            "?userid=" + $('#logtable_username').val() +
+            (project_id === 'all' ? '' : '&project_id=' + project_id) +
+            "&start=" + start +
+            "&end=" + end;
       } catch (e) {
         alert(e);
         console.log(e, e.stack);

@@ -18,6 +18,8 @@ function CMWNode(){}
 
 CMWNode.CMWNodeUniqueId = 0;
 
+CMWNode.FRAME_CLASS = 'CMWFrame';
+
 CMWNode.prototype.uniqueId = function()
 {
   return CMWNode.CMWNodeUniqueId++;
@@ -54,7 +56,9 @@ CMWNode.prototype.getAvailableWidth = function()
 {
   var parent = this.getParent();
   var w = this.getWidth();
-  if ( parent.getResizeHandleView && parent.getLeftChild && parent.getLeftChild() == this )
+  if ( !parent )
+    return w;
+  else if ( parent.getResizeHandleView && parent.getLeftChild && parent.getLeftChild() == this )
     return w - parent.getResizeHandleView().offsetWidth;
   else
     return w - parent.getWidth() + parent.getAvailableWidth();
@@ -67,7 +71,9 @@ CMWNode.prototype.getAvailableHeight = function()
 {
   var parent = this.getParent();
   var h = this.getHeight();
-  if ( parent.getResizeHandleView && parent.getTopChild && parent.getTopChild() == this )
+  if ( !parent )
+    return h;
+  else if ( parent.getResizeHandleView && parent.getTopChild && parent.getTopChild() == this )
     return h - parent.getResizeHandleView().offsetHeight;
   else
     return h - parent.getHeight() + parent.getAvailableHeight();
@@ -249,7 +255,7 @@ function CMWHSplitNode( child1, child2 )
   child2.setParent( this );
 
   var frame = document.createElement( "div" );
-  frame.className = "sliceView";
+  frame.className = CMWNode.FRAME_CLASS;
   frame.style.position = "absolute";
   frame.id = "CMW" + id;
   frame.style.top = "0px";
@@ -323,12 +329,18 @@ function CMWHSplitNode( child1, child2 )
     var f1 = child1.getFrame();
     var f2 = child2.getFrame();
     var w = self.getWidth();
+    var h = self.getHeight();
     w1 = Math.max( 20, Math.min( w - 20, Math.round( w * widthRatio ) ) );
 
     f1.style.width = w1 + "px";
+    f1.style.height = h + "px";
+    f1.style.left = "0";
+    f1.style.top = "0";
 
     f2.style.width = ( w - w1 ) + "px";
+    f2.style.height = h + "px";
     f2.style.left = w1 + "px";
+    f2.style.top = "0";
 
     child1.redraw();
     child2.redraw();
@@ -455,7 +467,7 @@ function CMWVSplitNode( child1, child2 )
   child2.setParent( this );
 
   var frame = document.createElement( "div" );
-  frame.className = "sliceView";
+  frame.className = CMWNode.FRAME_CLASS;
   frame.style.position = "absolute";
   frame.id = "CMW" + id;
   frame.style.top = "0px";
@@ -530,12 +542,18 @@ function CMWVSplitNode( child1, child2 )
     var f1 = child1.getFrame();
     var f2 = child2.getFrame();
     var h = self.getHeight();
+    var w = self.getWidth();
     h1 = Math.max( 20, Math.min( h - 20, Math.round( h * heightRatio ) ) );
 
     f1.style.height = h1 + "px";
+    f1.style.width = w + "px";
+    f1.style.top = "0";
+    f1.style.left = "0";
 
     f2.style.height = ( h - h1 ) + "px";
+    f2.style.width = w + "px";
     f2.style.top = h1 + "px";
+    f2.style.left = "0";
 
     child1.redraw();
     child2.redraw();
@@ -636,6 +654,218 @@ function CMWVSplitNode( child1, child2 )
 CMWVSplitNode.prototype = new CMWNode();
 CMWVSplitNode.prototype.constructor = CMWVSplitNode;
 
+
+
+/**
+ * Tabbed split node
+ */
+function CMWTabbedNode( children )
+{
+  var self = this;
+
+  var id = this.uniqueId();
+
+  var parent = null;
+
+  var children = children;
+  var activeChild = children[0];
+
+  children.forEach(function (c) {
+    c.setParent(self);
+  });
+
+  var frame = document.createElement( "div" );
+  frame.className = CMWNode.FRAME_CLASS;
+  frame.style.position = "absolute";
+  frame.id = "CMW" + id;
+  frame.style.top = "0px";
+  frame.style.bottom = "0px";
+
+  var tabContainer = document.createElement( "div" );
+  tabContainer.className = "CMWTabs";
+
+  var tabs = [];
+  var addTab = function (child, index) {
+    var tab = document.createElement("span");
+    tab.innerText = child.getTitle ?
+        child.getTitle() :
+        (child.getWindows().length + ' windows');
+    if (child === activeChild) tab.className = "active";
+    tab.addEventListener("click", function () { self.activateChild(child); return true; });
+    if (typeof index === 'undefined') {
+      tabContainer.appendChild(tab);
+      tabs.push(tab);
+    } else {
+      tabContainer.replaceChild(tab, tabContainer.childNodes[index]);
+      tabs[index] = tab;
+    }
+    return tab;
+  };
+
+  children.forEach(function (t) { addTab(t); });
+
+  frame.appendChild(tabContainer);
+
+  var activeChildFrame = activeChild.getFrame();
+  activeChildFrame.style.left = "0px";
+  activeChildFrame.style.top = "0px";
+  activeChildFrame.style.width = "";
+  activeChildFrame.style.height = "";
+
+  frame.appendChild( activeChildFrame );
+
+  this.getId = function(){ return id; };
+
+  this.getFrame = function(){ return frame; };
+
+  this.getParent = function(){ return parent; };
+
+  /**
+   * Set the parent node.
+   *
+   * @param {Object} newParent
+   * @return former parent node
+   */
+  this.setParent = function( newParent )
+  {
+    var oldParent = parent;
+    parent = newParent;
+    return oldParent;
+  };
+
+  this.getRootNode = function(){ return parent.getRootNode(); };
+
+  this.getActiveChild = function()
+  {
+    return activeChild;
+  };
+
+  this.getChildren = function()
+  {
+    return children.reduce(function (children, child) {
+      return children.concat(child.getChildren());
+    }, children);
+  };
+
+  this.addChild = function (newChild)
+  {
+    children.push(newChild);
+
+    var newChildFrame = newChild.getFrame();
+    if ( newChildFrame.parentNode !== null )
+      newChildFrame.parentNode.removeChild( newChildFrame );
+    newChild.setParent( self );
+
+    addTab(newChild);
+
+    self.redraw();
+  };
+
+  this.activateChild = function (child) {
+    childIndex = children.indexOf(child);
+    if (childIndex === -1) return;
+
+    tabs.forEach(function (t) { t.classList.remove("active"); });
+    tabs[childIndex].classList.add("active");
+
+    var newActiveChildFrame = child.getFrame();
+    if (activeChildFrame.parentNode === frame) {
+      frame.replaceChild(newActiveChildFrame, activeChildFrame);
+    } else {
+      frame.appendChild(newActiveChildFrame);
+    }
+    activeChild = child;
+    activeChildFrame = newActiveChildFrame;
+    activeChildFrame.style.left = "0px";
+    activeChildFrame.style.top = "0px";
+    activeChildFrame.style.width = "";
+    activeChildFrame.style.height = "";
+
+    self.redraw();
+
+    if (activeChild.focus) {
+      activeChild.focus();
+    } else {
+      activeChild.getWindows()[0].focus();
+    }
+  };
+
+  this.getWindows = function()
+  {
+    return children.reduce(function (w, c) {
+      return w.concat(c.getWindows());
+    }, []);
+  };
+
+  this.redraw = function()
+  {
+    var childFrame = activeChild.getFrame();
+    childFrame.style.top = tabContainer.offsetHeight + "px";
+    childFrame.style.left = "0";
+    childFrame.style.width = self.getWidth() + "px";
+    childFrame.style.height = (self.getHeight() - tabContainer.offsetHeight) + "px";
+
+    activeChild.redraw();
+
+    return self;
+  };
+
+  this.replaceChild = function( newChild, oldChild )
+  {
+    var oldChildInd = children.indexOf(oldChild);
+    if (oldChildInd === -1) return;
+    children[oldChildInd] = newChild;
+    newChild.setParent(self);
+    addTab(newChild, oldChildInd);
+    if (activeChild === oldChild) {
+      self.activateChild(newChild);
+    } else {
+      self.redraw();
+    }
+  };
+
+  this.getSiblingOf = function( child )
+  {
+    var childIndex = children.indexOf(child);
+    if ( childIndex !== -1) {
+      if ( children.length === 1 ) {
+        // Should not occur (should always have at least 2 tabs), but this
+        // is the semantically correct behavior.
+        return parent.getSiblingOf(self);
+      } else if ( children.length === 2) {
+        return children[(childIndex + 1) % children.length];
+      } else {
+        var siblings = children.slice();
+        siblings.splice(childIndex, 1);
+        return new CMWTabbedNode(siblings);
+      }
+    } else {
+      return null;
+    }
+  };
+
+  this.removeResizeHandle = function() {};
+
+  this.catchDrag = function()
+  {
+    activeChild.catchDrag();
+  };
+
+  this.releaseDrag = function()
+  {
+    children.forEach(function (c) { c.releaseDrag(); });
+  };
+
+  this.toXML = function( tabs )
+  {
+    return tabs + "<tabbednode id=\"" + id + "\">\n" +
+        children.map(function (c) { return c.toXML( tabs + "\t" ); }).join("\n") + "\n" +
+        tabs + "</tabbednode>";
+  };
+}
+
+CMWTabbedNode.prototype = new CMWNode();
+CMWTabbedNode.prototype.constructor = CMWTabbedNode;
 
 
 /**
@@ -754,7 +984,7 @@ function CMWWindow( title )
   titleBar.appendChild( closeHandle );
 
   var frame = document.createElement( "div" );
-  frame.className = "sliceView";
+  frame.className = CMWNode.FRAME_CLASS;
   frame.style.position = "absolute";
   frame.id = "CMW" + id;
   frame.style.top = "0px";
@@ -798,20 +1028,26 @@ function CMWWindow( title )
     if ( self != CMWWindow.selectedWindow )
     {
       var m = CATMAID.ui.getMouse(e, eventCatcher);
-      var min = m.offsetY;
-      var s = "Top";
-      if ( m.offsetY > self.getHeight() / 2 )
+      var min = Infinity;
+      var s = "Middle";
+      if ( m.offsetY < self.getHeight() / 3 )
+      {
+        min = m.offsetY;
+        s = "Top";
+      }
+      else if ( m.offsetY > ( 2 * self.getHeight() / 3 ) )
       {
         min = self.getHeight() - m.offsetY;
         s = "Bottom";
       }
-      if ( m.offsetX < min )
+      if ( (m.offsetX < self.getWidth() / 3) && (m.offsetX < min) )
       {
-        min = m.offsetX;
         s = "Left";
       }
-      if ( self.getWidth() - m.offsetX < min )
+      if ( (m.offsetX > (2 * self.getWidth() / 3)) && (self.getWidth() - m.offsetX < min) )
+      {
         s = "Right";
+      }
 
       eventCatcher.className = "eventCatcher" + s;
     }
@@ -842,19 +1078,38 @@ function CMWWindow( title )
 
       if ( eventCatcher.className == "eventCatcherTop" )
       {
-        parent.replaceChild( new CMWVSplitNode( CMWWindow.selectedWindow, self ), self );
+        if ( !e.shiftKey && parent instanceof CMWTabbedNode )
+          parent.getParent().replaceChild( new CMWVSplitNode( CMWWindow.selectedWindow, parent ), parent );
+        else
+          parent.replaceChild( new CMWVSplitNode( CMWWindow.selectedWindow, self ), self );
       }
       else if ( eventCatcher.className == "eventCatcherBottom" )
       {
-        parent.replaceChild( new CMWVSplitNode( self, CMWWindow.selectedWindow ), self );
+        if ( !e.shiftKey && parent instanceof CMWTabbedNode )
+          parent.getParent().replaceChild( new CMWVSplitNode( parent, CMWWindow.selectedWindow ), parent );
+        else
+          parent.replaceChild( new CMWVSplitNode( self, CMWWindow.selectedWindow ), self );
       }
       else if ( eventCatcher.className == "eventCatcherLeft" )
       {
-        parent.replaceChild( new CMWHSplitNode( CMWWindow.selectedWindow, self ), self );
+        if ( !e.shiftKey && parent instanceof CMWTabbedNode )
+          parent.getParent().replaceChild( new CMWHSplitNode( CMWWindow.selectedWindow, parent ), parent );
+        else
+          parent.replaceChild( new CMWHSplitNode( CMWWindow.selectedWindow, self ), self );
       }
       else if ( eventCatcher.className == "eventCatcherRight" )
       {
-        parent.replaceChild( new CMWHSplitNode( self, CMWWindow.selectedWindow ), self );
+        if ( !e.shiftKey && parent instanceof CMWTabbedNode )
+          parent.getParent().replaceChild( new CMWHSplitNode( parent, CMWWindow.selectedWindow ), parent );
+        else
+          parent.replaceChild( new CMWHSplitNode( self, CMWWindow.selectedWindow ), self );
+      }
+      else if ( eventCatcher.className == "eventCatcherMiddle" )
+      {
+        if ( parent instanceof CMWTabbedNode )
+          parent.addChild(CMWWindow.selectedWindow);
+        else
+          parent.replaceChild( new CMWTabbedNode( [self, CMWWindow.selectedWindow] ), self );
       }
     }
     var rootNode = self.getRootNode();

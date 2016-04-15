@@ -2,6 +2,8 @@
 {% load data_view_config %}
 {% include "catmaid/common_data_view_header.html" %}
 
+{% with show_stackgroups=config|get_or_none:"show_stackgroups"|default_if_none:1 %}
+{% with show_stacks=config|get_or_none:"show_stacks"|default_if_none:1 %}
 {% with catalogue_link=config|get_or_none:"catalogue_link"|default_if_none:1 %}
 {% with sample_images=config|get_or_none:"sample_images"|default_if_none:0 %}
 {% with sample_stack=config|get_or_none:"sample_stack"|default_if_none:0 %}
@@ -11,43 +13,65 @@
 
 {% if sample_images %}<table>{% endif %}
 {% for p in projects %}
-    {% if stacks_of|get:p.id %}
-    {# Add a sample image if requested #}
-    {% if sample_images %}<tr><td class="stackimage">
-            {# Get the samlpe stack  #}
-            {% with stack=stacks_of|get:p.id|dictsort:'id'|get_stack:sample_stack %}
-            {% if stack|is_none %}
-                Couldn't find requested stack: {{ sample_stack }}
-            {% else %}
-                {# Get the wanted slice #}
-                {% with slice=stack|get_slice:sample_slice %}
-                {% if slice|is_none %}
-                    Couldn't find requested slice: {{ sample_slice }}
+    {% if show_stackgroups and stackgroups_of|get:p.id %}
+
+    {% endif %}
+    {% if show_stacks and stacks_of|get:p.id or show_stackgroups and stackgroups_of|get:p.id %}
+        {# Add a sample image if requested #}
+        {% if sample_images %}
+            <tr><td class="stackimage">
+            {% if show_stacks and stacks_of|get:p.id %}
+                {# Get the samlpe stack  #}
+                {% with stack=stacks_of|get:p.id|dictsort:'id'|get_stack:sample_stack %}
+                {% if stack|is_none %}
+                    Couldn't find requested stack: {{ sample_stack }}
                 {% else %}
-                    <img src="{{ stack.image_base }}{{ slice }}/small.{{ stack.file_extension }}"
-                        alt="Sample image for {{ stack.title }} on slice {{ slice }}"
-                        {% if sample_width > -1 %} width="{{ sample_width }}" {% endif %}
-                        {% if sample_height > -1 %} height="{{ sample_height }}" {% endif %} />
+                    {# Get the wanted slice #}
+                    {% with slice=stack|get_slice:sample_slice %}
+                    {% if slice|is_none %}
+                        Couldn't find requested slice: {{ sample_slice }}
+                    {% else %}
+                        <img src="{{ stack.image_base }}{{ slice }}/small.{{ stack.file_extension }}"
+                            alt="Sample image for {{ stack.title }} on slice {{ slice }}"
+                            {% if sample_width > -1 %} width="{{ sample_width }}" {% endif %}
+                            {% if sample_height > -1 %} height="{{ sample_height }}" {% endif %} />
+                    {% endif %}
+                    {% endwith %}
                 {% endif %}
                 {% endwith %}
             {% endif %}
-            {% endwith %}
             </td><td class="stackname">
-    {% endif %}
-            <dl>
-                <dt>{{ p.title }}</dt>
-                {% for s in stacks_of|get:p.id|dictsort:"id" %}
-                <dd><a href="?pid={{ p.id }}&tool=navigator&sid0={{ s.id }}&s0=1" onclick="openProjectStack({{p.id}}, {{s.id}});return false">{{ s.title }}</a></dd><dd>{{ s.comment|safe }}</dd>
+        {% endif %}
+         <dl>
+            <dt>{{ p.title }}</dt>
+            {% if show_stackgroups and stackgroups_of|get:p.id %}
+                {% for sg in stackgroups_of|get:p.id|dictsort:"id" %}
+                    <dd><a href="#"
+                        onclick="openStackGroup({{p.id}}, {{sg.id}});return false">{{ sg.name }}</a></dd>
                 {% endfor %}
-                {# Optionally, add the the neuron catalogue link #}
-                {% if p.is_catalogueable and catalogue_link %}
-                    <dd><a href="{{ settings.CATMAID_URL }}{{ p.id }}">Browse the Neuron Catalogue</a></dd>
-                {% endif %}
-            </dl>
-        </td></tr>
+            {% endif %}
+            {% if show_stacks and stacks_of|get:p.id %}
+                {% for s in stacks_of|get:p.id|dictsort:"id" %}
+                    <dd><a href="?pid={{ p.id }}&tool=navigator&sid0={{ s.id }}&s0=1"
+                        onclick="openProjectStack({{p.id}}, {{s.id}});return false">{{ s.title }}</a></dd>
+                    {% if s.comment %}
+                        <dd>{{ s.comment|safe }}</dd>
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+            {# Optionally, add the the neuron catalogue link #}
+            {% if p.is_catalogueable and catalogue_link %}
+                <dd><a href="{{ settings.CATMAID_URL }}{{ p.id }}">Browse the Neuron Catalogue</a></dd>
+            {% endif %}
+        </dl>
+        {% if sample_images %}
+            </td></tr>
+        {% endif %}
     {% endif %}
 {% endfor %}
 {% if sample_images %}</table>{% endif %}
+{% endwith %}
+{% endwith %}
 {% endwith %}
 {% endwith %}
 {% endwith %}

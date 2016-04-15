@@ -12,6 +12,15 @@
   var DOM = {};
 
   /**
+   * Remove all elements from a parent element.
+   */
+  DOM.removeAllChildren = function(element) {
+    while (element.lastChild) {
+      element.removeChild(element.lastChild);
+    }
+  };
+
+  /**
    * Helper function to create a collapsible settings container.
    */
   DOM.addSettingsContainer = function(parent, name, closed)
@@ -114,16 +123,36 @@
   /**
    * Helper function to create a select element with options.
    */
-  DOM.createSelectSetting = function(name, options, helptext, handler)
+  DOM.createSelectSetting = function(name, options, helptext, handler, defaultValue)
   {
-    var select = $('<select />');
+    var select = document.createElement('select');
     for (var o in options) {
-      select.append(new Option(o, options[o]));
+      var value = options[o];
+      var selected = (defaultValue === value);
+      var option = new Option(o, value, selected, selected);
+      select.add(option);
     }
     if (handler) {
-      select.on('change', handler);
+      select.onchange = handler;
     }
     return CATMAID.DOM.createLabeledControl(name, select, helptext);
+  };
+
+  /**
+   * Create a file open button that can be optionally initialized hidden.
+   */
+  DOM.createFileButton = function(id, visible, onchangeFn) {
+    var fb = document.createElement('input');
+    fb.setAttribute('type', 'file');
+    if (id) {
+      fb.setAttribute('id', id);
+    }
+    fb.setAttribute('name', 'files[]');
+    if (!visible) {
+      fb.style.display = 'none';
+    }
+    fb.onchange = onchangeFn;
+    return fb;
   };
 
   /**
@@ -170,6 +199,32 @@
     }
 
     $('.stackTitle', win.getFrame()).after(wrapper);
+
+    return wrapper;
+  };
+
+  /**
+   * Inject a help button into the caption of a window. This button opens a
+   * widget containing the passed help text when clicked.
+   *
+   * @param {CMWWindow} win          Window to which the button with be added.
+   * @param {string}    title        Title of the help window that will open.
+   * @param {string}    helpTextHtml HTML source of the help text.
+   */
+  DOM.addHelpButton = function (win, title, helpTextHtml) {
+    var helpTextFeedback =
+        '<p class="ui-state-highlight ui-widget">' +
+        'Is this documentation incomplete or incorrect? Help out by ' +
+        '<a target="_blank" href="' +
+        CATMAID.makeDocURL('contributing.html#in-client-documentation') +
+        '">letting us know or contributing a fix.</a></p>';
+    DOM.addCaptionButton(win,
+        'ui-icon ui-icon-help',
+        'Show help documentation for this widget',
+        function () {
+          WindowMaker.create('html', {title: title,
+                                      html: helpTextHtml + helpTextFeedback});
+        });
   };
 
   /**
@@ -180,7 +235,7 @@
   DOM.addButtonDisplayToggle = function(win, title) {
     title = title || 'Show and hide widget controls';
     DOM.addCaptionButton(win, 'ui-icon ui-icon-gear', title, function() {
-      var frame = $(this).closest('.sliceView');
+      var frame = $(this).closest('.' + CMWNode.FRAME_CLASS);
       var panels = $('.buttonpanel', frame);
       if (panels.length > 0) {
        // Toggle display of first button panel found
@@ -194,7 +249,7 @@
    * Inject an extra button into the caption of a window. This button allows to
    * show and hide skeleton source controls for a widget.
    */
-  DOM.addSourceControlsToggle = function(win, source, title) {
+  DOM.addSourceControlsToggle = function(win, source, title, options) {
     title = title || 'Show and hide skeleton source controls';
 
     // A toggle function that also allows to recreate the UI.
@@ -211,7 +266,7 @@
 
       if (show || recreate) {
         // Create new panel
-        panel = CATMAID.skeletonListSources.createSourceControls(source);
+        panel = CATMAID.skeletonListSources.createSourceControls(source, options);
         panel.setAttribute('class', 'sourcepanel');
         // Add as first element after caption and event catcher
         var eventCatcher = frame.querySelector('.eventCatcher');
@@ -228,7 +283,7 @@
     // Make a update function that can be referred to from handlers
     var update = toggle.bind(window, true);
 
-    DOM.addCaptionButton(win, 'ui-icon ui-icon-link', title, function() {
+    return DOM.addCaptionButton(win, 'ui-icon ui-icon-link', title, function() {
       // Do a regular toggle update by default
       var opened = toggle();
 
@@ -242,6 +297,142 @@
         source.off(source.EVENT_SUBSCRIPTION_REMOVED, update);
       }
     });
+  };
+
+  /**
+   * Create a new select element that when clicked (or optionally hovered) shows
+   * a custom list in a DIV container below it. This custom list provides
+   * checkbox elements for each entry
+   *
+   * Main idea from: http://stackoverflow.com/questions/17714705
+   *
+   * @param title {String}   A title showing as the first element of the select
+   * @param options {Object} Maps values to field names
+   *
+   * @returns a wrapper around the select element
+   */
+  DOM.createCheckboxSelect = function(title, options) {
+    var checkboxes = document.createElement('ul');
+    for (var o in options) {
+      var entry = document.createElement('label');
+      var checkbox = document.createElement('input');
+      checkbox.setAttribute('type', 'checkbox');
+      checkbox.setAttribute('value', o);
+      entry.appendChild(checkbox);
+      entry.appendChild(document.createTextNode(options[o]));
+      checkboxes.appendChild(entry);
+    }
+    checkboxes.onclick = function(e) {
+      // Cancel bubbling
+      e.cancelBubble = true;
+      if (e.stopPropagation) e.stopPropagation();
+    };
+
+    return CATMAID.DOM.createCustomContentSelect(title, checkboxes);
+  };
+
+  /**
+   * Create a new select element that when clicked (or optionally hovered) shows
+   * content in a DIV container below it.
+   *
+   * Main idea from: http://stackoverflow.com/questions/17714705
+   *
+   * @param title {String}   A title showing as the first element of the select
+   * @param content {Object} Content to be displayed when select is clicked
+   *
+   * @returns a wrapper around the select element
+   */
+  DOM.createCustomContentSelect = function(title, content) {
+    // Expandable container
+    var container = document.createElement('span');
+    container.setAttribute('class', 'customselect');
+
+    var selectBox = document.createElement('div');
+    selectBox.setAttribute('class', 'customselect-selectbox');
+
+    var toggleSelect = document.createElement('select');
+    toggleSelect.options.add(new Option(title));
+    selectBox.appendChild(toggleSelect);
+
+    // Hide the selects drop down menu, which is needed for creating our own
+    // drop down as well as for showing thre rest of the panel if the menu is
+    // expanded.
+    var overSelect = document.createElement('div');
+    overSelect.setAttribute('class', 'customselect-overselect');
+    selectBox.appendChild(overSelect);
+
+    container.appendChild(selectBox);
+
+    var customContent = document.createElement('div');
+    customContent.setAttribute('class', 'customselect-content');
+    customContent.style.display = "none";
+    customContent.appendChild(content);
+    container.appendChild(customContent);
+
+    // The function responsible for hiding and showing all controls has a
+    // private state variable and an IIFE is used to encapsulate it (to reduce
+    // closure size).
+    var toggleExpansion = (function() {
+      var expanded = false;
+      return function(e) {
+        var customContent = this.querySelector('div.customselect-content');
+        if (expanded) {
+          customContent.style.display = 'none';
+        } else {
+          customContent.style.display = 'block';
+        }
+        expanded = !expanded;
+      };
+    })();
+
+    // Expand whe the container is clicked
+    container.onclick = toggleExpansion;
+    toggleSelect.onclick = function(e) {
+      toggleExpansion(e);
+      return false; // Don't bubble up
+    };
+
+    // This wrapper is used to make the actual control container expand more
+    // reliable.
+    var wrapper = document.createElement('span');
+    wrapper.appendChild(container);
+
+    return wrapper;
+  };
+
+  /**
+   * Create a simple placeholder.
+   */
+  DOM.createPlaceholder= function() {
+    var placeholder = document.createElement('span');
+    placeholder.classList.add('placeholder');
+    var img = document.createElement('img');
+    img.src = CATMAID.makeStaticURL('images/wait_bgtransgrey.gif');
+    placeholder.appendChild(img);
+    return placeholder;
+  };
+
+  /**
+   * Create a placeholder element that will get replaced once async content has
+   * been loaded, i.e. the passed in promise has been resolved. The promise is
+   * expected to return the actual element to be displayed.
+   */
+  DOM.createAsyncPlaceholder= function(promise) {
+    var placeholder = CATMAID.DOM.createPlaceholder();
+    if (!promise || !CATMAID.tools.isFn(promise.then)) {
+      throw new CATMAID.ValueError('Async musst be either a callback or promise');
+    }
+
+    // After promise is fulfilled, replace placeholder
+    promise.then(function(element) {
+      if (placeholder.parentNode) {
+        placeholder.parentNode.replaceChild(element, placeholder);
+      } else {
+        throw new CATMAID.ValueError('Placeholder node doesn\'t have a parent');
+      }
+    }).catch(CATMAID.handleError);
+
+    return placeholder;
   };
 
   // Export DOM namespace

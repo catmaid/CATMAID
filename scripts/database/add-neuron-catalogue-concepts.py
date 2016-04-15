@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
+
 from common import db_connection
 
 import sys
 
 if len(sys.argv) != 3:
-    print >> sys.stderr, "Usage: %s <PROJECT-ID> <USER-ID>" % (sys.argv[0],)
+    print("Usage: %s <PROJECT-ID> <USER-ID>" % (sys.argv[0],), file=sys.stderr)
     sys.exit(1)
 
 project_id = int(sys.argv[1])
@@ -17,7 +19,7 @@ for class_name in ('driver_line', 'cell_body_location'):
     c.execute("SELECT * FROM class WHERE project_id = %s AND class_name = %s",
               (project_id, class_name))
     if c.fetchall():
-        print >> sys.stderr, "The class '%s' has already been inserted" % (class_name,)
+        print("The class '%s' has already been inserted" % (class_name,), file=sys.stderr)
     else:
         c.execute("INSERT INTO class (user_id, project_id, class_name) "+
                   "VALUES (%s, %s, %s)",
@@ -27,7 +29,7 @@ for relation_name in ('expresses_in', 'has_cell_body'):
     c.execute("SELECT * FROM relation WHERE project_id = %s AND relation_name = %s",
               (project_id, relation_name))
     if c.fetchall():
-        print >> sys.stderr, "The relation '%s' has already been inserted" % (relation_name,)
+        print("The relation '%s' has already been inserted" % (relation_name,), file=sys.stderr)
     else:
         c.execute("INSERT INTO relation (user_id, project_id, relation_name) "+
                   "VALUES (%s, %s, %s)",

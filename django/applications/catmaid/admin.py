@@ -54,6 +54,7 @@ class BrokenSliceModelForm(forms.ModelForm):
 
     class Meta:
         model = BrokenSlice
+        fields = '__all__'
 
 
 class BrokenSliceAdmin(GuardedModelAdmin):
@@ -109,7 +110,8 @@ class BrokenSliceAdmin(GuardedModelAdmin):
 class ProjectStackInline(admin.TabularInline):
     model = ProjectStack
     extra = 1
-
+    max_num = 20
+    raw_id_fields = ("stack",)
 
 class ProjectAdmin(GuardedModelAdmin):
     list_display = ('title',)
@@ -260,6 +262,7 @@ class DataViewAdminForm(forms.ModelForm):
     """
     class Meta:
         model = DataView
+        fields = '__all__'
 
     def __init__(self, *args, **kwargs):
         super(DataViewAdminForm, self).__init__(*args, **kwargs)

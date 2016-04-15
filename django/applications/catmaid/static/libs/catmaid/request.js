@@ -78,6 +78,9 @@ RequestQueue = function(originUrl, csrfToken)
         break;
       case "function":
       case "object":
+        if (null === o[k]) {
+          break;
+        }
         if ( o[ k ].constructor == Array && o[ k ].length > 0 )
           q += encodeArray( o[ k ], r ) + "&";
         else
@@ -129,9 +132,14 @@ RequestQueue = function(originUrl, csrfToken)
       item.method,
       item.request,
       true );
+    // Accept all content types as response. This is needed to not have Firefox
+    // add its own defaults, which in turn triggers Django Rest Framework in the
+    // back-end to return a website for views it covers.
+    xmlHttp.setRequestHeader( "Accept", "*/*" );
     xmlHttp.setRequestHeader( "X-Requested-With", "XMLHttpRequest");
     if ( item.method == "POST" || item.method == "PUT" )
     {
+      xmlHttp.setRequestHeader( "Accept", "*/*" );
       xmlHttp.setRequestHeader( "Content-type", "application/x-www-form-urlencoded" );
       // xmlHttp.setRequestHeader( "Content-length", queue[ 0 ].data.length );
       // xmlHttp.setRequestHeader( "Connection", "close" );

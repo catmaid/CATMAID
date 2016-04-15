@@ -409,7 +409,7 @@
    * Recreate the connectivity matrix and refresh the UI.
    */
   ConnectivityMatrixWidget.prototype.update = function(container) {
-    if (!this.matrix) {
+    if (!(this.matrix && this.content)) {
       return;
     }
 

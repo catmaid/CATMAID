@@ -1,5 +1,4 @@
 import re
-import catmaid
 
 from django import template
 from django.conf import settings
@@ -16,9 +15,9 @@ def order_by(queryset, args):
 
 @register.filter
 def is_none(val):
-	""" Return whether the value is None or not.
-	"""
-	return val is None
+    """ Return whether the value is None or not.
+    """
+    return val is None
 
 @register.filter
 def get(dictionary, key):
@@ -26,19 +25,19 @@ def get(dictionary, key):
 
 @register.filter
 def get_or_none(dictionary, option):
-	""" Returns the value linked to the name key in the input
-	dictionary, if it exists. If it does not exists, it returns
-	none.
-	"""
-	if option in dictionary:
-		return dictionary[option]
-	else:
-		return None
+    """ Returns the value linked to the name key in the input
+    dictionary, if it exists. If it does not exists, it returns
+    none.
+    """
+    if option in dictionary:
+        return dictionary[option]
+    else:
+        return None
 
 def is_string_type(val):
-	""" Returns whether the passed type is a string type.
-	"""
-	return val == str or val == unicode or val == SafeUnicode
+    """ Returns whether the passed type is a string type.
+    """
+    return val == str or val == unicode or val == SafeUnicode
 
 @register.filter
 def sort(l):
@@ -48,13 +47,13 @@ def sort(l):
     return l
 
 @register.filter
-def natural_sort(l,field):
-	""" Natural sorting of a list wrt. to a given attribute.
-	Based on: http://stackoverflow.com/questions/4836710
-	"""
-	convert = lambda text: int(text) if text.isdigit() else text.lower()
-	alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', getattr(key, field)) ]
-	return sorted(l, key = alphanum_key)
+def natural_sort(l, field):
+    """ Natural sorting of a list wrt. to a given attribute.
+    Based on: http://stackoverflow.com/questions/4836710
+    """
+    convert = lambda text: int(text) if text.isdigit() else text.lower()
+    alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', getattr(key, field))]
+    return sorted(l, key=alphanum_key)
 
 @register.filter
 def intersect(set1, set2):
@@ -70,4 +69,4 @@ def catmaid_version():
 
 @register.simple_tag
 def csrf_cookie_name():
-	return settings.CSRF_COOKIE_NAME
+    return settings.CSRF_COOKIE_NAME

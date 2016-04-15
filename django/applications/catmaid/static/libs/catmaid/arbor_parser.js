@@ -74,8 +74,10 @@
     var io = [{count: 0},
               {count: 0}];
     for (var i=0; i<rows.length; ++i) {
-      var row = rows[i],
-          t = io[row[2]], // 2: type: 0 for pre, 1 for post
+      var row = rows[i];
+      // Skip non-synaptic connectors
+      if (row[2] !== 0 && row[2] !== 1) continue;
+      var t = io[row[2]], // 2: type: 0 for pre, 1 for post
           node = row[0], // 0: ID
           count = t[node];
       if (count) t[node] = count + 1;

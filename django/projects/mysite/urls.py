@@ -1,39 +1,51 @@
-from django.conf.urls import patterns, include, url
-from django.conf import settings
+import re
 
-from catmaid.views import *
+from adminplus.sites import AdminSitePlus
+
+from django.conf import settings
+from django.conf.urls import include, url
+from django.contrib import admin
+from django.views.static import serve
+
 from catmaid.control.authentication import ObtainAuthToken
 
-import catmaid
-
-# Uncomment the next two lines to enable the admin:
-from django.contrib import admin
-from adminplus.sites import AdminSitePlus
+# Administration
 admin.site = AdminSitePlus()
 admin.autodiscover()
 
+# Customize admin site titles and header
+admin.site.site_header = "CATMAID administration"
+admin.site.site_title = "CATMAID site admin"
+admin.site.index_title = "CATMAID instance"
+
 # CATMAID
-urlpatterns = patterns('',
+urlpatterns = [
     url(r'^', include('catmaid.urls')),
-)
+]
 
 # Admin site
-urlpatterns += patterns('',
+urlpatterns += [
     url(r'^admin/', include(admin.site.urls))
-)
+]
 
 # API Documentation
-urlpatterns += patterns('',
+urlpatterns += [
     url(r'^apis/', include('rest_framework_swagger.urls')),
     url(r'^api-token-auth/', ObtainAuthToken.as_view()),
-)
+]
 
-if settings.DEBUG:
-    urlpatterns += patterns('',
-        (r'^static/(?P<path>.*)$', 'django.views.static.serve', {'document_root': settings.STATIC_ROOT}),
-        # Access to static estensions in debug mode, remove leading slash.
-        (r'^%s(?P<path>.*)$' % settings.STATIC_EXTENSION_URL[1:],
-            'django.views.static.serve', {'document_root': settings.STATIC_EXTENSION_ROOT}),
-        (r'^%s(?P<path>.*)$' % settings.MEDIA_URL.replace(settings.CATMAID_URL, ''),
-            'django.views.static.serve', {'document_root': settings.MEDIA_ROOT}),
-    )
+# Serve static files in debug mode and if explicitely requested
+if settings.DEBUG or settings.SERVE_STATIC:
+    def serve_static(prefix, root):
+        return url(r'^%s(?P<path>.*)$' % re.escape(prefix), serve,
+                kwargs={'document_root': root})
+
+    urlpatterns += [
+        # General static files
+        serve_static('static/', settings.STATIC_ROOT),
+        # Access to static extensions in debug mode, remove leading slash.
+        serve_static(settings.STATIC_EXTENSION_URL[1:], settings.STATIC_EXTENSION_ROOT),
+        # Media files, i.e. cropped images or exports
+        serve_static(settings.MEDIA_URL.replace(settings.CATMAID_URL, ''),
+            settings.MEDIA_ROOT)
+    ]

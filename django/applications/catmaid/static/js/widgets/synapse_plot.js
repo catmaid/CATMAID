@@ -317,7 +317,7 @@
       var nodes = morphology.tags[this.ais_tag];
       if (nodes) {
         if (1 === nodes.length) return nodes[0];
-        CATMAID.ms("Warning", "More than one node tagged with '" + this.ais_tag + "'");
+        CATMAID.msg("Warning", "More than one node tagged with '" + this.ais_tag + "'");
         return null;
       } else {
         CATMAID.msg("Warning", "Could not find a node tagged with '" + this.ais_tag + "'");

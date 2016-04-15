@@ -1,8 +1,9 @@
 from django import forms
 from django.conf import settings
-from django.contrib.formtools.wizard.views import SessionWizardView
 from django.db import connection
 from django.shortcuts import render_to_response
+
+from formtools.wizard.views import SessionWizardView
 
 from catmaid.models import Class, ClassInstance, ClassInstanceClassInstance
 from catmaid.models import Connector, Project, Relation, Treenode

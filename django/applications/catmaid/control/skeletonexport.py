@@ -1,5 +1,8 @@
+from __future__ import print_function
+
 import json
 import networkx as nx
+import pytz
 from itertools import imap
 from functools import partial
 from collections import defaultdict
@@ -24,7 +27,7 @@ from tree_util import edge_count_to_root, partition
 try:
     from exportneuroml import neuroml_single_cell, neuroml_network
 except ImportError:
-    print "NeuroML is not loading"
+    print("NeuroML is not loading")
 
 
 def get_treenodes_qs(project_id=None, skeleton_id=None, with_labels=True):
@@ -113,6 +116,7 @@ def compact_skeleton(request, project_id=None, skeleton_id=None, with_connectors
         # Fetch all connectors with their partner treenode IDs
         pre = relations['presynaptic_to']
         post = relations['postsynaptic_to']
+        gj = relations.get('gapjunction_with', -1)
         cursor.execute('''
             SELECT tc.treenode_id, tc.connector_id, tc.relation_id,
                    c.location_x, c.location_y, c.location_z
@@ -120,10 +124,12 @@ def compact_skeleton(request, project_id=None, skeleton_id=None, with_connectors
                  connector c
             WHERE tc.skeleton_id = %s
               AND tc.connector_id = c.id
-              AND (tc.relation_id = %s OR tc.relation_id = %s)
-        ''' % (skeleton_id, pre, post))
+              AND (tc.relation_id = %s OR tc.relation_id = %s OR tc.relation_id = %s)
+        ''' % (skeleton_id, pre, post, gj))
 
-        connectors = tuple((row[0], row[1], 1 if row[2] == post else 0, row[3], row[4], row[5]) for row in cursor.fetchall())
+        relation_index = {pre: 0, post: 1, gj: 2}
+
+        connectors = tuple((row[0], row[1], relation_index.get(row[2], -1), row[3], row[4], row[5]) for row in cursor.fetchall())
 
     if 0 != with_tags:
         # Fetch all node tags
@@ -250,7 +256,7 @@ def compact_arbor(request, project_id=None, skeleton_id=None, with_nodes=None, w
 def treenode_time_bins(request, project_id=None, skeleton_id=None):
     """ Return a map of time bins (minutes) vs. list of nodes. """
     minutes = defaultdict(list)
-    epoch = datetime.utcfromtimestamp(0)
+    epoch = datetime.utcfromtimestamp(0).replace(tzinfo=pytz.utc)
 
     for row in Treenode.objects.filter(skeleton_id=int(skeleton_id)).values_list('id', 'creation_time'):
         minutes[int((row[1] - epoch).total_seconds() / 60)].append(row[0])
@@ -937,7 +943,8 @@ def skeleton_connectors_by_partner(request, project_id):
     partners = defaultdict(partial(defaultdict, partial(defaultdict, list)))
 
     for row in cursor.fetchall():
-        partners[row[0]][relations[row[1]]][row[2]].append(row[3])
+        relation_name = 'presynaptic_to' if row[1] == pre else 'postsynaptic_to'
+        partners[row[0]][relation_name][row[2]].append(row[3])
 
     return HttpResponse(json.dumps(partners))
 
@@ -951,60 +958,6 @@ def export_skeleton_reviews(request, project_id=None, skeleton_id=None):
         m[row[0]].append(row[1:3])
 
     return HttpResponse(json.dumps(m, separators=(',', ':'), cls=DjangoJSONEncoder))
-
-@requires_user_role(UserRole.Browse)
-def within_spatial_distance(request, project_id=None):
-    """ Find skeletons within a given Euclidean distance of a treenode. """
-    project_id = int(project_id)
-    tnid = request.POST.get('treenode', None)
-    if not tnid:
-        raise Exception("Need a treenode!")
-    tnid = int(tnid)
-    distance = int(request.POST.get('distance', 0))
-    if 0 == distance:
-        return HttpResponse(json.dumps({"skeletons": []}))
-    size_mode = int(request.POST.get("size_mode", 0))
-    having = ""
-
-    if 0 == size_mode:
-        having = "HAVING count(*) > 1"
-    elif 1 == size_mode:
-        having = "HAVING count(*) = 1"
-    # else, no constraint
-
-    cursor = connection.cursor()
-    cursor.execute('SELECT location_x, location_y, location_z FROM treenode WHERE id=%s' % tnid)
-    pos = cursor.fetchone()
-
-    limit = 100
-    x0 = pos[0] - distance
-    x1 = pos[0] + distance
-    y0 = pos[1] - distance
-    y1 = pos[1] + distance
-    z0 = pos[2] - distance
-    z1 = pos[2] + distance
-
-    # Cheap emulation of the distance
-    cursor.execute('''
-SELECT skeleton_id, count(*)
-FROM treenode
-WHERE project_id = %s
-  AND location_x > %s
-  AND location_x < %s
-  AND location_y > %s
-  AND location_y < %s
-  AND location_z > %s
-  AND location_z < %s
-GROUP BY skeleton_id
-%s
-LIMIT %s
-''' % (project_id, x0, x1, y0, y1, z0, z1, having, limit))
-
-
-    skeletons = tuple(row[0] for row in cursor.fetchall())
-
-    return HttpResponse(json.dumps({"skeletons": skeletons,
-                                    "reached_limit": 100 == len(skeletons)}))
 
 @requires_user_role(UserRole.Browse)
 def partners_by_connector(request, project_id=None):

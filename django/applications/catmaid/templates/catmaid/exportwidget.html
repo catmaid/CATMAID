@@ -351,6 +351,8 @@
                 });
                 // Parse connector objects
                 json[1].forEach(function (cn) {
+                  // Skip non-synaptic connectors
+                  if (cn[2] !== 0 && cn[2] !== 1) return;
                   var id = cn[1];
                   if (typeof skeleton.connectors[id] === 'undefined') {
                     skeleton.connectors[id] = {};

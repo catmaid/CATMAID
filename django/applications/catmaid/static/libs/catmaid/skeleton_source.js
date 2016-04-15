@@ -11,6 +11,7 @@
    */
   var SkeletonSource = function(register) {
     this.widgetId = register ? this.registerSource() : null;
+    this.APPEND_WARNING_THRESHOLD = 50;
   };
 
   // Operations that can be used to combine multiple sources.
@@ -114,6 +115,13 @@
   };
 
   /**
+   * Convenience method to remove all subscriptions at once.
+   */
+  SkeletonSource.prototype.removeAllSubscriptions = function() {
+    this.subscriptions.forEach(this.removeSubscription.bind(this));
+  };
+
+  /**
    * Get all skeleton sources this source has subscribed to.
    */
   SkeletonSource.prototype.getSourceSubscriptions = function() {
@@ -185,11 +193,16 @@
 
   SkeletonSource.prototype.loadSource = function() {
     var models = CATMAID.skeletonListSources.getSelectedSkeletonModels(this);
-    if (0 === models.length) {
+    var numModels = Object.keys(models).length;
+    if (0 === numModels) {
       CATMAID.info('Selected source is empty.');
       return;
     }
-    this.append(models);
+    if (numModels <= this.APPEND_WARNING_THRESHOLD ||
+        window.confirm('This will load a large number of skeletons (' +
+                       numModels + '). Are you sure you want to continue?')) {
+      this.append(models);
+    }
   };
 
   SkeletonSource.prototype.updateOneModel = function(model, source_chain) {

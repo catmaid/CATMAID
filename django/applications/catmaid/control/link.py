@@ -1,20 +1,29 @@
 import json
 
-from django.http import HttpResponse
+from django.db import connection
+from django.http import HttpResponse, JsonResponse
 from django.core.exceptions import ObjectDoesNotExist
 
+from catmaid import state
 from catmaid.models import UserRole, Project, Relation, Treenode, Connector, \
         TreenodeConnector, ClassInstance
 from catmaid.control.authentication import requires_user_role, can_edit_or_fail
 
 @requires_user_role(UserRole.Annotate)
 def create_link(request, project_id=None):
-    """ Create a link, currently only a presynaptic_to or postsynaptic_to relationship
-    between a treenode and a connector.
+    """ Create a link between a connector and a treenode
+
+    Currently the following link types (relations) are supported:
+    presynaptic_to, postsynaptic_to, abutting, gapjunction_with.
     """
     from_id = int(request.POST.get('from_id', 0))
     to_id = int(request.POST.get('to_id', 0))
     link_type = request.POST.get('link_type', 'none')
+
+    cursor = connection.cursor()
+    # Make sure the back-end is in the expected state
+    state.validate_state([from_id, to_id], request.POST.get('state'),
+            multinode=True, lock=True, cursor=cursor)
 
     try:
         project = Project.objects.get(id=project_id)
@@ -60,17 +69,35 @@ def create_link(request, project_id=None):
             result['warning'] = 'There are already %s post-synaptic ' \
                 'connections to the target skeleton' % post_links_to_skeleton
 
-    TreenodeConnector(
+        # Enforce only synaptic links
+        gapjunction_links = TreenodeConnector.objects.filter(project=project, connector=to_connector,
+            relation__relation_name='gapjunction_with')
+        if (gapjunction_links.count() != 0):
+            return HttpResponse(json.dumps({'error': 'Connector %s cannot have both a gap junction and a postsynaptic node.' % to_id}))
+
+    if link_type == 'gapjunction_with':
+        # Enforce only two gap junction links
+        gapjunction_links = TreenodeConnector.objects.filter(project=project, connector=to_connector, relation=relation)
+        synapse_links = TreenodeConnector.objects.filter(project=project, connector=to_connector, relation__relation_name__endswith='synaptic_to')
+        if (gapjunction_links.count() > 1):
+            return HttpResponse(json.dumps({'error': 'Connector %s can only have two gap junction connections.' % to_id}))
+        if (synapse_links.count() != 0):
+            return HttpResponse(json.dumps({'error': 'Connector %s is part of a synapse, and gap junction can not be added.' % to_id}))
+
+    link = TreenodeConnector(
         user=request.user,
         project=project,
         relation=relation,
         treenode=from_treenode,  # treenode_id = from_id
         skeleton=from_treenode.skeleton,  # treenode.skeleton_id where treenode.id = from_id
         connector=to_connector  # connector_id = to_id
-    ).save()
+    )
+    link.save()
 
     result['message'] = 'success'
-    return HttpResponse(json.dumps(result), content_type='application/json')
+    result['link_id'] = link.id
+    result['link_edition_time'] = link.edition_time
+    return JsonResponse(result)
 
 
 @requires_user_role(UserRole.Annotate)
@@ -78,18 +105,93 @@ def delete_link(request, project_id=None):
     connector_id = int(request.POST.get('connector_id', 0))
     treenode_id = int(request.POST.get('treenode_id', 0))
 
+    cursor = connection.cursor()
+    # Make sure the back-end is in the expected state
+    state.validate_state([treenode_id, connector_id], request.POST.get('state'),
+            multinode=True, lock=True, cursor=cursor)
+
     links = TreenodeConnector.objects.filter(
         connector=connector_id,
-        treenode=treenode_id)
+        treenode=treenode_id).select_related('relation')
 
     if links.count() == 0:
-        return HttpResponse(json.dumps({'error': 'Failed to delete connector #%s from geometry domain.' % connector_id}))
+        raise ValueError('Couldn\'t find link between connector {} '
+                'and node {}'.format(connector_id, treenode_id))
+
+    link = links[0]
 
     # Could be done by filtering above when obtaining the links,
     # but then one cannot distinguish between the link not existing
     # and the user_id not matching or not being superuser.
-    can_edit_or_fail(request.user, links[0].id, 'treenode_connector')
+    can_edit_or_fail(request.user, link.id, 'treenode_connector')
 
-    links[0].delete()
-    return HttpResponse(json.dumps({'result': 'Removed treenode to connector link'}))
+    deleted_link_id = link.id
+    link.delete()
+    return HttpResponse(json.dumps({
+        'link_id': deleted_link_id,
+        'link_type_id': link.relation.id,
+        'link_type': link.relation.relation_name,
+        'result': 'Removed treenode to connector link'
+    }))
 
+def create_connector_link(project_id, user_id, treenode_id, skeleton_id,
+        links, cursor=None):
+    """Create new connector links for the passded in treenode. What relation and
+    confidence is used to which connector is specified in the "links"
+    paremteter. A list of three-element lists, following the following format:
+    [<connector-id>, <relation-id>, <confidence>]
+    """
+    def make_row(l):
+        # Passed in links are expected to follow this format:
+        # [<connector-id>, <relation-id>, <confidence>]
+        if 3 != len(l):
+            raise ValueError("Invalid link information provided")
+        connector_id, relation_id, confidence = l[0], l[1], l[2]
+        return (user_id, project_id, relation_id, treenode_id, connector_id,
+                skeleton_id, confidence)
+
+    new_link_rows = [make_row(l) for l in links]
+    new_link_data = [x for e in new_link_rows for x in e]
+    cursor = cursor or connection.cursor()
+    link_template = ",".join(("({})".format(",".join(("%s",) * 7)),) * len(links))
+
+    cursor.execute("""
+        INSERT INTO treenode_connector (user_id, project_id, relation_id,
+                    treenode_id, connector_id, skeleton_id, confidence)
+        VALUES {}
+        RETURNING id, edition_time
+        """.format(link_template), new_link_data)
+
+    return cursor.fetchall()
+
+def create_treenode_links(project_id, user_id, connector_id, links, cursor=None):
+    """Create new connector links for the passded in treenode. What relation and
+    confidence is used to which connector is specified in the "links"
+    paremteter. A list of three-element lists, following the following format:
+    [<treenode-id>, <relation-id>, <confidence>]
+    """
+    def make_row(l):
+        # Passed in links are expected to follow this format:
+        # [<connector-id>, <relation-id>, <confidence>]
+        if 3 != len(l):
+            raise ValueError("Invalid link information provided")
+        treenode_id, relation_id, confidence = l[0], l[1], l[2]
+        return (user_id, project_id, relation_id, treenode_id, connector_id, confidence)
+
+    new_link_rows = [make_row(l) for l in links]
+    new_link_data = [x for e in new_link_rows for x in e]
+    cursor = cursor or connection.cursor()
+    link_template = ",".join(("({})".format(",".join(("%s",) * 6)),) * len(links))
+
+    cursor.execute("""
+        INSERT INTO treenode_connector (user_id, project_id, relation_id,
+                    treenode_id, connector_id, skeleton_id, confidence)
+        SELECT v.user_id, v.project_id, v.relation_id, v.treenode_id, v.connector_id,
+               t.skeleton_id, v.confidence
+        FROM (VALUES {}) v(user_id, project_id, relation_id, treenode_id, connector_id,
+                confidence)
+        INNER JOIN treenode t ON v.treenode_id = t.id
+        RETURNING id, edition_time, treenode_id, relation_id
+        """.format(link_template), new_link_data)
+
+    return cursor.fetchall()

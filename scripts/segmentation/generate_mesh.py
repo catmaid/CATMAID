@@ -10,7 +10,7 @@ def generate_mesh(request, project_id=None, stack_id=None):
     ).all()
 
     # retrieve stack information
-    stack_info = get_stack_info( project_id, stack_id, request.user )
+    stack_info = get_stack_info( project_id, stack_id )
     resolution=stack_info['resolution']
     dimension=stack_info['dimension']
     translation=stack_info['translation']
@@ -67,4 +67,4 @@ def generate_mesh(request, project_id=None, stack_id=None):
     writer.SetFileTypeToBinary()
     writer.Write()
 
-    return HttpResponse(json.dumps(True), mimetype="application/json")
+    return HttpResponse(json.dumps(True), content_type="application/json")

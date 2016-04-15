@@ -2,9 +2,10 @@ import json
 
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
 
 from catmaid.models import Message, ChangeRequest
-from catmaid.control.common import my_render_to_response, makeJSON_legacy_list
+from catmaid.control.common import makeJSON_legacy_list
 
 
 @login_required
@@ -27,8 +28,7 @@ def get_latest_unread_date(request):
 def list_messages(request, project_id=None):
     messages = Message.objects.filter(
         user=request.user,
-        read=False).extra(select={
-        'time_formatted': 'to_char("time", \'YYYY-MM-DD HH24:MI:SS TZ\')'})\
+        read=False)\
     .order_by('-time')
 
     def message_to_dict(message):
@@ -37,11 +37,7 @@ def list_messages(request, project_id=None):
             'title': message.title,
             'action': message.action,
             'text': message.text,
-            # time does not correspond exactly to PHP version, lacks
-            # timezone postfix. Can't find docs anywhere on how to get it.
-            # Doesn't seem to be used though, luckily.
-            'time': str(message.time),
-            'time_formatted': message.time_formatted
+            'time': str(message.time)
         }
 
     messages = map(message_to_dict, messages)
@@ -72,7 +68,7 @@ def read_message(request, project_id=None):
             redirect = 'history.back()'
             redir_link = 'history.back()'
 
-        return my_render_to_response(request, 'catmaid/read_message.html', {
+        return render(request, 'catmaid/read_message.html', {
             'url': request.build_absolute_uri(),
             'redirect': redirect,
             'redir_link': redir_link})
@@ -84,5 +80,5 @@ def read_message(request, project_id=None):
             error = e.message
         else:
             error = 'Unknown error.'
-        return my_render_to_response(request, 'catmaid/error.html', {'error': error})
+        return render(request, 'catmaid/error.html', {'error': error})
 

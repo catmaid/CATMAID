@@ -1103,3 +1103,21 @@ div.selection-table.windowContent {
   width: 1em;
   height: 1em;
 }
+
+img.missing-image {
+  width: 150px;
+  height: 150px;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+}
+
+img.missing-image:before {
+	content: url(../images/grey20.png);
+  display: inline-block;
+  font-size: 0;
+  line-height: 0;
+  width: 150px;
+  height: 150px;
+  border: 1px;
+}

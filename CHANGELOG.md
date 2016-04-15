@@ -1,6 +1,6 @@
-## Under development
+## 2016.04.15
 
-Contributors: Albert Cardona, Andrew Champion, Daniel Witvliet, Tom Kazimiers
+Contributors: Albert Cardona, Andrew Champion, Daniel Witvliet, Stephan Gerhard, Tom Kazimiers
 
 ### Notes
 

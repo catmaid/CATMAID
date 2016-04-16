@@ -10,8 +10,22 @@ Miscellaneous:
   source. This is now the default and can be changed in the settings widget with
   the help of the "Use source colors" checkbox.
 
+- Unavailable images on CATMAID's front pages are now displayed as a gray
+  placeholder box, instead of the broken image icon of the browser.
+
+
 ### Bug fixes
 
+- Creating synaptic connections from connector nodes across sections works
+  again.
+
+- Inserting a node along an edge will now render correctly right after using
+  ctrl+alt+click.
+
+- Merging two skeletons while the losing skeleton was loaded into another widget
+  (e.g. Selection Table) doesn't trigger an error anymore.
+
+- Undoing confidence changes works again.
 
 
 ## 2016.04.15

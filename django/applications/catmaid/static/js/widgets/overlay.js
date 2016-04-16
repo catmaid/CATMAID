@@ -2576,17 +2576,21 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
       return;
     }
 
-    // stackViewer.viewWidth and .viewHeight are in screen pixels
-    // so they must be scaled and then transformed to nanometers
-    // and stackViewer.x, .y are in absolute pixels, so they also must be brought to nanometers
-    var atnid = -1; // cannot send a null
-    var atntype = "";
-    if (SkeletonAnnotations.getActiveNodeId() &&
-        SkeletonAnnotations.TYPE_NODE === SkeletonAnnotations.getActiveNodeType()) {
-      if (future_active_node_id) {
-        atnid = future_active_node_id;
-      } else {
-        atnid = SkeletonAnnotations.getActiveNodeId();
+    var atnid = null;
+    var atntype = null;
+    var activeNodeId = SkeletonAnnotations.getActiveNodeId();
+    if (activeNodeId) {
+      var activeNodeType = SkeletonAnnotations.getActiveNodeType();
+      if (activeNodeType === SkeletonAnnotations.TYPE_NODE) {
+        atntype = 'treenode';
+        if (future_active_node_id) {
+          atnid = future_active_node_id;
+        } else {
+          atnid = activeNodeId;
+        }
+      } else if (activeNodeType === SkeletonAnnotations.TYPE_CONNECTORNODE) {
+        atnid = activeNodeId;
+        atntype = 'connector';
       }
     }
     // Include ID only in request, if it is real. Otherwise, keep the active
@@ -2612,6 +2616,9 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
       atnid = -1;
     }
 
+    // stackViewer.viewWidth and .viewHeight are in screen pixels, so they must
+    // be scaled and then transformed to nanometers and stackViewer.x, .y are in
+    // absolute pixels, so they also must be brought to nanometers
     var stackViewer = self.stackViewer;
     self.old_x = stackViewer.x;
     self.old_y = stackViewer.y;
@@ -2661,6 +2668,7 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
       bottom: wy1,
       z2: wz1,
       atnid: atnid,
+      atntype: atntype,
       labels: self.getLabelStatus()
     };
 

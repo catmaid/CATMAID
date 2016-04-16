@@ -2486,7 +2486,7 @@ var WindowMaker = new function()
 
   var createConnectorTableWindow = function(ct_instance)
   {
-    var CT = ct_instance ? ct_instance : new ConnectorTable();
+    var CT = ct_instance ? ct_instance : new CATMAID.ConnectorTable();
     var win = new CMWWindow(CT.getName());
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";

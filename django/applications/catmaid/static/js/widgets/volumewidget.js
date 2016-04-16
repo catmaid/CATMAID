@@ -6,11 +6,20 @@
   "use strict";
 
   /**
+   * Stores information about widget mode switches.
+   */
+  var Context = function(onExit) {
+    this.onExit = onExit;
+  };
+
+  /**
    * Manage spatial volumes with this widget.
    */
   var VolumeManagerWidget = function(options) {
     options = options || {};
 
+    // Stores information about current widget mode
+    this.currentContext = null;
     // Access to the displayed DataTable
     this.datatable = null;
     this.entriesPerPage = options.entriesPerPage || 25;
@@ -147,6 +156,11 @@
    */
   VolumeManagerWidget.prototype.editVolume = function(volume) {
     var self = this;
+
+    if (this.currentContext) {
+      CATMAID.tools.callIfFn(this.currentContext.onExit);
+    }
+
     var $content = $('#volume_manger_content');
     // Hide table
     $("div.volume-list", $content).hide();
@@ -228,6 +242,7 @@
     }
 
     volume.on(volume.EVENT_PROPERTY_CHANGED, volumeChanged);
+    this.currentContext = new Context(onClose);
   };
 
   /**

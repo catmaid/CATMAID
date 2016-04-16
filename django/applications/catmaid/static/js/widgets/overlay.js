@@ -1868,6 +1868,16 @@ SkeletonAnnotations.TracingOverlay.prototype.createNode = function (parentID, ch
         }
       }
 
+      if (childId) {
+        var childNode = self.nodes[childId];
+        if (childNode) {
+          childNode.parent = nn;
+          childNode.drawLineToParent();
+          nn.addChildNode(childNode);
+          nn.updateColors();
+        }
+      }
+
       // Invoke callback if necessary
       if (afterCreate) afterCreate(self, nn);
     })

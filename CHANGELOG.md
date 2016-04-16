@@ -4,7 +4,11 @@
 
 ### Features and enhancements
 
+Miscellaneous:
 
+- The skeleton projection layer can now draw the colors used from the selected
+  source. This is now the default and can be changed in the settings widget with
+  the help of the "Use source colors" checkbox.
 
 ### Bug fixes
 

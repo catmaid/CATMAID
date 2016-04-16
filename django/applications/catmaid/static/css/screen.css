@@ -1105,8 +1105,8 @@ div.selection-table.windowContent {
 }
 
 img.missing-image {
-  width: 150px;
-  height: 150px;
+  width: 128px;
+  height: 128px;
   padding: 0;
   margin: 0;
   overflow: hidden;
@@ -1117,7 +1117,7 @@ img.missing-image:before {
   display: inline-block;
   font-size: 0;
   line-height: 0;
-  width: 150px;
-  height: 150px;
-  border: 1px;
+  width: 128px;
+  height: 128px;
+  border: 2px;
 }

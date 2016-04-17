@@ -174,7 +174,7 @@
     return Object.keys(compartments).reduce(function(o, name) {
       var rules = compartments[name];
       if (!rules || 0 === rules.length) {
-        rules = defaultFilteRuleSet;
+        rules = defaultFilterRuleSet;
       }
       // Extract the set of rules defining this compartment. Also validate
       // skeleton constraints if there are any.
@@ -619,7 +619,7 @@
   };
 
   // A default no-op filter rule that takes all nodes.
-  var defaultFilteRuleSet = [
+  var defaultFilterRuleSet = [
     new CATMAID.SkeletonFilterRule(CATMAID.NodeFilterStrategy['take-all'])
   ];
 
@@ -655,7 +655,7 @@
     return p;
   };
 
-  var multiplyComponens = function(m, p) {
+  var multiplyComponents = function(m, p) {
     p[0] = p[0] * m;
     p[1] = p[1] * m;
     p[2] = p[2] * m;
@@ -666,7 +666,7 @@
   CATMAID.getIcoSpherePoints = function(x, y, z, radius) {
     return unitIcoSpherePoints
       .map(copyPoint)
-      .map(multiplyComponens.bind(null, radius))
+      .map(multiplyComponents.bind(null, radius))
       .map(addToPoint.bind(null, x, y, z));
   };
 

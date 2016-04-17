@@ -13,6 +13,12 @@ Miscellaneous:
 - Unavailable images on CATMAID's front pages are now displayed as a gray
   placeholder box, instead of the broken image icon of the browser.
 
+- A new volume type was added: alpha shapes can now be created in practically the
+  same way as convex hull volumes are created. Alpha shapes have one additional
+  parameter: alpha. It is used to filter edges for result mesh and has to be
+  fairly low with our spatial dimensions. Values around 0.00001 seemed to work
+  well in some cases.
+
 
 ### Bug fixes
 

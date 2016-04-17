@@ -784,9 +784,13 @@ SkeletonAnnotations.TracingOverlay.prototype.promiseNode = function(node)
         // Update nodes
         var vnid = node.id;
         self.nodes[nid] = self.nodes[vnid];
+        self.nodes[nid].edition_time = result.edition_time;
         delete self.nodes[vnid];
-        // Update node reference, passed in
+        // Update node reference, passed in (which *should* be the same as
+        // self.nodes[nid] referenced and updated above, but we set it just to
+        // be on the safe side).
         node.id = nid;
+        node.edition_time = result.edition_time;
         // If the virtual node was the active node before, update the active
         // node as well.
         if (SkeletonAnnotations.getActiveNodeId() == vnid) {

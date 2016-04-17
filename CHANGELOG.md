@@ -20,6 +20,10 @@ Miscellaneous:
   fairly low with our spatial dimensions. Values around 0.00001 seemed to work
   well in some cases.
 
+- Materialized virtual nodes have now the correct edition time set, which make
+  operations like adding a child to a virtual node work again (state checks
+  prevent this with wrong edition time).
+
 
 ### Bug fixes
 

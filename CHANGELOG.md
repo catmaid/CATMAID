@@ -25,6 +25,10 @@ Miscellaneous:
   operations like adding a child to a virtual node work again (state checks
   prevent this with wrong edition time).
 
+- The neuron search will now show a warning and cancel a search if a query
+  annotation doesn't exist and the query term doesn't start with a forward
+  slash (used for regular expressions).
+
 
 ### Bug fixes
 

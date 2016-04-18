@@ -106,12 +106,12 @@
   CATMAID.ConvexHullVolume = function(options) {
     options = options || {};
     CATMAID.Volume.call(this, options);
-    this.set("id", options.id || null);
+    this.set("id", CATMAID.tools.getDefined(options.id, null));
     this.set("title", options.title || "Convex hull volume");
     this.set("comment", options.comment || undefined);
     this.set("neuronSourceName", options.neuronSourceName || undefined);
     this.set("rules", options.rules || []);
-    this.set("preview", options.rules || true);
+    this.set("preview", CATMAID.tools.getDefined(options.preview, true));
     this.set("respectRadius", options.respectRadius || true);
   };
 

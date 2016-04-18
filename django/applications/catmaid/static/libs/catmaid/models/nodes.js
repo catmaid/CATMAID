@@ -865,7 +865,7 @@
       var undoState = new CATMAID.LocalState([mNode.value, mNode.timestamp],
           [mParent.value, mParent.timestamp], children, links);
 
-      var removeNode = CATMAID.Nodes.remove(undoState, projectId, nodeId);
+      var removeNode = CATMAID.Nodes.remove(undoState, projectId, mNode.value);
       return removeNode.then(function(result) {
 
         // Map ID change of children and links

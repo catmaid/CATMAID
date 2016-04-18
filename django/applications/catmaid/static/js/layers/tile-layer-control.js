@@ -152,7 +152,7 @@
           });
       var hidelabel = $('<div/>')
           .addClass('setting')
-          .append($('<label/>').append(hidecb).append('Hide this layer when SPACE is held'));
+          .append($('<label/>').append(hidecb).append('Hide this layer when <kbd>SPACE</kbd> is held'));
       container.append(hidelabel);
 
       // Layer settings

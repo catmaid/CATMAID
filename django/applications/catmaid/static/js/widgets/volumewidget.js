@@ -516,7 +516,15 @@
         });
 
         // Update working volume with default properties set above
-        volume.updateTriangleMesh();
+        $.blockUI({message: '<img src="' + CATMAID.staticURL +
+            'images/busy.gif" /> <span>Please wait, creating volume</span>'});
+        try {
+          // Update triangle mesh asynconously, to not block wait message
+          setTimeout(volume.updateTriangleMesh.bind(volume), 100);
+        } catch(e) {
+          $.unblockUI();
+          CATMAID.error("Couldn't create volume: " + e);
+        }
 
         return $settings;
       },

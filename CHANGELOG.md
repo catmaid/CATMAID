@@ -18,7 +18,8 @@ Miscellaneous:
   same way as convex hull volumes are created. Alpha shapes have one additional
   parameter: alpha. It is used to filter edges for result mesh and has to be
   fairly low with our spatial dimensions. Values around 0.00001 seemed to work
-  well in some cases.
+  well in some cases. The preview of alpha shapes is disabled by default, because
+  they can take much longer to compute.
 
 - Materialized virtual nodes have now the correct edition time set, which make
   operations like adding a child to a virtual node work again (state checks

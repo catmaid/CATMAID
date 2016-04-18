@@ -485,6 +485,11 @@
    *  https://en.wikipedia.org/wiki/Alpha_shape
    */
   CATMAID.AlphaShapeVolume = function(options) {
+    // Preview is by default disabled for alpha shapes, they can take longer to
+    // compute.
+    options = options || {};
+    options.preview = false;
+
     CATMAID.ConvexHullVolume.call(this, options);
     this.set("alpha", options.alpha || 0.000001);
   };

@@ -1343,15 +1343,17 @@
           skeleton.color = new_model.color.clone();
           // Update node name and color if the node is not part of a group
           if (gid) {
-            // Count every node that the current skeleton is part of and that
-            // isn't the node of the skeleton's group.
-            if (gid !== node.id()) {
+            if (gid === node.id()) {
+              // The new skeleton model is part of a group (this node), and needs
+              // no further updates.
+              CATMAID.msg("Skeleton updated", "Skeleton #" + skeleton.id +
+                  " in group \"" + node.data('label') + "\" was updated");
+            } else {
+              CATMAID.msg("Group updated", "Skeleton #" + skeleton.id +
+                  " in now part of group \"" + node.data('label'));
+              // Count every existing model that is added to a new group
               added_to_group += 1;
             }
-            // The new skeleton model is part of a group (this node), and needs
-            // no further updates.
-            CATMAID.msg("Skeleton updated", "Skeleton #" + skeleton.id + " in group \"" +
-                node.data('label') + "\" was updated");
           } else {
             // Update node label for singleton nodes
             if (new_model.baseName) {

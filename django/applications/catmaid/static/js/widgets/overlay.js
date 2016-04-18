@@ -2502,15 +2502,14 @@ SkeletonAnnotations.TracingOverlay.prototype.createNewOrExtendActiveSkeleton =
     var nearestnode = this.getClosestNode(this.coords.lastX,
                                           this.coords.lastY,
                                           searchRadius,
-                                          respectVirtualNodes).node;
-
+                                          respectVirtualNodes);
     if (nearestnode === null) {
       // Crate a new treenode, connector node and/or link
       this.createNodeOrLink(insert, link, postLink);
     } else if (link) {
       if (null === atn.id) { return; }
       if (nearestnode.skeleton_id === atn.skeleton_id) {
-        this.activateNode(nearestnode);
+        this.activateNode(nearestnode.node);
         return;
       }
       var nearestnode_id = nearestnode.id;
@@ -2521,7 +2520,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createNewOrExtendActiveSkeleton =
       this.createTreenodeLink(atn.id, nearestnode.id);
     } else {
       // Activate node at current location if no link is requested
-      this.activateNode(nearestnode);
+      this.activateNode(nearestnode.node);
     }
   }
 };

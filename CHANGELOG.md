@@ -4,6 +4,10 @@
 
 ### Features and enhancements
 
+Graph widget:
+
+- If a skeleton is appended that already exists in a group, the group's color
+  and label now doesn't change anymore. Instead a info message is shown.
 
 
 ### Bug fixes

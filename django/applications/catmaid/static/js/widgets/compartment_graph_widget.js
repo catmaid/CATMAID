@@ -1338,27 +1338,35 @@
         }
 
         if (new_model.selected) {
+          var gid = member_of[skeleton.id];
           // Update node properties
-
-          if (new_model.baseName) {
-            var name = CATMAID.NeuronNameService.getInstance().getName(new_model.id),
-                name = name ? name : new_model.baseName,
-                label = node.data('label');
-            if (subgraphs[new_model.id] && label.length > 0) {
-              var i_ = label.lastIndexOf(' [');
-              name = name + (-1 !== i_ ? label.substring(i_) : '');
-            }
-            node.data('label', name);
-          }
           skeleton.color = new_model.color.clone();
-
-          if (one) {
+          // Update node name and color if the node is not part of a group
+          if (gid) {
+            // Count every node that the current skeleton is part of and that
+            // isn't the node of the skeleton's group.
+            if (gid !== node.id()) {
+              added_to_group += 1;
+            }
+            // The new skeleton model is part of a group (this node), and needs
+            // no further updates.
+            CATMAID.msg("Skeleton updated", "Skeleton #" + skeleton.id + " in group \"" +
+                node.data('label') + "\" was updated");
+          } else {
+            // Update node label for singleton nodes
+            if (new_model.baseName) {
+              var name = CATMAID.NeuronNameService.getInstance().getName(new_model.id),
+                  name = name ? name : new_model.baseName,
+                  label = node.data('label');
+              if (subgraphs[new_model.id] && label.length > 0) {
+                var i_ = label.lastIndexOf(' [');
+                name = name + (-1 !== i_ ? label.substring(i_) : '');
+              }
+              node.data('label', name);
+            }
             // Update color in the case of singleton nodes
             node.data('color', '#' + skeleton.color.getHexString());
           }
-
-          var gid = member_of[skeleton.id];
-          if (gid && gid !== node.id()) added_to_group += 1;
 
           set[skeleton.id] = new_model;
 

@@ -14,6 +14,7 @@ Graph widget:
   widget help window currently only contains information on how edges/links
   between nodes can be hidden.
 
+
 Volume widget:
 
 - Preview for alpha shapes is now disabled by default due to its potential
@@ -26,6 +27,15 @@ Volume widget:
   re-generate it if needed. Re-generations will now also show an info dialog.
   If no mesh could be generated, saving is not allowed and the edit form will
   stay open.
+
+
+Tile layer:
+
+- An efficient browsing mode is now available that will not load tiles at
+  the periphery of the stack viewer. This is useful to reduce data use and
+  browsing latency on bandwidth-limited connections. To use this mode, increase
+  the "Tile area efficiency threshold" in the tile layer controls.
+
 
 ### Bug fixes
 

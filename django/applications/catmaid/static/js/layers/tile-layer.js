@@ -45,6 +45,12 @@
     this.hideIfNearestSliceBroken = false;
 
     /**
+     * Omit tiles with less area than this threshold visible.
+     * @type {Number}
+     */
+    this.efficiencyThreshold = 0.0;
+
+    /**
      * Contains all tiles in a 2D toroidal array
      * @type {Element[][]}
      */
@@ -192,7 +198,8 @@
         scaledStackPosition.xc,
         scaledStackPosition.yc,
         scaledStackPosition.z,
-        scaledStackPosition.s);
+        scaledStackPosition.s,
+        this.efficiencyThreshold);
 
     if (this.hideIfNearestSliceBroken) {
       // Re-project the stack z without avoiding broken sections to determine
@@ -245,17 +252,8 @@
     this._tileFirstC = tileInfo.firstCol;
     this._tileFirstR = tileInfo.firstRow;
 
-    var top;
-    var left;
-
-    if (scaledStackPosition.yc >= 0)
-      top  = -(scaledStackPosition.yc % effectiveTileHeight);
-    else
-      top  = -((scaledStackPosition.yc + 1) % effectiveTileHeight) - effectiveTileHeight + 1;
-    if (scaledStackPosition.xc >= 0)
-      left = -(scaledStackPosition.xc % effectiveTileWidth);
-    else
-      left = -((scaledStackPosition.xc + 1) % effectiveTileWidth) - effectiveTileWidth + 1;
+    var top = tileInfo.top;
+    var left = tileInfo.left;
 
     var t = top;
     var l = left;
@@ -467,7 +465,8 @@
           px / Math.pow(2, s) - self.stackViewer.viewWidth / 2,
           py / Math.pow(2, s) - self.stackViewer.viewHeight / 2,
           pz,
-          s);
+          s,
+          this.efficiencyThreshold);
       for (var i = tileInfo.firstCol; i <= tileInfo.lastCol; ++i)
         for (var j = tileInfo.firstRow; j <= tileInfo.lastRow; ++j)
           tileInds.push([i, j, tileInfo.z, tileInfo.zoom]);
@@ -485,10 +484,13 @@
    * @param  {number} yc Top view origin in scaled stack coordinates.
    * @param  {number} z  Stack section number.
    * @param  {number} s  Stack scale.
+   * @param  {number} efficiencyThreshold Omit tiles with less area than this
+   *                                      threshold visible.
    * @return {Object}    Object containing information sufficient to generate
    *                     tile indicies for all tiles in the requested view.
    */
-  TileLayer.prototype.tilesForLocation = function (xc, yc, z, s) {
+  TileLayer.prototype.tilesForLocation = function (xc, yc, z, s, efficiencyThreshold) {
+    if (typeof efficiencyThreshold === 'undefined') efficiencyThreshold = 1.0;
     var zoom = s;
     var mag = 1.0;
     var artificialZoom = false;
@@ -518,13 +520,45 @@
     var fr = Math.floor(yc / effectiveTileHeight);
     var fc = Math.floor(xc / effectiveTileWidth);
 
+    // Location of the first tile relative to the viewport.
+    var top, left;
+
+    if (yc >= 0)
+      top  = -(yc % effectiveTileHeight);
+    else
+      top  = -((yc + 1) % effectiveTileHeight) - effectiveTileHeight + 1;
+    if (xc >= 0)
+      left = -(xc % effectiveTileWidth);
+    else
+      left = -((xc + 1) % effectiveTileWidth) - effectiveTileWidth + 1;
+
+    // Efficient mode: omit tiles at the periphery that are only partially
+    // visible.
+    if (efficiencyThreshold > 0.0) {
+      // If the efficiency margins would cause no tile be drawn, ignore them.
+      if ((2 * efficiencyThreshold + 1) * effectiveTileHeight > this.stackViewer.viewHeight ||
+          (2 * efficiencyThreshold + 1) * effectiveTileWidth  > this.stackViewer.viewWidth) {
+        efficiencyThreshold = 0.0;
+      }
+
+      if ((top + effectiveTileHeight) < (effectiveTileHeight * efficiencyThreshold)) {
+        top += effectiveTileHeight;
+        fr += 1;
+      }
+
+      if ((left + effectiveTileWidth) < (effectiveTileWidth * efficiencyThreshold)) {
+        left += effectiveTileWidth;
+        fc += 1;
+      }
+    }
+
     var lr, lc;
 
     // Adjust last tile index to display to the one intersecting the bottom right
     // of the field of view. The purpose: to hide images beyond the stack edges.
     // Notice that we add the panning xd, yd as well (which is already in tile units).
-    lc = Math.floor((xc + this.stackViewer.viewWidth) / effectiveTileWidth);
-    lr = Math.floor((yc + this.stackViewer.viewHeight) / effectiveTileHeight);
+    lc = Math.floor((xc + this.stackViewer.viewWidth - efficiencyThreshold * effectiveTileWidth) / effectiveTileWidth);
+    lr = Math.floor((yc + this.stackViewer.viewHeight - efficiencyThreshold * effectiveTileHeight) / effectiveTileHeight);
 
     // Clamp last tile coordinates within the slice edges.
     lc = Math.min(lc, Math.floor((this.stack.dimension.x * Math.pow(2, -zoom) - 1) / this.tileSource.tileWidth));
@@ -535,6 +569,8 @@
       firstCol:  fc,
       lastRow:   lr,
       lastCol:   lc,
+      top:       top,
+      left:      left,
       z:         z,
       zoom:      zoom,
       mag:       mag
@@ -553,7 +589,15 @@
         value: 'true',
         help: 'Hide this tile layer if the nearest section is marked as ' +
               'broken, rather than the default behavior of displaying the ' +
-              'nearest non-broken section.'}];
+              'nearest non-broken section.'},{
+        name: 'efficiencyThreshold',
+        displayName: 'Tile area efficiency threshold',
+        type: 'number',
+        range: [0, 1],
+        step: 0.1,
+        value: 0.0,
+        help: 'Omit tiles with less area visible than this threshold. This ' +
+              'is useful to reduce data use on bandwidth-limited connections.'}];
 
     if (this.tileSource && CATMAID.tools.isFn(this.tileSource.getSettings)) {
       settings = settings.concat(this.tileSource.getSettings());
@@ -570,6 +614,9 @@
     if ('hideIfBroken' === name) {
       this.hideIfNearestSliceBroken = value;
       if (!this.hideIfNearestSliceBroken) this.setOpacity(this.opacity);
+    } else if ('efficiencyThreshold' === name) {
+      this.efficiencyThreshold = value;
+      this.redraw();
     } else if (this.tileSource && CATMAID.tools.isFn(this.tileSource.setSetting)) {
       return this.tileSource.setSetting(name, value);
     }

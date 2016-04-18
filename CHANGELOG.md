@@ -8,6 +8,8 @@
 
 ### Bug fixes
 
+- Creating nodes using the Z key without other nodes in close proximity works
+  again.
 
 
 ## 2016.04.18

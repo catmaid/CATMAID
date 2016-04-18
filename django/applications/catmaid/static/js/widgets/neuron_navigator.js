@@ -1997,7 +1997,7 @@
 
     connectortable_button.onclick = (function() {
       if (this.skeleton_ids.length > 0) {
-        var TNT = new ConnectorTable(this.skeleton_ids[0]);
+        var TNT = new CATMAID.ConnectorTable(this.skeleton_ids[0]);
         WindowMaker.create('connector-table', TNT);
       }
     }).bind(this);

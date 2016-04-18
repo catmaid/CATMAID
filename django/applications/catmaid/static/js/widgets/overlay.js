@@ -784,9 +784,13 @@ SkeletonAnnotations.TracingOverlay.prototype.promiseNode = function(node)
         // Update nodes
         var vnid = node.id;
         self.nodes[nid] = self.nodes[vnid];
+        self.nodes[nid].edition_time = result.edition_time;
         delete self.nodes[vnid];
-        // Update node reference, passed in
+        // Update node reference, passed in (which *should* be the same as
+        // self.nodes[nid] referenced and updated above, but we set it just to
+        // be on the safe side).
         node.id = nid;
+        node.edition_time = result.edition_time;
         // If the virtual node was the active node before, update the active
         // node as well.
         if (SkeletonAnnotations.getActiveNodeId() == vnid) {
@@ -1868,6 +1872,16 @@ SkeletonAnnotations.TracingOverlay.prototype.createNode = function (parentID, ch
         }
       }
 
+      if (childId) {
+        var childNode = self.nodes[childId];
+        if (childNode) {
+          childNode.parent = nn;
+          childNode.drawLineToParent();
+          nn.addChildNode(childNode);
+          nn.updateColors();
+        }
+      }
+
       // Invoke callback if necessary
       if (afterCreate) afterCreate(self, nn);
     })
@@ -2566,17 +2580,21 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
       return;
     }
 
-    // stackViewer.viewWidth and .viewHeight are in screen pixels
-    // so they must be scaled and then transformed to nanometers
-    // and stackViewer.x, .y are in absolute pixels, so they also must be brought to nanometers
-    var atnid = -1; // cannot send a null
-    var atntype = "";
-    if (SkeletonAnnotations.getActiveNodeId() &&
-        SkeletonAnnotations.TYPE_NODE === SkeletonAnnotations.getActiveNodeType()) {
-      if (future_active_node_id) {
-        atnid = future_active_node_id;
-      } else {
-        atnid = SkeletonAnnotations.getActiveNodeId();
+    var atnid = null;
+    var atntype = null;
+    var activeNodeId = SkeletonAnnotations.getActiveNodeId();
+    if (activeNodeId) {
+      var activeNodeType = SkeletonAnnotations.getActiveNodeType();
+      if (activeNodeType === SkeletonAnnotations.TYPE_NODE) {
+        atntype = 'treenode';
+        if (future_active_node_id) {
+          atnid = future_active_node_id;
+        } else {
+          atnid = activeNodeId;
+        }
+      } else if (activeNodeType === SkeletonAnnotations.TYPE_CONNECTORNODE) {
+        atnid = activeNodeId;
+        atntype = 'connector';
       }
     }
     // Include ID only in request, if it is real. Otherwise, keep the active
@@ -2602,6 +2620,9 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
       atnid = -1;
     }
 
+    // stackViewer.viewWidth and .viewHeight are in screen pixels, so they must
+    // be scaled and then transformed to nanometers and stackViewer.x, .y are in
+    // absolute pixels, so they also must be brought to nanometers
     var stackViewer = self.stackViewer;
     self.old_x = stackViewer.x;
     self.old_y = stackViewer.y;
@@ -2651,6 +2672,7 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
       bottom: wy1,
       z2: wz1,
       atnid: atnid,
+      atntype: atntype,
       labels: self.getLabelStatus()
     };
 

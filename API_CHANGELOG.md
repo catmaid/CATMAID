@@ -2,6 +2,11 @@ This changelog notes changes to API endpoints that are documented and listed
 through Swagger. Changes to undocumented, internal CATMAID APIs are not
 included in this changelog.
 
+## 2016.04.18
+
+No change.
+
+
 ## 2016.04.15
 
 ### Additions

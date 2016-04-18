@@ -80,6 +80,8 @@
     downstreamColor: "rgb(0,0,0)",
     // Color of upstream nodes and edges
     upstreamColor: "rgb(255,255,255)",
+    // Use source skeleton model colors
+    preferSourceColor: true,
     // Limiting Strahler number for Strahler based shading.
     strahlerShadingMin: 1,
     strahlerShadingMax: -1,
@@ -269,7 +271,8 @@
   SkeletonProjectionLayer.prototype.update = function() {
     var self = this;
     // To unify tests below, we make sure all skeleton IDs are strings
-    var currentSkeletonIds = this.skeletonSource.getSelectedSkeletons().map(String);
+    var currentSkeletons = this.skeletonSource.getSelectedSkeletonModels();
+    var currentSkeletonIds = Object.keys(currentSkeletons);
 
     if (0 === currentSkeletonIds.length) {
       this.currentProjections.clear();
@@ -308,7 +311,7 @@
       }
 
       prepare
-        .then(this.createProjections.bind(this))
+        .then(this.createProjections.bind(this, currentSkeletons))
         .then(this.redraw.bind(this))
         .catch(CATMAID.error);
     }
@@ -402,7 +405,7 @@
    *
    * @param {Object} arborParserMap Maps skeleton IDs to arbor parser instances.
    */
-  SkeletonProjectionLayer.prototype.createProjections = function(arborParserMap) {
+  SkeletonProjectionLayer.prototype.createProjections = function(skeletonModels, arborParserMap) {
     // Empty space
     this.clear();
 
@@ -417,7 +420,7 @@
         this.currentReferenceNodes.get(skid) : getClosestNodeInZ(ap, currentStackZ);
       if (null !== nodeId) {
         // Add projection to D3 paper
-        this._createProjection(nodeId, ap);
+        this._createProjection(nodeId, ap, skeletonModels[skid]);
       }
     }, this);
   };
@@ -426,9 +429,9 @@
    * Render SVG output for a given skeleton, represented by an arbor parser with
    * respect to a given node in this skeleton.
    *
-   * @param {Object} An arbor parser for a given skeleton
+   * @param {ArborParser} arborParser An arbor parser for a given skeleton
    */
-  SkeletonProjectionLayer.prototype._createProjection = function(nodeId, arborParser) {
+  SkeletonProjectionLayer.prototype._createProjection = function(nodeId, arborParser, skeletonModel) {
 
     // Get nodes
     var arbor = arborParser.arbor;
@@ -453,6 +456,9 @@
       };
     }
 
+    var downstreamColor = this.options.preferSourceColor && skeletonModel ?
+      skeletonModel.color.getStyle() : this.options.downstreamColor;
+
     // Construct rendering option context
     var renderOptions = {
       positions: arborParser.positions,
@@ -460,7 +466,7 @@
       stackViewer: this.stackViewer,
       paper: this.paper,
       ref: this.graphics.Node.prototype.USE_HREF + this.graphics.USE_HREF_SUFFIX,
-      color: material.color(this, this.options.downstreamColor),
+      color: material.color(this, downstreamColor),
       opacity: material.opacity(this, arbor, downstream),
       edgeWidth: this.graphics.ArrowLine.prototype.EDGE_WIDTH || 2,
       showEdges: this.options.showEdges,
@@ -477,8 +483,11 @@
       // Make sure we look at upstream like we look at downstream
       upstream = upstream.reroot(parentId);
 
+      var upstreamColor = this.options.preferSourceColor && skeletonModel ?
+        skeletonModel.color.getStyle() : this.options.upstreamColor;
+
       // Update render options with upstream color
-      renderOptions.color = material.color(this, this.options.upstreamColor);
+      renderOptions.color = material.color(this, upstreamColor);
       renderOptions.opacity = material.opacity(this, arbor, upstream);
 
       // Render downstream nodes

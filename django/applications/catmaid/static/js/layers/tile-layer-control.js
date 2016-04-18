@@ -177,7 +177,7 @@
                 input.attr('max', setting.range[1]);
               }
               if (setting.step) {
-                input.attr('step', settings.step);
+                input.attr('step', setting.step);
               }
               input.addClass('layerSetting');
               if (setting.value) {

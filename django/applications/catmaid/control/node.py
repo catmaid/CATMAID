@@ -277,7 +277,6 @@ def node_list_tuples_query(user, params, project_id, atnid, atntype, includeLabe
         '''
 
         # Add additional connectors to the pool before links are collected
-        print missing_connector_ids
         if missing_connector_ids:
             sanetized_connector_ids = [int(cid) for cid in missing_connector_ids]
             connector_quey += '''

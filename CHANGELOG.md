@@ -9,6 +9,9 @@ Graph widget:
 - If a skeleton is appended that already exists in a group, the group's color
   and label now doesn't change anymore. Instead a info message is shown.
 
+- Add help text icon to title bar and explain how edges/links between nodes can
+  be hidden.
+
 
 ### Bug fixes
 

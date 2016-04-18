@@ -1865,6 +1865,8 @@ var WindowMaker = new function()
     bar.setAttribute('class', 'buttonpanel');
     DOM.addSourceControlsToggle(win, GG);
     DOM.addButtonDisplayToggle(win);
+    DOM.addHelpButton(win, 'Help: ' + GG.getName(), "<h3>Visualize connecticity networks</h3>" +
+        "<h4>How to...</h4><p><em>Hide edges/links:</em> Select an edge and use the <em>Hide</em> button in the <em>Selection</em> tab.</p>");
 
     var tabs = appendTabs(bar, GG.widgetID, ['Main', 'Grow', 'Graph',
         'Selection', 'Subgraphs', 'Align', 'Export']);

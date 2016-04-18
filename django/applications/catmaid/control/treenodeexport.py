@@ -449,7 +449,7 @@ def create_request_based_export_job(request, project_id):
                     "isn't set up correctly. Please contact an administrator.")
 
     # Get stack ID and  skeleton IDs of which the nodes should be exported
-    stack_id = request.POST.get('stackid', None);
+    stack_id = request.POST.get('stackid', None)
     skeleton_ids = set(int(v) for k,v in request.POST.iteritems() \
             if k.startswith('skids['))
     # Width, height and depth of each node image stack needs to be known.

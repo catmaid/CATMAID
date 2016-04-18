@@ -182,20 +182,20 @@ class Concept(models.Model):
 
 def create_concept_sub_table(table_name):
     db = connection.cursor()
-    db.execute('''CREATE TABLE %s () INHERITS (concept)''' % table_name);
+    db.execute('''CREATE TABLE %s () INHERITS (concept)''' % table_name)
     db.execute('''CREATE SEQUENCE %s_id_seq
                     START WITH 1
                     INCREMENT BY 1
                     NO MAXVALUE
                     NO MINVALUE
-                    CACHE 1''' % table_name);
-    db.execute('''ALTER SEQUENCE %s_id_seq OWNED BY %s.id''' % (table_name, table_name));
-    db.execute('''ALTER TABLE ONLY %s ADD CONSTRAINT %s_pkey PRIMARY KEY (id)''' % (table_name, table_name));
-    db.execute('''ALTER TABLE %s ALTER COLUMN id SET DEFAULT nextval('%s_id_seq'::regclass)''' % (table_name, table_name));   # use concept_id_seq so id unique across all concepts?
-    db.execute('''ALTER TABLE ONLY %s ADD CONSTRAINT %s_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth_user(id)''' % (table_name, table_name));
+                    CACHE 1''' % table_name)
+    db.execute('''ALTER SEQUENCE %s_id_seq OWNED BY %s.id''' % (table_name, table_name))
+    db.execute('''ALTER TABLE ONLY %s ADD CONSTRAINT %s_pkey PRIMARY KEY (id)''' % (table_name, table_name))
+    db.execute('''ALTER TABLE %s ALTER COLUMN id SET DEFAULT nextval('%s_id_seq'::regclass)''' % (table_name, table_name))   # use concept_id_seq so id unique across all concepts?
+    db.execute('''ALTER TABLE ONLY %s ADD CONSTRAINT %s_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth_user(id)''' % (table_name, table_name))
     db.execute('''CREATE TRIGGER on_edit_%s
                     BEFORE UPDATE ON %s
-                    FOR EACH ROW EXECUTE PROCEDURE on_edit()''' % (table_name, table_name));
+                    FOR EACH ROW EXECUTE PROCEDURE on_edit()''' % (table_name, table_name))
 
 
 class Class(models.Model):
@@ -1090,7 +1090,7 @@ class ChangeRequest(UserFocusedModel):
         else:
             is_valid = False
 
-        return is_valid;
+        return is_valid
 
     def approve(self, *args, **kwargs):
         if not self.is_valid():

@@ -1265,7 +1265,7 @@ def autofill( workspace_pid, user, parent_ci, excluded_links=[] ):
     # recursively walk links to other class instances. Collect new
     # nodes if there are new ones created.
     sub_instance_links_q = ClassInstanceClassInstance.objects.filter(
-        class_instance_b=parent_ci, project_id=workspace_pid);
+        class_instance_b=parent_ci, project_id=workspace_pid)
     all_added_nodes = added_nodes
     for sil in sub_instance_links_q:
         si = sil.class_instance_a

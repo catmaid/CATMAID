@@ -1959,24 +1959,44 @@
 
   GroupGraph.prototype.removeSelected = function() {
     var nodes = this.orderedSelectedNodes();
-    if (0 === nodes.length) return alert("Select one or more nodes first!");
-    if (!confirm("Remove " + nodes.length + " selected node" + (nodes.length > 1 ? "s":"") + "?")) return;
-    nodes.forEach(function(node) {
-      delete this.groups[node.id()]; // ok if not present
-      var skid = node.data('skeletons')[0].id;
-      node.remove();
-
-      // If the node is part of a split subgraph, also remove all other nodes
-      // in the subgraph.
-      if (this.subgraphs.hasOwnProperty(skid)) {
-        this.cy.nodes().filter(function (i, splitNode) {
-          return splitNode.data('skeletons').some(function (model) {
-            return model.id === skid;
-          });
-        }).remove();
-        delete this.subgraphs[skid];
+    if (0 === nodes.length) {
+      // If no node is selected explicitely, just remove the selected Cytoscape
+      // element. This should usually be an edge.
+      var nRemoved = 0;
+      this.cy.elements().each(function(i, e) {
+        if (e.selected()) {
+          e.unselect();
+          e.remove();
+          ++nRemoved;
+        }
+      });
+      if (0 === nRemoved) {
+        alert("Select one or more nodes first!");
+        return;
       }
-    }, this);
+    } else {
+      var removalConfirmation = "Remove " + nodes.length + " selected node" +
+          (nodes.length > 1 ? "s":"") + "?";
+      if (!confirm(removalConfirmation)) {
+        return;
+      }
+      nodes.forEach(function(node) {
+        delete this.groups[node.id()]; // ok if not present
+        var skid = node.data('skeletons')[0].id;
+        node.remove();
+
+        // If the node is part of a split subgraph, also remove all other nodes
+        // in the subgraph.
+        if (this.subgraphs.hasOwnProperty(skid)) {
+          this.cy.nodes().filter(function (i, splitNode) {
+            return splitNode.data('skeletons').some(function (model) {
+              return model.id === skid;
+            });
+          }).remove();
+          delete this.subgraphs[skid];
+        }
+      }, this);
+    }
     this.deselectAll();
   };
 

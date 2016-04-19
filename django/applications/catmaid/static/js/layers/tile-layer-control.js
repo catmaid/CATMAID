@@ -180,7 +180,7 @@
                 input.attr('step', setting.step);
               }
               input.addClass('layerSetting');
-              if (setting.value) {
+              if (setting.hasOwnProperty('value')) {
                 input.attr('value', setting.value);
               }
               label.append(input);

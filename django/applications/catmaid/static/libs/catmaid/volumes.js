@@ -143,13 +143,14 @@
    * Create a triangle mesh from the filtered nodes of the currently selected
    * neuron source. The current filter rules are taken into account.
    */
-  CATMAID.ConvexHullVolume.prototype.updateTriangleMesh = function(onSuccess) {
+  CATMAID.ConvexHullVolume.prototype.updateTriangleMesh = function(onSuccess, onError) {
     // If there is no neuron source, there is no point. Return an empty mesh
     // representation (no vertices, no faces).
     var source = this.neuronSourceName ?
       CATMAID.skeletonListSources.getSource(this.neuronSourceName) : undefined;
 
     if (!source) {
+      CATMAID.tools.callIfFn(onError, "No skeleton source defined");
       return [[], []];
     }
 

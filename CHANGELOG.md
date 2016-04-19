@@ -14,6 +14,18 @@ Graph widget:
   widget help window currently only contains information on how edges/links
   between nodes can be hidden.
 
+Volume widget:
+
+- Preview for alpha shapes is now disabled by default due to its potential
+  re-computation cost.
+
+- Convex hull and alpha shape meshes are now only automatically re-generated on
+  property changes if preview is enabled.
+
+- Saving a new volume makes sure the volume's mesh is up-to-date and will
+  re-generate it if needed. Re-generations will now also show an info dialog.
+  If no mesh could be generated, saving is not allowed and the edit form will
+  stay open.
 
 ### Bug fixes
 

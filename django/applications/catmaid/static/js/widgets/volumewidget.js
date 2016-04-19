@@ -214,27 +214,52 @@
     var onUpdate = handlers[0];
     var closeVolumeEdit = handlers[1];
 
-    var onClose = function() {
-      volume.off(volume.EVENT_PROPERTY_CHANGED, volumeChanged);
-      CATMAID.tools.callIfFn(closeVolumeEdit);
+    var onClose = function(save, onSuccess, onCancel) {
+      if (CATMAID.tools.isFn(closeVolumeEdit)) {
+        var onSuccessWrapper = function() {
+          volume.off(volume.EVENT_PROPERTY_CHANGED, volumeChanged);
+          CATMAID.tools.callIfFn(onSuccess);
+        };
+        closeVolumeEdit(save, onSuccessWrapper, onCancel);
+      }
     };
     $addContent.append($('<div class="clear" />'));
     $addContent.append($('<div />')
         .append($('<button>Cancel</Cancel>')
           .on('click', function(e) {
-            // Show table
-            $("div.volume-list", $content).show();
-            $("div.volume-properties", $content).remove();
-            onClose();
+            onClose(false, function() {
+              // Show table
+              $("div.volume-list", $content).show();
+              $("div.volume-properties", $content).remove();
+            });
           }))
         .append($('<button>Save</Cancel>')
           .on('click', function(e) {
-            volume.save();
-            // Show table, remove volume settings
-            $("div.volume-list", $content).show();
-            $("div.volume-properties", $content).remove();
-            onClose();
-            self.redraw();
+            $.blockUI({message: '<img src="' + CATMAID.staticURL +
+                'images/busy.gif" /> <span>Please wait, creating volume</span>'});
+            function save() {
+              try {
+                onClose(true, function() {
+                  volume.save()
+                    .then(function(result) {
+                      // Show table, remove volume settings
+                      $("div.volume-list", $content).show();
+                      $("div.volume-properties", $content).remove();
+                    }).catch(CATMAID.handleError)
+                    .then(function() {
+                      $.unblockUI();
+                      self.redraw();
+                    });
+                }, function() {
+                  CATMAID.warn("Couldn't save volume");
+                  $.unblockUI();
+                });
+              } catch(e) {
+                $.unblockUI();
+                CATMAID.error("Couldn't create volume: " + e);
+              }
+            }
+            setTimeout(save, 100);
           })));
 
     $content.append($addContent);
@@ -515,15 +540,8 @@
           volume.set("rules", volume.rules, true);
         });
 
-        // Update working volume with default properties set above
-        $.blockUI({message: '<img src="' + CATMAID.staticURL +
-            'images/busy.gif" /> <span>Please wait, creating volume</span>'});
-        try {
-          // Update triangle mesh asynconously, to not block wait message
-          setTimeout(volume.updateTriangleMesh.bind(volume), 100);
-        } catch(e) {
-          $.unblockUI();
-          CATMAID.error("Couldn't create volume: " + e);
+        if (volume.preview) {
+          volume.updateTriangleMesh();
         }
 
         return $settings;
@@ -539,27 +557,59 @@
       createHandlers: function(volume) {
         // Give some feedback in case of problems
         var checkGeneratedMesh = function(volume, mesh) {
+          var meshNeedsUpdate = false;
           if (!mesh || 0 === mesh.length) {
             CATMAID.warn("Neither points nor mesh could be generated");
+            meshNeedsUpdate = true;
           } else if (!mesh[0] || 0 === mesh[0].length) {
             CATMAID.warn("Couldn't find points for volume generation");
+            meshNeedsUpdate = true;
           } else if (!mesh[1] || 0 === mesh[1].length) {
             CATMAID.warn("Couldn't generate volume from degenerative points");
+            meshNeedsUpdate = true;
           }
+          volume.meshNeedsSync = meshNeedsUpdate;
+          return !meshNeedsUpdate;
         };
         var onUpdate = function(field, newValue, oldValue) {
           // Re-create mesh if the updated field is no 'basic' property to avoid
           // unnecessary re-calculation.
-          if (field !== 'mesh' && field !== "id" && field !== "title" && field !== 'comment') {
-            volume.updateTriangleMesh(checkGeneratedMesh);
+          if (volume.preview && volume.meshNeedsSync) {
+            $.blockUI({message: '<img src="' + CATMAID.staticURL +
+                'images/busy.gif" /> <span>Please wait, creating volume</span>'});
+            var onSuccess = function(volume, mesh) {
+              checkGeneratedMesh(volume, mesh);
+              $.unblockUI();
+            };
+            var updateMesh = volume.updateTriangleMesh.bind(volume, onSuccess,
+                $.unblockUI.bind($));
+            setTimeout(updateMesh, 100);
           }
         };
-        var onClose = function() {
-          // Remove previewed meshes from 3D viewer
-          volume.clearPreviewData();
+        var onClose = function(save, onSuccess, onCancel) {
+          if (save) {
+            var onSuccessWrapper = function(volume, mesh) {
+              if (checkGeneratedMesh(volume, mesh)) {
+                CATMAID.tools.callIfFn(onSuccess);
+              } else {
+                CATMAID.tools.callIfFn(onCancel);
+              }
+              // Remove previewed meshes from 3D viewer
+              volume.clearPreviewData();
+            };
+            if (volume.meshNeedsSync) {
+              volume.updateTriangleMesh(onSuccessWrapper);
+            } else {
+              onSuccessWrapper(volume, volume.mesh);
+            }
+          } else {
+            // Remove previewed meshes from 3D viewer
+            volume.clearPreviewData();
+            CATMAID.tools.callIfFn(onSuccess);
+          }
         };
         return [onUpdate, onClose];
-      }
+      },
     };
   };
 
@@ -618,8 +668,9 @@
             boxTool.updateCropBox();
           };
 
-          var onCloseVolumeEdit = function() {
+          var onCloseVolumeEdit = function(save, onSuccess, onCancel) {
             boxTool.destroy();
+            onSuccess();
           };
 
           return [onUpdate, onCloseVolumeEdit];

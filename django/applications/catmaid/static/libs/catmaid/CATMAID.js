@@ -281,10 +281,10 @@ var requestQueue = new RequestQueue();
         // case, we have to call reject() explicitly.
         try {
           var json = CATMAID.validateJsonResponse(status, text, xml);
+          resolve(json);
         } catch (e) {
           reject(e);
         }
-        resolve(json);
       });
     });
   };

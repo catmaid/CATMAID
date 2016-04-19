@@ -132,7 +132,7 @@
 
   SynapsePlot.prototype.clear = function() {
     this.models = {};
-    this.morphologies = null;
+    this.morphologies = {};
     this.rows = null;
     this.preSource.clear();
     this.redraw();

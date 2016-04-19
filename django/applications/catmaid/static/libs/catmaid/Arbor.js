@@ -1821,13 +1821,15 @@ Arbor.prototype.findNodesWithin = function(source, distanceFn, max_distance) {
         dist = open.shift(),
         s = neighbors[node];
     within[node] = dist;
-    for (var i=0; i<s.length; ++i) {
-      var next = s[i];
-      if (within[next]) continue; // seen
-      var d = dist + distanceFn(node, next);
-      if (d > max_distance) continue;
-      open.push(next);
-      open.push(d);
+    if (s) {
+      for (var i=0; i<s.length; ++i) {
+        var next = s[i];
+        if (within[next]) continue; // seen
+        var d = dist + distanceFn(node, next);
+        if (d > max_distance) continue;
+        open.push(next);
+        open.push(d);
+      }
     }
   }
   return within;

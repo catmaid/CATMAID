@@ -205,10 +205,14 @@
   CommandHistory.prototype.execute = function(command) {
     var executedCommand = this.submit.then((function() {
       var result = command.execute(this._store);
+
+      // Branch off internal handler chain, handling errors is up to the
+      // original caller, they are ignored internally.
       result.then((function() {
         this._advanceHistory(command);
         this.trigger(CommandHistory.EVENT_COMMAND_EXECUTED, command, false);
-      }).bind(this));
+      }).bind(this)).catch(CATMAID.noop);
+
       return result;
     }).bind(this));
 
@@ -231,10 +235,14 @@
         throw new CATMAID.CommandHistoryError("Nothing to undo");
       }
       var result = command.undo(this._store);
+
+      // Branch off internal handler chain, handling errors is up to the
+      // original caller, they are ignored internally.
       result.then((function() {
         this._rollbackHistory();
         this.trigger(CommandHistory.EVENT_COMMAND_UNDONE, command);
-      }).bind(this));
+      }).bind(this)).catch(CATMAID.noop);
+
       return result;
     }).bind(this));
 

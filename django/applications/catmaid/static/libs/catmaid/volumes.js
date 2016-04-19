@@ -37,23 +37,23 @@
    */
   CATMAID.Volume.prototype.save = function() {
     if (null === this.id) {
-      requestQueue.register(CATMAID.makeURL(project.id + "/volumes/add"), "POST",
-          this.serialize(), CATMAID.jsonResponseHandler(function(json) {
-            if (json.success) {
-              CATMAID.msg("Success", "A new volume was created");
-            } else {
-              CATMAID.warn("Unknown status");
-            }
-          }));
+      return CATMAID.fetch(project.id + "/volumes/add", "POST", this.serialize())
+        .then(function(result) {
+          if (result.success) {
+            CATMAID.msg("Success", "A new volume was created");
+          } else {
+            CATMAID.warn("Unknown status");
+          }
+        });
     } else {
-      requestQueue.register(CATMAID.makeURL(project.id + "/volumes/" + this.id + "/"),
-          "POST", this.serialize(), CATMAID.jsonResponseHandler(function(json) {
-            if (json.success) {
-              CATMAID.msg("Changes saved", "The volume has been udpated");
-            } else {
-              CATMAID.warn("Unknown status");
-            }
-          }));
+      return CATMAID.fetch(project.id + "/volumes/" + this.id + "/", "POST", this.serialize())
+        .then(function(result) {
+          if (result.success) {
+            CATMAID.msg("Changes saved", "The volume has been udpated");
+          } else {
+            CATMAID.warn("Unknown status");
+          }
+        });
     }
   };
 

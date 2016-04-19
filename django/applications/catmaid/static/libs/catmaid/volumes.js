@@ -113,6 +113,8 @@
     this.set("rules", options.rules || []);
     this.set("preview", CATMAID.tools.getDefined(options.preview, true));
     this.set("respectRadius", options.respectRadius || true);
+    // Indicates if the mesh representation needs to be recomputed
+    this.meshNeedsSync = true;
   };
 
   CATMAID.ConvexHullVolume.prototype = Object.create(CATMAID.Volume.prototype);
@@ -121,6 +123,20 @@
   CATMAID.ConvexHullVolume.prototype.init = function() {
     this.updateTriangleMesh();
     return this;
+  };
+
+  /**
+   * Override property set method to know when the mesh representation needs to
+   * be updated.
+   */
+  CATMAID.ConvexHullVolume.prototype.set = function(field, value, forceOverride) {
+    // Check parameter for influence on mesh *before* the prototype is called,
+    // this makes sure all property change event handlers can already know that
+    // the mesh needs yo be updated.
+    if (field !== 'mesh' && field !== "id" && field !== "title" && field !== 'comment') {
+      this.meshNeedsSync = true;
+    }
+    CATMAID.Volume.prototype.set.call(this, field, value, forceOverride);
   };
 
   /**
@@ -144,6 +160,9 @@
     var update = (function(mesh, removeMesh) {
       this.set("mesh", mesh);
       this._removePreviewMesh = removeMesh;
+      // Mesh is now up to date
+      this.meshNeedsSync = false;
+
       if (CATMAID.tools.isFn(onSuccess)) {
         onSuccess(this, mesh);
       }

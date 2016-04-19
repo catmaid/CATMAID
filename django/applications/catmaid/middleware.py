@@ -65,11 +65,11 @@ class AjaxExceptionMiddleware(object):
         response = {
             'error': str(exception),
             'detail': format_exc(),
+            'type': type(exception).__name__
         }
         if settings.DEBUG:
             import sys, traceback
             (exc_type, exc_info, tb) = sys.exc_info()
-            response['type'] = exc_type.__name__
             response['info'] = str(exc_info)
             response['traceback'] = ''.join(traceback.format_tb(tb))
         return HttpResponse(json.dumps(response))

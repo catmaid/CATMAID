@@ -42,6 +42,8 @@ Tile layer:
 - Creating nodes using the Z key without other nodes in close proximity works
   again.
 
+- Zoom level slider initialized correctly for stacks with eight zoom levels.
+
 
 ## 2016.04.18
 

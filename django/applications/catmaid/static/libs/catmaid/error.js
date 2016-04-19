@@ -6,11 +6,16 @@
   /**
    * A general error containing a message of what went wrong.
    */
-  CATMAID.Error = function(message, detail) {
+  CATMAID.Error = function(message, detail, type) {
     this.name = 'CATMAID error';
     this.message = message || '(no message)';
     this.stack = (new Error()).stack;
     this.detail= detail || this.stack;
+    this.type = type;
+
+    // Make error message also available through 'error' field, to be consistent
+    // with the back-end API in that regard.
+    this.error = this.message;
   };
 
   CATMAID.Error.prototype = Object.create(Error.prototype);
@@ -20,7 +25,7 @@
    * A simple value error type to indicate some sort of input value problem.
    */
   CATMAID.ValueError = function(message, detail) {
-    CATMAID.Error.call(this, message, detail);
+    CATMAID.Error.call(this, message, detail, 'ValueError');
   };
 
   CATMAID.ValueError.prototype = Object.create(CATMAID.Error.prototype);

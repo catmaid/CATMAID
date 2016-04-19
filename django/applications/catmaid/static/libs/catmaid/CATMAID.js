@@ -260,7 +260,12 @@ var requestQueue = new RequestQueue();
     // `text` may be empty for no content responses.
     var json = text.length ? JSON.parse(text) : {};
     if (json.error) {
-      throw new CATMAID.Error("Unsuccessful request: " + json.error, json.detail);
+      if ('ValueError' === json.type) {
+        throw new CATMAID.ValueError(json.error, json.detail);
+      } else {
+        throw new CATMAID.Error("Unsuccessful request: " + json.error,
+            json.detail, json.type);
+      }
     } else {
       return json;
     }

@@ -451,7 +451,7 @@
               newRuleOptions, newRuleMergeMode, newRuleSkeletonID, newRuleSkeletonName);
           volume.rules.push(rule);
           // To trigger events, override with itself
-          volume.set("rules", volume.rules);
+          volume.set("rules", volume.rules, true);
           // Trigger table update
           datatable.rows().invalidate();
           datatable.ajax.reload();

@@ -48,6 +48,9 @@ Tile layer:
 
 - Zoom level slider initialized correctly for stacks with eight zoom levels.
 
+- Showing connector info for edge in Graph widget (Alt+Click) now works also if
+  the source is a single neuron and the target a group or split node.
+
 
 ## 2016.04.18
 

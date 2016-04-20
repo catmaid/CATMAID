@@ -623,20 +623,23 @@
             if (isSplit(target)) {
               connector_ids = getData(target).upstream_skids[target_skids[0]];
             }
+          } else {
+            source_skids = getSkids(source);
+            target_skids = getSkids(target);
           }
-        }
 
-        requestQueue.register(django_url + project.id + '/connector/pre-post-info', "POST",
-          {cids: connector_ids,
-           pre: source_skids,
-           post: target_skids},
-          function(status, text) {
-            if (200 !== status) return;
-            var json = $.parseJSON(text);
-            if (json.error) return new CATMAID.ErrorDialog(
-                "Cound not fetch edge data.", json.error);
-            CATMAID.ConnectorSelection.show_connectors(json);
-          });
+          var params = {
+            cids: connector_ids,
+            pre: source_skids,
+            post: target_skids
+          };
+
+          CATMAID.fetch(project.id + '/connector/pre-post-info', "POST", params)
+            .then(function(result) {
+              CATMAID.ConnectorSelection.show_connectors(result);
+            })
+            .catch(CATMAID.handleError);
+        }
       }
     });
 

@@ -564,6 +564,42 @@
         return arbor.nodes();
       }
     },
+    "endnodes": {
+      name: "Only end nodes",
+      filter: function(skeletonId, neuron, arbor, tags, partners, options) {
+        var endIds = arbor.findBranchAndEndNodes().ends;
+        var endNodes = {};
+        var nodes = arbor.nodes();
+        for (var i=0; i<endIds.length; ++i) {
+          var nodeId = endIds[i];
+          if (nodes.hasOwnProperty(nodeId)) {
+            endNodes[nodeId] = nodes[nodeId];
+          }
+        }
+        if (options.includeRoot) {
+          var rootNode = nodes[arbor.root];
+          if (rootNode) {
+            endNodes[arbor.root] = rootNode;
+          }
+        }
+        return endNodes;
+      }
+    },
+    "branches": {
+      name: "Only branch nodes",
+      filter: function(skeletonId, neuron, arbor, tags, partners) {
+        var branchIds = Object.keys(arbor.findBranchAndEndNodes().branches);
+        var branchNodes = {};
+        var nodes = arbor.nodes();
+        for (var i=0; i<branchIds.length; ++i) {
+          var nodeId = branchIds[i];
+          if (nodes.hasOwnProperty(nodeId)) {
+            branchNodes[nodeId] = nodes[nodeId];
+          }
+        }
+        return branchNodes;
+      }
+    },
     // Options: tag
     'tags': {
       name: "Only tagged nodes",

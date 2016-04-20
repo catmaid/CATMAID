@@ -28,6 +28,10 @@ Volume widget:
   If no mesh could be generated, saving is not allowed and the edit form will
   stay open.
 
+- Two new filters for convex hulls and alpha shapes are now available: "only
+  end nodes" (optionally including the root) and "only branch nodes". These
+  will restrict the base point set for volume generation.
+
 
 Tile layer:
 

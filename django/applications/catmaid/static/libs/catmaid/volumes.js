@@ -132,8 +132,11 @@
   CATMAID.ConvexHullVolume.prototype.set = function(field, value, forceOverride) {
     // Check parameter for influence on mesh *before* the prototype is called,
     // this makes sure all property change event handlers can already know that
-    // the mesh needs yo be updated.
-    if (field !== 'mesh' && field !== "id" && field !== "title" && field !== 'comment') {
+    // the mesh needs to be updated. In case a mesh set directly no sync is
+    // needed anymore.
+    if (field == 'mesh') {
+      this.meshNeedsSync = false;
+    } else if (field !== "id" && field !== "title" && field !== 'comment') {
       this.meshNeedsSync = true;
     }
     CATMAID.Volume.prototype.set.call(this, field, value, forceOverride);

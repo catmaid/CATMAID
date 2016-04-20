@@ -162,10 +162,10 @@
     var rules = this.rules;
     // On successful mesh generation, the mesh will be stored in the volume.
     var update = (function(mesh, removeMesh) {
-      this.set("mesh", mesh);
-      this._removePreviewMesh = removeMesh;
       // Mesh is now up to date
       this.meshNeedsSync = false;
+      this.set("mesh", mesh);
+      this._removePreviewMesh = removeMesh;
 
       if (CATMAID.tools.isFn(onSuccess)) {
         onSuccess(this, mesh);

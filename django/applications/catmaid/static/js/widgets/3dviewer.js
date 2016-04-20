@@ -1509,7 +1509,8 @@
               wireframe: false,
               wireframeLinewidth: 10,
               morphTargets: true,
-              morphNormals: true}));
+              morphNormals: true,
+              side: THREE.DoubleSide}));
 
       var wfh = new THREE.WireframeHelper(mesh, 0x000000);
       wfh.material.linewidth = 2;

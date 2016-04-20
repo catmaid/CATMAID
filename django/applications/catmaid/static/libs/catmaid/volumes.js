@@ -268,7 +268,7 @@
             }
           }
         } else {
-          throw new ValueError("Unknown merge mode: " + mergeMode);
+          throw new CATMAID.ValueError("Unknown merge mode: " + mergeMode);
         }
         nNodes += count;
       }).bind(nodeCollection);

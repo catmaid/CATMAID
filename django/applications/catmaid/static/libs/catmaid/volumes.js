@@ -258,10 +258,17 @@
             }
           }
         } else if (CATMAID.INTERSECTION === mergeMode) {
+          // An intersection keeps only nodes that both the target and the
+          // other set have.
           for (var node in other) {
             var existingNode = this[node];
-            // An intersection keeps only nodes that both the target and the
-            // other set have.
+            if (!existingNode) {
+              delete this[node];
+              --count;
+            }
+          }
+          for (var node in this) {
+            var existingNode = other[node];
             if (!existingNode) {
               delete this[node];
               --count;

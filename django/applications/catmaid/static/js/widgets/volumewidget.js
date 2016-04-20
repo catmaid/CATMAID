@@ -379,7 +379,8 @@
 
         if (withAlpha) {
           $content.append(CATMAID.DOM.createInputSetting("Alpha",
-              volume.alpha, "A size filter for potential edges in mesh", function(e) {
+              volume.alpha, "Only triangles with a circum radius less than 1/alpha will be used",
+              function(e) {
                 volume.set("alpha", Number(this.value));
               }));
         }

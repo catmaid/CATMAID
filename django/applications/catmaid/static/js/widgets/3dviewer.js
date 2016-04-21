@@ -4569,7 +4569,13 @@
 
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.addCompositeActorToScene = function() {
     this.CTYPES.forEach(function(t) {
-      this.space.add(this.actor[t]);
+      var actor = this.actor[t];
+      // Only add geometry to the scene that has at least one vertex. Not every
+      // CTYPE actor is actually used, so this case can happen. Adding empty
+      // geometry causes renderer warnings, which we want to avoid.
+      if (actor && actor.geometry.vertices.length > 0) {
+        this.space.add(this.actor[t]);
+      }
     }, this);
   };
 

@@ -2599,7 +2599,7 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
     // Include ID only in request, if it is real. Otherwise, keep the active
     // virtual node in the client and inject it into the result.
     var extraNodes;
-    if (!SkeletonAnnotations.isRealNode(atnid)) {
+    if (atnid && !SkeletonAnnotations.isRealNode(atnid)) {
       var n = self.nodes[atnid];
       if (n) {
         extraNodes = [{

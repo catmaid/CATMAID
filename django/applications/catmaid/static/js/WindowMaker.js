@@ -1335,6 +1335,7 @@ var WindowMaker = new function()
         [
           ['Meshes ', false, function() { WA.options.show_meshes = this.checked; WA.adjustContent(); }, false],
           [volumeSelection],
+          ['Faces ', false, function() { WA.options.meshes_faces = this.checked;}, false],
           [WA.createMeshColorButton()],
           ['Active node', true, function() { WA.options.show_active_node = this.checked; WA.adjustContent(); }, false],
           ['Active node on top', false, function() { WA.options.active_node_on_top = this.checked; WA.adjustContent(); }, false],

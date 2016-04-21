@@ -759,6 +759,7 @@
     this.show_meshes = false;
     this.meshes_color = "#ffffff";
     this.meshes_opacity = 0.2;
+    this.meshes_faces = false;
     this.show_missing_sections = false;
     this.missing_section_height = 20;
     this.show_active_node = true;
@@ -812,7 +813,7 @@
     color = color || new THREE.Color(this.meshes_color);
     if (typeof opacity === 'undefined') opacity = this.meshes_opacity;
     return new THREE.MeshLambertMaterial({color: color, opacity: opacity,
-      transparent: opacity !== 1, wireframe: true});
+      transparent: opacity !== 1, wireframe: !this.meshes_faces, side: THREE.DoubleSide});
   };
 
 

@@ -41,6 +41,12 @@ Tile layer:
   the "Tile area efficiency threshold" in the tile layer controls.
 
 
+3D viewer:
+
+- Meshes and volumes can now optionally be displayed with visible faces instead
+  of wireframe only.
+
+
 ### Bug fixes
 
 - Creating nodes using the Z key without other nodes in close proximity works

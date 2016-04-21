@@ -93,7 +93,7 @@ class Command(BaseCommand):
                 test_passed = False
                 project_passed = False
                 row = cursor.fetchone()
-                self.stdout.write('FAILED: node %s is skeleton %s has no path to root' % row)
+                self.stdout.write('FAILED: node %s in skeleton %s has no path to root' % row)
         if test_passed:
             self.stdout.write('OK')
 

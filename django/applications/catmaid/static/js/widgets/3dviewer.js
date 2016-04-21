@@ -5660,8 +5660,8 @@
       replacement: 'void main() {'},
     vertexPosition: {
       shader: 'vertex',
-      regex: /gl_Position\s*=\s*projectionMatrix\s*\*\s*mvPosition;/,
-      replacement: 'gl_Position = projectionMatrix * mvPosition;'},
+      regex: /#include\s+<project_vertex>/,
+      replacement: '#include <project_vertex>;'},
     fragmentDeclarations: {
       shader: 'fragment',
       regex: /void\s+main\(\s*\)\s+\{/,

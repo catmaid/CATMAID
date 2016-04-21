@@ -705,7 +705,7 @@
     'endnodes': function(container, options) {
       // Option to include root
       var $includeRoot = CATMAID.DOM.createCheckboxSetting(
-          "Include root node", true, "If checked, the root node will be treated as an end node.",
+          "Include root node", false, "If checked, the root node will be treated as an end node.",
           function(e) { options.includeRoot = this.checked; });
       $(container).append($includeRoot);
     },

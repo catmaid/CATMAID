@@ -1825,10 +1825,28 @@
     }
   };
 
-  WebGLApplication.prototype.Space.prototype.TextGeometryCache = function() {
+  WebGLApplication.prototype.Space.prototype.TextGeometryCache = function(options) {
     this.geometryCache = {};
 
-    this.getTagGeometry = function(tagString) {
+    // Load font asynchronously, text creation will wait
+    var prepare, font;
+    if (options.font) {
+      prepare = new Promise.resolve();
+      font = options.font;
+    } else {
+      prepare = new Promise(function(resolve, reject) {
+        var loader = new THREE.FontLoader();
+        var url = CATMAID.makeStaticURL('libs/three.js/fonts/helvetiker_regular.typeface.js');
+        loader.load(url, function(newFont) {
+          // Share font
+          options.font = newFont;
+          font = newFont;
+          resolve();
+        }, undefined, reject);
+      }).catch(CATMAID.handleError);
+    }
+
+    this.getTagGeometry = function(tagString, font) {
       if (tagString in this.geometryCache) {
         var e = this.geometryCache[tagString];
         e.refs += 1;
@@ -1839,7 +1857,7 @@
         size: 100,
         height: 20,
         curveSegments: 1,
-        font: "helvetiker"
+        font: font
       });
       text3d.computeBoundingBox();
       text3d.tagString = tagString;
@@ -1858,12 +1876,33 @@
       }
     };
 
-    this.createTextMesh = function(tagString, material) {
-      var text = new THREE.Mesh(this.getTagGeometry(tagString), material);
+    this._createMesh = function(tagString, material, font) {
+      var geometry = this.getTagGeometry(tagString, font);
+      var text = new THREE.Mesh(geometry, material);
       // We need to flip up, because our cameras' up direction is -Y.
       text.scale.setY(-1);
       text.visible = true;
       return text;
+    };
+
+    /**
+     * Create text mesh and load font if it isn't already available yet.
+     */
+    this.createTextMesh = function(tagString, material, onSuccess) {
+      // If font isn't loaded yet, load it and try again in 100ms.
+      if (font) {
+        var mesh = this._createMesh(tagString, material, font);
+        onSuccess(mesh);
+      } else {
+        prepare.then(function() {
+          if (font) {
+            var mesh = this._createMesh(tagString, material, font);
+            onSuccess(mesh);
+          } else {
+            throw new CATMAID.Error("3D viewer font couldn't be loaded");
+          }
+        });
+      }
     };
 
     this.destroy = function() {
@@ -1909,7 +1948,7 @@
 
     // Mesh materials for spheres on nodes tagged with 'uncertain end', 'undertain continuation' or 'TODO'
     this.updateDynamicMaterials(options, false);
-    this.textGeometryCache = new WebGLApplication.prototype.Space.prototype.TextGeometryCache();
+    this.textGeometryCache = new WebGLApplication.prototype.Space.prototype.TextGeometryCache(options);
     this.connectorLineColors = {'presynaptic_to': new THREE.LineBasicMaterial({color: 0xff0000, opacity: 1.0, linewidth: 6}),
                                 'postsynaptic_to': new THREE.LineBasicMaterial({color: 0x00f6ff, opacity: 1.0, linewidth: 6}),
                                 'gapjunction_with': new THREE.LineBasicMaterial({color: 0x9f25c2, opacity: 1.0, linewidth: 6})};
@@ -2321,7 +2360,7 @@
    * @param {Integer} textureZoomLevel (Optional) The zoom level used for
    *                                   image tile texture. If set to "max", the
    *                                   stack's maximum zoom level is used. If
-   *                                   null/undefined, no texture will be used. 
+   *                                   null/undefined, no texture will be used.
    * @param {Number}  opacity          A value in the range 0-1 representing the
    *                                   opacity of the z plane.
    */
@@ -3639,16 +3678,21 @@
     // Create meshes for the tags for all nodes that need them, reusing the geometries
     var cache = this.space.staticContent.textGeometryCache,
         textMaterial = this.space.staticContent.textMaterial;
+
+    var addNode = function(nodeID, text) {
+      var v = vs[nodeID];
+      text.position.x = v.x;
+      text.position.y = v.y;
+      text.position.z = v.z;
+      this.textlabels[nodeID] = text;
+      this.space.add(text);
+    };
+
     for (var tagString in tagNodes) {
       if (tagNodes.hasOwnProperty(tagString)) {
         tagNodes[tagString].forEach(function(nodeID) {
-          var text = cache.createTextMesh(tagString, textMaterial);
-          var v = vs[nodeID];
-          text.position.x = v.x;
-          text.position.y = v.y;
-          text.position.z = v.z;
-          this.textlabels[nodeID] = text;
-          this.space.add(text);
+          cache.createTextMesh(tagString, textMaterial,
+              addNode.bind(this, nodeID));
         }, this);
       }
     }

@@ -92,7 +92,7 @@ non_pipeline_js = {
     'cola': 'libs/cytoscapejs/cola.js',
     'springy': 'libs/cytoscapejs/springy.js',
     'foograph': 'libs/cytoscapejs/foograph.js',
-    'rhill-voronoi-core': 'libs/cytoscapejs/rhill-voronoi-core.js'
+    'rhill-voronoi-core': 'libs/cytoscapejs/rhill-voronoi-core.js',
 }
 
 # Even non-pipeline files have to be made known to pipeline, because it takes

@@ -303,7 +303,7 @@
 
     var sorted_skids = Object.keys(this.models)
       .map(function(skid) { return [skid, CATMAID.NeuronNameService.getInstance().getName(skid)]; })
-      .sort(function(a, b) { return a[1] > b[1]; })
+      .sort(function(a, b) { return a[1] > b[1] ? 1 : -1; })
       .map(function(pair) { return pair[0]; });
 
     var colors = (function(partner_colors, colorFn, groups) {

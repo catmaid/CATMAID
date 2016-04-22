@@ -18,6 +18,8 @@ RequestQueue = function(originUrl, csrfToken)
   var queue = [];		//!< queue of waiting requests
   var xmlHttp;
   var spinner = null;
+  // Extra headers are stored as key value pairs in an object
+  var extraHeaders = {};
 
   if ( typeof XMLHttpRequest != 'undefined' )
   {
@@ -148,6 +150,11 @@ RequestQueue = function(originUrl, csrfToken)
     if (!RequestQueue.csrfSafe(item.method) && sameOrigin(item.request)) {
       xmlHttp.setRequestHeader('X-CSRFToken', csrfToken);
     }
+
+    // Add extra headers
+    for (var headerName in extraHeaders) {
+      xmlHttp.setRequestHeader(headerName, extraHeaders[headerName]);
+    }
     xmlHttp.onreadystatechange = callback;
     xmlHttp.send( item.data );
   };
@@ -244,6 +251,20 @@ RequestQueue = function(originUrl, csrfToken)
         }
       }
       this.register( r, m, d, c, id );
+    },
+
+    /**
+     * Add a header that will be added to every new request.
+     */
+    addHeader: function(name, value) {
+      extraHeaders[name] = value;
+    },
+
+    /**
+     * Remove a header that was added before.
+     */
+    removeHeader: function(name) {
+      delete extraHeaders[name];
     }
   };
 };

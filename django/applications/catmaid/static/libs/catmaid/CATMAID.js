@@ -295,6 +295,27 @@ var requestQueue = new RequestQueue();
   };
 
   /**
+   * Add an extra header field to all future requests or until it is removed
+   * again.
+   *
+   * @param {String} name  The name of the new header field
+   * @param {String} value The value of the new header field
+   */
+  CATMAID.addHeaderToRequests = function(name, value) {
+    requestQueue.addHeader(name, value);
+  };
+
+  /**
+   * Remove a previously added extra header field from all future requests or
+   * until it is added again.
+   *
+   * @param {String} name  The name of the header field to remove
+   */
+  CATMAID.removeHeaderFromRequests = function(name) {
+    requestQueue.removeHeader(name);
+  };
+
+  /**
    * If front-end permission checks are enabled, it can be checked if the
    * current session allows a certain permission on a paticular project. Returns
    * true if permission checks are disabled.

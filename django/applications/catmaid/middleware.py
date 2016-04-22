@@ -125,3 +125,19 @@ class ProfilingMiddleware(object):
             labels = (request.META['REMOTE_ADDR'], datetime.now())
             request.profiler.dump_stats('/tmp/catmaid-%s-%s.profile' % labels)
         return response
+
+
+class NewRelicMiddleware(object):
+    """This middleware will log additional properties to New Relic and expects
+    the newrelic python module to be installed.
+    """
+
+    # Import this locally, so that we don't clutter general imports and require
+    # it only when it is used.
+    newrelic = __import__('newrelic.agent')
+
+    def process_request(self, request):
+        exec_ctx = request.META.get('HTTP_X_CATMAID_EXECUTION_CONTEXT', b'')
+        if not exec_ctx:
+            exec_ctx = 'unknown'
+        self.newrelic_agent.add_custom_parameter('execution_context', exec_ctx)

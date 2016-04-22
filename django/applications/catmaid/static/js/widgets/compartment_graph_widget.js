@@ -1822,10 +1822,12 @@
 
   GroupGraph.prototype.growPaths = function() {
     var types = ['source', 'target'];
-    for (var i=0; i<types; ++i) {
-      var type = 'path_' + types[i];
+    for (var i=0; i<types.length; ++i) {
+      var rawType = types[i];
+      var type = 'path_' + rawType;
       if (!this[type] || 0 === Object.keys(this[type]).length)  {
-        return CATMAID.msg('Select ' + type + ' nodes first!');
+        return CATMAID.msg('No ' + rawType + ' for path',
+            'Select ' + rawType + ' node(s) first!', {style: 'warning'});
       }
     }
 

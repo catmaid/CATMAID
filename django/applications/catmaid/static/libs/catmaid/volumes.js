@@ -530,7 +530,32 @@
    * it easier for sub-types to override.
    */
   CATMAID.AlphaShapeVolume.prototype.createMesh = function(points) {
-    return GeometryTools.alphaShape(this.alpha, points);
+    var mesh = GeometryTools.alphaShape(this.alpha, points);
+    // Remove all faces that appear more than once. This is needeed to remove
+    // interior faces at the moment. This issue has been reported:
+    // https://github.com/mikolalysenko/simplicial-complex-boundary/issues/1
+    var seen = new Set();
+    var toRemove = new Set();
+    for (var i=0, max=mesh.length; i<max; ++i) {
+      var face = mesh[i];
+      var key = face.toString();
+      if (seen.has(key)) {
+        toRemove.add(key);
+      } else {
+        seen.add(key);
+      }
+    }
+    var nFaces = mesh.length;
+    for (var i=mesh.length; i>0; --i) {
+      var j = i - 1;
+      var face = mesh[j];
+      var key = face.toString();
+      if (toRemove.has(key)) {
+        mesh.splice(j, 1);
+      }
+    }
+
+    return mesh;
   };
 
   /**

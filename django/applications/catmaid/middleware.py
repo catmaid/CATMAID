@@ -140,4 +140,4 @@ class NewRelicMiddleware(object):
         exec_ctx = request.META.get('HTTP_X_CATMAID_EXECUTION_CONTEXT', b'')
         if not exec_ctx:
             exec_ctx = 'unknown'
-        self.newrelic_agent.add_custom_parameter('execution_context', exec_ctx)
+        self.newrelic.agent.add_custom_parameter('execution_context', exec_ctx)

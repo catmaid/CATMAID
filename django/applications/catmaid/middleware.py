@@ -132,9 +132,11 @@ class NewRelicMiddleware(object):
     the newrelic python module to be installed.
     """
 
-    # Import this locally, so that we don't clutter general imports and require
-    # it only when it is used.
-    newrelic = __import__('newrelic.agent')
+    def __init__(self, *args, **kwargs):
+        super(NewRelicMiddleware, self).__init__(*args, **kwargs)
+        # Import this locally, so that we don't clutter general imports and require
+        # it only when it is used.
+        self.newrelic = __import__('newrelic.agent')
 
     def process_request(self, request):
         exec_ctx = request.META.get('HTTP_X_CATMAID_EXECUTION_CONTEXT', b'')

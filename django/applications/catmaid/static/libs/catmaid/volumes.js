@@ -514,7 +514,7 @@
     options.preview = false;
 
     CATMAID.ConvexHullVolume.call(this, options);
-    this.set("alpha", options.alpha || 0.000001);
+    this.set("alpha", options.alpha || 5000);
   };
 
   CATMAID.AlphaShapeVolume.prototype = Object.create(CATMAID.ConvexHullVolume.prototype);
@@ -530,7 +530,7 @@
    * it easier for sub-types to override.
    */
   CATMAID.AlphaShapeVolume.prototype.createMesh = function(points) {
-    var mesh = GeometryTools.alphaShape(this.alpha, points);
+    var mesh = GeometryTools.alphaShape(1.0 / this.alpha, points);
     // Remove all faces that appear more than once. This is needeed to remove
     // interior faces at the moment. This issue has been reported:
     // https://github.com/mikolalysenko/simplicial-complex-boundary/issues/1

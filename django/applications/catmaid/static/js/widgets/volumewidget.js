@@ -378,8 +378,8 @@
             }, volume.neuronSourceName));
 
         if (withAlpha) {
-          $content.append(CATMAID.DOM.createInputSetting("Alpha",
-              volume.alpha, "Only triangles with a circum radius less than 1/alpha will be used",
+          $content.append(CATMAID.DOM.createInputSetting("Alpha (nm)",
+              volume.alpha, "Only triangles with a circumsphere radius less than alpha will be used",
               function(e) {
                 volume.set("alpha", Number(this.value));
               }));

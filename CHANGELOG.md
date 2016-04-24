@@ -32,6 +32,9 @@ Volume widget:
   end nodes" (optionally including the root) and "only branch nodes". These
   will restrict the base point set for volume generation.
 
+- Alpha shapes now use the inverse of the alpha value used so far. This makes it
+  easier to use since it translates directly into nanometers.
+
 
 Tile layer:
 

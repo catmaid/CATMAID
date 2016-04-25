@@ -571,6 +571,9 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, options) {
       return nodeToStateList(node);
     },
     getParent: function(nodeId) {
+      if (!SkeletonAnnotations.isRealNode(nodeId)) {
+        nodeId = SkeletonAnnotations.getParentOfVirtualNode(nodeId);
+      }
       var node = self.nodes[nodeId];
       if (!node || !node.parent) {
         return undefined;
@@ -584,6 +587,9 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, options) {
       }
       var children = [];
       for (var cid in node.children) {
+        if (!SkeletonAnnotations.isRealNode(cid)) {
+          cid = SkeletonAnnotations.getChildOfVirtualNode(cid);
+        }
         var child = node.children[cid];
         children.push(nodeToStateList(child));
       }

@@ -8,6 +8,7 @@ from django.conf import settings
 from django.db import connection
 from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
+from django.shortcuts import get_object_or_404
 
 from rest_framework.decorators import api_view
 
@@ -434,9 +435,9 @@ def update_location_reviewer(request, project_id=None, node_id=None):
         # skeleton ID only if needed.
         r = Review.objects.get(treenode_id=node_id, reviewer=request.user)
     except Review.DoesNotExist:
-        r = Review(project_id=project_id, treenode_id=node_id, reviewer=request.user)
-        # Find the skeleton
-        r.skeleton = Treenode.objects.get(pk=node_id).skeleton
+        node = get_object_or_404(Treenode, pk=node_id)
+        r = Review(project_id=project_id, treenode_id=node_id,
+                   skeleton_id=node.skeleton_id, reviewer=request.user)
 
     r.review_time = timezone.now()
     r.save()

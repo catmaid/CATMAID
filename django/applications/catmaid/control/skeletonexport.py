@@ -737,6 +737,9 @@ def _export_review_skeleton(project_id=None, skeleton_id=None,
     # Get all reviews for the requested skeleton
     reviews = get_treenodes_to_reviews_with_time(skeleton_ids=[skeleton_id])
 
+    if 0 == len(treenodes):
+        return []
+
     # Add each treenode to a networkx graph and attach reviewer information to
     # it.
     g = nx.DiGraph()

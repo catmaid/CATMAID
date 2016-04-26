@@ -98,10 +98,10 @@ class CATMAIDConfig(AppConfig):
         self.check_superuser()
 
         # Make sure the existing version is what we expect
-        signals.pre_migrate.connect(check_old_version)
+        signals.pre_migrate.connect(check_old_version, sender=self)
 
         # Validate CATMAID environment after all migrations have been run
-        signals.post_migrate.connect(validate_environment)
+        signals.post_migrate.connect(validate_environment, sender=self)
 
     # A list of settings that are expected to be available.
     required_setting_fields = {

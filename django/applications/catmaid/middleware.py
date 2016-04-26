@@ -5,8 +5,9 @@ from traceback import format_exc
 from datetime import datetime
 
 from django.http import HttpResponse
-from django.contrib.auth.models import User
 from django.conf import settings
+
+from guardian.utils import get_anonymous_user
 
 from rest_framework.authentication import TokenAuthentication
 
@@ -52,10 +53,8 @@ class AnonymousAuthenticationMiddleware(object):
     Django's anonymou user.
     """
     def process_request(self, request):
-        if request.user.is_anonymous() and settings.ANONYMOUS_USER_ID:
-            request.user = User.objects.get(id=settings.ANONYMOUS_USER_ID)
-            request.user.is_anonymous = lambda: False
-            request.user.is_authenticated = lambda: False
+        if request.user.is_anonymous():
+            request.user = get_anonymous_user()
         return None
 
 

@@ -10,6 +10,7 @@ from django.shortcuts import get_object_or_404
 from django.test import TestCase, TransactionTestCase
 from django.test.client import Client
 from guardian.shortcuts import assign_perm
+from guardian.utils import get_anonymous_user
 
 from catmaid.fields import Double3D, Integer3D
 from catmaid.models import Project, Stack, ProjectStack
@@ -489,7 +490,7 @@ class ViewPageTests(TestCase):
         self.assertEqual(len(result), 0)
 
         # Add permission to the anonymous user to browse two projects
-        anon_user = User.objects.get(pk=settings.ANONYMOUS_USER_ID)
+        anon_user = get_anonymous_user()
         p = Project.objects.get(pk=self.test_project_id)
         assign_perm('can_browse', anon_user, p)
 
@@ -4200,7 +4201,7 @@ class PermissionTests(TestCase):
 
     def test_can_browse_access(self):
         # Give anonymous user browse permissions for the test project
-        anon_user = User.objects.get(pk=settings.ANONYMOUS_USER_ID)
+        anon_user = get_anonymous_user()
         p = Project.objects.get(pk=self.test_project_id)
         assign_perm('can_browse', anon_user, p)
         # Give anonymous user general browse permissions

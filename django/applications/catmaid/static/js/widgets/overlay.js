@@ -2739,7 +2739,7 @@ SkeletonAnnotations.TracingOverlay.prototype.setConfidence = function(newConfide
         CATMAID.commands.execute(new CATMAID.UpdateConfidenceCommand(
               self.state, project.id, nid, newConfidence, toConnector))
           .then(self.updateNodes.bind(self, undefined, undefined, undefined))
-          .catch(CATMAID.handlError);
+          .catch(CATMAID.handleError);
       });
     });
   }

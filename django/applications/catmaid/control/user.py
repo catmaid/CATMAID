@@ -1,5 +1,6 @@
 import json
 import colorsys
+import django.contrib.auth.views as django_auth_views
 
 from random import random
 from string import upper
@@ -9,6 +10,13 @@ from guardian.utils import get_anonymous_user
 from django.http import HttpResponse
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth.models import User
+
+
+def not_anonymous(user):
+    """Return true if the the user is neither Django's nor Guardian's anonymous
+    user.
+    """
+    return user.is_authenticated and user != get_anonymous_user()
 
 def access_check(user):
     """ Returns true if users are logged in or if they have the general
@@ -170,3 +178,7 @@ def update_user_profile(request):
 
     return HttpResponse(json.dumps({'success': 'Updated user profile'}),
             content_type='application/json')
+
+@user_passes_test(not_anonymous)
+def change_password(request, **kwargs):
+    return django_auth_views.password_change(request, **kwargs)

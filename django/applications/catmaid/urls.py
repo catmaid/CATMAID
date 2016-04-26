@@ -51,11 +51,7 @@ urlpatterns += [
     url(r'^user-list$', user.user_list),
     url(r'^user-table-list$', user.user_list_datatable),
     url(r'^user-profile/update$', user.update_user_profile),
-]
-
-# Django related user URLs
-urlpatterns += [
-    url(r'^user/password_change/$', djauth.password_change, {'post_change_redirect': '/'}),
+    url(r'^user/password_change/$', user.change_password, {'post_change_redirect': '/'}),
 ]
 
 # Log

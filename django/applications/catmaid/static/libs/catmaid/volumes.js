@@ -731,6 +731,20 @@
           selectedPartners = partners[0];
         } else if ('post' === options.relation) {
           selectedPartners = partners[1];
+        } else if ('pre-or-post' === options.relation) {
+          // Merge both pre and post connections into a new object
+          selectedPartners = CATMAID.tools.deepCopy(partners[0]);
+          for (var partnerId in partners[1]) {
+            var postPartner = partners[1][partnerId];
+            var p = selectedPartners[partnerId];
+            if (p) {
+              for (var treenodeId in postPartner) {
+                p[treenodeId] = postPartner[treenodeId];
+              }
+            } else {
+              selectedPartners[partnerId] = postPartner;
+            }
+          }
         } else {
           throw new CATMAID.ValuError("Unsupported relation: " + options.relation);
         }
@@ -738,17 +752,17 @@
         var synapticNodes = {};
         var partnerNeurons = options.otherNeurons;
 
-        // Check if partners in option set are in actual partner set and if
-        // their connection are of the requested type. Collect return all
-        // synaptic nodes of the current skeleton
-        Object.keys(selectedPartners).forEach(function(skid) {
-          if (partnerNeurons[skid]) {
-            var nodes = selectedPartners[skid];
+        for (var partnerId in selectedPartners) {
+          // Check if partners in option set are in actual partner set (or if
+          // all partners should be used). Collect return all synaptic nodes
+          // of the current skeleton
+          if (!partnerNeurons || partnerNeurons[partnerId]) {
+            var nodes = selectedPartners[partnerId];
             for (var nodeId in nodes) {
               synapticNodes[nodeId] = true;
             }
           }
-        });
+        }
 
         return synapticNodes;
       }

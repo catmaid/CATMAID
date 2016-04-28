@@ -778,14 +778,14 @@
       });
 
       var $otherNeurons = CATMAID.DOM.createSelectSetting("Source of synaptic neurons",
-          sourceOptions, "Neurons from this source will be checked against having synapses with the working set.",
+          sourceOptions, "Neurons from this source will be checked against having synapses with the working set. If \"None\" is selected, all synaptic nodes will be considered.",
           function(e) {
             // Get models from source to store in option set
             var source = this.value && this.value !== "None" ?
               CATMAID.skeletonListSources.getSource(this.value) : undefined;
 
             if (!source) {
-              options.otherNeurons = {};
+              options.otherNeurons = null;
               return;
             }
 
@@ -794,7 +794,7 @@
           }, 'None');
 
       var $relation = CATMAID.DOM.createSelectSetting("Relation of base set to above partners",
-          { "Postsynaptic": "post", "Presynaptic": "pre" },
+          { "Postsynaptic": "post", "Presynaptic": "pre" , "Pre- or postsynaptic": "pre-or-post"},
           "Select how a valid node of the base set (nodes to generate mesh) is related to partner neurons from other source.",
           function() {
             options.relation = this.value;

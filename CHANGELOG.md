@@ -35,6 +35,11 @@ Volume widget:
 - Alpha shapes now use the inverse of the alpha value used so far. This makes it
   easier to use since it translates directly into nanometers.
 
+- If a synaptic connection filter is used with Alpha shapes and convex hulls, it
+  is now possible to select all synaptic nodes, regardless of the partner
+  skeleton (select "None" as partner neurons), and to select both pre- and
+  post-synaptic nodes at the same time.
+
 
 Tile layer:
 

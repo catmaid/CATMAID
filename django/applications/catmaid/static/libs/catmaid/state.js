@@ -16,6 +16,9 @@
    * (used e.g. for node creation). Then there is also NoCheckState, which
    * causes the back-end to disable state checking for a request.
    */
+  CATMAID.State = {};
+  CATMAID.asEventSource(CATMAID.State);
+  CATMAID.State.EVENT_STATE_NEEDS_UPDATE = "state_needs_update";
 
   /**
    * A general state representation for the neighborhood of an existing nodes.

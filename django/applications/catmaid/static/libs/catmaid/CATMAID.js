@@ -262,6 +262,8 @@ var requestQueue = new RequestQueue();
     if (json.error) {
       if ('ValueError' === json.type) {
         throw new CATMAID.ValueError(json.error, json.detail);
+      } else if ('StateMatchingError' === json.type) {
+        throw new CATMAID.StateMatchingError(json.error, json.detail);
       } else {
         throw new CATMAID.Error("Unsuccessful request: " + json.error,
             json.detail, json.type);

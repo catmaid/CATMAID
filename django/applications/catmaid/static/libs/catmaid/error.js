@@ -51,4 +51,14 @@
   CATMAID.CommandHistoryError.prototype = Object.create(CATMAID.Error.prototype);
   CATMAID.CommandHistoryError.constructor = CATMAID.CommandHistoryError;
 
+  /**
+   * An error type to indicate a state mismatch between front-end and back-end.
+   */
+  CATMAID.StateMatchingError = function(message, detail) {
+    CATMAID.Error.call(this, message, detail);
+  };
+
+  CATMAID.StateMatchingError.prototype = Object.create(CATMAID.Error.prototype);
+  CATMAID.StateMatchingError.constructor = CATMAID.StateMatchingError;
+
 })(CATMAID);

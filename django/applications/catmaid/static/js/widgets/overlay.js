@@ -710,6 +710,9 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, options) {
     this.handleNodeChange, this);
   CATMAID.Nodes.on(CATMAID.Nodes.EVENT_NODE_RADIUS_CHANGED,
       this.simpleUpdateNodes, this);
+
+  CATMAID.State.on(CATMAID.State.EVENT_STATE_NEEDS_UPDATE,
+      this.simpleUpdateNodes, this);
 };
 
 SkeletonAnnotations.TracingOverlay.prototype = {
@@ -1054,6 +1057,9 @@ SkeletonAnnotations.TracingOverlay.prototype.destroy = function() {
   CATMAID.Nodes.off(CATMAID.Nodes.EVENT_NODE_CONFIDENCE_CHANGED,
       this.handleNodeChange, this);
   CATMAID.Nodes.off(CATMAID.Nodes.EVENT_NODE_RADIUS_CHANGED,
+      this.simpleUpdateNodes, this);
+
+  CATMAID.State.on(CATMAID.State.EVENT_STATE_NEEDS_UPDATE,
       this.simpleUpdateNodes, this);
 };
 

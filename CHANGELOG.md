@@ -50,6 +50,14 @@ Tile layer:
   of wireframe only.
 
 
+Miscellaneous:
+
+- If a client tries to perform an operation without having the most recent data
+  available and the performed action is canceled, a more helpful dialog is now
+  shown. It explains the situation and offers to refresh the client view
+  (currently only nodes in the tracing layer are refreshed).
+
+
 ### Bug fixes
 
 - Creating nodes using the Z key without other nodes in close proximity works

@@ -512,7 +512,7 @@
     // compute.
     options = options || {};
     options.preview = false;
-    options.title = options.title || "Alpha shape volue";
+    options.title = options.title || "Alpha shape volume";
 
     CATMAID.ConvexHullVolume.call(this, options);
     this.set("alpha", options.alpha || 5000);

@@ -1,7 +1,7 @@
 celery==3.1.9
 cssmin==0.2.0
 Cython==0.23.4
-distribute==0.7.3
+distribute==0.7.3; platform_python_implementation != 'PyPy'
 Django==1.9.11
 django-adminplus==0.5
 django-celery==3.1.17
@@ -16,21 +16,23 @@ docutils==0.12
 jsonfield==1.0.3
 kombu==3.0.32
 Markdown==2.6.2
-matplotlib==1.4.0
+matplotlib==1.4.0; platform_python_implementation != 'PyPy'
 mock==1.0.1
 networkx==1.7
-numpy==1.10.1
-pgmagick==0.6.2
-pillow==3.0.0
+numpy==0.10.1; platform_python_implementation != 'PyPy'
+git+https://bitbucket.org/pypy/numpy.git#egg=numpy; platform_python_implementation == 'PyPy'
+pgmagick==0.6.2; platform_python_implementation != 'PyPy'
+pillow==3.0.0; platform_python_implementation != 'PyPy'
 progressbar2==3.6.2
-psycopg2==2.6.2
+psycopg2==2.6.2; platform_python_implementation != 'PyPy'
+psycopg2cffi==2.7.5;  platform_python_implementation == 'PyPy'
 Pygments==2.0.2
 python-dateutil==2.1
-python-libuuid==0.9.0
+python-libuuid==0.9.0; platform_python_implementation != 'PyPy'
 pytz==2015.7
 PyYAML==3.10
 requests==2.10.0
-scipy==0.14.1
+scipy==0.14.1; platform_python_implementation != 'PyPy'
 Sphinx==1.3.1
 sphinxcontrib-images==0.7.0
 sqlparse==0.1.3

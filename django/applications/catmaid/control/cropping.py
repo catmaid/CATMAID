@@ -1,4 +1,5 @@
 import json
+import logging
 
 from django.conf import settings
 from django.http import HttpResponse
@@ -14,11 +15,17 @@ import glob
 from time import time
 from math import cos, sin, radians
 
-# The libuuid import is a workaround for a bug with GraphicsMagick
-# which expects the library to be loaded already. Therefore, it
-# has to be loaded before pgmagick.
-from pgmagick import Blob, Image, ImageList, Geometry, ChannelType, \
-        CompositeOperator as co
+logger = logging.getLogger(__name__)
+
+try:
+    # The libuuid import is a workaround for a bug with GraphicsMagick
+    # which expects the library to be loaded already. Therefore, it
+    # has to be loaded before pgmagick.
+    from pgmagick import Blob, Image, ImageList, Geometry, ChannelType, \
+            CompositeOperator as co
+except ImportError:
+    logger.warning("CATMAID was unable to load the pgmagick module. "
+        "Cropping will not be available")
 
 from celery.task import task
 

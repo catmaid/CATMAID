@@ -1,6 +1,14 @@
 import logging
-import scipy.cluster.hierarchy as hier
-import scipy.spatial.distance as dist
+
+logger = logging.getLogger(__name__)
+
+try:
+    import scipy.cluster.hierarchy as hier
+    import scipy.spatial.distance as dist
+except ImportError:
+    logger.warning("CATMAID was unable to load the scipy module. "
+        "Ontology clustering will not be available")
+
 import numpy as np
 
 from django import forms
@@ -15,8 +23,6 @@ from catmaid.control.classification import (ClassInstanceProxy,
     get_root_classes_qs, graphs_instanciate_features)
 from catmaid.control.ontology import get_features
 
-
-logger = logging.getLogger(__name__)
 
 metrics = (
     ('jaccard', 'Jaccard'),

@@ -5,15 +5,11 @@ import logging
 import numpy as np
 import base64
 from django.conf import settings
+from django.http import HttpResponse
 
 from catmaid.models import UserRole
 from catmaid.control.common import ConfigurationError
 from catmaid.control.authentication import requires_user_role
-
-try:
-    from PIL import Image
-except:
-    pass
 
 logger = logging.getLogger(__name__)
 
@@ -21,12 +17,17 @@ tile_loading_enabled = True
 
 try:
     import h5py
-except ImportError, e:
+except ImportError:
     tile_loading_enabled = False
     logger.warning("CATMAID was unable to load the h5py library. "
           "HDF5 tiles are therefore disabled.")
+try:
+    from PIL import Image
+except ImportError:
+    tile_loading_enabled = False
+    logger.warning("CATMAID was unable to load the PIL/pillow library. "
+          "HDF5 tiles are therefore disabled.")
 
-from django.http import HttpResponse
 
 @requires_user_role([UserRole.Browse])
 def get_tile(request, project_id=None, stack_id=None):

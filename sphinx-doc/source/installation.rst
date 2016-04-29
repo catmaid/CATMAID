@@ -135,6 +135,16 @@ shells, for example, you will need to activate it by running::
 
         python -m pip install -U pip
 
+.. note::
+
+   It is possible to use PyPy as Python implementation, which can improve
+   performance of back-end heavy endpoints. Most functionality is available,
+   except for the following: Ontology clustering, Cropping, Synapse clustering,
+   HDF 5 tiles and User analytics. To use PyPy, a new virtualenv using the PyPy
+   executable has to be created::
+
+       mkvirtualenv --no-site-packages -p /usr/bin/pypy catmaid
+
 Install all of the required Python packages with::
 
     cd /home/alice/catmaid/django

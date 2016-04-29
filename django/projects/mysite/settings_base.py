@@ -7,6 +7,18 @@ import utils
 import logging
 import pipelinefiles
 
+try:
+    import psycopg2
+except ImportError:
+    # If psycopg2 is not installed, expect psycopg2cffi, which can be used with
+    # PyP. Make sure psycopg2cffi runs in compatibility mode so that it can be
+    # imported as psycopg2.
+    try:
+        from psycopg2cffi import compat
+        compat.register()
+    except ImportError:
+        raise ImportError("Need either psycopg2 or psycopg2cffi")
+
 # Make Django root folder available
 PROJECT_ROOT = utils.relative('..', '..')
 # Add all subdirectories of project, applications and lib to sys.path

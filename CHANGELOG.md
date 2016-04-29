@@ -13,6 +13,11 @@
 - Both 'postgis2d' and 'postgis3d' node providers support now prepared
   statements for connector queries.
 
+- PyPy is now supported and can be used to improve performance of back-end heavy
+  endpoints. Most functionality is available, except for the following: Ontology
+  clustering, Cropping, Synapse clustering, HDF 5 tiles and User analytics. To
+  use PyPy, a new virtualenv using the PyPy executable has to be created.
+
 
 ### Features and enhancements
 

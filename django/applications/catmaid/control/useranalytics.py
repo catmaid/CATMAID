@@ -1,3 +1,4 @@
+import logging
 import numpy as np
 from datetime import timedelta, datetime
 from dateutil import parser as dateparser
@@ -11,16 +12,21 @@ from django.views.decorators.cache import never_cache
 
 from catmaid.models import Connector, Project, Treenode, Review
 
+logger = logging.getLogger(__name__)
 
-# Because we don't want to show generated images in a window, we can use
-# the Agg backend. This avoids some potential threading issues.
-import matplotlib
-matplotlib.use('Agg')
+try:
+    # Because we don't want to show generated images in a window, we can use
+    # the Agg backend. This avoids some potential threading issues.
+    import matplotlib
+    matplotlib.use('Agg')
 
-import matplotlib.pyplot as plt
-from matplotlib.dates import  DateFormatter, DayLocator
-from pylab import figure
-from matplotlib.backends.backend_agg import FigureCanvasAgg
+    import matplotlib.pyplot as plt
+    from matplotlib.dates import  DateFormatter, DayLocator
+    from pylab import figure
+    from matplotlib.backends.backend_agg import FigureCanvasAgg
+except ImportError, e:
+    logger.warning("CATMAID was unable to laod the matplitlib module. "
+        "User analytics will not be available")
 
 class Bout(object):
     """ Represents one bout, based on a list of events. The first event ist the

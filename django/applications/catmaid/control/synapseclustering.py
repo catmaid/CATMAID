@@ -1,9 +1,17 @@
+import logging
 import numpy as np
 from numpy import array, float32
 from numpy.linalg import norm
 import networkx as nx
 from collections import namedtuple
-from scipy.sparse.csgraph import dijkstra
+
+logger = logging.getLogger(__name__)
+
+try:
+    from scipy.sparse.csgraph import dijkstra
+except ImportError, e:
+    logger.warning("CATMAID was unable to load the scipy module. "
+        "Synapse clustering won't be available")
 
 from catmaid.control.common import get_relation_to_id_map
 from catmaid.models import Treenode, TreenodeConnector, ClassInstance, Relation

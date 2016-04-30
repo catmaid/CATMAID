@@ -253,7 +253,7 @@ def node_list_tuples_query(user, params, project_id, atnid, atntype, includeLabe
         # Uses a LEFT OUTER JOIN to include disconnected connectors,
         # that is, connectors that aren't referenced from treenode_connector.
 
-        connector_quey = '''
+        connector_query = '''
             SELECT connector.id,
                 connector.location_x,
                 connector.location_y,
@@ -280,7 +280,7 @@ def node_list_tuples_query(user, params, project_id, atnid, atntype, includeLabe
         # Add additional connectors to the pool before links are collected
         if missing_connector_ids:
             sanetized_connector_ids = [int(cid) for cid in missing_connector_ids]
-            connector_quey += '''
+            connector_query += '''
                 UNION
                 SELECT connector.id,
                     connector.location_x,
@@ -300,14 +300,14 @@ def node_list_tuples_query(user, params, project_id, atnid, atntype, includeLabe
                 AND connector.id IN ({})
             '''.format(','.join(str(cid) for cid in sanetized_connector_ids))
 
-        cursor.execute(connector_quey, params)
+        cursor.execute(connector_query, params)
         crows.extend(cursor.fetchall())
 
         connectors = []
         # A set of unique connector IDs
         connector_ids = set()
 
-        # Collect links to connectos for each treenode. Each entry maps a
+        # Collect links to connectors for each treenode. Each entry maps a
         # relation ID to a an object containing the relation name, and an object
         # mapping connector IDs to confidences.
         links = defaultdict(list)

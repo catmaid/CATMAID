@@ -29,7 +29,7 @@ int thumbnailSize = 192;
 String overviewName = "small";
 String inputFile = "totile.txt";
 boolean createZProjections = false;
-ArrayList channels, colors, names;
+ArrayList colors, names;
 
 public class ImageInfo {
 	public ArrayList images;
@@ -425,6 +425,7 @@ public class TilingJob {
 				channels.add(ch);
 			}
 		}
+		IJ.log( "Using channels: " + channels.toString() );
 
 		return true;
 	}
@@ -913,7 +914,7 @@ void work( pool ) {
 			throw new IllegalArgumentException( "A pool must not be null" );
 	// work serially on the jobs
 	for (job : pool.jobs) {
-		IJ.log("Processing tiling job with channels " + channels.toString() + " (or less if less available) of an image with max. value " + job.maxValue);
+		IJ.log("Processing tiling job of an image with max. value " + job.maxValue);
 
 		if (job.useGeneratedInfo)
 			IJ.log("Will generate meta data");
@@ -966,7 +967,6 @@ void setup( options ) {
 	if ( options.containsKey( "synopsis") || options.containsKey( "help" ) ) {
 		IJ.log( "This script tiles one or more files for the use with CATMAID" );
 		IJ.log( "You can pass the following arguments and options to the script:" );
-		IJ.log( "-ch <list of channels>   -- Define which channels to use, e.g. -ch \"1,2\"" );
 		IJ.log( "-input <filename>        -- The name of a file with input image stacks, one per line");
 		IJ.log( "-clr <list of colors>    -- Define a list of ImageJ colors to be used for the channels, e.g. -clr \"Green, Magenta\"" );
 		IJ.log( "-max-val <value>         -- The maximum value for dynamic range adjustments, e.g. -max-val 4095" );
@@ -979,26 +979,6 @@ void setup( options ) {
 		IJ.log( "--color-single-ch        -- Create colored single channels images, instead of gray ones" );
 		System.exit(0);
 	}
-
-	// channels
-	channels = new ArrayList();
-	if( options.containsKey( "-ch" ) ) {
-		channelOption = options.get("-ch");
-		wantedChannels = channelOption.split(",");
-		for (int i=0; i < wantedChannels.length; i++)
-			channels.add( new Integer( wantedChannels[ i ].trim() ).intValue() );
-		IJ.log( "Using channels: " + channels.toString() );
-	} else {
-		// add default channels
-		IJ.log("Using default channels: [1, 2, 3, 4, 5]");
-		channels.add(1);
-		channels.add(2);
-		channels.add(3);
-		channels.add(4);
-		channels.add(5);
-		numChannels = channels.size();
-	}
-	IJ.log( "! Currently only the project definition is used !" );
 
 	// channel colors
 	colors = new ArrayList();

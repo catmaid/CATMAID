@@ -466,7 +466,7 @@
           py / Math.pow(2, s) - self.stackViewer.viewHeight / 2,
           pz,
           s,
-          this.efficiencyThreshold);
+          self.efficiencyThreshold);
       for (var i = tileInfo.firstCol; i <= tileInfo.lastCol; ++i)
         for (var j = tileInfo.firstRow; j <= tileInfo.lastRow; ++j)
           tileInds.push([i, j, tileInfo.z, tileInfo.zoom]);

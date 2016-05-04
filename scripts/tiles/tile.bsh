@@ -967,6 +967,7 @@ void setup( options ) {
 		IJ.log( "This script tiles one or more files for the use with CATMAID" );
 		IJ.log( "You can pass the following arguments and options to the script:" );
 		IJ.log( "-ch <list of channels>   -- Define which channels to use, e.g. -ch \"1,2\"" );
+		IJ.log( "-input <filename>        -- The name of a file with input image stacks, one per line");
 		IJ.log( "-clr <list of colors>    -- Define a list of ImageJ colors to be used for the channels, e.g. -clr \"Green, Magenta\"" );
 		IJ.log( "-max-val <value>         -- The maximum value for dynamic range adjustments, e.g. -max-val 4095" );
 		IJ.log( "-target-dir <dir>        -- Define the directory in which the result should be saved" );

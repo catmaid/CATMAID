@@ -62,7 +62,7 @@ Matcher createYamlRepeatMatcher( String data, String parent ) {
  * Finds all patterns:
  * <whitespace><dash><anything><newline>
  * <at-least-one-whitespace><no-dash><anything><newline>
- * The last line can be there multiple times. The parent is currenty ignored.
+ * The last line can be there multiple times. The parent is currently ignored.
  */
 Matcher createYamlListMatcher( String data, String parent ) {
 	String extractListBlock = "(?<=" + parent + ":\\s{0,255}$\\n)(^\\s++-(?:.*$\\n(?:^\\s++[^-]+:.*$\\n))+)";
@@ -400,7 +400,7 @@ public class TilingJob {
 					if (!correct_when_possible)
 						return false;
 					IJ.log("Stack: " + s.name + " -- dropping request for channel " + ch + " as it is not available in source image.");
-					channelsToRemove.add( ch );	
+					channelsToRemove.add( ch );
 				}
 			}
 			// remove dropped channels
@@ -518,7 +518,7 @@ ImagePlus openImage( pathName )
 		pd = pd == null ? new Length( new Double(1.0), ome.units.UNITS.MICROM ) : pd;
 		Double pt = retrieve.getPixelsTimeIncrement( 0 );
 		pt = pt == null ? new Double( 1.0 ) : pt;
-		
+
 		n = r.getImageCount();
 		w = r.getSizeX();
 		h = r.getSizeY();
@@ -638,7 +638,7 @@ void createTiles( job, stack, imp, stackDir ) {
 			int rows = ( height / tileHeight );
 			if ( height > rows * tileHeight )
 				++rows;
-			
+
 			sliceDirName = stackDir + "/" +  sliceIndex;
 
 			// create tiles
@@ -977,7 +977,7 @@ void setup( options ) {
 		IJ.log( "-gen-meta <identifiers>  -- Let the tool add some meta data from the file, saved in file info file, for single channels, e.g. -gen-meta \"IlluminationChannel #<$Ch> Power|Power, IlluminationChannel #<$Ch> Wavelength|Wavelength\"" );
 		IJ.log( "--gen-info               -- Let the tool generate information about resolution and size, saved in file info file" );
 		IJ.log( "--z-project              -- Let the tool do a z-projection image for each generated stack" );
-		IJ.log( "--color-single-ch        -- Create colored single channels images, intead of gray ones" );
+		IJ.log( "--color-single-ch        -- Create colored single channels images, instead of gray ones" );
 		System.exit(0);
 	}
 
@@ -1042,7 +1042,7 @@ void setup( options ) {
 	} else {
 		maxValue = 4095;
 	}
-	
+
 	// number of zoom-out levels (each brings 50% in size) -- default: 4
 	if ( options.containsKey( "-levels" ) ) {
 		numZoomLevels = new Integer( options.get( "-levels" ) ).intValue();

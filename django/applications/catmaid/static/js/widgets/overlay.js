@@ -1576,9 +1576,8 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeLink = function (from
                     fromid, toid, annotation_set);
                 CATMAID.commands.execute(command)
                   .then(function(result) {
-                    // We expect that an update is queued already (based on
-                    // events)
-                    self.selectNode(result.fromid);
+                    // Wait for updates to finish before updating the active node
+                    self.submit.then(self.selectNode.bind(self, result.toid));
                   }).catch(CATMAID.handleError);
               }, CATMAID.handleError, true);
             };

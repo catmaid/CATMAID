@@ -73,6 +73,8 @@ Miscellaneous:
 - Showing connector info for edge in Graph widget (Alt+Click) now works also if
   the source is a single neuron and the target a group or split node.
 
+- Activate target node of a joined-in skeleton again.
+
 
 ## 2016.04.18
 

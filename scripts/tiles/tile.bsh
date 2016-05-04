@@ -974,8 +974,6 @@ void setup( options ) {
 		IJ.log( "-info-file <filename>    -- The name of the info YAML file" );
 		IJ.log( "-levels <numLevels>      -- Number of zoom-out levels wrt. to the original image (-1 for auto calculation), e.g -levels 4" );
 		IJ.log( "-tilesize <tilesize>     -- The width and height of one generated tile, e.g. -tilesize 256" );
-		IJ.log( "-metadata-file <filename>-- Define the name of a file that should be used for metadata retrieval" );
-		IJ.log( "-gen-meta <identifiers>  -- Let the tool add some meta data from the file, saved in file info file, for single channels, e.g. -gen-meta \"IlluminationChannel #<$Ch> Power|Power, IlluminationChannel #<$Ch> Wavelength|Wavelength\"" );
 		IJ.log( "--gen-info               -- Let the tool generate information about resolution and size, saved in file info file" );
 		IJ.log( "--z-project              -- Let the tool do a z-projection image for each generated stack" );
 		IJ.log( "--color-single-ch        -- Create colored single channels images, instead of gray ones" );

@@ -1,8 +1,9 @@
 import json
-import catmaid.state as state
 
 from django.db import connection
 from django.test import TestCase
+
+import catmaid.state as state
 from catmaid.tests.common import CatmaidTestCase
 
 class StateCheckingTest(CatmaidTestCase):
@@ -130,7 +131,7 @@ class StateCheckingTest(CatmaidTestCase):
         cursor = connection.cursor()
         checks1 = state.collect_state_checks(247, ps1, cursor, node=True)
         self.assertEqual(len(checks1), 1)
-        self.assertRaises(ValueError, lambda: state.check_state(ps1, checks1, cursor))
+        self.assertRaises(state.StateMatchingError, lambda: state.check_state(ps1, checks1, cursor))
 
         s2 = {
             'edition_time': '2011-12-05T13:51:36.855Z'
@@ -139,7 +140,7 @@ class StateCheckingTest(CatmaidTestCase):
 
         checks2 = state.collect_state_checks(247, ps2, cursor, node=True)
         self.assertEqual(len(checks2), 1)
-        self.assertRaises(ValueError, lambda: state.check_state(ps2, checks2, cursor))
+        self.assertRaises(state.StateMatchingError, lambda: state.check_state(ps2, checks2, cursor))
 
     def test_correct_node_state(self):
         s1 = {
@@ -177,7 +178,7 @@ class StateCheckingTest(CatmaidTestCase):
             [251, '2011-12-05T13:51:36.955Z']
         ]
         s1 = json.dumps(ps1)
-        self.assertRaises(ValueError,
+        self.assertRaises(state.StateMatchingError,
                 lambda: state.validate_state([247, 249, 251], s1, multinode=True))
 
         s2 = json.dumps([])
@@ -197,7 +198,7 @@ class StateCheckingTest(CatmaidTestCase):
         state.validate_state(251, s1, is_parent=True, parent_edittime=False)
         state.validate_state(251, s1, is_parent=False, parent_edittime=True)
         state.validate_state(247, s1, is_parent=False, parent_edittime=True)
-        self.assertRaises(ValueError,
+        self.assertRaises(state.StateMatchingError,
                 lambda: state.validate_state(247, s1, is_parent=True, parent_edittime=True))
 
     def test_wrong_parent_state(self):
@@ -205,15 +206,15 @@ class StateCheckingTest(CatmaidTestCase):
             'parent': [249, '1011-12-05T13:51:36.955Z']
         }
         s1 = json.dumps(ps1)
-        self.assertRaises(ValueError,
+        self.assertRaises(state.StateMatchingError,
                 lambda: state.validate_state(251, s1, is_parent=True, parent_edittime=True))
 
         s2 = json.dumps([])
-        self.assertRaises(ValueError,
+        self.assertRaises(state.StateMatchingError,
                 lambda: state.validate_state(251, s1, is_parent=True, parent_edittime=True))
 
         s3 = json.dumps({})
-        self.assertRaises(ValueError,
+        self.assertRaises(state.StateMatchingError,
                 lambda: state.validate_state(251, s3, is_parent=True, parent_edittime=True))
 
     def test_correct_edge_state(self):
@@ -232,7 +233,7 @@ class StateCheckingTest(CatmaidTestCase):
         }
         s1 = json.dumps(ps1)
         # Expect this state to validate cleanly
-        self.assertRaises(ValueError,
+        self.assertRaises(state.StateMatchingError,
                 lambda: state.validate_state(249, s1, node=True, children=[247]))
 
         ps2 = {
@@ -241,7 +242,7 @@ class StateCheckingTest(CatmaidTestCase):
         }
         s2 = json.dumps(ps2)
         # Expect this state to validate cleanly
-        self.assertRaises(ValueError,
+        self.assertRaises(state.StateMatchingError,
                 lambda: state.validate_state(249, s2, node=True, children=[251]))
 
         ps3 = {
@@ -250,7 +251,7 @@ class StateCheckingTest(CatmaidTestCase):
         }
         s3 = json.dumps(ps3)
         # Expect this state to validate cleanly
-        self.assertRaises(ValueError,
+        self.assertRaises(state.StateMatchingError,
                 lambda: state.validate_state(249, s3, node=True, children=True))
 
         ps4 = {
@@ -259,7 +260,7 @@ class StateCheckingTest(CatmaidTestCase):
         }
         s4 = json.dumps(ps4)
         # Expect this state to validate cleanly
-        self.assertRaises(ValueError,
+        self.assertRaises(state.StateMatchingError,
                 lambda: state.validate_state(251, s4, node=True, children=[251]))
 
     def test_correct_child_state(self):
@@ -276,28 +277,28 @@ class StateCheckingTest(CatmaidTestCase):
         }
         s1 = json.dumps(ps1)
         # Expect this state to validate cleanly
-        self.assertRaises(ValueError, lambda: state.validate_state(249, s1, children=True))
+        self.assertRaises(state.StateMatchingError, lambda: state.validate_state(249, s1, children=True))
 
         ps2 = {
             'children': [[251, '1011-12-05T13:51:36.955Z']],
         }
         s2 = json.dumps(ps2)
         # Expect this state to validate cleanly
-        self.assertRaises(ValueError, lambda: state.validate_state(249, s2, children=True))
+        self.assertRaises(state.StateMatchingError, lambda: state.validate_state(249, s2, children=True))
 
         ps3 = {
             'children': [],
         }
         s3 = json.dumps(ps3)
         # Expect this state to validate cleanly
-        self.assertRaises(ValueError, lambda: state.validate_state(249, s3, children=True))
+        self.assertRaises(state.StateMatchingError, lambda: state.validate_state(249, s3, children=True))
 
         ps4 = {
             'children': [[251, '2011-12-05T13:51:36.955Z']],
         }
         s4 = json.dumps(ps4)
         # Expect this state to validate cleanly
-        self.assertRaises(ValueError, lambda: state.validate_state(251, s4, children=True))
+        self.assertRaises(state.StateMatchingError, lambda: state.validate_state(251, s4, children=True))
 
     def test_correct_link_state(self):
         ps1 = {
@@ -313,7 +314,7 @@ class StateCheckingTest(CatmaidTestCase):
                       [372, '2011-12-20T10:46:01.360Z']],
         }
         s1 = json.dumps(ps1)
-        self.assertRaises(ValueError, lambda: state.validate_state(285, s1, links=True))
+        self.assertRaises(state.StateMatchingError, lambda: state.validate_state(285, s1, links=True))
 
     def test_correct_clink_state(self):
         ps1 = {
@@ -352,7 +353,7 @@ class StateCheckingTest(CatmaidTestCase):
             'links': [[360, '3011-12-20T10:46:01.360Z']],
         }
         s1 = json.dumps(ps1)
-        self.assertRaises(ValueError,
+        self.assertRaises(state.StateMatchingError,
                 lambda: state.validate_state(285, s1, neighborhood=True))
 
         ps2 = {
@@ -370,7 +371,7 @@ class StateCheckingTest(CatmaidTestCase):
             'links': [[360, '3011-12-20T10:46:01.360Z']],
         }
         s3 = json.dumps(ps3)
-        self.assertRaises(ValueError,
+        self.assertRaises(state.StateMatchingError,
                 lambda: state.validate_state(285, s3, neighborhood=True))
 
         ps4 = {
@@ -398,7 +399,7 @@ class StateCheckingTest(CatmaidTestCase):
             'links': [],
         }
         s6 = json.dumps(ps6)
-        self.assertRaises(ValueError,
+        self.assertRaises(state.StateMatchingError,
                 lambda: state.validate_state(285, s6, neighborhood=True))
 
 

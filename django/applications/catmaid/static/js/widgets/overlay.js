@@ -696,7 +696,7 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, options) {
   CATMAID.Connectors.on(CATMAID.Connectors.EVENT_CONNECTOR_CREATED,
       this.handleNewNode, this);
   CATMAID.Connectors.on(CATMAID.Connectors.EVENT_CONNECTOR_REMOVED,
-      this.handleNodeChange, this);
+      this.handleRemovedConnector, this);
   CATMAID.Connectors.on(CATMAID.Connectors.EVENT_LINK_CREATED,
       this.simpleUpdateNodes, this);
   CATMAID.Connectors.on(CATMAID.Connectors.EVENT_LINK_REMOVED,
@@ -1045,7 +1045,7 @@ SkeletonAnnotations.TracingOverlay.prototype.destroy = function() {
   CATMAID.Connectors.off(CATMAID.Connectors.EVENT_CONNECTOR_CREATED,
       this.handleNewNode, this);
   CATMAID.Connectors.off(CATMAID.Connectors.EVENT_CONNECTOR_REMOVED,
-      this.handleNodeChange, this);
+      this.handleRemovedConnector, this);
   CATMAID.Connectors.off(CATMAID.Connectors.EVENT_LINK_CREATED,
       this.simpleUpdateNodes, this);
   CATMAID.Connectors.off(CATMAID.Connectors.EVENT_LINK_REMOVED,
@@ -4109,6 +4109,22 @@ SkeletonAnnotations.TracingOverlay.prototype.handleNewNode = function(nodeID, px
  */
 SkeletonAnnotations.TracingOverlay.prototype.handleNodeChange = function(nodeId) {
   if (!this.nodes[nodeId]) return;
+  this.updateNodes();
+};
+
+/**
+ * If the removed connector was selected, unselect it. Update nodes if called
+ * with a node that is currently part of this overlay.
+ */
+SkeletonAnnotations.TracingOverlay.prototype.handleRemovedConnector = function(nodeId) {
+  var node = this.nodes[nodeId];
+  if (!node) {
+    return;
+  }
+  if (nodeId === SkeletonAnnotations.getActiveNodeId()) {
+    this.activateNode(null);
+  }
+
   this.updateNodes();
 };
 

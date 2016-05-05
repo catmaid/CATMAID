@@ -415,7 +415,7 @@
     // Truncate request to no more than 3000 tiles.
     if (tileIndices.length > 3000) tileIndices.splice(3000);
 
-    progressCallback(tileIndices.length, cachedCounter);
+    CATMAID.tools.callIfFn(progressCallback, tileIndices.length, cachedCounter);
     // Check if the queue is empty
     if (0 === tileIndices.length) return;
 

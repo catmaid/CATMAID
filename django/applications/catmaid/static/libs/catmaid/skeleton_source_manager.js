@@ -88,7 +88,7 @@
   var defaultSourceControlOptions = {
     showColorOption: true,
     showGroupOption: true,
-    showPullOption: true,
+    showPullOption: false,
     colors: true,
     selectionBased: true,
     groups: false,
@@ -167,6 +167,11 @@
           source.append(models);
         }
       }).bind(this);
+    } else {
+      // Increase whitespace a little bit
+      var whitespace = document.createElement('span');
+      whitespace.innerHTML = '&nbsp;';
+      controls.appendChild(whitespace);
     }
 
     // Select default value in a select element

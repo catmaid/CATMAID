@@ -175,7 +175,7 @@
     {
       if ( changeSliceDelayedTimer ) window.clearTimeout( changeSliceDelayedTimer );
       changeSliceDelayedParam = { z : val };
-      changeSliceDelayedTimer = window.setTimeout( changeSliceDelayedAction, 100 );
+      changeSliceDelayedTimer = window.setTimeout( changeSliceDelayedAction, 50 );
     };
 
     this.changeSlice = function( val )

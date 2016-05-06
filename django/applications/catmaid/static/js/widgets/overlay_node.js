@@ -901,6 +901,7 @@
       this.CATCH_RADIUS = 0;
 
       this.linkGroups = ['pregroup', 'postgroup', 'gjgroup', 'unidirgroup'];
+      this.lineGroups = ['preLines', 'postLines', 'gjLines', 'undirLines'];
 
       /**
        * Get al links of a specific connector group or an empty list.
@@ -917,6 +918,20 @@
 
       this.getLinks = function() {
         return this.linkGroups.reduce(this.expandGroup.bind(this), []);
+      };
+
+      /**
+       * Suspend all links to disable mouse events.
+       */
+      this.suspend = function() {
+        this.lineGroups.forEach(function(group) {
+          var lines = this[group];
+          if (lines) {
+            for (var i=0; i<lines.length; ++i) {
+              lines[i].suspend();
+            }
+          }
+        }, this);
       };
 
       /** Disables the ArrowLine object and removes entries from the preLines and postLines. */
@@ -1592,6 +1607,13 @@
         this.line.hide();
         this.catcher.hide();
         if (this.confidence_text) this.confidence_text.hide();
+      };
+
+      /**
+       * Suspend all links to disable mouse events.
+       */
+      this.suspend = function() {
+        this.line.suspended = true;
       };
 
       this.obliterate = function() {

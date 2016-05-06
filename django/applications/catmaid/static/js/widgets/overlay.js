@@ -3867,11 +3867,14 @@ SkeletonAnnotations.TracingOverlay.prototype.deleteNode = function(nodeId) {
    * and local objects.
    */
   function deleteConnectorNode(connectornode) {
+    // Suspennd the node before submitting the request to note catch mouse
+    // events on the removed node.
+    connectornode.suspend();
     self.submit.then(function() {
+      connectornode.needsync = false;
       var command = new CATMAID.RemoveConnectorCommand(self.state, project.id, connectornode.id);
       CATMAID.commands.execute(command)
         .then(function(result) {
-          connectornode.needsync = false;
           // If there was a presynaptic node, select it
           var preIDs  = Object.keys(connectornode.pregroup);
           var postIDs = Object.keys(connectornode.postgroup);

@@ -38,7 +38,7 @@
       };
 
       return CATMAID.fetch(url, 'POST', params).then((function(json) {
-        this.trigger(CATMAID.Nodes.EVENT_SKELETON_SPLIT, json.skeleton_id,
+        this.trigger(CATMAID.Skeletons.EVENT_SKELETON_SPLIT, json.skeleton_id,
             treenodeId);
         return json;
       }).bind(this));

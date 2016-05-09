@@ -44,17 +44,29 @@
         annotation_ids: annotationIds
       };
       return CATMAID.fetch(url, 'POST', params).then(function(json) {
-        if (json.deleted_links && json.deleted_links.length > 0) {
-          CATMAID.Annotations.trigger(CATMAID.Annotations.EVENT_ANNOTATIONS_DELETED,
-              json.deleted_annotations);
+        if (json.deleted_annotations) {
+          var deletedAnnotationIds = [];
+          var changedEntities = [];
+          for (var da in json.deleted_annotations) {
+            var entry = json.deleted_annotations[da];
+            deletedAnnotationIds.push(da);
+            if (entry.targetIds) {
+              changedEntities = changedEntities.concat(entry.targetIds);
+            }
+          }
+
+          if (deletedAnnotationIds.length > 0) {
+            CATMAID.Annotations.trigger(CATMAID.Annotations.EVENT_ANNOTATIONS_DELETED,
+                deletedAnnotationIds);
+          }
+
+          if (changedEntities.length > 0) {
+            // An empty annotation list is used as parameter, because this
+            // parameter represents added neurons.
+            CATMAID.Annotations.trigger(CATMAID.Annotations.EVENT_ANNOTATIONS_CHANGED,
+                changedEntities, []);
+          }
         }
-        // Use a copy of the entity id list, because we we will use this array also
-        // as a callback parameter. No deep clone required, we expect only numbers
-        // (or strings).
-        var changedEntities = entityIds.slice(0);
-        // Use a copy of th
-        CATMAID.Annotations.trigger(CATMAID.Annotations.EVENT_ANNOTATIONS_CHANGED,
-            changedEntities);
 
         return json;
       });

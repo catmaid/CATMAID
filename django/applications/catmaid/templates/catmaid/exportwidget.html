@@ -110,12 +110,12 @@
     // General term used for the exported elements
     var entity = connector_export ? 'connector' : 'treenode';
     // Make sure there is only one stack open at the moment
-    var stacks = project.getStacks();
+    var stacks = project.getStackViewers();
     if (stacks.length != 1) {
       alert("Please have only the stack open you want to use for the export!");
       return;
     }
-    var stack = stacks[0];
+    var stack = stacks[0].primaryStack;
 
     // Make sure X and Y have the same dimensions
     if (stack.resolution.x != stack.resolution.y) {

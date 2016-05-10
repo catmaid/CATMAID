@@ -73,6 +73,14 @@ Settings widget:
   be aware of page length setting changes, they have to be reloaded.
 
 
+History tables:
+
+- Starting with this release, CATMAID will record every single change to its
+  database tables in so called history tables. This makes it possible to
+  reconstruct the actual history of data (e.g. neurons) and user contributions.
+  Even data deleted in CATMAID can now be recovered without touching backups.
+
+
 Miscellaneous:
 
 - Alt + Y will always create a new selection table and add the active neuron

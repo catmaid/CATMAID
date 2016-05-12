@@ -585,6 +585,9 @@
             var updateMesh = volume.updateTriangleMesh.bind(volume, onSuccess,
                 $.unblockUI.bind($));
             setTimeout(updateMesh, 100);
+          } else if (!volume.preview && "preview" === field) {
+            // Preview just got disabled
+            volume.clearPreviewData();
           }
         };
         var onClose = function(save, onSuccess, onCancel) {

@@ -18,7 +18,8 @@ from formtools.wizard.views import SessionWizardView
 from guardian.models import Permission
 from guardian.shortcuts import get_perms_for_model, assign
 
-from catmaid.models import ClassInstance, Project, Stack, ProjectStack, Overlay
+from catmaid.models import (Class, Relation, ClassInstance, Project, Stack,
+        ProjectStack, Overlay, StackClassInstance)
 from catmaid.fields import Double3D
 from catmaid.control.common import urljoin
 from catmaid.control.classification import get_classification_links_qs, \
@@ -127,6 +128,15 @@ class PreOverlay(ImageBaseMixin):
         # Set 'image_base', 'num_zoom_levels' and 'fileextension'
         self.set_image_fields(info_object, project_url, data_folder, False)
 
+class PreStackGroup():
+    def __init__(self, info_object):
+        self.name= info_object['name']
+        self.relation = info_object['relation']
+        valid_relations = ("has_view", "has_channel")
+        if self.relation not in valid_relations:
+            raise ValueError("Unsupported stack group relation: {}. Plese use "
+                    "one of: {}.".format(self.relation, ", ".join(valid_relations)))
+
 class PreStack(ImageBaseMixin):
     def __init__(self, info_object, project_url, data_folder, only_unknown):
         # Make sure everything is there
@@ -148,6 +158,11 @@ class PreStack(ImageBaseMixin):
         if 'overlays' in info_object:
             for overlay in info_object['overlays']:
                 self.overlays.append(PreOverlay(overlay, project_url, data_folder))
+        # Collect stack group information
+        self.stackgroups = []
+        if 'stackgroups' in info_object:
+            for stackgroup in info_object['stackgroups']:
+                self.stackgroups.append(PreStackGroup(stackgroup))
 
         # Test if this stack is already known
         if only_unknown:
@@ -642,6 +657,7 @@ def import_projects( user, pre_projects, tags, permissions,
         try:
             # Create stacks and add them to project
             stacks = []
+            stack_groups = {}
             for s in pp.stacks:
                 stack = Stack.objects.create(
                     title=s.name,
@@ -666,6 +682,17 @@ def import_projects( user, pre_projects, tags, permissions,
                         tile_width=tile_width,
                         tile_height=tile_height,
                         tile_source_type=tile_source_type)
+                # Collect stack group information
+                for sg in s.stackgroups:
+                    stack_group = stack_groups.get(sg.name)
+                    if not stack_group:
+                        stack_group = []
+                        stack_groups[sg.name] = stack_group
+                    stack_group.append({
+                        'stack': stack,
+                        'relation': sg.relation
+                    })
+
             # Create new project
             p = Project.objects.create(
                 title=pp.name)
@@ -683,6 +710,22 @@ def import_projects( user, pre_projects, tags, permissions,
                     project=p, stack=s, translation=trln)
             # Make project persistent
             p.save()
+
+            # Save stack groups
+            for sg, linked_stacks in stack_groups.iteritems():
+                stack_group = ClassInstance.objects.create(
+                    user=user, project=p, name=sg,
+                    class_column=Class.objects.get(project=p, class_name="stackgroup")
+                )
+                for ls in linked_stacks:
+                    StackClassInstance.objects.create(
+                        user=user, project=p,
+                        relation=Relation.objects.get(project=p,
+                            relation_name=ls['relation']),
+                        class_instance=stack_group,
+                        stack=ls['stack'],
+                    )
+
             # Link classification graphs
             for cg in cls_graph_ids_to_link:
                 workspace = settings.ONTOLOGY_DUMMY_PROJECT_ID

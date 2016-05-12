@@ -63,6 +63,13 @@ Miscellaneous:
   (currently only nodes in the tracing layer are refreshed).
 
 
+Administration:
+
+- The image data importer available from CATMAID's admin interface supports now
+  the specification of stack groups. It can also apply custom translations when
+  mapping imported stacks to imported projects.
+
+
 ### Bug fixes
 
 - Creating nodes using the Z key without other nodes in close proximity works

@@ -143,6 +143,7 @@ file and could look like this for the example above::
            resolution: "(138.0,138.0,1.0)"
            zoomlevels: 3
            fileextension: "png"
+           translation: "(10.0, 20.0, 30.0)"
            stackgroups:
              - name: "Example group"
                relation: "has_channel"
@@ -205,6 +206,15 @@ having stack 2 and 3 as members---each representing a layer/channel. Stack
 groups are used by the front-end to open multiple stacks at once in a more
 intelligent fashion (e.g. open multi-channel stack groups as layers in the same
 viewer).
+
+All specified stacks within a project are linked into a single space. By default
+each stack origin is mapped to the project space origin (0,0,0). An optional
+translation can be applied to this mapping: If a stack has a ``translation``
+field, the stack is mapped with this offset into project space. Note that this
+translation is in project space coordinates (physical space, nanometers). The
+example above will link the last stack ("Remote stack") to the project "Wing
+Disc 1" with an offset of ``(10.0, 20.0, 30.0)`` nanometers. Both other stacks
+will be mapped to the project space origin.
 
 Also, it wouldn't confuse the tool if there is more YAML data in the
 project file than needed. It only uses what is depicted in the sample

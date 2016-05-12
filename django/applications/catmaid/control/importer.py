@@ -153,6 +153,12 @@ class PreStack(ImageBaseMixin):
         self.dimension = info_object['dimension']
         self.resolution = info_object['resolution']
         self.metadata = info_object['metadata'] if 'metadata' in info_object else ""
+        # Stacks can optionally contain a "translation" field, which can be used
+        # to add an offset when the stack is linked to a project
+        self.project_translation = info_object.get('translation', "(0,0,0)")
+        # Make sure this dimension can be matched
+        if not Double3D.tuple_pattern.match(self.project_translation):
+            raise ValueError("Couldn't read translation value")
         # Add overlays to the stack, if those are declared
         self.overlays = []
         if 'overlays' in info_object:
@@ -658,6 +664,7 @@ def import_projects( user, pre_projects, tags, permissions,
             # Create stacks and add them to project
             stacks = []
             stack_groups = {}
+            translations = {}
             for s in pp.stacks:
                 stack = Stack.objects.create(
                     title=s.name,
@@ -692,6 +699,8 @@ def import_projects( user, pre_projects, tags, permissions,
                         'stack': stack,
                         'relation': sg.relation
                     })
+                # Keep track of project-stack offsets
+                translations[stack] = s.project_translation
 
             # Create new project
             p = Project.objects.create(
@@ -705,7 +714,7 @@ def import_projects( user, pre_projects, tags, permissions,
             p.tags.add( *tags )
             # Add stacks to project
             for s in stacks:
-                trln = Double3D()
+                trln = Double3D.from_str(translations[s])
                 ps = ProjectStack.objects.create(
                     project=p, stack=s, translation=trln)
             # Make project persistent

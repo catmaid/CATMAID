@@ -69,10 +69,15 @@
       var url = project.id + "/volumes/add";
 
       return CATMAID.fetch(url, "POST", serializedVolume).then(function(json) {
+        CATMAID.Volumes.trigger(CATMAID.Volumes.EVENT_VOLUME_ADDED, json.volume_id);
         return json;
       });
     },
   };
+
+  // Add events
+  CATMAID.asEventSource(Volumes);
+  Volumes.EVENT_VOLUME_ADDED = "volume_added";
 
   // Export voume namespace into CATMAID namespace
   CATMAID.Volumes = Volumes;

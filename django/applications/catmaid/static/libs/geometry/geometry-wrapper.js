@@ -10,9 +10,15 @@
 * The resulting geometry.js file is committed to CATMAID's git repository.
 */
 window.GeometryTools = {
-	// See: https://github.com/mikolalysenko/convex-hull
-	convexHull: require("convex-hull"),
+  // See: https://github.com/mikolalysenko/convex-hull
+  convexHull: require("convex-hull"),
 
-	// See: https://github.com/mikolalysenko/alpha-shape
-	alphaShape: require("alpha-shape")
+  // See: https://github.com/mikolalysenko/alpha-shape
+  alphaShape: require("alpha-shape"),
+
+  // See: https://github.com/mikolalysenko/cell-orientation
+  cellOrientation: require('cell-orientation'),
+
+  // See: https://github.com/mikolalysenko/compare-cell
+  compareCell: require('compare-cell'),
 };

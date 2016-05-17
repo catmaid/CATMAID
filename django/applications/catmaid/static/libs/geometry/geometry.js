@@ -11,11 +11,20 @@
 * The resulting geometry.js file is committed to CATMAID's git repository.
 */
 window.GeometryTools = {
-	convexHull: require("convex-hull"),
-	alphaShape: require("alpha-shape")
+  // See: https://github.com/mikolalysenko/convex-hull
+  convexHull: require("convex-hull"),
+
+  // See: https://github.com/mikolalysenko/alpha-shape
+  alphaShape: require("alpha-shape"),
+
+  // See: https://github.com/mikolalysenko/cell-orientation
+  cellOrientation: require('cell-orientation'),
+
+  // See: https://github.com/mikolalysenko/compare-cell
+  compareCell: require('compare-cell'),
 };
 
-},{"alpha-shape":4,"convex-hull":12}],2:[function(require,module,exports){
+},{"alpha-shape":4,"cell-orientation":7,"compare-cell":10,"convex-hull":12}],2:[function(require,module,exports){
 'use strict'
 
 module.exports = affineHull

@@ -535,29 +535,35 @@
     // Remove all faces that appear more than once. This is needeed to remove
     // interior faces at the moment. This issue has been reported:
     // https://github.com/mikolalysenko/simplicial-complex-boundary/issues/1
-    var seen = new Set();
-    var toRemove = new Set();
-    for (var i=0, max=mesh.length; i<max; ++i) {
-      var face = mesh[i];
-      var key = face.toString();
-      if (seen.has(key)) {
-        toRemove.add(key);
-      } else {
-        seen.add(key);
-      }
-    }
-    var nFaces = mesh.length;
-    for (var i=mesh.length; i>0; --i) {
-      var j = i - 1;
-      var face = mesh[j];
-      var key = face.toString();
-      if (toRemove.has(key)) {
-        mesh.splice(j, 1);
-      }
-    }
+    reduceCellComplex(mesh);
 
     return mesh;
   };
+
+  function reduceCellComplex(cells) {
+    var compareCell = GeometryTools.compareCell;
+    var orientation = GeometryTools.cellOrientation;
+    cells.sort(compareCell);
+    var n = cells.length;
+    var ptr = 0;
+    for(var i=0; i<n; ++i) {
+      var c = cells[i];
+      var o = orientation(c);
+      if(o === 0) {
+        continue;
+      }
+      if(ptr > 0) {
+        var f = cells[ptr-1];
+        if(compareCell(c, f) === 0) {
+          ptr -= 1;
+          continue;
+        }
+      }
+      cells[ptr++] = c;
+    }
+    cells.length = ptr;
+    return cells;
+  }
 
   /**
    * A skeleton rule filters accepts or reject a skeleton. Besides a filtering

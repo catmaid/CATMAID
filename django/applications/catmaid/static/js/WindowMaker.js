@@ -1314,8 +1314,9 @@ var WindowMaker = new function()
     };
     var o = CATMAID.WebGLApplication.prototype.OPTIONS;
 
-    var volumeSelection = CATMAID.DOM.createAsyncPlaceholder(
-        CATMAID.Volumes.listAll(project.id).then(function(json) {
+    // Update volume list
+    var initVolumeList = function() {
+      return CATMAID.Volumes.listAll(project.id).then(function(json) {
           var volumes = json.reduce(function(o, volume) {
             o[volume.id] = volume.name;
             return o;
@@ -1329,12 +1330,28 @@ var WindowMaker = new function()
             WA.showVolume(volumeId, visible);
           };
           return node;
-        }));
+        });
+    };
+
+    // Create async selection and wrap it in container to have handle on initial
+    // DOM location
+    var volumeSelection = CATMAID.DOM.createAsyncPlaceholder(initVolumeList());
+    var volumeSelectionWrapper = document.createElement('span');
+    volumeSelectionWrapper.appendChild(volumeSelection);
+
+    // Replace volume selection wrapper children with new select
+    var refreshVolumeList = function() {
+      while (0 !== volumeSelectionWrapper.children.length) {
+        volumeSelectionWrapper.removeChild(volumeSelectionWrapper.children[0]);
+      }
+      var volumeSelection = CATMAID.DOM.createAsyncPlaceholder(initVolumeList());
+      volumeSelectionWrapper.appendChild(volumeSelection);
+    };
 
     appendToTab(tabs['View settings'],
         [
           ['Meshes ', false, function() { WA.options.show_meshes = this.checked; WA.adjustContent(); }, false],
-          [volumeSelection],
+          [volumeSelectionWrapper],
           ['Faces ', false, function() { WA.options.meshes_faces = this.checked;}, false],
           [WA.createMeshColorButton()],
           ['Active node', true, function() { WA.options.show_active_node = this.checked; WA.adjustContent(); }, false],
@@ -1556,6 +1573,15 @@ var WindowMaker = new function()
     // Create a Selection Table, preset as the sync target
     var st = createStagingListWindow( ST, win, WA.getName() );
 
+    CATMAID.Volumes.on(CATMAID.Volumes.EVENT_VOLUME_ADDED,
+        refreshVolumeList, WA);
+
+    // Clear listeners that were added above
+    var unregisterUIListeners = function() {
+      CATMAID.Volumes.off(CATMAID.Volumes.EVENT_VOLUME_ADDED,
+          refreshVolumeList, WA);
+    };
+
     win.addListener(
       function(callingWindow, signal) {
         switch (signal) {
@@ -1572,6 +1598,7 @@ var WindowMaker = new function()
                   windows.delete(widgetName);
                 }
               });
+              unregisterUIListeners();
               WA.destroy();
             }
             break;

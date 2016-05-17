@@ -54,6 +54,9 @@ Tile layer:
 - Meshes and volumes can now optionally be displayed with visible faces instead
   of wireframe only.
 
+- Volume list is now updated when new volumes are added, re-opening the widget
+  is not required anymore.
+
 
 Miscellaneous:
 

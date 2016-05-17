@@ -37,7 +37,7 @@
    */
   CATMAID.Volume.prototype.save = function() {
     if (null === this.id) {
-      return CATMAID.fetch(project.id + "/volumes/add", "POST", this.serialize())
+      return CATMAID.Volumes.add(project.id, this.serialize())
         .then(function(result) {
           if (result.success) {
             CATMAID.msg("Success", "A new volume was created");
@@ -46,7 +46,7 @@
           }
         });
     } else {
-      return CATMAID.fetch(project.id + "/volumes/" + this.id + "/", "POST", this.serialize())
+      return CATMAID.Volumes.update(project.id, this.id, this.serialize())
         .then(function(result) {
           if (result.success) {
             CATMAID.msg("Changes saved", "The volume has been udpated");

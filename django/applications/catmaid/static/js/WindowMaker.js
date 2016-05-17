@@ -1315,7 +1315,7 @@ var WindowMaker = new function()
     var o = CATMAID.WebGLApplication.prototype.OPTIONS;
 
     var volumeSelection = CATMAID.DOM.createAsyncPlaceholder(
-        CATMAID.fetch(project.id + '/volumes/', 'GET').then(function(json) {
+        CATMAID.Volumes.listAll(project.id).then(function(json) {
           var volumes = json.reduce(function(o, volume) {
             o[volume.id] = volume.name;
             return o;

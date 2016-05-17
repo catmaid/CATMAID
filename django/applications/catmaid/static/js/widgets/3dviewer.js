@@ -1598,7 +1598,7 @@
         return;
       }
 
-      CATMAID.fetch(project.id + '/volumes/' + volumeId + '/', 'GET')
+      CATMAID.Volumes.get(project.id, volumeId)
         .then((function(volume) {
           // Convert X3D mesh to simple VRML and have Three.js load it
           var vrml = x3dToVrml(volume.mesh);

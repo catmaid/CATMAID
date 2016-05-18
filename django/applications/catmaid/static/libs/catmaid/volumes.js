@@ -527,22 +527,62 @@
   };
 
   /**
+   * Extract boundary of simplicial cells and flip every other face. This is
+   * needed to be able to compute normal vectors that face outside of a boundary
+   * cell. Based on https://github.com/mikolalysenko/boundary-cells
+   */
+  function boundary(cells) {
+    var flip = GeometryTools.flipOrientation;
+    var n = cells.length;
+    var sz = 0;
+    for(var i=0; i<n; ++i) {
+      sz += cells[i].length;
+    }
+    var result = new Array(sz);
+    var ptr = 0;
+    for(var i=0; i<n; ++i) {
+      var c = cells[i];
+      var d = c.length;
+      for(var j=0; j<d; ++j) {
+        var b = result[ptr++] = new Array(d-1);
+        for(var k=1; k<d; ++k) {
+          b[k-1] = c[(j+k)%d];
+        }
+        // Flip every other cell
+        if (1 === j % 2) {
+          flip(b);
+        }
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Compute alpha complex, remove inner faces and adjust boundary cell
+   * orientation.
+   */
+  function alphaShape(alpha, points) {
+    var ac = GeometryTools.alphaComplex(alpha, points);
+    return reduceCellComplex(boundary(ac));
+  }
+
+  /**
    * Create the actual mesh from point cloud. This is a separate method to make
    * it easier for sub-types to override.
    */
   CATMAID.AlphaShapeVolume.prototype.createMesh = function(points) {
-    var mesh = GeometryTools.alphaShape(1.0 / this.alpha, points);
-    // Remove all faces that appear more than once. This is needeed to remove
-    // interior faces at the moment. This issue has been reported:
-    // https://github.com/mikolalysenko/simplicial-complex-boundary/issues/1
-    reduceCellComplex(mesh);
-
-    return mesh;
+    return alphaShape(1.0 / this.alpha, points);
   };
 
+  /**
+   * Remove all faces that appear more than once. This is needed to remove
+   * interior faces at the moment due to some boundary cell orientation
+   * inconsistencies.
+   */
   function reduceCellComplex(cells) {
     var compareCell = GeometryTools.compareCell;
     var orientation = GeometryTools.cellOrientation;
+    var flip = GeometryTools.flipOrientation;
     cells.sort(compareCell);
     var n = cells.length;
     var ptr = 0;

@@ -13,11 +13,14 @@ window.GeometryTools = {
   // See: https://github.com/mikolalysenko/convex-hull
   convexHull: require("convex-hull"),
 
-  // See: https://github.com/mikolalysenko/alpha-shape
-  alphaShape: require("alpha-shape"),
+  // See: https://github.com/mikolalysenko/alpha-complex
+  alphaComplex: require("alpha-complex"),
 
   // See: https://github.com/mikolalysenko/cell-orientation
   cellOrientation: require('cell-orientation'),
+
+  // See: https://github.com/mikolalysenko/flip-orientation
+  flipOrientation: require('flip-orientation'),
 
   // See: https://github.com/mikolalysenko/compare-cell
   compareCell: require('compare-cell'),

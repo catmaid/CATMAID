@@ -57,6 +57,8 @@ Tile layer:
 - Volume list is now updated when new volumes are added, re-opening the widget
   is not required anymore.
 
+- Transparent volumes are now displayed correctly.
+
 
 Miscellaneous:
 

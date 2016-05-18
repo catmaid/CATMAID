@@ -813,7 +813,8 @@
     color = color || new THREE.Color(this.meshes_color);
     if (typeof opacity === 'undefined') opacity = this.meshes_opacity;
     return new THREE.MeshLambertMaterial({color: color, opacity: opacity,
-      transparent: opacity !== 1, wireframe: !this.meshes_faces, side: THREE.DoubleSide});
+      transparent: opacity !== 1, wireframe: !this.meshes_faces, side: THREE.DoubleSide,
+      depthWrite: opacity === 1});
   };
 
 

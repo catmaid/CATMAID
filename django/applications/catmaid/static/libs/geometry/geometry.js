@@ -15,7 +15,7 @@ window.GeometryTools = {
   convexHull: require("convex-hull"),
 
   // See: https://github.com/mikolalysenko/alpha-complex
-  alphaComplex: require("alpha-complex"),
+  alphaShape: require("alpha-shape"),
 
   // See: https://github.com/mikolalysenko/cell-orientation
   cellOrientation: require('cell-orientation'),
@@ -27,7 +27,7 @@ window.GeometryTools = {
   compareCell: require('compare-cell'),
 };
 
-},{"alpha-complex":3,"cell-orientation":5,"compare-cell":8,"convex-hull":9,"flip-orientation":15}],2:[function(require,module,exports){
+},{"alpha-shape":4,"cell-orientation":7,"compare-cell":10,"convex-hull":12,"flip-orientation":18}],2:[function(require,module,exports){
 'use strict'
 
 module.exports = affineHull
@@ -79,7 +79,7 @@ function affineHull(points) {
   }
   return index
 }
-},{"robust-orientation":21}],3:[function(require,module,exports){
+},{"robust-orientation":25}],3:[function(require,module,exports){
 'use strict'
 
 module.exports = alphaComplex
@@ -96,7 +96,16 @@ function alphaComplex(alpha, points) {
     return circumradius(simplex) * alpha < 1
   })
 }
-},{"circumradius":7,"delaunay-triangulate":13}],4:[function(require,module,exports){
+},{"circumradius":9,"delaunay-triangulate":16}],4:[function(require,module,exports){
+module.exports = alphaShape
+
+var ac = require('alpha-complex')
+var bnd = require('simplicial-complex-boundary')
+
+function alphaShape(alpha, points) {
+  return bnd(ac(alpha, points))
+}
+},{"alpha-complex":3,"simplicial-complex-boundary":29}],5:[function(require,module,exports){
 /**
  * Bit twiddling hacks for JavaScript.
  *
@@ -302,7 +311,43 @@ exports.nextCombination = function(v) {
 }
 
 
-},{}],5:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
+'use strict'
+
+module.exports = boundary
+
+function boundary (cells) {
+  var i, j, k
+  var n = cells.length
+  var sz = 0
+  for (i = 0; i < n; ++i) {
+    sz += cells[i].length
+  }
+  var result = new Array(sz)
+  var ptr = 0
+  for (i = 0; i < n; ++i) {
+    var c = cells[i]
+    var d = c.length
+    for (j = 0; j < d; ++j) {
+      var b = result[ptr++] = new Array(d - 1)
+      var p = 0
+      for (k = 0; k < d; ++k) {
+        if (k === j) {
+          continue
+        }
+        b[p++] = c[k]
+      }
+      if (j & 1) {
+        var tmp = b[1]
+        b[1] = b[0]
+        b[0] = tmp
+      }
+    }
+  }
+  return result
+}
+
+},{}],7:[function(require,module,exports){
 'use strict'
 
 module.exports = orientation
@@ -321,7 +366,7 @@ function orientation(s) {
   return p
 }
 
-},{}],6:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 "use strict"
 
 var dup = require("dup")
@@ -390,7 +435,7 @@ function circumcenter(points) {
 
 circumcenter.barycenetric = barycentricCircumcenter
 module.exports = circumcenter
-},{"dup":14,"robust-linear-solve":20}],7:[function(require,module,exports){
+},{"dup":17,"robust-linear-solve":24}],9:[function(require,module,exports){
 module.exports = circumradius
 
 var circumcenter = require('circumcenter')
@@ -406,7 +451,7 @@ function circumradius(points) {
   }
   return Math.sqrt(avgDist / points.length)
 }
-},{"circumcenter":6}],8:[function(require,module,exports){
+},{"circumcenter":8}],10:[function(require,module,exports){
 module.exports = compareCells
 
 var min = Math.min
@@ -462,7 +507,19 @@ function compareCells(a, b) {
   }
 }
 
-},{}],9:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
+'use strict'
+
+var compareCells = require('compare-cell')
+var parity = require('cell-orientation')
+
+module.exports = compareOrientedCells
+
+function compareOrientedCells(a, b) {
+  return compareCells(a, b) || parity(a) - parity(b)
+}
+
+},{"cell-orientation":7,"compare-cell":10}],12:[function(require,module,exports){
 "use strict"
 
 var convexHull1d = require('./lib/ch1d')
@@ -488,7 +545,7 @@ function convexHull(points) {
   }
   return convexHullnd(points, d)
 }
-},{"./lib/ch1d":10,"./lib/ch2d":11,"./lib/chnd":12}],10:[function(require,module,exports){
+},{"./lib/ch1d":13,"./lib/ch2d":14,"./lib/chnd":15}],13:[function(require,module,exports){
 "use strict"
 
 module.exports = convexHull1d
@@ -512,7 +569,7 @@ function convexHull1d(points) {
     return [[lo]]
   }
 }
-},{}],11:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 'use strict'
 
 module.exports = convexHull2D
@@ -535,7 +592,7 @@ function convexHull2D(points) {
   return edges
 }
 
-},{"monotone-convex-hull-2d":17}],12:[function(require,module,exports){
+},{"monotone-convex-hull-2d":20}],15:[function(require,module,exports){
 'use strict'
 
 module.exports = convexHullnD
@@ -596,7 +653,7 @@ function convexHullnD(points, d) {
     return invPermute(nhull, ah)
   }
 }
-},{"affine-hull":2,"incremental-convex-hull":16}],13:[function(require,module,exports){
+},{"affine-hull":2,"incremental-convex-hull":19}],16:[function(require,module,exports){
 "use strict"
 
 var ch = require("incremental-convex-hull")
@@ -756,7 +813,7 @@ function triangulate(points, includePointAtInfinity) {
 
   return hull
 }
-},{"incremental-convex-hull":16,"uniq":29}],14:[function(require,module,exports){
+},{"incremental-convex-hull":19,"uniq":34}],17:[function(require,module,exports){
 "use strict"
 
 function dupe_array(count, value, i) {
@@ -806,7 +863,7 @@ function dupe(count, value) {
 }
 
 module.exports = dupe
-},{}],15:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 'use strict'
 
 module.exports = flip
@@ -821,7 +878,7 @@ function flip(a) {
   return a
 }
 
-},{}],16:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 "use strict"
 
 //High level idea:
@@ -1268,7 +1325,7 @@ function incrementalConvexHull(points, randomSearch) {
   //Extract boundary cells
   return triangles.boundary()
 }
-},{"robust-orientation":21,"simplicial-complex":25}],17:[function(require,module,exports){
+},{"robust-orientation":25,"simplicial-complex":30}],20:[function(require,module,exports){
 'use strict'
 
 module.exports = monotoneConvexHull2D
@@ -1350,7 +1407,40 @@ function monotoneConvexHull2D(points) {
   //Return result
   return result
 }
-},{"robust-orientation":21}],18:[function(require,module,exports){
+},{"robust-orientation":25}],21:[function(require,module,exports){
+'use strict'
+
+var compareCell = require('compare-cell')
+var compareOrientedCell = require('compare-oriented-cell')
+var orientation = require('cell-orientation')
+
+module.exports = reduceCellComplex
+
+function reduceCellComplex(cells) {
+  cells.sort(compareOrientedCell)
+  var n = cells.length
+  var ptr = 0
+  for(var i=0; i<n; ++i) {
+    var c = cells[i]
+    var o = orientation(c)
+    if(o === 0) {
+      continue
+    }
+    if(ptr > 0) {
+      var f = cells[ptr-1]
+      if(compareCell(c, f) === 0 &&
+         orientation(f)    !== o) {
+        ptr -= 1
+        continue
+      }
+    }
+    cells[ptr++] = c
+  }
+  cells.length = ptr
+  return cells
+}
+
+},{"cell-orientation":7,"compare-cell":10,"compare-oriented-cell":11}],22:[function(require,module,exports){
 "use strict"
 
 module.exports = compressExpansion
@@ -1385,7 +1475,7 @@ function compressExpansion(e) {
   e.length = top
   return e
 }
-},{}],19:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 "use strict"
 
 var twoProduct = require("two-product")
@@ -1489,7 +1579,7 @@ return robustDeterminant")
 }
 
 generateDispatch()
-},{"robust-compress":18,"robust-scale":22,"robust-sum":24,"two-product":26}],20:[function(require,module,exports){
+},{"robust-compress":22,"robust-scale":26,"robust-sum":28,"two-product":31}],24:[function(require,module,exports){
 "use strict"
 
 var determinant = require("robust-determinant")
@@ -1561,7 +1651,7 @@ function generateDispatch() {
 }
 
 generateDispatch()
-},{"robust-determinant":19}],21:[function(require,module,exports){
+},{"robust-determinant":23}],25:[function(require,module,exports){
 "use strict"
 
 var twoProduct = require("two-product")
@@ -1752,7 +1842,7 @@ function generateOrientationProc() {
 }
 
 generateOrientationProc()
-},{"robust-scale":22,"robust-subtract":23,"robust-sum":24,"two-product":26}],22:[function(require,module,exports){
+},{"robust-scale":26,"robust-subtract":27,"robust-sum":28,"two-product":31}],26:[function(require,module,exports){
 "use strict"
 
 var twoProduct = require("two-product")
@@ -1803,7 +1893,7 @@ function scaleLinearExpansion(e, scale) {
   g.length = count
   return g
 }
-},{"two-product":26,"two-sum":27}],23:[function(require,module,exports){
+},{"two-product":31,"two-sum":32}],27:[function(require,module,exports){
 "use strict"
 
 module.exports = robustSubtract
@@ -1960,7 +2050,7 @@ function robustSubtract(e, f) {
   g.length = count
   return g
 }
-},{}],24:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 "use strict"
 
 module.exports = linearExpansionSum
@@ -2117,7 +2207,19 @@ function linearExpansionSum(e, f) {
   g.length = count
   return g
 }
-},{}],25:[function(require,module,exports){
+},{}],29:[function(require,module,exports){
+'use strict'
+
+module.exports = boundary
+
+var bnd = require('boundary-cells')
+var reduce = require('reduce-simplicial-complex')
+
+function boundary(cells) {
+  return reduce(bnd(cells))
+}
+
+},{"boundary-cells":6,"reduce-simplicial-complex":21}],30:[function(require,module,exports){
 "use strict"; "use restrict";
 
 var bits      = require("bit-twiddle")
@@ -2461,7 +2563,7 @@ function connectedComponents(cells, vertex_count) {
 }
 exports.connectedComponents = connectedComponents
 
-},{"bit-twiddle":4,"union-find":28}],26:[function(require,module,exports){
+},{"bit-twiddle":5,"union-find":33}],31:[function(require,module,exports){
 "use strict"
 
 module.exports = twoProduct
@@ -2495,7 +2597,7 @@ function twoProduct(a, b, result) {
 
   return [ y, x ]
 }
-},{}],27:[function(require,module,exports){
+},{}],32:[function(require,module,exports){
 "use strict"
 
 module.exports = fastTwoSum
@@ -2513,7 +2615,7 @@ function fastTwoSum(a, b, result) {
 	}
 	return [ar+br, x]
 }
-},{}],28:[function(require,module,exports){
+},{}],33:[function(require,module,exports){
 "use strict"; "use restrict";
 
 module.exports = UnionFind;
@@ -2576,7 +2678,7 @@ proto.link = function(x, y) {
     ++ranks[xr];
   }
 }
-},{}],29:[function(require,module,exports){
+},{}],34:[function(require,module,exports){
 "use strict"
 
 function unique_pred(list, compare) {

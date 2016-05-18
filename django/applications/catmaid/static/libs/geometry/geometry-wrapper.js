@@ -14,7 +14,7 @@ window.GeometryTools = {
   convexHull: require("convex-hull"),
 
   // See: https://github.com/mikolalysenko/alpha-complex
-  alphaComplex: require("alpha-complex"),
+  alphaShape: require("alpha-shape"),
 
   // See: https://github.com/mikolalysenko/cell-orientation
   cellOrientation: require('cell-orientation'),

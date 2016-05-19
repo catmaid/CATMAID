@@ -1321,8 +1321,9 @@ var WindowMaker = new function()
             o[volume.id] = volume.name;
             return o;
           }, {});
+          var selectedVolumes = WA.getLoadedVolumeIds();
           // Create actual element based on the returned data
-          var node = CATMAID.DOM.createCheckboxSelect('Volumes', volumes);
+          var node = CATMAID.DOM.createCheckboxSelect('Volumes', volumes, selectedVolumes);
           // Add a selection handler
           node.onchange = function(e) {
             var visible = e.srcElement.checked;

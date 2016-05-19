@@ -1630,6 +1630,13 @@
     }
   };
 
+  /**
+   * Return IDs of the currently loaded volumes.
+   */
+  WebGLApplication.prototype.getLoadedVolumeIds = function() {
+    return Object.keys(this.loadedVolumes);
+  };
+
   /** Defines the properties of the 3d space and also its static members like the bounding box and the missing sections. */
   WebGLApplication.prototype.Space = function( w, h, container, stack, options ) {
     this.stack = stack;

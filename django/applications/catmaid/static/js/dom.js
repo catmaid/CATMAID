@@ -306,12 +306,15 @@
    *
    * Main idea from: http://stackoverflow.com/questions/17714705
    *
-   * @param title {String}   A title showing as the first element of the select
-   * @param options {Object} Maps values to field names
+   * @param title        {String}   A title showing as the first element of the select
+   * @param options      {Object}   Maps values to field names
+   * @param selectedKeys {String[]} (Optional) list of keys that should be
+   *                                selected initially
    *
    * @returns a wrapper around the select element
    */
-  DOM.createCheckboxSelect = function(title, options) {
+  DOM.createCheckboxSelect = function(title, options, selectedKeys) {
+    var selectedSet = new Set(selectedKeys ? selectedKeys : undefined);
     var checkboxes = document.createElement('ul');
     for (var o in options) {
       var entry = document.createElement('label');
@@ -320,6 +323,9 @@
       checkbox.setAttribute('value', o);
       entry.appendChild(checkbox);
       entry.appendChild(document.createTextNode(options[o]));
+      if (selectedSet.has(o)) {
+        checkbox.checked = true;
+      }
       checkboxes.appendChild(entry);
     }
     checkboxes.onclick = function(e) {

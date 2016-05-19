@@ -564,7 +564,7 @@
       incoming.toggleClass('gapjunction_visible', visible);
       outgoing.toggleClass('gapjunction_visible', visible);
       gapjunctions.toggleClass('gapjunction_visible', visible);
-      $(".gj_column").toggleClass('column_hidden', !visible);
+      $(".gj_column", content).toggleClass('column_hidden', !visible);
     };
 
     /**

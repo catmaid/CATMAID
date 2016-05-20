@@ -129,15 +129,17 @@
    * Override property set method to know when the mesh representation needs to
    * be updated.
    */
-  CATMAID.ConvexHullVolume.prototype.set = function(field, value, forceOverride) {
+  CATMAID.ConvexHullVolume.prototype.set = function(field, value, forceOverride, noSyncCheck) {
     // Check parameter for influence on mesh *before* the prototype is called,
     // this makes sure all property change event handlers can already know that
     // the mesh needs to be updated. In case a mesh set directly no sync is
     // needed anymore.
-    if (field == 'mesh') {
-      this.meshNeedsSync = false;
-    } else if (field !== "id" && field !== "title" && field !== 'comment') {
-      this.meshNeedsSync = true;
+    if (!noSyncCheck) {
+      if (field == 'mesh') {
+        this.meshNeedsSync = false;
+      } else if (field !== "id" && field !== "title" && field !== 'comment') {
+        this.meshNeedsSync = true;
+      }
     }
     CATMAID.Volume.prototype.set.call(this, field, value, forceOverride);
   };
@@ -516,6 +518,9 @@
 
     CATMAID.ConvexHullVolume.call(this, options);
     this.set("alpha", options.alpha || 5000);
+
+    // This field will hold an interval based mesh representation
+    this.intervalMesh = null;
   };
 
   CATMAID.AlphaShapeVolume.prototype = Object.create(CATMAID.ConvexHullVolume.prototype);
@@ -527,11 +532,62 @@
   };
 
   /**
+   * Override property set method to know when the mesh representation needs to
+   * be updated.
+   */
+  CATMAID.AlphaShapeVolume.prototype.set = function(field, value, forceOverride) {
+    // If the alpha field was changed and a mesh is already available, there is
+    // no update required, because alpha ranges are stored for individual
+    // triangles.
+    var alphaMeshUpdate = (field === 'alpha' && this.mesh);
+    if (alphaMeshUpdate) {
+      // Create new filtered mesh based on existing mesh
+      this.meshNeedsSync = false;
+    }
+    CATMAID.ConvexHullVolume.prototype.set.call(this, field, value, forceOverride, true);
+
+    // After the field has been set, refresh display if only alpha changed
+    if (alphaMeshUpdate) {
+      var faces = this.filterMesh();
+      var mesh = [this.mesh[0], faces];
+      this.set("mesh", mesh, true);
+      this.meshNeedsSync = false;
+      // Refresh preview
+      if (this.preview) {
+        this.clearPreviewData();
+        var list = this.mesh ? [this.mesh] : [];
+        this._removePreviewMesh = CATMAID.ConvexHullVolume.showMeshesIn3DViewer(list);
+      }
+    }
+  };
+
+  /**
+   * Update internal mesh representation with current alpha.
+   */
+  CATMAID.AlphaShapeVolume.prototype.filterMesh = function() {
+    if (!this.intervalMesh) {
+      return;
+    }
+
+    // Our alpha is already the inverse (1/a)
+    var alpha = this.alpha;
+    var faces = this.intervalMesh.cells[2].filter(function(c, i) {
+      // Allow only faces on the boundary
+      return this.b[i] < alpha && this.i[i] > alpha;
+    }, this.intervalMesh.meta[2]);
+
+    return faces;
+  };
+
+  /**
    * Create the actual mesh from point cloud. This is a separate method to make
    * it easier for sub-types to override.
    */
   CATMAID.AlphaShapeVolume.prototype.createMesh = function(points) {
-    return GeometryTools.alphaShape(1.0 / this.alpha, points);
+    //var alphaShape = GeometryTools.alphaShape(1.0 / this.alpha, points);
+    this.intervalMesh = CATMAID.alphaIntervalComplex(points, 2);
+    var mesh = this.filterMesh();
+    return mesh;
   };
 
   /**

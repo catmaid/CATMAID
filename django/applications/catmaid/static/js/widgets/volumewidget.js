@@ -573,6 +573,10 @@
           return !meshNeedsUpdate;
         };
         var onUpdate = function(field, newValue, oldValue) {
+          // Recalculate mesh if preview was just enabled
+          if (volume.preview && "preview" === field) {
+            volume.meshNeedsSync = true;
+          }
           // Re-create mesh if the updated field is no 'basic' property to avoid
           // unnecessary re-calculation.
           if (volume.preview && volume.meshNeedsSync) {

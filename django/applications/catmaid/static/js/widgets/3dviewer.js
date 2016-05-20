@@ -3180,12 +3180,32 @@
       var camera = this.CATMAID_view.camera;
       if ((ev.ctrlKey || ev.altKey) && !camera.inOrthographicMode) {
         // Move the camera and the target in target direction
-        var distance = 3500 * (ev.wheelDelta > 0 ? -1 : 1);
+        var absUpdateDistance = 3500;
+        var movingForward = ev.wheelDelta > 0;
+        var dirFactor = movingForward ? -1 : 1;
+        var distance = absUpdateDistance * dirFactor;
         var controls = this.CATMAID_view.controls;
         var change = new THREE.Vector3().copy(camera.position)
-          .sub(controls.target).normalize().multiplyScalar(distance);
+          .sub(controls.target);
 
+        // If the distance to the target is smaller than the distance the camera
+        // should move toward the target and we are moving forward, update the
+        // moving distance to be half the target distance.
+        var camTargetDistance = change.length();
+        if (camTargetDistance < absUpdateDistance && movingForward) {
+          absUpdateDistance = camTargetDistance * 0.5;
+          distance = absUpdateDistance * dirFactor;
+          // And cancel the location update if we are closer than ten units
+          // (arbitary close distance).
+          if (camTargetDistance - absUpdateDistance < 10) {
+            return;
+          }
+        }
+
+        // Scale change vector into usable range
+        change.normalize().multiplyScalar(distance);
         camera.position.add(change);
+
         // Move the target only if Alt was pressed
         if (ev.altKey) {
           controls.target.add(change);

@@ -378,10 +378,25 @@
             }, volume.neuronSourceName));
 
         if (withAlpha) {
-          $content.append(CATMAID.DOM.createInputSetting("Alpha (nm)",
-              volume.alpha, "Only triangles with a circumsphere radius less than alpha will be used",
+          var defaultAlphaStep = 10.0;
+          var alphaInputWrapper = CATMAID.DOM.createNumericInputSetting("Alpha (nm)",
+              volume.alpha, defaultAlphaStep,
+              "Only triangles with a circumsphere radius less than alpha will be used",
               function(e) {
                 volume.set("alpha", Number(this.value));
+              });
+          $content.append(alphaInputWrapper);
+
+          // Also update on mouse clicks and mouse wheel
+          var alphaInput = alphaInputWrapper.find('input');
+          alphaInput.on('mouseup mousewheel', function() {
+            volume.set("alpha", Number(this.value));
+          });
+
+          $content.append(CATMAID.DOM.createNumericInputSetting("",
+              defaultAlphaStep, 10.0, "Set the alpha change step for the numeric input above",
+              function(e) {
+                alphaInput.prop('step', Number(this.value));
               }));
         }
 

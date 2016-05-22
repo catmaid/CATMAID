@@ -129,15 +129,17 @@
    * Override property set method to know when the mesh representation needs to
    * be updated.
    */
-  CATMAID.ConvexHullVolume.prototype.set = function(field, value, forceOverride) {
+  CATMAID.ConvexHullVolume.prototype.set = function(field, value, forceOverride, noSyncCheck) {
     // Check parameter for influence on mesh *before* the prototype is called,
     // this makes sure all property change event handlers can already know that
     // the mesh needs to be updated. In case a mesh set directly no sync is
     // needed anymore.
-    if (field == 'mesh') {
-      this.meshNeedsSync = false;
-    } else if (field !== "id" && field !== "title" && field !== 'comment') {
-      this.meshNeedsSync = true;
+    if (!noSyncCheck) {
+      if (field == 'mesh') {
+        this.meshNeedsSync = false;
+      } else if (field !== "id" && field !== "title" && field !== 'comment') {
+        this.meshNeedsSync = true;
+      }
     }
     CATMAID.Volume.prototype.set.call(this, field, value, forceOverride);
   };
@@ -516,6 +518,9 @@
 
     CATMAID.ConvexHullVolume.call(this, options);
     this.set("alpha", options.alpha || 5000);
+    this.set("filterTriangles", false);
+    // This field will hold an interval based mesh representation
+    this.intervalMesh = null;
   };
 
   CATMAID.AlphaShapeVolume.prototype = Object.create(CATMAID.ConvexHullVolume.prototype);
@@ -527,11 +532,75 @@
   };
 
   /**
+   * Override property set method to know when the mesh representation needs to
+   * be updated.
+   */
+  CATMAID.AlphaShapeVolume.prototype.set = function(field, value, forceOverride) {
+    // If the alpha field was changed and a mesh is already available, there is
+    // no update required, because alpha ranges are stored for individual
+    // triangles.
+    var alphaMeshUpdate = this.mesh && (field === 'alpha' || field === 'filterTriangles');
+    if (alphaMeshUpdate) {
+      // Create new filtered mesh based on existing mesh
+      this.meshNeedsSync = false;
+    }
+    CATMAID.ConvexHullVolume.prototype.set.call(this, field, value, forceOverride,
+        alphaMeshUpdate);
+
+    // After the field has been set, refresh display if only alpha changed
+    if (alphaMeshUpdate) {
+      var faces = this.filterMesh();
+      var mesh = [this.mesh[0], faces];
+      this.set("mesh", mesh, true);
+      this.meshNeedsSync = false;
+      // Refresh preview
+      if (this.preview) {
+        this.clearPreviewData();
+        var list = this.mesh ? [this.mesh] : [];
+        this._removePreviewMesh = CATMAID.ConvexHullVolume.showMeshesIn3DViewer(list);
+      }
+    }
+  };
+
+  /**
+   * Update internal mesh representation with current alpha.
+   */
+  CATMAID.AlphaShapeVolume.prototype.filterMesh = function() {
+    if (!this.intervalMesh) {
+      return;
+    }
+
+    // Our alpha is already the inverse (1/a)
+    var faces, alpha = this.alpha;
+    if (this.filterTriangles) {
+      faces = this.intervalMesh.cells[2].filter(function(c, i) {
+        // Allow only faces on the boundary
+        return this.b[i] < alpha && this.i[i] > alpha;
+      }, this.intervalMesh.meta[2]);
+    } else {
+      var cells = this.intervalMesh.cells[3].filter(function(c, i) {
+        // Allow only tetraheda that have a circumradius < alpha. We can't use
+        // the interval based filtering here, because tetrahedrea are (in 3D) by
+        // interior to the alpha shape by definition. Therefore all tetraheda
+        // are filtered by their radius and the resulting boundary set is
+        // computed.
+        return this.r[i] < alpha;
+      }, this.intervalMesh.meta[3]);
+      faces = GeometryTools.simplicialComplexBoundary(cells);
+    }
+
+    return faces;
+  };
+
+  /**
    * Create the actual mesh from point cloud. This is a separate method to make
    * it easier for sub-types to override.
    */
   CATMAID.AlphaShapeVolume.prototype.createMesh = function(points) {
-    return GeometryTools.alphaShape(1.0 / this.alpha, points);
+    //var alphaShape = GeometryTools.alphaShape(1.0 / this.alpha, points);
+    this.intervalMesh = CATMAID.alphaIntervalComplex(points, 2);
+    var mesh = this.filterMesh();
+    return mesh;
   };
 
   /**
@@ -794,6 +863,231 @@
       .map(copyPoint)
       .map(multiplyComponents.bind(null, radius))
       .map(addToPoint.bind(null, x, y, z));
+  };
+
+  /**
+   * Test if the sphere defined by its center and radius is empty with respect to
+   * the passed in points. Test checks squared distance between each point and the
+   * sphere center, if it is equal/smaller radius, true is returned. False otherwise.
+   */
+  CATMAID.sphereIsEmpty = function(center, radiusSq, points) {
+    radiusSq -= 0.0001; // Allow points on surface
+    var abs = Math.abs;
+    var d = center.length;
+    for (var i=0, max=points.length; i<max; ++i) {
+      var dSq = 0;
+      var p = points[i];
+      for (var j=0; j < d; ++j) {
+        var c = p[j] - center[j];
+        dSq += c * c;
+      }
+      if (dSq < radiusSq) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  /**
+   * Simply return the value of "this" for the passed in index.
+   */
+  function indexToContent(i) {
+    /* jshint validthis: true */
+    return this[i];
+  }
+
+  /**
+   * Calculate alpha complex.
+   *
+   * @param {integer} minD Minimum simplex order for which to provide intervals
+   */
+  CATMAID.alphaIntervalComplex = function(points, minD) {
+    var util = GeometryTools.simplicialComplex;
+    var circumradius = GeometryTools.circumradius;
+    var circumcenter = GeometryTools.circumcenter;
+    var sphereIsEmpty = CATMAID.sphereIsEmpty;
+
+    // Get all Delaunay tetrahedrons
+    var r = GeometryTools.delaunayTriangulate(points);
+
+    if (0 === r.length) {
+      return {
+        'simplices': null,
+        'intervals': null,
+      };
+    }
+
+    // The boundary is the delaunay triangulation (i.e. the convex hull)
+    var boundary = GeometryTools.simplicialComplexBoundary(r);
+
+    // Order of start simplex, e.g. if there are four points we start with a
+    // 3-simplex.
+    var d = r[0].length - 1;
+
+    // Simplices will have one entry for each d >= k >= minD, each one being an
+    // array of simplices for each dimension.
+    var simplices = {};
+    // Meta will have one entry for each d >= k >= minD. This entry is an
+    // object with two fields, "b" and "i", each one containing a list with
+    // intervals, one for each simplex, matching the entries in the simplices
+    // object for this dimension. The two field have the following meaning:
+    //
+    // b: A list of alpha values, one for each simplex, from which on a simplex is
+    // part of the alpha complex. If alpha is smaller than the corresponding "i"
+    // value, the simplex is part of the boundary.
+    //
+    // i: A list of alpha, one for each simplex, from which on a simplex is not
+    // only part of the alpha complex, but specifically part of its interior.
+    // Alpha values lower than this "i" value and at least a value of the
+    // corresponding boundary value, indicate that the simplex in question is part
+    // of the boundary.
+    var meta = {};
+
+    // d-simplices are the trivial case, they are inside the alpha complex by
+    // definition.
+    simplices[d] = r;
+    var bD = [];
+    var iD = new Array(r.length);
+    var radiiD = new Array(r.length);
+    meta[d] = {
+      b: bD,
+      i: iD,
+      r: radiiD
+    };
+    var tmpDSimplex = new Array(r[0].length);
+    for (var t=0, max=r.length; t<max; ++t) {
+      var cell = r[t];
+      for(var i=0; i<cell.length; ++i) {
+        tmpDSimplex[i] = points[cell[i]];
+      }
+      // Radius of smallest circumsphere
+      var sigmaI = circumradius(tmpDSimplex);
+      // Boundary intervals are set to undefined by default, because by definition
+      // all d-simplices are inside the complex, hence the interior is set to the
+      // radius of the current simplex' circumsphere radius.
+      iD[t] = sigmaI;
+      // Store radius separately, because the i array is constructed differently
+      // for lower rang simplices.
+      radiiD[t] = sigmaI;
+    }
+
+    // Iterate over all lower order simplices until minimum order is reached
+    minD = minD || 0;
+    for (var k=d-1; k>=minD; --k) {
+      // Find all k-simplices
+      var kSimplices = util.unique(util.skeleton(simplices[k+1], k));
+      simplices[k] = kSimplices;
+
+      // Prepare interval and radii arrays
+      var bK = new Array(kSimplices.length);
+      var iK = new Array(kSimplices.length);
+      var rK = new Array(kSimplices.length);
+      meta[k] = {
+        b: bK,
+        i: iK,
+        r: rK
+      };
+
+      if (0 === kSimplices.length) {
+        break;
+      }
+
+      // Map k simplices to d simplices (e.g. triangles to tetrehedra). Also map k
+      // simplices to its k+1 simplices (super simplices), which re-uses the d
+      // simplex mapping, if k+1 == d.(so there is no need to recompute).
+      var dSimplices = simplices[d];
+      var dSimplexMap =util.incidence(kSimplices, dSimplices);
+      var dMeta = meta[d];
+      var superSimplices = simplices[k+1];
+      var superSimplexMap =  (k + 1 === d) ? dSimplexMap : util.incidence(kSimplices, superSimplices);
+      var superMeta = meta[k+1];
+      var convexHullMap = util.incidence(kSimplices, boundary);
+
+      var tmpKSimplex = new Array(kSimplices[0].length);
+      for (var t=0, max=kSimplices.length; t<max; ++t) {
+        var cell = kSimplices[t];
+        // Construct each k-simplex for further inspection
+        for(var i=0; i<cell.length; ++i) {
+          tmpKSimplex[i] = points[cell[i]];
+        }
+        // Radius of smallest circumsphere
+        var sigmaI = circumradius(tmpKSimplex);
+        var centerI = circumcenter(tmpKSimplex);
+
+        var a,b;
+        // Find k+1-simplices and their indices
+        var superSimplexIndicesT = superSimplexMap[t];
+        var superSimplicesT = superSimplexIndicesT.map(indexToContent, superSimplices);
+        // The cirumsphere of the k-simplex is empty if sigmaI is smaller than the
+        // distance to the closest neighbor. The closest neighbor will be one of
+        // the vertices of the current k-simplexes super-simplices (k+1). These in
+        // turn are available through the index.
+        var superSimplexTPoints = util.unique(util.skeleton(superSimplicesT, 0))
+          .map(indexToContent, points);
+        // FIXME: Remove k-simplex points from super set
+        var circumsphereEmpty = sphereIsEmpty(centerI, sigmaI * sigmaI, superSimplexTPoints);
+        if (circumsphereEmpty) {
+          a = sigmaI;
+        } else {
+          // This simplex is only part of the alpha shape, if one of its
+          // super-simplices is part of the alpha complex. This is if alpha is
+          // bigger than the minimum of the (already computed) super-simplex
+          // radii: a = min {aU | BU = (aU , bu), ∆U (k + 1)-Simplex, T ⊂ U}.
+          // Find minimum super-simplex radii (already computed):
+          var minSsa = superMeta.b[superSimplexIndicesT[0]];
+          if (undefined === minSsa) {
+            // TODO: Find better solution to have this work if k+1 == d? Currently
+            // d-simplices have no boundary information assigned.
+            var minSsa = superMeta.r[superSimplexIndicesT[0]];
+          }
+          for (var ss=1, ssmax=superSimplexIndicesT.length; ss<ssmax; ++ss) {
+            var ssa = superMeta.b[superSimplexIndicesT[ss]];
+            if (undefined === ssa) {
+              // TODO: Find better solution to have this work if k+1 == d? Currently
+              // d-simplices have no boundary information assigned.
+              ssa = superMeta.r[superSimplexIndicesT[ss]];
+            }
+            if (ssa < minSsa) {
+              minSsa = ssa;
+            }
+          }
+          a = minSsa;
+        }
+
+        var isOnConvexHull = (0 !== convexHullMap[t].length);
+        if (isOnConvexHull) {
+          // If the current simplex is part of the convex hull of the point set,
+          // then it is obviously on the boundary of the alpha complex.
+          b = Number.POSITIVE_INFINITY;
+        } else {
+          // The simlex is not part of the convex hull and it lies in the interior
+          // if and only if all its d-dimensional super-simplices are part of the
+          // alpha-complex.
+          var dSimplexIndicesT = dSimplexMap[t];
+          var dSimplicesT = dSimplexIndicesT.map(indexToContent, dSimplices);
+          var maxDsa = dMeta.r[dSimplexIndicesT[0]];
+          for (var ds=1, dsmax=dSimplexIndicesT.length; ds<dsmax; ++ds) {
+            var dsa = dMeta.r[dSimplexIndicesT[ds]];
+            if (dsa < maxDsa) {
+              maxDsa = dsa;
+            }
+          }
+          b = maxDsa;
+        }
+
+        // Set new intervals
+        bK[t] = a;
+        iK[t] = b;
+        rK[t] = sigmaI;
+      }
+    }
+
+    return {
+      'cells': simplices,
+      'meta': meta,
+      'maxD': d,
+      'minD': minD
+    };
   };
 
 })(CATMAID);

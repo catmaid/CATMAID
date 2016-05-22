@@ -13,15 +13,21 @@ window.GeometryTools = {
   // See: https://github.com/mikolalysenko/convex-hull
   convexHull: require("convex-hull"),
 
+  // See: https://github.com/mikolalysenko/circumcenter
+  delaunayTriangulate: require('delaunay-triangulate'),
+
   // See: https://github.com/mikolalysenko/alpha-complex
   alphaShape: require("alpha-shape"),
 
-  // See: https://github.com/mikolalysenko/cell-orientation
-  cellOrientation: require('cell-orientation'),
+  // See: https://github.com/mikolalysenko/simplicial-complex
+  simplicialComplex: require('simplicial-complex'),
 
-  // See: https://github.com/mikolalysenko/flip-orientation
-  flipOrientation: require('flip-orientation'),
+  // See: https://github.com/mikolalysenko/simplicial-complex-boundary
+  simplicialComplexBoundary: require('simplicial-complex-boundary'),
 
-  // See: https://github.com/mikolalysenko/compare-cell
-  compareCell: require('compare-cell'),
+  // See: https://github.com/mikolalysenko/circumradius
+  circumradius: require('circumradius'),
+
+  // See: https://github.com/mikolalysenko/circumcenter
+  circumcenter: require('circumcenter'),
 };

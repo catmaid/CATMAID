@@ -106,6 +106,22 @@
   };
 
   /**
+   * Helper function to create a number input field with label.
+   */
+  DOM.createNumericInputSetting = function(name, val, step, helptext, handler)
+  {
+    var input = $('<input/>').attr('type', 'number')
+      .attr('min', '0')
+      .attr('step', undefined === step ? 1 : step)
+      .addClass("ui-corner-all").val(val);
+    if (handler) {
+      input.change(handler);
+    }
+
+    return CATMAID.DOM.createLabeledControl(name, input, helptext);
+  };
+
+  /**
    * Helper function to create a set of radio buttons.
    */
   DOM.createRadioSetting = function(name, values, helptext, handler)

@@ -1277,7 +1277,7 @@
 
   WebGLApplication.prototype.look_at_active_node = function() {
     this.space.content.active_node.updatePosition(this.space, this.options);
-    this.space.view.controls.target = this.space.content.active_node.mesh.position.clone();
+    this.space.view.controls.target.copy(this.space.content.active_node.mesh.position);
     this.space.render();
   };
 

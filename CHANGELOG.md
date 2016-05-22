@@ -40,6 +40,13 @@ Volume widget:
   skeleton (select "None" as partner neurons), and to select both pre- and
   post-synaptic nodes at the same time.
 
+- Alpha shapes now use a different implementation which takes a little bit more
+  time to compute, but doesn't require re-computation if different alpha values
+  are used. This makes finding a good alpha value much quicker. The input field
+  for the alpha value to use is now also a numeric field in which arrow keys and
+  mouse wheel can be used to change the value. A second numeric input allows to
+  change the step size of alpha value changes.
+
 
 Tile layer:
 

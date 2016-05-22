@@ -518,7 +518,7 @@
 
     CATMAID.ConvexHullVolume.call(this, options);
     this.set("alpha", options.alpha || 5000);
-
+    this.set("filterTriangles", false);
     // This field will hold an interval based mesh representation
     this.intervalMesh = null;
   };
@@ -539,7 +539,7 @@
     // If the alpha field was changed and a mesh is already available, there is
     // no update required, because alpha ranges are stored for individual
     // triangles.
-    var alphaMeshUpdate = (field === 'alpha' && this.mesh);
+    var alphaMeshUpdate = this.mesh && (field === 'alpha' || field === 'filterTriangles');
     if (alphaMeshUpdate) {
       // Create new filtered mesh based on existing mesh
       this.meshNeedsSync = false;
@@ -570,11 +570,23 @@
     }
 
     // Our alpha is already the inverse (1/a)
-    var alpha = this.alpha;
-    var faces = this.intervalMesh.cells[2].filter(function(c, i) {
-      // Allow only faces on the boundary
-      return this.b[i] < alpha && this.i[i] > alpha;
-    }, this.intervalMesh.meta[2]);
+    var faces, alpha = this.alpha;
+    if (this.filterTriangles) {
+      faces = this.intervalMesh.cells[2].filter(function(c, i) {
+        // Allow only faces on the boundary
+        return this.b[i] < alpha && this.i[i] > alpha;
+      }, this.intervalMesh.meta[2]);
+    } else {
+      var cells = this.intervalMesh.cells[3].filter(function(c, i) {
+        // Allow only tetraheda that have a circumradius < alpha. We can't use
+        // the interval based filtering here, because tetrahedrea are (in 3D) by
+        // interior to the alpha shape by definition. Therefore all tetraheda
+        // are filtered by their radius and the resulting boundary set is
+        // computed.
+        return this.r[i] < alpha;
+      }, this.intervalMesh.meta[3]);
+      faces = GeometryTools.simplicialComplexBoundary(cells);
+    }
 
     return faces;
   };

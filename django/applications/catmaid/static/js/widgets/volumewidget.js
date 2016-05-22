@@ -398,6 +398,12 @@
               function(e) {
                 alphaInput.prop('step', Number(this.value));
               }));
+
+          $content.append(CATMAID.DOM.createCheckboxSetting("Filter triangles",
+              volume.respectRadius, "If checked, the alpha filter will be " +
+              "applied to individual triangles of the mesh. Otherwise, alpha " +
+              "is used to filter the tetrahedra of the 3D triangulation.",
+              function(e) { volume.set("filterTriangles", this.checked); }));
         }
 
         // Get available filter strategeis

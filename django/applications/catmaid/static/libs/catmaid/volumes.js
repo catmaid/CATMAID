@@ -544,7 +544,8 @@
       // Create new filtered mesh based on existing mesh
       this.meshNeedsSync = false;
     }
-    CATMAID.ConvexHullVolume.prototype.set.call(this, field, value, forceOverride, true);
+    CATMAID.ConvexHullVolume.prototype.set.call(this, field, value, forceOverride,
+        alphaMeshUpdate);
 
     // After the field has been set, refresh display if only alpha changed
     if (alphaMeshUpdate) {

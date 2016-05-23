@@ -249,7 +249,8 @@
         CATMAID.info("The exported PNG will have a transparent background");
         saveAs(blob, "catmaid_3d_view.png");
       } catch(e) {
-        CATMAID.error("Could not export current 3D view, there was an error.", e);
+        CATMAID.error("Could not export current 3D view, there was an error: " + e,
+            e.stack);
       }
     }).bind(this), true);
   };
@@ -285,7 +286,8 @@
             } catch (e) {
               $.unblockUI();
               error = true;
-              CATMAID.error("Could not export current 3D view, there was an error.", e);
+              CATMAID.error("Could not export current 3D view, there was an error: " + e,
+                  e.stack);
             }
           }, 0);
         };
@@ -2763,9 +2765,9 @@
     var o = options || {};
 
     // Find all spheres
+    var fields = ['synapticSpheres', 'radiusVolumes'];
     var skeletons = this.space.content.skeletons;
     var visibleSpheres = Object.keys(skeletons).reduce(function(o, skeleton_id) {
-      var fields = ['specialTagSpheres', 'synapticSpheres', 'radiusVolumes'];
       var skeleton = skeletons[skeleton_id];
       if (!skeleton.visible) return o;
 
@@ -2783,10 +2785,25 @@
         }, this);
       }, meshes);
 
-      o[skeleton_id] = meshes;
+      // Append all individual buffer objects to be able to create replacements
+      // for them. The whole buffers added below are only used to make all
+      // objects of this bufffer invisible for rendering (doesn't work with with
+      // the meshes only in SVG renderer).
+      var bufferSpheres = skeleton['specialTagSpheres'];
+      for (var id in bufferSpheres) {
+        var bo = bufferSpheres[id];
+        meshes.push(bo);
+      }
+
+      o.meshes[skeleton_id] = meshes;
+      o.buffers[skeleton_id] = skeleton.specialTagSphereCollection ?
+        [skeleton.specialTagSphereCollection] : [];
 
       return o;
-    }, {});
+    }, {
+      meshes: {},
+      buffers: {}
+    });
 
     // Hide the active node
     var atnVisible = self.space.content.active_node.mesh.visible;
@@ -2795,9 +2812,9 @@
     // Render
     var svgData = null;
     if ('catalog' === o['layout']) {
-      svgData = createCatalogData(visibleSpheres, o);
+      svgData = createCatalogData(visibleSpheres.meshes, visibleSpheres.buffers, o);
     } else {
-      svgData = renderSkeletons(visibleSpheres);
+      svgData = renderSkeletons(visibleSpheres.meshes, visibleSpheres.buffers);
     }
 
     // Show active node, if it was visible before
@@ -2842,8 +2859,13 @@
         var hex = mesh.material.color.getHexString();
         // Get radius of sphere in 3D world coordinates, but only use a 3x3 world
         // matrix, since we don't need the translation.
-        var r = tmp.set(mesh.geometry.boundingSphere.radius,0,0)
-                      .applyMatrix3(mesh.matrixWorld).length();
+        if (mesh instanceof THREE.Mesh) {
+          tmp.set(mesh.geometry.boundingSphere.radius, 0, 0)
+            .applyMatrix3(mesh.matrixWorld).length();
+        } else {
+          tmp.set(mesh.radius, 0, 0);
+        }
+        var r = tmp.length();
         // The radius has to be corrected for perspective
         var sr = tmp.copy(up).multiplyScalar(r);
         line.set(mesh.position.clone(), sr.add(mesh.position));
@@ -2887,7 +2909,7 @@
     /**
      * Create an SVG catalog of the current view.
      */
-    function createCatalogData(sphereMeshes, options)
+    function createCatalogData(sphereMeshes, sphereBuffers, options)
     {
       // Sort skeletons
       var skeletons;
@@ -2937,10 +2959,14 @@
 
         // Render view and replace sphere meshes of current skeleton
         var spheres = visibleSkids.reduce(function(o, s) {
-          o[s] = sphereMeshes[s];
+          o.meshes[s] = sphereMeshes[s];
+          o.buffers[s] = sphereBuffers[s];
           return o;
-        }, {});
-        var svg = renderSkeletons(spheres);
+        }, {
+          meshes: {},
+          buffers: {}
+        });
+        var svg = renderSkeletons(spheres.meshes, spheres.buffers);
 
         if (displayNames) {
           // Add name of neuron
@@ -2995,13 +3021,16 @@
     /**
      * Render the current scene and replace the given sphere meshes beforehand.
      */
-    function renderSkeletons(sphereMeshes)
+    function renderSkeletons(sphereMeshes, bufferCollections)
     {
       // Hide spherical meshes of all given skeletons
       var sphereReplacemens = {};
       for (var skid in sphereMeshes) {
-        setVisibility(sphereMeshes[skid], false);
-        sphereReplacemens[skid] = addSphereReplacements(sphereMeshes[skid], self.space);
+        var meshes = sphereMeshes[skid];
+        var buffers = bufferCollections[skid];
+        setVisibility(meshes, false);
+        setVisibility(buffers, false);
+        sphereReplacemens[skid] = addSphereReplacements(meshes, self.space);
       }
 
       // Create a new SVG renderer (which is faster than cleaning an existing one)
@@ -3012,8 +3041,11 @@
 
       // Show spherical meshes again and remove substitutes
       for (skid in sphereMeshes) {
+        var mesh = sphereMeshes[skid];
+        var buffers = bufferCollections[skid];
         removeSphereReplacements(sphereReplacemens[skid], self.space);
-        setVisibility(sphereMeshes[skid], true);
+        setVisibility(mesh, true);
+        setVisibility(buffers, true);
       }
 
       return svgRenderer.domElement;
@@ -3294,15 +3326,10 @@
       }
       if (!ev.shiftKey) return;
 
-      // Try to pick the node by casting a ray
-      var nodeId = space.pickNodeWithIntersectionRay(mouse.position.x, mouse.position.y,
-          ev.offsetX, camera);
-      if (!nodeId) {
-        // If no node was found through ray casting, try to pick a node using a
-        // color map. This option is more precise, but also slower. It is
-        // therefore used as a second option.
-        nodeId = space.pickNodeWithColorMap(ev.offsetX, ev.offsetY, camera);
-      }
+      // Try to pick a node using a color map. This option is more precise, but
+      // also slower than casting a ray, which is not used anymore because
+      // buffer geometries don't support it.
+      var nodeId = space.pickNodeWithColorMap(ev.offsetX, ev.offsetY, camera);
       if (!nodeId) {
         CATMAID.msg("Oops", "Couldn't find any intersectable object under the mouse.");
       } else {
@@ -3320,12 +3347,13 @@
    * @param savePickingMap Export the picking color map as PNG image
    * @return the picked node's ID or null if no node was found
    */
-  WebGLApplication.prototype.Space.prototype.pickNodeWithColorMap = function(x, y, camera, savePickingMap) {
+  WebGLApplication.prototype.Space.prototype.pickNodeWithColorMap =
+      function(x, y, camera, savePickingMap) {
     // Attempt to intersect visible skeleton spheres, stopping at the first found
     var color = 0;
     var idMap = {};
     var submit = new submitterFn();
-    var originalMaterials = {};
+    var originalMaterials = new Map();
     var originalVisibility = {};
     var originalConnectorPreVisibility =
       this.staticContent.connectorLineColors.presynaptic_to.visible;
@@ -3347,18 +3375,34 @@
     this.staticContent.connectorLineColors.presynaptic_to.visible = false;
     this.staticContent.connectorLineColors.postsynaptic_to.visible = false;
 
+    // Disable lighting and add plain ambient light
+    var lightVisMap = this.lights.map(function(l) {
+      var visible = l.visible;
+      l.visible = false;
+      return visible;
+    });
+
+    var ambientLight = new THREE.AmbientLight(0xffffff);
+    this.scene.add(ambientLight);
+
     // Prepare all spheres for picking by coloring them with an ID.
-    mapToPickables(this.content.skeletons, function(skeleton) {
+    mapToPickables(this, this.content.skeletons, function(skeleton) {
       originalVisibility[skeleton.id] = skeleton.actor.neurite.visible;
       skeleton.actor.neurite.visible = false;
-    }, function(id, obj) {
+    }, function(id, obj, isBuffer) {
       // IDs are expected to be 64 (bigint in Postgres) and can't be mapped to
       // colors directly. Since the space we are looking here at is likely to be
       // smaller, we can map colors to IDs ourself.
       color++;
       idMap[color] = id;
-      originalMaterials[id] = obj.material;
-      obj.material = new THREE.MeshBasicMaterial({color: color});
+      if (isBuffer) {
+        originalMaterials.set(obj, [obj.color, obj.alpha]);
+        obj.color = new THREE.Color(color);
+        obj.alpha = 1.0;
+      } else {
+        originalMaterials.set(obj, obj.material);
+        obj.material = new THREE.MeshBasicMaterial({color: color});
+      }
     });
 
     // Render scene to picking texture
@@ -3371,11 +3415,23 @@
         gl.UNSIGNED_BYTE, pixelBuffer);
 
     // Reset materials
-    mapToPickables(this.content.skeletons, function(skeleton) {
+    mapToPickables(this, this.content.skeletons, function(skeleton) {
       skeleton.actor.neurite.visible = originalVisibility[skeleton.id];
-    }, function(id, obj) {
-      obj.material = originalMaterials[id];
+    }, function(id, obj, isBuffer) {
+      if (isBuffer) {
+        var material = originalMaterials.get(obj);
+        obj.color = material[0];
+        obj.alpha = material[1];
+      } else {
+        obj.material = originalMaterials.get(obj);
+      }
     });
+
+    // Reset lighting, assuming no change in position
+    this.scene.remove(ambientLight);
+    this.lights.forEach(function(l, i) {
+      l.visible = this[i];
+    }, lightVisMap);
 
     // Reset visibility of unpickable things
     this.staticContent.adjust(this.options, this);
@@ -3406,25 +3462,32 @@
      * Execute a function for every skeleton and one for each of its pickable
      * elements (defined in fields.
      */
-    function mapToPickables(skeletons, fnSkeleton, fnPickable) {
-      var fields = ['specialTagSpheres', 'synapticSpheres', 'radiusVolumes'];
+    function mapToPickables(space, skeletons, fnSkeleton, fnPickable) {
+      var fields = ['synapticSpheres', 'radiusVolumes'];
       Object.keys(skeletons).forEach(function(skeleton_id) {
         var skeleton = skeletons[skeleton_id];
         fnSkeleton(skeleton);
+        // Regular mesh fields
         fields.map(function(field) {
           return skeleton[field];
         }).forEach(function(spheres) {
           Object.keys(spheres).forEach(function(id) {
-            fnPickable(id, spheres[id]);
+            fnPickable(id, spheres[id], false);
           });
         });
+        // Buffer geometry
+        var tagSpheres = skeleton['specialTagSpheres'];
+        for (var id in tagSpheres) {
+          fnPickable(id, tagSpheres[id], true);
+        }
       });
+
     }
   };
 
   WebGLApplication.prototype.Space.prototype.pickNodeWithIntersectionRay = function(x, y, xOffset, camera) {
     // Attempt to intersect visible skeleton spheres, stopping at the first found
-    var fields = ['specialTagSpheres', 'synapticSpheres', 'radiusVolumes'];
+    var fields = ['synapticSpheres', 'radiusVolumes'];
     var skeletons = this.content.skeletons;
 
     // Step, which is normalized screen coordinates, is choosen so that it will
@@ -3650,14 +3713,21 @@
     this.actor[this.CTYPES[3]].geometry.dispose();
 
     var meshes = collection || [];
-    [this.actor, this.synapticSpheres, this.radiusVolumes,
-     this.specialTagSpheres].forEach(function(ob) {
+    [this.actor, this.synapticSpheres, this.radiusVolumes].forEach(function(ob) {
       if (ob) {
         for (var key in ob) {
           if (ob.hasOwnProperty(key)) this.push(ob[key]);
         }
       }
     }, meshes);
+
+    if (this.specialTagSphereCollection) {
+      this.specialTagSphereCollection.geometry.dispose();
+      this.specialTagSphereCollection.geometry = null;
+      this.specialTagSphereCollection.material.dispose();
+      this.specialTagSphereCollection.material = null;
+      meshes.push(this.specialTagSphereCollection);
+    }
 
     // If no collection was given, remove objects right away
     if (!collection) {
@@ -4341,8 +4411,11 @@
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.scaleNodeHandles = function(value) {
       // Scale special tag spheres
       for (var k in this.specialTagSpheres) {
+        // All special tag spheres are stored in one buffer geometry. Iterate
+        // over each buffer object, get node location, translate each point of
+        // the object to origin and scale.
         if (this.specialTagSpheres.hasOwnProperty(k)) {
-          CATMAID.tools.setXYZ(this.specialTagSpheres[k].scale, value);
+          this.specialTagSpheres[k].scale = value;
         }
       }
 
@@ -4705,18 +4778,173 @@
     }, this);
   };
 
-  /** Place a colored sphere at the node. Used for highlighting special tags like 'uncertain end' and 'todo'. */
-  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createLabelSphere = function(v, material, scaling) {
-    if (this.specialTagSpheres.hasOwnProperty(v.node_id)) {
-      // There already is a tag sphere at the node
-      return;
+  /**
+   * Place a colored sphere at each node. Used for highlighting special tags like
+   * 'uncertain end' and 'todo'. Implemented with buffer geometries to gain
+   * better performance.
+   */
+  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createLabelSpheres =
+      function(labels, scaling) {
+    var labelGeometry = new THREE.BufferGeometry();
+    var labelTemplateGeometry = this.space.staticContent.labelspheregeometry;
+    var nPointsPerLabel = labelTemplateGeometry.vertices.length;
+    var facesOfLabel = labelTemplateGeometry.faces;
+    var nFacesPerLabel = facesOfLabel.length;
+    var boFactory = new WebGLApplication.BufferObjectFactory(labelGeometry, nPointsPerLabel);
+
+    var indexCount     = labels.length * nFacesPerLabel * 3;
+    var IndexType      = indexCount > 65535 ? Uint32Array : Uint16Array;
+    var labelIndices   = new IndexType(indexCount);
+
+    var labelPositions = new Float32Array(labels.length * nPointsPerLabel * 3);
+    var labelNormals   = new Float32Array(labels.length * nPointsPerLabel * 3);
+    var labelColors    = new Float32Array(labels.length * nPointsPerLabel * 3);
+    var labelVisible   = new Float32Array(labels.length * nPointsPerLabel);
+    var labelAlphas    = new Float32Array(labels.length * nPointsPerLabel);
+
+    // Find radius
+    var tmp = new THREE.Vector3();
+    var radius = labelTemplateGeometry.boundingSphere.radius * scaling;
+
+    // Create actual label geometry data based on the static label sphere
+    // geometry instance.
+    var labelMesh = new THREE.Mesh(labelTemplateGeometry);
+    var labelVertex = new THREE.Vector3();
+    var labelNormal = new THREE.Vector3();
+    for (var li=0, max=labels.length; li<max; ++li) {
+      var label = labels[li];
+      var v = label[0];
+      if (this.specialTagSpheres.hasOwnProperty(v.node_id)) {
+        // There already is a tag sphere at the node
+        continue;
+      }
+      var labelColor = label[1].color;
+      var labelAlpha = 1.0 - label[1].opacity;
+
+      labelMesh.position.set(v.x, v.y, v.z);
+      CATMAID.tools.setXYZ(labelMesh.scale, scaling);
+      labelMesh.updateMatrix();
+      var matrix = labelMesh.matrix;
+
+      var pointStart = li * nPointsPerLabel;
+      var vertexStart = pointStart * 3;
+      for (var j=0; j<nPointsPerLabel; ++j) {
+        labelVertex.copy(labelTemplateGeometry.vertices[j]);
+        labelVertex.applyMatrix4(matrix);
+
+        var vIndex =  vertexStart + j * 3;
+        labelPositions[vIndex + 0] = labelVertex.x;
+        labelPositions[vIndex + 1] = labelVertex.y;
+        labelPositions[vIndex + 2] = labelVertex.z;
+
+        labelColors[vIndex + 0] = labelColor.r;
+        labelColors[vIndex + 1] = labelColor.g;
+        labelColors[vIndex + 2] = labelColor.b;
+
+        labelVisible[pointStart + j] = 1.0;
+        labelAlphas[pointStart + j] = labelAlpha;
+      }
+
+      var faceStart = li * nFacesPerLabel * 3;
+      for (var j=0; j<nFacesPerLabel; ++j) {
+        var offset = faceStart + j * 3;
+        labelIndices[offset + 0] = pointStart + facesOfLabel[j].a;
+        labelIndices[offset + 1] = pointStart + facesOfLabel[j].b;
+        labelIndices[offset + 2] = pointStart + facesOfLabel[j].c;
+
+        labelNormal.copy(facesOfLabel[j].normal);
+        //labelNormal.applyMatrix4(matrix);
+        labelNormals[offset + 0] = labelNormal.x;
+        labelNormals[offset + 1] = labelNormal.y;
+        labelNormals[offset + 2] = labelNormal.z;
+      }
+
+      this.specialTagSpheres[v.node_id] = boFactory.create(pointStart, v.node_id, v,
+          scaling, label[1], radius);
     }
-    var mesh = new THREE.Mesh( this.space.staticContent.labelspheregeometry, material );
-    mesh.position.set( v.x, v.y, v.z );
-    mesh.node_id = v.node_id;
-    CATMAID.tools.setXYZ(mesh.scale, scaling);
-    this.specialTagSpheres[v.node_id] = mesh;
-    this.space.add( mesh );
+
+    // Create buffer geometry
+    labelGeometry.setIndex(new THREE.BufferAttribute(labelIndices, 1));
+    labelGeometry.addAttribute('position', new THREE.BufferAttribute(labelPositions, 3));
+    labelGeometry.addAttribute('normal', new THREE.BufferAttribute(labelNormals, 3));
+    labelGeometry.addAttribute('color', new THREE.BufferAttribute(labelColors, 3));
+    labelGeometry.addAttribute('visible', new THREE.BufferAttribute(labelVisible, 1));
+    labelGeometry.addAttribute('alpha', new THREE.BufferAttribute(labelAlphas, 1));
+
+    // Mark position, visible and alpha attributes as dynamic so that they can
+    // be changed during runtime.
+    labelGeometry.attributes.position.setDynamic(true);
+    labelGeometry.attributes.visible.setDynamic(true);
+    labelGeometry.attributes.alpha.setDynamic(true);
+    labelGeometry.attributes.color.setDynamic(true);
+
+    labelGeometry.computeBoundingSphere();
+
+    var labelMaterial = new THREE.ShaderMaterial({
+      vertexShader: [
+        'attribute float alpha;',
+        'attribute float visible;',
+        'attribute vec3 color;',
+        'varying float vAlpha;',
+        'varying float vVisible;',
+        'varying vec3 vColor;',
+
+        '#define EPSILON 1e-6',
+
+        '#ifdef USE_LOGDEPTHBUF',
+        '  #ifdef USE_LOGDEPTHBUF_EXT',
+        '    varying float vFragDepth;',
+        '  #endif',
+        '  uniform float logDepthBufFC;',
+        '#endif',
+
+        'void main() {',
+        '   gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);',
+        '   #ifdef USE_LOGDEPTHBUF',
+        '     gl_Position.z = log2(max( EPSILON, gl_Position.w + 1.0 )) * logDepthBufFC;',
+        '     #ifdef USE_LOGDEPTHBUF_EXT',
+        '       vFragDepth = 1.0 + gl_Position.w;',
+        '     #else',
+        '       gl_Position.z = (gl_Position.z - 1.0) * gl_Position.w;',
+        '     #endif',
+        '   #endif',
+        '   vColor = color;',
+        '   vVisible = visible;',
+        '   vAlpha = alpha;',
+        '}'
+      ].join('\n'),
+      fragmentShader: [
+        'varying float vAlpha;',
+        'varying float vVisible;',
+        'varying vec3 vColor;',
+
+        '#ifdef USE_LOGDEPTHBUF',
+        '  uniform float logDepthBufFC;',
+        '  #ifdef USE_LOGDEPTHBUF_EXT',
+        '    varying float vFragDepth;',
+        '  #endif',
+        '#endif',
+
+        'void main() {',
+        '  #if defined(USE_LOGDEPTHBUF) && defined(USE_LOGDEPTHBUF_EXT)',
+        '    gl_FragDepthEXT = log2(vFragDepth) * logDepthBufFC * 0.5;',
+        '  #endif',
+
+        '  if (vVisible > 0.0) {',
+        '    gl_FragColor = vec4(vColor, vAlpha);',
+        '  } else {',
+        '    discard;',
+        '  }',
+        '}'
+      ].join('\n'),
+      side: THREE.DoubleSide,
+      transparent: true,
+      depthTest: true,
+      depthWrite: false
+    });
+
+    this.specialTagSphereCollection = new THREE.Mesh(labelGeometry, labelMaterial);
+    this.space.add(this.specialTagSphereCollection);
   };
 
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createEdge = function(v1, v2, type) {
@@ -4814,6 +5042,9 @@
     material.opacity = this.skeletonmodel.opacity;
     material.transparent = material.opacity !== 1;
 
+    // Collect all labels first, before creating its geometry
+    var labels = [];
+
     // Create edges between all skeleton nodes
     // and a sphere on the node if radius > 0
     nodes.forEach(function(node) {
@@ -4876,7 +5107,7 @@
       }
       if (!lean && node[7] < 5) {
         // Edge with confidence lower than 5
-        this.createLabelSphere(v1, this.space.staticContent.labelColors.uncertain, options.skeleton_node_scaling);
+        labels.push([v1, this.space.staticContent.labelColors.uncertain]);
       }
     }, this);
 
@@ -4920,26 +5151,28 @@
         if (-1 !== tagLC.indexOf('todo')) {
           this.tags[tag].forEach(function(nodeID) {
             if (!this.specialTagSpheres[nodeID]) {
-              this.createLabelSphere(vs[nodeID], this.space.staticContent.labelColors.todo,
-                options.skeleton_node_scaling);
+              labels.push([vs[nodeID], this.space.staticContent.labelColors.todo]);
             }
           }, this);
         } else if (-1 !== tagLC.indexOf('uncertain')) {
           this.tags[tag].forEach(function(nodeID) {
             if (!this.specialTagSpheres[nodeID]) {
-              this.createLabelSphere(vs[nodeID], this.space.staticContent.labelColors.uncertain,
-                options.skeleton_node_scaling);
+              labels.push([vs[nodeID], this.space.staticContent.labelColors.uncertain]);
             }
           }, this);
         } else if (customTagRe.test(tagLC)) {
           this.tags[tag].forEach(function(nodeID) {
             if (!this.specialTagSpheres[nodeID]) {
-              this.createLabelSphere(vs[nodeID], this.space.staticContent.labelColors.custom,
-                options.skeleton_node_scaling);
+              labels.push([vs[nodeID], this.space.staticContent.labelColors.custom]);
             }
           }, this);
         }
       }
+    }
+
+    // Create label geometry, if needed
+    if (labels.length > 0) {
+      this.createLabelSpheres(labels, options.skeleton_node_scaling);
     }
 
     if (options.resample_skeletons) {
@@ -5717,6 +5950,121 @@
     }).bind(this);
 
     dialog.show(400, 300, false);
+  };
+
+  /**
+   * Wrap a group of vertices in a buffer geometry as an individual 3D object
+   */
+  WebGLApplication.BufferObjectFactory = function(buffer, length) {
+    this.buffer = buffer;
+    this.length = length;
+    var nObjects = 0;
+
+    this.BufferObject = function(start, id, position, scale, material, r) {
+      this.start = start;
+      this.id = id;
+      this.position = position;
+      this.material = material;
+      this.radius = r;
+      this._isVisible = true;
+      this._scale = scale;
+      this._color = material.color;
+      this._alpha = 1.0 - material.opacity;
+      ++nObjects;
+    };
+
+    this.BufferObject.prototype.buffer = buffer;
+    this.BufferObject.prototype.length = length;
+
+    Object.defineProperty(this.BufferObject.prototype, 'scale', {
+      get: function() {
+        return this._scale;
+      },
+      set: function(value) {
+        var scaleRatio = value / this._scale;
+        this._scale = value;
+
+        var cx = this.position.x;
+        var cy = this.position.y;
+        var cz = this.position.z;
+
+        var attribute = this.buffer.attributes.position;
+        var pos = attribute.array;
+        var offset = this.start * 3;
+        for (var i=0; i<this.length; ++i) {
+          var start = offset + i * 3;
+          pos[start    ] = (pos[start    ] - cx) * scaleRatio + cx;
+          pos[start + 1] = (pos[start + 1] - cy) * scaleRatio + cy;
+          pos[start + 2] = (pos[start + 2] - cz) * scaleRatio + cz;
+        }
+        attribute.needsUpdate = true;
+      }
+    });
+
+    Object.defineProperty(this.BufferObject.prototype, 'visible', {
+      get: function() {
+        return this.buffer.visible;
+      },
+      set: function(value) {
+        this._isVisible = value;
+        // Update 'visible' aray of the buffer
+        var visibility = this.buffer.getAttribute('visible');
+        for (var i=0; i<this.length; ++i) {
+          visibility.array[this.start + i] = value ? 1.0 : 0;
+        }
+        visibility.needsUpdate = true;
+      }
+    });
+
+    Object.defineProperty(this.BufferObject.prototype, 'color', {
+      get: function() {
+        return this._color;
+      },
+      set: function(value) {
+        var attribute = this.buffer.attributes.color;
+        var col = attribute.array;
+        var r = value.r;
+        var g = value.g;
+        var b = value.b;
+        var offset = this.start * 3;
+        for (var i=0, max=this.length; i<max; ++i) {
+          var start = offset + i*3;
+          col[start    ] = r;
+          col[start + 1] = g;
+          col[start + 2] = b;
+        }
+        this._color = value;
+        attribute.needsUpdate = true;
+      }
+    });
+
+    Object.defineProperty(this.BufferObject.prototype, 'alpha', {
+      get: function() {
+        return this._alpha;
+      },
+      set: function(value) {
+        this._alpha = value;
+        // Update 'alpha' aray of the buffer
+        var attribute = this.buffer.attributes.alpha;
+        var alpha = attribute.array;
+        for (var i=0; i<this.length; ++i) {
+          alpha[this.start + i] = value;
+        }
+        attribute.needsUpdate = true;
+      }
+    });
+  };
+
+  /**
+   * Mark a new part of a buffer as a separate object.
+   *
+   * @param {integer} start The start index of in the buffer, expecting each
+   *                        element only of size 1, i.e. to index positions this
+   *                        number has to be multiplied by 3.
+   */
+  WebGLApplication.BufferObjectFactory.prototype.create = function(start, id,
+      position, scale, material, r) {
+    return new this.BufferObject(start, id, position, scale, material, r);
   };
 
   /**

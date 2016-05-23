@@ -539,16 +539,25 @@
     // If the alpha field was changed and a mesh is already available, there is
     // no update required, because alpha ranges are stored for individual
     // triangles.
-    var alphaMeshUpdate = this.mesh && (field === 'alpha' || field === 'filterTriangles');
-    if (alphaMeshUpdate) {
-      // Create new filtered mesh based on existing mesh
+    var refreshMesh = this.mesh && field === 'alpha';
+
+    // If the triangle field was selected and the interval mesh has already
+    // 2-simplices available, no mesh update is required. If it is deselected
+    // and 3-simplices are available, no mesh update is required either.
+    if (this.intervalMesh && this.intervalMesh.cells && field === 'filterTriangles') {
+      refreshMesh = this.intervalMesh.cells[2] && true === value ||
+                    this.intervalMesh.cells[3] && false === value;
+
+    }
+
+    if (refreshMesh) {
       this.meshNeedsSync = false;
     }
     CATMAID.ConvexHullVolume.prototype.set.call(this, field, value, forceOverride,
-        alphaMeshUpdate);
+        refreshMesh);
 
     // After the field has been set, refresh display if only alpha changed
-    if (alphaMeshUpdate) {
+    if (refreshMesh) {
       var faces = this.filterMesh();
       var mesh = [this.mesh[0], faces];
       this.set("mesh", mesh, true);
@@ -597,8 +606,10 @@
    * it easier for sub-types to override.
    */
   CATMAID.AlphaShapeVolume.prototype.createMesh = function(points) {
-    //var alphaShape = GeometryTools.alphaShape(1.0 / this.alpha, points);
-    this.intervalMesh = CATMAID.alphaIntervalComplex(points, 2);
+    // Don't compute 2-simplices if no triangles are needed (i.e. tetrahedra
+    // will be looked at.
+    var lowestSimplexK = this.filterTriangles ? 2 : 3;
+    this.intervalMesh = CATMAID.alphaIntervalComplex(points, lowestSimplexK);
     var mesh = this.filterMesh();
     return mesh;
   };

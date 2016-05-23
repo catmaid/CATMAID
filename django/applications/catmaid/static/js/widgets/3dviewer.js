@@ -1489,10 +1489,13 @@
     var addedObjects = [];
     var self = this;
 
-    Object.keys(meshes).forEach(function(name) {
+    var renderedMeshes = Object.keys(meshes).filter(function(name) {
       var mesh = meshes[name];
       var points = mesh[0];
       var hull = mesh[1];
+      if (!points || 0 === points.length || !hull || 0 === hull.length) {
+        return false;
+      }
       // Make the mesh with the faces specified in the hull array
       var geom = new THREE.Geometry();
       points.forEach(function(p) {
@@ -1520,9 +1523,12 @@
       self.space.add(wfh);
       this.push(mesh);
       this.push(wfh);
+      return true;
     }, addedObjects);
 
-    this.space.render();
+    if (0 < renderedMeshes.length) {
+      this.space.render();
+    }
 
     return function() {
       if (!self || !self.space) {

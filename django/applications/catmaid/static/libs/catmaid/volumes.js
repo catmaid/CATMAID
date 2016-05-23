@@ -539,7 +539,7 @@
     // If the alpha field was changed and a mesh is already available, there is
     // no update required, because alpha ranges are stored for individual
     // triangles.
-    var refreshMesh = this.mesh && field === 'alpha';
+    var refreshMesh = this.mesh && field === 'alpha' && value !== this.alpha;
 
     // If the triangle field was selected and the interval mesh has already
     // 2-simplices available, no mesh update is required. If it is deselected

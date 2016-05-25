@@ -153,6 +153,11 @@ class PreStack(ImageBaseMixin):
         self.dimension = info_object['dimension']
         self.resolution = info_object['resolution']
         self.metadata = info_object['metadata'] if 'metadata' in info_object else ""
+        # Use tile size information if available
+        if 'tile_width' in info_object:
+            self.tile_width = info_object['tile_width']
+        if 'tile_height' in info_object:
+            self.tile_height = info_object['tile_height']
         # Stacks can optionally contain a "translation" field, which can be used
         # to add an offset when the stack is linked to a project
         self.project_translation = info_object.get('translation', "(0,0,0)")
@@ -673,8 +678,8 @@ def import_projects( user, pre_projects, tags, permissions,
                     image_base=s.image_base,
                     num_zoom_levels=s.num_zoom_levels,
                     file_extension=s.file_extension,
-                    tile_width=tile_width,
-                    tile_height=tile_height,
+                    tile_width=getattr(s, "tile_width", tile_width),
+                    tile_height=getattr(s, "tile_height", tile_height),
                     tile_source_type=tile_source_type,
                     metadata=s.metadata)
                 stacks.append( stack )

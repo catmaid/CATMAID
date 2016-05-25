@@ -740,6 +740,10 @@ def _export_review_skeleton(project_id=None, skeleton_id=None,
     if 0 == len(treenodes):
         return []
 
+    # The root node will be assigned below, depending on retrieved nodes and
+    # sub-arbor requests
+    root_id = None
+
     # Add each treenode to a networkx graph and attach reviewer information to
     # it.
     g = nx.DiGraph()
@@ -779,6 +783,14 @@ def _export_review_skeleton(project_id=None, skeleton_id=None,
         g.remove_nodes_from(to_delete)
         # Replace root id with sub-arbor ID
         root_id=subarbor_node_id
+
+    if not root_id:
+        if subarbor_node_id:
+            raise ValueError("Couldn't find a reference root node in provided "
+                             "skeleton (%s)" % (skeleton_id,))
+        else:
+            raise ValueError("Couldn't find a reference root node for provided "
+                             "subarbor (%s) in provided skeleton (%s)" % (subarbor_node_id, skeleton_id))
 
     # Create all sequences, as long as possible and always from end towards root
     distances = edge_count_to_root(g, root_node=root_id) # distance in number of edges from root

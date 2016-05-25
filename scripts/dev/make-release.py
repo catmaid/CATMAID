@@ -96,7 +96,9 @@ class CatmaidRelease(object):
         self.git.commit("-a", "-m", "Release {}".format(self.release_name))
 
         # Tag commit
+        log("Creating tag \"{}\"...".format(self.release_name), False)
         self.git.tag(self.release_name, "HEAD", "-a", "-m", self.get_tag_message())
+        log("done")
 
     def update_changelog(self):
         def contentfilter(changelog_data):
@@ -226,7 +228,6 @@ class CatmaidRelease(object):
                 raise ValueError("Couldn't parse section header: " + str(matches))
             title = matches[0].lstrip("#").strip(" ")
             replace = "{}\n{}".format(title, "-" * len(title))
-            print(replace)
             return replace
 
         tag_message = re.sub("^#\s*(.*)$", replace_section_header, tag_message, flags=re.MULTILINE)

@@ -34,26 +34,18 @@
     file and folder layout is supported within a stack folder
     (<a href="http://catmaid.org/page/tile_sources.html#file-based-image-stack" target="_blank">source type one</a>).</p>
 
-    <p>The working directory is defined in the settings as {{ datafolder_setting }}
-    and can be adjusted with the settings below. Additionally, you can define a
-    default base URL to be used as default in this dialog with the help of the
-    {{ base_url_setting }} setting. It should make your data (working) directory
+    <p>The working directory is defined as part of the CATMAID settings as
+    {{ datafolder_setting }} and can be further adjusted through the settings
+    below. Additionally, you can define a default base URL to be used if stacks
+    don't provide their URL explicitly. It should make your data directory
     asscessible from the web.</p>
 
     <hr />
 
     {% if datafolder_missing %}
-        <p><em>Unfortunately, this setting couldn't be found in your
-        configuration. Please make sure it is there.</em></p>
+        <p><em>Unfortunately, no data source was found in your
+        configuration. Please make sure a data folder is set up.</em></p>
     {% else %}
-        <div class="form-row">
-              <table>
-                  <tr>
-                      <td>Data folder:</td>
-                      <td>{{ settings.CATMAID_IMPORT_PATH }}</td>
-                  </tr>
-              </table>
-        </div>
         <p>
         <div class="aligned">
         {{ wizard.management_form }}

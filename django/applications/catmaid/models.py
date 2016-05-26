@@ -1,6 +1,5 @@
-from __future__ import absolute_import, print_function
-
 from datetime import datetime
+import logging
 import sys
 import re
 import urllib
@@ -1041,7 +1040,7 @@ def add_user_to_default_groups(sender, instance, created, **kwargs):
                 g = Group.objects.get(name=group)
                 g.user_set.add(instance)
             except Group.DoesNotExist:
-                print("Default group %s does not exist" % group)
+                logging.getLogger(__name__).info("Default group %s does not exist" % group)
 
 # Connect the User model's post save signal to default group assignment
 post_save.connect(add_user_to_default_groups, sender=User)
@@ -1164,4 +1163,4 @@ def notify_user(user, title, message):
     try:
         user.email_user('[CATMAID] ' + title, message)
     except Exception as e:
-        print('Failed to send e-mail (', str(e), ')', file=sys.stderr)
+        logging.getLogger(__name__).error('Failed to send e-mail (', str(e), ')')

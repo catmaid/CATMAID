@@ -154,7 +154,6 @@ def stats_user_history(request, project_id=None):
     start_date = request.GET.get('start_date', None)
     if start_date:
         start_date = dateparser.parse(start_date)
-        print(start_date)
     else:
         start_date = timezone.now() - timedelta(10)
     # Get the end date for the query, defaulting to now.

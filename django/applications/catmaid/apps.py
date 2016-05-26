@@ -1,3 +1,5 @@
+import logging
+
 from django.apps import AppConfig
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
@@ -192,7 +194,7 @@ class CATMAIDConfig(AppConfig):
         try:
             Project.objects.get(pk=settings.ONTOLOGY_DUMMY_PROJECT_ID)
         except Project.DoesNotExist:
-            print("Creating ontology dummy project")
+            logging.getLogger(__name__).info("Creating ontology dummy project")
             Project.objects.create(pk=settings.ONTOLOGY_DUMMY_PROJECT_ID,
                 title="Classification dummy project")
 

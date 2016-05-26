@@ -10,15 +10,15 @@
 # The patch below is based on the GeoDjango's GDAL module for Django 1.6:
 # https://github.com/django/django/blob/stable/1.6.x/django/contrib/gis/gdal/libgdal.py
 
-from __future__ import print_function
+import logging
+import os
+import sys
 
-import os, sys
 original_os_name = os.name
 os.name = "GDAL blocking OS"
 from django.contrib.gis import gdal
 os.name = original_os_name
 if not gdal.HAS_GDAL:
-    print("GeoDjango's GDAL support was disabled by CATMAID, "
-           "because it breaks TIFF support in pgmagick. See "
-           "https://github.com/catmaid/CATMAID/issues/1218 for more details.",
-          file=sys.stderr)
+    logging.getLogger(__name__).warn("GeoDjango's GDAL support was disabled by "
+           "CATMAID, because it breaks TIFF support in pgmagick. See "
+           "https://github.com/catmaid/CATMAID/issues/1218 for more details.")

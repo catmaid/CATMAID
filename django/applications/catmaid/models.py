@@ -93,6 +93,18 @@ def on_project_save(sender, instance, created, **kwargs):
 # Validate project when they are saved
 post_save.connect(on_project_save, sender=Project)
 
+# Supported tile source types
+tile_source_types = (
+    (1, '1: File-based image stack'),
+    (2, '2: Request query-based image stack'),
+    (3, '3: HDF5 via CATMAID backend'),
+    (4, '4: File-based image stack with zoom level directories'),
+    (5, '5: Directory-based image stack'),
+    (6, '6: DVID imageblk voxels'),
+    (7, '7: Render service'),
+    (8, '8: DVID imagetile tiles'),
+    (9, '9: FlixServer tiles')
+)
 
 class Stack(models.Model):
     title = models.TextField(help_text="Descriptive title of this stack.")
@@ -118,15 +130,7 @@ class Stack(models.Model):
     tile_height = models.IntegerField(default=256,
             help_text="The height of one tile.")
     tile_source_type = models.IntegerField(default=1,
-            choices=((1, '1: File-based image stack'),
-                     (2, '2: Request query-based image stack'),
-                     (3, '3: HDF5 via CATMAID backend'),
-                     (4, '4: File-based image stack with zoom level directories'),
-                     (5, '5: Directory-based image stack'),
-                     (6, '6: DVID imageblk voxels'),
-                     (7, '7: Render service'),
-                     (8, '8: DVID imagetile tiles'),
-                     (9, '9: FlixServer tiles')),
+            choices=tile_source_types,
             help_text='This represents how the tile data is organized. '
             'See <a href="http://catmaid.org/page/tile_sources.html">tile source '
             'conventions documentation</a>.')

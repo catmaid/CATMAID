@@ -19,7 +19,7 @@ from guardian.models import Permission
 from guardian.shortcuts import get_perms_for_model, assign
 
 from catmaid.models import (Class, Relation, ClassInstance, Project, Stack,
-        ProjectStack, Overlay, StackClassInstance)
+        ProjectStack, Overlay, StackClassInstance, tile_source_types)
 from catmaid.fields import Double3D
 from catmaid.control.common import urljoin
 from catmaid.control.classification import get_classification_links_qs, \
@@ -495,9 +495,10 @@ class ImportingWizard(SessionWizardView):
             cls_graph_ids = self.get_cleaned_data_for_step(
                 'classification')['classification_graph_suggestions']
         # Get remaining properties
-        default_tile_width = self.get_cleaned_data_for_step('projectselection')['default_tile_width']
-        default_tile_height = self.get_cleaned_data_for_step('projectselection')['default_tile_height']
-        default_tile_source_type = 1
+        project_selection_data = self.get_cleaned_data_for_step('projectselection')
+        default_tile_width = project_selection_data['default_tile_width']
+        default_tile_height = project_selection_data['default_tile_height']
+        default_tile_source_type = project_selection_data['default_tile_source_type']
         imported_projects, not_imported_projects = import_projects(
             self.request.user, selected_projects, tags,
             permissions, default_tile_width, default_tile_height,
@@ -616,6 +617,14 @@ class ProjectSelectionForm(forms.Form):
         initial=settings.IMPORTER_DEFAULT_TILE_HEIGHT,
         help_text="The default height of one tile in <em>pixel</em>, " \
             "used if not specified for a stack.")
+    default_tile_source_type = forms.ChoiceField(
+            initial=settings.IMPORTER_DEFAULT_TILE_SOURCE_TYPE,
+            choices=tile_source_types,
+            help_text="The default tile source type is used if there " \
+                    "none defined for n imported stack. It represents " \
+                    "how the tile data is organized. See " \
+                    "<a href=\"http://catmaid.org/page/tile_sources.html\">"\
+                    "tile source conventions documentation</a>.")
     link_classifications = forms.BooleanField(initial=False,
         required=False, help_text="If checked, this option will " \
             "let the importer suggest classification graphs to " \

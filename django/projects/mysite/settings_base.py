@@ -177,9 +177,10 @@ ROI_AUTO_CREATE_IMAGE = False
 # client.
 NODE_LIST_MAXIMUM_COUNT = 5000
 
-# Default importer tile width and height
+# Default importer tile width, tile height and tile source type
 IMPORTER_DEFAULT_TILE_WIDTH = 256
 IMPORTER_DEFAULT_TILE_HEIGHT = 256
+IMPORTER_DEFAULT_TILE_SOURCE_TYPE = 1
 
 # Some tools and widgets create files (e.g. cropping, ROIs, NeuroHDF5 and
 # treenode export). These files will be created in a folder for each tool

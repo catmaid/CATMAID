@@ -54,6 +54,8 @@ Volume widget:
   mouse wheel can be used to change the value. A second numeric input allows to
   change the step size of alpha value changes.
 
+- For preview, volumes now use the color and opacity defined in the 3D viewer.
+
 
 Tile layer:
 

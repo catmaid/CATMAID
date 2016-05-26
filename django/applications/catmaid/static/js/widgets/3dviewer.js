@@ -1505,16 +1505,18 @@
         this.faces.push(new THREE.Face3(indices[0], indices[1], indices[2]));
       }, geom);
       geom.computeFaceNormals();
+
+      // Create mesh based on volume color and opacity selected in 3D viewer.
+      // Ignore the face setting for now to always show faces.
+      var opacity = self.options.meshes_opacity;
       var mesh = new THREE.Mesh(
           geom,
           new THREE.MeshLambertMaterial(
-             {color: 0x0000ff,
-              opacity: 1.0,
-              transparent: true,
+             {color: self.options.meshes_color,
+              opacity: opacity,
+              transparent: opacity !== 1.0,
               wireframe: false,
-              wireframeLinewidth: 10,
-              morphTargets: true,
-              morphNormals: true,
+              depthWrite: opacity === 1.0,
               side: THREE.DoubleSide}));
 
       var wfh = new THREE.WireframeHelper(mesh, 0x000000);

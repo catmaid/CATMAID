@@ -260,7 +260,14 @@ var requestQueue = new RequestQueue();
     // `text` may be empty for no content responses.
     var json = text.length ? JSON.parse(text) : {};
     if (json.error) {
-      throw new CATMAID.Error("Unsuccessful request: " + json.error, json.detail);
+      if ('ValueError' === json.type) {
+        throw new CATMAID.ValueError(json.error, json.detail);
+      } else if ('StateMatchingError' === json.type) {
+        throw new CATMAID.StateMatchingError(json.error, json.detail);
+      } else {
+        throw new CATMAID.Error("Unsuccessful request: " + json.error,
+            json.detail, json.type);
+      }
     } else {
       return json;
     }
@@ -281,12 +288,33 @@ var requestQueue = new RequestQueue();
         // case, we have to call reject() explicitly.
         try {
           var json = CATMAID.validateJsonResponse(status, text, xml);
+          resolve(json);
         } catch (e) {
           reject(e);
         }
-        resolve(json);
       });
     });
+  };
+
+  /**
+   * Add an extra header field to all future requests or until it is removed
+   * again.
+   *
+   * @param {String} name  The name of the new header field
+   * @param {String} value The value of the new header field
+   */
+  CATMAID.addHeaderToRequests = function(name, value) {
+    requestQueue.addHeader(name, value);
+  };
+
+  /**
+   * Remove a previously added extra header field from all future requests or
+   * until it is added again.
+   *
+   * @param {String} name  The name of the header field to remove
+   */
+  CATMAID.removeHeaderFromRequests = function(name) {
+    requestQueue.removeHeader(name);
   };
 
   /**

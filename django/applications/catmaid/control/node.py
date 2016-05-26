@@ -8,6 +8,7 @@ from django.conf import settings
 from django.db import connection
 from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
+from django.shortcuts import get_object_or_404
 
 from rest_framework.decorators import api_view
 
@@ -44,6 +45,7 @@ def node_list_tuples(request, project_id=None, provider=None):
     # top: the Y coordinate of the bounding box (field of view) in calibrated units
     # left: the X coordinate of the bounding box (field of view) in calibrated units
     atnid = int(request.POST.get('atnid', -1))
+    atntype = request.POST.get('atntype','treenode')
     for p in ('top', 'left', 'bottom', 'right', 'z1', 'z2'):
         params[p] = float(request.POST.get(p, 0))
     # Limit the number of retrieved treenodes within the section
@@ -53,7 +55,7 @@ def node_list_tuples(request, project_id=None, provider=None):
 
     provider = get_treenodes_postgis
 
-    return node_list_tuples_query(request.user, params, project_id, atnid,
+    return node_list_tuples_query(request.user, params, project_id, atnid, atntype,
                                   includeLabels, provider)
 
 
@@ -164,7 +166,7 @@ def get_treenodes_postgis(cursor, params):
     return cursor.fetchall()
 
 
-def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_provider):
+def node_list_tuples_query(user, params, project_id, atnid, atntype, includeLabels, tn_provider):
     try:
         cursor = connection.cursor()
 
@@ -209,6 +211,16 @@ def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_pr
                 can_edit = is_superuser or row[19] == user_id or row[19] in domain
                 treenodes.append(row[10:19] + (can_edit,))
 
+        # A set of missing treenode and connector IDs
+        missing_treenode_ids = set()
+        missing_connector_ids = set()
+
+        # Check if the active treenode or connector is present; if not, load it
+        if atnid and -1 != atnid:
+            if atntype == 'treenode' and atnid not in treenode_ids:
+                missing_treenode_ids.add(atnid)
+            elif atntype == 'connector':
+                missing_connector_ids.add(atnid)
 
         # Find connectors related to treenodes in the field of view
         # Connectors found attached to treenodes
@@ -241,43 +253,61 @@ def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_pr
         # Uses a LEFT OUTER JOIN to include disconnected connectors,
         # that is, connectors that aren't referenced from treenode_connector.
 
-        cursor.execute('''
-        SELECT connector.id,
-            connector.location_x,
-            connector.location_y,
-            connector.location_z,
-            connector.confidence,
-            treenode_connector.relation_id,
-            treenode_connector.treenode_id,
-            treenode_connector.confidence,
-            treenode_connector.edition_time,
-            treenode_connector.id,
-            connector.user_id,
-            connector.edition_time
-        FROM connector LEFT OUTER JOIN treenode_connector
-                       ON connector.id = treenode_connector.connector_id
-        WHERE connector.project_id = %(project_id)s
-          AND connector.location_z >= %(z1)s
-          AND connector.location_z <  %(z2)s
-          AND connector.location_x >= %(left)s
-          AND connector.location_x <  %(right)s
-          AND connector.location_y >= %(top)s
-          AND connector.location_y <  %(bottom)s
-        ''', params)
+        connector_query = '''
+            SELECT connector.id,
+                connector.location_x,
+                connector.location_y,
+                connector.location_z,
+                connector.confidence,
+                treenode_connector.relation_id,
+                treenode_connector.treenode_id,
+                treenode_connector.confidence,
+                treenode_connector.edition_time,
+                treenode_connector.id,
+                connector.user_id,
+                connector.edition_time
+            FROM connector LEFT OUTER JOIN treenode_connector
+                           ON connector.id = treenode_connector.connector_id
+            WHERE connector.project_id = %(project_id)s
+              AND connector.location_z >= %(z1)s
+              AND connector.location_z <  %(z2)s
+              AND connector.location_x >= %(left)s
+              AND connector.location_x <  %(right)s
+              AND connector.location_y >= %(top)s
+              AND connector.location_y <  %(bottom)s
+        '''
 
+        # Add additional connectors to the pool before links are collected
+        if missing_connector_ids:
+            sanetized_connector_ids = [int(cid) for cid in missing_connector_ids]
+            connector_query += '''
+                UNION
+                SELECT connector.id,
+                    connector.location_x,
+                    connector.location_y,
+                    connector.location_z,
+                    connector.confidence,
+                    treenode_connector.relation_id,
+                    treenode_connector.treenode_id,
+                    treenode_connector.confidence,
+                    treenode_connector.edition_time,
+                    treenode_connector.id,
+                    connector.user_id,
+                    connector.edition_time
+                FROM connector LEFT OUTER JOIN treenode_connector
+                               ON connector.id = treenode_connector.connector_id
+                WHERE connector.project_id = %(project_id)s
+                AND connector.id IN ({})
+            '''.format(','.join(str(cid) for cid in sanetized_connector_ids))
+
+        cursor.execute(connector_query, params)
         crows.extend(cursor.fetchall())
 
         connectors = []
-        # A set of missing treenode IDs
-        missing_treenode_ids = set()
-        # Check if the active treenode is present; if not, load it
-        if -1 != atnid and atnid not in treenode_ids:
-            # If atnid is a connector, it doesn't matter, won't be found in treenode table
-            missing_treenode_ids.add(atnid)
         # A set of unique connector IDs
         connector_ids = set()
 
-        # Collect links to connectos for each treenode. Each entry maps a
+        # Collect links to connectors for each treenode. Each entry maps a
         # relation ID to a an object containing the relation name, and an object
         # mapping connector IDs to confidences.
         links = defaultdict(list)
@@ -315,7 +345,6 @@ def node_list_tuples_query(user, params, project_id, atnid, includeLabels, tn_pr
             cid = c[0]
             connectors[i] = (cid, c[1], c[2], c[3], c[4], links[cid], c[11],
                     is_superuser or c[10] == user_id or c[10] in domain)
-
 
         # Fetch missing treenodes. These are related to connectors
         # but not in the bounding box of the field of view.
@@ -406,9 +435,9 @@ def update_location_reviewer(request, project_id=None, node_id=None):
         # skeleton ID only if needed.
         r = Review.objects.get(treenode_id=node_id, reviewer=request.user)
     except Review.DoesNotExist:
-        r = Review(project_id=project_id, treenode_id=node_id, reviewer=request.user)
-        # Find the skeleton
-        r.skeleton = Treenode.objects.get(pk=node_id).skeleton
+        node = get_object_or_404(Treenode, pk=node_id)
+        r = Review(project_id=project_id, treenode_id=node_id,
+                   skeleton_id=node.skeleton_id, reviewer=request.user)
 
     r.review_time = timezone.now()
     r.save()

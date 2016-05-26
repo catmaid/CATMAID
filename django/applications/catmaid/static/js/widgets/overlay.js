@@ -571,6 +571,9 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, options) {
       return nodeToStateList(node);
     },
     getParent: function(nodeId) {
+      if (!SkeletonAnnotations.isRealNode(nodeId)) {
+        nodeId = SkeletonAnnotations.getParentOfVirtualNode(nodeId);
+      }
       var node = self.nodes[nodeId];
       if (!node || !node.parent) {
         return undefined;
@@ -584,6 +587,9 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, options) {
       }
       var children = [];
       for (var cid in node.children) {
+        if (!SkeletonAnnotations.isRealNode(cid)) {
+          cid = SkeletonAnnotations.getChildOfVirtualNode(cid);
+        }
         var child = node.children[cid];
         children.push(nodeToStateList(child));
       }
@@ -690,7 +696,7 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, options) {
   CATMAID.Connectors.on(CATMAID.Connectors.EVENT_CONNECTOR_CREATED,
       this.handleNewNode, this);
   CATMAID.Connectors.on(CATMAID.Connectors.EVENT_CONNECTOR_REMOVED,
-      this.handleNodeChange, this);
+      this.handleRemovedConnector, this);
   CATMAID.Connectors.on(CATMAID.Connectors.EVENT_LINK_CREATED,
       this.simpleUpdateNodes, this);
   CATMAID.Connectors.on(CATMAID.Connectors.EVENT_LINK_REMOVED,
@@ -703,6 +709,9 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, options) {
   CATMAID.Nodes.on(CATMAID.Nodes.EVENT_NODE_CONFIDENCE_CHANGED,
     this.handleNodeChange, this);
   CATMAID.Nodes.on(CATMAID.Nodes.EVENT_NODE_RADIUS_CHANGED,
+      this.simpleUpdateNodes, this);
+
+  CATMAID.State.on(CATMAID.State.EVENT_STATE_NEEDS_UPDATE,
       this.simpleUpdateNodes, this);
 };
 
@@ -784,9 +793,13 @@ SkeletonAnnotations.TracingOverlay.prototype.promiseNode = function(node)
         // Update nodes
         var vnid = node.id;
         self.nodes[nid] = self.nodes[vnid];
+        self.nodes[nid].edition_time = result.edition_time;
         delete self.nodes[vnid];
-        // Update node reference, passed in
+        // Update node reference, passed in (which *should* be the same as
+        // self.nodes[nid] referenced and updated above, but we set it just to
+        // be on the safe side).
         node.id = nid;
+        node.edition_time = result.edition_time;
         // If the virtual node was the active node before, update the active
         // node as well.
         if (SkeletonAnnotations.getActiveNodeId() == vnid) {
@@ -1032,7 +1045,7 @@ SkeletonAnnotations.TracingOverlay.prototype.destroy = function() {
   CATMAID.Connectors.off(CATMAID.Connectors.EVENT_CONNECTOR_CREATED,
       this.handleNewNode, this);
   CATMAID.Connectors.off(CATMAID.Connectors.EVENT_CONNECTOR_REMOVED,
-      this.handleNodeChange, this);
+      this.handleRemovedConnector, this);
   CATMAID.Connectors.off(CATMAID.Connectors.EVENT_LINK_CREATED,
       this.simpleUpdateNodes, this);
   CATMAID.Connectors.off(CATMAID.Connectors.EVENT_LINK_REMOVED,
@@ -1044,6 +1057,9 @@ SkeletonAnnotations.TracingOverlay.prototype.destroy = function() {
   CATMAID.Nodes.off(CATMAID.Nodes.EVENT_NODE_CONFIDENCE_CHANGED,
       this.handleNodeChange, this);
   CATMAID.Nodes.off(CATMAID.Nodes.EVENT_NODE_RADIUS_CHANGED,
+      this.simpleUpdateNodes, this);
+
+  CATMAID.State.on(CATMAID.State.EVENT_STATE_NEEDS_UPDATE,
       this.simpleUpdateNodes, this);
 };
 
@@ -1560,9 +1576,8 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeLink = function (from
                     fromid, toid, annotation_set);
                 CATMAID.commands.execute(command)
                   .then(function(result) {
-                    // We expect that an update is queued already (based on
-                    // events)
-                    self.selectNode(result.fromid);
+                    // Wait for updates to finish before updating the active node
+                    self.submit.then(self.selectNode.bind(self, result.toid));
                   }).catch(CATMAID.handleError);
               }, CATMAID.handleError, true);
             };
@@ -1865,6 +1880,16 @@ SkeletonAnnotations.TracingOverlay.prototype.createNode = function (parentID, ch
         if (parentNode) {
           parentNode.addChildNode(nn);
           parentNode.updateColors();
+        }
+      }
+
+      if (childId) {
+        var childNode = self.nodes[childId];
+        if (childNode) {
+          childNode.parent = nn;
+          childNode.drawLineToParent();
+          nn.addChildNode(childNode);
+          nn.updateColors();
         }
       }
 
@@ -2488,15 +2513,14 @@ SkeletonAnnotations.TracingOverlay.prototype.createNewOrExtendActiveSkeleton =
     var nearestnode = this.getClosestNode(this.coords.lastX,
                                           this.coords.lastY,
                                           searchRadius,
-                                          respectVirtualNodes).node;
-
+                                          respectVirtualNodes);
     if (nearestnode === null) {
       // Crate a new treenode, connector node and/or link
       this.createNodeOrLink(insert, link, postLink);
     } else if (link) {
       if (null === atn.id) { return; }
       if (nearestnode.skeleton_id === atn.skeleton_id) {
-        this.activateNode(nearestnode);
+        this.activateNode(nearestnode.node);
         return;
       }
       var nearestnode_id = nearestnode.id;
@@ -2507,7 +2531,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createNewOrExtendActiveSkeleton =
       this.createTreenodeLink(atn.id, nearestnode.id);
     } else {
       // Activate node at current location if no link is requested
-      this.activateNode(nearestnode);
+      this.activateNode(nearestnode.node);
     }
   }
 };
@@ -2566,23 +2590,27 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
       return;
     }
 
-    // stackViewer.viewWidth and .viewHeight are in screen pixels
-    // so they must be scaled and then transformed to nanometers
-    // and stackViewer.x, .y are in absolute pixels, so they also must be brought to nanometers
-    var atnid = -1; // cannot send a null
-    var atntype = "";
-    if (SkeletonAnnotations.getActiveNodeId() &&
-        SkeletonAnnotations.TYPE_NODE === SkeletonAnnotations.getActiveNodeType()) {
-      if (future_active_node_id) {
-        atnid = future_active_node_id;
-      } else {
-        atnid = SkeletonAnnotations.getActiveNodeId();
+    var atnid = null;
+    var atntype = null;
+    var activeNodeId = SkeletonAnnotations.getActiveNodeId();
+    if (activeNodeId) {
+      var activeNodeType = SkeletonAnnotations.getActiveNodeType();
+      if (activeNodeType === SkeletonAnnotations.TYPE_NODE) {
+        atntype = 'treenode';
+        if (future_active_node_id) {
+          atnid = future_active_node_id;
+        } else {
+          atnid = activeNodeId;
+        }
+      } else if (activeNodeType === SkeletonAnnotations.TYPE_CONNECTORNODE) {
+        atnid = activeNodeId;
+        atntype = 'connector';
       }
     }
     // Include ID only in request, if it is real. Otherwise, keep the active
     // virtual node in the client and inject it into the result.
     var extraNodes;
-    if (!SkeletonAnnotations.isRealNode(atnid)) {
+    if (atnid && !SkeletonAnnotations.isRealNode(atnid)) {
       var n = self.nodes[atnid];
       if (n) {
         extraNodes = [{
@@ -2602,6 +2630,9 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
       atnid = -1;
     }
 
+    // stackViewer.viewWidth and .viewHeight are in screen pixels, so they must
+    // be scaled and then transformed to nanometers and stackViewer.x, .y are in
+    // absolute pixels, so they also must be brought to nanometers
     var stackViewer = self.stackViewer;
     self.old_x = stackViewer.x;
     self.old_y = stackViewer.y;
@@ -2651,6 +2682,7 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
       bottom: wy1,
       z2: wz1,
       atnid: atnid,
+      atntype: atntype,
       labels: self.getLabelStatus()
     };
 
@@ -2712,7 +2744,7 @@ SkeletonAnnotations.TracingOverlay.prototype.setConfidence = function(newConfide
         CATMAID.commands.execute(new CATMAID.UpdateConfidenceCommand(
               self.state, project.id, nid, newConfidence, toConnector))
           .then(self.updateNodes.bind(self, undefined, undefined, undefined))
-          .catch(CATMAID.handlError);
+          .catch(CATMAID.handleError);
       });
     });
   }
@@ -3835,11 +3867,14 @@ SkeletonAnnotations.TracingOverlay.prototype.deleteNode = function(nodeId) {
    * and local objects.
    */
   function deleteConnectorNode(connectornode) {
+    // Suspennd the node before submitting the request to note catch mouse
+    // events on the removed node.
+    connectornode.suspend();
     self.submit.then(function() {
+      connectornode.needsync = false;
       var command = new CATMAID.RemoveConnectorCommand(self.state, project.id, connectornode.id);
       CATMAID.commands.execute(command)
         .then(function(result) {
-          connectornode.needsync = false;
           // If there was a presynaptic node, select it
           var preIDs  = Object.keys(connectornode.pregroup);
           var postIDs = Object.keys(connectornode.postgroup);
@@ -4077,6 +4112,22 @@ SkeletonAnnotations.TracingOverlay.prototype.handleNewNode = function(nodeID, px
  */
 SkeletonAnnotations.TracingOverlay.prototype.handleNodeChange = function(nodeId) {
   if (!this.nodes[nodeId]) return;
+  this.updateNodes();
+};
+
+/**
+ * If the removed connector was selected, unselect it. Update nodes if called
+ * with a node that is currently part of this overlay.
+ */
+SkeletonAnnotations.TracingOverlay.prototype.handleRemovedConnector = function(nodeId) {
+  var node = this.nodes[nodeId];
+  if (!node) {
+    return;
+  }
+  if (nodeId === SkeletonAnnotations.getActiveNodeId()) {
+    this.activateNode(null);
+  }
+
   this.updateNodes();
 };
 

@@ -10,9 +10,24 @@
 * The resulting geometry.js file is committed to CATMAID's git repository.
 */
 window.GeometryTools = {
-	// See: https://github.com/mikolalysenko/convex-hull
-	convexHull: require("convex-hull"),
+  // See: https://github.com/mikolalysenko/convex-hull
+  convexHull: require("convex-hull"),
 
-	// See: https://github.com/mikolalysenko/alpha-shape
-	alphaShape: require("alpha-shape")
+  // See: https://github.com/mikolalysenko/circumcenter
+  delaunayTriangulate: require('delaunay-triangulate'),
+
+  // See: https://github.com/mikolalysenko/alpha-complex
+  alphaShape: require("alpha-shape"),
+
+  // See: https://github.com/mikolalysenko/simplicial-complex
+  simplicialComplex: require('simplicial-complex'),
+
+  // See: https://github.com/mikolalysenko/simplicial-complex-boundary
+  simplicialComplexBoundary: require('simplicial-complex-boundary'),
+
+  // See: https://github.com/mikolalysenko/circumradius
+  circumradius: require('circumradius'),
+
+  // See: https://github.com/mikolalysenko/circumcenter
+  circumcenter: require('circumcenter'),
 };

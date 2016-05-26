@@ -5,8 +5,9 @@ from traceback import format_exc
 from datetime import datetime
 
 from django.http import HttpResponse
-from django.contrib.auth.models import User
 from django.conf import settings
+
+from guardian.utils import get_anonymous_user
 
 from rest_framework.authentication import TokenAuthentication
 
@@ -52,10 +53,8 @@ class AnonymousAuthenticationMiddleware(object):
     Django's anonymou user.
     """
     def process_request(self, request):
-        if request.user.is_anonymous() and settings.ANONYMOUS_USER_ID:
-            request.user = User.objects.get(id=settings.ANONYMOUS_USER_ID)
-            request.user.is_anonymous = lambda: False
-            request.user.is_authenticated = lambda: False
+        if request.user.is_anonymous():
+            request.user = get_anonymous_user()
         return None
 
 
@@ -65,11 +64,11 @@ class AjaxExceptionMiddleware(object):
         response = {
             'error': str(exception),
             'detail': format_exc(),
+            'type': type(exception).__name__
         }
         if settings.DEBUG:
             import sys, traceback
             (exc_type, exc_info, tb) = sys.exc_info()
-            response['type'] = exc_type.__name__
             response['info'] = str(exc_info)
             response['traceback'] = ''.join(traceback.format_tb(tb))
         return HttpResponse(json.dumps(response))
@@ -125,3 +124,21 @@ class ProfilingMiddleware(object):
             labels = (request.META['REMOTE_ADDR'], datetime.now())
             request.profiler.dump_stats('/tmp/catmaid-%s-%s.profile' % labels)
         return response
+
+
+class NewRelicMiddleware(object):
+    """This middleware will log additional properties to New Relic and expects
+    the newrelic python module to be installed.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super(NewRelicMiddleware, self).__init__(*args, **kwargs)
+        # Import this locally, so that we don't clutter general imports and require
+        # it only when it is used.
+        self.newrelic = __import__('newrelic.agent')
+
+    def process_request(self, request):
+        exec_ctx = request.META.get('HTTP_X_CATMAID_EXECUTION_CONTEXT', b'')
+        if not exec_ctx:
+            exec_ctx = 'unknown'
+        self.newrelic.agent.add_custom_parameter('execution_context', exec_ctx)

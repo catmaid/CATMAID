@@ -683,6 +683,8 @@ function CMWTabbedNode( children )
 
   var tabContainer = document.createElement( "div" );
   tabContainer.className = "CMWTabs";
+  var tabFrameContainer = document.createElement("div");
+  tabFrameContainer.style.display = "none";
 
   var tabs = [];
   var addTab = function (child, index) {
@@ -705,6 +707,7 @@ function CMWTabbedNode( children )
   children.forEach(function (t) { addTab(t); });
 
   frame.appendChild(tabContainer);
+  frame.appendChild(tabFrameContainer);
 
   var activeChildFrame = activeChild.getFrame();
   activeChildFrame.style.left = "0px";
@@ -771,6 +774,7 @@ function CMWTabbedNode( children )
     var newActiveChildFrame = child.getFrame();
     if (activeChildFrame.parentNode === frame) {
       frame.replaceChild(newActiveChildFrame, activeChildFrame);
+      tabFrameContainer.appendChild(activeChildFrame);
     } else {
       frame.appendChild(newActiveChildFrame);
     }

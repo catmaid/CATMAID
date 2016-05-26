@@ -152,7 +152,7 @@
           });
       var hidelabel = $('<div/>')
           .addClass('setting')
-          .append($('<label/>').append(hidecb).append('Hide this layer when SPACE is held'));
+          .append($('<label/>').append(hidecb).append('Hide this layer when <kbd>SPACE</kbd> is held'));
       container.append(hidelabel);
 
       // Layer settings
@@ -177,10 +177,10 @@
                 input.attr('max', setting.range[1]);
               }
               if (setting.step) {
-                input.attr('step', settings.step);
+                input.attr('step', setting.step);
               }
               input.addClass('layerSetting');
-              if (setting.value) {
+              if (setting.hasOwnProperty('value')) {
                 input.attr('value', setting.value);
               }
               label.append(input);

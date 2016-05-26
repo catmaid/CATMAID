@@ -1632,6 +1632,16 @@
     return !this.is_coannotation;
   };
 
+  /**
+   * Update this node if an annotation changed.
+   */
+  NeuronNavigator.AnnotationFilterNode.prototype.handleChangedAnnotations = function(updated_entities)
+  {
+    // Due to design limitations, there is currently no easy way to check if the
+    // passed in updated entities are part of the current display.
+    this.navigator.select_node(this);
+  };
+
   NeuronNavigator.AnnotationFilterNode.prototype.add_content = function(container,
       filters)
   {
@@ -1997,7 +2007,7 @@
 
     connectortable_button.onclick = (function() {
       if (this.skeleton_ids.length > 0) {
-        var TNT = new ConnectorTable(this.skeleton_ids[0]);
+        var TNT = new CATMAID.ConnectorTable(this.skeleton_ids[0]);
         WindowMaker.create('connector-table', TNT);
       }
     }).bind(this);

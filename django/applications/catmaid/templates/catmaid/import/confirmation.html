@@ -79,6 +79,17 @@
                     <td>Default opacity: {{ o.default_opacity }}</td>
                   </tr>
                 {% endfor %}
+                {% for sg in s.stackgroups %}
+                  <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td colspan="2"><em>Stack group:</em> {{ sg.name }} </td>
+                    <td></td>
+                    <td></td>
+                    <td>{{ sg.relation }}</td>
+                  </tr>
+                {% endfor %}
               {% endfor %}
             {% else %}
               <tr>

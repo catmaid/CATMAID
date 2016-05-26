@@ -44,8 +44,8 @@ def list_messages(request, project_id=None):
 
     # Add a dummy message that includes the count of open notifications.
     # This is used to add the red badge to the notifications icon.
-    crs = ChangeRequest.objects.filter(recipient = request.user, status = ChangeRequest.OPEN);
-    messages += [{'id': -1, 'notification_count': len(crs)}];
+    crs = ChangeRequest.objects.filter(recipient = request.user, status = ChangeRequest.OPEN)
+    messages += [{'id': -1, 'notification_count': len(crs)}]
 
     return HttpResponse(json.dumps(makeJSON_legacy_list(messages)))
 

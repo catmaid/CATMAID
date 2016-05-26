@@ -32,6 +32,7 @@
     this.colSortingDesc = false;
     // Rotate column headers by 90 degree
     this.rotateColumnHeaders = false;
+    CATMAID.skeletonListSources.updateGUI();
   };
 
   ConnectivityMatrixWidget.prototype = {};

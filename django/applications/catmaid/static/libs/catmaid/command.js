@@ -6,6 +6,10 @@
   // each command.
   var commandCounter = 0;
 
+  // Commands try to add a header field to requests made during the command
+  // execution, undo or redo operation.
+  var contextHeader = "X-CATMAID-Execution-Context";
+
   /**
    * A command wraps the execution of a function, it provides an interface for
    * executing it as well as undoing it. After a command has been instantiated,
@@ -52,18 +56,31 @@
   };
 
   /**
+   * This makes removing the header as promise continuations easier.
+   */
+  var removeContextHeader = function() {
+    CATMAID.removeHeaderFromRequests(contextHeader);
+  };
+
+  /**
    * Execute the command and return a new promise, resolving in what the
    * executed handler returns.
    *
    * @param {CommandStore} mapper (Optional) CommandStore instance to allow
    *                              command the mapping of original IDs to changed
    *                              IDs. If not provided, a global default map is used.
+   * @param {bool}         redo   (Optional) Indicates that this execution is a
+   *                              actually a redo operation of a former execution.
    */
-  Command.prototype.execute = function(mapper) {
+  Command.prototype.execute = function(mapper, redo) {
     if (!this.initialized) {
       throw new CATMAID.Error('Commands need to be initialized before execution');
     }
+    // Mark request during execution as regular command execution
+    CATMAID.addHeaderToRequests(contextHeader, redo ? "REDO" : "EXEC");
     var result = this._fn(done.bind(this, true), this, mapper || globalMap);
+    result.then(removeContextHeader).catch(removeContextHeader);
+
     return result;
   };
 
@@ -79,7 +96,11 @@
     if (!this.executed) {
       throw new CATMAID.Error('Only executed commands can be undone');
     }
+    // Mark request during execution as regular command execution
+    CATMAID.addHeaderToRequests(contextHeader, "UNDO");
     var result = this._undo(done.bind(this, false), this, mapper || globalMap);
+    result.then(removeContextHeader).catch(removeContextHeader);
+
     return result;
   };
 
@@ -204,11 +225,15 @@
    */
   CommandHistory.prototype.execute = function(command) {
     var executedCommand = this.submit.then((function() {
-      var result = command.execute(this._store);
+      var result = command.execute(this._store, false);
+
+      // Branch off internal handler chain, handling errors is up to the
+      // original caller, they are ignored internally.
       result.then((function() {
         this._advanceHistory(command);
         this.trigger(CommandHistory.EVENT_COMMAND_EXECUTED, command, false);
-      }).bind(this));
+      }).bind(this)).catch(CATMAID.noop);
+
       return result;
     }).bind(this));
 
@@ -231,10 +256,14 @@
         throw new CATMAID.CommandHistoryError("Nothing to undo");
       }
       var result = command.undo(this._store);
+
+      // Branch off internal handler chain, handling errors is up to the
+      // original caller, they are ignored internally.
       result.then((function() {
         this._rollbackHistory();
         this.trigger(CommandHistory.EVENT_COMMAND_UNDONE, command);
-      }).bind(this));
+      }).bind(this)).catch(CATMAID.noop);
+
       return result;
     }).bind(this));
 
@@ -262,7 +291,7 @@
       if (!command) {
         throw new CATMAID.CommandHistoryError("Nothing to redo");
       }
-      var result = command.execute(this._store);
+      var result = command.execute(this._store, true);
       result.then((function() {
         this._currentCommand += 1;
         this.trigger(CommandHistory.EVENT_COMMAND_EXECUTED, command, true);

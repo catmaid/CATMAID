@@ -430,4 +430,12 @@ CATMAID.tools = CATMAID.tools || {};
     return true;
   };
 
+  /**
+   * Returns the passed in value if it is not undefined. Otherwise returns
+   * passed in default.
+   */
+  tools.getDefined = function(value, fallback) {
+    return undefined === value ? fallback : value;
+  };
+
 })(CATMAID.tools);

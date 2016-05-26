@@ -300,8 +300,10 @@
       if (partners && partners.length > 0) {
         var partnerInfo = partners.reduce(function(o, p) {
           command.validateForUndo(p.id, p.edition_time);
-          o['links'].push([p.id, p.rel_id, p.confidence]);
-          o['state'][p.id] = p.edition_time;
+          // Map partners forward
+          var mPartner = map.getWithTime(map.NODE, p.id, p.edition_time, command);
+          o['links'].push([mPartner.value, p.rel_id, p.confidence]);
+          o['state'][mPartner.value] = mPartner.timestamp;
           return o;
         }, {'links': [], 'state': {}});
         links = partnerInfo.links;

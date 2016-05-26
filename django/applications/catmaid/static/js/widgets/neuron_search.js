@@ -432,10 +432,10 @@
       if (annotationID) {
         // If the annotation matches one particular instance, use it
         value = annotationID;
-      } else {
-        // Otherwise, treat the search term as regular expression and
-        // filter annotations that match
-        var pattern = '/' === a.substr(0, 1) ? a.substr(1) : CATMAID.tools.escapeRegEx(a);
+      } else if ('/' === a.substr(0, 1)) {
+        // Otherwise, treat the search term as regular expression if it starts
+        // with a forward slash character and filter annotations that match
+        var pattern = a.substr(1);
         var filter  = new RegExp(pattern);
         var matches = CATMAID.annotations.getAllNames().filter(function(a) {
           return this.test(a);
@@ -448,6 +448,9 @@
         if (0 === value.trim().length) {
           continue;
         }
+      } else {
+        CATMAID.warn("Couldn't find annotation \"" + a + "\"");
+        return;
       }
       var field = s ? 'sub_annotated_with' : 'annotated_with';
       params[field + n] = value;

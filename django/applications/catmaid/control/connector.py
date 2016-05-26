@@ -68,7 +68,7 @@ def one_to_many_synapses(request, project_id=None):
     """ Return the list of synapses of a specific kind between one skeleton and a list of other skeletons. """
     if 'skid' not in request.POST:
         raise ValueError("No skeleton ID for 'one' provided")
-    skid = int(request.POST.get('skid'));
+    skid = int(request.POST.get('skid'))
 
     skids = get_request_list(request.POST, 'skids', map_fn=int)
     if not skids:
@@ -508,7 +508,7 @@ def create_connector(request, project_id=None):
     # Create all initial links
     if links:
         created_links = create_treenode_links(project_id, request.user.id,
-                new_connector.id, links, cursor);
+                new_connector.id, links, cursor)
     else:
         created_links = []
 

@@ -18,7 +18,8 @@ from formtools.wizard.views import SessionWizardView
 from guardian.models import Permission
 from guardian.shortcuts import get_perms_for_model, assign
 
-from catmaid.models import ClassInstance, Project, Stack, ProjectStack, Overlay
+from catmaid.models import (Class, Relation, ClassInstance, Project, Stack,
+        ProjectStack, Overlay, StackClassInstance, tile_source_types)
 from catmaid.fields import Double3D
 from catmaid.control.common import urljoin
 from catmaid.control.classification import get_classification_links_qs, \
@@ -31,7 +32,7 @@ TEMPLATES = {"pathsettings": "catmaid/import/setup_path.html",
 
 info_file_name = "project.yaml"
 datafolder_setting = "CATMAID_IMPORT_PATH"
-base_url_setting = "CATMAID_IMPORT_URL"
+base_url_setting = "IMPORTER_DEFAULT_IMAGE_BASE"
 
 class UserProxy(User):
     """ A proxy class for the user model as we want to be able to call
@@ -127,6 +128,15 @@ class PreOverlay(ImageBaseMixin):
         # Set 'image_base', 'num_zoom_levels' and 'fileextension'
         self.set_image_fields(info_object, project_url, data_folder, False)
 
+class PreStackGroup():
+    def __init__(self, info_object):
+        self.name= info_object['name']
+        self.relation = info_object['relation']
+        valid_relations = ("has_view", "has_channel")
+        if self.relation not in valid_relations:
+            raise ValueError("Unsupported stack group relation: {}. Plese use "
+                    "one of: {}.".format(self.relation, ", ".join(valid_relations)))
+
 class PreStack(ImageBaseMixin):
     def __init__(self, info_object, project_url, data_folder, only_unknown):
         # Make sure everything is there
@@ -143,11 +153,29 @@ class PreStack(ImageBaseMixin):
         self.dimension = info_object['dimension']
         self.resolution = info_object['resolution']
         self.metadata = info_object['metadata'] if 'metadata' in info_object else ""
+        # Use tile size information if available
+        if 'tile_width' in info_object:
+            self.tile_width = info_object['tile_width']
+        if 'tile_height' in info_object:
+            self.tile_height = info_object['tile_height']
+        if 'tile_source_type' in info_object:
+            self.tile_source_type = info_object['tile_source_type']
+        # Stacks can optionally contain a "translation" field, which can be used
+        # to add an offset when the stack is linked to a project
+        self.project_translation = info_object.get('translation', "(0,0,0)")
+        # Make sure this dimension can be matched
+        if not Double3D.tuple_pattern.match(self.project_translation):
+            raise ValueError("Couldn't read translation value")
         # Add overlays to the stack, if those are declared
         self.overlays = []
         if 'overlays' in info_object:
             for overlay in info_object['overlays']:
                 self.overlays.append(PreOverlay(overlay, project_url, data_folder))
+        # Collect stack group information
+        self.stackgroups = []
+        if 'stackgroups' in info_object:
+            for stackgroup in info_object['stackgroups']:
+                self.stackgroups.append(PreStackGroup(stackgroup))
 
         # Test if this stack is already known
         if only_unknown:
@@ -419,8 +447,8 @@ class ImportingWizard(SessionWizardView):
                     })
                 # Other settings
                 max_num_stacks = 0
-                tile_width = self.get_cleaned_data_for_step('projectselection')['tile_width']
-                tile_height = self.get_cleaned_data_for_step('projectselection')['tile_height']
+                default_tile_width = self.get_cleaned_data_for_step('projectselection')['default_tile_width']
+                default_tile_height = self.get_cleaned_data_for_step('projectselection')['default_tile_height']
                 for p in selected_projects:
                     if len(p.stacks) > max_num_stacks:
                         max_num_stacks = len(p.stacks)
@@ -431,8 +459,8 @@ class ImportingWizard(SessionWizardView):
                     'tags': tags,
                     'user_permissions': user_permissions,
                     'group_permissions': group_permissions,
-                    'tile_width': tile_width,
-                    'tile_height': tile_height,
+                    'tile_width': default_tile_width,
+                    'tile_height': default_tile_height,
                 })
 
         context.update({
@@ -467,13 +495,14 @@ class ImportingWizard(SessionWizardView):
             cls_graph_ids = self.get_cleaned_data_for_step(
                 'classification')['classification_graph_suggestions']
         # Get remaining properties
-        tile_width = self.get_cleaned_data_for_step('projectselection')['tile_width']
-        tile_height = self.get_cleaned_data_for_step('projectselection')['tile_height']
-        tile_source_type = 1
+        project_selection_data = self.get_cleaned_data_for_step('projectselection')
+        default_tile_width = project_selection_data['default_tile_width']
+        default_tile_height = project_selection_data['default_tile_height']
+        default_tile_source_type = project_selection_data['default_tile_source_type']
         imported_projects, not_imported_projects = import_projects(
             self.request.user, selected_projects, tags,
-            permissions, tile_width, tile_height, tile_source_type,
-            cls_graph_ids)
+            permissions, default_tile_width, default_tile_height,
+            default_tile_source_type, cls_graph_ids)
         # Show final page
         return render_to_response('catmaid/import/done.html', {
             'projects': selected_projects,
@@ -555,11 +584,13 @@ class DataFileForm(forms.Form):
     """
     relative_path = forms.CharField(required=False,
         widget=forms.TextInput(attrs={'size':'40'}),
-        help_text="This path is <em>relative</em> to the data folder in use.")
+        help_text="Optionally, use a sub-folder of the data folder to narrow " \
+                  "down the folders to look at. This path is <em>relative</em> " \
+                  "to the data folder in use.")
     filter_term = forms.CharField(initial="*", required=False,
         widget=forms.TextInput(attrs={'size':'40'}),
-        help_text="You can apply a <em>glob filter</em> to the projects found \
-                   in your data folder.")
+        help_text="Optionally, you can apply a <em>glob filter</em> to the " \
+                  "projects found in your data folder.")
     only_unknown_projects = forms.BooleanField(initial=True, required=False,
         help_text="A project is marked as <em>known</em> if (and only if) \
                    all of its stacks are already known to the CATMAID instance.")
@@ -580,12 +611,22 @@ class ProjectSelectionForm(forms.Form):
     tags = forms.CharField(initial="", required=False,
         widget=forms.TextInput(attrs={'size':'50'}),
         help_text="A comma separated list of unquoted tags.")
-    tile_width = forms.IntegerField(
+    default_tile_width = forms.IntegerField(
         initial=settings.IMPORTER_DEFAULT_TILE_WIDTH,
-        help_text="The width of one tile in <em>pixel</em>.")
-    tile_height = forms.IntegerField(
+        help_text="The default width of one tile in <em>pixel</em>, " \
+            "used if not specified for a stack.")
+    default_tile_height = forms.IntegerField(
         initial=settings.IMPORTER_DEFAULT_TILE_HEIGHT,
-        help_text="The height of one tile in <em>pixel</em>.")
+        help_text="The default height of one tile in <em>pixel</em>, " \
+            "used if not specified for a stack.")
+    default_tile_source_type = forms.ChoiceField(
+            initial=settings.IMPORTER_DEFAULT_TILE_SOURCE_TYPE,
+            choices=tile_source_types,
+            help_text="The default tile source type is used if there " \
+                    "none defined for n imported stack. It represents " \
+                    "how the tile data is organized. See " \
+                    "<a href=\"http://catmaid.org/page/tile_sources.html\">"\
+                    "tile source conventions documentation</a>.")
     link_classifications = forms.BooleanField(initial=False,
         required=False, help_text="If checked, this option will " \
             "let the importer suggest classification graphs to " \
@@ -632,7 +673,8 @@ class ConfirmationForm(forms.Form):
     something = forms.CharField(initial="", required=False)
 
 def import_projects( user, pre_projects, tags, permissions,
-    tile_width, tile_height, tile_source_type, cls_graph_ids_to_link ):
+        default_tile_width, default_tile_height, default_tile_source_type,
+        cls_graph_ids_to_link ):
     """ Creates real CATMAID projects out of the PreProject objects
     and imports them into CATMAID.
     """
@@ -642,6 +684,8 @@ def import_projects( user, pre_projects, tags, permissions,
         try:
             # Create stacks and add them to project
             stacks = []
+            stack_groups = {}
+            translations = {}
             for s in pp.stacks:
                 stack = Stack.objects.create(
                     title=s.name,
@@ -650,9 +694,10 @@ def import_projects( user, pre_projects, tags, permissions,
                     image_base=s.image_base,
                     num_zoom_levels=s.num_zoom_levels,
                     file_extension=s.file_extension,
-                    tile_width=tile_width,
-                    tile_height=tile_height,
-                    tile_source_type=tile_source_type,
+                    tile_width=getattr(s, "tile_width", default_tile_width),
+                    tile_height=getattr(s, "tile_height", default_tile_height),
+                    tile_source_type=getattr(s, "tile_source_type",
+                        default_tile_source_type),
                     metadata=s.metadata)
                 stacks.append( stack )
                 # Add overlays of this stack
@@ -663,9 +708,23 @@ def import_projects( user, pre_projects, tags, permissions,
                         image_base=o.image_base,
                         default_opacity=o.default_opacity,
                         file_extension=o.file_extension,
-                        tile_width=tile_width,
-                        tile_height=tile_height,
-                        tile_source_type=tile_source_type)
+                        tile_width=getattr(o, "tile_width", default_tile_width),
+                        tile_height=getattr(o, "tile_height", default_tile_height),
+                        tile_source_type=getattr(o, "tile_source_type",
+                            default_tile_source_type))
+                # Collect stack group information
+                for sg in s.stackgroups:
+                    stack_group = stack_groups.get(sg.name)
+                    if not stack_group:
+                        stack_group = []
+                        stack_groups[sg.name] = stack_group
+                    stack_group.append({
+                        'stack': stack,
+                        'relation': sg.relation
+                    })
+                # Keep track of project-stack offsets
+                translations[stack] = s.project_translation
+
             # Create new project
             p = Project.objects.create(
                 title=pp.name)
@@ -678,11 +737,27 @@ def import_projects( user, pre_projects, tags, permissions,
             p.tags.add( *tags )
             # Add stacks to project
             for s in stacks:
-                trln = Double3D()
+                trln = Double3D.from_str(translations[s])
                 ps = ProjectStack.objects.create(
                     project=p, stack=s, translation=trln)
             # Make project persistent
             p.save()
+
+            # Save stack groups
+            for sg, linked_stacks in stack_groups.iteritems():
+                stack_group = ClassInstance.objects.create(
+                    user=user, project=p, name=sg,
+                    class_column=Class.objects.get(project=p, class_name="stackgroup")
+                )
+                for ls in linked_stacks:
+                    StackClassInstance.objects.create(
+                        user=user, project=p,
+                        relation=Relation.objects.get(project=p,
+                            relation_name=ls['relation']),
+                        class_instance=stack_group,
+                        stack=ls['stack'],
+                    )
+
             # Link classification graphs
             for cg in cls_graph_ids_to_link:
                 workspace = settings.ONTOLOGY_DUMMY_PROJECT_ID

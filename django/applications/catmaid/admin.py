@@ -218,7 +218,7 @@ class StackGroupAdmin(GuardedModelAdmin):
             i.relation = Relation.objects.get(project=i.project,
                                               relation_name=i.relation_name)
             i.save()
-        formset.save_m2m();
+        formset.save_m2m()
 
 
 class StackAdmin(GuardedModelAdmin):
@@ -240,7 +240,7 @@ class StackAdmin(GuardedModelAdmin):
                 i.relation = Relation.objects.get(project=i.project,
                                                 relation_name=i.relation_name)
             i.save()
-        formset.save_m2m();
+        formset.save_m2m()
 
 class OverlayAdmin(GuardedModelAdmin):
     list_display = ('title', 'image_base')

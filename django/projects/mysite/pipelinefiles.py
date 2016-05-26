@@ -61,9 +61,8 @@ libraries_js = {
     'numeric': ['numeric-1.2.6.js'],
     'three.js': ['three.js', 'controls/TrackballControls.js',
                  'camera/CombinedCamera.js', 'Detector.js',
-                 'geometries/TextGeometry.js', 'loaders/VRMLLoader.js',
-                 'renderer/Projector.js', 'renderer/SVGRenderer.js',
-                 'utils/FontUtils.js', 'helvetiker_regular.typeface.js'],
+                 'loaders/VRMLLoader.js', 'renderer/Projector.js',
+                 'renderer/SVGRenderer.js'],
     'threex': ['*.js'],
     'pixi.js': ['*.js'],
     'cytoscapejs': ['cytoscape.js'],
@@ -93,7 +92,7 @@ non_pipeline_js = {
     'cola': 'libs/cytoscapejs/cola.js',
     'springy': 'libs/cytoscapejs/springy.js',
     'foograph': 'libs/cytoscapejs/foograph.js',
-    'rhill-voronoi-core': 'libs/cytoscapejs/rhill-voronoi-core.js'
+    'rhill-voronoi-core': 'libs/cytoscapejs/rhill-voronoi-core.js',
 }
 
 # Even non-pipeline files have to be made known to pipeline, because it takes

@@ -109,9 +109,9 @@ class ImportingWizard(SessionWizardView):
                         'ntags': 0,
                     }
                     if scd['import_treenodes']:
-                        ps['ntreenodes'] = Treenode.objects.filter(project=p).count();
+                        ps['ntreenodes'] = Treenode.objects.filter(project=p).count()
                     if scd['import_connectors']:
-                        ps['nconnectors'] = Connector.objects.filter(project=p).count();
+                        ps['nconnectors'] = Connector.objects.filter(project=p).count()
                     if scd['import_annotations']:
                         annotation = Class.objects.filter(project=p,
                                 class_name="annotation")

@@ -122,4 +122,13 @@ QUnit.test('Utilities test', function( assert ) {
     assert.ok(!CATMAID.tools.sameSign(100,-42),
         "CATMAID.tools.sameSign correctly says 100 and -42 don't have same sign");
   })();
+
+  // Test getDefined
+  (function() {
+    assert.strictEqual(CATMAID.tools.getDefined(0, 1), 0, "CATMAID.tools.getDefined returns defined integer value");
+    assert.strictEqual(CATMAID.tools.getDefined("a", 1), "a", "CATMAID.tools.getDefined returns defined string value");
+    assert.strictEqual(CATMAID.tools.getDefined(undefined, 0), 0, "CATMAID.tools.getDefined returns fallback string value");
+    var obj = {};
+    assert.strictEqual(CATMAID.tools.getDefined(undefined, obj), obj, "CATMAID.tools.getDefined returns fallback object value");
+  })();
 });

@@ -6,11 +6,20 @@
   "use strict";
 
   /**
+   * Stores information about widget mode switches.
+   */
+  var Context = function(onExit) {
+    this.onExit = onExit;
+  };
+
+  /**
    * Manage spatial volumes with this widget.
    */
   var VolumeManagerWidget = function(options) {
     options = options || {};
 
+    // Stores information about current widget mode
+    this.currentContext = null;
     // Access to the displayed DataTable
     this.datatable = null;
     this.entriesPerPage = options.entriesPerPage || 25;
@@ -147,6 +156,11 @@
    */
   VolumeManagerWidget.prototype.editVolume = function(volume) {
     var self = this;
+
+    if (this.currentContext) {
+      CATMAID.tools.callIfFn(this.currentContext.onExit);
+    }
+
     var $content = $('#volume_manger_content');
     // Hide table
     $("div.volume-list", $content).hide();
@@ -173,7 +187,11 @@
     var title = function(e) { volume.title = this.value; };
     var comment = function(e) { volume.comment = this.value; };
     var typeSelect = CATMAID.DOM.createSelectSetting("Type",
-        { "Box": "box", "Convex Hull": "convexhull" },
+        {
+          "Box": "box",
+          "Convex Hull": "convexhull",
+          "Alpha shape": "alphashape"
+        },
         "The geometry type of this volume.", undefined, volumeType);
     $addContent.append(typeSelect);
     $('select', typeSelect).on('change', function() {
@@ -196,27 +214,52 @@
     var onUpdate = handlers[0];
     var closeVolumeEdit = handlers[1];
 
-    var onClose = function() {
-      volume.off(volume.EVENT_PROPERTY_CHANGED, volumeChanged);
-      CATMAID.tools.callIfFn(closeVolumeEdit);
+    var onClose = function(save, onSuccess, onCancel) {
+      if (CATMAID.tools.isFn(closeVolumeEdit)) {
+        var onSuccessWrapper = function() {
+          volume.off(volume.EVENT_PROPERTY_CHANGED, volumeChanged);
+          CATMAID.tools.callIfFn(onSuccess);
+        };
+        closeVolumeEdit(save, onSuccessWrapper, onCancel);
+      }
     };
     $addContent.append($('<div class="clear" />'));
     $addContent.append($('<div />')
         .append($('<button>Cancel</Cancel>')
           .on('click', function(e) {
-            // Show table
-            $("div.volume-list", $content).show();
-            $("div.volume-properties", $content).remove();
-            onClose();
+            onClose(false, function() {
+              // Show table
+              $("div.volume-list", $content).show();
+              $("div.volume-properties", $content).remove();
+            });
           }))
         .append($('<button>Save</Cancel>')
           .on('click', function(e) {
-            volume.save();
-            // Show table, remove volume settings
-            $("div.volume-list", $content).show();
-            $("div.volume-properties", $content).remove();
-            onClose();
-            self.redraw();
+            $.blockUI({message: '<img src="' + CATMAID.staticURL +
+                'images/busy.gif" /> <span>Please wait, creating volume</span>'});
+            function save() {
+              try {
+                onClose(true, function() {
+                  volume.save()
+                    .then(function(result) {
+                      // Show table, remove volume settings
+                      $("div.volume-list", $content).show();
+                      $("div.volume-properties", $content).remove();
+                    }).catch(CATMAID.handleError)
+                    .then(function() {
+                      $.unblockUI();
+                      self.redraw();
+                    });
+                }, function() {
+                  CATMAID.warn("Couldn't save volume");
+                  $.unblockUI();
+                });
+              } catch(e) {
+                $.unblockUI();
+                CATMAID.error("Couldn't create volume: " + e);
+              }
+            }
+            setTimeout(save, 100);
           })));
 
     $content.append($addContent);
@@ -228,6 +271,7 @@
     }
 
     volume.on(volume.EVENT_PROPERTY_CHANGED, volumeChanged);
+    this.currentContext = new Context(onClose);
   };
 
   /**
@@ -276,7 +320,9 @@
   };
 
   var getVolumeType = function(volume) {
-    if (volume instanceof CATMAID.ConvexHullVolume) {
+    if (volume instanceof CATMAID.AlphaShapeVolume) {
+      return "alphashape";
+    } else if (volume instanceof CATMAID.ConvexHullVolume) {
       return "convexhull";
     } else if (volume instanceof CATMAID.BoxVolume) {
       return "box";
@@ -285,79 +331,15 @@
     }
   };
 
-  var volumeTypes = {
-    "box": {
-      name: "Box",
+  /**
+   * Either convex hull or alpha-shape, which are almost identical. The
+   * alpha-shape has an extra parameter, the alpha.
+   */
+  var makeVolume = function(name, theclass, withAlpha) {
+    return {
+      name: name,
       createSettings: function(volume) {
-        var minX = function(e) { volume.set("minX", Number(this.value)); };
-        var minY = function(e) { volume.set("minY", Number(this.value)); };
-        var minZ = function(e) { volume.set("minZ", Number(this.value)); };
-        var maxX = function(e) { volume.set("maxX", Number(this.value)); };
-        var maxY = function(e) { volume.set("maxY", Number(this.value)); };
-        var maxZ = function(e) { volume.set("maxZ", Number(this.value)); };
-        var $settings = $('<div />');
-        var $content = CATMAID.DOM.addSettingsContainer($settings,
-            "Box settings", false);
-        $content.append(CATMAID.DOM.createInputSetting("Min X", volume.minX,
-              "X coordinate of the boxes minimum corner.", minX));
-        $content.append(CATMAID.DOM.createInputSetting("Min Y", volume.minY,
-              "Y coordinate of the boxes minimum corner.", minY));
-        $content.append(CATMAID.DOM.createInputSetting("Min Z", volume.minZ,
-              "Z coordinate of the boxes minimum corner.", minZ));
-        $content.append(CATMAID.DOM.createInputSetting("Max X", volume.maxX,
-              "X coordinate of the boxes maximum corner.", maxX));
-        $content.append(CATMAID.DOM.createInputSetting("Max Y", volume.maxY,
-              "Y coordinate of the boxes maximum corner.", maxY));
-        $content.append(CATMAID.DOM.createInputSetting("Max Z", volume.maxZ,
-              "Z coordinate of the boxes maximum corner.", maxZ));
-
-        return $settings;
-      },
-      createVolume: function(options) {
-        return new CATMAID.BoxVolume(options);
-      },
-      /**
-       * Create an array of handlers: [onVolumeUpdate, onVolumeClose]
-       */
-      createHandlers: function(volume) {
-        var handlers = [null, null];
-        if (project.focusedStackViewer) {
-          var stack = project.focusedStackViewer;
-          // TODO: Use a proper layer for this and make this work wirh regular
-          // ortho stacks.
-          var boxTool = new CATMAID.BoxSelectionTool();
-          boxTool.destroy();
-          boxTool.register(stack);
-          boxTool.createCropBoxByWorld(
-              volume.minX, volume.minY, Math.abs(volume.maxX - volume.minX),
-              Math.abs(volume.maxY - volume.minY), 0);
-
-          var onUpdate = function(field, newValue, oldValue) {
-            boxTool.cropBox.top = volume.minY;
-            boxTool.cropBox.bottom = volume.maxY;
-            boxTool.cropBox.left = volume.minX;
-            boxTool.cropBox.right = volume.maxX;
-            boxTool.updateCropBox();
-          };
-
-          var onCloseVolumeEdit = function() {
-            boxTool.destroy();
-          };
-
-          return [onUpdate, onCloseVolumeEdit];
-        } else {
-          return [null, null];
-        }
-      }
-    },
-
-    /**
-     * Convex hulls can be created around a set of points. Points are provided
-     * by point sources which then can be restricted further.
-     */
-    "convexhull": {
-      name: "Convex hull",
-      createSettings: function(volume) {
+        // TODO source is never used?
         var source = function(e) {
           var source = CATMAID.skeletonListSources.getSource(this.value);
           volume.set("neuronSource", source);
@@ -366,7 +348,7 @@
         var ruleType = function(e) { };
         var $settings = $('<div />');
         var $content = CATMAID.DOM.addSettingsContainer($settings,
-            "Convex hull rule settings", false);
+            name + " rule settings", false);
 
         // Option to control preview
         var preview = CATMAID.DOM.createCheckboxSetting(
@@ -394,6 +376,35 @@
             sourceOptions, "The selection to draw points from", function(e) {
               volume.set("neuronSourceName", this.value);
             }, volume.neuronSourceName));
+
+        if (withAlpha) {
+          var defaultAlphaStep = 10.0;
+          var alphaInputWrapper = CATMAID.DOM.createNumericInputSetting("Alpha (nm)",
+              volume.alpha, defaultAlphaStep,
+              "Only triangles with a circumsphere radius less than alpha will be used",
+              function(e) {
+                volume.set("alpha", Number(this.value));
+              });
+          $content.append(alphaInputWrapper);
+
+          // Also update on mouse clicks and mouse wheel
+          var alphaInput = alphaInputWrapper.find('input');
+          alphaInput.on('mouseup mousewheel', function() {
+            volume.set("alpha", Number(this.value));
+          });
+
+          $content.append(CATMAID.DOM.createNumericInputSetting("",
+              defaultAlphaStep, 10.0, "Set the alpha change step for the numeric input above",
+              function(e) {
+                alphaInput.prop('step', Number(this.value));
+              }));
+
+          $content.append(CATMAID.DOM.createCheckboxSetting("Filter triangles",
+              volume.filterTriangles, "If checked, the alpha filter will be " +
+              "applied to individual triangles of the mesh. Otherwise, alpha " +
+              "is used to filter the tetrahedra of the 3D triangulation.",
+              function(e) { volume.set("filterTriangles", this.checked); }));
+        }
 
         // Get available filter strategeis
         var nodeFilters = Object.keys(CATMAID.NodeFilterStrategy).reduce(function(o, p) {
@@ -450,7 +461,7 @@
           createSettings(nodeFilterSettingsContainer, newRuleOptions);
         };
         $content.append(CATMAID.DOM.createSelectSetting("Node filter",
-          nodeFilters, "Nodes inside the convex hull", function(e) {
+          nodeFilters, "Nodes inside the " + name, function(e) {
             updateNodeFilterSettings(this.value);
           }));
         $content.append(nodeFilterSettings);
@@ -462,7 +473,7 @@
               newRuleOptions, newRuleMergeMode, newRuleSkeletonID, newRuleSkeletonName);
           volume.rules.push(rule);
           // To trigger events, override with itself
-          volume.set("rules", volume.rules);
+          volume.set("rules", volume.rules, true);
           // Trigger table update
           datatable.rows().invalidate();
           datatable.ajax.reload();
@@ -551,13 +562,16 @@
           volume.set("rules", volume.rules, true);
         });
 
-        // Update working volume with default properties set above
-        volume.updateTriangleMesh();
+        if (volume.preview) {
+          volume.updateTriangleMesh();
+        }
 
         return $settings;
       },
       createVolume: function(options) {
-        return new CATMAID.ConvexHullVolume(options);
+        var volume = new CATMAID[theclass](options);
+        volume.init();
+        return volume;
       },
       /**
        * Create an array of handlers: [onVolumeUpdate, onVolumeClose]
@@ -565,28 +579,147 @@
       createHandlers: function(volume) {
         // Give some feedback in case of problems
         var checkGeneratedMesh = function(volume, mesh) {
+          var meshNeedsUpdate = false;
           if (!mesh || 0 === mesh.length) {
             CATMAID.warn("Neither points nor mesh could be generated");
+            meshNeedsUpdate = true;
           } else if (!mesh[0] || 0 === mesh[0].length) {
             CATMAID.warn("Couldn't find points for volume generation");
+            meshNeedsUpdate = true;
           } else if (!mesh[1] || 0 === mesh[1].length) {
             CATMAID.warn("Couldn't generate volume from degenerative points");
+            meshNeedsUpdate = true;
           }
+          volume.meshNeedsSync = meshNeedsUpdate;
+          return !meshNeedsUpdate;
         };
         var onUpdate = function(field, newValue, oldValue) {
+          // Recalculate mesh if preview was just enabled
+          if (volume.preview && "preview" === field) {
+            volume.meshNeedsSync = true;
+          }
           // Re-create mesh if the updated field is no 'basic' property to avoid
           // unnecessary re-calculation.
-          if (field !== 'mesh' && field !== "id" && field !== "title" && field !== 'comment') {
-            volume.updateTriangleMesh(checkGeneratedMesh);
+          if (volume.preview && volume.meshNeedsSync) {
+            $.blockUI({message: '<img src="' + CATMAID.staticURL +
+                'images/busy.gif" /> <span>Please wait, creating volume</span>'});
+            var onSuccess = function(volume, mesh) {
+              checkGeneratedMesh(volume, mesh);
+              $.unblockUI();
+            };
+            var updateMesh = volume.updateTriangleMesh.bind(volume, onSuccess,
+                $.unblockUI.bind($));
+            setTimeout(updateMesh, 100);
+          } else if (!volume.preview && "preview" === field) {
+            // Preview just got disabled
+            volume.clearPreviewData();
           }
         };
-        var onClose = function() {
-          // Remove previewed meshes from 3D viewer
-          volume.clearPreviewData();
+        var onClose = function(save, onSuccess, onCancel) {
+          if (save) {
+            var onSuccessWrapper = function(volume, mesh) {
+              if (checkGeneratedMesh(volume, mesh)) {
+                CATMAID.tools.callIfFn(onSuccess);
+              } else {
+                CATMAID.tools.callIfFn(onCancel);
+              }
+              // Remove previewed meshes from 3D viewer
+              volume.clearPreviewData();
+            };
+            if (volume.meshNeedsSync) {
+              volume.updateTriangleMesh(onSuccessWrapper);
+            } else {
+              onSuccessWrapper(volume, volume.mesh);
+            }
+          } else {
+            // Remove previewed meshes from 3D viewer
+            volume.clearPreviewData();
+            CATMAID.tools.callIfFn(onSuccess);
+          }
         };
         return [onUpdate, onClose];
+      },
+    };
+  };
+
+  var volumeTypes = {
+    "box": {
+      name: "Box",
+      createSettings: function(volume) {
+        var minX = function(e) { volume.set("minX", Number(this.value)); };
+        var minY = function(e) { volume.set("minY", Number(this.value)); };
+        var minZ = function(e) { volume.set("minZ", Number(this.value)); };
+        var maxX = function(e) { volume.set("maxX", Number(this.value)); };
+        var maxY = function(e) { volume.set("maxY", Number(this.value)); };
+        var maxZ = function(e) { volume.set("maxZ", Number(this.value)); };
+        var $settings = $('<div />');
+        var $content = CATMAID.DOM.addSettingsContainer($settings,
+            "Box settings", false);
+        $content.append(CATMAID.DOM.createInputSetting("Min X", volume.minX,
+              "X coordinate of the boxes minimum corner.", minX));
+        $content.append(CATMAID.DOM.createInputSetting("Min Y", volume.minY,
+              "Y coordinate of the boxes minimum corner.", minY));
+        $content.append(CATMAID.DOM.createInputSetting("Min Z", volume.minZ,
+              "Z coordinate of the boxes minimum corner.", minZ));
+        $content.append(CATMAID.DOM.createInputSetting("Max X", volume.maxX,
+              "X coordinate of the boxes maximum corner.", maxX));
+        $content.append(CATMAID.DOM.createInputSetting("Max Y", volume.maxY,
+              "Y coordinate of the boxes maximum corner.", maxY));
+        $content.append(CATMAID.DOM.createInputSetting("Max Z", volume.maxZ,
+              "Z coordinate of the boxes maximum corner.", maxZ));
+
+        return $settings;
+      },
+      createVolume: function(options) {
+        return new CATMAID.BoxVolume(options);
+      },
+      /**
+       * Create an array of handlers: [onVolumeUpdate, onVolumeClose]
+       */
+      createHandlers: function(volume) {
+        var handlers = [null, null];
+        if (project.focusedStackViewer) {
+          var stack = project.focusedStackViewer;
+          // TODO: Use a proper layer for this and make this work wirh regular
+          // ortho stacks.
+          var boxTool = new CATMAID.BoxSelectionTool();
+          boxTool.destroy();
+          boxTool.register(stack);
+          boxTool.createCropBoxByWorld(
+              volume.minX, volume.minY, Math.abs(volume.maxX - volume.minX),
+              Math.abs(volume.maxY - volume.minY), 0);
+
+          var onUpdate = function(field, newValue, oldValue) {
+            boxTool.cropBox.top = volume.minY;
+            boxTool.cropBox.bottom = volume.maxY;
+            boxTool.cropBox.left = volume.minX;
+            boxTool.cropBox.right = volume.maxX;
+            boxTool.updateCropBox();
+          };
+
+          var onCloseVolumeEdit = function(save, onSuccess, onCancel) {
+            boxTool.destroy();
+            onSuccess();
+          };
+
+          return [onUpdate, onCloseVolumeEdit];
+        } else {
+          return [null, null];
+        }
       }
-    }
+    },
+
+    /**
+     * Convex hulls can be created around a set of points. Points are provided
+     * by point sources which then can be restricted further.
+     */
+    "convexhull": makeVolume("Convex hull", "ConvexHullVolume"),
+
+    /**
+     * Alpha-shapes can be created around a set of points. Points are provided
+     * by point sources which are then restricted further.
+     */
+     "alphashape": makeVolume("Alpha shape", "AlphaShapeVolume", true)
   };
 
   /**
@@ -596,6 +729,16 @@
   var nodeFilterSettingFactories = {
     'take-all': function(container, options) {
       // Take all has no additional options
+    },
+    'endnodes': function(container, options) {
+      // Option to include root
+      var $includeRoot = CATMAID.DOM.createCheckboxSetting(
+          "Include root node", false, "If checked, the root node will be treated as an end node.",
+          function(e) { options.includeRoot = this.checked; });
+      $(container).append($includeRoot);
+    },
+    'branches': function(container, options) {
+      // There are no additional settings for branch node selection
     },
     'tags': function(container, options) {
       var $tag = CATMAID.DOM.createInputSetting("Tag", "",
@@ -663,14 +806,14 @@
       });
 
       var $otherNeurons = CATMAID.DOM.createSelectSetting("Source of synaptic neurons",
-          sourceOptions, "Neurons from this source will be checked against having synapses with the working set.",
+          sourceOptions, "Neurons from this source will be checked against having synapses with the working set. If \"None\" is selected, all synaptic nodes will be considered.",
           function(e) {
             // Get models from source to store in option set
             var source = this.value && this.value !== "None" ?
               CATMAID.skeletonListSources.getSource(this.value) : undefined;
 
             if (!source) {
-              options.otherNeurons = {};
+              options.otherNeurons = null;
               return;
             }
 
@@ -679,7 +822,7 @@
           }, 'None');
 
       var $relation = CATMAID.DOM.createSelectSetting("Relation of base set to above partners",
-          { "Postsynaptic": "post", "Presynaptic": "pre" },
+          { "Postsynaptic": "post", "Presynaptic": "pre" , "Pre- or postsynaptic": "pre-or-post"},
           "Select how a valid node of the base set (nodes to generate mesh) is related to partner neurons from other source.",
           function() {
             options.relation = this.value;

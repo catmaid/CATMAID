@@ -62,7 +62,7 @@ class DVIDClient:
             for instance_id in repo[instance_key]:
                 instance = repo[instance_key][instance_id]
                 if 'Base' not in instance:
-                    continue;
+                    continue
                 base = instance['Base']
                 if 'TypeName' not in base:
                     continue

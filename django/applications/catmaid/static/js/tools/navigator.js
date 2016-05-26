@@ -44,11 +44,11 @@
         undefined,
         undefined,
         new Array(
-          0,
-          1,
-          2,
+          8,
           4,
-          8 ),
+          2,
+          1,
+          0 ),
         8,
         function( val ){ CATMAID.statusBar.replaceLast( "s: " + val ); },
         undefined,
@@ -175,7 +175,7 @@
     {
       if ( changeSliceDelayedTimer ) window.clearTimeout( changeSliceDelayedTimer );
       changeSliceDelayedParam = { z : val };
-      changeSliceDelayedTimer = window.setTimeout( changeSliceDelayedAction, 100 );
+      changeSliceDelayedTimer = window.setTimeout( changeSliceDelayedAction, 50 );
     };
 
     this.changeSlice = function( val )

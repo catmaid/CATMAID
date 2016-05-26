@@ -3,6 +3,14 @@ import decimal
 
 from django.db import connection
 
+
+class StateMatchingError(Exception):
+    """Indicates that a state check wasn't successful"""
+    def __init__(self, message, state):
+        super(StateMatchingError, self).__init__(message)
+        self.unmatched_state = state
+
+
 class SQL:
     was_edited = """
         SELECT 1 FROM location t
@@ -343,4 +351,4 @@ def check_state(state, state_checks, cursor):
     # Expect results to have a length of the number of checks made and that
     # each result equals one.
     if not state_check_results or 1 != len(state_check_results) or 1 != state_check_results[0][0]:
-        raise ValueError("The provided state differs from the database state")
+        raise StateMatchingError("The provided state differs from the database state", state)

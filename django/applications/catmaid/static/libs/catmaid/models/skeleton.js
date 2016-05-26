@@ -38,7 +38,7 @@
       };
 
       return CATMAID.fetch(url, 'POST', params).then((function(json) {
-        this.trigger(CATMAID.Nodes.EVENT_SKELETON_SPLIT, json.skeleton_id,
+        this.trigger(CATMAID.Skeletons.EVENT_SKELETON_SPLIT, json.skeleton_id,
             treenodeId);
         return json;
       }).bind(this));
@@ -74,8 +74,8 @@
       return CATMAID.fetch(url, 'POST', params).then((function(json) {
         // Trigger join, delete and change events
         CATMAID.Skeletons.trigger(
-            CATMAID.Skeletons.EVENT_SKELETONS_JOINED, json.result_skeleton_id,
-                json.deleted_skeleton_id);
+            CATMAID.Skeletons.EVENT_SKELETONS_JOINED, json.deleted_skeleton_id,
+                json.result_skeleton_id);
         CATMAID.Skeletons.trigger(
             CATMAID.Skeletons.EVENT_SKELETON_DELETED, json.deleted_skeleton_id);
         CATMAID.Skeletons.trigger(

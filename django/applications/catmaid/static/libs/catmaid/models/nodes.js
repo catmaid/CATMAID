@@ -490,12 +490,19 @@
           partnerConfidences.push(node.old_confidence);
         }
       } else {
-        var updatedNode = updatedNodes[mNode.value];
-        if (!updatedNode) {
+        // Expect only a single updated edge, the one to the parent. No need to
+        // check parent ID here.
+        for (var n in updatedNodes) {
+          var node = updatedNodes[n];
+          oldConfidence = node.old_confidence;
+          break;
+        }
+        // Check explicitely for undefined and not !oldConfidence to allow also
+        // a confidence of zero.
+        if (undefined === oldConfidence) {
           throw new CATMAID.ValueError("Can't undo confidence update, missing " +
               "history information");
         }
-        oldConfidence = updatedNode.old_confidence;
       }
 
       var undoState = new CATMAID.LocalState([mNode.value, mNode.timestamp]);
@@ -858,7 +865,7 @@
       var undoState = new CATMAID.LocalState([mNode.value, mNode.timestamp],
           [mParent.value, mParent.timestamp], children, links);
 
-      var removeNode = CATMAID.Nodes.remove(undoState, projectId, nodeId);
+      var removeNode = CATMAID.Nodes.remove(undoState, projectId, mNode.value);
       return removeNode.then(function(result) {
 
         // Map ID change of children and links

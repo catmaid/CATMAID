@@ -113,6 +113,10 @@
   };
 
   var show_table = function(header, connectors, relation) {
+    if (!connectors || 0 === connectors.length) {
+      CATMAID.warn("No connectors to show");
+      return;
+    }
     WindowMaker.show('create-connector-selection');
     // Write the label
     $('#connector-selection-label').text(header);

@@ -199,6 +199,18 @@ window.onbeforeunload = function() {
   };
 
   /**
+   * Open a state update dialog and send a state update event to update state
+   * listeners.
+   */
+  CATMAID.suggestStateUpdate = function(error) {
+    var refresh = CATMAID.State.trigger.bind(CATMAID.State,
+        CATMAID.State.EVENT_STATE_NEEDS_UPDATE);
+    var dialog = new CATMAID.StateUpdateDialog(error.message,
+        error.detail, refresh);
+    dialog.show();
+  };
+
+  /**
    * Look at the error type and take appropriate action.
    */
   CATMAID.handleError = function(error) {
@@ -207,6 +219,8 @@ window.onbeforeunload = function() {
         new CATMAID.LoginDialog(e.error).show();
       } else if (error instanceof CATMAID.CommandHistoryError) {
         CATMAID.warn(error.message);
+      } else if (error instanceof CATMAID.StateMatchingError) {
+        CATMAID.suggestStateUpdate(error);
       } else {
         CATMAID.error(error.message, error.detail);
       }

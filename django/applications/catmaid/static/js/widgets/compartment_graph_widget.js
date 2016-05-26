@@ -623,20 +623,23 @@
             if (isSplit(target)) {
               connector_ids = getData(target).upstream_skids[target_skids[0]];
             }
+          } else {
+            source_skids = getSkids(source);
+            target_skids = getSkids(target);
           }
-        }
 
-        requestQueue.register(django_url + project.id + '/connector/pre-post-info', "POST",
-          {cids: connector_ids,
-           pre: source_skids,
-           post: target_skids},
-          function(status, text) {
-            if (200 !== status) return;
-            var json = $.parseJSON(text);
-            if (json.error) return new CATMAID.ErrorDialog(
-                "Cound not fetch edge data.", json.error);
-            CATMAID.ConnectorSelection.show_connectors(json);
-          });
+          var params = {
+            cids: connector_ids,
+            pre: source_skids,
+            post: target_skids
+          };
+
+          CATMAID.fetch(project.id + '/connector/pre-post-info', "POST", params)
+            .then(function(result) {
+              CATMAID.ConnectorSelection.show_connectors(result);
+            })
+            .catch(CATMAID.handleError);
+        }
       }
     });
 
@@ -1338,27 +1341,37 @@
         }
 
         if (new_model.selected) {
+          var gid = member_of[skeleton.id];
           // Update node properties
-
-          if (new_model.baseName) {
-            var name = CATMAID.NeuronNameService.getInstance().getName(new_model.id),
-                name = name ? name : new_model.baseName,
-                label = node.data('label');
-            if (subgraphs[new_model.id] && label.length > 0) {
-              var i_ = label.lastIndexOf(' [');
-              name = name + (-1 !== i_ ? label.substring(i_) : '');
-            }
-            node.data('label', name);
-          }
           skeleton.color = new_model.color.clone();
-
-          if (one) {
+          // Update node name and color if the node is not part of a group
+          if (gid) {
+            if (gid === node.id()) {
+              // The new skeleton model is part of a group (this node), and needs
+              // no further updates.
+              CATMAID.msg("Skeleton updated", "Skeleton #" + skeleton.id +
+                  " in group \"" + node.data('label') + "\" was updated");
+            } else {
+              CATMAID.msg("Group updated", "Skeleton #" + skeleton.id +
+                  " in now part of group \"" + node.data('label'));
+              // Count every existing model that is added to a new group
+              added_to_group += 1;
+            }
+          } else {
+            // Update node label for singleton nodes
+            if (new_model.baseName) {
+              var name = CATMAID.NeuronNameService.getInstance().getName(new_model.id),
+                  name = name ? name : new_model.baseName,
+                  label = node.data('label');
+              if (subgraphs[new_model.id] && label.length > 0) {
+                var i_ = label.lastIndexOf(' [');
+                name = name + (-1 !== i_ ? label.substring(i_) : '');
+              }
+              node.data('label', name);
+            }
             // Update color in the case of singleton nodes
             node.data('color', '#' + skeleton.color.getHexString());
           }
-
-          var gid = member_of[skeleton.id];
-          if (gid && gid !== node.id()) added_to_group += 1;
 
           set[skeleton.id] = new_model;
 
@@ -1809,10 +1822,12 @@
 
   GroupGraph.prototype.growPaths = function() {
     var types = ['source', 'target'];
-    for (var i=0; i<types; ++i) {
-      var type = 'path_' + types[i];
+    for (var i=0; i<types.length; ++i) {
+      var rawType = types[i];
+      var type = 'path_' + rawType;
       if (!this[type] || 0 === Object.keys(this[type]).length)  {
-        return CATMAID.msg('Select ' + type + ' nodes first!');
+        return CATMAID.msg('No ' + rawType + ' for path',
+            'Select ' + rawType + ' node(s) first!', {style: 'warning'});
       }
     }
 
@@ -1949,24 +1964,44 @@
 
   GroupGraph.prototype.removeSelected = function() {
     var nodes = this.orderedSelectedNodes();
-    if (0 === nodes.length) return alert("Select one or more nodes first!");
-    if (!confirm("Remove " + nodes.length + " selected node" + (nodes.length > 1 ? "s":"") + "?")) return;
-    nodes.forEach(function(node) {
-      delete this.groups[node.id()]; // ok if not present
-      var skid = node.data('skeletons')[0].id;
-      node.remove();
-
-      // If the node is part of a split subgraph, also remove all other nodes
-      // in the subgraph.
-      if (this.subgraphs.hasOwnProperty(skid)) {
-        this.cy.nodes().filter(function (i, splitNode) {
-          return splitNode.data('skeletons').some(function (model) {
-            return model.id === skid;
-          });
-        }).remove();
-        delete this.subgraphs[skid];
+    if (0 === nodes.length) {
+      // If no node is selected explicitely, just remove the selected Cytoscape
+      // element. This should usually be an edge.
+      var nRemoved = 0;
+      this.cy.elements().each(function(i, e) {
+        if (e.selected()) {
+          e.unselect();
+          e.remove();
+          ++nRemoved;
+        }
+      });
+      if (0 === nRemoved) {
+        alert("Select one or more nodes first!");
+        return;
       }
-    }, this);
+    } else {
+      var removalConfirmation = "Remove " + nodes.length + " selected node" +
+          (nodes.length > 1 ? "s":"") + "?";
+      if (!confirm(removalConfirmation)) {
+        return;
+      }
+      nodes.forEach(function(node) {
+        delete this.groups[node.id()]; // ok if not present
+        var skid = node.data('skeletons')[0].id;
+        node.remove();
+
+        // If the node is part of a split subgraph, also remove all other nodes
+        // in the subgraph.
+        if (this.subgraphs.hasOwnProperty(skid)) {
+          this.cy.nodes().filter(function (i, splitNode) {
+            return splitNode.data('skeletons').some(function (model) {
+              return model.id === skid;
+            });
+          }).remove();
+          delete this.subgraphs[skid];
+        }
+      }, this);
+    }
     this.deselectAll();
   };
 

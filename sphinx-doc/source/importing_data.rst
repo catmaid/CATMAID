@@ -134,12 +134,22 @@ file and could look like this for the example above::
            resolution: "(138.0,138.0,1.0)"
            zoomlevels: 2
            fileextension: "jpg"
+           stackgroups:
+             - name: "Example group"
+               relation: "has_channel"
          - url: "http://my.other.server.net/examplestack/"
            name: "Remote stack"
            dimension: "(3886,3893,55)"
            resolution: "(138.0,138.0,1.0)"
            zoomlevels: 3
            fileextension: "png"
+           translation: "(10.0, 20.0, 30.0)"
+           tile_width: 512
+           tile_height: 512
+           tile_source_type: 2
+           stackgroups:
+             - name: "Example group"
+               relation: "has_channel"
 
 As can be seen, a project has only two properties: a name and a set of
 stacks. A stack, however, needs more information. In general, there are
@@ -172,7 +182,8 @@ setting. This setting *requires* to also use the ``zoomlevel`` and the
 ``fileextension`` fields, because the importer won't try different URLs
 to get an idea about the file extension and the number of zoom levels.
 Like done for the folder based stacks, a url based stack needs the
-``resolution`` and ``dimension`` fields, too.
+``resolution`` and ``dimension`` fields, too. It is also possible to declare
+``tile_width``, ``tile_height`` and ``tile_source_type`` information.
 
 A stack can also have *overlays*. To add one or more of them, please
 use the ``overlays`` field in a stack. Like visible in the example, an
@@ -185,6 +196,29 @@ don't need to, provide a ``fileextension``. If you don't, the import
 tries to find it on its own. Besides that, a default opacity for
 displaying an overlay can be provided, by using the ``defaultopacity``
 key word. It ranges from zero to one. If not provided, it defaults to zero.
+
+CATMAID can link stacks to so called stack groups. These are general data
+structures that relate stacks to each other, for instance to denote that they
+represent channels of the same data set or are orthogonal views. There is no
+limit on how many stack groups a stack can be part of. Each stack in a project
+file can reference stack groups by ``name`` and the type of ``relation`` this
+stack has to this stack group. At the moment, valid relations are
+``has_channel`` and ``has_view``. All stacks referencing a stack group with the
+same name will be linked to the same new stack group in the new project. In the
+example above, a single stack group named "Example group" will be created,
+having stack 2 and 3 as members---each representing a layer/channel. Stack
+groups are used by the front-end to open multiple stacks at once in a more
+intelligent fashion (e.g. open multi-channel stack groups as layers in the same
+viewer).
+
+All specified stacks within a project are linked into a single space. By default
+each stack origin is mapped to the project space origin (0,0,0). An optional
+translation can be applied to this mapping: If a stack has a ``translation``
+field, the stack is mapped with this offset into project space. Note that this
+translation is in project space coordinates (physical space, nanometers). The
+example above will link the last stack ("Remote stack") to the project "Wing
+Disc 1" with an offset of ``(10.0, 20.0, 30.0)`` nanometers. Both other stacks
+will be mapped to the project space origin.
 
 Also, it wouldn't confuse the tool if there is more YAML data in the
 project file than needed. It only uses what is depicted in the sample
@@ -232,13 +266,18 @@ available.
 Using the Importer
 ^^^^^^^^^^^^^^^^^^
 
-To use the importer, you have to adjust your CATMAID settings file to
-make your data path and its URL known. These settings are called
-``CATMAID_IMPORT_PATH`` and ``CATMAID_IMPORT_URL``. Sticking to the
-examples from before, these variables might be::
+To use the importer, you have to adjust your CATMAID settings file to make your
+data path known to CATMAID. This can be done with the ``CATMAID_IMPORT_PATH``
+settings. Sticking to the examples from before, this setting might be::
 
     CATMAID_IMPORT_PATH = <CATMAID-PATH>/httpdocs/data
-    CATMAID_IMPORT_URL = http://<CATMAID-URL>/data
+
+For imported stacks that don't provide an image URL by themselves, CATMAID can
+construct an image base from the the ``IMPORTER_DEFAULT_IMAGE_BASE`` setting
+plus the imported project and stack names. For the example above, this variable
+could be set to::
+
+    IMPORTER_DEFAULT_IMAGE_BASE = http://<CATMAID-URL>/data
 
 With this in place, the importer can be used through Django's admin
 interface. It is listed as *Importer* under *Custom Views*. The first
@@ -257,11 +296,11 @@ term. You can use Unix shell-style wildcards there. With the check-box
 below this setting, you can make sure the tool looks only at unknown
 projects. Here, a project is unknown if all of its stacks are known to
 CATMAID. A stack in turn is known if there is already a stack with the
-same image base. The last setting on this dialog is the *Base URL*. By
-default it is set to the value of ``CATMAID_IMPORT_URL`` (if available).
-This setting plus the relative path stay the same for every project
-to be imported in this run. To continue, click on the *next step*
-button.
+same image base. The last setting on this dialog is the *Base URL*. By default
+it is set to the value of ``IMPORTER_DEFAULT_IMAGE_BASE`` (if available). This
+setting plus the relative path stay the same for every project to be imported in
+this run. It is used if imported stacks don't provide a URL explicitly. To
+continue, click on the *next step* button.
 
 The importer will tell you if it doesn't find any projects based on
 the settings of the first step. However, if it does find potential

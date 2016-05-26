@@ -11,11 +11,29 @@
 * The resulting geometry.js file is committed to CATMAID's git repository.
 */
 window.GeometryTools = {
-	convexHull: require("convex-hull"),
-	alphaShape: require("alpha-shape")
+  // See: https://github.com/mikolalysenko/convex-hull
+  convexHull: require("convex-hull"),
+
+  // See: https://github.com/mikolalysenko/circumcenter
+  delaunayTriangulate: require('delaunay-triangulate'),
+
+  // See: https://github.com/mikolalysenko/alpha-complex
+  alphaShape: require("alpha-shape"),
+
+  // See: https://github.com/mikolalysenko/simplicial-complex
+  simplicialComplex: require('simplicial-complex'),
+
+  // See: https://github.com/mikolalysenko/simplicial-complex-boundary
+  simplicialComplexBoundary: require('simplicial-complex-boundary'),
+
+  // See: https://github.com/mikolalysenko/circumradius
+  circumradius: require('circumradius'),
+
+  // See: https://github.com/mikolalysenko/circumcenter
+  circumcenter: require('circumcenter'),
 };
 
-},{"alpha-shape":4,"convex-hull":12}],2:[function(require,module,exports){
+},{"alpha-shape":4,"circumcenter":8,"circumradius":9,"convex-hull":12,"delaunay-triangulate":16,"simplicial-complex":29,"simplicial-complex-boundary":28}],2:[function(require,module,exports){
 'use strict'
 
 module.exports = affineHull
@@ -300,25 +318,35 @@ exports.nextCombination = function(v) {
 
 
 },{}],6:[function(require,module,exports){
-"use strict"
+'use strict'
 
 module.exports = boundary
 
-function boundary(cells) {
+function boundary (cells) {
+  var i, j, k
   var n = cells.length
   var sz = 0
-  for(var i=0; i<n; ++i) {
+  for (i = 0; i < n; ++i) {
     sz += cells[i].length
   }
   var result = new Array(sz)
   var ptr = 0
-  for(var i=0; i<n; ++i) {
+  for (i = 0; i < n; ++i) {
     var c = cells[i]
     var d = c.length
-    for(var j=0; j<d; ++j) {
-      var b = result[ptr++] = new Array(d-1)
-      for(var k=1; k<d; ++k) {
-        b[k-1] = c[(j+k)%d]
+    for (j = 0; j < d; ++j) {
+      var b = result[ptr++] = new Array(d - 1)
+      var p = 0
+      for (k = 0; k < d; ++k) {
+        if (k === j) {
+          continue
+        }
+        b[p++] = c[k]
+      }
+      if (j & 1) {
+        var tmp = b[1]
+        b[1] = b[0]
+        b[0] = tmp
       }
     }
   }

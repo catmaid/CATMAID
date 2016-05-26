@@ -1314,14 +1314,16 @@ var WindowMaker = new function()
     };
     var o = CATMAID.WebGLApplication.prototype.OPTIONS;
 
-    var volumeSelection = CATMAID.DOM.createAsyncPlaceholder(
-        CATMAID.fetch(project.id + '/volumes/', 'GET').then(function(json) {
+    // Update volume list
+    var initVolumeList = function() {
+      return CATMAID.Volumes.listAll(project.id).then(function(json) {
           var volumes = json.reduce(function(o, volume) {
             o[volume.id] = volume.name;
             return o;
           }, {});
+          var selectedVolumes = WA.getLoadedVolumeIds();
           // Create actual element based on the returned data
-          var node = CATMAID.DOM.createCheckboxSelect('Volumes', volumes);
+          var node = CATMAID.DOM.createCheckboxSelect('Volumes', volumes, selectedVolumes);
           // Add a selection handler
           node.onchange = function(e) {
             var visible = e.srcElement.checked;
@@ -1329,12 +1331,29 @@ var WindowMaker = new function()
             WA.showVolume(volumeId, visible);
           };
           return node;
-        }));
+        });
+    };
+
+    // Create async selection and wrap it in container to have handle on initial
+    // DOM location
+    var volumeSelection = CATMAID.DOM.createAsyncPlaceholder(initVolumeList());
+    var volumeSelectionWrapper = document.createElement('span');
+    volumeSelectionWrapper.appendChild(volumeSelection);
+
+    // Replace volume selection wrapper children with new select
+    var refreshVolumeList = function() {
+      while (0 !== volumeSelectionWrapper.children.length) {
+        volumeSelectionWrapper.removeChild(volumeSelectionWrapper.children[0]);
+      }
+      var volumeSelection = CATMAID.DOM.createAsyncPlaceholder(initVolumeList());
+      volumeSelectionWrapper.appendChild(volumeSelection);
+    };
 
     appendToTab(tabs['View settings'],
         [
           ['Meshes ', false, function() { WA.options.show_meshes = this.checked; WA.adjustContent(); }, false],
-          [volumeSelection],
+          [volumeSelectionWrapper],
+          ['Faces ', false, function() { WA.options.meshes_faces = this.checked;}, false],
           [WA.createMeshColorButton()],
           ['Active node', true, function() { WA.options.show_active_node = this.checked; WA.adjustContent(); }, false],
           ['Active node on top', false, function() { WA.options.active_node_on_top = this.checked; WA.adjustContent(); }, false],
@@ -1555,6 +1574,15 @@ var WindowMaker = new function()
     // Create a Selection Table, preset as the sync target
     var st = createStagingListWindow( ST, win, WA.getName() );
 
+    CATMAID.Volumes.on(CATMAID.Volumes.EVENT_VOLUME_ADDED,
+        refreshVolumeList, WA);
+
+    // Clear listeners that were added above
+    var unregisterUIListeners = function() {
+      CATMAID.Volumes.off(CATMAID.Volumes.EVENT_VOLUME_ADDED,
+          refreshVolumeList, WA);
+    };
+
     win.addListener(
       function(callingWindow, signal) {
         switch (signal) {
@@ -1571,6 +1599,7 @@ var WindowMaker = new function()
                   windows.delete(widgetName);
                 }
               });
+              unregisterUIListeners();
               WA.destroy();
             }
             break;
@@ -1865,6 +1894,8 @@ var WindowMaker = new function()
     bar.setAttribute('class', 'buttonpanel');
     DOM.addSourceControlsToggle(win, GG);
     DOM.addButtonDisplayToggle(win);
+    DOM.addHelpButton(win, 'Help: ' + GG.getName(), "<h3>Visualize connecticity networks</h3>" +
+        "<h4>How to...</h4><p><em>Hide edges/links:</em> Select an edge and use the <em>Hide</em> button in the <em>Selection</em> tab.</p>");
 
     var tabs = appendTabs(bar, GG.widgetID, ['Main', 'Grow', 'Graph',
         'Selection', 'Subgraphs', 'Align', 'Export']);
@@ -2486,7 +2517,7 @@ var WindowMaker = new function()
 
   var createConnectorTableWindow = function(ct_instance)
   {
-    var CT = ct_instance ? ct_instance : new ConnectorTable();
+    var CT = ct_instance ? ct_instance : new CATMAID.ConnectorTable();
     var win = new CMWWindow(CT.getName());
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";

@@ -1,3 +1,156 @@
+## 2016.05.26
+
+Contributors:: Albert Cardona, Andrew Champion, Tom Kazimiers
+
+### Notes
+
+- The default image base setting for the importer has changed. If you use the
+  importer along with this setting, please update your settings.py file to now
+  use IMPORTER_DEFAULT_IMAGE_BASE instead of CATMAID_IMPORT_URL. The semantics
+  stay the same.
+
+
+### Features and enhancements
+
+Graph widget:
+
+- If a skeleton is appended that already exists in a group, the group's color
+  and label now doesn't change anymore. Instead a info message is shown.
+
+- Selected edges can now be removed with the help of the "Remove" button in the
+  "Selection" tab. Also, a help text icon has been added to the title bar. The
+  widget help window currently only contains information on how edges/links
+  between nodes can be hidden.
+
+
+Volume widget:
+
+- Preview for alpha shapes is now disabled by default due to its potential
+  re-computation cost.
+
+- Convex hull and alpha shape meshes are now only automatically re-generated on
+  property changes if preview is enabled.
+
+- Saving a new volume makes sure the volume's mesh is up-to-date and will
+  re-generate it if needed. Re-generations will now also show an info dialog.
+  If no mesh could be generated, saving is not allowed and the edit form will
+  stay open.
+
+- Two new filters for convex hulls and alpha shapes are now available: "only
+  end nodes" (optionally including the root) and "only branch nodes". These
+  will restrict the base point set for volume generation.
+
+- Alpha shapes now use the inverse of the alpha value used so far. This makes it
+  easier to use since it translates directly into nanometers.
+
+- If a synaptic connection filter is used with Alpha shapes and convex hulls, it
+  is now possible to select all synaptic nodes, regardless of the partner
+  skeleton (select "None" as partner neurons), and to select both pre- and
+  post-synaptic nodes at the same time.
+
+- Alpha shapes now use a different implementation which takes a little bit more
+  time to compute, but doesn't require re-computation if different alpha values
+  are used. This makes finding a good alpha value much quicker. The input field
+  for the alpha value to use is now also a numeric field in which arrow keys and
+  mouse wheel can be used to change the value. A second numeric input allows to
+  change the step size of alpha value changes.
+
+- For preview, volumes now use the color and opacity defined in the 3D viewer.
+
+
+Tile layer:
+
+- An efficient browsing mode is now available that will not load tiles at
+  the periphery of the stack viewer. This is useful to reduce data use and
+  browsing latency on bandwidth-limited connections. To use this mode, increase
+  the "Tile area efficiency threshold" in the tile layer controls.
+
+
+3D viewer:
+
+- Meshes and volumes can now optionally be displayed with visible faces instead
+  of wireframe only.
+
+- Volume list is now updated when new volumes are added, re-opening the widget
+  is not required anymore.
+
+- Transparent volumes are now displayed correctly.
+
+
+Miscellaneous:
+
+- If a client tries to perform an operation without having the most recent data
+  available and the performed action is canceled, a more helpful dialog is now
+  shown. It explains the situation and offers to refresh the client view
+  (currently only nodes in the tracing layer are refreshed).
+
+
+Administration:
+
+- The image data importer available from CATMAID's admin interface supports now
+  the specification of stack groups. It can also apply custom translations when
+  mapping imported stacks to imported projects.
+
+
+### Bug fixes
+
+- Creating nodes using the Z key without other nodes in close proximity works
+  again.
+
+- Zoom level slider initialized correctly for stacks with eight zoom levels.
+
+- Showing connector info for edge in Graph widget (Alt+Click) now works also if
+  the source is a single neuron and the target a group or split node.
+
+- Activate target node of a joined-in skeleton again.
+
+
+## 2016.04.18
+
+Contributors: Albert Cardona, Andrew Champion, Tom Kazimiers
+
+
+### Features and enhancements
+
+Miscellaneous:
+
+- The skeleton projection layer can now draw the colors used from the selected
+  source. This is now the default and can be changed in the settings widget with
+  the help of the "Use source colors" checkbox.
+
+- Unavailable images on CATMAID's front pages are now displayed as a gray
+  placeholder box, instead of the broken image icon of the browser.
+
+- A new volume type was added: alpha shapes can now be created in practically the
+  same way as convex hull volumes are created. Alpha shapes have one additional
+  parameter: alpha. It is used to filter edges for result mesh and has to be
+  fairly low with our spatial dimensions. Values around 0.00001 seemed to work
+  well in some cases. The preview of alpha shapes is disabled by default, because
+  they can take much longer to compute.
+
+- Materialized virtual nodes have now the correct edition time set, which make
+  operations like adding a child to a virtual node work again (state checks
+  prevent this with wrong edition time).
+
+- The neuron search will now show a warning and cancel a search if a query
+  annotation doesn't exist and the query term doesn't start with a forward
+  slash (used for regular expressions).
+
+
+### Bug fixes
+
+- Creating synaptic connections from connector nodes across sections works
+  again.
+
+- Inserting a node along an edge will now render correctly right after using
+  ctrl+alt+click.
+
+- Merging two skeletons while the losing skeleton was loaded into another widget
+  (e.g. Selection Table) doesn't trigger an error anymore.
+
+- Undoing confidence changes works again.
+
+
 ## 2016.04.15
 
 Contributors: Albert Cardona, Andrew Champion, Daniel Witvliet, Stephan Gerhard, Tom Kazimiers
@@ -12,18 +165,31 @@ update an existing CATMAID instance safely, please follow these steps:
 2. Upgrade to this version (or a newer one) and update pip and all Python
    packages (in within your virtualenv), South can be removed afterwards:
 
+   ```
    pip install -U pip
    pip install -r requirements.txt
    pip uninstall south
+   ```
 
-3. Fake initial migrations (and only the initial migrations!) of all used
+3. Remove the following variables from settings.py file (in
+   `django/projects/mysite/`): `TEMPLATE_DIRS`, `TEMPLATE_DEBUG`
+
+4. Fake initial migrations (and only the initial migration!) of the
+   `contenttypes` app and apply its other migrations:
+
+   ```
+   python manage.py migrate contenttypes 0001_initial --fake
+   python manage.py migrate contenttypes
+   ```
+
+5. Fake initial migrations (and only the initial migrations!) of all used
    Django applications to register current database state:
 
+   ```
    python manage.py migrate admin 0001_initial --fake
    python manage.py migrate auth 0001_initial --fake
    python manage.py migrate authtoken 0001_initial --fake
    python manage.py migrate catmaid 0001_initial --fake
-   python manage.py migrate contenttypes 0001_initial --fake
    python manage.py migrate djcelery 0001_initial --fake
    python manage.py migrate guardian 0001_initial --fake
    python manage.py migrate kombu_transport_django 0001_initial --fake
@@ -31,12 +197,15 @@ update an existing CATMAID instance safely, please follow these steps:
    python manage.py migrate sessions 0001_initial --fake
    python manage.py migrate sites 0001_initial --fake
    python manage.py migrate taggit 0001_initial --fake
+   ```
 
-4. In the future no syncdb step is required anymore. Continue with the rest of
+6. In the future no syncdb step is required anymore. Continue with the rest of
    the regular update procedure:
 
+   ```
    python manage.py migrate
    python manage.py collectstatic [-l]
+   ```
 
 This procedure will only be required for upgrading an existing instance to a
 release newer than 2015.12.21. It won't be needed to migrate from newer
@@ -45,10 +214,9 @@ releases.
 Also note that if you are running an Apache/mod_wsgi setup (or referencing
 django.wsgi), you have to re-generate your configuration with:
 
-  ./django/create_configuration
-
-The following variables have to be removed from settings.py files:
-TEMPLATE_DIRS, TEMPLATE_DEBUG
+   ```
+   ./django/create_configuration
+   ```
 
 Additionally, PostgreSQL is now required to be of version 9.4.
 

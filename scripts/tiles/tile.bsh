@@ -29,7 +29,7 @@ int thumbnailSize = 192;
 String overviewName = "small";
 String inputFile = "totile.txt";
 boolean createZProjections = false;
-ArrayList channels, colors, names;
+ArrayList colors, names;
 
 public class ImageInfo {
 	public ArrayList images;
@@ -62,7 +62,7 @@ Matcher createYamlRepeatMatcher( String data, String parent ) {
  * Finds all patterns:
  * <whitespace><dash><anything><newline>
  * <at-least-one-whitespace><no-dash><anything><newline>
- * The last line can be there multiple times. The parent is currenty ignored.
+ * The last line can be there multiple times. The parent is currently ignored.
  */
 Matcher createYamlListMatcher( String data, String parent ) {
 	String extractListBlock = "(?<=" + parent + ":\\s{0,255}$\\n)(^\\s++-(?:.*$\\n(?:^\\s++[^-]+:.*$\\n))+)";
@@ -400,7 +400,7 @@ public class TilingJob {
 					if (!correct_when_possible)
 						return false;
 					IJ.log("Stack: " + s.name + " -- dropping request for channel " + ch + " as it is not available in source image.");
-					channelsToRemove.add( ch );	
+					channelsToRemove.add( ch );
 				}
 			}
 			// remove dropped channels
@@ -425,6 +425,7 @@ public class TilingJob {
 				channels.add(ch);
 			}
 		}
+		IJ.log( "Using channels: " + channels.toString() );
 
 		return true;
 	}
@@ -518,7 +519,7 @@ ImagePlus openImage( pathName )
 		pd = pd == null ? new Length( new Double(1.0), ome.units.UNITS.MICROM ) : pd;
 		Double pt = retrieve.getPixelsTimeIncrement( 0 );
 		pt = pt == null ? new Double( 1.0 ) : pt;
-		
+
 		n = r.getImageCount();
 		w = r.getSizeX();
 		h = r.getSizeY();
@@ -638,7 +639,7 @@ void createTiles( job, stack, imp, stackDir ) {
 			int rows = ( height / tileHeight );
 			if ( height > rows * tileHeight )
 				++rows;
-			
+
 			sliceDirName = stackDir + "/" +  sliceIndex;
 
 			// create tiles
@@ -913,7 +914,7 @@ void work( pool ) {
 			throw new IllegalArgumentException( "A pool must not be null" );
 	// work serially on the jobs
 	for (job : pool.jobs) {
-		IJ.log("Processing tiling job with channels " + channels.toString() + " (or less if less available) of an image with max. value " + job.maxValue);
+		IJ.log("Processing tiling job of an image with max. value " + job.maxValue);
 
 		if (job.useGeneratedInfo)
 			IJ.log("Will generate meta data");
@@ -966,40 +967,18 @@ void setup( options ) {
 	if ( options.containsKey( "synopsis") || options.containsKey( "help" ) ) {
 		IJ.log( "This script tiles one or more files for the use with CATMAID" );
 		IJ.log( "You can pass the following arguments and options to the script:" );
-		IJ.log( "-ch <list of channels>   -- Define which channels to use, e.g. -ch \"1,2\"" );
+		IJ.log( "-input <filename>        -- The name of a file with input image stacks, one per line");
 		IJ.log( "-clr <list of colors>    -- Define a list of ImageJ colors to be used for the channels, e.g. -clr \"Green, Magenta\"" );
 		IJ.log( "-max-val <value>         -- The maximum value for dynamic range adjustments, e.g. -max-val 4095" );
 		IJ.log( "-target-dir <dir>        -- Define the directory in which the result should be saved" );
 		IJ.log( "-info-file <filename>    -- The name of the info YAML file" );
 		IJ.log( "-levels <numLevels>      -- Number of zoom-out levels wrt. to the original image (-1 for auto calculation), e.g -levels 4" );
 		IJ.log( "-tilesize <tilesize>     -- The width and height of one generated tile, e.g. -tilesize 256" );
-		IJ.log( "-metadata-file <filename>-- Define the name of a file that should be used for metadata retrieval" );
-		IJ.log( "-gen-meta <identifiers>  -- Let the tool add some meta data from the file, saved in file info file, for single channels, e.g. -gen-meta \"IlluminationChannel #<$Ch> Power|Power, IlluminationChannel #<$Ch> Wavelength|Wavelength\"" );
 		IJ.log( "--gen-info               -- Let the tool generate information about resolution and size, saved in file info file" );
 		IJ.log( "--z-project              -- Let the tool do a z-projection image for each generated stack" );
-		IJ.log( "--color-single-ch        -- Create colored single channels images, intead of gray ones" );
+		IJ.log( "--color-single-ch        -- Create colored single channels images, instead of gray ones" );
 		System.exit(0);
 	}
-
-	// channels
-	channels = new ArrayList();
-	if( options.containsKey( "-ch" ) ) {
-		channelOption = options.get("-ch");
-		wantedChannels = channelOption.split(",");
-		for (int i=0; i < wantedChannels.length; i++)
-			channels.add( new Integer( wantedChannels[ i ].trim() ).intValue() );
-		IJ.log( "Using channels: " + channels.toString() );
-	} else {
-		// add default channels
-		IJ.log("Using default channels: [1, 2, 3, 4, 5]");
-		channels.add(1);
-		channels.add(2);
-		channels.add(3);
-		channels.add(4);
-		channels.add(5);
-		numChannels = channels.size();
-	}
-	IJ.log( "! Currently only the project definition is used !" );
 
 	// channel colors
 	colors = new ArrayList();
@@ -1042,7 +1021,7 @@ void setup( options ) {
 	} else {
 		maxValue = 4095;
 	}
-	
+
 	// number of zoom-out levels (each brings 50% in size) -- default: 4
 	if ( options.containsKey( "-levels" ) ) {
 		numZoomLevels = new Integer( options.get( "-levels" ) ).intValue();

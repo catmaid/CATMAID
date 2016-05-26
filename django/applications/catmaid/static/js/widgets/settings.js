@@ -631,6 +631,9 @@
             'Shading', skpShading));
 
       // Set default properties
+      var skpPreferSourceColor = CATMAID.DOM.createCheckboxSetting("Use source color",
+          CATMAID.SkeletonProjectionLayer.options.preferSourceColor, null,
+          updateSkeletonProjectionDisplay);
       var skpDownstreamColor = CATMAID.DOM.createInputSetting("Downstream color",
           CATMAID.SkeletonProjectionLayer.options.downstreamColor);
       var skpUpstreamColor = CATMAID.DOM.createInputSetting("Upstream color",
@@ -653,6 +656,7 @@
           "For distance based shading, a fall-off can be set, by which " +
           "opacity is reduced with every layer");
 
+      dsSkeletonProjection.append(skpPreferSourceColor);
       dsSkeletonProjection.append(skpDownstreamColor);
       dsSkeletonProjection.append(skpUpstreamColor);
       dsSkeletonProjection.append(skpShowEdges);

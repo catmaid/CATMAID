@@ -59,9 +59,9 @@ INSTALLED_APPS = (
     'djcelery',
     'taggit',
     'adminplus',
+    'guardian',
     'catmaid',
     'performancetests',
-    'guardian',
     'pipeline',
     'rest_framework',
     'rest_framework.authtoken',
@@ -142,9 +142,6 @@ AUTHENTICATION_BACKENDS = (
     'rest_framework.authentication.TokenAuthentication',
 )
 
-# User-ID of the anonymous (i.e. not-logged-in) user. This is usually -1.
-ANONYMOUS_USER_ID = -1
-
 # Project ID of a dummy project that will keep all ontologies and
 # classifications that are shared between multiple projects (and are
 # thereby project independent).
@@ -180,9 +177,11 @@ ROI_AUTO_CREATE_IMAGE = False
 # client.
 NODE_LIST_MAXIMUM_COUNT = 5000
 
-# Default importer tile width and height
+# Default importer tile width, tile height and tile source type
 IMPORTER_DEFAULT_TILE_WIDTH = 256
 IMPORTER_DEFAULT_TILE_HEIGHT = 256
+IMPORTER_DEFAULT_TILE_SOURCE_TYPE = 1
+IMPORTER_DEFAULT_IMAGE_BASE = ''
 
 # Some tools and widgets create files (e.g. cropping, ROIs, NeuroHDF5 and
 # treenode export). These files will be created in a folder for each tool

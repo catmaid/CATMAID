@@ -759,6 +759,7 @@
     this.show_meshes = false;
     this.meshes_color = "#ffffff";
     this.meshes_opacity = 0.2;
+    this.meshes_faces = false;
     this.show_missing_sections = false;
     this.missing_section_height = 20;
     this.show_active_node = true;
@@ -812,7 +813,8 @@
     color = color || new THREE.Color(this.meshes_color);
     if (typeof opacity === 'undefined') opacity = this.meshes_opacity;
     return new THREE.MeshLambertMaterial({color: color, opacity: opacity,
-      transparent: opacity !== 1, wireframe: true});
+      transparent: opacity !== 1, wireframe: !this.meshes_faces, side: THREE.DoubleSide,
+      depthWrite: opacity === 1});
   };
 
 
@@ -1275,7 +1277,7 @@
 
   WebGLApplication.prototype.look_at_active_node = function() {
     this.space.content.active_node.updatePosition(this.space, this.options);
-    this.space.view.controls.target = this.space.content.active_node.mesh.position.clone();
+    this.space.view.controls.target.copy(this.space.content.active_node.mesh.position);
     this.space.render();
   };
 
@@ -1487,10 +1489,13 @@
     var addedObjects = [];
     var self = this;
 
-    Object.keys(meshes).forEach(function(name) {
+    var renderedMeshes = Object.keys(meshes).filter(function(name) {
       var mesh = meshes[name];
       var points = mesh[0];
       var hull = mesh[1];
+      if (!points || 0 === points.length || !hull || 0 === hull.length) {
+        return false;
+      }
       // Make the mesh with the faces specified in the hull array
       var geom = new THREE.Geometry();
       points.forEach(function(p) {
@@ -1500,16 +1505,19 @@
         this.faces.push(new THREE.Face3(indices[0], indices[1], indices[2]));
       }, geom);
       geom.computeFaceNormals();
+
+      // Create mesh based on volume color and opacity selected in 3D viewer.
+      // Ignore the face setting for now to always show faces.
+      var opacity = self.options.meshes_opacity;
       var mesh = new THREE.Mesh(
           geom,
           new THREE.MeshLambertMaterial(
-             {color: 0x0000ff,
-              opacity: 1.0,
-              transparent: true,
+             {color: self.options.meshes_color,
+              opacity: opacity,
+              transparent: opacity !== 1.0,
               wireframe: false,
-              wireframeLinewidth: 10,
-              morphTargets: true,
-              morphNormals: true}));
+              depthWrite: opacity === 1.0,
+              side: THREE.DoubleSide}));
 
       var wfh = new THREE.WireframeHelper(mesh, 0x000000);
       wfh.material.linewidth = 2;
@@ -1517,9 +1525,12 @@
       self.space.add(wfh);
       this.push(mesh);
       this.push(wfh);
+      return true;
     }, addedObjects);
 
-    this.space.render();
+    if (0 < renderedMeshes.length) {
+      this.space.render();
+    }
 
     return function() {
       if (!self || !self.space) {
@@ -1596,7 +1607,7 @@
         return;
       }
 
-      CATMAID.fetch(project.id + '/volumes/' + volumeId + '/', 'GET')
+      CATMAID.Volumes.get(project.id, volumeId)
         .then((function(volume) {
           // Convert X3D mesh to simple VRML and have Three.js load it
           var vrml = x3dToVrml(volume.mesh);
@@ -1625,6 +1636,13 @@
       delete this.loadedVolumes[volumeId];
       this.space.render();
     }
+  };
+
+  /**
+   * Return IDs of the currently loaded volumes.
+   */
+  WebGLApplication.prototype.getLoadedVolumeIds = function() {
+    return Object.keys(this.loadedVolumes);
   };
 
   /** Defines the properties of the 3d space and also its static members like the bounding box and the missing sections. */
@@ -1824,10 +1842,28 @@
     }
   };
 
-  WebGLApplication.prototype.Space.prototype.TextGeometryCache = function() {
+  WebGLApplication.prototype.Space.prototype.TextGeometryCache = function(options) {
     this.geometryCache = {};
 
-    this.getTagGeometry = function(tagString) {
+    // Load font asynchronously, text creation will wait
+    var prepare, font;
+    if (options.font) {
+      prepare = new Promise.resolve();
+      font = options.font;
+    } else {
+      prepare = new Promise(function(resolve, reject) {
+        var loader = new THREE.FontLoader();
+        var url = CATMAID.makeStaticURL('libs/three.js/fonts/helvetiker_regular.typeface.js');
+        loader.load(url, function(newFont) {
+          // Share font
+          options.font = newFont;
+          font = newFont;
+          resolve();
+        }, undefined, reject);
+      }).catch(CATMAID.handleError);
+    }
+
+    this.getTagGeometry = function(tagString, font) {
       if (tagString in this.geometryCache) {
         var e = this.geometryCache[tagString];
         e.refs += 1;
@@ -1838,7 +1874,7 @@
         size: 100,
         height: 20,
         curveSegments: 1,
-        font: "helvetiker"
+        font: font
       });
       text3d.computeBoundingBox();
       text3d.tagString = tagString;
@@ -1857,12 +1893,33 @@
       }
     };
 
-    this.createTextMesh = function(tagString, material) {
-      var text = new THREE.Mesh(this.getTagGeometry(tagString), material);
+    this._createMesh = function(tagString, material, font) {
+      var geometry = this.getTagGeometry(tagString, font);
+      var text = new THREE.Mesh(geometry, material);
       // We need to flip up, because our cameras' up direction is -Y.
       text.scale.setY(-1);
       text.visible = true;
       return text;
+    };
+
+    /**
+     * Create text mesh and load font if it isn't already available yet.
+     */
+    this.createTextMesh = function(tagString, material, onSuccess) {
+      // If font isn't loaded yet, load it and try again in 100ms.
+      if (font) {
+        var mesh = this._createMesh(tagString, material, font);
+        onSuccess(mesh);
+      } else {
+        prepare.then(function() {
+          if (font) {
+            var mesh = this._createMesh(tagString, material, font);
+            onSuccess(mesh);
+          } else {
+            throw new CATMAID.Error("3D viewer font couldn't be loaded");
+          }
+        });
+      }
     };
 
     this.destroy = function() {
@@ -1908,7 +1965,7 @@
 
     // Mesh materials for spheres on nodes tagged with 'uncertain end', 'undertain continuation' or 'TODO'
     this.updateDynamicMaterials(options, false);
-    this.textGeometryCache = new WebGLApplication.prototype.Space.prototype.TextGeometryCache();
+    this.textGeometryCache = new WebGLApplication.prototype.Space.prototype.TextGeometryCache(options);
     this.connectorLineColors = {'presynaptic_to': new THREE.LineBasicMaterial({color: 0xff0000, opacity: 1.0, linewidth: 6}),
                                 'postsynaptic_to': new THREE.LineBasicMaterial({color: 0x00f6ff, opacity: 1.0, linewidth: 6}),
                                 'gapjunction_with': new THREE.LineBasicMaterial({color: 0x9f25c2, opacity: 1.0, linewidth: 6})};
@@ -2320,7 +2377,7 @@
    * @param {Integer} textureZoomLevel (Optional) The zoom level used for
    *                                   image tile texture. If set to "max", the
    *                                   stack's maximum zoom level is used. If
-   *                                   null/undefined, no texture will be used. 
+   *                                   null/undefined, no texture will be used.
    * @param {Number}  opacity          A value in the range 0-1 representing the
    *                                   opacity of the z plane.
    */
@@ -3131,12 +3188,32 @@
       var camera = this.CATMAID_view.camera;
       if ((ev.ctrlKey || ev.altKey) && !camera.inOrthographicMode) {
         // Move the camera and the target in target direction
-        var distance = 3500 * (ev.wheelDelta > 0 ? -1 : 1);
+        var absUpdateDistance = 3500;
+        var movingForward = ev.wheelDelta > 0;
+        var dirFactor = movingForward ? -1 : 1;
+        var distance = absUpdateDistance * dirFactor;
         var controls = this.CATMAID_view.controls;
         var change = new THREE.Vector3().copy(camera.position)
-          .sub(controls.target).normalize().multiplyScalar(distance);
+          .sub(controls.target);
 
+        // If the distance to the target is smaller than the distance the camera
+        // should move toward the target and we are moving forward, update the
+        // moving distance to be half the target distance.
+        var camTargetDistance = change.length();
+        if (camTargetDistance < absUpdateDistance && movingForward) {
+          absUpdateDistance = camTargetDistance * 0.5;
+          distance = absUpdateDistance * dirFactor;
+          // And cancel the location update if we are closer than ten units
+          // (arbitary close distance).
+          if (camTargetDistance - absUpdateDistance < 10) {
+            return;
+          }
+        }
+
+        // Scale change vector into usable range
+        change.normalize().multiplyScalar(distance);
         camera.position.add(change);
+
         // Move the target only if Alt was pressed
         if (ev.altKey) {
           controls.target.add(change);
@@ -3638,16 +3715,21 @@
     // Create meshes for the tags for all nodes that need them, reusing the geometries
     var cache = this.space.staticContent.textGeometryCache,
         textMaterial = this.space.staticContent.textMaterial;
+
+    var addNode = function(nodeID, text) {
+      var v = vs[nodeID];
+      text.position.x = v.x;
+      text.position.y = v.y;
+      text.position.z = v.z;
+      this.textlabels[nodeID] = text;
+      this.space.add(text);
+    };
+
     for (var tagString in tagNodes) {
       if (tagNodes.hasOwnProperty(tagString)) {
         tagNodes[tagString].forEach(function(nodeID) {
-          var text = cache.createTextMesh(tagString, textMaterial);
-          var v = vs[nodeID];
-          text.position.x = v.x;
-          text.position.y = v.y;
-          text.position.z = v.z;
-          this.textlabels[nodeID] = text;
-          this.space.add(text);
+          cache.createTextMesh(tagString, textMaterial,
+              addNode.bind(this, nodeID));
         }, this);
       }
     }
@@ -4524,7 +4606,13 @@
 
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.addCompositeActorToScene = function() {
     this.CTYPES.forEach(function(t) {
-      this.space.add(this.actor[t]);
+      var actor = this.actor[t];
+      // Only add geometry to the scene that has at least one vertex. Not every
+      // CTYPE actor is actually used, so this case can happen. Adding empty
+      // geometry causes renderer warnings, which we want to avoid.
+      if (actor && actor.geometry.vertices.length > 0) {
+        this.space.add(this.actor[t]);
+      }
     }, this);
   };
 
@@ -5615,8 +5703,8 @@
       replacement: 'void main() {'},
     vertexPosition: {
       shader: 'vertex',
-      regex: /gl_Position\s*=\s*projectionMatrix\s*\*\s*mvPosition;/,
-      replacement: 'gl_Position = projectionMatrix * mvPosition;'},
+      regex: /#include\s+<project_vertex>/,
+      replacement: '#include <project_vertex>;'},
     fragmentDeclarations: {
       shader: 'fragment',
       regex: /void\s+main\(\s*\)\s+\{/,

@@ -111,7 +111,8 @@
         scaledStackPosition.xc,
         scaledStackPosition.yc,
         scaledStackPosition.z,
-        scaledStackPosition.s);
+        scaledStackPosition.s,
+        this.efficiencyThreshold);
 
     if (this.hideIfNearestSliceBroken) {
       // Re-project the stack z without avoiding broken sections to determine
@@ -124,9 +125,6 @@
         this.setOpacity(this.opacity);
       }
     }
-
-    var effectiveTileWidth = this.tileSource.tileWidth * tileInfo.mag;
-    var effectiveTileHeight = this.tileSource.tileHeight * tileInfo.mag;
 
     var rows = this._tiles.length, cols = this._tiles[0].length;
 
@@ -146,17 +144,8 @@
     this._tileFirstC = tileInfo.firstCol;
     this._tileFirstR = tileInfo.firstRow;
 
-    var top;
-    var left;
-
-    if (scaledStackPosition.yc >= 0)
-      top  = -(scaledStackPosition.yc % effectiveTileHeight);
-    else
-      top  = -((scaledStackPosition.yc + 1) % effectiveTileHeight) - effectiveTileHeight + 1;
-    if (scaledStackPosition.xc >= 0)
-      left = -(scaledStackPosition.xc % effectiveTileWidth);
-    else
-      left = -((scaledStackPosition.xc + 1) % effectiveTileWidth) - effectiveTileWidth + 1;
+    var top = tileInfo.top;
+    var left = tileInfo.left;
 
     // Set tile grid offset and magnification on the whole container, rather than
     // individual tiles.

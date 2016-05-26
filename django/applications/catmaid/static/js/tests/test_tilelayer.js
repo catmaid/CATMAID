@@ -28,6 +28,8 @@ QUnit.test('Tile layer test', function (assert) {
     firstCol: 0,
     lastRow:  expRows - 1,
     lastCol:  expCols - 1,
+    top:      0,
+    left:     0,
     z:         1,
     zoom:      0,
     mag:       1
@@ -41,6 +43,8 @@ QUnit.test('Tile layer test', function (assert) {
     firstCol: 0,
     lastRow:  expRows - 1,
     lastCol:  expCols - 1,
+    top:      0,
+    left:     0,
     z:         1,
     zoom:      2,
     mag:       1
@@ -54,6 +58,8 @@ QUnit.test('Tile layer test', function (assert) {
     firstCol: 0,
     lastRow:  4,
     lastCol:  expCols - 1,
+    top:      0,
+    left:     0,
     z:         1,
     zoom:      1,
     mag:       1
@@ -67,6 +73,8 @@ QUnit.test('Tile layer test', function (assert) {
     firstCol: 48,
     lastRow:  expRows - 1,
     lastCol:  49,
+    top:      0,
+    left:     0,
     z:         1,
     zoom:      1,
     mag:       1
@@ -80,6 +88,8 @@ QUnit.test('Tile layer test', function (assert) {
     firstCol: 0,
     lastRow:  Math.ceil(expRows/2 - 1),
     lastCol:  Math.ceil(expCols/2 - 1),
+    top:      0,
+    left:     0,
     z:         1,
     zoom:      0,
     mag:       2

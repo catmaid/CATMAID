@@ -176,7 +176,7 @@ def create_annotated_entity_list(project, entities_qs, relations, annotations=Tr
             skeleton_dict[s[1]] = []
         skeleton_dict[s[1]].append(s[0])
 
-    annotated_entities = [];
+    annotated_entities = []
     for e in entities:
         class_name = e.class_column.class_name
         entity_info = {

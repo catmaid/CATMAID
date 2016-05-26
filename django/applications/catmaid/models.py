@@ -1,6 +1,5 @@
-from __future__ import absolute_import, print_function
-
 from datetime import datetime
+import logging
 import sys
 import re
 import urllib
@@ -93,6 +92,18 @@ def on_project_save(sender, instance, created, **kwargs):
 # Validate project when they are saved
 post_save.connect(on_project_save, sender=Project)
 
+# Supported tile source types
+tile_source_types = (
+    (1, '1: File-based image stack'),
+    (2, '2: Request query-based image stack'),
+    (3, '3: HDF5 via CATMAID backend'),
+    (4, '4: File-based image stack with zoom level directories'),
+    (5, '5: Directory-based image stack'),
+    (6, '6: DVID imageblk voxels'),
+    (7, '7: Render service'),
+    (8, '8: DVID imagetile tiles'),
+    (9, '9: FlixServer tiles')
+)
 
 class Stack(models.Model):
     title = models.TextField(help_text="Descriptive title of this stack.")
@@ -118,15 +129,7 @@ class Stack(models.Model):
     tile_height = models.IntegerField(default=256,
             help_text="The height of one tile.")
     tile_source_type = models.IntegerField(default=1,
-            choices=((1, '1: File-based image stack'),
-                     (2, '2: Request query-based image stack'),
-                     (3, '3: HDF5 via CATMAID backend'),
-                     (4, '4: File-based image stack with zoom level directories'),
-                     (5, '5: Directory-based image stack'),
-                     (6, '6: DVID imageblk voxels'),
-                     (7, '7: Render service'),
-                     (8, '8: DVID imagetile tiles'),
-                     (9, '9: FlixServer tiles')),
+            choices=tile_source_types,
             help_text='This represents how the tile data is organized. '
             'See <a href="http://catmaid.org/page/tile_sources.html">tile source '
             'conventions documentation</a>.')
@@ -182,20 +185,20 @@ class Concept(models.Model):
 
 def create_concept_sub_table(table_name):
     db = connection.cursor()
-    db.execute('''CREATE TABLE %s () INHERITS (concept)''' % table_name);
+    db.execute('''CREATE TABLE %s () INHERITS (concept)''' % table_name)
     db.execute('''CREATE SEQUENCE %s_id_seq
                     START WITH 1
                     INCREMENT BY 1
                     NO MAXVALUE
                     NO MINVALUE
-                    CACHE 1''' % table_name);
-    db.execute('''ALTER SEQUENCE %s_id_seq OWNED BY %s.id''' % (table_name, table_name));
-    db.execute('''ALTER TABLE ONLY %s ADD CONSTRAINT %s_pkey PRIMARY KEY (id)''' % (table_name, table_name));
-    db.execute('''ALTER TABLE %s ALTER COLUMN id SET DEFAULT nextval('%s_id_seq'::regclass)''' % (table_name, table_name));   # use concept_id_seq so id unique across all concepts?
-    db.execute('''ALTER TABLE ONLY %s ADD CONSTRAINT %s_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth_user(id)''' % (table_name, table_name));
+                    CACHE 1''' % table_name)
+    db.execute('''ALTER SEQUENCE %s_id_seq OWNED BY %s.id''' % (table_name, table_name))
+    db.execute('''ALTER TABLE ONLY %s ADD CONSTRAINT %s_pkey PRIMARY KEY (id)''' % (table_name, table_name))
+    db.execute('''ALTER TABLE %s ALTER COLUMN id SET DEFAULT nextval('%s_id_seq'::regclass)''' % (table_name, table_name))   # use concept_id_seq so id unique across all concepts?
+    db.execute('''ALTER TABLE ONLY %s ADD CONSTRAINT %s_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth_user(id)''' % (table_name, table_name))
     db.execute('''CREATE TRIGGER on_edit_%s
                     BEFORE UPDATE ON %s
-                    FOR EACH ROW EXECUTE PROCEDURE on_edit()''' % (table_name, table_name));
+                    FOR EACH ROW EXECUTE PROCEDURE on_edit()''' % (table_name, table_name))
 
 
 class Class(models.Model):
@@ -1037,7 +1040,7 @@ def add_user_to_default_groups(sender, instance, created, **kwargs):
                 g = Group.objects.get(name=group)
                 g.user_set.add(instance)
             except Group.DoesNotExist:
-                print("Default group %s does not exist" % group)
+                logging.getLogger(__name__).info("Default group %s does not exist" % group)
 
 # Connect the User model's post save signal to default group assignment
 post_save.connect(add_user_to_default_groups, sender=User)
@@ -1090,7 +1093,7 @@ class ChangeRequest(UserFocusedModel):
         else:
             is_valid = False
 
-        return is_valid;
+        return is_valid
 
     def approve(self, *args, **kwargs):
         if not self.is_valid():
@@ -1160,4 +1163,4 @@ def notify_user(user, title, message):
     try:
         user.email_user('[CATMAID] ' + title, message)
     except Exception as e:
-        print('Failed to send e-mail (', str(e), ')', file=sys.stderr)
+        logging.getLogger(__name__).error('Failed to send e-mail (%s)', str(e))

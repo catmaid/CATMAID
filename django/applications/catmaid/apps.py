@@ -1,3 +1,5 @@
+import logging
+
 from django.apps import AppConfig
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
@@ -98,10 +100,10 @@ class CATMAIDConfig(AppConfig):
         self.check_superuser()
 
         # Make sure the existing version is what we expect
-        signals.pre_migrate.connect(check_old_version)
+        signals.pre_migrate.connect(check_old_version, sender=self)
 
         # Validate CATMAID environment after all migrations have been run
-        signals.post_migrate.connect(validate_environment)
+        signals.post_migrate.connect(validate_environment, sender=self)
 
     # A list of settings that are expected to be available.
     required_setting_fields = {
@@ -120,6 +122,8 @@ class CATMAIDConfig(AppConfig):
         "NODE_LIST_MAXIMUM_COUNT": int,
         "IMPORTER_DEFAULT_TILE_WIDTH": int,
         "IMPORTER_DEFAULT_TILE_HEIGHT": int,
+        "IMPORTER_DEFAULT_TILE_SOURCE_TYPE": int,
+        "IMPORTER_DEFAULT_IMAGE_BASE": str,
         "MEDIA_HDF5_SUBDIRECTORY": str,
         "MEDIA_CROPPING_SUBDIRECTORY": str,
         "MEDIA_ROI_SUBDIRECTORY": str,
@@ -190,7 +194,7 @@ class CATMAIDConfig(AppConfig):
         try:
             Project.objects.get(pk=settings.ONTOLOGY_DUMMY_PROJECT_ID)
         except Project.DoesNotExist:
-            print("Creating ontology dummy project")
+            logging.getLogger(__name__).info("Creating ontology dummy project")
             Project.objects.create(pk=settings.ONTOLOGY_DUMMY_PROJECT_ID,
                 title="Classification dummy project")
 

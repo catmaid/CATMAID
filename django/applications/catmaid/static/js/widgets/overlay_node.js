@@ -1254,9 +1254,15 @@
 
         if (!o) return; // Not properly initialized with mc_start
         if (e.shiftKey) return;
+        if (!checkNodeID(this)) return;
 
         var catmaidTracingOverlay = SkeletonAnnotations.getTracingOverlayByPaper(this.parentNode.parentNode);
         var node = catmaidTracingOverlay.nodes[d];
+
+        if (!node) {
+          CATMAID.statusBar.replaceLast("Couldn't find moved node # " + d + " on tracing layer");
+          return;
+        }
 
         if (!mayEdit() || !node.can_edit) {
           CATMAID.statusBar.replaceLast("You don't have permission to move node #" + d);
@@ -1264,7 +1270,6 @@
         }
 
         if (o.id !== SkeletonAnnotations.getActiveNodeId()) return;
-        if (!checkNodeID(this)) return;
 
         node.x += d3.event.dx;
         node.y += d3.event.dy;
@@ -1310,20 +1315,12 @@
 
       var checkNodeID = function(svgNode) {
         if (!o || o.id !== svgNode.__data__) {
-          console.log("WARNING: detected ID mismatch in mouse event system.");
-          // Reload nodes if the source node is still part of the SVG. It might
-          // happen that this is not the case, e.g. if the section was changed
-          // before the mouse up event is triggered.
-          if (svgNode.parentNode && svgNode.parentNode.parentNode) {
-            var svg = SkeletonAnnotations.getTracingOverlayByPaper(svgNode.parentNode.parentNode);
-            if (svg) {
-              svg.updateNodes();
-            } else {
-              console.log("Couldn't find SVG overlay for the node receiving the event");
-            }
-          } else {
-            console.log("Couldn't find parent SVG elements for the node receiving the event");
-          }
+          console.log("Warning: tracing layer node ID changed while mouse action in progress.");
+          return false;
+        }
+        // Test if the supplied node has a parent (SVG
+        if (!svgNode.parentNode || !svgNode.parentNode.parentNode) {
+          console.log("Warning: tracing layer node removed from display while mouse action in progress.");
           return false;
         }
         return true;

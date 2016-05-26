@@ -144,6 +144,9 @@ file and could look like this for the example above::
            zoomlevels: 3
            fileextension: "png"
            translation: "(10.0, 20.0, 30.0)"
+           tile_width: 512
+           tile_height: 512
+           tile_source_type: 2
            stackgroups:
              - name: "Example group"
                relation: "has_channel"
@@ -179,7 +182,8 @@ setting. This setting *requires* to also use the ``zoomlevel`` and the
 ``fileextension`` fields, because the importer won't try different URLs
 to get an idea about the file extension and the number of zoom levels.
 Like done for the folder based stacks, a url based stack needs the
-``resolution`` and ``dimension`` fields, too.
+``resolution`` and ``dimension`` fields, too. It is also possible to declare
+``tile_width``, ``tile_height`` and ``tile_source_type`` information.
 
 A stack can also have *overlays*. To add one or more of them, please
 use the ``overlays`` field in a stack. Like visible in the example, an

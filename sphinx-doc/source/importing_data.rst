@@ -266,13 +266,18 @@ available.
 Using the Importer
 ^^^^^^^^^^^^^^^^^^
 
-To use the importer, you have to adjust your CATMAID settings file to
-make your data path and its URL known. These settings are called
-``CATMAID_IMPORT_PATH`` and ``CATMAID_IMPORT_URL``. Sticking to the
-examples from before, these variables might be::
+To use the importer, you have to adjust your CATMAID settings file to make your
+data path known to CATMAID. This can be done with the ``CATMAID_IMPORT_PATH``
+settings. Sticking to the examples from before, this setting might be::
 
     CATMAID_IMPORT_PATH = <CATMAID-PATH>/httpdocs/data
-    CATMAID_IMPORT_URL = http://<CATMAID-URL>/data
+
+For imported stacks that don't provide an image URL by themselves, CATMAID can
+construct an image base from the the ``IMPORTER_DEFAULT_IMAGE_BASE`` setting
+plus the imported project and stack names. For the example above, this variable
+could be set to::
+
+    IMPORTER_DEFAULT_IMAGE_BASE = http://<CATMAID-URL>/data
 
 With this in place, the importer can be used through Django's admin
 interface. It is listed as *Importer* under *Custom Views*. The first
@@ -291,11 +296,11 @@ term. You can use Unix shell-style wildcards there. With the check-box
 below this setting, you can make sure the tool looks only at unknown
 projects. Here, a project is unknown if all of its stacks are known to
 CATMAID. A stack in turn is known if there is already a stack with the
-same image base. The last setting on this dialog is the *Base URL*. By
-default it is set to the value of ``CATMAID_IMPORT_URL`` (if available).
-This setting plus the relative path stay the same for every project
-to be imported in this run. To continue, click on the *next step*
-button.
+same image base. The last setting on this dialog is the *Base URL*. By default
+it is set to the value of ``IMPORTER_DEFAULT_IMAGE_BASE`` (if available). This
+setting plus the relative path stay the same for every project to be imported in
+this run. It is used if imported stacks don't provide a URL explicitly. To
+continue, click on the *next step* button.
 
 The importer will tell you if it doesn't find any projects based on
 the settings of the first step. However, if it does find potential

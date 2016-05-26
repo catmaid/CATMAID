@@ -83,10 +83,11 @@ HDF5_STORAGE_PATH = 'CATMAIDPATH/django/hdf5/'
 # Importer settings
 # If you want to use the importer, please adjust these settings. The
 # CATMAID_IMPORT_PATH in (and below) the importer should look for new
-# data. The CATMAID_IMPORT_URL refers is the URL as seen from outside
-# that gives read access to the CATMAID_IMPORT_PATH.
+# data. The IMPORTER_DEFAULT_IMAGE_BASE refers is the URL as seen from
+# outside that gives read access to the CATMAID_IMPORT_PATH. It is used if
+# imported stacks don't provide their URL explicitly.
 CATMAID_IMPORT_PATH = 'CATMAIDPATH/httpdocs/data'
-CATMAID_IMPORT_URL = 'http://CATMAID_SERVERNAME/CATMAID_SUBDIR/data'
+IMPORTER_DEFAULT_IMAGE_BASE = 'http://CATMAID_SERVERNAME/CATMAID_SUBDIR/data'
 
 ## Celery configuration
 djcelery.setup_loader()

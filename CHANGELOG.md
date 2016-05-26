@@ -1,6 +1,13 @@
 ## Under development
 
 
+### Notes
+
+- The default image base setting for the importer has changed. If you use the
+  importer along with this setting, please update your settings.py file to now
+  use IMPORTER_DEFAULT_IMAGE_BASE instead of CATMAID_IMPORT_URL. The semantics
+  stay the same.
+
 
 ### Features and enhancements
 

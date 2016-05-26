@@ -32,7 +32,7 @@ TEMPLATES = {"pathsettings": "catmaid/import/setup_path.html",
 
 info_file_name = "project.yaml"
 datafolder_setting = "CATMAID_IMPORT_PATH"
-base_url_setting = "CATMAID_IMPORT_URL"
+base_url_setting = "IMPORTER_DEFAULT_IMAGE_BASE"
 
 class UserProxy(User):
     """ A proxy class for the user model as we want to be able to call

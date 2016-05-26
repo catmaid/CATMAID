@@ -445,8 +445,8 @@ class ImportingWizard(SessionWizardView):
                     })
                 # Other settings
                 max_num_stacks = 0
-                tile_width = self.get_cleaned_data_for_step('projectselection')['tile_width']
-                tile_height = self.get_cleaned_data_for_step('projectselection')['tile_height']
+                default_tile_width = self.get_cleaned_data_for_step('projectselection')['default_tile_width']
+                default_tile_height = self.get_cleaned_data_for_step('projectselection')['default_tile_height']
                 for p in selected_projects:
                     if len(p.stacks) > max_num_stacks:
                         max_num_stacks = len(p.stacks)
@@ -457,8 +457,8 @@ class ImportingWizard(SessionWizardView):
                     'tags': tags,
                     'user_permissions': user_permissions,
                     'group_permissions': group_permissions,
-                    'tile_width': tile_width,
-                    'tile_height': tile_height,
+                    'tile_width': default_tile_width,
+                    'tile_height': default_tile_height,
                 })
 
         context.update({
@@ -493,12 +493,12 @@ class ImportingWizard(SessionWizardView):
             cls_graph_ids = self.get_cleaned_data_for_step(
                 'classification')['classification_graph_suggestions']
         # Get remaining properties
-        tile_width = self.get_cleaned_data_for_step('projectselection')['tile_width']
-        tile_height = self.get_cleaned_data_for_step('projectselection')['tile_height']
+        default_tile_width = self.get_cleaned_data_for_step('projectselection')['default_tile_width']
+        default_tile_height = self.get_cleaned_data_for_step('projectselection')['default_tile_height']
         tile_source_type = 1
         imported_projects, not_imported_projects = import_projects(
             self.request.user, selected_projects, tags,
-            permissions, tile_width, tile_height, tile_source_type,
+            permissions, default_tile_width, default_tile_height, tile_source_type,
             cls_graph_ids)
         # Show final page
         return render_to_response('catmaid/import/done.html', {
@@ -606,12 +606,14 @@ class ProjectSelectionForm(forms.Form):
     tags = forms.CharField(initial="", required=False,
         widget=forms.TextInput(attrs={'size':'50'}),
         help_text="A comma separated list of unquoted tags.")
-    tile_width = forms.IntegerField(
+    default_tile_width = forms.IntegerField(
         initial=settings.IMPORTER_DEFAULT_TILE_WIDTH,
-        help_text="The width of one tile in <em>pixel</em>.")
-    tile_height = forms.IntegerField(
+        help_text="The default width of one tile in <em>pixel</em>, " \
+            "used if not specified for a stack.")
+    default_tile_height = forms.IntegerField(
         initial=settings.IMPORTER_DEFAULT_TILE_HEIGHT,
-        help_text="The height of one tile in <em>pixel</em>.")
+        help_text="The default height of one tile in <em>pixel</em>, " \
+            "used if not specified for a stack.")
     link_classifications = forms.BooleanField(initial=False,
         required=False, help_text="If checked, this option will " \
             "let the importer suggest classification graphs to " \
@@ -658,7 +660,8 @@ class ConfirmationForm(forms.Form):
     something = forms.CharField(initial="", required=False)
 
 def import_projects( user, pre_projects, tags, permissions,
-    tile_width, tile_height, tile_source_type, cls_graph_ids_to_link ):
+        default_tile_width, default_tile_height, tile_source_type,
+        cls_graph_ids_to_link ):
     """ Creates real CATMAID projects out of the PreProject objects
     and imports them into CATMAID.
     """
@@ -678,8 +681,8 @@ def import_projects( user, pre_projects, tags, permissions,
                     image_base=s.image_base,
                     num_zoom_levels=s.num_zoom_levels,
                     file_extension=s.file_extension,
-                    tile_width=getattr(s, "tile_width", tile_width),
-                    tile_height=getattr(s, "tile_height", tile_height),
+                    tile_width=getattr(s, "tile_width", default_tile_width),
+                    tile_height=getattr(s, "tile_height", default_tile_height),
                     tile_source_type=tile_source_type,
                     metadata=s.metadata)
                 stacks.append( stack )
@@ -691,8 +694,8 @@ def import_projects( user, pre_projects, tags, permissions,
                         image_base=o.image_base,
                         default_opacity=o.default_opacity,
                         file_extension=o.file_extension,
-                        tile_width=tile_width,
-                        tile_height=tile_height,
+                        tile_width=getattr(o, "tile_width", default_tile_width),
+                        tile_height=getattr(o, "tile_height", default_tile_height),
                         tile_source_type=tile_source_type)
                 # Collect stack group information
                 for sg in s.stackgroups:

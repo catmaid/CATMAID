@@ -1163,4 +1163,4 @@ def notify_user(user, title, message):
     try:
         user.email_user('[CATMAID] ' + title, message)
     except Exception as e:
-        logging.getLogger(__name__).error('Failed to send e-mail (', str(e), ')')
+        logging.getLogger(__name__).error('Failed to send e-mail (%s)', str(e))

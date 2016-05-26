@@ -178,7 +178,7 @@ Webserver
   to disk, especially if multiple users use CATMAID, can be a real performance
   hit.
 
-* Make use of the `SPDY <https://http://en.wikipedia.org/wiki/SPDY>`_ protocol.
+* Make use of the `HTTP/2 <https://http://en.wikipedia.org/wiki/HTTP/2>`_ protocol.
   Modern browsers and webservers support it and it only requires you to set up
   SSL/TLS as an additional step before activating it. Through multiplexing,
   compression and prioritization much better use of single connections. Requests

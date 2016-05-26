@@ -221,7 +221,7 @@ Prefer descriptive, consistent names for parameters. For example, an endpoint
 receiving a list of skeleton identifiers should prefer a parameter named
 ``skeleton_ids`` over ``skids`` or ``ids``; a few bytes in the header are not
 going to have a performance impact relative to the packaging of HTTP and
-transport, much less when HTTP2/SPDY and modern compression-aware browsers are
+transport, much less when HTTP/2 and modern compression-aware browsers are
 involved. However, abbreviated property names or array-packed values are
 acceptable for the responses of performance-critical endpoints.
 

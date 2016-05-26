@@ -297,6 +297,12 @@ def find_project_folders(image_base, path, filter_term, only_unknown, depth=1):
                 dirs = dirs + find_files( current_file, depth - 1)
     return (dirs, projects, not_readable)
 
+def get_projects_from_url(url, filter_term, only_unknown):
+    dirs = []
+    projects = []
+    not_readable = []
+    return (dirs, projects, not_readable)
+
 class ImportingWizard(SessionWizardView):
     def get_template_names(self):
         return [TEMPLATES[self.steps.current]]
@@ -317,18 +323,27 @@ class ImportingWizard(SessionWizardView):
             if not cleaned_path_data:
                 return form
             # Get the cleaned data from first step
+            source = cleaned_path_data['import_from']
             path = cleaned_path_data['relative_path']
+            remote_host = cleaned_path_data['remote_host']
             filter_term = cleaned_path_data['filter_term']
             only_unknown = cleaned_path_data['only_unknown_projects']
             base_url = cleaned_path_data['base_url']
-            # Get all folders that match the selected criteria
-            data_dir = os.path.join(settings.CATMAID_IMPORT_PATH, path)
-            if data_dir[-1] != os.sep:
-                data_dir = data_dir + os.sep
-            if len(filter_term) == "":
+
+            if len(filter_term.strip()) == 0:
                 filter_term = "*"
-            folders, projects, not_readable = find_project_folders(
-                base_url, data_dir, filter_term, only_unknown)
+
+            if source == 'remote':
+                folders, projects, not_readable = get_projects_from_url(
+                        remote_host, filter_term, only_unknown)
+            else:
+                # Get all folders that match the selected criteria
+                data_dir = os.path.join(settings.CATMAID_IMPORT_PATH, path)
+                if data_dir[-1] != os.sep:
+                    data_dir = data_dir + os.sep
+                folders, projects, not_readable = find_project_folders(
+                    base_url, data_dir, filter_term, only_unknown)
+
             # Sort the folders (wrt. short name) to be better readable
             folders = sorted(folders, key=lambda folder: folder[1])
             # Save these settings in the form
@@ -582,11 +597,20 @@ class DataFileForm(forms.Form):
     """ A form to select basic properties on the data to be
     imported. Path and filter constraints can be set here.
     """
-    relative_path = forms.CharField(required=False,
-        widget=forms.TextInput(attrs={'size':'40'}),
+    import_from = forms.ChoiceField(
+            initial=settings.IMPORTER_DEFAULT_DATA_SOURCE,
+            choices=(('filesystem', 'Data directory on server'),
+                     ('remote', 'Remote host')),
+            help_text="Where new pojects and stacks will be looked for")
+    relative_path = forms.CharField(required=False, widget=forms.TextInput(
+        attrs={'size':'40', 'class': 'import-source-setting filesystem-import'}),
         help_text="Optionally, use a sub-folder of the data folder to narrow " \
                   "down the folders to look at. This path is <em>relative</em> " \
                   "to the data folder in use.")
+    remote_host = forms.CharField(required=False, widget=forms.TextInput(
+        attrs={'size':'40', 'class': 'import-source-setting remote-import'}),
+        help_text="The URL to a remote host from which projects and stacks " \
+                  "can be imported.")
     filter_term = forms.CharField(initial="*", required=False,
         widget=forms.TextInput(attrs={'size':'40'}),
         help_text="Optionally, you can apply a <em>glob filter</em> to the " \

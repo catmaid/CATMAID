@@ -584,11 +584,13 @@ class DataFileForm(forms.Form):
     """
     relative_path = forms.CharField(required=False,
         widget=forms.TextInput(attrs={'size':'40'}),
-        help_text="This path is <em>relative</em> to the data folder in use.")
+        help_text="Optionally, use a sub-folder of the data folder to narrow " \
+                  "down the folders to look at. This path is <em>relative</em> " \
+                  "to the data folder in use.")
     filter_term = forms.CharField(initial="*", required=False,
         widget=forms.TextInput(attrs={'size':'40'}),
-        help_text="You can apply a <em>glob filter</em> to the projects found \
-                   in your data folder.")
+        help_text="Optionally, you can apply a <em>glob filter</em> to the " \
+                  "projects found in your data folder.")
     only_unknown_projects = forms.BooleanField(initial=True, required=False,
         help_text="A project is marked as <em>known</em> if (and only if) \
                    all of its stacks are already known to the CATMAID instance.")

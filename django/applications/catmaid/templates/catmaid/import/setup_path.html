@@ -46,22 +46,15 @@
         <p><em>Unfortunately, this setting couldn't be found in your
         configuration. Please make sure it is there.</em></p>
     {% else %}
-        <p>The following settings have been found:
         <div class="form-row">
               <table>
                   <tr>
-                      <td>{{ datafolder_setting }}</td>
-                      <td> {{ settings.CATMAID_IMPORT_PATH }}</td>
+                      <td>Data folder:</td>
+                      <td>{{ settings.CATMAID_IMPORT_PATH }}</td>
                   </tr>
               </table>
         </div>
-        </p>
-        <p>First you can narrow down the set of folders looked at. With the
-        <em>relative path</em> setting below you can specify a sub-directory below the import
-        path to be the working directory. If left empty, just the {{ datafolder_setting }}
-        setting will be used.
-        You can filter the projects used by specifying a <em>filter term</em> (a regular
-        expression).
+        <p>
         <div class="aligned">
         {{ wizard.management_form }}
         {% for field in wizard.form %}

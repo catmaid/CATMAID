@@ -158,6 +158,8 @@ class PreStack(ImageBaseMixin):
             self.tile_width = info_object['tile_width']
         if 'tile_height' in info_object:
             self.tile_height = info_object['tile_height']
+        if 'tile_source_type' in info_object:
+            self.tile_source_type = info_object['tile_source_type']
         # Stacks can optionally contain a "translation" field, which can be used
         # to add an offset when the stack is linked to a project
         self.project_translation = info_object.get('translation', "(0,0,0)")
@@ -495,11 +497,11 @@ class ImportingWizard(SessionWizardView):
         # Get remaining properties
         default_tile_width = self.get_cleaned_data_for_step('projectselection')['default_tile_width']
         default_tile_height = self.get_cleaned_data_for_step('projectselection')['default_tile_height']
-        tile_source_type = 1
+        default_tile_source_type = 1
         imported_projects, not_imported_projects = import_projects(
             self.request.user, selected_projects, tags,
-            permissions, default_tile_width, default_tile_height, tile_source_type,
-            cls_graph_ids)
+            permissions, default_tile_width, default_tile_height,
+            default_tile_source_type, cls_graph_ids)
         # Show final page
         return render_to_response('catmaid/import/done.html', {
             'projects': selected_projects,
@@ -660,7 +662,7 @@ class ConfirmationForm(forms.Form):
     something = forms.CharField(initial="", required=False)
 
 def import_projects( user, pre_projects, tags, permissions,
-        default_tile_width, default_tile_height, tile_source_type,
+        default_tile_width, default_tile_height, default_tile_source_type,
         cls_graph_ids_to_link ):
     """ Creates real CATMAID projects out of the PreProject objects
     and imports them into CATMAID.
@@ -683,7 +685,8 @@ def import_projects( user, pre_projects, tags, permissions,
                     file_extension=s.file_extension,
                     tile_width=getattr(s, "tile_width", default_tile_width),
                     tile_height=getattr(s, "tile_height", default_tile_height),
-                    tile_source_type=tile_source_type,
+                    tile_source_type=getattr(s, "tile_source_type",
+                        default_tile_source_type),
                     metadata=s.metadata)
                 stacks.append( stack )
                 # Add overlays of this stack
@@ -696,7 +699,8 @@ def import_projects( user, pre_projects, tags, permissions,
                         file_extension=o.file_extension,
                         tile_width=getattr(o, "tile_width", default_tile_width),
                         tile_height=getattr(o, "tile_height", default_tile_height),
-                        tile_source_type=tile_source_type)
+                        tile_source_type=getattr(o, "tile_source_type",
+                            default_tile_source_type))
                 # Collect stack group information
                 for sg in s.stackgroups:
                     stack_group = stack_groups.get(sg.name)

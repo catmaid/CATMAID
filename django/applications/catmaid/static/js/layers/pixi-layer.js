@@ -23,6 +23,14 @@
         {backgroundColor: 0x000000});
     this.stage = new PIXI.Container();
     this.layersRegistered = new Set();
+
+    // Disable the renderer's accessibility plugin (if available), because it
+    // requires the renderer view to be part of the DOM at all times (which we
+    // cannot guarantee).
+    if (this.renderer.plugins['accessibility']) {
+      this.renderer.plugins['accessibility'].destroy();
+      delete this.renderer.plugins['accessibility'];
+    }
   }
 
   /**

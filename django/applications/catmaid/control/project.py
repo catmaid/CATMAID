@@ -124,10 +124,6 @@ def projects(request):
             type: string
             description: Project title
             required: true
-          catalogue:
-            type: boolean
-            description: Indicates if the project has a catalogue entry
-            required: true
           stacks:
             type: array
             items:
@@ -170,9 +166,6 @@ def projects(request):
             'comment': row[3]
         })
 
-    # Extend projects with extra catalogueable info
-    projects = extend_projects(request.user, projects)
-
     # Get all stack groups for this project
     project_stack_groups = {}
     for group in StackGroup.objects.all():
@@ -200,7 +193,6 @@ def projects(request):
         result.append({
             'id': p.id,
             'title': p.title,
-            'catalogue': int(p.is_catalogueable),
             'stacks': stacks,
             'stackgroups': stackgroups
         })

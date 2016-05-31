@@ -11,7 +11,10 @@ None.
 
 ### Modifications
 
-None.
+- `GET /projects/`:
+  Does not include the catalogueable property of projects anymore. Use
+  ontology queries to filter by the "driver_line" class for the same
+  semantics.
 
 ### Deprecations
 

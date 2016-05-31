@@ -114,12 +114,13 @@ def projects(request):
 
     # Get all projects that are visisble for the current user
     projects = get_project_qs_for_user(request.user).order_by('title')
-    cursor = connection.cursor()
-    project_template = ",".join(("(%s)",) * len(projects))
-    user_project_ids = [p.id for p in projects]
 
-    if not user_project_ids:
+    if 0 == len(projects):
         return JsonResponse([], safe=False)
+
+    cursor = connection.cursor()
+    project_template = ",".join(("(%s)",) * len(projects)) or "()"
+    user_project_ids = [p.id for p in projects]
 
     cursor.execute("""
         SELECT ps.project_id, ps.stack_id, s.title, s.comment FROM project_stack ps

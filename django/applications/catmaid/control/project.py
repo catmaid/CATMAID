@@ -3,7 +3,7 @@ import json
 from guardian.shortcuts import get_objects_for_user
 
 from django.db import connection
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 
 from catmaid.models import UserRole, Class, Project, Relation, StackGroup
@@ -117,6 +117,10 @@ def projects(request):
     cursor = connection.cursor()
     project_template = ",".join(("(%s)",) * len(projects))
     user_project_ids = [p.id for p in projects]
+
+    if not user_project_ids:
+        return JsonResponse([], safe=False)
+
     cursor.execute("""
         SELECT ps.project_id, ps.stack_id, s.title, s.comment FROM project_stack ps
         INNER JOIN (VALUES {}) user_project(id)

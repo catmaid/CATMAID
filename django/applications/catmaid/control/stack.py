@@ -2,9 +2,9 @@ from __future__ import absolute_import
 
 import os.path
 from contextlib import closing
-import h5py
 import json
 import httplib
+import logging
 
 from django.conf import settings
 from django.http import HttpResponse
@@ -14,6 +14,13 @@ from ..models import UserRole, Project, Stack, ProjectStack, \
         BrokenSlice, Overlay
 from .authentication import requires_user_role
 
+logger = logging.getLogger(__name__)
+
+try:
+    import h5py
+except ImportError, e:
+    logger.warning("CATMAID was unable to import the h5py library. "
+          "Project/stack mesh loading is therefore disabled.")
 
 def get_stack_info(project_id=None, stack_id=None):
     """ Returns a dictionary with relevant information for stacks.

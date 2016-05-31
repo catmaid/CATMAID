@@ -1,7 +1,7 @@
 import os
 import cStringIO
 from contextlib import closing
-import h5py
+import logging
 import numpy as np
 import base64
 from django.conf import settings
@@ -10,6 +10,14 @@ try:
     from PIL import Image
 except:
     pass
+
+logger = logging.getLogger(__name__)
+
+try:
+    import h5py
+except ImportError, e:
+    logger.warning("CATMAID was unable to load the h5py library. "
+          "HDF5 tiles are therefore disabled.")
 
 from django.http import HttpResponse
 

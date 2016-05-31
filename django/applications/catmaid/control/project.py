@@ -2,6 +2,7 @@ import json
 
 from guardian.shortcuts import get_objects_for_user
 
+from django.db import connection
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 
@@ -146,7 +147,28 @@ def projects(request):
     """
 
     # Get all projects that are visisble for the current user
-    projects = get_project_qs_for_user(request.user).order_by('title').prefetch_related('stacks')
+    projects = get_project_qs_for_user(request.user).order_by('title')
+    cursor = connection.cursor()
+    project_template = ",".join(("(%s)",) * len(projects))
+    user_project_ids = [p.id for p in projects]
+    cursor.execute("""
+        SELECT ps.project_id, ps.stack_id, s.title, s.comment FROM project_stack ps
+        INNER JOIN (VALUES {}) user_project(id)
+        ON ps.project_id = user_project.id
+        INNER JOIN stack s
+        ON ps.stack_id = s.id
+    """.format(project_template), user_project_ids)
+    project_stack_mapping = dict()
+    for row in cursor.fetchall():
+        stacks = project_stack_mapping.get(row[0])
+        if not stacks:
+            stacks = []
+            project_stack_mapping[row[0]] = stacks
+        stacks.append({
+            'id': row[1],
+            'title': row[2],
+            'comment': row[3]
+        })
 
     # Extend projects with extra catalogueable info
     projects = extend_projects(request.user, projects)
@@ -161,14 +183,9 @@ def projects(request):
         groups.append(group)
 
     result = []
+    no_stacks = tuple()
     for p in projects:
-        stacks = []
-        for s in p.stacks.all():
-            stacks.append({
-                'id': s.id,
-                'title': s.title,
-                'comment': s.comment,
-            })
+        stacks = project_stack_mapping.get(p.id, no_stacks)
 
         stackgroups = []
         available_stackgroups = project_stack_groups.get(p.id)

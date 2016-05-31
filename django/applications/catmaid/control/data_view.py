@@ -162,8 +162,9 @@ def get_data_view( request, data_view_id ):
             stackgroup_index[sg.id] = sg
             stackgroups_of[sg.project_id].append(sg)
 
-    # Extend the project list with additional information like editabilty
-    projects = add_catalogue_info( request.user, projects )
+    # Extend the project list with catalogue information
+    if 'catalogue_link' in config:
+        projects = add_catalogue_info( request.user, projects )
 
     # Sort by default
     if "sort" not in config or config["sort"] == True:

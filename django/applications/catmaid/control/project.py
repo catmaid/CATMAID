@@ -168,27 +168,31 @@ def projects(request):
 
     # Get all stack groups for this project
     project_stack_groups = {}
-    for group in StackGroup.objects.all():
-        groups = project_stack_groups.get(group.project_id)
+    cursor.execute("""
+        SELECT ci.project_id, ci.id, ci.name
+        FROM class_instance ci
+        INNER JOIN (VALUES {}) user_project(id)
+        ON ci.project_id = user_project.id
+        INNER JOIN class c
+        ON ci.class_id = c.id
+        WHERE c.class_name = 'stackgroup'
+    """.format(project_template), user_project_ids)
+    for row in cursor.fetchall():
+        groups = project_stack_groups.get(row[0])
         if not groups:
             groups = []
-            project_stack_groups[group.project_id] = groups
-        groups.append(group)
+            project_stack_groups[row[0]] = groups
+        groups.append({
+            'id': row[1],
+            'title': row[2],
+            'comment': '',
+        })
 
     result = []
-    no_stacks = tuple()
+    empty_tuple = tuple()
     for p in projects:
-        stacks = project_stack_mapping.get(p.id, no_stacks)
-
-        stackgroups = []
-        available_stackgroups = project_stack_groups.get(p.id)
-        if available_stackgroups:
-            for sg in available_stackgroups:
-                stackgroups.append({
-                    'id': sg.id,
-                    'title': sg.name,
-                    'comment': '',
-                })
+        stacks = project_stack_mapping.get(p.id, empty_tuple)
+        stackgroups = project_stack_groups.get(p.id, empty_tuple)
 
         result.append({
             'id': p.id,

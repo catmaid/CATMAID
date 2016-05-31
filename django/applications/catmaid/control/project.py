@@ -40,36 +40,6 @@ def update_project_tags(request, project_id=None, tags=None):
     # Return an empty closing response
     return HttpResponse(json.dumps(""), content_type="application/json")
 
-class ExProject:
-    """ A wrapper around the Project model to include additional
-    properties.
-    """
-    def __init__(self, project, is_catalogueable):
-        self.project = project
-        self.is_catalogueable = is_catalogueable
-
-    def __getattr__(self, attr):
-        """ Return own property when available, otherwise proxy
-        to project.
-        """
-        if attr in self.__dict__:
-            return getattr(self,attr)
-        return getattr(self.project, attr)
-
-def extend_projects(user, projects):
-    """ Adds the is_catalogueable property to all projects passed.
-    """
-    # Find all the projects that are catalogueable:
-    catalogueable_projects = set(x.project.id for x in \
-        Class.objects.filter(class_name='driver_line').select_related('project'))
-
-    result = []
-    for p in projects:
-        ex_p = ExProject(p, id in catalogueable_projects)
-        result.append(ex_p)
-
-    return result
-
 def get_project_qs_for_user(user):
     """ Returns the query set of projects that are administrable and
     browsable by the given user.

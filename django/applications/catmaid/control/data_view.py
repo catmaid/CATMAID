@@ -13,8 +13,39 @@ from django.contrib.contenttypes.models import ContentType
 from taggit.models import TaggedItem
 
 from catmaid.control.common import makeJSON_legacy_list
-from catmaid.control.project import get_project_qs_for_user, extend_projects
-from catmaid.models import DataView, DataViewType, Project, Stack, ProjectStack, StackGroup
+from catmaid.control.project import get_project_qs_for_user
+from catmaid.models import (Class, DataView, DataViewType, Project, Stack,
+        ProjectStack, StackGroup)
+
+class ExProject:
+    """ A wrapper around the Project model to include additional
+    properties.
+    """
+    def __init__(self, project, is_catalogueable):
+        self.project = project
+        self.is_catalogueable = is_catalogueable
+
+    def __getattr__(self, attr):
+        """ Return own property when available, otherwise proxy
+        to project.
+        """
+        if attr in self.__dict__:
+            return getattr(self,attr)
+        return getattr(self.project, attr)
+
+def add_catalogue_info(user, projects):
+    """ Adds the is_catalogueable property to all projects passed.
+    """
+    # Find all the projects that are catalogueable:
+    catalogueable_projects = set(x.project.id for x in \
+        Class.objects.filter(class_name='driver_line').select_related('project'))
+
+    result = []
+    for p in projects:
+        ex_p = ExProject(p, id in catalogueable_projects)
+        result.append(ex_p)
+
+    return result
 
 def get_data_view_type_comment( request ):
     """ Return the comment of a specific data view type.
@@ -132,7 +163,7 @@ def get_data_view( request, data_view_id ):
             stackgroups_of[sg.project_id].append(sg)
 
     # Extend the project list with additional information like editabilty
-    projects = extend_projects( request.user, projects )
+    projects = add_catalogue_info( request.user, projects )
 
     # Sort by default
     if "sort" not in config or config["sort"] == True:

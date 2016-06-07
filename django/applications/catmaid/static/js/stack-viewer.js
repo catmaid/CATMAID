@@ -230,10 +230,9 @@
   StackViewer.prototype.screenPosition = function () {
     var width = this.viewWidth / this.scale;
     var height = this.viewHeight / this.scale;
-    var l =
-    {
-      top : Math.floor( this.y - height / 2 ),
-      left : Math.floor( this.x - width / 2 )
+    var l = {
+      top: this.y - height / 2,
+      left: this.x - width / 2
     };
     return l;
   };

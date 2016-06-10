@@ -30,6 +30,10 @@
       } else if ('remote' === source) {
         hideAll(document.querySelectorAll('.import-source-setting'));
         showAll(document.querySelectorAll('.remote-import'));
+      } else if ('remote-catmaid' === source) {
+        hideAll(document.querySelectorAll('.import-source-setting'));
+        showAll(document.querySelectorAll('.catmaid-host'));
+        showAll(document.querySelectorAll('.api-key'));
       } else {
         alert("Unknown import source: " + source);
       }

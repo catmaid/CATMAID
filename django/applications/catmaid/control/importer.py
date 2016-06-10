@@ -308,7 +308,7 @@ def find_project_folders(image_base, path, filter_term, only_unknown, depth=1):
                 dirs = dirs + find_files( current_file, depth - 1)
     return (dirs, projects, not_readable)
 
-def get_projects_from_url(url, filter_term, only_unknown):
+def get_projects_from_url(url, filter_term, only_unknown, headers):
     if not url:
         raise ValueError("No URL provided")
     # Sanitize and add protocol, if not there
@@ -321,7 +321,7 @@ def get_projects_from_url(url, filter_term, only_unknown):
     not_readable = []
 
     # Ask remote server for data
-    r = requests.get(url)
+    r = requests.get(url, headers=headers)
     content_type = r.headers['content-type']
     # Both YAML and JSON should end up in the same directories of directories
     # structure.
@@ -370,6 +370,8 @@ class ImportingWizard(SessionWizardView):
             source = cleaned_path_data['import_from']
             path = cleaned_path_data['relative_path']
             remote_host = cleaned_path_data['remote_host']
+            catmaid_host = cleaned_path_data['catmaid_host']
+            api_key = cleaned_path_data['api_key'].strip()
             filter_term = cleaned_path_data['filter_term']
             only_unknown = cleaned_path_data['only_unknown_projects']
             base_url = cleaned_path_data['base_url']
@@ -380,6 +382,15 @@ class ImportingWizard(SessionWizardView):
             if source == 'remote':
                 folders, projects, not_readable = get_projects_from_url(
                         remote_host, filter_term, only_unknown)
+            if source == 'remote-catmaid':
+                complete_catmaid_host = "{}{}{}".format(catmaid_host,
+                    "" if catmaid_host[-1] == "/" else "/", "projects/export")
+                if len(api_key) > 0:
+                    headers = {
+                        'X-Authorization': 'Token {}'.format(api_key)
+                    }
+                folders, projects, not_readable = get_projects_from_url(
+                        complete_catmaid_host, filter_term, only_unknown, headers)
             else:
                 # Get all folders that match the selected criteria
                 data_dir = os.path.join(settings.CATMAID_IMPORT_PATH, path)
@@ -644,7 +655,8 @@ class DataFileForm(forms.Form):
     import_from = forms.ChoiceField(
             initial=settings.IMPORTER_DEFAULT_DATA_SOURCE,
             choices=(('filesystem', 'Data directory on server'),
-                     ('remote', 'Remote host')),
+                     ('remote-catmaid', 'Remote CATMAID instance'),
+                     ('remote', 'General remote host')),
             help_text="Where new pojects and stacks will be looked for")
     relative_path = forms.CharField(required=False, widget=forms.TextInput(
         attrs={'size':'40', 'class': 'import-source-setting filesystem-import'}),
@@ -656,6 +668,12 @@ class DataFileForm(forms.Form):
         help_text="The URL to a remote host from which projects and stacks " \
                   "can be imported. To connect to another CATMAID server, add " \
                   "/projects/export to its URL.")
+    catmaid_host = forms.CharField(required=False, widget=forms.TextInput(
+        attrs={'size':'40', 'class': 'import-source-setting catmaid-host'}),
+        help_text="The main URL of the remote CATMAID instance.")
+    api_key = forms.CharField(required=False, widget=forms.TextInput(
+        attrs={'size':'40', 'class': 'import-source-setting api-key'}),
+        help_text="(Optional) API-Key of your user on the remote CATMAID instance.")
     filter_term = forms.CharField(initial="*", required=False,
         widget=forms.TextInput(attrs={'size':'40'}),
         help_text="Optionally, you can apply a <em>glob filter</em> to the " \

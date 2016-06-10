@@ -8,8 +8,11 @@
 ### Features and enhancements
 
 - Importer: projects and stacks available on remote servers can now be
-  imported. The new projects/export endpoint provides all required data. For
-  now, the remote host URL has to include this, if CATMAID should be talked to.
+  imported, optionally with API-key authentication on other CATMAID instances.
+  The remote data source can of course be any URL in a JSON or YAML format
+  understood by CATMAID. The import section in the CATMAID documentation holds
+  more detail on this. For CATMAID, the new "projects/export" endpoint
+  provides all required data that is visible to the requesting user.
 
 
 ### Bug fixes

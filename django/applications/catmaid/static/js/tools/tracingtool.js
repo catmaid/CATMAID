@@ -693,7 +693,10 @@
     }));
 
     this.addAction(new CATMAID.Action({
-      helpText: "Append the active skeleton to the last used selection widget (<kbd>Ctrl</kbd>: remove from selection; <kbd>Shift</kbd>: select by radius)",
+      helpText: "Append the active skeleton to the last used selection widget " +
+          "(<kbd>Ctrl</kbd>: remove from selection; " +
+          "<kbd>Shift</kbd>: select by radius; " +
+          "<kbd>Alt</kbd>: create a new selection widget)",
       keyShortcuts: {
         "Y": [ 89 ]
       },
@@ -701,7 +704,9 @@
         if (e.shiftKey) { // Select skeletons by radius.
           var selectionCallback = (e.ctrlKey || e.metaKey) ?
               function (skids) { CATMAID.SelectionTable.getLastFocused().removeSkeletons(skids); } :
-              function (skids) { CATMAID.SelectionTable.getLastFocused().addSkeletons(skids); };
+              (e.altKey ?
+                  function (skids) { WindowMaker.create('neuron-staging-area').widget.addSkeletons(skids); } :
+                  function (skids) { CATMAID.SelectionTable.getLastFocused().addSkeletons(skids); });
           var atnID = SkeletonAnnotations.getActiveNodeId();
 
           activeTracingLayer.tracingOverlay.selectRadius(
@@ -728,8 +733,10 @@
             CATMAID.SelectionTable.getLastFocused().removeSkeletons([
                 SkeletonAnnotations.getActiveSkeletonId()]);
           } else {
-            CATMAID.SelectionTable.getLastFocused().append(
-                SkeletonAnnotations.activeSkeleton.getSelectedSkeletonModels());
+            var selectionTable = e.altKey ?
+                WindowMaker.create('neuron-staging-area').widget :
+                CATMAID.SelectionTable.getLastFocused();
+            selectionTable.append(SkeletonAnnotations.activeSkeleton.getSelectedSkeletonModels());
           }
         }
       }

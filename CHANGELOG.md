@@ -14,6 +14,11 @@
   more detail on this. For CATMAID, the new "projects/export" endpoint
   provides all required data that is visible to the requesting user.
 
+Miscellaneous:
+
+- Alt + Y will always create a new selection table and add the active neuron
+  to it. Also works with Shift.
+
 
 ### Bug fixes
 

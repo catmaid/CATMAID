@@ -1505,6 +1505,10 @@ def graphs_instanciate_features(graphs, features, target=None, cursor=None):
 
     for ng, g in enumerate(graphs):
         paths = all_paths.get(g.id)
+
+        if not paths:
+            continue
+
         # Create tree representation, relates are taken care of implicitly.
         # They are part of a link definition (a class_instance_class_instance
         # row).

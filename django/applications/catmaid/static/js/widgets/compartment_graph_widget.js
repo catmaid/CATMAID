@@ -1467,11 +1467,11 @@
         }, o);
       }, {})).map(function(aid) { return json.annotations[aid]; }).sort();
 
-      // All neuron names
+      // All neuron names, and remove skid from subgraphs as a side effect
       var names = Object.keys(models).map(function(skid) {
         // Groups and subgraphs are incompatible
         delete this.subgraphs[skid];
-        return models[skid].baseName;
+        return CATMAID.NeuronNameService.getInstance().getName(skid);
       }, this).sort();
 
       common.unshift("--");

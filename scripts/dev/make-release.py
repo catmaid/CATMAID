@@ -145,7 +145,7 @@ class CatmaidRelease(object):
             # Insert contributor list into second line after header
             contributor_list_insert = changelog_data.find('\n', header_end + 1) + 1
             changelog_data = changelog_data[0:contributor_list_insert] + \
-                "{}: {}\n".format(self.changelog_contributor_label, contributor_list) + \
+                "{} {}\n".format(self.changelog_contributor_label, contributor_list) + \
                 changelog_data[contributor_list_insert:]
 
             return changelog_data

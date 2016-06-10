@@ -433,6 +433,13 @@
           function () {
             CATMAID.NeuronNameService.getInstance().setFormatString($(this).val());
           }));
+      ds.append(CATMAID.DOM.createInputSetting(
+          "Annotation delimiter",
+          CATMAID.NeuronNameService.getInstance().getListDelimiter(),
+          "Specify the delimiter used to separate multiple annotations in a neuron name",
+          function() {
+            CATMAID.NeuronNameService.getInstance().setListDelimiter($(this).val());
+          }));
 
 
       // Overlay settings

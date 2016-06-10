@@ -46,6 +46,9 @@
       // The format string mapping components into a final neuron name.
       var formatString = '%f';
 
+      // The delimiter used for listing annotations in a neuron name.
+      var listDelimiter = ", ";
+
       // An object mapping skeleton IDs to objects that contain the current name and
       // a list of clients, interested in the particular skeleton.
       var managedSkeletons = {};
@@ -73,6 +76,26 @@
         getFormatString: function()
         {
           return formatString;
+        },
+
+        /**
+         * Mutator for the list delimiter that is used for listing annotations
+         * in a neuron name.
+         */
+        setListDelimiter: function(delimiter)
+        {
+          listDelimiter = delimiter;
+
+          // Update the name representation of all neurons
+          this.refresh();
+        },
+
+        /**
+         * Accessor for the list delimiter.
+         */
+        getListDelimiter: function()
+        {
+          return listDelimiter;
         },
 
         /**
@@ -361,7 +384,7 @@
                   }, []);
                   // Return only if there are own annotations
                   if (ma.length > 0) {
-                    return ma.sort(compareAnnotations).join(', ');
+                    return ma.sort(compareAnnotations).join(listDelimiter);
                   }
 
                   return null;
@@ -379,7 +402,7 @@
                   if (skid in data.skeletons) {
                     return data.skeletons[skid].annotations.map(function(a) {
                       return data.annotations[a.id];
-                    }).sort(compareAnnotations).join(', ');
+                    }).sort(compareAnnotations).join(listDelimiter);
                   }
                 } else if ('all-meta' === l.id) {
                   if (skid in data.skeletons) {
@@ -401,7 +424,7 @@
                     }, []);
                     // Return only if there are own annotations
                     if (oa.length > 0) {
-                      return oa.sort(compareAnnotations).join(', ');
+                      return oa.sort(compareAnnotations).join(listDelimiter);
                     }
                   }
                 } else if ('own-meta' === l.id) {

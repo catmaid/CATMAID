@@ -19,6 +19,9 @@ Miscellaneous:
 - Alt + Y will always create a new selection table and add the active neuron
   to it. Also works with Shift.
 
+- The delimiter used to separate annotations in a neuron name can now be
+  configured in the Annotations section of the Settings Widget.
+
 
 ### Bug fixes
 

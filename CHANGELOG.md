@@ -1,9 +1,15 @@
 ## Under development
 
+### Notes
+
+- A virtualenv upgrade is required.
 
 
 ### Features and enhancements
 
+- Importer: projects and stacks available on remote servers can now be
+  imported. The new projects/export endpoint provides all required data. For
+  now, the remote host URL has to include this, if CATMAID should be talked to.
 
 
 ### Bug fixes

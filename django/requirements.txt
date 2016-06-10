@@ -29,6 +29,7 @@ python-dateutil==2.1
 python-libuuid==0.9.0
 pytz==2015.7
 PyYAML==3.10
+requests==2.10.0
 scipy==0.14.1
 Sphinx==1.3.1
 sphinxcontrib-images==0.7.0

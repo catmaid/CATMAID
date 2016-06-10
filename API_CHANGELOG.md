@@ -6,8 +6,11 @@ included in this changelog.
 
 ### Additions
 
-None.
-
+- `GET projects/export`:
+  Provides all available information on the structure and properties
+  of projects and stacks. Supports application/json and application/yaml
+  content types. A return YAML document matches the format supported by
+  the importer.
 
 ### Modifications
 

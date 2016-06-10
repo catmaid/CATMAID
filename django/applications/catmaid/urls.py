@@ -77,6 +77,7 @@ urlpatterns += [
 # General project model access
 urlpatterns += [
     url(r'^projects/$', project.projects),
+    url(r'^projects/export$', project.export_projects),
 ]
 
 # General stack model access

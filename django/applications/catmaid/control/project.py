@@ -1,4 +1,5 @@
 import json
+import yaml
 
 from guardian.shortcuts import get_objects_for_user
 
@@ -176,4 +177,150 @@ def projects(request):
             'stackgroups': stackgroups
         })
 
-    return HttpResponse(json.dumps(result, sort_keys=True, indent=4), content_type="application/json")
+    return HttpResponse(json.dumps(result, sort_keys=True, indent=4),
+            content_type="application/json")
+
+@api_view(['GET'])
+def export_projects(request):
+    """Detailed list of projects visible to the requesting user.
+    """
+
+    # Get all projects that are visisble for the current user
+    projects = get_project_qs_for_user(request.user).order_by('title')
+
+    if 0 == len(projects):
+        return JsonResponse([], safe=False)
+
+    cursor = connection.cursor()
+    project_template = ",".join(("(%s)",) * len(projects)) or "()"
+    user_project_ids = [p.id for p in projects]
+
+    cursor.execute("""
+        SELECT ps.project_id, ps.stack_id, s.title, s.image_base, s.metadata,
+        s.dimension, s.resolution, s.num_zoom_levels, s.file_extension, s.tile_width,
+        s.tile_height, s.tile_source_type, s.comment FROM project_stack ps
+        INNER JOIN (VALUES {}) user_project(id)
+        ON ps.project_id = user_project.id
+        INNER JOIN stack s
+        ON ps.stack_id = s.id
+    """.format(project_template), user_project_ids)
+    visible_stacks = dict()
+    project_stack_mapping = dict()
+
+    for row in cursor.fetchall():
+        stacks = project_stack_mapping.get(row[0])
+        if not stacks:
+            stacks = []
+            project_stack_mapping[row[0]] = stacks
+        stack = {
+            'id': row[1],
+            'name': row[2],
+            'url': row[3],
+            'metadata': row[4],
+            'dimension': row[5],
+            'resolution': row[6],
+            'zoomlevels': row[7],
+            'fileextension': row[8],
+            'tile_width': row[9],
+            'tile_height': row[10],
+            'tile_source_type': row[11],
+            'comment': row[3]
+        }
+        stacks.append(stack)
+        visible_stacks[row[1]] = stack
+
+    # Add overlay information
+    stack_template = ",".join(("(%s)",) * len(visible_stacks)) or "()"
+    cursor.execute("""
+        SELECT stack_id, o.id, title, image_base, default_opacity, file_extension,
+        tile_width, tile_height, tile_source_type
+        FROM overlay o
+        INNER JOIN (VALUES {}) visible_stack(id)
+        ON o.stack_id = visible_stack.id
+    """.format(stack_template), visible_stacks.keys())
+    stack_overlay_mapping = dict()
+    for row in cursor.fetchall():
+        stack = visible_stacks.get(row[0])
+        if not stack:
+            raise ValueError("Couldn't find stack {} for overlay {}".format(row[0], row[1]))
+        overlays = stack.get('overlays')
+        if not overlays:
+            overlays = []
+            stack['overlays'] = overlays
+        overlays.append({
+            'id': row[1],
+            'name': row[2],
+            'url': row[3],
+            'defaultopacity': row[4],
+            'fileextension': row[5],
+            'tile_width': row[6],
+            'tile_height': row[7],
+            'tile_source_type': row[8]
+        })
+
+    # Add stack group information to stacks
+    project_stack_groups = {}
+    cursor.execute("""
+        SELECT sci.class_instance_id, ci.project_id, ci.name,
+               array_agg(sci.stack_id), array_agg(r.relation_name)
+        FROM class_instance ci
+        INNER JOIN (VALUES (24)) user_project(id)
+        ON ci.project_id = user_project.id
+        INNER JOIN class c
+        ON ci.class_id = c.id
+        INNER JOIN stack_class_instance sci
+        ON ci.id = sci.class_instance_id
+        INNER JOIN relation r
+        ON sci.relation_id = r.id
+        WHERE c.class_name = 'stackgroup'
+        GROUP BY sci.class_instance_id, ci.project_id, ci.name;
+    """.format(project_template), user_project_ids)
+    for row in cursor.fetchall():
+        groups = project_stack_groups.get(row[1])
+        if not groups:
+            groups = []
+            project_stack_groups[row[1]] = groups
+        groups.append({
+            'id': row[0],
+            'name': row[2],
+            'comment': '',
+        })
+        # Add to stacks
+        for stack_id, relation_name in zip(row[3], row[4]):
+            stack = visible_stacks.get(stack_id)
+            if not stack:
+                # Only add visible stacks
+                continue
+            stack_groups = stack.get('stackgroups')
+            if not stack_groups:
+                stack_groups = []
+                stack['stackgroups'] = stack_groups
+            stack_groups.append({
+                'id': row[0],
+                'name': row[2],
+                'relation': relation_name
+            })
+
+    result = []
+    empty_tuple = tuple()
+    for p in projects:
+        stacks = project_stack_mapping.get(p.id, empty_tuple)
+        stackgroups = project_stack_groups.get(p.id, empty_tuple)
+
+        result.append({
+            'project': {
+                'id': p.id,
+                'name': p.title,
+                'stacks': stacks,
+            }
+        })
+
+    return_content_type = request.META.get('HTTP_ACCEPT', 'application/yaml')
+    if 'application/yaml' in return_content_type:
+        # YAML return format matches information files discussed in
+        # documentation: http://www.catmaid.org/en/stable/importing_data.html
+        return HttpResponse(yaml.dump(result),
+                content_type="application/yaml")
+    else:
+        return HttpResponse(json.dumps(result, sort_keys=True, indent=4),
+                content_type="application/json")

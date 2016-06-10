@@ -2,6 +2,7 @@ import glob
 import os.path
 import yaml
 import urllib
+import requests
 
 from collections import OrderedDict
 
@@ -55,7 +56,7 @@ class GroupProxy(Group):
         return self.name
 
 class ImageBaseMixin:
-    def set_image_fields(self, info_object, project_url, data_folder, needs_zoom):
+    def set_image_fields(self, info_object, project_url=None, data_folder=None, needs_zoom=True):
         """ Sets the image_base, num_zoom_levels, file_extension fields
         of the calling object. Favor a URL field, if there is one. A URL
         field, however, also requires the existence of the
@@ -75,7 +76,7 @@ class ImageBaseMixin:
             if needs_zoom:
                 self.num_zoom_levels = info_object['zoomlevels']
             self.file_extension = info_object['fileextension']
-        else:
+        elif project_url:
             # The image base of a stack is the combination of the
             # project URL and the stack's folder name.
             folder = info_object['folder']
@@ -89,6 +90,8 @@ class ImageBaseMixin:
                 self.num_zoom_levels = info_object['zoomlevels']
             if ext_available:
                 self.file_extension = info_object['fileextension']
+
+        if data_folder:
             # Only retrieve file extension and zoom level if one of
             # them is not available in the stack definition.
             if (not zoom_available and needs_zoom) or not ext_available:
@@ -183,9 +186,8 @@ class PreStack(ImageBaseMixin):
             self.already_known = (num_same_image_base > 0)
 
 class PreProject:
-    def __init__(self, info_file, project_url, data_folder, only_unknown):
-        self.info_file = info_file
-        info = yaml.load(open(info_file))
+    def __init__(self, properties, project_url, data_folder, only_unknown):
+        info = properties
 
         # Make sure everything is there
         if 'project' not in info:
@@ -283,13 +285,22 @@ def find_project_folders(image_base, path, filter_term, only_unknown, depth=1):
                     if os.sep != '/':
                         url_dir = url_dir.replace("\\", "/")
                     project_url = urljoin(image_base, url_dir)
-                    project = PreProject( info_file, project_url, short_name, only_unknown )
-                    if only_unknown and project.already_known:
-                        continue
-                    else:
-                        projects[current_file] = project
-                        # Remember this project if it isn't available yet
-                        dirs.append( (current_file, short_name) )
+                    # Expect a YAML file
+                    yaml_data = yaml.load_all(open(info_file))
+                    for project_yaml_data in yaml_data:
+                        project = PreProject(project_yaml_data, project_url,
+                                short_name, only_unknown )
+                        if only_unknown and project.already_known:
+                            continue
+                        else:
+                            key = current_file
+                            new_key_index = 1
+                            while key in projects:
+                                new_key_index += 1
+                                key = "{} #{}".format(current_file, new_key_index)
+                            # Remember this project if it isn't available yet
+                            projects[key] = project
+                            dirs.append((key, short_name))
                 except Exception as e:
                     not_readable.append( (info_file, e) )
             elif depth > 1:
@@ -298,9 +309,42 @@ def find_project_folders(image_base, path, filter_term, only_unknown, depth=1):
     return (dirs, projects, not_readable)
 
 def get_projects_from_url(url, filter_term, only_unknown):
+    if not url:
+        raise ValueError("No URL provided")
+    # Sanitize and add protocol, if not there
+    url = url.strip()
+    if not (url.startswith("http://") or url.startswith("https://")):
+        url = "http://" + url
+
     dirs = []
-    projects = []
+    projects = {}
     not_readable = []
+
+    # Ask remote server for data
+    r = requests.get(url)
+    content_type = r.headers['content-type']
+    # Both YAML and JSON should end up in the same directories of directories
+    # structure.
+    if 'json' in content_type:
+        content = r.json()
+        for p in content:
+            project = PreProject(p, None, None, only_unknown )
+            short_name = project.name
+            key = "{}-{}".format(url, short_name)
+            projects[key] = project
+            dirs.append((key, short_name))
+    elif 'yaml' in content_type:
+        content = yaml.load_all(r.content)
+        for p in content:
+            for pp in p:
+                project = PreProject(pp, None, None, only_unknown )
+                short_name = project.name
+                key = "{}-{}".format(url, short_name)
+                projects[key] = project
+                dirs.append((key, short_name))
+    else:
+        raise ValuleError("Unrecognized content type in response of remote")
+
     return (dirs, projects, not_readable)
 
 class ImportingWizard(SessionWizardView):
@@ -610,7 +654,8 @@ class DataFileForm(forms.Form):
     remote_host = forms.CharField(required=False, widget=forms.TextInput(
         attrs={'size':'40', 'class': 'import-source-setting remote-import'}),
         help_text="The URL to a remote host from which projects and stacks " \
-                  "can be imported.")
+                  "can be imported. To connect to another CATMAID server, add " \
+                  "/projects/export to its URL.")
     filter_term = forms.CharField(initial="*", required=False,
         widget=forms.TextInput(attrs={'size':'40'}),
         help_text="Optionally, you can apply a <em>glob filter</em> to the " \

@@ -189,7 +189,7 @@ class PreProject:
 
         # Make sure everything is there
         if 'project' not in info:
-            raise RuntimeError("Missing required container field '%s'" % f)
+            raise RuntimeError("Missing required container field 'project'")
         # Read out data
         p = info['project']
 

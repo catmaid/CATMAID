@@ -361,7 +361,7 @@
                   }, []);
                   // Return only if there are own annotations
                   if (ma.length > 0) {
-                    return ma.join(', ');
+                    return ma.sort(compareAnnotations).join(', ');
                   }
 
                   return null;
@@ -379,7 +379,7 @@
                   if (skid in data.skeletons) {
                     return data.skeletons[skid].annotations.map(function(a) {
                       return data.annotations[a.id];
-                    }).join(', ');
+                    }).sort(compareAnnotations).join(', ');
                   }
                 } else if ('all-meta' === l.id) {
                   if (skid in data.skeletons) {
@@ -401,7 +401,7 @@
                     }, []);
                     // Return only if there are own annotations
                     if (oa.length > 0) {
-                      return oa.join(', ');
+                      return oa.sort(compareAnnotations).join(', ');
                     }
                   }
                 } else if ('own-meta' === l.id) {
@@ -563,5 +563,12 @@
       },
     };
   })();
+
+  /**
+   * Compare strings ignoring case.
+   */
+  function compareAnnotations(a, b) {
+    return a.localeCompare(b, undefined, {numeric: true, sensitivity: "base"});
+  }
 
 })(CATMAID);

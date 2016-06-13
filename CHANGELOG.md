@@ -7,12 +7,14 @@
 
 ### Features and enhancements
 
-- Importer: projects and stacks available on remote servers can now be
-  imported, optionally with API-key authentication on other CATMAID instances.
-  The remote data source can of course be any URL in a JSON or YAML format
-  understood by CATMAID. The import section in the CATMAID documentation holds
-  more detail on this. For CATMAID, the new "projects/export" endpoint
-  provides all required data that is visible to the requesting user.
+Importer:
+
+- Projects and stacks available on remote servers can now be imported,
+  optionally with API-key authentication on other CATMAID instances.  The remote
+  data source can of course be any URL in a JSON or YAML format understood by
+  CATMAID. The import section in the CATMAID documentation holds more detail on
+  this. For CATMAID, the new "projects/export" endpoint provides all required
+  data that is visible to the requesting user.
 
 
 Graph widget:

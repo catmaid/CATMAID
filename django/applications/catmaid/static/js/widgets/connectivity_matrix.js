@@ -756,7 +756,7 @@
       var th = document.createElement('th');
       th.appendChild(div);
       if (group) {
-        a.setAttribute('data-group', group);
+        a.setAttribute('data-group', name);
         th.setAttribute('title', 'This group contains ' + group.length +
             ' skeleton(s): ' + group.join(', '));
       }

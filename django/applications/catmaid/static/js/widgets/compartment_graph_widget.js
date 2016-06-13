@@ -2541,6 +2541,60 @@
     saveAs(blob, "graph-" + this.widgetID + ".svg");
   };
 
+  /**
+   * Open the currently loaded neurons and groups in a connectivity matrix
+   * widget, optionally including only selected nodes.
+   */
+  GroupGraph.prototype.openConnectivityMatrix = function(onlySelected) {
+    if (0 === this.cy.nodes().size()) {
+      CATMAID.warn("Please select at least one node");
+      return;
+    }
+
+    // Optionally, use only selected nodes
+    var nodes = this.cy.nodes();
+    if (onlySelected) {
+      nodes = nodes.filter(function(i, node) {
+        return node.selected();
+      });
+      if (0 === nodes.size()) {
+        CATMAID.warn("Please select at least one node");
+        return;
+      }
+    }
+
+    // Collect groups and single nodes
+    var self = this;
+    var models = nodes.toArray().reduce((function(o, node) {
+      var group = self.groups[node.id()];
+      if (group) {
+        o.groups[group.label] = group.models;
+      } else {
+        node.data('skeletons').reduce(function(t, model) {
+          t[model.id] = model;
+          return t;
+        }, o.single);
+      }
+
+      return o;
+    }).bind(this), {
+      'groups': {},
+      'single': {}
+    });
+
+    // Initialize new connectivity matrix with groups and single models
+    var cm = new CATMAID.ConnectivityMatrixWidget();
+    for (var g in models.groups) {
+      cm.rowDimension.appendAsGroup(models.groups[g], g);
+      cm.colDimension.appendAsGroup(models.groups[g], g);
+    }
+    cm.rowDimension.append(models.single);
+    cm.colDimension.append(models.single);
+
+    // Create UI for widget and display it
+    WindowMaker.create('connectivity-matrix', cm);
+  };
+
   GroupGraph.prototype.openPlot = function() {
     if (0 === this.cy.nodes().size()) {
       alert("Load a graph first!");

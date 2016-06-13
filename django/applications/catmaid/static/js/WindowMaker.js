@@ -2018,6 +2018,7 @@ var WindowMaker = new function()
         [['Export GML', GG.exportGML.bind(GG)],
          ['Export SVG', GG.exportSVG.bind(GG)],
          ['Export Adjacency Matrix', GG.exportAdjacencyMatrix.bind(GG)],
+         ['Open Connectivity Matrix', GG.openConnectivityMatrix.bind(GG, false)],
          ['Open plot', GG.openPlot.bind(GG)],
          ['Quantify', GG.quantificationDialog.bind(GG)]]);
 

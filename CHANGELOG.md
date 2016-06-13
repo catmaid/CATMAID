@@ -14,6 +14,13 @@
   more detail on this. For CATMAID, the new "projects/export" endpoint
   provides all required data that is visible to the requesting user.
 
+
+Graph widget:
+
+- The new button "Open Connectivity Matrix" in the Export tab will open a new
+  Connectivity Matrix widget for the current graph, including its groups.
+
+
 Miscellaneous:
 
 - Alt + Y will always create a new selection table and add the active neuron

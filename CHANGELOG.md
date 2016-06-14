@@ -23,6 +23,16 @@ Graph widget:
   Connectivity Matrix widget for the current graph, including its groups.
 
 
+Connectivity matrix:
+
+- It is now possible to manually change the order of multiple entries at once,
+  which is useful to move sets of entries. The "Display" tab now has a "Manually
+  edit order" option. If checked, number input boxes are shown next to each row
+  and column head as well as a "Re-order" button in the top-left cell if the
+  table. After the numbers are adjusted to the desired order, the "Re-order"
+  button will apply the new ordering. Negative and decimal numbers can be used.
+
+
 Miscellaneous:
 
 - Alt + Y will always create a new selection table and add the active neuron

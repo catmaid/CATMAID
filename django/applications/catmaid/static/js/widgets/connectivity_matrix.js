@@ -32,6 +32,9 @@
     this.colSortingDesc = false;
     // Rotate column headers by 90 degree
     this.rotateColumnHeaders = false;
+    // Display manual order edit controls
+    this.displayOrderFields = false;
+
     CATMAID.skeletonListSources.updateGUI();
   };
 
@@ -318,6 +321,18 @@
         rotateCols.appendChild(document.createTextNode('Column header 90°'));
         tabs['Display'].appendChild(rotateCols);
 
+        var displayOrderFieldsCb = document.createElement('input');
+        displayOrderFieldsCb.setAttribute('type', 'checkbox');
+        displayOrderFieldsCb.checked = this.displayOrderFields;
+        displayOrderFieldsCb.onclick = (function(e) {
+          this.displayOrderFields = e.target.checked;
+          this.refresh();
+        }).bind(this);
+        var displayOrderFields = document.createElement('label');
+        displayOrderFields.appendChild(displayOrderFieldsCb);
+        displayOrderFields.appendChild(document.createTextNode('Manually edit order'));
+        tabs['Display'].appendChild(displayOrderFields);
+
         $(controls).tabs();
       },
 
@@ -453,6 +468,38 @@
       }).bind(this));
   };
 
+  function sortDimension(map, a, b) {
+    // A mapped values is expected to be a list of two elements: a new
+    // index and an old one. If the new index is the same, the old is used
+    // for comparison. This maintains local order when moving sets.
+    var aIndices = map.get(a), bIndices = map.get(b);
+    var ia = aIndices[0], ib = bIndices[0];
+    if (ia === ib) {
+      ia = aIndices[1];
+      ib = bIndices[1];
+    }
+    return ia === ib ? 0 : (ia < ib ? -1 : 1);
+  }
+
+  function mapOrder(table, source, isRow, map, e, i) {
+    var headerCell = source.isGroup(e) ?
+      $(table).find('a[data-is-row=' + isRow + '][data-group=' + e + ']') :
+      $(table).find('a[data-is-row=' + isRow + '][data-skeleton-ids="[' + e + ']"]');
+    var position;
+    if (1 !== headerCell.length) {
+      CATMAID.warn('Did not find exactly one connectivity matrix row for pre-element ' + e);
+      position = -1;
+    } else  {
+      var inputCell = isRow ? headerCell.closest('th').prev() :
+          $($(table).find('tr:first').find('th')[i + 2]);
+      if (inputCell) {
+        position = Number(inputCell.find('input').val());
+      }
+    }
+    map.set(e, [position, i]);
+    return map;
+  }
+
   /**
    * Add a tabular representation of the connectivity matrix to the given DOM
    * element.
@@ -485,6 +532,74 @@
         handleCompletion.bind(this, table, rowNames, rowSkids, colNames, colSkids));
 
     if (walked) {
+      // Add optional order fields
+      if (this.displayOrderFields) {
+        // Row
+        var orderFieldRow = document.createElement('tr');
+        var orderFieldApply = document.createElement('input');
+        orderFieldApply.setAttribute('type', 'button');
+        orderFieldApply.setAttribute('value', 'Re-order');
+        var orderFieldTh = document.createElement('th');
+        orderFieldTh.appendChild(orderFieldApply);
+        orderFieldRow.appendChild(orderFieldTh);
+        // One empty column is required here, compensating for the pre-column
+        orderFieldRow.appendChild(document.createElement('th'));
+
+        colNames.forEach(function(col, i) {
+          var orderTh = document.createElement('th');
+          var orderInput = document.createElement('input');
+          orderInput.setAttribute('type', 'number');
+          orderInput.setAttribute('class', 'order-input');
+          orderInput.setAttribute('value', i + 1);
+          orderTh.appendChild(orderInput);
+          this.appendChild(orderTh);
+        }, orderFieldRow);
+
+        // For symmetry with the first column
+        orderFieldRow.appendChild(document.createElement('th'));
+
+        table.insertBefore(orderFieldRow, colHeader);
+        // If order inputs are displayed, one more empty cell is needed, due to
+        // the extra order input column.
+        $(colHeader).find("th:first").before(document.createElement('th'));
+
+        $(table).find("tr").each(function(i, e) {
+          // The first row is the top order row and the second one the regular
+          // header. No need to modify both of them
+          if (i > 1) {
+            if (i < rowNames.length + 2) {
+              var orderTh = document.createElement('th');
+              var orderInput = document.createElement('input');
+              orderInput.setAttribute('type', 'number');
+              orderInput.setAttribute('class', 'order-input');
+              orderInput.setAttribute('value', i - 1);
+              orderTh.appendChild(orderInput);
+              $(this).find('th:first').before(orderTh);
+            } else {
+              $(this).find('th:first').before(document.createElement('th'));
+            }
+          }
+        });
+
+        orderFieldApply.onclick = (function(widget) {
+          return function() {
+            var cmTable = $(this).closest('table');
+            // Read new order
+            var rowOrder = widget.rowDimension.orderedElements.reduce(
+                mapOrder.bind(window, cmTable, widget.rowDimension, true), new Map());
+            var colOrder = widget.colDimension.orderedElements.reduce(
+                mapOrder.bind(window, cmTable, widget.colDimension, false), new Map());
+            // Sort dimensions
+            widget.rowDimension.sort(sortDimension.bind(widget, rowOrder));
+            widget.colDimension.sort(sortDimension.bind(widget, colOrder));
+            // Set no-op sort and refresh view
+            widget.rowSorting = 0;
+            widget.colSorting = 0;
+            widget.refresh();
+          };
+        })(this);
+      }
+
       // Add general information paragraph
       var infoBox = document.createElement('div');
       infoBox.appendChild(document.createTextNode('The table below shows the ' +

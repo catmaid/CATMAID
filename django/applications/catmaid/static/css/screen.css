@@ -546,6 +546,10 @@ div#classification_graph_object img.roiimage {
   min-width: 3em;
 }
 
+.connectivity_matrix input.order-input {
+  width: 80%;
+}
+
 .connectivity_matrix .hover-button {
   cursor: pointer;
   float: left;

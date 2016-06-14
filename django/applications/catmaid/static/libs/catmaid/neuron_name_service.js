@@ -44,7 +44,7 @@
       ];
 
       // The format string mapping components into a final neuron name.
-      var formatString = '%f';
+      var formatString = '%f{, }';
 
       // The delimiter used for listing annotations in a neuron name.
       var listDelimiter = ", ";
@@ -76,26 +76,6 @@
         getFormatString: function()
         {
           return formatString;
-        },
-
-        /**
-         * Mutator for the list delimiter that is used for listing annotations
-         * in a neuron name.
-         */
-        setListDelimiter: function(delimiter)
-        {
-          listDelimiter = delimiter;
-
-          // Update the name representation of all neurons
-          this.refresh();
-        },
-
-        /**
-         * Accessor for the list delimiter.
-         */
-        getListDelimiter: function()
-        {
-          return listDelimiter;
         },
 
         /**
@@ -392,17 +372,18 @@
 
               var skeleton = managedSkeletons[skid];
 
-              // Find values for component in the list.
+              // Find values for component in the list, each component is a list
+              // of strings, or null if no value is available.
               var componentValues = componentList.map(function (l) {
                 if ('neuronname' === l.id) {
-                  return data.neuronnames[skid];
+                  return [data.neuronnames[skid]];
                 } else if ('skeletonid' === l.id) {
-                  return '' + skid;
+                  return ['' + skid];
                 } else if ('all' === l.id) {
                   if (skid in data.skeletons) {
                     return data.skeletons[skid].annotations.map(function(a) {
                       return data.annotations[a.id];
-                    }).sort(compareAnnotations).join(listDelimiter);
+                    }).sort(compareAnnotations);
                   }
                 } else if ('all-meta' === l.id) {
                   if (skid in data.skeletons) {
@@ -410,7 +391,7 @@
                     // annotation.
                     var label = metaLabel(CATMAID.annotations.getID(l.option));
                     if (null !== label) {
-                      return label;
+                      return [label];
                     }
                   }
                 } else if ('own' === l.id) {
@@ -424,7 +405,7 @@
                     }, []);
                     // Return only if there are own annotations
                     if (oa.length > 0) {
-                      return oa.sort(compareAnnotations).join(listDelimiter);
+                      return oa.sort(compareAnnotations);
                     }
                   }
                 } else if ('own-meta' === l.id) {
@@ -434,7 +415,7 @@
                     var label = metaLabel(CATMAID.annotations.getID(l.option),
                         session.userid);
                     if (null !== label) {
-                      return label;
+                      return [label];
                     }
                   }
                 }
@@ -444,18 +425,20 @@
 
               var fallbackValue = null;
               for (var i = 0; i < componentList.length; ++i) {
-                if (componentValues[i] !== null)
+                if (componentValues[i] !== null && componentValues[i].length > 0)
                   fallbackValue = componentValues[i];
               }
 
-              var name = formatString.replace(/%(f|\d+)/g, function (match, component) {
+              var name = formatString.replace(/%(f|\d+i)(?:\{(.*)\})?/g, function (match, component, delimiter) {
+                delimiter = delimiter === undefined ? ", " : delimiter;
+
                 if (component === 'f') {
-                  return fallbackValue;
+                  return fallbackValue.join(delimiter);
                 }
 
                 var index = parseInt(component, 10);
                 if (index >= 0 && index < componentValues.length) {
-                  return componentValues[index];
+                  return componentValues[index].join(delimiter);
                 } else return match;
               });
 

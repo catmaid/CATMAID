@@ -429,16 +429,10 @@
           "Format the neuron label using label components from list above. " +
           "Reference the Nth component by using \"%N\". " +
           "Use \"%f\" for a fallback that uses first available component " +
-          "from the top.",
+          "from the top. Optionally, append \"{<em>delimiter</em>}\" to specify " +
+          "how component values should be separeted, defaulting to \"{, }\".",
           function () {
             CATMAID.NeuronNameService.getInstance().setFormatString($(this).val());
-          }));
-      ds.append(CATMAID.DOM.createInputSetting(
-          "Annotation delimiter",
-          CATMAID.NeuronNameService.getInstance().getListDelimiter(),
-          "Specify the delimiter used to separate multiple annotations in a neuron name",
-          function() {
-            CATMAID.NeuronNameService.getInstance().setListDelimiter($(this).val());
           }));
 
 

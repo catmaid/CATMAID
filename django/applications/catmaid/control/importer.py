@@ -271,6 +271,7 @@ def find_project_folders(image_base, path, filter_term, only_unknown, depth=1):
     """
     dirs = []
     projects = {}
+    already_available = []
     not_readable = []
     for current_file in glob.glob( os.path.join(path, filter_term) ):
         if os.path.isdir(current_file):
@@ -293,6 +294,7 @@ def find_project_folders(image_base, path, filter_term, only_unknown, depth=1):
                         project = PreProject(project_yaml_data, project_url,
                                 short_name, only_unknown )
                         if only_unknown and project.already_known:
+                            already_available.append((current_file, short_name))
                             continue
                         else:
                             key = current_file
@@ -308,7 +310,7 @@ def find_project_folders(image_base, path, filter_term, only_unknown, depth=1):
             elif depth > 1:
                 # Recurse in subdir if requested
                 dirs = dirs + find_files( current_file, depth - 1)
-    return (dirs, projects, not_readable)
+    return (dirs, projects, not_readable, already_available)
 
 def get_projects_from_url(url, filter_term, only_unknown, headers=None):
     if not url:
@@ -321,6 +323,7 @@ def get_projects_from_url(url, filter_term, only_unknown, headers=None):
     dirs = []
     projects = {}
     not_readable = []
+    already_available = []
 
     # Ask remote server for data
     r = requests.get(url, headers=headers)
@@ -347,7 +350,7 @@ def get_projects_from_url(url, filter_term, only_unknown, headers=None):
     else:
         raise ValuleError("Unrecognized content type in response of remote")
 
-    return (dirs, projects, not_readable)
+    return (dirs, projects, not_readable, already_available)
 
 class ImportingWizard(SessionWizardView):
     def get_template_names(self):
@@ -382,7 +385,7 @@ class ImportingWizard(SessionWizardView):
                 filter_term = "*"
 
             if source == 'remote':
-                folders, projects, not_readable = get_projects_from_url(
+                folders, projects, not_readable, already_available = get_projects_from_url(
                         remote_host, filter_term, only_unknown)
             if source == 'remote-catmaid':
                 complete_catmaid_host = "{}{}{}".format(catmaid_host,
@@ -392,14 +395,14 @@ class ImportingWizard(SessionWizardView):
                     headers = {
                         'X-Authorization': 'Token {}'.format(api_key)
                     }
-                folders, projects, not_readable = get_projects_from_url(
+                folders, projects, not_readable, already_available = get_projects_from_url(
                         complete_catmaid_host, filter_term, only_unknown, headers)
             else:
                 # Get all folders that match the selected criteria
                 data_dir = os.path.join(settings.CATMAID_IMPORT_PATH, path)
                 if data_dir[-1] != os.sep:
                     data_dir = data_dir + os.sep
-                folders, projects, not_readable = find_project_folders(
+                folders, projects, not_readable, already_available = find_project_folders(
                     base_url, data_dir, filter_term, only_unknown)
 
             # Sort the folders (wrt. short name) to be better readable
@@ -407,6 +410,7 @@ class ImportingWizard(SessionWizardView):
             # Save these settings in the form
             form.folders = folders
             form.not_readable = not_readable
+            form.already_available = already_available
             self.projects = projects
             # Update the folder list and select all by default
             form.fields['projects'].choices = folders
@@ -477,6 +481,7 @@ class ImportingWizard(SessionWizardView):
                 context.update({
                     'folders': getattr(form, "folders", []),
                     'not_readable': getattr(form, "not_readable", []),
+                    'already_available': getattr(form, "already_available", []),
                 })
             elif self.steps.current == 'classification':
                 context.update({

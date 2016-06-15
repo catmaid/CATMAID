@@ -99,6 +99,18 @@
         {% endfor %}
         </div>
     {% endif %}
+
+    {% if already_available %}
+        <p>
+        The following projects are available, but projects with the same name
+        already exist in this CATMAID instance.
+        <ul>
+            {% for key, short_name in already_available %}
+                <li>Source: {{ key }}<br />Name: {{ short_name }}</li>
+            {% endfor %}
+        </ul>
+        </p>
+    {% endif %}
     </div>
 
     {% if folders %}

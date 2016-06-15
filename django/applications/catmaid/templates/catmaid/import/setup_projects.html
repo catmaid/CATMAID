@@ -126,7 +126,8 @@
         <form method="post" id="path-setup-form"
               action="">
             {% csrf_token %}
-            <p>No project info files have been found. Please return to the last step to adjust your settings and/or make sure that there is actually data accessible.</p>
+            <p>No projects could be imported. Please return to the last step to
+            adjust your settings and make sure the data accessible.</p>
         {% if wizard.steps.prev %}
             <p>
             <button name="wizard_goto_step" type="submit" value="{{ wizard.steps.first }}" class="button small">{% trans "first step" %}</button>

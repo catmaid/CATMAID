@@ -32,6 +32,11 @@ Connectivity matrix:
   table. After the numbers are adjusted to the desired order, the "Re-order"
   button will apply the new ordering. Negative and decimal numbers can be used.
 
+- Connectivity matrices can now be exported as PDF. The "Export PDF" button on
+  the "Main" tab will open a dialog explaining that this PDF export is made
+  through having the browser print the table and how to enable colors. Pressing
+  "Print" will show the browser's print dialog for only the table.
+
 
 Miscellaneous:
 

@@ -237,6 +237,12 @@
         exportCSV.onclick = this.exportCSV.bind(this);
         tabs['Main'].appendChild(exportCSV);
 
+        var exportPDF = document.createElement('input');
+        exportPDF.setAttribute("type", "button");
+        exportPDF.setAttribute("value", "Export PDF");
+        exportPDF.onclick = this.exportPDF.bind(this);
+        tabs['Main'].appendChild(exportPDF);
+
         var sortOptionNames = sortOptions.map(function(o) {
           return o.name;
         });
@@ -1068,6 +1074,32 @@
     if (CATMAID.tools.isFn(handleCompletion)) handleCompletion(rowSums, colSums);
 
     return true;
+  };
+
+  /**
+   * Open the print dialog for an empty page containing only the connectivity
+   * matrix table.
+   */
+  ConnectivityMatrixWidget.prototype.exportPDF = function() {
+    var table = $("table.partner_table", this.content);
+    if (1 !== table.length) {
+      CATMAID.warn("Couldn't find table to print");
+      return;
+    }
+    // Show an options dialog that explains a PDF export is only possible
+    // through printing at the moment
+    var dialog = new CATMAID.OptionsDialog("Connecticity matrix export", {
+      "Cancel": null,
+      "Print": function() {
+        CATMAID.tools.printElement(table[0]);
+      }
+    });
+    dialog.appendMessage("Exporting the connectivity matrix as a PDF file " +
+        "currently only works by printing to a PDF file. Clicking the \"Print\"" +
+        "button below, will create a new window with only the connectivity " +
+        "matrix. The print dialog is automatically started. To show cell colors, " +
+        "be sure to activate the \"Background graphics\" setting in the print dialog.");
+    dialog.show(450, 200, true);
   };
 
   /**

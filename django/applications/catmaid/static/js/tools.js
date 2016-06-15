@@ -438,4 +438,58 @@ CATMAID.tools = CATMAID.tools || {};
     return undefined === value ? fallback : value;
   };
 
+  /**
+   * Make all letters except the first of the second parameter lower case. Used
+   * by cloneNode() function.
+   */
+  var camelize = function(a,b){
+      return b.toUpperCase();
+  };
+
+  /**
+   * Clone a DOM node and apply the currently computed style. All child nodes
+   * are copied as well.
+   */
+  tools.cloneNode = function(element, copyStyle) {
+    var copy = element.cloneNode(false);
+    // Add style information
+    if (copyStyle && Node.ELEMENT_NODE === element.nodeType) {
+      var computedStyle = window.getComputedStyle(element, null);
+      var target = copy.style;
+      for (var i = 0, l = computedStyle.length; i < l; i++) {
+          var prop = computedStyle[i];
+          var camel = prop.replace(/\-([a-z])/g, camelize);
+          var val = computedStyle.getPropertyValue(prop);
+          target[camel] = val;
+      }
+    }
+
+    for (var i=0, length=element.childNodes.length; i<length; ++i) {
+      var child = element.childNodes[i];
+      var childClone = CATMAID.tools.cloneNode(child, copyStyle);
+      copy.appendChild(childClone);
+    }
+
+    return copy;
+  };
+
+  /**
+   * Print a HTML element.
+   */
+  tools.printElement = function(element) {
+    // Add table to new window
+    var printWindow = window.open("");
+    if (!printWindow) {
+      CATMAID.warn("Couldn't open new window for printing");
+      return;
+    }
+    var clone = CATMAID.tools.cloneNode(element, true);
+    var printHTML = "<html><body></body></html>";
+    printWindow.document.write("<html><body></body></html>");
+    printWindow.document.body.appendChild(clone);
+
+    printWindow.print();
+    printWindow.close();
+  };
+
 })(CATMAID.tools);

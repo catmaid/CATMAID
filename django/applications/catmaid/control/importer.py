@@ -308,7 +308,7 @@ def find_project_folders(image_base, path, filter_term, only_unknown, depth=1):
                 dirs = dirs + find_files( current_file, depth - 1)
     return (dirs, projects, not_readable)
 
-def get_projects_from_url(url, filter_term, only_unknown, headers):
+def get_projects_from_url(url, filter_term, only_unknown, headers=None):
     if not url:
         raise ValueError("No URL provided")
     # Sanitize and add protocol, if not there

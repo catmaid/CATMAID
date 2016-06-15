@@ -393,7 +393,7 @@
     var rowSort = sortOptions[this.rowSorting];
     if (rowSort && CATMAID.tools.isFn(rowSort.sort)) {
       this.rowDimension.sort(rowSort.sort.bind(this, this.rowSortingDesc,
-            this.matrix, this.rowDimension, true));
+            this.matrix, this.rowDimension, this.colDimension, true));
     } else if (undefined === rowSort.sort) {
       // Explicitly allow null as no-op
       CATMAID.error('Could not find row sorting function with name ' +
@@ -404,7 +404,7 @@
     var colSort = sortOptions[this.colSorting];
     if (colSort && CATMAID.tools.isFn(colSort.sort)) {
       this.colDimension.sort(colSort.sort.bind(this, this.colSortingDesc,
-            this.matrix, this.colDimension, false));
+            this.matrix, this.colDimension, this.rowDimension, false));
     } else if (undefined === colSort.sort) {
       // Explicitly allow null as no-op
       CATMAID.error('Could not find column sorting function with name ' +
@@ -1194,14 +1194,14 @@
     },
     {
       name: 'ID',
-      sort: function(desc, matrix, src, isRow, a, b) {
+      sort: function(desc, matrix, src, otherSrc, isRow, a, b) {
         var c = CATMAID.tools.compareStrings('' + a, '' + b);
         return desc ? -1 * c : c;
       }
     },
     {
       name: 'Name',
-      sort: function(desc, matrix, src, isRow, a, b) {
+      sort: function(desc, matrix, src, otherSrc, isRow, a, b) {
         // Compare against the group name, if a or b is a group,
         // otherwise use the name of the neuron name service.
         var nns = CATMAID.NeuronNameService.getInstance();
@@ -1213,16 +1213,10 @@
     },
     {
       name: 'Order of other',
-      sort: function(desc, matrix, src, isRow, a, b) {
-        var ia, ib;
+      sort: function(desc, matrix, src, otherSrc, isRow, a, b) {
         // Get index of a and b in other dimensions
-        if (isRow) {
-          ia = matrix.colSkeletonIDs.indexOf(a);
-          ib = matrix.colSkeletonIDs.indexOf(b);
-        } else {
-          ia = matrix.rowSkeletonIDs.indexOf(a);
-          ib = matrix.rowSkeletonIDs.indexOf(b);
-        }
+        var ia = otherSrc.orderedElements.indexOf(a);
+        var ib = otherSrc.orderedElements.indexOf(b);
         // If either a or b is -1, meaning they were not found in the other
         // dimension, the columns not found will be pushed to the end.
         if (-1 === ia || -1 === ib) {
@@ -1234,21 +1228,21 @@
     },
     {
       name: 'Synapse count',
-      sort: function(desc, matrix, src, isRow, a, b) {
+      sort: function(desc, matrix, src, otherSrc, isRow, a, b) {
         var c = compareDescendingSynapseCount(matrix, src, isRow, a, b);
         return desc ? -1 * c : c;
       }
     },
     {
       name: 'Output synapse count',
-      sort: function(desc, matrix, src, isRow, a, b) {
+      sort: function(desc, matrix, src, otherSrc, isRow, a, b) {
         var c = compareDescendingSynapseCount(matrix, src, isRow, a, b, true);
         return desc ? -1 * c : c;
       }
     },
     {
       name: 'Total synapse count',
-      sort: function(desc, matrix, src, isRow, a, b) {
+      sort: function(desc, matrix, src, otherSrc, isRow, a, b) {
         var c =  compareDescendingTotalSynapseCount(matrix, src, isRow, a, b);
         return desc ? -1 * c : c;
       }

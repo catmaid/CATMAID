@@ -26,6 +26,7 @@
     <form method="post" id="confirmation-form" action="">
     {% csrf_token %}
     <div class="module">
+    {{ wizard.form.non_field_errors }}
     <p>The following projects have been selected to be imported together with
     the settings listed. Please confirm this selection to do the actual import.
     Alternatively, you can go back and change settings. If an image base of a

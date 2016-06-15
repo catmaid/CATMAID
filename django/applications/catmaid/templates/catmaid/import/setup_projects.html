@@ -88,6 +88,7 @@
             </label>
         </p>
         <div class="aligned">
+        {{ wizard.form.non_field_errors }}
         {{ wizard.management_form }}
         {% for field in wizard.form %}
             <div class="form-row">

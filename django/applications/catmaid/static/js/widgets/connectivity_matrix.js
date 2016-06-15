@@ -1095,10 +1095,11 @@
       }
     });
     dialog.appendMessage("Exporting the connectivity matrix as a PDF file " +
-        "currently only works by printing to a PDF file. Clicking the \"Print\"" +
-        "button below, will create a new window with only the connectivity " +
-        "matrix. The print dialog is automatically started. To show cell colors, " +
-        "be sure to activate the \"Background graphics\" setting in the print dialog.");
+        "currently only works by printing to a PDF file. Clicking the \"Print\" " +
+        "button below will create a new window with only the connectivity " +
+        "matrix in it. The browser's print dialog is automatically shown. Colors " +
+        "will only be visible if the \"Background graphics\" setting in the " +
+        "print dialog is active.");
     dialog.show(450, 200, true);
   };
 

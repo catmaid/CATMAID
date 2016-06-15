@@ -385,6 +385,7 @@ class ImportingWizard(SessionWizardView):
             if source == 'remote-catmaid':
                 complete_catmaid_host = "{}{}{}".format(catmaid_host,
                     "" if catmaid_host[-1] == "/" else "/", "projects/export")
+                headers = None
                 if len(api_key) > 0:
                     headers = {
                         'X-Authorization': 'Token {}'.format(api_key)

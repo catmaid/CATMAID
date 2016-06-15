@@ -473,8 +473,8 @@ class ImportingWizard(SessionWizardView):
                 })
             elif self.steps.current == 'projectselection':
                 context.update({
-                    'folders': form.folders,
-                    'not_readable': form.not_readable,
+                    'folders': getattr(form, "folders", []),
+                    'not_readable': getattr(form, "not_readable", []),
                 })
             elif self.steps.current == 'classification':
                 context.update({

@@ -9,10 +9,11 @@
   /**
    * Create a flexible option dialog.
    */
-  var OptionsDialog = function(title) {
+  var OptionsDialog = function(title, buttons) {
     this.dialog = document.createElement('div');
     this.dialog.setAttribute("id", "dialog-confirm");
     this.dialog.setAttribute("title", title);
+    this.buttons = buttons;
   };
 
   OptionsDialog.prototype = {};
@@ -22,15 +23,19 @@
    */
   OptionsDialog.prototype.show = function(width, height, modal) {
     var self = this;
-    $(this.dialog).dialog({
-      width: width ? width : 300,
-      height: height ? height : 200,
-      modal: modal !== undefined ? modal : true,
-      close: function() {
-        if (self.onCancel) self.onCancel();
-        $(this).dialog("destroy");
-      },
-      buttons: {
+    var buttons;
+    if (this.buttons) {
+      buttons = {};
+      for (var b in this.buttons) {
+        buttons[b] = (function(callback) {
+          return function() {
+            CATMAID.tools.callIfFn(callback);
+            $(this).dialog("destroy");
+          };
+        })(this.buttons[b]);
+      }
+    } else {
+      buttons = {
         "Cancel": function() {
           if (self.onCancel) self.onCancel();
           $(this).dialog("destroy");
@@ -39,7 +44,17 @@
           if (self.onOK) self.onOK();
           $(this).dialog("destroy");
         }
-      }
+      };
+    }
+    $(this.dialog).dialog({
+      width: width ? width : 300,
+      height: height ? height : 200,
+      modal: modal !== undefined ? modal : true,
+      close: function() {
+        if (self.onCancel) self.onCancel();
+        $(this).dialog("destroy");
+      },
+      buttons: buttons
     });
   };
 

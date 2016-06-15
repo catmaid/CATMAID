@@ -12,7 +12,9 @@ from django.conf import settings
 from django.contrib.auth.models import User, Group
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ValidationError
 from django.shortcuts import render_to_response
+from django.utils.translation import ugettext as _
 
 from formtools.wizard.views import SessionWizardView
 
@@ -686,6 +688,20 @@ class DataFileForm(forms.Form):
         widget=forms.TextInput(attrs={'size':'40'}),
         help_text="The <em>base URL</em> should give read access to the data \
                    folder in use.")
+
+    def clean(self):
+        form_data = self.cleaned_data
+
+        # Make sure URLs are provided for a remote import
+        import_from = form_data['import_from']
+        if 'remote-catmaid' == import_from:
+            if 0 == len(form_data['catmaid_host'].strip()):
+                raise ValidationError(_('No URL provided'))
+        elif 'remote' == import_from:
+            if 0 == len(form_data['remote_host'].strip()):
+                raise ValidationError(_('No URL provided'))
+
+        return form_data
 
 class ProjectSelectionForm(forms.Form):
     """ A form to select projects to import out of the

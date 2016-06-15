@@ -675,6 +675,16 @@
       // Keep track of button hiding time out and last position
       var hideTimeout, lastButtonLeft, lastButtonTop;
 
+      $(table).on('mouseenter', 'td, th', function () {
+        var colnum = parseInt($(this).index()) + 1;
+        $('td:nth-child(' + colnum + '), th:nth-child(' + colnum + ')', $(this).closest('table'))
+            .addClass('highlight');
+      }).on('mouseleave', 'td, th', function () {
+        var colnum = parseInt($(this).index()) + 1;
+        $('td:nth-child(' + colnum + '), th:nth-child(' + colnum + ')', $(this).closest('table'))
+            .removeClass('highlight');
+      });
+
       // Add a handler for hovering over table headers
       $(table).on('mouseenter', 'th', content, function(e) {
         // Determine if this event comes from either a focus change within the

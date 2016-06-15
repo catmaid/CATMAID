@@ -546,6 +546,15 @@ div#classification_graph_object img.roiimage {
   min-width: 3em;
 }
 
+.connectivity_matrix .partner_table tr:hover td,
+.connectivity_matrix .partner_table tr:hover th,
+.connectivity_matrix .partner_table td.highlight,
+.connectivity_matrix .partner_table th.highlight {
+  background: #FFA;
+  border-color: #331;
+  font-weight: bold;
+}
+
 .connectivity_matrix input.order-input {
   width: 80%;
 }

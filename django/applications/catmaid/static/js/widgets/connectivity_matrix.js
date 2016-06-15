@@ -483,8 +483,8 @@
 
   function mapOrder(table, source, isRow, map, e, i) {
     var headerCell = source.isGroup(e) ?
-      $(table).find('a[data-is-row=' + isRow + '][data-group=' + e + ']') :
-      $(table).find('a[data-is-row=' + isRow + '][data-skeleton-ids="[' + e + ']"]');
+      $(table).find('a[data-is-row="' + isRow + '"][data-group="' + e + '"]') :
+      $(table).find('a[data-is-row="' + isRow + '"][data-skeleton-ids="[' + e + ']"]');
     var position;
     if (1 !== headerCell.length) {
       CATMAID.warn('Did not find exactly one connectivity matrix row for pre-element ' + e);

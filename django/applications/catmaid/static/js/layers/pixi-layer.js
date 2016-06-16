@@ -23,6 +23,14 @@
         {backgroundColor: 0x000000});
     this.stage = new PIXI.Container();
     this.layersRegistered = new Set();
+
+    // Disable the renderer's accessibility plugin (if available), because it
+    // requires the renderer view to be part of the DOM at all times (which we
+    // cannot guarantee).
+    if (this.renderer.plugins['accessibility']) {
+      this.renderer.plugins['accessibility'].destroy();
+      delete this.renderer.plugins['accessibility'];
+    }
   }
 
   /**
@@ -366,7 +374,7 @@
    * @return {string[]} Names of supported blend modes.
    */
   PixiLayer.prototype.getAvailableBlendModes = function () {
-    var glBlendModes = this._context.renderer.blendModes;
+    var glBlendModes = this._context.renderer.state.blendModes;
     var normBlendFuncs = glBlendModes[PIXI.BLEND_MODES.NORMAL];
     return Object.keys(PIXI.BLEND_MODES)
         .filter(function (modeKey) { // Filter modes that are not different from normal.
@@ -396,6 +404,7 @@
     this.batchContainer.children.forEach(function (child) {
       child.blendMode = PIXI.BLEND_MODES[modeKey];
     });
+    this.syncFilters();
   };
 
   /**
@@ -441,10 +450,22 @@
    * Update filters in the renderer to match filters set for the layer.
    */
   PixiLayer.prototype.syncFilters = function () {
-    if (this.filters.length > 0)
-      this.batchContainer.filters = this.filters.map(function (f) { return f.pixiFilter; });
-    else
+    if (this.filters.length > 0) {
+      var modeKey = this.blendMode.replace(/ /, '_').toUpperCase();
+      var filters = this.filters.map(function (f) {
+        f.pixiFilter.blendMode = PIXI.BLEND_MODES[modeKey];
+        return f.pixiFilter;
+      });
+      // This is a currently needed work-around for issue #1598 in Pixi.js
+      if (1 === this.filters.length) {
+        var noopFilter = new PIXI.filters.ColorMatrixFilter();
+        noopFilter.blendMode = PIXI.BLEND_MODES[modeKey];
+        filters.push(noopFilter);
+      }
+      this.batchContainer.filters = filters;
+    } else {
       this.batchContainer.filters = null;
+    }
   };
 
   /**
@@ -482,7 +503,7 @@
    * a layer filter.
    * @constructor
    * @param {string} displayName      Display name of this filter in interfaces.
-   * @param {function(new:PIXI.AbstractFilter)} pixiConstructor
+   * @param {function(new:PIXI.Filter)} pixiConstructor
    *                                  Constructor for the underlying Pixi filter.
    * @param {Array}   params               Parameters to display in control UI and
    *                                  their mapping to Pixi properties.
@@ -584,7 +605,7 @@
    * @constructor
    */
   PixiLayer.Filters.BrightnessContrastSaturationFilter = function () {
-    PIXI.AbstractFilter.call(this);
+    PIXI.Filter.call(this);
 
     this.passes = [this];
 
@@ -621,7 +642,7 @@
         '}';
   };
 
-  PixiLayer.Filters.BrightnessContrastSaturationFilter.prototype = Object.create(PIXI.AbstractFilter.prototype);
+  PixiLayer.Filters.BrightnessContrastSaturationFilter.prototype = Object.create(PIXI.Filter.prototype);
   PixiLayer.Filters.BrightnessContrastSaturationFilter.prototype.constructor = PixiLayer.Filters.BrightnessContrastSaturationFilter;
 
   ['brightness', 'contrast', 'saturation'].forEach(function (prop) {
@@ -641,7 +662,7 @@
    * @constructor
    */
   PixiLayer.Filters.IntensityThresholdTransparencyFilter = function () {
-    PIXI.AbstractFilter.call(this);
+    PIXI.Filter.call(this);
 
     this.passes = [this];
 
@@ -669,7 +690,7 @@
         '}';
   };
 
-  PixiLayer.Filters.IntensityThresholdTransparencyFilter.prototype = Object.create(PIXI.AbstractFilter.prototype);
+  PixiLayer.Filters.IntensityThresholdTransparencyFilter.prototype = Object.create(PIXI.Filter.prototype);
   PixiLayer.Filters.IntensityThresholdTransparencyFilter.prototype.constructor = PixiLayer.Filters.IntensityThresholdTransparencyFilter;
 
   ['luminanceCoeff', 'intensityThreshold'].forEach(function (prop) {

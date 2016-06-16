@@ -76,7 +76,7 @@
     graphic.beginFill(0xFFFFFF,0);
     graphic.drawRect(0,0,this.tileSource.tileWidth,this.tileSource.tileHeight);
     graphic.endFill();
-    var emptyTex = graphic.generateTexture(false);
+    var emptyTex = graphic.generateCanvasTexture();
 
     this._tiles = [];
     this._tileFirstR = 0;

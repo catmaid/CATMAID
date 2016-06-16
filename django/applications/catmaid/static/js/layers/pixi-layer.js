@@ -451,10 +451,17 @@
   PixiLayer.prototype.syncFilters = function () {
     if (this.filters.length > 0) {
       var modeKey = this.blendMode.replace(/ /, '_').toUpperCase();
-      this.batchContainer.filters = this.filters.map(function (f) {
+      var filters = this.filters.map(function (f) {
         f.pixiFilter.blendMode = PIXI.BLEND_MODES[modeKey];
         return f.pixiFilter;
       });
+      // This is a currently needed work-around for issue #1598 in Pixi.js
+      if (1 === this.filters.length) {
+        var noopFilter = new PIXI.filters.ColorMatrixFilter();
+        noopFilter.blendMode = PIXI.BLEND_MODES[modeKey];
+        filters.push(noopFilter);
+      }
+      this.batchContainer.filters = filters;
     } else {
       this.batchContainer.filters = null;
     }

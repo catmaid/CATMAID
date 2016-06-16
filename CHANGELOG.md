@@ -34,6 +34,8 @@ Miscellaneous:
 
 ### Bug fixes
 
+- Additive blending between layers now works also when filters are in use. This
+  allows for proper in-browser composite generation.
 
 
 ## 2016.05.26

@@ -47,7 +47,7 @@
      * @param {string}  nodeType         Either 'treenode' or 'connector'
      * @param {array}   newLabels        An array of strings representing labels
      *                                   that the node should have.
-     * @param {bool}    deeleteExisting  If true, all existing labels will be
+     * @param {bool}    deleteExisting   If true, all existing labels will be
      *                                   removed before new labels are added.
      *
      * @returns {Object} Promise that is resolved with update information once

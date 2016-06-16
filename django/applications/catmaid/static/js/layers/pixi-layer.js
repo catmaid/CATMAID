@@ -404,6 +404,7 @@
     this.batchContainer.children.forEach(function (child) {
       child.blendMode = PIXI.BLEND_MODES[modeKey];
     });
+    this.syncFilters();
   };
 
   /**

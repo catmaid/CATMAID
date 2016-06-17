@@ -13,7 +13,7 @@ from catmaid.models import UserRole, Project, Class, ClassInstance, \
         ClassInstanceClassInstance, Relation, ReviewerWhitelist
 from catmaid.control.authentication import requires_user_role, can_edit_or_fail
 from catmaid.control.common import defaultdict, get_relation_to_id_map, \
-        get_class_to_id_map
+        get_class_to_id_map, get_request_list
 
 def create_basic_annotated_entity_query(project, params, relations, classes,
         allowed_classes=['neuron', 'annotation']):
@@ -321,10 +321,7 @@ def query_annotated_classinstances(request, project_id = None):
     relations = dict(Relation.objects.filter(project_id=project_id).values_list('relation_name', 'id'))
 
     # Type constraints
-    allowed_classes = [v for k,v in request.POST.iteritems()
-            if k.startswith('types[')]
-    if not allowed_classes:
-        allowed_classes = ('neuron', 'annotation')
+    allowed_classes = get_request_list(request.POST, 'types', ['neuron', 'annotation'])
 
     query = create_basic_annotated_entity_query(p, request.POST,
             relations, classes, allowed_classes)
@@ -500,14 +497,10 @@ def annotate_entities(request, project_id = None):
     # Read keys in a sorted manner
     sorted_keys = sorted(request.POST.keys())
 
-    annotations = [request.POST[k] for k in sorted_keys
-            if k.startswith('annotations[')]
-    meta_annotations = [request.POST[k] for k in sorted_keys
-            if k.startswith('meta_annotations[')]
-    entity_ids = [int(request.POST[k]) for k in sorted_keys
-            if k.startswith('entity_ids[')]
-    skeleton_ids = [int(request.POST[k]) for k in sorted_keys
-            if k.startswith('skeleton_ids[')]
+    annotations = get_request_list(request.POST, 'annotations', [])
+    meta_annotations = get_request_list(request.POST, 'meta_annotations', [])
+    entity_ids = get_request_list(request.POST, 'entity_ids', [], map_fn=int)
+    skeleton_ids = get_request_list(request.POST, 'skeleton_ids', [], map_fn=int)
 
     if any(skeleton_ids):
         skid_to_eid = dict(ClassInstance.objects.filter(project = p,
@@ -553,10 +546,8 @@ def annotate_entities(request, project_id = None):
 def remove_annotations(request, project_id=None):
     """ Removes an annotation from one or more entities.
     """
-    annotation_ids = [int(v) for k,v in request.POST.iteritems()
-            if k.startswith('annotation_ids[')]
-    entity_ids = [int(v) for k,v in request.POST.iteritems()
-            if k.startswith('entity_ids[')]
+    annotation_ids = get_request_list(request.POST, 'annotation_ids', [], map_fn=int)
+    entity_ids = get_request_list(request.POST, 'entity_ids', [], map_fn=int)
 
     if not annotation_ids:
         raise ValueError("No annotation IDs provided")
@@ -595,8 +586,7 @@ def remove_annotations(request, project_id=None):
 def remove_annotation(request, project_id=None, annotation_id=None):
     """ Removes an annotation from one or more entities.
     """
-    entity_ids = [int(v) for k,v in request.POST.iteritems()
-            if k.startswith('entity_ids[')]
+    entity_ids = get_request_list(request.POST, 'entity_ids', [], map_fn=int)
 
     cicis_to_delete, missed_cicis, deleted, num_left = _remove_annotation(
             request.user, project_id, entity_ids, annotation_id)
@@ -970,7 +960,7 @@ def list_annotations(request, project_id=None):
 def _fast_co_annotations(request, project_id, display_start, display_length):
     classIDs = dict(Class.objects.filter(project_id=project_id).values_list('class_name', 'id'))
     relationIDs = dict(Relation.objects.filter(project_id=project_id).values_list('relation_name', 'id'))
-    co_annotation_ids = set(int(v) for k, v in request.POST.iteritems() if k.startswith('parallel_annotations'))
+    co_annotation_ids = set(get_request_list(request.POST, 'parallel_annotations', [], map_fn=int))
 
     select, rest = generate_co_annotation_query(int(project_id), co_annotation_ids, classIDs, relationIDs)
 
@@ -1158,8 +1148,7 @@ def annotations_for_skeletons(request, project_id=None):
             type: integer
             description: A skeleton ID
     """
-    skids = tuple(int(skid) for key, skid in request.POST.iteritems() \
-            if key.startswith('skeleton_ids['))
+    skids = tuple(get_request_list(request.POST, 'skeleton_ids', [], map_fn=int))
     cursor = connection.cursor()
     cursor.execute("SELECT id FROM relation WHERE project_id=%s AND relation_name='annotated_with'" % int(project_id))
     annotated_with_id = cursor.fetchone()[0]
@@ -1217,8 +1206,7 @@ def annotations_for_entities(request, project_id=None):
             description: A skeleton ID
     """
     # Get 'annotated_with' relation ID
-    object_ids = tuple(int(eid) for key, eid in request.POST.iteritems() \
-            if key.startswith('object_ids['))
+    object_ids = tuple(get_request_list(request.POST, 'object_ids', [], map_fn=int))
     cursor = connection.cursor()
     cursor.execute("""
         SELECT id FROM relation

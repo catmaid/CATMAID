@@ -19,6 +19,17 @@ included in this changelog.
   ontology queries to filter by the "driver_line" class for the same
   semantics.
 
+- `POST /{project_id}/annotations/forskeletons`:
+  Parameter `skeleton_ids` now correctly parses with and without explicit
+  indices.
+
+- `POST /{project_id}/annotations/query`:
+  Parameter `object_ids` now correctly parses with and without explicit
+  indices.
+
+- `POST /{project_id}/annotations/query-targets`:
+  Parameter `types` now correctly parses with and without explicit indices.
+
 ### Deprecations
 
 None.

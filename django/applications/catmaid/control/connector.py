@@ -635,14 +635,22 @@ def connectors_info(request, project_id):
     """
 
     cids = get_request_list(request.POST, 'cids', map_fn=int)
+    skids = get_request_list(request.POST, 'skids', map_fn=int)
     skids_pre = get_request_list(request.POST, 'pre', map_fn=int)
     skids_post = get_request_list(request.POST, 'post', map_fn=int)
 
     cursor = connection.cursor()
 
-    relations = get_relation_to_id_map(project_id, ('presynaptic_to', 'postsynaptic_to'), cursor)
-    pre = relations['presynaptic_to']
-    post = relations['postsynaptic_to']
+    if skids_pre or skids_post:
+        if skids:
+            raise ValueError("The skids parameter can't be used together with "
+                    "pre and/or post.")
+
+        relations = get_relation_to_id_map(project_id, ('presynaptic_to', 'postsynaptic_to'), cursor)
+        pre = relations['presynaptic_to']
+        post = relations['postsynaptic_to']
+    else:
+        pre = post = None
 
     # Construct base query
     query_parts = ['''
@@ -689,6 +697,14 @@ def connectors_info(request, project_id):
         '''.format(post_skid_template))
         query_params.extend(skids_post)
 
+    # Add generic skeleton filters
+    if skids:
+        skid_template = ",".join(("(%s)",) * len(skids))
+        query_parts.append('''
+            JOIN (VALUES {}) sk(id) ON tc1.skeleton_id = sk.id OR tc2.skeleton_id = sk.id
+        '''.format(skid_template))
+        query_params.extend(skids)
+
     # Prevent self-joins of connector partners
     query_parts.append('''
         WHERE tc1.id != tc2.id
@@ -707,6 +723,11 @@ def connectors_info(request, project_id):
             AND tc2.relation_id = %s
         ''')
         query_params.append(post)
+
+    if skids:
+        query_parts.append('''
+            AND tc1.treenode_id < tc2.treenode_id
+        ''')
 
     query_parts.append('''
         ORDER BY tc2.skeleton_id

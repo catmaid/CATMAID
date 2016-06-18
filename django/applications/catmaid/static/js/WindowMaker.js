@@ -1155,6 +1155,8 @@ var WindowMaker = new function()
           ['Spatial select', WA.spatialSelect.bind(WA)],
           [document.createTextNode(' - ')],
           ['Count', WA.countObjects.bind(WA)],
+          [document.createTextNode(' - ')],
+          ['List connectors', WA.listConnectors.bind(WA)],
         ]);
 
     var storedViewsSelect = document.createElement('select');

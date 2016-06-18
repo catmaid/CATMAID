@@ -41,6 +41,18 @@
   };
 
   /**
+   * Load all connectors in the passed in list and display a connector selcetion
+   * for the result.
+   */
+  ConnectorSelection.prototype.showConnectors = function(connectorIds, skeletonIds) {
+    CATMAID.Connectors.list(project.id, connectorIds, skeletonIds)
+      .then(function(result) {
+        console.log(result);
+        show_table("", result.connectors, null);
+      });
+  };
+
+  /**
   * Display a list of already aquired connector links. A list of lists
   * (connectors) is expected, each connector has entries that correspond to the
   * displayed table: connector id, connector X, Y, Z, node 1, skeleton 1,

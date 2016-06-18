@@ -634,7 +634,7 @@
             post: target_skids
           };
 
-          CATMAID.fetch(project.id + '/connector/pre-post-info', "POST", params)
+          CATMAID.fetch(project.id + '/connector/info', "POST", params)
             .then(function(result) {
               CATMAID.ConnectorSelection.show_connectors(result);
             })

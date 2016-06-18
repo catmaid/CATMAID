@@ -176,6 +176,38 @@
             linkTypeId: result.link_type_id
           };
         });
+    },
+
+    /**
+     * Get a list of connector properties, optionally filtered by pre- or
+     * post-skeleton IDs.
+     *
+     * @param {integer} projectId       The project space to use
+     * @param {integer} connectorIds    (Optional) The IDs of connectors to list
+     * @param {integer} skeletonIds     (Optional) The IDs of skeletons the
+     *                                  result connectors have to connect to.
+     * @param {integer} preSkeletonIds  (Optional) The IDs of presynaptic
+     *                                  skeletons linked to result connectors.
+     * @param {integer} postSkeletonIds (Optional) The IDs of postsynaptic
+     *                                  skeletons linked to result connectors.
+     */
+    list: function(projectId, connectorIds, skeletonIds, preSkeletonIds, postSkeletonIds) {
+      CATMAID.requirePermission(projectId, 'can_browse',
+          'You don\'t have have permission to list connectors');
+      var url = projectId + '/connector/info';
+      var params = {
+        cids: connectorIds,
+        skids: skeletonIds,
+        pre: preSkeletonIds,
+        post: postSkeletonIds
+      };
+
+      return CATMAID.fetch(url, 'POST', params)
+        .then(function(result) {
+          return {
+            connectors: result
+          };
+        });
     }
   };
 

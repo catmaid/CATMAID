@@ -628,50 +628,112 @@ def _list_completed(project_id, completed_by=None, from_date=None, to_date=None)
 @requires_user_role(UserRole.Browse)
 def connectors_info(request, project_id):
     """
-    Given a list of connectors, a list of presynaptic skeletons and a list of postsynatic skeletons,
-    return a list of rows, one per synaptic connection, in the same format as one_to_many_synapses.
-    The list of connectors is optional.
+    Given a list of connectors, a list of presynaptic skeletons and a list of
+    postsynatic skeletons, return a list of rows, one per synaptic connection,
+    in the same format as one_to_many_synapses. The list of connectors (cids),
+    pre-skeletons (pre) and post-skeletons (post) is optional.
     """
 
-    int_to_str = lambda x: str(int(x))
-    cids = get_request_list(request.POST, 'cids', map_fn=int_to_str)
-    skids_pre = get_request_list(request.POST, 'pre', map_fn=int_to_str)
-    skids_post = get_request_list(request.POST, 'post', map_fn=int_to_str)
+    cids = get_request_list(request.POST, 'cids', map_fn=int)
+    skids = get_request_list(request.POST, 'skids', map_fn=int)
+    skids_pre = get_request_list(request.POST, 'pre', map_fn=int)
+    skids_post = get_request_list(request.POST, 'post', map_fn=int)
 
     cursor = connection.cursor()
 
-    relations = get_relation_to_id_map(project_id, ('presynaptic_to', 'postsynaptic_to'), cursor)
-    pre = relations['presynaptic_to']
-    post = relations['postsynaptic_to']
+    if skids_pre or skids_post:
+        if skids:
+            raise ValueError("The skids parameter can't be used together with "
+                    "pre and/or post.")
 
-    cursor.execute('''
-    SELECT DISTINCT
-           tc1.connector_id, c.location_x, c.location_y, c.location_z,
-           tc1.treenode_id, tc1.skeleton_id, tc1.confidence, tc1.user_id,
-           t1.location_x, t1.location_y, t1.location_z,
-           tc2.treenode_id, tc2.skeleton_id, tc2.confidence, tc2.user_id,
-           t2.location_x, t2.location_y, t2.location_z
-    FROM treenode_connector tc1,
-         treenode_connector tc2,
-         treenode t1,
-         treenode t2,
-         connector c
-    WHERE %s
-          tc1.connector_id = c.id
-      AND tc1.connector_id = tc2.connector_id
-      AND tc1.skeleton_id IN (%s)
-      AND tc2.skeleton_id IN (%s)
-      AND tc1.relation_id = %s
-      AND tc2.relation_id = %s
-      AND tc1.id != tc2.id
-      AND tc1.treenode_id = t1.id
-      AND tc2.treenode_id = t2.id
-    ORDER BY tc2.skeleton_id
-    ''' % ("c.id IN (%s) AND" % ",".join(cids) if cids else "",
-           ",".join(skids_pre),
-           ",".join(skids_post),
-           pre,
-           post))
+        relations = get_relation_to_id_map(project_id, ('presynaptic_to', 'postsynaptic_to'), cursor)
+        pre = relations['presynaptic_to']
+        post = relations['postsynaptic_to']
+    else:
+        pre = post = None
+
+    # Construct base query
+    query_parts = ['''
+        SELECT DISTINCT
+               tc1.connector_id, c.location_x, c.location_y, c.location_z,
+               tc1.treenode_id, tc1.skeleton_id, tc1.confidence, tc1.user_id,
+               t1.location_x, t1.location_y, t1.location_z,
+               tc2.treenode_id, tc2.skeleton_id, tc2.confidence, tc2.user_id,
+               t2.location_x, t2.location_y, t2.location_z
+        FROM connector c
+    ''']
+
+    query_params = []
+
+    # Add connector filter, if requested
+    if cids:
+        cid_template = ",".join(("(%s)",) * len(cids))
+        query_parts.append('''
+            JOIN (VALUES {}) rc(id) ON c.id = rc.id
+        '''.format(cid_template))
+        query_params.extend(cids)
+
+    # Add pre-synaptic skeleton filter, if requested
+    query_parts.append('''
+        JOIN treenode_connector tc1 ON tc1.connector_id = c.id
+        JOIN treenode t1 ON tc1.treenode_id = t1.id
+    ''')
+    if skids_pre:
+        pre_skid_template = ",".join(("(%s)",) * len(skids_pre))
+        query_parts.append('''
+            JOIN (VALUES {}) sk_pre(id) ON tc1.skeleton_id = sk_pre.id
+        '''.format(pre_skid_template))
+        query_params.extend(skids_pre)
+
+    # Add post-synaptic skeleton filter, if requested
+    query_parts.append('''
+        JOIN treenode_connector tc2 ON tc2.connector_id = c.id
+        JOIN treenode t2 ON tc2.treenode_id = t2.id
+    ''')
+    if skids_post:
+        post_skid_template = ",".join(("(%s)",) * len(skids_post))
+        query_parts.append('''
+            JOIN (VALUES {}) sk_post(id) ON tc2.skeleton_id = sk_post.id
+        '''.format(post_skid_template))
+        query_params.extend(skids_post)
+
+    # Add generic skeleton filters
+    if skids:
+        skid_template = ",".join(("(%s)",) * len(skids))
+        query_parts.append('''
+            JOIN (VALUES {}) sk(id) ON tc1.skeleton_id = sk.id OR tc2.skeleton_id = sk.id
+        '''.format(skid_template))
+        query_params.extend(skids)
+
+    # Prevent self-joins of connector partners
+    query_parts.append('''
+        WHERE tc1.id != tc2.id
+    ''')
+
+    # Pre-synaptic skeleton filters also constrain the relation
+    if skids_pre:
+        query_parts.append('''
+            AND tc1.relation_id = %s
+        ''')
+        query_params.append(pre)
+
+    # Post-synaptic skeleton filters also constrain the relation
+    if skids_post:
+        query_parts.append('''
+            AND tc2.relation_id = %s
+        ''')
+        query_params.append(post)
+
+    if skids:
+        query_parts.append('''
+            AND tc1.treenode_id < tc2.treenode_id
+        ''')
+
+    query_parts.append('''
+        ORDER BY tc2.skeleton_id
+    ''')
+
+    cursor.execute("\n".join(query_parts), query_params)
 
     rows = tuple((row[0], (row[1], row[2], row[3]),
                   row[4], row[5], row[6], row[7],

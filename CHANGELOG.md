@@ -7,6 +7,13 @@
 
 ### Features and enhancements
 
+3D viewer:
+
+- Through the "List connectors" button on the Main tab, it is now possible to
+  open a connector selection with all currently loaded connectors in it.
+  Skeleton visibility and connector restrictions are respected.
+
+
 Importer:
 
 - Projects and stacks available on remote servers can now be imported,

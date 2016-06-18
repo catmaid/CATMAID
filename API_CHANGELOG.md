@@ -12,6 +12,10 @@ included in this changelog.
   content types. A return YAML document matches the format supported by
   the importer.
 
+- `POST /{project_id}/connector/info`:
+  This endpoint replaces the `/{project_id}/connector/pre-post-infos` endpoint.
+  The `pre` and `post` parameters are now optional.
+
 ### Modifications
 
 - `GET /projects/`:
@@ -37,7 +41,8 @@ None.
 
 ### Removals
 
-None.
+- `POST /{project_id}/connector/pre-post-info`:
+  This endpoint was renamed to `/{project_id}/connector/info` endpoint.
 
 ## 2016.05.26
 

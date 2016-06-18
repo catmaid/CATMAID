@@ -35,6 +35,8 @@
     this.animation = undefined;
     // Map loaed volume IDs to an array of Three.js meshes
     this.loadedVolumes = {};
+    // Current set of filtered connectors (if any)
+    this.filteredConnectors = null;
 
     // Listen to changes of the active node
     SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
@@ -1215,6 +1217,12 @@
         return o;
       }, {});
 
+      // Remember current set of filtered connectors
+      this.filteredConnectors = {
+        'connectorIds': Object.keys(common),
+        'skeletonIds': visible_skeletons
+      };
+
       for (var skeleton_id in skeletons) {
         if (skeletons.hasOwnProperty(skeleton_id)) {
           skeletons[skeleton_id].remove_connector_selection();
@@ -1227,6 +1235,8 @@
       skids.forEach(function(skid) {
         skeletons[skid].remove_connector_selection();
       });
+      // Declare that there is no filter used at the moment
+      this.filteredConnectors = null;
     }
 
     this.space.render();
@@ -5063,6 +5073,22 @@
     var value = +number; // cast
     if (Number.isNaN(value) || value < min) return CATMAID.warn(error_msg);
     return value;
+  };
+
+  /**
+   * Open a connector table with the connectors currently visisble in the 3D
+   * viewer.
+   */
+  WebGLApplication.prototype.listConnectors = function() {
+    if (this.filteredConnectors) {
+      CATMAID.ConnectorSelection.showConnectors(
+          this.filteredConnectors.connectorIds,
+          this.filteredConnectors.skeletonIds);
+    } else {
+      CATMAID.ConnectorSelection.showConnectors(
+          null,
+          this.getSelectedSkeletons());
+    }
   };
 
   WebGLApplication.prototype.updateSynapseClusteringBandwidth = function(value) {

@@ -1189,7 +1189,7 @@ class ViewPageTests(TestCase):
     def test_connector_info(self):
         self.fake_authentication()
         response = self.client.post(
-                '/%d/connector/pre-post-info' % self.test_project_id,
+                '/%d/connector/info' % self.test_project_id,
                 {'pre[0]': 235, 'post[0]': 373})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
@@ -1203,7 +1203,7 @@ class ViewPageTests(TestCase):
         self.assertEqual(expected_result, parsed_response)
 
         response = self.client.post(
-                '/%d/connector/pre-post-info' % self.test_project_id,
+                '/%d/connector/info' % self.test_project_id,
                 {'pre[0]': 235, 'post[0]': 373, 'cids[0]': 421})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
@@ -1214,7 +1214,7 @@ class ViewPageTests(TestCase):
         self.assertEqual(expected_result, parsed_response)
 
         response = self.client.post(
-                '/%d/connector/pre-post-info' % self.test_project_id,
+                '/%d/connector/info' % self.test_project_id,
                 {'pre[0]': 2462, 'post[0]': 2468})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
@@ -1226,7 +1226,7 @@ class ViewPageTests(TestCase):
         self.assertEqual(expected_result, parsed_response)
 
         response = self.client.post(
-                '/%d/connector/pre-post-info' % self.test_project_id,
+                '/%d/connector/info' % self.test_project_id,
                 {'pre[0]': 2462, 'post[0]': 2462})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)

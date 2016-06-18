@@ -47,7 +47,6 @@
   ConnectorSelection.prototype.showConnectors = function(connectorIds, skeletonIds) {
     CATMAID.Connectors.list(project.id, connectorIds, skeletonIds)
       .then(function(result) {
-        console.log(result);
         show_table("", result.connectors, null);
       });
   };

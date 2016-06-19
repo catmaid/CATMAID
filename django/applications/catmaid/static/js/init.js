@@ -17,7 +17,7 @@
   /**
    * CATMAID's web front-end.
    */
-  var Client = function() {
+  var Client = function(options) {
     // Lazy load images in container with ID "content" and class "lazy".
     this.blazy = new Blazy({
       selector: ".lazy",
@@ -25,6 +25,233 @@
       loadInvisible: true,
       errorClass: "missing-image"
     });
+
+    this.init(options);
+  };
+
+  /**
+   * Initialize the CATMAID web front-end based on the passed in options.
+   */
+  Client.prototype.init = function(options) {
+    var pid;
+    var sids = [];
+    var ss = [];
+    var inittool;
+    var z;
+    var y;
+    var x;
+    var s;
+    var zp;
+    var yp;
+    var xp;
+    var init_active_node_id;
+    var init_active_skeleton;
+    var singleStackViewer = false;
+
+    var account;
+    var password;
+
+    if ( options )
+    {
+      // simply parse the fragment options
+      // @todo take care for the options proper range
+      if ( options[ "z" ] ) z = parseInt( options[ "z" ] );
+      if ( isNaN( z ) ) z = undefined;
+      if ( options[ "y" ] ) y = parseInt( options[ "y" ] );
+      if ( isNaN( y ) ) y = undefined;
+      if ( options[ "x" ] ) x = parseInt( options[ "x" ] );
+      if ( isNaN( x ) ) x = undefined;
+      if ( options[ "s" ] ) s = parseFloat( options[ "s" ] );
+          if ( isNaN( s ) ) s = undefined;
+          if ( options[ "active_skeleton_id" ] ) init_active_skeleton = parseInt( options[ "active_skeleton_id" ] );
+          if ( options[ "active_node_id" ] ) init_active_node_id = parseInt( options[ "active_node_id" ] );
+
+      if ( !(
+          typeof z == "undefined" ||
+          typeof y == "undefined" ||
+          typeof x == "undefined" ||
+          typeof s == "undefined" ) )
+      {
+        pid = 1;
+        sids = [];
+        sids[ 0 ] = 1;
+        ss = [];
+        ss[ 0 ] = 1;
+      }
+      else
+      {
+        if ( options[ "pid" ] ) pid = options[ "pid" ];
+        if ( options[ "zp" ] ) zp = parseInt( options[ "zp" ] );
+        if ( isNaN( zp ) ) zp = undefined;
+        if ( options[ "yp" ] ) yp = parseInt( options[ "yp" ] );
+        if ( isNaN( yp ) ) yp = undefined;
+        if ( options[ "xp" ] ) xp = parseInt( options[ "xp" ] );
+        if ( isNaN( xp ) ) xp = undefined;
+        if ( options[ "tool" ] ) inittool = options[ "tool"];
+
+        for ( var i = 0; options[ "sid" + i ]; ++i )
+        {
+          var sid = options[ "sid" + i ];
+          // Make sure a stack isn't opened multiple times
+          if ( -1 !== sids.indexOf( sid ) ) {
+            continue;
+          }
+          sids.push( sid );
+          if ( options[ "s" + i ] )
+            ss.push( parseFloat( options[ "s" + i ] ) );
+          else
+            ss.push( NaN );
+          if ( isNaN( ss[ i ] ) )
+          {
+            sids.pop();
+            ss.pop();
+          }
+        }
+      }
+
+      if ( options[ "account" ] && options[ "password" ] )
+      {
+        account = options[ "account" ];
+        password = options[ "password" ];
+      }
+
+      // find data view setting
+      if ( options[ "dataview" ] )
+        current_dataview = parseInt( options["dataview"] );
+      if ( isNaN( current_dataview ) ) current_dataview = undefined;
+
+      // Check if only one stack viewer should be used for all stacks
+      if ( options[ "composite" ] ) {
+        singleStackViewer = ("1" === options["composite"]);
+      }
+    }
+
+    CATMAID.statusBar = new CATMAID.Console();
+    document.body.appendChild( CATMAID.statusBar.getView() );
+
+    var a_url = document.getElementById( "a_url" );
+    a_url.onmouseover = function( e )
+    {
+      this.href = project.createURL();
+      return true;
+    };
+
+    document.getElementById( "login_box" ).style.display = "block";
+    document.getElementById( "logout_box" ).style.display = "none";
+    document.getElementById( "session_box" ).style.display = "none";
+
+    // Create the toolboxes
+    $('#toolbox_project').replaceWith(CATMAID.createButtonsFromActions(
+      CATMAID.toolActions, 'toolbox_project', ''));
+    $('#toolbox_edit').replaceWith(CATMAID.createButtonsFromActions(
+      CATMAID.EditTool.actions, 'toolbox_edit', ''));
+    $('#toolbox_segmentation').replaceWith(CATMAID.createButtonsFromActions(
+      CATMAID.SegmentationTool.actions, 'toolbox_segmentation', ''));
+    $('#toolbox_data').replaceWith(CATMAID.createButtonsFromActions(
+      CATMAID.TracingTool.actions, 'toolbox_data', ''));
+
+    // Add the toolbar buttons:
+    document.getElementById( "toolbar_nav" ).style.display = "none";
+    document.getElementById( "toolbar_text" ).style.display = "none";
+    document.getElementById( "toolbar_tags" ).style.display = "none";
+    document.getElementById( "toolbar_roi" ).style.display = "none";
+    document.getElementById( "toolbox_project" ).style.display = "none";
+    document.getElementById( "toolbox_edit" ).style.display = "none";
+    document.getElementById( "toolbox_ontology" ).style.display = "none";
+    document.getElementById( "toolbox_data" ).style.display = "none";
+    document.getElementById( "toolbox_segmentation" ).style.display = "none";
+    document.getElementById( "toolbox_show" ).style.display = "none";
+
+    document.getElementById( "account" ).onkeydown = login_oninputreturn;
+    document.getElementById( "password" ).onkeydown = login_oninputreturn;
+
+    dataview_menu = new Menu();
+    document.getElementById( "dataview_menu" ).appendChild( dataview_menu.getView() );
+    dataviews();
+
+    project_menu = new Menu();
+    document.getElementById( "project_menu" ).appendChild( project_menu.getView() );
+
+    stack_menu = new Menu();
+    document.getElementById( "stack_menu" ).appendChild( stack_menu.getView() );
+
+    message_menu = new Menu();
+    document.getElementById( "message_menu" ).appendChild( message_menu.getView() );
+
+    user_menu = new Menu();
+    document.getElementById( "user_menu" ).appendChild( user_menu.getView() );
+
+    // login and thereafter load stacks if requested
+    login(undefined, undefined, function() {
+      var tools = {
+        navigator: CATMAID.Navigator,
+        tracingtool: CATMAID.TracingTool,
+        segmentationtool: CATMAID.SegmentationTool,
+        classification_editor: null
+      };
+
+      loadStacksFromURL(singleStackViewer);
+
+      // Open stacks one after another and move to the requested location. Load
+      // the requested tool after everything has been loaded.
+      function loadStacksFromURL(composite, loaded) {
+        loaded = loaded || 0;
+        useExistingStackViewer = composite && (loaded > 0);
+        if (pid) {
+          if (sids.length > 0) {
+            // Open stack and queue test/loading for next one
+            var sid = sids.shift();
+            var s = ss.shift();
+            openProjectStack(pid, sid, useExistingStackViewer).then(function() {
+              // Moving every stack is not really necessary, but for now a
+              // convenient way to apply the requested scale to each stack.
+              if (typeof zp == "number" && typeof yp == "number" &&
+                  typeof xp == "number" && typeof s == "number" ) {
+                project.moveTo(zp, yp, xp, s, function() {
+                  // Load next stack
+                  loadStacksFromURL(composite, loaded + 1);
+                });
+              }
+            });
+          } else {
+            // Set the tool only after the move; otherwise, thousands of skeleton
+            // nodes may be fetched and painted unnecessarily.
+            var tool = tools[inittool];
+            if (tool) {
+              project.setTool(new tool());
+            }
+            if (init_active_node_id) {
+              // initialization hack
+              SkeletonAnnotations.init_active_node_id = init_active_node_id;
+            }
+          }
+        }
+      }
+    });
+
+    // the text-label toolbar
+
+    var input_fontsize = new Input( "fontsize", 3, function( e ){ return true; }, 32 );
+    document.getElementById( "input_fontsize" ).appendChild( input_fontsize.getView() );
+    var input_fontcolourred = new Input( "fontcolourred", 3, function( e ){ return true; }, 255 );
+    document.getElementById( "input_fontcolourred" ).appendChild( input_fontcolourred.getView() );
+    var input_fontcolourgreen = new Input( "fontcolourgreen", 3, function( e ){ return true; }, 127 );
+    document.getElementById( "input_fontcolourgreen" ).appendChild( input_fontcolourgreen.getView() );
+    var input_fontcolourblue = new Input( "fontcolourblue", 3, function( e ){ return true; }, 0 );
+    document.getElementById( "input_fontcolourblue" ).appendChild( input_fontcolourblue.getView() );
+
+    rootWindow = new CMWRootNode();
+    CATMAID.ui.registerEvent( "onresize", resize );
+
+    // change global bottom bar height, hide the copyright notice
+    // and move the statusBar
+    CATMAID.statusBar.setBottom();
+
+    window.onresize();
+
+    console.log('CATMAID (Client version ' + CATMAID.CLIENT_VERSION + ')\n' +
+                'For help interacting with CATMAID from the console see:\n' +
+                'https://github.com/catmaid/CATMAID/wiki/Scripting');
   };
 
   // Export Client
@@ -1197,229 +1424,8 @@ var realInit = function()
   }
 
   // Initialize a new CATMAID front-end
-  CATMAID.client = new CATMAID.Client();
-
-  //! analyze the URL
-  var pid;
-  var sids = [];
-  var ss = [];
-  var inittool;
-  var z;
-  var y;
-  var x;
-  var s;
-  var zp;
-  var yp;
-  var xp;
-  var init_active_node_id;
-  var init_active_skeleton;
-  var singleStackViewer = false;
-
-  var account;
-  var password;
-
-  var values = CATMAID.tools.parseQuery(window.location.search);
-  if ( values )
-  {
-    // simply parse the fragment values
-    // @todo take care for the values proper range
-    if ( values[ "z" ] ) z = parseInt( values[ "z" ] );
-    if ( isNaN( z ) ) z = undefined;
-    if ( values[ "y" ] ) y = parseInt( values[ "y" ] );
-    if ( isNaN( y ) ) y = undefined;
-    if ( values[ "x" ] ) x = parseInt( values[ "x" ] );
-    if ( isNaN( x ) ) x = undefined;
-    if ( values[ "s" ] ) s = parseFloat( values[ "s" ] );
-        if ( isNaN( s ) ) s = undefined;
-        if ( values[ "active_skeleton_id" ] ) init_active_skeleton = parseInt( values[ "active_skeleton_id" ] );
-        if ( values[ "active_node_id" ] ) init_active_node_id = parseInt( values[ "active_node_id" ] );
-
-    if ( !(
-        typeof z == "undefined" ||
-        typeof y == "undefined" ||
-        typeof x == "undefined" ||
-        typeof s == "undefined" ) )
-    {
-      pid = 1;
-      sids = [];
-      sids[ 0 ] = 1;
-      ss = [];
-      ss[ 0 ] = 1;
-    }
-    else
-    {
-      if ( values[ "pid" ] ) pid = values[ "pid" ];
-      if ( values[ "zp" ] ) zp = parseInt( values[ "zp" ] );
-      if ( isNaN( zp ) ) zp = undefined;
-      if ( values[ "yp" ] ) yp = parseInt( values[ "yp" ] );
-      if ( isNaN( yp ) ) yp = undefined;
-      if ( values[ "xp" ] ) xp = parseInt( values[ "xp" ] );
-      if ( isNaN( xp ) ) xp = undefined;
-      if ( values[ "tool" ] ) inittool = values[ "tool"];
-
-      for ( var i = 0; values[ "sid" + i ]; ++i )
-      {
-        var sid = values[ "sid" + i ];
-        // Make sure a stack isn't opened multiple times
-        if ( -1 !== sids.indexOf( sid ) ) {
-          continue;
-        }
-        sids.push( sid );
-        if ( values[ "s" + i ] )
-          ss.push( parseFloat( values[ "s" + i ] ) );
-        else
-          ss.push( NaN );
-        if ( isNaN( ss[ i ] ) )
-        {
-          sids.pop();
-          ss.pop();
-        }
-      }
-    }
-
-    if ( values[ "account" ] && values[ "password" ] )
-    {
-      account = values[ "account" ];
-      password = values[ "password" ];
-    }
-
-    // find data view setting
-    if ( values[ "dataview" ] )
-      current_dataview = parseInt( values["dataview"] );
-    if ( isNaN( current_dataview ) ) current_dataview = undefined;
-
-    // Check if only one stack viewer should be used for all stacks
-    if ( values[ "composite" ] ) {
-      singleStackViewer = ("1" === values["composite"]);
-    }
-  }
-
-  CATMAID.statusBar = new CATMAID.Console();
-  document.body.appendChild( CATMAID.statusBar.getView() );
-
-  var a_url = document.getElementById( "a_url" );
-  a_url.onmouseover = function( e )
-  {
-    this.href = project.createURL();
-    return true;
-  };
-
-  document.getElementById( "login_box" ).style.display = "block";
-  document.getElementById( "logout_box" ).style.display = "none";
-  document.getElementById( "session_box" ).style.display = "none";
-
-  // Create the toolboxes
-  $('#toolbox_project').replaceWith(CATMAID.createButtonsFromActions(
-    CATMAID.toolActions, 'toolbox_project', ''));
-  $('#toolbox_edit').replaceWith(CATMAID.createButtonsFromActions(
-    CATMAID.EditTool.actions, 'toolbox_edit', ''));
-  $('#toolbox_segmentation').replaceWith(CATMAID.createButtonsFromActions(
-    CATMAID.SegmentationTool.actions, 'toolbox_segmentation', ''));
-  $('#toolbox_data').replaceWith(CATMAID.createButtonsFromActions(
-    CATMAID.TracingTool.actions, 'toolbox_data', ''));
-
-  // Add the toolbar buttons:
-  document.getElementById( "toolbar_nav" ).style.display = "none";
-  document.getElementById( "toolbar_text" ).style.display = "none";
-  document.getElementById( "toolbar_tags" ).style.display = "none";
-  document.getElementById( "toolbar_roi" ).style.display = "none";
-  document.getElementById( "toolbox_project" ).style.display = "none";
-  document.getElementById( "toolbox_edit" ).style.display = "none";
-  document.getElementById( "toolbox_ontology" ).style.display = "none";
-  document.getElementById( "toolbox_data" ).style.display = "none";
-  document.getElementById( "toolbox_segmentation" ).style.display = "none";
-  document.getElementById( "toolbox_show" ).style.display = "none";
-
-  document.getElementById( "account" ).onkeydown = login_oninputreturn;
-  document.getElementById( "password" ).onkeydown = login_oninputreturn;
-
-  dataview_menu = new Menu();
-  document.getElementById( "dataview_menu" ).appendChild( dataview_menu.getView() );
-  dataviews();
-
-  project_menu = new Menu();
-  document.getElementById( "project_menu" ).appendChild( project_menu.getView() );
-
-  stack_menu = new Menu();
-  document.getElementById( "stack_menu" ).appendChild( stack_menu.getView() );
-
-  message_menu = new Menu();
-  document.getElementById( "message_menu" ).appendChild( message_menu.getView() );
-
-  user_menu = new Menu();
-  document.getElementById( "user_menu" ).appendChild( user_menu.getView() );
-
-  // login and thereafter load stacks if requested
-  login(undefined, undefined, function() {
-    var tools = {
-      navigator: CATMAID.Navigator,
-      tracingtool: CATMAID.TracingTool,
-      segmentationtool: CATMAID.SegmentationTool,
-      classification_editor: null
-    };
-
-    loadStacksFromURL(singleStackViewer);
-
-    // Open stacks one after another and move to the requested location. Load
-    // the requested tool after everything has been loaded.
-    function loadStacksFromURL(composite, loaded) {
-      loaded = loaded || 0;
-      useExistingStackViewer = composite && (loaded > 0);
-      if (pid) {
-        if (sids.length > 0) {
-          // Open stack and queue test/loading for next one
-          var sid = sids.shift();
-          var s = ss.shift();
-          openProjectStack(pid, sid, useExistingStackViewer).then(function() {
-            // Moving every stack is not really necessary, but for now a
-            // convenient way to apply the requested scale to each stack.
-            if (typeof zp == "number" && typeof yp == "number" &&
-                typeof xp == "number" && typeof s == "number" ) {
-              project.moveTo(zp, yp, xp, s, function() {
-                // Load next stack
-                loadStacksFromURL(composite, loaded + 1);
-              });
-            }
-          });
-        } else {
-          // Set the tool only after the move; otherwise, thousands of skeleton
-          // nodes may be fetched and painted unnecessarily.
-          var tool = tools[inittool];
-          if (tool) {
-            project.setTool(new tool());
-          }
-          if (init_active_node_id) {
-            // initialization hack
-            SkeletonAnnotations.init_active_node_id = init_active_node_id;
-          }
-        }
-      }
-    }
-  });
-
-  // the text-label toolbar
-
-  var input_fontsize = new Input( "fontsize", 3, function( e ){ return true; }, 32 );
-  document.getElementById( "input_fontsize" ).appendChild( input_fontsize.getView() );
-  var input_fontcolourred = new Input( "fontcolourred", 3, function( e ){ return true; }, 255 );
-  document.getElementById( "input_fontcolourred" ).appendChild( input_fontcolourred.getView() );
-  var input_fontcolourgreen = new Input( "fontcolourgreen", 3, function( e ){ return true; }, 127 );
-  document.getElementById( "input_fontcolourgreen" ).appendChild( input_fontcolourgreen.getView() );
-  var input_fontcolourblue = new Input( "fontcolourblue", 3, function( e ){ return true; }, 0 );
-  document.getElementById( "input_fontcolourblue" ).appendChild( input_fontcolourblue.getView() );
-
-  rootWindow = new CMWRootNode();
-  CATMAID.ui.registerEvent( "onresize", resize );
-
-  // change global bottom bar height, hide the copyright notice
-  // and move the statusBar
-  CATMAID.statusBar.setBottom();
-
-  window.onresize();
-
-  console.log('CATMAID (Client version ' + CATMAID.CLIENT_VERSION + ')\n' +
-              'For help interacting with CATMAID from the console see:\n' +
-              'https://github.com/catmaid/CATMAID/wiki/Scripting');
+  var options = CATMAID.tools.parseQuery(window.location.search);
+  CATMAID.client = new CATMAID.Client(options);
 };
 
 /**

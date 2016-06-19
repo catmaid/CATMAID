@@ -244,7 +244,6 @@
       document.getElementById("toolbox_edit").style.display = "block";
       document.getElementById( "content" ).style.display = "none";
       document.body.appendChild( view );
-      CATMAID.ui.registerEvent( "onresize", resize );
     };
 
     /**
@@ -259,7 +258,6 @@
       //! on the root window as this done by the last child.
       rootWindow.closeAllChildren();
 
-      CATMAID.ui.removeEvent( "onresize", resize );
       try
       {
         document.body.removeChild( view );

@@ -2,7 +2,6 @@
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
   CATMAID,
-  mayEdit,
   OverlayLabel,
   project,
   requestQueue,
@@ -2331,7 +2330,7 @@ SkeletonAnnotations.TracingOverlay.prototype.whenclicked = function (e) {
     this.activateNode(null);
     handled = true;
   } else {
-    if (!mayEdit()) {
+    if (!CATMAID.mayEdit()) {
       CATMAID.statusBar.replaceLast("You don't have permission.");
       e.stopPropagation();
       return;
@@ -3835,7 +3834,7 @@ SkeletonAnnotations.TracingOverlay.prototype.deleteNode = function(nodeId) {
     return this.toggleVirtualNodeSuppression(nodeId);
   }
 
-  if (!mayEdit() || !node.can_edit) {
+  if (!CATMAID.mayEdit() || !node.can_edit) {
     if (node.type === SkeletonAnnotations.TYPE_CONNECTORNODE) {
       CATMAID.error("You don't have permission to delete connector #" + node.id);
     } else {

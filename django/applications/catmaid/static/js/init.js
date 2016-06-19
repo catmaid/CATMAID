@@ -1496,19 +1496,19 @@
     CATMAID.client = new CATMAID.Client(options);
   };
 
+  CATMAID.mayEdit = function() {
+    return checkPermission('can_annotate');
+  };
+
+  CATMAID.mayView = function() {
+    return checkPermission('can_annotate') || checkPermission('can_browse');
+  };
+
+  function checkPermission(p) {
+    return CATMAID.hasPermission(project.getId(), p);
+  }
+
 })(CATMAID);
 
 var requestQueue;
 var project;
-
-function checkPermission(p) {
-  return CATMAID.hasPermission(project.getId(), p);
-}
-
-function mayEdit() {
-  return checkPermission('can_annotate');
-}
-
-function mayView() {
-  return checkPermission('can_annotate') || checkPermission('can_browse');
-}

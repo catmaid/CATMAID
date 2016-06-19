@@ -31,9 +31,9 @@
                     {% if slice|is_none %}
                         Couldn't find requested slice: {{ sample_slice }}
                     {% else %}
-                        <img src="{{ stack.image_base }}{{ slice }}/small.{{ stack.file_extension }}"
+                        <img class="lazy"
+                            data-src="{{ stack.image_base }}{{ slice }}/small.{{ stack.file_extension }}"
                             alt="Sample image for {{ stack.title }} on slice {{ slice }}"
-                            onerror="this.classList.add('missing-image');"
                             {% if sample_width > -1 %} width="{{ sample_width }}" {% endif %}
                             {% if sample_height > -1 %} height="{{ sample_height }}" {% endif %} />
                     {% endif %}

@@ -6,7 +6,6 @@
   InstanceRegistry,
   project,
   requestQueue,
-  session,
   SVGCanvas,
   SynapseClustering,
   WindowMaker
@@ -2093,7 +2092,7 @@
       var cy = this.cy,
           postData = {skeleton_ids: this.getSkeletons()};
       // if neither user_ids nor whitelist is specified, returns the union
-      if ('own-review' === mode) postData['user_ids'] = [session.userid];
+      if ('own-review' === mode) postData['user_ids'] = [CATMAID.session.userid];
       else if ('whitelist-review' === mode) postData['whitelist'] = true;
       requestQueue.register(django_url + project.id + "/skeletons/review-status", "POST",
           postData,

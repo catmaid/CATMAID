@@ -507,7 +507,7 @@
       buttonName: "synapse",
       buttonID: 'trace_button_synapse',
       run: function (e) {
-        if (!mayEdit())
+        if (!CATMAID.mayEdit())
           return false;
         SkeletonAnnotations.setTracingMode(SkeletonAnnotations.MODES.SYNAPSE);
         return true;
@@ -519,7 +519,7 @@
      */
     var tagFn = function(tag) {
       return function(e) {
-        if (!mayEdit()) return false;
+        if (!CATMAID.mayEdit()) return false;
         if (e.altKey || e.ctrlKey || e.metaKey) return false;
         var modifier = e.shiftKey;
         var nodeId = SkeletonAnnotations.getActiveNodeId();
@@ -575,7 +575,7 @@
       buttonID: 'trace_button_goactive',
       keyShortcuts: { "A": [ 65 ] },
       run: function (e) {
-        if (!mayView())
+        if (!CATMAID.mayView())
           return false;
         if (e.shiftKey) {
           var skid = SkeletonAnnotations.getActiveSkeletonId();
@@ -591,7 +591,7 @@
       helpText: "Go to nearest open leaf node (subsequent <kbd>Shift</kbd>+<kbd>R</kbd>: cycle through other open leaves; with <kbd>Alt</kbd>: most recent rather than nearest)",
       keyShortcuts: { "R": [ 82 ] },
       run: function (e) {
-        if (!mayView())
+        if (!CATMAID.mayView())
           return false;
         activeTracingLayer.tracingOverlay.goToNextOpenEndNode(SkeletonAnnotations.getActiveNodeId(), e.shiftKey, e.altKey);
         return true;
@@ -602,7 +602,7 @@
       helpText: "Go to next branch or end point (with <kbd>Alt</kbd>: stop earlier at node with tag, synapse or low confidence; subsequent <kbd>Shift</kbd>+<kbd>V</kbd>: cycle through other branches)",
       keyShortcuts: { "V": [ 86 ] },
       run: function (e) {
-        if (!mayView())
+        if (!CATMAID.mayView())
           return false;
         activeTracingLayer.tracingOverlay.goToNextBranchOrEndNode(SkeletonAnnotations.getActiveNodeId(), e);
         return true;
@@ -613,7 +613,7 @@
       helpText: "Go to previous branch or end node (with <kbd>Alt</kbd>: stop earlier at node with tag, synapse or low confidence)",
       keyShortcuts: { "B": [ 66 ] },
       run: function (e) {
-        if (!mayView())
+        if (!CATMAID.mayView())
           return false;
         activeTracingLayer.tracingOverlay.goToPreviousBranchOrRootNode(SkeletonAnnotations.getActiveNodeId(), e);
         return true;
@@ -625,7 +625,7 @@
       helpText: "Deselect the active node",
       keyShortcuts: { "D": [ 68 ] },
       run: function (e) {
-        if (!mayView())
+        if (!CATMAID.mayView())
           return false;
         activeTracingLayer.tracingOverlay.activateNode(null);
         return true;
@@ -636,7 +636,7 @@
       helpText: "Go to the parent of the active node (<kbd>Ctrl</kbd>: ignore virtual nodes)",
       keyShortcuts: { "[": [ 219, 56 ] },
       run: function (e) {
-        if (!mayView())
+        if (!CATMAID.mayView())
           return false;
         var modifierKey = e.ctrlKey || e.metaKey;
         if (CATMAID.TracingTool.Settings.session.invert_virtual_node_ignore_modifier) modifierKey = !modifierKey;
@@ -649,7 +649,7 @@
       helpText: "Go to the child of the active node (<kbd>Ctrl</kbd>: ignore virtual nodes; Subsequent <kbd>Shift</kbd>+<kbd>]</kbd>: cycle through children)",
       keyShortcuts: { "]": [ 221, 57 ] },
       run: function (e) {
-        if (!mayView())
+        if (!CATMAID.mayView())
           return false;
         var modifierKey = e.ctrlKey || e.metaKey;
         if (CATMAID.TracingTool.Settings.session.invert_virtual_node_ignore_modifier) modifierKey = !modifierKey;
@@ -662,7 +662,7 @@
       helpText: "Edit the radius of the active node (<kbd>Shift</kbd>: without measurment tool)",
       keyShortcuts: { "O": [ 79 ] },
       run: function (e) {
-        if (!mayView())
+        if (!CATMAID.mayView())
           return false;
         activeTracingLayer.tracingOverlay.editRadius(SkeletonAnnotations.getActiveNodeId(),
             e.shiftKey);
@@ -674,7 +674,7 @@
       helpText: "Measure the distance between the cursor and a clicked point",
       keyShortcuts: { "X": [ 88 ] },
       run: function (e) {
-        if (!mayView())
+        if (!CATMAID.mayView())
           return false;
         activeTracingLayer.tracingOverlay.measureRadius();
         return true;
@@ -685,7 +685,7 @@
       helpText: "Go to last node edited by you in this skeleton",
       keyShortcuts: { "H": [ 72 ] },
       run: function (e) {
-        if (!mayView())
+        if (!CATMAID.mayView())
           return false;
         activeTracingLayer.tracingOverlay.goToLastEditedNode(SkeletonAnnotations.getActiveSkeletonId());
         return true;
@@ -747,7 +747,7 @@
       buttonName: "skelsplitting",
       buttonID: 'trace_button_skelsplitting',
       run: function (e) {
-        if (!mayEdit())
+        if (!CATMAID.mayEdit())
           return false;
         activeTracingLayer.tracingOverlay.splitSkeleton(SkeletonAnnotations.getActiveNodeId());
         return true;
@@ -760,7 +760,7 @@
       buttonID: 'trace_button_skelrerooting',
       keyShortcuts: { "6": [ 54 ] },
       run: function (e) {
-        if (!mayEdit())
+        if (!CATMAID.mayEdit())
           return false;
         activeTracingLayer.tracingOverlay.rerootSkeleton(SkeletonAnnotations.getActiveNodeId());
         return true;
@@ -773,7 +773,7 @@
       buttonID: 'trace_button_togglelabels',
       keyShortcuts: { "7": [ 55 ] },
       run: function (e) {
-        if (!mayView())
+        if (!CATMAID.mayView())
           return false;
         show_labels = !show_labels;
         getTracingLayers().forEach(function(layer) {
@@ -789,7 +789,7 @@
       buttonName: "exportswc",
       buttonID: 'trace_button_exportswc',
       run: function (e) {
-        if (!mayView())
+        if (!CATMAID.mayView())
           return false;
         SkeletonAnnotations.exportSWC();
         return true;
@@ -800,7 +800,7 @@
       helpText: "Switch between a terminal and its connector",
       keyShortcuts: { "S": [ 83 ] },
       run: function (e) {
-        if (!mayView())
+        if (!CATMAID.mayView())
           return false;
         activeTracingLayer.tracingOverlay.switchBetweenTerminalAndConnector();
         return true;
@@ -811,7 +811,7 @@
       helpText: "Tag the active node",
       keyShortcuts: { "T": [ 84 ] },
       run: function (e) {
-        if (!mayEdit())
+        if (!CATMAID.mayEdit())
           return false;
         if (e.shiftKey) {
           // Delete all tags
@@ -844,7 +844,7 @@
       helpText: "Select the nearest node to the mouse cursor",
       keyShortcuts: { "G": [ 71 ] },
       run: function (e) {
-        if (!mayView())
+        if (!CATMAID.mayView())
           return false;
         if (!(e.ctrlKey || e.metaKey)) {
           // Give all layers a chance to activate a node
@@ -882,7 +882,7 @@
       helpText: "Create treenode (<kbd>Shift</kbd> on another node: join), behavior like mouse click",
       keyShortcuts: { 'Z': [ 90 ] },
       run: function (e) {
-        if (!mayEdit())
+        if (!CATMAID.mayEdit())
           return false;
         var insert = e.altKey;
         var link = e.shiftKey;
@@ -896,7 +896,7 @@
       helpText: "Delete the active node (or suppress it if it is virtual)",
       keyShortcuts: { 'DEL': [ 46 ] },
       run: function (e) {
-        if (!mayEdit())
+        if (!CATMAID.mayEdit())
           return false;
         activeTracingLayer.tracingOverlay.deleteNode(SkeletonAnnotations.getActiveNodeId());
         return true;
@@ -907,7 +907,7 @@
       helpText: "Retrieve information about the active node.",
       keyShortcuts: { 'I': [ 73 ] },
       run: function (e) {
-        if (!mayView())
+        if (!CATMAID.mayView())
           return false;
         activeTracingLayer.tracingOverlay.printTreenodeInfo(SkeletonAnnotations.getActiveNodeId());
         return true;
@@ -918,7 +918,7 @@
       helpText: "Set confidence in node link to 1 (Alt: with a connector)",
       keyShortcuts: { '1': [ 49 ] },
       run: function (e) {
-        if (!mayEdit())
+        if (!CATMAID.mayEdit())
           return false;
         activeTracingLayer.tracingOverlay.setConfidence(1, e.altKey);
         return true;
@@ -929,7 +929,7 @@
       helpText: "Set confidence in node link to 2 (Alt: with a connector)",
       keyShortcuts: { '2': [ 50 ] },
       run: function (e) {
-        if (!mayEdit())
+        if (!CATMAID.mayEdit())
           return false;
         activeTracingLayer.tracingOverlay.setConfidence(2, e.altKey);
         return true;
@@ -940,7 +940,7 @@
       helpText: "Set confidence in node link to 3 (Alt: with a connector)",
       keyShortcuts: { '3': [ 51 ] },
       run: function (e) {
-        if (!mayEdit())
+        if (!CATMAID.mayEdit())
           return false;
         activeTracingLayer.tracingOverlay.setConfidence(3, e.altKey);
         return true;
@@ -951,7 +951,7 @@
       helpText: "Set confidence in node link to 4 (Alt: with a connector)",
       keyShortcuts: { '4': [ 52 ] },
       run: function (e) {
-        if (!mayEdit())
+        if (!CATMAID.mayEdit())
           return false;
         activeTracingLayer.tracingOverlay.setConfidence(4, e.altKey);
         return true;
@@ -962,7 +962,7 @@
       helpText: "Set confidence in node link to 5 (Alt: with a connector)",
       keyShortcuts: { '5': [ 53 ] },
       run: function (e) {
-        if (!mayEdit())
+        if (!CATMAID.mayEdit())
           return false;
         activeTracingLayer.tracingOverlay.setConfidence(5, e.altKey);
         return true;
@@ -973,7 +973,7 @@
       helpText: "Move to previous node in segment for review. At an end node, moves one section beyond for you to check that it really ends.",
       keyShortcuts: { 'Q': [ 81 ] },
       run: function (e) {
-        if (!mayEdit())
+        if (!CATMAID.mayEdit())
           return false;
         if (CATMAID.ReviewSystem.validSegment())
           CATMAID.ReviewSystem.moveNodeInSegmentBackward();
@@ -985,7 +985,7 @@
       helpText: "Move to next node in segment for review (with <kbd>Shift</kbd>: move to next unreviewed node in the segment)",
       keyShortcuts: { 'W': [ 87 ] },
       run: function (e) {
-        if (!mayEdit())
+        if (!CATMAID.mayEdit())
           return false;
         if (CATMAID.ReviewSystem.validSegment())
           CATMAID.ReviewSystem.moveNodeInSegmentForward(e.shiftKey);
@@ -997,7 +997,7 @@
       helpText: "Start reviewing the next skeleton segment.",
       keyShortcuts: { 'E': [ 69 ] },
       run: function (e) {
-        if (!mayEdit())
+        if (!CATMAID.mayEdit())
           return false;
         if (CATMAID.ReviewSystem.validSegment())
           CATMAID.ReviewSystem.selectNextSegment();
@@ -1009,7 +1009,7 @@
       helpText: "Rename active neuron",
       keyShortcuts: { 'F2': [ 113 ] },
       run: function (e) {
-        if (!mayEdit()) {
+        if (!CATMAID.mayEdit()) {
           return false;
         }
         activeTracingLayer.tracingOverlay.renameNeuron(SkeletonAnnotations.getActiveSkeletonId());
@@ -1021,7 +1021,7 @@
       helpText: "Annotate active neuron",
       keyShortcuts: { 'F3': [ 114 ] },
       run: function (e) {
-        if (!mayEdit()) {
+        if (!CATMAID.mayEdit()) {
           return false;
         }
         CATMAID.annotate_neurons_of_skeletons(

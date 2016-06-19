@@ -1,7 +1,6 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
-  mayEdit,
   project,
   requestQueue,
   SkeletonAnnotations,
@@ -1191,7 +1190,7 @@
               var atnSubType = SkeletonAnnotations.getActiveNodeSubType();
               if ((e.altKey && !e.shiftKey) ||
                   atnSubType === SkeletonAnnotations.SUBTYPE_GAPJUNCTION_CONNECTOR) {
-                if (!mayEdit()) {
+                if (!CATMAID.mayEdit()) {
                   CATMAID.error("You lack permissions to declare node #" + node.id +
                       " as having a gap junction with connector #" + atnID);
                   return;
@@ -1200,7 +1199,7 @@
                 SkeletonAnnotations.atn.subtype = SkeletonAnnotations.SUBTYPE_GAPJUNCTION_CONNECTOR;
                 catmaidTracingOverlay.createLink(node.id, atnID, "gapjunction_with");
               }  else if (atnSubType === SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR) {
-                if (!mayEdit()) {
+                if (!CATMAID.mayEdit()) {
                   CATMAID.error("You lack permissions to declare node #" + node.id +
                       " as postsynaptic to connector #" + atnID);
                   return;
@@ -1208,7 +1207,7 @@
                 // careful, atnID is a connector
                 catmaidTracingOverlay.createLink(node.id, atnID, "postsynaptic_to");
               } else if (atnSubType === SkeletonAnnotations.SUBTYPE_ABUTTING_CONNECTOR) {
-                if (!mayEdit()) {
+                if (!CATMAID.mayEdit()) {
                   CATMAID.error("You lack permissions to declare node #" + node.id +
                       " as abutting against connector #" + atnID);
                   return;
@@ -1264,7 +1263,7 @@
           return;
         }
 
-        if (!mayEdit() || !node.can_edit) {
+        if (!CATMAID.mayEdit() || !node.can_edit) {
           CATMAID.statusBar.replaceLast("You don't have permission to move node #" + d);
           return;
         }

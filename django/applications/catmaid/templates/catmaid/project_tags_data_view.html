@@ -52,11 +52,13 @@
 					{# list otherwise. #}
 					{% if not force_stack_list and stacks|length == 1 and not sample_images %}
 						<a {% if highlight %}class="highlight" {% endif %}
-							href="?pid={{ p.id }}&tool=navigator&sid0={{ stacks.0.id }}&s0=1" onclick="openProjectStack({{p.id}},{{stacks.0.id}});return false">{{ p.title }}</a><br />
+								href="?pid={{ p.id }}&tool=navigator&sid0={{ stacks.0.id }}&s0=1"
+								onclick="CATMAID.openProjectStack({{p.id}},{{stacks.0.id}});return false">{{ p.title }}</a><br />
 					{% elif sample_images %}
 						{% for s in stacks %}
 							{% with slice=s|get_slice:sample_slice %}
-							<a href="?pid={{ p.id }}&tool=navigator&sid0={{ s.id }}&s0=1" onclick="openProjectStack({{p.id}}, {{s.id}});return false">
+							<a href="?pid={{ p.id }}&tool=navigator&sid0={{ s.id }}&s0=1"
+									onclick="CATMAID.openProjectStack({{p.id}}, {{s.id}});return false">
 								<img class="lazy"
 									data-src="{{ s.image_base }}{{ slice }}/small.{{ s.file_extension }}"
 									alt="Sample image for {{ s.title }} on slice {{ slice }}"
@@ -71,7 +73,7 @@
 							<dt>{{ p.title }}</dt>
 							{% for s in stacks %}
 							<dd><a {% if highlight %}class="highlight" {% endif %}
-								href="#" onclick="openProjectStack({{p.id}}, {{s.id}})"
+								href="#" onclick="CATMAID.openProjectStack({{p.id}}, {{s.id}})"
 								title="{{ s.comment }}">{{ s.title }}</a>
 							</dd>
 							{% endfor %}

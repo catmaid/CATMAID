@@ -23,9 +23,9 @@
     var editToolActions = [];
 
     // Only check profile if it is available
-    if (!userprofile) return editToolActions;
+    if (!CATMAID.userprofile) return editToolActions;
 
-    if (userprofile.show_text_label_tool) {
+    if (CATMAID.userprofile.show_text_label_tool) {
       editToolActions.push(
         new CATMAID.Action({
           helpText: "Text label tool",
@@ -38,7 +38,7 @@
         }));
     }
 
-    if (userprofile.show_tagging_tool) {
+    if (CATMAID.userprofile.show_tagging_tool) {
       editToolActions.push(
         new CATMAID.Action({
           helpText: "Tagging tool",
@@ -51,7 +51,7 @@
         }));
     }
 
-    if (userprofile.show_cropping_tool) {
+    if (CATMAID.userprofile.show_cropping_tool) {
       editToolActions.push(
         new CATMAID.Action({
           helpText: "Crop tool",
@@ -64,7 +64,7 @@
         }));
     }
 
-    if (userprofile.show_segmentation_tool) {
+    if (CATMAID.userprofile.show_segmentation_tool) {
       editToolActions.push(
         new CATMAID.Action({
            helpText: "Segmentation Tool",
@@ -78,7 +78,7 @@
         }));
     }
 
-    if (userprofile.show_tracing_tool) {
+    if (CATMAID.userprofile.show_tracing_tool) {
       editToolActions.push(
         new CATMAID.Action({
           helpText: "Tracing tool",
@@ -113,7 +113,7 @@
         }));
     }
 
-    if (userprofile.show_ontology_tool) {
+    if (CATMAID.userprofile.show_ontology_tool) {
       editToolActions.push(
         new CATMAID.Action({
           helpText: "Show ontology tools",
@@ -126,7 +126,7 @@
         }));
     }
 
-    if (userprofile.show_roi_tool) {
+    if (CATMAID.userprofile.show_roi_tool) {
       editToolActions.push(
         new CATMAID.Action({
           helpText: "Show ROI tool",

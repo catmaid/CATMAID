@@ -127,7 +127,7 @@
   CATMAID.annotate = function(entity_ids, skeleton_ids, callback, noCommand) {
 
     // Complain if the user has no annotation permissions for the current project
-    if (!checkPermission('can_annotate')) {
+    if (!CATMAID.mayEdit()) {
       CATMAID.error("You don't have have permission to add annotations");
       return;
     }

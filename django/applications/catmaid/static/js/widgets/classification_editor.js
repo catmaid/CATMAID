@@ -27,7 +27,7 @@
       // change to pid workspace if pid was passed
       if (pid) {
         this.change_workspace(pid, true);
-      } else if (userprofile.independent_ontology_workspace_is_default) {
+      } else if (CATMAID.userprofile.independent_ontology_workspace_is_default) {
         this.change_workspace(-1, true);
       } else {
         this.change_workspace(project.id, true);
@@ -623,7 +623,7 @@
                 project.setTool( new CATMAID.Navigator() );
               }
             };
-            openProjectStack(roi.project_id, roi.stack_id).then(callback);
+            CATMAID.openProjectStack(roi.project_id, roi.stack_id).then(callback);
           }));
     };
 

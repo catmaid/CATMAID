@@ -132,9 +132,9 @@
                 // permission to change this annotation, check and disable this
                 // checkbox.
                 if (disable_unpermitted &&
-                    a_info.users[0].id != session.userid &&
+                    a_info.users[0].id != CATMAID.session.userid &&
                     !CATMAID.hasPermissionOnUser(a_info.users[0].name) &&
-                    !session.is_superuser) {
+                    !CATMAID.session.is_superuser) {
                   checked = true;
                   disabled = true;
                 }
@@ -215,7 +215,7 @@
         // default pattern "neuron 123456".
         var name = this.models[this.model2_id].baseName;
         var checked = (null === name.match(/[Nn]euron \d+/));
-        var cb = create_labeled_checkbox(name, session.userid, checked, false,
+        var cb = create_labeled_checkbox(name, CATMAID.session.userid, checked, false,
             name + " (reference to merged in neuron)");
         if (count1 > count2) {
           big.appendChild(cb, checked);

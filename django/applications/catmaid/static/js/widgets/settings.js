@@ -5,7 +5,6 @@
   project,
   requestQueue,
   SkeletonAnnotations,
-  userprofile,
   WindowMaker
 */
 

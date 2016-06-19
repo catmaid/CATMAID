@@ -5,7 +5,6 @@
   InstanceRegistry,
   project,
   requestQueue,
-  session,
   Set,
   SkeletonAnnotations,
   WindowMaker,
@@ -313,7 +312,7 @@
     var postData = {
         skeleton_ids: skeleton_ids,
         whitelist: this.review_filter === 'Team'};
-    if (this.review_filter === 'Self') postData.user_ids = [session.userid];
+    if (this.review_filter === 'Self') postData.user_ids = [CATMAID.session.userid];
     requestQueue.register(django_url + project.id + '/skeletons/review-status', 'POST',
       postData,
       (function(status, text) {
@@ -575,7 +574,7 @@
           var postData = {
               skeleton_ids: skeleton_ids,
               whitelist: self.review_filter === 'Team'};
-          if (self.review_filter === 'Self') postData.user_ids = [session.userid];
+          if (self.review_filter === 'Self') postData.user_ids = [CATMAID.session.userid];
           requestQueue.register(django_url + project.id + '/skeletons/review-status', 'POST',
             postData,
             CATMAID.jsonResponseHandler(function(json) {

@@ -42,6 +42,7 @@
 
       stackViewers.push( stackViewer );
 
+      var rootWindow = CATMAID.rootWindow;
       if ( rootWindow.getChild() === null ) {
         rootWindow.replaceChild( stackViewer.getWindow() );
       } else {
@@ -244,7 +245,6 @@
       document.getElementById("toolbox_edit").style.display = "block";
       document.getElementById( "content" ).style.display = "none";
       document.body.appendChild( view );
-      CATMAID.ui.registerEvent( "onresize", resize );
     };
 
     /**
@@ -257,9 +257,8 @@
 
       //! Close all windows. There is no need to explicitely call close()
       //! on the root window as this done by the last child.
-      rootWindow.closeAllChildren();
+      CATMAID.rootWindow.closeAllChildren();
 
-      CATMAID.ui.removeEvent( "onresize", resize );
       try
       {
         document.body.removeChild( view );
@@ -454,7 +453,7 @@
 
     var tool = null;
 
-    var view = rootWindow.getFrame();
+    var view = CATMAID.rootWindow.getFrame();
     view.className = "projectView";
 
     this.coordinates = {

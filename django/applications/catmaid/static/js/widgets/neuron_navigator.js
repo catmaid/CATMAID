@@ -4,7 +4,6 @@
   CATMAID
   AnalyzeArbor,
   Arbor,
-  checkPermission,
   ConnectorTable,
   InstanceRegistry,
   NeuronDendrogram,
@@ -1322,7 +1321,7 @@
    */
   NeuronNavigator.disable_on_missing_permissions = function(html_element)
   {
-    if (!checkPermission('can_annotate')) {
+    if (!CATMAID.mayEdit()) {
       html_element.setAttribute('disabled', 'disabled');
     }
   };

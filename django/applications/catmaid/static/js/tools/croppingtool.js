@@ -337,7 +337,7 @@
       CroppingTool.superproto.register.call( self, parentStackViewer );
 
       // initialize the stacks we offer to crop
-      getStackMenuInfo(project.id, function(stacks) {
+      CATMAID.getStackMenuInfo(project.id, function(stacks) {
         self.stacks_to_crop = [];
         $.each(stacks, function(index, value) {
           // By default, mark only the current stack to be cropped

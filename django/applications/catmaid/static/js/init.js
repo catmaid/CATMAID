@@ -9,10 +9,38 @@
    * Global access to window and project control events and variables.
    * @namespace
    */
-  CATMAID.Init = {};
+  CATMAID.Init = {
+
+    /**
+     * Check if the client CATMAID version matches the server version. If it
+     * does not, disruptively prompt the user to refresh.
+     */
+    checkVersion: function () {
+      requestQueue.register(django_url + 'version', 'GET', undefined,
+          CATMAID.jsonResponseHandler(function(data) {
+            if (CATMAID.CLIENT_VERSION !== data.SERVER_VERSION) {
+              new CATMAID.ErrorDialog("Your version of CATMAID is different " +
+                  "from the server's version. Please refresh your browser " +
+                  "immediately to update to the server's version. Continuing to " +
+                  "use a different version than the server can cause " +
+                  "unintended behavior and data loss.",
+                  'Client version: ' + CATMAID.CLIENT_VERSION + '; ' +
+                  'Server version: ' + data.SERVER_VERSION).show();
+            }
+
+            window.setTimeout(CATMAID.Init.checkVersion, CATMAID.Init.CHECK_VERSION_TIMEOUT_INTERVAL);
+          }, function () {
+            window.setTimeout(CATMAID.Init.checkVersion, CATMAID.Init.CHECK_VERSION_TIMEOUT_INTERVAL);
+            CATMAID.statusBar.replaceLast('Unable to check version (network may be disconnected).');
+            return true;
+          }));
+    }
+  };
+
   CATMAID.asEventSource(CATMAID.Init);
   CATMAID.Init.EVENT_PROJECT_CHANGED = "init_project_changed";
   CATMAID.Init.EVENT_USER_CHANGED = "init_user_changed";
+
 
   /**
    * CATMAID's web front-end.
@@ -25,6 +53,9 @@
       loadInvisible: true,
       errorClass: "missing-image"
     });
+
+    // Do periodic update checks
+    window.setTimeout(CATMAID.Init.checkVersion, CATMAID.Init.CHECK_VERSION_TIMEOUT_INTERVAL);
 
     this.init(options);
   };
@@ -1331,32 +1362,6 @@ function openStackGroup(pid, sgid, successFn) {
       CATMAID.error("Couldn't load stack group: " + error.error, error.detail);
     });
 }
-
-/**
- * Check if the client CATMAID version matches the server version. If it does
- * not, disruptively prompt the user to refresh.
- */
-CATMAID.Init.checkVersion = function () {
-    requestQueue.register(django_url + 'version', 'GET', undefined,
-        CATMAID.jsonResponseHandler(function(data) {
-          if (CATMAID.CLIENT_VERSION !== data.SERVER_VERSION) {
-            new CATMAID.ErrorDialog("Your version of CATMAID is different " +
-                "from the server's version. Please refresh your browser " +
-                "immediately to update to the server's version. Continuing to " +
-                "use a different version than the server can cause " +
-                "unintended behavior and data loss.",
-                'Client version: ' + CATMAID.CLIENT_VERSION + '; ' +
-                'Server version: ' + data.SERVER_VERSION).show();
-          }
-
-          window.setTimeout(CATMAID.Init.checkVersion, CATMAID.Init.CHECK_VERSION_TIMEOUT_INTERVAL);
-        }, function () {
-          window.setTimeout(CATMAID.Init.checkVersion, CATMAID.Init.CHECK_VERSION_TIMEOUT_INTERVAL);
-          CATMAID.statusBar.replaceLast('Unable to check version (network may be disconnected).');
-          return true;
-        }));
-};
-window.setTimeout(CATMAID.Init.checkVersion, CATMAID.Init.CHECK_VERSION_TIMEOUT_INTERVAL);
 
 /**
  * Initialize CATMAID.

@@ -7,8 +7,7 @@
   project,
   requestQueue,
   submitterFn,
-  user_groups,
-  userprofile
+  user_groups
 */
 
 "use strict";

@@ -103,7 +103,7 @@
        * Updates the workspace toolbar according to the user profile.
        */
       var initToolbar = function() {
-          var use_projects = userprofile.independent_ontology_workspace_is_default ? false : true;
+          var use_projects = CATMAID.userprofile.independent_ontology_workspace_is_default ? false : true;
           $("input[name='ontology_space'][value='project']").prop('checked', use_projects);
           $("input[name='ontology_space'][value='classification']").prop('checked', !use_projects);
           self.workspace_mode = use_projects ? "project" : "classification";

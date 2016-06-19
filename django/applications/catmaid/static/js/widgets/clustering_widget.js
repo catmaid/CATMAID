@@ -845,7 +845,7 @@
     this.init = function()
     {
       if (!self.workspace_pid) {
-        if (userprofile.independent_ontology_workspace_is_default) {
+        if (CATMAID.userprofile.independent_ontology_workspace_is_default) {
           self.workspace_pid = -1;
         } else {
           self.workspace_pid = project.id;

@@ -703,6 +703,12 @@
   }
 
   /**
+   * An object to store profile properties of the current user.
+   * @type {CATMAID.Userprofile}
+   */
+  CATMAID.userprofile = null;
+
+  /**
    * Update profile dependent information, e.g., the visibility of tools in the
    * toolbar.
    *
@@ -711,7 +717,7 @@
   function handle_profile_update(e) {
     try {
       if (e.userprofile) {
-        userprofile = new CATMAID.Userprofile(e.userprofile);
+        CATMAID.userprofile = new CATMAID.Userprofile(e.userprofile);
         username = e.username;
       } else {
         throw "The server returned no valid user profile.";
@@ -1449,12 +1455,6 @@ var session;
 CATMAID.Init.CHECK_VERSION_TIMEOUT_INTERVAL = 15*60*1000;
 
 var rootWindow;
-
-/**
- * An object to store profile properties of the current user.
- * @type {CATMAID.Userprofile}
- */
-var userprofile = null;
 
 function checkPermission(p) {
   return CATMAID.hasPermission(project.getId(), p);

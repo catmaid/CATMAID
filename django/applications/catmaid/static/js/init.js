@@ -543,6 +543,129 @@
     updateProjects();
   }
 
+  function handle_dataviews(e) {
+    // a function for creating data view menu handlers
+    var create_handler = function( id, code_type ) {
+      return function() {
+        // close any open project and its windows
+        rootWindow.closeAllChildren();
+        // open data view
+        CATMAID.client.switch_dataview( id, code_type );
+      };
+    };
+    /* As we want to handle a data view change in JS,
+     * a function is added as action for all the menu
+     * elements. Also add small links to each menu entry
+     * as comment.
+     */
+    for ( var i in e )
+    {
+      e[i].action = create_handler( e[i].id,
+        e[i].code_type );
+      var link = '<a class="hoverlink" href="' + django_url +
+        '?dataview=' + e[i].id + '">&para;&nbsp;</a>';
+      e[i].note = link + e[i].note;
+    }
+
+    dataview_menu.update( e );
+  }
+
+  Client.prototype.switch_dataview = function(view_id, view_type) {
+    /* Some views are dynamic, e.g. the plain list view offers a
+     * live filter of projects. Therefore we treat different types
+     * of dataviews differently and need to know whether the
+     * requested view is a legacy view.
+     */
+    var do_switch_dataview = function( view_id, view_type ) {
+      if ( view_type == "legacy_project_list_data_view" ) {
+        // Show the standard plain list data view
+        document.getElementById("data_view").style.display = "none";
+        document.getElementById("clientside_data_view").style.display = "block";
+        updateProjectListFromCache();
+      } else {
+        // let Django render the requested view and display it
+        document.getElementById("clientside_data_view").style.display = "none";
+        document.getElementById("data_view").style.display = "block";
+        CATMAID.DataViews.get(view_id).then(handle_load_dataview)
+          .catch(handle_dataview_load_error);
+      }
+    };
+
+    /* If view type is passed, switch to the data view directly.
+     * Otherwise, retrieve the data view type first.
+     */
+    if (view_type) {
+      do_switch_dataview(view_id, view_type);
+    } else {
+      requestQueue.register(django_url + 'dataviews/type/' + view_id,
+        'GET', undefined, function(status, text, xml) {
+          if (status == 200 && text) {
+            var e = $.parseJSON(text);
+            if (e.error) {
+              alert(e.error);
+            } else {
+              do_switch_dataview(view_id, e.type);
+            }
+          } else {
+            alert("A problem occurred while retrieving data view information.");
+          }
+      });
+    }
+  };
+
+  /**
+   * Load the default data view.
+   */
+  Client.prototype.load_default_dataview = function() {
+    var self = this;
+    CATMAID.DataViews.getDefaultConfig().then(function(info) {
+      self.switch_dataview(info.id, info.code_type);
+    }).catch(CATMAID.handleError);
+  };
+
+  function handle_dataview_load_error(text) {
+    var data_view_container = document.getElementById("data_view");
+
+    if ( !( typeof data_view_container === "undefined" || data_view_container === null ) )
+    {
+      //! remove old content
+      while ( data_view_container.firstChild )
+      {
+        data_view_container.removeChild( data_view_container.firstChild );
+      }
+
+      // create error message
+      var error_paragraph = document.createElement( "p" );
+      data_view_container.appendChild( error_paragraph );
+      error_paragraph.appendChild( document.createTextNode(
+        "Sorry, there was a problem loading the requested data view." ) );
+      // create new error iframe
+      var error_iframe = document.createElement( "iframe" );
+      error_iframe.style.width = "100%";
+      error_iframe.style.height = "400px";
+      data_view_container.appendChild( error_iframe );
+      error_iframe.contentDocument.write( text );
+    }
+  }
+
+  function handle_load_dataview(text) {
+    var data_view_container = document.getElementById("data_view");
+
+    if ( !( typeof data_view_container === "undefined" || data_view_container === null ) )
+    {
+      //! remove old content
+      while ( data_view_container.firstChild )
+      {
+        data_view_container.removeChild( data_view_container.firstChild );
+      }
+
+      //! add new content
+      data_view_container.innerHTML = text;
+      // Revalidate content to lazy-load
+      CATMAID.client.blazy.revalidate();
+    }
+  }
+
   // Export Client
   CATMAID.Client = Client;
 
@@ -734,9 +857,9 @@ function updateProjects(completionCallback) {
     .then(function(json) {
       // recreate the project data view
       if (current_dataview) {
-        switch_dataview(current_dataview);
+        CATMAID.client.switch_dataview(current_dataview);
       } else {
-        load_default_dataview();
+        CATMAID.client.load_default_dataview();
       }
       cachedProjectsInfo = json;
 
@@ -1233,128 +1356,6 @@ CATMAID.Init.checkVersion = function () {
         }));
 };
 window.setTimeout(CATMAID.Init.checkVersion, CATMAID.Init.CHECK_VERSION_TIMEOUT_INTERVAL);
-
-function handle_dataviews(e) {
-  // a function for creating data view menu handlers
-  var create_handler = function( id, code_type ) {
-    return function() {
-      // close any open project and its windows
-      rootWindow.closeAllChildren();
-      // open data view
-      switch_dataview( id, code_type );
-    };
-  };
-  /* As we want to handle a data view change in JS,
-   * a function is added as action for all the menu
-   * elements. Also add small links to each menu entry
-   * as comment.
-   */
-  for ( var i in e )
-  {
-    e[i].action = create_handler( e[i].id,
-      e[i].code_type );
-    var link = '<a class="hoverlink" href="' + django_url +
-      '?dataview=' + e[i].id + '">&para;&nbsp;</a>';
-    e[i].note = link + e[i].note;
-  }
-
-  dataview_menu.update( e );
-}
-
-function switch_dataview( view_id, view_type ) {
-  /* Some views are dynamic, e.g. the plain list view offers a
-   * live filter of projects. Therefore we treat different types
-   * of dataviews differently and need to know whether the
-   * requested view is a legacy view.
-   */
-  var do_switch_dataview = function( view_id, view_type ) {
-    if ( view_type == "legacy_project_list_data_view" ) {
-      // Show the standard plain list data view
-      document.getElementById("data_view").style.display = "none";
-      document.getElementById("clientside_data_view").style.display = "block";
-      updateProjectListFromCache();
-    } else {
-      // let Django render the requested view and display it
-      document.getElementById("clientside_data_view").style.display = "none";
-      document.getElementById("data_view").style.display = "block";
-      CATMAID.DataViews.get(view_id).then(handle_load_dataview)
-        .catch(handle_dataview_load_error);
-    }
-  };
-
-  /* If view type is passed, switch to the data view directly.
-   * Otherwise, retrieve the data view type first.
-   */
-  if (view_type) {
-    do_switch_dataview(view_id, view_type);
-  } else {
-    requestQueue.register(django_url + 'dataviews/type/' + view_id,
-      'GET', undefined, function(status, text, xml) {
-        if (status == 200 && text) {
-          var e = $.parseJSON(text);
-          if (e.error) {
-            alert(e.error);
-          } else {
-            do_switch_dataview(view_id, e.type);
-          }
-        } else {
-          alert("A problem occurred while retrieving data view information.");
-        }
-    });
-  }
-}
-
-/**
- * Load the default data view.
- */
-function load_default_dataview() {
-  CATMAID.DataViews.getDefaultConfig().then(function(info) {
-    switch_dataview(info.id, info.code_type);
-  }).catch(CATMAID.handleError);
-}
-
-function handle_dataview_load_error(text) {
-  var data_view_container = document.getElementById("data_view");
-
-  if ( !( typeof data_view_container === "undefined" || data_view_container === null ) )
-  {
-    //! remove old content
-    while ( data_view_container.firstChild )
-    {
-      data_view_container.removeChild( data_view_container.firstChild );
-    }
-
-    // create error message
-    var error_paragraph = document.createElement( "p" );
-    data_view_container.appendChild( error_paragraph );
-    error_paragraph.appendChild( document.createTextNode(
-      "Sorry, there was a problem loading the requested data view." ) );
-    // create new error iframe
-    var error_iframe = document.createElement( "iframe" );
-    error_iframe.style.width = "100%";
-    error_iframe.style.height = "400px";
-    data_view_container.appendChild( error_iframe );
-    error_iframe.contentDocument.write( text );
-  }
-}
-
-function handle_load_dataview(text) {
-  var data_view_container = document.getElementById("data_view");
-
-  if ( !( typeof data_view_container === "undefined" || data_view_container === null ) )
-  {
-    //! remove old content
-    while ( data_view_container.firstChild )
-    {
-      data_view_container.removeChild( data_view_container.firstChild );
-    }
-
-    //! add new content
-    data_view_container.innerHTML = text;
-    // Revalidate content to lazy-load
-    CATMAID.client.blazy.revalidate();
-  }
-}
 
 /**
  * Initialize CATMAID.

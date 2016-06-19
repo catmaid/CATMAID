@@ -196,7 +196,7 @@
       // the requested tool after everything has been loaded.
       function loadStacksFromURL(composite, loaded) {
         loaded = loaded || 0;
-        useExistingStackViewer = composite && (loaded > 0);
+        var useExistingStackViewer = composite && (loaded > 0);
         if (pid) {
           if (sids.length > 0) {
             // Open stack and queue test/loading for next one

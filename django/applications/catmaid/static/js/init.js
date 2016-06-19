@@ -1,6 +1,11 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
+// These globals are currently used in many places and have yet to be moved into
+// the CATMAID namespace.
+var requestQueue;
+var project;
+
 (function(CATMAID) {
 
   "use strict";
@@ -1509,6 +1514,3 @@
   }
 
 })(CATMAID);
-
-var requestQueue;
-var project;

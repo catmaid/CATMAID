@@ -182,7 +182,7 @@
     document.getElementById( "user_menu" ).appendChild( user_menu.getView() );
 
     // login and thereafter load stacks if requested
-    login(undefined, undefined, function() {
+    this.login(undefined, undefined, function() {
       var tools = {
         navigator: CATMAID.Navigator,
         tracingtool: CATMAID.TracingTool,
@@ -254,6 +254,128 @@
                 'https://github.com/catmaid/CATMAID/wiki/Scripting');
   };
 
+  /**
+   * Queue a login request optionally using account and password,
+   * freeze the window to wait for an answer.
+   *
+   * If account or password are set, a new session is instantiated or an error occurs.
+   * If account and password are not set, an existing session is tried to be recognised.
+   *
+   * @param  {string}   account
+   * @param  {string}   password
+   * @param  {function} completionCallback
+   */
+  Client.prototype.login = function(account, password, completionCallback) {
+    var loginCompletion = function ( status, text, xml ) {
+      handle_login( status, text, xml, completionCallback );
+    };
+    if ( msg_timeout ) window.clearTimeout( msg_timeout );
+
+    CATMAID.ui.catchEvents( "wait" );
+    if ( account || password ) {
+      // Attempt to login.
+      requestQueue.register(
+        django_url + 'accounts/login',
+        'POST',
+        { name : account, pwd : password },
+        loginCompletion );
+    }
+    else {
+      // Check if the user is logged in.
+      requestQueue.register(
+        django_url + 'accounts/login',
+        'GET',
+        undefined,
+        loginCompletion );
+    }
+  };
+
+  /**
+   * Handle a login request answer.
+   * If the answer was session data, establish a session, update the projects menu.
+   * If the answer was an error, display an error alert.
+   * If the answer was a notice, do nothing.
+   *
+   * @param  {number}    status             XHR response status.
+   * @param  {string}    text               XHR response content.
+   * @param  {Object}    xml                XHR response XML (unused).
+   * @param  {function=} completionCallback Completion callback (no arguments).
+   */
+  function handle_login(status, text, xml, completionCallback) {
+    if (status == 200 && text) {
+      var e = JSON.parse(text);
+
+      if (e.id) {
+        session = e;
+        document.getElementById("account").value = "";
+        document.getElementById("password").value = "";
+        document.getElementById("session_longname").replaceChild(
+        document.createTextNode(e.longname), document.getElementById("session_longname").firstChild);
+        document.getElementById("login_box").style.display = "none";
+        document.getElementById("logout_box").style.display = "block";
+        document.getElementById("session_box").style.display = "block";
+
+        document.getElementById("message_box").style.display = "block";
+
+        // Check for unread messages
+        check_messages();
+
+        // Update user menu
+        user_menu.update({
+          "user_menu_entry_1": {
+            action: django_url + "user/password_change/",
+            title: "Change password",
+            note: "",
+          },
+          "user_menu_entry_2": {
+            action: getAuthenticationToken,
+            title: "Get API token",
+            note: ""
+          }
+        });
+
+      } else if (e.error) {
+        alert(e.error);
+      }
+
+      // Continuation for user list retrieval
+      var done = function () {
+        handle_profile_update(e);
+        updateProjects(completionCallback);
+      };
+
+      if (e.id || (e.permissions && -1 !== e.permissions.indexOf('catmaid.can_browse'))) {
+        // Asynchronously, try to get a full list of users if a user is logged in
+        // or the anonymous user has can_browse permissions.
+        CATMAID.User.getUsers(done);
+      } else {
+        done();
+      }
+    } else if (status != 200) {
+      // Of course, lots of non-200 errors are fine - just report
+      // all for the moment, however:
+      alert("The server returned an unexpected status (" + status + ") " + "with error message:\n" + text);
+      if ( typeof completionCallback !== "undefined" ) {
+        completionCallback();
+      }
+    }
+  }
+
+  /**
+   * Queue a login request on pressing return.
+   * Used as onkeydown-handler in the account and password input fields.
+   *
+   * @param  {Object}  e Key event.
+   * @return {boolean}   False if enter was pressed, true otherwise.
+   */
+  function login_oninputreturn(e) {
+    if (CATMAID.ui.getKey(e) == 13) {
+      CATMAID.client.login(document.getElementById("account").value, document.getElementById("password").value);
+      return false;
+    } else
+    return true;
+  }
+
   // Export Client
   CATMAID.Client = Client;
 
@@ -312,133 +434,6 @@ function mayEdit() {
 
 function mayView() {
   return checkPermission('can_annotate') || checkPermission('can_browse');
-}
-
-/**
- * Queue a login request on pressing return.
- * Used as onkeydown-handler in the account and password input fields.
- *
- * @param  {Object}  e Key event.
- * @return {boolean}   False if enter was pressed, true otherwise.
- */
-function login_oninputreturn(e) {
-  if (CATMAID.ui.getKey(e) == 13) {
-    login(document.getElementById("account").value, document.getElementById("password").value);
-    return false;
-  } else
-  return true;
-}
-
-/**
- * Queue a login request optionally using account and password,
- * freeze the window to wait for an answer.
- *
- * If account or password are set, a new session is instantiated or an error occurs.
- * If account and password are not set, an existing session is tried to be recognised.
- *
- * @param  {string}   account
- * @param  {string}   password
- * @param  {function} completionCallback
- */
-function login(
-    account,
-    password,
-    completionCallback
-)
-{
-  var loginCompletion = function ( status, text, xml ) {
-    handle_login( status, text, xml, completionCallback );
-  };
-  if ( msg_timeout ) window.clearTimeout( msg_timeout );
-
-  CATMAID.ui.catchEvents( "wait" );
-  if ( account || password ) {
-    // Attempt to login.
-    requestQueue.register(
-      django_url + 'accounts/login',
-      'POST',
-      { name : account, pwd : password },
-      loginCompletion );
-  }
-  else {
-    // Check if the user is logged in.
-    requestQueue.register(
-      django_url + 'accounts/login',
-      'GET',
-      undefined,
-      loginCompletion );
-  }
-}
-
-/**
- * Handle a login request answer.
- * If the answer was session data, establish a session, update the projects menu.
- * If the answer was an error, display an error alert.
- * If the answer was a notice, do nothing.
- *
- * @param  {number}    status             XHR response status.
- * @param  {string}    text               XHR response content.
- * @param  {Object}    xml                XHR response XML (unused).
- * @param  {function=} completionCallback Completion callback (no arguments).
- */
-function handle_login(status, text, xml, completionCallback) {
-  if (status == 200 && text) {
-    var e = JSON.parse(text);
-
-    if (e.id) {
-      session = e;
-      document.getElementById("account").value = "";
-      document.getElementById("password").value = "";
-      document.getElementById("session_longname").replaceChild(
-      document.createTextNode(e.longname), document.getElementById("session_longname").firstChild);
-      document.getElementById("login_box").style.display = "none";
-      document.getElementById("logout_box").style.display = "block";
-      document.getElementById("session_box").style.display = "block";
-
-      document.getElementById("message_box").style.display = "block";
-
-      // Check for unread messages
-      check_messages();
-
-      // Update user menu
-      user_menu.update({
-        "user_menu_entry_1": {
-          action: django_url + "user/password_change/",
-          title: "Change password",
-          note: "",
-        },
-        "user_menu_entry_2": {
-          action: getAuthenticationToken,
-          title: "Get API token",
-          note: ""
-        }
-      });
-
-    } else if (e.error) {
-      alert(e.error);
-    }
-
-    // Continuation for user list retrieval
-    done = function () {
-      handle_profile_update(e);
-      updateProjects(completionCallback);
-    };
-
-    if (e.id || (e.permissions && -1 !== e.permissions.indexOf('catmaid.can_browse'))) {
-      // Asynchronously, try to get a full list of users if a user is logged in
-      // or the anonymous user has can_browse permissions.
-      CATMAID.User.getUsers(done);
-    } else {
-      done();
-    }
-  } else if (status != 200) {
-    // Of course, lots of non-200 errors are fine - just report
-    // all for the moment, however:
-    alert("The server returned an unexpected status (" + status + ") " + "with error message:\n" + text);
-    if ( typeof completionCallback !== "undefined" ) {
-      completionCallback();
-    }
-  }
 }
 
 function getAuthenticationToken() {

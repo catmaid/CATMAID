@@ -25,7 +25,7 @@
 
       // If OK is pressed, the dialog should cause a (re-)login
       this.dialog.onOK = function() {
-        login($(user_field).val(), $(pass_field).val(), callback);
+        CATMAID.client.login($(user_field).val(), $(pass_field).val(), callback);
       };
     };
 

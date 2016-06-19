@@ -233,7 +233,7 @@
             // Open stack and queue test/loading for next one
             var sid = sids.shift();
             var s = ss.shift();
-            openProjectStack(pid, sid, useExistingStackViewer).then(function() {
+            CATMAID.openProjectStack(pid, sid, useExistingStackViewer).then(function() {
               // Moving every stack is not really necessary, but for now a
               // convenient way to apply the requested scale to each stack.
               if (typeof zp == "number" && typeof yp == "number" &&
@@ -783,6 +783,10 @@
     }
   }
 
+  // Export Client
+  CATMAID.Client = Client;
+
+
   /**
    * Open the given a specific stack group in a project.
    *
@@ -790,7 +794,7 @@
    * @param  {number}    sgid      ID of the stack group to open.
    * @param  {function=} successFn Callback on success (unused).
    */
-  Client.prototype.openStackGroup = function(pid, sgid, successFn) {
+  CATMAID.openStackGroup = function(pid, sgid, successFn) {
     CATMAID.fetch(pid + "/stackgroup/" + sgid + "/info", "GET")
       .then(function(json) {
         if (!json.stacks || 0 === json.stacks.length) {
@@ -837,9 +841,183 @@
       });
   };
 
-  // Export Client
-  CATMAID.Client = Client;
+  /*
+   * Open a project and stack in a stack viewer, returning a promise yielding
+   * the stack viewer.
+   *
+   * @param  {number|string} projectID   ID of the project to open. If different
+   *                                     than the ID of the currently open
+   *                                     project, it will be destroyed.
+   * @param  {number} stackID            ID of the stack to open.
+   * @param  {boolean} useExistingViewer True to add the stack to the existing,
+   *                                     focused stack viewer.
+   * @return {Promise}                   A promise yielding the stack viewer.
+   */
+  CATMAID.openProjectStack = function(projectID, stackID, useExistingViewer) {
+    if (project && project.id != projectID) {
+      project.destroy();
+    }
 
+    CATMAID.ui.catchEvents("wait");
+    return new Promise(function (resolve, reject) {
+      requestQueue.register(
+        django_url + projectID + '/stack/' + stackID + '/info',
+        'GET',
+        undefined,
+        CATMAID.jsonResponseHandler(
+          function(json) {
+            handle_openProjectStack(
+                  json,
+                  useExistingViewer ? project.focusedStackViewer : undefined)
+                .then(resolve, reject);
+          }, function(e) {
+            reject();
+            // Handle login errors
+            if (e && e.permission_error) {
+              new CATMAID.LoginDialog(e.error, realInit).show();
+              return true;
+            }
+            return false;
+          })
+      );
+    });
+  };
+
+  /**
+   * Open a stack from a stack info API JSON response. Open the project or, if
+   * already opened, add the stack to the opened project. If not opening a new
+   * project, an existing stack viewer can be specified to receive the stack.
+   *
+   * @param  {Object} e                JSON response from the stack info API.
+   * @param  {StackViewer} stackViewer Viewer to which to add the stack.
+   * @return {Promise}                 A promise yielding the stack viewer
+   *                                   containing the new stack.
+   */
+  function handle_openProjectStack( e, stackViewer )
+  {
+    // If the stack's project is not the opened project, replace it.
+    if (!(project && project.id == e.pid)) {
+      project = new CATMAID.Project(e.pid);
+      project.register();
+      // Update all datastores to reflect the active project before triggering
+      // any events. This is necessary so that settings are correct when
+      // updating for the project change.
+      return CATMAID.DataStoreManager.reloadAll().then(function () {
+        CATMAID.Init.trigger(CATMAID.Init.EVENT_PROJECT_CHANGED, project);
+        return loadStack(e);
+      });
+    } else {
+      return Promise.resolve(loadStack(e, stackViewer));
+    }
+
+    function loadStack(e, stackViewer) {
+      var useExistingViewer = typeof stackViewer !== 'undefined';
+      var labelupload = '';
+
+      if( e.hasOwnProperty('labelupload_url') && e.tile_source_type === 2 ) {
+        labelupload = e.labelupload_url;
+      }
+
+      var tilesource = CATMAID.getTileSource(e.tile_source_type,
+          e.image_base, e.file_extension, e.tile_width, e.tile_height);
+
+      var stack = new CATMAID.Stack(
+          e.sid,
+          e.stitle,
+          e.dimension,
+          e.resolution,
+          e.translation,    //!< @todo replace by an affine transform
+          e.broken_slices,
+          e.num_zoom_levels,
+          -2,
+          labelupload, // TODO: if there is any
+          e.metadata,
+          e.orientation,
+          tilesource );
+
+      if (!useExistingViewer) {
+        stackViewer = new CATMAID.StackViewer(project, stack);
+      }
+
+      document.getElementById( "toolbox_project" ).style.display = "block";
+
+      var tilelayerConstructor = CATMAID.TileLayer.Settings.session.prefer_webgl ?
+          CATMAID.PixiTileLayer :
+          CATMAID.TileLayer;
+      var tilelayer = new tilelayerConstructor(
+          stackViewer,
+          "Image data (" + stack.title + ")",
+          stack,
+          tilesource,
+          true,
+          1,
+          !useExistingViewer,
+          CATMAID.TileLayer.Settings.session.linear_interpolation);
+
+      if (!useExistingViewer) {
+        stackViewer.addLayer( "TileLayer", tilelayer );
+
+        $.each(e.overlay, function(key, value) {
+          var tilesource = CATMAID.getTileSource( value.tile_source_type,
+              value.image_base, value.file_extension, value.tile_width, value.tile_height );
+          var layer_visibility = parseInt(value.default_opacity) > 0;
+          var tilelayer2 = new tilelayerConstructor(
+                  stackViewer,
+                  value.title,
+                  stack,
+                  tilesource,
+                  layer_visibility,
+                  value.default_opacity / 100,
+                  false);
+          stackViewer.addLayer( value.title, tilelayer2 );
+        });
+
+        project.addStackViewer( stackViewer );
+
+        // refresh the overview handler to also register the mouse events on the buttons
+        stackViewer.tilelayercontrol.refresh();
+      } else {
+        stackViewer.addStackLayer(stack, tilelayer);
+      }
+
+      /* Update the projects stack menu. If there is more
+      than one stack linked to the current project, a submenu for easy
+      access is generated. */
+      stack_menu.update();
+      getStackMenuInfo(project.id, function(stacks) {
+        if (stacks.length > 1)
+        {
+          var stack_menu_content = [];
+          stacks.forEach(function(s) {
+            stack_menu_content.push({
+                id: s.id,
+                title: s.title,
+                note: '',
+                action: [{
+                    title: 'Open in new viewer',
+                    note: '',
+                    action: CATMAID.openProjectStack.bind(window, s.pid, s.id, false)
+                  },{
+                    title: 'Add to focused viewer',
+                    note: '',
+                    action: CATMAID.openProjectStack.bind(window, s.pid, s.id, true)
+                  }
+                ]
+              }
+            );
+          });
+
+          stack_menu.update( stack_menu_content );
+          var stackMenuBox = document.getElementById( "stackmenu_box" );
+          stackMenuBox.firstElementChild.lastElementChild.style.display = "none";
+          stackMenuBox.style.display = "block";
+        }
+      });
+
+      CATMAID.ui.releaseEvents();
+      return stackViewer;
+    }
+  }
 
   /**
    * Layout currently open stack viewers. Currently, this only changes the layout
@@ -1094,7 +1272,7 @@ function updateProjects(completionCallback) {
             'title': s.title,
             'comment': s.comment,
             'note': '',
-            'action': openProjectStack.bind(window, p.id, s.id, false)
+            'action': CATMAID.openProjectStack.bind(window, p.id, s.id, false)
           };
           return o;
         }, {});
@@ -1103,7 +1281,7 @@ function updateProjects(completionCallback) {
             'title': sg.title,
             'comment': sg.comment,
             'note': '',
-            'action': CATMAID.client.openStackGroup.bind(window, p.id, sg.id, false)
+            'action': CATMAID.openStackGroup.bind(window, p.id, sg.id, false)
           };
           return o;
         }, {});
@@ -1269,184 +1447,6 @@ function updateProjectListFromCache() {
     updateProjectListMessage("No projects matched '"+searchString+"'");
   }
   project_menu.update(cachedProjectsInfo);
-}
-
-/*
- * Open a project and stack in a stack viewer, returning a promise yielding
- * the stack viewer.
- *
- * @param  {number|string} projectID   ID of the project to open. If different
- *                                     than the ID of the currently open
- *                                     project, it will be destroyed.
- * @param  {number} stackID            ID of the stack to open.
- * @param  {boolean} useExistingViewer True to add the stack to the existing,
- *                                     focused stack viewer.
- * @return {Promise}                   A promise yielding the stack viewer.
- */
-function openProjectStack(projectID, stackID, useExistingViewer) {
-  if (project && project.id != projectID) {
-    project.destroy();
-  }
-
-  CATMAID.ui.catchEvents("wait");
-  return new Promise(function (resolve, reject) {
-    requestQueue.register(
-      django_url + projectID + '/stack/' + stackID + '/info',
-      'GET',
-      undefined,
-      CATMAID.jsonResponseHandler(
-        function(json) {
-          handle_openProjectStack(
-                json,
-                useExistingViewer ? project.focusedStackViewer : undefined)
-              .then(resolve, reject);
-        }, function(e) {
-          reject();
-          // Handle login errors
-          if (e && e.permission_error) {
-            new CATMAID.LoginDialog(e.error, realInit).show();
-            return true;
-          }
-          return false;
-        })
-    );
-  });
-}
-
-/**
- * Open a stack from a stack info API JSON response. Open the project or, if
- * already opened, add the stack to the opened project. If not opening a new
- * project, an existing stack viewer can be specified to receive the stack.
- *
- * @param  {Object} e                JSON response from the stack info API.
- * @param  {StackViewer} stackViewer Viewer to which to add the stack.
- * @return {Promise}                 A promise yielding the stack viewer
- *                                   containing the new stack.
- */
-function handle_openProjectStack( e, stackViewer )
-{
-  // If the stack's project is not the opened project, replace it.
-  if (!(project && project.id == e.pid)) {
-    project = new CATMAID.Project(e.pid);
-    project.register();
-    // Update all datastores to reflect the active project before triggering
-    // any events. This is necessary so that settings are correct when
-    // updating for the project change.
-    return CATMAID.DataStoreManager.reloadAll().then(function () {
-      CATMAID.Init.trigger(CATMAID.Init.EVENT_PROJECT_CHANGED, project);
-      return loadStack(e);
-    });
-  } else {
-    return Promise.resolve(loadStack(e, stackViewer));
-  }
-
-  function loadStack(e, stackViewer) {
-    var useExistingViewer = typeof stackViewer !== 'undefined';
-    var labelupload = '';
-
-    if( e.hasOwnProperty('labelupload_url') && e.tile_source_type === 2 ) {
-      labelupload = e.labelupload_url;
-    }
-
-    var tilesource = CATMAID.getTileSource(e.tile_source_type,
-        e.image_base, e.file_extension, e.tile_width, e.tile_height);
-
-    var stack = new CATMAID.Stack(
-        e.sid,
-        e.stitle,
-        e.dimension,
-        e.resolution,
-        e.translation,    //!< @todo replace by an affine transform
-        e.broken_slices,
-        e.num_zoom_levels,
-        -2,
-        labelupload, // TODO: if there is any
-        e.metadata,
-        e.orientation,
-        tilesource );
-
-    if (!useExistingViewer) {
-      stackViewer = new CATMAID.StackViewer(project, stack);
-    }
-
-    document.getElementById( "toolbox_project" ).style.display = "block";
-
-    var tilelayerConstructor = CATMAID.TileLayer.Settings.session.prefer_webgl ?
-        CATMAID.PixiTileLayer :
-        CATMAID.TileLayer;
-    var tilelayer = new tilelayerConstructor(
-        stackViewer,
-        "Image data (" + stack.title + ")",
-        stack,
-        tilesource,
-        true,
-        1,
-        !useExistingViewer,
-        CATMAID.TileLayer.Settings.session.linear_interpolation);
-
-    if (!useExistingViewer) {
-      stackViewer.addLayer( "TileLayer", tilelayer );
-
-      $.each(e.overlay, function(key, value) {
-        var tilesource = CATMAID.getTileSource( value.tile_source_type,
-            value.image_base, value.file_extension, value.tile_width, value.tile_height );
-        var layer_visibility = parseInt(value.default_opacity) > 0;
-        var tilelayer2 = new tilelayerConstructor(
-                stackViewer,
-                value.title,
-                stack,
-                tilesource,
-                layer_visibility,
-                value.default_opacity / 100,
-                false);
-        stackViewer.addLayer( value.title, tilelayer2 );
-      });
-
-      project.addStackViewer( stackViewer );
-
-      // refresh the overview handler to also register the mouse events on the buttons
-      stackViewer.tilelayercontrol.refresh();
-    } else {
-      stackViewer.addStackLayer(stack, tilelayer);
-    }
-
-    /* Update the projects stack menu. If there is more
-    than one stack linked to the current project, a submenu for easy
-    access is generated. */
-    stack_menu.update();
-    getStackMenuInfo(project.id, function(stacks) {
-      if (stacks.length > 1)
-      {
-        var stack_menu_content = [];
-        stacks.forEach(function(s) {
-          stack_menu_content.push({
-              id: s.id,
-              title: s.title,
-              note: '',
-              action: [{
-                  title: 'Open in new viewer',
-                  note: '',
-                  action: openProjectStack.bind(window, s.pid, s.id, false)
-                },{
-                  title: 'Add to focused viewer',
-                  note: '',
-                  action: openProjectStack.bind(window, s.pid, s.id, true)
-                }
-              ]
-            }
-          );
-        });
-
-        stack_menu.update( stack_menu_content );
-        var stackMenuBox = document.getElementById( "stackmenu_box" );
-        stackMenuBox.firstElementChild.lastElementChild.style.display = "none";
-        stackMenuBox.style.display = "block";
-      }
-    });
-
-    CATMAID.ui.releaseEvents();
-    return stackViewer;
-  }
 }
 
 /**

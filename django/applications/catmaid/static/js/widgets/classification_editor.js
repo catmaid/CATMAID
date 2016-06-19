@@ -623,7 +623,7 @@
                 project.setTool( new CATMAID.Navigator() );
               }
             };
-            openProjectStack(roi.project_id, roi.stack_id).then(callback);
+            CATMAID.openProjectStack(roi.project_id, roi.stack_id).then(callback);
           }));
     };
 

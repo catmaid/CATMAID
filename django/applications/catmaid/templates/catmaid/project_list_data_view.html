@@ -48,13 +48,13 @@
             {% if show_stackgroups and stackgroups_of|get:p.id %}
                 {% for sg in stackgroups_of|get:p.id|dictsort:"id" %}
                     <dd><a href="#"
-                        onclick="CATMAID.client.openStackGroup({{p.id}}, {{sg.id}});return false">{{ sg.name }}</a></dd>
+                        onclick="CATMAID.openStackGroup({{p.id}}, {{sg.id}});return false">{{ sg.name }}</a></dd>
                 {% endfor %}
             {% endif %}
             {% if show_stacks and stacks_of|get:p.id %}
                 {% for s in stacks_of|get:p.id|dictsort:"id" %}
                     <dd><a href="?pid={{ p.id }}&tool=navigator&sid0={{ s.id }}&s0=1"
-                        onclick="openProjectStack({{p.id}}, {{s.id}});return false">{{ s.title }}</a></dd>
+                        onclick="CATMAID.openProjectStack({{p.id}}, {{s.id}});return false">{{ s.title }}</a></dd>
                     {% if s.comment %}
                         <dd>{{ s.comment|safe }}</dd>
                     {% endif %}

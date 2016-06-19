@@ -3582,7 +3582,7 @@ var WindowMaker = new function()
           $("<option />", opts).appendTo($select);
           // Add entry to filter select and select current user by default
           $("<option />", opts)
-              .prop('selected', userID == session.userid)
+              .prop('selected', userID == CATMAID.session.userid)
               .appendTo($filter_select);
         }
       }

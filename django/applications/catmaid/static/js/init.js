@@ -389,6 +389,9 @@
     }
   };
 
+  // Publicly accessible session
+  CATMAID.session = null;
+
   /**
    * Handle a login request answer.
    * If the answer was session data, establish a session, update the projects menu.
@@ -405,7 +408,7 @@
       var e = JSON.parse(text);
 
       if (e.id) {
-        session = e;
+        CATMAID.session = e;
         document.getElementById("account").value = "";
         document.getElementById("password").value = "";
         document.getElementById("session_longname").replaceChild(
@@ -525,7 +528,7 @@
    */
   function handle_message( status, text, xml )
   {
-    if ( !session )
+    if ( !CATMAID.session )
       return;
 
     if ( status == 200 && text )
@@ -685,7 +688,7 @@
    * @param  {Object}    xml                XHR response XML (unused).
    */
   function handle_logout(status, text, xml) {
-    session = undefined;
+    CATMAID.session = undefined;
     document.getElementById( "login_box" ).style.display = "block";
     document.getElementById( "logout_box" ).style.display = "none";
     document.getElementById( "session_box" ).style.display = "none";
@@ -1446,7 +1449,6 @@ var project;
 
 var current_dataview;
 
-var session;
 /**
  * Interval (in milliseconds) to check client CATMAID version against server
  * version.

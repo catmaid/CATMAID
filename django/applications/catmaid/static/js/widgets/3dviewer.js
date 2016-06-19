@@ -8,7 +8,6 @@
   InstanceRegistry,
   project,
   requestQueue,
-  session,
   SkeletonAnnotations,
   SkeletonRegistry,
   submitterFn,
@@ -4218,10 +4217,11 @@
         }).bind(this)
           : function() { return notComputable; };
       } else if ('own-reviewed' === options.color_method) {
+        var userId = CATMAID.session.userid;
         pickColor = this.reviews ?
           (function(vertex) {
             var reviewers = this.reviews[vertex.node_id];
-          return reviewers && reviewers.some(function (r) { return r[0] == session.userid;}) ?
+          return reviewers && reviewers.some(function (r) { return r[0] == userId;}) ?
             reviewedColor : unreviewedColor;
         }).bind(this)
           : function() { return notComputable; };

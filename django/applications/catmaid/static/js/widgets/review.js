@@ -33,7 +33,7 @@
 
     this.init = function() {
       projectID = project.id;
-      followedUsers = [session.userid];
+      followedUsers = [CATMAID.session.userid];
     };
 
     this.setAutoCentering = function(centering) {
@@ -403,7 +403,7 @@
               self.current_segment['nr_nodes'] + ' nodes');
           if (self.noRefreshBetwenSegments) {
             end_puffer_count += 1;
-            markSegmentDone(self.current_segment, [session.userid]);
+            markSegmentDone(self.current_segment, [CATMAID.session.userid]);
             // do not directly jump to the next segment to review
             if( end_puffer_count < 3) {
               return;
@@ -437,7 +437,7 @@
       if (changeSelectedNode) {
 
         var whitelist = CATMAID.ReviewSystem.Whitelist.getWhitelist();
-        var reviewedByTeam = reviewedByUserOrTeam.bind(self, session.userid, whitelist);
+        var reviewedByTeam = reviewedByUserOrTeam.bind(self, CATMAID.session.userid, whitelist);
 
         // Find index of next real node that should be reviewed
         var newIndex = Math.min(self.current_segment_index + 1, sequenceLength - 1);
@@ -488,7 +488,7 @@
             while (i_union < sequenceLength && 0 !== sequence[i_union].rids.length) {
               i_union += 1;
             }
-            var cellIDs = [session.userid];
+            var cellIDs = [CATMAID.session.userid];
             if (i_user === sequenceLength) {
               CATMAID.msg('DONE', 'Segment fully reviewed: ' +
                   self.current_segment['nr_nodes'] + ' nodes');
@@ -528,7 +528,7 @@
         cell.text(status + '%')
             .css('background-color',
                  CATMAID.ReviewSystem.getBackgroundColor(Math.round(status)));
-        if (s === session.userid) segment['status'] = status;
+        if (s === CATMAID.session.userid) segment['status'] = status;
       });
     }
 
@@ -738,10 +738,10 @@
       // current user as first element, regardless of his/her review status.
       var reviewers = Object.keys(users).filter(function(u) {
         // u is a string, so rely on != for comparing to (integer) user ID.
-        return this[u].count > 0 && u != session.userid;
+        return this[u].count > 0 && u != CATMAID.session.userid;
       }, users);
       // Prepend user ID
-      reviewers = [session.userid].concat(reviewers);
+      reviewers = [CATMAID.session.userid].concat(reviewers);
       // Make sure all IDs are actual numbers
       reviewers = reviewers.map(function(u){ return parseInt(u); });
 
@@ -925,7 +925,7 @@
         return;
       }
       var startsegment = -1, endsegment = 0, locations = [];
-      var reviewedByCurrentUser = reviewedByUser.bind(self, session.userid);
+      var reviewedByCurrentUser = reviewedByUser.bind(self, CATMAID.session.userid);
 
       for(var idx in self.skeleton_segments) {
         if( self.skeleton_segments[idx]['status'] !== "100.00" ) {
@@ -1034,7 +1034,7 @@
        */
       refresh: function (callback) {
         // If no project is open or no user is logged in, clear the whitelist.
-        if (typeof project === 'undefined' || !project || typeof session === 'undefined') {
+        if (typeof project === 'undefined' || !project || typeof CATMAID.session === 'undefined') {
           whitelist = {};
           return;
         }
@@ -1057,7 +1057,7 @@
        */
       save: function (callback) {
         // If no user is logged in, do not attempt to save the whitelist.
-        if (typeof session === 'undefined') return;
+        if (typeof CATMAID.session === 'undefined') return;
 
         var encodedWhitelist = Object.keys(whitelist).reduce(function (ewl, userId) {
           ewl[userId] = whitelist[userId].toISOString();

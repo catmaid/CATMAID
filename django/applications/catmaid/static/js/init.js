@@ -286,6 +286,32 @@
   };
 
   /**
+   * Resize the main content and root window.
+   *
+   * Called by the window.onresize event.
+   */
+  var resize = function( e )
+  {
+    var top = document.getElementById( "toolbar_container" ).offsetHeight;
+    var height = Math.max( 0, CATMAID.ui.getFrameHeight() - top - global_bottom );
+    var width = CATMAID.ui.getFrameWidth();
+
+    var content = document.getElementById( "content" );
+    content.style.top = top + "px";
+    content.style.width = width + "px";
+    content.style.height = height + "px";
+
+    rootFrame = rootWindow.getFrame();
+    rootFrame.style.top = top + "px";
+    rootFrame.style.width = CATMAID.UI.getFrameWidth() + "px";
+    rootFrame.style.height = height + "px";
+
+    rootWindow.redraw();
+
+    return true;
+  };
+
+  /**
    * Queue a login request optionally using account and password,
    * freeze the window to wait for an answer.
    *
@@ -1460,30 +1486,4 @@ var realInit = function()
   // Initialize a new CATMAID front-end
   var options = CATMAID.tools.parseQuery(window.location.search);
   CATMAID.client = new CATMAID.Client(options);
-};
-
-/**
- * Resize the main content and root window.
- *
- * Called by the window.onresize event.
- */
-var resize = function( e )
-{
-  var top = document.getElementById( "toolbar_container" ).offsetHeight;
-  var height = Math.max( 0, CATMAID.ui.getFrameHeight() - top - global_bottom );
-  var width = CATMAID.ui.getFrameWidth();
-
-  var content = document.getElementById( "content" );
-  content.style.top = top + "px";
-  content.style.width = width + "px";
-  content.style.height = height + "px";
-
-  rootFrame = rootWindow.getFrame();
-  rootFrame.style.top = top + "px";
-  rootFrame.style.width = CATMAID.UI.getFrameWidth() + "px";
-  rootFrame.style.height = height + "px";
-
-  rootWindow.redraw();
-
-  return true;
 };

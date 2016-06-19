@@ -41,8 +41,19 @@
   CATMAID.Init.EVENT_PROJECT_CHANGED = "init_project_changed";
   CATMAID.Init.EVENT_USER_CHANGED = "init_user_changed";
 
+  // Message menu in top bar
+  var message_menu;
+
   // User name of current user
   var username;
+  // Timeout reference for message updates
+  var msg_timeout;
+  /**
+   * Length (in milliseconds) of the message lookup interval.
+   * @type {Number}
+   */
+  var MSG_TIMEOUT_INTERVAL = 60000;
+
 
   /**
    * CATMAID's web front-end.
@@ -1409,7 +1420,6 @@ var project_menu;
 
 var stack_menu;
 
-var message_menu;
 /**
  * A menu for user related links.
  * @type {Menu}
@@ -1417,12 +1427,6 @@ var message_menu;
 var user_menu;
 
 var session;
-var msg_timeout;
-/**
- * Length (in milliseconds) of the message lookup interval.
- * @type {Number}
- */
-var MSG_TIMEOUT_INTERVAL = 60000;
 /**
  * Interval (in milliseconds) to check client CATMAID version against server
  * version.

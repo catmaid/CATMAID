@@ -167,7 +167,7 @@
 
     dataview_menu = new Menu();
     document.getElementById( "dataview_menu" ).appendChild( dataview_menu.getView() );
-    dataviews();
+    CATMAID.DataViews.list().then(handle_dataviews);
 
     project_menu = new Menu();
     document.getElementById( "project_menu" ).appendChild( project_menu.getView() );
@@ -1233,13 +1233,6 @@ CATMAID.Init.checkVersion = function () {
         }));
 };
 window.setTimeout(CATMAID.Init.checkVersion, CATMAID.Init.CHECK_VERSION_TIMEOUT_INTERVAL);
-
-/**
- * Retrieve data views.
- */
-function dataviews() {
-  requestQueue.register(django_url + 'dataviews/list', 'GET', undefined, handle_dataviews);
-}
 
 function handle_dataviews(status, text, xml) {
   if ( status == 200 && text )

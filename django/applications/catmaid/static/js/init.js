@@ -660,6 +660,47 @@
     CATMAID.updateProjects();
   }
 
+  /**
+   * Update profile dependent information, e.g., the visibility of tools in the
+   * toolbar.
+   *
+   * @param  {Object} e The parsed JSON response object.
+   */
+  function handle_profile_update(e) {
+    try {
+      if (e.userprofile) {
+        userprofile = new CATMAID.Userprofile(e.userprofile);
+        username = e.username;
+      } else {
+        throw "The server returned no valid user profile.";
+      }
+    } catch (error) {
+      /* A valid user profile is needed to start CATMAID. This is a severe error
+       * and a message box will tell the user to report this problem.
+       */
+      new CATMAID.ErrorDialog("The user profile couldn't be loaded. This " +
+          "however, is required to start CATMAID. Please report this problem " +
+          "to your administrator and try again later.", error).show();
+      return;
+    }
+
+    // update the edit tool actions and its div container
+    var new_edit_actions = CATMAID.createButtonsFromActions(CATMAID.EditTool.actions,
+      'toolbox_edit', '');
+    $('#toolbox_edit').replaceWith(new_edit_actions);
+    $('#toolbox_edit').hide();
+
+    // Re-configure CSRF protection to update the CSRF cookie.
+    CATMAID.setupCsrfProtection();
+
+    // Update all datastores to reflect the current user before triggering
+    // any events. This is necessary so that settings are correct when
+    // updating for user change.
+    CATMAID.DataStoreManager.reloadAll().then(function () {
+      CATMAID.Init.trigger(CATMAID.Init.EVENT_USER_CHANGED);
+    });
+  }
+
   function handle_dataviews(e) {
     // a function for creating data view menu handlers
     var create_handler = function( id, code_type ) {
@@ -1381,47 +1422,6 @@ function getAuthenticationToken() {
   };
 
   dialog.show(460, 200, true);
-}
-
-/**
- * Update profile dependent information, e.g., the visibility of tools in the
- * toolbar.
- *
- * @param  {Object} e The parsed JSON response object.
- */
-function handle_profile_update(e) {
-  try {
-    if (e.userprofile) {
-      userprofile = new CATMAID.Userprofile(e.userprofile);
-      username = e.username;
-    } else {
-      throw "The server returned no valid user profile.";
-    }
-  } catch (error) {
-    /* A valid user profile is needed to start CATMAID. This is a severe error
-     * and a message box will tell the user to report this problem.
-     */
-    new CATMAID.ErrorDialog("The user profile couldn't be loaded. This " +
-        "however, is required to start CATMAID. Please report this problem " +
-        "to your administrator and try again later.", error).show();
-    return;
-  }
-
-  // update the edit tool actions and its div container
-  var new_edit_actions = CATMAID.createButtonsFromActions(CATMAID.EditTool.actions,
-    'toolbox_edit', '');
-  $('#toolbox_edit').replaceWith(new_edit_actions);
-  $('#toolbox_edit').hide();
-
-  // Re-configure CSRF protection to update the CSRF cookie.
-  CATMAID.setupCsrfProtection();
-
-  // Update all datastores to reflect the current user before triggering
-  // any events. This is necessary so that settings are correct when
-  // updating for user change.
-  CATMAID.DataStoreManager.reloadAll().then(function () {
-    CATMAID.Init.trigger(CATMAID.Init.EVENT_USER_CHANGED);
-  });
 }
 
 /**

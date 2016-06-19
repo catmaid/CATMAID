@@ -506,6 +506,43 @@
     }, null);
   };
 
+  /**
+   * Queue a logout request.
+   * Freeze the window to wait for an answer.
+   */
+  Client.prototype.logout = function() {
+    if (msg_timeout) window.clearTimeout(msg_timeout);
+
+    CATMAID.ui.catchEvents("wait");
+    requestQueue.register(django_url + 'accounts/logout', 'POST', undefined, handle_logout);
+  };
+
+  /**
+   * Handle a logout request response.
+   * Update the project menu.
+   *
+   * @param  {number}    status             XHR response status.
+   * @param  {string}    text               XHR response content.
+   * @param  {Object}    xml                XHR response XML (unused).
+   */
+  function handle_logout(status, text, xml) {
+    session = undefined;
+    document.getElementById( "login_box" ).style.display = "block";
+    document.getElementById( "logout_box" ).style.display = "none";
+    document.getElementById( "session_box" ).style.display = "none";
+
+    document.getElementById( "message_box" ).style.display = "none";
+
+    if ( project && project.id ) project.setTool( new CATMAID.Navigator() );
+
+    if (status == 200 && text) {
+      var e = $.parseJSON(text);
+      handle_profile_update(e);
+    }
+
+    updateProjects();
+  }
+
   // Export Client
   CATMAID.Client = Client;
 
@@ -616,43 +653,6 @@ function getAuthenticationToken() {
   };
 
   dialog.show(460, 200, true);
-}
-
-/**
- * Queue a logout request.
- * Freeze the window to wait for an answer.
- */
-function logout() {
-  if (msg_timeout) window.clearTimeout(msg_timeout);
-
-  CATMAID.ui.catchEvents("wait");
-  requestQueue.register(django_url + 'accounts/logout', 'POST', undefined, handle_logout);
-}
-
-/**
- * Handle a logout request response.
- * Update the project menu.
- *
- * @param  {number}    status             XHR response status.
- * @param  {string}    text               XHR response content.
- * @param  {Object}    xml                XHR response XML (unused).
- */
-function handle_logout(status, text, xml) {
-  session = undefined;
-  document.getElementById( "login_box" ).style.display = "block";
-  document.getElementById( "logout_box" ).style.display = "none";
-  document.getElementById( "session_box" ).style.display = "none";
-
-  document.getElementById( "message_box" ).style.display = "none";
-
-  if ( project && project.id ) project.setTool( new CATMAID.Navigator() );
-
-  if (status == 200 && text) {
-    var e = $.parseJSON(text);
-    handle_profile_update(e);
-  }
-
-  updateProjects();
 }
 
 /**

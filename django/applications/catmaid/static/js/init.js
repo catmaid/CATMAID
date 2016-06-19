@@ -1,14 +1,20 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
-/**
- * Global access to window and project control events and variables.
- * @namespace
- */
-CATMAID.Init = {};
-CATMAID.asEventSource(CATMAID.Init);
-CATMAID.Init.EVENT_PROJECT_CHANGED = "init_project_changed";
-CATMAID.Init.EVENT_USER_CHANGED = "init_user_changed";
+(function(CATMAID) {
+
+  "use strict";
+
+  /**
+   * Global access to window and project control events and variables.
+   * @namespace
+   */
+  CATMAID.Init = {};
+  CATMAID.asEventSource(CATMAID.Init);
+  CATMAID.Init.EVENT_PROJECT_CHANGED = "init_project_changed";
+  CATMAID.Init.EVENT_USER_CHANGED = "init_user_changed";
+
+})(CATMAID);
 
 var global_bottom = 29;
 

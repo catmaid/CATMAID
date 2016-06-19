@@ -398,7 +398,7 @@
       // Continuation for user list retrieval
       var done = function () {
         handle_profile_update(e);
-        updateProjects(completionCallback);
+        CATMAID.updateProjects(completionCallback);
       };
 
       if (e.id || (e.permissions && -1 !== e.permissions.indexOf('catmaid.can_browse'))) {
@@ -657,7 +657,7 @@
       handle_profile_update(e);
     }
 
-    updateProjects();
+    CATMAID.updateProjects();
   }
 
   function handle_dataviews(e) {
@@ -698,7 +698,7 @@
         // Show the standard plain list data view
         document.getElementById("data_view").style.display = "none";
         document.getElementById("clientside_data_view").style.display = "block";
-        updateProjectListFromCache();
+        CATMAID.updateProjectListFromCache();
       } else {
         // let Django render the requested view and display it
         document.getElementById("clientside_data_view").style.display = "none";
@@ -1068,6 +1068,212 @@
     }
   };
 
+  /**
+   * Do a delayed call to updateProjectListFromCache() and indicate
+   * the progress.
+   */
+  var cacheLoadingTimeout = null;
+  CATMAID.updateProjectListFromCacheDelayed = function() {
+    // the filter form can already be displayed
+    $('#project_filter_form').show();
+    // indicate active filtered loading of the projects
+    var indicator = document.getElementById("project_filter_indicator");
+    window.setTimeout( function() { indicator.className = "filtering"; }, 1);
+
+    // clear timeout if already present and create a new one
+    if (cacheLoadingTimeout !== null)
+    {
+      clearTimeout(cacheLoadingTimeout);
+    }
+    cacheLoadingTimeout = window.setTimeout(
+      function() {
+        CATMAID.updateProjectListFromCache();
+        // indicate finish of filtered loading of the projects
+        indicator.className = "";
+      }, 500);
+  };
+
+  /**
+   * Update the displayed project list based on the cache
+   * entries. This can involve a filter in the text box
+   * "project_filter_text".
+   */
+  CATMAID.updateProjectListFromCache = function() {
+    var matchingProjects = 0,
+        searchString = $('#project_filter_text').val(),
+        display,
+        re = new RegExp(searchString, "i"),
+        title,
+        toappend,
+        i, j, k,
+        dt, dd, a, ddc,
+        p,
+        catalogueElement, catalogueElementLink,
+        pp = document.getElementById("projects_dl");
+    // remove all the projects
+    while (pp.firstChild) pp.removeChild(pp.firstChild);
+    updateProjectListMessage('');
+    // add new projects according to filter
+    for (i in cachedProjectsInfo) {
+      p = cachedProjectsInfo[i];
+      display = false;
+      toappend = [];
+
+      dt = document.createElement("dt");
+
+      title = p.title;
+      if (re.test(title)) {
+        display = true;
+      }
+      dt.appendChild(document.createTextNode(p.title));
+
+      document.getElementById("projects_h").style.display = "block";
+      document.getElementById("project_filter_form").style.display = "block";
+      toappend.push(dt);
+
+      // add a link for every action (e.g. a stack link)
+      for (j in p.action) {
+        var sid_title = p.action[j].title;
+        var sid_action = p.action[j].action;
+        var sid_note = p.action[j].comment;
+        dd = document.createElement("dd");
+        a = document.createElement("a");
+        ddc = document.createElement("dd");
+        a.href = sid_action;
+        if (re.test(sid_title)) {
+          display = true;
+        }
+        a.appendChild(document.createTextNode(sid_title));
+        dd.appendChild(a);
+        toappend.push(dd);
+        if (sid_note) {
+          ddc = document.createElement("dd");
+          ddc.innerHTML = sid_note;
+          toappend.push(ddc);
+        }
+      }
+      // optionally, add a neuron catalogue link
+      if (p.catalogue) {
+        catalogueElement = document.createElement('dd');
+        catalogueElementLink = document.createElement('a');
+        catalogueElementLink.href = django_url + p.pid;
+        catalogueElementLink.appendChild(document.createTextNode('Browse the Neuron Catalogue'));
+        catalogueElement.appendChild(catalogueElementLink);
+        toappend.push(catalogueElement);
+      }
+      if (display) {
+        ++ matchingProjects;
+        for (k = 0; k < toappend.length; ++k) {
+          pp.appendChild(toappend[k]);
+        }
+      }
+    }
+    if (cachedProjectsInfo.length === 0) {
+      updateProjectListMessage("No CATMAID projects have been created");
+    } else if (matchingProjects === 0) {
+      updateProjectListMessage("No projects matched '"+searchString+"'");
+    }
+    project_menu.update(cachedProjectsInfo);
+  };
+
+  /**
+   * Queue a project-menu-update request.
+   *
+   * @param  {function=} completionCallback Completion callback (no arguments).
+   */
+  CATMAID.updateProjects = function(completionCallback) {
+    CATMAID.updatePermissions();
+
+    project_menu.update(null);
+
+    document.getElementById("projects_h").style.display = "none";
+    document.getElementById("project_filter_form").style.display = "none";
+
+    var pp = document.getElementById("projects_dl");
+
+    while (pp.firstChild) pp.removeChild(pp.firstChild);
+
+    var w = document.createElement("dd");
+    w.className = "wait_bgwhite";
+    w.appendChild(document.createTextNode("loading ..."));
+    pp.appendChild(w);
+
+    // Destroy active project
+    // TODO: Does this really have to happen here?
+    if (project) {
+      project.destroy();
+      project = undefined;
+    }
+
+    CATMAID.fetch('projects/', 'GET')
+      .catch(function(error) {
+        // Show error and continue with null JSON
+        CATMAID.error("Could not load available projects: " + error.error, error.detail);
+        return null;
+      })
+      .then(function(json) {
+        // recreate the project data view
+        if (current_dataview) {
+          CATMAID.client.switch_dataview(current_dataview);
+        } else {
+          CATMAID.client.load_default_dataview();
+        }
+        cachedProjectsInfo = json;
+
+        // Prepare JSON so that a menu can be created from it. Display only
+        // projects that have at least one stack linked to them.
+        var projects = json.filter(function(p) {
+          return p.stacks.length > 0;
+        }).map(function(p) {
+          var stacks = p.stacks.reduce(function(o, s) {
+            o[s.id] = {
+              'title': s.title,
+              'comment': s.comment,
+              'note': '',
+              'action': CATMAID.openProjectStack.bind(window, p.id, s.id, false)
+            };
+            return o;
+          }, {});
+          var stackgroups = p.stackgroups.reduce(function(o, sg) {
+            o[sg.id] = {
+              'title': sg.title,
+              'comment': sg.comment,
+              'note': '',
+              'action': CATMAID.openStackGroup.bind(window, p.id, sg.id, false)
+            };
+            return o;
+          }, {});
+
+          return {
+            'title': p.title,
+            'note': '',
+            'action': [{
+              'title': 'Stacks',
+              'comment': '',
+              'note': '',
+              'action': stacks
+            }, {
+              'title': 'Stack groups',
+              'comment': '',
+              'note': '',
+              'action': stackgroups
+            }]
+
+          };
+        });
+
+        project_menu.update(projects);
+        CATMAID.ui.releaseEvents();
+        if (CATMAID.tools.isFn(completionCallback)) {
+          completionCallback();
+        }
+      });
+  };
+
+  function updateProjectListMessage(text) {
+    $('#project_list_message').text(text);
+  }
+
 })(CATMAID);
 
 var global_bottom = 29;
@@ -1219,130 +1425,6 @@ function handle_profile_update(e) {
 }
 
 /**
- * Queue a project-menu-update request.
- *
- * @param  {function=} completionCallback Completion callback (no arguments).
- */
-function updateProjects(completionCallback) {
-  CATMAID.updatePermissions();
-
-  project_menu.update(null);
-
-  document.getElementById("projects_h").style.display = "none";
-  document.getElementById("project_filter_form").style.display = "none";
-
-  var pp = document.getElementById("projects_dl");
-
-  while (pp.firstChild) pp.removeChild(pp.firstChild);
-
-  var w = document.createElement("dd");
-  w.className = "wait_bgwhite";
-  w.appendChild(document.createTextNode("loading ..."));
-  pp.appendChild(w);
-
-  // Destroy active project
-  // TODO: Does this really have to happen here?
-  if (project) {
-    project.destroy();
-    project = undefined;
-  }
-
-  CATMAID.fetch('projects/', 'GET')
-    .catch(function(error) {
-      // Show error and continue with null JSON
-      CATMAID.error("Could not load available projects: " + error.error, error.detail);
-      return null;
-    })
-    .then(function(json) {
-      // recreate the project data view
-      if (current_dataview) {
-        CATMAID.client.switch_dataview(current_dataview);
-      } else {
-        CATMAID.client.load_default_dataview();
-      }
-      cachedProjectsInfo = json;
-
-      // Prepare JSON so that a menu can be created from it. Display only
-      // projects that have at least one stack linked to them.
-      var projects = json.filter(function(p) {
-        return p.stacks.length > 0;
-      }).map(function(p) {
-        var stacks = p.stacks.reduce(function(o, s) {
-          o[s.id] = {
-            'title': s.title,
-            'comment': s.comment,
-            'note': '',
-            'action': CATMAID.openProjectStack.bind(window, p.id, s.id, false)
-          };
-          return o;
-        }, {});
-        var stackgroups = p.stackgroups.reduce(function(o, sg) {
-          o[sg.id] = {
-            'title': sg.title,
-            'comment': sg.comment,
-            'note': '',
-            'action': CATMAID.openStackGroup.bind(window, p.id, sg.id, false)
-          };
-          return o;
-        }, {});
-
-        return {
-          'title': p.title,
-          'note': '',
-          'action': [{
-            'title': 'Stacks',
-            'comment': '',
-            'note': '',
-            'action': stacks
-          }, {
-            'title': 'Stack groups',
-            'comment': '',
-            'note': '',
-            'action': stackgroups
-          }]
-
-        };
-      });
-
-      project_menu.update(projects);
-      CATMAID.ui.releaseEvents();
-      if (CATMAID.tools.isFn(completionCallback)) {
-        completionCallback();
-      }
-    });
-}
-
-function updateProjectListMessage(text) {
-  $('#project_list_message').text(text);
-}
-
-/**
- * Do a delayed call to updateProjectListFromCache() and indicate
- * the progress.
- */
-var cacheLoadingTimeout = null;
-function updateProjectListFromCacheDelayed()
-{
-  // the filter form can already be displayed
-  $('#project_filter_form').show();
-  // indicate active filtered loading of the projects
-  var indicator = document.getElementById("project_filter_indicator");
-  window.setTimeout( function() { indicator.className = "filtering"; }, 1);
-
-  // clear timeout if already present and create a new one
-  if (cacheLoadingTimeout !== null)
-  {
-    clearTimeout(cacheLoadingTimeout);
-  }
-  cacheLoadingTimeout = window.setTimeout(
-    function() {
-      updateProjectListFromCache();
-      // indicate finish of filtered loading of the projects
-      indicator.className = "";
-    }, 500);
-}
-
-/**
  * Retrieve stack menu information from the back-end and
  * executes a callback on success.
  *
@@ -1364,89 +1446,6 @@ function getStackMenuInfo(project_id, callback) {
                 alert("Sorry, the stacks for the current project couldn't be retrieved.");
             }
         });
-}
-
-/**
- * Update the displayed project list based on the cache
- * entries. This can involve a filter in the text box
- * "project_filter_text".
- */
-function updateProjectListFromCache() {
-  var matchingProjects = 0,
-      searchString = $('#project_filter_text').val(),
-      display,
-      re = new RegExp(searchString, "i"),
-      title,
-      toappend,
-      i, j, k,
-      dt, dd, a, ddc,
-      p,
-      catalogueElement, catalogueElementLink,
-      pp = document.getElementById("projects_dl");
-  // remove all the projects
-  while (pp.firstChild) pp.removeChild(pp.firstChild);
-  updateProjectListMessage('');
-  // add new projects according to filter
-  for (i in cachedProjectsInfo) {
-    p = cachedProjectsInfo[i];
-    display = false;
-    toappend = [];
-
-    dt = document.createElement("dt");
-
-    title = p.title;
-    if (re.test(title)) {
-      display = true;
-    }
-    dt.appendChild(document.createTextNode(p.title));
-
-    document.getElementById("projects_h").style.display = "block";
-    document.getElementById("project_filter_form").style.display = "block";
-    toappend.push(dt);
-
-    // add a link for every action (e.g. a stack link)
-    for (j in p.action) {
-      var sid_title = p.action[j].title;
-      var sid_action = p.action[j].action;
-      var sid_note = p.action[j].comment;
-      dd = document.createElement("dd");
-      a = document.createElement("a");
-      ddc = document.createElement("dd");
-      a.href = sid_action;
-      if (re.test(sid_title)) {
-        display = true;
-      }
-      a.appendChild(document.createTextNode(sid_title));
-      dd.appendChild(a);
-      toappend.push(dd);
-      if (sid_note) {
-        ddc = document.createElement("dd");
-        ddc.innerHTML = sid_note;
-        toappend.push(ddc);
-      }
-    }
-    // optionally, add a neuron catalogue link
-    if (p.catalogue) {
-      catalogueElement = document.createElement('dd');
-      catalogueElementLink = document.createElement('a');
-      catalogueElementLink.href = django_url + p.pid;
-      catalogueElementLink.appendChild(document.createTextNode('Browse the Neuron Catalogue'));
-      catalogueElement.appendChild(catalogueElementLink);
-      toappend.push(catalogueElement);
-    }
-    if (display) {
-      ++ matchingProjects;
-      for (k = 0; k < toappend.length; ++k) {
-        pp.appendChild(toappend[k]);
-      }
-    }
-  }
-  if (cachedProjectsInfo.length === 0) {
-    updateProjectListMessage("No CATMAID projects have been created");
-  } else if (matchingProjects === 0) {
-    updateProjectListMessage("No projects matched '"+searchString+"'");
-  }
-  project_menu.update(cachedProjectsInfo);
 }
 
 /**

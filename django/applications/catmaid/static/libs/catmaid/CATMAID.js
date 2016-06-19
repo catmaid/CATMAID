@@ -277,8 +277,11 @@ var requestQueue = new RequestQueue();
    * Queue a request for the given back-end method along with the given data. It
    * expects a JSON response. A promise is returned. The URL passed in needs to
    * be relative to the back-end URL.
+   *
+   * @param {Boolean} raw (Optional) If truty, no JSON validation and parsing is
+   *                                 performed.
    */
-  CATMAID.fetch = function(relativeURL, method, data) {
+  CATMAID.fetch = function(relativeURL, method, data, raw) {
     return new Promise(function(resolve, reject) {
       var url = CATMAID.makeURL(relativeURL);
       requestQueue.register(url, method, data, function(status, text, xml) {
@@ -287,8 +290,12 @@ var requestQueue = new RequestQueue();
         // this wasn't an asynchronously called function. But since this is the
         // case, we have to call reject() explicitly.
         try {
-          var json = CATMAID.validateJsonResponse(status, text, xml);
-          resolve(json);
+          if (raw) {
+            resolve(text);
+          } else {
+            var json = CATMAID.validateJsonResponse(status, text, xml);
+            resolve(json);
+          }
         } catch (e) {
           reject(e);
         }

@@ -1234,42 +1234,31 @@ CATMAID.Init.checkVersion = function () {
 };
 window.setTimeout(CATMAID.Init.checkVersion, CATMAID.Init.CHECK_VERSION_TIMEOUT_INTERVAL);
 
-function handle_dataviews(status, text, xml) {
-  if ( status == 200 && text )
+function handle_dataviews(e) {
+  // a function for creating data view menu handlers
+  var create_handler = function( id, code_type ) {
+    return function() {
+      // close any open project and its windows
+      rootWindow.closeAllChildren();
+      // open data view
+      switch_dataview( id, code_type );
+    };
+  };
+  /* As we want to handle a data view change in JS,
+   * a function is added as action for all the menu
+   * elements. Also add small links to each menu entry
+   * as comment.
+   */
+  for ( var i in e )
   {
-    var e = JSON.parse(text);
-    if ( e.error )
-    {
-      alert( e.error );
-    }
-    else
-    {
-      // a function for creating data view menu handlers
-      var create_handler = function( id, code_type ) {
-        return function() {
-          // close any open project and its windows
-          rootWindow.closeAllChildren();
-          // open data view
-          switch_dataview( id, code_type );
-        };
-      };
-      /* As we want to handle a data view change in JS,
-       * a function is added as action for all the menu
-       * elements. Also add small links to each menu entry
-       * as comment.
-       */
-      for ( var i in e )
-      {
-        e[i].action = create_handler( e[i].id,
-          e[i].code_type );
-        var link = '<a class="hoverlink" href="' + django_url +
-          '?dataview=' + e[i].id + '">&para;&nbsp;</a>';
-        e[i].note = link + e[i].note;
-      }
-
-      dataview_menu.update( e );
-    }
+    e[i].action = create_handler( e[i].id,
+      e[i].code_type );
+    var link = '<a class="hoverlink" href="' + django_url +
+      '?dataview=' + e[i].id + '">&para;&nbsp;</a>';
+    e[i].note = link + e[i].note;
   }
+
+  dataview_menu.update( e );
 }
 
 function switch_dataview( view_id, view_type ) {
@@ -1288,7 +1277,8 @@ function switch_dataview( view_id, view_type ) {
       // let Django render the requested view and display it
       document.getElementById("clientside_data_view").style.display = "none";
       document.getElementById("data_view").style.display = "block";
-      load_dataview( view_id );
+      CATMAID.DataViews.get(view_id).then(handle_load_dataview)
+        .catch(handle_dataview_load_error);
     }
   };
 
@@ -1318,34 +1308,12 @@ function switch_dataview( view_id, view_type ) {
  * Load the default data view.
  */
 function load_default_dataview() {
-  requestQueue.register(django_url + 'dataviews/default',
-    'GET', undefined, handle_load_default_dataview);
+  CATMAID.DataViews.getDefaultConfig().then(function(info) {
+    switch_dataview(info.id, info.code_type);
+  }).catch(CATMAID.handleError);
 }
 
-function handle_load_default_dataview(status, text, xml) {
-  if ( status == 200 && text )
-  {
-    var e = JSON.parse(text);
-    if ( e.error )
-    {
-      alert( e.error );
-    }
-    else
-    {
-        switch_dataview( e.id, e.code_type );
-    }
-  }
-}
-
-/**
- * Load a specific data view.
- */
-function load_dataview( view_id ) {
-  requestQueue.register(django_url + 'dataviews/show/' + view_id,
-    'GET', undefined, handle_load_dataview);
-}
-
-function handle_load_dataview(status, text, xml) {
+function handle_dataview_load_error(text) {
   var data_view_container = document.getElementById("data_view");
 
   if ( !( typeof data_view_container === "undefined" || data_view_container === null ) )
@@ -1356,26 +1324,35 @@ function handle_load_dataview(status, text, xml) {
       data_view_container.removeChild( data_view_container.firstChild );
     }
 
-    // put content into data view div
-    if ( status == 200 && text )
+    // create error message
+    var error_paragraph = document.createElement( "p" );
+    data_view_container.appendChild( error_paragraph );
+    error_paragraph.appendChild( document.createTextNode(
+      "Sorry, there was a problem loading the requested data view." ) );
+    // create new error iframe
+    var error_iframe = document.createElement( "iframe" );
+    error_iframe.style.width = "100%";
+    error_iframe.style.height = "400px";
+    data_view_container.appendChild( error_iframe );
+    error_iframe.contentDocument.write( text );
+  }
+}
+
+function handle_load_dataview(text) {
+  var data_view_container = document.getElementById("data_view");
+
+  if ( !( typeof data_view_container === "undefined" || data_view_container === null ) )
+  {
+    //! remove old content
+    while ( data_view_container.firstChild )
     {
-      //! add new content
-      data_view_container.innerHTML = text;
-      // Revalidate content to lazy-load
-      CATMAID.client.blazy.revalidate();
-    } else {
-      // create error message
-      var error_paragraph = document.createElement( "p" );
-      data_view_container.appendChild( error_paragraph );
-      error_paragraph.appendChild( document.createTextNode(
-        "Sorry, there was a problem loading the requested data view." ) );
-      // create new error iframe
-      var error_iframe = document.createElement( "iframe" );
-      error_iframe.style.width = "100%";
-      error_iframe.style.height = "400px";
-      data_view_container.appendChild( error_iframe );
-      error_iframe.contentDocument.write( text );
+      data_view_container.removeChild( data_view_container.firstChild );
     }
+
+    //! add new content
+    data_view_container.innerHTML = text;
+    // Revalidate content to lazy-load
+    CATMAID.client.blazy.revalidate();
   }
 }
 

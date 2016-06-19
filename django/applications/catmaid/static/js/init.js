@@ -982,7 +982,7 @@
             reject();
             // Handle login errors
             if (e && e.permission_error) {
-              new CATMAID.LoginDialog(e.error, realInit).show();
+              new CATMAID.LoginDialog(e.error, CATMAID.initWebClient).show();
               return true;
             }
             return false;
@@ -1458,6 +1458,44 @@
     dialog.show(460, 200, true);
   };
 
+  /**
+   * Initialize CATMAID.
+   *
+   * Check browser capabilities.
+   * Parse deep link from the URL if necessary.
+   * Setup UI and windowing system.
+   *
+   * Called by the onload-handler of document.body.
+   */
+  CATMAID.initWebClient = function() {
+    // If the browser supports everything but webgl, let the user dismiss the warning message
+    if (Modernizr.opacity && Modernizr.canvas && Modernizr.svg && Modernizr.json)
+    {
+      $('#browser_unsupported .message').append($('<p><a href="#">Dismiss<a/></p>').click(function () {
+        $('#browser_unsupported').hide();
+      }));
+    }
+
+    // If promises are missing, load a polyfill then try to init again.
+    if (!Modernizr.promises)
+    {
+      var script = document.createElement('script');
+      script.type = 'text/javascript';
+      script.src = STATIC_URL_JS + 'libs/promise-polyfill/es6-promise-2.0.1.min.js';
+      script.onload = function () {
+        window.ES6Promise.polyfill();
+        Modernizr.promises = true;
+        CATMAID.initWebClient();
+      };
+      document.head.appendChild(script);
+      return;
+    }
+
+    // Initialize a new CATMAID front-end
+    var options = CATMAID.tools.parseQuery(window.location.search);
+    CATMAID.client = new CATMAID.Client(options);
+  };
+
 })(CATMAID);
 
 var requestQueue;
@@ -1474,42 +1512,3 @@ function mayEdit() {
 function mayView() {
   return checkPermission('can_annotate') || checkPermission('can_browse');
 }
-
-/**
- * Initialize CATMAID.
- *
- * Check browser capabilities.
- * Parse deep link from the URL if necessary.
- * Setup UI and windowing system.
- *
- * Called by the onload-handler of document.body.
- */
-var realInit = function()
-{
-  // If the browser supports everything but webgl, let the user dismiss the warning message
-  if (Modernizr.opacity && Modernizr.canvas && Modernizr.svg && Modernizr.json)
-  {
-    $('#browser_unsupported .message').append($('<p><a href="#">Dismiss<a/></p>').click(function () {
-      $('#browser_unsupported').hide();
-    }));
-  }
-
-  // If promises are missing, load a polyfill then try to init again.
-  if (!Modernizr.promises)
-  {
-    var script = document.createElement('script');
-    script.type = 'text/javascript';
-    script.src = STATIC_URL_JS + 'libs/promise-polyfill/es6-promise-2.0.1.min.js';
-    script.onload = function () {
-      window.ES6Promise.polyfill();
-      Modernizr.promises = true;
-      realInit();
-    };
-    document.head.appendChild(script);
-    return;
-  }
-
-  // Initialize a new CATMAID front-end
-  var options = CATMAID.tools.parseQuery(window.location.search);
-  CATMAID.client = new CATMAID.Client(options);
-};

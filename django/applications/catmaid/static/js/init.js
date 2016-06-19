@@ -301,7 +301,7 @@
     content.style.width = width + "px";
     content.style.height = height + "px";
 
-    rootFrame = rootWindow.getFrame();
+    var rootFrame = rootWindow.getFrame();
     rootFrame.style.top = top + "px";
     rootFrame.style.width = CATMAID.UI.getFrameWidth() + "px";
     rootFrame.style.height = height + "px";

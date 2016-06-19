@@ -538,6 +538,66 @@
   };
 
   /**
+   * Display the messages window.
+   */
+  Client.prototype.showMessages = (function()
+  {
+    // A reference to the currently displayed message window (if any)
+    var messageWindow = null;
+
+    return function() {
+      if ( !messageWindow )
+      {
+        messageWindow = new CMWWindow( "Messages" );
+        var messageContent = messageWindow.getFrame();
+        messageContent.style.backgroundColor = "#ffffff";
+        var messageContext = document.getElementById( "message_context" );
+        if ( messageContext.parentNode )
+          messageContext.parentNode.removeChild( messageContext );
+        messageContent.appendChild( messageContext );
+
+        messageWindow.addListener(
+          function( callingWindow, signal )
+          {
+            switch ( signal )
+            {
+            case CMWWindow.CLOSE:
+              if ( messageContext.parentNode )
+                messageContext.parentNode.removeChild( messageContext );
+              document.getElementById( "dump" ).appendChild( messageContext );
+              if ( typeof project === "undefined" || project === null )
+              {
+                rootWindow.close();
+                document.getElementById( "content" ).style.display = "block";
+              }
+              messageWindow = null;
+              break;
+            case CMWWindow.RESIZE:
+              messageContext.style.height = messageWindow.getContentHeight() + "px";
+              break;
+            }
+            return true;
+          } );
+
+        /* be the first window */
+        if ( rootWindow.getFrame().parentNode != document.body )
+        {
+          document.body.appendChild( rootWindow.getFrame() );
+          document.getElementById( "content" ).style.display = "none";
+        }
+
+        if ( rootWindow.getChild() === null )
+          rootWindow.replaceChild( messageWindow );
+        else
+          rootWindow.replaceChild( new CMWVSplitNode( messageWindow, rootWindow.getChild() ) );
+      }
+
+      messageWindow.focus();
+    };
+
+  })();
+
+  /**
    * Queue a logout request.
    * Freeze the window to wait for an answer.
    */
@@ -1427,60 +1487,3 @@ var resize = function( e )
 
   return true;
 };
-
-var showMessages = (function()
-{
-  // A reference to the currently displayed message window (if any)
-  var messageWindow = null;
-
-  return function() {
-    if ( !messageWindow )
-    {
-      messageWindow = new CMWWindow( "Messages" );
-      var messageContent = messageWindow.getFrame();
-      messageContent.style.backgroundColor = "#ffffff";
-      var messageContext = document.getElementById( "message_context" );
-      if ( messageContext.parentNode )
-        messageContext.parentNode.removeChild( messageContext );
-      messageContent.appendChild( messageContext );
-
-      messageWindow.addListener(
-        function( callingWindow, signal )
-        {
-          switch ( signal )
-          {
-          case CMWWindow.CLOSE:
-            if ( messageContext.parentNode )
-              messageContext.parentNode.removeChild( messageContext );
-            document.getElementById( "dump" ).appendChild( messageContext );
-            if ( typeof project === "undefined" || project === null )
-            {
-              rootWindow.close();
-              document.getElementById( "content" ).style.display = "block";
-            }
-            messageWindow = null;
-            break;
-          case CMWWindow.RESIZE:
-            messageContext.style.height = messageWindow.getContentHeight() + "px";
-            break;
-          }
-          return true;
-        } );
-
-      /* be the first window */
-      if ( rootWindow.getFrame().parentNode != document.body )
-      {
-        document.body.appendChild( rootWindow.getFrame() );
-        document.getElementById( "content" ).style.display = "none";
-      }
-
-      if ( rootWindow.getChild() === null )
-        rootWindow.replaceChild( messageWindow );
-      else
-        rootWindow.replaceChild( new CMWVSplitNode( messageWindow, rootWindow.getChild() ) );
-    }
-
-    messageWindow.focus();
-  };
-
-})();

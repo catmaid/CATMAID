@@ -41,6 +41,8 @@
   CATMAID.Init.EVENT_PROJECT_CHANGED = "init_project_changed";
   CATMAID.Init.EVENT_USER_CHANGED = "init_user_changed";
 
+  // User name of current user
+  var username;
 
   /**
    * CATMAID's web front-end.
@@ -385,7 +387,7 @@
             note: "",
           },
           "user_menu_entry_2": {
-            action: getAuthenticationToken,
+            action: CATMAID.getAuthenticationToken,
             title: "Get API token",
             note: ""
           }
@@ -1339,6 +1341,58 @@
           });
   };
 
+  CATMAID.getAuthenticationToken = function() {
+    var dialog = new CATMAID.OptionsDialog('API Authentication Token');
+    dialog.appendMessage('To retrieve your API authentication token, you must ' +
+                         're-enter your password.');
+    var password = dialog.appendField('Password:', 'password', '', true);
+    password.setAttribute('type', 'password');
+
+    dialog.onOK = function () {
+      CATMAID.fetch('/api-token-auth/',
+                    'POST',
+                    {username: username, password: password.value})
+          .then(function (json) {
+            var resultDialog = new CATMAID.OptionsDialog('API Authentication Token');
+            resultDialog.appendHTML('Your API token is');
+            var container = document.createElement('p');
+            var token = document.createElement('input');
+            token.setAttribute('value', json.token);
+            token.setAttribute('readonly', true);
+            token.setAttribute('size', 40);
+            var copyButton = $('<button />')
+                .button({
+                  icons: {primary: "ui-icon-clipboard"},
+                  label: 'Copy to clipboard',
+                  text: false
+                })
+                .click(function () {
+                  token.select();
+                  document.execCommand('copy');
+                });
+            container.appendChild(token);
+            container.appendChild(copyButton.get(0));
+            resultDialog.dialog.appendChild(container);
+            resultDialog.appendHTML(
+                'This token is tied to your account and shares your ' +
+                'permissions. ' +
+                'Requests using this token can do anything your account can ' +
+                'do, so <b>do not distribute this token or check it into ' +
+                'source control.</b>');
+            resultDialog.appendHTML(
+                'For help using your API token, see the ' +
+                '<a target="_blank" href="' +
+                CATMAID.makeDocURL('api.html#api-token') + '">' +
+                'API use documentation</a> and ' +
+                '<a target="_blank" href="' + CATMAID.makeURL('/apis/') + '">' +
+                'this server\'s API documentation</a>.');
+            resultDialog.show(460, 280, true);
+          });
+    };
+
+    dialog.show(460, 200, true);
+  };
+
 })(CATMAID);
 
 var global_bottom = 29;
@@ -1394,58 +1448,6 @@ function mayEdit() {
 
 function mayView() {
   return checkPermission('can_annotate') || checkPermission('can_browse');
-}
-
-function getAuthenticationToken() {
-  var dialog = new CATMAID.OptionsDialog('API Authentication Token');
-  dialog.appendMessage('To retrieve your API authentication token, you must ' +
-                       're-enter your password.');
-  var password = dialog.appendField('Password:', 'password', '', true);
-  password.setAttribute('type', 'password');
-
-  dialog.onOK = function () {
-    CATMAID.fetch('/api-token-auth/',
-                  'POST',
-                  {username: username, password: password.value})
-        .then(function (json) {
-          var resultDialog = new CATMAID.OptionsDialog('API Authentication Token');
-          resultDialog.appendHTML('Your API token is');
-          var container = document.createElement('p');
-          var token = document.createElement('input');
-          token.setAttribute('value', json.token);
-          token.setAttribute('readonly', true);
-          token.setAttribute('size', 40);
-          var copyButton = $('<button />')
-              .button({
-                icons: {primary: "ui-icon-clipboard"},
-                label: 'Copy to clipboard',
-                text: false
-              })
-              .click(function () {
-                token.select();
-                document.execCommand('copy');
-              });
-          container.appendChild(token);
-          container.appendChild(copyButton.get(0));
-          resultDialog.dialog.appendChild(container);
-          resultDialog.appendHTML(
-              'This token is tied to your account and shares your ' +
-              'permissions. ' +
-              'Requests using this token can do anything your account can ' +
-              'do, so <b>do not distribute this token or check it into ' +
-              'source control.</b>');
-          resultDialog.appendHTML(
-              'For help using your API token, see the ' +
-              '<a target="_blank" href="' +
-              CATMAID.makeDocURL('api.html#api-token') + '">' +
-              'API use documentation</a> and ' +
-              '<a target="_blank" href="' + CATMAID.makeURL('/apis/') + '">' +
-              'this server\'s API documentation</a>.');
-          resultDialog.show(460, 280, true);
-        });
-  };
-
-  dialog.show(460, 200, true);
 }
 
 /**

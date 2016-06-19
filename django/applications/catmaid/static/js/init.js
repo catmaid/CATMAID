@@ -12,6 +12,13 @@
   CATMAID.Init = {
 
     /**
+     * Interval (in milliseconds) to check client CATMAID version against server
+     * version.
+     * @type {Number}
+     */
+    CHECK_VERSION_TIMEOUT_INTERVAL: 15*60*1000,
+
+    /**
      * Check if the client CATMAID version matches the server version. If it
      * does not, disruptively prompt the user to refresh.
      */
@@ -1449,13 +1456,6 @@
 
 var requestQueue;
 var project;
-
-/**
- * Interval (in milliseconds) to check client CATMAID version against server
- * version.
- * @type {Number}
- */
-CATMAID.Init.CHECK_VERSION_TIMEOUT_INTERVAL = 15*60*1000;
 
 var rootWindow;
 

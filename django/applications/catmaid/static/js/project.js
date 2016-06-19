@@ -42,6 +42,7 @@
 
       stackViewers.push( stackViewer );
 
+      var rootWindow = CATMAID.rootWindow;
       if ( rootWindow.getChild() === null ) {
         rootWindow.replaceChild( stackViewer.getWindow() );
       } else {
@@ -256,7 +257,7 @@
 
       //! Close all windows. There is no need to explicitely call close()
       //! on the root window as this done by the last child.
-      rootWindow.closeAllChildren();
+      CATMAID.rootWindow.closeAllChildren();
 
       try
       {
@@ -452,7 +453,7 @@
 
     var tool = null;
 
-    var view = rootWindow.getFrame();
+    var view = CATMAID.rootWindow.getFrame();
     view.className = "projectView";
 
     this.coordinates = {

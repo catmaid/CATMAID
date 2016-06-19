@@ -54,7 +54,7 @@ var WindowMaker = new function()
               destroy();
             }
             if (typeof(project) === "undefined" || project === null) {
-              rootWindow.close();
+              CATMAID.rootWindow.close();
               document.getElementById("content").style.display = "none";
             } else {
               // Remove from listing
@@ -92,6 +92,7 @@ var WindowMaker = new function()
     document.getElementById("content").style.display = "none";
 
     /* be the first window */
+    var rootWindow = CATMAID.rootWindow;
     if (rootWindow.getFrame().parentNode != document.body) {
       document.body.appendChild(rootWindow.getFrame());
       document.getElementById("content").style.display = "none";
@@ -1087,6 +1088,7 @@ var WindowMaker = new function()
     document.getElementById("content").style.display = "none";
 
     /* be the first window */
+    var rootWindow = CATMAId.client.rootWindow;
     if (rootWindow.getFrame().parentNode != document.body) {
       document.body.appendChild(rootWindow.getFrame());
       document.getElementById("content").style.display = "none";
@@ -1590,7 +1592,7 @@ var WindowMaker = new function()
         switch (signal) {
           case CMWWindow.CLOSE:
             if (typeof project === undefined || project === null) {
-              rootWindow.close();
+              CATMAID.rootWindow.close();
               document.getElementById("content").style.display = "none";
             }
             else {

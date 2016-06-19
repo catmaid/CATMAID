@@ -112,6 +112,10 @@
     this.init(options);
   };
 
+  // The front end's root window. This should eventually become part of Client,
+  // it is already initialized by it.
+  CATMAID.rootWindow = null;
+
   /**
    * Initialize the CATMAID web front-end based on the passed in options.
    */
@@ -323,7 +327,7 @@
     var input_fontcolourblue = new Input( "fontcolourblue", 3, function( e ){ return true; }, 0 );
     document.getElementById( "input_fontcolourblue" ).appendChild( input_fontcolourblue.getView() );
 
-    rootWindow = new CMWRootNode();
+    CATMAID.rootWindow = new CMWRootNode();
     CATMAID.ui.registerEvent( "onresize", resize );
 
     // change global bottom bar height, hide the copyright notice
@@ -353,12 +357,12 @@
     content.style.width = width + "px";
     content.style.height = height + "px";
 
-    var rootFrame = rootWindow.getFrame();
+    var rootFrame = CATMAID.rootWindow.getFrame();
     rootFrame.style.top = top + "px";
     rootFrame.style.width = CATMAID.UI.getFrameWidth() + "px";
     rootFrame.style.height = height + "px";
 
-    rootWindow.redraw();
+    CATMAID.rootWindow.redraw();
 
     return true;
   };
@@ -648,7 +652,7 @@
               document.getElementById( "dump" ).appendChild( messageContext );
               if ( typeof project === "undefined" || project === null )
               {
-                rootWindow.close();
+                CATMAID.rootWindow.close();
                 document.getElementById( "content" ).style.display = "block";
               }
               messageWindow = null;
@@ -659,6 +663,8 @@
             }
             return true;
           } );
+
+        var rootWindow = CATMAID.rootWindow;
 
         /* be the first window */
         if ( rootWindow.getFrame().parentNode != document.body )
@@ -767,7 +773,7 @@
     var create_handler = function( id, code_type ) {
       return function() {
         // close any open project and its windows
-        rootWindow.closeAllChildren();
+        CATMAID.rootWindow.closeAllChildren();
         // open data view
         CATMAID.client.switch_dataview( id, code_type );
       };
@@ -1139,7 +1145,7 @@
     if (3 === stackViewers.length && orientations[Stack.ORIENTATION_XY] &&
         orientations[Stack.ORIENTATION_XZ] && orientations[Stack.ORIENTATION_ZY]) {
       // Test if a fourth window has to be created
-      var windows = rootWindow.getWindows();
+      var windows = CATMAID.rootWindow.getWindows();
       if (3 === windows.length) {
         // Create fourth window for nicer layout
         WindowMaker.create('keyboard-shortcuts');
@@ -1154,7 +1160,7 @@
       var zyWin = orientations[Stack.ORIENTATION_ZY].getWindow();
 
       // Find fourth window
-      var extraWin = rootWindow.getWindows().filter(function(w) {
+      var extraWin = CATMAID.rootWindow.getWindows().filter(function(w) {
         return w !== xyWin && w !== xzWin && w !== zyWin;
       });
 
@@ -1166,7 +1172,7 @@
       // Arrange windows in four-pane layout
       var left = new CMWVSplitNode(xyWin, xzWin);
       var right = new CMWVSplitNode(zyWin, extraWin[0]);
-      rootWindow.replaceChild(new CMWHSplitNode(left, right));
+      CATMAID.rootWindow.replaceChild(new CMWHSplitNode(left, right));
     }
   };
 
@@ -1456,8 +1462,6 @@
 
 var requestQueue;
 var project;
-
-var rootWindow;
 
 function checkPermission(p) {
   return CATMAID.hasPermission(project.getId(), p);

@@ -1025,7 +1025,7 @@
       than one stack linked to the current project, a submenu for easy
       access is generated. */
       stack_menu.update();
-      getStackMenuInfo(project.id, function(stacks) {
+      CATMAID.getStackMenuInfo(project.id, function(stacks) {
         if (stacks.length > 1)
         {
           var stack_menu_content = [];
@@ -1315,6 +1315,30 @@
     $('#project_list_message').text(text);
   }
 
+  /**
+   * Retrieve stack menu information from the back-end and
+   * executes a callback on success.
+   *
+   * @param  {number}            project_id  ID of the project to retrieve
+   * @param  {function(object)=} callback    Callback to receive the response
+   *                                         stack information object.
+   */
+  CATMAID.getStackMenuInfo = function(project_id, callback) {
+      requestQueue.register(django_url + project_id + '/stacks',
+          'GET', undefined, function(status, text, xml) {
+              if (status == 200 && text) {
+                  var e = $.parseJSON(text);
+                  if (e.error) {
+                      alert(e.error);
+                  } else if (callback){
+                      callback(e);
+                  }
+              } else {
+                  alert("Sorry, the stacks for the current project couldn't be retrieved.");
+              }
+          });
+  };
+
 })(CATMAID);
 
 var global_bottom = 29;
@@ -1422,30 +1446,6 @@ function getAuthenticationToken() {
   };
 
   dialog.show(460, 200, true);
-}
-
-/**
- * Retrieve stack menu information from the back-end and
- * executes a callback on success.
- *
- * @param  {number}            project_id  ID of the project to retrieve
- * @param  {function(object)=} callback    Callback to receive the response
- *                                         stack information object.
- */
-function getStackMenuInfo(project_id, callback) {
-    requestQueue.register(django_url + project_id + '/stacks',
-        'GET', undefined, function(status, text, xml) {
-            if (status == 200 && text) {
-                var e = $.parseJSON(text);
-                if (e.error) {
-                    alert(e.error);
-                } else if (callback){
-                    callback(e);
-                }
-            } else {
-                alert("Sorry, the stacks for the current project couldn't be retrieved.");
-            }
-        });
 }
 
 /**

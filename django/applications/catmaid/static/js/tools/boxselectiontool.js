@@ -202,7 +202,7 @@
   {
       var self = this;
       // make sure the tool knows all (and only) open projecs
-      getStackMenuInfo(project.id, function(stacks) {
+      CATMAID.getStackMenuInfo(project.id, function(stacks) {
           $.each(stacks, function(i, s) {
               var id = s.id;
               var opened_stacks = project.getViewersForStack( id );

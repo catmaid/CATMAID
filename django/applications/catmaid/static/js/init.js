@@ -83,6 +83,9 @@
   // Height of status bar
   var global_bottom = 29;
 
+  // A reference to the currently displayed data view
+  var current_dataview;
+
 
   /**
    * CATMAID's web front-end.
@@ -1446,8 +1449,6 @@
 
 var requestQueue;
 var project;
-
-var current_dataview;
 
 /**
  * Interval (in milliseconds) to check client CATMAID version against server

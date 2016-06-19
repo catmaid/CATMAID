@@ -318,7 +318,7 @@
         document.getElementById("message_box").style.display = "block";
 
         // Check for unread messages
-        check_messages();
+        CATMAID.client.check_messages();
 
         // Update user menu
         user_menu.update({
@@ -375,6 +375,136 @@
     } else
     return true;
   }
+
+  /**
+   * Check if there are new messages for the current user.
+   */
+  Client.prototype.check_messages = (function() {
+
+    // The date of the last unread message
+    var latest_message_date = null;
+
+    return function() {
+      requestQueue.register(django_url + 'messages/latestunreaddate', 'GET',
+          undefined, CATMAID.jsonResponseHandler(function(data) {
+            // If there is a newer latest message than we know of, get all
+            // messages to display them in the message menu and widget.
+            if (data.latest_unread_date) {
+              if (!latest_message_date || latest_message_date < data.latest_unread_date) {
+                // Save the date and get all messages
+                latest_message_date = data.latest_unread_date;
+                get_messages();
+                return;
+              }
+            }
+
+            // Check again later
+            msg_timeout = window.setTimeout(CATMAID.client.check_messages,
+                MSG_TIMEOUT_INTERVAL);
+          }, function () {
+            msg_timeout = window.setTimeout(CATMAID.client.check_messages,
+                MSG_TIMEOUT_INTERVAL);
+            CATMAID.statusBar.replaceLast('Unable to check for messages (network may be disconnected).');
+            return true;
+          }));
+    };
+  })();
+
+  /**
+   * Retrieve user messages.
+   */
+  Client.prototype.get_messages = function() {
+    requestQueue.register(django_url + 'messages/list', 'GET', undefined, handle_message);
+  };
+
+  /**
+   * Handle use message request response.
+   *
+   * @param  {number}    status             XHR response status.
+   * @param  {string}    text               XHR response content.
+   * @param  {Object}    xml                XHR response XML (unused).
+   */
+  function handle_message( status, text, xml )
+  {
+    if ( !session )
+      return;
+
+    if ( status == 200 && text )
+    {
+      var e = JSON.parse(text);
+      if ( e.error )
+      {
+        alert( e.error );
+      }
+      else
+      {
+        var message_container = document.getElementById( "message_container" );
+        if ( !( typeof message_container === "undefined" || message_container === null ) )
+        {
+          //! remove old messages
+          while ( message_container.firstChild ) message_container.removeChild( message_container.firstChild );
+
+          //! add new messages
+          var n = 0;
+          for ( var i in e )
+          {
+            if (e [ i ].id == -1) {
+              var notifications_count = e [ i ].notification_count;
+              var notifications_button_img = $('#data_button_notifications_img');
+              if (notifications_button_img !== undefined) {
+                if (notifications_count > 0)
+                  notifications_button_img.attr('src', STATIC_URL_JS + 'images/table_notifications_open.svg');
+                else
+                  notifications_button_img.attr('src', STATIC_URL_JS + 'images/table_notifications.svg');
+              }
+
+              delete e [ i ];
+            } else {
+              var timeFormatted = (new Date(e[i].time)).toLocaleString();
+              e[ i ].action = django_url + 'messages/mark_read?id=' + e[ i ].id;
+              e[ i ].note = timeFormatted;
+              ++n;
+              var dt = document.createElement( "dt" );
+              dt.appendChild( document.createTextNode( timeFormatted ) );
+              var dd1 = document.createElement( "dd" );
+              var dd1a = document.createElement( "a" );
+              dd1a.href = e[ i ].action;
+              dd1a.target = '_blank';
+              dd1a.appendChild( document.createTextNode( e[ i ].title ) );
+              dd1.appendChild( dd1a );
+              var dd2 = document.createElement( "dd" );
+              dd2.innerHTML = e[ i ].text;
+              message_container.appendChild( dt );
+              message_container.appendChild( dd1 );
+              message_container.appendChild( dd2 );
+            }
+          }
+          message_menu.update( e );
+          // Make all message links open in a new page
+          var links = message_menu.getView().querySelectorAll('a');
+          for (var j=0; j<links.length; ++j) {
+            links[j].target = '_blank';
+          }
+          if ( n > 0 ) document.getElementById( "message_menu_text" ).className = "alert";
+          else document.getElementById( "message_menu_text" ).className = "";
+        }
+
+      }
+    }
+
+    msg_timeout = window.setTimeout( CATMAID.client.check_messages, MSG_TIMEOUT_INTERVAL );
+  }
+
+  /**
+   * Mark a message as read
+   *
+   * @param  {number} id ID of the message to mark as read.
+   */
+  Client.prototype.read_message = function(id) {
+    requestQueue.register(django_url + 'messages/mark_read', 'POST', {
+      id: id
+    }, null);
+  };
 
   // Export Client
   CATMAID.Client = Client;
@@ -1103,134 +1233,6 @@ CATMAID.Init.checkVersion = function () {
         }));
 };
 window.setTimeout(CATMAID.Init.checkVersion, CATMAID.Init.CHECK_VERSION_TIMEOUT_INTERVAL);
-
-/**
- * Check if there are new messages for the current user.
- */
-var check_messages = (function() {
-
-  // The date of the last unread message
-  var latest_message_date = null;
-
-  return function() {
-    requestQueue.register(django_url + 'messages/latestunreaddate', 'GET',
-        undefined, CATMAID.jsonResponseHandler(function(data) {
-          // If there is a newer latest message than we know of, get all
-          // messages to display them in the message menu and widget.
-          if (data.latest_unread_date) {
-            if (!latest_message_date || latest_message_date < data.latest_unread_date) {
-              // Save the date and get all messages
-              latest_message_date = data.latest_unread_date;
-              get_messages();
-              return;
-            }
-          }
-
-          // Check again later
-          msg_timeout = window.setTimeout(check_messages, MSG_TIMEOUT_INTERVAL);
-        }, function () {
-          msg_timeout = window.setTimeout(check_messages, MSG_TIMEOUT_INTERVAL);
-          CATMAID.statusBar.replaceLast('Unable to check for messages (network may be disconnected).');
-          return true;
-        }));
-  };
-})();
-
-/**
- * Retrieve user messages.
- */
-function get_messages() {
-  requestQueue.register(django_url + 'messages/list', 'GET', undefined, handle_message);
-}
-
-/**
- * Handle use message request response.
- *
- * @param  {number}    status             XHR response status.
- * @param  {string}    text               XHR response content.
- * @param  {Object}    xml                XHR response XML (unused).
- */
-function handle_message( status, text, xml )
-{
-  if ( !session )
-    return;
-
-  if ( status == 200 && text )
-  {
-    var e = JSON.parse(text);
-    if ( e.error )
-    {
-      alert( e.error );
-    }
-    else
-    {
-      var message_container = document.getElementById( "message_container" );
-      if ( !( typeof message_container === "undefined" || message_container === null ) )
-      {
-        //! remove old messages
-        while ( message_container.firstChild ) message_container.removeChild( message_container.firstChild );
-
-        //! add new messages
-        var n = 0;
-        for ( var i in e )
-        {
-          if (e [ i ].id == -1) {
-            var notifications_count = e [ i ].notification_count;
-            var notifications_button_img = $('#data_button_notifications_img');
-            if (notifications_button_img !== undefined) {
-              if (notifications_count > 0)
-                notifications_button_img.attr('src', STATIC_URL_JS + 'images/table_notifications_open.svg');
-              else
-                notifications_button_img.attr('src', STATIC_URL_JS + 'images/table_notifications.svg');
-            }
-
-            delete e [ i ];
-          } else {
-            var timeFormatted = (new Date(e[i].time)).toLocaleString();
-            e[ i ].action = django_url + 'messages/mark_read?id=' + e[ i ].id;
-            e[ i ].note = timeFormatted;
-            ++n;
-            var dt = document.createElement( "dt" );
-            dt.appendChild( document.createTextNode( timeFormatted ) );
-            var dd1 = document.createElement( "dd" );
-            var dd1a = document.createElement( "a" );
-            dd1a.href = e[ i ].action;
-            dd1a.target = '_blank';
-            dd1a.appendChild( document.createTextNode( e[ i ].title ) );
-            dd1.appendChild( dd1a );
-            var dd2 = document.createElement( "dd" );
-            dd2.innerHTML = e[ i ].text;
-            message_container.appendChild( dt );
-            message_container.appendChild( dd1 );
-            message_container.appendChild( dd2 );
-          }
-        }
-        message_menu.update( e );
-        // Make all message links open in a new page
-        var links = message_menu.getView().querySelectorAll('a');
-        for (var j=0; j<links.length; ++j) {
-          links[j].target = '_blank';
-        }
-        if ( n > 0 ) document.getElementById( "message_menu_text" ).className = "alert";
-        else document.getElementById( "message_menu_text" ).className = "";
-      }
-
-    }
-  }
-
-  msg_timeout = window.setTimeout( check_messages, MSG_TIMEOUT_INTERVAL );
-}
-
-/**
- * Mark a message as read
- *
- * @param  {number} id ID of the message to mark as read.
- */
-function read_message(id) {
-  requestQueue.register(django_url + 'messages/mark_read', 'POST', {
-    id: id
-  }, null);
-}
 
 /**
  * Retrieve data views.

@@ -41,8 +41,31 @@
   CATMAID.Init.EVENT_PROJECT_CHANGED = "init_project_changed";
   CATMAID.Init.EVENT_USER_CHANGED = "init_user_changed";
 
-  // Message menu in top bar
+  /**
+   * A menu showing available data views.
+   * @type {Menu}
+   */
+  var dataview_menu;
+  /**
+   * A menu for all visible projets.
+   * @type {Menu}
+   */
+  var project_menu;
+  /**
+   * A menu for all stacks in the current project.
+   * @type {Menu}
+   */
+  var stack_menu;
+  /**
+   * A menu for message related links.
+   * @type {Menu}
+   */
   var message_menu;
+  /**
+   * A menu for user related links.
+   * @type {Menu}
+   */
+  var user_menu;
 
   // User name of current user
   var username;
@@ -53,6 +76,12 @@
    * @type {Number}
    */
   var MSG_TIMEOUT_INTERVAL = 60000;
+
+  // Previously loaded projects
+  var cachedProjectsInfo = null;
+
+  // Height of status bar
+  var global_bottom = 29;
 
 
   /**
@@ -1406,25 +1435,10 @@
 
 })(CATMAID);
 
-var global_bottom = 29;
-
 var requestQueue;
 var project;
 
-var cachedProjectsInfo = null;
-
 var current_dataview;
-var dataview_menu;
-
-var project_menu;
-
-var stack_menu;
-
-/**
- * A menu for user related links.
- * @type {Menu}
- */
-var user_menu;
 
 var session;
 /**

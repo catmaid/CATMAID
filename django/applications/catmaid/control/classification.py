@@ -1736,7 +1736,7 @@ class ClassificationSearchWizard(SessionWizardView):
                 matches = True
                 # All features of one ontology must match
                 for f in ontologies_to_features[o]:
-                    print("Check if graph {} instantiates feature {}".format(g.id, f.id))
+                    print("Check if graph {} instantiates feature {}".format(g.id, f))
                     if graph_instanciates_feature(g, f):
                         continue
                     else:

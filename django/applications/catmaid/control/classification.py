@@ -1823,7 +1823,7 @@ class ClassificationSearchWizard(SessionWizardView):
         # Build project index
         project_index = dict([(p.id, p) for p in Project.objects.all()])
 
-        return render(request, 'catmaid/classification/search_report.html', {
+        return render(self.request, 'catmaid/classification/search_report.html', {
             'project_ids': project_ids,
             'matching_graphs': matching_graphs,
             'cg_to_pids': cg_to_pids,

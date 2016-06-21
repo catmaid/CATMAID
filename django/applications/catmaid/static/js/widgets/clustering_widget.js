@@ -392,15 +392,14 @@
         "plugins": ["themes", "json_data", "ui", "crrm", "types", "dnd", "contextmenu"],
         "json_data": {
         "ajax": {
-          "url": django_url + pid + '/ontology/list',
+          "url": CATMAID.makeURL(pid + '/ontology/list'),
           "data": function (n) {
           var expandRequest, parentName, parameters;
           // depending on which type of node it is, display those
           // the result is fed to the AJAX request `data` option
           parameters = {
-            "pid": pid,
-            "parenttype": n.attr ? n.attr("rel") : "relation",
-            "parentid": n.attr ? n.attr("id").replace("node_", "") : 0
+            "parenttype": n.type ? n.type : "relation",
+            "parentid": n.type === "root" ? n.id : 0
           };
           // if a specific root class is requested, add it to the request
           if (root_class) {
@@ -415,14 +414,14 @@
           return parameters;
           },
           "success": function (e) {
-          if (e.warning) {
-            $("#ontology_warnings").html("Warning: " + e.warning);
-          } else {
-            $("#ontology_warnings").html("");
-          }
-          if (e.error) {
-            alert(e.error);
-          }
+            if (e.warning) {
+              $("#ontology_warnings").html("Warning: " + e.warning);
+            } else {
+              $("#ontology_warnings").html("");
+            }
+            if (e.error) {
+              alert(e.error);
+            }
           }
         },
         "progressive_render": true
@@ -431,13 +430,6 @@
         "select_limit": 1,
         "select_multiple_modifier": "ctrl",
         "selected_parent_close": "deselect"
-        },
-
-        "themes": {
-        "theme": "classic",
-        "url": STATIC_URL_JS + "libs/jsTree/classic/style.css",
-        "dots": true,
-        "icons": true
         },
         "contextmenu": {
         "items": function (obj) {
@@ -450,7 +442,6 @@
               "separator_before": false,
               "separator_after": false,
               "label": "Relate a class to this one",
-              "_class": "wider-context-menu",
               "action": function (obj) {
                 return CATMAID.OntologyEditor.create_link_handler(this, pid, obj, tree_id);
                }
@@ -459,7 +450,6 @@
               "separator_before": true,
               "separator_after": false,
               "label": "Remove all class-class links",
-              "_class": "wider-context-menu",
               "action": function (obj) {
                 // assure that this was on purpose
                 if (confirm("Are you sure you want to remove all ontology class-class links?")) {
@@ -530,7 +520,6 @@
                   "separator_before": false,
                   "separator_after": false,
                   "label": r_name,
-                  "_class": "even-wider-context-menu",
                   "action": function(rid) {
                     return function (obj) {
                       return CATMAID.OntologyEditor.remove_restriction(pid, obj, rid);
@@ -553,7 +542,6 @@
             menu["remove_parent_links"] = {
               "separator_before": true,
               "separator_after": false,
-              "_class": "wider-context-menu",
               "label": "Remove parent relation link",
               "action": function (obj) {
                 // assure that this was on purpose
@@ -569,7 +557,6 @@
               "separator_before": false,
               "separator_after": false,
               "label": "Relate a class with this relation",
-              "_class": "wider-context-menu",
               "action": function (obj) {
                 return CATMAID.OntologyEditor.create_link_handler(this, pid, obj, tree_id);
                }
@@ -578,11 +565,10 @@
               "separator_before": true,
               "separator_after": false,
               "label": "Remove all links with this relation",
-              "_class": "wider-context-menu",
               "action": function (obj) {
                 // assure that this was on purpose
                 if (confirm("Are you sure you want to remove all ontology class-class links that use this relation?")) {
-                  var rel_id = obj.attr('id').replace("node_", "");
+                  var rel_id = obj.id;
                   var class_b_id = obj.attr('classbid');
                   return CATMAID.OntologyEditor.remove_selected_links_handler(pid, rel_id, class_b_id, tree_id);
                 }

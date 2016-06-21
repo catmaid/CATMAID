@@ -283,14 +283,6 @@ div#ontology_editor_widget div#ontology_warnings {
   color: red;
 }
 
-.wider-context-menu {
-  min-width: 220px;
-}
-
-.even-wider-context-menu {
-  min-width: 235px;
-}
-
 div#classification_graph_object a {
   padding-bottom: 2px;
 }

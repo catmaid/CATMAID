@@ -192,6 +192,15 @@ None.
 - `POST /{project_id}/annotations/query-targets`:
   Parameter `types` now correctly parses with and without explicit indices.
 
+- `GET /{project_id}/ontology/list`:
+  Return format has been made simpler, contains still same information.
+
+- `GET /{project_id}/ontology/relations/list`:
+  Return format has been made simpler, contains still same information.
+
+- `GET /{project_id}/ontology/classes/list`:
+  Return format has been made simpler, contains still same information.
+
 ### Deprecations
 
 None.

@@ -1605,7 +1605,8 @@ def graph_instanciates_feature_complex(graph, feature):
         return True
     else:
         # More than one?
-        raise Exception('Found more than one ontology node link of one class instance.')
+        raise Exception('Found more than one ({}) ontology node links of '
+            'one class instance.'.format(num_links))
 
 def graphs_instanciate_feature(graphlist, feature):
     """ A delegate method to be able to use different implementations in a

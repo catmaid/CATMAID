@@ -61,57 +61,56 @@
 
       tree.jstree({
         "core": {
-        "html_titles": false
+          "html_titles": false
         },
         "plugins": ["themes", "json_data", "ui", "crrm", "types", "dnd", "contextmenu"],
         "json_data": {
-        "ajax": {
-          "url": django_url + pid + '/ontology/list',
-          "data": function (n) {
-          var expandRequest, parentName, parameters;
-          // depending on which type of node it is, display those
-          // the result is fed to the AJAX request `data` option
-          parameters = {
-            "pid": pid,
-            "parenttype": n.attr ? n.attr("rel") : "relation",
-            "parentid": n.attr ? n.attr("id").replace("node_", "") : 0
-          };
-          // if a specific root class is requested, add it to the request
-          if (root_class) {
-            parameters["rootclass"] = root_class;
-          }
-          if (n[0]) {
-            parameters['parentname'] = n[0].innerText;
-          }
-          if (n.attr && n.attr("rel") == "relation") {
-            parameters['classbid'] = n.attr("classbid");
-          }
-          return parameters;
+          "ajax": {
+            "url": django_url + pid + '/ontology/list',
+            "data": function (n) {
+              var expandRequest, parentName, parameters;
+              // depending on which type of node it is, display those
+              // the result is fed to the AJAX request `data` option
+              parameters = {
+                "pid": pid,
+                "parenttype": n.attr ? n.attr("rel") : "relation",
+                "parentid": n.attr ? n.attr("id").replace("node_", "") : 0
+              };
+              // if a specific root class is requested, add it to the request
+              if (root_class) {
+                parameters["rootclass"] = root_class;
+              }
+              if (n[0]) {
+                parameters['parentname'] = n[0].innerText;
+              }
+              if (n.attr && n.attr("rel") == "relation") {
+                parameters['classbid'] = n.attr("classbid");
+              }
+              return parameters;
+            },
+            "success": function (e) {
+              if (e.warning) {
+                $("#ontology_warnings").html("Warning: " + e.warning);
+              } else {
+                $("#ontology_warnings").html("");
+              }
+              if (e.error) {
+                alert(e.error);
+              }
+            }
           },
-          "success": function (e) {
-          if (e.warning) {
-            $("#ontology_warnings").html("Warning: " + e.warning);
-          } else {
-            $("#ontology_warnings").html("");
-          }
-          if (e.error) {
-            alert(e.error);
-          }
-          }
-        },
-        "progressive_render": true
+          "progressive_render": true
         },
         "ui": {
-        "select_limit": 1,
-        "select_multiple_modifier": "ctrl",
-        "selected_parent_close": "deselect"
+          "select_limit": 1,
+          "select_multiple_modifier": "ctrl",
+          "selected_parent_close": "deselect"
         },
-
         "themes": {
-        "theme": "classic",
-        "url": STATIC_URL_JS + "libs/jsTree/classic/style.css",
-        "dots": true,
-        "icons": true
+          "theme": "classic",
+          "url": STATIC_URL_JS + "libs/jsTree/classic/style.css",
+          "dots": true,
+          "icons": true
         },
         "contextmenu": {
         "items": function (obj) {
@@ -167,21 +166,22 @@
             };
 
             menu = {
-            "add_class_with_relation": {
-              "separator_before": false,
-              "separator_after": false,
-              "label": "Relate a class to this one",
-              "action": function (obj) {
-                return self.create_link_handler(this, pid, obj, tree_id);
-               }
-            },
-            "add_restriction": {
-              "separator_before": true,
-              "separator_after": false,
-              "_disabled": false,
-              "label": "Add restriction",
-              "submenu": add_restriction_submenu
-            }};
+              "add_class_with_relation": {
+                "separator_before": false,
+                "separator_after": false,
+                "label": "Relate a class to this one",
+                "action": function (obj) {
+                  return self.create_link_handler(this, pid, obj, tree_id);
+                 }
+              },
+              "add_restriction": {
+                "separator_before": true,
+                "separator_after": false,
+                "_disabled": false,
+                "label": "Add restriction",
+                "submenu": add_restriction_submenu
+              }
+            };
 
             // if there are restrictions present, offer to remove them
             var has_restrictions = false;
@@ -345,112 +345,112 @@
 
       tree.jstree({
         "core": {
-        "html_titles": false
+          "html_titles": false
         },
         "plugins": ["themes", "json_data", "ui", "crrm", "types", "dnd", "contextmenu"],
         "json_data": {
-        "ajax": {
-          "url": django_url + pid + '/ontology/relations/list',
-          "data": function (n) {
-          var expandRequest, parentName, parameters;
-          // depending on which type of node it is, display those
-          // the result is fed to the AJAX request `data` option
-          parameters = {
-            "pid": pid,
-            "parentid": n.attr ? n.attr("id").replace("node_", "") : 0
-          };
-          return parameters;
+          "ajax": {
+            "url": django_url + pid + '/ontology/relations/list',
+            "data": function (n) {
+              var expandRequest, parentName, parameters;
+              // depending on which type of node it is, display those
+              // the result is fed to the AJAX request `data` option
+              parameters = {
+                "pid": pid,
+                "parentid": n.attr ? n.attr("id").replace("node_", "") : 0
+              };
+              return parameters;
+            },
+            "success": function (e) {
+              if (e.error) {
+                alert(e.error);
+              }
+            }
           },
-          "success": function (e) {
-          if (e.error) {
-            alert(e.error);
-          }
-          }
-        },
-        "progressive_render": true
+          "progressive_render": true
         },
         "ui": {
-        "select_limit": 1,
-        "select_multiple_modifier": "ctrl",
-        "selected_parent_close": "deselect"
+          "select_limit": 1,
+          "select_multiple_modifier": "ctrl",
+          "selected_parent_close": "deselect"
         },
 
         "themes": {
-        "theme": "classic",
-        "url": STATIC_URL_JS + "libs/jsTree/classic/style.css",
-        "dots": true,
-        "icons": true
+          "theme": "classic",
+          "url": STATIC_URL_JS + "libs/jsTree/classic/style.css",
+          "dots": true,
+          "icons": true
         },
         "contextmenu": {
-        "items": function (obj) {
-          var type_of_node = obj.attr("rel");
-          var menu = {};
-          if (type_of_node === "root") {
-            menu = {
-            "add_relation": {
-              "separator_before": false,
-              "separator_after": false,
-              "label": "Add new relation",
-              "action": function (obj) {
-                return self.create_relation_handler(pid, tree_id);
-               }
-            },
-            "remove_all_relations": {
-              "separator_before": true,
-              "separator_after": false,
-              "label": "Remove all relations",
-              "action": function (obj) {
-                // assure that this was on purpose
-                if (confirm("Are you sure you want to remove all ontology relations?")) {
-                  return self.remove_all_relations_handler(pid, tree_id);
-                }
-               }
-            }
-            };
-          } else if (type_of_node === "relation") {
-            menu = {
-            "rename_relation": {
-              "separator_before": false,
-              "separator_after": false,
-              "label": "Rename relation",
-              "action": function (obj) {
-                var rel_id = obj.attr('id').replace("node_", "");
-                var rel_name = obj.attr('name');
-                return self.rename_relation_handler(
-                  rel_id, rel_name, pid, tree_id);
-               }
-            },
-            "remove_relation": {
-              "separator_before": false,
-              "separator_after": false,
-              "label": "Remove relation",
-              "action": function (obj) {
-                // assure that this was on purpose
-                if (confirm("Are you sure you want to remove this relation?")) {
+          "items": function (obj) {
+            var type_of_node = obj.attr("rel");
+            var menu = {};
+            if (type_of_node === "root") {
+              menu = {
+              "add_relation": {
+                "separator_before": false,
+                "separator_after": false,
+                "label": "Add new relation",
+                "action": function (obj) {
+                  return self.create_relation_handler(pid, tree_id);
+                 }
+              },
+              "remove_all_relations": {
+                "separator_before": true,
+                "separator_after": false,
+                "label": "Remove all relations",
+                "action": function (obj) {
+                  // assure that this was on purpose
+                  if (confirm("Are you sure you want to remove all ontology relations?")) {
+                    return self.remove_all_relations_handler(pid, tree_id);
+                  }
+                 }
+              }
+              };
+            } else if (type_of_node === "relation") {
+              menu = {
+              "rename_relation": {
+                "separator_before": false,
+                "separator_after": false,
+                "label": "Rename relation",
+                "action": function (obj) {
                   var rel_id = obj.attr('id').replace("node_", "");
-                  return self.remove_relation_handler(pid, rel_id, tree_id);
-                }
-               }
+                  var rel_name = obj.attr('name');
+                  return self.rename_relation_handler(
+                    rel_id, rel_name, pid, tree_id);
+                 }
+              },
+              "remove_relation": {
+                "separator_before": false,
+                "separator_after": false,
+                "label": "Remove relation",
+                "action": function (obj) {
+                  // assure that this was on purpose
+                  if (confirm("Are you sure you want to remove this relation?")) {
+                    var rel_id = obj.attr('id').replace("node_", "");
+                    return self.remove_relation_handler(pid, rel_id, tree_id);
+                  }
+                 }
+              }
+              };
             }
-            };
+            return menu;
           }
-          return menu;
-        }
         },
         "crrm": {},
         "types": {
-        "types": {
-          "root": {
-            "icon": {
-              "image": STATIC_URL_JS + "images/ontology_root.png"
+          "types": {
+            "root": {
+              "icon": {
+                "image": STATIC_URL_JS + "images/ontology_root.png"
+              },
             },
-          },
-          "relation": {
-            "icon": {
-              "image": STATIC_URL_JS + "images/ontology_relation.png"
-            },
+            "relation": {
+              "icon": {
+                "image": STATIC_URL_JS + "images/ontology_relation.png"
+              },
+            }
           }
-        }
         }
       });
 
@@ -467,13 +467,13 @@
         // check what type of node has been created
         alert("yes");
         data = {
-        "operation": "create_node",
-        "parentid": data.rslt.parent.attr("id").replace("node_", ""),
-        "template_node_id": data.rslt.obj.attr("template_node_id"),
-        "classname": data.rslt.obj.attr("classname"),
-        "relationname": data.rslt.obj.attr("relname"),
-        "objname": data.rslt.name,
-        "pid": pid
+          "operation": "create_node",
+          "parentid": data.rslt.parent.attr("id").replace("node_", ""),
+          "template_node_id": data.rslt.obj.attr("template_node_id"),
+          "classname": data.rslt.obj.attr("classname"),
+          "relationname": data.rslt.obj.attr("relname"),
+          "objname": data.rslt.name,
+          "pid": pid
         };
 
       });
@@ -499,114 +499,114 @@
 
       tree.jstree({
         "core": {
-        "html_titles": false
+          "html_titles": false
         },
         "plugins": ["themes", "json_data", "ui", "crrm", "types", "dnd", "contextmenu"],
         "json_data": {
-        "ajax": {
-          "url": django_url + pid + '/ontology/classes/list',
-          "data": function (n) {
-          var expandRequest, parentName, parameters;
-          // depending on which type of node it is, display those
-          // the result is fed to the AJAX request `data` option
-          parameters = {
-            "pid": pid,
-            "roots": 0, // show root classes (0 or 1)?
-            "parentid": n.attr ? n.attr("id").replace("node_", "") : 0
-          };
-          return parameters;
+          "ajax": {
+            "url": django_url + pid + '/ontology/classes/list',
+            "data": function (n) {
+              var expandRequest, parentName, parameters;
+              // depending on which type of node it is, display those
+              // the result is fed to the AJAX request `data` option
+              parameters = {
+                "pid": pid,
+                "roots": 0, // show root classes (0 or 1)?
+                "parentid": n.attr ? n.attr("id").replace("node_", "") : 0
+              };
+              return parameters;
+            },
+            "success": function (e) {
+              if (e.error) {
+                alert(e.error);
+              }
+            }
           },
-          "success": function (e) {
-          if (e.error) {
-            alert(e.error);
-          }
-          }
-        },
-        "progressive_render": true
+          "progressive_render": true
         },
         "ui": {
-        "select_limit": 1,
-        "select_multiple_modifier": "ctrl",
-        "selected_parent_close": "deselect"
+          "select_limit": 1,
+          "select_multiple_modifier": "ctrl",
+          "selected_parent_close": "deselect"
         },
 
         "themes": {
-        "theme": "classic",
-        "url": STATIC_URL_JS + "libs/jsTree/classic/style.css",
-        "dots": true,
-        "icons": true
+          "theme": "classic",
+          "url": STATIC_URL_JS + "libs/jsTree/classic/style.css",
+          "dots": true,
+          "icons": true
         },
         "contextmenu": {
-        "items": function (obj) {
-          var id_of_node = obj.attr("id");
-          var type_of_node = obj.attr("rel");
-          var menu = {};
-          if (type_of_node === "root") {
-            menu = {
-            "add_class": {
-              "separator_before": false,
-              "separator_after": false,
-              "label": "Add new class",
-              "action": function (obj) {
-                return self.create_class_handler(pid, tree_id);
-               }
-            },
-            "remove_all_classes": {
-              "separator_before": true,
-              "separator_after": false,
-              "label": "Remove all classes",
-              "action": function (obj) {
-                // assure that this was on purpose
-                if (confirm("Are you sure you want to remove all ontology classes?")) {
-                  return self.remove_all_classes_handler(pid, tree_id);
-                }
-               }
-            }
-            };
-          } else if (type_of_node === "class") {
-            menu = {
-            "rename_class": {
-              "separator_before": false,
-              "separator_after": false,
-              "label": "Rename class",
-              "action": function (obj) {
-                var class_id = obj.attr('id').replace("node_", "");
-                var class_name = obj.attr('name');
-                return self.rename_class_handler(
-                  class_id, class_name, pid, tree_id);
-               }
-            },
-            "remove_class": {
-              "separator_before": false,
-              "separator_after": false,
-              "label": "Remove class",
-              "action": function (obj) {
-                // assure that this was on purpose
-                if (confirm("Are you sure you want to remove this class?")) {
+          "items": function (obj) {
+            var id_of_node = obj.attr("id");
+            var type_of_node = obj.attr("rel");
+            var menu = {};
+            if (type_of_node === "root") {
+              menu = {
+              "add_class": {
+                "separator_before": false,
+                "separator_after": false,
+                "label": "Add new class",
+                "action": function (obj) {
+                  return self.create_class_handler(pid, tree_id);
+                 }
+              },
+              "remove_all_classes": {
+                "separator_before": true,
+                "separator_after": false,
+                "label": "Remove all classes",
+                "action": function (obj) {
+                  // assure that this was on purpose
+                  if (confirm("Are you sure you want to remove all ontology classes?")) {
+                    return self.remove_all_classes_handler(pid, tree_id);
+                  }
+                 }
+              }
+              };
+            } else if (type_of_node === "class") {
+              menu = {
+              "rename_class": {
+                "separator_before": false,
+                "separator_after": false,
+                "label": "Rename class",
+                "action": function (obj) {
                   var class_id = obj.attr('id').replace("node_", "");
-                  return self.remove_class_handler(pid, class_id, tree_id);
-                }
-               }
+                  var class_name = obj.attr('name');
+                  return self.rename_class_handler(
+                    class_id, class_name, pid, tree_id);
+                 }
+              },
+              "remove_class": {
+                "separator_before": false,
+                "separator_after": false,
+                "label": "Remove class",
+                "action": function (obj) {
+                  // assure that this was on purpose
+                  if (confirm("Are you sure you want to remove this class?")) {
+                    var class_id = obj.attr('id').replace("node_", "");
+                    return self.remove_class_handler(pid, class_id, tree_id);
+                  }
+                 }
+              }
+              };
             }
-            };
+            return menu;
           }
-          return menu;
-        }
         },
         "crrm": {},
         "types": {
-        "types": {
-          "root": {
-            "icon": {
-              "image": STATIC_URL_JS + "images/ontology_root.png"
+          "types": {
+            "root": {
+              "icon": {
+                "image": STATIC_URL_JS + "images/ontology_root.png"
+              },
             },
-          },
-          "class": {
-            "icon": {
-              "image": STATIC_URL_JS + "images/ontology_class.png"
-            },
+            "class": {
+              "icon": {
+                "image": STATIC_URL_JS + "images/ontology_class.png"
+              },
+            }
           }
-        }
         }
       });
     };
@@ -724,27 +724,27 @@
         function(new_name) {
           self.display_wait_message(
             "Renaming class. Just a moment...");
-          // rename relation with AJAX call
-          requestQueue.register(django_url + pid + '/ontology/classes/rename',
-            'POST',
-            { "classid": class_id,
-              "newname": new_name, },
-            function(status, data, text) {
-              self.hide_wait_message();
-              self.handle_operation_response(status, data, text,
-                function() {
-                  self.refresh_tree(tree_id);
-                  self.show_error_status( "Success",
-                    "The class has been renamed." );
-                });
-            });
+            // rename relation with AJAX call
+            requestQueue.register(django_url + pid + '/ontology/classes/rename',
+              'POST',
+              { "classid": class_id,
+                "newname": new_name, },
+              function(status, data, text) {
+                self.hide_wait_message();
+                self.handle_operation_response(status, data, text,
+                  function() {
+                    self.refresh_tree(tree_id);
+                    self.show_error_status( "Success",
+                      "The class has been renamed." );
+                  });
+              });
         });
     };
 
     /**
      * Handles the removal of a relation.
      */
-    this.remove_relation_handler = function (pid, relation_id, tree_id) {
+    this.remove_relation_handler = function(pid, relation_id, tree_id) {
       var self = this;
       self.display_wait_message("Removing relation. Just a moment...");
       // make relation with Ajax call
@@ -1252,8 +1252,7 @@
      * Shows a JavaScript alert box with text about a request
      * status error.
      */
-    this.show_error_msg = function( status, text )
-    {
+    this.show_error_msg = function( status, text ) {
       alert("The server returned an unexpected status (" + status + ") " + "with error message:\n" + text);
     };
 

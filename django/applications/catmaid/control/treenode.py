@@ -22,6 +22,7 @@ from catmaid.control.common import get_relation_to_id_map, \
 from catmaid.control.neuron import _delete_if_empty
 from catmaid.control.node import _fetch_location, _fetch_locations
 from catmaid.control.link import create_connector_link
+from catmaid.history import record_request_action
 from catmaid.util import Point3D, is_collinear
 
 
@@ -33,6 +34,7 @@ def can_edit_treenode_or_fail(user, project_id, treenode_id):
 
 
 @requires_user_role(UserRole.Annotate)
+@record_request_action("Create new treenode")
 def create_treenode(request, project_id=None):
     """
     Add a new treenode to the database

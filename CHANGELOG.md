@@ -65,6 +65,8 @@ Miscellaneous:
 - Additive blending between layers now works also when filters are in use. This
   allows for proper in-browser composite generation.
 
+- Hidden nodes are no longer selected by G or Shift + Y.
+
 
 ## 2016.05.26
 

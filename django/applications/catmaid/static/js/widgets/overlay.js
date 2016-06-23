@@ -1230,8 +1230,7 @@ SkeletonAnnotations.TracingOverlay.prototype.getClosestNode = function (
       xdiff = x - node.x;
       ydiff = y - node.y;
       // Must discard those not within current z
-      var d = node.z - this.stackViewer.z;
-      if (d < 0 || d >= 1) continue;
+      if (!node.shouldDisplay()) continue;
       distsq = xdiff*xdiff + ydiff*ydiff;
       if (distsq < mindistsq) {
         mindistsq = distsq;
@@ -1249,7 +1248,7 @@ SkeletonAnnotations.TracingOverlay.prototype.getClosestNode = function (
  * Optionally, virtual nodes can be respceted.
  */
 SkeletonAnnotations.TracingOverlay.prototype.findAllNodesWithinRadius = function (
-    x, y, z, radius, respectVirtualNodes)
+    x, y, z, radius, respectVirtualNodes, respectHiddenNodes)
 {
   var xdiff, ydiff, zdiff, distsq, radiussq = radius * radius, node, nodeid;
 
@@ -1263,7 +1262,7 @@ SkeletonAnnotations.TracingOverlay.prototype.findAllNodesWithinRadius = function
       ydiff = y - this.pix2physY(node.z, node.y, node.x);
       zdiff = z - this.pix2physZ(node.z, node.y, node.x);
       distsq = xdiff*xdiff + ydiff*ydiff + zdiff*zdiff;
-      if (distsq < radiussq)
+      if (distsq < radiussq && (!respectHiddenNodes || node.shouldDisplay()))
         return true;
     }
 

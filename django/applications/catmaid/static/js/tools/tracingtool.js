@@ -721,7 +721,7 @@
                     activeStackViewer.primaryStack.stackToProjectX(node.z, node.y, node.x),
                     activeStackViewer.primaryStack.stackToProjectY(node.z, node.y, node.x),
                     activeStackViewer.primaryStack.stackToProjectZ(node.z, node.y, node.x),
-                    radius, respectVirtualNodes);
+                    radius, respectVirtualNodes, true);
                 selectedIDs = selectedIDs.map(function (nodeID) {
                     return activeTracingLayer.tracingOverlay.nodes[nodeID].skeleton_id;
                 }).filter(function (s) { return !isNaN(s); });

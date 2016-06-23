@@ -514,7 +514,7 @@ var project;
               if (!latest_message_date || latest_message_date < data.latest_unread_date) {
                 // Save the date and get all messages
                 latest_message_date = data.latest_unread_date;
-                get_messages();
+                CATMAID.client.get_messages();
                 return;
               }
             }

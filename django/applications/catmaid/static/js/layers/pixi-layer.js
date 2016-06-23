@@ -345,7 +345,18 @@
     this.opacity = val;
     this.visible = val >= 0.02;
     if (this.batchContainer) {
-      this.batchContainer.alpha = val;
+      // Some filters must handle opacity alpha themselves. If such a filter is
+      // applied to this layer, do not use the built-in Pixi alpha.
+      var filterBasedAlpha = false;
+
+      this.filters.forEach(function (filter) {
+        if (filter.pixiFilter.uniforms.hasOwnProperty('containerAlpha')) {
+          filter.pixiFilter.uniforms.containerAlpha = val;
+          filterBasedAlpha = true;
+        }
+      });
+
+      if (!filterBasedAlpha) this.batchContainer.alpha = val;
       this.batchContainer.visible = this.visible;
     }
   };

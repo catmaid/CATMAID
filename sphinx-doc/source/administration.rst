@@ -70,6 +70,13 @@ clone the virtualenv by calling::
    With the newer version, you have to then fake the initial migration:
    ``manage.py migrate catmaid --fake 0001_initial``.
 
+.. note::
+
+   It is advisable to go through the changelog (CHANGELOG.md file) for each
+   release that is either skipped or upgrade to. Sometimes settings change or
+   other adjustments are required, which the changelog will provide information
+   on for the respective release.
+
 Backup an restore the database
 ------------------------------
 

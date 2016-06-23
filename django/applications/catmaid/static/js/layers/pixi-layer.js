@@ -605,17 +605,14 @@
    * @constructor
    */
   PixiLayer.Filters.BrightnessContrastSaturationFilter = function () {
-    PIXI.Filter.call(this);
 
-    this.passes = [this];
-
-    this.uniforms = {
+    var uniforms = {
       brightness: {type: '1f', value: 1},
       contrast: {type: '1f', value: 1},
       saturation: {type: '1f', value: 1}
     };
 
-    this.fragmentSrc =
+    var fragmentSrc =
         'precision mediump float;' +
         'uniform float brightness;' +
         'uniform float contrast;' +
@@ -640,6 +637,8 @@
           'frag.rgb = color;' +
           'gl_FragColor = frag;' +
         '}';
+
+    PIXI.Filter.call(this, null, fragmentSrc, uniforms);
   };
 
   PixiLayer.Filters.BrightnessContrastSaturationFilter.prototype = Object.create(PIXI.Filter.prototype);
@@ -648,10 +647,10 @@
   ['brightness', 'contrast', 'saturation'].forEach(function (prop) {
     Object.defineProperty(PixiLayer.Filters.BrightnessContrastSaturationFilter.prototype, prop, {
       get: function () {
-        return this.uniforms[prop].value;
+        return this.uniforms[prop];
       },
       set: function (value) {
-        this.uniforms[prop].value = value;
+        this.uniforms[prop] = value;
       }
     });
   });
@@ -662,16 +661,13 @@
    * @constructor
    */
   PixiLayer.Filters.IntensityThresholdTransparencyFilter = function () {
-    PIXI.Filter.call(this);
 
-    this.passes = [this];
-
-    this.uniforms = {
+    var uniforms = {
       luminanceCoeff: {type: '3fv', value: [0.2125, 0.7154, 0.0721]},
       intensityThreshold: {type: '1f', value: 0.01}
     };
 
-    this.fragmentSrc =
+    var fragmentSrc =
         'precision mediump float;' +
         'uniform vec3 luminanceCoeff;' +
         'uniform float intensityThreshold;' +
@@ -688,6 +684,8 @@
         '  frag.rgb = frag.rgb * frag.a;' + // Use premultiplied RGB
         '  gl_FragColor = frag;' +
         '}';
+
+    PIXI.Filter.call(this, null, fragmentSrc, uniforms);
   };
 
   PixiLayer.Filters.IntensityThresholdTransparencyFilter.prototype = Object.create(PIXI.Filter.prototype);
@@ -696,10 +694,10 @@
   ['luminanceCoeff', 'intensityThreshold'].forEach(function (prop) {
     Object.defineProperty(PixiLayer.Filters.IntensityThresholdTransparencyFilter.prototype, prop, {
       get: function () {
-        return this.uniforms[prop].value;
+        return this.uniforms[prop];
       },
       set: function (value) {
-        this.uniforms[prop].value = value;
+        this.uniforms[prop] = value;
       }
     });
   });

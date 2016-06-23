@@ -1088,7 +1088,7 @@ var WindowMaker = new function()
     document.getElementById("content").style.display = "none";
 
     /* be the first window */
-    var rootWindow = CATMAId.client.rootWindow;
+    var rootWindow = CATMAID.client.rootWindow;
     if (rootWindow.getFrame().parentNode != document.body) {
       document.body.appendChild(rootWindow.getFrame());
       document.getElementById("content").style.display = "none";

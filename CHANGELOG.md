@@ -244,7 +244,7 @@ update an existing CATMAID instance safely, please follow these steps:
    `contenttypes` app and apply its other migrations:
 
    ```
-   python manage.py migrate contenttypes 0001_initial --fake
+   python manage.py migrate --fake contenttypes 0001_initial
    python manage.py migrate contenttypes
    ```
 
@@ -252,17 +252,17 @@ update an existing CATMAID instance safely, please follow these steps:
    Django applications to register current database state:
 
    ```
-   python manage.py migrate admin 0001_initial --fake
-   python manage.py migrate auth 0001_initial --fake
-   python manage.py migrate authtoken 0001_initial --fake
-   python manage.py migrate catmaid 0001_initial --fake
-   python manage.py migrate djcelery 0001_initial --fake
-   python manage.py migrate guardian 0001_initial --fake
-   python manage.py migrate kombu_transport_django 0001_initial --fake
-   python manage.py migrate performancetests 0001_initial --fake
-   python manage.py migrate sessions 0001_initial --fake
-   python manage.py migrate sites 0001_initial --fake
-   python manage.py migrate taggit 0001_initial --fake
+   python manage.py migrate --fake admin 0001_initial
+   python manage.py migrate --fake auth 0001_initial
+   python manage.py migrate --fake authtoken 0001_initial
+   python manage.py migrate --fake catmaid 0001_initial
+   python manage.py migrate --fake djcelery 0001_initial
+   python manage.py migrate --fake guardian 0001_initial
+   python manage.py migrate --fake kombu_transport_django 0001_initial
+   python manage.py migrate --fake performancetests 0001_initial
+   python manage.py migrate --fake sessions 0001_initial
+   python manage.py migrate --fake sites 0001_initial
+   python manage.py migrate --fake taggit 0001_initial
    ```
 
 6. In the future no syncdb step is required anymore. Continue with the rest of

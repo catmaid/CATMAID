@@ -78,7 +78,7 @@ def check_old_version(sender, **kwargs):
                 "2015.12.21 (with all migrations applied) and then move on to "
                 "the next version. Note that you have to fake the initial "
                 "migration of the newer version, i.e. before you do the "
-                "regular update steps call 'manage.py migrate catmaid --fake "
+                "regular update steps call 'manage.py migrate --fake catmaid "
                 "0001_initial'.")
 
 def validate_environment(sender, **kwargs):

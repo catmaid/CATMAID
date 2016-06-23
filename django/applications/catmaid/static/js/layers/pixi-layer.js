@@ -431,8 +431,8 @@
         {displayName: 'Width (px)', name: 'blurX', type: 'slider', range: [0, 32]},
         {displayName: 'Height (px)', name: 'blurY', type: 'slider', range: [0, 32]}
       ], this),
-      'Invert': PixiLayer.FilterWrapper.bind(null, 'Invert', PIXI.filters.InvertFilter, [
-        {displayName: 'Strength', name: 'invert', type: 'slider', range: [0, 1]}
+      'Invert': PixiLayer.FilterWrapper.bind(null, 'Invert', PixiLayer.Filters.Invert, [
+        {displayName: 'Strength', name: 'strength', type: 'slider', range: [0, 1]}
       ], this),
       'Brightness, Contrast & Saturation': PixiLayer.FilterWrapper.bind(null, 'Brightness, Contrast & Saturation', PixiLayer.Filters.BrightnessContrastSaturationFilter, [
         {displayName: 'Brightness', name: 'brightness', type: 'slider', range: [0, 3]},
@@ -612,6 +612,41 @@
    * Custom Pixi/WebGL filters.
    */
   PixiLayer.Filters = {};
+
+  /**
+   * A simple intensity inversion filter.
+   * @constructor
+   */
+  PixiLayer.Filters.Invert = function () {
+    PIXI.filters.ColorMatrixFilter.call(this);
+
+    this._strength = 1.0;
+
+    this.updateMatrix();
+  };
+
+  PixiLayer.Filters.Invert.prototype = Object.create(PIXI.Filter.prototype);
+  PixiLayer.Filters.Invert.prototype.constructor = PixiLayer.Filters.Invert;
+
+  PixiLayer.Filters.Invert.prototype.updateMatrix = function () {
+    var s = -this._strength;
+
+    this.uniforms.m = [
+      s, 0, 0, 0, 1,
+      0, s, 0, 0, 1,
+      0, 0, s, 0, 1,
+      0, 0, 0, 1, 0];
+  };
+
+  Object.defineProperty(PixiLayer.Filters.Invert.prototype, 'strength', {
+    get: function () {
+      return this._strength;
+    },
+    set: function (value) {
+      this._strength = value;
+      this.updateMatrix();
+    }
+  });
 
   /**
    * This filter allows basic linear brightness, contrast and saturation

@@ -57,6 +57,8 @@ Miscellaneous:
   requested and shown once they come into view. This improves performance
   significantly when displaying many sample images.
 
+- New filter "Label Color Map" will false-color stacks of label ID images.
+
 
 ### Bug fixes
 

@@ -446,6 +446,9 @@
         {displayName: 'Intensity Threshold', name: 'intensityThreshold', type: 'slider', range: [0, 1]},
         {displayName: 'Luminance Coefficients', name: 'luminanceCoeff', type: 'matrix', size: [1, 3]}
       ], this),
+      'Label Color Map': PixiLayer.FilterWrapper.bind(null, 'Label Color Map', PixiLayer.Filters.LabelColorMap, [
+        {displayName: 'Map Seed', name: 'seed', type: 'slider', range: [0, 1]},
+      ], this),
     };
   };
 
@@ -704,6 +707,60 @@
 
   ['luminanceCoeff', 'intensityThreshold'].forEach(function (prop) {
     Object.defineProperty(PixiLayer.Filters.IntensityThresholdTransparencyFilter.prototype, prop, {
+      get: function () {
+        return this.uniforms[prop];
+      },
+      set: function (value) {
+        this.uniforms[prop] = value;
+      }
+    });
+  });
+
+  /**
+   * This filter maps label image pixels to a false coloring. Because of Pixi's
+   * textue handling, etc., this is very lossy to distinguishing similar label
+   * values.
+   * @constructor
+   */
+  PixiLayer.Filters.LabelColorMap = function () {
+
+    var uniforms = {
+      seed: {type: '1f', value: 1.0},
+      containerAlpha: {type: '1f', value: 1.0}
+    };
+
+    var fragmentSrc =
+        'precision highp float;' +
+        'uniform float seed;' +
+        'uniform float containerAlpha;' +
+
+        'vec3 hash_to_color(vec4 label) {' +
+        '  const float SCALE = 33452.5859;' + // Some large constant to make the truncation interesting.
+        '  label = fract(label * SCALE);' + // Truncate some information.
+        '  label += dot(label, label.wzyx + 100.0 * seed);' + // Mix channels and add the salt.
+        '  return fract((label.xzy + label.ywz) * label.zyw);' + // Downmix to three channels and truncate to a color.
+        '}' +
+
+        'varying vec2 vTextureCoord;' +
+        'uniform sampler2D uSampler;' +
+
+        'void main(void) {' +
+        '  vec4 frag = texture2D(uSampler, vTextureCoord);' +
+        '  vec3 color = frag.rgb;' +
+
+        '  frag.rgb = hash_to_color(frag.rgba) * containerAlpha;' +
+        '  frag.a = containerAlpha;' +
+        '  gl_FragColor = frag;' +
+        '}';
+
+    PIXI.Filter.call(this, null, fragmentSrc, uniforms);
+  };
+
+  PixiLayer.Filters.LabelColorMap.prototype = Object.create(PIXI.Filter.prototype);
+  PixiLayer.Filters.LabelColorMap.prototype.constructor = PixiLayer.Filters.LabelColorMap;
+
+  ['seed', 'containerAlpha'].forEach(function (prop) {
+    Object.defineProperty(PixiLayer.Filters.LabelColorMap.prototype, prop, {
       get: function () {
         return this.uniforms[prop];
       },

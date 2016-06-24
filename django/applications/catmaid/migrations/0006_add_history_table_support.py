@@ -255,6 +255,39 @@ add_history_functions_sql = """
     END;
     $$;
 
+    -- Copy data from a live table into its history table.
+    CREATE OR REPLACE FUNCTION populate_history_table(live_table_schema text,
+        live_table_name regclass, history_table_name regclass, time_column text)
+        RETURNS void
+    LANGUAGE plpgsql AS
+    $$
+    DECLARE
+        start_time timestamptz;
+        end_time timestamptz;
+        delta interval;
+    BEGIN
+        RAISE NOTICE 'Adding initial history information for table %', live_table_name;
+        start_time = clock_timestamp();
+        EXECUTE (
+            SELECT format(
+                'INSERT INTO %I (%s,%s,exec_transaction_id) SELECT %s, tstzrange(%s, null), %s FROM ONLY %s.%s lt',
+                history_table_name,
+                string_agg(quote_ident(c.column_name), ','),
+                'sys_period',
+                string_agg('lt.' || quote_ident(c.column_name), ','),
+                CASE WHEN time_column IS NULL THEN 'current_timestamp' ELSE
+                    'lt.' || time_column END,
+                    txid_current(), live_table_schema, live_table_name::text)
+            FROM information_schema.columns c, pg_class pc
+            WHERE pc.oid = live_table_name
+            AND c.table_name = pc.relname
+            AND c.table_schema = live_table_schema);
+        end_time = clock_timestamp();
+        delta = 1000 * (extract(epoch from end_time) - extract(epoch from start_time));
+        RAISE NOTICE 'Execution time: %ms', delta;
+    END;
+    $$;
+
 
     -- Remove an existing history table for the passed in table
     CREATE OR REPLACE FUNCTION drop_history_table(live_table_name regclass)
@@ -391,56 +424,58 @@ remove_history_functions_sql = """
     DROP TABLE catmaid_history_table;
     DROP TABLE catmaid_transaction_info;
     DROP VIEW catmaid_inheritening_tables;
-    DROP FUNCTION create_history_table(live_table_schema text, live_table_name regclass, create_triggers boolean, copy_inheritance boolean);
-    DROP FUNCTION drop_history_table(live_table_name regclass);
-    DROP FUNCTION update_history_of_row();
-    DROP FUNCTION history_table_name(regclass);
     DROP TYPE IF EXISTS history_change_type;
+    DROP FUNCTION IF EXISTS create_history_table(live_table_schema text, live_table_name regclass, create_triggers boolean, copy_inheritance boolean);
+    DROP FUNCTION IF EXISTS drop_history_table(live_table_name regclass);
+    DROP FUNCTION IF EXISTS update_history_of_row();
+    DROP FUNCTION IF EXISTS history_table_name(regclass);
+    DROP FUNCTION IF EXISTS populate_history_table(text, regclass, regclass, text);
 """
 
 add_initial_history_tables_sql = """
     -- The list of CATMAID tables for which a history table is initially
     -- created. These are all except log and treenode_edge
     CREATE TEMPORARY TABLE temp_versioned_catmaid_table (
-        name regclass
+        name regclass,
+        time_column text
     ) ON COMMIT DROP;
     INSERT INTO temp_versioned_catmaid_table (VALUES
-        ('broken_slice'),
-        ('cardinality_restriction'),
-        ('catmaid_userprofile'),
-        ('catmaid_volume'),
-        ('change_request'),
-        ('class'),
-        ('class_class'),
-        ('class_instance'),
-        ('class_instance_class_instance'),
-        ('client_data'),
-        ('client_datastore'),
-        ('concept'),
-        ('connector'),
-        ('connector_class_instance'),
-        ('data_view'),
-        ('data_view_type'),
-        ('location'),
-        ('message'),
-        ('overlay'),
-        ('project'),
-        ('project_stack'),
-        ('region_of_interest'),
-        ('region_of_interest_class_instance'),
-        ('relation'),
-        ('relation_instance'),
-        ('restriction'),
-        ('review'),
-        ('reviewer_whitelist'),
-        ('stack'),
-        ('stack_class_instance'),
-        ('suppressed_virtual_treenode'),
-        ('textlabel'),
-        ('textlabel_location'),
-        ('treenode'),
-        ('treenode_class_instance'),
-        ('treenode_connector')
+        ('broken_slice', NULL),
+        ('cardinality_restriction', 'creation_time'),
+        ('catmaid_userprofile', NULL),
+        ('catmaid_volume', 'creation_time'),
+        ('change_request', 'creation_time'),
+        ('class', 'creation_time'),
+        ('class_class', 'creation_time'),
+        ('class_instance', 'creation_time'),
+        ('class_instance_class_instance', 'creation_time'),
+        ('client_data', NULL),
+        ('client_datastore', NULL),
+        ('concept', 'creation_time'),
+        ('connector', 'creation_time'),
+        ('connector_class_instance', 'creation_time'),
+        ('data_view', NULL),
+        ('data_view_type', NULL),
+        ('location', 'creation_time'),
+        ('message', 'time'),
+        ('overlay', NULL),
+        ('project', NULL),
+        ('project_stack', NULL),
+        ('region_of_interest', 'creation_time'),
+        ('region_of_interest_class_instance', 'creation_time'),
+        ('relation', 'creation_time'),
+        ('relation_instance', 'creation_time'),
+        ('restriction', 'creation_time'),
+        ('review', 'review_time'),
+        ('reviewer_whitelist', NULL),
+        ('stack', NULL),
+        ('stack_class_instance', 'creation_time'),
+        ('suppressed_virtual_treenode', 'creation_time'),
+        ('textlabel', 'creation_time'),
+        ('textlabel_location', NULL),
+        ('treenode', 'creation_time'),
+        ('treenode_class_instance', 'creation_time'),
+        ('treenode_connector', 'creation_time')
     );
 
     -- The list of non-CATMAID tables for which a history table is initially
@@ -473,8 +508,28 @@ add_initial_history_tables_sql = """
     SELECT create_history_table('public', t.name) FROM temp_versioned_catmaid_table t;
     SELECT create_history_table('public', t.name) FROM temp_versioned_non_catmaid_table t;
 
-    -- Populate history tables with current live table data
-"""
+    -- Populate history tables with current live table data. If a tavle is part
+    -- of an inheritence chain, only the current table is scanned and not its
+    -- descendants. This is done to avoid duplicates.
+    SELECT populate_history_table('public', tt.name,
+        ht.history_table_name::regclass, tt.time_column)
+    FROM temp_versioned_catmaid_table tt, catmaid_history_table ht
+    WHERE ht.live_table_name = tt.name AND tt.time_column IS NOT NULL;
+
+    SELECT populate_history_table('public', tt.name,
+        ht.history_table_name::regclass, NULL)
+    FROM temp_versioned_catmaid_table tt, catmaid_history_table ht
+    WHERE ht.live_table_name = tt.name AND tt.time_column IS NULL;
+
+    SELECT populate_history_table('public', tt.name,
+        ht.history_table_name::regclass, NULL)
+    FROM temp_versioned_non_catmaid_table tt, catmaid_history_table ht
+    WHERE ht.live_table_name = tt.name;
+
+    -- Add transaction information for initial data migration
+    INSERT INTO catmaid_transaction_info (transaction_id, execution_time, user_id, change_type, label)
+    VALUES (txid_current(), current_timestamp, {system_user_id}, 'Migration', 'Initial history population');
+""".format(system_user_id=get_system_user().id)
 
 remove_history_tables_sql = """
     -- Remove existing history tables and triggers
@@ -497,5 +552,5 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.RunSQL(add_history_functions_sql, remove_history_functions_sql),
-        migrations.RunSQL(add_initial_history_tables_sql, remove_history_tables_sql)
+        migrations.RunSQL(add_initial_history_tables_sql, remove_history_tables_sql),
     ]

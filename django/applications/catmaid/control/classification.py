@@ -660,10 +660,10 @@ def get_child_classes( workspace_pid, parent_ci, relation_map=None, cursor=None 
 
     return child_types
 
-def child_types_to_jstree_dict(child_types):
-    """ Converts a child type directory as created by the
-    get_child_classes function to a dictionary that can be
-    converted into JSON and consumed by jsTree.
+def describe_child_types(child_types):
+    """ Converts a child type directory as created by the get_child_classes
+    function to a dictionary that contains all required information to create
+    new child instances
     """
     json_dict = {}
     for ct in child_types:
@@ -765,7 +765,7 @@ def list_classification_graph(request, workspace_pid, project_id=None, link_id=N
             #add_template_fields( [child] )
             response_on_error = 'Could not select child classes.'
             child_types = get_child_classes( workspace_pid, cls_graph, relation_map, cursor )
-            child_types_jstree = child_types_to_jstree_dict( child_types )
+            child_types_info = describe_child_types( child_types )
 
             # Get ROI information
             roi_html, roi_links = get_rois(root_link.class_instance_b)
@@ -790,7 +790,7 @@ def list_classification_graph(request, workspace_pid, project_id=None, link_id=N
                 'linkid': root_link.id,
                 'type': 'root',
                 'rois': roi_json,
-                'child_groups': json.dumps(child_types_jstree),
+                'child_groups': child_types_info,
                 'leaf': len(child_links) > 0
             }
 
@@ -823,7 +823,7 @@ def list_classification_graph(request, workspace_pid, project_id=None, link_id=N
                 roi_json = json.dumps( [r.id for r in roi_links] )
                 # Get sub-child information
                 subchild_types = get_child_classes(workspace_pid, child, relation_map, cursor)
-                subchild_types_jstree = child_types_to_jstree_dict( subchild_types )
+                subchild_types_info = describe_child_types( subchild_types )
                 # Build title
                 if roi_html:
                     name = get_class_name(child.class_column.id, child.class_column,
@@ -840,7 +840,7 @@ def list_classification_graph(request, workspace_pid, project_id=None, link_id=N
                     'linkid': child_link.id,
                     'type': 'element',
                     'rois': roi_json,
-                    'child_groups': json.dumps(subchild_types_jstree),
+                    'child_groups': subchild_types_info,
                     'leaf': len(sub_child_links) > 0
                 }
 

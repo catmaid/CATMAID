@@ -538,9 +538,9 @@
             var node_id = node.original.oid;
             var node_type = node.type;
             if (node_type === "root" || node_type === "element") {
-              var child_groups = JSON.parse(node.original.child_groups);
               var menu = {};
               if (self.displayEditToos) {
+                var child_groups = node.original.child_groups;
                 // Add entries to create child class instances
                 for (var group_name in child_groups) {
                   var menu_id = 'add_child_' + group_name;

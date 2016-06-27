@@ -157,7 +157,7 @@ def get_treenodes_postgis(cursor, params):
       ) edges(edge_child_id)
     WHERE
           t1.project_id = %(project_id)s
-      AND (   (t1.id = t2.parent_id OR t1.parent_id = t2.id)
+      AND (   (t1.parent_id = t2.id)
            OR (t1.parent_id IS NULL AND t1.id = t2.id))
       AND edge_child_id = t1.id
     LIMIT %(limit)s

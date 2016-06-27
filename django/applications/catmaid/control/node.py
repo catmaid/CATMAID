@@ -227,7 +227,6 @@ def node_list_tuples_query(user, params, project_id, atnid, atntype, includeLabe
         crows = []
 
         if treenode_ids:
-            treenode_list = ','.join('({0})'.format(t) for t in treenode_ids)
             response_on_error = 'Failed to query connector locations.'
             cursor.execute('''
             SELECT c.id,
@@ -244,8 +243,8 @@ def node_list_tuples_query(user, params, project_id, atnid, atntype, includeLabe
                 c.edition_time
             FROM treenode_connector tc
             INNER JOIN connector c ON (tc.connector_id = c.id)
-            INNER JOIN (VALUES %s) vals(v) ON tc.treenode_id = v
-                           ''' % treenode_list)
+            INNER JOIN UNNEST(%s) vals(v) ON tc.treenode_id = v
+                           ''', (list(treenode_ids),))
 
             crows = list(cursor.fetchall())
 
@@ -353,7 +352,6 @@ def node_list_tuples_query(user, params, project_id, atnid, atntype, includeLabe
         # below.
 
         if missing_treenode_ids:
-            missing_id_list = ','.join('({0})'.format(mnid) for mnid in missing_treenode_ids)
             response_on_error = 'Failed to query treenodes from connectors'
             cursor.execute('''
             SELECT id,
@@ -366,8 +364,9 @@ def node_list_tuples_query(user, params, project_id, atnid, atntype, includeLabe
                 skeleton_id,
                 edition_time,
                 user_id
-            FROM treenode, (VALUES %s) missingnodes(mnid)
-            WHERE id = mnid''' % missing_id_list)
+            FROM treenode,
+                 UNNEST(%s) missingnodes(mnid)
+            WHERE id = mnid''', (list(missing_treenode_ids),))
 
             for row in cursor.fetchall():
                 treenodes.append(row)
@@ -386,30 +385,34 @@ def node_list_tuples_query(user, params, project_id, atnid, atntype, includeLabe
                     r[4] >= z1 and r[4] < z2
 
             # Collect treenodes visible in the current section
-            visible = ','.join('({0})'.format(row[0]) for row in treenodes if is_visible(row))
+            visible = [row[0] for row in treenodes if is_visible(row)]
             if visible:
                 cursor.execute('''
-                SELECT tnid, class_instance.name
-                FROM class_instance, treenode_class_instance,
-                     (VALUES %s) treenodes(tnid)
+                SELECT treenode_class_instance.treenode_id,
+                       class_instance.name
+                FROM class_instance,
+                     treenode_class_instance,
+                     UNNEST(%s) treenodes(tnid)
                 WHERE treenode_class_instance.relation_id = %s
-                  AND treenode_class_instance.treenode_id = tnid
                   AND class_instance.id = treenode_class_instance.class_instance_id
-                ''' % (visible, relation_map['labeled_as']))
+                  AND treenode_class_instance.treenode_id = tnid
+                ''', (visible, relation_map['labeled_as']))
                 for row in cursor.fetchall():
                     labels[row[0]].append(row[1])
 
             # Collect connectors visible in the current section
-            visible = ','.join('({0})'.format(row[0]) for row in connectors if row[3] >= z1 and row[3] < z2)
+            visible = [row[0] for row in connectors if row[3] >= z1 and row[3] < z2]
             if visible:
                 cursor.execute('''
-                SELECT cnid, class_instance.name
-                FROM class_instance, connector_class_instance,
-                     (VALUES %s) connectors(cnid)
+                SELECT connector_class_instance.connector_id,
+                       class_instance.name
+                FROM class_instance,
+                     connector_class_instance,
+                     UNNEST(%s) connectors(cnid)
                 WHERE connector_class_instance.relation_id = %s
-                  AND connector_class_instance.connector_id = cnid
                   AND class_instance.id = connector_class_instance.class_instance_id
-                ''' % (visible, relation_map['labeled_as']))
+                  AND connector_class_instance.connector_id = cnid
+                ''', (visible, relation_map['labeled_as']))
                 for row in cursor.fetchall():
                     labels[row[0]].append(row[1])
 

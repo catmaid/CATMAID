@@ -51,12 +51,12 @@ def node_list_tuples(request, project_id=None, provider=None):
     # Limit the number of retrieved treenodes within the section
     params['limit'] = settings.NODE_LIST_MAXIMUM_COUNT
     params['project_id'] = project_id
-    includeLabels = (request.POST.get('labels', None) == 'true')
+    include_labels = (request.POST.get('labels', None) == 'true')
 
     provider = get_treenodes_postgis
 
     return node_list_tuples_query(request.user, params, project_id, atnid, atntype,
-                                  includeLabels, provider)
+                                  include_labels, provider)
 
 
 def get_treenodes_classic(cursor, params):
@@ -166,7 +166,7 @@ def get_treenodes_postgis(cursor, params):
     return cursor.fetchall()
 
 
-def node_list_tuples_query(user, params, project_id, atnid, atntype, includeLabels, tn_provider):
+def node_list_tuples_query(user, params, project_id, atnid, atntype, include_labels, tn_provider):
     try:
         cursor = connection.cursor()
 
@@ -374,7 +374,7 @@ def node_list_tuples_query(user, params, project_id, atnid, atntype, includeLabe
                     or row[9] in domain,))
 
         labels = defaultdict(list)
-        if includeLabels:
+        if include_labels:
             # Avoid dict lookups in loop
             top, left, z1 = params['top'], params['left'], params['z1']
             bottom, right, z2 = params['bottom'], params['right'], params['z2']

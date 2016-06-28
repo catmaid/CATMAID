@@ -3420,6 +3420,12 @@ class ViewPageTests(TestCase):
 
     def test_node_list_without_active_node(self):
         self.fake_authentication()
+
+        response = self.client.post(
+                '/%d/label/treenode/%d/update' % (self.test_project_id, 2374),
+                {'tags': 'test_treenode_label', 'delete_existing': 'false'})
+        self.assertEqual(response.status_code, 200)
+
         expected_t_result = [
             [2374, 2372, 3310.0, 5190.0, 0.0, 5, -1.0, 2364, '2011-12-05T13:51:36.955Z', False],
             [2372, 2370, 2760.0, 4600.0, 0.0, 5, -1.0, 2364, '2011-12-05T13:51:36.955Z', False],
@@ -3453,6 +3459,10 @@ class ViewPageTests(TestCase):
                 [2464, 24, 5, '2016-03-09T18:10:50.846Z', 2473]], '2016-03-09T18:10:49.445Z', True]
         ]
 
+        expected_label_response = {
+            '2374': ['test_treenode_label']
+        }
+
         expected_rel_response = {
             '24': 'postsynaptic_to',
             '23': 'presynaptic_to'
@@ -3466,7 +3476,7 @@ class ViewPageTests(TestCase):
             'bottom': 8075,
             'z2': 9,
             'atnid': -1,
-            'labels': False,
+            'labels': 'true',
         })
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
@@ -3486,7 +3496,7 @@ class ViewPageTests(TestCase):
                 else:
                     self.assertEqual(e, parsed_row[n])
 
-        self.assertEqual({}, parsed_response[2])
+        self.assertEqual(expected_label_response, parsed_response[2])
         self.assertEqual(False, parsed_response[3])
         self.assertEqual(expected_rel_response, parsed_response[4])
 

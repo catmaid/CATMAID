@@ -52,11 +52,11 @@ class PostGISTests(TestCase):
         }
 
         non_postgis_nodes_r = node.node_list_tuples_query(self.user, params,
-                self.test_project_id, atnid, includeLabels=False,
+                self.test_project_id, atnid, None, includeLabels=False,
                 tn_provider=node.get_treenodes_classic)
 
         postgis_nodes_r = node.node_list_tuples_query(self.user, params,
-                self.test_project_id, atnid, includeLabels=False,
+                self.test_project_id, atnid, None, includeLabels=False,
                 tn_provider=node.get_treenodes_postgis)
 
         self.assertEqual(non_postgis_nodes_r.status_code, 200)
@@ -93,28 +93,31 @@ class PostGISTests(TestCase):
         """Test if joning two skeletons update the edge table correctly.
         """
         # Create two independent skeletons with one treenode each
-        from_treenode_id, from_treenode_skid, _ = treenode._create_treenode(
+        from_treenode = treenode._create_treenode(
             self.test_project_id, self.user, self.user, 0, 0, 0, -1, 0, -1, -1)
-        to_treenode_id, to_treenode_skid, _ = treenode._create_treenode(
+        to_treenode = treenode._create_treenode(
             self.test_project_id, self.user, self.user, 1, 1, 1, -1, 0, -1, -1)
         annotation_map = {}
 
         cursor = connection.cursor()
 
         # Expect one (self referencing) edge for both new nodes
-        from_edges_before = self.get_edges(cursor, from_treenode_id)
-        to_edges_before = self.get_edges(cursor, to_treenode_id)
+        from_edges_before = self.get_edges(cursor, from_treenode.treenode_id)
+        to_edges_before = self.get_edges(cursor, to_treenode.treenode_id)
         self.assertEqual(1, len(from_edges_before))
         self.assertEqual(1, len(to_edges_before))
 
         # Join them and test if the correct node appears in the edge table
-        skeleton._join_skeleton(self.user, from_treenode_id, to_treenode_id,
-                                self.test_project_id, annotation_map)
+        skeleton._join_skeleton(self.user,
+                                from_treenode.treenode_id,
+                                to_treenode.treenode_id,
+                                self.test_project_id,
+                                annotation_map)
 
         # Expect still one edge per node, but expect the to_edge to be
         # different from before (because it now references from_node)
-        from_edges_after = self.get_edges(cursor, from_treenode_id)
-        to_edges_after = self.get_edges(cursor, to_treenode_id)
+        from_edges_after = self.get_edges(cursor, from_treenode.treenode_id)
+        to_edges_after = self.get_edges(cursor, to_treenode.treenode_id)
         self.assertEqual(1, len(from_edges_after))
         self.assertEqual(1, len(to_edges_after))
         self.assertEqual(from_edges_before[0], from_edges_after[0])

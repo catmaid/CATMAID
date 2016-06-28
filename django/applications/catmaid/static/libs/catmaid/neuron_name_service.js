@@ -429,7 +429,7 @@
                   fallbackValue = componentValues[i];
               }
 
-              var name = formatString.replace(/%(f|\d+i)(?:\{(.*)\})?/g, function (match, component, delimiter) {
+              var name = formatString.replace(/%(f|\d+)(?:\{(.*)\})?/g, function (match, component, delimiter) {
                 delimiter = delimiter === undefined ? ", " : delimiter;
 
                 if (component === 'f') {

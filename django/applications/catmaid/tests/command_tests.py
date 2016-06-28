@@ -15,7 +15,8 @@ class PruneSkeletonsTest(TestCase):
         self.username = "test"
         self.password = "test"
         self.user = User.objects.create(username=self.username,
-                                        password=self.password)
+                                        password=self.password,
+                                        is_superuser=True)
         self.client = Client()
         self.client.login(username=self.username, password=self.password)
 
@@ -35,7 +36,7 @@ class PruneSkeletonsTest(TestCase):
 
         # Call pruning for this project
         out = StringIO()
-        call_command('catmaid_prune_skeletons', p.project.id, stdout=out)
+        call_command('catmaid_prune_skeletons', project_id=[p.project.id], stdout=out)
         self.assertIn('Deleted 4 nodes in project "%s"' % p.project.id, out.getvalue())
 
 class TestProject():

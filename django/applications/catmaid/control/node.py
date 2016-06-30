@@ -369,9 +369,8 @@ def node_list_tuples_query(user, params, project_id, atnid, atntype, include_lab
             WHERE id = mnid''', (list(missing_treenode_ids),))
 
             for row in cursor.fetchall():
-                treenodes.append(row)
-                treenode_ids.add(row[0:9] + (is_superuser or row[9] == user_id
-                    or row[9] in domain,))
+                can_edit = is_superuser or row[9] == user_id or row[9] in domain
+                treenodes.append(row[0:9] + (can_edit,))
 
         labels = defaultdict(list)
         if include_labels:

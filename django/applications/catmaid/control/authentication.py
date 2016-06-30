@@ -376,9 +376,9 @@ def user_can_edit(cursor, user_id, other_user_id):
     # The group with identical name to the username is implicit, doesn't have to exist. Therefore, check this edge case before querying:
     if user_id == other_user_id:
         return True
-    # Retrieve a value larger than zero when the user_id belongs to a group with name equal to that associated with other_user_id
+    # Retrieve a row when the user_id belongs to a group with name equal to that associated with other_user_id
     cursor.execute("""
-    SELECT count(*)
+    SELECT 1
     FROM auth_user u,
          auth_group g,
          auth_user_groups ug
@@ -386,9 +386,9 @@ def user_can_edit(cursor, user_id, other_user_id):
       AND u.username = g.name
       AND g.id = ug.group_id
       AND ug.user_id = %s
+    LIMIT 1
     """ % (other_user_id, user_id))
-    rows = cursor.fetchall()
-    return rows and rows[0][0] > 0
+    return cursor.rowcount > 0
 
 
 def user_domain(cursor, user_id):

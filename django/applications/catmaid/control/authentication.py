@@ -410,6 +410,7 @@ def user_domain(cursor, user_id):
     domain.add(user_id)
     return domain
 
+
 @requires_user_role([UserRole.Annotate])
 def all_usernames(request, project_id=None):
     """ Return an ordered list of all usernames, each entry a list of id and username. """

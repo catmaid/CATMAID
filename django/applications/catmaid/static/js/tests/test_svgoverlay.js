@@ -56,13 +56,11 @@ QUnit.test('SVG overlay test', function( assert ) {
       nodes: {
         '41': {
           id: 41,
-          can_edit: true,
           type: SkeletonAnnotations.TYPE_NODE,
           needsync: true
         },
         '42': {
           id: 42,
-          can_edit: true,
           type: SkeletonAnnotations.TYPE_NODE,
           needsync: true
         }

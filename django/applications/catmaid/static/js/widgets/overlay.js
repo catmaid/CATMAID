@@ -1984,14 +1984,14 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
     extraNodes.forEach(function(n) {
       this.nodes[n.id] = this.graphics.newNode(n.id, null, n.parent_id, n.radius,
           n.x, n.y, n.z, n.z - this.stackViewer.z, n.confidence, n.skeleton_id,
-          n.edition_time, n.can_edit);
+          n.edition_time, n.user_id);
     }, this);
   }
 
   // Populate Nodes
   jso[0].forEach(function(a, index, array) {
     // a[0]: ID, a[1]: parent ID, a[2]: x, a[3]: y, a[4]: z, a[5]: confidence
-    // a[8]: user_id, a[6]: radius, a[7]: skeleton_id, a[8]: user can edit or not
+    // a[8]: user_id, a[6]: radius, a[7]: skeleton_id, a[9]: user_id
     var z = this.stackViewer.primaryStack.projectToUnclampedStackZ(a[4], a[3], a[2]);
     this.nodes[a[0]] = this.graphics.newNode(
       a[0], null, a[1], a[6],
@@ -2029,8 +2029,7 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
     // a[5]: presynaptic nodes as array of arrays with treenode id
     // and confidence, a[6]: postsynaptic nodes as array of arrays with treenode id
     // and confidence, a[7]: gap junction nodes as array of arrays with treenode id,
-    // a[8]: undirected nodes as array of arrays with treenode id, a[9]: whether
-    // the user can edit the connector
+    // a[8]: undirected nodes as array of arrays with treenode id, a[9]: user_id
     var z = this.stackViewer.primaryStack.projectToUnclampedStackZ(a[3], a[2], a[1]);
     this.nodes[a[0]] = this.graphics.newConnectorNode(
       a[0],
@@ -2192,7 +2191,7 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
     var c = 5;
 
     var vn = graphics.newNode(id, parent, parent.id, r, pos[0], pos[1], z, 0, c,
-        child.skeleton_id, child.edition_time, child.can_edit);
+        child.skeleton_id, child.edition_time, child.user_id);
 
     // Update child information of virtual node and parent as if the virtual
     // node was a real node. That is, replace the original child of the parent
@@ -2619,7 +2618,7 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
           z: n.z,
           confidence: n.confidence,
           skeleton_id: n.skeleton_id,
-          can_edit: n.can_edit
+          user_id: n.user_id
         }];
       } else {
         console.log('Could not pin virtual node before update: ' + atnid);
@@ -3833,7 +3832,7 @@ SkeletonAnnotations.TracingOverlay.prototype.deleteNode = function(nodeId) {
     return this.toggleVirtualNodeSuppression(nodeId);
   }
 
-  if (!CATMAID.mayEdit() || !node.can_edit) {
+  if (!CATMAID.mayEdit() || !node.canEdit()) {
     if (node.type === SkeletonAnnotations.TYPE_CONNECTORNODE) {
       CATMAID.error("You don't have permission to delete connector #" + node.id);
     } else {

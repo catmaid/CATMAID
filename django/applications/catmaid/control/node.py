@@ -16,7 +16,7 @@ from catmaid import state
 from catmaid.models import UserRole, Treenode, Connector, \
         ClassInstanceClassInstance, Review
 from catmaid.control.authentication import requires_user_role, \
-        can_edit_all_or_fail, user_domain
+        can_edit_all_or_fail
 from catmaid.control.common import get_relation_to_id_map, get_request_list
 
 
@@ -55,7 +55,7 @@ def node_list_tuples(request, project_id=None, provider=None):
 
     provider = get_treenodes_postgis
 
-    return node_list_tuples_query(request.user, params, project_id, atnid, atntype,
+    return node_list_tuples_query(params, project_id, atnid, atntype,
                                   include_labels, provider)
 
 
@@ -166,7 +166,7 @@ def get_treenodes_postgis(cursor, params):
     return cursor.fetchall()
 
 
-def node_list_tuples_query(user, params, project_id, atnid, atntype, include_labels, tn_provider):
+def node_list_tuples_query(params, project_id, atnid, atntype, include_labels, tn_provider):
     try:
         cursor = connection.cursor()
 
@@ -177,13 +177,6 @@ def node_list_tuples_query(user, params, project_id, atnid, atntype, include_lab
         id_to_relation = {v: k for k, v in relation_map.items()}
 
         response_on_error = 'Failed to query treenodes'
-
-        is_superuser = user.is_superuser
-        user_id = user.id
-
-        # Set of other user_id for which the request user has editing rights on.
-        # For a superuser, the domain is all users, and implicit.
-        domain = None if is_superuser else user_domain(cursor, user_id)
 
         # Above, notice that the join is done for:
         # 1. A parent-child or child-parent pair (where the first one is in section z)
@@ -203,13 +196,11 @@ def node_list_tuples_query(user, params, project_id, atnid, atntype, include_lab
             t1id = row[0]
             if t1id not in treenode_ids:
                 treenode_ids.add(t1id)
-                can_edit = is_superuser or row[9] == user_id or row[9] in domain
-                treenodes.append(row[0:9] + (can_edit,))
+                treenodes.append(row[0:10])
             t2id = row[10]
             if t2id not in treenode_ids:
                 treenode_ids.add(t2id)
-                can_edit = is_superuser or row[19] == user_id or row[19] in domain
-                treenodes.append(row[10:19] + (can_edit,))
+                treenodes.append(row[10:20])
 
         # A set of missing treenode and connector IDs
         missing_treenode_ids = set()
@@ -239,8 +230,8 @@ def node_list_tuples_query(user, params, project_id, atnid, atntype, include_lab
                 tc.confidence,
                 tc.edition_time,
                 tc.id,
-                c.user_id,
-                c.edition_time
+                c.edition_time,
+                c.user_id
             FROM treenode_connector tc
             INNER JOIN connector c ON (tc.connector_id = c.id)
             INNER JOIN UNNEST(%s) vals(v) ON tc.treenode_id = v
@@ -263,8 +254,8 @@ def node_list_tuples_query(user, params, project_id, atnid, atntype, include_lab
                 treenode_connector.confidence,
                 treenode_connector.edition_time,
                 treenode_connector.id,
-                connector.user_id,
-                connector.edition_time
+                connector.edition_time,
+                connector.user_id
             FROM connector LEFT OUTER JOIN treenode_connector
                            ON connector.id = treenode_connector.connector_id
             WHERE connector.project_id = %(project_id)s
@@ -291,8 +282,8 @@ def node_list_tuples_query(user, params, project_id, atnid, atntype, include_lab
                     treenode_connector.confidence,
                     treenode_connector.edition_time,
                     treenode_connector.id,
-                    connector.user_id,
-                    connector.edition_time
+                    connector.edition_time,
+                    connector.user_id
                 FROM connector LEFT OUTER JOIN treenode_connector
                                ON connector.id = treenode_connector.connector_id
                 WHERE connector.project_id = %(project_id)s
@@ -342,8 +333,7 @@ def node_list_tuples_query(user, params, project_id, atnid, atntype, include_lab
         for i in xrange(len(connectors)):
             c = connectors[i]
             cid = c[0]
-            connectors[i] = (cid, c[1], c[2], c[3], c[4], links[cid], c[11],
-                    is_superuser or c[10] == user_id or c[10] in domain)
+            connectors[i] = (cid, c[1], c[2], c[3], c[4], links[cid], c[10], c[11])
 
         # Fetch missing treenodes. These are related to connectors
         # but not in the bounding box of the field of view.
@@ -368,9 +358,7 @@ def node_list_tuples_query(user, params, project_id, atnid, atntype, include_lab
                  UNNEST(%s) missingnodes(mnid)
             WHERE id = mnid''', (list(missing_treenode_ids),))
 
-            for row in cursor.fetchall():
-                can_edit = is_superuser or row[9] == user_id or row[9] in domain
-                treenodes.append(row[0:9] + (can_edit,))
+            treenodes.extend(cursor.fetchall())
 
         labels = defaultdict(list)
         if include_labels:

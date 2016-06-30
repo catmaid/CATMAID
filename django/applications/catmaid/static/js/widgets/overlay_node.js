@@ -177,15 +177,15 @@
       confidence,
       skeleton_id,// the id of the skeleton this node is an element of
       edition_time, // The last time this node was edited by a user
-      can_edit)   // a boolean combining (is_superuser or user owns the node)
+      user_id)   // id of the user who owns the node
     {
       var node = this.cache.nodePool.next();
       if (node) {
         node.reInit(id, parent, parent_id, radius, x, y, z, zdiff, confidence,
-            skeleton_id, edition_time, can_edit);
+            skeleton_id, edition_time, user_id);
       } else {
         node = new this.Node(this.overlayGlobals, id, parent, parent_id, radius,
-            x, y, z, zdiff, confidence, skeleton_id, edition_time, can_edit, defSuffix);
+            x, y, z, zdiff, confidence, skeleton_id, edition_time, user_id, defSuffix);
         this.cache.nodePool.push(node);
       }
       return node;
@@ -202,14 +202,14 @@
       confidence,
       subtype,
       edition_time, // last time this connector wsa edited by a user
-      can_edit)   // a boolean combining (is_superuser or user owns the node)
+      user_id)   // id of the user who owns the node
     {
       var connector = this.cache.connectorPool.next();
       if (connector) {
-        connector.reInit(id, x, y, z, zdiff, confidence, subtype, edition_time, can_edit);
+        connector.reInit(id, x, y, z, zdiff, confidence, subtype, edition_time, user_id);
       } else {
         connector = new this.ConnectorNode(this.overlayGlobals, id, x, y, z,
-            zdiff, confidence, subtype, edition_time, can_edit, defSuffix);
+            zdiff, confidence, subtype, edition_time, user_id, defSuffix);
         connector.createArrow = this.createArrow;
         this.cache.connectorPool.push(connector);
       }
@@ -349,6 +349,11 @@
 
       this.shouldDisplay = function() {
         return this.zdiff >= 0 && this.zdiff < 1;
+      };
+
+      /** Whether the user has edit permissions for this node. */
+      this.canEdit = function () {
+        return CATMAID.session.is_superuser || CATMAID.session.domain.has(this.user_id);
       };
 
       /** Draw a line with the other node if this or the other should be displayed. */
@@ -670,7 +675,7 @@
       };
 
       /** Reset all member variables and reposition SVG circles when existing. */
-      this.reInit = function(id, parent, parent_id, radius, x, y, z, zdiff, confidence, skeleton_id, edition_time, can_edit) {
+      this.reInit = function(id, parent, parent_id, radius, x, y, z, zdiff, confidence, skeleton_id, edition_time, user_id) {
         this.id = id;
         this.parent = parent;
         this.parent_id = parent_id;
@@ -686,7 +691,7 @@
         this.skeleton_id = skeleton_id;
         this.isroot = null === parent_id || isNaN(parent_id) || parseInt(parent_id) < 0;
         this.edition_time = edition_time;
-        this.can_edit = can_edit;
+        this.user_id = user_id;
         this.needsync = false;
         delete this.suppressed;
 
@@ -864,7 +869,7 @@
       confidence, // confidence with the parent
       skeleton_id,// the id of the skeleton this node is an element of
       edition_time, // Last time this node was edited
-      can_edit,   // whether the user can edit (move, remove) this node
+      user_id,   // id of the user who owns the node
       hrefSuffix) // a suffix that is appended to the ID of the referenced geometry
     {
       this.overlayGlobals = overlayGlobals;
@@ -883,7 +888,7 @@
       this.confidence = confidence;
       this.skeleton_id = skeleton_id;
       this.edition_time = edition_time;
-      this.can_edit = can_edit;
+      this.user_id = user_id;
       this.isroot = null === parent_id || isNaN(parent_id) || parseInt(parent_id) < 0;
       this.c = null; // The SVG circle for drawing and interacting with the node.
       this.radiusGraphics = null; // The SVG circle for visualing skeleton radius.
@@ -1066,7 +1071,7 @@
         }
       };
 
-      this.reInit = function(id, x, y, z, zdiff, confidence, subtype, edition_time, can_edit) {
+      this.reInit = function(id, x, y, z, zdiff, confidence, subtype, edition_time, user_id) {
         this.id = id;
         this.x = x;
         this.y = y;
@@ -1075,7 +1080,7 @@
         this.confidence = confidence;
         this.subtype = subtype;
         this.edition_time = edition_time;
-        this.can_edit = can_edit;
+        this.user_id = user_id;
         this.pregroup = {};
         this.postgroup = {};
         this.undirgroup = {};
@@ -1110,7 +1115,7 @@
       confidence, // (TODO: UNUSED)
       subtype,    // the kind of connector node
       edition_time, // Last time this connector was edited
-      can_edit,   // whether the logged in user has permissions to edit this node -- the server will in any case enforce permissions; this is for proper GUI flow
+      user_id,   // id of the user who owns the node
       hrefSuffix) // a suffix that is appended to the ID of the referenced geometry
     {
       this.overlayGlobals = overlayGlobals;
@@ -1124,7 +1129,7 @@
       this.zdiff = zdiff;
       this.confidence = confidence;
       this.edition_time = edition_time;
-      this.can_edit = can_edit;
+      this.user_id = user_id;
       this.pregroup = {}; // set of presynaptic treenodes
       this.postgroup = {}; // set of postsynaptic treenodes
       this.undirgroup = {}; // set of undirected treenodes
@@ -1263,7 +1268,7 @@
           return;
         }
 
-        if (!CATMAID.mayEdit() || !node.can_edit) {
+        if (!CATMAID.mayEdit() || !node.canEdit()) {
           CATMAID.statusBar.replaceLast("You don't have permission to move node #" + d);
           return;
         }

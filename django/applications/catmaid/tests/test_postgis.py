@@ -51,11 +51,11 @@ class PostGISTests(TestCase):
             'labels': False,
         }
 
-        non_postgis_nodes_r = node.node_list_tuples_query(self.user, params,
+        non_postgis_nodes_r = node.node_list_tuples_query(params,
                 self.test_project_id, atnid, None, include_labels=False,
                 tn_provider=node.get_treenodes_classic)
 
-        postgis_nodes_r = node.node_list_tuples_query(self.user, params,
+        postgis_nodes_r = node.node_list_tuples_query(params,
                 self.test_project_id, atnid, None, include_labels=False,
                 tn_provider=node.get_treenodes_postgis)
 

@@ -426,8 +426,14 @@ var project;
     if (status == 200 && text) {
       var e = JSON.parse(text);
 
-      if (e.id) {
+      if (e.error) {
+        alert(e.error);
+        return;
+      } else {
         CATMAID.session = e;
+      }
+
+      if (e.id) { // Logged in as a non-anonymous user.
         document.getElementById("account").value = "";
         document.getElementById("password").value = "";
         document.getElementById("session_longname").replaceChild(
@@ -454,9 +460,12 @@ var project;
             note: ""
           }
         });
+      } else {
+        document.getElementById( "login_box" ).style.display = "block";
+        document.getElementById( "logout_box" ).style.display = "none";
+        document.getElementById( "session_box" ).style.display = "none";
 
-      } else if (e.error) {
-        alert(e.error);
+        document.getElementById( "message_box" ).style.display = "none";
       }
 
       // Continuation for user list retrieval
@@ -547,7 +556,7 @@ var project;
    */
   function handle_message( status, text, xml )
   {
-    if ( !CATMAID.session )
+    if ( !CATMAID.session || !CATMAID.session.id )
       return;
 
     if ( status == 200 && text )
@@ -709,21 +718,9 @@ var project;
    * @param  {Object}    xml                XHR response XML (unused).
    */
   function handle_logout(status, text, xml) {
-    CATMAID.session = undefined;
-    document.getElementById( "login_box" ).style.display = "block";
-    document.getElementById( "logout_box" ).style.display = "none";
-    document.getElementById( "session_box" ).style.display = "none";
-
-    document.getElementById( "message_box" ).style.display = "none";
-
     if ( project && project.id ) project.setTool( new CATMAID.Navigator() );
 
-    if (status == 200 && text) {
-      var e = $.parseJSON(text);
-      handle_profile_update(e);
-    }
-
-    CATMAID.updateProjects();
+    handle_login(status, text, xml);
   }
 
   /**

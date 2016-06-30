@@ -16,7 +16,7 @@ from django.contrib.auth import authenticate, logout, login
 from django.contrib.auth.models import User, Group
 from django.contrib.auth.forms import UserCreationForm
 from django.db import connection
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import _get_queryset, render
 
@@ -36,53 +36,51 @@ def login_user(request):
         user = authenticate(username=username, password=password)
 
         if user is not None:
-            profile_context['userprofile'] = user.userprofile.as_dict()
-            profile_context['permissions'] = tuple(request.user.get_all_permissions())
             if user.is_active:
                 # Redirect to a success page.
                 request.session['user_id'] = user.id
                 login(request, user)
                 # Add some context information
                 profile_context['id'] = request.session.session_key
-                profile_context['longname'] = user.get_full_name()
-                profile_context['userid'] = user.id
-                profile_context['username'] = user.username
-                profile_context['is_superuser'] = user.is_superuser
-                return HttpResponse(json.dumps(profile_context))
+                return user_context_response(user, profile_context)
             else:
                 # Return a 'disabled account' error message
                 profile_context['error'] = ' Disabled account'
-                return HttpResponse(json.dumps(profile_context))
+                return user_context_response(request.user, profile_context)
         else:
             # Return an 'invalid login' error message.
-            profile_context['userprofile'] = request.user.userprofile.as_dict()
             profile_context['error'] = ' Invalid login'
-            return HttpResponse(json.dumps(profile_context))
+            return user_context_response(request.user, profile_context)
     else:   # request.method == 'GET'
-        profile_context['userprofile'] = request.user.userprofile.as_dict()
-        profile_context['permissions'] = tuple(request.user.get_all_permissions())
         # Check if the user is logged in.
         if request.user.is_authenticated():
             profile_context['id'] = request.session.session_key
-            profile_context['longname'] = request.user.get_full_name()
-            profile_context['userid'] = request.user.id
-            profile_context['username'] = request.user.username
-            profile_context['is_superuser'] = request.user.is_superuser
-            return HttpResponse(json.dumps(profile_context))
+            return user_context_response(request.user, profile_context)
         else:
             # Return a 'not logged in' warning message.
             profile_context['warning'] = ' Not logged in'
-            return HttpResponse(json.dumps(profile_context))
+            return user_context_response(request.user, profile_context)
 
 
 def logout_user(request):
     logout(request)
     # Return profile context of anonymous user
     anon_user = get_anonymous_user()
-    profile_context = {}
-    profile_context['userprofile'] = anon_user.userprofile.as_dict()
-    profile_context['success'] = True
-    return HttpResponse(json.dumps(profile_context))
+    return user_context_response(anon_user)
+
+
+def user_context_response(user, additional_fields=None):
+    context = {
+        'longname': user.get_full_name(),
+        'userid': user.id,
+        'username': user.username,
+        'is_superuser': user.is_superuser,
+        'userprofile': user.userprofile.as_dict(),
+        'permissions': tuple(user.get_all_permissions())
+    }
+    if additional_fields is not None:
+        context.update(additional_fields)
+    return JsonResponse(context)
 
 
 def check_user_role(user, project, roles):

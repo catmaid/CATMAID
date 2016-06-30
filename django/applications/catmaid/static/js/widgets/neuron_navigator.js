@@ -1969,7 +1969,12 @@
                   this.neuron_id + " has been succesfully deleted.");
             // Expect a parent node
             this.navigator.select_node(this.parent_node);
-          }).bind(this));
+          }).bind(this),
+          function (result) {
+            var message = result.hasOwnProperty('message') ?
+                result.message : "The server returned an error.";
+            CATMAID.msg("Error: neuron not deleted", message);
+          });
       }
     }).bind(this);
 

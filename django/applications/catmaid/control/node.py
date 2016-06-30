@@ -103,6 +103,92 @@ def get_treenodes_classic(cursor, params):
     return cursor.fetchall()
 
 
+def get_connector_nodes_classic(cursor, params, treenode_ids, missing_connector_ids):
+    """ Selects all connectors that have links to nodes in treenode_ids, are
+    in the bounding box, or are in missing_connector_ids.
+    """
+    crows = []
+
+    if treenode_ids:
+        cursor.execute('''
+        SELECT c.id,
+            c.location_x,
+            c.location_y,
+            c.location_z,
+            c.confidence,
+            tc.relation_id,
+            tc.treenode_id,
+            tc.confidence,
+            tc.edition_time,
+            tc.id,
+            c.edition_time,
+            c.user_id
+        FROM treenode_connector tc
+        INNER JOIN connector c ON (tc.connector_id = c.id)
+        INNER JOIN UNNEST(%s) vals(v) ON tc.treenode_id = v
+                       ''', (list(treenode_ids),))
+
+        crows = list(cursor.fetchall())
+
+    # Obtain connectors within the field of view that were not captured above.
+    # Uses a LEFT OUTER JOIN to include disconnected connectors,
+    # that is, connectors that aren't referenced from treenode_connector.
+
+    connector_query = '''
+        SELECT connector.id,
+            connector.location_x,
+            connector.location_y,
+            connector.location_z,
+            connector.confidence,
+            treenode_connector.relation_id,
+            treenode_connector.treenode_id,
+            treenode_connector.confidence,
+            treenode_connector.edition_time,
+            treenode_connector.id,
+            connector.edition_time,
+            treenode_connector.id,
+            connector.edition_time,
+            connector.user_id
+        FROM connector LEFT OUTER JOIN treenode_connector
+                       ON connector.id = treenode_connector.connector_id
+        WHERE connector.project_id = %(project_id)s
+          AND connector.location_z >= %(z1)s
+          AND connector.location_z <  %(z2)s
+          AND connector.location_x >= %(left)s
+          AND connector.location_x <  %(right)s
+          AND connector.location_y >= %(top)s
+          AND connector.location_y <  %(bottom)s
+    '''
+
+    # Add additional connectors to the pool before links are collected
+    if missing_connector_ids:
+        sanetized_connector_ids = [int(cid) for cid in missing_connector_ids]
+        connector_query += '''
+            UNION
+            SELECT connector.id,
+                connector.location_x,
+                connector.location_y,
+                connector.location_z,
+                connector.confidence,
+                treenode_connector.relation_id,
+                treenode_connector.treenode_id,
+                treenode_connector.confidence,
+                treenode_connector.edition_time,
+                treenode_connector.id,
+                connector.edition_time,
+                connector.user_id
+            FROM connector LEFT OUTER JOIN treenode_connector
+                           ON connector.id = treenode_connector.connector_id
+            WHERE connector.project_id = %(project_id)s
+            AND connector.id IN ({})
+        '''.format(','.join(str(cid) for cid in sanetized_connector_ids))
+
+    cursor.execute(connector_query, params)
+    crows.extend(cursor.fetchall())
+
+    return crows
+
+
 def get_treenodes_postgis(cursor, params):
     """ Selects all treenodes of which links to other treenodes intersect with
     the request bounding box.
@@ -166,6 +252,46 @@ def get_treenodes_postgis(cursor, params):
     return cursor.fetchall()
 
 
+def get_connector_nodes_postgis(cursor, params, treenode_ids, missing_connector_ids):
+    """Selects all connectors that are in or have links that intersect the
+    bounding box, or that are in missing_connector_ids.
+    """
+    params['sanitized_connector_ids'] = map(int, missing_connector_ids)
+    cursor.execute('''
+    SELECT
+        c.id,
+        c.location_x,
+        c.location_y,
+        c.location_z,
+        c.confidence,
+        tc.relation_id,
+        tc.treenode_id,
+        tc.confidence,
+        tc.edition_time,
+        tc.id,
+        c.edition_time,
+        c.user_id
+    FROM (SELECT DISTINCT tce.connector_id
+         FROM treenode_connector_edge tce
+         WHERE tce.edge &&& 'LINESTRINGZ(%(left)s %(bottom)s %(z2)s,
+                                       %(right)s %(top)s %(z1)s)'
+           AND ST_3DDWithin(tce.edge, ST_MakePolygon(ST_GeomFromText(
+            'LINESTRING(%(left)s %(top)s %(halfz)s, %(right)s %(top)s %(halfz)s,
+                        %(right)s %(bottom)s %(halfz)s, %(left)s %(bottom)s %(halfz)s,
+                        %(left)s %(top)s %(halfz)s)')), %(halfzdiff)s)
+        UNION SELECT UNNEST(%(sanitized_connector_ids)s::bigint[])
+      ) edges(edge_connector_id)
+    JOIN connector c
+      ON (edge_connector_id = c.id)
+    LEFT OUTER JOIN treenode_connector tc
+      ON (tc.connector_id = c.id)
+    WHERE c.project_id = %(project_id)s
+    LIMIT %(limit)s
+    ''', params)
+
+    return list(cursor.fetchall())
+
+
 def node_list_tuples_query(params, project_id, atnid, atntype, include_labels, tn_provider):
     try:
         cursor = connection.cursor()
@@ -215,83 +341,9 @@ def node_list_tuples_query(params, project_id, atnid, atntype, include_labels, t
 
         # Find connectors related to treenodes in the field of view
         # Connectors found attached to treenodes
-        crows = []
-
-        if treenode_ids:
-            response_on_error = 'Failed to query connector locations.'
-            cursor.execute('''
-            SELECT c.id,
-                c.location_x,
-                c.location_y,
-                c.location_z,
-                c.confidence,
-                tc.relation_id,
-                tc.treenode_id,
-                tc.confidence,
-                tc.edition_time,
-                tc.id,
-                c.edition_time,
-                c.user_id
-            FROM treenode_connector tc
-            INNER JOIN connector c ON (tc.connector_id = c.id)
-            INNER JOIN UNNEST(%s) vals(v) ON tc.treenode_id = v
-                           ''', (list(treenode_ids),))
-
-            crows = list(cursor.fetchall())
-
-        # Obtain connectors within the field of view that were not captured above.
-        # Uses a LEFT OUTER JOIN to include disconnected connectors,
-        # that is, connectors that aren't referenced from treenode_connector.
-
-        connector_query = '''
-            SELECT connector.id,
-                connector.location_x,
-                connector.location_y,
-                connector.location_z,
-                connector.confidence,
-                treenode_connector.relation_id,
-                treenode_connector.treenode_id,
-                treenode_connector.confidence,
-                treenode_connector.edition_time,
-                treenode_connector.id,
-                connector.edition_time,
-                connector.user_id
-            FROM connector LEFT OUTER JOIN treenode_connector
-                           ON connector.id = treenode_connector.connector_id
-            WHERE connector.project_id = %(project_id)s
-              AND connector.location_z >= %(z1)s
-              AND connector.location_z <  %(z2)s
-              AND connector.location_x >= %(left)s
-              AND connector.location_x <  %(right)s
-              AND connector.location_y >= %(top)s
-              AND connector.location_y <  %(bottom)s
-        '''
-
-        # Add additional connectors to the pool before links are collected
-        if missing_connector_ids:
-            sanetized_connector_ids = [int(cid) for cid in missing_connector_ids]
-            connector_query += '''
-                UNION
-                SELECT connector.id,
-                    connector.location_x,
-                    connector.location_y,
-                    connector.location_z,
-                    connector.confidence,
-                    treenode_connector.relation_id,
-                    treenode_connector.treenode_id,
-                    treenode_connector.confidence,
-                    treenode_connector.edition_time,
-                    treenode_connector.id,
-                    connector.edition_time,
-                    connector.user_id
-                FROM connector LEFT OUTER JOIN treenode_connector
-                               ON connector.id = treenode_connector.connector_id
-                WHERE connector.project_id = %(project_id)s
-                AND connector.id IN ({})
-            '''.format(','.join(str(cid) for cid in sanetized_connector_ids))
-
-        cursor.execute(connector_query, params)
-        crows.extend(cursor.fetchall())
+        response_on_error = 'Failed to query connector locations.'
+        cn_provider = get_connector_nodes_classic if tn_provider == get_treenodes_classic else get_connector_nodes_postgis
+        crows = cn_provider(cursor, params, treenode_ids, missing_connector_ids)
 
         connectors = []
         # A set of unique connector IDs

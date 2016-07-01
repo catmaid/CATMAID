@@ -70,13 +70,15 @@ def logout_user(request):
 
 
 def user_context_response(user, additional_fields=None):
+    cursor = connection.cursor()
     context = {
         'longname': user.get_full_name(),
         'userid': user.id,
         'username': user.username,
         'is_superuser': user.is_superuser,
         'userprofile': user.userprofile.as_dict(),
-        'permissions': tuple(user.get_all_permissions())
+        'permissions': tuple(user.get_all_permissions()),
+        'domain': list(user_domain(cursor, user.id))
     }
     if additional_fields is not None:
         context.update(additional_fields)

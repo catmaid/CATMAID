@@ -79,8 +79,18 @@ var project;
    */
   var user_menu;
 
+  // Timeout reference for user edit domain updates.
+  var edit_domain_timeout;
+
+  /**
+   * Length (in milliseconds) of the interval to refresh user edit domain data.
+   * @type {Number}
+   */
+  var EDIT_DOMAIN_TIMEOUT_INTERVAL = 5*60*1000;
+
   // Timeout reference for message updates
   var msg_timeout;
+
   /**
    * Length (in milliseconds) of the message lookup interval.
    * @type {Number}
@@ -406,6 +416,24 @@ var project;
     }
   };
 
+  /**
+   * Update the active user's edit domain (the list of user IDs whose
+   * class instances they have permission to edit).
+   */
+  Client.prototype.refreshEditDomain = function () {
+    CATMAID.fetch('accounts/login', 'GET')
+        .then(function (json) {
+          CATMAID.session.domain = new Set(json.domain);
+
+          if (edit_domain_timeout) {
+            window.clearTimeout(edit_domain_timeout);
+          }
+
+          edit_domain_timeout = window.setTimeout(CATMAID.client.refreshEditDomain,
+                                                  EDIT_DOMAIN_TIMEOUT_INTERVAL);
+        });
+  };
+
   // Publicly accessible session
   CATMAID.session = null;
 
@@ -429,6 +457,11 @@ var project;
         return;
       } else {
         CATMAID.session = e;
+        CATMAID.session.domain = new Set(e.domain);
+      }
+
+      if (edit_domain_timeout) {
+        window.clearTimeout(edit_domain_timeout);
       }
 
       if (e.id) { // Logged in as a non-anonymous user.
@@ -458,6 +491,9 @@ var project;
             note: ""
           }
         });
+
+        edit_domain_timeout = window.setTimeout(CATMAID.client.refreshEditDomain,
+                                                EDIT_DOMAIN_TIMEOUT_INTERVAL);
       } else {
         document.getElementById( "login_box" ).style.display = "block";
         document.getElementById( "logout_box" ).style.display = "none";

@@ -310,10 +310,10 @@ def node_list_tuples_query(params, project_id, atnid, atntype, include_labels, t
             cid = row[0] # connector ID
             tcid = row[9] # treenode connector ID
             if tnid is not None:
-                if tnid not in treenode_ids:
-                    missing_treenode_ids.add(tnid)
                 if tcid in seen_links:
                     continue
+                if tnid not in treenode_ids:
+                    missing_treenode_ids.add(tnid)
                 seen_links.add(tcid)
                 # Collect relations between connectors and treenodes
                 # row[5]: treenode_relation_id

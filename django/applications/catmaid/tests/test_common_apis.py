@@ -3811,6 +3811,54 @@ class ViewPageTests(TestCase):
         self.assertEqual(aq[0].name, 'myannotation')
         self.assertEqual(aq[1].name, 'pattern 10 test-2-annotation')
 
+    def test_annotation_list(self):
+        self.fake_authentication()
+
+        skeleton_id = 235
+        response = self.client.post(
+            '/%d/annotations/add' % (self.test_project_id,),
+            {'annotations[0]': 'A',
+             'skeleton_ids[0]': skeleton_id})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        annotations = {a['name']:a['id'] for a in parsed_response['annotations']}
+        for a in ('A',):
+            self.assertTrue(a in annotations)
+        annotation_id = parsed_response['new_annotations'][0]
+
+        expected_response = [{'name': 'A', 'id': annotation_id, 'users': [{'id': 3, 'name': 'test2'}]}]
+
+        response = self.client.get('/%d/annotations/' % (self.test_project_id,))
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+
+        self.assertEqual(len(parsed_response['annotations']),
+                         len(expected_response))
+        for a in parsed_response['annotations']:
+            self.assertTrue(a in expected_response)
+
+        # Test that an used annotation also appears in the list.
+        response = self.client.post(
+            '/%d/annotations/add' % (self.test_project_id,),
+            {'annotations[0]': 'B'})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        annotations = {a['name']:a['id'] for a in parsed_response['annotations']}
+        for a in ('B',):
+            self.assertTrue(a in annotations)
+        annotation_id = parsed_response['new_annotations'][0]
+
+        expected_response.append({'name': 'B', 'id': annotation_id, 'users': []})
+
+        response = self.client.get('/%d/annotations/' % (self.test_project_id,))
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+
+        self.assertEqual(len(parsed_response['annotations']),
+                         len(expected_response))
+        for a in parsed_response['annotations']:
+            self.assertTrue(a in expected_response)
+
     def test_review_status(self):
         self.fake_authentication()
 

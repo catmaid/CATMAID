@@ -932,11 +932,9 @@ def list_annotations(request, project_id=None):
                          ON (ci.id = cici.class_instance_b)
             LEFT OUTER JOIN auth_user u
                          ON (cici.user_id = u.id)
-            WHERE (ci.class_id = %s AND cici.relation_id = %s
-              AND ci.project_id = %s AND cici.project_id = %s);
+            WHERE (ci.class_id = %s AND (cici.relation_id = %s OR cici.id IS NULL));
                        ''',
-            (classes['annotation'], relations['annotated_with'], project_id,
-                project_id))
+            (classes['annotation'], relations['annotated_with']))
         annotation_tuples = cursor.fetchall()
     else:
         annotation_query = create_annotation_query(project_id, request.POST)
@@ -952,7 +950,8 @@ def list_annotations(request, project_id=None):
         if ls is None:
             ls = []
             annotation_dict[aid] = ls
-        ls.append({'id': uid, 'name': username})
+        if uid is not None:
+            ls.append({'id': uid, 'name': username})
     # Flatten dictionary to list
     annotations = tuple({'name': ids[aid], 'id': aid, 'users': users} for aid, users in annotation_dict.iteritems())
     return HttpResponse(json.dumps({'annotations': annotations}), content_type="application/json")

@@ -79,8 +79,6 @@ var project;
    */
   var user_menu;
 
-  // User name of current user
-  var username;
   // Timeout reference for message updates
   var msg_timeout;
   /**
@@ -739,7 +737,6 @@ var project;
     try {
       if (e.userprofile) {
         CATMAID.userprofile = new CATMAID.Userprofile(e.userprofile);
-        username = e.username;
       } else {
         throw "The server returned no valid user profile.";
       }
@@ -1418,7 +1415,8 @@ var project;
     dialog.onOK = function () {
       CATMAID.fetch('/api-token-auth/',
                     'POST',
-                    {username: username, password: password.value})
+                    {username: CATMAID.session.username,
+                     password: password.value})
           .then(function (json) {
             var resultDialog = new CATMAID.OptionsDialog('API Authentication Token');
             resultDialog.appendHTML('Your API token is');

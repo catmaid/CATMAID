@@ -3160,7 +3160,7 @@ SkeletonAnnotations.TracingOverlay.prototype.measureRadius = function () {
   var r = -1;
   var c = 5;
 
-  var fakeNode = new this.graphics.Node(this.paper, id, null, null, r, pos[0], pos[1], pos[2], 0, c,
+  var fakeNode = this.graphics.newNode(id, null, null, r, pos[0], pos[1], pos[2], 0, c,
       null, false, '1');
 
   toggleMeasurementTool();

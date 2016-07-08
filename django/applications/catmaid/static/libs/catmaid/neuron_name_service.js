@@ -1,7 +1,6 @@
 /* global
   project,
   requestQueue,
-  session
   */
 
 (function (CATMAID) {
@@ -398,7 +397,7 @@
                   if (skid in data.skeletons) {
                     // Collect own annotations
                     var oa = data.skeletons[skid].annotations.reduce(function(o, a) {
-                      if (a.uid === session.userid) {
+                      if (a.uid === CATMAID.session.userid) {
                         o.push(data.annotations[a.id]);
                       }
                       return o;
@@ -413,7 +412,7 @@
                     // Collect all annotations that are annotated with requested meta
                     // annotation.
                     var label = metaLabel(CATMAID.annotations.getID(l.option),
-                        session.userid);
+                        CATMAID.session.userid);
                     if (null !== label) {
                       return [label];
                     }

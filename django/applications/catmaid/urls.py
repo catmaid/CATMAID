@@ -169,11 +169,13 @@ urlpatterns += [
 ]
 
 # Neuron access
+UrlParser.explicit_root_paths |= set(['{project_id}/neurons'])
 urlpatterns += [
     url(r'^(?P<project_id>\d+)/neuron/(?P<neuron_id>\d+)/get-all-skeletons$', neuron.get_all_skeletons_of_neuron),
     url(r'^(?P<project_id>\d+)/neuron/(?P<neuron_id>\d+)/give-to-user$', neuron.give_neuron_to_other_user),
     url(r'^(?P<project_id>\d+)/neuron/(?P<neuron_id>\d+)/delete$', neuron.delete_neuron),
     url(r'^(?P<project_id>\d+)/neurons/(?P<neuron_id>\d+)/rename$', neuron.rename_neuron),
+    url(r'^(?P<project_id>\d+)/neurons/from-models$', neuron.get_neuron_ids_from_models),
 ]
 
 # Node access

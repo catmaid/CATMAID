@@ -704,6 +704,18 @@ class ViewPageTests(TestCase):
         self.assertEqual(old_name, ClassInstance.objects.get(id=neuron_id).name)
         self.assertEqual(log_count, count_logs())
 
+    def test_neuron_ids_from_models(self):
+        self.fake_authentication()
+        url = '/%d/neurons/from-models' % (self.test_project_id,)
+        response = self.client.post(url, {'model_ids': [235, 373]})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = {
+            '235': 233,
+            '373': 374
+        }
+        self.assertDictEqual(expected_result, parsed_response)
+
     def test_skeletons_from_neuron(self):
         self.fake_authentication()
         url = '/%d/neuron/%d/get-all-skeletons' % (self.test_project_id,

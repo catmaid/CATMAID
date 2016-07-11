@@ -16,6 +16,9 @@ included in this changelog.
   This endpoint replaces the `/{project_id}/connector/pre-post-infos` endpoint.
   The `pre` and `post` parameters are now optional.
 
+- `POST /{project_id}/neurons/from-models`:
+  Get the IDs of all neurons modeled by a list of entities, e.g. skelton IDs.
+
 ### Modifications
 
 - `GET /projects/`:

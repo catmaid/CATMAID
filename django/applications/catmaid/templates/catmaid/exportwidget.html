@@ -38,29 +38,31 @@
 
 	function graphexport_NeuroML181() {
 		var dialog = new CATMAID.OptionsDialog("Export NeuroML Level 3");
-		var choice = dialog.appendChoice("Source: ", "neuroml-choice",
-				['Neurons in Selection Table and their mutual synapses',
+		var choice = dialog.appendChoice("Export: ", "neuroml-choice",
+				['Neurons in selected source and their mutual synapses',
 				 'Active neuron and all its input synapses',
-				 'Active neuron and input synapses only from neurons in Selection Table'],
+				 'Active neuron and input synapses only from neurons in the selected source'],
 				[0, 1, 2],
 				0);
-		var selectionTables = CATMAID.SelectionTable.prototype.getInstances();
-		var choiceST = dialog.appendChoice("Selection table: ", "neuroml-st",
-				selectionTables.map(function(item) { return item.getName(); }),
-				selectionTables.map(function(item, i) { return i; }),
+		var sources = CATMAID.skeletonListSources.sources;
+    var sourceNames = Object.keys(sources).filter(function (n) {
+        return n !== 'Active skeleton'; });
+		var choiceST = dialog.appendChoice("Source: ", "neuroml-st",
+				sourceNames,
+				sourceNames,
 				0);
 
 		dialog.onOK = function() {
 			var post;
 			switch (choice.selectedIndex) {
 				case 0:
-					if (0 === selectionTables.length) {
-						alert("Create and fill out a selection table first!");
+					if (0 === sources.length) {
+						alert("Create selection table first!");
 						return;
 					}
-					post = {skids: selectionTables[choiceST.selectedIndex].getSelectedSkeletons()};
+					post = {skids: sources[choiceST.value].getSelectedSkeletons()};
 					if (!post.skids || 0 === post.skids.length) {
-						alert("Add first one or more skeletons to the Selection Table!");
+						alert("First add one or more skeletons to the selected source!");
 						return;
 					}
 					break;
@@ -73,12 +75,12 @@
 					break;
 				case 2:
 					post = {skids: [SkeletonAnnotations.getActiveSkeletonId()],
-					        inputs: selectionTables[choiceST.selectedIndex].getSelectedSkeletons()};
+					        inputs: sources[choiceST.value].getSelectedSkeletons()};
 					if (!post.skids || 0 === post.skids.length) {
 						alert("Select a neuron first!");
 						return;
 					} else if (!post.inputs || 0 === post.inputs.length) {
-						alert("Add first one or more skeletons to the Selection Table!");
+						alert("First add one or more skeletons to the selected source!");
 						return;
 					}
 					break;

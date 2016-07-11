@@ -67,6 +67,8 @@ Miscellaneous:
 
 - Hidden nodes are no longer selected by G or Shift + Y.
 
+- All skeleton sources are now selectable when exporting NeuroML.
+
 
 ## 2016.05.26
 

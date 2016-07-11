@@ -173,8 +173,8 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
 
     # Get the existing list of tags for the tree node/connector and delete any
     # that are not in the new list.
-    existingLabels = table.objects.filter(**kwargs).select_related('class_instance__name')
-    existing_names = set(ele.class_instance.name for ele in existingLabels)
+    existing_labels = table.objects.filter(**kwargs).select_related('class_instance__name')
+    existing_names = set(ele.class_instance.name for ele in existing_labels)
     duplicate_labels = table.objects.filter(**kwargs).exclude(class_instance__name__in=new_tags).select_related('class_instance__name')
 
     other_labels = []

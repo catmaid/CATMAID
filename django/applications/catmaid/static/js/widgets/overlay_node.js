@@ -358,7 +358,9 @@
 
       /** Draw a line with the other node if this or the other should be displayed. */
       this.mustDrawLineWith = function(node) {
-        return this.shouldDisplay() || (node && node.shouldDisplay());
+        return this.shouldDisplay()
+            || (node && node.shouldDisplay())
+            || (node && (Math.sign(this.zdiff) * Math.sign(node.zdiff) === -1));
       };
 
       this.scale = function(baseScale, resScale, dynamicScale) {

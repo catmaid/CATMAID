@@ -1484,16 +1484,6 @@
     }),
 
     new CATMAID.Action({
-      helpText: "Export widget",
-      buttonID: "data_button_export_widget",
-      buttonName: 'export_widget',
-      run: function (e) {
-        WindowMaker.show('export-widget');
-        return true;
-      }
-    }),
-
-    new CATMAID.Action({
       helpText: "Synapse Distribution Plot",
       buttonID: "data_button_synapse_plot",
       buttonName: 'synapse_plot',

@@ -3052,51 +3052,6 @@ var WindowMaker = new function()
         return {window: win, widget: null};
     };
 
-  var createExportWidget = function()
-  {
-      var win = new CMWWindow("Export widget");
-      var content = win.getFrame();
-      content.style.backgroundColor = "#ffffff";
-
-      var container = createContainer( "project_export_widget" );
-      content.appendChild( container );
-
-      addListener(win, container);
-
-      addLogic(win);
-
-      $('#project_export_widget').load(django_url + project.id + '/exportwidget',
-        function(response, status, xhr) {
-          if (status == "success") {
-            // Bind NetworkX JSON link to handler
-            $(this).find('#export-networkx').click(function() {
-              graphexport_nxjson();
-            });
-            // Bind NeuroML link to handler
-            $(this).find('#export-neuroml181').click(function() {
-              graphexport_NeuroML181();
-            });
-            // Bind treenode export link to handler
-            $(this).find('#export-treenode-archive').click(function() {
-              // Show dialog to select
-              export_treenodes();
-            });
-            // Bind connector export link to handler
-            $(this).find('#export-connector-archive').click(function() {
-              // Show dialog to select
-              export_connectors();
-            });
-            // Bind tree geometry export link to handler
-            $(this).find('#export-tree-geometry').click(function() {
-              // Show dialog to select
-              export_tree_geometry();
-            });
-          }
-        });
-
-      return {window: win, widget: null};
-  };
-
   var createOntologySearchWidget = function(osInstance)
   {
     // If available, a new instance passed as parameter will be used.
@@ -3693,7 +3648,6 @@ var WindowMaker = new function()
     "node-table": createNodeTableWindow,
     "connector-table": createConnectorTableWindow,
     "log-table": createLogTableWindow,
-    "export-widget": createExportWidget,
     "neuron-staging-area": createStagingListWindow,
     "create-connector-selection": createConnectorSelectionWindow,
     "skeleton-measurements-table": createSkeletonMeasurementsTable,

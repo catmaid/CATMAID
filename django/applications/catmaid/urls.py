@@ -17,7 +17,7 @@ from catmaid.control import (authentication, user, log, message, client, common,
         search, graphexport, graph2, circles, analytics, review,
         wiringdiagram, object, treenodetable)
 
-from catmaid.views import CatmaidView, ExportWidgetView
+from catmaid.views import CatmaidView
 
 
 # A regular expression matching floating point and integer numbers
@@ -406,8 +406,6 @@ urlpatterns += [
     # User analytics and proficiency
     url(r'^useranalytics$', useranalytics.plot_useranalytics),
     url(r'^(?P<project_id>\d+)/userproficiency$', user_evaluation.evaluate_user),
-
-    url(r'^(?P<project_id>\d+)/exportwidget$', ExportWidgetView.as_view()),
 
     url(r'^(?P<project_id>\d+)/graphexport/json$', graphexport.export_jsongraph),
 

@@ -36,14 +36,6 @@ class UserProficiencyView(TemplateView):
         context['CATMAID_URL'] = settings.CATMAID_URL
         return context
 
-class ExportWidgetView(TemplateView):
-    template_name = "catmaid/exportwidget.html"
-
-    def get_context_data(self, **kwargs):
-        context = super(ExportWidgetView, self).get_context_data(**kwargs)
-        context['catmaid_url'] = settings.CATMAID_URL
-        return context
-
 class GroupMembershipHelper(TemplateView):
     template_name = "catmaid/groupmembershiphelper.html"
 

@@ -1,9 +1,115 @@
-{# -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- #}
-{# vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: #}
+/* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
+/* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
-{% block content %}
+(function(CATMAID) {
 
-<script type="text/javascript">
+  "use strict";
+
+  /**
+   * Export data in various formats.
+   */
+  var ExportWidget = function(options) {
+    options = options || {};
+  };
+
+  ExportWidget.contentTemplate = `
+<h3>Export Graph</h3>
+
+The selected skeletons from the <i>Selection Table</i> are used to extract the subnetwork (in different formats) or
+summary statistics.
+
+<ul>
+
+  <li><a id='export-networkx' href='#'><strong>NetworkX JSON graph</strong></a><br />
+    Using Python and <a href target='_new' href='http://networkx.github.io/documentation/latest/reference/readwrite.json_graph.html'>NetworkX</a>, you can import the returned file in your Python shell for further analysis.<br />
+    <pre>
+    import networkx as nx
+    from networkx.readwrite import json_graph
+    g=json_graph.load(open('my_downloaded_file.json'))
+    g.nodes(data=True)
+    g.edges(data=True)
+    nx.write_graphml( g, 'mynetwork.graphml' )
+    </pre></li>
+
+  <li><a id='export-neuroml181' href='#'><strong>NeuroML 1.8.1 (Level 3, NetworkML)</strong></a></br />
+  For modeling with <a href="http://www.neuroconstruct.org/">neuroConstruct</a> and then e.g. the <a href="http://www.neuron.yale.edu/neuron/">NEURON</a> simulator.</li>
+
+</ul>
+
+In addition, it is possible to extract the tree nodes or only it's connectors of
+the selected neurons.
+
+<ul>
+  <li>
+    <a id='export-treenode-archive' href='#'>
+            <strong>Treenode archive</strong></a><br />
+    The generated <em>tar.gz</em> archive contains one folder for every
+    selected neuron, named after it's ID. Such a folder contains image files for
+    every treenode of the neuron's skeleton(s), named <em>treenode-id.tiff</em>.
+    Along those files a meta data file, named <em>metadata.csv</em>, is created.
+    It contains a table with meta data for every treenode ID (first column). The
+    remaining columns are <em>parent-id</em>, <em># presynaptic sites</em>,
+    <em># postsynaptic sites</em>, <em>x</em>, <em>y</em> and <em>z</em>. The
+    root node has no parent and it's entry will have <em>null</em> in the
+    corresponding field in the meta data file.
+  </li>
+  <li>
+    <a id='export-connector-archive' href='#'>
+            <strong>Connector archive</strong></a><br />
+    The generated <em>tar.gz</em> archive contains one folder for every
+    selected neuron, named after it's ID. Such a folder contains two folders:
+    <em>presynaptic</em> and <em>postsynaptic</em> for the respective connector
+    types. These in turn contain one folder for each connector, named after
+    their ID. The actual images are stored in such a connector folder. They are
+    named <em>x_y_z.tiff</em> and encode the image center coordinates in their
+    name.
+  </li>
+  <li>
+    <a id='export-tree-geometry' href='#'>
+            <strong>Treenode and connector geometry</strong></a><br />
+    The generated JSON file contains location and tree information for all
+    treenodes in the selected neurons, as well as for all connector nodes
+    presynaptic or postsynaptic to the selected neurons.
+  </li>
+</ul>
+`;
+
+  ExportWidget.prototype.getName = function() {
+    return "Export widget";
+  };
+
+  ExportWidget.prototype.getWidgetConfiguration = function() {
+    return {
+      contentID: 'export_widget_content',
+
+      createContent: function(container) {
+        container.innerHTML = ExportWidget.contentTemplate;
+
+        var $container = $(container);
+
+        // Bind NetworkX JSON link to handler
+        $container.find('#export-networkx').click(function() {
+          graphexport_nxjson();
+        });
+        // Bind NeuroML link to handler
+       $container.find('#export-neuroml181').click(function() {
+          graphexport_NeuroML181();
+        });
+        // Bind treenode export link to handler
+        $container.find('#export-treenode-archive').click(function() {
+          export_treenodes();
+        });
+        // Bind connector export link to handler
+        $container.find('#export-connector-archive').click(function() {
+          export_connectors();
+        });
+        // Bind tree geometry export link to handler
+        $container.find('#export-tree-geometry').click(function() {
+          export_tree_geometry();
+        });
+      }
+    };
+  };
 
   function new_window_with_return( url ) {
     var selectionTables = CATMAID.SelectionTable.prototype.getInstances();
@@ -24,8 +130,8 @@
         dataType: "text",
         data: { skeleton_list: selectionTables[choiceST.selectedIndex].getSelectedSkeletons() },
         success: function (data) {
-					var blob = new Blob([data], {type: "text/plain"});
-					saveAs(blob, "networkx_graph.json");
+          var blob = new Blob([data], {type: "text/plain"});
+          saveAs(blob, "networkx_graph.json");
         }
       });
     };
@@ -36,56 +142,56 @@
     new_window_with_return( "/graphexport/json" );
   }
 
-	function graphexport_NeuroML181() {
-		var dialog = new CATMAID.OptionsDialog("Export NeuroML Level 3");
-		var choice = dialog.appendChoice("Export: ", "neuroml-choice",
-				['Neurons in selected source and their mutual synapses',
-				 'Active neuron and all its input synapses',
-				 'Active neuron and input synapses only from neurons in the selected source'],
-				[0, 1, 2],
-				0);
-		var sources = CATMAID.skeletonListSources.sources;
+  function graphexport_NeuroML181() {
+    var dialog = new CATMAID.OptionsDialog("Export NeuroML Level 3");
+    var choice = dialog.appendChoice("Export: ", "neuroml-choice",
+        ['Neurons in selected source and their mutual synapses',
+         'Active neuron and all its input synapses',
+         'Active neuron and input synapses only from neurons in the selected source'],
+        [0, 1, 2],
+        0);
+    var sources = CATMAID.skeletonListSources.sources;
     var sourceNames = Object.keys(sources).filter(function (n) {
         return n !== 'Active skeleton'; });
-		var choiceST = dialog.appendChoice("Source: ", "neuroml-st",
-				sourceNames,
-				sourceNames,
-				0);
+    var choiceST = dialog.appendChoice("Source: ", "neuroml-st",
+        sourceNames,
+        sourceNames,
+        0);
 
-		dialog.onOK = function() {
-			var post;
-			switch (choice.selectedIndex) {
-				case 0:
-					if (0 === sources.length) {
-						alert("Create selection table first!");
-						return;
-					}
-					post = {skids: sources[choiceST.value].getSelectedSkeletons()};
-					if (!post.skids || 0 === post.skids.length) {
-						alert("First add one or more skeletons to the selected source!");
-						return;
-					}
-					break;
-				case 1:
-					post = {skids: [SkeletonAnnotations.getActiveSkeletonId()]};
-					if (!post.skids || 0 === post.skids.length) {
-						alert("Select a neuron first!");
-						return;
-					}
-					break;
-				case 2:
-					post = {skids: [SkeletonAnnotations.getActiveSkeletonId()],
-					        inputs: sources[choiceST.value].getSelectedSkeletons()};
-					if (!post.skids || 0 === post.skids.length) {
-						alert("Select a neuron first!");
-						return;
-					} else if (!post.inputs || 0 === post.inputs.length) {
-						alert("First add one or more skeletons to the selected source!");
-						return;
-					}
-					break;
-			}
-			post.mode = choice.selectedIndex;
+    dialog.onOK = function() {
+      var post;
+      switch (choice.selectedIndex) {
+        case 0:
+          if (0 === sources.length) {
+            alert("Create selection table first!");
+            return;
+          }
+          post = {skids: sources[choiceST.value].getSelectedSkeletons()};
+          if (!post.skids || 0 === post.skids.length) {
+            alert("First add one or more skeletons to the selected source!");
+            return;
+          }
+          break;
+        case 1:
+          post = {skids: [SkeletonAnnotations.getActiveSkeletonId()]};
+          if (!post.skids || 0 === post.skids.length) {
+            alert("Select a neuron first!");
+            return;
+          }
+          break;
+        case 2:
+          post = {skids: [SkeletonAnnotations.getActiveSkeletonId()],
+                  inputs: sources[choiceST.value].getSelectedSkeletons()};
+          if (!post.skids || 0 === post.skids.length) {
+            alert("Select a neuron first!");
+            return;
+          } else if (!post.inputs || 0 === post.inputs.length) {
+            alert("First add one or more skeletons to the selected source!");
+            return;
+          }
+          break;
+      }
+      post.mode = choice.selectedIndex;
 
       jQuery.ajax({
         url: django_url + project.id + "/neuroml/neuroml_level3_v181",
@@ -93,12 +199,12 @@
         dataType: "text",
         data: post,
         success: function (json) {
-					var blob = new Blob([json], {type: "text/plain"});
-					saveAs(blob, "circuit.neuroml");
-				}});
-		};
-		dialog.show();
-	}
+          var blob = new Blob([json], {type: "text/plain"});
+          saveAs(blob, "circuit.neuroml");
+        }});
+    };
+    dialog.show();
+  }
 
   function export_treenodes() {
     create_node_export_dialog(false);
@@ -378,67 +484,24 @@
     dialog.show(500, 250, true);
   }
 
-</script>
+  // A key that references this widget in CATMAID
+  var widgetKey = "export-widget";
 
+  // Register widget with CATMAID
+  CATMAID.registerWidget({
+    key: widgetKey,
+    creator: ExportWidget
+  });
 
-<h3>Export Graph</h3>
+  // Add an action to the tracing tool that will open this widget
+  CATMAID.TracingTool.actions.push(new CATMAID.Action({
+      helpText: "Export widget",
+      buttonID: "data_button_export_widget",
+      buttonName: 'export_widget',
+    run: function (e) {
+        WindowMaker.show(widgetKey);
+        return true;
+    }
+  }));
 
-The selected skeletons from the <i>Selection Table</i> are used to extract the subnetwork (in different formats) or
-summary statistics.
-
-<ul>
-
-  <li><a id='export-networkx' href='#'><strong>NetworkX JSON graph</strong></a><br />
-    Using Python and <a href target='_new' href='http://networkx.github.io/documentation/latest/reference/readwrite.json_graph.html'>NetworkX</a>, you can import the returned file in your Python shell for further analysis.<br />
-    <pre>
-    import networkx as nx
-    from networkx.readwrite import json_graph
-    g=json_graph.load(open('my_downloaded_file.json'))
-    g.nodes(data=True)
-    g.edges(data=True)
-    nx.write_graphml( g, 'mynetwork.graphml' )
-    </pre></li>
-
-	<li><a id='export-neuroml181' href='#'><strong>NeuroML 1.8.1 (Level 3, NetworkML)</strong></a></br />
-	For modeling with <a href="http://www.neuroconstruct.org/">neuroConstruct</a> and then e.g. the <a href="http://www.neuron.yale.edu/neuron/">NEURON</a> simulator.</li>
-
-</ul>
-
-In addition, it is possible to extract the tree nodes or only it's connectors of
-the selected neurons.
-
-<ul>
-  <li>
-    <a id='export-treenode-archive' href='#'>
-            <strong>Treenode archive</strong></a><br />
-    The generated <em>tar.gz</em> archive contains one folder for every
-    selected neuron, named after it's ID. Such a folder contains image files for
-    every treenode of the neuron's skeleton(s), named <em>treenode-id.tiff</em>.
-    Along those files a meta data file, named <em>metadata.csv</em>, is created.
-    It contains a table with meta data for every treenode ID (first column). The
-    remaining columns are <em>parent-id</em>, <em># presynaptic sites</em>,
-    <em># postsynaptic sites</em>, <em>x</em>, <em>y</em> and <em>z</em>. The
-    root node has no parent and it's entry will have <em>null</em> in the
-    corresponding field in the meta data file.
-  </li>
-  <li>
-    <a id='export-connector-archive' href='#'>
-            <strong>Connector archive</strong></a><br />
-    The generated <em>tar.gz</em> archive contains one folder for every
-    selected neuron, named after it's ID. Such a folder contains two folders:
-    <em>presynaptic</em> and <em>postsynaptic</em> for the respective connector
-    types. These in turn contain one folder for each connector, named after
-    their ID. The actual images are stored in such a connector folder. They are
-    named <em>x_y_z.tiff</em> and encode the image center coordinates in their
-    name.
-  </li>
-  <li>
-    <a id='export-tree-geometry' href='#'>
-            <strong>Treenode and connector geometry</strong></a><br />
-    The generated JSON file contains location and tree information for all
-    treenodes in the selected neurons, as well as for all connector nodes
-    presynaptic or postsynaptic to the selected neurons.
-  </li>
-</ul>
-
-{% endblock %}
+})(CATMAID);

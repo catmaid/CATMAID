@@ -184,10 +184,39 @@ def give_neuron_to_other_user(request, project_id=None, neuron_id=None):
     return HttpResponse(json.dumps({'success':'Moved neuron #%s to %s staging area.'}))
 
 
+@api_view(['POST'])
 @requires_user_role(UserRole.Annotate)
 def rename_neuron(request, project_id=None, neuron_id=None):
-    """Rename a neuron if it is not locked by a user on which the current user
-    has no permission.
+    """Rename a neuron.
+
+    If a neuron is not locked by a user on which the current user has no
+    permission, the name of neuron can be changed through this endpoint. Neuron
+    names are currently not allowed to contain pipe characters ("|").
+    ---
+    parameters:
+        - name: neuron_id
+          description: ID of neuron to rename
+          required: true
+          type: integer
+          paramType: path
+        - name: name
+          description: New name of the neuron
+          required: true
+          type: string
+          paramType: form
+    type:
+      success:
+        description: If renaming was successful
+        type: boolean
+        required: true
+      renamed_neuron:
+        description: ID of the renamed neuron
+        type: integer
+        required: true
+      old_name:
+        description: Old name of the renamed neuron
+        type: string
+        required: true
     """
     # Make sure the user can edit the neuron
     can_edit_class_instance_or_fail(request.user, neuron_id, 'neuron')

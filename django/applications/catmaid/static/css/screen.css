@@ -118,7 +118,7 @@ dd {
 }
 
 /* Hide the browser warning messsage if all features are present */
-html.mod-js.mod-opacity.mod-canvas.mod-svg.mod-webgl.mod-json #browser_unsupported {
+html.mod-js.mod-opacity.mod-canvas.mod-svg.mod-webgl.mod-json.mod-promises #browser_unsupported {
   display: none;
 }
 

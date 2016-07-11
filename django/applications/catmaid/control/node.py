@@ -246,6 +246,7 @@ def get_treenodes_postgis(cursor, params):
             'LINESTRING(%(left)s %(top)s %(halfz)s, %(right)s %(top)s %(halfz)s,
                         %(right)s %(bottom)s %(halfz)s, %(left)s %(bottom)s %(halfz)s,
                         %(left)s %(top)s %(halfz)s)')), %(halfzdiff)s)
+           AND te.project_id = %(project_id)s
       ) edges(edge_child_id)
     WHERE
           t1.project_id = %(project_id)s
@@ -285,6 +286,7 @@ def get_connector_nodes_postgis(cursor, params, treenode_ids, missing_connector_
             'LINESTRING(%(left)s %(top)s %(halfz)s, %(right)s %(top)s %(halfz)s,
                         %(right)s %(bottom)s %(halfz)s, %(left)s %(bottom)s %(halfz)s,
                         %(left)s %(top)s %(halfz)s)')), %(halfzdiff)s)
+           AND tce.project_id = %(project_id)s
       ) edges(edge_tc_id)
     JOIN treenode_connector tc
       ON (tc.id = edge_tc_id)
@@ -315,6 +317,7 @@ def get_connector_nodes_postgis(cursor, params, treenode_ids, missing_connector_
             'LINESTRING(%(left)s %(top)s %(halfz)s, %(right)s %(top)s %(halfz)s,
                         %(right)s %(bottom)s %(halfz)s, %(left)s %(bottom)s %(halfz)s,
                         %(left)s %(top)s %(halfz)s)')), %(halfzdiff)s)
+           AND cg.project_id = %(project_id)s
         UNION SELECT UNNEST(%(sanitized_connector_ids)s::bigint[])
       ) geoms(geom_connector_id)
     JOIN connector c

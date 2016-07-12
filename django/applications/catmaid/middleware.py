@@ -1,10 +1,9 @@
-import json
 import re
 import cProfile
 from traceback import format_exc
 from datetime import datetime
 
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.conf import settings
 
 from guardian.utils import get_anonymous_user
@@ -59,6 +58,8 @@ class AnonymousAuthenticationMiddleware(object):
 
 
 class AjaxExceptionMiddleware(object):
+    """Catch exceptions and wrap it in a JSON response.
+    """
 
     def process_exception(self, request, exception):
         response = {
@@ -71,7 +72,7 @@ class AjaxExceptionMiddleware(object):
             (exc_type, exc_info, tb) = sys.exc_info()
             response['info'] = str(exc_info)
             response['traceback'] = ''.join(traceback.format_tb(tb))
-        return HttpResponse(json.dumps(response))
+        return JsonResponse(response)
 
 
 class BasicModelMapMiddleware(object):

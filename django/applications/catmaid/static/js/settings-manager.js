@@ -134,7 +134,8 @@
             }
 
             Object.keys(scopeValues.entries).forEach(function (k) {
-              if (rendered[k].overridable) {
+              if (self.schema.entries.hasOwnProperty(k) // Ignore properties not in the schema
+                  && rendered[k].overridable) {
                 var entry = scopeValues.entries[k];
                 rendered[k].value = entry.value;
                 rendered[k].overridable = entry.overridable;

@@ -26,11 +26,15 @@
      * Add meta controls and information about settings cascade, scope and
      * overrides/locking to a settings element.
      */
-    var wrapSettingsControl = function (control, settings, key, scope) {
+    var wrapSettingsControl = function (control, settings, key, scope, update) {
       var valueScope = settings.rendered[scope][key].valueScope;
       var fromThisScope = valueScope === scope;
       var overridable = settings.rendered[scope][key].overridable;
       var meta = $('<ul />');
+      var updateAndRefresh = function () {
+        CATMAID.tools.callIfFn(update);
+        refresh();
+      };
 
       if (!fromThisScope) {
         control.addClass('inherited');
@@ -53,7 +57,7 @@
         meta.append($('<button />')
             .text('Reset to inherited default')
             .click(function () {
-              settings.unset(key, scope).then(refresh);
+              settings.unset(key, scope).then(updateAndRefresh);
             }));
       }
 
@@ -64,7 +68,7 @@
         meta.append($('<button />')
             .text(overridable ? 'Lock this setting' : 'Unlock this setting')
             .click(function () {
-              settings.setOverridable(key, !overridable, scope).then(refresh);
+              settings.setOverridable(key, !overridable, scope).then(updateAndRefresh);
             }));
       }
 

@@ -696,7 +696,7 @@ def split_skeleton(request, project_id=None):
     insert_into_log(project_id, request.user.id, "split_skeleton", location,
                     "Split skeleton with ID {0} (neuron: {1})".format( skeleton_id, neuron.name ) )
 
-    return HttpResponse(json.dumps({'skeleton_id': new_skeleton.id}), content_type='application/json')
+    return JsonResponse({'new_skeleton_id': new_skeleton.id, 'existing_skeleton_id': skeleton_id})
 
 
 @api_view(['GET'])

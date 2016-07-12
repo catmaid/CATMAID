@@ -2353,7 +2353,7 @@ class ViewPageTests(TestCase):
             {'treenode_id': 2394, 'upstream_annotation_map': '{}', 'downstream_annotation_map': '{}'})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
-        new_skeleton_id = parsed_response['skeleton_id']
+        new_skeleton_id = parsed_response['new_skeleton_id']
 
         self.assertTreenodeHasProperties(2392, None, old_skeleton_id)
         self.assertTreenodeHasProperties(2394, None, new_skeleton_id)
@@ -2416,7 +2416,7 @@ class ViewPageTests(TestCase):
              'downstream_annotation_map': json.dumps({'A': self.test_user_id, 'B': self.test_user_id, 'C': self.test_user_id})})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
-        new_skeleton_id = parsed_response['skeleton_id']
+        new_skeleton_id = parsed_response['new_skeleton_id']
 
         response = self.client.post(
             '/%d/skeleton/annotationlist' % (self.test_project_id,),

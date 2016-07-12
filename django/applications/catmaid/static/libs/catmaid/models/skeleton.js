@@ -38,8 +38,12 @@
       };
 
       return CATMAID.fetch(url, 'POST', params).then((function(json) {
-        this.trigger(CATMAID.Skeletons.EVENT_SKELETON_SPLIT, json.skeleton_id,
+        this.trigger(CATMAID.Skeletons.EVENT_SKELETON_SPLIT,
+            json.new_skeleton_id,
+            json.existing_skeleton_id,
             treenodeId);
+        this.trigger(CATMAID.Skeletons.EVENT_SKELETON_CHANGED,
+            json.existing_skeleton_id);
         return json;
       }).bind(this));
     },

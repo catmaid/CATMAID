@@ -134,7 +134,7 @@
     };
 
     if (writeThrough) return this._store(key, scope);
-    else Promise.resolve();
+    else return Promise.resolve();
   };
 
   /**

@@ -72,6 +72,7 @@
     this.rendered = {};
     this.settingsStore = CATMAID.DataStoreManager.get(Settings.DATA_STORE_NAME);
     this._boundLoad = this.load.bind(this);
+    this._storeThrottleTimeout = null;
     this.settingsStore.on(CATMAID.DataStore.EVENT_LOADED, this._boundLoad);
     this.load();
   }
@@ -89,6 +90,7 @@
   };
 
   Settings.DATA_STORE_NAME = 'settings';
+  Settings.STORE_THROTTLE_INTERVAL = 1*1000;
 
   Settings.prototype.destroy = function () {
     this.settingsStore.off(CATMAID.DataStore.EVENT_LOADED, this._boundLoad);
@@ -218,10 +220,20 @@
             scopeValues.entries[key].value = value;
           }
 
+          if (self._storeThrottleTimeout) {
+            window.clearTimeout(self._storeThrottleTimeout);
+          }
+
+          self._storeThrottleTimeout = window.setTimeout(function () {
+            self.settingsStore._storeDirty();
+            CATMAID.msg('Success', 'User profile updated successfully.');
+            self.load();
+            self._storeThrottleTimeout = null;
+          }, Settings.STORE_THROTTLE_INTERVAL);
+
           return self.settingsStore
-              .set(self.name, scopeValues, datastoreScope, true)
+              .set(self.name, scopeValues, datastoreScope, false)
               .then(function () {
-                CATMAID.msg('Success', 'User profile updated successfully.');
                 self.load();
               });
         });

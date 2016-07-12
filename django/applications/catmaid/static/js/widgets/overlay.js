@@ -1797,11 +1797,12 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeWithLink = function (
       undefined, SkeletonAnnotations.defaultNewNeuronName);
   CATMAID.commands.execute(command)
     .then(function(jso) {
-      var editTime = null; // TODO
+      var editTime = jso.edition_time;
       var nid = parseInt(jso.treenode_id);
       // always create a new treenode which is the root of a new skeleton
       var nn = self.graphics.newNode(nid, null, null, radius, pos_x, pos_y,
-          pos_z, 0, 5 /* confidence */, parseInt(jso.skeleton_id), editTime, true);
+          pos_z, 0, 5 /* confidence */, parseInt(jso.skeleton_id), editTime,
+          CATMAID.session.userid);
       // add node to nodes list
       self.nodes[nid] = nn;
       nn.createGraphics();
@@ -1858,7 +1859,8 @@ SkeletonAnnotations.TracingOverlay.prototype.createNode = function (parentID, ch
       // object is not within the set of retrieved nodes, but the parentID
       // will be defined.
       var nn = self.graphics.newNode(nid, self.nodes[parentID], parentID,
-          radius, pos_x, pos_y, pos_z, 0, 5 /* confidence */, skid, editTime, true);
+          radius, pos_x, pos_y, pos_z, 0, 5 /* confidence */, skid, editTime,
+          CATMAID.session.userid);
 
       self.nodes[nid] = nn;
       nn.createGraphics();

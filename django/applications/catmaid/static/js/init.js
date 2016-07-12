@@ -421,16 +421,22 @@ var project;
    * class instances they have permission to edit).
    */
   Client.prototype.refreshEditDomain = function () {
+    function resetEditDomainTimeout() {
+      if (edit_domain_timeout) {
+        window.clearTimeout(edit_domain_timeout);
+      }
+
+      edit_domain_timeout = window.setTimeout(CATMAID.client.refreshEditDomain,
+                                              EDIT_DOMAIN_TIMEOUT_INTERVAL);
+    }
+
     CATMAID.fetch('accounts/login', 'GET')
         .then(function (json) {
           CATMAID.session.domain = new Set(json.domain);
-
-          if (edit_domain_timeout) {
-            window.clearTimeout(edit_domain_timeout);
-          }
-
-          edit_domain_timeout = window.setTimeout(CATMAID.client.refreshEditDomain,
-                                                  EDIT_DOMAIN_TIMEOUT_INTERVAL);
+          resetEditDomainTimeout();
+        }, function () {
+          CATMAID.statusBar.replaceLast('Unable to update account information (network may be disconnected).');
+          resetEditDomainTimeout();
         });
   };
 

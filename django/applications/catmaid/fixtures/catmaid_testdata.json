@@ -1,6 +1,6 @@
 [
   {
-    "pk": 1,
+    "pk": 5,
     "model": "auth.user",
     "fields": {
       "username": "test0",
@@ -267,7 +267,7 @@
       "creation_time": "2010-08-26T12:23:53.551Z",
       "edition_time": "2010-08-26T12:23:53.551Z",
       "project": 3,
-      "user": 1
+      "user": 5
     }
   },
   {
@@ -279,7 +279,7 @@
       "creation_time": "2010-08-26T13:19:57.046Z",
       "edition_time": "2010-08-26T13:19:57.046Z",
       "project": 3,
-      "user": 1
+      "user": 5
     }
   },
   {
@@ -507,7 +507,7 @@
       "creation_time": "2012-07-22T19:15:24.010Z",
       "edition_time": "2012-07-22T19:15:24.010Z",
       "project": 3,
-      "user": 1
+      "user": 5
     }
   },
   {
@@ -1133,7 +1133,7 @@
       "edition_time": "2010-08-26T13:08:19.488Z",
       "project": 3,
       "relation_name": "is_a",
-      "user": 1
+      "user": 5
     }
   },
   {
@@ -1147,7 +1147,7 @@
       "edition_time": "2010-08-26T13:15:22.408Z",
       "project": 3,
       "relation_name": "part_of",
-      "user": 1
+      "user": 5
     }
   },
   {
@@ -1161,7 +1161,7 @@
       "edition_time": "2010-08-26T13:15:31.939Z",
       "project": 3,
       "relation_name": "model_of",
-      "user": 1
+      "user": 5
     }
   },
   {
@@ -1175,7 +1175,7 @@
       "edition_time": "2010-08-26T13:15:41.060Z",
       "project": 3,
       "relation_name": "element_of",
-      "user": 1
+      "user": 5
     }
   },
   {
@@ -1189,7 +1189,7 @@
       "edition_time": "2010-08-26T15:20:51.554Z",
       "project": 3,
       "relation_name": "presynaptic_to",
-      "user": 1
+      "user": 5
     }
   },
   {
@@ -1203,7 +1203,7 @@
       "edition_time": "2010-08-26T15:21:35.859Z",
       "project": 3,
       "relation_name": "postsynaptic_to",
-      "user": 1
+      "user": 5
     }
   },
   {
@@ -1217,7 +1217,7 @@
       "edition_time": "2010-08-26T15:21:35.859Z",
       "project": 3,
       "relation_name": "gapjunction_with",
-      "user": 1
+      "user": 5
     }
   },
   {
@@ -4816,7 +4816,7 @@
       "location_y": 4600.000,
       "location_z": 0.000,
       "editor": 2,
-      "user": 1
+      "user": 5
     }
   },
   {
@@ -4834,7 +4834,7 @@
       "location_y": 5190.000,
       "location_z": 0.000,
       "editor": 2,
-      "user": 1
+      "user": 5
     }
   },
   {
@@ -4852,7 +4852,7 @@
       "location_y": 4330.000,
       "location_z": 0.000,
       "editor": 2,
-      "user": 1
+      "user": 5
     }
   },
   {
@@ -4870,7 +4870,7 @@
       "location_y": 4880.000,
       "location_z": 0.000,
       "editor": 2,
-      "user": 1
+      "user": 5
     }
   },
   {

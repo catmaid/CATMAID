@@ -22,7 +22,7 @@ from guardian.models import Permission
 from guardian.shortcuts import get_perms_for_model, assign
 
 from catmaid.models import (Class, Relation, ClassInstance, Project, Stack,
-        ProjectStack, Overlay, StackClassInstance, tile_source_types)
+        ProjectStack, Overlay, StackClassInstance, TILE_SOURCE_TYPES)
 from catmaid.fields import Double3D
 from catmaid.control.common import urljoin
 from catmaid.control.classification import get_classification_links_qs, \
@@ -730,7 +730,7 @@ class ProjectSelectionForm(forms.Form):
             "used if not specified for a stack.")
     default_tile_source_type = forms.ChoiceField(
             initial=settings.IMPORTER_DEFAULT_TILE_SOURCE_TYPE,
-            choices=tile_source_types,
+            choices=TILE_SOURCE_TYPES,
             help_text="The default tile source type is used if there " \
                     "none defined for n imported stack. It represents " \
                     "how the tile data is organized. See " \

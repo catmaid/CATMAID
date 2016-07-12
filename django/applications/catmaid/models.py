@@ -93,7 +93,7 @@ def on_project_save(sender, instance, created, **kwargs):
 post_save.connect(on_project_save, sender=Project)
 
 # Supported tile source types
-tile_source_types = (
+TILE_SOURCE_TYPES = (
     (1, '1: File-based image stack'),
     (2, '2: Request query-based image stack'),
     (3, '3: HDF5 via CATMAID backend'),
@@ -129,7 +129,7 @@ class Stack(models.Model):
     tile_height = models.IntegerField(default=256,
             help_text="The height of one tile.")
     tile_source_type = models.IntegerField(default=1,
-            choices=tile_source_types,
+            choices=TILE_SOURCE_TYPES,
             help_text='This represents how the tile data is organized. '
             'See <a href="http://catmaid.org/page/tile_sources.html">tile source '
             'conventions documentation</a>.')

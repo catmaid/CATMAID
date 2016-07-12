@@ -560,17 +560,20 @@
         ['Leaf node', 'leaf_node_color'],
       ]);
 
+      var updateTracingColors = function () {
+        // Update all tracing layers
+        project.getStackViewers().forEach(function(sv) {
+          var overlay = SkeletonAnnotations.getTracingOverlay(sv.getId());
+          if (overlay) overlay.recolorAllNodes();
+        });
+      };
       var setColorOfTracingFields = function() {
         colors.forEach(function(field, label) {
           var input = colorControls.get(field);
           var color = $(input).find('input').val();
           SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE][field] = color;
         });
-        // Update all tracing layers
-        project.getStackViewers().forEach(function(sv) {
-          var overlay = SkeletonAnnotations.getTracingOverlay(sv.getId());
-          if (overlay) overlay.recolorAllNodes();
-        });
+        updateTracingColors();
       };
 
       var colorControls = new Map();
@@ -580,7 +583,8 @@
         this.append(wrapSettingsControl(input,
                                         SkeletonAnnotations.TracingOverlay.Settings,
                                         field,
-                                        SETTINGS_SCOPE));
+                                        SETTINGS_SCOPE,
+                                        updateTracingColors));
         var colorField = $(input).find('input');
         CATMAID.ColorPicker.enable(colorField, {
           initialColor: color,

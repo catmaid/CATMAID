@@ -217,6 +217,10 @@
               overridable: true
             };
           } else {
+            if (scopeValues.entries[key].value === value) {
+              // Nothing has changed. Bail early to avoid needless work.
+              return Promise.resolve();
+            }
             scopeValues.entries[key].value = value;
           }
 

@@ -127,6 +127,7 @@
       positionOptions.forEach(function(o) {
         this.append(new Option(o.name, o.id));
       }, msgPosition);
+      msgPosition.val(CATMAID.messagePosition);
 
       ds.append(CATMAID.DOM.createLabeledControl('Message position', msgPosition,
             'Choose where on the screen messages should be displayed. By ' +

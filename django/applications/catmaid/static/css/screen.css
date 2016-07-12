@@ -798,7 +798,7 @@ div#classification_graph_object img.roiimage {
   opacity: 1;
   display: none;
   padding: 10px;
-  pointer-events: none;
+  pointer-events: auto;
   position: absolute;
   width: 100%;
   -webkit-transform: translateY(10px);

@@ -69,6 +69,9 @@ Miscellaneous:
 
 - All skeleton sources are now selectable when exporting NeuroML.
 
+- Fix "Reset to inherited default" and "Lock this setting" buttons in settings
+  controls not being clickable.
+
 
 ## 2016.05.26
 

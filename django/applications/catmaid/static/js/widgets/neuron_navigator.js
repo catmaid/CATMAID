@@ -733,7 +733,8 @@
   };
 
   NeuronNavigator.Node.prototype.add_annotation_list_table = function($container,
-      table_id, filters, display_usage, display_annotator, unlink_handler, callback)
+      table_id, filters, display_usage, display_annotator, displayLength,
+      unlink_handler, callback)
   {
     var content = document.createElement('div');
     content.setAttribute('id', 'navigator_annotationlist_content' +
@@ -837,7 +838,7 @@
       "bProcessing": true,
       "bServerSide": true,
       "bAutoWidth": false,
-      "iDisplayLength": this.possibleLengths[0],
+      "iDisplayLength": Number.isInteger(displayLength) ? displayLength : -1,
       "sAjaxSource": django_url + project.id + '/annotations/table-list',
       "fnServerData": function (sSource, aoData, fnCallback) {
           if (filters.is_meta) {
@@ -1481,6 +1482,9 @@
       this.name = "Annotations";
       this.creates_co_annotations = false;
     }
+
+    // Number of displayed annotations per page
+    this.annotationListLength = 25;
   };
 
   NeuronNavigator.AnnotationListNode.prototype = {};
@@ -1508,10 +1512,15 @@
 
     // Add annotation data table based on filters above
     var datatable = this.add_annotation_list_table(container, table_id, filters,
-        true, false, null, null);
+        true, false, this.annotationListLength, null, null);
 
     // Make self accessible in callbacks more easily
     var self = this;
+
+    // If the pagination display length is changed, record the new length
+    datatable.on('length.dt', function(e, settings, length) {
+      self.annotationListLength = length;
+    });
 
     // If an annotation is selected an annotation filter node is created and the
     // event is removed. If the annotation list node should create co-annotations,
@@ -1769,6 +1778,9 @@
     this.neuron_name = neuron.name;
     this.name = neuron.name;
     this.skeleton_ids = neuron.skeleton_ids;
+
+    // Number of initially displayed annotations per page
+    this.annotationListLength = 25;
 
     this.link = function(navigator, parent)
     {
@@ -2122,12 +2134,18 @@
 
     // Add annotation data table based on filters above
     var annotation_datatable = this.add_annotation_list_table(container,
-        annotation_table_id, filters, false, true, function(annotation_ids) {
+        annotation_table_id, filters, false, true, this.annotationListLength,
+        function(annotation_ids) {
           annotation_ids = annotation_ids instanceof Array ?
               annotation_ids : [annotation_ids];
           return CATMAID.confirmAndRemoveAnnotations(project.id,
               [self.neuron_id], annotation_ids);
         }, this.create_ann_post_process_fn(this, container));
+
+    // If the pagination display length is changed, record the new length
+    annotation_datatable.on('length.dt', function(e, settings, length) {
+      self.annotationListLength = length;
+    });
 
     // If a user is selected an annotation filter node is created and the event
     // is removed.

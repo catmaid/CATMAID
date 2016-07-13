@@ -20,7 +20,7 @@ matplotlib==1.4.0
 mock==1.0.1
 networkx==1.7
 numpy==1.10.1
-pgmagick==0.6.1
+pgmagick==0.6.2
 pillow==3.0.0
 progressbar2==3.6.2
 psycopg2==2.6.1

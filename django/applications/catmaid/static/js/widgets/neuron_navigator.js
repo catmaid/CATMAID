@@ -1476,10 +1476,10 @@
   NeuronNavigator.AnnotationListNode = function(creates_co_annotations)
   {
     if (creates_co_annotations) {
-      this.name = "Co-Annotations";
+      NeuronNavigator.Node.call(this, "Co-Annotations");
       this.creates_co_annotations = true;
     } else {
-      this.name = "Annotations";
+      NeuronNavigator.Node.call(this, "Annotations");
       this.creates_co_annotations = false;
     }
 
@@ -1487,9 +1487,10 @@
     this.annotationListLength = 25;
   };
 
-  NeuronNavigator.AnnotationListNode.prototype = {};
-  $.extend(NeuronNavigator.AnnotationListNode.prototype,
-      new NeuronNavigator.Node(""));
+  NeuronNavigator.AnnotationListNode.prototype = Object.create(
+      NeuronNavigator.Node.prototype);
+  NeuronNavigator.AnnotationListNode.prototype.constructor =
+      NeuronNavigator.AnnotationListNode;
 
   NeuronNavigator.AnnotationListNode.prototype.become_co_annotation_list =
       function()
@@ -1543,14 +1544,16 @@
    */
   NeuronNavigator.MetaAnnotationListNode = function(annotates)
   {
+    NeuronNavigator.AnnotationListNode.call(this, false);
     this.is_meta = true;
     this.annotates = annotates;
     this.name = annotates ? "Annotates" : "Annotated with";
   };
 
-  NeuronNavigator.MetaAnnotationListNode.prototype = {};
-  $.extend(NeuronNavigator.MetaAnnotationListNode.prototype,
-      new NeuronNavigator.AnnotationListNode(false));
+  NeuronNavigator.MetaAnnotationListNode.prototype = Object.create(
+      NeuronNavigator.AnnotationListNode.prototype);
+  NeuronNavigator.MetaAnnotationListNode.prototype.constructor =
+      NeuronNavigator.MetaAnnotationListNode;
 
   NeuronNavigator.MetaAnnotationListNode.prototype.create_annotation_filter =
       function(annotation, annotation_id)
@@ -1564,11 +1567,14 @@
    * The user list node of the navigator provides a list of all existing users.
    * It will add a user filter node if double clicked on one of them.
    */
-  NeuronNavigator.UserListNode = function() {};
+  NeuronNavigator.UserListNode = function() {
+    NeuronNavigator.Node.call(this, "Users");
+  };
 
-  NeuronNavigator.UserListNode.prototype = {};
-  $.extend(NeuronNavigator.UserListNode.prototype,
-      new NeuronNavigator.Node("Users"));
+  NeuronNavigator.UserListNode.prototype = Object.create(
+      NeuronNavigator.Node.prototype);
+  NeuronNavigator.UserListNode.prototype.constructor =
+      NeuronNavigator.UserListNode;
 
   NeuronNavigator.UserListNode.prototype.add_content = function(container,
       filters)
@@ -1599,11 +1605,14 @@
    * The neuron list node of the navigator lists all neurons. It is the simplest
    * user of the neuron list mixin.
    */
-  NeuronNavigator.NeuronListNode = function() {};
+  NeuronNavigator.NeuronListNode = function() {
+    NeuronNavigator.Node.call(this, "Neurons");
+  };
 
-  NeuronNavigator.NeuronListNode.prototype = {};
-  $.extend(NeuronNavigator.NeuronListNode.prototype,
-      new NeuronNavigator.Node("Neurons"));
+  NeuronNavigator.NeuronListNode.prototype = Object.create(
+      NeuronNavigator.Node.prototype);
+  NeuronNavigator.NeuronListNode.prototype.constructor =
+      NeuronNavigator.NeuronListNode;
   $.extend(NeuronNavigator.NeuronListNode.prototype,
       new NeuronNavigator.NeuronListMixin());
 
@@ -1622,16 +1631,17 @@
   NeuronNavigator.AnnotationFilterNode = function(annotation, annotation_id,
       is_coannotation, is_meta_annotation)
   {
+    NeuronNavigator.Node.call(this, annotation);
     this.annotation = annotation;
     this.annotation_id = annotation_id;
     this.is_coannotation = is_coannotation;
     this.is_meta_annotation = is_meta_annotation;
-    this.name = annotation;
   };
 
-  NeuronNavigator.AnnotationFilterNode.prototype = {};
-  $.extend(NeuronNavigator.AnnotationFilterNode.prototype,
-      new NeuronNavigator.Node("Empty Annotation Filter"));
+  NeuronNavigator.AnnotationFilterNode.prototype = Object.create(
+      NeuronNavigator.Node.prototype);
+  NeuronNavigator.AnnotationFilterNode.prototype.constructor =
+      NeuronNavigator.AnnotationFilterNode;
   $.extend(NeuronNavigator.AnnotationFilterNode.prototype,
       new NeuronNavigator.NeuronListMixin());
 
@@ -1726,13 +1736,15 @@
    */
   NeuronNavigator.UserFilterNode = function(included_user)
   {
+    NeuronNavigator.Node.call(this, "Empty User Filter");
     this.user_id = included_user.id;
     this.name = included_user.login;
   };
 
-  NeuronNavigator.UserFilterNode.prototype = {};
-  $.extend(NeuronNavigator.UserFilterNode.prototype,
-      new NeuronNavigator.Node("Empty User Filter"));
+  NeuronNavigator.UserFilterNode.prototype = Object.create(
+      NeuronNavigator.Node.prototype);
+  NeuronNavigator.UserFilterNode.prototype.constructor =
+      NeuronNavigator.UserFilterNode;
 
   NeuronNavigator.UserFilterNode.prototype.breaks_filter_chain = function()
   {
@@ -1774,9 +1786,9 @@
    */
   NeuronNavigator.NeuronNode = function(neuron)
   {
+    NeuronNavigator.Node.call(this, neuron.name);
     this.neuron_id = neuron.id;
     this.neuron_name = neuron.name;
-    this.name = neuron.name;
     this.skeleton_ids = neuron.skeleton_ids;
 
     // Number of initially displayed annotations per page
@@ -1794,9 +1806,10 @@
     };
   };
 
-  NeuronNavigator.NeuronNode.prototype = {};
-  $.extend(NeuronNavigator.NeuronNode.prototype,
-      new NeuronNavigator.Node("Neuron node"));
+  NeuronNavigator.NeuronNode.prototype = Object.create(
+      NeuronNavigator.Node.prototype);
+  NeuronNavigator.NeuronNode.prototype.constructor =
+      NeuronNavigator.NeuronNode;
 
   NeuronNavigator.NeuronNode.prototype.breaks_filter_chain = function()
   {
@@ -2211,12 +2224,19 @@
    */
   NeuronNavigator.ActiveNeuronMixin = function()
   {
+    NeuronNavigator.NeuronNode.call(this, {
+      id: null,
+      name: '',
+      skeleton_ids: []
+    });
     this.current_skid = null;
     this.sync_active_neuron = true;
   };
 
-  $.extend(NeuronNavigator.ActiveNeuronMixin.prototype,
-      new NeuronNavigator.NeuronNode({id: null, name: '', skeleton_ids: []}, true));
+  NeuronNavigator.ActiveNeuronMixin.prototype = Object.create(
+      NeuronNavigator.NeuronNode.prototype);
+  NeuronNavigator.ActiveNeuronMixin.prototype.constructor =
+      NeuronNavigator.ActiveNeuronMixin;
 
   NeuronNavigator.ActiveNeuronMixin.prototype.add_activeneuron_content =
       function(container, filters)
@@ -2323,13 +2343,15 @@
    */
   NeuronNavigator.ActiveNeuronNode = function()
   {
+    NeuronNavigator.ActiveNeuronMixin.call(this);
     this.name = 'Active Neuron';
     this.refresh_activeneuron();
   };
 
-  NeuronNavigator.ActiveNeuronNode.prototype = {};
-  $.extend(NeuronNavigator.ActiveNeuronNode.prototype,
-      new NeuronNavigator.ActiveNeuronMixin());
+  NeuronNavigator.ActiveNeuronNode.prototype = Object.create(
+      NeuronNavigator.ActiveNeuronMixin.prototype);
+  NeuronNavigator.ActiveNeuronNode.prototype.constructor =
+      NeuronNavigator.ActiveNeuronNode;
 
   NeuronNavigator.ActiveNeuronNode.prototype.add_content = function(container,
       filters)
@@ -2346,6 +2368,8 @@
    */
   NeuronNavigator.HomeNode = function()
   {
+    NeuronNavigator.ActiveNeuronMixin.call(this);
+
     this.name = "Home";
     // A home node acts as the root node and has therefore no parent.
     this.link(null);
@@ -2353,9 +2377,9 @@
     this.current_skid = SkeletonAnnotations.getActiveSkeletonId();
   };
 
-  NeuronNavigator.HomeNode.prototype = {};
-  $.extend(NeuronNavigator.HomeNode.prototype,
-      new NeuronNavigator.ActiveNeuronMixin());
+  NeuronNavigator.HomeNode.prototype = Object.create(
+      NeuronNavigator.ActiveNeuronMixin.prototype);
+  NeuronNavigator.HomeNode.prototype.constructor = Navigator.HomeNode;
 
   NeuronNavigator.HomeNode.prototype.add_content = function(container, filters)
   {

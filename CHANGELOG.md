@@ -61,6 +61,11 @@ Miscellaneous:
 
 - New filter "Label Color Map" will false-color stacks of label ID images.
 
+- It is now possible to configure the available page length options used by
+  most tables from a central place. This is done through the "Table page length
+  options" setting, which is available from the Settings widget. For widgets to
+  be aware of page length setting changes, they have to be reloaded.
+
 
 ### Bug fixes
 

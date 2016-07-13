@@ -241,10 +241,7 @@ TreenodeTable.prototype.init = function() {
     "bLengthChange": true,
     "bAutoWidth": false,
     "iDisplayLength": 30,
-    "aLengthMenu": [
-      [30, 50, 100, -1],
-      [30, 50, 100, "All"]
-    ],
+    "aLengthMenu": [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
     "bJQueryUI": true,
     "aoColumns": [{
       "sClass": "center",

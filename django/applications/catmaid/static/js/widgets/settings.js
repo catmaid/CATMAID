@@ -158,6 +158,22 @@
       hoverBehavior.on('change', function(e) {
         CATMAID.focusBehavior = parseInt(this.value, 10);
       });
+
+      ds.append(CATMAID.DOM.createInputSetting('Table page length options',
+            CATMAID.pageLengthOptions.join(', '), 'A list of numbers, ' +
+            'representing page length options that nearly all tables will use. ' +
+            'A value of -1 stands for "All values". Widgets have to be reloaded ' +
+            'to respect setting changes.', function() {
+              var newOptions = this.value.split(',')
+                .map(CATMAID.tools.trimString)
+                .map(Number);
+              try {
+                CATMAID.pageLengthOptions = newOptions;
+                CATMAID.msg("Success", "Pagination options updated");
+              } catch (e) {
+                CATMAID.msg("Warning: invalid value", e.message ? e.message : e);
+              }
+            }));
     };
 
     /**

@@ -360,9 +360,8 @@
     /* Because some nodes use tables to display data, some common options are
      * kept on the abstract node level.
      */
-    this.possibleLengths = [25, 100, 500, 2000];
-    this.possibleLengthsLabels = this.possibleLengths.map(
-        function (n) { return n.toString(); });
+    this.possibleLengths = CATMAID.pageLengthOptions;
+    this.possibleLengthsLabels = CATMAID.pageLengthLabels;
   };
 
   /**

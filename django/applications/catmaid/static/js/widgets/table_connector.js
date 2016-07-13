@@ -15,9 +15,8 @@
     var self = this;
     var asInitValsSyn = [];
     var skeletonID = optionalSkid ? optionalSkid : -1;
-    var possibleLengths = [25, 100, -1];
-    var possibleLengthsLabels = possibleLengths.map(
-      function (n) { return (n === -1) ? "All" : n.toString(); });
+    var possibleLengths = CATMAID.pageLengthOptions;
+    var possibleLengthsLabels = CATMAID.pageLengthLabels;
 
     this.updateConnectorTable = function() {
       self.setSkeleton( -1 );

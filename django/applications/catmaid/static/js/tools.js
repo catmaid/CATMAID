@@ -492,4 +492,12 @@ CATMAID.tools = CATMAID.tools || {};
     printWindow.close();
   };
 
+  /**
+   * Apply thr trim() function to a string. Makes is possible to be used in
+   * map/etc.
+   */
+  tools.trimString = function(str) {
+    return str.trim();
+  };
+
 })(CATMAID.tools);

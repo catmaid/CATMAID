@@ -88,7 +88,7 @@
         tableContainer.appendChild(table);
         container.appendChild(tableContainer);
         this.datatable = $(table).DataTable({
-          lengthMenu: [[10, 25, 100, -1], [10, 25, 100, "All"]],
+          lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
           ajax: {
             url: CATMAID.makeURL(project.id +  "/volumes/"),
             dataSrc: ""

@@ -130,10 +130,7 @@ var NotificationsTable = new function()
         return nRow;
       },
       "iDisplayLength": 50,
-      "aLengthMenu": [
-        [-1, 10, 50, 100, 200],
-        ["All", 10, 50, 100, 200]
-      ],
+      "aLengthMenu": [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
       "bJQueryUI": true,
       "aoColumns": [{
         "bSearchable": false,

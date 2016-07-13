@@ -231,7 +231,7 @@
         paging: true,
         displayStart: this.display_start,
         pageLength: this.display_length,
-        lengthMenu: [[50, 100, 500, -1], [50, 100, 500, "All"]],
+        lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
         order: [],
         processing: true,
         columns: [

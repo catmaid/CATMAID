@@ -111,6 +111,31 @@ window.onbeforeunload = function() {
     }
   });
 
+  var isNoInterger = function(v) { return !Number.isInteger(v); };
+  var pageLengthOptions = [25, 100, 500, 2000, -1];
+  Object.defineProperty(CATMAID, 'pageLengthOptions', {
+    get: function() { return pageLengthOptions.slice(); },
+    set: function(newValue) {
+      if (!(newValue instanceof Array) || newValue.some(isNoInterger)) {
+        throw new CATMAID.ValueError('Please provide an array of integer numbers');
+      }
+      pageLengthOptions = newValue.slice();
+    }
+  });
+  Object.defineProperty(CATMAID, 'pageLengthLabels', {
+    get: function() { return CATMAID.getPageLengthLabels(pageLengthOptions); }
+  });
+
+  /**
+   * Return a string version of the input array and replace occurences of "-1"
+   * with "All". This is usefule for page length lists.
+   */
+  CATMAID.getPageLengthLabels = function(options) {
+    return options.map(function (n) {
+      return -1 === n ? "All" : n.toString();
+    });
+  };
+
   /**
    * Convenience function to show a growl message
    */

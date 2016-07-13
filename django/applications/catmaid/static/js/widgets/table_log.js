@@ -10,9 +10,8 @@
     var self = this;
     var asInitValsSyn = [];
 
-    var possibleLengths = [25, 100, 500, 2000, -1];
-    var possibleLengthsLabels = possibleLengths.map(
-        function (n) { return (n === -1) ? "All" : n.toString(); });
+    var possibleLengths = CATMAID.pageLengthOptions;
+    var possibleLengthsLabels = CATMAID.pageLengthLabels;
 
     /**
      * Redraw the complete log table.

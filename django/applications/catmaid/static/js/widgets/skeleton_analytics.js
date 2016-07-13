@@ -39,10 +39,7 @@
       "bServerSide": false, // Enable sorting locally, and prevent sorting from calling the fnServerData to reload the table -- an expensive and undesirable operation.
       "bAutoWidth": false,
       "iDisplayLength": -1,
-      "aLengthMenu": [
-        [-1, 10, 100, 200],
-        ["All", 10, 100, 200]
-      ],
+      "aLengthMenu": [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
       "bJQueryUI": true,
       "aoColumns": [
       { // Type

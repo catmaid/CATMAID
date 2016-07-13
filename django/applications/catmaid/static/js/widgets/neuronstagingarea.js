@@ -770,7 +770,7 @@
       infoCallback: this.getTableInfo.bind(this),
       displayStart: this.entriesPerPage * this.page,
       pageLength: this.entriesPerPage,
-      lengthMenu: [[10, 25, 100, -1], [10, 25, 100, "All"]],
+      lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
       processing: true,
       // Load data from widget through ajax option. This allows for complete
       // control over the data and allows for manual filtering and sorting.

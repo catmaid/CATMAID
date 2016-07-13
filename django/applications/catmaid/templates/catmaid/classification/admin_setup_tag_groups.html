@@ -1,14 +1,16 @@
 {% extends "admin/base_site.html" %}
 {% load i18n %}
+{% load admin_static %}
 
 {% block extrahead %}
 <style type="text/css">
     ul { list-style: none; padding: 0px; }
     ul li { list-style-type: none; }
 </style>
-<script type="text/javascript" src="{{ STATIC_URL }}libs/jquery/jquery.js"></script>
+<script type="text/javascript" src="{% static 'admin/js/jquery.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'admin/js/jquery.init.js' %}"></script>
 <script>
-$(document).ready(function() {
+(function ($) {$(document).ready(function() {
     var master_cb = $("#select-all");
     if (master_cb.length > 0) {
         var slave_cbs = $("#path-setup-form input[type=checkbox]");
@@ -24,7 +26,7 @@ $(document).ready(function() {
             }).length == slave_cbs.length)
         });
     }
-});
+});})(django.jQuery);
 </script>
 {% endblock %}
 

@@ -1,6 +1,7 @@
 {% extends "admin/base_site.html" %}
 {% load i18n admin_static %}
 {% load admin_urls %}
+{% load pipeline %}
 
 {% block extrastyle %}
   {{ block.super }}
@@ -24,7 +25,7 @@
         want to mess around with it. It uses currently v1.4.2, but we want
         to have a newer version. Therefore, we use our own jQuery version here.
     {% endcomment %}
-    <script type="text/javascript" src="{{ STATIC_URL }}libs/jquery/jquery.js"></script>
+    {% javascript 'jquery-lib' %}
     <script>
         $(document).ready(function() {
             // functionality for (un-)selecting all projects

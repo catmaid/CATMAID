@@ -1,10 +1,12 @@
 {% extends "admin/guardian/model/change_form.html" %}
 {% load i18n  %}
+{% load admin_static %}
 
 {% block extrahead %}
-<script src="{{ STATIC_URL }}libs/jquery/jquery.js" type="text/javascript"></script>
+<script type="text/javascript" src="{% static 'admin/js/jquery.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'admin/js/jquery.init.js' %}"></script>
 <script type="text/javascript">
-	$(document).ready(function() {
+	(function ($) {$(document).ready(function() {
 		// update the data view type comment according to selection
 		update_data_view_comment = function() {
 			$.ajax({
@@ -21,6 +23,6 @@
 		$('#id_data_view_type').change(update_data_view_comment);
 		// Do an initial update
 		update_data_view_comment();
-	});
+	});})(django.jQuery);
 </script>
 {% endblock %}

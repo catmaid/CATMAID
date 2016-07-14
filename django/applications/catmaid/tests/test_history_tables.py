@@ -3,6 +3,7 @@ import time
 from django.db import connection, transaction
 from django.test import TestCase, TransactionTestCase
 from guardian.shortcuts import assign_perm
+from catmaid import history
 from catmaid.models import Class, Project, User
 
 
@@ -328,3 +329,66 @@ class HistoryTableTests(TransactionTestCase):
         # the updated class entry.
         expected_interval = "[\"{}\",\"{}\")".format(creation_time, deletion_time)
         self.assertEqual(class_history_entry['sys_period'], expected_interval)
+
+    @classmethod
+    def get_num_tables_without_update_triggers(cls, cursor):
+        cursor.execute("""
+            SELECT count(*) FROM catmaid_live_table_triggers
+            WHERE triggers_installed = false;
+        """)
+        return cursor.fetchone()[0]
+
+    @classmethod
+    def get_num_history_tables(cls, cursor):
+        cursor.execute("""
+            SELECT count(*) FROM catmaid_history_table;
+        """)
+        return cursor.fetchone()[0]
+
+    def test_history_tracking_disable_enable_sql(self):
+        """Test if history tracking can be disabled and enabled through
+        pain SQL.
+        """
+        cursor = connection.cursor()
+
+        # Assert that history tables are fully set up, i.e. that there are
+        # update triggers set for all tables
+        n_missing_enabled = HistoryTableTests.get_num_tables_without_update_triggers(cursor)
+        self.assertEqual(0, n_missing_enabled)
+
+        # Disable history tracking
+        cursor.execute("""SELECT disable_history_tracking()""")
+
+        # Expect no installed triggers anymore
+        n_history_tables = HistoryTableTests.get_num_history_tables(cursor)
+        n_missing_disabled = HistoryTableTests.get_num_tables_without_update_triggers(cursor)
+        self.assertEqual(n_history_tables, n_missing_disabled)
+
+        # Enable history tracking and expect zero missing tables again
+        cursor.execute("""SELECT enable_history_tracking()""")
+        n_missing_enabled = HistoryTableTests.get_num_tables_without_update_triggers(cursor)
+        self.assertEqual(0, n_missing_enabled)
+
+    def test_history_tracking_disable_enable_python(self):
+        """Test if history tracking can be disabled and enabled through
+        CATMAID's Python API
+        """
+        cursor = connection.cursor()
+
+        # Assert that history tables are fully set up, i.e. that there are
+        # update triggers set for all tables
+        n_missing_enabled = HistoryTableTests.get_num_tables_without_update_triggers(cursor)
+        self.assertEqual(0, n_missing_enabled)
+
+        # Disable history tracking
+        history.disable_history_tracking()
+
+        # Expect no installed triggers anymore
+        n_history_tables = HistoryTableTests.get_num_history_tables(cursor)
+        n_missing_disabled = HistoryTableTests.get_num_tables_without_update_triggers(cursor)
+        self.assertEqual(n_history_tables, n_missing_disabled)
+
+        # Enable history tracking and expect zero missing tables again
+        history.enable_history_tracking()
+        n_missing_enabled = HistoryTableTests.get_num_tables_without_update_triggers(cursor)
+        self.assertEqual(0, n_missing_enabled)

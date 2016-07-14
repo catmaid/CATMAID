@@ -46,3 +46,37 @@ def record_action(user_id, label):
             return result
         return wrapped_f
     return decorator
+
+
+def enable_history_tracking(ignore_missing_fn=False):
+    """Enable history tracking globally.
+    """
+    cursor = connection.cursor()
+    if ignore_missing_fn:
+        cursor.execute("""
+            SELECT EXISTS(SELECT * FROM pg_proc
+            WHERE proname = 'enable_history_tracking');""")
+        result = cursor.fetchone()
+        if not result[0]:
+            # If the function does not exist, return silently if the missing
+            # function shouldn't be reported
+            return False
+    cursor.execute("SELECT enable_history_tracking()")
+    return True
+
+
+def disable_history_tracking(ignore_missing_fn=False):
+    """Disable history tracking globally.
+    """
+    cursor = connection.cursor()
+    if ignore_missing_fn:
+        cursor.execute("""
+            SELECT EXISTS(SELECT * FROM pg_proc
+            WHERE proname = 'disable_history_tracking');""")
+        result = cursor.fetchone()
+        if not result[0]:
+            # If the function does not exist, return silently if the missing
+            # function shouldn't be reported
+            return False
+    cursor.execute("SELECT disable_history_tracking()")
+    return True

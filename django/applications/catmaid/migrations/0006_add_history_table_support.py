@@ -2,8 +2,13 @@
 from __future__ import unicode_literals
 
 from django.db import connection, migrations, models
+from django.conf import settings
 
-from catmaid.apps import get_system_user
+
+# Indicate whether history tables are enabled for this migration. If they are
+# not, only history tables will be created, but no triggers are installed and no
+# initial population of history tables will happen.
+history_tracking_enabled = getattr(settings, 'HISTORY_TRACKING', True)
 
 add_history_functions_sql = """
 
@@ -13,6 +18,7 @@ add_history_functions_sql = """
     CREATE TABLE catmaid_history_table (
         history_table_name  name PRIMARY KEY,
         live_table_name     regclass,
+        triggers_installed  boolean NOT NULL,
         creation_time       timestamptz NOT NULL DEFAULT current_timestamp
     );
 
@@ -37,11 +43,33 @@ add_history_functions_sql = """
 
 
     -- Return the unquoted name of an input table's history table.
+    CREATE OR REPLACE FUNCTION history_table_update_trigger_name(live_table_name regclass)
+        RETURNS text AS
+    $$
+        SELECT 'on_change_' || relname || '_update_history' FROM pg_class WHERE oid = $1;
+    $$ LANGUAGE sql STABLE;
+
+
+    -- Return the unquoted name of an input table's history update trigger.
     CREATE OR REPLACE FUNCTION history_table_name(live_table_name regclass)
         RETURNS text AS
     $$
         SELECT relname || '_history' FROM pg_class WHERE oid = $1;
     $$ LANGUAGE sql STABLE;
+
+
+    -- A view that tells if the known history tables have heit update trigger
+    -- installed.
+    CREATE OR REPLACE VIEW catmaid_live_table_triggers AS
+        SELECT cht.live_table_name, EXISTS(
+            SELECT * FROM information_schema.triggers ist, pg_class pc
+            WHERE pc.oid = cht.live_table_name
+            AND ist.event_object_table = pc.relname
+            AND ist.trigger_name =
+            history_table_update_trigger_name(cht.live_table_name)) AS
+                triggers_installed
+        FROM catmaid_history_table cht;
+
 
     -- Create a view that makes access to inheritance information more convenient
     CREATE VIEW catmaid_inheritening_tables
@@ -215,43 +243,14 @@ add_history_functions_sql = """
                 history_table_name || '_sys_period', history_table_name);
         END IF;
 
+        -- Keep track of created history tables
+        INSERT INTO catmaid_history_table (history_table_name, live_table_name, triggers_installed)
+        VALUES (history_table_name, live_table_name, false);
+
         -- Set up data insert, update and delete trigger on original database
         IF create_triggers THEN
-            EXECUTE format(
-                'CREATE TRIGGER %I
-                AFTER INSERT OR UPDATE OR DELETE ON %s FOR EACH ROW
-                EXECUTE PROCEDURE update_history_of_row(%s, %s, %s)',
-                'on_change_' || live_table_name || '_update_history',
-                live_table_name, 'sys_period', history_table_name, 'true');
-
-            -- Keep track of created history tables
-            INSERT INTO catmaid_history_table (history_table_name, live_table_name)
-            VALUES (history_table_name, live_table_name);
-
-            -- Monitor schema changes with DDL event triggers
-            --
-            -- * If the table is dropped, drop history table
-            -- * If column type changes, rename column in history table:
-            --   <column_name>_<date> and add new column with new data type
-            -- * If column is renamed, rename column in history table accordingly
-            --
-            -- TODO: Find way to do schema changes without triggering these events
-            -- (useful if one knows what one is doing, e.g. a data type change from
-            -- float to double shouldn't necessarily create a new column)
-
-            -- Create event trigger for alter table statements on the original
-            -- table. The trigger function will inspect the changes and update
-            -- the history table accordingly. That is, new columns are just
-            -- added and removed columns are renamed. History columns always
-            -- default to NULL.
-            --   EXECUTE format(
-            --       'CREATE EVENT TRIGGER on_%s_alter_table ON ddl_command_end
-            --        WHEN TAG IN ('ALTER TABLE')
-            --        EXECUTE PROCEDURE alter_history_table($1)',
-            --   live_table_name)
-            --   USING history_table_name;
+            PERFORM enable_history_tracking_for_table(live_table_name, history_table_name);
         END IF;
-
     END;
     $$;
 
@@ -310,7 +309,7 @@ add_history_functions_sql = """
         -- Cascading deleting is used to delete parent tables and child tables in one go
         EXECUTE format('DROP TABLE IF EXISTS %I CASCADE', history_table_name);
         EXECUTE format('DROP TRIGGER IF EXISTS %I ON %s',
-            'on_change_' || live_table_name || '_update_history', live_table_name);
+            history_table_update_trigger_name(live_table_name), live_table_name);
 
         -- Remove from created table log
         DELETE FROM catmaid_history_table cht WHERE cht.live_table_name = $1;
@@ -338,6 +337,90 @@ add_history_functions_sql = """
             PERFORM drop_history_table(row.live_table_name);
         END LOOP;
 
+    END;
+    $$;
+
+    -- Enable history tracking for a particular live table and history table by
+    -- making sure all triggers are connected to -- history events.
+    CREATE OR REPLACE FUNCTION enable_history_tracking_for_table(live_table_name regclass, history_table_name text)
+    RETURNS void
+    LANGUAGE plpgsql AS
+    $$
+    DECLARE
+        history_trigger_name text;
+    BEGIN
+        history_trigger_name = history_table_update_trigger_name(live_table_name);
+        IF NOT EXISTS(
+            SELECT * FROM catmaid_live_table_triggers cltt
+            WHERE cltt.live_table_name = $1 AND triggers_installed = true)
+        THEN
+            EXECUTE format(
+                'CREATE TRIGGER %I
+                AFTER INSERT OR UPDATE OR DELETE ON %s FOR EACH ROW
+                EXECUTE PROCEDURE update_history_of_row(%s, %s, %s)',
+                history_trigger_name, live_table_name, 'sys_period',
+                history_table_name, 'true');
+            -- Remember that triggers are now installed for this table
+            UPDATE catmaid_history_table cht SET triggers_installed = true
+            WHERE cht.live_table_name = $1 AND cht.history_table_name = $2;
+        END IF;
+    END;
+    $$;
+
+
+    -- Disable history tracking by ensuring all triggers for history events on
+    -- the passed in live table are dropped.
+    CREATE OR REPLACE FUNCTION
+    disable_history_tracking_for_table(live_table_name regclass, history_table_name text)
+    RETURNS void
+    LANGUAGE plpgsql AS
+    $$
+    BEGIN
+        EXECUTE format('DROP TRIGGER IF EXISTS %I ON %s',
+            history_table_update_trigger_name(live_table_name), live_table_name);
+        -- Remember that triggers are now installed for this table
+        UPDATE catmaid_history_table cht SET triggers_installed = false
+        WHERE cht.live_table_name = $1 AND cht.history_table_name = $2;
+    END;
+    $$;
+
+
+    -- Enable history tracking by making sure all triggers for all monitored
+    -- lived tables are created.
+    CREATE OR REPLACE FUNCTION enable_history_tracking()
+    RETURNS void
+    LANGUAGE plpgsql AS
+    $$
+    DECLARE
+        -- A record in the the catmaid_history_table table
+        row record;
+    BEGIN
+        -- Iterate over all known history tables
+        FOR row IN SELECT * FROM catmaid_history_table
+        LOOP
+            PERFORM enable_history_tracking_for_table(row.live_table_name,
+                row.history_table_name);
+        END LOOP;
+    END;
+    $$;
+
+
+    -- Disable history tracking by making sure all history table triggers of
+    -- all monitored live tables are dropped.
+    CREATE OR REPLACE FUNCTION disable_history_tracking()
+    RETURNS void
+    LANGUAGE plpgsql AS
+    $$
+    DECLARE
+        -- A record in the the catmaid_history_table table
+        row record;
+    BEGIN
+        -- Iterate over all known history tables
+        FOR row IN SELECT * FROM catmaid_history_table
+        LOOP
+            PERFORM disable_history_tracking_for_table(row.live_table_name,
+                row.history_table_name);
+        END LOOP;
     END;
     $$;
 
@@ -398,15 +481,21 @@ add_history_functions_sql = """
 
 remove_history_functions_sql = """
     -- Remove history functions
+    DROP VIEW IF EXISTS catmaid_live_table_triggers;
+    DROP VIEW catmaid_inheritening_tables;
     DROP TABLE catmaid_history_table;
     DROP TABLE catmaid_transaction_info;
-    DROP VIEW catmaid_inheritening_tables;
     DROP TYPE IF EXISTS history_change_type;
     DROP FUNCTION IF EXISTS create_history_table(live_table_schema text, live_table_name regclass, create_triggers boolean, copy_inheritance boolean);
     DROP FUNCTION IF EXISTS drop_history_table(live_table_name regclass);
     DROP FUNCTION IF EXISTS update_history_of_row();
     DROP FUNCTION IF EXISTS history_table_name(regclass);
     DROP FUNCTION IF EXISTS populate_history_table(text, regclass, regclass, text);
+    DROP FUNCTION IF EXISTS enable_history_tracking_for_table(live_table_name regclass, history_table_name text);
+    DROP FUNCTION IF EXISTS disable_history_tracking_for_table(live_table_name regclass, history_table_name text);
+    DROP FUNCTION IF EXISTS enable_history_tracking();
+    DROP FUNCTION IF EXISTS disable_history_tracking();
+    DROP FUNCTION IF EXISTS history_table_update_trigger_name(live_table_name regclass);
 """
 
 add_initial_history_tables_sql = """
@@ -482,9 +571,13 @@ add_initial_history_tables_sql = """
     );
 
     -- Create a history table for all tables
-    SELECT create_history_table('public', t.name) FROM temp_versioned_catmaid_table t;
-    SELECT create_history_table('public', t.name) FROM temp_versioned_non_catmaid_table t;
+    SELECT create_history_table('public', t.name, {create_triggers}) FROM temp_versioned_catmaid_table t;
+    SELECT create_history_table('public', t.name, {create_triggers}) FROM temp_versioned_non_catmaid_table t;
+""".format(create_triggers='true' if history_tracking_enabled else 'false')
 
+# This snipped is meant to be appended to the add_initial_history_tables_sql
+# query, if history tables are initially in use.
+populate_initial_history_tables_sql = """
     -- Populate history tables with current live table data. If a tavle is part
     -- of an inheritence chain, only the current table is scanned and not its
     -- descendants. This is done to avoid duplicates.
@@ -509,6 +602,10 @@ add_initial_history_tables_sql = """
     INSERT INTO catmaid_transaction_info (transaction_id, execution_time, user_id, change_type, label)
     VALUES (txid_current(), current_timestamp, NULL, 'Migration', 'Initial history population');
 """
+
+if history_tracking_enabled:
+    add_initial_history_tables_sql += populate_initial_history_tables_sql
+
 
 remove_history_tables_sql = """
     -- Remove existing history tables and triggers

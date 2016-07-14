@@ -156,6 +156,12 @@ USE_TZ = True
 # content of multiple sites.
 SITE_ID = 1
 
+# History tables are created and populated by default. They keep track of every
+# change in all CATMAID tables plus some additional ones. If this is not
+# wanted, history tables can be disabled by setting HISTORY_TRACKING to False.
+# Note that the tables will still exist, but only not populated.
+HISTORY_TRACKING = True
+
 # Default user profile settings
 PROFILE_INDEPENDENT_ONTOLOGY_WORKSPACE_IS_DEFAULT = False
 PROFILE_SHOW_TEXT_LABEL_TOOL = False

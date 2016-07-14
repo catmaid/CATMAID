@@ -1,11 +1,15 @@
 import logging
 
+from catmaid import history
+
 from django.apps import AppConfig
 from django.conf import settings
+from django.core.checks import Warning, register
 from django.core.exceptions import ImproperlyConfigured
 from django.db import connection
 from django.db.utils import ProgrammingError
 from django.db.models import signals
+from django.db.backends import signals as db_signals
 from django.contrib import auth
 from django.contrib.auth.management.commands import createsuperuser
 
@@ -81,6 +85,21 @@ def check_old_version(sender, **kwargs):
                 "regular update steps call 'manage.py migrate --fake catmaid "
                 "0001_initial'.")
 
+def check_history_setup(app_configs, **kwargs):
+    messages = []
+    # Enable or disable history tracking, depending on the configuration.
+    # Ignore silently, if the database wasn't migrated yet.
+    if getattr(settings, 'HISTORY_TRACKING', True):
+        run = history.enable_history_tracking(True)
+    else:
+        run = history.disable_history_tracking(True)
+
+    if not run:
+        messages.append(Warning(
+            "Couldn't check history setup, missing database functions",
+            hint="Migrate CATMAID"))
+    return messages
+
 def validate_environment(sender, **kwargs):
     """Make sure CATMAID is set up correctly."""
     # Only validate after catmaid was migrated
@@ -104,6 +123,9 @@ class CATMAIDConfig(AppConfig):
 
         # Validate CATMAID environment after all migrations have been run
         signals.post_migrate.connect(validate_environment, sender=self)
+
+        # Register history checks
+        register(check_history_setup)
 
     # A list of settings that are expected to be available.
     required_setting_fields = {

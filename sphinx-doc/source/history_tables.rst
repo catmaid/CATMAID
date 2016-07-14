@@ -31,3 +31,17 @@ can be used. This will create the history table and sets up all required
 triggers. Likewise, there is a ``delete_history_table( live_table_name )``
 function, which makes sure a history table is removed cleanly if this is wanted.
 The table ``history_table`` keeps track of all currently active history tables.
+
+Disabling history tables
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+While history tracking is important and in most situations desirable, there are
+a few situations where it would beneficial to disable it (e.g. some database
+maintenance tasks). To do this the setting ``HISTORY_TRACKING`` can be set to
+``False``, i.e. add the following line to the ``settings.py`` file::
+
+   HISTORY_TRACKING = False
+
+With the next restart of CATMAID, history tracking will be disabled. Likewise,
+it can be enabled again by setting ``HISTORY_TRACKING = True`` (or removing the
+line).

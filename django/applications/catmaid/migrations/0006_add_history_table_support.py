@@ -29,7 +29,7 @@ add_history_functions_sql = """
     CREATE TABLE catmaid_transaction_info (
         transaction_id bigint DEFAULT txid_current(),
         execution_time timestamp with time zone DEFAULT current_timestamp,
-        user_id integer NOT NULL,
+        user_id integer,
         change_type history_change_type NOT NULL,
         label text NOT NULL,
         CONSTRAINT catmaid_transaction_info_pk PRIMARY KEY (transaction_id, execution_time)
@@ -503,10 +503,12 @@ add_initial_history_tables_sql = """
     FROM temp_versioned_non_catmaid_table tt, catmaid_history_table ht
     WHERE ht.live_table_name = tt.name;
 
-    -- Add transaction information for initial data migration
+    -- Add transaction information for initial data migration. During first
+    -- database setup, there is no system user set up. This is why we don't
+    -- reference the system user here, but only use NULL.
     INSERT INTO catmaid_transaction_info (transaction_id, execution_time, user_id, change_type, label)
-    VALUES (txid_current(), current_timestamp, {system_user_id}, 'Migration', 'Initial history population');
-""".format(system_user_id=get_system_user().id)
+    VALUES (txid_current(), current_timestamp, NULL, 'Migration', 'Initial history population');
+"""
 
 remove_history_tables_sql = """
     -- Remove existing history tables and triggers

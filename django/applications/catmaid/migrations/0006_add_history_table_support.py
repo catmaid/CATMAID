@@ -394,29 +394,6 @@ add_history_functions_sql = """
         RETURN NULL;
     END;
     $$;
-
-    -- Concepts are CATMAID tables that have both a creation time and
-    -- edition time column. These are used updated and the history of
-    -- the current table is updated.
---   CREATE OR REPLACE FUNCTION alter_history_table(live_table_name regclass)
---   RETURNS trigger LANGUAGE plpgsql AS
---   $$
---   BEGIN
---       -- TODO: Implement
---   END;
---   $$
-
---   -- Concepts are CATMAID tables that have both a creation time and
---   -- edition time column. These are used updated and the history of
---   -- the current table is updated.
---   CREATE OR REPLACE FUNCTION on_concept_update()
---   RETURNS trigger LANGUAGE plpgsql AS
---   $$
---   BEGIN
---       update_history(
---       RETURN NEW;
---   END;
---   $$
 """
 
 remove_history_functions_sql = """

@@ -3,17 +3,23 @@
   "use strict";
 
   /**
-   * Stores and persists key-value client settings.
+   * Manages and persists key-value client settings.
    *
-   * Settings are cascaded through a series of scopes (CATMAID defaults,
-   * global, project-defaults, user-defaults, and user- project session).
+   * Settings are cascaded through a series of scopes:
+   *
+   *   - CATMAID defaults
+   *   - global
+   *   - project-defaults
+   *   - user-defaults
+   *   - user-project session
+   *
    * Each scope may declare a value to be not overridable (i.e., locked),
    * preventing more specific scopes from changing the value.
    *
    * The results of applying this cascade at each scope level are
    * accessible through attributes on this Settings object, e.g.:
    *
-   *     var foo = new Settings(...)
+   *     var foo = new CATMAID.Settings(...)
    *     var a = foo.session.<setting entry name>
    *     foo.session.<setting entry name> = 'test'
    *
@@ -34,6 +40,25 @@
    *         }
    *       }
    *     }
+   *
+   * For example:
+   *
+   *     myModuleSettings = new CATMAID.Settings(
+   *         'my-module',
+   *         {
+   *           version: 0,
+   *           entries: {
+   *             example_setting_name: {
+   *               default: "some default value"
+   *             }
+   *           },
+   *           migrations: {}
+   *         });
+   *
+   * The settings module identifier, 'my-module', must be unique. The useful
+   * value of the setting is then accessible as:
+   *
+   *     var a = myModuleSettings.session.example_setting_name;
    *
    * Version number, the name of settings entries, and their default CATMAID
    * value are specified by this Settings object's schema. Schemas may also
@@ -59,6 +84,9 @@
    * is current, or, if no migration is found or a migration exceptions, the
    * settings will be discarded. After migration, the resulting settings are
    * stored back to the datastore.
+   *
+   * Generally it is not necessary to change the schema version or add a
+   * migration when adding a setting, only when modifying its type or name.
    *
    * @param {string} name        Name of this Settings group, used as a key
    *                             in the backend 'settings' DataStore.

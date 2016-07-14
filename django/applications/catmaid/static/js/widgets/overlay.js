@@ -3165,7 +3165,6 @@ SkeletonAnnotations.TracingOverlay.prototype.editRadius = function(treenode_id, 
  * next click using the radius measurement tool.
  */
 SkeletonAnnotations.TracingOverlay.prototype.measureRadius = function () {
-  console.log('foo');
   var self = this;
 
   var pos = [this.coords.lastX, this.coords.lastY, this.stackViewer.z];

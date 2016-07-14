@@ -526,10 +526,11 @@ var nodeToStateList = function(n) {
 /**
  * The constructor for TracingOverlay.
  */
-SkeletonAnnotations.TracingOverlay = function(stackViewer, options) {
+SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
   var options = options || {};
 
   this.stackViewer = stackViewer;
+  this.pixiLayer = pixiLayer;
 
   // Register instance
   this.register(stackViewer);
@@ -654,16 +655,7 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, options) {
         this);
   }, this);
 
-  this.paper = d3.select(this.view)
-                  .append('svg')
-                  .attr({
-                      width: stackViewer.viewWidth,
-                      height: stackViewer.viewHeight,
-                      style: 'overflow: hidden; position: relative;'});
-  // If the equal ratio between stack, SVG viewBox and overlay DIV size is not
-  // maintained, this additional attribute would be necessary:
-  // this.paper.attr('preserveAspectRatio', 'xMinYMin meet')
-  this.graphics = CATMAID.SkeletonElementsFactory.createSkeletonElements(this.paper, stackViewer.getId(), this._skeletonDisplaySource.skeletonModels);
+  this.graphics = CATMAID.SkeletonElementsFactory.createSkeletonElements(pixiLayer.batchContainer, this._skeletonDisplaySource.skeletonModels);
   this.graphics.setActiveNodeRadiusVisibility(SkeletonAnnotations.TracingOverlay.Settings.session.display_active_node_radius);
 
   // Listen to change and delete events of skeletons
@@ -2269,16 +2261,16 @@ SkeletonAnnotations.TracingOverlay.prototype.redraw = function(force, completion
   doNotUpdate = !force && (doNotUpdate || this.suspended);
 
   var screenScale = SkeletonAnnotations.TracingOverlay.Settings.session.screen_scaling;
-  this.paper.classed('screen-scale', screenScale);
+  // this.paper.classed('screen-scale', screenScale);
   // All SVG elements scale automatcally, if the viewport on the SVG data
   // changes. If in screen scale mode, where the size of all elements should
   // stay the same (regardless of zoom level), counter acting this is required.
   var resScale = Math.max(stackViewer.primaryStack.resolution.x, stackViewer.primaryStack.resolution.y);
   var dynamicScale = screenScale ? (1 / (stackViewer.scale * resScale)) : false;
-  this.graphics.scale(
-      SkeletonAnnotations.TracingOverlay.Settings.session.scale,
-      resScale,
-      dynamicScale);
+  // this.graphics.scale(
+  //     SkeletonAnnotations.TracingOverlay.Settings.session.scale,
+  //     resScale,
+  //     dynamicScale);
 
   if ( !doNotUpdate ) {
     // If changing scale or slice, remove tagbox.
@@ -2288,17 +2280,23 @@ SkeletonAnnotations.TracingOverlay.prototype.redraw = function(force, completion
 
   var stackViewBox = stackViewer.createStackViewBox();
 
+  this.pixiLayer.batchContainer.scale.set(stackViewer.scale);// * stackViewer.primaryStack.resolution.x;
+  // this.pixiLayer.batchContainer.scale.y = stackViewer.scale; // * stackViewer.primaryStack.resolution.y;
+  this.pixiLayer.batchContainer.x = -stackViewBox.min.x;
+  this.pixiLayer.batchContainer.y = -stackViewBox.min.y;
+  // this.pixiLayer.batchContainer.scale = 1;//stackViewer.scale * resScale;
   // Use project coordinates for the SVG's view box
-  this.paper.attr({
-      viewBox: [
-          stackViewBox.min.x,
-          stackViewBox.min.y,
-          stackViewBox.max.x - stackViewBox.min.x,
-          stackViewBox.max.y - stackViewBox.min.y].join(' '),
-      width: stackViewer.viewWidth,     // Width and height only need to be updated on
-      height: stackViewer.viewHeight}); // resize.
+  // this.paper.attr({
+  //     viewBox: [
+  //         stackViewBox.min.x,
+  //         stackViewBox.min.y,
+  //         stackViewBox.max.x - stackViewBox.min.x,
+  //         stackViewBox.max.y - stackViewBox.min.y].join(' '),
+  //     width: stackViewer.viewWidth,     // Width and height only need to be updated on
+  //     height: stackViewer.viewHeight}); // resize.
 
   if (doNotUpdate) {
+    this.pixiLayer._renderIfReady();
     if (typeof completionCallback !== "undefined") {
       completionCallback();
     }

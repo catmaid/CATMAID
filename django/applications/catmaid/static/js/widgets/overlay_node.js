@@ -42,25 +42,19 @@
       /**
        * Create a new SkeletonInstance and return it.
        */
-      createSkeletonElements: function(paper, defSuffix, skeletonDisplayModels) {
+      createSkeletonElements: function(pixiContainer, skeletonDisplayModels) {
         // Add prototype
         SkeletonElements.prototype = createSkeletonElementsPrototype();
 
-        return new SkeletonElements(paper, defSuffix, skeletonDisplayModels);
+        return new SkeletonElements(pixiContainer, skeletonDisplayModels);
       }
     };
   })();
 
   /** Namespace where SVG element instances are created, cached and edited. */
-  var SkeletonElements = function(paper, defSuffix, skeletonDisplayModels)
-  {
-    // Allow a suffix for SVG definition IDs
-    this.USE_HREF_SUFFIX = defSuffix || '';
-    // Create definitions for reused elements and markers
-    var defs = paper.append('defs');
-
+  var SkeletonElements = function (pixiContainer, skeletonDisplayModels) {
     this.overlayGlobals = {
-      paper: paper,
+      skeletonElements: this,
       skeletonDisplayModels: skeletonDisplayModels || {},
       hideOtherSkeletons: false
     };
@@ -74,13 +68,13 @@
       SkeletonElements.prototype.ConnectorNode.prototype,
       SkeletonElements.prototype.ArrowLine.prototype,
     ];
-    concreteElements.forEach(function (klass) {klass.initDefs(defs, defSuffix);});
+    concreteElements.forEach(function (klass) {klass.initTextures();});
 
     // Create element groups to enforce drawing order: lines, arrows, nodes, labels
-    paper.append('g').classed('lines', true);
-    paper.append('g').classed('arrows', true);
-    paper.append('g').classed('nodes', true);
-    paper.append('g').classed('labels', true);
+    this.containers = ['lines', 'arrows', 'nodes', 'labels'].reduce(function (o, name) {
+      o[name] = pixiContainer.addChild(new PIXI.Container());
+      return o;
+    }, {});
 
     this.cache = {
       nodePool : new this.ElementPool(100),
@@ -105,7 +99,11 @@
 
     this.destroy = function() {
       this.cache.clear();
-      paper = null;
+      Object.keys(this.containers).forEach(function (name) {
+        var container = this.containers[name];
+        container.parent.removeChild(container);
+        container.destroy();
+      }, this);
     };
 
     this.scale = function(baseScale, resScale, dynamicScale) {
@@ -155,7 +153,7 @@
       return function(connector, node, confidence, is_pre) {
         var arrow = arrowPool.next();
         if (!arrow) {
-          arrow = new ArrowLine(paper, defSuffix);
+          arrow = new ArrowLine();
           arrowPool.push(arrow);
         }
         arrow.init(connector, node, confidence, is_pre);
@@ -185,7 +183,7 @@
             skeleton_id, edition_time, user_id);
       } else {
         node = new this.Node(this.overlayGlobals, id, parent, parent_id, radius,
-            x, y, z, zdiff, confidence, skeleton_id, edition_time, user_id, defSuffix);
+            x, y, z, zdiff, confidence, skeleton_id, edition_time, user_id);
         this.cache.nodePool.push(node);
       }
       return node;
@@ -209,7 +207,7 @@
         connector.reInit(id, x, y, z, zdiff, confidence, subtype, edition_time, user_id);
       } else {
         connector = new this.ConnectorNode(this.overlayGlobals, id, x, y, z,
-            zdiff, confidence, subtype, edition_time, user_id, defSuffix);
+            zdiff, confidence, subtype, edition_time, user_id);
         connector.createArrow = this.createArrow;
         this.cache.connectorPool.push(connector);
       }
@@ -292,31 +290,25 @@
         // c may already exist if the node is being reused
         if (!this.c) {
           // create a circle object
-          this.c = this.overlayGlobals.paper.select('.nodes').append('use')
-                              .attr('xlink:href', '#' + this.USE_HREF + this.hrefSuffix)
-                              .attr('x', this.x)
-                              .attr('y', this.y);
+          this.c = new PIXI.Graphics();
+          this.c.x = this.x;
+          this.c.y = this.y;
+          this.c.beginFill(0xFFFFFF);
+          this.c.drawCircle(0, 0, this.CATCH_RADIUS*2);
+          this.c.endFill();
+          this.overlayGlobals.skeletonElements.containers.nodes.addChild(this.c);
 
-          ptype.mouseEventManager.attach(this.c, this.type);
+          // ptype.mouseEventManager.attach(this.c, this.type);
         }
 
-        var fillcolor = this.color();
+        // this.c.attr('class', this.getVisibilityGroups().reduce(function (c, groupID) {
+        //   return c + ' ' + SkeletonAnnotations.VisibilityGroups.GROUP_CLASSES[groupID];
+        // }, ''));
 
-        this.c.attr({
-          fill: fillcolor,
-          stroke: fillcolor,
-          opacity: 1.0,
-          'stroke-width': this.CATCH_RADIUS*2,// Use a large transparent stroke to
-          'stroke-opacity': 0                 // catch mouse events near the circle.
-        });
+        this.c.tint = new THREE.Color(this.color()).getHex();
+        // this.c.datum(this.id);
 
-        this.c.attr('class', this.getVisibilityGroups().reduce(function (c, groupID) {
-          return c + ' ' + SkeletonAnnotations.VisibilityGroups.GROUP_CLASSES[groupID];
-        }, ''));
-
-        this.c.datum(this.id);
-
-        if ("hidden" === this.c.attr('visibility')) this.c.show();
+        if (!this.c.visible) this.c.visible = true;
       };
 
       this.createRadiusGraphics = function () {
@@ -381,22 +373,17 @@
         // to avoid the line size be inconcistent on zoom until a redraw.
         this.EDGE_WIDTH = this.BASE_EDGE_WIDTH * baseScale * (dynamicScale ? 1 : resScale);
         this.confidenceFontSize = this.CONFIDENCE_FONT_PT*this.scaling + 'pt';
-        this.circleDef.attr('r', this.NODE_RADIUS*this.scaling);
+        // this.circleDef.attr('r', this.NODE_RADIUS*this.scaling);
       };
 
-      this.initDefs = function(defs, hrefSuffix) {
-        this.circleDef = defs.append('circle').attr({
-          id: this.USE_HREF + (hrefSuffix || ''),
-          cx: 0,
-          cy: 0,
-          r: this.NODE_RADIUS
-        });
+      this.initTextures = function () {
+        var g = new PIXI.Graphics();
+        g.drawCircle(0, 0, this.NODE_RADIUS);
       };
     })();
 
     ptype.AbstractTreenode = function() {
       // For drawing:
-      this.USE_HREF = 'treenodeCircle';
       this.NODE_RADIUS = 3;
       this.CATCH_RADIUS = 6;
       this.BASE_EDGE_WIDTH = 2;
@@ -545,15 +532,14 @@
 
       this.updateColors = function() {
         if (this.c) {
-          var fillcolor = this.color();
-          this.c.attr({fill: fillcolor});
+          this.c.tint = new THREE.Color(this.color()).getHex();
           this.createRadiusGraphics();
         }
         if (this.line) {
-          var linecolor = this.colorFromZDiff();
-          this.line.attr({stroke: linecolor});
+          var linecolor = new THREE.Color(this.colorFromZDiff()).getHex();
+          this.line.tint = linecolor;
           if (this.number_text) {
-            this.number_text.attr({fill: linecolor});
+            this.number_text.tint = linecolor;
           }
         }
       };
@@ -566,13 +552,14 @@
         if (!this.mustDrawLineWith(this.parent)) {
           return;
         }
-        var lineColor = this.colorFromZDiff();
+        var lineColor = new THREE.Color(this.colorFromZDiff()).getHex();
 
         if (!this.line) {
-          this.line = this.overlayGlobals.paper.select('.lines').append('line');
-          this.line.toBack();
-          this.line.datum(this.id);
-          this.line.on('click', ptype.mouseEventManager.edge_mc_click);
+          this.line = new PIXI.Graphics();
+          this.overlayGlobals.skeletonElements.containers.lines.addChild(this.line);
+          // this.line.toBack();
+          // this.line.datum(this.id);
+          // this.line.on('click', ptype.mouseEventManager.edge_mc_click);
         }
 
         // If the parent or this itself is more than one slice away from the current
@@ -583,19 +570,17 @@
         var parentLocation = getIntersection(this.parent, this,
             Math.max(this.dToSecBefore, Math.min(this.dToSecAfter, this.parent.zdiff)));
 
-        this.line.attr({
-            x1: childLocation[0], y1: childLocation[1],
-            x2: parentLocation[0], y2: parentLocation[1],
-            stroke: lineColor,
-            'stroke-width': this.EDGE_WIDTH
-        });
+        this.line.lineColor = lineColor;
+        this.line.lineWidth = this.EDGE_WIDTH;
+        this.line.moveTo(childLocation[0], childLocation[1]);
+        this.line.lineTo(parentLocation[0], parentLocation[1]);
 
         this.line.attr('class', this.getVisibilityGroups().reduce(function (c, groupID) {
           return c + ' ' + SkeletonAnnotations.VisibilityGroups.GROUP_CLASSES[groupID];
         }, ''));
 
         // May be hidden if the node was reused
-        this.line.show();
+        this.line.visible = true;
 
         if (this.confidence < 5) {
           // Create new or update
@@ -658,7 +643,8 @@
         this.visibilityGroups = null;
         if (this.c) {
           ptype.mouseEventManager.forget(this.c, SkeletonAnnotations.TYPE_NODE);
-          this.c.remove();
+          this.c.parent.removeChild(this.c);
+          this.c.destroy();
           this.c = null;
         }
         if (this.radiusGraphics) {
@@ -666,7 +652,8 @@
           this.radiusGraphics = null;
         }
         if (this.line) {
-          this.line.remove();
+          this.line.parent.removeChild(this.line);
+          this.line.destroy();
           this.line = null;
         }
         if (this.number_text) {
@@ -688,17 +675,15 @@
         this.connectors = {};
         this.visibilityGroups = null;
         if (this.c) {
-          this.c.datum(null);
-          this.c.attr('class', null);
-          this.c.hide();
+          // this.c.datum(null);
+          this.c.visible = false;
         }
         if (this.radiusGraphics) {
           this.radiusGraphics.remove();
           this.radiusGraphics = null;
         }
         if (this.line) {
-          this.line.attr('class', null);
-          this.line.hide();
+          this.line.visible = false;
         }
         if (this.number_text) {
           this.number_text.remove();
@@ -729,17 +714,18 @@
         delete this.suppressed;
 
         if (this.c) {
-          this.c.datum(id);
+          // this.c.datum(id);
           if (!this.shouldDisplay()) {
-            this.c.hide();
+            this.c.visible = false;
           } else {
-            this.c.attr({x: x, y: y});
+            this.c.x = x;
+            this.c.y = y;
           }
         }
         this.createRadiusGraphics();
         if (this.line) {
-          this.line.datum(id);
-          this.line.hide();
+          // this.line.datum(id);
+          this.line.visible = false;
         }
         if (this.number_text) {
           this.number_text.remove();
@@ -902,8 +888,7 @@
       confidence, // confidence with the parent
       skeleton_id,// the id of the skeleton this node is an element of
       edition_time, // Last time this node was edited
-      user_id,   // id of the user who owns the node
-      hrefSuffix) // a suffix that is appended to the ID of the referenced geometry
+      user_id)   // id of the user who owns the node
     {
       this.overlayGlobals = overlayGlobals;
       this.id = id;
@@ -926,7 +911,6 @@
       this.c = null; // The SVG circle for drawing and interacting with the node.
       this.radiusGraphics = null; // The SVG circle for visualing skeleton radius.
       this.line = null; // The SVG line element that represents an edge between nodes
-      this.hrefSuffix = hrefSuffix;
     };
 
     ptype.Node.prototype = new ptype.AbstractTreenode();
@@ -1029,7 +1013,9 @@
         this.id = null;
         if (this.c) {
           ptype.mouseEventManager.forget(this.c, SkeletonAnnotations.TYPE_CONNECTORNODE);
-          this.c.remove();
+          this.c.parent.removeChild(this.c);
+          this.c.destroy();
+          this.c = null;
         }
         this.visibilityGroups = null;
         this.subtype = null;
@@ -1048,9 +1034,8 @@
       this.disable = function() {
         this.id = this.DISABLED;
         if (this.c) {
-          this.c.datum(null);
-          this.c.attr('class', null);
-          this.c.hide();
+          // this.c.datum(null);
+          this.c.visible = false;
         }
         this.subtype = null;
         this.removeConnectorArrows();
@@ -1084,8 +1069,8 @@
 
       this.updateColors = function() {
         if (this.c) {
-          var fillcolor = this.color();
-          this.c.attr({fill: fillcolor});
+          var fillcolor = new THREE.Color(this.color()).getHex();
+          this.c.tint = fillcolor;
         }
       };
 
@@ -1157,11 +1142,12 @@
         this.needsync = false;
 
         if (this.c) {
-          this.c.datum(id);
+          // this.c.datum(id);
           if (this.shouldDisplay()) {
-            this.c.attr({x: x, y: y});
+            this.c.x = x;
+            this.c.y = y;
           } else {
-            this.c.hide();
+            this.c.visible = false;
           }
         }
 
@@ -1184,8 +1170,7 @@
       confidence, // (TODO: UNUSED)
       subtype,    // the kind of connector node
       edition_time, // Last time this connector was edited
-      user_id,   // id of the user who owns the node
-      hrefSuffix) // a suffix that is appended to the ID of the referenced geometry
+      user_id)   // id of the user who owns the node
     {
       this.overlayGlobals = overlayGlobals;
       this.id = id;
@@ -1208,7 +1193,6 @@
       this.postLines = null; // Array of ArrowLine to the postsynaptic nodes
       this.undirLines = null; // Array of undirected ArraowLine
       this.gjLines = null; // Array of gap junction ArrowLine
-      this.hrefSuffix = hrefSuffix;
     };
 
     ptype.ConnectorNode.prototype = new ptype.AbstractConnectorNode();
@@ -1524,8 +1508,10 @@
     })();
 
 
-    ptype.ArrowLine = function(paper, hrefSuffix) {
+    ptype.ArrowLine = function(container) {
+      return;
       this.line = paper.select('.arrows').append('line');
+      this.line = new PIXI.Graphics();
       // Because the transparent stroke trick will not work for lines, a separate,
       // larger stroked, transparent line is needed to catch mouse events. In SVG2
       // this can be achieved on the original line with a marker-segment.
@@ -1533,7 +1519,6 @@
       this.catcher.on('mousedown', this.mousedown);
       this.catcher.on('mouseover', this.mouseover);
       this.confidence_text = null;
-      this.hrefSuffix = hrefSuffix;
     };
 
     ptype.ArrowLine.prototype = new (function() {
@@ -1673,6 +1658,7 @@
       };
 
       this.disable = function() {
+        return;
         this.catcher.datum(null);
         this.line.hide();
         this.catcher.hide();
@@ -1687,6 +1673,7 @@
       };
 
       this.obliterate = function() {
+        return;
         this.catcher.datum(null);
         this.catcher.on('mousedown', null);
         this.catcher.on('mouseover', null);
@@ -1701,9 +1688,10 @@
       };
 
       this.init = function(connector, node, confidence, is_pre) {
-        this.line.attr('class', connector.getVisibilityGroups().reduce(function (c, groupID) {
-          return c + ' ' + SkeletonAnnotations.VisibilityGroups.GROUP_CLASSES[groupID];
-        }, ''));
+        // this.line.attr('class', connector.getVisibilityGroups().reduce(function (c, groupID) {
+        //   return c + ' ' + SkeletonAnnotations.VisibilityGroups.GROUP_CLASSES[groupID];
+        // }, ''));
+        return;
         this.catcher.datum({connector_id: connector.id, treenode_id: node.id, is_pre: is_pre});
         if (1 == is_pre) {
           this.update(node.x, node.y, connector.x, connector.y, is_pre, confidence, connector.NODE_RADIUS*node.scaling);
@@ -1720,15 +1708,16 @@
         this.confidenceFontSize = this.CONFIDENCE_FONT_PT*this.scaling + 'pt';
         // If not in screen scaling mode, do not need to scale markers (but must reset scale).
         var scale = dynamicScale ? resScale*dynamicScale : 1;
-        this.markerDefs.forEach(function (m) {
-          m.attr({
-            markerWidth: markerSize[0]*scale,
-            markerHeight: markerSize[1]*scale
-          });
-        });
+        // this.markerDefs.forEach(function (m) {
+        //   m.attr({
+        //     markerWidth: markerSize[0]*scale,
+        //     markerHeight: markerSize[1]*scale
+        //   });
+        // });
       };
 
-      this.initDefs = function(defs, hrefSuffix) {
+      this.initTextures = function () {
+        return;
         // Note that in SVG2 the fill could be set to 'context-stroke' and would
         // work appropriately as an end marker for both pre- and post- connectors.
         // However, this SVG2 feature is not supported in current browsers, so two
@@ -1766,6 +1755,7 @@
                                            fillColor,
                                            confidence,
                                            existing) {
+        return;
         var text,
         numberOffset = 0.8 * this.CONFIDENCE_FONT_PT * this.scaling,
         xdiff = parentx - x,

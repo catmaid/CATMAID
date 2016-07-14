@@ -362,6 +362,13 @@
   };
 
   /**
+   * Get the layer opacity.
+   */
+  PixiLayer.prototype.getOpacity = function () {
+    return this.opacity;
+  };
+
+  /**
    * Notify this layer that it has been reordered to be before another layer.
    * While the stack viewer orders DOM elements, layers are responsible for any
    * internal order representation, such as in a scene graph.

@@ -466,7 +466,7 @@ class ClientData(models.Model):
     key = models.CharField(max_length=255)
     # TODO: JSONField does not use Postgres JSON type, does not validate that
     # text content is valid JSON. Replace with Django's JSONField when we reach
-    # Django 1.9/Postgres 9.4.
+    # Django 1.9.
     value = JSONField(default={})
 
     class Meta:

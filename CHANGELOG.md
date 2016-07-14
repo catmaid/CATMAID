@@ -3,6 +3,9 @@
 ### Notes
 
 - A virtualenv upgrade is required.
+- PostgreSQL 9.5 and PostGIS 2.2 is now required. When updating, update PostGIS
+  first and update all databases in which the PostGIS extension is installed by
+  running "ALTER EXTENSION postgis UPDATE;". Then perform the Postgres update.
 
 
 ### Features and enhancements

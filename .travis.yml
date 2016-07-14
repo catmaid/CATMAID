@@ -9,9 +9,17 @@ env:
     - SLIMERJSLAUNCHER=$(which firefox) DISPLAY=:99.0 PATH=$TRAVIS_BUILD_DIR/slimerjs:$PATH TMPDIR=$TRAVIS_BUILD_DIR/tmp
     - GH_REF: github.com/catmaid/catmaid.github.io.git
     - secure: "jS17W1CVlSIcUl0BqQjWpDlncxvOFg3w6HDOCuCp0DlPjMaJcLK3xjPqKE3a4FbTvTWo/q8jxjk4lGkRa5GneZhk/b0UEpQBrfY6NmQF4df0MHA7rRdLoSYAqh96bMKWLWSZ/teEB89wUxX21Zyuft05IvJ0G1s4PazTrZoovcg="
+    - PGPORT: 5433
+    - PGHOST: localhost
 addons:
   firefox: "38.0"
-  postgresql: 9.4
+  apt:
+    sources:
+    - precise-pgdg-9.5
+    packages:
+    - postgresql-9.5
+    - postgresql-contrib-9.5
+  postgresql: 9.5
 before_install:
   - mkdir tmp
   - travis_retry sudo apt-get update -y -qq
@@ -25,6 +33,8 @@ install:
   - pip install coveralls
   - npm install jshint qunit-phantomjs-runner csslint jsdoc
 before_script:
+  - sudo cp /etc/postgresql/9.4/main/pg_hba.conf /etc/postgresql/9.5/main/pg_hba.conf
+  - sudo /etc/init.d/postgresql restart
   - psql -c 'CREATE DATABASE catmaid;' -U postgres
   - psql -c 'CREATE EXTENSION postgis;' -U postgres catmaid
   - cd django

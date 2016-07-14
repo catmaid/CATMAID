@@ -23,9 +23,9 @@ RUN mkdir -p /opt/virtualenvs \
 
 ADD . /home/
 # Postgres setup
-RUN sed -i '/# DO NOT DISABLE!/ilocal catmaid catmaid_user  md5' /etc/postgresql/9.4/main/pg_hba.conf \
+RUN sed -i '/# DO NOT DISABLE!/ilocal catmaid catmaid_user  md5' /etc/postgresql/9.5/main/pg_hba.conf \
     && service postgresql start \
-    && /home/scripts/createuser.sh catmaid catmaid_user p4ssw0rd | sudo -u postgres psql --cluster 9.4/main
+    && /home/scripts/createuser.sh catmaid catmaid_user p4ssw0rd | sudo -u postgres psql --cluster 9.5/main
 
 # CATMAID setup
 RUN cp /home/django/configuration.py.example /home/django/configuration.py \

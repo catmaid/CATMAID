@@ -3,12 +3,14 @@ from django.db import connection
 
 def add_log_entry(user_id, label):
     """Give a label to the current transaction and time, executed by a
-    particular user.
+    particular user. This information is recorded only once per transaction, and
+    subsequent calls will be ignored silently.
     """
     cursor = connection.cursor()
     cursor.execute("""
         INSERT INTO catmaid_transaction_info (user_id, change_type, label)
         VALUES (%s, 'Backend', %s)
+        ON CONFLICT DO NOTHING
     """, (user_id, label))
 
 

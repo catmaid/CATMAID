@@ -153,7 +153,7 @@
       return function(connector, node, confidence, is_pre) {
         var arrow = arrowPool.next();
         if (!arrow) {
-          arrow = new ArrowLine();
+          arrow = new ArrowLine(connector.overlayGlobals.skeletonElements.containers.arrows);
           arrowPool.push(arrow);
         }
         arrow.init(connector, node, confidence, is_pre);
@@ -294,7 +294,7 @@
           this.c.x = this.x;
           this.c.y = this.y;
           this.c.beginFill(0xFFFFFF);
-          this.c.drawCircle(0, 0, this.CATCH_RADIUS*2);
+          this.c.drawCircle(0, 0, this.NODE_RADIUS); // TODO: no catcher radius
           this.c.endFill();
           this.overlayGlobals.skeletonElements.containers.nodes.addChild(this.c);
 
@@ -308,7 +308,7 @@
         this.c.tint = new THREE.Color(this.color()).getHex();
         // this.c.datum(this.id);
 
-        if (!this.c.visible) this.c.visible = true;
+        this.c.visible = true;
       };
 
       this.createRadiusGraphics = function () {
@@ -570,10 +570,11 @@
         var parentLocation = getIntersection(this.parent, this,
             Math.max(this.dToSecBefore, Math.min(this.dToSecAfter, this.parent.zdiff)));
 
-        this.line.lineColor = lineColor;
-        this.line.lineWidth = this.EDGE_WIDTH;
+        this.line.clear();
+        this.line.lineStyle(this.BASE_EDGE_WIDTH, 0xFFFFFF, 1.0); // TODO: edge width
         this.line.moveTo(childLocation[0], childLocation[1]);
         this.line.lineTo(parentLocation[0], parentLocation[1]);
+        this.line.tint = lineColor;
 
         this.line.attr('class', this.getVisibilityGroups().reduce(function (c, groupID) {
           return c + ' ' + SkeletonAnnotations.VisibilityGroups.GROUP_CLASSES[groupID];
@@ -917,7 +918,6 @@
 
     ptype.AbstractConnectorNode = function() {
       // For drawing:
-      this.USE_HREF = 'connectornodeCircle';
       this.NODE_RADIUS = 8;
       this.CATCH_RADIUS = 0;
 
@@ -1509,23 +1509,22 @@
 
 
     ptype.ArrowLine = function(container) {
-      return;
-      this.line = paper.select('.arrows').append('line');
       this.line = new PIXI.Graphics();
+      container.addChild(this.line);
       // Because the transparent stroke trick will not work for lines, a separate,
       // larger stroked, transparent line is needed to catch mouse events. In SVG2
       // this can be achieved on the original line with a marker-segment.
-      this.catcher = paper.select('.arrows').append('line');
-      this.catcher.on('mousedown', this.mousedown);
-      this.catcher.on('mouseover', this.mouseover);
+      // this.catcher = paper.select('.arrows').append('line');
+      // this.catcher.on('mousedown', this.mousedown);
+      // this.catcher.on('mouseover', this.mouseover);
       this.confidence_text = null;
     };
 
     ptype.ArrowLine.prototype = new (function() {
-      this.PRE_COLOR = "rgb(200,0,0)";
-      this.POST_COLOR = "rgb(0,217,232)";
-      this.GJ_COLOR = "rgb(159,37,194)";
-      this.OTHER_COLOR = "rgb(0,200,0)";
+      this.PRE_COLOR = new THREE.Color("rgb(200,0,0)").getHex();
+      this.POST_COLOR = new THREE.Color("rgb(0,217,232)").getHex();
+      this.GJ_COLOR = new THREE.Color("rgb(159,37,194)").getHex();
+      this.OTHER_COLOR = new THREE.Color("rgb(0,200,0)").getHex();
       this.BASE_EDGE_WIDTH = 2;
       this.CATCH_SCALE = 3;
       this.CONFIDENCE_FONT_PT = 15;
@@ -1616,8 +1615,11 @@
         var x2new = (x2 - x1) * F + x1;
         var y2new = (y2 - y1) * F + y1;
 
-        this.line.attr({x1: x1, y1: y1, x2: x2new, y2: y2new});
-        this.catcher.attr({x1: x1, y1: y1, x2: x2new, y2: y2new});
+        this.line.clear();
+        this.line.lineStyle(this.BASE_EDGE_WIDTH, 0xFFFFFF, 1.0); // TODO: no width scaling
+        this.line.moveTo(x1, y1);
+        this.line.lineTo(x2new, y2new);
+        // this.catcher.attr({x1: x1, y1: y1, x2: x2new, y2: y2new});
 
         var stroke_color;
         if (undefined === is_pre) stroke_color = this.OTHER_COLOR;
@@ -1641,27 +1643,23 @@
           else def = 'markerArrowPost';
           opts['marker-end'] = 'url(#' + def + this.hrefSuffix + ')';
         }
-        this.line.attr(opts);
-        this.catcher.attr({stroke: stroke_color, // Though invisible, must be set for mouse events to trigger
-                           'stroke-opacity': 0,
-                           'stroke-width': this.EDGE_WIDTH*this.CATCH_SCALE });
+        this.line.tint = stroke_color;
+        // this.catcher.attr({stroke: stroke_color, // Though invisible, must be set for mouse events to trigger
+        //                    'stroke-opacity': 0,
+        //                    'stroke-width': this.EDGE_WIDTH*this.CATCH_SCALE });
 
         this.show();
       };
 
       this.show = function() {
-        // Ensure visible
-        if ('hidden' === this.line.attr('visibility')) {
-          this.line.show();
-          this.catcher.show();
-        }
+        this.line.visible = true;
+        // this.catcher.visible = true;();
       };
 
       this.disable = function() {
-        return;
-        this.catcher.datum(null);
-        this.line.hide();
-        this.catcher.hide();
+        // this.catcher.datum(null);
+        this.line.visible = false;
+        // this.catcher.visible = false;
         if (this.confidence_text) this.confidence_text.hide();
       };
 
@@ -1673,13 +1671,13 @@
       };
 
       this.obliterate = function() {
-        return;
-        this.catcher.datum(null);
-        this.catcher.on('mousedown', null);
-        this.catcher.on('mouseover', null);
-        this.line.remove();
+        // this.catcher.datum(null);
+        // this.catcher.on('mousedown', null);
+        // this.catcher.on('mouseover', null);
+        this.line.parent.removeChild(this.line);
+        this.line.destroy();
         this.line = null;
-        this.catcher.remove();
+        // this.catcher.remove();
         this.catcher = null;
         if (this.confidence_text) {
           this.confidence_text.remove();
@@ -1691,9 +1689,8 @@
         // this.line.attr('class', connector.getVisibilityGroups().reduce(function (c, groupID) {
         //   return c + ' ' + SkeletonAnnotations.VisibilityGroups.GROUP_CLASSES[groupID];
         // }, ''));
-        return;
-        this.catcher.datum({connector_id: connector.id, treenode_id: node.id, is_pre: is_pre});
-        if (1 == is_pre) {
+        // this.catcher.datum({connector_id: connector.id, treenode_id: node.id, is_pre: is_pre});
+        if (1 === is_pre) {
           this.update(node.x, node.y, connector.x, connector.y, is_pre, confidence, connector.NODE_RADIUS*node.scaling);
         } else {
           this.update(connector.x, connector.y, node.x, node.y, is_pre, confidence, node.NODE_RADIUS*node.scaling);

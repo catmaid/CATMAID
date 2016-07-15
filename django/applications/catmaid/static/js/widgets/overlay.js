@@ -1118,6 +1118,7 @@ SkeletonAnnotations.TracingOverlay.prototype.recolorAllNodes = function () {
       this.nodes[nodeID].updateColors();
     }
   }
+  this.pixiLayer._renderIfReady();
 };
 
 /**
@@ -2280,20 +2281,10 @@ SkeletonAnnotations.TracingOverlay.prototype.redraw = function(force, completion
 
   var stackViewBox = stackViewer.createStackViewBox();
 
-  this.pixiLayer.batchContainer.scale.set(stackViewer.scale);// * stackViewer.primaryStack.resolution.x;
-  // this.pixiLayer.batchContainer.scale.y = stackViewer.scale; // * stackViewer.primaryStack.resolution.y;
-  this.pixiLayer.batchContainer.x = -stackViewBox.min.x;
-  this.pixiLayer.batchContainer.y = -stackViewBox.min.y;
-  // this.pixiLayer.batchContainer.scale = 1;//stackViewer.scale * resScale;
-  // Use project coordinates for the SVG's view box
-  // this.paper.attr({
-  //     viewBox: [
-  //         stackViewBox.min.x,
-  //         stackViewBox.min.y,
-  //         stackViewBox.max.x - stackViewBox.min.x,
-  //         stackViewBox.max.y - stackViewBox.min.y].join(' '),
-  //     width: stackViewer.viewWidth,     // Width and height only need to be updated on
-  //     height: stackViewer.viewHeight}); // resize.
+  this.pixiLayer.batchContainer.scale.set(stackViewer.scale);
+  this.pixiLayer.batchContainer.position.set(
+      -stackViewBox.min.x*stackViewer.scale,
+      -stackViewBox.min.y*stackViewer.scale);
 
   if (doNotUpdate) {
     this.pixiLayer._renderIfReady();

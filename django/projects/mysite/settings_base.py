@@ -171,11 +171,12 @@ PROFILE_SHOW_ROI_TOOL = False
 # such an image will be created when requested.
 ROI_AUTO_CREATE_IMAGE = False
 
-# The maximum number of nodes returned by a single spatial query. This
+# A limit on the size of the result returned by a single spatial query. This
 # determines the maximum number of nodes shown in the tracing overlay, so has
 # severe worst-case performance implications for the database, web server, and
-# client.
-NODE_LIST_MAXIMUM_COUNT = 5000
+# client. Note that this is not a direct limit on the number of nodes in the
+# result; that will be between 1x and 2x this value.
+NODE_LIST_MAXIMUM_COUNT = 3500
 
 # Default importer tile width, tile height and tile source type
 IMPORTER_DEFAULT_DATA_SOURCE = 'filesystem'

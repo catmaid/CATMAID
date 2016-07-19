@@ -159,7 +159,7 @@ div.TileLayerControl .layerControl {
   background: #111;
 }
 
-li.layerControl: :before {
+li.layerControl :before {
   content: counter(order-counter);
   margin-right: 5px;
   margin-top: 0.25em;

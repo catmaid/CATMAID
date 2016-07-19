@@ -26,7 +26,7 @@
   border-radius: 5px;
 }
 
-.tagEditor li: hover {
+.tagEditor li:hover {
   background-color: #eee;
 }
 

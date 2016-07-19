@@ -20,7 +20,7 @@
     this.renderer = new PIXI.autoDetectRenderer(
         stackViewer.getView().clientWidth,
         stackViewer.getView().clientHeight,
-        {backgroundColor: 0x000000, antialias: true});
+        {transparent: true, backgroundColor: 0x000000, antialias: true});
     this.stage = new PIXI.Container();
     this.layersRegistered = new Set();
 

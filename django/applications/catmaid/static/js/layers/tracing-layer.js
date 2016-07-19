@@ -23,6 +23,11 @@
     this.tracingOverlay = new SkeletonAnnotations.TracingOverlay(stackViewer, this, options);
     this.isHideable = true;
 
+    if (!this.stackViewer.getLayersView().contains(this.renderer.view)) {
+      this.stackViewer.getLayersView().appendChild(this.renderer.view);
+      this.renderer.view.className = 'sliceTiles';
+    }
+
     this.renderer.plugins.interaction.autoPreventDefault = false;
   }
 

@@ -82,3 +82,15 @@ def disable_history_tracking(ignore_missing_fn=False):
             return False
     cursor.execute("SELECT disable_history_tracking()")
     return True
+
+
+def sync_history_table(table):
+    """Sync history of a particular table. By default a time column named
+    "creation_time" is expected, which can be changed or disabled (if falsy).
+    """
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT sync_history_table(%s::regclass,
+            (SELECT history_table_name FROM catmaid_history_table
+            WHERE live_table_name=%s::regclass)::text)
+    """, (table, table, table))

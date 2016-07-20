@@ -12,14 +12,19 @@ history_tracking_enabled = getattr(settings, 'HISTORY_TRACKING', True)
 
 add_history_functions_sql = """
 
-    -- Create a table to keep track of created history tables. This log is
-    -- useful for rolling back this migration and more robust access to
-    -- individual history tables based on a live table name.
+    -- Create a table to keep track of created history tables, when they were
+    -- created, whether triggers were installed on the live table and if the
+    -- live table has a particular column representing time. The latter is used
+    -- to syncronize tables if history tracking is enabled after it was
+    -- disabled.  log is also useful for rolling back this migration and
+    -- more robust access to individual history tables based on a live table name.
     CREATE TABLE catmaid_history_table (
-        history_table_name  name PRIMARY KEY,
-        live_table_name     regclass,
-        triggers_installed  boolean NOT NULL,
-        creation_time       timestamptz NOT NULL DEFAULT current_timestamp
+        history_table_name      name PRIMARY KEY,
+        live_table_name         regclass,
+        triggers_installed      boolean NOT NULL,
+        live_table_time_column  text,
+        live_table_pkey_column  text,
+        creation_time           timestamptz NOT NULL DEFAULT current_timestamp
     );
 
 
@@ -89,17 +94,22 @@ add_history_functions_sql = """
 
     -- Create a history table and triggers to populate it for the passed in
     -- table. Always use this function to create history tables to ensure
-    -- everything is set up correctly. If the passed in table inherits from
-    -- another table and <copy_inheritance> is true (default), the history
-    -- table will have the same inheritance hierarchy as the live table.
-    --
-    -- Note that while regclass typed arguments are safer, they can't be
-    -- easiliy used to construct new database identifier names without
-    -- running into quoting issues easily. The validity of this input is checked.
+    -- everything is set up correctly. An optional time column can be specified,
+    -- which will be used to obtain time information for a live row, otherwise the
+    -- current timestamp will be used. Currently, only tables with a single column
+    -- primary key are supported. If the passed in table inherits from another
+    -- table and <copy_inheritance> is true (default), the history table will have
+    -- the same inheritance hierarchy as the live table. The optional
+    -- live_table_time_column is stored so that live tables and history tables can
+    -- be synchronized in case triggers are disabled and re-enabled.  If <sync> is
+    -- true, the created history table is synchronized automatically, after it is
+    -- created.
     CREATE OR REPLACE FUNCTION create_history_table(live_table_schema text,
                                                     live_table_name regclass,
+                                                    live_table_time_column text DEFAULT NULL,
                                                     create_triggers boolean DEFAULT true,
-                                                    copy_inheritance boolean DEFAULT true)
+                                                    copy_inheritance boolean DEFAULT true,
+                                                    sync boolean DEFAULT true)
     RETURNS void
     LANGUAGE plpgsql AS
     $$
@@ -118,6 +128,10 @@ add_history_functions_sql = """
         -- A list of columns in a potential parent table
         parent_info record;
 
+        -- The primary key of the live table
+        live_table_pkey_column  text;
+        live_table_n_pkeys      int;
+
     BEGIN
 
         -- History tables will be named like the live table plus a '_history' suffix
@@ -128,6 +142,27 @@ add_history_functions_sql = """
                   WHERE cht.history_table_name = outerblock.history_table_name) THEN
             RAISE NOTICE 'History table ''%'' already exists', history_table_name;
             RETURN;
+        END IF;
+
+        -- Find primary key of table
+
+        SELECT a.attname
+        FROM   pg_index i
+        JOIN   pg_attribute a ON a.attrelid = i.indrelid
+                             AND a.attnum = ANY(i.indkey)
+        WHERE  i.indrelid = live_table_name
+        AND    i.indisprimary
+        INTO live_table_pkey_column;
+
+        GET DIAGNOSTICS live_table_n_pkeys = ROW_COUNT;
+
+        IF live_table_n_pkeys = 0 THEN
+            RAISE EXCEPTION 'Need primary key on table to create history '
+                'table for "%"', live_table_name;
+        ELSIF live_table_n_pkeys > 1 THEN
+            RAISE EXCEPTION 'Currently only single column primary keys are'
+            'supported, the primary key of table "%" consists of % columns: %',
+                live_table_name, live_table_n_pkeys, live_table_pkey_column;
         END IF;
 
         -- Set parent information to nothing by default
@@ -159,8 +194,9 @@ add_history_functions_sql = """
 
             IF FOUND THEN
                 RAISE NOTICE 'Parent: %, %, %', parent_info.parent_schemaname, parent_info.parent_tablename, parent_info.parent_oid;
-                -- Recursively create a history table for the parent, without adding triggers
-                PERFORM create_history_table(parent_info.parent_schemaname, parent_info.parent_oid, TRUE, TRUE);
+                -- Recursively create a history table for the parent
+                PERFORM create_history_table(parent_info.parent_schemaname,
+                    parent_info.parent_oid, live_table_time_column, TRUE, TRUE);
             END IF;
             RAISE NOTICE 'END INHERITANCE';
         END IF;
@@ -244,17 +280,34 @@ add_history_functions_sql = """
         END IF;
 
         -- Keep track of created history tables
-        INSERT INTO catmaid_history_table (history_table_name, live_table_name, triggers_installed)
-        VALUES (history_table_name, live_table_name, false);
+        INSERT INTO catmaid_history_table (history_table_name, live_table_name,
+            triggers_installed, live_table_time_column, live_table_pkey_column)
+        VALUES (history_table_name, live_table_name, false,
+            live_table_time_column, live_table_pkey_column);
 
         -- Set up data insert, update and delete trigger on original database
         IF create_triggers THEN
-            PERFORM enable_history_tracking_for_table(live_table_name, history_table_name);
+            -- Handle sync separately, makes it easier to disable
+            PERFORM enable_history_tracking_for_table(live_table_name,
+                history_table_name, false);
+        END IF;
+
+        IF sync THEN
+            RAISE NOTICE 'Syncing history for table "%" in history table "%"',
+                live_table_name, history_table_name;
+            PERFORM sync_history_table($2,cht.history_table_name::regclass)
+            FROM catmaid_history_table cht
+            WHERE cht.live_table_name = $2
+            AND cht.history_table_name = outerblock.history_table_name::name;
         END IF;
     END;
     $$;
 
-    -- Copy data from a live table into its history table.
+    -- Copy data from a live table into its history table. Ignore live data that
+    -- is already present in the historic data. If a time column is passed in
+    -- that is different from NULL and its live value is newer than the
+    -- corresponding historic value, the history table is updated and the newer
+    -- row is inserted and the old history row is updated..
     CREATE OR REPLACE FUNCTION populate_history_table(live_table_schema text,
         live_table_name regclass, history_table_name regclass, time_column text)
         RETURNS void
@@ -281,6 +334,184 @@ add_history_functions_sql = """
             WHERE pc.oid = live_table_name
             AND c.table_name = pc.relname
             AND c.table_schema = live_table_schema);
+        end_time = clock_timestamp();
+        delta = 1000 * (extract(epoch from end_time) - extract(epoch from start_time));
+        RAISE NOTICE 'Execution time: %ms', delta;
+    END;
+    $$;
+
+
+    -- Synchronize a history table by comparing it to its live table. If a
+    -- live row does not have a corresponding history entry, a new history table
+    -- row is created for it (like when a new entry is added). Otherwise, if a
+    -- live row already has a corresponding history table row (i.e. their IDs
+    -- match) both are synced. If a time column has been passed in, it is used
+    -- to check if the live row is newer. Otherwise, all values are compared
+    -- and if live table values differ, a new history entry is created and the
+    -- old one is updated to become invalid.
+    CREATE OR REPLACE FUNCTION sync_history_table(live_table_name regclass,
+        history_table_name regclass)
+        RETURNS void
+    LANGUAGE plpgsql AS
+    $$
+    DECLARE
+        start_time  timestamptz;
+        end_time    timestamptz;
+        delta       interval;
+        row         record;
+        num_updated_rows int;
+        num_new_rows int;
+        time_column text;
+        time_source text;
+        pkey_column text;
+    BEGIN
+        RAISE NOTICE 'Obtaining exclusive locks on tables % and %',
+            live_table_name, history_table_name;
+        EXECUTE format('LOCK TABLE %s IN ACCESS EXCLUSIVE MODE', live_table_name);
+        EXECUTE format('LOCK TABLE %s IN ACCESS EXCLUSIVE MODE', history_table_name);
+
+        start_time = clock_timestamp();
+
+        SELECT cht.live_table_time_column
+        FROM catmaid_history_table cht
+        WHERE cht.live_table_name = $1
+        AND cht.history_table_name = $2::name
+        INTO time_column;
+
+        SELECT cht.live_table_pkey_column
+        FROM catmaid_history_table cht
+        WHERE cht.live_table_name = $1
+        AND cht.history_table_name = $2::name
+        INTO pkey_column;
+
+        IF time_column IS NOT NULL THEN
+            RAISE NOTICE 'Synchronizing history information for table "%" using '
+                'time column "%" and primary key "%"', live_table_name,
+                time_column, pkey_column;
+            -- If there is a time column available for this table, invalidate all
+            -- history rows with a sys_period range that contains the live row's
+            -- time column value, but started before it. New (active) history
+            -- rows will then be inserted for those newer live rows.
+            time_source = 'lt.' || time_column;
+            EXECUTE (
+                SELECT format (
+                    'WITH updated_entries AS ('
+                        'UPDATE %1$s ht '
+                        'SET sys_period = tstzrange(lower(ht.sys_period), %3$s) '
+                        'FROM %2$s lt, catmaid_history_table cht '
+                        'WHERE ht.%9$s = lt.%9$s '
+                        'AND ht.sys_period @> %3$s ' -- @> is "contains" operator
+                        'AND lower(ht.sys_period) < %3$s '
+                        'RETURNING lt.*, tstzrange(%3$s, null) AS sys_period, %8$s AS txid '
+                    ') '
+                    'INSERT INTO %1$s (%5$s,sys_period,exec_transaction_id) '
+                    'SELECT %5$s, sys_period, txid  FROM updated_entries ue '
+                    'RETURNING %9$s ',
+                    history_table_name,
+                    live_table_name,
+                    time_source,
+                    string_agg('lt.' || quote_ident(c.column_name), ','),
+                    string_agg(quote_ident(c.column_name), ','),
+                    'to_sync.' || time_column,
+                    string_agg('to_sync.' || quote_ident(c.column_name), ','),
+                    txid_current(),
+                    pkey_column
+                )
+                FROM information_schema.columns c, pg_class pc
+                WHERE pc.oid = live_table_name
+                AND c.table_name = pc.relname
+            );
+
+            GET DIAGNOSTICS num_updated_rows = ROW_COUNT;
+
+            IF num_updated_rows > 0 THEN
+                RAISE NOTICE '% existing history entries required an update',
+                    num_updated_rows;
+            ELSE
+                RAISE NOTICE 'No existing history entries required an update';
+            END IF;
+        ELSE
+            RAISE NOTICE 'Synchronizing history information for table "%" '
+                'without time column and with primary key "%"',
+                live_table_name, pkey_column;
+
+            -- If there is a time column available for this table, invalidate all
+            -- history rows with a sys_period range that contains the live row's
+            -- time column value, but started before it. New (active) history
+            -- rows will then be inserted for those newer live rows.
+            time_source = 'current_timestamp';
+            EXECUTE (
+                SELECT format (
+                    'WITH updated_entries AS ('
+                        'UPDATE %1$s ht '
+                        'SET sys_period = tstzrange(lower(ht.sys_period), %3$s) '
+                        'FROM %2$s lt '
+                        'WHERE ht.%10$s = lt.%10$s '
+                        'AND (%9$s) ' -- Did live table change?
+                        'AND ht.sys_period @> %3$s ' -- @> is "contains" operator
+                        'RETURNING lt.*, tstzrange(%3$s, null) AS sys_period, %8$s AS txid '
+                    ') '
+                    'INSERT INTO %1$s (%5$s,sys_period,exec_transaction_id) '
+                    'SELECT %5$s, sys_period, txid  FROM updated_entries ue '
+                    'RETURNING %10$s ',
+                    history_table_name,
+                    live_table_name,
+                    time_source,
+                    string_agg('lt.' || quote_ident(c.column_name), ','),
+                    string_agg(quote_ident(c.column_name), ','),
+                    'to_sync.' || time_column,
+                    string_agg('to_sync.' || quote_ident(c.column_name), ','),
+                    txid_current(),
+                    string_agg('ht.' || quote_ident(c.column_name) || '<>' ||
+                        'lt.' || quote_ident(c.column_name), ' OR '),
+                    pkey_column
+                )
+                FROM information_schema.columns c, pg_class pc
+                WHERE pc.oid = live_table_name
+                AND c.table_name = pc.relname
+            );
+
+            GET DIAGNOSTICS num_updated_rows = ROW_COUNT;
+
+            IF num_updated_rows > 0 THEN
+                RAISE NOTICE '% existing history entries required an update',
+                    num_updated_rows;
+            ELSE
+                RAISE NOTICE 'No existing history entries required an update';
+            END IF;
+        END IF;
+
+        -- Insert all live rows that don't have an existing history entry yet.
+        EXECUTE (
+            SELECT format (
+                'INSERT INTO %1$s (%5$s,sys_period,exec_transaction_id) '
+                'SELECT %4$s, tstzrange(%3$s, null), %6$s '
+                'FROM %2$s lt '
+                'LEFT JOIN %1$s ht '
+                'ON lt.%7$s = ht.%7$s '
+                'WHERE ht.%7$s IS NULL',
+                history_table_name,
+                live_table_name,
+                time_source,
+                string_agg('lt.' || quote_ident(c.column_name), ','),
+                string_agg(quote_ident(c.column_name), ','),
+                txid_current(),
+                pkey_column
+            )
+            FROM information_schema.columns c, pg_class pc
+            WHERE pc.oid = live_table_name
+            AND c.table_name = pc.relname
+        );
+
+        GET DIAGNOSTICS num_new_rows = ROW_COUNT;
+
+        IF num_new_rows > 0 THEN
+            RAISE NOTICE '% new live entries where added to the history',
+                num_new_rows;
+        ELSE
+            RAISE NOTICE 'No new live entries where added to the history';
+        END IF;
+
         end_time = clock_timestamp();
         delta = 1000 * (extract(epoch from end_time) - extract(epoch from start_time));
         RAISE NOTICE 'Execution time: %ms', delta;
@@ -342,27 +573,43 @@ add_history_functions_sql = """
 
     -- Enable history tracking for a particular live table and history table by
     -- making sure all triggers are connected to -- history events.
-    CREATE OR REPLACE FUNCTION enable_history_tracking_for_table(live_table_name regclass, history_table_name text)
+    CREATE OR REPLACE FUNCTION enable_history_tracking_for_table(live_table_name regclass,
+        history_table_name text, sync boolean DEFAULT true)
     RETURNS void
     LANGUAGE plpgsql AS
     $$
     DECLARE
         history_trigger_name text;
     BEGIN
+        IF sync THEN
+            RAISE NOTICE 'Syncing history for table "%" in history table "%"',
+                live_table_name, history_table_name;
+            PERFORM sync_history_table($1, $2)
+            FROM catmaid_history_table cht
+            WHERE cht.live_table_name = $1
+            AND cht.history_table_name = $2::name;
+        END IF;
+
         history_trigger_name = history_table_update_trigger_name(live_table_name);
         IF NOT EXISTS(
             SELECT * FROM catmaid_live_table_triggers cltt
             WHERE cltt.live_table_name = $1 AND triggers_installed = true)
         THEN
-            EXECUTE format(
-                'CREATE TRIGGER %I
-                AFTER INSERT OR UPDATE OR DELETE ON %s FOR EACH ROW
-                EXECUTE PROCEDURE update_history_of_row(%s, %s, %s)',
-                history_trigger_name, live_table_name, 'sys_period',
-                history_table_name, 'true');
+            EXECUTE(
+                SELECT format(
+                    'CREATE TRIGGER %I
+                    AFTER INSERT OR UPDATE OR DELETE ON %s FOR EACH ROW
+                    EXECUTE PROCEDURE update_history_of_row(%s, %s, %s)',
+                    history_trigger_name, cht.live_table_name, 'sys_period',
+                    cht.history_table_name, cht.live_table_pkey_column)
+                FROM catmaid_history_table cht
+                WHERE cht.live_table_name = $1 AND cht.history_table_name = $2);
+
             -- Remember that triggers are now installed for this table
             UPDATE catmaid_history_table cht SET triggers_installed = true
             WHERE cht.live_table_name = $1 AND cht.history_table_name = $2;
+
+            -- Sync history table with the live table, if requested.
         END IF;
     END;
     $$;
@@ -432,7 +679,7 @@ add_history_functions_sql = """
     -- to be updated with a sys_period of [current_val, now] and add a new
     -- row. The following arguments are passed to this trigger function and
     -- are part of the TG_ARGV variable:
-    -- sys_period_column, history_table_name regclass,live_table_name,adjust
+    -- sys_period_column, history_table_name regclass,live_table_pkey_column
     CREATE OR REPLACE FUNCTION update_history_of_row()
     RETURNS TRIGGER
     LANGUAGE plpgsql AS
@@ -448,13 +695,15 @@ add_history_functions_sql = """
             -- if their current sys_period contains the current_timestamp.
             -- TODO: Should this be more fault tolerant and ignore deletes of
             -- non existing rows?
-            EXECUTE format(
-                'UPDATE %I
-                 SET %s = tstzrange(lower(sys_period), current_timestamp),
-                     %s = txid_current()
-                 WHERE id=%s
-                 AND %2$s @> current_timestamp', -- @> is contains operator
-                TG_ARGV[1], TG_ARGV[0], 'exec_transaction_id', OLD.id);
+            EXECUTE (
+                SELECT format(
+                    'UPDATE %I
+                     SET %s = tstzrange(lower(sys_period), current_timestamp),
+                         %s = txid_current()
+                     WHERE %4$s=$1.%4$s
+                     AND %2$s @> current_timestamp', -- @> is contains operator
+                    TG_ARGV[1], TG_ARGV[0], 'exec_transaction_id', TG_ARGV[2])
+            ) USING OLD;
         END IF;
 
         IF (TG_OP = 'INSERT' OR TG_OP = 'UPDATE') THEN
@@ -486,12 +735,16 @@ remove_history_functions_sql = """
     DROP TABLE catmaid_history_table;
     DROP TABLE catmaid_transaction_info;
     DROP TYPE IF EXISTS history_change_type;
-    DROP FUNCTION IF EXISTS create_history_table(live_table_schema text, live_table_name regclass, create_triggers boolean, copy_inheritance boolean);
+    DROP FUNCTION IF EXISTS create_history_table(live_table_schema text,
+        live_table_name regclass, live_table_time_column text,
+        live_table_pkey_column text, create_triggers boolean,
+        copy_inheritance boolean, sync boolean);
     DROP FUNCTION IF EXISTS drop_history_table(live_table_name regclass);
     DROP FUNCTION IF EXISTS update_history_of_row();
     DROP FUNCTION IF EXISTS history_table_name(regclass);
     DROP FUNCTION IF EXISTS populate_history_table(text, regclass, regclass, text);
-    DROP FUNCTION IF EXISTS enable_history_tracking_for_table(live_table_name regclass, history_table_name text);
+    DROP FUNCTION IF EXISTS sync_history_table(regclass, regclass);
+    DROP FUNCTION IF EXISTS enable_history_tracking_for_table(live_table_name regclass, history_table_name text, sync boolean);
     DROP FUNCTION IF EXISTS disable_history_tracking_for_table(live_table_name regclass, history_table_name text);
     DROP FUNCTION IF EXISTS enable_history_tracking();
     DROP FUNCTION IF EXISTS disable_history_tracking();
@@ -570,9 +823,15 @@ add_initial_history_tables_sql = """
         ('taggit_taggeditem')
     );
 
-    -- Create a history table for all tables
-    SELECT create_history_table('public', t.name, {create_triggers}) FROM temp_versioned_catmaid_table t;
-    SELECT create_history_table('public', t.name, {create_triggers}) FROM temp_versioned_non_catmaid_table t;
+    -- Create a history table including inheritance for all tables, but handle
+    -- sync separately (to avoid syncing when disabled in settings and to
+    -- allow faster initial syncing).
+    SELECT create_history_table('public', t.name, t.time_column,
+        {create_triggers}, true, false)
+    FROM temp_versioned_catmaid_table t;
+    SELECT create_history_table('public', t.name, NULL,
+        {create_triggers}, true, false)
+    FROM temp_versioned_non_catmaid_table t;
 """.format(create_triggers='true' if history_tracking_enabled else 'false')
 
 # This snipped is meant to be appended to the add_initial_history_tables_sql

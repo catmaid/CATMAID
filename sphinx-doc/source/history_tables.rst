@@ -24,6 +24,10 @@ updated. It contains a complete copy for each version of each row and specifies
 a time period for its validity. This time period is called "system time" and is
 represented through the additional ``sys_period`` column in each history table.
 
+CATMAID's history system has one requiremens for tables it keeps track of: a
+single column primary key has to be used. Extending it to support multi-column
+primary keys is possible, not needed at the moment.
+
 By default, all tables of CATMAID itself plus the user table (a Django table)
 are set up to track history. To enable this for other tables (e.g. if new tables
 are added), the database function ``create_history_table( live_table_name )``

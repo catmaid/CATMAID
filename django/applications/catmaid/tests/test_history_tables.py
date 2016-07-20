@@ -21,6 +21,13 @@ class HistoryTableTests(TransactionTestCase):
         assign_perm('can_browse', self.user, self.project)
         assign_perm('can_annotate', self.user, self.project)
 
+    def run(self, *args):
+        """Wrap running of individual tests to make sure history tracking is
+        enabled for each test.
+        """
+        history.enable_history_tracking()
+        return super(HistoryTableTests, self).run(*args)
+
     def test_history_table_existence(self):
         """Test if all catmaid tables have a history table"""
         expected_tables_with_history = (
@@ -392,3 +399,207 @@ class HistoryTableTests(TransactionTestCase):
         history.enable_history_tracking()
         n_missing_enabled = HistoryTableTests.get_num_tables_without_update_triggers(cursor)
         self.assertEqual(0, n_missing_enabled)
+
+    def test_history_synchronization_missed_insert_with_time_column(self):
+        """See if disabling the history and inserting a new live row, yields in
+        the correct history if synchronized.
+        """
+        cursor = connection.cursor()
+
+        # Disable history tracking and get number of rows
+        history.disable_history_tracking()
+        original_class_history = self.get_history_entries(cursor, 'class')
+        n_original_entries = len(original_class_history)
+
+        # Create new row (without history updated)
+        cursor.execute("""
+            INSERT INTO "class" (user_id, project_id, class_name)
+            VALUES (%(user_id)s, %(project_id)s, 'testclass')
+            RETURNING row_to_json(class.*)
+        """, {
+            'user_id': self.user.id,
+            'project_id': self.project.id
+        })
+        class_details = cursor.fetchone()[0]
+        transaction.commit()
+
+        # Assert the row count didn't change in the history tables, because
+        # history tracking is disabled.
+        after_insert_class_history = self.get_history_entries(cursor, 'class')
+        n_after_insert_entries = len(original_class_history)
+
+        self.assertListEqual(original_class_history, after_insert_class_history)
+
+        # Sync history
+        history.sync_history_table('class')
+
+        # Assert node count is up-to-date again
+        after_sync_class_history = self.get_history_entries(cursor, 'class')
+        n_after_sync_entries = len(after_sync_class_history)
+
+        self.assertEqual(n_after_insert_entries + 1, n_after_sync_entries)
+
+        # Get last two class history entries
+        class_history_entry = after_sync_class_history[-1][0]
+
+        # Expect all fields of the original table to match the history table
+        for k,v in class_details.iteritems():
+            self.assertEqual(v, class_history_entry[k])
+
+        edition_time = self.timestamp_to_interval_format(class_details['edition_time'])
+        expected_interval = self.format_range(edition_time)
+        self.assertEqual(class_history_entry['sys_period'], expected_interval)
+
+    def test_history_synchronization_missed_modify_with_time_column(self):
+        """See if disabling the history and modifying an existing live node,
+        yields in the correct history if synchronized.
+        """
+        cursor = connection.cursor()
+
+        # Create initial row that will be modified
+        cursor.execute("""
+            INSERT INTO "class" (user_id, project_id, class_name)
+            VALUES (%(user_id)s, %(project_id)s, 'testclass')
+            RETURNING row_to_json(class.*)
+        """, {
+            'user_id': self.user.id,
+            'project_id': self.project.id
+        })
+        class_details = cursor.fetchone()[0]
+        # Make sure triggers are executed
+        transaction.commit()
+
+        # Disable history tracking and get number of rows
+        history.disable_history_tracking()
+        original_class_history = self.get_history_entries(cursor, 'class')
+        n_original_entries = len(original_class_history)
+
+        cursor.execute("""
+            UPDATE "class" SET class_name='tetclass2'
+            WHERE id=%s
+            RETURNING row_to_json(class.*)
+        """, (class_details['id'],))
+        after_update_class_details = cursor.fetchone()[0]
+        # Make sure triggers are executed
+        transaction.commit()
+
+        # Assert the row count didn't change in the history tables, because
+        # history tracking is disabled.
+        after_insert_class_history = self.get_history_entries(cursor, 'class')
+        n_after_insert_entries = len(original_class_history)
+
+        self.assertListEqual(original_class_history, after_insert_class_history)
+
+        # Sync history
+        history.sync_history_table('class')
+
+        # Assert node count is up-to-date again
+        after_sync_class_history = self.get_history_entries(cursor, 'class')
+        n_after_sync_entries = len(after_sync_class_history)
+
+        self.assertEqual(n_after_insert_entries + 1, n_after_sync_entries)
+
+        # Get last two class history entries
+        class_history_entry_1 = after_sync_class_history[-2][0]
+        class_history_entry_2 = after_sync_class_history[-1][0]
+
+        # Expect all fields of the original table to match the history table
+        for k,v in class_details.iteritems():
+            self.assertEqual(v, class_history_entry_1[k])
+        for k,v in after_update_class_details.iteritems():
+            self.assertEqual(v, class_history_entry_2[k])
+
+        edition_time_1 = self.timestamp_to_interval_format(class_details['edition_time'])
+        edition_time_2 = self.timestamp_to_interval_format(after_update_class_details['edition_time'])
+        self.assertNotEqual(edition_time_1, edition_time_2)
+
+        expected_interval_1 = self.format_range(edition_time_1, edition_time_2)
+        expected_interval_2 = self.format_range(edition_time_2)
+        self.assertEqual(class_history_entry_1['sys_period'], expected_interval_1)
+        self.assertEqual(class_history_entry_2['sys_period'], expected_interval_2)
+
+    def test_history_synchronization_missed_insert_without_time_column(self):
+        """See if disabling the history and inserting a new live row, yields in
+        the correct history if synchronized.
+        """
+        cursor = connection.cursor()
+
+        # Disable history tracking and get number of rows
+        history.disable_history_tracking()
+        original_project_history = self.get_history_entries(cursor, 'project')
+        n_original_entries = len(original_project_history)
+
+        # Create new row (without history updated)
+        cursor.execute("""
+            INSERT INTO "project" (title)
+            VALUES ('testproject')
+            RETURNING row_to_json(project.*)
+        """)
+        project_details = cursor.fetchone()[0]
+        transaction.commit()
+
+        # Assert the row count didn't change in the history tables, because
+        # history tracking is disabled.
+        after_insert_project_history = self.get_history_entries(cursor, 'project')
+        n_after_insert_entries = len(after_insert_project_history)
+
+        self.assertListEqual(original_project_history, after_insert_project_history)
+
+        # Sync history
+        history.sync_history_table('project')
+
+        # Assert node count is up-to-date again
+        after_sync_project_history = self.get_history_entries(cursor, 'project')
+        n_after_sync_entries = len(after_sync_project_history)
+
+        self.assertEqual(n_after_insert_entries + 1, n_after_sync_entries)
+
+        # Get last two class history entries
+        project_history_entry = after_sync_project_history[-1][0]
+
+        # Expect all fields of the original table to match the history table
+        for k,v in project_details.iteritems():
+            self.assertEqual(v, project_history_entry[k])
+
+    def test_history_synchronization_missed_modify_without_time_column(self):
+        """See if disabling the history and inserting a new live row, yields in
+        the correct history if synchronized.
+        """
+        cursor = connection.cursor()
+
+        # Create new row (without history updated)
+        cursor.execute("""
+            INSERT INTO "project" (title)
+            VALUES ('testproject')
+            RETURNING row_to_json(project.*)
+        """)
+        project_details = cursor.fetchone()[0]
+        transaction.commit()
+
+        # Disable history tracking and get number of rows
+        history.disable_history_tracking()
+        original_project_history = self.get_history_entries(cursor, 'project')
+        n_original_entries = len(original_project_history)
+
+        cursor.execute("""
+            UPDATE "project" SET title='newname'
+            WHERE id=%s
+        """, (project_details['id'],))
+        # Make sure triggers are executed
+        transaction.commit()
+
+        # Assert the row count didn't change in the history tables, because
+        # history tracking is disabled.
+        after_insert_project_history = self.get_history_entries(cursor, 'project')
+        n_after_insert_entries = len(original_project_history)
+
+        self.assertListEqual(original_project_history, after_insert_project_history)
+
+        # Sync history
+        history.sync_history_table('project')
+
+        # Assert node count is up-to-date again
+        after_sync_project_history = self.get_history_entries(cursor, 'project')
+        n_after_sync_entries = len(after_sync_project_history)
+
+        self.assertEqual(n_after_insert_entries + 1, n_after_sync_entries)

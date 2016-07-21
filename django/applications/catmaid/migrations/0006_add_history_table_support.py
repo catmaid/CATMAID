@@ -566,7 +566,9 @@ add_history_functions_sql = """
     $$;
 
     -- Enable history tracking for a particular live table and history table by
-    -- making sure all triggers are connected to -- history events.
+    -- making sure all triggers are connected to history events. In case
+    -- triggers have to be created, the history table is synced by default,
+    -- which can optionally be disabled.
     CREATE OR REPLACE FUNCTION enable_history_tracking_for_table(live_table_name regclass,
         history_table_name text, sync boolean DEFAULT true)
     RETURNS void
@@ -575,20 +577,20 @@ add_history_functions_sql = """
     DECLARE
         history_trigger_name text;
     BEGIN
-        IF sync THEN
-            RAISE NOTICE 'Syncing history for table "%" in history table "%"',
-                live_table_name, history_table_name;
-            PERFORM sync_history_table($1, $2)
-            FROM catmaid_history_table cht
-            WHERE cht.live_table_name = $1
-            AND cht.history_table_name = $2::name;
-        END IF;
-
-        history_trigger_name = history_table_update_trigger_name(live_table_name);
         IF NOT EXISTS(
             SELECT * FROM catmaid_live_table_triggers cltt
             WHERE cltt.live_table_name = $1 AND triggers_installed = true)
         THEN
+            history_trigger_name = history_table_update_trigger_name(live_table_name);
+            IF sync THEN
+                RAISE NOTICE 'Syncing history for table "%" in history table "%"',
+                    live_table_name, history_table_name;
+                PERFORM sync_history_table($1, $2)
+                FROM catmaid_history_table cht
+                WHERE cht.live_table_name = $1
+                AND cht.history_table_name = $2::name;
+            END IF;
+
             EXECUTE(
                 SELECT format(
                     'CREATE TRIGGER %I

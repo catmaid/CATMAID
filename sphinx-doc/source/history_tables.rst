@@ -48,4 +48,6 @@ maintenance tasks). To do this the setting ``HISTORY_TRACKING`` can be set to
 
 With the next restart of CATMAID, history tracking will be disabled. Likewise,
 it can be enabled again by setting ``HISTORY_TRACKING = True`` (or removing the
-line).
+line). If the history system is enabled after it was disabled (i.e. database
+triggers have to be created), all history tables are synchronized so that they
+contain the most recent live data as well.

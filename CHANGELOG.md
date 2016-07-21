@@ -45,26 +45,31 @@ Connectivity matrix:
   "Print" will show the browser's print dialog for only the table.
 
 
-Miscellaneous:
+Settings widget:
 
 - Tracing overlay colors customized in the settings widget are now persistent.
 
-- Alt + Y will always create a new selection table and add the active neuron
-  to it. Also works with Shift.
+- Neuron name settings customized in the settings widget are now persistent.
 
 - The delimiter used to separate annotations in a neuron name can now be
   configured in the Annotations section of the Settings Widget.
+
+- It is now possible to configure the available page length options used by
+  most tables from a central place. This is done through the "Table page length
+  options" setting, which is available from the Settings widget. For widgets to
+  be aware of page length setting changes, they have to be reloaded.
+
+
+Miscellaneous:
+
+- Alt + Y will always create a new selection table and add the active neuron
+  to it. Also works with Shift.
 
 - Images on CATMAID's front-page are now loaded lazily, i.e. they are only
   requested and shown once they come into view. This improves performance
   significantly when displaying many sample images.
 
 - New filter "Label Color Map" will false-color stacks of label ID images.
-
-- It is now possible to configure the available page length options used by
-  most tables from a central place. This is done through the "Table page length
-  options" setting, which is available from the Settings widget. For widgets to
-  be aware of page length setting changes, they have to be reloaded.
 
 
 ### Bug fixes

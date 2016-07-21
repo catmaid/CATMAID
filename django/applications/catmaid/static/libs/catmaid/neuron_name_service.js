@@ -19,6 +19,13 @@
     // The NeuronNameService is a singleton
     var instance;
 
+    var DEFAULT_COMPONENT_LIST = [
+          {id: 'skeletonid', name: "Skeleton ID"},
+          {id: 'neuronname', name: "Neuron name"}
+        ];
+
+    var DEFAULT_FORMAT_STRING = '%f{, }';
+
     /**
      * Creates a new instance of the neuron name service. If empty is true, the
      * component list is empty.
@@ -37,13 +44,10 @@
       ];
 
       // The current label component/naming list
-      var componentList = empty ? [] : [
-        {id: 'skeletonid', name: "Skeleton ID"},
-        {id: 'neuronname', name: "Neuron name"}
-      ];
+      var componentList = empty ? [] : $.extend(true, [], DEFAULT_COMPONENT_LIST);
 
       // The format string mapping components into a final neuron name.
-      var formatString = '%f{, }';
+      var formatString = DEFAULT_FORMAT_STRING;
 
       // The delimiter used for listing annotations in a neuron name.
       var listDelimiter = ", ";
@@ -56,6 +60,49 @@
       var clients = [];
 
       return {
+
+        /**
+         * Load configuration for this name service instance from the persistent
+         * settings manager.
+         *
+         * @param  {string=} scope Name of the settings scope to load, defaults
+         *                         to 'session'.
+         * @param  {boolean=} sync Whether to load synchronously. Default false.
+         * @return {Promise=}      A promise, if loading asynchronously.
+         */
+        loadConfigurationFromSettings: function (scope, sync) {
+          scope = scope || 'session';
+          if (!CATMAID.NeuronNameService.Settings) {
+            CATMAID.NeuronNameService.Settings = new CATMAID.Settings(
+                'neuron-name-service',
+                {
+                  version: 0,
+                  entries: {
+                    component_list: {
+                      default: DEFAULT_COMPONENT_LIST
+                    },
+                    format_string: {
+                      default: DEFAULT_FORMAT_STRING
+                    },
+                  },
+                  migrations: {}
+                });
+          }
+
+          var loadValues = (function () {
+            componentList = $.extend(true, [], CATMAID.NeuronNameService.Settings[scope].component_list);
+            formatString = CATMAID.NeuronNameService.Settings[scope].format_string;
+            this.refresh();
+          }).bind(this);
+
+          if (sync) {
+            loadValues();
+          } else {
+            return CATMAID.NeuronNameService.Settings
+                .load()
+                .then(loadValues);
+          }
+        },
 
         /**
          * Mutator for the format string that maps componenets to a final neuron
@@ -532,6 +579,8 @@
               this.handleAnnotationChange, instance);
           CATMAID.Neurons.on(CATMAID.Neurons.EVENT_NEURON_RENAMED,
               this.handleNeuronNameChange, instance);
+          CATMAID.Init.on(CATMAID.Init.EVENT_PROJECT_CHANGED,
+              this.loadConfigurationFromSettings, instance);
         },
 
         /**
@@ -545,6 +594,8 @@
               this.handleAnnotationChange, instance);
           CATMAID.Neurons.off(CATMAID.Neurons.EVENT_NEURON_RENAMED,
               this.handleNeuronNameChange, instance);
+          CATMAID.Init.off(CATMAID.Init.EVENT_PROJECT_CHANGED,
+              this.loadConfigurationFromSettings, instance);
         }
       };
     }
@@ -554,6 +605,7 @@
         if (!instance) {
           instance = init();
           instance.registerEventHandlers();
+          instance.loadConfigurationFromSettings();
         }
 
         return instance;

@@ -371,17 +371,36 @@
       }, select);
       ds.append(CATMAID.DOM.createLabeledControl('Neuron label', select));
 
-      // Create 'Add' button and component list
+      // Neuron name service configuration
+      var nameServiceInstance = CATMAID.NeuronNameService.getInstance();
+      if (SETTINGS_SCOPE !== 'session') {
+        // Create a dummy neuron name service instance to manage settings
+        // at scopes other than session.
+        nameServiceInstance = CATMAID.NeuronNameService.newInstance(true);
+        nameServiceInstance.loadConfigurationFromSettings(SETTINGS_SCOPE, true);
+      }
+
+      var persistComponentList = function () {
+        CATMAID.NeuronNameService.Settings
+            .set(
+              'component_list',
+              nameServiceInstance.getComponentList(),
+              SETTINGS_SCOPE)
+            .then(function () {
+                  CATMAID.NeuronNameService.getInstance().loadConfigurationFromSettings();
+                });
+          };
       var componentList = $('<select/>').addClass('multiline').attr('size', '4')[0];
       var addButton = $('<button/>').text('Add label component').click(function() {
         var newLabel = select.val();
         // The function to be called to actually add the label
         var addLabeling = function(metaAnnotation) {
           if (metaAnnotation) {
-            CATMAID.NeuronNameService.getInstance().addLabeling(newLabel, metaAnnotation);
+            nameServiceInstance.addLabeling(newLabel, metaAnnotation);
           } else {
-            CATMAID.NeuronNameService.getInstance().addLabeling(newLabel);
+            nameServiceInstance.addLabeling(newLabel);
           }
+          persistComponentList();
           updateComponentList();
         };
 
@@ -413,17 +432,25 @@
         if (componentList.selectedIndex < componentList.length - 1) {
           // We display the component list reversed, therefore we need to mirror
           // the index.
-          CATMAID.NeuronNameService.getInstance().removeLabeling(componentList.length - componentList.selectedIndex - 1);
+          nameServiceInstance.removeLabeling(componentList.length - componentList.selectedIndex - 1);
+          persistComponentList();
           updateComponentList();
         }
       });
       ds.append(CATMAID.DOM.createLabeledControl('', addButton));
-      ds.append(CATMAID.DOM.createLabeledControl('', componentList));
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createLabeledControl('', componentList),
+          CATMAID.NeuronNameService.Settings,
+          'component_list',
+          SETTINGS_SCOPE,
+          function () {
+            return CATMAID.NeuronNameService.getInstance().loadConfigurationFromSettings();
+          }));
       ds.append(CATMAID.DOM.createLabeledControl('', removeButton));
 
       var updateComponentList = function() {
         $(componentList).empty();
-        var options = CATMAID.NeuronNameService.getInstance().getComponentList().map(function(o, i) {
+        var options = nameServiceInstance.getComponentList().map(function(o, i) {
           // Add each component list element to the select control. The last
           // element is disabled by default.
           var optionElement = $('<option/>').attr('value', o.id)
@@ -443,16 +470,30 @@
       // Initialize component list
       updateComponentList();
 
-      ds.append(CATMAID.DOM.createInputSetting(
-          "Formatted neuron name",
-          CATMAID.NeuronNameService.getInstance().getFormatString(),
-          "Format the neuron label using label components from list above. " +
-          "Reference the Nth component by using \"%N\". " +
-          "Use \"%f\" for a fallback that uses first available component " +
-          "from the top. Optionally, append \"{<em>delimiter</em>}\" to specify " +
-          "how component values should be separeted, defaulting to \"{, }\".",
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createInputSetting(
+              "Formatted neuron name",
+              nameServiceInstance.getFormatString(),
+              "Format the neuron label using label components from list above. " +
+              "Reference the Nth component by using \"%N\". " +
+              "Use \"%f\" for a fallback that uses first available component " +
+              "from the top. Optionally, append \"{<em>delimiter</em>}\" to specify " +
+              "how component values should be separeted, defaulting to \"{, }\".",
+              function () {
+                CATMAID.NeuronNameService.Settings
+                  .set(
+                    'format_string',
+                    $(this).val(),
+                    SETTINGS_SCOPE)
+                  .then(function () {
+                    CATMAID.NeuronNameService.getInstance().loadConfigurationFromSettings();
+                  });
+              }),
+          CATMAID.NeuronNameService.Settings,
+          'format_string',
+          SETTINGS_SCOPE,
           function () {
-            CATMAID.NeuronNameService.getInstance().setFormatString($(this).val());
+            return CATMAID.NeuronNameService.getInstance().loadConfigurationFromSettings();
           }));
 
 

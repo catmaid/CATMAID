@@ -51,3 +51,31 @@ it can be enabled again by setting ``HISTORY_TRACKING = True`` (or removing the
 line). If the history system is enabled after it was disabled (i.e. database
 triggers have to be created), all history tables are synchronized so that they
 contain the most recent live data as well.
+
+Schema migration
+^^^^^^^^^^^^^^^^
+
+In case there are schema changes to any of the tracked live tables, the history
+tables have to be changed as well. Currently, this happens manually, but will
+become automated eventually (using Postgres DDL triggers). This means
+
+* a) if a live table is created, a new history table has to be created for it
+  (call `SELECT create_history_table(<schema>, <tablename>::regclass,
+  <timecolumn>);`, with `<timecolumn>` being an edit reference time, e.g.
+  `edition_time` for most CATMAID tables)
+* b) if a live table is renamed, the history table is renamed accordingly, use
+  `history_table_name(<tablename>::regclass)` to create the new name,
+* c) if a live table is removed, the history table should be dropped as well,
+
+or
+
+* d) if a column is added, the history table should get the new column as well
+  (defaulting to NULL values for previous entries if not manually filled),
+* e) if a column is renamed, the history column should also be renamed or
+* f) if the data type of a column changes, the original column is renamed (append
+  first free "_n" suffix) and the new column is added. If no information loss is
+  present (e.g. float to double), the original history column can also just be
+  changed without backup to save storage space or
+* g) if a column is removed, the history column is removed as well.
+
+These changes should be done as part of the schema modifying migration

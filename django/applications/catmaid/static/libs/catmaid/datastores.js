@@ -63,10 +63,20 @@
                       if (!e.has(d.key)) {
                         e.set(d.key, {});
                       }
-                      e.get(d.key)[scope] = {
-                        dirty: false,
-                        value: $.parseJSON(d.value)
-                      };
+
+                      try {
+                        e.get(d.key)[scope] = {
+                          dirty: false,
+                          value: $.parseJSON(d.value)
+                        };
+                      } catch (error) {
+                        // Do not alert the user, since this will not affect
+                        // other key/scopes and there is nothing explicit they
+                        // can do to correct it.
+                        console.log('Client data for store ' + d.key +
+                                    ', scope ' + scope + ' was not parsable.');
+                      }
+
                       return e;
                     },
                     new Map());

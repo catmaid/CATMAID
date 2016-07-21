@@ -49,7 +49,8 @@
       }
 
       meta.append($('<li />')
-          .text('CATMAID\'s default is "' + settings.schema.entries[key].default + '".'));
+          .text('CATMAID\'s default is ' +
+                JSON.stringify(settings.schema.entries[key].default) + '.'));
 
       meta = $('<div class="settingsMeta" />').append(meta);
 

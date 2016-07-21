@@ -22,9 +22,9 @@
   };
 
   AnnotationCache.prototype.destroy = function() {
-    CATMAID.Annoations.off(CATMAID.Annotations.EVENT_ANNOTATIONS_DELETED,
+    CATMAID.Annotations.off(CATMAID.Annotations.EVENT_ANNOTATIONS_DELETED,
         this.removeAll, this);
-    CATMAID.Annoations.off(CATMAID.Annotations.EVENT_ANNOTATIONS_CHANGED,
+    CATMAID.Annotations.off(CATMAID.Annotations.EVENT_ANNOTATIONS_CHANGED,
         this._handleChangedAnnotations, this);
   };
 

@@ -1,6 +1,6 @@
 .. _history-tables:
 
-History and prevenance tracking
+History and provenance tracking
 ===============================
 
 CATMAID keeps track of all changes to its database tables. Each row has a time
@@ -24,7 +24,7 @@ updated. It contains a complete copy for each version of each row and specifies
 a time period for its validity. This time period is called "system time" and is
 represented through the additional ``sys_period`` column in each history table.
 
-CATMAID's history system has one requiremens for tables it keeps track of: a
+CATMAID's history system has one requirement for tables it keeps track of: a
 single column primary key has to be used. Extending it to support multi-column
 primary keys is possible, not needed at the moment.
 

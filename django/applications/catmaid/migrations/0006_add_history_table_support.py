@@ -399,23 +399,20 @@ add_history_functions_sql = """
                         'UPDATE %1$s ht '
                         'SET sys_period = tstzrange(lower(ht.sys_period), %3$s) '
                         'FROM %2$s lt, catmaid_history_table cht '
-                        'WHERE ht.%9$s = lt.%9$s '
+                        'WHERE ht.%5$s = lt.%5$s '
                         'AND ht.sys_period @> %3$s ' -- @> is "contains" operator
                         'AND lower(ht.sys_period) < %3$s '
-                        'RETURNING lt.*, tstzrange(%3$s, null) AS sys_period, %8$s AS txid '
+                        'RETURNING lt.*, tstzrange(%3$s, null) AS sys_period, %4$s AS txid '
                     ') '
-                    'INSERT INTO %1$s (%5$s,sys_period,exec_transaction_id) '
-                    'SELECT %5$s, sys_period, txid  FROM updated_entries ue '
-                    'RETURNING %9$s ',
+                    'INSERT INTO %1$s (%6$s,sys_period,exec_transaction_id) '
+                    'SELECT %6$s, sys_period, txid  FROM updated_entries ue '
+                    'RETURNING %5$s ',
                     history_table_name,
                     live_table_name,
                     time_source,
-                    string_agg('lt.' || quote_ident(c.column_name), ','),
-                    string_agg(quote_ident(c.column_name), ','),
-                    'to_sync.' || time_column,
-                    string_agg('to_sync.' || quote_ident(c.column_name), ','),
                     txid_current(),
-                    pkey_column
+                    pkey_column,
+                    string_agg(quote_ident(c.column_name), ',')
                 )
                 FROM information_schema.columns c, pg_class pc
                 WHERE pc.oid = live_table_name
@@ -446,21 +443,18 @@ add_history_functions_sql = """
                         'UPDATE %1$s ht '
                         'SET sys_period = tstzrange(lower(ht.sys_period), %3$s) '
                         'FROM %2$s lt '
-                        'WHERE ht.%10$s = lt.%10$s '
-                        'AND (%9$s) ' -- Did live table change?
+                        'WHERE ht.%7$s = lt.%7$s '
+                        'AND (%6$s) ' -- Did live table change?
                         'AND ht.sys_period @> %3$s ' -- @> is "contains" operator
-                        'RETURNING lt.*, tstzrange(%3$s, null) AS sys_period, %8$s AS txid '
+                        'RETURNING lt.*, tstzrange(%3$s, null) AS sys_period, %5$s AS txid '
                     ') '
-                    'INSERT INTO %1$s (%5$s,sys_period,exec_transaction_id) '
-                    'SELECT %5$s, sys_period, txid  FROM updated_entries ue '
-                    'RETURNING %10$s ',
+                    'INSERT INTO %1$s (%4$s,sys_period,exec_transaction_id) '
+                    'SELECT %4$s, sys_period, txid  FROM updated_entries ue '
+                    'RETURNING %7$s ',
                     history_table_name,
                     live_table_name,
                     time_source,
-                    string_agg('lt.' || quote_ident(c.column_name), ','),
                     string_agg(quote_ident(c.column_name), ','),
-                    'to_sync.' || time_column,
-                    string_agg('to_sync.' || quote_ident(c.column_name), ','),
                     txid_current(),
                     string_agg('ht.' || quote_ident(c.column_name) || '<>' ||
                         'lt.' || quote_ident(c.column_name), ' OR '),

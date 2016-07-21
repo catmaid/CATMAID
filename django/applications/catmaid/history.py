@@ -93,4 +93,4 @@ def sync_history_table(table):
         SELECT sync_history_table(%s::regclass,
             (SELECT history_table_name FROM catmaid_history_table
             WHERE live_table_name=%s::regclass)::text)
-    """, (table, table, table))
+    """, (table, table))

@@ -828,6 +828,7 @@ div#classification_graph_object img.roiimage {
   bottom: -20px;
   content: " ";
   display: block;
+  pointer-events: none;
   height: 20px;
   left: 0;
   position: absolute;

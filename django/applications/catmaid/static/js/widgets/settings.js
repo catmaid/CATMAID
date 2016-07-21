@@ -32,8 +32,8 @@
       var overridable = settings.rendered[scope][key].overridable;
       var meta = $('<ul />');
       var updateAndRefresh = function () {
-        CATMAID.tools.callIfFn(update);
-        refresh();
+        var updateValue = CATMAID.tools.isFn(update) ? update() : undefined;
+        Promise.resolve(updateValue).then(refresh);
       };
 
       if (!fromThisScope) {

@@ -72,7 +72,8 @@ libraries_js = {
     'blazy': ['blazy.min.js'],
     'geometry': ['geometry.js', 'intersects.js'], # order matters
     'catmaid': ['request.js', 'CATMAID.js', 'error.js', 'events.js', 'state.js',
-                'command.js', 'models/*.js','skeleton_source.js', '*.js'],
+                'command.js', 'models/*.js', 'skeleton_source.js',
+                'datastores.js', 'settings-manager.js', '*.js'],
 }
 
 JAVASCRIPT = OrderedDict()

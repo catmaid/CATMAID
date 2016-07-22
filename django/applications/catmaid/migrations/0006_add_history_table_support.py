@@ -277,6 +277,14 @@ add_history_functions_sql = """
                 history_table_name || '_sys_period', history_table_name);
         END IF;
 
+        -- Create index for transaction information, which is also needed to
+        -- quickly find events that are part of the same transaction.
+        IF (SELECT to_regclass((history_table_name || '_exec_transaction_id')::cstring)) IS NULL THEN
+            EXECUTE format(
+                'CREATE INDEX %I ON %I (exec_transaction_id)',
+                history_table_name || '_exec_transaction_id', history_table_name);
+        END IF;
+
         -- Keep track of created history tables
         INSERT INTO catmaid_history_table (history_table_name, live_table_name,
             triggers_installed, live_table_time_column, live_table_pkey_column)

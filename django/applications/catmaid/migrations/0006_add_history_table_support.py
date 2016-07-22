@@ -106,8 +106,7 @@ add_history_functions_sql = """
     -- be synchronized in case triggers are disabled and re-enabled. If <sync> is
     -- true, the created history table is synchronized automatically, after it is
     -- created.
-    CREATE OR REPLACE FUNCTION create_history_table(live_table_schema text,
-                                                    live_table_name regclass,
+    CREATE OR REPLACE FUNCTION create_history_table(live_table_name regclass,
                                                     live_table_time_column text DEFAULT NULL,
                                                     create_triggers boolean DEFAULT true,
                                                     copy_inheritance boolean DEFAULT true,
@@ -181,22 +180,21 @@ add_history_functions_sql = """
             BEGIN
                 SELECT parent_schemaname, parent_tablename, parent_oid INTO STRICT parent_info
                 FROM catmaid_inheriting_tables
-                WHERE child_oid = live_table_name
-                AND child_schemaname = live_table_schema::text;
+                WHERE child_oid = live_table_name;
                 EXCEPTION
                     WHEN NO_DATA_FOUND THEN
                         -- Do nothing
                     WHEN TOO_MANY_ROWS THEN
                         -- Multi-inheritance support isn't implemented for history tables, yet
-                        RAISE EXCEPTION 'Couldn''t create history table, found more than one parent of %s.%s', live_table_schema, live_table_name;
+                        RAISE EXCEPTION 'Couldn''t create history table, found more than one parent of "%s"', live_table_name;
             END;
 
             IF FOUND THEN
                 RAISE NOTICE 'Setting up history tracking for parent: %, %, %',
                     parent_info.parent_schemaname, parent_info.parent_tablename, parent_info.parent_oid;
                 -- Recursively create a history table for the parent
-                PERFORM create_history_table(parent_info.parent_schemaname,
-                    parent_info.parent_oid, live_table_time_column, create_triggers, copy_inheritance, sync);
+                PERFORM create_history_table(parent_info.parent_oid, live_table_time_column,
+                    create_triggers, copy_inheritance, sync);
             END IF;
             RAISE NOTICE 'END INHERITANCE';
         END IF;
@@ -737,8 +735,7 @@ remove_history_functions_sql = """
     DROP TABLE catmaid_history_table;
     DROP TABLE catmaid_transaction_info;
     DROP TYPE IF EXISTS history_change_type;
-    DROP FUNCTION IF EXISTS create_history_table(live_table_schema text,
-        live_table_name regclass, live_table_time_column text,
+    DROP FUNCTION IF EXISTS create_history_table(live_table_name regclass, live_table_time_column text,
         live_table_pkey_column text, create_triggers boolean,
         copy_inheritance boolean, sync boolean);
     DROP FUNCTION IF EXISTS drop_history_table(live_table_name regclass);
@@ -828,10 +825,10 @@ add_initial_history_tables_sql = """
     -- Create a history table including inheritance for all tables, but handle
     -- sync separately (to avoid syncing when disabled in settings and to
     -- allow faster initial syncing).
-    SELECT create_history_table('public', t.name, t.time_column,
+    SELECT create_history_table(t.name, t.time_column,
         {create_triggers}, true, false)
     FROM temp_versioned_catmaid_table t;
-    SELECT create_history_table('public', t.name, NULL,
+    SELECT create_history_table(t.name, NULL,
         {create_triggers}, true, false)
     FROM temp_versioned_non_catmaid_table t;
 """.format(create_triggers='true' if history_tracking_enabled else 'false')

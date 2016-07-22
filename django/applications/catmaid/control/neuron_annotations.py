@@ -297,7 +297,7 @@ def query_annotated_classinstances(request, project_id = None):
             required: true
           skeleton_ids:
             type: array
-            description: A list of users
+            description: A list of ids of skeletons modeling this entity
             required: true
             items:
                 type: integer

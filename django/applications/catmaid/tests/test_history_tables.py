@@ -286,7 +286,7 @@ class HistoryTableTests(TransactionTestCase):
 
     def test_delete(self):
         """Test if deleting an existing entry leads to the correct history table
-        updates. The delettion is performed in a different transaction, so that
+        updates. The deletion is performed in a different transaction, so that
         a different time is recorded for the change than for the creation.
         """
         cursor = connection.cursor()

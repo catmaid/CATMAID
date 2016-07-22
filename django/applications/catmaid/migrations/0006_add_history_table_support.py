@@ -36,7 +36,7 @@ add_history_functions_sql = """
 
     -- The combination of transaction ID and execution time is unique and
     -- represents one semantic front-end action, initiated by a particular
-    -- user. The unique constraint isn't added explicitelt to avoid performance
+    -- user. The unique constraint isn't added explicitly to avoid performance
     -- costs during insertion.
     CREATE TABLE catmaid_transaction_info (
         transaction_id bigint DEFAULT txid_current(),

@@ -9,7 +9,7 @@ period is represented by the half-open interval ``[start, end)`` for which a row
 is valid starting from time point ``start`` and is valid until (*but not
 including!*) ``end``. Keeping track of changes is managed entirely in the
 database. Currently, all CATMAID tables except ``treenode_edge`` are versioned,
-which can always be regenerated from the ``treenode`` table. CATMAID als keeps
+which can always be regenerated from the ``treenode`` table. CATMAID also keeps
 track of changes in non-CATMAID tables, that is the tables used by Django and
 Django applications we use, except for Celery and Kombu tables.
 

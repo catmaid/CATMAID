@@ -739,6 +739,47 @@
     content.setAttribute('id', 'navigator_annotationlist_content' +
         this.navigator.widgetID);
 
+    // Create annotate button
+    var link_annotations_button = document.createElement('input');
+    link_annotations_button.setAttribute('type', 'button');
+    link_annotations_button.setAttribute('value', 'Add annotations to neurons');
+    link_annotations_button.onclick = function() {
+      // Get all selected checkboxes
+      var annotationIds = $('#' + table_id)
+        .find('td input[type=checkbox].annotation-selection:checked')
+        .map(function(a) {
+          return $(this).data('annotation-id');
+        })
+        .get();
+      var annotations = annotationIds
+        .map(CATMAID.annotations.getName, CATMAID.annotations)
+        .filter(function(a) { return !!a; });
+      if (!annotations || !annotations.length) {
+        CATMAID.warn("Please select at least one annotation");
+        return;
+      }
+
+      // Open a new source select dialog to annotate selected neurons
+      var dialog = new CATMAID.SkeletonSourceDialog("Select annotation targets",
+          "Please select a skeleton source. All its selected neurons will be " +
+          "annotated.", function(source) {
+            var skeletonIds = source.getSelectedSkeletons();
+            CATMAID.Annotations.add(project.id, null, skeletonIds, annotations, null)
+              .then(function(result) {
+                if (result.new_annotations.length > 0) {
+                  CATMAID.msg("New annotations added", "Successfully added " +
+                      result.new_annotations.length + " new annotations to " +
+                      skeletonIds.length + " neurons");
+                } else {
+                  CATMAID.msg("No new annotations",
+                      "All annotations were already linked to the selected neurons");
+                }
+              });
+          });
+      dialog.show();
+    };
+    content.appendChild(link_annotations_button);
+
     // Create annotation table
     var header_columns = getAnnotationColumTitles(display_usage,
         display_annotator, unlink_handler);

@@ -71,6 +71,11 @@ Miscellaneous:
 
 - New filter "Label Color Map" will false-color stacks of label ID images.
 
+- The button "Add annotations to neurons" above annotation lists in the
+  Neuron Navigator makes it possible to send currently selected
+  annotations to other neurons. Those target neurons are selected by
+  choosing a skeleton source in a dialog box, which is shown to the user
+  once the button is pressed.
 
 ### Bug fixes
 

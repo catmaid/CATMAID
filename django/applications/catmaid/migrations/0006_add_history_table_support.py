@@ -77,7 +77,7 @@ add_history_functions_sql = """
 
 
     -- Create a view that makes access to inheritance information more convenient
-    CREATE VIEW catmaid_inheritening_tables
+    CREATE VIEW catmaid_inheriting_tables
     AS
         SELECT parnsp.nspname AS parent_schemaname,
             parcla.relname AS parent_tablename,
@@ -181,7 +181,7 @@ add_history_functions_sql = """
             RAISE NOTICE 'START INHERITANCE for %', live_table_name;
             BEGIN
                 SELECT parent_schemaname, parent_tablename, parent_oid INTO STRICT parent_info
-                FROM catmaid_inheritening_tables
+                FROM catmaid_inheriting_tables
                 WHERE child_oid = live_table_name
                 AND child_schemaname = live_table_schema::text;
                 EXCEPTION
@@ -727,7 +727,7 @@ add_history_functions_sql = """
 remove_history_functions_sql = """
     -- Remove history functions
     DROP VIEW IF EXISTS catmaid_live_table_triggers;
-    DROP VIEW catmaid_inheritening_tables;
+    DROP VIEW catmaid_inheriting_tables;
     DROP TABLE catmaid_history_table;
     DROP TABLE catmaid_transaction_info;
     DROP TYPE IF EXISTS history_change_type;

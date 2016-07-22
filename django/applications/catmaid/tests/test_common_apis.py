@@ -3913,6 +3913,106 @@ class ViewPageTests(TestCase):
         for a in parsed_response['annotations']:
             self.assertTrue(a in expected_response)
 
+    def test_annotations_query_targets(self):
+        self.fake_authentication()
+
+        skeleton_id_a = 235
+        skeleton_id_b = 2388
+        response = self.client.post(
+            '/%d/annotations/add' % (self.test_project_id,),
+            {'annotations[0]': 'A',
+             'skeleton_ids[0]': skeleton_id_a})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        annotations = {a['name']:a['id'] for a in parsed_response['annotations']}
+        for a in ('A',):
+            self.assertTrue(a in annotations)
+        annotation_id_a = parsed_response['new_annotations'][0]
+
+        response = self.client.post(
+            '/%d/annotations/add' % (self.test_project_id,),
+            {'annotations[0]': 'B',
+             'skeleton_ids[0]': skeleton_id_b})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        annotations = {a['name']:a['id'] for a in parsed_response['annotations']}
+        for a in ('B',):
+            self.assertTrue(a in annotations)
+        annotation_id_b = parsed_response['new_annotations'][0]
+
+        # Test disjunctive behavior
+        response = self.client.post(
+            '/%d/annotations/query-targets' % (self.test_project_id,),
+            {'annotated_with[0]': ','.join(map(str, [annotation_id_a, annotation_id_b]))})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_entities = sorted([
+            {"skeleton_ids": [235],
+             "type": "neuron",
+             "id": 233,
+             "name": "branched neuron"},
+            {"skeleton_ids": [2388],
+             "type": "neuron",
+             "id": 2389,
+             "name": "neuron 2389"}])
+        self.assertEqual(parsed_response['totalRecords'], 2)
+        self.assertItemsEqual(parsed_response['entities'], expected_entities)
+
+        # Test conjunctive behavior
+        response = self.client.post(
+            '/%d/annotations/add' % (self.test_project_id,),
+            {'annotations[0]': 'C',
+             'skeleton_ids[0]': skeleton_id_a})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        annotations = {a['name']:a['id'] for a in parsed_response['annotations']}
+        for a in ('C',):
+            self.assertTrue(a in annotations)
+        annotation_id_c = parsed_response['new_annotations'][0]
+
+        response = self.client.post(
+            '/%d/annotations/query-targets' % (self.test_project_id,),
+            {'annotated_with[0]': ','.join(map(str, [annotation_id_a, annotation_id_b])),
+             'annotated_with[1]': str(annotation_id_c)})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_entities = sorted([
+            {"skeleton_ids": [235],
+             "type": "neuron",
+             "id": 233,
+             "name": "branched neuron"}])
+        self.assertEqual(parsed_response['totalRecords'], 1)
+        self.assertItemsEqual(parsed_response['entities'], expected_entities)
+
+        # Test meta-annotation querying
+        response = self.client.post(
+            '/%d/annotations/add' % (self.test_project_id,),
+            {'meta_annotations[0]': 'D',
+             'annotations[0]': 'C'})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        annotations = {a['name']:a['id'] for a in parsed_response['annotations']}
+        for a in ('D',):
+            self.assertTrue(a in annotations)
+        annotation_id_d = parsed_response['new_annotations'][0]
+
+        response = self.client.post(
+            '/%d/annotations/query-targets' % (self.test_project_id,),
+            {'annotated_with[0]': str(annotation_id_d),
+             'sub_annotated_with[0]': str(annotation_id_d)})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_entities = sorted([
+            {"skeleton_ids": [235],
+             "type": "neuron",
+             "id": 233,
+             "name": "branched neuron"},
+            {"type": "annotation",
+             "id": 2478,
+             "name": "C"}])
+        self.assertEqual(parsed_response['totalRecords'], 2)
+        self.assertItemsEqual(parsed_response['entities'], expected_entities)
+
     def test_review_status(self):
         self.fake_authentication()
 

@@ -13,11 +13,12 @@ history_tracking_enabled = getattr(settings, 'HISTORY_TRACKING', True)
 add_history_functions_sql = """
 
     -- Create a table to keep track of created history tables, when they were
-    -- created, whether triggers were installed on the live table and if the
-    -- live table has a particular column representing time. The latter is used
-    -- to syncronize tables if history tracking is enabled after it was
-    -- disabled.  log is also useful for rolling back this migration and
-    -- more robust access to individual history tables based on a live table name.
+    -- created, whether triggers were installed on the live table, what the name
+    -- of the live table's primary key is and if the live table has a particular
+    -- column representing time. The latter is used to synchronize tables if
+    -- history tracking is enabled after it was disabled. This table is also used
+    -- for rolling back this migration and more robust access to individual
+    -- history tables based on a live table name.
     CREATE TABLE catmaid_history_table (
         history_table_name      name PRIMARY KEY,
         live_table_name         regclass,
@@ -47,7 +48,7 @@ add_history_functions_sql = """
     );
 
 
-    -- Return the unquoted name of an input table's history table.
+    -- Return the unquoted name of a live table's history table.
     CREATE OR REPLACE FUNCTION history_table_update_trigger_name(live_table_name regclass)
         RETURNS text AS
     $$
@@ -55,7 +56,7 @@ add_history_functions_sql = """
     $$ LANGUAGE sql STABLE;
 
 
-    -- Return the unquoted name of an input table's history update trigger.
+    -- Return the unquoted name of a live table's history update trigger.
     CREATE OR REPLACE FUNCTION history_table_name(live_table_name regclass)
         RETURNS text AS
     $$
@@ -63,8 +64,7 @@ add_history_functions_sql = """
     $$ LANGUAGE sql STABLE;
 
 
-    -- A view that tells if the known history tables have heit update trigger
-    -- installed.
+    -- A view that tells if the known history tables have update trigger installed.
     CREATE OR REPLACE VIEW catmaid_live_table_triggers AS
         SELECT cht.live_table_name, EXISTS(
             SELECT * FROM information_schema.triggers ist, pg_class pc
@@ -76,7 +76,7 @@ add_history_functions_sql = """
         FROM catmaid_history_table cht;
 
 
-    -- Create a view that makes access to inheritance information more convenient
+    -- A view that makes access to inheritance information more convenient.
     CREATE VIEW catmaid_inheriting_tables
     AS
         SELECT parnsp.nspname AS parent_schemaname,
@@ -96,12 +96,14 @@ add_history_functions_sql = """
     -- table. Always use this function to create history tables to ensure
     -- everything is set up correctly. An optional time column can be specified,
     -- which will be used to obtain time information for a live row, otherwise the
-    -- current timestamp will be used. Currently, only tables with a single column
-    -- primary key are supported. If the passed in table inherits from another
-    -- table and <copy_inheritance> is true (default), the history table will have
-    -- the same inheritance hierarchy as the live table. The optional
+    -- current timestamp will be used when time information is needed (e.g. for
+    -- syncing live and history tables)d. Currently, only tables with a single
+    -- column primary key are supported. If the passed in table inherits from
+    -- another table and <copy_inheritance> is true (default), the history table
+    -- will have the same inheritance hierarchy as the live table. All parent
+    -- history tables are initialized as regular history tables, too. The optional
     -- live_table_time_column is stored so that live tables and history tables can
-    -- be synchronized in case triggers are disabled and re-enabled.  If <sync> is
+    -- be synchronized in case triggers are disabled and re-enabled. If <sync> is
     -- true, the created history table is synchronized automatically, after it is
     -- created.
     CREATE OR REPLACE FUNCTION create_history_table(live_table_schema text,
@@ -137,7 +139,7 @@ add_history_functions_sql = """
         -- History tables will be named like the live table plus a '_history' suffix
         history_table_name = history_table_name(live_table_name);
 
-        -- If there is already a history table registered with this name, continue
+        -- Don't do anything if there is already a history table registered with this name.
         IF EXISTS(SELECT 1 FROM catmaid_history_table cht
                   WHERE cht.history_table_name = outerblock.history_table_name) THEN
             RAISE NOTICE 'History table ''%'' already exists', history_table_name;
@@ -145,7 +147,6 @@ add_history_functions_sql = """
         END IF;
 
         -- Find primary key of table
-
         SELECT a.attname
         FROM   pg_index i
         JOIN   pg_attribute a ON a.attrelid = i.indrelid
@@ -156,6 +157,7 @@ add_history_functions_sql = """
 
         GET DIAGNOSTICS live_table_n_pkeys = ROW_COUNT;
 
+        -- Make sure there is a single-column primary key available on the live table.
         IF live_table_n_pkeys = 0 THEN
             RAISE EXCEPTION 'Need primary key on table to create history '
                 'table for "%"', live_table_name;
@@ -169,15 +171,12 @@ add_history_functions_sql = """
         SELECT NULL INTO parent_info;
 
         -- Create new history table with the same columns as the original,
-        -- but without indices or constraints. Its name is created by
-        -- appending "_history" to the input table name. The original table
-        -- is not changed, but the history table will have a new column:
-        -- sys_period, representing the valid range of a row.
+        -- but without indices or constraints. Parent tables are required to
+        -- have regular history tables as well.
         IF copy_inheritance THEN
             -- If the table inherits from another table and <copy_inheritance> is
             -- true, the complete inheritance hierarchy will be recreated for the
-            -- new table. Triggers, however, are only applied to the passed in live
-            -- table. Recursively walk parents to guarantee path to root.
+            -- new table. Currently, only single table inheritance is supported.
             RAISE NOTICE 'START INHERITANCE for %', live_table_name;
             BEGIN
                 SELECT parent_schemaname, parent_tablename, parent_oid INTO STRICT parent_info
@@ -188,12 +187,13 @@ add_history_functions_sql = """
                     WHEN NO_DATA_FOUND THEN
                         -- Do nothing
                     WHEN TOO_MANY_ROWS THEN
-                        -- Multi-inheritance support isn't implemented for histoty tables, yet
+                        -- Multi-inheritance support isn't implemented for history tables, yet
                         RAISE EXCEPTION 'Couldn''t create history table, found more than one parent of %s.%s', live_table_schema, live_table_name;
             END;
 
             IF FOUND THEN
-                RAISE NOTICE 'Parent: %, %, %', parent_info.parent_schemaname, parent_info.parent_tablename, parent_info.parent_oid;
+                RAISE NOTICE 'Setting up history tracking for parent: %, %, %',
+                    parent_info.parent_schemaname, parent_info.parent_tablename, parent_info.parent_oid;
                 -- Recursively create a history table for the parent
                 PERFORM create_history_table(parent_info.parent_schemaname,
                     parent_info.parent_oid, live_table_time_column, TRUE, TRUE);
@@ -204,10 +204,8 @@ add_history_functions_sql = """
         IF parent_info IS NOT NULL THEN
             parent_history_table_name = history_table_name(parent_info.parent_oid);
             RAISE NOTICE 'CREATE History table with INHERITANCE %', parent_history_table_name;
-            -- Parent rows are sorted by their depth, most distant first.
-            -- If this parent table doesn't have a history table, yet, it is created.
-            -- Create a regular history table without inheritance, either
-            -- because no parent is available or no parent check was performed.
+            -- Create a history table that inherits from the previously created
+            -- parent history table.
             EXECUTE format(
                 'CREATE TABLE IF NOT EXISTS %I (LIKE %s) INHERITS (%I)',
                 history_table_name,live_table_name, parent_history_table_name
@@ -221,8 +219,8 @@ add_history_functions_sql = """
             );
         END IF;
 
-        -- Make all history columns (except the later added sys_period column
-        -- default to NULL
+        -- Make all history columns (except the later added sys_period and
+        -- transaction info columns) default to NULL.
         FOR column_info IN
             SELECT c.column_name
             FROM information_schema.columns c
@@ -240,7 +238,7 @@ add_history_functions_sql = """
         END LOOP;
 
         -- Add a system time column to the history table, named sys_period, if
-        -- it doesn't exist already (which can happen due to table inheritence.
+        -- it doesn't exist already (which can happen due to table inheritance.
         IF NOT EXISTS(SELECT column_name
                       FROM information_schema.columns
                       WHERE table_schema = 'public'
@@ -255,8 +253,8 @@ add_history_functions_sql = """
 
         -- Add a transaction reference to the history table, named
         -- exec_transaction_id, if it doesn't exist already (which can
-        -- happen due to table inheritence. Together with the lower part
-        -- of the sys_period range, the transaction ID is uniqie.
+        -- happen due to table inheritance. Together with the lower part
+        -- of the sys_period range, the transaction ID is unique.
         IF NOT EXISTS(SELECT column_name
                       FROM information_schema.columns
                       WHERE table_schema = 'public'
@@ -307,7 +305,7 @@ add_history_functions_sql = """
     -- is already present in the historic data. If a time column is passed in
     -- that is different from NULL and its live value is newer than the
     -- corresponding historic value, the history table is updated and the newer
-    -- row is inserted and the old history row is updated..
+    -- row is inserted and the old history row is updated.
     CREATE OR REPLACE FUNCTION populate_history_table(live_table_schema text,
         live_table_name regclass, history_table_name regclass, time_column text)
         RETURNS void
@@ -432,10 +430,10 @@ add_history_functions_sql = """
                 'without time column and with primary key "%"',
                 live_table_name, pkey_column;
 
-            -- If there is a time column available for this table, invalidate all
-            -- history rows with a sys_period range that contains the live row's
-            -- time column value, but started before it. New (active) history
-            -- rows will then be inserted for those newer live rows.
+            -- If there is no time column available for this table, invalidate all
+            -- history rows with a sys_period range that contains the current
+            -- time stamp, but started before it. New (active) history rows
+            -- will then be inserted for those newer live rows.
             time_source = 'current_timestamp';
             EXECUTE (
                 SELECT format (
@@ -521,8 +519,8 @@ add_history_functions_sql = """
     DECLARE
 
         -- This will contain the name of the newly created history table. No
-        -- regclass is used, because the implcit table existance check on variable
-        -- assignment can fail if the table has already been removed by as
+        -- regclass is used, because the implicit table existence check on variable
+        -- assignment can fail if the table has already been removed by an
         -- cascaded table drop.
         history_table_name text;
 
@@ -551,7 +549,7 @@ add_history_functions_sql = """
     $$
     DECLARE
 
-        -- A record in the the history_table table
+        -- A record in the history_table table
         row record;
 
     BEGIN
@@ -564,6 +562,7 @@ add_history_functions_sql = """
 
     END;
     $$;
+
 
     -- Enable history tracking for a particular live table and history table by
     -- making sure all triggers are connected to history events. In case
@@ -582,6 +581,7 @@ add_history_functions_sql = """
             WHERE cltt.live_table_name = $1 AND triggers_installed = true)
         THEN
             history_trigger_name = history_table_update_trigger_name(live_table_name);
+            -- Sync history table with the live table, if requested.
             IF sync THEN
                 RAISE NOTICE 'Syncing history for table "%" in history table "%"',
                     live_table_name, history_table_name;
@@ -604,8 +604,6 @@ add_history_functions_sql = """
             -- Remember that triggers are now installed for this table
             UPDATE catmaid_history_table cht SET triggers_installed = true
             WHERE cht.live_table_name = $1 AND cht.history_table_name = $2;
-
-            -- Sync history table with the live table, if requested.
         END IF;
     END;
     $$;
@@ -621,7 +619,7 @@ add_history_functions_sql = """
     BEGIN
         EXECUTE format('DROP TRIGGER IF EXISTS %I ON %s',
             history_table_update_trigger_name(live_table_name), live_table_name);
-        -- Remember that triggers are now installed for this table
+        -- Remember that triggers are now removed for this table
         UPDATE catmaid_history_table cht SET triggers_installed = false
         WHERE cht.live_table_name = $1 AND cht.history_table_name = $2;
     END;
@@ -635,7 +633,7 @@ add_history_functions_sql = """
     LANGUAGE plpgsql AS
     $$
     DECLARE
-        -- A record in the the catmaid_history_table table
+        -- A record in the catmaid_history_table table
         row record;
     BEGIN
         -- Iterate over all known history tables
@@ -655,7 +653,7 @@ add_history_functions_sql = """
     LANGUAGE plpgsql AS
     $$
     DECLARE
-        -- A record in the the catmaid_history_table table
+        -- A record in the catmaid_history_table table
         row record;
     BEGIN
         -- Iterate over all known history tables
@@ -833,8 +831,8 @@ add_initial_history_tables_sql = """
 # This snipped is meant to be appended to the add_initial_history_tables_sql
 # query, if history tables are initially in use.
 populate_initial_history_tables_sql = """
-    -- Populate history tables with current live table data. If a tavle is part
-    -- of an inheritence chain, only the current table is scanned and not its
+    -- Populate history tables with current live table data. If a table is part
+    -- of an inheritance hierarchy, only the current table is scanned and not its
     -- descendants. This is done to avoid duplicates.
     SELECT populate_history_table('public', tt.name,
         ht.history_table_name::regclass, tt.time_column)

@@ -196,7 +196,7 @@ add_history_functions_sql = """
                     parent_info.parent_schemaname, parent_info.parent_tablename, parent_info.parent_oid;
                 -- Recursively create a history table for the parent
                 PERFORM create_history_table(parent_info.parent_schemaname,
-                    parent_info.parent_oid, live_table_time_column, TRUE, TRUE);
+                    parent_info.parent_oid, live_table_time_column, create_triggers, copy_inheritance, sync);
             END IF;
             RAISE NOTICE 'END INHERITANCE';
         END IF;

@@ -239,7 +239,7 @@ add_history_functions_sql = """
         -- it doesn't exist already (which can happen due to table inheritance.
         IF NOT EXISTS(SELECT column_name
                       FROM information_schema.columns
-                      WHERE table_schema = 'public'
+                      WHERE table_schema NOT IN ('information_schema', 'pg_catalog')
                       AND table_name = history_table_name
                       AND column_name = 'sys_period') THEN
             EXECUTE format(
@@ -255,7 +255,7 @@ add_history_functions_sql = """
         -- of the sys_period range, the transaction ID is unique.
         IF NOT EXISTS(SELECT column_name
                       FROM information_schema.columns
-                      WHERE table_schema = 'public'
+                      WHERE table_schema NOT IN ('information_schema', 'pg_catalog')
                       AND table_name = history_table_name
                       AND column_name = 'exec_transaction_id') THEN
             EXECUTE format(

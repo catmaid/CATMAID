@@ -536,7 +536,7 @@ add_history_functions_sql = """
         -- History tables will be named like the live table plus a '_history' suffix
         history_table_name = history_table_name(live_table_name);
 
-        -- Cascading deleting is used to delete parent tables and child tables in one go
+        -- Cascading deleting is used to also delete child tables.
         EXECUTE format('DROP TABLE IF EXISTS %I CASCADE', history_table_name);
         EXECUTE format('DROP TRIGGER IF EXISTS %I ON %s',
             history_table_update_trigger_name(live_table_name), live_table_name);

@@ -312,8 +312,8 @@ add_history_functions_sql = """
     -- that is different from NULL and its live value is newer than the
     -- corresponding historic value, the history table is updated and the newer
     -- row is inserted and the old history row is updated.
-    CREATE OR REPLACE FUNCTION populate_history_table(live_table_schema text,
-        live_table_name regclass, history_table_name regclass, time_column text)
+    CREATE OR REPLACE FUNCTION populate_history_table(live_table_name regclass,
+        history_table_name regclass, time_column text)
         RETURNS void
     LANGUAGE plpgsql AS
     $$
@@ -326,18 +326,19 @@ add_history_functions_sql = """
         start_time = clock_timestamp();
         EXECUTE (
             SELECT format(
-                'INSERT INTO %I (%s,%s,exec_transaction_id) SELECT %s, tstzrange(%s, null), %s FROM ONLY %s.%s lt',
+                'INSERT INTO %s (%s,%s,exec_transaction_id) SELECT %s, tstzrange(%s, null), %s FROM ONLY %s lt',
                 history_table_name,
                 string_agg(quote_ident(c.column_name), ','),
                 'sys_period',
                 string_agg('lt.' || quote_ident(c.column_name), ','),
                 CASE WHEN time_column IS NULL THEN 'current_timestamp' ELSE
                     'lt.' || time_column END,
-                    txid_current(), live_table_schema, live_table_name::text)
-            FROM information_schema.columns c, pg_class pc
+                    txid_current(), live_table_name)
+            FROM information_schema.columns c, pg_class pc, pg_namespace pn
             WHERE pc.oid = live_table_name
             AND c.table_name = pc.relname
-            AND c.table_schema = live_table_schema);
+            AND pn.oid = pc.relnamespace
+            AND c.table_schema = pn.nspname);
         end_time = clock_timestamp();
         delta = 1000 * (extract(epoch from end_time) - extract(epoch from start_time));
         RAISE NOTICE 'Execution time: %ms', delta;
@@ -741,7 +742,7 @@ remove_history_functions_sql = """
     DROP FUNCTION IF EXISTS drop_history_table(live_table_name regclass);
     DROP FUNCTION IF EXISTS update_history_of_row();
     DROP FUNCTION IF EXISTS history_table_name(regclass);
-    DROP FUNCTION IF EXISTS populate_history_table(text, regclass, regclass, text);
+    DROP FUNCTION IF EXISTS populate_history_table(regclass, regclass, text);
     DROP FUNCTION IF EXISTS sync_history_table(regclass, regclass);
     DROP FUNCTION IF EXISTS enable_history_tracking_for_table(live_table_name regclass, history_table_name text, sync boolean);
     DROP FUNCTION IF EXISTS disable_history_tracking_for_table(live_table_name regclass, history_table_name text);
@@ -839,17 +840,17 @@ populate_initial_history_tables_sql = """
     -- Populate history tables with current live table data. If a table is part
     -- of an inheritance hierarchy, only the current table is scanned and not its
     -- descendants. This is done to avoid duplicates.
-    SELECT populate_history_table('public', tt.name,
+    SELECT populate_history_table(tt.name,
         ht.history_table_name::regclass, tt.time_column)
     FROM temp_versioned_catmaid_table tt, catmaid_history_table ht
     WHERE ht.live_table_name = tt.name AND tt.time_column IS NOT NULL;
 
-    SELECT populate_history_table('public', tt.name,
+    SELECT populate_history_table(tt.name,
         ht.history_table_name::regclass, NULL)
     FROM temp_versioned_catmaid_table tt, catmaid_history_table ht
     WHERE ht.live_table_name = tt.name AND tt.time_column IS NULL;
 
-    SELECT populate_history_table('public', tt.name,
+    SELECT populate_history_table(tt.name,
         ht.history_table_name::regclass, NULL)
     FROM temp_versioned_non_catmaid_table tt, catmaid_history_table ht
     WHERE ht.live_table_name = tt.name;

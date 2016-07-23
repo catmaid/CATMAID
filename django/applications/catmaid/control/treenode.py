@@ -77,7 +77,6 @@ def create_treenode(request, project_id=None):
     # parent and will therefore become part of another skeleton.
     parent_id = int(params['parent_id'])
     has_parent = parent_id and parent_id != -1
-    has_links = bool(links)
     if has_parent:
         state.validate_state(parent_id, request.POST.get('state'),
                 parent_edittime=has_parent, lock=True)
@@ -90,7 +89,7 @@ def create_treenode(request, project_id=None):
     # Create all initial links
     if links:
         created_links = create_connector_link(project_id, request.user.id,
-                new_treenode.treenode_id, new_treenode.skeleton_id, links);
+                new_treenode.treenode_id, new_treenode.skeleton_id, links)
     else:
         created_links = []
 

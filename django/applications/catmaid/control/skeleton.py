@@ -1405,7 +1405,7 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
     except Exception as e:
         raise Exception(response_on_error + ':' + str(e))
 
-def _import_skeleton(request, project_id, arborescence, neuron_id=None, name=None):
+def _import_skeleton(user, project_id, arborescence, neuron_id=None, name=None):
     """Create a skeleton from a networkx directed tree.
 
     Associate the skeleton to the specified neuron, or a new one if none is
@@ -1418,7 +1418,7 @@ def _import_skeleton(request, project_id, arborescence, neuron_id=None, name=Non
     class_map = get_class_to_id_map(project_id)
 
     new_skeleton = ClassInstance()
-    new_skeleton.user = request.user
+    new_skeleton.user = user
     new_skeleton.project_id = project_id
     new_skeleton.class_column_id = class_map['skeleton']
     if name is not None:
@@ -1430,7 +1430,7 @@ def _import_skeleton(request, project_id, arborescence, neuron_id=None, name=Non
     new_skeleton.save()
 
     def relate_neuron_to_skeleton(neuron, skeleton):
-        return _create_relation(request.user, project_id,
+        return _create_relation(user, project_id,
                 relation_map['model_of'], skeleton, neuron)
 
     if neuron_id is not None:
@@ -1441,13 +1441,13 @@ def _import_skeleton(request, project_id, arborescence, neuron_id=None, name=Non
     if neuron_id is not None:
         # Raise an Exception if the user doesn't have permission to
         # edit the existing neuron.
-        can_edit_class_instance_or_fail(request.user, neuron_id, 'neuron')
+        can_edit_class_instance_or_fail(user, neuron_id, 'neuron')
 
     else:
         # A neuron does not exist, therefore we put the new skeleton
         # into a new neuron.
         new_neuron = ClassInstance()
-        new_neuron.user = request.user
+        new_neuron.user = user
         new_neuron.project_id = project_id
         new_neuron.class_column_id = class_map['neuron']
         if name is not None:
@@ -1481,7 +1481,7 @@ def _import_skeleton(request, project_id, arborescence, neuron_id=None, name=Non
         RETURNING treenode.id;
         """ % {
             'project_id': project_id,
-            'user_id': request.user.id,
+            'user_id': user.id,
             'skeleton_id': new_skeleton.id,
             'num_treenodes': arborescence.number_of_nodes()})
     treenode_ids = cursor.fetchall()
@@ -1493,24 +1493,29 @@ def _import_skeleton(request, project_id, arborescence, neuron_id=None, name=Non
     for n, nbrs in arborescence.adjacency_iter():
         for nbr in nbrs:
             arborescence.node[nbr]['parent_id'] = arborescence.node[n]['id']
+            if not 'radius' in arborescence.node[nbr]:
+                arborescence.node[nbr]['radius'] = -1
     arborescence.node[root]['parent_id'] = 'NULL'
+    if not 'radius' in arborescence.node[root]:
+        arborescence.node[root]['radius'] = -1
     new_location = tuple([arborescence.node[root][k] for k in ('x', 'y', 'z')])
 
     treenode_values = \
-            '),('.join([','.join(map(str, [n[1][k] for k in ('id', 'x', 'y', 'z', 'parent_id')])) \
-            for n in arborescence.nodes_iter(data=True)])
+            '),('.join([','.join(map(str, [d[k] for k in ('id', 'x', 'y', 'z', 'parent_id', 'radius')])) \
+            for n, d in arborescence.nodes_iter(data=True)])
     cursor.execute("""
         UPDATE treenode SET
             location_x = v.x,
             location_y = v.y,
             location_z = v.z,
-            parent_id = v.parent_id
-        FROM (VALUES (%s)) AS v(id, x, y, z, parent_id)
+            parent_id = v.parent_id,
+            radius = v.radius
+        FROM (VALUES (%s)) AS v(id, x, y, z, parent_id, radius)
         WHERE treenode.id = v.id AND treenode.skeleton_id = %s
         """ % (treenode_values, new_skeleton.id)) # Include skeleton ID for index performance.
 
     # Log import.
-    insert_into_log(project_id, request.user.id, 'create_neuron',
+    insert_into_log(project_id, user.id, 'create_neuron',
                     new_location, 'Create neuron %d and skeleton '
                     '%d via import' % (new_neuron.id, new_skeleton.id))
 

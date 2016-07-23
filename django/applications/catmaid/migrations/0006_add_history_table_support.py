@@ -92,6 +92,17 @@ add_history_functions_sql = """
             JOIN pg_catalog.pg_namespace AS parnsp ON (parnsp.oid = parcla.relnamespace);
 
 
+    -- A view to simplify schema and column lookup for regclass objects
+    CREATE OR REPLACE VIEW catmaid_table_info
+    AS
+        SELECT pc.oid AS rel_oid, pc.relname AS rel_name,
+            pn.nspname AS rel_schema, c.column_name AS column_name
+        FROM information_schema.columns c, pg_class pc, pg_namespace pn
+        WHERE c.table_name = pc.relname
+        AND pn.oid = pc.relnamespace
+        AND c.table_schema = pn.nspname;
+
+
     -- Create a history table and triggers to populate it for the passed in
     -- table. Always use this function to create history tables to ensure
     -- everything is set up correctly. An optional time column can be specified,
@@ -119,6 +130,9 @@ add_history_functions_sql = """
 
         -- This will contain the name of the newly created history table
         history_table_name text;
+
+        -- This will contain a reference to the newly created history table
+        history_table_oid regclass;
 
         -- This will contain the name of a parent history table, if any
         parent_history_table_name text;
@@ -217,14 +231,16 @@ add_history_functions_sql = """
             );
         END IF;
 
+        -- Get the OID of the new history table
+        history_table_oid = to_regclass(history_table_name::cstring);
+
         -- Make all history columns (except the later added sys_period and
         -- transaction info columns) default to NULL.
         FOR column_info IN
-            SELECT c.column_name
-            FROM information_schema.columns c
-            WHERE c.table_schema NOT IN ('information_schema', 'pg_catalog')
-            AND c.table_name = live_table_name::text
-            AND c.column_name <> 'sys_period'
+            SELECT column_name
+            FROM catmaid_table_info
+            WHERE rel_oid = live_table_name
+            AND column_name <> 'sys_period'
         LOOP
             -- Drop NOT NULL constraints and add default
             EXECUTE format(
@@ -238,9 +254,8 @@ add_history_functions_sql = """
         -- Add a system time column to the history table, named sys_period, if
         -- it doesn't exist already (which can happen due to table inheritance.
         IF NOT EXISTS(SELECT column_name
-                      FROM information_schema.columns
-                      WHERE table_schema NOT IN ('information_schema', 'pg_catalog')
-                      AND table_name = history_table_name
+                      FROM catmaid_table_info
+                      WHERE rel_oid = history_table_oid
                       AND column_name = 'sys_period') THEN
             EXECUTE format(
                 'ALTER TABLE %I ADD COLUMN sys_period tstzrange
@@ -254,9 +269,8 @@ add_history_functions_sql = """
         -- happen due to table inheritance. Together with the lower part
         -- of the sys_period range, the transaction ID is unique.
         IF NOT EXISTS(SELECT column_name
-                      FROM information_schema.columns
-                      WHERE table_schema NOT IN ('information_schema', 'pg_catalog')
-                      AND table_name = history_table_name
+                      FROM catmaid_table_info
+                      WHERE rel_oid = history_table_oid
                       AND column_name = 'exec_transaction_id') THEN
             EXECUTE format(
                 'ALTER TABLE %I ADD COLUMN exec_transaction_id bigint
@@ -334,11 +348,8 @@ add_history_functions_sql = """
                 CASE WHEN time_column IS NULL THEN 'current_timestamp' ELSE
                     'lt.' || time_column END,
                     txid_current(), live_table_name)
-            FROM information_schema.columns c, pg_class pc, pg_namespace pn
-            WHERE pc.oid = live_table_name
-            AND c.table_name = pc.relname
-            AND pn.oid = pc.relnamespace
-            AND c.table_schema = pn.nspname);
+            FROM catmaid_table_info c
+            WHERE c.rel_oid = live_table_name);
         end_time = clock_timestamp();
         delta = 1000 * (extract(epoch from end_time) - extract(epoch from start_time));
         RAISE NOTICE 'Execution time: %ms', delta;
@@ -419,9 +430,8 @@ add_history_functions_sql = """
                     pkey_column,
                     string_agg(quote_ident(c.column_name), ',')
                 )
-                FROM information_schema.columns c, pg_class pc
-                WHERE pc.oid = live_table_name
-                AND c.table_name = pc.relname
+                FROM catmaid_table_info c
+                WHERE c.rel_oid = live_table_name
             );
 
             GET DIAGNOSTICS num_updated_rows = ROW_COUNT;
@@ -465,9 +475,8 @@ add_history_functions_sql = """
                         'lt.' || quote_ident(c.column_name), ' OR '),
                     pkey_column
                 )
-                FROM information_schema.columns c, pg_class pc
-                WHERE pc.oid = live_table_name
-                AND c.table_name = pc.relname
+                FROM catmaid_table_info c
+                WHERE c.rel_oid = live_table_name
             );
 
             GET DIAGNOSTICS num_updated_rows = ROW_COUNT;
@@ -497,9 +506,8 @@ add_history_functions_sql = """
                 txid_current(),
                 pkey_column
             )
-            FROM information_schema.columns c, pg_class pc
-            WHERE pc.oid = live_table_name
-            AND c.table_name = pc.relname
+            FROM catmaid_table_info c
+            WHERE c.rel_oid = live_table_name
         );
 
         GET DIAGNOSTICS num_new_rows = ROW_COUNT;
@@ -749,6 +757,7 @@ remove_history_functions_sql = """
     DROP FUNCTION IF EXISTS enable_history_tracking();
     DROP FUNCTION IF EXISTS disable_history_tracking();
     DROP FUNCTION IF EXISTS history_table_update_trigger_name(live_table_name regclass);
+    DROP VIEW IF EXISTS catmaid_table_info;
 """
 
 add_initial_history_tables_sql = """

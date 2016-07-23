@@ -7,8 +7,10 @@ from datetime import datetime, timedelta
 from collections import defaultdict
 from itertools import chain
 
+from django.conf import settings
 from django.core.serializers.json import DjangoJSONEncoder
-from django.http import HttpResponse, Http404, JsonResponse
+from django.http import HttpResponse, HttpResponseBadRequest, Http404, \
+        JsonResponse
 from django.shortcuts import get_object_or_404
 from django.db import connection
 from django.db.models import Q
@@ -1404,6 +1406,97 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
 
     except Exception as e:
         raise Exception(response_on_error + ':' + str(e))
+
+
+@api_view(['POST'])
+@requires_user_role(UserRole.Annotate)
+def import_skeleton(request, project_id=None):
+    """Import a neuron modeled by a skeleton from an uploaded file.
+
+    Currently only SWC representation is supported.
+    ---
+    consumes: multipart/form-data
+    parameters:
+      - name: neuron_id
+        description: >
+            If specified, the imported skeleton will model this existing neuron.
+        paramType: form
+        type: integer
+      - name: file
+        required: true
+        description: A skeleton representation file to import.
+        paramType: body
+        dataType: File
+    type:
+        neuron_id:
+            type: integer
+            required: true
+            description: ID of the neuron used or created.
+        skeleton_id:
+            type: integer
+            required: true
+            description: ID of the imported skeleton.
+        node_id_map:
+            required: true
+            description: >
+                An object whose properties are node IDs in the import file and
+                whose values are IDs of the created nodes.
+    """
+
+    neuron_id = request.POST.get('neuron_id', None)
+    if neuron_id is not None:
+        neuron_id = int(neuron_id)
+
+    if len(request.FILES) == 1:
+        for uploadedfile in request.FILES.itervalues():
+            if uploadedfile.size > settings.IMPORTED_SKELETON_FILE_MAXIMUM_SIZE:
+                return HttpResponse('File too large. Maximum file size is {} bytes.'.format(settings.IMPORTED_SKELETON_FILE_MAXIMUM_SIZE), status=413)
+
+            filename = uploadedfile.name
+            extension = filename.split('.')[-1].strip().lower()
+            if extension == 'swc':
+                swc_string = '\n'.join(uploadedfile)
+                return import_skeleton_swc(request.user, project_id, swc_string, neuron_id)
+            else:
+                return HttpResponse('File type "{}" not understood. Known file types: swc'.format(extension), status=415)
+
+    return HttpResponseBadRequest('No file received.')
+
+
+def import_skeleton_swc(user, project_id, swc_string, neuron_id=None):
+    """Import a neuron modeled by a skeleton in SWC format.
+    """
+
+    g = nx.DiGraph()
+    for line in swc_string.splitlines():
+        if line.startswith('#') or not line.strip():
+            continue
+        row = line.strip().split()
+        if len(row) != 7:
+            raise ValueError('SWC has a malformed line: {}'.format(line))
+
+        node_id = int(row[0])
+        parent_id = int(row[6])
+        g.add_node(node_id, {'x': float(row[2]),
+                             'y': float(row[3]),
+                             'z': float(row[4]),
+                             'radius': float(row[5])})
+
+        if parent_id != -1:
+            g.add_edge(parent_id, node_id)
+
+    if not nx.is_directed_acyclic_graph(g):
+        raise ValueError('SWC skeleton is malformed: it contains a cycle.')
+
+    import_info = _import_skeleton(user, project_id, g, neuron_id)
+    node_id_map = {n: d['id'] for n, d in import_info['graph'].nodes_iter(data=True)}
+
+    return JsonResponse({
+            'neuron_id': import_info['neuron_id'],
+            'skeleton_id': import_info['skeleton_id'],
+            'node_id_map': node_id_map,
+        })
+
 
 def _import_skeleton(user, project_id, arborescence, neuron_id=None, name=None):
     """Create a skeleton from a networkx directed tree.

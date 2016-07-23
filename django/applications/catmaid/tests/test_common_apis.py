@@ -1,6 +1,7 @@
 import re
 import urllib
 import json
+import StringIO
 
 from django.conf import settings
 from django.contrib.auth.models import Permission
@@ -2341,6 +2342,32 @@ class ViewPageTests(TestCase):
         self.assertEqual(0, ClassInstanceClassInstance.objects.filter(id=2390).count())
 
         self.assertEqual(new_skeleton_id, get_object_or_404(TreenodeConnector, id=2405).skeleton_id)
+
+    def test_import_skeleton(self):
+        self.fake_authentication()
+
+        orig_skeleton_id = 235
+        response = self.client.get('/%d/skeleton/%d/swc' % (self.test_project_id, orig_skeleton_id))
+        self.assertEqual(response.status_code, 200)
+        orig_swc_string = response.content
+
+        swc_file = StringIO.StringIO(orig_swc_string)
+        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
+                                    {'file.swc': swc_file})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        new_skeleton_id = parsed_response['skeleton_id']
+        id_map = parsed_response['node_id_map']
+
+        for tn in Treenode.objects.filter(skeleton_id=orig_skeleton_id):
+            new_tn = Treenode.objects.get(id=id_map[str(tn.id)])
+            self.assertEqual(new_skeleton_id, new_tn.skeleton_id)
+            if tn.parent_id:
+                self.assertEqual(id_map[str(tn.parent_id)], new_tn.parent_id)
+            self.assertEqual(tn.location_x, new_tn.location_x)
+            self.assertEqual(tn.location_y, new_tn.location_y)
+            self.assertEqual(tn.location_z, new_tn.location_z)
+            self.assertEqual(max(tn.radius, 0), max(new_tn.radius, 0))
 
     def test_skeleton_contributor_statistics(self):
         self.fake_authentication()

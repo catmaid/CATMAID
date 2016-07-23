@@ -199,6 +199,10 @@ MEDIA_TREENODE_SUBDIRECTORY = 'treenode_archives'
 # than this. This defaults to 50 Megabyte.
 GENERATED_FILES_MAXIMUM_SIZE = 52428800
 
+# The maximum allowed size in bytes for files uploaded for import as skeletons.
+# The default is 5 megabytes.
+IMPORTED_SKELETON_FILE_MAXIMUM_SIZE = 5242880
+
 # Specifies if user registration is allowed
 USER_REGISTRATION_ALLOWED = False
 

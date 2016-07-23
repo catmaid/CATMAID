@@ -237,6 +237,7 @@ urlpatterns += [
     url(r'^(?P<project_id>\d+)/skeleton/join$', skeleton.join_skeleton),
     url(r'^(?P<project_id>\d+)/skeleton/reroot$', skeleton.reroot_skeleton),
     url(r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/permissions$', skeleton.get_skeleton_permissions),
+    url(r'^(?P<project_id>\d+)/skeletons/import$', skeleton.import_skeleton),
     url(r'^(?P<project_id>\d+)/skeleton/annotationlist$', skeleton.annotation_list),
     url(r'^(?P<project_id>\d+)/skeletons/within-spatial-distance$', skeleton.within_spatial_distance),
     url(r'^(?P<project_id>\d+)/skeletongroup/adjacency_matrix$', skeleton.adjacency_matrix),

@@ -19,6 +19,10 @@ included in this changelog.
 - `POST /{project_id}/neurons/from-models`:
   Get the IDs of all neurons modeled by a list of entities, e.g. skelton IDs.
 
+- `POST /{project_id}/skeletons/import`:
+  Import a neuron modeled by a skeleton from an uploaded file. Currently only
+  SWC representation is supported.
+
 ### Modifications
 
 - `GET /projects/`:

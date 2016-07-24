@@ -279,10 +279,16 @@ add_history_functions_sql = """
             );
         END IF;
 
+        -- Create live table primary key index for the new history table. This
+        -- is needed to quickly query older versions of an entity.
+        IF (SELECT to_regclass((history_table_name || '_live_pk_index')::cstring)) IS NULL THEN
+            EXECUTE format(
+                'CREATE INDEX %I ON %I (%I)',
+                history_table_name || '_live_pk_index', history_table_name, live_table_pkey_column);
+        END IF;
+
         -- Create sys_period (validity period) index for the new history
-        -- table. This is needed to quickly query older versions of an
-        -- entity.
-        -- TODO: Maybe also needs an id index?
+        -- table. This is needed to quickly query older state snapshots.
         IF (SELECT to_regclass((history_table_name || '_sys_period')::cstring)) IS NULL THEN
             EXECUTE format(
                 'CREATE INDEX %I ON %I USING gist(sys_period)',

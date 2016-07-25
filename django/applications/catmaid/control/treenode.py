@@ -8,6 +8,7 @@ from collections import defaultdict
 
 from django.db import connection
 from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404
 
 from rest_framework.decorators import api_view
 
@@ -397,14 +398,16 @@ def update_parent(request, project_id=None, treenode_id=None):
     treenode_id = int(treenode_id)
     parent_id = int(request.POST.get('parent_id', -1))
 
+    can_edit_treenode_or_fail(request.user, project_id, treenode_id)
+
     # Make sure the back-end is in the expected state
     state.validate_state(treenode_id, request.POST.get('state'),
-            neighborhood=True, lock=True, cursor=cursor)
+            neighborhood=True, lock=True)
 
-    child = Treenode.objects.get(pk=treenode_id)
-    parent = Treenode.objects.get(pk=parent_id)
+    child = get_object_or_404(Treenode, pk=treenode_id, project_id=project_id)
+    parent = get_object_or_404(Treenode, pk=parent_id, project_id=project_id)
 
-    if (child.skeleton_id != parent.skeleton_id):
+    if child.skeleton_id != parent.skeleton_id:
         raise Exception("Child node %s is in skeleton %s but parent node %s is in skeleton %s!", \
                         treenode_id, child.skeleton_id, parent_id, parent.skeleton_id)
 

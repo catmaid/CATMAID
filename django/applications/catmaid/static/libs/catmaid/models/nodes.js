@@ -109,9 +109,10 @@
       CATMAID.requirePermission(projectId, 'can_annotate',
           'You don\'t have have permission to change node');
 
-      var url = projectId + '/treenode/' + nodeId + '/parent';
+      var url = projectId + '/treenodes/' + nodeId + '/parent';
       var params = {
-        parent_id: newParentId
+        parent_id: newParentId,
+        state: state.makeNodeState(nodeId)
       };
 
       return CATMAID.fetch(url, 'POST', params)

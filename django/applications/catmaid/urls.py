@@ -201,7 +201,7 @@ urlpatterns += [
     url(r'^(?P<project_id>\d+)/treenodes/(?P<treenode_id>\d+)/info$', treenode.treenode_info),
     url(r'^(?P<project_id>\d+)/treenodes/(?P<treenode_id>\d+)/children$', treenode.find_children),
     url(r'^(?P<project_id>\d+)/treenodes/(?P<treenode_id>\d+)/confidence$', treenode.update_confidence),
-    url(r'^(?P<project_id>\d+)/treenode/(?P<treenode_id>\d+)/parent$', treenode.update_parent),
+    url(r'^(?P<project_id>\d+)/treenodes/(?P<treenode_id>\d+)/parent$', treenode.update_parent),
     url(r'^(?P<project_id>\d+)/treenode/(?P<treenode_id>\d+)/radius$', treenode.update_radius),
     url(r'^(?P<project_id>\d+)/treenodes/radius$', treenode.update_radii),
     url(r'^(?P<project_id>\d+)/treenodes/(?P<treenode_id>\d+)/previous-branch-or-root$', treenode.find_previous_branchnode_or_root),

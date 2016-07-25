@@ -394,3 +394,15 @@ If you find that widget help documentation is missing, incomplete, confusing,
 or incorrect, you can contribute better documentation by
 `creating an issue on GitHub <https://github.com/catmaid/CATMAID/issues/new>`_
 or editing the ``helpText`` property of the widget and creating a pull request.
+
+Other Policies
+--------------
+
+Security
+########
+
+The disclosure policy of the CATMAID developers for vulnerabilities is that
+arbitrary SQL execution by anonymous users or users with "browse" permissions
+must be notified to the mailing list simultaneous with patch publication.
+Vulnerabilities only exploitable by users with "annotate" permissions will
+be noted in the release changelog but will not be sent to the mailing list.

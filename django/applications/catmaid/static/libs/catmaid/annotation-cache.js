@@ -13,7 +13,7 @@
     this.annotation_ids = {};
     this.annotation_names = {};
 
-    // Listen to annotation deletions so these annotations can be reomved from
+    // Listen to annotation deletions so these annotations can be removed from
     // the cache.
     CATMAID.Annotations.on(CATMAID.Annotations.EVENT_ANNOTATIONS_DELETED,
         this.removeAll, this);

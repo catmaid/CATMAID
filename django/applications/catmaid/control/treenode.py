@@ -593,7 +593,6 @@ def update_radius(request, project_id=None, treenode_id=None):
         return create_update_response(old_radii, radius)
 
 
-# REMARK this function went from 1.6 seconds to 400 ms when de-modelized
 @requires_user_role(UserRole.Annotate)
 def delete_treenode(request, project_id=None):
     """ Deletes a treenode. If the skeleton has a single node, deletes the

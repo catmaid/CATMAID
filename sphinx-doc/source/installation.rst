@@ -29,11 +29,12 @@ Ubuntu, you have to add the officical Postgres repository as an
 `extra Apt repository <https://wiki.postgresql.org/wiki/Apt>`_ (if you haven't
 done so already)::
 
-    sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt/ \
-      $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+    PG_URL="http://apt.postgresql.org/pub/repos/apt/"
+    APT_LINE="deb ${PG_URL} $(lsb_release -cs)-pgdg main"
+    echo "${APT_LINE}" | sudo tee "/etc/apt/sources.list.d/pgdg.list"
     sudo apt-get install wget ca-certificates
-    wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | \
-      sudo apt-key add -
+    PG_KEY_URL="https://www.postgresql.org/media/keys/ACCC4CF8.asc"
+    wget --quiet -O - ${PG_KEY_URL} | sudo apt-key add -
     sudo apt-get update
 
 And then you can install these dependencies with::

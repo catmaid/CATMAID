@@ -95,8 +95,8 @@
     // Number of cells and grid height/width
     var numHCells = Math.ceil((worldViewBox.max.x - worldViewBox.min.x - xGridStartW) / this.cellWidth) + 1;
     var numVCells = Math.ceil((worldViewBox.max.y - worldViewBox.min.y - yGridStartW) / this.cellHeight) + 1;
-    var width = localViewBox.max.x - localViewBox.min.x;
-    var height = localViewBox.max.y - localViewBox.min.y;
+    var width = (localViewBox.max.x - localViewBox.min.x) * this.stackViewer.scale;
+    var height = (localViewBox.max.y - localViewBox.min.y) * this.stackViewer.scale;
 
     // Clean paper
     this.paper.clear();

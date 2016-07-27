@@ -760,7 +760,7 @@ div#classification_graph_object img.roiimage {
 }
 
 .setting .help {
-  width: 40em;
+  min-width: 20em;
   margin-top: 0.25em;
   margin-bottom: 0.5em;
 }

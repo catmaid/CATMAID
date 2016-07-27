@@ -159,13 +159,17 @@ def stats_user_history(request, project_id=None):
     # Get the end date for the query, defaulting to now.
     end_date = request.GET.get('end_date', None)
     if end_date:
-        # We need to set the end date to the last second of the day to get all
-        # events.
-        end_date = dateparser.parse(end_date) + timedelta(days=1) - timedelta(seconds=1)
+        end_date = dateparser.parse(end_date)
     else:
         end_date = timezone.now()
+    # The API is inclusive and should return stats for the end date as
+    # well. The actual query is easier with an exclusive end and therefore
+    # the end date is set to the beginning of the next day.
+    end_date = end_date + timedelta(days=1)
+    end_date = datetime(end_date.year, end_date.month, end_date.day)
+
     # Calculate number of days between (including) start and end
-    daydelta = (end_date + timedelta(days=1) - start_date).days
+    daydelta = (end_date - start_date).days
 
     all_users = User.objects.filter().values_list('id', flat=True)
     days = []
@@ -201,7 +205,8 @@ def stats_user_history(request, project_id=None):
                 child.location_z
             FROM treenode child
             WHERE child.project_id = %(project_id)s
-              AND child.creation_time BETWEEN %(start_date)s AND %(end_date)s
+              AND child.creation_time >= %(start_date)s
+              AND child.creation_time < %(end_date)s
         ) AS child
         INNER JOIN LATERAL (
             SELECT sqrt(pow(child.location_x - parent.location_x, 2)
@@ -231,7 +236,7 @@ def stats_user_history(request, project_id=None):
         FROM treenode_connector t1
         JOIN treenode_connector t2 ON t1.connector_id = t2.connector_id
         WHERE t1.project_id=%s
-        AND t1.creation_time BETWEEN %s AND %s
+        AND t1.creation_time >= %s AND t1.creation_time < %s
         AND t1.relation_id <> t2.relation_id
         AND (t1.relation_id = %s OR t1.relation_id = %s)
         AND (t2.relation_id = %s OR t2.relation_id = %s)
@@ -240,14 +245,16 @@ def stats_user_history(request, project_id=None):
     ''', (project_id, start_date, end_date, preId, postId, preId, postId))
     connector_stats = cursor.fetchall()
 
-    tree_reviewed_nodes = Review.objects \
-        .filter(
-            project_id=project_id,
-            review_time__range=(start_date, end_date)) \
-        .extra(select={'date': "date_trunc('day', review_time)"}) \
-        .order_by('date') \
-        .values_list('reviewer_id', 'date') \
-        .annotate(count = Count('treenode'))
+    # Get review information
+    cursor.execute('''
+        SELECT r.reviewer_id, (date_trunc('day', r.review_time)) AS date, count(*)
+        FROM review r
+        WHERE r.project_id = %(project_id)s
+        AND r.review_time >= %(start_date)s
+        AND r.review_time < %(end_date)s
+        GROUP BY r.reviewer_id, date
+    ''', dict(project_id=project_id, start_date=start_date, end_date=end_date))
+    tree_reviewed_nodes = cursor.fetchall()
 
     for di in treenode_stats:
         user_id = str(di[0])

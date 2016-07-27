@@ -105,6 +105,7 @@ urlpatterns += [
 ]
 
 # Statistics
+UrlParser.explicit_root_paths |= set(['{project_id}/stats'])
 urlpatterns += [
     url(r'^(?P<project_id>\d+)/stats$', TemplateView.as_view(template_name="catmaid/projectstatistics.html")),
     url(r'^(?P<project_id>\d+)/stats/nodecount$', stats.stats_nodecount),

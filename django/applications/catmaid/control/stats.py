@@ -10,6 +10,8 @@ from django.db.models.aggregates import Count
 from django.db import connection
 from django.utils import timezone
 
+from rest_framework.decorators import api_view
+
 from catmaid.control.authentication import requires_user_role
 from catmaid.control.common import get_relation_to_id_map
 from catmaid.models import ClassInstance, Connector, Treenode, User, UserRole, \
@@ -151,7 +153,86 @@ def stats_user_activity(request, project_id=None):
     return HttpResponse(json.dumps({'skeleton_nodes': timepoints,
          'presynaptic': prelinks, 'postsynaptic': postlinks}), content_type='application/json')
 
+@api_view(['GET'])
 def stats_user_history(request, project_id=None):
+    """Get per user contribution statistics
+
+    A date range can be provided to limit the scope of the returned statiscis.
+    By default, the statistics for the last ten days is returned. The returned
+    data includes created cable length, the number of created synaptic
+    connections and the number of reviews made, per day and user.
+    ---
+    parameters:
+    - name: start_date
+      description: |
+        If provided (YYYY-MM-DD), only statistics from this day on are returned (inclusive).
+      required: false
+      type: string
+      paramType: form
+    - name: end_date
+      description: |
+        If provided (YYYY-MM-DD), only statistics to this day on are returned (inclusive).
+      required: false
+      type: string
+      paramType: form
+    - name: time_zone
+      description: |
+        Optional time zone for the date range, e.g. "US/Eastern"
+      required: false
+      type: string
+      paramType: form
+    models:
+      stats_user_history_cell:
+        id: stats_user_history_cell
+        properties:
+          new_treenodes:
+            description: Cable length created
+            type: integer
+            required: true
+          new_connectors:
+            description: Number of new synaptic connections created
+            type: integer
+            required: true
+          new_reviewed_nodes:
+            description: Number of new node reviews
+            type: integer
+            required: true
+      stats_user_history_day_segment:
+        id: stats_user_history_day_segment
+        properties:
+          date:
+            description: Entries for a day, expressed as field name
+            $ref: stats_user_history_cell
+            required: true
+      stats_user_history_segment:
+        id: stats_user_history_segment
+        properties:
+          user_id:
+            description: Entries by day for a user (ID), expressed as field name
+            $ref: stats_user_history_day_segment
+            required: true
+    type:
+      days:
+        description: Returned dates in YYYYMMDD format
+        type: array
+        items:
+          type: string
+          format: date
+        required: true
+      daysformatted:
+        description: Returned dates in more readable format
+        type: array
+        items:
+          type: string
+        required: true
+      stats_table:
+        description: Actual history information by user and by date
+        $ref: stats_user_history_segment
+        required: true
+    """
+    raw_time_zone = request.GET.get('time_zone', settings.TIME_ZONE)
+    time_zone = pytz.timezone(raw_time_zone)
+
     # Get the start date for the query, defaulting to 10 days ago.
     start_date = request.GET.get('start_date', None)
     if start_date:

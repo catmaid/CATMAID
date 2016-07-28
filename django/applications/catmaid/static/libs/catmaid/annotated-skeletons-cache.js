@@ -13,12 +13,22 @@
     this.trackedAnnotations = {};
 
     /**
+     * How frequently to update all tracked annotations from backend (in ms).
+     * @type {number}
+     */
+    this.PERIODIC_REFRESH_INTERVAL = 5*60*1000;
+
+    /**
      * Whether to refresh an annotation as soon as it is changed on the client.
      * @type {Boolean}
      */
     this.EAGER_REFRESH = false;
 
-    // Listen to annotation deletions so these annotations can be reomved from
+    this.periodicRefreshTimeout = window.setTimeout(
+        this._periodicRefresh.bind(this),
+        this.PERIODIC_REFRESH_INTERVAL);
+
+    // Listen to annotation deletions so these annotations can be removed from
     // the cache.
     CATMAID.Annotations.on(CATMAID.Annotations.EVENT_ANNOTATIONS_DELETED,
         this._handleDeletedAnnotations, this);
@@ -32,6 +42,16 @@
     }
 
     return this.trackedAnnotations[annotationName];
+  };
+
+  AnnotatedSkeletonsCache.prototype._periodicRefresh = function () {
+    Object.keys(this.trackedAnnotations).forEach(function (annotationName) {
+      this.refresh(annotationName);
+    }, this);
+
+    this.periodicRefreshTimeout = window.setTimeout(
+        this._periodicRefresh.bind(this),
+        this.PERIODIC_REFRESH_INTERVAL);
   };
 
   AnnotatedSkeletonsCache.prototype.refresh = function (annotationName) {

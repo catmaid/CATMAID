@@ -54,6 +54,12 @@
         this.PERIODIC_REFRESH_INTERVAL);
   };
 
+  /**
+   * Refresh the set of skeleton IDs (meta-)annotated with a tracked annotation,
+   * and notify all registered callbacks.
+   *
+   * @param  {string} annotationName Name of the tracked annotation to refresh.
+   */
   AnnotatedSkeletonsCache.prototype.refresh = function (annotationName) {
     var tracked = this._getTrackedAnnotation(annotationName);
     var self = this;
@@ -90,6 +96,18 @@
     }
   };
 
+  /**
+   * Notify all callbacks registered with an annotation with the current set
+   * of (meta-)annotated skeleton IDs.
+   *
+   * @param  {string}  annotationName Name of the tracked annotation to notify.
+   * @param  {Boolean} includeMeta    Whether to notify callbacks registered for
+   *                                  skeletons directly annotated with the
+   *                                  annotation (false) or those registered
+   *                                  for both direct and meta-annotations by
+   *                                  the annotation (true). If not specified,
+   *                                  both sets of callbacks are notified.
+   */
   AnnotatedSkeletonsCache.prototype.notify = function (annotationName, includeMeta) {
     var tracked = this._getTrackedAnnotation(annotationName);
     var includeBoth = typeof includeMeta === 'undefined';
@@ -103,6 +121,19 @@
     });
   };
 
+  /**
+   * Register an annotation to be tracked by the cache and a callback to notify
+   * when the set of annotated skeleton IDs changes.
+   *
+   * @param  {string}  annotationName Name of the tracked annotation to notify.
+   * @param  {Function} callback      Notification callback, takes two
+   *                                  arguments: the annotation name and the
+   *                                  set of skeleton IDs.
+   * @param  {Boolean} includeMeta    Whether to register for skeletons directly
+   *                                  annotated with the annotation (false) or
+   *                                  for both direct and meta-annotations by
+   *                                  the annotation (true).
+   */
   AnnotatedSkeletonsCache.prototype.register = function (annotationName, callback, includeMeta) {
     var newlyTracked = false;
     if (this.trackedAnnotations.hasOwnProperty(annotationName)) {
@@ -122,6 +153,20 @@
     if (newlyTracked) this.refresh(annotationName);
   };
 
+  /**
+   * Remove a callback registered to an annotation tracked by the cache. If this
+   * was the last callback registered to the annotation, it will be untracked.
+   *
+   * @param  {string}  annotationName Name of the annotation to unregister.
+   * @param  {Function} callback      Notification callback, takes two
+   *                                  arguments: the annotation name and the
+   *                                  set of skeleton IDs.
+   * @param  {Boolean} includeMeta    Whether the callback was registered for
+   *                                  direction annotations only (false) or
+   *                                  direct and meta-annotations (true). Must
+   *                                  be the same as the value passed when the
+   *                                  callback was registered.
+   */
   AnnotatedSkeletonsCache.prototype.unregister = function (annotationName, callback, includeMeta) {
     var tracked = this._getTrackedAnnotation(annotationName);
     var includeBoth = typeof includeMeta === 'undefined';

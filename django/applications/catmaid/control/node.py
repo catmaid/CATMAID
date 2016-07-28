@@ -433,7 +433,7 @@ def node_list_tuples_query(params, project_id, atnid, atntype, include_labels, t
                 edition_time,
                 user_id
             FROM treenode,
-                 UNNEST(%s) missingnodes(mnid)
+                 UNNEST(%s::bigint[]) missingnodes(mnid)
             WHERE id = mnid''', (list(missing_treenode_ids),))
 
             treenodes.extend(cursor.fetchall())
@@ -457,7 +457,7 @@ def node_list_tuples_query(params, project_id, atnid, atntype, include_labels, t
                        class_instance.name
                 FROM class_instance,
                      treenode_class_instance,
-                     UNNEST(%s) treenodes(tnid)
+                     UNNEST(%s::bigint[]) treenodes(tnid)
                 WHERE treenode_class_instance.relation_id = %s
                   AND class_instance.id = treenode_class_instance.class_instance_id
                   AND treenode_class_instance.treenode_id = tnid
@@ -473,7 +473,7 @@ def node_list_tuples_query(params, project_id, atnid, atntype, include_labels, t
                        class_instance.name
                 FROM class_instance,
                      connector_class_instance,
-                     UNNEST(%s) connectors(cnid)
+                     UNNEST(%s::bigint[]) connectors(cnid)
                 WHERE connector_class_instance.relation_id = %s
                   AND class_instance.id = connector_class_instance.class_instance_id
                   AND connector_class_instance.connector_id = cnid

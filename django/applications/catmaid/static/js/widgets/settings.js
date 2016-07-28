@@ -444,14 +444,21 @@
         }
       });
       ds.append(CATMAID.DOM.createLabeledControl('', addButton));
-      ds.append(wrapSettingsControl(
-          CATMAID.DOM.createLabeledControl('', componentList),
-          CATMAID.NeuronNameService.Settings,
-          'component_list',
-          SETTINGS_SCOPE,
-          function () {
-            return CATMAID.NeuronNameService.getInstance().loadConfigurationFromSettings();
-          }));
+      // A container is necessary since this component may complete asynchronously.
+      var nnsAsyncContainer = $('<div/>');
+      ds.append(nnsAsyncContainer);
+      CATMAID.NeuronNameService.Settings
+          .load()
+          .then(function () {
+            nnsAsyncContainer.append(wrapSettingsControl(
+                CATMAID.DOM.createLabeledControl('', componentList),
+                CATMAID.NeuronNameService.Settings,
+                'component_list',
+                SETTINGS_SCOPE,
+                function () {
+                  return CATMAID.NeuronNameService.getInstance().loadConfigurationFromSettings();
+                }));
+          });
       ds.append(CATMAID.DOM.createLabeledControl('', removeButton));
 
       var updateComponentList = function() {
@@ -476,31 +483,37 @@
       // Initialize component list
       updateComponentList();
 
-      ds.append(wrapSettingsControl(
-          CATMAID.DOM.createInputSetting(
-              "Formatted neuron name",
-              nameServiceInstance.getFormatString(),
-              "Format the neuron label using label components from list above. " +
-              "Reference the Nth component by using \"%N\". " +
-              "Use \"%f\" for a fallback that uses first available component " +
-              "from the top. Optionally, append \"{<em>delimiter</em>}\" to specify " +
-              "how component values should be separeted, defaulting to \"{, }\".",
-              function () {
-                CATMAID.NeuronNameService.Settings
-                  .set(
-                    'format_string',
-                    $(this).val(),
-                    SETTINGS_SCOPE)
-                  .then(function () {
-                    CATMAID.NeuronNameService.getInstance().loadConfigurationFromSettings();
-                  });
-              }),
-          CATMAID.NeuronNameService.Settings,
-          'format_string',
-          SETTINGS_SCOPE,
-          function () {
-            return CATMAID.NeuronNameService.getInstance().loadConfigurationFromSettings();
-          }));
+      nnsAsyncContainer = $('<div/>');
+      ds.append(nnsAsyncContainer);
+      CATMAID.NeuronNameService.Settings
+          .load()
+          .then(function () {
+            nnsAsyncContainer.append(wrapSettingsControl(
+                CATMAID.DOM.createInputSetting(
+                    "Formatted neuron name",
+                    nameServiceInstance.getFormatString(),
+                    "Format the neuron label using label components from list above. " +
+                    "Reference the Nth component by using \"%N\". " +
+                    "Use \"%f\" for a fallback that uses first available component " +
+                    "from the top. Optionally, append \"{<em>delimiter</em>}\" to specify " +
+                    "how component values should be separeted, defaulting to \"{, }\".",
+                    function () {
+                      CATMAID.NeuronNameService.Settings
+                        .set(
+                          'format_string',
+                          $(this).val(),
+                          SETTINGS_SCOPE)
+                        .then(function () {
+                          CATMAID.NeuronNameService.getInstance().loadConfigurationFromSettings();
+                        });
+                    }),
+                CATMAID.NeuronNameService.Settings,
+                'format_string',
+                SETTINGS_SCOPE,
+                function () {
+                  return CATMAID.NeuronNameService.getInstance().loadConfigurationFromSettings();
+                }));
+          });
 
 
       // Overlay settings

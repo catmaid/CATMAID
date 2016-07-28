@@ -4491,7 +4491,7 @@ SkeletonAnnotations.VisibilityGroups = new (function () {
    * Determines whether an ordered list of group memberships is visible based
    * upon current hidden group toggle state.
    *
-   * @param  {[number]} groupIDs Ordered list of group IDs, from GROUP_IDS.
+   * @param  {number[]} groupIDs Ordered list of group IDs, from GROUP_IDS.
    * @return {Boolean}           True if visible, false otherwise.
    */
   this.areGroupsVisible = function (groupIDs) {

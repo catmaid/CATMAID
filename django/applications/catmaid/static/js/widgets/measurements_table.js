@@ -218,7 +218,8 @@
 
   SkeletonMeasurementsTable.prototype.exportCSV = function() {
     if (!this.table) return;
-    var csv = this.labels.join(',') + '\n' + this.table.fnGetData().map(function(row) {
+    var skeletonRows = this.table._('tr', {"filter":"applied"});
+    var csv = this.labels.join(',') + '\n' + skeletonRows.map(function(row) {
       return $(row[0]).text() + ',' + row.slice(1).join(',');
     }).join('\n'),
         blob = new Blob([csv], {type: 'text/plain'});

@@ -7,6 +7,19 @@
 
 ### Features and enhancements
 
+Tracing overlay:
+
+- Visibility groups can be defined that hide or show nodes in the overlay
+  based upon filtering criteria such as neuron meta-annotations or node
+  creator. Unlike the skeleton source based visibility, visibility groups can be
+  toggled instantly with HOME (for group 1) or Shift + HOME (for group 2). For
+  meta-annotation based visibility, this does not require using a search as a
+  skeleton source, and the set of skeletons matched by the meta-annotations is
+  transparently refreshed in the background. Another visibility group,
+  "Always visible", establishes a set of filters for overriding hidden groups
+  such that skeletons matched by these filters will always be shown.
+
+
 3D viewer:
 
 - Through the "List connectors" button on the Main tab, it is now possible to

@@ -666,22 +666,18 @@ add_history_functions_sql = """
     $$
     BEGIN
 
-        IF (TG_OP = 'UPDATE' OR TG_OP = 'DELETE') THEN
-
-            -- Insert new historic data into history table, based on the
-            -- currently available columns in the updated table.
-            EXECUTE (
-                SELECT format(
-                    'INSERT INTO %1$I (%2$s,%3$s,%4$s) '
-                    'SELECT %5$s, tstzrange(LEAST(%6$s, current_timestamp), current_timestamp), txid_current()',
-                    TG_ARGV[1], string_agg(quote_ident(column_name), ','), TG_ARGV[0], 'exec_transaction_id',
-                    string_agg('$1.' || quote_ident(column_name), ','), '$1.' || TG_ARGV[3])
-                FROM   information_schema.columns
-                WHERE  table_name   = TG_TABLE_NAME    -- table name, case sensitive
-                AND    table_schema = TG_TABLE_SCHEMA  -- schema name, case sensitive
-            ) USING OLD;
-
-        END IF;
+        -- Insert new historic data into history table, based on the
+        -- currently available columns in the updated table.
+        EXECUTE (
+            SELECT format(
+                'INSERT INTO %1$I (%2$s,%3$s,%4$s) '
+                'SELECT %5$s, tstzrange(LEAST(%6$s, current_timestamp), current_timestamp), txid_current()',
+                TG_ARGV[1], string_agg(quote_ident(column_name), ','), TG_ARGV[0], 'exec_transaction_id',
+                string_agg('$1.' || quote_ident(column_name), ','), '$1.' || TG_ARGV[3])
+            FROM   information_schema.columns
+            WHERE  table_name   = TG_TABLE_NAME    -- table name, case sensitive
+            AND    table_schema = TG_TABLE_SCHEMA  -- schema name, case sensitive
+        ) USING OLD;
 
         -- No return value is expected if run
         RETURN NULL;
@@ -704,24 +700,21 @@ add_history_functions_sql = """
     $$
     BEGIN
 
-        IF (TG_OP = 'UPDATE' OR TG_OP = 'DELETE') THEN
 
-            -- Insert new historic data into history table, based on the --
-            -- currently available columns in the updated table. If no time table
-            -- is given, retrieve time from table.
-            EXECUTE (
-                SELECT format(
-                    'INSERT INTO %1$I AS ht (%2$s,%3$s,%4$s) '
-                    'SELECT %5s, tstzrange(LEAST(tt.%8$s, current_timestamp), current_timestamp), txid_current() '
-                    'FROM %6$I tt WHERE tt.live_pk = $1.%7$s',
-                    TG_ARGV[1], string_agg(quote_ident(column_name), ','), TG_ARGV[0], 'exec_transaction_id',
-                    string_agg('$1.' || quote_ident(column_name), ','), TG_ARGV[3], TG_ARGV[2], TG_ARGV[4])
-                FROM   information_schema.columns
-                WHERE  table_name   = TG_TABLE_NAME    -- table name, case sensitive
-                AND    table_schema = TG_TABLE_SCHEMA  -- schema name, case sensitive
-            ) USING OLD;
-
-        END IF;
+        -- Insert new historic data into history table, based on the --
+        -- currently available columns in the updated table. If no time table
+        -- is given, retrieve time from table.
+        EXECUTE (
+            SELECT format(
+                'INSERT INTO %1$I AS ht (%2$s,%3$s,%4$s) '
+                'SELECT %5s, tstzrange(LEAST(tt.%8$s, current_timestamp), current_timestamp), txid_current() '
+                'FROM %6$I tt WHERE tt.live_pk = $1.%7$s',
+                TG_ARGV[1], string_agg(quote_ident(column_name), ','), TG_ARGV[0], 'exec_transaction_id',
+                string_agg('$1.' || quote_ident(column_name), ','), TG_ARGV[3], TG_ARGV[2], TG_ARGV[4])
+            FROM   information_schema.columns
+            WHERE  table_name   = TG_TABLE_NAME    -- table name, case sensitive
+            AND    table_schema = TG_TABLE_SCHEMA  -- schema name, case sensitive
+        ) USING OLD;
 
         -- No return value is expected if run
         RETURN NULL;

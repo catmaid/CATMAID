@@ -4395,6 +4395,9 @@ SkeletonAnnotations.Tag = new (function() {
 })();
 
 
+/**
+ * Controls the visibility of groups of skeleton IDs defined by filters.
+ */
 SkeletonAnnotations.VisibilityGroups = new (function () {
   this.GROUP_IDS = {
     OVERRIDE: 0,
@@ -4417,6 +4420,9 @@ SkeletonAnnotations.VisibilityGroups = new (function () {
     };
   }, this);
 
+  /**
+   * Refresh any meta-annotation-based filters from the backed.
+   */
   this.refresh = function () {
     for (var n = 0; n < this.groups.length; ++n)
       for (var i in document.styleSheets)
@@ -4431,6 +4437,16 @@ SkeletonAnnotations.VisibilityGroups = new (function () {
     });
   };
 
+  /**
+   * Set the filters defining a visibility group.
+   * @param {number} groupID      ID of the group to set, from GROUP_IDS.
+   * @param {Object} groupSetting The filter defining the group. If keyed by
+   *                              'universal', may match 'all' or 'none'. May be
+   *                              keyed by 'metaAnnotationName' to a string
+   *                              name of the meta-annotation to match. May be
+   *                              keyed by 'creatorID' to the numeric ID of the
+   *                              creation user to match.
+   */
   this.setGroup = function (groupID, groupSetting) {
     var group = this.groups[groupID];
 
@@ -4452,6 +4468,17 @@ SkeletonAnnotations.VisibilityGroups = new (function () {
     }
   };
 
+  /**
+   * Predicate for whether a tracing overlay node is matched by a group. Note
+   * that for connector nodes this will only determine if the connector node
+   * itself is matched by the group; it is the connector node's responsibility
+   * to determine whether it is transitively matched by a group through linked
+   * treenodes.
+   *
+   * @param  {number} groupID  ID of the group to query, from GROUP_IDS.
+   * @param  {Object}  node    Tracing overlay treenode or connector node.
+   * @return {Boolean}         True if matched, false otherwise.
+   */
   this.isNodeInGroup = function (groupID, node) {
     var group = this.groups[groupID];
 
@@ -4460,11 +4487,23 @@ SkeletonAnnotations.VisibilityGroups = new (function () {
     else return group.skeletonIDs.has(node.skeleton_id);
   };
 
+  /**
+   * Determines whether an ordered list of group memberships is visible based
+   * upon current hidden group toggle state.
+   *
+   * @param  {[number]} groupIDs Ordered list of group IDs, from GROUP_IDS.
+   * @return {Boolean}           True if visible, false otherwise.
+   */
   this.areGroupsVisible = function (groupIDs) {
     if (groupIDs.length === 0) return true;
     return this.groups[groupIDs.slice(-1)].cssRule.style.display !== 'none';
   };
 
+  /**
+   * Toggle the visibility of a hidden group.
+   *
+   * @param  {number} groupID  ID of the group to toggle, from GROUP_IDS.
+   */
   this.toggle = function (groupID) {
     var rule = this.groups[groupID].cssRule;
     if (typeof rule === 'undefined') return;

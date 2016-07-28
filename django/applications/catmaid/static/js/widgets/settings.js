@@ -822,6 +822,169 @@
         });
       }
 
+
+      var dsVisibilityGroups = CATMAID.DOM.addSettingsContainer(ds,
+          "Visibility groups", true);
+      var dsVisibilityGroupsRadioWrapper = $('<div />').addClass('setting');
+      var visibilityGroups = [{
+          name: 'Hidden group 1',
+          description: 'Toggle visibility of this group with <kbd>HOME</kbd>',
+          id: SkeletonAnnotations.VisibilityGroups.GROUP_IDS.GROUP_1,
+        },{
+          name: 'Hidden group 2',
+          description: 'Toggle visibility of this group with <kbs>SHIFT</kbd>+<kbd>HOME</kbd>',
+          id: SkeletonAnnotations.VisibilityGroups.GROUP_IDS.GROUP_2,
+        },{
+          name: 'Always visible',
+          description: 'Skeletons in this group are always visible, ' +
+                       'even if they are also in hidden groups.',
+          id: SkeletonAnnotations.VisibilityGroups.GROUP_IDS.OVERRIDE,
+        }];
+      var updateVisibilityGroup = function (groupID) {
+        var radioValue = $('input[type="radio"][name="visibility-group-' + groupID + '"]:checked').val();
+        var groupSetting = {};
+        switch (radioValue.split('-').slice(-1)[0]) {
+          case 'universal':
+            groupSetting.universal = $('#visibility-group-' + groupID + '-value-0').val();
+            break;
+          case 'annotation':
+            groupSetting.metaAnnotationName = $('#visibility-group-' + groupID + '-value-1').val();
+            break;
+          case 'creator':
+            var creatorValue = $('#visibility-group-' + groupID + '-value-2').val();
+            groupSetting.creatorID = parseInt(creatorValue, 10);
+            break;
+        }
+
+        var settingsCopy = SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE].visibility_groups;
+        settingsCopy = $.extend([], settingsCopy);
+        settingsCopy[groupID] = groupSetting;
+        SkeletonAnnotations.TracingOverlay.Settings
+            .set(
+              'visibility_groups',
+              settingsCopy,
+              SETTINGS_SCOPE)
+            .then(function () {
+              SkeletonAnnotations.VisibilityGroups.setGroup(
+                  groupID,
+                  SkeletonAnnotations.TracingOverlay.Settings.session.visibility_groups[groupID]);
+
+              // Redraw all overlays
+              project.getStackViewers().forEach(function(sv) {
+                var overlay = SkeletonAnnotations.getTracingOverlay(sv.getId());
+                if (overlay) {
+                  overlay.redraw(true);
+                }
+              });
+            });
+      };
+
+      visibilityGroups.forEach(function (group) {
+        var scopedSettings = SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE].visibility_groups[group.id];
+
+        var groupRadioControl = CATMAID.DOM.createRadioSetting(
+              'visibility-group-' + group.id,
+              [{
+                id: 'visibility-group-' + group.id + '-universal',
+                desc: 'Universal match',
+                checked: scopedSettings.hasOwnProperty('universal')
+              },{
+                id: 'visibility-group-' + group.id + '-meta-annotation',
+                desc: 'Match meta-annotation',
+                checked: scopedSettings.hasOwnProperty('metaAnnotationName')
+              },{
+                id: 'visibility-group-' + group.id + '-creator',
+                desc: 'Match by creator',
+                checked: scopedSettings.hasOwnProperty('creatorID')
+              }],
+              null,
+              function () {
+                updateVisibilityGroup(group.id);
+              }).addClass('setting');
+
+        groupRadioControl.children().each(function (i, radio) {
+          var select;
+          var checkRadioOnChange = function (name) {
+            return function () {
+              $('#visibility-group-' + group.id + '-' + name)
+                  .prop('checked', true)
+                  .trigger('change');
+            };
+          };
+          switch (i) {
+            case 0:
+              var selected = scopedSettings.hasOwnProperty('universal') ?
+                scopedSettings.universal : 'none';
+              select = CATMAID.DOM.createSelectSetting(
+                    '',
+                    {'All skeletons': 'all', 'No skeletons': 'none'},
+                    null,
+                    checkRadioOnChange('universal'),
+                    selected);
+              select = select.children('label').children('select');
+              break;
+            case 1:
+              var selected = scopedSettings.hasOwnProperty('metaAnnotationName') ?
+                scopedSettings.metaAnnotationName : null;
+              select = $('<input/>').attr('type', 'text')
+                  .addClass("ui-corner-all").val(selected);
+              select.change(checkRadioOnChange('meta-annotation'));
+              select.autocomplete({
+                source: CATMAID.annotations.getAllNames()
+              });
+              break;
+            case 2:
+              var selected = scopedSettings.hasOwnProperty('creatorID') ?
+                scopedSettings.creatorID : null;
+              var users = CATMAID.User.all();
+              users = Object.keys(users)
+                  .map(function (userID) { return users[userID]; })
+                  .sort(CATMAID.User.displayNameCompare)
+                  .reduce(function (o, user) {
+                    o[user.getDisplayName()] = user.id;
+                    return o;
+                  }, {});
+              select = CATMAID.DOM.createSelectSetting(
+                    '',
+                    users,
+                    null,
+                    checkRadioOnChange('creator'),
+                    selected);
+              select = select.children('label').children('select');
+              break;
+          }
+
+          select.attr('id', 'visibility-group-' + group.id + '-value-' + i);
+          $(radio).append(select);
+        });
+
+        groupRadioControl.prepend($('<p/>')
+              .addClass('help')
+              .append(group.description));
+        groupRadioControl.prepend($('<h4/>').append(group.name));
+
+        dsVisibilityGroupsRadioWrapper.append(groupRadioControl);
+      });
+
+      dsVisibilityGroups.append(wrapSettingsControl(
+          dsVisibilityGroupsRadioWrapper,
+          SkeletonAnnotations.TracingOverlay.Settings,
+          'visibility_groups',
+          SETTINGS_SCOPE,
+          function () {
+            SkeletonAnnotations.TracingOverlay.Settings.session.visibility_groups.forEach(function (group, i) {
+              SkeletonAnnotations.VisibilityGroups.setGroup(i, group);
+            });
+
+            project.getStackViewers().forEach(function(sv) {
+              var overlay = SkeletonAnnotations.getTracingOverlay(sv.getId());
+              if (overlay) {
+                overlay.redraw(true);
+              }
+            });
+          }));
+
+
       // Reviewer whitelist settings
       ds = CATMAID.DOM.addSettingsContainer(container, "Reviewer Team");
       // Add explanatory text

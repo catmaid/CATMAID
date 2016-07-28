@@ -46,6 +46,7 @@ var SkeletonAnnotations = {
 
 };
 
+
 /**
  * If the active node is deleted, the active node will be changed to the passed
  * in parent (if any). Otherwise, the active node just becomes unselected.
@@ -742,7 +743,11 @@ SkeletonAnnotations.TracingOverlay.Settings = new CATMAID.Settings(
           },
           leaf_node_color: {
             default: "rgb(128,0,0)",
-          }
+          },
+          // Visibility groups
+          visibility_groups: {
+            default: [{universal: 'none'}, {universal: 'none'}, {universal: 'none'}]
+          },
         },
         migrations: {}
       });
@@ -1241,7 +1246,7 @@ SkeletonAnnotations.TracingOverlay.prototype.getClosestNode = function (
       xdiff = x - node.x;
       ydiff = y - node.y;
       // Must discard those not within current z
-      if (!node.shouldDisplay()) continue;
+      if (!node.isVisible()) continue;
       distsq = xdiff*xdiff + ydiff*ydiff;
       if (distsq < mindistsq) {
         mindistsq = distsq;
@@ -1273,7 +1278,7 @@ SkeletonAnnotations.TracingOverlay.prototype.findAllNodesWithinRadius = function
       ydiff = y - this.pix2physY(node.z, node.y, node.x);
       zdiff = z - this.pix2physZ(node.z, node.y, node.x);
       distsq = xdiff*xdiff + ydiff*ydiff + zdiff*zdiff;
-      if (distsq < radiussq && (!respectHiddenNodes || node.shouldDisplay()))
+      if (distsq < radiussq && (!respectHiddenNodes || node.isVisible()))
         return true;
     }
 
@@ -4388,3 +4393,94 @@ SkeletonAnnotations.Tag = new (function() {
     }
   };
 })();
+
+
+SkeletonAnnotations.VisibilityGroups = new (function () {
+  this.GROUP_IDS = {
+    OVERRIDE: 0,
+    GROUP_1: 1,
+    GROUP_2: 2,
+  };
+
+  this.GROUP_CLASSES = ['visibilityOverride', 'visibilityGroup1', 'visibilityGroup2'];
+
+  this.groups = Object.keys(this.GROUP_IDS).map(function (groupName, groupID) {
+    return {
+      metaAnnotationName: null,
+      creatorID: null,
+      skeletonIDs: new Set(),
+      matchAll: false,
+      cssRule: null,
+      callback: (function (metaAnnotationName, skeletonIDs) {
+        this.groups[groupID].skeletonIDs = skeletonIDs;
+      }).bind(this),
+    };
+  }, this);
+
+  this.refresh = function () {
+    for (var n = 0; n < this.groups.length; ++n)
+      for (var i in document.styleSheets)
+        for (var j in document.styleSheets[i].rules)
+          if (document.styleSheets[i].rules[j].selectorText == 'svg .' + this.GROUP_CLASSES[n])
+            this.groups[n].cssRule = document.styleSheets[i].rules[j];
+
+    this.groups.forEach(function (group) {
+      if (group.metaAnnotationName) {
+        CATMAID.annotatedSkeletons.refresh(group.metaAnnotationName, true);
+      }
+    });
+  };
+
+  this.setGroup = function (groupID, groupSetting) {
+    var group = this.groups[groupID];
+
+    if (group.metaAnnotationName) {
+      CATMAID.annotatedSkeletons.unregister(group.metaAnnotationName, group.callback, true);
+    }
+
+    group.skeletonIDs = new Set();
+    group.metaAnnotationName = null;
+    group.creatorID = null;
+    group.matchAll = false;
+    if (groupSetting.hasOwnProperty('metaAnnotationName')) {
+      group.metaAnnotationName = groupSetting.metaAnnotationName;
+      CATMAID.annotatedSkeletons.register(group.metaAnnotationName, group.callback, true);
+    } else if (groupSetting.hasOwnProperty('creatorID')) {
+      group.creatorID = groupSetting.creatorID;
+    } else if (groupSetting.hasOwnProperty('universal')) {
+      group.matchAll = groupSetting.universal === 'all';
+    }
+  };
+
+  this.isNodeInGroup = function (groupID, node) {
+    var group = this.groups[groupID];
+
+    if (group.matchAll) return true;
+    else if (group.creatorID) return node.user_id === group.creatorID;
+    else return group.skeletonIDs.has(node.skeleton_id);
+  };
+
+  this.areGroupsVisible = function (groupIDs) {
+    if (groupIDs.length === 0) return true;
+    return this.groups[groupIDs.slice(-1)].cssRule.style.display !== 'none';
+  };
+
+  this.toggle = function (groupID) {
+    var rule = this.groups[groupID].cssRule;
+    if (typeof rule === 'undefined') return;
+
+    var hidden = rule.style.display === 'none';
+    rule.style.display = hidden ? 'inherit' : 'none';
+  };
+
+})();
+
+// TODO: this results in annotations being updated multiple times.
+CATMAID.Init.on(CATMAID.Init.EVENT_PROJECT_CHANGED, function () {
+  CATMAID.annotations.update(function () {
+    SkeletonAnnotations.VisibilityGroups.refresh();
+    SkeletonAnnotations.TracingOverlay.Settings.session.visibility_groups.forEach(function (group, i) {
+      SkeletonAnnotations.VisibilityGroups.setGroup(i, group);
+    });
+  });
+});

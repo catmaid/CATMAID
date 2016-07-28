@@ -295,8 +295,7 @@
           this.c = this.overlayGlobals.paper.select('.nodes').append('use')
                               .attr('xlink:href', '#' + this.USE_HREF + this.hrefSuffix)
                               .attr('x', this.x)
-                              .attr('y', this.y)
-                              .classed('overlay-node', true);
+                              .attr('y', this.y);
 
           ptype.mouseEventManager.attach(this.c, this.type);
         }
@@ -310,6 +309,11 @@
           'stroke-width': this.CATCH_RADIUS*2,// Use a large transparent stroke to
           'stroke-opacity': 0                 // catch mouse events near the circle.
         });
+
+        this.c.attr('class', this.getVisibilityGroups().reduce(function (c, groupID) {
+          return c + ' ' + SkeletonAnnotations.VisibilityGroups.GROUP_CLASSES[groupID];
+        }, ''));
+
         this.c.datum(this.id);
 
         if ("hidden" === this.c.attr('visibility')) this.c.show();
@@ -349,6 +353,11 @@
 
       this.shouldDisplay = function() {
         return this.zdiff >= 0 && this.zdiff < 1;
+      };
+
+      this.isVisible = function () {
+        return this.shouldDisplay() &&
+            SkeletonAnnotations.VisibilityGroups.areGroupsVisible(this.getVisibilityGroups());
       };
 
       /** Whether the user has edit permissions for this node. */
@@ -412,6 +421,19 @@
         return this.zdiff >= 0 && this.zdiff < 1 &&
             (!this.overlayGlobals.hideOtherSkeletons ||
              this.overlayGlobals.skeletonDisplayModels.hasOwnProperty(this.skeleton_id));
+      };
+
+      this.getVisibilityGroups = function () {
+        if (this.visibilityGroups) return this.visibilityGroups;
+
+        this.visibilityGroups = [];
+
+        for (var groupID = SkeletonAnnotations.VisibilityGroups.groups.length - 1; groupID >= 0; groupID--) {
+          if (SkeletonAnnotations.VisibilityGroups.isNodeInGroup(groupID, this))
+            this.visibilityGroups.push(groupID);
+        }
+
+        return this.visibilityGroups;
       };
 
       /**
@@ -568,6 +590,10 @@
             'stroke-width': this.EDGE_WIDTH
         });
 
+        this.line.attr('class', this.getVisibilityGroups().reduce(function (c, groupID) {
+          return c + ' ' + SkeletonAnnotations.VisibilityGroups.GROUP_CLASSES[groupID];
+        }, ''));
+
         // May be hidden if the node was reused
         this.line.show();
 
@@ -629,6 +655,7 @@
         this.type = null;
         this.children = null;
         this.connectors = null;
+        this.visibilityGroups = null;
         if (this.c) {
           ptype.mouseEventManager.forget(this.c, SkeletonAnnotations.TYPE_NODE);
           this.c.remove();
@@ -659,8 +686,10 @@
         this.children = {};
         this.numberOfChildren = 0;
         this.connectors = {};
+        this.visibilityGroups = null;
         if (this.c) {
           this.c.datum(null);
+          this.c.attr('class', null);
           this.c.hide();
         }
         if (this.radiusGraphics) {
@@ -668,6 +697,7 @@
           this.radiusGraphics = null;
         }
         if (this.line) {
+          this.line.attr('class', null);
           this.line.hide();
         }
         if (this.number_text) {
@@ -684,6 +714,7 @@
         this.children = {};
         this.numberOfChildren = 0;
         this.connectors = {};
+        this.visibilityGroups = null;
         this.radius = radius; // the radius as stored in the database
         this.x = x;
         this.y = y;
@@ -909,6 +940,39 @@
       this.linkGroups = ['pregroup', 'postgroup', 'gjgroup', 'unidirgroup'];
       this.lineGroups = ['preLines', 'postLines', 'gjLines', 'undirLines'];
 
+      this.getVisibilityGroups = function () {
+        if (this.visibilityGroups) return this.visibilityGroups;
+
+        this.visibilityGroups = [];
+
+        var groupBooleans = Array(SkeletonAnnotations.VisibilityGroups.groups.length).fill(false);
+        var groupCounts = Array(SkeletonAnnotations.VisibilityGroups.groups.length).fill(0);
+        for (var groupID = SkeletonAnnotations.VisibilityGroups.groups.length - 1; groupID >= 0; groupID--) {
+          groupBooleans[groupID] = SkeletonAnnotations.VisibilityGroups.isNodeInGroup(groupID, this);
+        }
+
+        var overrideID = SkeletonAnnotations.VisibilityGroups.GROUP_IDS.OVERRIDE;
+
+        // For hidden groups, the connector is in the group if *all* linked
+        // treenodes are in the group. The connector has the override group
+        // if *any* linked treenode is in the override group.
+        var links = this.getLinks();
+        links.forEach(function (link) {
+          link.treenode.getVisibilityGroups().forEach(function (groupID) {
+            groupCounts[groupID]++;
+          });
+        });
+
+        for (var groupID = SkeletonAnnotations.VisibilityGroups.groups.length - 1; groupID >= 0; groupID--) {
+          if (groupBooleans[groupID] || (
+                groupID === overrideID ?
+                (groupCounts[groupID] > 0) : (groupCounts[groupID] === links.length)))
+            this.visibilityGroups.push(groupID);
+        }
+
+        return this.visibilityGroups;
+      };
+
       /**
        * Get al links of a specific connector group or an empty list.
        */
@@ -967,6 +1031,7 @@
           ptype.mouseEventManager.forget(this.c, SkeletonAnnotations.TYPE_CONNECTORNODE);
           this.c.remove();
         }
+        this.visibilityGroups = null;
         this.subtype = null;
         this.pregroup = null;
         this.postgroup = null;
@@ -984,6 +1049,7 @@
         this.id = this.DISABLED;
         if (this.c) {
           this.c.datum(null);
+          this.c.attr('class', null);
           this.c.hide();
         }
         this.subtype = null;
@@ -1079,6 +1145,7 @@
         this.y = y;
         this.z = z;
         this.zdiff = zdiff;
+        this.visibilityGroups = null;
         this.confidence = confidence;
         this.subtype = subtype;
         this.edition_time = edition_time;
@@ -1634,6 +1701,9 @@
       };
 
       this.init = function(connector, node, confidence, is_pre) {
+        this.line.attr('class', connector.getVisibilityGroups().reduce(function (c, groupID) {
+          return c + ' ' + SkeletonAnnotations.VisibilityGroups.GROUP_CLASSES[groupID];
+        }, ''));
         this.catcher.datum({connector_id: connector.id, treenode_id: node.id, is_pre: is_pre});
         if (1 == is_pre) {
           this.update(node.x, node.y, connector.x, connector.y, is_pre, confidence, connector.NODE_RADIUS*node.scaling);
@@ -1721,7 +1791,8 @@
                    'font-size': this.confidenceFontSize,
                    'text-anchor': 'middle',
                    'alignment-baseline': 'middle',
-                   fill: fillColor})
+                   fill: fillColor,
+                   class: this.line.attr('class')})
             .text(""+confidence);
 
         return text;

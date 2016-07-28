@@ -1090,6 +1090,19 @@
       }
     }));
 
+    this.addAction(new CATMAID.Action({
+      helpText: "Toggle display of skeletons in visibility group 1 (<kbd>Shift</kbd>: visibility group 2)",
+      keyShortcuts: { 'HOME': [ 36 ] },
+      run: function (e) {
+        if (e.shiftKey) {
+          SkeletonAnnotations.VisibilityGroups.toggle(SkeletonAnnotations.VisibilityGroups.GROUP_IDS.GROUP_2);
+        } else {
+          SkeletonAnnotations.VisibilityGroups.toggle(SkeletonAnnotations.VisibilityGroups.GROUP_IDS.GROUP_1);
+        }
+        return true;
+      }
+    }));
+
 
     var keyCodeToAction = CATMAID.getKeyCodeToActionMap(actions);
 

@@ -730,7 +730,7 @@
 
         if (this.c) {
           this.c.datum(id);
-          if (0 !== zdiff) {
+          if (!this.shouldDisplay()) {
             this.c.hide();
           } else {
             this.c.attr({x: x, y: y});

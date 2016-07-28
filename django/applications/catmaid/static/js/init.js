@@ -125,6 +125,17 @@ var project;
     this.init(options);
   };
 
+  Client.Settings = new CATMAID.Settings(
+    'client-settings',
+    {
+      version: 0,
+      entries: {
+        table_page_length_options: {
+          default: [25, 100, 500, 2000, -1]
+        }
+      }
+    });
+
   // The front end's root window. This should eventually become part of Client,
   // it is already initialized by it.
   CATMAID.rootWindow = null;

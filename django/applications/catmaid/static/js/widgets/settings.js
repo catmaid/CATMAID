@@ -160,21 +160,26 @@
         CATMAID.focusBehavior = parseInt(this.value, 10);
       });
 
-      ds.append(CATMAID.DOM.createInputSetting('Table page length options',
-            CATMAID.pageLengthOptions.join(', '), 'A list of numbers, ' +
-            'representing page length options that nearly all tables will use. ' +
-            'A value of -1 stands for "All values". Widgets have to be reloaded ' +
-            'to respect setting changes.', function() {
-              var newOptions = this.value.split(',')
-                .map(CATMAID.tools.trimString)
-                .map(Number);
-              try {
-                CATMAID.pageLengthOptions = newOptions;
-                CATMAID.msg("Success", "Pagination options updated");
-              } catch (e) {
-                CATMAID.msg("Warning: invalid value", e.message ? e.message : e);
-              }
-            }));
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createInputSetting(
+              'Table page length options',
+              CATMAID.Client.Settings[SETTINGS_SCOPE].table_page_length_options,
+              'A list of numbers, representing page length options that ' +
+              'nearly all tables will use. A value of -1 stands for "All ' +
+              'values". Widgets have to be reloaded to respect setting changes.',
+              function () {
+                var newOptions = this.value.split(',')
+                  .map(CATMAID.tools.trimString)
+                  .map(Number);
+                CATMAID.Client.Settings
+                  .set('table_page_length_options', newOptions, SETTINGS_SCOPE)
+                  .catch(function(e) {
+                    CATMAID.msg("Warning: invalid value", e.message ? e.message : e);
+                  });
+              }),
+          CATMAID.Client.Settings,
+          'table_page_length_options',
+          SETTINGS_SCOPE));
     };
 
     /**

@@ -111,19 +111,19 @@ window.onbeforeunload = function() {
     }
   });
 
-  var isNoInterger = function(v) { return !Number.isInteger(v); };
-  var pageLengthOptions = [25, 100, 500, 2000, -1];
+  /**
+   * Convenience wrappers for table page length settings.
+   */
   Object.defineProperty(CATMAID, 'pageLengthOptions', {
-    get: function() { return pageLengthOptions.slice(); },
-    set: function(newValue) {
-      if (!(newValue instanceof Array) || newValue.some(isNoInterger)) {
-        throw new CATMAID.ValueError('Please provide an array of integer numbers');
-      }
-      pageLengthOptions = newValue.slice();
+    get: function() {
+      return CATMAID.Client.Settings.session.table_page_length_options;
     }
   });
   Object.defineProperty(CATMAID, 'pageLengthLabels', {
-    get: function() { return CATMAID.getPageLengthLabels(pageLengthOptions); }
+    get: function() {
+      var opts = CATMAID.Client.Settings.session.table_page_length_options;
+      return CATMAID.getPageLengthLabels(opts);
+    }
   });
 
   /**

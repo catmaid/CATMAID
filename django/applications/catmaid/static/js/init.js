@@ -136,6 +136,27 @@ var project;
       }
     });
 
+  CATMAID.Init.on(CATMAID.Init.EVENT_PROJECT_CHANGED, function () {
+    CATMAID.Client.Settings
+        .load()
+        .then(function () {
+          /**
+           * Convenience wrappers for table page length settings.
+           */
+          Object.defineProperty(CATMAID, 'pageLengthOptions', {
+            get: function() {
+              return CATMAID.Client.Settings.session.table_page_length_options;
+            }
+          });
+          Object.defineProperty(CATMAID, 'pageLengthLabels', {
+            get: function() {
+              var opts = CATMAID.Client.Settings.session.table_page_length_options;
+              return CATMAID.getPageLengthLabels(opts);
+            }
+          });
+        });
+  });
+
   // The front end's root window. This should eventually become part of Client,
   // it is already initialized by it.
   CATMAID.rootWindow = null;

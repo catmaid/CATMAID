@@ -112,21 +112,6 @@ window.onbeforeunload = function() {
   });
 
   /**
-   * Convenience wrappers for table page length settings.
-   */
-  Object.defineProperty(CATMAID, 'pageLengthOptions', {
-    get: function() {
-      return CATMAID.Client.Settings.session.table_page_length_options;
-    }
-  });
-  Object.defineProperty(CATMAID, 'pageLengthLabels', {
-    get: function() {
-      var opts = CATMAID.Client.Settings.session.table_page_length_options;
-      return CATMAID.getPageLengthLabels(opts);
-    }
-  });
-
-  /**
    * Return a string version of the input array and replace occurences of "-1"
    * with "All". This is usefule for page length lists.
    */

@@ -2020,7 +2020,7 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
 
   // Populate ConnectorNodes
   jso[1].forEach(function(a, index, array) {
-    var links = a[5];
+    var links = a[7];
     // Determine the connector node type. For now eveything with no or only
     // pre or post treenodes is treated as a synapse. If there are only
     // non-directional connectors, an abutting or gap junction connector is assumed.
@@ -2044,16 +2044,14 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
       }
     }
     // a[0]: ID, a[1]: x, a[2]: y, a[3]: z, a[4]: confidence,
-    // a[5]: presynaptic nodes as array of arrays with treenode id
-    // and confidence, a[6]: postsynaptic nodes as array of arrays with treenode id
-    // and confidence, a[7]: gap junction nodes as array of arrays with treenode id,
-    // a[8]: undirected nodes as array of arrays with treenode id, a[9]: user_id
+    // a[5]: edition time, a[6]: user_id
+    // a[7]: treenode links
     var z = this.stackViewer.primaryStack.projectToUnclampedStackZ(a[3], a[2], a[1]);
     this.nodes[a[0]] = this.graphics.newConnectorNode(
       a[0],
       this.stackViewer.primaryStack.projectToUnclampedStackX(a[3], a[2], a[1]),
       this.stackViewer.primaryStack.projectToUnclampedStackY(a[3], a[2], a[1]),
-      z, z - this.stackViewer.z, a[4], subtype, a[6], a[7]);
+      z, z - this.stackViewer.z, a[4], subtype, a[5], a[6]);
   }, this);
 
   // Disable any unused instances
@@ -2085,9 +2083,9 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
   jso[1].forEach(function(a, index, array) {
     // a[0] is the ID of the ConnectorNode
     var connector = this.nodes[a[0]];
-    // a[5]: all relations, an array of arrays, containing treenode_id,
+    // a[7]: all relations, an array of arrays, containing treenode_id,
     // relation_id, tc_confidence
-    a[5].forEach(function(r, i, ar) {
+    a[7].forEach(function(r, i, ar) {
       // r[0]: tnid, r[1]: relation ID r[2]: tc_confidence
       var tnid = r[0];
       var node = this.nodes[tnid];

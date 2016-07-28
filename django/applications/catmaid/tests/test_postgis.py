@@ -82,6 +82,12 @@ class PostGISTests(TestCase):
             self.assertTrue(tn in non_postgis_nodes[0])
 
         for c in non_postgis_nodes[1]:
+            c[7] = sorted(c[7])
+
+        for c in postgis_nodes[1]:
+            c[7] = sorted(c[7])
+
+        for c in non_postgis_nodes[1]:
             self.assertTrue(c in postgis_nodes[1])
 
         for c in postgis_nodes[1]:

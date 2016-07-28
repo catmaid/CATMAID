@@ -122,13 +122,13 @@ def get_connector_nodes_classic(cursor, params, treenode_ids, missing_connector_
             c.location_y,
             c.location_z,
             c.confidence,
-            tc.relation_id,
+            c.edition_time,
+            c.user_id,
             tc.treenode_id,
+            tc.relation_id,
             tc.confidence,
             tc.edition_time,
-            tc.id,
-            c.edition_time,
-            c.user_id
+            tc.id
         FROM treenode_connector tc
         INNER JOIN connector c ON (tc.connector_id = c.id)
         INNER JOIN UNNEST(%s) vals(v) ON tc.treenode_id = v
@@ -146,15 +146,13 @@ def get_connector_nodes_classic(cursor, params, treenode_ids, missing_connector_
             connector.location_y,
             connector.location_z,
             connector.confidence,
-            treenode_connector.relation_id,
+            connector.edition_time,
+            connector.user_id,
             treenode_connector.treenode_id,
+            treenode_connector.relation_id,
             treenode_connector.confidence,
             treenode_connector.edition_time,
-            treenode_connector.id,
-            connector.edition_time,
-            treenode_connector.id,
-            connector.edition_time,
-            connector.user_id
+            treenode_connector.id
         FROM connector LEFT OUTER JOIN treenode_connector
                        ON connector.id = treenode_connector.connector_id
         WHERE connector.project_id = %(project_id)s
@@ -271,13 +269,13 @@ def get_connector_nodes_postgis(cursor, params, treenode_ids, missing_connector_
         c.location_y,
         c.location_z,
         c.confidence,
-        tc.relation_id,
+        c.edition_time,
+        c.user_id,
         tc.treenode_id,
+        tc.relation_id,
         tc.confidence,
         tc.edition_time,
-        tc.id,
-        c.edition_time,
-        c.user_id
+        tc.id
     FROM (SELECT DISTINCT tce.id AS tce_id
          FROM treenode_connector_edge tce
          WHERE tce.edge &&& 'LINESTRINGZ(%(left)s %(bottom)s %(z2)s,
@@ -302,13 +300,13 @@ def get_connector_nodes_postgis(cursor, params, treenode_ids, missing_connector_
         c.location_y,
         c.location_z,
         c.confidence,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
         c.edition_time,
-        c.user_id
+        c.user_id,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL
     FROM (SELECT DISTINCT cg.id AS cg_id
          FROM connector_geom cg
          WHERE cg.geom &&& 'LINESTRINGZ(%(left)s %(bottom)s %(z2)s,
@@ -386,12 +384,14 @@ def node_list_tuples_query(params, project_id, atnid, atntype, include_labels, t
         links = defaultdict(list)
         used_relations = set()
         seen_links = set()
+
         for row in crows:
             # Collect treeenode IDs related to connectors but not yet in treenode_ids
             # because they lay beyond adjacent sections
-            tnid = row[6] # The tnid column is index 7 (see SQL statement above)
             cid = row[0] # connector ID
-            tcid = row[9] # treenode connector ID
+            tnid = row[7] # treenode ID
+            tcid = row[11] # treenode connector ID
+
             if tnid is not None:
                 if tcid in seen_links:
                     continue
@@ -399,24 +399,19 @@ def node_list_tuples_query(params, project_id, atnid, atntype, include_labels, t
                     missing_treenode_ids.add(tnid)
                 seen_links.add(tcid)
                 # Collect relations between connectors and treenodes
-                # row[5]: treenode_relation_id
-                # row[6]: treenode_id (tnid above)
-                # row[7]: tc_confidence
-                # row[8]: tc_edition_time
-                # row[9]: tc_id
-                links[cid].append((tnid, row[5], row[7], row[8], tcid))
-                used_relations.add(row[5])
+                # row[7]: treenode_id (tnid above)
+                # row[8]: treenode_relation_id
+                # row[9]: tc_confidence
+                # row[10]: tc_edition_time
+                # row[11]: tc_id
+                links[cid].append(row[7:12])
+                used_relations.add(row[8])
 
             # Collect unique connectors
             if cid not in connector_ids:
-                connectors.append(row)
+                connectors.append(row[0:7] + (links[cid],))
                 connector_ids.add(cid)
 
-        # Fix connectors to contain only the relevant entries, plus the relations
-        for i in xrange(len(connectors)):
-            c = connectors[i]
-            cid = c[0]
-            connectors[i] = (cid, c[1], c[2], c[3], c[4], links[cid], c[10], c[11])
 
         # Fetch missing treenodes. These are related to connectors
         # but not in the bounding box of the field of view.

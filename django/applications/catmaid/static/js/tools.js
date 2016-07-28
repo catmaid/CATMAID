@@ -500,4 +500,20 @@ CATMAID.tools = CATMAID.tools || {};
     return str.trim();
   };
 
+  /**
+   * Predicate for whether two ES6 Sets have equal elements. O(n log n),
+   * because of the bizarre and incomplete spec.
+   */
+  tools.areSetsEqual = function (a, b) {
+    if (a === b) return true;
+    if (!a || !b) return false;
+    if (a.size !== b.size) return false;
+
+    for (var member of a) {
+      if (!b.has(member)) return false;
+    }
+
+    return true;
+  };
+
 })(CATMAID.tools);

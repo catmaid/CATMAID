@@ -546,13 +546,20 @@ add_history_functions_sql = """
                 history_trigger_name_regular =
                     get_history_update_trigger_name_regular(live_table_name);
 
-                EXECUTE format(
-                    'CREATE TRIGGER %1$I '
-                    'AFTER UPDATE OR DELETE ON %2$s FOR EACH ROW '
-                    'EXECUTE PROCEDURE update_history_of_row_regular(%3$s, %4$s, %5$s, %6$s)',
-                    history_trigger_name_regular, history_info.live_table_name, 'sys_period',
-                    history_info.history_table_name, history_info.live_table_pkey_column,
-                    history_info.live_table_time_column);
+                EXECUTE (
+                    SELECT format(
+                        'CREATE TRIGGER %1$I '
+                        'AFTER UPDATE OR DELETE ON %2$s FOR EACH ROW '
+                        'EXECUTE PROCEDURE update_history_of_row_regular('
+                            '%3$s, %4$s, %5$s, %6$s, ''%7$s'', ''%8$s'')',
+                        history_trigger_name_regular, history_info.live_table_name, 'sys_period',
+                        history_info.history_table_name, history_info.live_table_pkey_column,
+                        history_info.live_table_time_column,
+                        string_agg(quote_ident(cti.column_name), ','),
+                        string_agg('$1.' || quote_ident(cti.column_name), ','))
+                    FROM catmaid_table_info cti
+                    WHERE cti.rel_oid = history_info.live_table_name
+                );
             ELSE
                 -- Install time table based triggers if a time time table is provided,
                 -- expect time column to be available from it.
@@ -668,15 +675,11 @@ add_history_functions_sql = """
 
         -- Insert new historic data into history table, based on the
         -- currently available columns in the updated table.
-        EXECUTE (
-            SELECT format(
-                'INSERT INTO %1$I (%2$s,%3$s,%4$s) '
-                'SELECT %5$s, tstzrange(LEAST(%6$s, current_timestamp), current_timestamp), txid_current()',
-                TG_ARGV[1], string_agg(quote_ident(column_name), ','), TG_ARGV[0], 'exec_transaction_id',
-                string_agg('$1.' || quote_ident(column_name), ','), '$1.' || TG_ARGV[3])
-            FROM   information_schema.columns
-            WHERE  table_name   = TG_TABLE_NAME    -- table name, case sensitive
-            AND    table_schema = TG_TABLE_SCHEMA  -- schema name, case sensitive
+        EXECUTE(format(
+            'INSERT INTO %1$I (%2$s,%3$s,%4$s) '
+            'SELECT %5$s, tstzrange(LEAST($1.%6$s, current_timestamp), current_timestamp), txid_current() ',
+            TG_ARGV[1], TG_ARGV[4], TG_ARGV[0], 'exec_transaction_id',
+            TG_ARGV[5], TG_ARGV[3])
         ) USING OLD;
 
         -- No return value is expected if run

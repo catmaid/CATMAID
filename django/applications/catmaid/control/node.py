@@ -234,8 +234,6 @@ def get_treenodes_postgis(cursor, params):
         t2.edition_time,
         t2.user_id
     FROM
-      treenode t1,
-      treenode t2,
       (SELECT te.id
          FROM treenode_edge te
          WHERE te.edge &&& 'LINESTRINGZ(%(left)s %(bottom)s %(z2)s,
@@ -246,11 +244,9 @@ def get_treenodes_postgis(cursor, params):
                         %(left)s %(top)s %(halfz)s)')), %(halfzdiff)s)
            AND te.project_id = %(project_id)s
       ) edges(edge_child_id)
-    WHERE
-          t1.project_id = %(project_id)s
-      AND (   (t1.parent_id = t2.id)
-           OR (t1.parent_id IS NULL AND t1.id = t2.id))
-      AND edge_child_id = t1.id
+    JOIN treenode t1 ON edge_child_id = t1.id
+    LEFT JOIN treenode t2 ON t2.id = t1.parent_id
+    WHERE t1.project_id = %(project_id)s
     LIMIT %(limit)s
     ''', params)
 
@@ -353,7 +349,7 @@ def node_list_tuples_query(params, project_id, atnid, atntype, include_labels, t
                 treenode_ids.add(t1id)
                 treenodes.append(row[0:10])
             t2id = row[10]
-            if t2id not in treenode_ids:
+            if t2id and t2id not in treenode_ids:
                 treenode_ids.add(t2id)
                 treenodes.append(row[10:20])
 

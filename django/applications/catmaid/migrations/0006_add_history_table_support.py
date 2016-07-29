@@ -551,12 +551,17 @@ add_history_functions_sql = """
                         'CREATE TRIGGER %1$I '
                         'AFTER UPDATE OR DELETE ON %2$s FOR EACH ROW '
                         'EXECUTE PROCEDURE update_history_of_row_regular('
-                            '%3$s, %4$s, %5$s, %6$s, ''%7$s'', ''%8$s'')',
-                        history_trigger_name_regular, history_info.live_table_name, 'sys_period',
-                        history_info.history_table_name, history_info.live_table_pkey_column,
-                        history_info.live_table_time_column,
+                        '''%3$s'')',
+                        history_trigger_name_regular, history_info.live_table_name,
+                        format(
+                        'INSERT INTO %1$I (%2$s,%3$s,%4$s) '
+                        'SELECT %5$s, tstzrange(LEAST($1.%6$s, current_timestamp), current_timestamp), txid_current() ',
+                        history_info.history_table_name,
                         string_agg(quote_ident(cti.column_name), ','),
-                        string_agg('$1.' || quote_ident(cti.column_name), ','))
+                        'sys_period',
+                        'exec_transaction_id',
+                        string_agg('$1.' || quote_ident(cti.column_name), ','),
+                        history_info.live_table_time_column))
                     FROM catmaid_table_info cti
                     WHERE cti.rel_oid = history_info.live_table_name
                 );
@@ -675,12 +680,7 @@ add_history_functions_sql = """
 
         -- Insert new historic data into history table, based on the
         -- currently available columns in the updated table.
-        EXECUTE(format(
-            'INSERT INTO %1$I (%2$s,%3$s,%4$s) '
-            'SELECT %5$s, tstzrange(LEAST($1.%6$s, current_timestamp), current_timestamp), txid_current() ',
-            TG_ARGV[1], TG_ARGV[4], TG_ARGV[0], 'exec_transaction_id',
-            TG_ARGV[5], TG_ARGV[3])
-        ) USING OLD;
+        EXECUTE(TG_ARGV[0]) USING OLD;
 
         -- No return value is expected if run
         RETURN NULL;

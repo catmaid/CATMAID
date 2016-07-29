@@ -272,7 +272,7 @@ def get_connector_nodes_postgis(cursor, params, treenode_ids, missing_connector_
         tc.confidence,
         tc.edition_time,
         tc.id
-    FROM (SELECT DISTINCT tce.id AS tce_id
+    FROM (SELECT tce.id AS tce_id
          FROM treenode_connector_edge tce
          WHERE tce.edge &&& 'LINESTRINGZ(%(left)s %(bottom)s %(z2)s,
                                        %(right)s %(top)s %(z1)s)'
@@ -303,7 +303,7 @@ def get_connector_nodes_postgis(cursor, params, treenode_ids, missing_connector_
         NULL,
         NULL,
         NULL
-    FROM (SELECT DISTINCT cg.id AS cg_id
+    FROM (SELECT cg.id AS cg_id
          FROM connector_geom cg
          WHERE cg.geom &&& 'LINESTRINGZ(%(left)s %(bottom)s %(z2)s,
                                        %(right)s %(top)s %(z1)s)'

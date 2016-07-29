@@ -560,6 +560,11 @@ add_history_functions_sql = """
                 history_update_fn_name =
                     get_history_update_fn_name_regular(live_table_name);
 
+                -- History tables: update entry, coming from either a table update or
+                -- delete statement. Both wil create a new history entry containing the old
+                -- data along with the validity time range [old-time-column,
+                -- current-timestamp). The time information is provided by the live table
+                -- itself, it has to provide the time column.
                 EXECUTE (
                     SELECT format(
                         'CREATE OR REPLACE FUNCTION %1$s()
@@ -570,22 +575,21 @@ add_history_functions_sql = """
 
                             -- Insert new historic data into history table, based on the
                             -- currently available columns in the updated table.
-                            EXECUTE(''%2$s'') USING OLD;
+                            INSERT INTO %2$I (%3$s,%4$s,%5$s)
+                            SELECT %6$s, tstzrange(LEAST(OLD.%7$s, current_timestamp), current_timestamp),
+                            txid_current();
 
                             -- No return value is expected if run
                             RETURN NULL;
                         END;
                         $FN$',
                         history_update_fn_name,
-                        format(
-                        'INSERT INTO %1$I (%2$s,%3$s,%4$s) '
-                        'SELECT %5$s, tstzrange(LEAST($1.%6$s, current_timestamp), current_timestamp), txid_current() ',
                         history_info.history_table_name,
                         string_agg(quote_ident(cti.column_name), ','),
                         'sys_period',
                         'exec_transaction_id',
-                        string_agg('$1.' || quote_ident(cti.column_name), ','),
-                        history_info.live_table_time_column))
+                        string_agg('OLD.' || quote_ident(cti.column_name), ','),
+                        history_info.live_table_time_column)
                     FROM catmaid_table_info cti
                     WHERE cti.rel_oid = history_info.live_table_name
                 );
@@ -694,31 +698,6 @@ add_history_functions_sql = """
         END LOOP;
     END;
     $$;
-
-
-    -- History tables: update entry, coming from either a table update or
-    -- delete statement. Both wil create a new history entry containing the old
-    -- data along with the validity time range [old-time-column,
-    -- current-timestamp). The time information is provided by the live table
-    -- itself, it has to provide the time column. The following arguments are
-    -- passed to this trigger function and are part of the TG_ARGV variable:
-    -- 0: sys_period_column, 1: history_table_name, 2: live_table_pkey_column,
-    -- 3: time_column
-    CREATE OR REPLACE FUNCTION update_history_of_row_regular()
-    RETURNS TRIGGER
-    LANGUAGE plpgsql AS
-    $$
-    BEGIN
-
-        -- Insert new historic data into history table, based on the
-        -- currently available columns in the updated table.
-        EXECUTE(TG_ARGV[0]) USING OLD;
-
-        -- No return value is expected if run
-        RETURN NULL;
-    END;
-    $$;
-
 
     -- History tables: update entry, coming from either a table update or
     -- delete statement. Both wil create a new history entry containing the old

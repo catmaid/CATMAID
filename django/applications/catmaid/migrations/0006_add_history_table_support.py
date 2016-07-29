@@ -52,6 +52,14 @@ add_history_functions_sql = """
 
 
     -- Return the unquoted name of a live table's history table regular update trigger.
+    CREATE OR REPLACE FUNCTION get_history_update_fn_name_regular(live_table_name regclass)
+        RETURNS text AS
+    $$
+        SELECT 'update_history_row_for_' || relname || '_regular' FROM pg_class WHERE oid = $1;
+    $$ LANGUAGE sql STABLE;
+
+
+    -- Return the unquoted name of a live table's history table regular update trigger.
     CREATE OR REPLACE FUNCTION get_history_update_trigger_name_regular(live_table_name regclass)
         RETURNS text AS
     $$
@@ -479,6 +487,8 @@ add_history_functions_sql = """
             get_history_update_trigger_name_regular(live_table_name), live_table_name);
         EXECUTE format('DROP TRIGGER IF EXISTS %I ON %s',
             get_history_update_trigger_name_timetable(live_table_name), live_table_name);
+        EXECUTE format('DROP FUNCTION IF EXISTS %s() CASCADE',
+            get_history_update_fn_name_regular(live_table_name));
 
         -- Remove from created table log
         DELETE FROM catmaid_history_table cht WHERE cht.live_table_name = $1;
@@ -520,6 +530,7 @@ add_history_functions_sql = """
     LANGUAGE plpgsql AS
     $$
     DECLARE
+        history_update_fn_name text;
         history_trigger_name_regular text;
         history_trigger_name_timetable text;
         time_trigger_name name;
@@ -546,13 +557,26 @@ add_history_functions_sql = """
                 history_trigger_name_regular =
                     get_history_update_trigger_name_regular(live_table_name);
 
+                history_update_fn_name =
+                    get_history_update_fn_name_regular(live_table_name);
+
                 EXECUTE (
                     SELECT format(
-                        'CREATE TRIGGER %1$I '
-                        'AFTER UPDATE OR DELETE ON %2$s FOR EACH ROW '
-                        'EXECUTE PROCEDURE update_history_of_row_regular('
-                        '''%3$s'')',
-                        history_trigger_name_regular, history_info.live_table_name,
+                        'CREATE OR REPLACE FUNCTION %1$s()
+                        RETURNS TRIGGER
+                        LANGUAGE plpgsql AS
+                        $FN$
+                        BEGIN
+
+                            -- Insert new historic data into history table, based on the
+                            -- currently available columns in the updated table.
+                            EXECUTE(''%2$s'') USING OLD;
+
+                            -- No return value is expected if run
+                            RETURN NULL;
+                        END;
+                        $FN$',
+                        history_update_fn_name,
                         format(
                         'INSERT INTO %1$I (%2$s,%3$s,%4$s) '
                         'SELECT %5$s, tstzrange(LEAST($1.%6$s, current_timestamp), current_timestamp), txid_current() ',
@@ -564,6 +588,14 @@ add_history_functions_sql = """
                         history_info.live_table_time_column))
                     FROM catmaid_table_info cti
                     WHERE cti.rel_oid = history_info.live_table_name
+                );
+
+                EXECUTE format(
+                    'CREATE TRIGGER %1$I '
+                    'AFTER UPDATE OR DELETE ON %2$s FOR EACH ROW '
+                    'EXECUTE PROCEDURE %3$s()',
+                    history_trigger_name_regular, history_info.live_table_name,
+                    history_update_fn_name
                 );
             ELSE
                 -- Install time table based triggers if a time time table is provided,
@@ -765,7 +797,6 @@ remove_history_functions_sql = """
         live_table_pkey_column text, create_triggers boolean,
         copy_inheritance boolean, sync boolean);
     DROP FUNCTION IF EXISTS drop_history_table(live_table_name regclass);
-    DROP FUNCTION IF EXISTS update_history_of_row_regular();
     DROP FUNCTION IF EXISTS update_history_of_row_timetable();
     DROP FUNCTION IF EXISTS history_table_name(regclass);
     DROP FUNCTION IF EXISTS sync_time_table(regclass, regclass);
@@ -773,6 +804,7 @@ remove_history_functions_sql = """
     DROP FUNCTION IF EXISTS disable_history_tracking_for_table(live_table_name regclass, history_table_name text);
     DROP FUNCTION IF EXISTS enable_history_tracking();
     DROP FUNCTION IF EXISTS disable_history_tracking();
+    DROP FUNCTION IF EXISTS get_history_update_fn_name_regular(live_table_name regclass);
     DROP FUNCTION IF EXISTS get_history_update_trigger_name_regular(live_table_name regclass);
     DROP FUNCTION IF EXISTS get_history_update_trigger_name_timetable(live_table_name regclass);
     DROP FUNCTION IF EXISTS get_time_table_name(live_table_name regclass);

@@ -576,9 +576,9 @@
         this.line.lineTo(parentLocation[0], parentLocation[1]);
         this.line.tint = lineColor;
 
-        this.line.attr('class', this.getVisibilityGroups().reduce(function (c, groupID) {
-          return c + ' ' + SkeletonAnnotations.VisibilityGroups.GROUP_CLASSES[groupID];
-        }, ''));
+        // this.line.attr('class', this.getVisibilityGroups().reduce(function (c, groupID) {
+        //   return c + ' ' + SkeletonAnnotations.VisibilityGroups.GROUP_CLASSES[groupID];
+        // }, ''));
 
         // May be hidden if the node was reused
         this.line.visible = true;

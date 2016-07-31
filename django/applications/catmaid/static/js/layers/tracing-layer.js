@@ -57,7 +57,7 @@
   };
 
   /**
-   * Force redrwar of the tracing layer.
+   * Force redraw of the tracing layer.
    */
   TracingLayer.prototype.forceRedraw = function (completionCallback) {
     this.tracingOverlay.redraw(true, completionCallback);

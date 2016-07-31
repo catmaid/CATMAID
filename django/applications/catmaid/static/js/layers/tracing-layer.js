@@ -27,6 +27,8 @@
       this.stackViewer.getLayersView().appendChild(this.renderer.view);
       this.renderer.view.className = 'sliceTiles';
     }
+
+    this.renderer.plugins.interaction.autoPreventDefault = false;
   }
 
   TracingLayer.prototype = Object.create(CATMAID.PixiLayer.prototype);

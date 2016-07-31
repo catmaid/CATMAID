@@ -190,14 +190,14 @@ SkeletonAnnotations.getTracingOverlay = function(stackViewerId) {
 };
 
 /**
- * Map a D3 paper instance to an overlay.
+ * Map a skeleton elements instance to an overlay.
  */
-SkeletonAnnotations.getTracingOverlayByPaper = function(paper) {
+SkeletonAnnotations.getTracingOverlayBySkeletonElements = function(skeletonElements) {
   var instances = this.TracingOverlay.prototype._instances;
   for (var stackViewerId in instances) {
     if (instances.hasOwnProperty(stackViewerId)) {
       var s = instances[stackViewerId];
-      if (paper === s.paper.node()) {
+      if (skeletonElements === s.graphics) {
         return s;
       }
     }
@@ -628,14 +628,6 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
   this.old_width = stackViewer.viewWidth;
   this.old_height = stackViewer.viewHeight;
 
-  this.view = document.createElement("div");
-  this.view.className = "sliceTracingOverlay";
-  this.view.id = "sliceTracingOverlayId" + stackViewer.getId();
-  this.view.style.zIndex = 5;
-  // Custom cursor for tracing
-  this.view.style.cursor ="url(" + STATIC_URL_JS + "images/svg-circle.cur) 15 15, crosshair";
-  this.view.onmousemove = this.createViewMouseMoveFn(this.stackViewer, this.coords);
-
   this._skeletonDisplaySource = new CATMAID.BasicSkeletonSource(
       'Tracing overlay (' + this.stackViewer.primaryStack.title + ')');
   this._skeletonDisplaySource.unregisterSource();
@@ -655,8 +647,18 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
         this);
   }, this);
 
-  this.graphics = CATMAID.SkeletonElementsFactory.createSkeletonElements(pixiLayer.batchContainer, this._skeletonDisplaySource.skeletonModels);
+  this.graphics = CATMAID.SkeletonElementsFactory.createSkeletonElements(
+      pixiLayer.batchContainer,
+      this._skeletonDisplaySource.skeletonModels);
   this.graphics.setActiveNodeRadiusVisibility(SkeletonAnnotations.TracingOverlay.Settings.session.display_active_node_radius);
+
+  this.view = document.createElement("div");
+  this.view.className = "sliceTracingOverlay";
+  this.view.id = "sliceTracingOverlayId" + stackViewer.getId();
+  this.view.style.zIndex = 5;
+  // Custom cursor for tracing
+  this.view.style.cursor ="url(" + STATIC_URL_JS + "images/svg-circle.cur) 15 15, crosshair";
+  this.view.onmousemove = this.createViewMouseMoveFn(this.stackViewer, this.coords);
 
   // Listen to change and delete events of skeletons
   CATMAID.Skeletons.on(CATMAID.Skeletons.EVENT_SKELETON_CHANGED,
@@ -2317,28 +2319,38 @@ SkeletonAnnotations.TracingOverlay.prototype.whenclicked = function (e) {
 
   var m = CATMAID.ui.getMouse(e, this.view);
 
-  var handled = false;
-  var atn = SkeletonAnnotations.atn;
-  var insert = e.altKey && e.ctrlKey;
-  var link = e.shiftKey;
-  var postLink = e.altKey;
-  // e.metaKey should correspond to the command key on Mac OS
-  var deselect = (!insert && e.ctrlKey) || e.metaKey ||
-    (insert && (null === atn.id || SkeletonAnnotations.TYPE_NODE !== atn.type));
+  // Construct an event mocking the actual click that can be passed to the
+  // tracing overlay. If it is handled there, do nothing here.
+  var eventFields = {};
+  for (var p in e) {
+    eventFields[p] = e[p];
+  }
+  var mockClick = new MouseEvent('mousedown', eventFields);
+  var handled = !this.pixiLayer.renderer.view.dispatchEvent(mockClick);
 
-  if (deselect) {
-    if (null !== atn.id) {
-      CATMAID.statusBar.replaceLast("Deactivated node #" + atn.id);
+  if (!handled) {
+    var atn = SkeletonAnnotations.atn;
+    var insert = e.altKey && e.ctrlKey;
+    var link = e.shiftKey;
+    var postLink = e.altKey;
+    // e.metaKey should correspond to the command key on Mac OS
+    var deselect = (!insert && e.ctrlKey) || e.metaKey ||
+      (insert && (null === atn.id || SkeletonAnnotations.TYPE_NODE !== atn.type));
+
+    if (deselect) {
+      if (null !== atn.id) {
+        CATMAID.statusBar.replaceLast("Deactivated node #" + atn.id);
+      }
+      this.activateNode(null);
+      handled = true;
+    } else {
+      if (!CATMAID.mayEdit()) {
+        CATMAID.statusBar.replaceLast("You don't have permission.");
+        e.stopPropagation();
+        return;
+      }
+      handled = this.createNodeOrLink(insert, link, postLink);
     }
-    this.activateNode(null);
-    handled = true;
-  } else {
-    if (!CATMAID.mayEdit()) {
-      CATMAID.statusBar.replaceLast("You don't have permission.");
-      e.stopPropagation();
-      return;
-    }
-    handled = this.createNodeOrLink(insert, link, postLink);
   }
 
   if (handled) {

@@ -1,3 +1,6 @@
+import numpy as np
+import scipy.stats as stats
+
 from django.db import connection
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
@@ -38,11 +41,31 @@ class Command(BaseCommand):
             self.stdout.write('No test views found')
             return
 
-        results = test.run_tests(views)
+        n_repeat = getattr(settings, 'PERFORMANCETESTS_TEST_REPEAT', 0)
+
+        results, repeat_runs = test.run_tests_and_repeat(views, n_repeat)
+
+        # Calculate std. deviation and std. error
+        std_dev = []
+        std_err = []
+        if repeat_runs:
+            self.stdout.write("Calculating average timings")
+            n_samples = 1 + len(results)
+            for n,r in enumerate(results):
+                timings = [r.time] + [rr[n].time for rr in repeat_runs]
+                r.time = sum(timings) / n_samples
+                std = np.std(timings, ddof=1)
+                sem = stats.sem(timings, axis=None, ddof=1)
+                std_dev.append(std)
+                std_err.append(sem)
+        else:
+            std_dev = ("-",) * len(results)
+            std_err = ("-",) * len(results)
 
         # Print and optionally save all results
-        for r in results:
-            self.stdout.write("URL: %s Time: %sms" % (r.view.url, r.time))
+        for i,r in enumerate(results):
+            self.stdout.write("URL: %s Time: %sms N: %s SD: %s SE: %s" % (
+                r.view.url, r.time, 1 + n_repeat, std_dev[i], std_err[i]))
 
             if options['saveresults']:
                 r.save()

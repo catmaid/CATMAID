@@ -1628,13 +1628,27 @@
         var x2new = (x2 - x1) * F + x1;
         var y2new = (y2 - y1) * F + y1;
 
+        // Draw line.
         this.line.clear();
         this.line.lineStyle(this.BASE_EDGE_WIDTH, 0xFFFFFF, 1.0); // TODO: no width scaling
         this.line.moveTo(x1, y1);
         this.line.lineTo(x2new, y2new);
 
+        // Draw arrowhead.
         var norm = lineNormal(x1, y1, x2, y2);
-        var s = this.BASE_EDGE_WIDTH * this.CATCH_SCALE; // TODO this.EDGE_WIDTH * this.CATCH_SCALE;
+        var s = this.BASE_EDGE_WIDTH;
+        var x2a = x2new - (x2 - x1) * 2 * s / le,
+            y2a = y2new - (y2 - y1) * 2 * s / le;
+        this.line.beginFill(0xFFFFFF, 1.0);
+        this.line.drawPolygon([
+            x2new, y2new,
+            x2a + s * norm[0], y2a + s * norm[1],
+            x2a - s * norm[0], y2a - s * norm[1],
+            x2new, y2new]);
+        this.line.endFill();
+
+        // Create mouse catcher.
+        s = this.BASE_EDGE_WIDTH * this.CATCH_SCALE; // TODO this.EDGE_WIDTH * this.CATCH_SCALE;
         norm[0] *= s;
         norm[1] *= s;
         this.line.hitArea = new PIXI.Polygon(
@@ -1655,17 +1669,7 @@
           this.confidence_text.destroy();
           this.confidence_text = null;
         }
-        // Adjust
-        var opts = {stroke: stroke_color, 'stroke-width': this.EDGE_WIDTH };
-        if (undefined === is_pre) {
-          opts['marker-end'] = 'none';
-        } else {
-          var def;
-          if (is_pre == 2) def = 'markerArrowGj';
-          else if (is_pre == 1) def = 'markerArrowPre';
-          else def = 'markerArrowPost';
-          opts['marker-end'] = 'url(#' + def + this.hrefSuffix + ')';
-        }
+
         this.line.tint = stroke_color;
 
         this.show();

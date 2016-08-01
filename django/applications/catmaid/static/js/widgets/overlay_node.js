@@ -293,10 +293,10 @@
           this.c.x = this.x;
           this.c.y = this.y;
           this.c.beginFill(0xFFFFFF);
-          this.c.drawCircle(0, 0, this.NODE_RADIUS); // TODO: no catcher radius
+          this.c.drawCircle(0, 0, this.scaling*this.NODE_RADIUS);
           this.c.endFill();
           this.c.interactive = true;
-          this.c.hitArea = new PIXI.Circle(0, 0, this.NODE_RADIUS*3.0); // TODO: too big for connector nodes
+          this.c.hitArea = new PIXI.Circle(0, 0, this.scaling*(this.NODE_RADIUS + this.CATCH_RADIUS)); // TODO: too big for connector nodes
           this.c.node = this;
 
           this.overlayGlobals.skeletonElements.containers.nodes.addChild(this.c);
@@ -373,8 +373,9 @@
         // scaling must not be applied to edge. While all three scales could be
         // combined to avoid this without the non-scaling-stroke, this is necessary
         // to avoid the line size be inconcistent on zoom until a redraw.
-        this.EDGE_WIDTH = this.BASE_EDGE_WIDTH * baseScale * (dynamicScale ? 1 : resScale);
+        this.EDGE_WIDTH = this.BASE_EDGE_WIDTH * this.scaling;//baseScale * (dynamicScale ? 1 : resScale);
         this.confidenceFontSize = this.CONFIDENCE_FONT_PT*this.scaling + 'pt';
+        this.textResolution = resScale;
         // this.circleDef.attr('r', this.NODE_RADIUS*this.scaling);
       };
 
@@ -541,7 +542,7 @@
           var linecolor = new THREE.Color(this.colorFromZDiff()).getHex();
           this.line.tint = linecolor;
           if (this.number_text) {
-            this.number_text.tint = linecolor;
+            this.number_text.style.fill = linecolor;
           }
         }
       };
@@ -573,7 +574,7 @@
             Math.max(this.dToSecBefore, Math.min(this.dToSecAfter, this.parent.zdiff)));
 
         this.line.clear();
-        this.line.lineStyle(this.BASE_EDGE_WIDTH, 0xFFFFFF, 1.0); // TODO: edge width
+        this.line.lineStyle(this.EDGE_WIDTH, 0xFFFFFF, 1.0); // TODO: edge width
         this.line.moveTo(childLocation[0], childLocation[1]);
         this.line.lineTo(parentLocation[0], parentLocation[1]);
         this.line.tint = lineColor;
@@ -1630,13 +1631,13 @@
 
         // Draw line.
         this.line.clear();
-        this.line.lineStyle(this.BASE_EDGE_WIDTH, 0xFFFFFF, 1.0); // TODO: no width scaling
+        this.line.lineStyle(this.EDGE_WIDTH, 0xFFFFFF, 1.0); // TODO: no width scaling
         this.line.moveTo(x1, y1);
         this.line.lineTo(x2new, y2new);
 
         // Draw arrowhead.
         var norm = lineNormal(x1, y1, x2, y2);
-        var s = this.BASE_EDGE_WIDTH;
+        var s = 1.5 * this.EDGE_WIDTH;
         var x2a = x2new - (x2 - x1) * 2 * s / le,
             y2a = y2new - (y2 - y1) * 2 * s / le;
         this.line.beginFill(0xFFFFFF, 1.0);
@@ -1648,7 +1649,7 @@
         this.line.endFill();
 
         // Create mouse catcher.
-        s = this.BASE_EDGE_WIDTH * this.CATCH_SCALE; // TODO this.EDGE_WIDTH * this.CATCH_SCALE;
+        s = this.EDGE_WIDTH * this.CATCH_SCALE; // TODO this.EDGE_WIDTH * this.CATCH_SCALE;
         norm[0] *= s;
         norm[1] *= s;
         this.line.hitArea = new PIXI.Polygon(
@@ -1713,18 +1714,17 @@
         this.treenode_id = node.id;
         this.relation = is_pre;
         if (1 === is_pre) {
-          this.update(node.x, node.y, connector.x, connector.y, is_pre, confidence, connector.NODE_RADIUS*node.scaling);
+          this.update(node.x, node.y, connector.x, connector.y, is_pre, confidence, connector.NODE_RADIUS*connector.scaling);
         } else {
           this.update(connector.x, connector.y, node.x, node.y, is_pre, confidence, node.NODE_RADIUS*node.scaling);
         }
       };
 
-      var markerSize = [5, 4];
-
       this.scale = function(baseScale, resScale, dynamicScale) {
         this.scaling = baseScale * resScale * (dynamicScale ? dynamicScale : 1);
-        this.EDGE_WIDTH = this.BASE_EDGE_WIDTH * baseScale * (dynamicScale ? 1 : resScale);
-        this.confidenceFontSize = this.CONFIDENCE_FONT_PT * this.scaling;
+        this.EDGE_WIDTH = this.BASE_EDGE_WIDTH * this.scaling;//baseScale * (dynamicScale ? 1 : resScale);
+        this.confidenceFontSize = this.CONFIDENCE_FONT_PT * this.scaling + 'pt';
+        this.textResolution = resScale;
         // If not in screen scaling mode, do not need to scale markers (but must reset scale).
         var scale = dynamicScale ? resScale*dynamicScale : 1;
         // this.markerDefs.forEach(function (m) {
@@ -1737,31 +1737,6 @@
 
       this.initTextures = function () {
         return;
-        // Note that in SVG2 the fill could be set to 'context-stroke' and would
-        // work appropriately as an end marker for both pre- and post- connectors.
-        // However, this SVG2 feature is not supported in current browsers, so two
-        // connectors are created, one for each color.
-        this.markerDefs = [
-          defs.append('marker'),
-          defs.append('marker'),
-          defs.append('marker')];
-        var ids = ['markerArrowPost', 'markerArrowPre', 'markerArrowGj'];
-        var colors = [this.POST_COLOR, this.PRE_COLOR, this.GJ_COLOR];
-        this.markerDefs.forEach(function (m, i) {
-            m.attr({
-            id: ids[i] + (hrefSuffix || ''),
-            viewBox: '0 0 10 10',
-            markerWidth: markerSize[0],
-            markerHeight: markerSize[1],
-            markerUnits: 'strokeWidth',
-            refX: '10',
-            refY: '5',
-            orient: 'auto'
-          }).append('path').attr({
-            d: (ids[i] === 'markerArrowGj') ? 'M 0 0 L 5 0 L 5 10 L 0 10 z' : 'M 0 0 L 10 5 L 0 10 z',
-            fill: colors[i]
-          });
-        });
       };
     })();
 
@@ -1785,13 +1760,16 @@
           text.text = '' + confidence;
           text.visible = true;
         } else {
-          text = new PIXI.Text('' + confidence);
+          text = new PIXI.Text('' + confidence, {fontWeight: 'normal'});
+          text.alpha = 1.0;
+          text.anchor.x = text.anchor.y = 0.5;
           this.line.parent.addChild(text);
         }
 
+        text.resolution = this.textResolution;
         text.x = newConfidenceX;
         text.y = newConfidenceY;
-        text.style = {fontSize: this.confidenceFontSize, fill: fillColor};
+        text.style = {fontSize: this.confidenceFontSize, fill: fillColor, baseline: 'middle'};
         // text.attr({x: newConfidenceX,
         //            y: newConfidenceY,
         //            'font-size': this.confidenceFontSize,

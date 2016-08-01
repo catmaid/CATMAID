@@ -22,17 +22,6 @@
         stackViewer.getView().clientHeight,
         {transparent: true, backgroundColor: 0x000000, antialias: true});
     this.stage = new PIXI.Container();
-    // this.stage.interactive = true;
-    // var self = this;
-    // this.stage.on('mousedown', function (e) {
-    //   console.log('context md');
-    //   console.log(e.data.originalEvent.defaultPrevented);
-    //   e.stopPropagation();
-    //   e.data.originalEvent.stopPropagation();
-    //   console.log(e.data.originalEvent.defaultPrevented);
-    //   console.log(e.data.originalEvent);
-    //   console.log(self.renderer.plugins.interaction);
-    // });
     this.layersRegistered = new Set();
 
     // Disable the renderer's accessibility plugin (if available), because it

@@ -55,13 +55,12 @@ class Command(BaseCommand):
         std_err = []
         if repeat_runs:
             self.stdout.write("Calculating average timings")
-            n_samples = 1 + len(results)
             for n,r in enumerate(results):
                 # Get timings and skip first n entries if requested
                 timings = [r.time] + [rr[n].time for rr in repeat_runs]
                 timings = timings[n_skip:]
                 # Calculate average, standard deviation and standard error
-                r.time = sum(timings) / n_samples
+                r.time = sum(timings) / len(timings)
                 std = np.std(timings, ddof=1)
                 sem = stats.sem(timings, axis=None, ddof=1)
                 std_dev.append(std)

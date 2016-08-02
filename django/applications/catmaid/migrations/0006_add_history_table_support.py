@@ -101,6 +101,14 @@ add_history_functions_sql = """
     $$ LANGUAGE sql STABLE;
 
 
+    -- Return the unquoted name of a live table's time table truncate trigger.
+    CREATE OR REPLACE FUNCTION get_time_table_truncate_trigger_name(live_table_name regclass)
+        RETURNS text AS
+    $$
+        SELECT 'on_truncate_' || relname || '_truncate_time_table' FROM pg_class WHERE oid = $1;
+    $$ LANGUAGE sql STABLE;
+
+
     -- A view that tells if the known history tables have update trigger installed.
     CREATE OR REPLACE VIEW catmaid_live_table_triggers AS
         SELECT cht.live_table_name,
@@ -372,13 +380,16 @@ add_history_functions_sql = """
         -- created as part of the trigger enabling.
         IF live_table_time_column IS NULL THEN
 
+            -- A foreign key reference to live table's PK isn't used, because
+            -- it make is much easier to deal with TRUNCATE queries on the live
+            -- table.
             time_table_name = get_time_table_name(live_table_name);
             EXECUTE format(
                 'CREATE TABLE IF NOT EXISTS %s ('
-                '  live_pk %s REFERENCES %s (%s) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,'
+                '  live_pk %s UNIQUE DEFERRABLE INITIALLY DEFERRED,'
                 '  edition_time timestamptz NOT NULL'
                 ')',
-                time_table_name, live_table_pkey_type, live_table_name, live_table_pkey_column);
+                time_table_name, live_table_pkey_type);
 
             -- Get the OID of the new history table
             time_table_oid = to_regclass(time_table_name::cstring);
@@ -389,6 +400,7 @@ add_history_functions_sql = """
                     'CREATE INDEX %I ON %s (%s)',
                     time_table_name || '_live_pk_index', time_table_oid, 'live_pk');
             END IF;
+
         ELSE
             SELECT NULL into time_table_oid;
         END IF;
@@ -622,6 +634,14 @@ add_history_functions_sql = """
                     time_trigger_name, live_table_name, history_info.time_table,
                     history_info.live_table_pkey_column);
 
+                -- In case the original is truncated, truncate time table too.
+                EXECUTE format(
+                    'CREATE TRIGGER %1$I '
+                    'AFTER TRUNCATE ON %2$s FOR EACH STATEMENT '
+                    'EXECUTE PROCEDURE truncate_time_table(%s)',
+                    get_time_table_truncate_trigger_name(live_table_name),
+                    live_table_name, history_info.time_table);
+
                 EXECUTE format(
                     'CREATE TRIGGER %1$I '
                     'AFTER UPDATE OR DELETE ON %2$s FOR EACH ROW '
@@ -649,6 +669,8 @@ add_history_functions_sql = """
     BEGIN
         EXECUTE format('DROP TRIGGER IF EXISTS %I ON %s',
             get_time_table_update_trigger_name(live_table_name), live_table_name);
+        EXECUTE format('DROP TRIGGER IF EXISTS %I ON %s',
+            get_time_table_truncate_trigger_name(live_table_name), live_table_name);
         EXECUTE format('DROP TRIGGER IF EXISTS %I ON %s',
             get_history_update_trigger_name_regular(live_table_name), live_table_name);
         EXECUTE format('DROP TRIGGER IF EXISTS %I ON %s',
@@ -735,11 +757,23 @@ add_history_functions_sql = """
     END;
     $$;
 
+    -- Truncate the time table of the source table. Expects time table name as
+    -- first argument.
+    CREATE OR REPLACE FUNCTION truncate_time_table()
+    RETURNS TRIGGER
+    LANGUAGE plpgsql AS
+    $$
+    BEGIN
+        EXECUTE format('TRUNCATE %I', TG_ARGV[0]);
+        RETURN NULL;
+    END;
+    $$;
 
-    -- Insert or update a time table entry for a particular live table.
-    -- Deletion is handled through cascading deletes. This trigger should only be
-    -- installed on tables that don't have a time table already.  The following
-    -- arguments are passed to this trigger function:
+
+    -- Insert or update a time table entry for a particular live table. Delete
+    -- time info row if respective target row is deleted. This trigger should
+    -- only be installed on tables that don't have a time table already.The
+    -- following arguments are passed to this trigger function:
     -- 0: time_table_name, 1: live_table_pkey_column
     CREATE OR REPLACE FUNCTION update_time_for_row()
     RETURNS TRIGGER
@@ -757,6 +791,12 @@ add_history_functions_sql = """
                 'VALUES ($1.%2$s, current_timestamp)',
                 TG_ARGV[0], TG_ARGV[1])
             USING NEW;
+        ELSIF TG_OP = 'DELETE' THEN
+            EXECUTE format(
+                'DELETE FROM %1$I '
+                'WHERE %1$s.live_pk = $1.%2$s',
+                TG_ARGV[0], TG_ARGV[1])
+            USING OLD;
         END IF;
 
         -- No return value is expected
@@ -779,6 +819,7 @@ remove_history_functions_sql = """
     DROP FUNCTION IF EXISTS update_history_of_row_timetable();
     DROP FUNCTION IF EXISTS history_table_name(regclass);
     DROP FUNCTION IF EXISTS sync_time_table(regclass, regclass);
+    DROP FUNCTION IF EXISTS truncate_time_table() CASCADE;
     DROP FUNCTION IF EXISTS enable_history_tracking_for_table(live_table_name regclass, history_table_name text, sync boolean);
     DROP FUNCTION IF EXISTS disable_history_tracking_for_table(live_table_name regclass, history_table_name text);
     DROP FUNCTION IF EXISTS enable_history_tracking();
@@ -788,6 +829,7 @@ remove_history_functions_sql = """
     DROP FUNCTION IF EXISTS get_history_update_trigger_name_timetable(live_table_name regclass);
     DROP FUNCTION IF EXISTS get_time_table_name(live_table_name regclass);
     DROP FUNCTION IF EXISTS get_time_table_update_trigger_name(live_table_name regclass);
+    DROP FUNCTION IF EXISTS get_time_table_truncate_trigger_name(live_table_name regclass);
     DROP FUNCTION IF EXISTS update_time_for_row();
     DROP VIEW IF EXISTS catmaid_table_info;
 """

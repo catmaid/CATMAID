@@ -651,6 +651,7 @@
         colors.forEach(function(field, label) {
           var input = colorControls.get(field);
           var color = $(input).find('input').val();
+          color = new THREE.Color(color).getHex();
           SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE][field] = color;
         });
         updateTracingColors();

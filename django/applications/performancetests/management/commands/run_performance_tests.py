@@ -42,6 +42,11 @@ class Command(BaseCommand):
             return
 
         n_repeat = getattr(settings, 'PERFORMANCETESTS_TEST_REPEAT', 0)
+        n_skip = getattr(settings, 'PERFORMANCETESTS_TEST_SKIP', 0)
+
+        if n_skip > n_repeat:
+            raise CommandError("PERFORMANCETESTS_TEST_SKIP can't be bigger "
+                "than PERFORMANCETESTS_TEST_REPEAT")
 
         results, repeat_runs = test.run_tests_and_repeat(views, n_repeat)
 
@@ -52,7 +57,10 @@ class Command(BaseCommand):
             self.stdout.write("Calculating average timings")
             n_samples = 1 + len(results)
             for n,r in enumerate(results):
+                # Get timings and skip first n entries if requested
                 timings = [r.time] + [rr[n].time for rr in repeat_runs]
+                timings = timings[n_skip:]
+                # Calculate average, standard deviation and standard error
                 r.time = sum(timings) / n_samples
                 std = np.std(timings, ddof=1)
                 sem = stats.sem(timings, axis=None, ddof=1)
@@ -65,7 +73,7 @@ class Command(BaseCommand):
         # Print and optionally save all results
         for i,r in enumerate(results):
             self.stdout.write("URL: %s Time: %sms N: %s SD: %s SE: %s" % (
-                r.view.url, r.time, 1 + n_repeat, std_dev[i], std_err[i]))
+                r.view.url, r.time, 1 + n_repeat - n_skip, std_dev[i], std_err[i]))
 
             if options['saveresults']:
                 r.save()

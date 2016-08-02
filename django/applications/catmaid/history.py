@@ -30,7 +30,6 @@ def record_request_action(label):
                 raise ValueError("Couldn't find request to record action for")
 
             result = f(*args, **kwargs)
-            print "Log", user_id, label
             add_log_entry(user_id, label)
             return result
         return wrapped_f

@@ -308,7 +308,7 @@
         //   return c + ' ' + SkeletonAnnotations.VisibilityGroups.GROUP_CLASSES[groupID];
         // }, ''));
 
-        this.c.tint = new THREE.Color(this.color()).getHex();
+        this.c.tint = this.color();
 
         this.c.visible = true;
       };
@@ -431,7 +431,7 @@
        * whether it's the active node, the root node, a leaf node, or in
        * an active skeleton.
        *
-       * @return {string}           CSS color description like 'rgb(0,0,0)'.
+       * @return {number}           Hex color.
        */
       this.color = function() {
         var model = this.overlayGlobals.skeletonDisplayModels[this.skeleton_id];
@@ -459,16 +459,16 @@
        * active node, the root node, a leaf node, or in an active skeleton.
        *
        * @param  {THREE.Color} baseColor Node's skeleton model base color.
-       * @return {string}                CSS color description like 'rgb(0,0,0)'.
+       * @return {number}                Hex color.
        */
       this.colorCustom = function (baseColor) {
         if (SkeletonAnnotations.getActiveNodeId() === this.id) {
           // The active node is always in green:
           return SkeletonAnnotations.TracingOverlay.Settings.session.active_node_color;
         } else if (this.isroot) {
-          return baseColor.clone().offsetHSL(0, 0, 0.25).getStyle();
+          return baseColor.clone().offsetHSL(0, 0, 0.25).getHex();
         } else if (0 === this.numberOfChildren) {
-          return baseColor.clone().offsetHSL(0, 0, -0.25).getStyle();
+          return baseColor.clone().offsetHSL(0, 0, -0.25).getHex();
         } else {
           // If none of the above applies, just colour according to the z difference.
           return this.colorCustomFromZDiff(baseColor);
@@ -480,7 +480,7 @@
        * zdiff with the current section is positive, negative, or zero, and
        * whether the node belongs to the active skeleton.
        *
-       * @return {string}           CSS color description like 'rgb(0,0,0)'.
+       * @return {number}                Hex color.
        */
       this.colorFromZDiff = function() {
         var model = this.overlayGlobals.skeletonDisplayModels[this.skeleton_id];
@@ -511,15 +511,15 @@
        * belongs to the active skeleton.
        *
        * @param  {THREE.Color} baseColor Node's skeleton model base color.
-       * @return {string}                CSS color description like 'rgb(0,0,0)'.
+       * @return {number}                Hex color.
        */
       this.colorCustomFromZDiff = function (baseColor) {
         // zdiff is in sections, therefore the current section is at [0, 1) --
         // notice 0 is inclusive and 1 is exclusive.
         if (this.zdiff >= 1) {
-          return baseColor.clone().offsetHSL(0.1, 0, 0).getStyle();
+          return baseColor.clone().offsetHSL(0.1, 0, 0).getHex();
         } else if (this.zdiff < 0) {
-          return baseColor.clone().offsetHSL(-0.1, 0, 0).getStyle();
+          return baseColor.clone().offsetHSL(-0.1, 0, 0).getHex();
         } else if (SkeletonAnnotations.getActiveSkeletonId() === this.skeleton_id) {
           if (SkeletonAnnotations.isRealNode(this.id)) {
             return SkeletonAnnotations.TracingOverlay.Settings.session.active_skeleton_color;
@@ -527,19 +527,19 @@
             return SkeletonAnnotations.TracingOverlay.Settings.session.active_skeleton_color_virtual;
           }
         } else if (SkeletonAnnotations.isRealNode(this.id)) {
-          return baseColor.getStyle();
+          return baseColor.getHex();
         } else {
-          return baseColor.getStyle();
+          return baseColor.getHex();
         }
       };
 
       this.updateColors = function() {
         if (this.c) {
-          this.c.tint = new THREE.Color(this.color()).getHex();
+          this.c.tint = this.color();
           this.createRadiusGraphics();
         }
         if (this.line) {
-          var linecolor = new THREE.Color(this.colorFromZDiff()).getHex();
+          var linecolor = this.colorFromZDiff();
           this.line.tint = linecolor;
           if (this.number_text) {
             this.number_text.style.fill = linecolor;
@@ -555,7 +555,7 @@
         if (!this.mustDrawLineWith(this.parent)) {
           return;
         }
-        var lineColor = new THREE.Color(this.colorFromZDiff()).getHex();
+        var lineColor = this.colorFromZDiff();
 
         if (!this.line) {
           this.line = new PIXI.Graphics();
@@ -1063,10 +1063,10 @@
 
       this.color = function() {
         if (SkeletonAnnotations.getActiveNodeId() === this.id) {
-          return "rgb(0,255,0)";
+          return 0x00FF00;
         }
         if (this.zdiff >= 0 && this.zdiff < 1) {
-          return "rgb(235,117,0)";
+          return 0xEB7500;
         }
       };
 
@@ -1075,17 +1075,17 @@
         // zdiff is in sections, therefore the current section is at [0, 1)
         // -- notice 0 is inclusive and 1 is exclusive.
         if (this.zdiff >= 1) {
-          return "rgb(0,0,255)";
+          return 0x0000FF;
         } else if (this.zdiff < 0) {
-          return "rgb(255,0,0)";
+          return 0xFF0000;
         } else {
-          return "rgb(235,117,0)";
+          return 0xEB7500;
         }
       };
 
       this.updateColors = function() {
         if (this.c) {
-          var fillcolor = new THREE.Color(this.color()).getHex();
+          var fillcolor = this.color();
           this.c.tint = fillcolor;
         }
       };

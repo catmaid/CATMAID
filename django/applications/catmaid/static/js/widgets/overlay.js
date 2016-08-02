@@ -699,7 +699,7 @@ CATMAID.asEventSource(SkeletonAnnotations.TracingOverlay.prototype);
 SkeletonAnnotations.TracingOverlay.Settings = new CATMAID.Settings(
       'tracing-overlay',
       {
-        version: 0,
+        version: 1,
         entries: {
           display_active_node_radius: {
             default: true
@@ -711,39 +711,59 @@ SkeletonAnnotations.TracingOverlay.Settings = new CATMAID.Settings(
             default: 1.0
           },
           // Colors that a node can take
-          active_node_color : {
-            default: "rgb(0,255,0)",
+          active_node_color: {
+            default: 0x00FF00,
           },
           active_skeleton_color: {
-            default: "rgb(255,255,0)",
+            default: 0xFFFF00,
           },
           active_skeleton_color_virtual: {
-            default: "rgb(255,255,0)",
+            default: 0xFFFF00,
           },
           inactive_skeleton_color: {
-            default: "rgb(255,0,255)",
+            default: 0xFF00FF,
           },
           inactive_skeleton_color_virtual: {
-            default: "rgb(255,0,255)",
+            default: 0xFF00FF,
           },
           inactive_skeleton_color_above: {
-            default: "rgb(0,0,255)",
+            default: 0x0000FF,
           },
           inactive_skeleton_color_below: {
-            default: "rgb(255,0,0)",
+            default: 0xFF0000,
           },
           root_node_color: {
-            default: "rgb(255,0,0)",
+            default: 0xFF0000,
           },
           leaf_node_color: {
-            default: "rgb(128,0,0)",
+            default: 0x800000,
           },
           // Visibility groups
           visibility_groups: {
             default: [{universal: 'none'}, {universal: 'none'}, {universal: 'none'}]
           },
         },
-        migrations: {}
+        migrations: {
+          0: function (settings) {
+            ['active_node_color',
+             'active_skeleton_color',
+             'active_skeleton_color_virtual',
+             'inactive_skeleton_color',
+             'inactive_skeleton_color_virtual',
+             'inactive_skeleton_color_above',
+             'inactive_skeleton_color_below',
+             'root_node_color',
+             'leaf_node_color'].forEach(function (color) {
+              if (settings.hasOwnProperty('entries') && settings.entries.hasOwnProperty(color)) {
+                settings.entries[color].value = new THREE.Color(settings.entries[color].value).getHex();
+              }
+             });
+
+             settings.version = 1;
+
+             return settings;
+          }
+        }
       });
 
 /**

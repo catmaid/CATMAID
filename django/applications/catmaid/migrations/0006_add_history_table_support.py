@@ -97,7 +97,7 @@ add_history_functions_sql = """
     CREATE OR REPLACE FUNCTION get_time_table_update_trigger_name(live_table_name regclass)
         RETURNS text AS
     $$
-        SELECT 'on_change_' || relname || '_update_time_table' FROM pg_class WHERE oid = $1;
+        SELECT 'on_change_update_time_table'::text;
     $$ LANGUAGE sql STABLE;
 
 
@@ -105,7 +105,7 @@ add_history_functions_sql = """
     CREATE OR REPLACE FUNCTION get_time_table_truncate_trigger_name(live_table_name regclass)
         RETURNS text AS
     $$
-        SELECT 'on_truncate_' || relname || '_truncate_time_table' FROM pg_class WHERE oid = $1;
+        SELECT 'on_truncate_truncate_time_table'::text;
     $$ LANGUAGE sql STABLE;
 
 

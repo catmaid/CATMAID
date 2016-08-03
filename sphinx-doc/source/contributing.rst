@@ -78,6 +78,11 @@ contain utility functions not exposed by the API that may be useful, so when
 developing a new API endpoint be sure to check related modules for reusable
 utilities.
 
+Back-end errors should always be signaled to the front-end with the help
+of Exceptions. Regardless whether an argument is missing, permissions are
+lacking or something went wrong otherwise. A dedicated middleware will catch
+them and return them in an expected format to the front-end.
+
 ..
     TODO: organization of controls/views, urls ("Where to look and where to add")
     TODO: basic overview of schema, esp. understanding how classinstance, etc.

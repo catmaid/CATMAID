@@ -272,6 +272,8 @@
       this.confidenceFontSize = this.CONFIDENCE_FONT_PT + 'pt';
       // Store current node scaling factor
       this.scaling = 1.0;
+      this.baseScale = 1.0;
+      this.stackScaling = 1.0;
       this.resolutionScale = 1.0;
       this.radiusVisibility = false;
       // Store current section distance to next and previous sections. These can
@@ -289,20 +291,24 @@
         // c may already exist if the node is being reused
         if (!this.c) {
           // create a circle object
-          this.c = new PIXI.Graphics();
-          this.c.x = this.x;
-          this.c.y = this.y;
-          this.c.beginFill(0xFFFFFF);
-          this.c.drawCircle(0, 0, this.scaling*this.NODE_RADIUS);
-          this.c.endFill();
+          // this.c = new PIXI.Graphics();
+          this.c = new PIXI.Sprite(this.NODE_TEXTURE);
+          this.c.anchor.set(0.5);
+          // this.c.beginFill(0xFFFFFF);
+          // this.c.drawCircle(0, 0, this.scaling*this.NODE_RADIUS);
+          // this.c.endFill();
           this.c.interactive = true;
-          this.c.hitArea = new PIXI.Circle(0, 0, this.scaling*(this.NODE_RADIUS + this.CATCH_RADIUS)); // TODO: too big for connector nodes
+          this.c.hitArea = new PIXI.Circle(0, 0, this.NODE_RADIUS + this.CATCH_RADIUS); // TODO: too big for connector nodes
           this.c.node = this;
 
           this.overlayGlobals.skeletonElements.containers.nodes.addChild(this.c);
 
           ptype.mouseEventManager.attach(this.c, this.type);
         }
+
+        this.c.x = this.x;
+        this.c.y = this.y;
+        this.c.scale.set(this.stackScaling);
 
         // this.c.attr('class', this.getVisibilityGroups().reduce(function (c, groupID) {
         //   return c + ' ' + SkeletonAnnotations.VisibilityGroups.GROUP_CLASSES[groupID];
@@ -367,27 +373,38 @@
       };
 
       this.scale = function(baseScale, resScale, dynamicScale) {
+        var oldScaling = this.scaling;
         this.resolutionScale = resScale;
+        this.baseScale = baseScale;
+        this.stackScaling = baseScale * (dynamicScale ? dynamicScale : 1);
         this.scaling = baseScale * resScale * (dynamicScale ? dynamicScale : 1);
-        // To account for SVG non-scaling-stroke in screen scale mode the resolution
-        // scaling must not be applied to edge. While all three scales could be
-        // combined to avoid this without the non-scaling-stroke, this is necessary
-        // to avoid the line size be inconcistent on zoom until a redraw.
-        this.EDGE_WIDTH = this.BASE_EDGE_WIDTH * this.scaling;//baseScale * (dynamicScale ? 1 : resScale);
-        this.confidenceFontSize = this.CONFIDENCE_FONT_PT*this.scaling + 'pt';
+        this.EDGE_WIDTH = this.BASE_EDGE_WIDTH * this.stackScaling;//baseScale * (dynamicScale ? 1 : resScale);
+        this.confidenceFontSize = this.CONFIDENCE_FONT_PT*this.stackScaling + 'pt';
         this.textResolution = resScale;
         // this.circleDef.attr('r', this.NODE_RADIUS*this.scaling);
+        //
+        if (oldScaling !== this.scaling) this.initTextures();
       };
 
       this.initTextures = function () {
         var g = new PIXI.Graphics();
-        g.drawCircle(0, 0, this.NODE_RADIUS);
+        g.beginFill(0xFFFFFF);
+        g.drawCircle(0, 0, this.NODE_RADIUS * this.baseScale);
+        g.endFill();
+
+        if (this.NODE_TEXTURE) {
+          this.NODE_TEXTURE.baseTexture = g.generateTexture().baseTexture;
+        } else {
+          this.NODE_TEXTURE = g.generateTexture();
+        }
+
+        this.NODE_TEXTURE.update();
       };
     })();
 
     ptype.AbstractTreenode = function() {
       // For drawing:
-      this.NODE_RADIUS = 3;
+      this.NODE_RADIUS = 3; // In nm stack size (or fixed screen size at scale 0).
       this.CATCH_RADIUS = 6;
       this.BASE_EDGE_WIDTH = 2;
 
@@ -734,11 +751,9 @@
         if (this.c) {
           if (!this.shouldDisplay()) {
             this.c.visible = false;
-          } else {
-            this.c.x = x;
-            this.c.y = y;
           }
         }
+        this.createCircle();
         this.createRadiusGraphics();
         if (this.line) {
           this.line.visible = false;
@@ -1158,13 +1173,11 @@
         this.needsync = false;
 
         if (this.c) {
-          if (this.shouldDisplay()) {
-            this.c.x = x;
-            this.c.y = y;
-          } else {
+          if (!this.shouldDisplay()) {
             this.c.visible = false;
           }
         }
+        this.createCircle();
 
         this.preLines = null;
         this.postLines = null;
@@ -1714,16 +1727,17 @@
         this.treenode_id = node.id;
         this.relation = is_pre;
         if (1 === is_pre) {
-          this.update(node.x, node.y, connector.x, connector.y, is_pre, confidence, connector.NODE_RADIUS*connector.scaling);
+          this.update(node.x, node.y, connector.x, connector.y, is_pre, confidence, connector.NODE_RADIUS*connector.stackScaling);
         } else {
-          this.update(connector.x, connector.y, node.x, node.y, is_pre, confidence, node.NODE_RADIUS*node.scaling);
+          this.update(connector.x, connector.y, node.x, node.y, is_pre, confidence, node.NODE_RADIUS*node.stackScaling);
         }
       };
 
       this.scale = function(baseScale, resScale, dynamicScale) {
+        this.stackScaling = baseScale * (dynamicScale ? dynamicScale : 1);
         this.scaling = baseScale * resScale * (dynamicScale ? dynamicScale : 1);
-        this.EDGE_WIDTH = this.BASE_EDGE_WIDTH * this.scaling;//baseScale * (dynamicScale ? 1 : resScale);
-        this.confidenceFontSize = this.CONFIDENCE_FONT_PT * this.scaling + 'pt';
+        this.EDGE_WIDTH = this.BASE_EDGE_WIDTH * this.stackScaling;//baseScale * (dynamicScale ? 1 : resScale);
+        this.confidenceFontSize = this.CONFIDENCE_FONT_PT * this.stackScaling + 'pt';
         this.textResolution = resScale;
         // If not in screen scaling mode, do not need to scale markers (but must reset scale).
         var scale = dynamicScale ? resScale*dynamicScale : 1;
@@ -1750,7 +1764,7 @@
                                            confidence,
                                            existing) {
         var text,
-            numberOffset = 0.8 * this.CONFIDENCE_FONT_PT * this.scaling,
+            numberOffset = 0.8 * this.CONFIDENCE_FONT_PT * this.stackScaling,
             norm = lineNormal(x, y, parentx, parenty),
             newConfidenceX = (x + parentx) / 2 + norm[0] * numberOffset,
             newConfidenceY = (y + parenty) / 2 + norm[1] * numberOffset;

@@ -2284,11 +2284,11 @@ SkeletonAnnotations.TracingOverlay.prototype.redraw = function(force, completion
   doNotUpdate = !force && (doNotUpdate || this.suspended);
 
   var screenScale = SkeletonAnnotations.TracingOverlay.Settings.session.screen_scaling;
-  // All graphics elements scale automatcally, if the viewport on the SVG data
-  // changes. If in screen scale mode, where the size of all elements should
-  // stay the same (regardless of zoom level), counter acting this is required.
+  // All graphics elements scale automatcally. If in screen scale mode, where
+  // the size of all elements should stay the same (regardless of zoom level),
+  // counter acting this is required.
   var resScale = Math.max(stackViewer.primaryStack.resolution.x, stackViewer.primaryStack.resolution.y);
-  var dynamicScale = screenScale ? (1 / (stackViewer.scale * resScale)) : false;
+  var dynamicScale = screenScale ? (1 / stackViewer.scale) : false;
   this.graphics.scale(
       SkeletonAnnotations.TracingOverlay.Settings.session.scale,
       resScale,

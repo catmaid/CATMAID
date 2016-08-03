@@ -55,7 +55,7 @@ add_history_functions_sql = """
     CREATE OR REPLACE FUNCTION get_history_update_fn_name_regular(live_table_name regclass)
         RETURNS text AS
     $$
-        SELECT 'update_history_row_for_' || relname || '_regular' FROM pg_class WHERE oid = $1;
+        SELECT 'update_history_' || relname || '_reg' FROM pg_class WHERE oid = $1;
     $$ LANGUAGE sql STABLE;
 
 
@@ -63,7 +63,7 @@ add_history_functions_sql = """
     CREATE OR REPLACE FUNCTION get_history_update_trigger_name_regular(live_table_name regclass)
         RETURNS text AS
     $$
-        SELECT 'on_change_' || relname || '_update_history_regular' FROM pg_class WHERE oid = $1;
+        SELECT 'on_change_update_history_regular'::text;
     $$ LANGUAGE sql STABLE;
 
 
@@ -71,7 +71,7 @@ add_history_functions_sql = """
     CREATE OR REPLACE FUNCTION get_history_update_trigger_name_timetable(live_table_name regclass)
         RETURNS text AS
     $$
-        SELECT 'on_change_' || relname || '_update_history_timetable' FROM pg_class WHERE oid = $1;
+        SELECT 'on_change_history_timetable'::text;
     $$ LANGUAGE sql STABLE;
 
 

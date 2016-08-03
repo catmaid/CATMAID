@@ -39,24 +39,25 @@
       /**
        * Create a new SkeletonInstance and return it.
        */
-      createSkeletonElements: function(pixiContainer, skeletonDisplayModels) {
+      createSkeletonElements: function(tracingOverlay, pixiContainer, skeletonDisplayModels) {
         // Add prototype
         SkeletonElements.prototype = createSkeletonElementsPrototype();
 
-        return new SkeletonElements(pixiContainer, skeletonDisplayModels);
+        return new SkeletonElements(tracingOverlay, pixiContainer, skeletonDisplayModels);
       }
     };
   })();
 
   /** Namespace where graphics element instances are created, cached and edited. */
-  var SkeletonElements = function (pixiContainer, skeletonDisplayModels) {
+  var SkeletonElements = function (tracingOverlay, pixiContainer, skeletonDisplayModels) {
     this.overlayGlobals = {
+      tracingOverlay: tracingOverlay,
       skeletonElements: this,
       skeletonDisplayModels: skeletonDisplayModels || {},
       hideOtherSkeletons: false
     };
 
-    // Let (concrete) element classes initialize any shared SVG definitions
+    // Let (concrete) element classes initialize any shared resources
     // required by their instances. Even though called statically, initDefs is an
     // instance (prototype) method so that we can get overriding inheritance of
     // pseudo-static variables.
@@ -65,7 +66,10 @@
       SkeletonElements.prototype.ConnectorNode.prototype,
       SkeletonElements.prototype.ArrowLine.prototype,
     ];
-    concreteElements.forEach(function (klass) {klass.initTextures();});
+    concreteElements.forEach(function (klass) {
+      klass.overlayGlobals = this.overlayGlobals;
+      klass.initTextures();
+    }, this);
 
     // Create element groups to enforce drawing order: lines, arrows, nodes, labels
     this.containers = ['lines', 'arrows', 'nodes', 'labels'].reduce(function (o, name) {
@@ -150,7 +154,7 @@
       return function(connector, node, confidence, is_pre) {
         var arrow = arrowPool.next();
         if (!arrow) {
-          arrow = new ArrowLine(connector.overlayGlobals);
+          arrow = new ArrowLine();
           arrowPool.push(arrow);
         }
         arrow.init(connector, node, confidence, is_pre);
@@ -179,7 +183,7 @@
         node.reInit(id, parent, parent_id, radius, x, y, z, zdiff, confidence,
             skeleton_id, edition_time, user_id);
       } else {
-        node = new this.Node(this.overlayGlobals, id, parent, parent_id, radius,
+        node = new this.Node(id, parent, parent_id, radius,
             x, y, z, zdiff, confidence, skeleton_id, edition_time, user_id);
         this.cache.nodePool.push(node);
       }
@@ -203,7 +207,7 @@
       if (connector) {
         connector.reInit(id, x, y, z, zdiff, confidence, subtype, edition_time, user_id);
       } else {
-        connector = new this.ConnectorNode(this.overlayGlobals, id, x, y, z,
+        connector = new this.ConnectorNode(id, x, y, z,
             zdiff, confidence, subtype, edition_time, user_id);
         connector.createArrow = this.createArrow;
         this.cache.connectorPool.push(connector);
@@ -392,13 +396,19 @@
         g.drawCircle(0, 0, this.NODE_RADIUS * this.baseScale);
         g.endFill();
 
+        var tracingOverlay = this.overlayGlobals.tracingOverlay;
+        var texture = tracingOverlay.pixiLayer._context.renderer.generateTexture(
+            g, PIXI.SCALE_MODES.DEFAULT, 1);
+
         if (this.NODE_TEXTURE) {
-          this.NODE_TEXTURE.baseTexture = g.generateTexture().baseTexture;
+          var oldTexture = this.NODE_TEXTURE.baseTexture;
+          this.NODE_TEXTURE.baseTexture = texture.baseTexture;
+          oldTexture.destroy();
         } else {
-          this.NODE_TEXTURE = g.generateTexture();
+          this.NODE_TEXTURE = texture;
         }
 
-        this.NODE_TEXTURE.update();
+        // this.NODE_TEXTURE.update();
       };
     })();
 
@@ -666,7 +676,6 @@
 
       /** Prepare node for removal from cache. */
       this.obliterate = function() {
-        this.overlayGlobals = null;
         this.id = null;
         this.parent = null;
         this.parent_id = null;
@@ -688,6 +697,7 @@
         if (this.line) {
           this.line.parent.removeChild(this.line);
           this.line.destroy();
+          this.line.removeAllListeners();
           this.line = null;
         }
         if (this.number_text) {
@@ -908,7 +918,6 @@
     ptype.AbstractTreenode.prototype = ptype.NodePrototype;
 
     ptype.Node = function(
-      overlayGlobals,
       id,         // unique id for the node from the database
       parent,     // the parent node (may be null if the node is not loaded)
       parent_id,  // is null only for the root node
@@ -922,7 +931,6 @@
       edition_time, // Last time this node was edited
       user_id)   // id of the user who owns the node
     {
-      this.overlayGlobals = overlayGlobals;
       this.id = id;
       this.type = SkeletonAnnotations.TYPE_NODE;
       this.parent = parent;
@@ -1040,7 +1048,6 @@
       };
 
       this.obliterate = function() {
-        this.overlayGlobals = null;
         this.id = null;
         if (this.c) {
           this.c.node = null;
@@ -1189,7 +1196,6 @@
     ptype.AbstractConnectorNode.prototype = ptype.NodePrototype;
 
     ptype.ConnectorNode = function(
-      overlayGlobals,
       id,         // unique id for the node from the database
       x,          // the x coordinate in oriented project coordinates
       y,          // the y coordinate in oriented project coordinates
@@ -1200,7 +1206,6 @@
       edition_time, // Last time this connector was edited
       user_id)   // id of the user who owns the node
     {
-      this.overlayGlobals = overlayGlobals;
       this.id = id;
       this.type = SkeletonAnnotations.TYPE_CONNECTORNODE;
       this.subtype = subtype;
@@ -1387,9 +1392,9 @@
 
       /** Here `this` is the circle graphic. */
       var mc_up = function(event) {
-        this.off('mousemove')
-            .off('mouseup')
-            .off('mouseupoutside');
+        this.removeAllListeners('mousemove')
+            .removeAllListeners('mouseup')
+            .removeAllListeners('mouseupoutside');
 
         if (!dragging) {
           o = null;
@@ -1527,16 +1532,15 @@
          'mouseup',
          'mouseupoutside',
          'click'].forEach(function (l) {
-          mc.off(l);
+          mc.removeAllListeners(l);
         });
       };
     })();
 
 
-    ptype.ArrowLine = function(overlayGlobals) {
+    ptype.ArrowLine = function() {
       this.line = new PIXI.Graphics();
-      this.overlayGlobals = overlayGlobals;
-      overlayGlobals.skeletonElements.containers.arrows.addChild(this.line);
+      this.overlayGlobals.skeletonElements.containers.arrows.addChild(this.line);
       this.line.interactive = true;
       this.line.on('mousedown', this.mousedown);
       this.line.on('mouseover', this.mouseover);
@@ -1711,6 +1715,7 @@
         this.relation = null;
         this.line.parent.removeChild(this.line);
         this.line.destroy();
+        this.line.removeAllListeners();
         this.line = null;
         if (this.confidence_text) {
           this.confidence_text.parent.removeChild(this.confidence_text);

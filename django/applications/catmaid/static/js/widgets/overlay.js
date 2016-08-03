@@ -648,6 +648,7 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
   }, this);
 
   this.graphics = CATMAID.SkeletonElementsFactory.createSkeletonElements(
+      this,
       pixiLayer.batchContainer,
       this._skeletonDisplaySource.skeletonModels);
   this.graphics.setActiveNodeRadiusVisibility(SkeletonAnnotations.TracingOverlay.Settings.session.display_active_node_radius);

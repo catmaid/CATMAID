@@ -766,3 +766,161 @@ class HistoryTableTests(TransactionTestCase):
         # time table also. Let's pretend nothing happened.
         self.assertEqual(project_details['id'], project_time_entry['live_pk'])
         self.assertEqual(original_project_edition_time, project_edition_time)
+
+    def test_live_table_truncate_with_time_column(self):
+        """Test if truncating a live table copies all its rows to the history
+        table.
+        """
+        cursor = connection.cursor()
+
+        original_class_history = self.get_history_entries(cursor, 'class')
+        n_original_entries = len(original_class_history)
+
+        # Create initial row that will be modified
+        cursor.execute("""
+            INSERT INTO "class" (user_id, project_id, class_name)
+            VALUES (%(user_id)s, %(project_id)s, 'testclass')
+            RETURNING row_to_json(class.*),
+                current_timestamp::text
+        """, {
+            'user_id': self.user.id,
+            'project_id': self.project.id
+        })
+        class_result = cursor.fetchone()
+        class_details = class_result[0]
+        class_creation_time = class_result[1]
+        transaction.commit()
+
+        # Create initial row that will be modified
+        cursor.execute("""
+            INSERT INTO "class" (user_id, project_id, class_name)
+            VALUES (%(user_id)s, %(project_id)s, 'testclass2')
+            RETURNING row_to_json(class.*),
+                current_timestamp::text
+        """, {
+            'user_id': self.user.id,
+            'project_id': self.project.id
+        })
+        class_2_result = cursor.fetchone()
+        class_2_details = class_2_result[0]
+        class_2_creation_time = class_2_result[1]
+        transaction.commit()
+
+        # Get current number of projects
+        cursor.execute("SELECT COUNT(*) FROM class")
+        n_live_classes = cursor.fetchone()[0]
+        transaction.commit()
+
+        # Update row in new transaction (to have new timestamp)
+        cursor.execute("""
+            TRUNCATE "class" CASCADE;
+            SELECT current_timestamp::text;
+        """)
+        truncate_result = cursor.fetchone()
+        truncate_timestamp = truncate_result[0]
+        transaction.commit()
+
+        # Expect time table to be truncated too
+        self.assertNotEqual(class_creation_time, truncate_timestamp)
+        self.assertNotEqual(class_2_creation_time, truncate_timestamp)
+
+        # Expect all former live table entries to now be in the history table
+        class_history = self.get_history_entries(cursor, 'class')
+        self.assertEqual(len(class_history),
+                n_original_entries + n_live_classes)
+
+        # Get new project history entries
+        class_1_history_entry = class_history[-2][0] #older
+        class_2_history_entry = class_history[-1][0] #newer
+
+        # Expect all fields of the original table to match the history table
+        for k,v in class_details.iteritems():
+            self.assertEqual(v, class_1_history_entry[k])
+        for k,v in class_2_details.iteritems():
+            self.assertEqual(v, class_2_history_entry[k])
+
+        # It is now expected that the range of the history interval will end with
+        # the truncation time of the live table.
+        expected_interval_1 = self.format_range(class_creation_time, truncate_timestamp)
+        expected_interval_2 = self.format_range(class_2_creation_time, truncate_timestamp)
+        self.assertEqual(class_1_history_entry['sys_period'], expected_interval_1)
+        self.assertEqual(class_2_history_entry['sys_period'], expected_interval_2)
+
+    def test_live_table_truncate_without_time_column(self):
+        """Test if truncating a live table copies all its rows to the history
+        table.
+        """
+        cursor = connection.cursor()
+
+        original_project_history = self.get_history_entries(cursor, 'project')
+        n_original_entries = len(original_project_history)
+
+        original_project_time = self.get_time_entries(cursor, 'project')
+        n_original_time_entries = len(original_project_time)
+
+        # Create initial row that will be modified
+        cursor.execute("""
+            INSERT INTO "project" (title)
+            VALUES ('testproject')
+            RETURNING row_to_json(project.*),
+                current_timestamp::text
+        """)
+        project_result = cursor.fetchone()
+        project_details = project_result[0]
+        creation_time = project_result[1]
+        transaction.commit()
+
+        # Create initial row that will be modified
+        cursor.execute("""
+            INSERT INTO "project" (title)
+            VALUES ('testproject2')
+            RETURNING row_to_json(project.*),
+                current_timestamp::text
+        """)
+        project_2_result = cursor.fetchone()
+        project_2_details = project_2_result[0]
+        creation_time_2 = project_2_result[1]
+        transaction.commit()
+
+        # Get current number of projects
+        cursor.execute("SELECT COUNT(*) FROM project")
+        n_live_projects = cursor.fetchone()[0]
+        transaction.commit()
+
+        # Update row in new transaction (to have new timestamp)
+        cursor.execute("""
+            TRUNCATE "project" CASCADE;
+            SELECT current_timestamp::text;
+        """, (project_details['id'],))
+        truncate_result = cursor.fetchone()
+        truncate_timestamp = truncate_result[0]
+        transaction.commit()
+
+        after_truncate_project_time = self.get_time_entries(cursor, 'project')
+        n_after_truncate_time_entries = len(after_truncate_project_time)
+
+        # Expect time table to be truncated too
+        self.assertEqual(0, n_after_truncate_time_entries)
+        self.assertNotEqual(creation_time, truncate_timestamp)
+
+        # Expect all former live table entries to now be in the history table
+        truncate_history = self.get_history_entries(cursor, 'project')
+        self.assertEqual(len(truncate_history),
+                n_original_entries + n_live_projects)
+
+        # Get new project history entries
+        project_1_history_entry = truncate_history[-2][0] #older
+        project_2_history_entry = truncate_history[-1][0] #newer
+
+        # Expect all fields of the original table to match the history table
+        for k,v in project_details.iteritems():
+            self.assertEqual(v, project_1_history_entry[k])
+        for k,v in project_2_details.iteritems():
+            self.assertEqual(v, project_2_history_entry[k])
+
+        # It is now expected that the range of the history interval will end with
+        # the truncation time of the live table.
+        expected_interval_1 = self.format_range(creation_time, truncate_timestamp)
+        expected_interval_2 = self.format_range(creation_time_2, truncate_timestamp)
+        self.assertEqual(project_1_history_entry['sys_period'], expected_interval_1)
+        self.assertEqual(project_2_history_entry['sys_period'], expected_interval_2)

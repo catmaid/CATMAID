@@ -84,6 +84,14 @@ add_history_functions_sql = """
     $$ LANGUAGE sql STABLE;
 
 
+    -- Return the unquoted name of a live table's history table truncate trigger.
+    CREATE OR REPLACE FUNCTION get_history_truncate_trigger_name()
+        RETURNS text AS
+    $$
+        SELECT 'on_truncate_handle_live_table_truncate'::text;
+    $$ LANGUAGE sql STABLE;
+
+
     -- Return the unquoted name of a table tracking time for the live table.
     -- Doesn't check if the table actually exists.
     CREATE OR REPLACE FUNCTION get_time_table_name(live_table_name regclass)
@@ -665,6 +673,16 @@ add_history_functions_sql = """
                     history_info.time_table, 'edition_time');
             END IF;
 
+            -- In case the original is truncated, invalidate all live entries.
+            -- This has to happen *before* the actual truncation of the live
+            -- table, because the live data is needed for the history table.
+            EXECUTE format(
+                'CREATE TRIGGER %1$I '
+                'BEFORE TRUNCATE ON %2$s FOR EACH STATEMENT '
+                'EXECUTE PROCEDURE handle_live_table_truncate(%s)',
+                get_history_truncate_trigger_name(),
+                live_table_name, history_info.history_table_name);
+
             -- Remember that triggers are now installed for this table
             UPDATE catmaid_history_table cht SET triggers_installed = true
             WHERE cht.live_table_name = $1 AND cht.history_table_name = $2;
@@ -689,6 +707,8 @@ add_history_functions_sql = """
             get_history_update_trigger_name_regular(live_table_name), live_table_name);
         EXECUTE format('DROP TRIGGER IF EXISTS %I ON %s',
             get_history_update_trigger_name_timetable(live_table_name), live_table_name);
+        EXECUTE format('DROP TRIGGER IF EXISTS %I ON %s',
+            get_history_truncate_trigger_name(), live_table_name);
         -- Remember that triggers are now removed for this table
         UPDATE catmaid_history_table cht SET triggers_installed = false
         WHERE cht.live_table_name = $1 AND cht.history_table_name = $2;
@@ -771,14 +791,61 @@ add_history_functions_sql = """
     END;
     $$;
 
-    -- Truncate the time table of the source table. Expects time table name as
-    -- first argument.
-    CREATE OR REPLACE FUNCTION truncate_time_table()
+    -- Invalidate all entries of the source table, by copying them to the
+    -- history table. Expects history table name as first argument. Since this
+    -- is expected to be a very infrequent operation, it is not optimized for
+    -- performance.
+    CREATE OR REPLACE FUNCTION handle_live_table_truncate()
     RETURNS TRIGGER
     LANGUAGE plpgsql AS
     $$
+    DECLARE
+        history_info record;
     BEGIN
-        EXECUTE format('TRUNCATE %I', TG_ARGV[0]);
+        SELECT * FROM catmaid_history_table cht
+        WHERE cht.live_table_name = TG_RELID
+        AND cht.history_table_name = TG_ARGV[0]::regclass::name
+        INTO history_info;
+
+        -- Insert new historic data into history table, based on the
+        -- currently available columns in the updated table.
+        IF history_info.time_table IS NULL THEN
+            EXECUTE (
+                SELECT format(
+                    'INSERT INTO %1$I (%2$s,%3$s,%4$s) '
+                    'SELECT %5$s, tstzrange(LEAST(lt.%6$s, current_timestamp), current_timestamp), '
+                    'txid_current() '
+                    'FROM %7$s lt',
+                    history_info.history_table_name,
+                    string_agg(quote_ident(cti.column_name), ','),
+                    'sys_period',
+                    'exec_transaction_id',
+                    string_agg('lt.' || quote_ident(cti.column_name), ','),
+                    history_info.live_table_time_column,
+                    history_info.live_table_name)
+                FROM catmaid_table_info cti
+                WHERE cti.rel_oid = TG_RELID);
+        ELSE
+            EXECUTE (
+                SELECT format(
+                    'INSERT INTO %1$I (%2$s,%3$s,%4$s) '
+                    'SELECT %5$s, tstzrange(LEAST(tt.%6$s, current_timestamp), current_timestamp), '
+                    'txid_current() '
+                    'FROM %7$s lt '
+                    'JOIN %8$s tt ON lt.%9$s = tt.live_pk',
+                    history_info.history_table_name,
+                    string_agg(quote_ident(cti.column_name), ','),
+                    'sys_period',
+                    'exec_transaction_id',
+                    string_agg('lt.' || quote_ident(cti.column_name), ','),
+                    'edition_time',
+                    history_info.live_table_name,
+                    history_info.time_table,
+                    history_info.live_table_pkey_column)
+                FROM catmaid_table_info cti
+                WHERE cti.rel_oid = TG_RELID);
+        END IF;
+
         RETURN NULL;
     END;
     $$;
@@ -846,6 +913,7 @@ remove_history_functions_sql = """
     DROP FUNCTION IF EXISTS history_table_name(regclass);
     DROP FUNCTION IF EXISTS sync_time_table(regclass, regclass);
     DROP FUNCTION IF EXISTS truncate_time_table() CASCADE;
+    DROP FUNCTION IF EXISTS handle_live_table_truncate() CASCADE;
     DROP FUNCTION IF EXISTS enable_history_tracking_for_table(live_table_name regclass, history_table_name text, sync boolean);
     DROP FUNCTION IF EXISTS disable_history_tracking_for_table(live_table_name regclass, history_table_name text);
     DROP FUNCTION IF EXISTS enable_history_tracking();
@@ -853,6 +921,7 @@ remove_history_functions_sql = """
     DROP FUNCTION IF EXISTS get_history_update_fn_name_regular(live_table_name regclass);
     DROP FUNCTION IF EXISTS get_history_update_trigger_name_regular(live_table_name regclass);
     DROP FUNCTION IF EXISTS get_history_update_trigger_name_timetable(live_table_name regclass);
+    DROP FUNCTION IF EXISTS get_history_truncate_trigger_name();
     DROP FUNCTION IF EXISTS get_time_table_name(live_table_name regclass);
     DROP FUNCTION IF EXISTS get_time_table_update_trigger_name(live_table_name regclass);
     DROP FUNCTION IF EXISTS get_time_table_truncate_trigger_name(live_table_name regclass);

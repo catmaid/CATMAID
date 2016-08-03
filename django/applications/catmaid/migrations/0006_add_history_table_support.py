@@ -112,24 +112,30 @@ add_history_functions_sql = """
     -- A view that tells if the known history tables have update trigger installed.
     CREATE OR REPLACE VIEW catmaid_live_table_triggers AS
         SELECT cht.live_table_name,
-            (EXISTS(
+            ((
+                cht.time_table IS NULL
+                AND EXISTS (
                 SELECT 1 FROM information_schema.triggers ist, pg_class pc
                 WHERE pc.oid = cht.live_table_name
                 AND ist.event_object_table = pc.relname
                 AND ist.trigger_name =
-                    get_history_update_trigger_name_regular(cht.live_table_name)
-            ) AND EXISTS (
-                SELECT 1 FROM information_schema.triggers ist, pg_class pc
-                WHERE pc.oid = cht.live_table_name
-                AND ist.event_object_table = pc.relname
-                AND ist.trigger_name =
-                    get_history_update_trigger_name_timetable(cht.live_table_name)
-            ) AND EXISTS (
-                SELECT 1 FROM information_schema.triggers ist, pg_class pc
-                WHERE pc.oid = cht.live_table_name
-                AND ist.event_object_table = pc.relname
-                AND ist.trigger_name =
-                    get_time_table_update_trigger_name(cht.live_table_name)
+                    get_history_update_trigger_name_regular(cht.live_table_name))
+            ) OR (
+                cht.time_table IS NOT NULL
+                AND (
+                EXISTS (
+                    SELECT 1 FROM information_schema.triggers ist, pg_class pc
+                    WHERE pc.oid = cht.live_table_name
+                    AND ist.event_object_table = pc.relname
+                    AND ist.trigger_name =
+                        get_history_update_trigger_name_timetable(cht.live_table_name)
+                ) AND EXISTS (
+                    SELECT 1 FROM information_schema.triggers ist, pg_class pc
+                    WHERE pc.oid = cht.live_table_name
+                    AND ist.event_object_table = pc.relname
+                    AND ist.trigger_name =
+                        get_time_table_update_trigger_name(cht.live_table_name)
+                ))
             )) AS triggers_installed
         FROM catmaid_history_table cht;
 
@@ -753,6 +759,18 @@ add_history_functions_sql = """
         ) USING OLD;
 
         -- No return value is expected if run
+        RETURN NULL;
+    END;
+    $$;
+
+    -- Truncate the time table of the source table. Expects time table name as
+    -- first argument.
+    CREATE OR REPLACE FUNCTION truncate_time_table()
+    RETURNS TRIGGER
+    LANGUAGE plpgsql AS
+    $$
+    BEGIN
+        EXECUTE format('TRUNCATE %I', TG_ARGV[0]);
         RETURN NULL;
     END;
     $$;

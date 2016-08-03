@@ -119,6 +119,15 @@ class HistoryTableTests(TransactionTestCase):
         return cursor.fetchall()
 
     @staticmethod
+    def get_time_entries(cursor, live_table_name):
+        cursor.execute("""
+            SELECT row_to_json(t)
+            FROM (SELECT * FROM {}_time) t
+                  ORDER BY edition_time
+        """.format(live_table_name))
+        return cursor.fetchall()
+
+    @staticmethod
     def timestamp_to_interval_format(timestamp):
         """The JSON representation of intervals encodes timestamps in a
         different format than regular timestamps are encoded. This will
@@ -156,25 +165,8 @@ class HistoryTableTests(TransactionTestCase):
         class_details = cursor.fetchone()[0]
 
         new_class_history = self.get_history_entries(cursor, 'class')
-        last_class_history_entry = new_class_history[-1][0]
-        # Expect one entry more than before
-        self.assertEqual(len(new_class_history), n_original_entries + 1)
-
-        # Expect all fields of the original table to match the history table
-        for k,v in class_details.iteritems():
-            self.assertEqual(v, last_class_history_entry[k])
-
-        # Expect the history table entry to have a sys_period column, which is
-        # set to an open interval beginning at te original values creation time.
-        self.assertTrue('sys_period' in last_class_history_entry)
-        # The date formatting is unforunately different for intervals, so we
-        # have to transform the creation time into the expectcted interval
-        # format, i.e. replacing the "T" and cutting of the last three
-        # characters.
-        reformated_creation_time = self.timestamp_to_interval_format(
-                class_details['creation_time'])
-        expected_interval = self.format_range(reformated_creation_time)
-        self.assertEqual(last_class_history_entry['sys_period'], expected_interval)
+        # Expect no changed history for new rows
+        self.assertListEqual(original_class_history, new_class_history)
 
     def test_update(self):
         """Test if updating an existing entry leads to the correct history table
@@ -217,25 +209,20 @@ class HistoryTableTests(TransactionTestCase):
         # Expect two more history entries, one for insertion and one for the
         # class name update.
         new_class_history = self.get_history_entries(cursor, 'class')
-        self.assertEqual(len(new_class_history), n_original_entries + 2)
+        self.assertEqual(len(new_class_history), n_original_entries + 1)
 
         # Get last two class history entries
-        class_history_entry_1 = new_class_history[-2][0]
-        class_history_entry_2 = new_class_history[-1][0]
+        class_history_entry = new_class_history[-1][0]
 
         # Expect all fields of the original table to match the history table
         for k,v in class_details.iteritems():
-            self.assertEqual(v, class_history_entry_1[k])
-        for k,v in new_class_details.iteritems():
-            self.assertEqual(v, class_history_entry_2[k])
+            self.assertEqual(v, class_history_entry[k])
 
         # It is now expected that the range in the first interval will end with
         # the start of the second, which should also equal the edition time of
         # the updated class entry.
-        expected_interval_1 = self.format_range(creation_time_1, edition_time_2)
-        expected_interval_2 = self.format_range(edition_time_2)
-        self.assertEqual(class_history_entry_1['sys_period'], expected_interval_1)
-        self.assertEqual(class_history_entry_2['sys_period'], expected_interval_2)
+        expected_interval = self.format_range(creation_time_1, edition_time_2)
+        self.assertEqual(class_history_entry['sys_period'], expected_interval)
 
         # Update row in new transaction (to have new timestamp)
         cursor.execute("""
@@ -255,23 +242,19 @@ class HistoryTableTests(TransactionTestCase):
         self.assertEqual(creation_time_2, creation_time_3)
         self.assertNotEqual(creation_time_3, edition_time_3)
 
-        # Expect two more history entries, one for insertion and one for the
-        # class name update.
+        # Expect one more history entriy for the class name update
         new_class_2_history = self.get_history_entries(cursor, 'class')
         self.assertEqual(len(new_class_2_history), len(new_class_history) + 1)
 
         # Get last two class history entries
-        class_history_2_entry_1 = new_class_2_history[-3][0]
-        class_history_2_entry_2 = new_class_2_history[-2][0]
-        class_history_2_entry_3 = new_class_2_history[-1][0]
+        class_history_2_entry_1 = new_class_2_history[-2][0]
+        class_history_2_entry_2 = new_class_2_history[-1][0]
 
         # Expect all fields of the original table to match the history table
         for k,v in class_details.iteritems():
             self.assertEqual(v, class_history_2_entry_1[k])
         for k,v in new_class_details.iteritems():
             self.assertEqual(v, class_history_2_entry_2[k])
-        for k,v in new_class_2_details.iteritems():
-            self.assertEqual(v, class_history_2_entry_3[k])
 
         # It is now expected that the range in the first interval will
         # end with the start of the second and the second will end with
@@ -279,10 +262,8 @@ class HistoryTableTests(TransactionTestCase):
         # time of the updated class entry.
         expected_interval_1 = self.format_range(creation_time_1, edition_time_2)
         expected_interval_2 = self.format_range(edition_time_2, edition_time_3)
-        expected_interval_3 = self.format_range(edition_time_3)
         self.assertEqual(class_history_2_entry_1['sys_period'], expected_interval_1)
         self.assertEqual(class_history_2_entry_2['sys_period'], expected_interval_2)
-        self.assertEqual(class_history_2_entry_3['sys_period'], expected_interval_3)
 
     def test_delete(self):
         """Test if deleting an existing entry leads to the correct history table
@@ -400,127 +381,10 @@ class HistoryTableTests(TransactionTestCase):
         n_missing_enabled = HistoryTableTests.get_num_tables_without_update_triggers(cursor)
         self.assertEqual(0, n_missing_enabled)
 
-    def test_history_synchronization_missed_insert_with_time_column(self):
-        """See if disabling the history and inserting a new live row, yields in
-        the correct history if synchronized.
-        """
-        cursor = connection.cursor()
-
-        # Disable history tracking and get number of rows
-        history.disable_history_tracking()
-        original_class_history = self.get_history_entries(cursor, 'class')
-        n_original_entries = len(original_class_history)
-
-        # Create new row (without history updated)
-        cursor.execute("""
-            INSERT INTO "class" (user_id, project_id, class_name)
-            VALUES (%(user_id)s, %(project_id)s, 'testclass')
-            RETURNING row_to_json(class.*)
-        """, {
-            'user_id': self.user.id,
-            'project_id': self.project.id
-        })
-        class_details = cursor.fetchone()[0]
-        transaction.commit()
-
-        # Assert the row count didn't change in the history tables, because
-        # history tracking is disabled.
-        after_insert_class_history = self.get_history_entries(cursor, 'class')
-        n_after_insert_entries = len(original_class_history)
-
-        self.assertListEqual(original_class_history, after_insert_class_history)
-
-        # Sync history
-        history.sync_history_table('class')
-
-        # Assert node count is up-to-date again
-        after_sync_class_history = self.get_history_entries(cursor, 'class')
-        n_after_sync_entries = len(after_sync_class_history)
-
-        self.assertEqual(n_after_insert_entries + 1, n_after_sync_entries)
-
-        # Get last two class history entries
-        class_history_entry = after_sync_class_history[-1][0]
-
-        # Expect all fields of the original table to match the history table
-        for k,v in class_details.iteritems():
-            self.assertEqual(v, class_history_entry[k])
-
-        edition_time = self.timestamp_to_interval_format(class_details['edition_time'])
-        expected_interval = self.format_range(edition_time)
-        self.assertEqual(class_history_entry['sys_period'], expected_interval)
-
-    def test_history_synchronization_missed_modify_with_time_column(self):
-        """See if disabling the history and modifying an existing live node,
-        yields in the correct history if synchronized.
-        """
-        cursor = connection.cursor()
-
-        # Create initial row that will be modified
-        cursor.execute("""
-            INSERT INTO "class" (user_id, project_id, class_name)
-            VALUES (%(user_id)s, %(project_id)s, 'testclass')
-            RETURNING row_to_json(class.*)
-        """, {
-            'user_id': self.user.id,
-            'project_id': self.project.id
-        })
-        class_details = cursor.fetchone()[0]
-        # Make sure triggers are executed
-        transaction.commit()
-
-        # Disable history tracking and get number of rows
-        history.disable_history_tracking()
-        original_class_history = self.get_history_entries(cursor, 'class')
-        n_original_entries = len(original_class_history)
-
-        cursor.execute("""
-            UPDATE "class" SET class_name='tetclass2'
-            WHERE id=%s
-            RETURNING row_to_json(class.*)
-        """, (class_details['id'],))
-        after_update_class_details = cursor.fetchone()[0]
-        # Make sure triggers are executed
-        transaction.commit()
-
-        # Assert the row count didn't change in the history tables, because
-        # history tracking is disabled.
-        after_insert_class_history = self.get_history_entries(cursor, 'class')
-        n_after_insert_entries = len(original_class_history)
-
-        self.assertListEqual(original_class_history, after_insert_class_history)
-
-        # Sync history
-        history.sync_history_table('class')
-
-        # Assert node count is up-to-date again
-        after_sync_class_history = self.get_history_entries(cursor, 'class')
-        n_after_sync_entries = len(after_sync_class_history)
-
-        self.assertEqual(n_after_insert_entries + 1, n_after_sync_entries)
-
-        # Get last two class history entries
-        class_history_entry_1 = after_sync_class_history[-2][0]
-        class_history_entry_2 = after_sync_class_history[-1][0]
-
-        # Expect all fields of the original table to match the history table
-        for k,v in class_details.iteritems():
-            self.assertEqual(v, class_history_entry_1[k])
-        for k,v in after_update_class_details.iteritems():
-            self.assertEqual(v, class_history_entry_2[k])
-
-        edition_time_1 = self.timestamp_to_interval_format(class_details['edition_time'])
-        edition_time_2 = self.timestamp_to_interval_format(after_update_class_details['edition_time'])
-        self.assertNotEqual(edition_time_1, edition_time_2)
-
-        expected_interval_1 = self.format_range(edition_time_1, edition_time_2)
-        expected_interval_2 = self.format_range(edition_time_2)
-        self.assertEqual(class_history_entry_1['sys_period'], expected_interval_1)
-        self.assertEqual(class_history_entry_2['sys_period'], expected_interval_2)
-
-    def test_history_synchronization_missed_insert_without_time_column(self):
-        """See if disabling the history and inserting a new live row, yields in
-        the correct history if synchronized.
+    def test_time_synchronization_missed_insert_without_time_column(self):
+        """See if disabling the history and inserting a new live row in a table
+        without time column (and hence with time table), yields in the correct
+        time table updates.
         """
         cursor = connection.cursor()
 
@@ -528,6 +392,10 @@ class HistoryTableTests(TransactionTestCase):
         history.disable_history_tracking()
         original_project_history = self.get_history_entries(cursor, 'project')
         n_original_entries = len(original_project_history)
+
+        # Assert node count didn't change in time table
+        original_project_time = self.get_time_entries(cursor, 'project')
+        n_original_time_entries = len(original_project_time)
 
         # Create new row (without history updated)
         cursor.execute("""
@@ -545,21 +413,41 @@ class HistoryTableTests(TransactionTestCase):
 
         self.assertListEqual(original_project_history, after_insert_project_history)
 
-        # Sync history
-        history.sync_history_table('project')
+        after_insert_project_time = self.get_time_entries(cursor, 'project')
+        n_after_insert_time_entries = len(after_insert_project_time)
+
+        # Don't expect time entries to change, history system is disabled
+        self.assertListEqual(original_project_time, after_insert_project_time)
+
+        # Sync time table
+        cursor.execute("""
+            SELECT sync_time_table(%s::regclass,
+                (SELECT time_table FROM catmaid_history_table
+                WHERE live_table_name=%s::regclass)::text),
+                current_timestamp::text
+        """, ('project', 'project'))
+        sync_time = cursor.fetchone()[1]
+
+        # Assert node count didn't change in time table
+        after_sync_project_time = self.get_time_entries(cursor, 'project')
+        n_after_sync_time_entries = len(after_sync_project_time)
 
         # Assert node count is up-to-date again
         after_sync_project_history = self.get_history_entries(cursor, 'project')
         n_after_sync_entries = len(after_sync_project_history)
 
-        self.assertEqual(n_after_insert_entries + 1, n_after_sync_entries)
+        # Don't expect history to change
+        self.assertListEqual(original_project_history,
+                after_sync_project_history)
 
-        # Get last two class history entries
-        project_history_entry = after_sync_project_history[-1][0]
+        # Get last time table class history entrie
+        project_time_entry = after_sync_project_time[-1][0]
+        project_edition_time = self.timestamp_to_interval_format(
+            project_time_entry['edition_time'])
 
         # Expect all fields of the original table to match the history table
-        for k,v in project_details.iteritems():
-            self.assertEqual(v, project_history_entry[k])
+        self.assertEqual(project_details['id'], project_time_entry['live_pk'])
+        self.assertEqual(sync_time, project_edition_time)
 
     def test_history_synchronization_missed_modify_without_time_column(self):
         """See if disabling the history and inserting a new live row, yields in
@@ -581,6 +469,15 @@ class HistoryTableTests(TransactionTestCase):
         original_project_history = self.get_history_entries(cursor, 'project')
         n_original_entries = len(original_project_history)
 
+        # Assert node count didn't change in time table
+        original_project_time = self.get_time_entries(cursor, 'project')
+        n_original_time_entries = len(original_project_time)
+
+        # Get last time table class history entrie
+        original_project_time_entry = original_project_time[-1][0]
+        original_project_edition_time = self.timestamp_to_interval_format(
+            original_project_time_entry['edition_time'])
+
         cursor.execute("""
             UPDATE "project" SET title='newname'
             WHERE id=%s
@@ -595,11 +492,39 @@ class HistoryTableTests(TransactionTestCase):
 
         self.assertListEqual(original_project_history, after_insert_project_history)
 
-        # Sync history
-        history.sync_history_table('project')
+        after_update_project_time = self.get_time_entries(cursor, 'project')
+        n_after_update_time_entries = len(after_update_project_time)
+
+        # Don't expect time entries to change, history system is disabled
+        self.assertListEqual(original_project_time, after_update_project_time)
+
+        # Sync time table
+        cursor.execute("""
+            SELECT sync_time_table(%s::regclass,
+                (SELECT time_table FROM catmaid_history_table
+                WHERE live_table_name=%s::regclass)::text),
+                current_timestamp::text
+        """, ('project', 'project'))
+        sync_time = cursor.fetchone()[1]
+
+        # Assert node count didn't change in time table
+        after_sync_project_time = self.get_time_entries(cursor, 'project')
+        n_after_sync_time_entries = len(after_sync_project_time)
 
         # Assert node count is up-to-date again
         after_sync_project_history = self.get_history_entries(cursor, 'project')
         n_after_sync_entries = len(after_sync_project_history)
 
-        self.assertEqual(n_after_insert_entries + 1, n_after_sync_entries)
+        self.assertEqual(n_original_time_entries, n_after_sync_time_entries)
+        self.assertEqual(n_original_entries, n_after_sync_entries)
+
+        # Get last time table class history entrie
+        project_time_entry = after_sync_project_time[-1][0]
+        project_edition_time = self.timestamp_to_interval_format(
+            project_time_entry['edition_time'])
+
+        # Don't expect time table to change. Even though the live table changed,
+        # we don't know the old data. Therefore, there is no need to update the
+        # time table also. Let's pretend nothing happened.
+        self.assertEqual(project_details['id'], project_time_entry['live_pk'])
+        self.assertEqual(original_project_edition_time, project_edition_time)

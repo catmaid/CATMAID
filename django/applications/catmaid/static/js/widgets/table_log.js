@@ -10,9 +10,6 @@
     var self = this;
     var asInitValsSyn = [];
 
-    var possibleLengths = CATMAID.pageLengthOptions;
-    var possibleLengthsLabels = CATMAID.pageLengthLabels;
-
     /**
      * Redraw the complete log table.
      */
@@ -23,6 +20,8 @@
 
     this.init = function (pid) {
       var tableid = '#logtable';
+      var possibleLengths = CATMAID.pageLengthOptions;
+      var possibleLengthsLabels = CATMAID.pageLengthLabels;
 
       self.logTable = $(tableid).dataTable({
         // http://www.datatables.net/usage/options

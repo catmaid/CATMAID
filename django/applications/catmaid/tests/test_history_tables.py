@@ -1,6 +1,6 @@
 import time
 
-from django.db import connection, transaction
+from django.db import connection, transaction, InternalError
 from django.test import TestCase, TransactionTestCase
 from guardian.shortcuts import assign_perm
 from catmaid import history
@@ -27,6 +27,22 @@ class HistoryTableTests(TransactionTestCase):
         """
         history.enable_history_tracking()
         return super(HistoryTableTests, self).run(*args)
+
+    def test_name_length_limits(self):
+        """ Make sure an exception is raised if the history table name for a live
+        table exceeds identifier limits imposed by Postgres.
+        """
+        cursor = connection.cursor()
+        with self.assertRaises(InternalError):
+            cursor.execute("""
+                CREATE TABLE
+                    a_very_very_long_table_name_which_is_pretty_close_to_63_chars (
+                        test    text
+                    );
+                SELECT create_history_table(
+                    'a_very_very_long_table_name_which_is_pretty_close_to_63_chars'::regclass)
+            """)
+
 
     def test_history_table_existence(self):
         """Test if all catmaid tables have a history table"""

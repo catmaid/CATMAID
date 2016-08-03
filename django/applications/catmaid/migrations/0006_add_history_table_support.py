@@ -225,6 +225,14 @@ add_history_functions_sql = """
         -- History tables will be named like the live table plus a '_history' suffix
         history_table_name = history_table_name(live_table_name);
 
+        -- Make sure the history table name is not longer than 63 characters, a
+        -- limit that Postgres defaults to and which causes identifier names to
+        -- become shortened silently.
+        IF (LENGTH(get_history_update_fn_name_regular(live_table_name)) > 63) THEN
+            RAISE EXCEPTION 'Can''t create history table with name longer than '
+                '63 characters: %', history_table_name;
+        END IF;
+
         -- Don't do anything if there is already a history table registered with this name.
         IF EXISTS(SELECT 1 FROM catmaid_history_table cht
                   WHERE cht.history_table_name = outerblock.history_table_name) THEN

@@ -78,11 +78,11 @@
     }, {});
 
     this.cache = {
-      nodePool : new this.ElementPool(100),
-      connectorPool : new this.ElementPool(20),
-      arrowPool : new this.ElementPool(50),
+      nodePool: new this.ElementPool(100),
+      connectorPool: new this.ElementPool(20),
+      arrowPool: new this.ElementPool(50),
 
-      clear : function() {
+      clear: function() {
         this.nodePool.clear();
         this.connectorPool.clear();
         this.arrowPool.clear();
@@ -569,7 +569,7 @@
           var linecolor = this.colorFromZDiff();
           this.line.tint = linecolor;
           if (this.number_text) {
-            this.number_text.style.fill = linecolor;
+            this.number_text.tint = linecolor;
           }
         }
       };
@@ -1763,6 +1763,8 @@
     /** Used for confidence between treenode nodes and confidence between
      * a connector and a treenode. */
     (function(classes) {
+      var confidenceTextCache = {};
+
       var updateConfidenceText = function (x, y,
                                            parentx, parenty,
                                            fillColor,
@@ -1774,21 +1776,43 @@
             newConfidenceX = (x + parentx) / 2 + norm[0] * numberOffset,
             newConfidenceY = (y + parenty) / 2 + norm[1] * numberOffset;
 
+        var cachedText = confidenceTextCache[confidence];
+
+        if (!cachedText) {
+          cachedText = new PIXI.Text('' + confidence, {
+              fontWeight: 'normal',
+              fontSize: this.confidenceFontSize,
+              fill: 0xFFFFFF,
+              baseline: 'middle'});
+          cachedText.alpha = 1.0;
+          cachedText.resolution = this.textResolution;
+          var texture = this.overlayGlobals.tracingOverlay.pixiLayer._context.renderer.generateTexture(
+              cachedText, PIXI.SCALE_MODES.DEFAULT, 1);
+          confidenceTextCache[confidence] = cachedText;
+        } else if (cachedText.style.fontSize !== this.confidenceFontSize) {
+          cachedText.style = {
+              fontWeight: 'normal',
+              fontSize: this.confidenceFontSize,
+              fill: 0xFFFFFF,
+              baseline: 'middle'};
+          cachedText.resolution = this.textResolution;
+          var texture = this.overlayGlobals.tracingOverlay.pixiLayer._context.renderer.generateTexture(
+              cachedText, PIXI.SCALE_MODES.DEFAULT, 1);
+        }
+
         if (existing) {
           text = existing;
-          text.text = '' + confidence;
           text.visible = true;
+          text.texture = cachedText.texture;
         } else {
-          text = new PIXI.Text('' + confidence, {fontWeight: 'normal'});
-          text.alpha = 1.0;
+          text = new PIXI.Sprite(cachedText.texture);
           text.anchor.x = text.anchor.y = 0.5;
           this.line.parent.addChild(text);
         }
 
-        text.resolution = this.textResolution;
         text.x = newConfidenceX;
         text.y = newConfidenceY;
-        text.style = {fontSize: this.confidenceFontSize, fill: fillColor, baseline: 'middle'};
+        text.tint = fillColor;
         // text.attr({x: newConfidenceX,
         //            y: newConfidenceY,
         //            'font-size': this.confidenceFontSize,

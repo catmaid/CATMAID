@@ -66,6 +66,10 @@ folder. Within this folder, ``models.py`` defines the database schema and
 logical objects on which the back API operates, while ``urls.py`` maps URI
 endpoints in the API to Python methods. Both are useful starting points when
 locating particular functionality or determining where to add new functionality.
+In case an endpoint changes data, a transaction log entry is added. This way
+semantic information can be linked to individual database changes. Writing
+endpoints are decorated with a ``record_view`` decorator in ``urls.py``. Make
+sure to follow this convention for new endpoints.
 
 Most of the API routes to the ``catmaid.control`` module and folder. Within this
 module API functions are organized into logical units like skeleton or

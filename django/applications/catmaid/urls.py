@@ -18,6 +18,7 @@ from catmaid.control import (authentication, user, log, message, client, common,
         wiringdiagram, object, treenodetable)
 
 from catmaid.views import CatmaidView
+from catmaid.history import record_request_action as record_view
 
 
 # A regular expression matching floating point and integer numbers
@@ -195,25 +196,25 @@ urlpatterns += [
 # Treenode access
 UrlParser.explicit_root_paths |= set(['{project_id}/treenodes'])
 urlpatterns += [
-    url(r'^(?P<project_id>\d+)/treenode/create$', treenode.create_treenode),
-    url(r'^(?P<project_id>\d+)/treenode/insert$', treenode.insert_treenode),
-    url(r'^(?P<project_id>\d+)/treenode/delete$', treenode.delete_treenode),
+    url(r'^(?P<project_id>\d+)/treenode/create$', record_view("Create new node")(treenode.create_treenode)),
+    url(r'^(?P<project_id>\d+)/treenode/insert$', record_view("Insert new node")(treenode.insert_treenode)),
+    url(r'^(?P<project_id>\d+)/treenode/delete$', record_view("Delete node")(treenode.delete_treenode)),
     url(r'^(?P<project_id>\d+)/treenodes/(?P<treenode_id>\d+)/info$', treenode.treenode_info),
     url(r'^(?P<project_id>\d+)/treenodes/(?P<treenode_id>\d+)/children$', treenode.find_children),
-    url(r'^(?P<project_id>\d+)/treenodes/(?P<treenode_id>\d+)/confidence$', treenode.update_confidence),
-    url(r'^(?P<project_id>\d+)/treenodes/(?P<treenode_id>\d+)/parent$', treenode.update_parent),
-    url(r'^(?P<project_id>\d+)/treenode/(?P<treenode_id>\d+)/radius$', treenode.update_radius),
-    url(r'^(?P<project_id>\d+)/treenodes/radius$', treenode.update_radii),
+    url(r'^(?P<project_id>\d+)/treenodes/(?P<treenode_id>\d+)/confidence$', record_view("Update node confidence")(treenode.update_confidence)),
+    url(r'^(?P<project_id>\d+)/treenodes/(?P<treenode_id>\d+)/parent$', record_view("Update node parent")(treenode.update_parent)),
+    url(r'^(?P<project_id>\d+)/treenode/(?P<treenode_id>\d+)/radius$', record_view("Update node radius")(treenode.update_radius)),
+    url(r'^(?P<project_id>\d+)/treenodes/radius$', record_view("Update node radius")(treenode.update_radii),
     url(r'^(?P<project_id>\d+)/treenodes/(?P<treenode_id>\d+)/previous-branch-or-root$', treenode.find_previous_branchnode_or_root),
-    url(r'^(?P<project_id>\d+)/treenodes/(?P<treenode_id>\d+)/next-branch-or-end$', treenode.find_next_branchnode_or_end),
+    url(r'^(?P<project_id>\d+)/treenodes/(?P<treenode_id>\d+)/next-branch-or-end$', treenode.find_next_branchnode_or_end)),
 ]
 
 # Suppressed virtual treenode access
 urlpatterns += [
     url(r'^(?P<project_id>\d+)/treenodes/(?P<treenode_id>\d+)/suppressed-virtual/$',
-            suppressed_virtual_treenode.SuppressedVirtualTreenodeList.as_view()),
+            record_view("Supress virtual node", "POST")(suppressed_virtual_treenode.SuppressedVirtualTreenodeList.as_view())),
     url(r'^(?P<project_id>\d+)/treenodes/(?P<treenode_id>\d+)/suppressed-virtual/(?P<suppressed_id>\d+)$',
-            suppressed_virtual_treenode.SuppressedVirtualTreenodeDetail.as_view()),
+            record_view("Unsupress virtual node", "DELETE")(suppressed_virtual_treenode.SuppressedVirtualTreenodeDetail.as_view())),
 ]
 
 # General skeleton access

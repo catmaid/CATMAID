@@ -14,23 +14,32 @@ def add_log_entry(user_id, label):
     """, (user_id, label))
 
 
-def record_request_action(label):
+def record_request_action(label, method=None):
     """Give a label to the current transaction and time, executed by a Django
     user as provided by the wrapped function's request parameter. This
     parameter is first looked up in the function's keyword arguments and if not
-    found, the request is expected to be provided as the first argument.
+    found, the request is expected to be provided as the first argument. If
+    <method> is set to a particular HTTP method (i.e. GET or POST), only these
+    requests are recorded.
     """
+    if method and not method.isupper():
+        raise ValueError("Method name must be upper case")
+
     def decorator(f):
         def wrapped_f(*args, **kwargs):
             if 'request' in kwargs:
-                user_id = kwargs['request'].user.id
+                request = kwargs['request']
             elif len(args) > 0:
-                user_id = args[0].user.id
+                request = args[0]
             else:
                 raise ValueError("Couldn't find request to record action for")
 
             result = f(*args, **kwargs)
-            add_log_entry(user_id, label)
+
+            user_id = request.user.id
+            if not method or request.method == method:
+                add_log_entry(user_id, label)
+
             return result
         return wrapped_f
     return decorator

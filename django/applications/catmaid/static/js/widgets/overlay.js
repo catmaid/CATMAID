@@ -621,6 +621,7 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
      far enough to merit issuing another updateNodes. */
   this.old_x = stackViewer.x;
   this.old_y = stackViewer.y;
+  this.old_z = stackViewer.z;
 
   // Remember the width and height of stack viewer at the time of the last
   // update. When resizing, this is used to tell whether a node update is
@@ -2278,7 +2279,9 @@ SkeletonAnnotations.TracingOverlay.prototype.redraw = function(force, completion
   var stackViewer = this.stackViewer;
 
   // Don't udpate if the stack's current section or scale wasn't changed
-  var doNotUpdate = stackViewer.old_z == stackViewer.z && stackViewer.old_s == stackViewer.s;
+  var doNotUpdate = stackViewer.old_z === stackViewer.z &&
+                    stackViewer.old_s === stackViewer.s &&
+                    this.old_z === stackViewer.z;
   if ( doNotUpdate ) {
     var padS = this.padding / stackViewer.scale;
     // Don't upate if the center didn't move horizontally, but do if
@@ -2700,6 +2703,7 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
     var stackViewer = self.stackViewer;
     self.old_x = stackViewer.x;
     self.old_y = stackViewer.y;
+    self.old_z = stackViewer.z;
     self.old_width = stackViewer.viewWidth;
     self.old_height = stackViewer.viewHeight;
 

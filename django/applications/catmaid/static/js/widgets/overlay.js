@@ -647,12 +647,6 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
         this);
   }, this);
 
-  this.graphics = CATMAID.SkeletonElementsFactory.createSkeletonElements(
-      this,
-      pixiLayer.batchContainer,
-      this._skeletonDisplaySource.skeletonModels);
-  this.graphics.setActiveNodeRadiusVisibility(SkeletonAnnotations.TracingOverlay.Settings.session.display_active_node_radius);
-
   this.view = document.createElement("div");
   this.view.className = "sliceTracingOverlay";
   this.view.id = "sliceTracingOverlayId" + stackViewer.getId();
@@ -660,6 +654,19 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
   // Custom cursor for tracing
   this.view.style.cursor ="url(" + STATIC_URL_JS + "images/svg-circle.cur) 15 15, crosshair";
   this.view.onmousemove = this.createViewMouseMoveFn(this.stackViewer, this.coords);
+
+  this.paper = d3.select(this.view)
+                  .append('svg')
+                  .attr({
+                      width: stackViewer.viewWidth,
+                      height: stackViewer.viewHeight,
+                      style: 'overflow: hidden; position: relative;'});
+
+  this.graphics = CATMAID.SkeletonElementsFactory.createSkeletonElements(
+      this,
+      pixiLayer.batchContainer,
+      this._skeletonDisplaySource.skeletonModels);
+  this.graphics.setActiveNodeRadiusVisibility(SkeletonAnnotations.TracingOverlay.Settings.session.display_active_node_radius);
 
   // Listen to change and delete events of skeletons
   CATMAID.Skeletons.on(CATMAID.Skeletons.EVENT_SKELETON_CHANGED,
@@ -2285,6 +2292,7 @@ SkeletonAnnotations.TracingOverlay.prototype.redraw = function(force, completion
   doNotUpdate = !force && (doNotUpdate || this.suspended);
 
   var screenScale = SkeletonAnnotations.TracingOverlay.Settings.session.screen_scaling;
+  this.paper.classed('screen-scale', screenScale);
   // All graphics elements scale automatcally. If in screen scale mode, where
   // the size of all elements should stay the same (regardless of zoom level),
   // counter acting this is required.
@@ -2307,6 +2315,16 @@ SkeletonAnnotations.TracingOverlay.prototype.redraw = function(force, completion
   this.pixiLayer.batchContainer.position.set(
       -stackViewBox.min.x*stackViewer.scale,
       -stackViewBox.min.y*stackViewer.scale);
+
+  // Use project coordinates for the SVG's view box
+  this.paper.attr({
+      viewBox: [
+          stackViewBox.min.x,
+          stackViewBox.min.y,
+          stackViewBox.max.x - stackViewBox.min.x,
+          stackViewBox.max.y - stackViewBox.min.y].join(' '),
+      width: stackViewer.viewWidth,     // Width and height only need to be updated on
+      height: stackViewer.viewHeight}); // resize.
 
   if (doNotUpdate) {
     this.pixiLayer._renderIfReady();
@@ -3224,7 +3242,9 @@ SkeletonAnnotations.TracingOverlay.prototype.measureRadius = function () {
         // Unbind key handler and remove circle
         $('body').off('keydown.catmaidRadiusSelect');
         fakeNode.removeSurroundingCircle();
-        fakeNode.obliterate();
+        if (fakeNode.id === id) {
+          fakeNode.obliterate();
+        }
         return true;
       }
       return false;

@@ -23,14 +23,6 @@
     return [nx, ny];
   };
 
-  d3.selection.prototype.hide = function () {
-    return this.attr('visibility', 'hidden');
-  };
-
-  d3.selection.prototype.show = function () {
-    return this.attr('visibility', 'visible');
-  };
-
   /**
    * Construct new SkeletonElement instances with this factory.
    */
@@ -295,12 +287,8 @@
         // c may already exist if the node is being reused
         if (!this.c) {
           // create a circle object
-          // this.c = new PIXI.Graphics();
           this.c = new PIXI.Sprite(this.NODE_TEXTURE);
           this.c.anchor.set(0.5);
-          // this.c.beginFill(0xFFFFFF);
-          // this.c.drawCircle(0, 0, this.scaling*this.NODE_RADIUS);
-          // this.c.endFill();
           this.c.interactive = true;
           this.c.hitArea = new PIXI.Circle(0, 0, this.NODE_RADIUS + this.CATCH_RADIUS); // TODO: too big for connector nodes
           this.c.node = this;
@@ -329,20 +317,19 @@
             this.shouldDisplay() &&
             this.radius > 0) {
           if (!this.radiusGraphics) {
-            this.radiusGraphics = this.overlayGlobals.paper.select('.lines').append('circle');
+            this.radiusGraphics = new PIXI.Graphics();
+            this.overlayGlobals.skeletonElements.containers.lines.addChild(this.radiusGraphics);
           }
 
-          var fillcolor = this.color();
-          this.radiusGraphics.attr({
-                                cx: this.x,
-                                cy: this.y,
-                                r: this.radius / this.resolutionScale,
-                                fill: 'none',
-                                stroke: fillcolor,
-                                'stroke-width': 1.5
-                              });
+          this.radiusGraphics.clear();
+          this.radiusGraphics.lineStyle(this.EDGE_WIDTH, 0xFFFFFF, 1.0);
+          this.radiusGraphics.drawCircle(0, 0, this.radius / this.resolutionScale);
+          this.radiusGraphics.tint = this.color();
+          this.radiusGraphics.x = this.x;
+          this.radiusGraphics.y = this.y;
         } else if (this.radiusGraphics) {
-          this.radiusGraphics.remove();
+          this.radiusGraphics.parent.removeChild(this.radiusGraphics);
+          this.radiusGraphics.destroy();
           this.radiusGraphics = null;
         }
       };
@@ -385,8 +372,7 @@
         this.EDGE_WIDTH = this.BASE_EDGE_WIDTH * this.stackScaling;//baseScale * (dynamicScale ? 1 : resScale);
         this.confidenceFontSize = this.CONFIDENCE_FONT_PT*this.stackScaling + 'pt';
         this.textResolution = resScale;
-        // this.circleDef.attr('r', this.NODE_RADIUS*this.scaling);
-        //
+
         if (oldScaling !== this.scaling) this.initTextures();
       };
 
@@ -691,7 +677,8 @@
           this.c = null;
         }
         if (this.radiusGraphics) {
-          this.radiusGraphics.remove();
+          this.radiusGraphics.parent.removeChild(this.radiusGraphics);
+          this.radiusGraphics.destroy();
           this.radiusGraphics = null;
         }
         if (this.line) {
@@ -723,7 +710,8 @@
           this.c.visible = false;
         }
         if (this.radiusGraphics) {
-          this.radiusGraphics.remove();
+          this.radiusGraphics.parent.removeChild(this.radiusGraphics);
+          this.radiusGraphics.destroy();
           this.radiusGraphics = null;
         }
         if (this.line) {
@@ -805,28 +793,31 @@
         }
 
         // Create a label to measure current radius of the circle.
-        // var label = this.overlayGlobals.paper.append('g').classed('radiuslabel', true).attr({
-        //     'pointer-events': 'none'});
-        // var fontSize = parseFloat(ptype.ArrowLine.prototype.confidenceFontSize) * 0.75;
-        // var pad = fontSize * 0.5;
-        // var labelShadow = label.append('rect').attr({
-        //     x: this.x,
-        //     y: this.y,
-        //     rx: pad,
-        //     ry: pad,
-        //     stroke: '#000',
-        //     fill: '#000',
-        //     opacity: 0.75,
-        //     'pointer-events': 'none'});
-        // var labelText = label.append('text').attr({
-        //     x: this.x,
-        //     y: this.y,
-        //     'font-size': fontSize + 'pt',
-        //     fill: '#FFF',
-        //     'pointer-events': 'none'});
+        var label = this.overlayGlobals.tracingOverlay.paper.append('g').classed('radiuslabel', true).attr({
+            'pointer-events': 'none'});
+        var fontSize = parseFloat(ptype.ArrowLine.prototype.confidenceFontSize) * 0.75;
+        var pad = fontSize * 0.5;
+        var labelShadow = label.append('rect').attr({
+            x: this.x,
+            y: this.y,
+            rx: pad,
+            ry: pad,
+            stroke: '#000',
+            fill: '#000',
+            opacity: 0.75,
+            'pointer-events': 'none'});
+        var labelText = label.append('text').attr({
+            x: this.x,
+            y: this.y,
+            'font-size': fontSize + 'pt',
+            fill: '#FFF',
+            'pointer-events': 'none'});
 
         // Mark this node as currently edited
-        this.surroundingCircleElements = [c, line];
+        this.surroundingCircleElements = {
+            c: c,
+            line: line,
+            label: label};
 
         // Store current position of this node, just in case this instance will be
         // re-initialized due to an update. This also means that the circle cannot
@@ -853,14 +844,14 @@
           // Update radius measurement label.
           var rP = stackToProject(r);
           var newRP = Math.sqrt(Math.pow(rP.x, 2) + Math.pow(rP.y, 2) + Math.pow(rP.z, 2));
-          // labelText.attr({x: nodeX + r.x + 3 * pad, y: nodeY + r.y + 2 * pad});
-          // labelText.text(Math.round(newRP) + 'nm (' + Math.round(newR) + 'px)');
-          // var bbox = labelText.node().getBBox();
-          // labelShadow.attr({
-          //     x: nodeX + r.x + 2 * pad,
-          //     y: nodeY + r.y + 2 * pad - bbox.height,
-          //     width: bbox.width + 2 * pad,
-          //     height: bbox.height + pad});
+          labelText.attr({x: nodeX + r.x + 3 * pad, y: nodeY + r.y + 2 * pad});
+          labelText.text(Math.round(newRP) + 'nm (' + Math.round(newR) + 'px)');
+          var bbox = labelText.node().getBBox();
+          labelShadow.attr({
+              x: nodeX + r.x + 2 * pad,
+              y: nodeY + r.y + 2 * pad - bbox.height,
+              width: bbox.width + 2 * pad,
+              height: bbox.height + pad});
 
           if (line) {
             var lineColor = SkeletonAnnotations.TracingOverlay.Settings.session.active_skeleton_color;
@@ -903,15 +894,17 @@
           return;
         }
         // Get last radius components
-        var r = this.surroundingCircleElements[0].datum;
+        var sce = this.surroundingCircleElements;
+        var r = sce.c.datum;
         // Clean up
-        this.surroundingCircleElements.forEach(function (e) {
-          if (e) {
-            e.parent.removeChild(e);
-            e.destroy();
-            e.removeAllListeners();
-          }
-        });
+        sce.c.parent.removeChild(sce.c);
+        sce.c.destroy();
+        sce.c.removeAllListeners();
+        if (sce.line) {
+          sce.line.parent.removeChild(sce.line);
+          sce.line.destroy();
+        }
+        sce.label.remove();
         delete this.surroundingCircleElements;
 
         this.overlayGlobals.tracingOverlay.redraw();
@@ -1748,17 +1741,9 @@
       this.scale = function(baseScale, resScale, dynamicScale) {
         this.stackScaling = baseScale * (dynamicScale ? dynamicScale : 1);
         this.scaling = baseScale * resScale * (dynamicScale ? dynamicScale : 1);
-        this.EDGE_WIDTH = this.BASE_EDGE_WIDTH * this.stackScaling;//baseScale * (dynamicScale ? 1 : resScale);
+        this.EDGE_WIDTH = this.BASE_EDGE_WIDTH * this.stackScaling;
         this.confidenceFontSize = this.CONFIDENCE_FONT_PT * this.stackScaling + 'pt';
         this.textResolution = resScale;
-        // If not in screen scaling mode, do not need to scale markers (but must reset scale).
-        var scale = dynamicScale ? resScale*dynamicScale : 1;
-        // this.markerDefs.forEach(function (m) {
-        //   m.attr({
-        //     markerWidth: markerSize[0]*scale,
-        //     markerHeight: markerSize[1]*scale
-        //   });
-        // });
       };
 
       this.initTextures = function () {

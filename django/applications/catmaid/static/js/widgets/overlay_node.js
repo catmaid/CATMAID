@@ -290,7 +290,7 @@
           this.c = new PIXI.Sprite(this.NODE_TEXTURE);
           this.c.anchor.set(0.5);
           this.c.interactive = true;
-          this.c.hitArea = new PIXI.Circle(0, 0, this.NODE_RADIUS + this.CATCH_RADIUS); // TODO: too big for connector nodes
+          this.c.hitArea = new PIXI.Circle(0, 0, this.NODE_RADIUS + this.CATCH_RADIUS);
           this.c.node = this;
 
           this.overlayGlobals.skeletonElements.containers.nodes.addChild(this.c);
@@ -592,7 +592,7 @@
             Math.max(this.dToSecBefore, Math.min(this.dToSecAfter, this.parent.zdiff)));
 
         this.line.clear();
-        this.line.lineStyle(this.EDGE_WIDTH, 0xFFFFFF, 1.0); // TODO: edge width
+        this.line.lineStyle(this.EDGE_WIDTH, 0xFFFFFF, 1.0);
         this.line.moveTo(childLocation[0], childLocation[1]);
         this.line.lineTo(parentLocation[0], parentLocation[1]);
         this.line.tint = lineColor;
@@ -688,7 +688,7 @@
           this.line = null;
         }
         if (this.number_text) {
-          // this.number_text.parent.removeChild(this.number_text);
+          // Already removed from parent line by line.destroy.
           this.number_text.destroy();
           this.number_text = null;
         }
@@ -1710,7 +1710,6 @@
 
       this.show = function() {
         this.line.visible = this.visibility;
-        // if (this.confidence_text) this.confidence_text.visible = this.visibility;
       };
 
       this.updateVisibility = function (connector) {
@@ -1720,7 +1719,6 @@
 
       this.disable = function() {
         this.line.visible = false;
-        // if (this.confidence_text) this.confidence_text.visible = false;
       };
 
       /**
@@ -1739,7 +1737,7 @@
         this.line.removeAllListeners();
         this.line = null;
         if (this.confidence_text) {
-          // this.confidence_text.parent.removeChild(this.confidence_text);
+          // Already removed from parent line by line.destroy.
           this.confidence_text.destroy();
           this.confidence_text = null;
         }
@@ -1824,7 +1822,6 @@
         text.x = newConfidenceX;
         text.y = newConfidenceY;
         text.tint = fillColor;
-        // text.visible = this.line.visible;
 
         return text;
       };

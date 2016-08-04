@@ -3236,6 +3236,7 @@ SkeletonAnnotations.TracingOverlay.prototype.measureRadius = function () {
       // Remove circle and call callback
       fakeNode.removeSurroundingCircle(displayRadius);
       fakeNode.obliterate();
+      self.redraw();
     }
   }
 

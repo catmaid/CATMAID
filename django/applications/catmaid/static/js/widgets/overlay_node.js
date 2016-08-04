@@ -782,61 +782,51 @@
       this.drawSurroundingCircle = function(drawLine, toStack, stackToProject, onclickHandler) {
         var self = this;
         // Create a circle object that represents the surrounding circle
-        var color = "rgb(255,255,0)";
-        var c = this.overlayGlobals.paper.select('.nodes').append('circle')
-          .attr({
-            cx: this.x,
-            cy: this.y,
-            r: 0,
-            fill: "none",
-            stroke: color,
-            'stroke-width': 1.5,
-          });
+        var color = 0xFFFF00;
+
+        var c = new PIXI.Graphics();
+        c.lineStyle(this.EDGE_WIDTH, 0xFFFFFF, 1.0);
+        c.drawCircle(this.x, this.y, 0);
+        this.overlayGlobals.skeletonElements.containers.nodes.addChild(c);
+        c.hitArea = new PIXI.Circle(this.x, this.y, 1000000);
+        c.interactive = true;
+        c.visible = true;
+        c.tint = color;
+
         // Create a line from the node to mouse if requested
         if (drawLine) {
-          var line = this.overlayGlobals.paper.select('.lines').append('line')
-            .attr({
-              x1: this.x,
-              y1: this.y,
-              x2: this.x,
-              y2: this.y,
-              stroke: color,
-              'stroke-width': this.EDGE_WIDTH
-            });
+          var line = new PIXI.Graphics();
+          line.lineStyle(this.EDGE_WIDTH, 0xFFFFFF, 1.0);
+          line.moveTo(this.x, this.y);
+          line.lineTo(this.x + 1, this.y + 1);
+          line.tint = color;
+          line.visible = true;
+          this.overlayGlobals.skeletonElements.containers.lines.addChild(line);
         }
-        // Create an adhoc mouse catcher
-        var mc = this.overlayGlobals.paper.select('.nodes').append('circle')
-          .attr({
-            cx: this.x,
-            cy: this.y,
-            r: '300%',
-            fill: color,  // If opacity is zero it must have a fillcolor, otherwise the mouse events ignore it
-            stroke: "none",
-            opacity: 0
-          });
+
         // Create a label to measure current radius of the circle.
-        var label = this.overlayGlobals.paper.append('g').classed('radiuslabel', true).attr({
-            'pointer-events': 'none'});
-        var fontSize = parseFloat(ptype.ArrowLine.prototype.confidenceFontSize) * 0.75;
-        var pad = fontSize * 0.5;
-        var labelShadow = label.append('rect').attr({
-            x: this.x,
-            y: this.y,
-            rx: pad,
-            ry: pad,
-            stroke: '#000',
-            fill: '#000',
-            opacity: 0.75,
-            'pointer-events': 'none'});
-        var labelText = label.append('text').attr({
-            x: this.x,
-            y: this.y,
-            'font-size': fontSize + 'pt',
-            fill: '#FFF',
-            'pointer-events': 'none'});
+        // var label = this.overlayGlobals.paper.append('g').classed('radiuslabel', true).attr({
+        //     'pointer-events': 'none'});
+        // var fontSize = parseFloat(ptype.ArrowLine.prototype.confidenceFontSize) * 0.75;
+        // var pad = fontSize * 0.5;
+        // var labelShadow = label.append('rect').attr({
+        //     x: this.x,
+        //     y: this.y,
+        //     rx: pad,
+        //     ry: pad,
+        //     stroke: '#000',
+        //     fill: '#000',
+        //     opacity: 0.75,
+        //     'pointer-events': 'none'});
+        // var labelText = label.append('text').attr({
+        //     x: this.x,
+        //     y: this.y,
+        //     'font-size': fontSize + 'pt',
+        //     fill: '#FFF',
+        //     'pointer-events': 'none'});
 
         // Mark this node as currently edited
-        this.surroundingCircleElements = [c, mc, label, line];
+        this.surroundingCircleElements = [c, line];
 
         // Store current position of this node, just in case this instance will be
         // re-initialized due to an update. This also means that the circle cannot
@@ -846,8 +836,8 @@
         var nodeZ = this.z;
 
         // Update radius on mouse move
-        mc.on('mousemove', function() {
-          var e = d3.event;
+        c.on('mousemove', function (event) {
+          var e = event.data.originalEvent;
           var rS = toStack({x: e.layerX, y: e.layerY});
           var r = {
             x: rS.x - nodeX,
@@ -855,20 +845,22 @@
             z: rS.z - nodeZ
           };
           var newR = Math.sqrt(Math.pow(r.x, 2) + Math.pow(r.y, 2) + Math.pow(r.z, 2));
-          c.attr('r', newR);
+          c.graphicsData[0].shape.radius = newR;
+          c.dirty = true;
+          c.clearDirty = true; // Force re-rendering.
           // Strore also x and y components
-          c.datum(r);
+          c.datum = r;
           // Update radius measurement label.
           var rP = stackToProject(r);
           var newRP = Math.sqrt(Math.pow(rP.x, 2) + Math.pow(rP.y, 2) + Math.pow(rP.z, 2));
-          labelText.attr({x: nodeX + r.x + 3 * pad, y: nodeY + r.y + 2 * pad});
-          labelText.text(Math.round(newRP) + 'nm (' + Math.round(newR) + 'px)');
-          var bbox = labelText.node().getBBox();
-          labelShadow.attr({
-              x: nodeX + r.x + 2 * pad,
-              y: nodeY + r.y + 2 * pad - bbox.height,
-              width: bbox.width + 2 * pad,
-              height: bbox.height + pad});
+          // labelText.attr({x: nodeX + r.x + 3 * pad, y: nodeY + r.y + 2 * pad});
+          // labelText.text(Math.round(newRP) + 'nm (' + Math.round(newR) + 'px)');
+          // var bbox = labelText.node().getBBox();
+          // labelShadow.attr({
+          //     x: nodeX + r.x + 2 * pad,
+          //     y: nodeY + r.y + 2 * pad - bbox.height,
+          //     width: bbox.width + 2 * pad,
+          //     height: bbox.height + pad});
 
           if (line) {
             var lineColor = SkeletonAnnotations.TracingOverlay.Settings.session.active_skeleton_color;
@@ -877,18 +869,26 @@
                   SkeletonAnnotations.TracingOverlay.Settings.session.inactive_skeleton_color_above :
                   SkeletonAnnotations.TracingOverlay.Settings.session.inactive_skeleton_color_below;
             }
-            line.attr({x2: nodeX + r.x, y2: nodeY + r.y, stroke: lineColor});
+            line.clear();
+            line.lineStyle(self.EDGE_WIDTH, 0xFFFFFF, 1.0);
+            line.moveTo(nodeX, nodeY);
+            line.lineTo(nodeX + r.x, nodeY + r.y);
+            line.tint = lineColor;
           }
+
+          self.overlayGlobals.tracingOverlay.redraw();
         });
 
         // Don't let mouse down events bubble up
-        mc.on('mousedown', function() {
-          d3.event.stopPropagation();
-          d3.event.preventDefault();
+        c.on('mousedown', function (event) {
+          var e = event.data.originalEvent;
+          e.stopPropagation();
+          e.preventDefault();
         });
-        mc.on('click', function() {
-          d3.event.stopPropagation();
-          d3.event.preventDefault();
+        c.on('click', function (event) {
+          var e = event.data.originalEvent;
+          e.stopPropagation();
+          e.preventDefault();
           if (onclickHandler) { onclickHandler(); }
           return true;
         });
@@ -903,10 +903,18 @@
           return;
         }
         // Get last radius components
-        var r = this.surroundingCircleElements[0].datum();
+        var r = this.surroundingCircleElements[0].datum;
         // Clean up
-        this.surroundingCircleElements.forEach(function (e) { if (e) e.remove() ;});
+        this.surroundingCircleElements.forEach(function (e) {
+          if (e) {
+            e.parent.removeChild(e);
+            e.destroy();
+            e.removeAllListeners();
+          }
+        });
         delete this.surroundingCircleElements;
+
+        this.overlayGlobals.tracingOverlay.redraw();
         // Execute callback, if any, with radius in stack coordinates as argument
         if (callback) {
           if (r) callback(r.x, r.y, r.z);
@@ -1062,7 +1070,6 @@
         this.postgroup = null;
         this.undirgroup = null;
         this.gjgroup = null;
-        // Note: mouse event handlers are removed by c.remove()
         this.removeConnectorArrows(); // also removes confidence text associated with edges
         this.preLines = null;
         this.postLines = null;
@@ -1648,7 +1655,7 @@
 
         // Draw line.
         this.line.clear();
-        this.line.lineStyle(this.EDGE_WIDTH, 0xFFFFFF, 1.0); // TODO: no width scaling
+        this.line.lineStyle(this.EDGE_WIDTH, 0xFFFFFF, 1.0);
         this.line.moveTo(x1, y1);
         this.line.lineTo(x2new, y2new);
 
@@ -1666,7 +1673,7 @@
         this.line.endFill();
 
         // Create mouse catcher.
-        s = this.EDGE_WIDTH * this.CATCH_SCALE; // TODO this.EDGE_WIDTH * this.CATCH_SCALE;
+        s = this.EDGE_WIDTH * this.CATCH_SCALE;
         norm[0] *= s;
         norm[1] *= s;
         this.line.hitArea = new PIXI.Polygon(

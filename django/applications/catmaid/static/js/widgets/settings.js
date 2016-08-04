@@ -729,9 +729,9 @@
           CATMAID.SkeletonProjectionLayer.options.preferSourceColor, null,
           updateSkeletonProjectionDisplay);
       var skpDownstreamColor = CATMAID.DOM.createInputSetting("Downstream color",
-          CATMAID.SkeletonProjectionLayer.options.downstreamColor);
+          new THREE.Color(CATMAID.SkeletonProjectionLayer.options.downstreamColor).getStyle());
       var skpUpstreamColor = CATMAID.DOM.createInputSetting("Upstream color",
-          CATMAID.SkeletonProjectionLayer.options.upstreamColor);
+          new THREE.Color(CATMAID.SkeletonProjectionLayer.options.upstreamColor).getStyle());
       var skpShowEdges = CATMAID.DOM.createCheckboxSetting("Show edges",
           CATMAID.SkeletonProjectionLayer.options.showEdges, null,
           updateSkeletonProjectionDisplay);
@@ -794,8 +794,8 @@
         return {
           "visible": skpVisible.find('input').prop('checked'),
           "shadingMode": skpShading.val(),
-          "downstreamColor": skpDownstreamColor.find('input').val(),
-          "upstreamColor": skpUpstreamColor.find('input').val(),
+          "downstreamColor": new THREE.Color(skpDownstreamColor.find('input').val()).getHex(),
+          "upstreamColor": new THREE.Color(skpUpstreamColor.find('input').val()).getHex(),
           "showEdges": skpShowEdges.find('input').prop('checked'),
           "showNodes": skpShowNodes.find('input').prop('checked'),
           "strahlerShadingMin": skpMinStrahler.find('input').val(),

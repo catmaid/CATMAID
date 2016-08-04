@@ -6,10 +6,11 @@
   "use strict";
 
   /**
-   * This layer can project a complete skeleton into own SVG layer.
+   * This layer can project a complete skeleton into own tracing layer.
    */
   var SkeletonProjectionLayer = function(stackViewer, options) {
     this.stackViewer = stackViewer;
+    CATMAID.PixiLayer.call(this);
     this.isHideable = true;
     // The currently displayed skeleton, node and arbor parser
     this.currentProjections = new Map();
@@ -18,12 +19,7 @@
     // Make sure there is an options object
     this.options = {};
     this.updateOptions(options, true);
-
-    // Create grid view, aligned to the upper left
-    this.view = document.createElement("div");
-    this.view.style.position = "absolute";
-    this.view.style.left = 0;
-    this.view.style.top = 0;
+    this.opacity = 1.0;
 
     // This layer has its own skeleton source, which is used to subscribe to
     // other sources. The local skeleton source is configured to override its
@@ -37,19 +33,10 @@
     });
     this.skeletonSource.ignoreLocal = true;
 
-    // Append it to DOM
-    stackViewer.getView().appendChild(this.view);
-
-    // Create SVG
-    this.paper = d3.select(this.view)
-        .append('svg')
-        .attr({
-          width: stackViewer.viewWidth,
-          height: stackViewer.viewHeight,
-          style: 'overflow: hidden; position: relative;'});
-
+    CATMAID.PixiLayer.prototype._initBatchContainer.call(this);
     this.graphics = CATMAID.SkeletonElementsFactory.createSkeletonElements(
-        this.paper, '-p' + this.stackViewer.getId());
+      {pixiLayer: this},
+      this.batchContainer);
 
     // Listen to active node change events
     SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
@@ -77,9 +64,9 @@
     // Indicate if nodes should be rendered
     showNodes: false,
     // Color of downstream nodes and edges
-    downstreamColor: "rgb(0,0,0)",
+    downstreamColor: 0x000000,
     // Color of upstream nodes and edges
-    upstreamColor: "rgb(255,255,255)",
+    upstreamColor: 0xFFFFFF,
     // Use source skeleton model colors
     preferSourceColor: true,
     // Limiting Strahler number for Strahler based shading.
@@ -99,7 +86,8 @@
         SkeletonProjectionLayer.options, true);
   };
 
-  SkeletonProjectionLayer.prototype = {};
+  SkeletonProjectionLayer.prototype = Object.create(CATMAID.PixiLayer.prototype);
+  SkeletonProjectionLayer.prototype.constructor = SkeletonProjectionLayer;
 
   SkeletonProjectionLayer.prototype.treenodeReference = 'treenodeCircle';
   SkeletonProjectionLayer.prototype.NODE_RADIUS = 8;
@@ -120,7 +108,7 @@
       if (!subscribedSource || (subscribedSource && subscribedSource !== source)) {
         this.replaceSupscription(source);
       }
-      // Re-create SVG
+      // Re-create graphics
       this.update();
     }
   };
@@ -183,15 +171,6 @@
     return "Skeleton projection";
   };
 
-  SkeletonProjectionLayer.prototype.setOpacity = function( val ) {
-      this.view.style.opacity = val;
-      this.opacity = val;
-  };
-
-  SkeletonProjectionLayer.prototype.getOpacity = function() {
-      return this.opacity;
-  };
-
   SkeletonProjectionLayer.prototype.resize = function(width, height) {
     this.redraw();
   };
@@ -207,16 +186,17 @@
     var projectViewBox = this.stackViewer.primaryStack.createStackToProjectBox(stackViewBox);
 
     var screenScale = SkeletonAnnotations.TracingOverlay.Settings.session.screen_scaling;
-    this.paper.classed('screen-scale', screenScale);
-    // All SVG elements scale automatcally, if the viewport on the SVG data
-    // changes. If in screen scale mode, where the size of all elements should
+    // All graphics elements scale automatcally.
+    // If in screen scale mode, where the size of all elements should
     // stay the same (regardless of zoom level), counter acting this is required.
     var resScale = Math.max(this.stackViewer.primaryStack.resolution.x,
        this.stackViewer.primaryStack.resolution.y);
-    var dynamicScale = screenScale ? (1 / (this.stackViewer.scale * resScale)) : false;
+    var dynamicScale = screenScale ? (1 / this.stackViewer.scale) : false;
 
-    this.graphics.scale(SkeletonAnnotations.TracingOverlay.Settings.session.scale,
-        resScale, dynamicScale);
+    this.graphics.scale(
+        SkeletonAnnotations.TracingOverlay.Settings.session.scale,
+        resScale,
+        dynamicScale);
 
     // In case of a zoom level change and screen scaling is selected, update
     // edge width.
@@ -224,19 +204,23 @@
       // Remember current zoom level
       this.lastScale = this.stackViewer.s;
       // Update edge width
-      var edgeWidth = this.graphics.ArrowLine.prototype.EDGE_WIDTH || 2;
-      this.paper.selectAll('line').attr('stroke-width', edgeWidth);
+      var edgeWidth = this.graphics.Node.prototype.EDGE_WIDTH || 2;
+      this.graphics.containers.lines.children.forEach(function (line) {
+        line.graphicsData[0].lineWidth = edgeWidth;
+        line.dirty = true;
+        line.clearDirty = true;
+      });
+      this.graphics.containers.nodes.children.forEach(function (c) {
+        c.scale.set(this.graphics.Node.prototype.stackScaling);
+      }, this);
     }
 
-    // Use project coordinates for the SVG's view box
-    this.paper.attr({
-        viewBox: [
-            stackViewBox.min.x,
-            stackViewBox.min.y,
-            stackViewBox.max.x - stackViewBox.min.x,
-            stackViewBox.max.y - stackViewBox.min.y].join(' '),
-        width: this.stackViewer.viewWidth,     // Width and height only need to be updated on
-        height: this.stackViewer.viewHeight}); // resize.
+    this.batchContainer.scale.set(this.stackViewer.scale);
+    this.batchContainer.position.set(
+        -stackViewBox.min.x*this.stackViewer.scale,
+        -stackViewBox.min.y*this.stackViewer.scale);
+
+    this._renderIfReady();
 
     if (CATMAID.tools.isFn(completionCallback)) {
       completionCallback();
@@ -244,7 +228,7 @@
   };
 
   SkeletonProjectionLayer.prototype.unregister = function() {
-    this.stackViewer.getView().removeChild(this.view);
+    CATMAID.PixiLayer.prototype.unregister.call(this);
 
     SkeletonAnnotations.off(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
         this.handleActiveNodeChange, this);
@@ -394,14 +378,20 @@
    * Empty canvas.
    */
   SkeletonProjectionLayer.prototype.clear = function() {
-    if (this.paper) {
-      this.paper.selectAll('use').remove();
-      this.paper.selectAll('line').remove();
+    if (this.graphics) {
+      this.graphics.containers.nodes.children.forEach(function (child) {
+        child.destroy();
+      });
+      this.graphics.containers.nodes.removeChildren();
+      this.graphics.containers.lines.children.forEach(function (child) {
+        child.destroy();
+      });
+      this.graphics.containers.lines.removeChildren();
     }
   };
 
   /**
-   * Recreate the SVG display.
+   * Recreate the graphics display.
    *
    * @param {Object} arborParserMap Maps skeleton IDs to arbor parser instances.
    */
@@ -426,8 +416,8 @@
   };
 
   /**
-   * Render SVG output for a given skeleton, represented by an arbor parser with
-   * respect to a given node in this skeleton.
+   * Render graphics output for a given skeleton, represented by an arbor
+   * parser with respect to a given node in this skeleton.
    *
    * @param {ArborParser} arborParser An arbor parser for a given skeleton
    */
@@ -457,18 +447,17 @@
     }
 
     var downstreamColor = this.options.preferSourceColor && skeletonModel ?
-      skeletonModel.color.getStyle() : this.options.downstreamColor;
+      skeletonModel.color.getHex() : this.options.downstreamColor;
 
     // Construct rendering option context
     var renderOptions = {
       positions: arborParser.positions,
       edges: arbor.edges,
       stackViewer: this.stackViewer,
-      paper: this.paper,
-      ref: this.graphics.Node.prototype.USE_HREF + this.graphics.USE_HREF_SUFFIX,
+      graphics: this.graphics,
       color: material.color(this, downstreamColor),
       opacity: material.opacity(this, arbor, downstream),
-      edgeWidth: this.graphics.ArrowLine.prototype.EDGE_WIDTH || 2,
+      edgeWidth: this.graphics.Node.prototype.EDGE_WIDTH || 2,
       showEdges: this.options.showEdges,
       showNodes: this.options.showNodes
     };
@@ -496,7 +485,7 @@
   };
 
   /**
-   * Render nodes on a D3 paper.
+   * Render nodes in a Pixi context.
    */
   function renderNodes(n, i, nodes) {
     /* jshint validthis: true */ // `this` is bound to a set of options above
@@ -511,29 +500,26 @@
     // Display only nodes and edges not on the current section
     if (pos.z !== this.stackViewer.z) {
       if (this.showNodes) {
-        var c = this.paper.select('.nodes').append('use')
-          .attr({
-            'xlink:href': '#' + this.ref,
-            'x': pos.x,
-            'y': pos.y,
-            'fill': color,
-            'opacity': opacity})
-          .classed('overlay-node', true);
+        var c = new PIXI.Sprite(this.graphics.Node.prototype.NODE_TEXTURE);
+        c.anchor.set(0.5);
+        c.x = pos.x;
+        c.y = pos.y;
+        c.scale.set(this.graphics.Node.prototype.stackScaling);
+        c.tint = color;
+        c.alpha = opacity;
+        this.graphics.containers.nodes.addChild(c);
       }
 
       if (this.showEdges) {
         var e = this.edges[n];
         if (e) {
           var pos2 = this.positions[e];
-          var edge = this.paper.select('.lines').append('line');
-          edge.toBack();
-          edge.attr({
-              x1: pos.x, y1: pos.y,
-              x2: pos2.x, y2: pos2.y,
-              stroke: color,
-              'stroke-width': this.edgeWidth,
-              'opacity': opacity
-          });
+          var edge = new PIXI.Graphics();
+          edge.lineStyle(this.edgeWidth, 0xFFFFFF, opacity);
+          edge.moveTo(pos.x, pos.y);
+          edge.lineTo(pos2.x, pos2.y);
+          edge.tint = color;
+          this.graphics.containers.lines.addChild(edge);
         }
       }
     }

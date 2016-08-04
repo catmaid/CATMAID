@@ -1152,6 +1152,19 @@ SkeletonAnnotations.TracingOverlay.prototype.recolorAllNodes = function () {
 };
 
 /**
+ * Make sure all nodes have the correct visibility.
+ */
+SkeletonAnnotations.TracingOverlay.prototype.updateVisibilityForAllNodes = function () {
+  // Assumes that atn and active_skeleton_id are correct:
+  for (var nodeID in this.nodes) {
+    if (this.nodes.hasOwnProperty(nodeID)) {
+      this.nodes[nodeID].updateVisibility();
+    }
+  }
+  this.pixiLayer._renderIfReady();
+};
+
+/**
  * Set whether the radius of the active node is visible.
  */
 SkeletonAnnotations.TracingOverlay.prototype.updateActiveNodeRadiusVisibility = function () {
@@ -4445,15 +4458,13 @@ SkeletonAnnotations.VisibilityGroups = new (function () {
     GROUP_2: 2,
   };
 
-  this.GROUP_CLASSES = ['visibilityOverride', 'visibilityGroup1', 'visibilityGroup2'];
-
   this.groups = Object.keys(this.GROUP_IDS).map(function (groupName, groupID) {
     return {
       metaAnnotationName: null,
       creatorID: null,
       skeletonIDs: new Set(),
       matchAll: false,
-      cssRule: null,
+      visible: groupName === 'OVERRIDE',
       callback: (function (metaAnnotationName, skeletonIDs) {
         this.groups[groupID].skeletonIDs = skeletonIDs;
       }).bind(this),
@@ -4464,12 +4475,6 @@ SkeletonAnnotations.VisibilityGroups = new (function () {
    * Refresh any meta-annotation-based filters from the backed.
    */
   this.refresh = function () {
-    for (var n = 0; n < this.groups.length; ++n)
-      for (var i in document.styleSheets)
-        for (var j in document.styleSheets[i].rules)
-          if (document.styleSheets[i].rules[j].selectorText == 'svg .' + this.GROUP_CLASSES[n])
-            this.groups[n].cssRule = document.styleSheets[i].rules[j];
-
     this.groups.forEach(function (group) {
       if (group.metaAnnotationName) {
         CATMAID.annotatedSkeletons.refresh(group.metaAnnotationName, true);
@@ -4536,7 +4541,7 @@ SkeletonAnnotations.VisibilityGroups = new (function () {
    */
   this.areGroupsVisible = function (groupIDs) {
     if (groupIDs.length === 0) return true;
-    return this.groups[groupIDs.slice(-1)].cssRule.style.display !== 'none';
+    return this.groups[groupIDs.slice(-1)].visible;
   };
 
   /**
@@ -4545,11 +4550,12 @@ SkeletonAnnotations.VisibilityGroups = new (function () {
    * @param  {number} groupID  ID of the group to toggle, from GROUP_IDS.
    */
   this.toggle = function (groupID) {
-    var rule = this.groups[groupID].cssRule;
-    if (typeof rule === 'undefined') return;
+    this.groups[groupID].visible = !this.groups[groupID].visible;
 
-    var hidden = rule.style.display === 'none';
-    rule.style.display = hidden ? 'inherit' : 'none';
+    project.getStackViewers().forEach(function(sv) {
+      var overlay = SkeletonAnnotations.getTracingOverlay(sv.getId());
+      if (overlay) overlay.updateVisibilityForAllNodes();
+    });
   };
 
 })();

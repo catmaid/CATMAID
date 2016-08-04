@@ -302,13 +302,9 @@
         this.c.y = this.y;
         this.c.scale.set(this.stackScaling);
 
-        // this.c.attr('class', this.getVisibilityGroups().reduce(function (c, groupID) {
-        //   return c + ' ' + SkeletonAnnotations.VisibilityGroups.GROUP_CLASSES[groupID];
-        // }, ''));
-
         this.c.tint = this.color();
 
-        this.c.visible = true;
+        this.c.visible = SkeletonAnnotations.VisibilityGroups.areGroupsVisible(this.getVisibilityGroups());
       };
 
       this.createRadiusGraphics = function () {
@@ -349,6 +345,15 @@
       this.isVisible = function () {
         return this.shouldDisplay() &&
             SkeletonAnnotations.VisibilityGroups.areGroupsVisible(this.getVisibilityGroups());
+      };
+
+      this.updateVisibility = function () {
+        if (this.c) {
+          this.c.visible = SkeletonAnnotations.VisibilityGroups.areGroupsVisible(this.getVisibilityGroups());
+        }
+        if (this.line) {
+          this.line.visible = SkeletonAnnotations.VisibilityGroups.areGroupsVisible(this.getVisibilityGroups());
+        }
       };
 
       /** Whether the user has edit permissions for this node. */
@@ -603,12 +608,7 @@
             parentLocation[0] - norm[0], parentLocation[1] - norm[1],
             childLocation[0]  - norm[0], childLocation[1]  - norm[1]);
 
-        // this.line.attr('class', this.getVisibilityGroups().reduce(function (c, groupID) {
-        //   return c + ' ' + SkeletonAnnotations.VisibilityGroups.GROUP_CLASSES[groupID];
-        // }, ''));
-
-        // May be hidden if the node was reused
-        this.line.visible = true;
+        this.line.visible = SkeletonAnnotations.VisibilityGroups.areGroupsVisible(this.getVisibilityGroups());
 
         if (this.confidence < 5) {
           // Create new or update
@@ -688,7 +688,7 @@
           this.line = null;
         }
         if (this.number_text) {
-          this.number_text.parent.removeChild(this.number_text);
+          // this.number_text.parent.removeChild(this.number_text);
           this.number_text.destroy();
           this.number_text = null;
         }
@@ -990,7 +990,8 @@
         for (var groupID = SkeletonAnnotations.VisibilityGroups.groups.length - 1; groupID >= 0; groupID--) {
           if (groupBooleans[groupID] || (
                 groupID === overrideID ?
-                (groupCounts[groupID] > 0) : (groupCounts[groupID] === links.length)))
+                (groupCounts[groupID] > 0) :
+                (links.length > 0 && groupCounts[groupID] === links.length)))
             this.visibilityGroups.push(groupID);
         }
 
@@ -1110,6 +1111,21 @@
           var fillcolor = this.color();
           this.c.tint = fillcolor;
         }
+      };
+
+      this.updateVisibility = function () {
+        if (this.c) {
+          this.c.visible = SkeletonAnnotations.VisibilityGroups.areGroupsVisible(this.getVisibilityGroups());
+        }
+
+        if (this.preLines)
+          this.preLines.forEach(function (arrow) { arrow.updateVisibility(this); }, this);
+        if (this.postLines)
+          this.postLines.forEach(function (arrow) { arrow.updateVisibility(this); }, this);
+        if (this.undirLines)
+          this.undirLines.forEach(function (arrow) { arrow.updateVisibility(this); }, this);
+        if (this.gjLines)
+          this.gjLines.forEach(function (arrow) { arrow.updateVisibility(this); }, this);
       };
 
       this.drawEdges = function(redraw) {
@@ -1549,6 +1565,7 @@
       this.treenode_id = null;
       this.connector_id = null;
       this.relation = null;
+      this.visibility = true;
     };
 
     ptype.ArrowLine.prototype = new (function() {
@@ -1689,17 +1706,21 @@
         }
 
         this.line.tint = stroke_color;
-
-        this.show();
       };
 
       this.show = function() {
-        this.line.visible = true;
+        this.line.visible = this.visibility;
+        // if (this.confidence_text) this.confidence_text.visible = this.visibility;
+      };
+
+      this.updateVisibility = function (connector) {
+        this.visibility = SkeletonAnnotations.VisibilityGroups.areGroupsVisible(connector.getVisibilityGroups());
+        this.show();
       };
 
       this.disable = function() {
         this.line.visible = false;
-        if (this.confidence_text) this.confidence_text.visible = false;
+        // if (this.confidence_text) this.confidence_text.visible = false;
       };
 
       /**
@@ -1718,16 +1739,13 @@
         this.line.removeAllListeners();
         this.line = null;
         if (this.confidence_text) {
-          this.confidence_text.parent.removeChild(this.confidence_text);
+          // this.confidence_text.parent.removeChild(this.confidence_text);
           this.confidence_text.destroy();
           this.confidence_text = null;
         }
       };
 
       this.init = function(connector, node, confidence, is_pre) {
-        // this.line.attr('class', connector.getVisibilityGroups().reduce(function (c, groupID) {
-        //   return c + ' ' + SkeletonAnnotations.VisibilityGroups.GROUP_CLASSES[groupID];
-        // }, ''));
         this.connector_id = connector.id;
         this.treenode_id = node.id;
         this.relation = is_pre;
@@ -1736,6 +1754,7 @@
         } else {
           this.update(connector.x, connector.y, node.x, node.y, is_pre, confidence, node.NODE_RADIUS*node.stackScaling);
         }
+        this.updateVisibility(connector);
       };
 
       this.scale = function(baseScale, resScale, dynamicScale) {
@@ -1799,19 +1818,13 @@
         } else {
           text = new PIXI.Sprite(cachedText.texture);
           text.anchor.x = text.anchor.y = 0.5;
-          this.line.parent.addChild(text);
+          this.line.addChild(text);
         }
 
         text.x = newConfidenceX;
         text.y = newConfidenceY;
         text.tint = fillColor;
-        // text.attr({x: newConfidenceX,
-        //            y: newConfidenceY,
-        //            'font-size': this.confidenceFontSize,
-        //            'text-anchor': 'middle',
-        //            'alignment-baseline': 'middle',
-        //            fill: fillColor,
-        //            class: this.line.attr('class')})
+        // text.visible = this.line.visible;
 
         return text;
       };

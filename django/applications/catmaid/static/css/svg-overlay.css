@@ -42,15 +42,3 @@ svg .label:hover {
   /* display and visibility are cheaper than opacity, but cause flicker. */
   opacity: 0;
 }
-
-svg .visibilityGroup1 {
-  display: none;
-}
-
-svg .visibilityGroup2 {
-  display: none;
-}
-
-svg .visibilityOverride {
-  display: inline;
-}

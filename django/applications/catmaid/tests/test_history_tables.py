@@ -161,7 +161,7 @@ class HistoryTableTests(TransactionTestCase):
         else:
             return "[\"{}\",)".format(timestamp1)
 
-    def test_insert(self):
+    def test_insert_with_time_column(self):
         """Test if inserting new data in a live table, leads to the expected
         result in its history table.
         """
@@ -184,7 +184,48 @@ class HistoryTableTests(TransactionTestCase):
         # Expect no changed history for new rows
         self.assertListEqual(original_class_history, new_class_history)
 
-    def test_update(self):
+    def test_insert_without_time_column(self):
+        """Test if inserting new data in a live table without time column (and
+        therefore with time table), leads to the expected result: no history
+        change, but new time table entry.
+        """
+        cursor = connection.cursor()
+
+        original_project_history = self.get_history_entries(cursor, 'project')
+        n_original_entries = len(original_project_history)
+
+        original_project_time = self.get_time_entries(cursor, 'project')
+        n_original_time_entries = len(original_project_time)
+
+        cursor.execute("""
+            INSERT INTO "project" (title)
+            VALUES ('testproject')
+            RETURNING row_to_json(project.*),
+                current_timestamp::text
+        """)
+        insert_result = cursor.fetchone()
+        project_details = insert_result[0]
+        project_creation_time = insert_result[1]
+
+        new_project_history = self.get_history_entries(cursor, 'project')
+        # Expect no changed history for new rows
+        self.assertListEqual(original_project_history, new_project_history)
+
+        # But expect a new time entry
+        after_insert_project_time = self.get_time_entries(cursor, 'project')
+        n_after_insert_time_entries = len(after_insert_project_time)
+
+        # Get last time table class history entrie
+        after_insert_project_time_entry = after_insert_project_time[-1][0]
+        after_insert_project_edition_time = self.timestamp_to_interval_format(
+            after_insert_project_time_entry['edition_time'])
+
+        self.assertEqual(n_original_time_entries + 1, n_after_insert_time_entries)
+
+        self.assertEqual(project_details['id'], after_insert_project_time_entry['live_pk'])
+        self.assertEqual(project_creation_time, after_insert_project_edition_time)
+
+    def test_update_with_time_column(self):
         """Test if updating an existing entry leads to the correct history table
         updates. The update is performed in a different transaction, so that a
         different time is recorded for the change than for the creation.
@@ -222,21 +263,19 @@ class HistoryTableTests(TransactionTestCase):
         self.assertEqual(creation_time_1, creation_time_2)
         self.assertNotEqual(creation_time_2, edition_time_2)
 
-        # Expect two more history entries, one for insertion and one for the
-        # class name update.
+        # Expect one more history entry for the class name update
         new_class_history = self.get_history_entries(cursor, 'class')
         self.assertEqual(len(new_class_history), n_original_entries + 1)
 
-        # Get last two class history entries
+        # Get last class history entry
         class_history_entry = new_class_history[-1][0]
 
         # Expect all fields of the original table to match the history table
         for k,v in class_details.iteritems():
             self.assertEqual(v, class_history_entry[k])
 
-        # It is now expected that the range in the first interval will end with
-        # the start of the second, which should also equal the edition time of
-        # the updated class entry.
+        # It is now expected that the range of the history interval will end with
+        # the edition time of the live table entry.
         expected_interval = self.format_range(creation_time_1, edition_time_2)
         self.assertEqual(class_history_entry['sys_period'], expected_interval)
 
@@ -281,7 +320,121 @@ class HistoryTableTests(TransactionTestCase):
         self.assertEqual(class_history_2_entry_1['sys_period'], expected_interval_1)
         self.assertEqual(class_history_2_entry_2['sys_period'], expected_interval_2)
 
-    def test_delete(self):
+    def test_update_without_time_column(self):
+        """Test if updating an existing entry without time column (and therefore
+        with time table) leads to the correct history table updates. The update
+        is performed in a different transaction, so that a different time is
+        recorded for the change than for the creation.
+        """
+        cursor = connection.cursor()
+
+        original_project_history = self.get_history_entries(cursor, 'project')
+        n_original_entries = len(original_project_history)
+
+        original_project_time = self.get_time_entries(cursor, 'project')
+        n_original_time_entries = len(original_project_time)
+
+        # Create initial row that will be modified
+        cursor.execute("""
+            INSERT INTO "project" (title)
+            VALUES ('testproject')
+            RETURNING row_to_json(project.*),
+                current_timestamp::text
+        """)
+        project_result = cursor.fetchone()
+        project_details = project_result[0]
+        creation_time = project_result[1]
+        transaction.commit()
+
+        # Update row in new transaction (to have new timestamp)
+        cursor.execute("""
+            UPDATE "project" SET title='new title'
+            WHERE id=%s
+            RETURNING row_to_json(project.*),
+            current_timestamp::text;
+        """, (project_details['id'],))
+        new_project_result = cursor.fetchone()
+        new_project_details = new_project_result[0]
+        new_project_timestamp = new_project_result[1]
+        transaction.commit()
+
+        after_update_project_time = self.get_time_entries(cursor, 'project')
+        n_after_update_time_entries = len(after_update_project_time)
+
+        # Get last time table project entry
+        after_update_project_time_entry = after_update_project_time[-1][0]
+        after_update_project_edition_time = self.timestamp_to_interval_format(
+            after_update_project_time_entry['edition_time'])
+
+        self.assertEqual(n_original_time_entries + 1, n_after_update_time_entries)
+        self.assertNotEqual(creation_time, after_update_project_edition_time)
+        self.assertEqual(new_project_timestamp,
+                after_update_project_edition_time)
+
+        # Expect one more history entry for the update
+        new_project_history = self.get_history_entries(cursor, 'project')
+        self.assertEqual(len(new_project_history), n_original_entries + 1)
+
+        # Get new project history entry
+        project_history_entry = new_project_history[-1][0]
+
+        # Expect all fields of the original table to match the history table
+        for k,v in project_details.iteritems():
+            self.assertEqual(v, project_history_entry[k])
+
+        # It is now expected that the range of the history interval will end with
+        # the edition time of the live table entry.
+        expected_interval = self.format_range(creation_time, new_project_timestamp)
+        self.assertEqual(project_history_entry['sys_period'], expected_interval)
+
+        # Update row in new transaction (to have new timestamp)
+        cursor.execute("""
+            UPDATE "project" SET title='new name 2'
+            WHERE id=%s
+            RETURNING row_to_json(project.*),
+                current_timestamp::text;
+        """, (project_details['id'],))
+        new_project_2_result = cursor.fetchone()
+        new_project_2_details = new_project_2_result[0]
+        new_project_2_timestamp = new_project_2_result[1]
+        transaction.commit()
+
+        after_update_2_project_time = self.get_time_entries(cursor, 'project')
+        n_after_update_2_time_entries = len(after_update_2_project_time)
+
+        # Get last time table project entry
+        after_update_2_project_time_entry = after_update_2_project_time[-1][0]
+        after_update_2_project_edition_time = self.timestamp_to_interval_format(
+            after_update_2_project_time_entry['edition_time'])
+
+        self.assertNotEqual(new_project_timestamp, after_update_2_project_edition_time)
+        self.assertEqual(new_project_2_timestamp, after_update_2_project_edition_time)
+
+        # Expect one more history entry for the project name update
+        new_project_2_history = self.get_history_entries(cursor, 'project')
+        self.assertEqual(len(new_project_2_history), len(new_project_history) + 1)
+
+        # Get last two project history entries
+        project_history_2_entry_1 = new_project_2_history[-2][0]
+        project_history_2_entry_2 = new_project_2_history[-1][0]
+
+        # Expect all fields of the original table to match the history table
+        for k,v in project_details.iteritems():
+            self.assertEqual(v, project_history_2_entry_1[k])
+        for k,v in new_project_details.iteritems():
+            self.assertEqual(v, project_history_2_entry_2[k])
+
+        # It is now expected that the range in the first interval will
+        # end with the start of the second and the second will end with
+        # the time table timestamp of the updated project.
+        expected_interval_1 = self.format_range(creation_time,
+                new_project_timestamp)
+        expected_interval_2 = self.format_range(new_project_timestamp,
+                new_project_2_timestamp)
+        self.assertEqual(project_history_2_entry_1['sys_period'], expected_interval_1)
+        self.assertEqual(project_history_2_entry_2['sys_period'], expected_interval_2)
+
+    def test_delete_with_time_column(self):
         """Test if deleting an existing entry leads to the correct history table
         updates. The deletion is performed in a different transaction, so that
         a different time is recorded for the change than for the creation.
@@ -333,6 +486,75 @@ class HistoryTableTests(TransactionTestCase):
         # the updated class entry.
         expected_interval = "[\"{}\",\"{}\")".format(creation_time, deletion_time)
         self.assertEqual(class_history_entry['sys_period'], expected_interval)
+
+    def test_delete_without_time_column(self):
+        """Test if deleting an existing entry leads to the correct history table
+        updates. The deletion is performed in a different transaction, so that
+        a different time is recorded for the change than for the creation.
+        """
+        cursor = connection.cursor()
+
+        original_project_history = self.get_history_entries(cursor, 'project')
+        n_original_entries = len(original_project_history)
+
+        original_project_time = self.get_time_entries(cursor, 'project')
+        n_original_time_entries = len(original_project_time)
+
+        # Create initial row that will be modified
+        cursor.execute("""
+            INSERT INTO "project" (title)
+            VALUES ('testproject')
+            RETURNING row_to_json(project.*),
+                current_timestamp::text
+        """)
+        project_result = cursor.fetchone()
+        project_details = project_result[0]
+        creation_time = project_result[1]
+        transaction.commit()
+
+        after_insert_project_time = self.get_time_entries(cursor, 'project')
+        n_after_insert_time_entries = len(after_insert_project_time)
+        self.assertEqual(n_original_time_entries + 1, n_after_insert_time_entries)
+
+        # Update row in new transaction (to have new timestamp)
+        cursor.execute("""
+            DELETE FROM "project"
+            WHERE id=%s
+            RETURNING current_timestamp::text;
+        """, (project_details['id'],))
+        deletion_time = cursor.fetchone()[0]
+        transaction.commit()
+
+        # Expect one more history entry, valid from the original creation time
+        # to the deletion time.
+        new_project_history = self.get_history_entries(cursor, 'project')
+        self.assertEqual(len(new_project_history), n_original_entries + 1)
+
+        after_delete_project_time = self.get_time_entries(cursor, 'project')
+        n_after_delete_time_entries = len(after_delete_project_time)
+
+        after_delete_project_time_entry = after_delete_project_time[-1][0]
+        after_delete_project_edition_time = self.timestamp_to_interval_format(
+            after_delete_project_time_entry['edition_time'])
+
+        # Expect one time table entry less, because the live row was deleted
+        self.assertEqual(n_original_time_entries, n_after_delete_time_entries)
+        # Don't expect last time entry to have ID of deleted row
+        self.assertNotEqual(project_details['id'],
+                after_delete_project_time_entry['live_pk'])
+
+        # Get last project history entry
+        project_history_entry = new_project_history[-1][0]
+
+        # Expect all fields of the original table to match the history table
+        for k,v in project_details.iteritems():
+            self.assertEqual(v, project_history_entry[k])
+
+        # It is now expected that the range in the first interval will end with
+        # the start of the second, which should also equal the edition time of
+        # the updated project entry.
+        expected_interval = "[\"{}\",\"{}\")".format(creation_time, deletion_time)
+        self.assertEqual(project_history_entry['sys_period'], expected_interval)
 
     @classmethod
     def get_num_tables_without_update_triggers(cls, cursor):

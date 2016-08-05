@@ -451,8 +451,8 @@
         CATMAID.warn("Couldn't find annotation \"" + a + "\"");
         return;
       }
-      var field = s ? 'sub_annotated_with' : 'annotated_with';
-      params[field + n] = value;
+      params['annotated_with[' + n + ']'] = value;
+      if (s) params['sub_annotated_with[' + n + ']'] = value;
       ++n;
     }
 
@@ -468,7 +468,7 @@
     }
 
     // Augment form data with offset and limit information
-    params.rangey_start = this.display_start;
+    params.range_start = this.display_start;
     params.range_length = this.display_length;
     params.with_annotations = this.displayAnnotations;
 

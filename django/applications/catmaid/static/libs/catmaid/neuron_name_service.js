@@ -71,7 +71,8 @@
          * @return {Promise=}      A promise, if loading asynchronously.
          */
         loadConfigurationFromSettings: function (scope, sync) {
-          scope = scope || 'session';
+          if (!(scope in CATMAID.Settings.SCOPES))
+            scope = 'session';
           if (!CATMAID.NeuronNameService.Settings) {
             CATMAID.NeuronNameService.Settings = new CATMAID.Settings(
                 'neuron-name-service',

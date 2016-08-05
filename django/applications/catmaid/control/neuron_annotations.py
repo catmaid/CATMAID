@@ -149,9 +149,10 @@ def get_sub_annotation_ids(project_id, annotation_sets, relations, classes):
                 child_ids = aaa.get(parent_id) or set_wrapper()
                 for child_id in child_ids.data:
                     if child_id not in sa_ids:
-                        # Add all children as sub annotations
-                        ls.add(child_id)
-                        working_set.add(child_id)
+                        if child_id not in ls:
+                            # Add all children as sub annotations
+                            ls.add(child_id)
+                            working_set.add(child_id)
         # Store the result list for this ID
         sa_ids[annotation_set] = list(ls)
 

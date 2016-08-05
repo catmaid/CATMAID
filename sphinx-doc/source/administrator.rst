@@ -6,6 +6,7 @@ Administrator Documentation
 
    installation
    administration
+   history_tables
    docker
    userprofiles
    celeryinstall

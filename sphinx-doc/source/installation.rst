@@ -20,14 +20,26 @@ Introduction
 
 The most fundamental dependencies of CATMAID are:
 
-1. PostgreSQL >= 9.3 and PostGIS >= 2.1
+1. PostgreSQL >= 9.5 and PostGIS >= 2.2
 2. Python 2.7
 3. Imagemagick (for generating image tiles)
 
-On Debian-based systems, such as Ubuntu, you can install these
-with::
+To get the required PostgreSQL version for Debian-based systems, such as
+Ubuntu, you have to add the officical Postgres repository as an
+`extra Apt repository <https://wiki.postgresql.org/wiki/Apt>`_ (if you haven't
+done so already)::
 
-    sudo apt-get install python postgresql-9.3 imagemagick
+    PG_URL="http://apt.postgresql.org/pub/repos/apt/"
+    APT_LINE="deb ${PG_URL} $(lsb_release -cs)-pgdg main"
+    echo "${APT_LINE}" | sudo tee "/etc/apt/sources.list.d/pgdg.list"
+    sudo apt-get install wget ca-certificates
+    PG_KEY_URL="https://www.postgresql.org/media/keys/ACCC4CF8.asc"
+    wget --quiet -O - ${PG_KEY_URL} | sudo apt-key add -
+    sudo apt-get update
+
+And then you can install these dependencies with::
+
+    sudo apt-get install python postgresql-9.5 imagemagick
 
 CATMAID is based on the `Django web framework
 <https://www.djangoproject.com/>`_.  If you just wish to work on
@@ -149,8 +161,7 @@ database called ``catmaid`` and a database user called
 ``catmaid_user``.  Firstly, we need to reconfigure PostgreSQL to
 allow password-based authentication for that user to that
 database.  To do that, edit the file
-``/etc/postgresql/9.3/main/pg_hba.conf`` (where ``9.3`` may be a
-slightly different version for you) and add this line as the
+``/etc/postgresql/9.5/main/pg_hba.conf`` and add this line as the
 *first* rule in that file::
 
     local catmaid catmaid_user md5
@@ -176,7 +187,7 @@ relations, e.g.::
 
     psql -U catmaid_user catmaid
     Password:
-    psql (9.3.4)
+    psql (9.5.3)
     Type "help" for help.
 
     catmaid=> \d

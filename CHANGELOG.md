@@ -3,6 +3,9 @@
 ### Notes
 
 - A virtualenv upgrade is required.
+- PostgreSQL 9.5 and PostGIS 2.2 is now required. When updating, update PostGIS
+  first and update all databases in which the PostGIS extension is installed by
+  running "ALTER EXTENSION postgis UPDATE;". Then perform the Postgres update.
 
 
 ### Features and enhancements
@@ -71,6 +74,14 @@ Settings widget:
   most tables from a central place. This is done through the "Table page length
   options" setting, which is available from the Settings widget. For widgets to
   be aware of page length setting changes, they have to be reloaded.
+
+
+History tables:
+
+- Starting with this release, CATMAID will record every single change to its
+  database tables in so called history tables. This makes it possible to
+  reconstruct the actual history of data (e.g. neurons) and user contributions.
+  Even data deleted in CATMAID can now be recovered without touching backups.
 
 
 Miscellaneous:

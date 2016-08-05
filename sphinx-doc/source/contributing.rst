@@ -66,6 +66,10 @@ folder. Within this folder, ``models.py`` defines the database schema and
 logical objects on which the back API operates, while ``urls.py`` maps URI
 endpoints in the API to Python methods. Both are useful starting points when
 locating particular functionality or determining where to add new functionality.
+In case an endpoint changes data, a transaction log entry is added. This way
+semantic information can be linked to individual database changes. Writing
+endpoints are decorated with a ``record_view`` decorator in ``urls.py``. Make
+sure to follow this convention for new endpoints.
 
 Most of the API routes to the ``catmaid.control`` module and folder. Within this
 module API functions are organized into logical units like skeleton or
@@ -73,6 +77,11 @@ connector, which are grouped into corresponding Python modules. These often
 contain utility functions not exposed by the API that may be useful, so when
 developing a new API endpoint be sure to check related modules for reusable
 utilities.
+
+Back-end errors should always be signaled to the front-end with the help
+of Exceptions. Regardless whether an argument is missing, permissions are
+lacking or something went wrong otherwise. A dedicated middleware will catch
+them and return them in an expected format to the front-end.
 
 ..
     TODO: organization of controls/views, urls ("Where to look and where to add")

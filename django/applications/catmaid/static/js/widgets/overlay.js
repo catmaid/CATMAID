@@ -190,14 +190,14 @@ SkeletonAnnotations.getTracingOverlay = function(stackViewerId) {
 };
 
 /**
- * Map a D3 paper instance to an overlay.
+ * Map a skeleton elements instance to an overlay.
  */
-SkeletonAnnotations.getTracingOverlayByPaper = function(paper) {
+SkeletonAnnotations.getTracingOverlayBySkeletonElements = function(skeletonElements) {
   var instances = this.TracingOverlay.prototype._instances;
   for (var stackViewerId in instances) {
     if (instances.hasOwnProperty(stackViewerId)) {
       var s = instances[stackViewerId];
-      if (paper === s.paper.node()) {
+      if (skeletonElements === s.graphics) {
         return s;
       }
     }
@@ -526,10 +526,11 @@ var nodeToStateList = function(n) {
 /**
  * The constructor for TracingOverlay.
  */
-SkeletonAnnotations.TracingOverlay = function(stackViewer, options) {
+SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
   var options = options || {};
 
   this.stackViewer = stackViewer;
+  this.pixiLayer = pixiLayer;
 
   // Register instance
   this.register(stackViewer);
@@ -627,14 +628,6 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, options) {
   this.old_width = stackViewer.viewWidth;
   this.old_height = stackViewer.viewHeight;
 
-  this.view = document.createElement("div");
-  this.view.className = "sliceTracingOverlay";
-  this.view.id = "sliceTracingOverlayId" + stackViewer.getId();
-  this.view.style.zIndex = 5;
-  // Custom cursor for tracing
-  this.view.style.cursor ="url(" + STATIC_URL_JS + "images/svg-circle.cur) 15 15, crosshair";
-  this.view.onmousemove = this.createViewMouseMoveFn(this.stackViewer, this.coords);
-
   this._skeletonDisplaySource = new CATMAID.BasicSkeletonSource(
       'Tracing overlay (' + this.stackViewer.primaryStack.title + ')');
   this._skeletonDisplaySource.unregisterSource();
@@ -654,16 +647,25 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, options) {
         this);
   }, this);
 
+  this.view = document.createElement("div");
+  this.view.className = "sliceTracingOverlay";
+  this.view.id = "sliceTracingOverlayId" + stackViewer.getId();
+  this.view.style.zIndex = 5;
+  // Custom cursor for tracing
+  this.view.style.cursor ="url(" + STATIC_URL_JS + "images/svg-circle.cur) 15 15, crosshair";
+  this.view.onmousemove = this.createViewMouseMoveFn(this.stackViewer, this.coords);
+
   this.paper = d3.select(this.view)
                   .append('svg')
                   .attr({
                       width: stackViewer.viewWidth,
                       height: stackViewer.viewHeight,
                       style: 'overflow: hidden; position: relative;'});
-  // If the equal ratio between stack, SVG viewBox and overlay DIV size is not
-  // maintained, this additional attribute would be necessary:
-  // this.paper.attr('preserveAspectRatio', 'xMinYMin meet')
-  this.graphics = CATMAID.SkeletonElementsFactory.createSkeletonElements(this.paper, stackViewer.getId(), this._skeletonDisplaySource.skeletonModels);
+
+  this.graphics = CATMAID.SkeletonElementsFactory.createSkeletonElements(
+      this,
+      pixiLayer.batchContainer,
+      this._skeletonDisplaySource.skeletonModels);
   this.graphics.setActiveNodeRadiusVisibility(SkeletonAnnotations.TracingOverlay.Settings.session.display_active_node_radius);
 
   // Listen to change and delete events of skeletons
@@ -1126,6 +1128,20 @@ SkeletonAnnotations.TracingOverlay.prototype.recolorAllNodes = function () {
       this.nodes[nodeID].updateColors();
     }
   }
+  this.pixiLayer._renderIfReady();
+};
+
+/**
+ * Make sure all nodes have the correct visibility.
+ */
+SkeletonAnnotations.TracingOverlay.prototype.updateVisibilityForAllNodes = function () {
+  // Assumes that atn and active_skeleton_id are correct:
+  for (var nodeID in this.nodes) {
+    if (this.nodes.hasOwnProperty(nodeID)) {
+      this.nodes[nodeID].updateVisibility();
+    }
+  }
+  this.pixiLayer._renderIfReady();
 };
 
 /**
@@ -2270,11 +2286,11 @@ SkeletonAnnotations.TracingOverlay.prototype.redraw = function(force, completion
 
   var screenScale = SkeletonAnnotations.TracingOverlay.Settings.session.screen_scaling;
   this.paper.classed('screen-scale', screenScale);
-  // All SVG elements scale automatcally, if the viewport on the SVG data
-  // changes. If in screen scale mode, where the size of all elements should
-  // stay the same (regardless of zoom level), counter acting this is required.
+  // All graphics elements scale automatcally. If in screen scale mode, where
+  // the size of all elements should stay the same (regardless of zoom level),
+  // counter acting this is required.
   var resScale = Math.max(stackViewer.primaryStack.resolution.x, stackViewer.primaryStack.resolution.y);
-  var dynamicScale = screenScale ? (1 / (stackViewer.scale * resScale)) : false;
+  var dynamicScale = screenScale ? (1 / stackViewer.scale) : false;
   this.graphics.scale(
       SkeletonAnnotations.TracingOverlay.Settings.session.scale,
       resScale,
@@ -2288,6 +2304,11 @@ SkeletonAnnotations.TracingOverlay.prototype.redraw = function(force, completion
 
   var stackViewBox = stackViewer.createStackViewBox();
 
+  this.pixiLayer.batchContainer.scale.set(stackViewer.scale);
+  this.pixiLayer.batchContainer.position.set(
+      -stackViewBox.min.x*stackViewer.scale,
+      -stackViewBox.min.y*stackViewer.scale);
+
   // Use project coordinates for the SVG's view box
   this.paper.attr({
       viewBox: [
@@ -2299,6 +2320,7 @@ SkeletonAnnotations.TracingOverlay.prototype.redraw = function(force, completion
       height: stackViewer.viewHeight}); // resize.
 
   if (doNotUpdate) {
+    this.pixiLayer._renderIfReady();
     if (typeof completionCallback !== "undefined") {
       completionCallback();
     }
@@ -2328,28 +2350,38 @@ SkeletonAnnotations.TracingOverlay.prototype.whenclicked = function (e) {
 
   var m = CATMAID.ui.getMouse(e, this.view);
 
-  var handled = false;
-  var atn = SkeletonAnnotations.atn;
-  var insert = e.altKey && e.ctrlKey;
-  var link = e.shiftKey;
-  var postLink = e.altKey;
-  // e.metaKey should correspond to the command key on Mac OS
-  var deselect = (!insert && e.ctrlKey) || e.metaKey ||
-    (insert && (null === atn.id || SkeletonAnnotations.TYPE_NODE !== atn.type));
+  // Construct an event mocking the actual click that can be passed to the
+  // tracing overlay. If it is handled there, do nothing here.
+  var eventFields = {};
+  for (var p in e) {
+    eventFields[p] = e[p];
+  }
+  var mockClick = new MouseEvent('mousedown', eventFields);
+  var handled = !this.pixiLayer.renderer.view.dispatchEvent(mockClick);
 
-  if (deselect) {
-    if (null !== atn.id) {
-      CATMAID.statusBar.replaceLast("Deactivated node #" + atn.id);
+  if (!handled) {
+    var atn = SkeletonAnnotations.atn;
+    var insert = e.altKey && e.ctrlKey;
+    var link = e.shiftKey;
+    var postLink = e.altKey;
+    // e.metaKey should correspond to the command key on Mac OS
+    var deselect = (!insert && e.ctrlKey) || e.metaKey ||
+      (insert && (null === atn.id || SkeletonAnnotations.TYPE_NODE !== atn.type));
+
+    if (deselect) {
+      if (null !== atn.id) {
+        CATMAID.statusBar.replaceLast("Deactivated node #" + atn.id);
+      }
+      this.activateNode(null);
+      handled = true;
+    } else {
+      if (!CATMAID.mayEdit()) {
+        CATMAID.statusBar.replaceLast("You don't have permission.");
+        e.stopPropagation();
+        return;
+      }
+      handled = this.createNodeOrLink(insert, link, postLink);
     }
-    this.activateNode(null);
-    handled = true;
-  } else {
-    if (!CATMAID.mayEdit()) {
-      CATMAID.statusBar.replaceLast("You don't have permission.");
-      e.stopPropagation();
-      return;
-    }
-    handled = this.createNodeOrLink(insert, link, postLink);
   }
 
   if (handled) {
@@ -3203,7 +3235,9 @@ SkeletonAnnotations.TracingOverlay.prototype.measureRadius = function () {
         // Unbind key handler and remove circle
         $('body').off('keydown.catmaidRadiusSelect');
         fakeNode.removeSurroundingCircle();
-        fakeNode.obliterate();
+        if (fakeNode.id === id) {
+          fakeNode.obliterate();
+        }
         return true;
       }
       return false;
@@ -3215,6 +3249,7 @@ SkeletonAnnotations.TracingOverlay.prototype.measureRadius = function () {
       // Remove circle and call callback
       fakeNode.removeSurroundingCircle(displayRadius);
       fakeNode.obliterate();
+      self.redraw();
     }
   }
 
@@ -4403,15 +4438,13 @@ SkeletonAnnotations.VisibilityGroups = new (function () {
     GROUP_2: 2,
   };
 
-  this.GROUP_CLASSES = ['visibilityOverride', 'visibilityGroup1', 'visibilityGroup2'];
-
   this.groups = Object.keys(this.GROUP_IDS).map(function (groupName, groupID) {
     return {
       metaAnnotationName: null,
       creatorID: null,
       skeletonIDs: new Set(),
       matchAll: false,
-      cssRule: null,
+      visible: groupName === 'OVERRIDE',
       callback: (function (metaAnnotationName, skeletonIDs) {
         this.groups[groupID].skeletonIDs = skeletonIDs;
       }).bind(this),
@@ -4422,12 +4455,6 @@ SkeletonAnnotations.VisibilityGroups = new (function () {
    * Refresh any meta-annotation-based filters from the backed.
    */
   this.refresh = function () {
-    for (var n = 0; n < this.groups.length; ++n)
-      for (var i in document.styleSheets)
-        for (var j in document.styleSheets[i].rules)
-          if (document.styleSheets[i].rules[j].selectorText == 'svg .' + this.GROUP_CLASSES[n])
-            this.groups[n].cssRule = document.styleSheets[i].rules[j];
-
     this.groups.forEach(function (group) {
       if (group.metaAnnotationName) {
         CATMAID.annotatedSkeletons.refresh(group.metaAnnotationName, true);
@@ -4494,7 +4521,7 @@ SkeletonAnnotations.VisibilityGroups = new (function () {
    */
   this.areGroupsVisible = function (groupIDs) {
     if (groupIDs.length === 0) return true;
-    return this.groups[groupIDs.slice(-1)].cssRule.style.display !== 'none';
+    return this.groups[groupIDs.slice(-1)].visible;
   };
 
   /**
@@ -4503,11 +4530,12 @@ SkeletonAnnotations.VisibilityGroups = new (function () {
    * @param  {number} groupID  ID of the group to toggle, from GROUP_IDS.
    */
   this.toggle = function (groupID) {
-    var rule = this.groups[groupID].cssRule;
-    if (typeof rule === 'undefined') return;
+    this.groups[groupID].visible = !this.groups[groupID].visible;
 
-    var hidden = rule.style.display === 'none';
-    rule.style.display = hidden ? 'inherit' : 'none';
+    project.getStackViewers().forEach(function(sv) {
+      var overlay = SkeletonAnnotations.getTracingOverlay(sv.getId());
+      if (overlay) overlay.updateVisibilityForAllNodes();
+    });
   };
 
 })();

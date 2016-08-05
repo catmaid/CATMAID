@@ -1155,7 +1155,7 @@
     project.getStackViewers().forEach(function(s) {
       var layer = prepareStackViewer(s);
       layer.tracingOverlay.updateNodes(layer.forceRedraw.bind(layer));
-      s.getView().appendChild(layer.tracingOverlay.view);
+      // s.getView().appendChild(layer.tracingOverlay.view);
     }, this);
 
     // Listen to creation and removal of new stack views in current project.

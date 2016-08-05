@@ -20,7 +20,7 @@
     this.renderer = new PIXI.autoDetectRenderer(
         stackViewer.getView().clientWidth,
         stackViewer.getView().clientHeight,
-        {backgroundColor: 0x000000});
+        {backgroundColor: 0x000000, antialias: true});
     this.stage = new PIXI.Container();
     this.layersRegistered = new Set();
 
@@ -359,6 +359,13 @@
       if (!filterBasedAlpha) this.batchContainer.alpha = val;
       this.batchContainer.visible = this.visible;
     }
+  };
+
+  /**
+   * Get the layer opacity.
+   */
+  PixiLayer.prototype.getOpacity = function () {
+    return this.opacity;
   };
 
   /**

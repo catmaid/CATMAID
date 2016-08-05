@@ -569,7 +569,9 @@
                       this.value === 'overlay-scaling-screen',
                       SETTINGS_SCOPE)
                     .then(function () {
-                      project.getStackViewers().forEach(function (s) {s.redraw();});
+                      project.getStackViewers().forEach(function (s) {
+                        SkeletonAnnotations.getTracingOverlay(s.getId()).redraw(true);
+                      });
                     });
               }).addClass('setting'),
           SkeletonAnnotations.TracingOverlay.Settings,
@@ -595,7 +597,9 @@
                         .then(function () {
                           $('#overlay-scale-value').text((
                               SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE].scale*100).toFixed());
-                          project.getStackViewers().forEach(function (s) {s.redraw();});
+                          project.getStackViewers().forEach(function (s) {
+                            SkeletonAnnotations.getTracingOverlay(s.getId()).redraw(true);
+                          });
                         });
                   }})),
           SkeletonAnnotations.TracingOverlay.Settings,

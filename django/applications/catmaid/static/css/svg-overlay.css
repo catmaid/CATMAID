@@ -4,6 +4,8 @@
   left: 0;
   margin: 0;
   padding: 0;
+  width: 100%;
+  height: 100%;
 }
 
 .tagEditor {
@@ -39,16 +41,4 @@ svg.screen-scale circle {
 svg .label:hover {
   /* display and visibility are cheaper than opacity, but cause flicker. */
   opacity: 0;
-}
-
-svg .visibilityGroup1 {
-  display: none;
-}
-
-svg .visibilityGroup2 {
-  display: none;
-}
-
-svg .visibilityOverride {
-  display: inline;
 }

@@ -90,14 +90,16 @@ def create_basic_annotated_entity_query(project, params, relations, classes,
         # Use IN (OR) for a single annotation and its sub-annotations
         filters['cici_via_a__class_instance_b_id__in'] = first_id_set
 
-    # Create basic filter, possibly containing *one* annotation ID set
-    entities = ClassInstance.objects.filter(**filters)
+        # Create basic filter, possibly containing *one* annotation ID set
+        entities = ClassInstance.objects.filter(**filters)
 
-    # Add remaining filters for annotation constraints, if any
-    for annotation_id_set in annotation_id_sets:
-        entities = entities.filter(
-            cici_via_a__relation_id=annotated_with,
-            cici_via_a__class_instance_b_id__in=annotation_id_set)
+        # Add remaining filters for annotation constraints, if any
+        for annotation_id_set in annotation_id_sets:
+            entities = entities.filter(
+                cici_via_a__relation_id=annotated_with,
+                cici_via_a__class_instance_b_id__in=annotation_id_set)
+    else:
+        entities = ClassInstance.objects.none()
 
     # Create final query. Without any restriction, the result set will contain
     # all instances of the given set of allowed classes.

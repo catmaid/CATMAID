@@ -4071,6 +4071,14 @@ class ViewPageTests(TestCase):
         self.assertEqual(parsed_response['totalRecords'], 2)
         self.assertItemsEqual(parsed_response['entities'], expected_entities)
 
+        # Test that an empty request returns nothing, not everything.
+        response = self.client.post(
+            '/%d/annotations/query-targets' % (self.test_project_id,),
+            {})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        self.assertEqual(parsed_response['totalRecords'], 0)
+
     def test_review_status(self):
         self.fake_authentication()
 

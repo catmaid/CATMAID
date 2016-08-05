@@ -143,16 +143,20 @@ var project;
           /**
            * Convenience wrappers for table page length settings.
            */
-          Object.defineProperty(CATMAID, 'pageLengthOptions', {
-            get: function() {
-              return CATMAID.Client.Settings.session.table_page_length_options;
-            }
-          });
-          Object.defineProperty(CATMAID, 'pageLengthLabels', {
-            get: function() {
-              var opts = CATMAID.Client.Settings.session.table_page_length_options;
-              return CATMAID.getPageLengthLabels(opts);
-            }
+          Object.defineProperties(CATMAID, {
+            pageLengthOptions: {
+              get: function() {
+                return CATMAID.Client.Settings.session.table_page_length_options;
+              },
+              configurable: true,
+            },
+            pageLengthLabels: {
+              get: function() {
+                var opts = CATMAID.Client.Settings.session.table_page_length_options;
+                return CATMAID.getPageLengthLabels(opts);
+              },
+              configurable: true,
+            },
           });
         });
   });

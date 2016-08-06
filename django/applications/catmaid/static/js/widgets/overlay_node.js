@@ -1372,7 +1372,7 @@
         e.preventDefault();
 
         if (!CATMAID.mayEdit() || !node.canEdit()) {
-          CATMAID.statusBar.replaceLast("You don't have permission to move node #" + d);
+          CATMAID.statusBar.replaceLast("You don't have permission to move node #" + node.id);
           return;
         }
 

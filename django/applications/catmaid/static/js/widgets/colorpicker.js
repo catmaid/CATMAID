@@ -64,6 +64,13 @@
       CATMAID.tools.callIfFn(resizeOnRender);
       resizeOnRender = null;
     }
+
+    // Make sure no width or height is explicitely set on the container
+    // element, which would prevent proper resizing.
+    $("div.cp-app").css({
+      width: "",
+      height: ""
+    });
   }
 
   /**

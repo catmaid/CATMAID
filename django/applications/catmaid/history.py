@@ -69,7 +69,7 @@ def enable_history_tracking(ignore_missing_fn=False):
     if ignore_missing_fn:
         cursor.execute("""
             SELECT EXISTS(SELECT 1 FROM pg_class
-            WHERE relname='catmaid_history_tables');""")
+            WHERE relname='catmaid_history_table');""")
         result = cursor.fetchone()
         if not result[0]:
             # If the function does not exist, return silently if the missing

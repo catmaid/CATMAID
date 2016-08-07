@@ -619,6 +619,20 @@ class HistoryTableTests(TransactionTestCase):
         n_missing_enabled = HistoryTableTests.get_num_tables_without_update_triggers(cursor)
         self.assertEqual(0, n_missing_enabled)
 
+        # Disable history tracking again
+        history.disable_history_tracking()
+
+        # Expect no installed triggers anymore
+        n_history_tables = HistoryTableTests.get_num_history_tables(cursor)
+        n_missing_disabled = HistoryTableTests.get_num_tables_without_update_triggers(cursor)
+        self.assertEqual(n_history_tables, n_missing_disabled)
+
+        # Enable history tracking, but allow for silent failure. Expect zero
+        # missing tables afterwards.
+        history.enable_history_tracking(True)
+        n_missing_enabled = HistoryTableTests.get_num_tables_without_update_triggers(cursor)
+        self.assertEqual(0, n_missing_enabled)
+
     def test_time_synchronization_missed_insert_without_time_column(self):
         """See if disabling the history and inserting a new live row in a table
         without time column (and hence with time table), yields in the correct

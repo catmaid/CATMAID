@@ -20,7 +20,7 @@ from catmaid.models import ClientDatastore, ClientData, Project, UserRole
 class ClientDatastoreSerializer(ModelSerializer):
     class Meta:
         model = ClientDatastore
-        read_only_fields = ('id')
+        read_only_fields = ('id',)
 
 
 class ClientDatastoreList(APIView):
@@ -83,7 +83,7 @@ class ClientDatastoreDetail(APIView):
 class ClientDataSerializer(ModelSerializer):
     class Meta:
         model = ClientData
-        read_only_fields = ('id')
+        read_only_fields = ('id',)
 
 
 class ClientDataList(APIView):

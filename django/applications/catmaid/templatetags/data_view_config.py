@@ -158,7 +158,7 @@ def has_tag(project, tags):
             return True
     return False
 
-@register.assignment_tag
+@register.simple_tag
 def pids_to_projects(pids, project_index, sort=False):
     """ Returns a list of project objects that correspond to the PID list
     passed as parameter. If sort is specified, the returning list is sorted
@@ -170,7 +170,7 @@ def pids_to_projects(pids, project_index, sort=False):
     else:
         return projects
 
-@register.assignment_tag
+@register.simple_tag
 def is_highlighted(pid, highlight_tags, tag_index):
     """ Expects <args> to be a list where the first element is a list of tags
     to test against and the second element is a project ID. Based on that, this

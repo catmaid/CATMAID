@@ -287,8 +287,7 @@ class ViewPageTests(TestCase):
     def test_authentication(self):
         # Try to access the password change view without logging in
         response = self.client.get('/user/password_change/')
-        self.assertEqual('http://testserver/accounts/login?next=' + settings.CATMAID_URL + 'user/password_change/',
-                         response['Location'])
+        self.assertRedirects(response, '/accounts/login?next=/user/password_change/')
         self.assertEqual(response.status_code, 302)
         # Now insert a fake session and expect a successful request
         self.fake_authentication()
@@ -655,7 +654,7 @@ class ViewPageTests(TestCase):
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         self.assertEqual(len(parsed_response), 1)
-        value = json.loads(parsed_response[0]['value'])
+        value = parsed_response[0]['value']
         self.assertTrue(value['replaced'])
 
         response = self.client.put(

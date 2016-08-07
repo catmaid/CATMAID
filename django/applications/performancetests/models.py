@@ -1,7 +1,6 @@
+from django.contrib.postgres.fields import JSONField
 from django.db import models
 from django.utils import timezone
-
-from jsonfield import JSONField
 
 
 class TestView(models.Model):
@@ -31,7 +30,7 @@ class TestResult(models.Model):
     Represents the result of test of the given view. It expects a time and a
     result.
     """
-    view = models.ForeignKey(TestView)
+    view = models.ForeignKey(TestView, on_delete=models.CASCADE)
     time = models.FloatField()
     result_code = models.IntegerField()
     result = models.TextField()

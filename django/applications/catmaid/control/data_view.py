@@ -50,7 +50,7 @@ def add_catalogue_info(user, projects):
 def get_data_view_type_comment( request ):
     """ Return the comment of a specific data view type.
     """
-    requested_id = request.REQUEST["data_view_type_id"]
+    requested_id = request.GET["data_view_type_id"]
     if requested_id == "":
         text = "Please select a valid data view type."
     else:

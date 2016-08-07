@@ -12,11 +12,12 @@ be an endpoint in both.
 
 Instead, use the smallest set of endpoints covering the entire path tree
 as the root paths and Swagger resources.
+
+This monkey patch can be applied with the patch() function, after all
+Django applications are loaded.
 """
 
 import re
-
-from rest_framework_swagger.urlparser import UrlParser
 
 
 def _minimal_top_level_apis(self, apis):
@@ -39,5 +40,13 @@ def _minimal_top_level_apis(self, apis):
 
     return sorted(top_level_apis, key=self.__get_last_element__)
 
-UrlParser.explicit_root_paths = set()
-UrlParser.get_top_level_apis = _minimal_top_level_apis
+def patch():
+    """
+    Perform the actual monkey patching of django-rest-swagger's URL parser.
+    Needs to be called after all Django application have been loaded, e.g. from
+    AppConfig.ready().
+    """
+    from rest_framework_swagger.urlparser import UrlParser
+
+    UrlParser.explicit_root_paths = set()
+    UrlParser.get_top_level_apis = _minimal_top_level_apis

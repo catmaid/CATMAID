@@ -20,7 +20,7 @@ from catmaid.models import ClientDatastore, ClientData, Project, UserRole
 class ClientDatastoreSerializer(ModelSerializer):
     class Meta:
         model = ClientDatastore
-        read_only_fields = ('id')
+        read_only_fields = ('id',)
 
 
 class ClientDatastoreList(APIView):
@@ -83,7 +83,7 @@ class ClientDatastoreDetail(APIView):
 class ClientDataSerializer(ModelSerializer):
     class Meta:
         model = ClientData
-        read_only_fields = ('id')
+        read_only_fields = ('id',)
 
 
 class ClientDataList(APIView):
@@ -201,7 +201,7 @@ class ClientDataList(APIView):
             raise ValidationError('A value for the data must be provided.')
         # Validate JSON by reserializing.
         try:
-            value = json.dumps(json.loads(value))
+            value = json.loads(value)
         except ValueError as exc:
             raise ValidationError('Data value is invalid JSON: ' + str(exc))
 

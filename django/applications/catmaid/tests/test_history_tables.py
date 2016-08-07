@@ -28,6 +28,181 @@ class HistoryTableTests(TransactionTestCase):
         history.enable_history_tracking()
         return super(HistoryTableTests, self).run(*args)
 
+    tables_with_history = (
+        # CATMAID tables
+        'broken_slice',
+        'cardinality_restriction',
+        'catmaid_userprofile',
+        'catmaid_volume',
+        'change_request',
+        'class',
+        'class_class',
+        'class_instance',
+        'class_instance_class_instance',
+        'client_data',
+        'client_datastore',
+        'concept',
+        'connector',
+        'connector_class_instance',
+        'data_view',
+        'data_view_type',
+        'location',
+        'message',
+        'overlay',
+        'project',
+        'project_stack',
+        'region_of_interest',
+        'region_of_interest_class_instance',
+        'relation',
+        'relation_instance',
+        'restriction',
+        'review',
+        'reviewer_whitelist',
+        'stack',
+        'stack_class_instance',
+        'suppressed_virtual_treenode',
+        'textlabel',
+        'textlabel_location',
+        'treenode',
+        'treenode_class_instance',
+        'treenode_connector',
+
+        # Non-CATMAID tables
+        'auth_group',
+        'auth_group_permissions',
+        'auth_permission',
+        'auth_user',
+        'auth_user_groups',
+        'auth_user_user_permissions',
+        'authtoken_token',
+        'django_admin_log',
+        'django_content_type',
+        'django_migrations',
+        'django_site',
+        'guardian_groupobjectpermission',
+        'guardian_userobjectpermission',
+        'performancetests_event',
+        'performancetests_testresult',
+        'performancetests_testview',
+        'taggit_tag',
+        'taggit_taggeditem'
+    )
+
+    tables_without_history = (
+        # History tables of versioned CATMAID tables
+        'broken_slice_history',
+        'cardinality_restriction_history',
+        'catmaid_userprofile_history',
+        'catmaid_volume_history',
+        'change_request_history',
+        'class_history',
+        'class_class_history',
+        'class_instance_history',
+        'class_instance_class_instance_history',
+        'client_data_history',
+        'client_datastore_history',
+        'concept_history',
+        'connector_history',
+        'connector_class_instance_history',
+        'data_view_history',
+        'data_view_type_history',
+        'location_history',
+        'message_history',
+        'overlay_history',
+        'project_history',
+        'project_stack_history',
+        'region_of_interest_history',
+        'region_of_interest_class_instance_history',
+        'relation_history',
+        'relation_instance_history',
+        'restriction_history',
+        'review_history',
+        'reviewer_whitelist_history',
+        'stack_history',
+        'stack_class_instance_history',
+        'suppressed_virtual_treenode_history',
+        'textlabel_history',
+        'textlabel_location_history',
+        'treenode_history',
+        'treenode_class_instance_history',
+        'treenode_connector_history',
+
+        # History tables of versioned non-CATMAID tables
+        'auth_group_history',
+        'auth_group_permissions_history',
+        'auth_permission_history',
+        'auth_user_history',
+        'auth_user_groups_history',
+        'auth_user_user_permissions_history',
+        'authtoken_token_history',
+        'django_admin_log_history',
+        'django_content_type_history',
+        'django_migrations_history',
+        'django_site_history',
+        'guardian_groupobjectpermission_history',
+        'guardian_userobjectpermission_history',
+        'performancetests_event_history',
+        'performancetests_testresult_history',
+        'performancetests_testview_history',
+        'taggit_tag_history',
+        'taggit_taggeditem',
+
+        # Time tables
+        'broken_slice_time',
+        'catmaid_userprofile_time',
+        'client_data_time',
+        'client_datastore_time',
+        'data_view_time',
+        'data_view_type_time',
+        'overlay_time',
+        'project_time',
+        'project_stack_time',
+        'reviewer_whitelist_time',
+        'stack_time',
+        'textlabel_location_time',
+        'auth_group_time',
+        'auth_group_permissions_time',
+        'auth_permission_time',
+        'auth_user_time',
+        'auth_user_groups_time',
+        'auth_user_user_permissions_time',
+        'authtoken_token_time',
+        'django_admin_log_time',
+        'django_content_type_time',
+        'django_migrations_time',
+        'django_site_time',
+        'guardian_groupobjectpermission_time',
+        'guardian_userobjectpermission_time',
+        'performancetests_event_time',
+        'performancetests_testresult_time',
+        'performancetests_testview_time',
+        'taggit_tag_time',
+        'taggit_taggeditem_history',
+        'taggit_taggeditem_time',
+
+        # Regular unversioned CATMAID tables
+        'log',
+        'treenode_edge',
+        'catmaid_history_table',
+        'treenode_connector_edge',
+        'connector_geom',
+        'catmaid_transaction_info',
+
+        # Regular unversioned non-CATMAID tables
+        'djkombu_queue',
+        'djkombu_message',
+        'djcelery_periodictasks',
+        'celery_taskmeta',
+        'celery_tasksetmeta',
+        'djcelery_crontabschedule',
+        'djcelery_intervalschedule',
+        'djcelery_periodictask',
+        'djcelery_workerstate',
+        'djcelery_taskstate',
+        'django_session',
+        'spatial_ref_sys'
+    )
+
     def test_name_length_limits(self):
         """ Make sure an exception is raised if the history table name for a live
         table exceeds identifier limits imposed by Postgres.
@@ -46,68 +221,12 @@ class HistoryTableTests(TransactionTestCase):
 
     def test_history_table_existence(self):
         """Test if all catmaid tables have a history table"""
-        expected_tables_with_history = (
-            # CATMAID tables
-            'broken_slice',
-            'cardinality_restriction',
-            'catmaid_userprofile',
-            'catmaid_volume',
-            'change_request',
-            'class',
-            'class_class',
-            'class_instance',
-            'class_instance_class_instance',
-            'client_data',
-            'client_datastore',
-            'concept',
-            'connector',
-            'connector_class_instance',
-            'data_view',
-            'data_view_type',
-            'location',
-            'message',
-            'overlay',
-            'project',
-            'project_stack',
-            'region_of_interest',
-            'region_of_interest_class_instance',
-            'relation',
-            'relation_instance',
-            'restriction',
-            'review',
-            'reviewer_whitelist',
-            'stack',
-            'stack_class_instance',
-            'suppressed_virtual_treenode',
-            'textlabel',
-            'textlabel_location',
-            'treenode',
-            'treenode_class_instance',
-            'treenode_connector',
-
-            # Non-CATMAID tables
-            'auth_group',
-            'auth_group_permissions',
-            'auth_permission',
-            'auth_user',
-            'auth_user_groups',
-            'auth_user_user_permissions',
-            'authtoken_token',
-            'django_admin_log',
-            'django_content_type',
-            'django_migrations',
-            'django_site',
-            'guardian_groupobjectpermission',
-            'guardian_userobjectpermission',
-            'performancetests_event',
-            'performancetests_testresult',
-            'performancetests_testview',
-            'taggit_tag',
-            'taggit_taggeditem'
-        )
 
         cursor = connection.cursor()
-        cmt_template = ",".join(('(%s)',) * len(expected_tables_with_history))
+
+        # Check if tables show up in own catmaid_history_table tracking table.
+        # First, get all expected tables that are defined in the list above.
+        cmt_template = ",".join(('(%s)',) * len(HistoryTableTests.tables_with_history))
         cursor.execute("""
             SELECT cmt.table_name, cht.history_table_name,
                 COUNT(cmt.table_name), COUNT(cht.history_table_name)
@@ -115,15 +234,50 @@ class HistoryTableTests(TransactionTestCase):
             JOIN (VALUES {}) cmt(table_name)
                 ON cmt.table_name::regclass = cht.live_table_name
             GROUP BY cmt.table_name, cht.history_table_name
-        """.format(cmt_template), expected_tables_with_history)
+        """.format(cmt_template), HistoryTableTests.tables_with_history)
 
         # Expect exactly one history table for all the specified CATMAID tables
         table_info = cursor.fetchall()
-        self.assertEqual(len(table_info), len(expected_tables_with_history))
+        self.assertEqual(len(table_info), len(HistoryTableTests.tables_with_history))
         # Expect only one history table per live table and vice versa
         for live_name, history_name, n_live, n_history in table_info:
             self.assertEqual(1, n_live)
             self.assertEqual(1, n_history)
+
+        # List all tables in current database search path and make sure there
+        # are no tables that are neither listed as explicitely as versioned or
+        # without history. This should fail if e.g. one of CATMAID's
+        # dependencies creates a new table that we haven't seen before.
+        cursor.execute("""
+            SELECT tablename FROM pg_tables WHERE schemaname='public';
+        """)
+        all_tables = [row[0] for row in cursor.fetchall()]
+        unknown_tables = []
+        for table_name in all_tables:
+            if table_name in HistoryTableTests.tables_with_history:
+                cursor.execute("""
+                    SELECT history_table_name(%s::regclass)::regclass;
+                """, (table_name,))
+            elif table_name in HistoryTableTests.tables_without_history:
+                with self.assertRaises(Exception):
+                    cursor.execute("""
+                        SELECT history_table_name({}::regclass)::regclass;
+                    """, (table_name,))
+            else:
+                unknown_tables.append(table_name)
+
+        if unknown_tables:
+            if 1 == len(unknown_tables):
+                raise ValueError("The tables {} wasn't declared as table with or "
+                        "without history. Please add it to the list so that "
+                        "checks can be performed properly.".format(
+                            unknown_tables[0]))
+            else:
+                raise ValueError("The tables {} weren't declared as table with or "
+                        "without history. Please add them to the list so that "
+                        "checks can be performed properly.".format(
+                            ", ".join(unknown_tables)))
+
 
     @staticmethod
     def get_history_entries(cursor, live_table_name):

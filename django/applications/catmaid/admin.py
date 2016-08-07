@@ -3,7 +3,7 @@ from django.db.models import fields as db_fields, ForeignKey
 from django.core.exceptions import ValidationError
 from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 from django.utils.safestring import mark_safe
 from guardian.admin import GuardedModelAdmin
 from catmaid.models import (Project, DataView, Stack, ProjectStack, UserProfile,
@@ -362,6 +362,7 @@ admin.site.register(StackGroup, StackGroupAdmin)
 
 # Replace the user admin view with custom view
 admin.site.register(User, CustomUserAdmin)
+admin.site.register(Group)
 # Register additional views
 admin.site.register_view('annotationimporter', 'Annotation data importer',
                          view=ImportingWizard.as_view())

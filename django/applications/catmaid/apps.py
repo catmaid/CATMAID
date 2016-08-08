@@ -16,22 +16,23 @@ from django.contrib.auth.management.commands import createsuperuser
 import custom_rest_swagger_apis
 
 
-def get_system_user():
+def get_system_user(user_model=None):
     """Return a User instance of a superuser. This is either the superuser
     having the ID configured in SYSTEM_USER_ID or the superuser with the lowest
     ID."""
-    User = auth.get_user_model()
+    if not user_model:
+        user_model = auth.get_user_model()
 
     if hasattr(settings, "SYSTEM_USER_ID"):
         try:
-            return User.objects.get(id=settings.SYSTEM_USER_ID, is_superuser=True)
-        except User.DoesNotExist:
+            return user_model.objects.get(id=settings.SYSTEM_USER_ID, is_superuser=True)
+        except user_model.DoesNotExist:
             raise ImproperlyConfigured("Could not find any super user with ID "
                                        "configured in SYSTEM_USER_ID (%s), "
                                        "please fix this in settings.py" % settings.SYSTEM_USER_ID)
     else:
         # Find admin user with lowest id
-        users = User.objects.filter(is_superuser=True).order_by('id')
+        users = user_model.objects.filter(is_superuser=True).order_by('id')
         if not len(users):
             raise ImproperlyConfigured("Couldn't find any super user, " +
                                        "please make sure you have one")

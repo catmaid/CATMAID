@@ -730,6 +730,9 @@ SkeletonAnnotations.TracingOverlay.Settings = new CATMAID.Settings(
           active_virtual_node_color: {
             default: 0x00C000,
           },
+          active_suppressed_virtual_node_color: {
+            default: 0x008000,
+          },
           active_skeleton_color: {
             default: 0xFFFF00,
           },
@@ -3557,6 +3560,29 @@ SkeletonAnnotations.TracingOverlay.prototype.promiseSuppressedVirtualNodes = fun
 };
 
 /**
+ * Check whether a virtual node ID is suppressed, assuming its suppression info
+ * has already been promised.
+ * @param  {string}  vnID ID of the virtual node to check.
+ * @return {Boolean}      Whether the node is known to be suppressed.
+ */
+SkeletonAnnotations.TracingOverlay.prototype.isVirtualNodeSuppressed = function (vnID) {
+  if (SkeletonAnnotations.isRealNode(vnID));
+
+  var childID = SkeletonAnnotations.getChildOfVirtualNode(vnID);
+  var child = this.nodes[childID];
+  if (child && child.hasOwnProperty('suppressed')) {
+    var vnCoords = SkeletonAnnotations.getVirtualNodeComponents(vnID).slice(3, 6).map(Number);
+    return child.suppressed.some(function (s) {
+      if (s.orientation === this.stackViewer.primaryStack.orientation) {
+        return vnCoords[2 - s.orientation] === s.location_coordinate;
+      }
+      return false;
+    }, this);
+  }
+  return false;
+};
+
+/**
  * Moves the view to the location where the skeleton between a child
  * and a parent node intersects with the first section next to the child. Or,
  * alternatively, the parent if reverse is trueish. Returns a promise which
@@ -4061,6 +4087,7 @@ SkeletonAnnotations.TracingOverlay.prototype.toggleVirtualNodeSuppression = func
           CATMAID.jsonResponseHandler(function () {
             var node = self.nodes[childId];
             if (node) delete node.suppressed;
+            self.recolorAllNodes();
             CATMAID.info('Unsuppressed virtual parent of ' + childId + ' at ' +
                          orientationName + '=' + coordinate);
           }));
@@ -4072,6 +4099,7 @@ SkeletonAnnotations.TracingOverlay.prototype.toggleVirtualNodeSuppression = func
           CATMAID.jsonResponseHandler(function (json) {
             var node = self.nodes[childId];
             if (node && node.suppressed) node.suppressed.push(json);
+            self.recolorAllNodes();
             CATMAID.info('Suppressed virtual parent of ' + childId + ' at ' +
                          orientationName + '=' + coordinate);
           }));
@@ -4167,6 +4195,10 @@ SkeletonAnnotations.TracingOverlay.prototype.nodeIsPartOfSkeleton = function(ske
  * Handle update of active node with recoloring all nodes.
  */
 SkeletonAnnotations.TracingOverlay.prototype.handleActiveNodeChange = function(node) {
+  if (SkeletonAnnotations.Settings.session.skip_suppressed_virtual_nodes) {
+    var self = this;
+    this.promiseSuppressedVirtualNodes(node.id).then(function () { self.recolorAllNodes(); });
+  }
   this.recolorAllNodes();
 };
 

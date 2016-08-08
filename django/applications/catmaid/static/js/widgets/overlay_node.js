@@ -459,7 +459,11 @@
           if (SkeletonAnnotations.isRealNode(this.id)) {
             color = SkeletonAnnotations.TracingOverlay.Settings.session.active_node_color;
           } else {
-            color = SkeletonAnnotations.TracingOverlay.Settings.session.active_virtual_node_color;
+            if (this.overlayGlobals.tracingOverlay.isVirtualNodeSuppressed(this.id)) {
+              color = SkeletonAnnotations.TracingOverlay.Settings.session.active_suppressed_virtual_node_color;
+            } else {
+              color = SkeletonAnnotations.TracingOverlay.Settings.session.active_virtual_node_color;
+            }
           }
         } else if (this.isroot) {
           // The root node should be colored red unless it's active:
@@ -487,7 +491,11 @@
           if (SkeletonAnnotations.isRealNode(this.id)) {
             return SkeletonAnnotations.TracingOverlay.Settings.session.active_node_color;
           } else {
-            return SkeletonAnnotations.TracingOverlay.Settings.session.active_virtual_node_color;
+            if (this.overlayGlobals.tracingOverlay.isVirtualNodeSuppressed(this.id)) {
+              return SkeletonAnnotations.TracingOverlay.Settings.session.active_suppressed_virtual_node_color;
+            } else {
+              return SkeletonAnnotations.TracingOverlay.Settings.session.active_virtual_node_color;
+            }
           }
         } else if (this.isroot) {
           return baseColor.clone().offsetHSL(0, 0, 0.25).getHex();

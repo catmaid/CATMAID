@@ -25,6 +25,11 @@ Tracing overlay:
 - The active node color for virtual nodes can now be configured to be different
   than for read nodes.
 
+- The active node color for suppressed virtual nodes can be configured to be
+  different than for unsuppressed virtual nodes. Note this only takes effect
+  if the "Respect suppressed virtual nodes during navigation" setting is
+  enabled.
+
 
 3D viewer:
 

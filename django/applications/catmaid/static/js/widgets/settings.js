@@ -631,6 +631,7 @@
       var colors = new Map([
         ['Active node', 'active_node_color'],
         ['Active virtual node', 'active_virtual_node_color'],
+        ['Active suppressed virtual node', 'active_suppressed_virtual_node_color'],
         ['Active skeleton', 'active_skeleton_color'],
         ['Inactive skeleton', 'inactive_skeleton_color'],
         ['Active skeleton virtual node/edge', 'active_skeleton_color_virtual'],

@@ -36,7 +36,7 @@ summary statistics.
 
 </ul>
 
-In addition, it is possible to extract the tree nodes or only it's connectors of
+In addition, it is possible to extract the tree nodes or only the connectors of
 the selected neurons.
 
 <ul>

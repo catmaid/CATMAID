@@ -751,7 +751,6 @@
             this.c.visible = false;
           }
         }
-        this.createCircle();
         this.createRadiusGraphics();
         if (this.line) {
           this.line.visible = false;
@@ -1200,7 +1199,6 @@
             this.c.visible = false;
           }
         }
-        this.createCircle();
 
         this.preLines = null;
         this.postLines = null;

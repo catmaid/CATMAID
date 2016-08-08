@@ -53,9 +53,15 @@ def transaction_collection(request, project_id):
             description: Transaction ID, only in combination with timestamp unique.
             required: true
     type:
-      - type: array
+      transactions:
+        type: array
         items:
           $ref: transaction_entity
+        description: Matching transactions
+        required: true
+      total_count:
+        type: integer
+        description: The total number of elements
         required: true
     """
     if request.method == 'GET':
@@ -74,10 +80,16 @@ def transaction_collection(request, project_id):
 
         cursor = connection.cursor()
         cursor.execute("""
-            SELECT row_to_json(cti.*) FROM catmaid_transaction_info cti
+            SELECT row_to_json(cti), COUNT(*) OVER() AS full_count
+            FROM catmaid_transaction_info cti
             WHERE project_id = %s
             ORDER BY execution_time DESC {}
         """.format(" ".join(constraints)), params)
-        json_data = [row[0] for row in cursor.fetchall()]
+        result = cursor.fetchall()
+        json_data = [row[0] for row in result]
+        total_count = result[0][1] if len(json_data) > 0 else 0
 
-        return Response(json_data)
+        return Response({
+            "transactions": json_data,
+            "total_count": total_count
+        })

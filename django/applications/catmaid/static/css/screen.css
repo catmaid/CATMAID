@@ -1135,3 +1135,7 @@ img.missing-image:before {
   height: 128px;
   border: 2px;
 }
+
+.table-widget table {
+  width: 100%;
+}

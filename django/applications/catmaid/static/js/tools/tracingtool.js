@@ -869,7 +869,11 @@
           }
           if (selectedNode) {
             // If this layer has a node close by, activate it
-            SkeletonAnnotations.staticSelectNode(selectedNode.id);
+            if (activeTracingLayer.stackViewer.z === selectedNode.node.z) {
+              SkeletonAnnotations.staticSelectNode(selectedNode.id);
+            } else {
+              SkeletonAnnotations.staticMoveToAndSelectNode(selectedNode.id);
+            }
           }
           return true;
         } else {

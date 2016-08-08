@@ -531,6 +531,7 @@
    */
   SkeletonProjectionLayer.prototype.getClosestNode = function(x, y, radius) {
     var nearestnode = null;
+    var nearestpos = null;
     var mindistsq = radius * radius;
     // Find a node close to this location
     this.currentProjections.forEach(function(ap, skid) {
@@ -543,10 +544,13 @@
         if (distsq < mindistsq) {
           mindistsq = distsq;
           nearestnode = nodeID;
+          nearestpos = pos;
         }
       }
     });
-    return {id: nearestnode, distsq: mindistsq};
+    return {id: nearestnode,
+            node: {x: nearestpos.x, y: nearestpos.y, z: nearestpos.z},
+            distsq: mindistsq};
   };
 
   /**

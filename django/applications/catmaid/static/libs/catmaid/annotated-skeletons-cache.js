@@ -97,6 +97,38 @@
   };
 
   /**
+   * Explicitly let the cache know about skeletons added or removed from an
+   * annotation, so that it can notify listeners without waiting on a full
+   * refresh.
+   *
+   * @param  {string}   annotationName     Name of the annotation to notify (if
+   *                                       tracked).
+   * @param  {number[]} addedSkeletonIDs   An array of skeleton IDs gaining the
+   *                                       annotation.
+   * @param  {number[]} removedSkeletonIDs An array of skeleton IDs removing the
+   *                                       annotation.
+   */
+  AnnotatedSkeletonsCache.prototype.explicitChange = function (annotationName, addedSkeletonIDs, removedSkeletonIDs) {
+    if (!this.trackedAnnotations.hasOwnProperty(annotationName)) return;
+    var tracked = this._getTrackedAnnotation(annotationName);
+
+    addedSkeletonIDs = addedSkeletonIDs || [];
+    removedSkeletonIDs = removedSkeletonIDs || [];
+
+    addedSkeletonIDs.forEach(function (addedSkeletonID) {
+      tracked.skeletonIDs[0].add(addedSkeletonID);
+      tracked.skeletonIDs[1].add(addedSkeletonID);
+    });
+
+    removedSkeletonIDs.forEach(function (removedSkeletonID) {
+      tracked.skeletonIDs[0].delete(removedSkeletonID);
+      tracked.skeletonIDs[1].delete(removedSkeletonID);
+    });
+
+    this.notify(annotationName);
+  };
+
+  /**
    * Notify all callbacks registered with an annotation with the current set
    * of (meta-)annotated skeleton IDs.
    *

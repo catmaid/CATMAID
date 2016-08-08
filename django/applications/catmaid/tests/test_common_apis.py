@@ -4078,6 +4078,21 @@ class ViewPageTests(TestCase):
         parsed_response = json.loads(response.content)
         self.assertEqual(parsed_response['totalRecords'], 0)
 
+        # Test that searching by name without any annotation still works.
+        response = self.client.post(
+            '/%d/annotations/query-targets' % (self.test_project_id,),
+            {'name': 'downstream-A'})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_entities = sorted([
+            {'skeleton_ids': [373],
+            'type': 'neuron',
+            'id': 374,
+            'name': 'downstream-A'}])
+        self.assertEqual(parsed_response['totalRecords'], 1)
+        self.assertItemsEqual(parsed_response['entities'], expected_entities)
+
+
     def test_review_status(self):
         self.fake_authentication()
 

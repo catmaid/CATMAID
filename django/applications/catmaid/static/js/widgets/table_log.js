@@ -18,12 +18,17 @@
     return {
       controlsID: "log_table_controls",
       createControls: function(controls) {
+        // Create tabs
+        var tabs = CATMAID.DOM.addTabGroup(controls,
+            'log_table_controls', ['Log', 'History']);
+
         var add = document.createElement('input');
         add.setAttribute("type", "button");
         add.setAttribute("id", "update_logtable");
         add.setAttribute("value", "Update table");
         add.onclick = this.update.bind(this);
-        controls.appendChild(add);
+        tabs['Log'].appendChild(add);
+        tabs['Log'].dataset.mode = 'log';
 
         /* users */
         var sync = document.createElement('select');
@@ -44,7 +49,7 @@
           option.value = user.id;
           sync.appendChild(option);
         }
-        controls.appendChild(sync);
+        tabs['Log'].appendChild(sync);
 
         var opType = document.createElement('select');
         opType.setAttribute("id", "logtable_operationtype");
@@ -80,11 +85,30 @@
             option.value = operation_type_array[i];
             opType.appendChild(option);
         }
-        controls.appendChild(opType);
+        tabs['Log'].appendChild(opType);
+
+        // History table
+        tabs['History'].dataset.mode = 'history';
+
+        var self = this;
+        $(controls).tabs({
+          activate: function(event, ui) {
+            var mode = ui.newPanel.attr('data-mode');
+            if (mode === 'log' || mode === 'history') {
+              self.mode = mode;
+              self.redraw();
+            } else {
+              CATMAID.warn('Unknown log table mode: ' + mode);
+            }
+          }
+        });
       },
       contentID: "log_table_content",
       createContent: function(container) {
         var self = this;
+        this.logContainer = document.createElement('div');
+        this.historyContainer = document.createElement('div');
+
         var logTable = document.createElement('table');
         logTable.setAttribute('id', 'logtable');
 
@@ -112,7 +136,8 @@
             '</tr>' +
             '</tfoot>';
 
-        container.appendChild(logTable);
+        this.logContainer.appendChild(logTable);
+        container.appendChild(this.logContainer);
 
         this.logTable = $(logTable).dataTable({
           // http://www.datatables.net/usage/options
@@ -209,8 +234,6 @@
             var z = parseFloat(aData[5]);
             project.moveTo(z, y, x);
         });
-
-
       }
     };
   };
@@ -218,9 +241,26 @@
   /**
    * Redraw the complete log table.
    */
+  LogTable.prototype.redraw = function() {
+    if (this.mode === 'log') {
+      this.logContainer.style.display = 'block';
+      this.historyContainer.style.display = 'none';
+    } else if (this.mode === 'history') {
+      this.logContainer.style.display = 'none';
+      this.historyContainer.style.display = 'block';
+    }
+  };
+
+  /**
+   * Update and redraw the complete log table.
+   */
   LogTable.prototype.update = function() {
-    this.logTable.fnClearTable( 0 );
-    this.logTable.fnDraw();
+    if (this.mode === 'log') {
+      this.logTable.fnClearTable( 0 );
+      this.logTable.fnDraw();
+    } else if (this.mode === 'history') {
+
+    }
   };
 
   LogTable.prototype.init = function (pid) {

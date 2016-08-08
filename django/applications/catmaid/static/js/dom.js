@@ -457,6 +457,24 @@
     return placeholder;
   };
 
+  /**
+   * Create a tab group and add it to the passed in container. The widget ID is
+   * expected to be unique.
+   */
+  DOM.addTabGroup = function(container, widgetId, titles) {
+    var ul = document.createElement('ul');
+    container.appendChild(ul);
+    return titles.reduce(function(o, name) {
+      var id = name.replace(/ /, '') + widgetId;
+      ul.appendChild($('<li><a href="#' + id + '">' + name + '</a></li>')[0]);
+      var div = document.createElement('div');
+      div.setAttribute('id', id);
+      container.appendChild(div);
+      o[name] = div;
+      return o;
+    }, {});
+  };
+
   // Export DOM namespace
   CATMAID.DOM = DOM;
 

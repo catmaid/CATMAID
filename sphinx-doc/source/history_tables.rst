@@ -43,6 +43,16 @@ function, which makes sure a history table is removed cleanly if this is wanted.
 The table ``catmaid_history_table`` keeps track of all currently active history
 tables.
 
+Transaction log
+^^^^^^^^^^^^^^^
+
+Each endpoint of the CATMAID API that changes data is supposed to leave a log
+entry in the transaction log. This way, database changes can be associated with
+a particular back-end operation. Like explained in the :ref:`contributor
+documentation <contributor-backend>`, data changing endpoints in ``urls.py``
+are wrapped in a ``record_view`` decorator, which is parameterized with a label.
+This label is used by the back-end to find affected tables of a change.
+
 Disabling history tracking
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 

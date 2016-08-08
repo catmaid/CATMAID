@@ -1,13 +1,27 @@
-from django.db import connection
+import re
 
+from django.db import connection
 from django.db.transaction import TransactionManagementError
 
+transaction_label_pattern = re.compile('^\w+\.\w+$')
+
+
+def fail_on_wrong_format_label(label):
+    """Check the passed in label if it matches the expected format and raise an
+    error if not."""
+    if not transaction_label_pattern.match(label):
+        raise ValueError('Label "{}" doesn\'t follow convention '
+                         '"<resources>.<action>"'.format(label))
 
 def add_log_entry(user_id, label):
     """Give a label to the current transaction and time, executed by a
-    particular user. This information is recorded only once per transaction, and
-    subsequent calls will be ignored silently.
+    particular user. This information is recorded only once per transaction,
+    and subsequent calls will be ignored silently. Labels are expected to
+    follow the pattern <resource>.<action> with <resource> being a plural
+    identifier (e.g. treenodes), just like URI endpoints.
     """
+    fail_on_wrong_format_label(label)
+
     cursor = connection.cursor()
     # Only try to insert log record if current transaction is still valid
     if not cursor.db.needs_rollback:
@@ -26,6 +40,7 @@ def record_request_action(label, method=None):
     <method> is set to a particular HTTP method (i.e. GET or POST), only these
     requests are recorded.
     """
+    fail_on_wrong_format_label(label)
     if method and not method.isupper():
         raise ValueError("Method name must be upper case")
 
@@ -53,6 +68,7 @@ def record_action(user_id, label):
     """Give a label to the current transaction and time, executed by a
     particular user.
     """
+    fail_on_wrong_format_label(label)
     def decorator(f):
         def wrapped_f(*args, **kwargs):
             result = f(*args, **kwargs)

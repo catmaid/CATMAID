@@ -58,6 +58,8 @@ repository root. The sections below outline basic folder, file, and module
 structure for the backend and frontend, as well as primers on a few common data
 structures.
 
+.. _contributor-backend:
+
 Backend
 #######
 
@@ -67,9 +69,7 @@ logical objects on which the back API operates, while ``urls.py`` maps URI
 endpoints in the API to Python methods. Both are useful starting points when
 locating particular functionality or determining where to add new functionality.
 In case an endpoint changes data, a transaction log entry is added. This way
-semantic information can be linked to individual database changes. Writing
-endpoints are decorated with a ``record_view`` decorator in ``urls.py``. Make
-sure to follow this convention for new endpoints.
+semantic information can be linked to individual database changes.
 
 Most of the API routes to the ``catmaid.control`` module and folder. Within this
 module API functions are organized into logical units like skeleton or
@@ -235,6 +235,12 @@ involved. However, abbreviated property names or array-packed values are
 acceptable for the responses of performance-critical endpoints.
 
 Date and time response values should be in UTC and formatted as ISO 8601.
+
+Endpoints containing write operations should be decorated with a ``record_view``
+decorator in ``urls.py``, which expects a label as argument. This label should
+follow the pattern ``resource.action`` and just like URI itself, the
+``resource`` is expected to be in its plural form. Make sure to follow this
+convention for new endpoints.
 
 Javascript
 ##########

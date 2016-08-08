@@ -727,6 +727,9 @@ SkeletonAnnotations.TracingOverlay.Settings = new CATMAID.Settings(
           active_node_color: {
             default: 0x00FF00,
           },
+          active_virtual_node_color: {
+            default: 0x00C000,
+          },
           active_skeleton_color: {
             default: 0xFFFF00,
           },

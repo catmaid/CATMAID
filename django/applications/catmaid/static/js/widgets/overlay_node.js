@@ -456,8 +456,11 @@
         if (model) return this.colorCustom(model.color);
         var color;
         if (SkeletonAnnotations.getActiveNodeId() === this.id) {
-          // The active node is always in green:
-          color = SkeletonAnnotations.TracingOverlay.Settings.session.active_node_color;
+          if (SkeletonAnnotations.isRealNode(this.id)) {
+            color = SkeletonAnnotations.TracingOverlay.Settings.session.active_node_color;
+          } else {
+            color = SkeletonAnnotations.TracingOverlay.Settings.session.active_virtual_node_color;
+          }
         } else if (this.isroot) {
           // The root node should be colored red unless it's active:
           color = SkeletonAnnotations.TracingOverlay.Settings.session.root_node_color;
@@ -481,8 +484,11 @@
        */
       this.colorCustom = function (baseColor) {
         if (SkeletonAnnotations.getActiveNodeId() === this.id) {
-          // The active node is always in green:
-          return SkeletonAnnotations.TracingOverlay.Settings.session.active_node_color;
+          if (SkeletonAnnotations.isRealNode(this.id)) {
+            return SkeletonAnnotations.TracingOverlay.Settings.session.active_node_color;
+          } else {
+            return SkeletonAnnotations.TracingOverlay.Settings.session.active_virtual_node_color;
+          }
         } else if (this.isroot) {
           return baseColor.clone().offsetHSL(0, 0, 0.25).getHex();
         } else if (0 === this.numberOfChildren) {

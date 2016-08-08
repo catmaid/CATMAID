@@ -630,10 +630,11 @@
       // Node color settings: Title vs. SkeletonAnnotations field.
       var colors = new Map([
         ['Active node', 'active_node_color'],
+        ['Active virtual node', 'active_virtual_node_color'],
         ['Active skeleton', 'active_skeleton_color'],
         ['Inactive skeleton', 'inactive_skeleton_color'],
-        ['Active virtual node/edge', 'active_skeleton_color_virtual'],
-        ['Inactive virtual node/edge', 'inactive_skeleton_color_virtual'],
+        ['Active skeleton virtual node/edge', 'active_skeleton_color_virtual'],
+        ['Inactive skeleton virtual node/edge', 'inactive_skeleton_color_virtual'],
         ['Inactive upstream edge', 'inactive_skeleton_color_above'],
         ['Inactive downstream edge', 'inactive_skeleton_color_below'],
         ['Root node', 'root_node_color'],

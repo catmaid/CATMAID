@@ -22,6 +22,9 @@ Tracing overlay:
   "Always visible", establishes a set of filters for overriding hidden groups
   such that skeletons matched by these filters will always be shown.
 
+- The active node color for virtual nodes can now be configured to be different
+  than for read nodes.
+
 
 3D viewer:
 

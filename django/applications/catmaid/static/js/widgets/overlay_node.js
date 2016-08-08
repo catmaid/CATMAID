@@ -1392,6 +1392,10 @@
 
         this.x = node.x = newPosition.x;
         this.y = node.y = newPosition.y;
+        if (this.node.radiusGraphics) {
+          this.node.radiusGraphics.x = this.x;
+          this.node.radiusGraphics.y = this.y;
+        }
         node.drawEdges(true); // TODO for connector this is overkill
         // Update postsynaptic edges from connectors. Suprisingly this brute
         // approach of iterating through all nodes is sufficiently fast.

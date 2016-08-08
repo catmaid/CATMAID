@@ -548,9 +548,11 @@
         }
       }
     });
-    return {id: nearestnode,
-            node: {x: nearestpos.x, y: nearestpos.y, z: nearestpos.z},
-            distsq: mindistsq};
+    return nearestnode ?
+        {id: nearestnode,
+         node: {x: nearestpos.x, y: nearestpos.y, z: nearestpos.z},
+         distsq: mindistsq} :
+        null;
   };
 
   /**

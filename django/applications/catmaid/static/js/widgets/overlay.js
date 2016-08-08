@@ -1933,9 +1933,6 @@ SkeletonAnnotations.TracingOverlay.prototype.createNode = function (parentID, ch
       self.suspended = originalSuspended;
       CATMAID.Nodes.trigger(CATMAID.Nodes.EVENT_NODE_CREATED,
           nid, phys_x, phys_y, phys_z);
-
-      // Set atn to be the newly created node
-      self.activateNode(nn);
       // Append to parent and recolor
       if (parentID) {
         var parentNode = self.nodes[parentID];
@@ -1954,6 +1951,9 @@ SkeletonAnnotations.TracingOverlay.prototype.createNode = function (parentID, ch
           nn.updateColors();
         }
       }
+
+      // Set atn to be the newly created node
+      self.activateNode(nn);
 
       // Invoke callback if necessary
       if (afterCreate) afterCreate(self, nn);

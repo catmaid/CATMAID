@@ -3,15 +3,17 @@
 History and provenance tracking
 ===============================
 
-CATMAID keeps track of all changes to its database tables. Each row has a time
-range associated that denotes when this particular row was valid. This time
-period is represented by the half-open interval ``[start, end)`` for which a row
-is valid starting from time point ``start`` and is valid until (*but not
-including!*) ``end``. Keeping track of changes is managed entirely in the
-database. Currently, all CATMAID tables except ``treenode_edge`` are versioned,
-which can always be regenerated from the ``treenode`` table. CATMAID also keeps
-track of changes in non-CATMAID tables, that is the tables used by Django and
-Django applications we use, except for Celery and Kombu tables.
+CATMAID keeps track of all changes to its database tables. If a database row
+is changed, all old values will be stored in a so history table together with
+a time range representing the datas validity. This time period is represented by
+the half-open interval ``[start, end)`` for which a row is valid starting from
+time point ``start`` and is valid until (*but not including!*) ``end``. Keeping
+track of changes is managed entirely in the database. Currently, all CATMAID
+tables except ``treenode_edge`` and a few others are versioned, which can
+typically be regenerated. CATMAID also keeps track of changes in most
+non-CATMAID tables, that is the tables used by Django and Django applications we
+use, except for asynchronous task related Celery and Kombu.
+
 
 History tables
 --------------
@@ -19,10 +21,14 @@ History tables
 Each versioned table has a so called history table associated, indicated by the
 ``_history`` suffix (e.g. ``project`` and ``project_history``). This history
 table is populated automatically through database triggers: whenever data in the
-live table is inserted, updated or deleted, the history table will be be
-updated. It contains a complete copy for each version of each row and specifies
-a time period for its validity. This time period is called "system time" and is
-represented through the additional ``sys_period`` column in each history table.
+live table is updated or deleted, the history table will be be
+updated. It contains a complete copy for every historic version of each row and
+specifies a time period for its validity. This time period is called "system
+time" and is represented through the additional ``sys_period`` column in each
+history table. This time range spans typically the time of the last edittion (or
+creation) to the time of change. If a live table doesn't store such a start time
+stamp, a separate 1:1 time table, which keeps track of editions, is created and
+managed.
 
 CATMAID's history system has one requirement for tables it keeps track of: a
 single column primary key has to be used. Extending it to support multi-column
@@ -34,15 +40,17 @@ are added), the database function ``create_history_table( live_table_name )``
 can be used. This will create the history table and sets up all required
 triggers. Likewise, there is a ``delete_history_table( live_table_name )``
 function, which makes sure a history table is removed cleanly if this is wanted.
-The table ``history_table`` keeps track of all currently active history tables.
+The table ``catmaid_history_table`` keeps track of all currently active history
+tables.
 
-Disabling history tables
-^^^^^^^^^^^^^^^^^^^^^^^^
+Disabling history tracking
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 While history tracking is important and in most situations desirable, there are
 a few situations where it would beneficial to disable it (e.g. some database
-maintenance tasks). To do this the setting ``HISTORY_TRACKING`` can be set to
-``False``, i.e. add the following line to the ``settings.py`` file::
+maintenance tasks, more performance). To do this the setting
+``HISTORY_TRACKING`` can be set to ``False``, i.e. add the following line to the
+``settings.py`` file::
 
    HISTORY_TRACKING = False
 
@@ -60,17 +68,20 @@ tables have to be changed as well. Currently, this happens manually, but will
 become automated eventually (using Postgres DDL triggers). This means
 
 * a) if a live table is created, a new history table has to be created for it
-  (call `SELECT create_history_table(<schema>, <tablename>::regclass,
-  <timecolumn>);`, with `<timecolumn>` being an edit reference time, e.g.
-  `edition_time` for most CATMAID tables)
+  (call ``SELECT create_history_table(<schema>, <tablename>::regclass,
+  <timecolumn>);``, with ``<timecolumn>`` being an edit reference time, e.g.
+  ``edition_time`` for most CATMAID tables). To let CATMAID know if you expect
+  this table to have a history table, Add the table to the appropriate list
+  in the ``HistoryTableTest`` class. This way you can also mark a table as not
+  versioned.
 * b) if a live table is renamed, the history table is renamed accordingly, use
-  `history_table_name(<tablename>::regclass)` to create the new name,
-* c) if a live table is removed, the history table should be dropped as well,
+  the function ``history_table_name(<tablename>::regclass)`` to create the new name,
+* c) if a live table is removed, the history table should be dropped as well
 
 or
 
 * d) if a column is added, the history table should get the new column as well
-  (defaulting to NULL values for previous entries if not manually filled),
+  (defaulting to ``NULL`` values for previous entries if not manually filled),
 * e) if a column is renamed, the history column should also be renamed or
 * f) if the data type of a column changes, the original column is renamed (append
   first free "_n" suffix) and the new column is added. If no information loss is
@@ -78,4 +89,19 @@ or
   changed without backup to save storage space or
 * g) if a column is removed, the history column is removed as well.
 
-These changes should be done as part of the schema modifying migration
+These changes should be done as part of the schema modifying migration. Below
+you will find a an example of the migration SQL code to update the data type of
+a particular column of a table. In this particular case the ``value`` column of
+the ``client_data`` table changes its type from ``text`` to ``jsonb``, which
+should be reflected directly in the history table::
+
+    DO $$
+    BEGIN
+    EXECUTE format(
+        'ALTER TABLE %1$s '
+        'ALTER COLUMN value '
+        'TYPE jsonb '
+        'USING value::jsonb',
+        history_table_name('client_data'::regclass));
+    END
+    $$;

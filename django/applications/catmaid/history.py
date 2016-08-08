@@ -13,7 +13,7 @@ def fail_on_wrong_format_label(label):
         raise ValueError('Label "{}" doesn\'t follow convention '
                          '"<resources>.<action>"'.format(label))
 
-def add_log_entry(user_id, label):
+def add_log_entry(user_id, label, project_id=None):
     """Give a label to the current transaction and time, executed by a
     particular user. This information is recorded only once per transaction,
     and subsequent calls will be ignored silently. Labels are expected to
@@ -26,10 +26,11 @@ def add_log_entry(user_id, label):
     # Only try to insert log record if current transaction is still valid
     if not cursor.db.needs_rollback:
         cursor.execute("""
-            INSERT INTO catmaid_transaction_info (user_id, change_type, label)
-            VALUES (%s, 'Backend', %s)
+            INSERT INTO catmaid_transaction_info (user_id, change_type, label,
+                project_id)
+            VALUES (%s, 'Backend', %s, %s)
             ON CONFLICT DO NOTHING
-        """, (user_id, label))
+        """, (user_id, label, project_id))
 
 
 def record_request_action(label, method=None):
@@ -53,18 +54,20 @@ def record_request_action(label, method=None):
             else:
                 raise ValueError("Couldn't find request to record action for")
 
+            project_id = kwargs.get('project_id', None)
+
             result = f(*args, **kwargs)
 
             user_id = request.user.id
             if not method or request.method == method:
-                add_log_entry(user_id, label)
+                add_log_entry(user_id, label, project_id)
 
             return result
         return wrapped_f
     return decorator
 
 
-def record_action(user_id, label):
+def record_action(user_id, label, project_id=None):
     """Give a label to the current transaction and time, executed by a
     particular user.
     """
@@ -72,7 +75,7 @@ def record_action(user_id, label):
     def decorator(f):
         def wrapped_f(*args, **kwargs):
             result = f(*args, **kwargs)
-            add_log_entry(user_id, label)
+            add_log_entry(user_id, label, project_id)
             return result
         return wrapped_f
     return decorator

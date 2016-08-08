@@ -468,6 +468,7 @@
       function remove(sv) {
         if (!sv.getLayer(key)) return;
         sv.removeLayer(key);
+        sv.redraw();
       }
 
       var fn = allHaveLayers ? remove : add;

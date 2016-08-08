@@ -659,8 +659,8 @@
 
       var colorControls = new Map();
       colors.forEach(function(field, label) {
-        var color = SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE][field];
-        var input = CATMAID.DOM.createInputSetting(label, color);
+        var color = new THREE.Color(SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE][field]);
+        var input = CATMAID.DOM.createInputSetting(label, color.getStyle());
         this.append(wrapSettingsControl(input,
                                         SkeletonAnnotations.TracingOverlay.Settings,
                                         field,
@@ -668,7 +668,7 @@
                                         updateTracingColors));
         var colorField = $(input).find('input');
         CATMAID.ColorPicker.enable(colorField, {
-          initialColor: color,
+          initialColor: color.getHex(),
           onColorChange: setColorOfTracingFields
         });
         colorControls.set(field, input);

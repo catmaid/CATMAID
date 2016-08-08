@@ -65,9 +65,12 @@
                       }
 
                       try {
+                        var value = (typeof d.value === 'string' || d.value instanceof String) ?
+                            $.parseJSON(d.value) :
+                            d.value;
                         e.get(d.key)[scope] = {
                           dirty: false,
-                          value: $.parseJSON(d.value)
+                          value: value
                         };
                       } catch (error) {
                         // Do not alert the user, since this will not affect

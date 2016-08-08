@@ -1131,6 +1131,38 @@
           SkeletonAnnotations.quickSingleNodeSkeletonMerge = this.checked;
         }));
 
+      var autoAnnotationChange = function() {
+          var annotationName = this.value;
+          SkeletonAnnotations.Settings
+              .set(
+                'auto_annotations',
+                annotationName ? [{annotationNames: [annotationName]}] : [],
+                SETTINGS_SCOPE)
+              .then(function () {
+                SkeletonAnnotations.AutoAnnotator.loadFromSettings();
+              });
+        };
+      var autoAnnotationName = SkeletonAnnotations.Settings[SETTINGS_SCOPE].auto_annotations;
+      autoAnnotationName = autoAnnotationName.length > 0 ?
+          autoAnnotationName[0].annotationNames :
+          '';
+      var autoAnnotationInput = CATMAID.DOM.createInputSetting(
+              "Auto-annotate changed skeletons",
+              autoAnnotationName,
+              "Any skeletons you create, split, join or extend will be " +
+              "automatically annotated with the annotation entered here. " +
+              "Leave blank to not auto-annotate.",
+              autoAnnotationChange);
+      ds.append(wrapSettingsControl(
+          autoAnnotationInput,
+          SkeletonAnnotations.Settings,
+          'auto_annotations',
+          SETTINGS_SCOPE));
+      $(autoAnnotationInput).find('input[type=text]').autocomplete({
+        source: CATMAID.annotations.getAllNames(),
+        change: autoAnnotationChange,
+      });
+
       // Auto-select skeleton source created last
       ds.append(CATMAID.DOM.createCheckboxSetting('Auto-select widget created last as source ' +
             'for new widgets', CATMAID.skeletonListSources.defaultSelectLastSource,

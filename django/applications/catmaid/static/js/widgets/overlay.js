@@ -69,7 +69,11 @@ SkeletonAnnotations.Settings = new CATMAID.Settings(
       entries: {
         skip_suppressed_virtual_nodes: {
           default: false
-        }
+        },
+        // Auto-annotation
+        auto_annotations: {
+          default: []
+        },
       },
       migrations: {}
     });
@@ -4572,4 +4576,96 @@ CATMAID.Init.on(CATMAID.Init.EVENT_PROJECT_CHANGED, function () {
       SkeletonAnnotations.VisibilityGroups.setGroup(i, group);
     });
   });
+});
+
+
+/**
+ * Automatically annotate skeletons on creation or edition.
+ *
+ * This is just a thin convenience wrapper around skeleton events.
+ */
+SkeletonAnnotations.AutoAnnotator = new (function () {
+  this.rules = new Map();
+
+  /**
+   * Register an auto annotation rule.
+   *
+   * @param  {string}   identifier      Unique name of the rule to create.
+   * @param  {function} predicate       Predicate taking a skeletonID, returning
+   *                                    a boolean indicated whether to add the
+   *                                    annotations.
+   * @param  {string[]} annotationNames An array of annotation names that will
+   *                                    be added if the predicate is true.
+   */
+  this.register = function (identifier, predicate, annotationNames) {
+    if (!Array.isArray(annotationNames)) {
+      annotationNames = [annotationNames];
+    }
+
+    var callback = function (skeletonId) {
+      if (predicate(skeletonId)) {
+        CATMAID.Annotations.add(project.id,
+                                null,
+                                [skeletonId],
+                                annotationNames,
+                                null);
+        annotationNames.forEach(function (annotationName) {
+          CATMAID.annotatedSkeletons.explicitChange(annotationName, [skeletonId], []);
+        });
+      }
+    };
+
+    this.rules.set(identifier, {
+        callback: callback,
+        predicate: predicate,
+        annotationNames: annotationNames});
+
+    CATMAID.Skeletons.on(CATMAID.Skeletons.EVENT_SKELETON_CHANGED, callback);
+  };
+
+  /**
+   * Remove an auto annotation rule.
+   * @param  {string} identifier Unique name of the rule to remove.
+   */
+  this.unregister = function (identifier) {
+    var rule = this.rules.get(identifier);
+
+    if (!rule) return;
+    this.rules.delete(identifier);
+
+    CATMAID.Skeletons.off(CATMAID.Skeletons.EVENT_SKELETON_CHANGED, rule.callback);
+  };
+
+  /**
+   * Remove all auto annotation rules.
+   */
+  this.unregisterAll = function () {
+    this.rules.forEach(function(val, key) { this.unregister(key); }, this);
+  };
+
+  /**
+   * Create auto annotation rules from settings, removing any existing rules
+   * created due to settings.
+   */
+  this.loadFromSettings = function () {
+    this.rules.forEach(function (val, identifier) {
+      if (identifier.startsWith('autoAnnotation')) {
+        this.unregister(identifier);
+      }
+    }, this);
+    SkeletonAnnotations.Settings.session.auto_annotations.forEach(
+        function (autoAnnotation, i) {
+          if (autoAnnotation.annotationNames) {
+            this.register(
+                'autoAnnotation' + i,
+                function () { return true; },
+                autoAnnotation.annotationNames);
+          }
+        }, this);
+  };
+})();
+
+CATMAID.Init.on(CATMAID.Init.EVENT_PROJECT_CHANGED, function () {
+  SkeletonAnnotations.AutoAnnotator.unregisterAll();
+  SkeletonAnnotations.AutoAnnotator.loadFromSettings();
 });

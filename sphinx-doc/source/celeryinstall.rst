@@ -191,6 +191,39 @@ Or when using ``celerybeat`` as well::
 Now this could be run in a Screen session and you can safely disconnect from
 the server. However, like said before, this won't survive a server reboot.
 
+.. _celery-supervisord:
+
+Supervisord
+^^^^^^^^^^^
+
+Supervisord is a process management tool which makes setting up processes very
+easy. This documentation talks :ref:`here <supervisord>` in detail about it. A
+script that can be used with the example provided there would look like this
+(``run-celery.sh`` in the example)::
+
+  #!/bin/bash
+
+  # Virtualenv location
+  ENVDIR=/path/to/catmaid/django/env
+  # Django project directory
+  DJANGODIR=/path/to/catmaid/django/projects
+  # Which settings file should Django use
+  DJANGO_SETTINGS_MODULE=mysite.settings
+
+  echo "Starting celery as `whoami`"
+
+  # Activate the virtual environment
+  cd $DJANGODIR
+  source $ENVDIR/bin/activate
+  export DJANGO_SETTINGS_MODULE=$DJANGO_SETTINGS_MODULE
+  export PYTHONPATH=$DJANGODIR:$PYTHONPATH
+
+  # Run Celery
+  exec ./mysite/manage.py celery worker -l info -E
+
+Init
+^^^^
+
 Depending on your operating system manages the boot process, you can use
 the ``init`` scripts provided in the Celery source. A detailed description
 can be found in the

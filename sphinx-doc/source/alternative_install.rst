@@ -240,3 +240,46 @@ copy this to ``/etc/init/``, customize it, and start Gunicorn
 with ``initctl start gunicorn-catmaid``.  (Thereafter it will be
 started on boot automatically, and can be restarted with
 ``initctl restart gunicorn-catmaid``.
+
+.. _supervisord:
+
+Using Supervisord for process management
+----------------------------------------
+
+Depending on your setup, you might use custom scripts to run a WSGI server,
+Celery or other server components. In this case, process management has to be
+taken care of as well, so that these scripts are run after a e.g. a server
+restart. One way to do this is using ``supervisord``. We found it to be
+reliable, flexible and easy to configure with multiple custom scripts. For each
+program or program group a new configuration file has to be created::
+
+  /etc/supervisor/conf.d/<name>.conf
+
+Such a configuration file can contain information about individual programs and
+groups of them (to manage them together). Below you will find an example of
+a typical setup with a Gunicorn start script and a Celery start script, both
+grouped under the name "catmaid"::
+
+  [program:catmaid-app]
+  command = /opt/catmaid/django/projects/mysite/run-gunicorn.sh
+  user = www-data
+  stdout_logfile = /opt/catmaid/django/projects/mysite/gunicorn.log
+  redirect_stderr = true
+
+  [program:catmaid-celery]
+  command = /opt/catmaid/django/projects/mysite/run-celery.sh
+  user = www-data
+  stdout_logfile = /opt/catmaid/django/projects/mysite/celery.log
+  redirect_stderr = true
+
+  [group:catmaid]
+  programs=catmaid-app,catmaid-celery
+
+This of course expects a CATMAID instance installed in the folder
+``/opt/catmaid/``. An example for a working ``run-celery.sh`` script can be
+found :ref:`here <celery-supervisord>`. With the configuration and the scripts
+in place, ``supervisord`` can be instructed to reload its configuration and
+start the catmaid group::
+
+  $ sudo supervisorctl reread
+  $ sudo supervisorctl start catmaid:

@@ -65,6 +65,7 @@ urlpatterns += [
 UrlParser.explicit_root_paths |= set(['{project_id}/transactions'])
 urlpatterns += [
     url(r'^(?P<project_id>\d+)/transactions/$', transaction.transaction_collection),
+    url(r'^(?P<project_id>\d+)/transactions/location$', transaction.get_location),
 ]
 
 # Messages

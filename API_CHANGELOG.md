@@ -27,6 +27,10 @@ included in this changelog.
   Get a list of transaction objects, ordered by time (latest first). A sub-range
   can be specified optionally.
 
+- `GET /{project_id}}/transactions/location`
+  Get a location representing the change in a given transaction. Returns error
+  if no location was found.
+
 ### Modifications
 
 - `GET /projects/`:

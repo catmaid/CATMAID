@@ -266,7 +266,8 @@
                   recordsFiltered: result.total_count,
                   data: result.transactions
                 });
-              });
+              })
+              .catch(CATMAID.handleError);
           },
           order: [],
           columns: [
@@ -298,6 +299,22 @@
             {data: "transaction_id", title: "Transaction", orderable: false},
             {data: "change_type", title: "Type", orderable: false}
           ],
+        }).on('dblclick', 'tr', function() {
+          var data = self.historyTable.row( this ).data();
+          if (data) {
+            var params = {
+              'transaction_id': data.transaction_id,
+              'execution_time': data.execution_time
+            };
+            CATMAID.fetch(project.id + '/transactions/location', 'GET', params)
+              .then(function(result) {
+                  var x = parseFloat(result.x);
+                  var y = parseFloat(result.y);
+                  var z = parseFloat(result.z);
+                  project.moveTo(z, y, x);
+              })
+              .catch(CATMAID.handleError);
+          }
         });
 
         this.redraw();

@@ -93,3 +93,92 @@ def transaction_collection(request, project_id):
             "transactions": json_data,
             "total_count": total_count
         })
+
+
+@api_view(["GET"])
+@requires_user_role([UserRole.Browse])
+def get_location(request, project_id):
+    """Try to associate a location in the passed in project for a particular
+    transaction.
+    ---
+    parameters:
+      transaction_id:
+        type: integer
+        required: true
+        description: Transaction ID in question
+        paramType: form
+      execution_time:
+        type: string
+        required: true
+        description: Execution time of the transaction
+        paramType: form
+      label:
+        type: string
+        required: false
+        description: Optional label of the transaction to avoid extra lookup
+        paramType: form
+    type:
+      x:
+        type: integer
+        required: true
+      y:
+        type: integer
+        required: true
+      z:
+        type: integer
+        required: true
+    """
+    if request.method == 'GET':
+        transaction_id = request.GET.get('transaction_id', None)
+        if not transaction_id:
+            raise ValueError("Need transaction ID")
+        transaction_id = int(transaction_id)
+
+        execution_time = request.GET.get('execution_time', None)
+        if not execution_time:
+            raise ValueError("Need execution time")
+
+        cursor = connection.cursor()
+
+        label = request.GET.get('label', None)
+        if not label:
+            cursor.execute("""
+                SELECT label FROM catmaid_transaction_info
+                WHERE transaction_id = %s AND execution_time = %s
+            """, (transaction_id, execution_time))
+            result = cursor.fetchone()
+            if not result:
+                raise ValueError("Couldn't find label for transaction {} and "
+                        "execution time {}".format(transaction_id, execution_time))
+            label = result[0]
+
+        location = None
+        query = location_queries.get(label)
+        if query:
+            cursor.execute(query, (transaction_id, execution_time))
+            result = cursor.fetchall()
+            if result and len(result) == 1:
+                loc = result[0]
+                if len(loc) == 3:
+                    location = (loc[0], loc[1], loc[2])
+
+        if not location or len(location) != 3:
+            raise ValueError("Couldn't find location for transaction {} and "
+                    "execution time {}".format(transaction_id, execution_time))
+
+        return Response({
+            'x': location[0],
+            'y': location[1],
+            'z': location[2]
+        })
+
+location_queries = {
+    # Look transaction and edition time up in treenode table and return
+    # node location.
+    'treenodes.create': """
+        SELECT location_x, location_y, location_z
+        FROM treenode
+        WHERE xmin = %s
+        -- AND edition_time = %s
+    """
+}

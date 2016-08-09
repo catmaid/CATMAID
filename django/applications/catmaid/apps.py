@@ -240,8 +240,6 @@ class CATMAIDConfig(AppConfig):
             # will fail.
             return
 
-        print "yay"
-
         Class = self.get_model("Class")
         Relation = self.get_model("Relation")
         user = get_system_user(User)

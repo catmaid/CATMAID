@@ -15,22 +15,18 @@ needed_classes = {
     'neuron': "A neuron representation",
     'root': "The root node for the tracing system",
     'skeleton': "The representation of a skeleton",
-    'annotation': "An arbitrary annotation",
 }
 
 # All relations needed by the tracing system alongside their
 # descriptions.
 needed_relations = {
     'labeled_as': "Something is labeled by sth. else.",
-    'is_a': "A generic is-a relationship",
     'element_of': "A generic element-of relationship",
     'model_of': "Marks something as a model of something else.",
-    'part_of': "One thing is part of something else.",
     'presynaptic_to': "Something is presynaptic to something else.",
     'postsynaptic_to': "Something is postsynaptic to something else.",
-    'annotated_with': "Something is annotated by something else.",
     'abutting': "Two things abut against each other",
-    'gapjunction_with': "Something has a gap junction with something else", 
+    'gapjunction_with': "Something has a gap junction with something else",
 }
 
 def check_tracing_setup_view(request, project_id=None):

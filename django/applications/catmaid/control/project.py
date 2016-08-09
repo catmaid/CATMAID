@@ -13,6 +13,56 @@ from catmaid.control.authentication import requires_user_role
 from rest_framework.decorators import api_view
 
 
+# All classes needed by the tracing system alongside their
+# descriptions.
+needed_classes = {
+    'stackgroup': "An identifier for a group of stacks",
+    'annotation': "An arbitrary annotation",
+}
+
+# All relations needed by the tracing system alongside their
+# descriptions.
+needed_relations = {
+    'has_channel': "A stack group can have assosiated channels",
+    'has_view': "A stack group can have assosiated orthogonal views",
+    'is_a': "A generic is-a relationship",
+    'part_of': "One thing is part of something else.",
+    'annotated_with': "Something is annotated by something else.",
+}
+
+
+def validate_project_setup(project_id, user_id, fix=False,
+        class_model=None, rel_model=None):
+    """Will check if needed classes and relations exist for every project. If
+    <fix> is truthy, missing objects will be added.
+    """
+    missing_classes = []
+    missing_relations = []
+
+    class_model = class_model or Class
+    rel_model = rel_model or Relation
+
+    for nc, desc in needed_classes.iteritems():
+        try:
+            class_model.objects.get(project_id=project_id, class_name=nc)
+        except class_model.DoesNotExist:
+            missing_classes.append(nc)
+            if fix:
+                class_model.objects.create(project_id=project_id,
+                        class_name=nc, user_id=user_id)
+
+    for nr, desc in needed_relations.iteritems():
+        try:
+            rel_model.objects.get(project_id=project_id, relation_name=nr)
+        except rel_model.DoesNotExist:
+            missing_relations.append(nr)
+            if fix:
+                rel_model.objects.get_or_create(project_id=project_id,
+                        relation_name=nr, user_id=user_id)
+
+    return missing_classes, missing_relations
+
+
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def list_project_tags(request, project_id=None):
     """ Return the tags associated with the project.

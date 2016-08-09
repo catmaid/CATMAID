@@ -228,6 +228,7 @@ class CATMAIDConfig(AppConfig):
     def validate_projects(self):
         """Make sure all projects have the relations and classes available they
         expect."""
+        from catmaid.control.project import validate_project_setup
         User = auth.get_user_model()
         Project = self.get_model("Project")
         has_users = User.objects.all().exists()
@@ -239,6 +240,10 @@ class CATMAIDConfig(AppConfig):
             # will fail.
             return
 
-        user = get_system_user()
+        print "yay"
+
+        Class = self.get_model("Class")
+        Relation = self.get_model("Relation")
+        user = get_system_user(User)
         for p in Project.objects.all():
-            p.validate_project_setup(user.id)
+            validate_project_setup(p.id, user.id, True, Class, Relation)

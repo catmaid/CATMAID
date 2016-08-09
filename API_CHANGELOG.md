@@ -23,6 +23,10 @@ included in this changelog.
   Import a neuron modeled by a skeleton from an uploaded file. Currently only
   SWC representation is supported.
 
+- `GET /{project_id}}/transactions/`
+  Get a list of transaction objects, ordered by time (latest first). A sub-range
+  can be specified optionally.
+
 ### Modifications
 
 - `GET /projects/`:

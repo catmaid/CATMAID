@@ -14,7 +14,7 @@ from catmaid.control import (authentication, user, log, message, client, common,
         suppressed_virtual_treenode, skeleton, skeletonexport, treenodeexport,
         cropping, data_view, ontology, classification, notifications, roi,
         clustering, volume, flytem, dvid, useranalytics, user_evaluation,
-        search, graphexport, graph2, circles, analytics, review,
+        search, graphexport, transaction, graph2, circles, analytics, review,
         wiringdiagram, object, treenodetable)
 
 from catmaid.views import CatmaidView
@@ -59,6 +59,12 @@ urlpatterns += [
 urlpatterns += [
     url(r'^(?P<project_id>\d+)/logs/list$', log.list_logs),
     url(r'^log/(?P<level>(info|error|debug))$', log.log_frontent_event),
+]
+
+# Transaction history
+UrlParser.explicit_root_paths |= set(['{project_id}/transactions'])
+urlpatterns += [
+    url(r'^(?P<project_id>\d+)/transactions/$', transaction.transaction_collection),
 ]
 
 # Messages

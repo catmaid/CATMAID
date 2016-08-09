@@ -339,7 +339,7 @@
       };
 
       this.shouldDisplay = function() {
-        return this.zdiff >= 0 && this.zdiff < 1;
+        return this.id !== this.DISABLED && this.zdiff >= 0 && this.zdiff < 1;
       };
 
       this.isVisible = function () {
@@ -349,10 +349,12 @@
 
       this.updateVisibility = function () {
         if (this.c) {
-          this.c.visible = SkeletonAnnotations.VisibilityGroups.areGroupsVisible(this.getVisibilityGroups());
+          this.c.visible = this.isVisible();
         }
         if (this.line) {
-          this.line.visible = SkeletonAnnotations.VisibilityGroups.areGroupsVisible(this.getVisibilityGroups());
+          this.line.visible = this.parent &&
+            this.mustDrawLineWith(this.parent) &&
+            SkeletonAnnotations.VisibilityGroups.areGroupsVisible(this.getVisibilityGroups());
         }
       };
 
@@ -426,7 +428,7 @@
       };
 
       this.shouldDisplay = function () {
-        return this.zdiff >= 0 && this.zdiff < 1 &&
+        return this.id !== this.DISABLED && this.zdiff >= 0 && this.zdiff < 1 &&
             (!this.overlayGlobals.hideOtherSkeletons ||
              this.overlayGlobals.skeletonDisplayModels.hasOwnProperty(this.skeleton_id));
       };
@@ -1127,7 +1129,7 @@
       };
 
       this.updateVisibility = function () {
-        if (this.c) {
+        if (this.shouldDisplay() && this.c) {
           this.c.visible = SkeletonAnnotations.VisibilityGroups.areGroupsVisible(this.getVisibilityGroups());
         }
 

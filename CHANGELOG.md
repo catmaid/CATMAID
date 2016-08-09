@@ -91,6 +91,10 @@ History tables:
   reconstruct the actual history of data (e.g. neurons) and user contributions.
   Even data deleted in CATMAID can now be recovered without touching backups.
 
+- The log widget in the front-end provides a way to few the history: It has a
+  new tab called "History", where each event that caused related database
+  changes is listed.
+
 
 Miscellaneous:
 
@@ -120,6 +124,8 @@ Miscellaneous:
 
 - Fix "Reset to inherited default" and "Lock this setting" buttons in settings
   controls not being clickable.
+
+- All layouts of the color picker can be used again (i.e. resizing it).
 
 
 ## 2016.05.26

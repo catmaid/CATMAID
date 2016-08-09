@@ -90,95 +90,95 @@ class HistoryTableTests(TransactionTestCase):
 
     tables_without_history = (
         # History tables of versioned CATMAID tables
-        'broken_slice_history',
-        'cardinality_restriction_history',
-        'catmaid_userprofile_history',
-        'catmaid_volume_history',
-        'change_request_history',
-        'class_history',
-        'class_class_history',
-        'class_instance_history',
-        'class_instance_class_instance_history',
-        'client_data_history',
-        'client_datastore_history',
-        'concept_history',
-        'connector_history',
-        'connector_class_instance_history',
-        'data_view_history',
-        'data_view_type_history',
-        'location_history',
-        'message_history',
-        'overlay_history',
-        'project_history',
-        'project_stack_history',
-        'region_of_interest_history',
-        'region_of_interest_class_instance_history',
-        'relation_history',
-        'relation_instance_history',
-        'restriction_history',
-        'review_history',
-        'reviewer_whitelist_history',
-        'stack_history',
-        'stack_class_instance_history',
-        'suppressed_virtual_treenode_history',
-        'textlabel_history',
-        'textlabel_location_history',
-        'treenode_history',
-        'treenode_class_instance_history',
-        'treenode_connector_history',
+        'broken_slice__history',
+        'cardinality_restriction__history',
+        'catmaid_userprofile__history',
+        'catmaid_volume__history',
+        'change_request__history',
+        'class__history',
+        'class_class__history',
+        'class_instance__history',
+        'class_instance_class_instance__history',
+        'client_data__history',
+        'client_datastore__history',
+        'concept__history',
+        'connector__history',
+        'connector_class_instance__history',
+        'data_view__history',
+        'data_view_type__history',
+        'location__history',
+        'message__history',
+        'overlay__history',
+        'project__history',
+        'project_stack__history',
+        'region_of_interest__history',
+        'region_of_interest_class_instance__history',
+        'relation__history',
+        'relation_instance__history',
+        'restriction__history',
+        'review__history',
+        'reviewer_whitelist__history',
+        'stack__history',
+        'stack_class_instance__history',
+        'suppressed_virtual_treenode__history',
+        'textlabel__history',
+        'textlabel_location__history',
+        'treenode__history',
+        'treenode_class_instance__history',
+        'treenode_connector__history',
 
         # History tables of versioned non-CATMAID tables
-        'auth_group_history',
-        'auth_group_permissions_history',
-        'auth_permission_history',
-        'auth_user_history',
-        'auth_user_groups_history',
-        'auth_user_user_permissions_history',
-        'authtoken_token_history',
-        'django_admin_log_history',
-        'django_content_type_history',
-        'django_migrations_history',
-        'django_site_history',
-        'guardian_groupobjectpermission_history',
-        'guardian_userobjectpermission_history',
-        'performancetests_event_history',
-        'performancetests_testresult_history',
-        'performancetests_testview_history',
-        'taggit_tag_history',
+        'auth_group__history',
+        'auth_group_permissions__history',
+        'auth_permission__history',
+        'auth_user__history',
+        'auth_user_groups__history',
+        'auth_user_user_permissions__history',
+        'authtoken_token__history',
+        'django_admin_log__history',
+        'django_content_type__history',
+        'django_migrations__history',
+        'django_site__history',
+        'guardian_groupobjectpermission__history',
+        'guardian_userobjectpermission__history',
+        'performancetests_event__history',
+        'performancetests_testresult__history',
+        'performancetests_testview__history',
+        'taggit_tag__history',
         'taggit_taggeditem',
 
         # Time tables
-        'broken_slice_time',
-        'catmaid_userprofile_time',
-        'client_data_time',
-        'client_datastore_time',
-        'data_view_time',
-        'data_view_type_time',
-        'overlay_time',
-        'project_time',
-        'project_stack_time',
-        'reviewer_whitelist_time',
-        'stack_time',
-        'textlabel_location_time',
-        'auth_group_time',
-        'auth_group_permissions_time',
-        'auth_permission_time',
-        'auth_user_time',
-        'auth_user_groups_time',
-        'auth_user_user_permissions_time',
-        'authtoken_token_time',
-        'django_admin_log_time',
-        'django_content_type_time',
-        'django_migrations_time',
-        'django_site_time',
-        'guardian_groupobjectpermission_time',
-        'guardian_userobjectpermission_time',
-        'performancetests_event_time',
-        'performancetests_testresult_time',
-        'performancetests_testview_time',
-        'taggit_tag_time',
-        'taggit_taggeditem_history',
-        'taggit_taggeditem_time',
+        'broken_slice__tracking',
+        'catmaid_userprofile__tracking',
+        'client_data__tracking',
+        'client_datastore__tracking',
+        'data_view__tracking',
+        'data_view_type__tracking',
+        'overlay__tracking',
+        'project__tracking',
+        'project_stack__tracking',
+        'reviewer_whitelist__tracking',
+        'stack__tracking',
+        'textlabel_location__tracking',
+        'auth_group__tracking',
+        'auth_group_permissions__tracking',
+        'auth_permission__tracking',
+        'auth_user__tracking',
+        'auth_user_groups__tracking',
+        'auth_user_user_permissions__tracking',
+        'authtoken_token__tracking',
+        'django_admin_log__tracking',
+        'django_content_type__tracking',
+        'django_migrations__tracking',
+        'django_site__tracking',
+        'guardian_groupobjectpermission__tracking',
+        'guardian_userobjectpermission__tracking',
+        'performancetests_event__tracking',
+        'performancetests_testresult__tracking',
+        'performancetests_testview__tracking',
+        'taggit_tag__tracking',
+        'taggit_taggeditem__history',
+        'taggit_taggeditem__tracking',
 
         # Regular unversioned CATMAID tables
         'log',
@@ -228,12 +228,12 @@ class HistoryTableTests(TransactionTestCase):
         # First, get all expected tables that are defined in the list above.
         cmt_template = ",".join(('(%s)',) * len(HistoryTableTests.tables_with_history))
         cursor.execute("""
-            SELECT cmt.table_name, cht.history_table_name,
-                COUNT(cmt.table_name), COUNT(cht.history_table_name)
+            SELECT cmt.table_name, cht.history_table,
+                COUNT(cmt.table_name), COUNT(cht.history_table)
             FROM catmaid_history_table cht
             JOIN (VALUES {}) cmt(table_name)
-                ON cmt.table_name::regclass = cht.live_table_name
-            GROUP BY cmt.table_name, cht.history_table_name
+                ON cmt.table_name::regclass = cht.live_table
+            GROUP BY cmt.table_name, cht.history_table
         """.format(cmt_template), HistoryTableTests.tables_with_history)
 
         # Expect exactly one history table for all the specified CATMAID tables
@@ -256,12 +256,12 @@ class HistoryTableTests(TransactionTestCase):
         for table_name in all_tables:
             if table_name in HistoryTableTests.tables_with_history:
                 cursor.execute("""
-                    SELECT history_table_name(%s::regclass)::regclass;
+                    SELECT get_history_table_name(%s::regclass)::regclass;
                 """, (table_name,))
             elif table_name in HistoryTableTests.tables_without_history:
                 with self.assertRaises(Exception):
                     cursor.execute("""
-                        SELECT history_table_name({}::regclass)::regclass;
+                        SELECT get_history_table_name({}::regclass)::regclass;
                     """, (table_name,))
             else:
                 unknown_tables.append(table_name)
@@ -280,21 +280,21 @@ class HistoryTableTests(TransactionTestCase):
 
 
     @staticmethod
-    def get_history_entries(cursor, live_table_name):
+    def get_history_entries(cursor, live_table):
         cursor.execute("""
             SELECT row_to_json(t)
-            FROM (SELECT * FROM {}_history) t
+            FROM (SELECT * FROM {}__history) t
                   ORDER BY lower(sys_period)
-        """.format(live_table_name))
+        """.format(live_table))
         return cursor.fetchall()
 
     @staticmethod
-    def get_time_entries(cursor, live_table_name):
+    def get_time_entries(cursor, live_table):
         cursor.execute("""
             SELECT row_to_json(t)
-            FROM (SELECT * FROM {}_time) t
+            FROM (SELECT * FROM {}__tracking) t
                   ORDER BY edition_time
-        """.format(live_table_name))
+        """.format(live_table))
         return cursor.fetchall()
 
     @staticmethod
@@ -827,9 +827,9 @@ class HistoryTableTests(TransactionTestCase):
 
         # Sync time table
         cursor.execute("""
-            SELECT sync_time_table(%s::regclass,
-                (SELECT time_table FROM catmaid_history_table
-                WHERE live_table_name=%s::regclass)::text),
+            SELECT sync_tracking_table(%s::regclass,
+                (SELECT tracking_table FROM catmaid_history_table
+                WHERE live_table=%s::regclass)::text),
                 current_timestamp::text
         """, ('project', 'project'))
         sync_time = cursor.fetchone()[1]
@@ -906,9 +906,9 @@ class HistoryTableTests(TransactionTestCase):
 
         # Sync time table
         cursor.execute("""
-            SELECT sync_time_table(%s::regclass,
-                (SELECT time_table FROM catmaid_history_table
-                WHERE live_table_name=%s::regclass)::text),
+            SELECT sync_tracking_table(%s::regclass,
+                (SELECT tracking_table FROM catmaid_history_table
+                WHERE live_table=%s::regclass)::text),
                 current_timestamp::text
         """, ('project', 'project'))
         sync_time = cursor.fetchone()[1]

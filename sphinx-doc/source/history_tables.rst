@@ -74,16 +74,18 @@ Schema migration
 ^^^^^^^^^^^^^^^^
 
 In case there are schema changes to any of the tracked live tables, the history
-tables have to be changed as well. Currently, this happens manually, but will
-become automated eventually (using Postgres DDL triggers). This means
+tables have to be changed as well and triggers have to be regenerated.
+Currently, this happens manually, but will become automated eventually (using
+Postgres DDL triggers). This means
 
 * a) if a live table is created, a new history table has to be created for it
-  (call ``SELECT create_history_table(<schema>, <tablename>::regclass,
-  <timecolumn>);``, with ``<timecolumn>`` being an edit reference time, e.g.
-  ``edition_time`` for most CATMAID tables). To let CATMAID know if you expect
-  this table to have a history table, Add the table to the appropriate list
-  in the ``HistoryTableTest`` class. This way you can also mark a table as not
-  versioned.
+  (call ``SELECT create_history_table( <tablename>::regclass,  <timecolumn>);``,
+  with ``<timecolumn>`` being an edit reference time, e.g.
+  ``edition_time`` for most CATMAID tables). If ``<timecolumn>`` is ``NULL``, a
+  time tracking table will be created automatically. To let CATMAID know if you
+  expect this table to have a history table, add the table to the appropriate
+  list in the ``HistoryTableTest`` class. This way you can also mark a table as
+  not versioned.
 * b) if a live table is renamed, the history table is renamed accordingly, use
   the function ``history_table_name(<tablename>::regclass)`` to create the new name,
 * c) if a live table is removed, the history table should be dropped as well
@@ -99,19 +101,28 @@ or
   changed without backup to save storage space or
 * g) if a column is removed, the history column is removed as well.
 
-These changes should be done as part of the schema modifying migration. Below
-you will find a an example of the migration SQL code to update the data type of
-a particular column of a table. In this particular case the ``value`` column of
-the ``client_data`` table changes its type from ``text`` to ``jsonb``, which
-should be reflected directly in the history table::
+These changes should be done as part of the schema modifying migration. For all
+changes except live table creation and deletion, triggers have to be
+regenerated. To do this, call ``PERFORM update_history_tracking_for_table(
+<tablename>::regclass )`` for individual tables or update all tables at once
+with ``PERFORM update_history_tracking()``. This should make sure all changes
+are baked into the trigger functions.
+
+Below you will find an example of the migration SQL code to update the data
+type of a particular column of a table. In this particular case the ``value``
+column of the ``client_data`` table changes its type from ``text`` to ``jsonb``,
+which should be reflected directly in the history table::
 
     DO $$
     BEGIN
+    -- Update history table
     EXECUTE format(
         'ALTER TABLE %1$s '
         'ALTER COLUMN value '
         'TYPE jsonb '
         'USING value::jsonb',
         history_table_name('client_data'::regclass));
+    -- Update triggers
+    PERFORM update_history_tracking_for_table('client_data'::regclass);
     END
     $$;

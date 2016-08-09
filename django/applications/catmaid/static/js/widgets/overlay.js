@@ -4584,7 +4584,12 @@ SkeletonAnnotations.VisibilityGroups = new (function () {
    */
   this.areGroupsVisible = function (groupIDs) {
     if (groupIDs.length === 0) return true;
-    return this.groups[groupIDs.slice(-1)].visible;
+
+    for (var i = groupIDs.length - 1; i >= 0; i--) {
+      if (this.groups[groupIDs[i]].visible) return true;
+    }
+
+    return false;
   };
 
   /**

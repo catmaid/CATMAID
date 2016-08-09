@@ -499,18 +499,6 @@
     }
   },
   {
-    "pk": 2457,
-    "model": "catmaid.class",
-    "fields": {
-      "description": null,
-      "class_name": "annotation",
-      "creation_time": "2012-07-22T19:15:24.010Z",
-      "edition_time": "2012-07-22T19:15:24.010Z",
-      "project": 3,
-      "user": 5
-    }
-  },
-  {
     "pk": 1,
     "model": "catmaid.classinstance",
     "fields": {
@@ -1259,20 +1247,6 @@
       "edition_time": "2011-10-04T13:32:34.506Z",
       "project": 3,
       "relation_name": "has_cell_body",
-      "user": 3
-    }
-  },
-  {
-    "pk": 2456,
-    "model": "catmaid.relation",
-    "fields": {
-      "description": null,
-      "isreciprocal": false,
-      "creation_time": "2011-10-04T13:32:34.506Z",
-      "uri": null,
-      "edition_time": "2011-10-04T13:32:34.506Z",
-      "project": 3,
-      "relation_name": "annotated_with",
       "user": 3
     }
   },

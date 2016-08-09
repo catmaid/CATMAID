@@ -343,7 +343,7 @@
       this.logTable.fnClearTable( 0 );
       this.logTable.fnDraw();
     } else if (this.mode === 'history') {
-
+      this.historyTable.ajax.reload();
     }
   };
 

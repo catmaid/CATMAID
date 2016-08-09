@@ -1,6 +1,7 @@
 ## 2016.08.09
 
 Contributors: Albert Cardona, Andrew Champion, Tom Kazimiers
+
 ### Notes
 
 - A virtualenv upgrade is required.

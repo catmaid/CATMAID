@@ -180,5 +180,11 @@ location_queries = {
         FROM treenode
         WHERE xmin = %s
         -- AND edition_time = %s
+    """,
+    'nodes.update_location': """
+        SELECT location_x, location_y, location_z
+        FROM location
+        WHERE xmin = %s
+        AND edition_time = %s
     """
 }

@@ -937,7 +937,8 @@
                   .addClass("ui-corner-all").val(selected);
               select.change(checkRadioOnChange('meta-annotation'));
               select.autocomplete({
-                source: CATMAID.annotations.getAllNames()
+                source: CATMAID.annotations.getAllNames(),
+                change: checkRadioOnChange('meta-annotation')
               });
               break;
             case 2:

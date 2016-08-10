@@ -1172,6 +1172,14 @@ SkeletonAnnotations.TracingOverlay.prototype.updateVisibilityForAllNodes = funct
       this.nodes[nodeID].updateVisibility();
     }
   }
+  for (var nodeID in this.labels) {
+    if (this.labels.hasOwnProperty(nodeID)) {
+      var node = this.nodes[nodeID];
+      if (node) {
+        this.labels[nodeID].visibility(node.isVisible());
+      }
+    }
+  }
   this.pixiLayer._renderIfReady();
 };
 
@@ -2200,8 +2208,8 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
       if (m.hasOwnProperty(nid)) {
         var node = this.nodes[nid];
         // Only add labels for nodes in current section
-        if (0 === node.zdiff) {
-          this.labels[nid] = new OverlayLabel(nid, this.paper, node.x, node.y, fontSize, m[nid]);
+        if (node.shouldDisplay()) {
+          this.labels[nid] = new OverlayLabel(nid, this.paper, node.x, node.y, fontSize, m[nid], node.isVisible());
         }
       }
     }

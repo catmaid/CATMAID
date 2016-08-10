@@ -10,8 +10,9 @@
  * @param {number}        y         The y coordinate in project coordinates.
  * @param {number}        fontSize  Font size of label.
  * @param {string}        text      Label text.
+ * @param {boolean}       visible   Whether this label should be visible.
  */
-OverlayLabel = function (id, paper, x, y, fontSize, text) {
+OverlayLabel = function (id, paper, x, y, fontSize, text, visible) {
 
   "use strict";
 
@@ -48,6 +49,15 @@ OverlayLabel = function (id, paper, x, y, fontSize, text) {
           fill: '#000',
           opacity: 0.75
       });
+
+  this.visibility = function (visible) {
+    if (typeof visible === 'undefined')
+      return c.style('visibility') === 'visible';
+
+    c.style('visibility', visible ? 'visible' : 'hidden');
+  };
+
+  this.visibility(visible);
 
   this.remove = function () {
     c.remove();

@@ -1,4 +1,5 @@
 import re
+import functools
 
 from django.db import connection
 from django.db.transaction import TransactionManagementError
@@ -46,6 +47,7 @@ def record_request_action(label, method=None):
         raise ValueError("Method name must be upper case")
 
     def decorator(f):
+        @functools.wraps(f)
         def wrapped_f(*args, **kwargs):
             if 'request' in kwargs:
                 request = kwargs['request']
@@ -73,6 +75,7 @@ def record_action(user_id, label, project_id=None):
     """
     fail_on_wrong_format_label(label)
     def decorator(f):
+        @functools.wraps(f)
         def wrapped_f(*args, **kwargs):
             result = f(*args, **kwargs)
             add_log_entry(user_id, label, project_id)

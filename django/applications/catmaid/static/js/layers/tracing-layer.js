@@ -53,6 +53,12 @@
     return this.tracingOverlay.getClosestNode(x, y, radius, respectVirtualNodes);
   };
 
+  TracingLayer.prototype.setOpacity = function (val) {
+    CATMAID.PixiLayer.prototype.setOpacity.call(this, val);
+
+    this.tracingOverlay.paper.style('display', this.visible ? 'inherit' : 'none');
+  };
+
   /** */
   TracingLayer.prototype.redraw = function (completionCallback) {
     this.tracingOverlay.redraw(false, completionCallback);

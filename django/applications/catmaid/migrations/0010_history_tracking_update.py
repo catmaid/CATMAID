@@ -589,20 +589,24 @@ forward_history_update = """
 
         -- Cascading deleting is used to also delete child tables and triggers.
         EXECUTE format('DROP TABLE IF EXISTS %I CASCADE', history_table_name);
-        EXECUTE format('DROP TABLE IF EXISTS %I CASCADE',
-            get_tracking_table_name(live_table));
         EXECUTE format('DROP TRIGGER IF EXISTS %I ON %s',
             get_tracking_table_update_trigger_name(), live_table);
+        EXECUTE format('DROP TRIGGER IF EXISTS %I ON %s',
+            get_tracking_table_truncate_trigger_name(), live_table);
+        EXECUTE format('DROP TABLE IF EXISTS %I CASCADE',
+            get_tracking_table_name(live_table));
+
         EXECUTE format('DROP TRIGGER IF EXISTS %I ON %s',
             get_history_update_trigger_name_regular(), live_table);
         EXECUTE format('DROP TRIGGER IF EXISTS %I ON %s',
             get_history_update_trigger_name_tracking(), live_table);
         EXECUTE format('DROP FUNCTION IF EXISTS %s() CASCADE',
             get_history_update_fn_name_regular(live_table));
+        EXECUTE format('DROP FUNCTION IF EXISTS %s() CASCADE',
+            get_history_truncate_trigger_name());
 
         -- Remove from created table log
         DELETE FROM catmaid_history_table cht WHERE cht.live_table = $1;
-
     END;
     $$;
 
@@ -914,7 +918,7 @@ forward_history_update = """
                 SELECT format(
                     'INSERT INTO %1$I (%2$s,%3$s,%4$s) '
                     'SELECT %5$s, tstzrange(LEAST(lt.%6$s, current_timestamp), current_timestamp), '
-                    'tt.%8$s '
+                    'lt.%8$s '
                     'FROM %7$s lt',
                     history_info.history_table,
                     string_agg(quote_ident(cti.column_name), ','),
@@ -1043,7 +1047,7 @@ forward_add_initial_history_tables_sql = """
     CREATE TEMPORARY TABLE temp_versioned_catmaid_table (
         name regclass,
         time_column text,
-        txid_column text
+        txid_column text DEFAULT NULL
     ) ON COMMIT DROP;
     INSERT INTO temp_versioned_catmaid_table (VALUES
         ('broken_slice', NULL),
@@ -1110,12 +1114,57 @@ forward_add_initial_history_tables_sql = """
         ('taggit_taggeditem')
     );
 
+    -- Add a transaction ID column to the passed in table
+    CREATE OR REPLACE FUNCTION add_txid_column(target_table regclass)
+    RETURNS text
+    LANGUAGE plpgsql AS
+    $$
+    BEGIN
+        RAISE NOTICE 'Add transaction ID column to table %', target_table;
+        EXECUTE format(
+            'ALTER TABLE %1$s '
+            'ADD COLUMN txid bigint DEFAULT txid_current()',
+            target_table);
+
+        -- TODO: Test if adding a BRIN index for transaction columns speeds up
+        -- lookup. Transaction IDs naturally increase and so might correlate with
+        -- the pysical location.
+
+        RETURN 'txid';
+    END;
+    $$;
+
+    -- Walk over all CATMAID tables and if they have a time column associated,
+    -- make sure they also have a transaction column 'txid'. If not, the table
+    -- is updated if and only if it has no inhertience child tables.
+    UPDATE temp_versioned_catmaid_table t
+    SET txid_column = add_txid_column(t.name::regclass)
+    FROM temp_versioned_catmaid_table t2
+    LEFT JOIN catmaid_inheriting_tables cit
+    ON cit.child_oid = t2.name::regclass
+    WHERE cit.child_oid IS NULL
+    AND t2.time_column IS NOT NULL
+    AND t.name = t2.name;
+
+    -- Now that all non-inheritance and inheritance root tables are updated,
+    -- update all inheritance child tables.
+    UPDATE temp_versioned_catmaid_table t
+    SET txid_column = 'txid'
+    FROM temp_versioned_catmaid_table t2
+    JOIN catmaid_inheriting_tables cit
+    ON cit.child_oid = t2.name::regclass
+    WHERE t2.time_column IS NOT NULL
+    AND t.txid_column IS NULL
+    AND t.name = t2.name;
+
+    -- Don't keep column adding function
+    DROP FUNCTION add_txid_column(regclass);
+
+
     -- Create a history table including inheritance for all tables, but handle
     -- sync separately (to avoid syncing when disabled in settings and to
     -- allow faster initial syncing).
-    -- TODO: Change back to:
-    -- SELECT create_history_table(t.name, t.time_column, t.txid_column,
-    SELECT create_history_table(t.name, NULL, NULL, --time_column, t.txid_column,
+    SELECT create_history_table(t.name, t.time_column, t.txid_column,
         {create_triggers}, true, false)
     FROM temp_versioned_catmaid_table t;
     SELECT create_history_table(t.name, NULL, NULL,
@@ -2147,8 +2196,45 @@ backward_reinit_previous_history_tables_sql = """
 """.format(create_triggers='true' if history_tracking_enabled else 'false')
 
 backward_remove_history_tables_sql = """
-    -- Remove existing history tables and triggers
-    SELECT drop_all_history_tables();
+    -- Find all tables that got a new transaction ID column added, and remove it
+    BEGIN;
+        CREATE TEMPORARY TABLE temp_versioned_catmaid_table (
+            name        regclass,
+            txid_col    text
+        ) ON COMMIT DROP;
+
+        INSERT INTO temp_versioned_catmaid_table (name, txid_col)
+        SELECT cht.live_table, cht.txid_column
+        FROM catmaid_history_table cht
+        LEFT JOIN catmaid_inheriting_tables cit
+        ON cht.live_table = cit.child_oid
+        WHERE cit.child_oid IS NULL
+        AND cht.tracking_table IS NULL;
+
+        -- Remove transaction ID column to the passed in table
+        CREATE OR REPLACE FUNCTION remove_column(target_table regclass, col text)
+        RETURNS void
+        LANGUAGE plpgsql AS
+        $$
+        BEGIN
+            RAISE NOTICE 'Remove column % from table %', col, target_table;
+            EXECUTE format(
+                'ALTER TABLE %1$s '
+                'DROP COLUMN %2$s',
+                target_table, col);
+        END;
+        $$;
+
+        -- Perform actual column removal
+        SELECT remove_column(t.name, t.txid_col)
+        FROM temp_versioned_catmaid_table t;
+
+        DROP FUNCTION remove_column(regclass, text);
+
+        -- Remove history tables
+        SELECT drop_all_history_tables();
+
+    COMMIT;
 """
 
 

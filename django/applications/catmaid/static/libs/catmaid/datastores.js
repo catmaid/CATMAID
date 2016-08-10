@@ -175,7 +175,12 @@
             key: key,
             value: JSON.stringify(entry.value)
           },
-          CATMAID.jsonResponseHandler(resolve, reject));
+          CATMAID.jsonResponseHandler(resolve, reject, true));
+    }).catch(function (reason) {
+      if (reason && reason.status && reason.status === 403) {
+        console.log('Datastore lacks permissions to store for ' +
+                    'store: ' + self.name + ' key: ' + key + ' scope: ' + scope);
+      }
     });
   };
 

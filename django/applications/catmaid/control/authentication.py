@@ -4,6 +4,7 @@ import json
 from functools import wraps
 from itertools import groupby
 
+from guardian.core import ObjectPermissionChecker
 from guardian.models import UserObjectPermission, GroupObjectPermission
 from guardian.shortcuts import get_perms_for_model
 from guardian.utils import get_anonymous_user
@@ -91,8 +92,11 @@ def check_user_role(user, project, roles):
     Administrator role satisfies any requirement.
     """
 
+    # Prefetch all user permissions for project.
+    checker = ObjectPermissionChecker(user)
+
     # Check for admin privs in all cases.
-    has_role = user.has_perm('can_administer', project)
+    has_role = checker.has_perm('can_administer', project)
 
     if not has_role:
         # Check the indicated role(s)
@@ -100,9 +104,9 @@ def check_user_role(user, project, roles):
             roles = [roles]
         for role in roles:
             if role == UserRole.Annotate:
-                has_role = user.has_perm('can_annotate', project)
+                has_role = checker.has_perm('can_annotate', project)
             elif role == UserRole.Browse:
-                has_role = user.has_perm('can_browse', project)
+                has_role = checker.has_perm('can_browse', project)
             if has_role:
                 break
 

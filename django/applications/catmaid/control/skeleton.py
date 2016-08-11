@@ -665,12 +665,19 @@ def split_skeleton(request, project_id=None):
     cici.user = skeleton.user # The same user that owned the skeleton to split
     cici.project_id = project_id
     cici.save()
-    # update skeleton_id of list in treenode table
-    # This creates a lazy QuerySet that, upon calling update, returns a new QuerySet
-    # that is then executed. It does NOT create an update SQL query for every treenode.
-    Treenode.objects.filter(id__in=change_list).update(skeleton=new_skeleton)
-    # update the skeleton_id value of the treenode_connector table
-    TreenodeConnector.objects.filter(treenode_id__in=change_list).update(skeleton=new_skeleton)
+
+    # Update skeleton IDs for treenodes, treenode_connectors, and reviews.
+    cursor.execute("""
+        UPDATE treenode
+          SET skeleton_id = %(new_skeleton_id)s
+          WHERE id = ANY(%(change_list)s::bigint[]);
+        UPDATE treenode_connector
+          SET skeleton_id = %(new_skeleton_id)s
+          WHERE treenode_id = ANY(%(change_list)s::bigint[]);
+        UPDATE review
+          SET skeleton_id = %(new_skeleton_id)s
+          WHERE treenode_id = ANY(%(change_list)s::bigint[]);
+        """, {'new_skeleton_id': new_skeleton.id, 'change_list': change_list})
 
     # setting new root treenode's parent to null
     Treenode.objects.filter(id=treenode_id).update(parent=None, editor=request.user)
@@ -678,10 +685,6 @@ def split_skeleton(request, project_id=None):
     # Update annotations of existing neuron to have only over set
     _update_neuron_annotations(project_id, request.user, neuron.id,
             upstream_annotation_map)
-
-    # Update all reviews of the treenodes that are moved to a new neuron to
-    # refer to the new skeleton.
-    Review.objects.filter(treenode_id__in=change_list).update(skeleton=new_skeleton)
 
     # Update annotations of under skeleton
     _annotate_entities(project_id, [new_neuron.id], downstream_annotation_map)

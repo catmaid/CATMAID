@@ -668,16 +668,9 @@ def split_skeleton(request, project_id=None):
     # update skeleton_id of list in treenode table
     # This creates a lazy QuerySet that, upon calling update, returns a new QuerySet
     # that is then executed. It does NOT create an update SQL query for every treenode.
-    tns = Treenode.objects.filter(id__in=change_list).update(skeleton=new_skeleton)
+    Treenode.objects.filter(id__in=change_list).update(skeleton=new_skeleton)
     # update the skeleton_id value of the treenode_connector table
-    tc = TreenodeConnector.objects.filter(
-        relation__relation_name__endswith = 'synaptic_to',
-        treenode__in=change_list,
-    ).update(skeleton=new_skeleton)
-    tcgj = TreenodeConnector.objects.filter(
-        relation__relation_name = 'gapjunction_with',
-        treenode__in=change_list,
-    ).update(skeleton=new_skeleton)
+    TreenodeConnector.objects.filter(treenode_id__in=change_list).update(skeleton=new_skeleton)
 
     # setting new root treenode's parent to null
     Treenode.objects.filter(id=treenode_id).update(parent=None, editor=request.user)

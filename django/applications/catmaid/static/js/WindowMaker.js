@@ -1444,10 +1444,10 @@ var WindowMaker = new function()
         ]);
 
     var axisOptions = document.createElement('select');
-    axisOptions.options.add(new Option("Camera Up", "up"));
-    axisOptions.options.add(new Option("X", "x"));
-    axisOptions.options.add(new Option("Y", "y"));
-    axisOptions.options.add(new Option("Z", "z"));
+    for (var axis in CATMAID.AnimationFactory.AxisTypes) {
+      var label = CATMAID.AnimationFactory.AxisTypes[axis];
+      axisOptions.options.add(new Option(label, axis));
+    }
     axisOptions.onchange = function() {
       WA.options.animation_axis = this.value;
     };

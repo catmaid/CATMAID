@@ -5796,6 +5796,16 @@
     return {
 
       /**
+       * Map known rotation axis types to a human readable form.
+       */
+      AxisTypes: {
+        "up": "Camera Up",
+        "x": "X",
+        "y": "Y",
+        "z": "Z"
+      },
+
+      /**
        * Create a new animation instance.
        */
       createAnimation: function(options) {

@@ -9,6 +9,12 @@ Tracing overlay:
 - Node tags now respect visibility groups.
 
 
+3D viewer:
+
+- Exporting an animation will now use the rotation axis selected in the regular
+  widget controls.
+
+
 ### Bug fixes
 
 - The browser link preview no longer obscures the status bar when hovering

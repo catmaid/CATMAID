@@ -5391,6 +5391,7 @@
         'animation-export-backforth', false);
     var camera = this.space.view.camera;
     var target = this.space.view.controls.target;
+    var rotationAxis = this.options.animation_axis;
 
     var docURL = CATMAID.makeDocURL('user_faq.html#faq-3dviewer-webm');
     dialog.appendHTML('Note: you can convert the resulting WebM file to ' +
@@ -5417,7 +5418,7 @@
         var visMap = this.space.getVisibilityMap();
 
         try {
-          var axis = "up";
+          var axis = rotationAxis;
           var rotations = parseInt(rotationsField.value);
           var rotationtime = parseFloat(rotationtimeField.value);
           var framerate = parseInt(framerateField.value);

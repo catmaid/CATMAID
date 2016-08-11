@@ -4,12 +4,19 @@
 
 ### Features and enhancements
 
+Tracing overlay:
+
+- Node tags now respect visibility groups.
 
 
 ### Bug fixes
 
 - The browser link preview no longer obscures the status bar when hovering
   over the tracing layer.
+
+- Node tags are correctly hidden when holding Space.
+
+- Fixed an error that could sometimes happen on page load for anonymous users.
 
 
 ## 2016.08.09

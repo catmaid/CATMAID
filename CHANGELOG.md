@@ -8,6 +8,8 @@
 
 ### Bug fixes
 
+- The browser link preview no longer obscures the status bar when hovering
+  over the tracing layer.
 
 
 ## 2016.08.09

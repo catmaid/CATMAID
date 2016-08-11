@@ -41,7 +41,6 @@
      * focus() call will not succeed. */
     var focusCatcher = document.createElement( "a" );
     focusCatcher.id = "focusCatcher";
-    focusCatcher.href = "#";
     document.body.appendChild( focusCatcher );
 
     var onkeydown = function( e )

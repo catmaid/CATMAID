@@ -9,6 +9,7 @@ User Documentation
    tools
    tracing_neurons
    api
+   volumes
    user_faq
    importing_data
    data_views

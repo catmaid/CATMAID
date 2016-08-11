@@ -72,6 +72,8 @@ see what parameters it expects.
 Note that the undocumented API is considered volatile and changes to it are
 not included in the API changelog.
 
+.. _api-token:
+
 API Token
 ---------
 

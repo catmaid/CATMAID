@@ -1125,11 +1125,6 @@ forward_add_initial_history_tables_sql = """
             'ALTER TABLE %1$s '
             'ADD COLUMN txid bigint DEFAULT txid_current()',
             target_table);
-
-        -- TODO: Test if adding a BRIN index for transaction columns speeds up
-        -- lookup. Transaction IDs naturally increase and so might correlate with
-        -- the pysical location.
-
         RETURN 'txid';
     END;
     $$;

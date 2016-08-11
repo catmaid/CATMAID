@@ -906,8 +906,7 @@ remove_history_functions_sql = """
     DROP TABLE IF EXISTS catmaid_transaction_info;
     DROP TYPE IF EXISTS history_change_type;
     DROP FUNCTION IF EXISTS create_history_table(live_table_name regclass, live_table_time_column text,
-        live_table_pkey_column text, create_triggers boolean,
-        copy_inheritance boolean, sync boolean);
+        create_triggers boolean, copy_inheritance boolean, sync boolean);
     DROP FUNCTION IF EXISTS drop_history_table(live_table_name regclass);
     DROP FUNCTION IF EXISTS update_history_of_row_timetable();
     DROP FUNCTION IF EXISTS history_table_name(regclass);

@@ -1,6 +1,11 @@
 ## Under development
 
 
+### Notes
+
+- Release 2016.08.09 is deprecated. If you have it installed, please upgrade to
+  this version, 2016.08.12.
+
 
 ### Features and enhancements
 
@@ -23,6 +28,8 @@ Tracing overlay:
 - Node tags are correctly hidden when holding Space.
 
 - Fixed an error that could sometimes happen on page load for anonymous users.
+
+- Missing documentation for curent volumes features added to
 
 
 ## 2016.08.09

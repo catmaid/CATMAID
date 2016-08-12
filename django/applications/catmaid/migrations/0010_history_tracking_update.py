@@ -658,8 +658,9 @@ forward_history_update = """
 
                 -- A non-null NEW has to be returned to execute the actual query (because
                 -- this is to be used as a BEFORE trigger).
-                IF NEW IS NULL THEN
+                IF TG_OP=''DELETE'' THEN
                     RETURN OLD;
+                ELSE
                     -- Update current row
                     NEW.%8$s = txid_current();
                     RETURN NEW;

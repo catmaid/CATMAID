@@ -565,7 +565,12 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
       if (!node || !node.parent) {
         return undefined;
       }
-      return nodeToStateList(node.parent);
+      var parent = node.parent;
+      if (!SkeletonAnnotations.isRealNode(parent.id)) {
+        var parentId = SkeletonAnnotations.getParentOfVirtualNode(parent.id);
+        parent = self.nodes[parentId];
+      }
+      return nodeToStateList(parent);
     },
     getChildren: function(nodeId) {
       var node = self.nodes[nodeId];

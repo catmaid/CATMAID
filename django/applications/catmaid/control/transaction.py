@@ -207,9 +207,27 @@ class LocationQuery(object):
     def get(self, history=False):
         return self.history_query if history else self.query
 
-location_queries = {
-    # Look transaction and edition time up in treenode table and return
-    # node location.
+
+class LocationRef(object):
+    def __init__(self, d, key): self.d, self.key = d, key
+    def get(self, history=False): return self.d[self.key].get(history=history)
+
+location_queries = {}
+location_queries.update({
+    # For annotations, select the root of the annotated neuron
+    'annotations.add': LocationQuery("""
+        SELECT location_x, location_y, location_z
+        FROM treenode t
+        JOIN class_instance_class_instance cici_s
+            ON (cici_s.class_instance_a = t.skeleton_id
+            AND t.parent_id IS NULL)
+        JOIN class_instance_class_instance{history} cici_e
+            ON (cici_s.class_instance_b = cici_e.class_instance_a
+            AND cici_e.{txid} = %s)
+    """),
+    'annotations.remove': LocationRef(location_queries, 'annotations.add'),
+    # Look transaction and edition time up in treenode table and return node
+    # location.
     'treenodes.create': LocationQuery("""
         SELECT location_x, location_y, location_z
         FROM treenode{history}
@@ -220,4 +238,4 @@ location_queries = {
         FROM location{history}
         WHERE {txid} = %s
     """)
-}
+})

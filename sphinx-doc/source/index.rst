@@ -42,6 +42,13 @@ The **C**\ ollaborative **A**\ nnotation **T**\ oolkit for **M**\ assive **A**\ 
     :height: 100px
     :title: CATMAID user interface showing multiple channels of a confocal stack
 
+.. thumbnail:: _static/screenshots/volumes-alpha-shape-setup.png
+    :class: lightimage
+    :group: index
+    :width: 150px
+    :height: 100px
+    :title: CATMAID user interface showing the neuron based creation of 3D  meshes
+
 Documentation
 -------------
 

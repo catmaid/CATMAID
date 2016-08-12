@@ -1,5 +1,6 @@
-## Under development
+## 2016.08.12
 
+Contributors: Andrew Champion, Tom Kazimiers
 
 ### Notes
 

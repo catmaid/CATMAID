@@ -3961,6 +3961,19 @@ SkeletonAnnotations.TracingOverlay.prototype.deleteNode = function(nodeId) {
     return false;
   }
 
+  var viewBox = this.stackViewer.createStackViewBox();
+  if (node.z < viewBox.min.z ||
+      node.y < viewBox.min.y ||
+      node.x < viewBox.min.x ||
+      node.z > viewBox.max.z ||
+      node.y > viewBox.max.y ||
+      node.x > viewBox.max.x) {
+    CATMAID.msg("Error",
+                "Can not delete nodes outside the current view area. " +
+                "Press A to bring the node into view then try again.");
+    return false;
+  }
+
   // Unset active node to avoid actions that involve the deleted node
   var isActiveNode = (node.id === SkeletonAnnotations.getActiveNodeId());
   if (isActiveNode) {

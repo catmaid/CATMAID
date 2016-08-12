@@ -70,9 +70,9 @@
     }, {});
 
     this.cache = {
-      nodePool: new this.ElementPool(100),
-      connectorPool: new this.ElementPool(20),
-      arrowPool: new this.ElementPool(50),
+      nodePool: new this.ElementPool(100, 1.2),
+      connectorPool: new this.ElementPool(20, 1.2),
+      arrowPool: new this.ElementPool(50, 1.2),
 
       clear: function() {
         this.nodePool.clear();
@@ -214,10 +214,11 @@
     var ptype = {};
 
       /** For reusing objects such as DOM elements, which are expensive to insert and remove. */
-    ptype.ElementPool = function(reserve_size) {
+    ptype.ElementPool = function(reserveSize, reserveProportion) {
       this.pool = [];
       this.nextIndex = 0;
-      this.reserve_size = reserve_size;
+      this.reserveSize = reserveSize;
+      this.reserveProportion = reserveProportion;
     };
 
     $.extend(ptype.ElementPool.prototype, {
@@ -238,14 +239,16 @@
           this.reset();
         },
 
-        disableBeyond: function(new_length) {
-          if (new_length < this.pool.length) {
+        disableBeyond: function(newLength) {
+          if (newLength < this.pool.length) {
+            var reserve = Math.max(newLength + this.reserveSize,
+                                   Math.floor(newLength * this.reserveProportion));
             // Drop elements beyond new length plus reserve
-            if (this.pool.length > new_length + this.reserve_size) {
-              this.pool.splice(new_length + this.reserve_size).forEach(this.obliterateFn);
+            if (this.pool.length > reserve) {
+              this.pool.splice(reserve).forEach(this.obliterateFn);
             }
             // Disable elements from cut off to new ending of node pool array
-            this.pool.slice(new_length).forEach(this.disableFn);
+            this.pool.slice(newLength).forEach(this.disableFn);
           }
         },
 

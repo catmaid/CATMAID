@@ -654,10 +654,16 @@ forward_history_update = """
                 -- currently available columns in the updated table.
                 INSERT INTO %2$I (%3$s,%4$s,%5$s)
                 SELECT %6$s, tstzrange(LEAST(OLD.%7$s, current_timestamp), current_timestamp),
-                OLD.%8$s;
+                txid_current();
 
-                -- No return value is expected if run
-                RETURN NULL;
+                -- A non-null NEW has to be returned to execute the actual query (because
+                -- this is to be used as a BEFORE trigger).
+                IF NEW IS NULL THEN
+                    RETURN OLD;
+                    -- Update current row
+                    NEW.%8$s = txid_current();
+                    RETURN NEW;
+                END IF;
             END;
             $FN$',
             history_update_fn_name,
@@ -725,7 +731,7 @@ forward_history_update = """
 
                 EXECUTE format(
                     'CREATE TRIGGER %1$I '
-                    'AFTER UPDATE OR DELETE ON %2$s FOR EACH ROW '
+                    'BEFORE UPDATE OR DELETE ON %2$s FOR EACH ROW '
                     'EXECUTE PROCEDURE %3$s()',
                     history_trigger_name_regular, history_info.live_table,
                     history_update_fn_name

@@ -85,7 +85,15 @@ QUnit.test('SVG overlay test', function( assert ) {
       submit: submitterFn(),
       pix2physX: function() { return 0; },
       pix2physY: function() { return 0; },
-      pix2physZ: function() { return 0; }
+      pix2physZ: function() { return 0; },
+      stackViewer: {
+        createStackViewBox: function () {
+          return {
+            min: {x: -Infinity, y: -Infinity, z: -Infinity},
+            max: {x: Infinity, y: Infinity, z: Infinity}
+          };
+        },
+      },
     };
 
     // Indicates which nodes are available in our fake backend

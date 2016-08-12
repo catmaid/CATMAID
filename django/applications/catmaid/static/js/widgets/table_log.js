@@ -8,6 +8,7 @@
     /** Pointer to the existing instance of table. */
     this.logTable = null;
     this.mode = "log";
+    this.highlightLocation = true;
   };
 
   LogTable.prototype.getName = function() {
@@ -95,6 +96,18 @@
         updateHistory.setAttribute("value", "Update history table");
         updateHistory.onclick = this.update.bind(this);
         tabs['History'].appendChild(updateHistory);
+
+        var highlightLocLabel = document.createElement('label');
+        var highlightLocCb = document.createElement('input');
+        highlightLocCb.setAttribute('type', 'checkbox');
+        highlightLocCb.checked = this.highlightLocation;
+        highlightLocCb.onclick = function() {
+          self.highlightLocation = this.checked;
+        };
+        highlightLocLabel.appendChild(highlightLocCb);
+        highlightLocLabel.appendChild(document.createTextNode(
+            "Highlight location change"));
+        tabs['History'].appendChild(highlightLocLabel);
 
         var self = this;
         $(controls).tabs({
@@ -248,6 +261,18 @@
         this.historyContainer.appendChild(historyTable);
         container.appendChild(this.historyContainer);
 
+        // A handler for location change
+        var locationChange = function(x, y, z) {
+          // Biefly flash new location, if requested
+          if (self.highlightLocation) {
+            var nFlashes = 3;
+            var delay = 100;
+            project.getStackViewers().forEach(function(s) {
+              s.pulseateReferenceLines(nFlashes, delay);
+            });
+          }
+        };
+
         this.historyTable = $(historyTable).DataTable({
           dom: "lrphtip",
           paging: true,
@@ -311,7 +336,8 @@
                   var x = parseFloat(result.x);
                   var y = parseFloat(result.y);
                   var z = parseFloat(result.z);
-                  project.moveTo(z, y, x);
+                  project.moveTo(z, y, x, undefined,
+                      locationChange.bind(window, x, y, z));
               })
               .catch(CATMAID.handleError);
           }

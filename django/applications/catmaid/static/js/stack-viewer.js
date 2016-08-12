@@ -742,6 +742,20 @@
     this._horr.style.visibility = show ? "visible" : "hidden";
   };
 
+  /**
+   * Pulsate reference lines using jQuery UI
+   */
+  StackViewer.prototype.pulseateReferenceLines = function (times, delay) {
+    var visible = this._vert.style.visibility === "visible";
+    var halfDelay = delay * 0.5;
+    this.showReferenceLines(true);
+    var refLines = $(this._vert).add(this._horr);
+    for (var i=0; i<times; ++i) {
+      refLines = refLines.fadeOut(halfDelay).fadeIn(halfDelay);
+    }
+    refLines = refLines.fadeOut(delay);
+  };
+
   StackViewer.Settings = new CATMAID.Settings(
       'stack-viewer',
       {

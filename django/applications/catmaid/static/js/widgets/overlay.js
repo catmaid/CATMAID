@@ -4203,7 +4203,7 @@ SkeletonAnnotations.TracingOverlay.prototype.nodeIsPartOfSkeleton = function(ske
  * Handle update of active node with recoloring all nodes.
  */
 SkeletonAnnotations.TracingOverlay.prototype.handleActiveNodeChange = function(node) {
-  if (SkeletonAnnotations.Settings.session.skip_suppressed_virtual_nodes) {
+  if (node.id && SkeletonAnnotations.Settings.session.skip_suppressed_virtual_nodes) {
     var self = this;
     this.promiseSuppressedVirtualNodes(node.id).then(function () { self.recolorAllNodes(); });
   }

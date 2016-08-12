@@ -2,6 +2,7 @@ from django.db import connection
 from django.http import HttpResponse
 
 from catmaid.control.authentication import requires_user_role
+from catmaid.error import LocationLookupError
 from catmaid.models import UserRole
 
 from rest_framework.decorators import api_view
@@ -156,6 +157,8 @@ def get_location(request, project_id):
         # transaction ID for lookup
         location = None
         provider = location_queries.get(label)
+        if not provider:
+            raise LocationLookupError("A representative location for this change was not found")
         query = provider.get(False)
         checked_history = False
         while query:

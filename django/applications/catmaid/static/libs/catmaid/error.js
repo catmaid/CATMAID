@@ -61,4 +61,14 @@
   CATMAID.StateMatchingError.prototype = Object.create(CATMAID.Error.prototype);
   CATMAID.StateMatchingError.constructor = CATMAID.StateMatchingError;
 
+  /**
+   * An error type to indicate an unsuccesful location lookup.
+   */
+  CATMAID.LocationLookupError = function(message, detail) {
+    CATMAID.Error.call(this, message, detail);
+  };
+
+  CATMAID.LocationLookupError.prototype = Object.create(CATMAID.Error.prototype);
+  CATMAID.LocationLookupError.constructor = CATMAID.LocationLookupError;
+
 })(CATMAID);

@@ -339,6 +339,14 @@
                   project.moveTo(z, y, x, undefined,
                       locationChange.bind(window, x, y, z));
               })
+              .catch(function(error) {
+                if (error instanceof CATMAID.LocationLookupError) {
+                  CATMAID.warn(error.message);
+                } else {
+                  // Re-throw exception
+                  throw error;
+                }
+              })
               .catch(CATMAID.handleError);
           }
         });

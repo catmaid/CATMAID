@@ -122,6 +122,13 @@ class StateCheckingTest(CatmaidTestCase):
         self.assertEqual(s_multinode[1][0], 433)
         self.assertEqual(s_multinode[1][1], "Timestamp2")
 
+    def test_wrong_id_format(self):
+        s1 = {
+            'parent': ['vn:5543379:5543376:433833.000:244407.000:76125.000', '2016-03-15T03:37:56.217Z']
+        }
+        with self.assertRaisesRegexp(ValueError, "Invalid state provided"):
+            state.parse_state(json.dumps(s1))
+
     def test_wrong_node_state(self):
         s1 = {
             'edition_time': '2016-03-15T03:37:56.217Z'

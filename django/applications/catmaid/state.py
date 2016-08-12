@@ -121,8 +121,8 @@ def parse_state(state):
     def parse_id(name, id):
         try:
             return int(id)
-        except TypeError, e:
-            raise ValueError("Invalid state, couldn't parse {} id".format(name))
+        except (ValueError, TypeError):
+            raise ValueError("Invalid state provided, couldn't parse {} id: {}".format(name, id))
 
     # Make sure child, parent and link ids are integers
     parsed_state_type = type(state)

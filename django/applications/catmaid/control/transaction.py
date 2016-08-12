@@ -2,11 +2,15 @@ from django.db import connection
 from django.http import HttpResponse
 
 from catmaid.control.authentication import requires_user_role
-from catmaid.error import LocationLookupError
 from catmaid.models import UserRole
 
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+
+
+class LocationLookupError(Exception):
+    pass
+
 
 @api_view(["GET"])
 @requires_user_role([UserRole.Browse])

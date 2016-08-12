@@ -152,19 +152,30 @@ def get_location(request, project_id):
                         "execution time {}".format(transaction_id, execution_time))
             label = result[0]
 
+        # Look first in live table and then in history table. Use only
+        # transaction ID for lookup
         location = None
-        query = location_queries.get(label)
-        if query:
-            cursor.execute(query, (transaction_id, execution_time))
+        provider = location_queries.get(label)
+        query = provider.get(False)
+        checked_history = False
+        while query:
+            cursor.execute(query, (transaction_id, ))
+            query = None
             result = cursor.fetchall()
             if result and len(result) == 1:
                 loc = result[0]
                 if len(loc) == 3:
                     location = (loc[0], loc[1], loc[2])
+                    query = None
+                else:
+                    raise ValueError("Couldn't read location information, "
+                        "expected 3 columns, got {}".format(len(loc)))
+            elif not checked_history:
+                query = provider.get(True)
+                checked_history = True
 
         if not location or len(location) != 3:
-            raise ValueError("Couldn't find location for transaction {} and "
-                    "execution time {}".format(transaction_id, execution_time))
+            raise ValueError("Couldn't find location for transaction {}".format(transaction_id))
 
         return Response({
             'x': location[0],
@@ -172,19 +183,34 @@ def get_location(request, project_id):
             'z': location[2]
         })
 
+class LocationQuery(object):
+
+    def __init__(self, query, history_suffix='__history', txid_column='txid'):
+        """ The query is a query string that selects tuples of three,
+        representing X, Y and Z coordinates of a location. If this string
+        contains "{history}", this part will be replaced by the history suffix,
+        if a historic location is asked for.
+        """
+        self.txid_column = txid_column
+        self.history_suffix = history_suffix
+        self.query = query.format(history='', txid=txid_column)
+        self.history_query = query.format(history=history_suffix,
+                txid=txid_column)
+
+    def get(self, history=False):
+        return self.history_query if history else self.query
+
 location_queries = {
     # Look transaction and edition time up in treenode table and return
     # node location.
-    'treenodes.create': """
+    'treenodes.create': LocationQuery("""
         SELECT location_x, location_y, location_z
-        FROM treenode
-        WHERE xmin = %s
-        -- AND edition_time = %s
-    """,
-    'nodes.update_location': """
+        FROM treenode{history}
+        WHERE {txid} = %s
+    """),
+    'nodes.update_location': LocationQuery("""
         SELECT location_x, location_y, location_z
-        FROM location
-        WHERE xmin = %s
-        AND edition_time = %s
-    """
+        FROM location{history}
+        WHERE {txid} = %s
+    """)
 }

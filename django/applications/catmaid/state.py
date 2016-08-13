@@ -10,6 +10,10 @@ class StateMatchingError(Exception):
         super(StateMatchingError, self).__init__(message)
         self.unmatched_state = state
 
+    def __str__(self):
+        return "{}: {}".format(self.message,
+            str(self.unmatched_state) or "(no details found)")
+
 
 class SQL:
     was_edited = """

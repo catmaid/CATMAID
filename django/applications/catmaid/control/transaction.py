@@ -225,17 +225,116 @@ location_queries.update({
             ON (cici_s.class_instance_b = cici_e.class_instance_a
             AND cici_e.{txid} = %s)
     """),
-    'annotations.remove': LocationRef(location_queries, 'annotations.add'),
-    # Look transaction and edition time up in treenode table and return node
-    # location.
-    'treenodes.create': LocationQuery("""
+    'annotations.remove': LocationQuery("""
         SELECT location_x, location_y, location_z
-        FROM treenode{history}
-        WHERE {txid} = %s
+        FROM treenode t
+        JOIN class_instance_class_instance{history} cici_s
+            ON (cici_s.class_instance_a = t.skeleton_id
+            AND t.parent_id IS NULL)
+        JOIN class_instance_class_instance__history cici_e
+            ON (cici_s.class_instance_b = cici_e.class_instance_a
+            AND cici_e.{txid} = %s)
+    """),
+    'connectors.create': LocationQuery("""
+        SELECT c.location_x, c.location_y, c.location_z
+        FROM connector{history} c
+        WHERE c.{txid} = %s
+    """),
+    'connectors.remove': LocationQuery("""
+        SELECT c.location_x, c.location_y, c.location_z
+        FROM connector__history c
+        WHERE c.{txid} = %s
+    """),
+    'labels.remove': LocationQuery("""
+        SELECT t.location_x, t.location_y, t.location_z
+        FROM treenode_class_instance__history tci
+        JOIN treenode{history} t
+        ON t.id = tci.treenode_id
+        WHERE tci.{txid} = %s
+    """),
+    'labels.update': LocationQuery("""
+        SELECT t.location_x, t.location_y, t.location_z
+        FROM treenode_class_instance{history} tci
+        JOIN treenode{history} t
+        ON t.id = tci.treenode_id
+        WHERE tci.{txid} = %s
+    """),
+    'links.create': LocationQuery("""
+        SELECT t.location_x, t.location_y, t.location_z
+        FROM treenode_connector{history} tc
+        JOIN treenode{history} t
+        ON t.id = tc.treenode_id
+        WHERE tc.{txid} = %s
+    """),
+    'links.remove': LocationQuery("""
+        SELECT t.location_x, t.location_y, t.location_z
+        FROM treenode_connector__history tc
+        JOIN treenode{history} t
+        ON t.id = tc.treenode_id
+        WHERE tc.{txid} = %s
+    """),
+    'neurons.remove': LocationQuery("""
+        SELECT location_x, location_y, location_z
+        FROM treenode t
+        JOIN class_instance_class_instance{history} cici_s
+            ON (cici_s.class_instance_a = t.skeleton_id
+            AND t.parent_id IS NULL)
+        JOIN class_instance_class_instance__history cici_e
+            ON (cici_s.class_instance_b = cici_e.class_instance_a
+            AND cici_e.{txid} = %s)
+    """),
+    'neurons.rename': LocationQuery("""
+        SELECT location_x, location_y, location_z
+        FROM treenode t
+        JOIN class_instance_class_instance{history} cici_s
+            ON (cici_s.class_instance_a = t.skeleton_id
+            AND t.parent_id IS NULL)
+        JOIN class_instance_class_instance__history{history} cici_e
+            ON (cici_s.class_instance_b = cici_e.class_instance_a
+            AND cici_e.{txid} = %s)
+    """),
+    'nodes.add_or_update_review': LocationQuery("""
+        SELECT t.location_x, t.location_y, t.location_z
+        FROM review{history} r
+        JOIN treenode{history} t
+        ON t.id = r.treenode_id
+        WHERE r.{txid} = %s
     """),
     'nodes.update_location': LocationQuery("""
         SELECT location_x, location_y, location_z
         FROM location{history}
         WHERE {txid} = %s
-    """)
+    """),
+    'textlabels.create': LocationQuery("""
+        SELECT t.location_x, t.location_y, t.location_z
+        FROM textlabel{history} t
+        JOIN textlabel_location{history} tl
+        ON t.id = tl.textlabel_id
+        WHERE t.{txid} = %s
+    """),
+    'textlabels.update': LocationRef(location_queries, "textlabels.create"),
+    'textlabels.delete': LocationQuery("""
+        SELECT t.location_x, t.location_y, t.location_z
+        FROM textlabel__history t
+        JOIN textlabel_location{history} tl
+        ON t.id = tl.textlabel_id
+        WHERE t.{txid} = %s
+    """),
+    # Look transaction and edition time up in treenode table and return node
+    # location.
+    'treenodes.create': LocationRef(location_queries, "nodes.update_location"),
+    'treenodes.insert': LocationRef(location_queries, "nodes.update_location"),
+    'treenodes.remove': LocationRef(location_queries, "nodes.update_location"),
+    'treenodes.update_confidence': LocationRef(location_queries, "nodes.update_location"),
+    'treenodes.update_parent': LocationRef(location_queries, "nodes.update_location"),
+    'treenodes.update_radius': LocationRef(location_queries, "nodes.update_location"),
+    'treenodes.suppress_virtual_node': LocationQuery("""
+        SELECT t.location_x, t.location_y, t.location_z
+        FROM suppressed_virtual_treenode{history} svt
+        JOIN treenode{history} t
+        ON t.id = svt.child_id
+        WHERE svt.{txid} = %s
+    """),
+    'treenodes.unsuppress_virtual_node': LocationRef(location_queries,
+            "treenodes.suppress_virtual_node"),
 })

@@ -149,7 +149,7 @@ urlpatterns += [
     url(r'^(?P<project_id>\d+)/labels/$', label.labels_all),
     url(r'^(?P<project_id>\d+)/labels-for-nodes$', label.labels_for_nodes),
     url(r'^(?P<project_id>\d+)/labels/(?P<node_type>(treenode|location|connector))/(?P<node_id>\d+)/$', label.labels_for_node),
-    url(r'^(?P<project_id>\d+)/label/(?P<ntype>(treenode|location|connector))/(?P<location_id>\d+)/update$', record_view("labels.remove")(label.label_update)),
+    url(r'^(?P<project_id>\d+)/label/(?P<ntype>(treenode|location|connector))/(?P<location_id>\d+)/update$', record_view("labels.update")(label.label_update)),
     url(r'^(?P<project_id>\d+)/label/(?P<ntype>(treenode|location|connector))/(?P<location_id>\d+)/remove$', record_view("labels.remove")(label.remove_label_link)),
     url(r'^(?P<project_id>\d+)/label/remove$', record_view("labels.remove_unused")(label.label_remove)),
 ]

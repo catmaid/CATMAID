@@ -173,7 +173,7 @@ RequestQueue = function(originUrl, csrfToken)
         advance = false;
         // Re-throw error
         throw error;
-      };
+      }
       if (advance) {
         // Move forward in queue
         queue.shift();

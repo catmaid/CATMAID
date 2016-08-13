@@ -163,11 +163,24 @@ RequestQueue = function(originUrl, csrfToken)
   {
     if ( xmlHttp.readyState == 4 )
     {
+      var advance = true;
       hideSpinner();
-      queue[ 0 ].callback( xmlHttp.status, xmlHttp.responseText, xmlHttp.responseXML );
-      queue.shift();
-      if ( queue.length > 0 )
-        send();
+      try {
+        queue[ 0 ].callback( xmlHttp.status, xmlHttp.responseText, xmlHttp.responseXML );
+      } catch(error) {
+        // In case of error, reset complete queue
+        queue.length = 0;
+        advance = false;
+        // Re-throw error
+        throw error;
+      };
+      if (advance) {
+        // Move forward in queue
+        queue.shift();
+        if ( queue.length > 0 ) {
+          send();
+        }
+      }
     }
   };
 

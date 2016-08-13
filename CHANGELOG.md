@@ -7,6 +7,7 @@
 
 ### Bug fixes
 
+- Remove major cause of CATMAID freezing after the display of an error message.
 
 
 ## 2016.08.12

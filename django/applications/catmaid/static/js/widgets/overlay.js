@@ -2171,7 +2171,7 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
   // Create virtual nodes, if needed. These are nodes that are not actually on
   // the current section, but are created to represent the connection between a
   // child and a parent node that are not part of this section either.
-  jso[0].forEach(function(a, index, array) {
+  jso[0].forEach(function(a) {
     var n = this.nodes[a[0]];
     // Check if the node is above or below this section
     if (n.zdiff !== 0) {
@@ -2181,16 +2181,6 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
         var vn = createVirtualNode(this.graphics, n, p, this.stackViewer);
         if (vn) {
           this.nodes[vn.id] = vn;
-        }
-      }
-      // Check if children are not in section as well
-      for (var cid in n.children) {
-        var c = n.children[cid];
-        if (c.zdiff !== 0 && !CATMAID.tools.sameSign(n.zdiff, c.zdiff)) {
-          var vn = createVirtualNode(this.graphics, c, n, this.stackViewer);
-          if (vn) {
-            this.nodes[vn.id] = vn;
-          }
         }
       }
     }

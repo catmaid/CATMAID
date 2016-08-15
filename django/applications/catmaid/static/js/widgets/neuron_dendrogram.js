@@ -648,6 +648,10 @@ NeuronDendrogram.prototype.renderDendogram = function(tree, tags, referenceTags)
     .classed('tagged', function(d) { return d.source.belowTag; })
     .attr("d", pathGenerator);
 
+  if (this.showStrahler) {
+    upLink.style("stroke-width", function (d) { return d.target.strahler; });
+  }
+
   /**
    * The node click handler is called if users double click on a node. It will
    * select the current node and highlight all downstream neurons in the

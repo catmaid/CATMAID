@@ -2070,7 +2070,7 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
   }
 
   // Populate Nodes
-  jso[0].forEach(function(a, index, array) {
+  jso[0].forEach(function(a) {
     // a[0]: ID, a[1]: parent ID, a[2]: x, a[3]: y, a[4]: z, a[5]: confidence
     // a[8]: user_id, a[6]: radius, a[7]: skeleton_id, a[9]: user_id
     var z = this.stackViewer.primaryStack.projectToUnclampedStackZ(a[4], a[3], a[2]);
@@ -2082,7 +2082,7 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
   }, this);
 
   // Populate ConnectorNodes
-  jso[1].forEach(function(a, index, array) {
+  jso[1].forEach(function(a) {
     var links = a[7];
     // Determine the connector node type. For now eveything with no or only
     // pre or post treenodes is treated as a synapse. If there are only
@@ -2123,7 +2123,7 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
 
   // Now that all Node instances are in place, loop nodes again
   // and set correct parent objects and parent's children update
-  jso[0].forEach(function(a, index, array) {
+  jso[0].forEach(function(a) {
     var pn = this.nodes[a[1]]; // parent Node
     if (pn) {
       var nn = this.nodes[a[0]];
@@ -2143,7 +2143,7 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
 
   // Now that ConnectorNode and Node instances are in place,
   // set all relations
-  jso[1].forEach(function(a, index, array) {
+  jso[1].forEach(function(a) {
     // a[0] is the ID of the ConnectorNode
     var connector = this.nodes[a[0]];
     // a[7]: all relations, an array of arrays, containing treenode_id,

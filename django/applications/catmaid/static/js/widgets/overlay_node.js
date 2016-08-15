@@ -357,6 +357,7 @@
         if (this.line) {
           this.line.visible = this.parent &&
             this.mustDrawLineWith(this.parent) &&
+            !this.line.tooShort &&
             SkeletonAnnotations.VisibilityGroups.areGroupsVisible(this.getVisibilityGroups());
         }
       };
@@ -382,6 +383,8 @@
         this.EDGE_WIDTH = this.BASE_EDGE_WIDTH * this.stackScaling;//baseScale * (dynamicScale ? 1 : resScale);
         this.confidenceFontSize = this.CONFIDENCE_FONT_PT*this.stackScaling + 'pt';
         this.textResolution = resScale;
+
+        this.pixelsPerUnitSq = 1 / (this.scaling * this.scaling);
 
         if (oldScaling !== this.scaling) this.initTextures();
       };
@@ -413,6 +416,7 @@
       this.NODE_RADIUS = 3; // In nm stack size (or fixed screen size at scale 0).
       this.CATCH_RADIUS = 6;
       this.BASE_EDGE_WIDTH = 2;
+      this.MIN_EDGE_LENGTH_SQ = 4; // Minimum size in px for edges to be drawn.
 
       // ID of the disabled nodes
       this.DISABLED = -1;
@@ -592,15 +596,6 @@
         if (!this.mustDrawLineWith(this.parent)) {
           return;
         }
-        var lineColor = this.colorFromZDiff();
-
-        if (!this.line) {
-          this.line = new PIXI.Graphics();
-          this.overlayGlobals.skeletonElements.containers.lines.addChild(this.line);
-          this.line.node = this;
-          this.line.interactive = true;
-          this.line.on('click', ptype.mouseEventManager.edge_mc_click);
-        }
 
         // If the parent or this itself is more than one slice away from the current
         // Z, draw the line only until it meets with the next non-boken slice,
@@ -610,6 +605,26 @@
         var parentLocation = getIntersection(this.parent, this,
             Math.max(this.dToSecBefore, Math.min(this.dToSecAfter, this.parent.zdiff)));
 
+        var lengthSq = (parentLocation[0] - childLocation[0]) *
+                       (parentLocation[0] - childLocation[0]) +
+                       (parentLocation[1] - childLocation[1]) *
+                       (parentLocation[1] - childLocation[1]);
+        if (lengthSq * this.pixelsPerUnitSq < this.MIN_EDGE_LENGTH_SQ) {
+          if (this.line) this.line.tooShort = true;
+          return;
+        }
+
+        if (!this.line) {
+          this.line = new PIXI.Graphics();
+          this.overlayGlobals.skeletonElements.containers.lines.addChild(this.line);
+          this.line.node = this;
+          this.line.interactive = true;
+          this.line.on('click', ptype.mouseEventManager.edge_mc_click);
+        }
+
+        this.line.tooShort = false;
+
+        var lineColor = this.colorFromZDiff();
         this.line.clear();
         this.line.lineStyle(this.EDGE_WIDTH, 0xFFFFFF, 1.0);
         this.line.moveTo(childLocation[0], childLocation[1]);

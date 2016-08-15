@@ -10,7 +10,7 @@ from datetime import datetime
 
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import connection
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 
 from rest_framework.decorators import api_view
 
@@ -21,6 +21,8 @@ from catmaid.control.authentication import requires_user_role
 from catmaid.control.common import get_relation_to_id_map
 from catmaid.control.review import get_treenodes_to_reviews, \
         get_treenodes_to_reviews_with_time
+
+from psycopg2.extras import DateTimeTZRange
 
 from tree_util import edge_count_to_root, partition
 try:
@@ -84,16 +86,18 @@ def compact_skeleton(request, project_id=None, skeleton_id=None, with_connectors
     skeleton_id = int(skeleton_id)
     with_connectors  = int(with_connectors)
     with_tags = int(with_tags)
+    with_history = bool(request.GET.get("with_history", False))
 
     cursor = connection.cursor()
 
+    history_query = ', creation_time' if with_history else ''
     cursor.execute('''
         SELECT id, parent_id, user_id,
                location_x, location_y, location_z,
-               radius, confidence
+               radius, confidence{}
         FROM treenode
         WHERE skeleton_id = %s
-    ''' % skeleton_id)
+    '''.format(history_query), (skeleton_id,))
 
     nodes = tuple(cursor.fetchall())
 
@@ -116,24 +120,26 @@ def compact_skeleton(request, project_id=None, skeleton_id=None, with_connectors
         pre = relations['presynaptic_to']
         post = relations['postsynaptic_to']
         gj = relations.get('gapjunction_with', -1)
+        c_history_query = ', tc.creation_time' if with_history else ''
         cursor.execute('''
             SELECT tc.treenode_id, tc.connector_id, tc.relation_id,
-                   c.location_x, c.location_y, c.location_z
+                   c.location_x, c.location_y, c.location_z{}
             FROM treenode_connector tc,
                  connector c
             WHERE tc.skeleton_id = %s
               AND tc.connector_id = c.id
               AND (tc.relation_id = %s OR tc.relation_id = %s OR tc.relation_id = %s)
-        ''' % (skeleton_id, pre, post, gj))
+        '''.format(c_history_query), (skeleton_id, pre, post, gj))
 
         relation_index = {pre: 0, post: 1, gj: 2}
 
         connectors = tuple((row[0], row[1], relation_index.get(row[2], -1), row[3], row[4], row[5]) for row in cursor.fetchall())
 
     if 0 != with_tags:
+        t_history_query = ', tci.creation_time' if with_history else ''
         # Fetch all node tags
         cursor.execute('''
-            SELECT c.name, tci.treenode_id
+            SELECT c.name, tci.treenode_id{}
             FROM treenode t,
                  treenode_class_instance tci,
                  class_instance c
@@ -141,12 +147,44 @@ def compact_skeleton(request, project_id=None, skeleton_id=None, with_connectors
               AND t.id = tci.treenode_id
               AND tci.relation_id = %s
               AND c.id = tci.class_instance_id
-        ''' % (skeleton_id, relations['labeled_as']))
+        '''.format(t_history_query), (skeleton_id, relations['labeled_as']))
 
         for row in cursor.fetchall():
             tags[row[0]].append(row[1])
 
-    return HttpResponse(json.dumps((nodes, connectors, tags), separators=(',', ':')))
+    result = [nodes, connectors, tags]
+
+    if with_history:
+        # The recursive search will look for history treenodes that
+        cursor.execute('''
+            SELECT id, parent_id, user_id,
+                location_x, location_y, location_z,
+                radius, confidence, sys_period
+            FROM treenode__history
+            WHERE skeleton_id = %s
+            ORDER BY sys_period
+        ''', (skeleton_id,))
+
+        history_nodes = tuple(cursor.fetchall())
+        result.append(history_nodes)
+
+    return JsonResponse(result, safe=False,
+            json_dumps_params={
+                'separators': (',', ':'),
+                'default': default
+            })
+
+def default(obj):
+    """Default JSON serializer."""
+
+    if isinstance(obj, DateTimeTZRange):
+		l_bound = "[" if obj.lower_inc else "("
+		u_bound = "]" if obj.upper_inc else ")"
+		return "{}{},{}{}".format(l_bound, obj.lower, obj.upper, u_bound)
+    elif isinstance(obj, datetime):
+        return str(obj)
+
+    raise TypeError('Not sure how to serialize object of type %s: %s' % (type(obj), obj,))
 
 
 @requires_user_role(UserRole.Browse)

@@ -70,8 +70,11 @@ InstanceRegistry.prototype.getLastInstance = function() {
  * Finally when all are loaded, fnDone is invoked without arguments.
  * Note that fnDone is invoked even when the given skeleton_ids array is empty.
  *
- * Additionally, when done if any skeletons don't exist anymore, a dialog will ask to remove them from all widgets that are skeleton sources.*/
-var fetchSkeletons = function(skeleton_ids, fnMakeURL, fnPost, fnLoadedOne, fnFailedLoading, fnDone) {
+ * Additionally, when done if any skeletons don't exist anymore, a dialog will ask to remove them from all widgets that are skeleton sources.
+ *
+ * If no <method> parameter is passed in, POST is assumed.*/
+var fetchSkeletons = function(skeleton_ids, fnMakeURL, fnPost, fnLoadedOne, fnFailedLoading, fnDone, method) {
+  method = method || "POST";
   var i = 0,
       missing = [],
       unloadable = [],
@@ -88,7 +91,7 @@ var fetchSkeletons = function(skeleton_ids, fnMakeURL, fnPost, fnLoadedOne, fnFa
         fnMissing();
       },
       loadOne = function(skeleton_id) {
-        requestQueue.register(fnMakeURL(skeleton_id), 'POST', fnPost(skeleton_id),
+        requestQueue.register(fnMakeURL(skeleton_id), method, fnPost(skeleton_id),
             function(status, text) {
               try {
                 if (200 === status) {

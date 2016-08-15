@@ -986,7 +986,7 @@ var WindowMaker = new function()
 
     var tabs = DOM.addTabGroup(bar, WA.widgetID, ['Main', 'View', 'Shading',
         'Skeleton filters', 'View settings', 'Stacks', 'Shading parameters',
-        'Animation', 'Export']);
+        'Animation', 'History', 'Export']);
 
     var select_source = CATMAID.skeletonListSources.createSelect(WA);
 
@@ -1318,7 +1318,9 @@ var WindowMaker = new function()
         [
           ['Play', function() {
             try {
-              WA.startAnimation(WA.createAnimation());
+              WA.createAnimation()
+                .then(WA.startAnimation.bind(WA))
+                .catch(CATMAID.handleError);
             } catch(e) {
               if (e instanceof CATMAID.ValueError) {
                 CATMAID.msg("Error", e.message);
@@ -1397,6 +1399,47 @@ var WindowMaker = new function()
           ['Back and forth', o.animation_back_forth, function() {
             WA.options.animation_back_forth = this.checked;
           }, false]
+        ]);
+
+    var historyTimeDisplay = document.createElement('span');
+    historyTimeDisplay.classList.add('right');
+
+    var stopAnimation = WA.stopAnimation.bind(WA);
+
+    DOM.appendToTab(tabs['History'],
+        [
+          ['Play', function() {
+            try {
+              var options = {
+                notify: function(currentDate, endDate) {
+                  // Update time display and if the end is reached, stop animation
+                  if (currentDate > endDate) {
+                    stopAnimation();
+                    historyTimeDisplay.textContent = "";
+                  } else {
+                    historyTimeDisplay.textContent = currentDate.toString();
+                  }
+                }
+              };
+              WA.createAnimation('history', options)
+                .then(WA.startAnimation.bind(WA))
+                .catch(CATMAID.handleError);
+            } catch(e) {
+              if (e instanceof CATMAID.ValueError) {
+                CATMAID.msg("Error", e.message);
+              } else {
+                throw e;
+              }
+            }
+          }],
+          ['Stop', function() {
+            stopAnimation();
+            historyTimeDisplay.textContent = "";
+          }],
+          ['Hours per tick', o.animation_hours_per_tick, '', function() {
+            WA.options.animation_hours_per_tick = parseFloat(this.value);
+           }, 5],
+          [historyTimeDisplay]
         ]);
 
     DOM.appendToTab(tabs['Export'],

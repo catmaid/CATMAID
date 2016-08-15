@@ -441,9 +441,9 @@ def node_list_tuples_query(params, project_id, atnid, atntype, include_labels, t
             bottom, right, z2 = params['bottom'], params['right'], params['z2']
 
             def is_visible(r):
-                return r[2] >= left and r[2] < right and \
-                    r[3] >= top and r[3] < bottom and \
-                    r[4] >= z1 and r[4] < z2
+                return left <= r[2] < right and \
+                    top <= r[3] < bottom and \
+                    z1 <= r[4] < z2
 
             # Collect treenodes visible in the current section
             visible = [row[0] for row in treenodes if is_visible(row)]
@@ -462,7 +462,7 @@ def node_list_tuples_query(params, project_id, atnid, atntype, include_labels, t
                     labels[row[0]].append(row[1])
 
             # Collect connectors visible in the current section
-            visible = [row[0] for row in connectors if row[3] >= z1 and row[3] < z2]
+            visible = [row[0] for row in connectors if z1 <= row[3] < z2]
             if visible:
                 cursor.execute('''
                 SELECT connector_class_instance.connector_id,

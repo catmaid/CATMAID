@@ -1988,41 +1988,44 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodeCoordinatesInDB = functio
    */
   function promiseUpdate() {
     var update = {treenode: [],
-                  connector: []};
+                  connector: [],
+                  virtual: []};
     /* jshint validthis: true */ // "this" will be bound to the tracing overlay
     var nodeIDs = Object.keys(this.nodes);
     for (var i = 0; i < nodeIDs.length; ++i) {
       var node = this.nodes[nodeIDs[i]];
       // only updated nodes that need sync, e.g.  when they changed position
-      if (node.needsync && SkeletonAnnotations.isRealNode(node.id)) {
+      if (node.needsync) {
         node.needsync = false;
-        update[node.type].push([node.id,
-                                this.pix2physX(node.z, node.y, node.x),
-                                this.pix2physY(node.z, node.y, node.x),
-                                this.pix2physZ(node.z, node.y, node.x)]);
+        if (SkeletonAnnotations.isRealNode(node.id)) {
+          update[node.type].push([node.id,
+                                  this.pix2physX(node.z, node.y, node.x),
+                                  this.pix2physY(node.z, node.y, node.x),
+                                  this.pix2physZ(node.z, node.y, node.x)]);
+        } else {
+          update.virtual.push(node);
+        }
       }
     }
+
+    var promise;
     if (update.treenode.length > 0 || update.connector.length > 0) {
       var command = new CATMAID.UpdateNodesCommand(this.state,
           project.id, update.treenode, update.connector);
-      return CATMAID.commands.execute(command).catch(CATMAID.handleError);
+      promise = CATMAID.commands.execute(command).catch(CATMAID.handleError);
     } else {
-      return Promise.resolve(0);
+      promise = Promise.resolve(0);
     }
+
+    update.virtual.forEach(function (node) {
+      promise.then(this.promiseNode.bind(this, node));
+    }, this);
+
+    return promise;
   }
 
   // Queue update of real nodes as a promise
   var promise = this.submit.then(promiseUpdate.bind(this));
-
-  // Queue additional virtual node creation
-  for (var nid in this.nodes) {
-    var node = this.nodes[nid];
-    if (node.needsync && !SkeletonAnnotations.isRealNode(nid)) {
-      node.needsync = false;
-      // Queue another node existence promise.
-      promise = promise.then(this.promiseNode.bind(this, node));
-    }
-  }
 
   // Queue callback, if there is any (it will get the results of the node update
   // as arguments automatically).

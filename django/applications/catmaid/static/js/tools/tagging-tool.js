@@ -1,11 +1,3 @@
-/**
- * taggingtool.js
- *
- * requirements:
- *   tools.js
- *
- */
-
 function TaggingTool()
 {
     var self = this;

@@ -3151,26 +3151,6 @@ var WindowMaker = new function()
     return {window: win, widget: null};
   };
 
-
-  var createStatisticsWindow = function()
-  {
-    var win = new CMWWindow( "Statistics" );
-    var content = win.getFrame();
-    content.style.backgroundColor = "#ffffff";
-
-    var container = createContainer( "project_stats_widget" );
-    content.appendChild( container );
-
-    addListener(win, container);
-
-    addLogic(win);
-
-    CATMAID.ProjectStatistics.init();
-
-    return {window: win, widget: null};
-  };
-
-
   var createNotificationsWindow = function()
   {
     var win = new CMWWindow( "Notifications" );
@@ -3529,7 +3509,6 @@ var WindowMaker = new function()
     "connectivity-graph-plot": createConnectivityGraphPlot,
     "assemblygraph-widget": createAssemblyGraphWindow,
     "sliceinfo-widget": createSliceInfoWindow,
-    "statistics": createStatisticsWindow,
     "review-system": createReviewWindow,
     "connectivity-widget": createConnectivityWindow,
     "adjacencymatrix-widget": createAdjacencyMatrixWindow,

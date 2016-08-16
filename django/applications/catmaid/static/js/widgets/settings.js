@@ -522,27 +522,32 @@
 
       // Active node radius display.
       ds.append(wrapSettingsControl(
-          CATMAID.DOM.createCheckboxSetting(
-              "Display radius for active node",
-              SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE].display_active_node_radius,
-              "Show a radius circle around the active node if its radius is set.",
+          CATMAID.DOM.createSelectSetting(
+              "Display node radii",
+              {'Do not display': 'none',
+               'Active node': 'active-node',
+               'Active skeleton': 'active-skeleton',
+               'All nodes': 'all'},
+              "Show radii around these nodes. Note that showing radii for " +
+              "many nodes will slow down the tracing overlay.",
               function() {
                 SkeletonAnnotations.TracingOverlay.Settings
                     .set(
-                      'display_active_node_radius',
-                      this.checked,
+                      'display_node_radii',
+                      this.value,
                       SETTINGS_SCOPE)
                     .then(function () {
                       project.getStackViewers().every(function(sv) {
                         var overlay = SkeletonAnnotations.getTracingOverlay(sv.getId());
                         if (overlay) {
-                          overlay.updateActiveNodeRadiusVisibility();
+                          overlay.updateNodeRadiiVisibility();
                         }
                       });
                     });
-              }),
+              },
+              SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE].display_node_radii),
           SkeletonAnnotations.TracingOverlay.Settings,
-          'display_active_node_radius',
+          'display_node_radii',
           SETTINGS_SCOPE));
 
 

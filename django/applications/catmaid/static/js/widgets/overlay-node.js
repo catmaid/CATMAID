@@ -23,6 +23,8 @@
     return [nx, ny];
   };
 
+  var RADII_VISIBILITY = ['none', 'active-node', 'active-skeleton', 'all'];
+
   /**
    * Construct new SkeletonElement instances with this factory.
    */
@@ -112,8 +114,8 @@
       });
     };
 
-    this.setActiveNodeRadiusVisibility = function (visibility) {
-      SkeletonElements.prototype.Node.prototype.radiusVisibility = visibility;
+    this.setNodeRadiiVisibility = function (visibility) {
+      SkeletonElements.prototype.Node.prototype.radiiVisibility = RADII_VISIBILITY.indexOf(visibility);
     };
 
     /** Invoked at the start of the continuation that updates all nodes. */
@@ -274,7 +276,7 @@
       this.baseScale = 1.0;
       this.stackScaling = 1.0;
       this.resolutionScale = 1.0;
-      this.radiusVisibility = false;
+      this.radiiVisibility = RADII_VISIBILITY.indexOf('none');
       // Store current section distance to next and previous sections. These can
       // be changed to correct for broken nodes.
       this.dToSecBefore = -1;
@@ -311,10 +313,23 @@
       };
 
       this.createRadiusGraphics = function () {
-        if (this.radiusVisibility &&
-            SkeletonAnnotations.getActiveNodeId() === this.id &&
+        var shouldDrawRadius = false;
+        if (this.radiiVisibility &&
             this.shouldDisplay() &&
             this.radius > 0) {
+          if (this.radiiVisibility === 1) {
+            // Active node
+            shouldDrawRadius = SkeletonAnnotations.getActiveNodeId() === this.id;
+          } else if (this.radiiVisibility === 2) {
+            // Active skeleton
+            shouldDrawRadius = SkeletonAnnotations.getActiveSkeletonId() === this.skeleton_id;
+          } else {
+            // All
+            shouldDrawRadius = true;
+          }
+        }
+
+        if (shouldDrawRadius) {
           if (!this.radiusGraphics) {
             this.radiusGraphics = new PIXI.Graphics();
             this.overlayGlobals.skeletonElements.containers.lines.addChild(this.radiusGraphics);
@@ -323,7 +338,8 @@
           this.radiusGraphics.clear();
           this.radiusGraphics.lineStyle(this.EDGE_WIDTH, 0xFFFFFF, 1.0);
           this.radiusGraphics.drawCircle(0, 0, this.radius / this.resolutionScale);
-          this.radiusGraphics.tint = this.color();
+          this.radiusGraphics.tint = this.c.tint;
+          this.radiusGraphics.visible = this.c.visible;
           this.radiusGraphics.x = this.x;
           this.radiusGraphics.y = this.y;
         } else if (this.radiusGraphics) {
@@ -352,7 +368,11 @@
 
       this.updateVisibility = function () {
         if (this.c) {
-          this.c.visible = this.isVisible();
+          var visible = this.isVisible();
+          this.c.visible = visible;
+          if (this.radiusGraphics) {
+            this.radiusGraphics.visible = visible;
+          }
         }
         if (this.line) {
           this.line.visible = this.parent &&
@@ -783,9 +803,11 @@
         if (this.c) {
           if (!this.shouldDisplay()) {
             this.c.visible = false;
+            if (this.radiusGraphics) {
+              this.radiusGraphics.visible = false;
+            }
           }
         }
-        this.createRadiusGraphics();
         if (this.line) {
           this.line.visible = false;
         }

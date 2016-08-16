@@ -676,7 +676,7 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
       this,
       pixiLayer.batchContainer,
       this._skeletonDisplaySource.skeletonModels);
-  this.graphics.setActiveNodeRadiusVisibility(SkeletonAnnotations.TracingOverlay.Settings.session.display_active_node_radius);
+  this.graphics.setNodeRadiiVisibility(SkeletonAnnotations.TracingOverlay.Settings.session.display_node_radii);
 
   // Listen to change and delete events of skeletons
   CATMAID.Skeletons.on(CATMAID.Skeletons.EVENT_SKELETON_CHANGED,
@@ -719,8 +719,9 @@ SkeletonAnnotations.TracingOverlay.Settings = new CATMAID.Settings(
       {
         version: 1,
         entries: {
-          display_active_node_radius: {
-            default: true
+          display_node_radii: {
+            // Enum of 'none', 'active-node', 'active-skeleton', 'all'
+            default: 'active-node'
           },
           screen_scaling: {
             default: true
@@ -1191,8 +1192,8 @@ SkeletonAnnotations.TracingOverlay.prototype.updateVisibilityForAllNodes = funct
 /**
  * Set whether the radius of the active node is visible.
  */
-SkeletonAnnotations.TracingOverlay.prototype.updateActiveNodeRadiusVisibility = function () {
-  this.graphics.setActiveNodeRadiusVisibility(SkeletonAnnotations.TracingOverlay.Settings.session.display_active_node_radius);
+SkeletonAnnotations.TracingOverlay.prototype.updateNodeRadiiVisibility = function () {
+  this.graphics.setNodeRadiiVisibility(SkeletonAnnotations.TracingOverlay.Settings.session.display_node_radii);
   this.recolorAllNodes(); // Necessary to trigger update of radius graphics.
 };
 
@@ -2189,8 +2190,7 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
   // Draw node edges and circles, including the ones for virtual nodes.
   for (var i in this.nodes) {
     if (this.nodes.hasOwnProperty(i)) {
-      this.nodes[i].drawEdges();
-      this.nodes[i].createCircle();
+      this.nodes[i].createGraphics();
     }
   }
 

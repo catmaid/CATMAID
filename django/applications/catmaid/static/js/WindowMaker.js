@@ -3543,7 +3543,7 @@ var WindowMaker = new function()
         windows.set(name, new Map([[handles.window, handles.widget]]));
       }
     } else {
-      alert("No known window with name " + name);
+      CATMAID.error("No known window with name " + name);
     }
   };
 
@@ -3560,7 +3560,7 @@ var WindowMaker = new function()
 
       return handles;
     } else {
-      alert("No known window with name " + name);
+      CATMAID.error("No known window with name " + name);
     }
   };
 

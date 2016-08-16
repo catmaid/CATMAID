@@ -22,6 +22,7 @@
       this.firstName = firstName;
       this.lastName = lastName;
       this.color = color;
+      this.isAanonymous = (login === 'AnonymousUser');
 
       // Cache the instance for later lookups.
       User.prototype.users[userID] = this;

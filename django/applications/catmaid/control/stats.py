@@ -238,7 +238,8 @@ def stats_user_history(request, project_id=None):
     if start_date:
         start_date = dateparser.parse(start_date)
     else:
-        start_date = timezone.now(time_zone) - timedelta(10)
+        with timezone.override(time_zone):
+            start_date = timezone.now() - timedelta(10)
     start_date = datetime(start_date.year, start_date.month, start_date.day,
                         tzinfo=time_zone)
 
@@ -247,7 +248,8 @@ def stats_user_history(request, project_id=None):
     if end_date:
         end_date = dateparser.parse(end_date)
     else:
-        end_date = timezone.now(time_zone)
+        with timezone.override(time_zone):
+            end_date = timezone.now()
 
     # The API is inclusive and should return stats for the end date as
     # well. The actual query is easier with an exclusive end and therefore

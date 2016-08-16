@@ -11,6 +11,12 @@
   these users from the CATMAID color scheme. This is useful if many users have
   similar colors in their user profiles.
 
+Statistics widget:
+
+- If a user has the can_administer permission for a project, the Statistics
+  widget now displays an extra button to open the new User Analytics widget. It
+  displays the same information as the admin view with the same name.
+
 
 ### Bug fixes
 

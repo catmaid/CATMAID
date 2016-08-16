@@ -507,7 +507,7 @@
   };
 
   ProjectStatistics.prototype.getWidgetConfiguration = function() {
-    return {
+    var config = {
       contentID: "project_stats_widget",
       createContent: function(container) {
         container.innerHTML =
@@ -567,6 +567,29 @@
         this.refresh_project_statistics();
       }
     };
+
+    // If this user has has can_administer permissions in this project,
+    // buttons to access additional tools are addeed.
+    if (CATMAID.hasPermission(project.id, 'can_administer')) {
+      config['controlsID'] = 'project_stats_controls';
+      config['createControls'] = function(controls) {
+        var userAnalytics = document.createElement('input');
+        userAnalytics.setAttribute("type", "button");
+        userAnalytics.setAttribute("value", "User Analytics");
+        userAnalytics.onclick = openUserAnalytics;
+        controls.appendChild(userAnalytics);
+      };
+    }
+
+    return config;
+  };
+
+  var openUserAnalytics = function() {
+    WindowMaker.show('user-analytics');
+  };
+
+  var openUserProficiency = function() {
+    WindowMaker.show('user-analytics');
   };
 
   // Export statistics widget

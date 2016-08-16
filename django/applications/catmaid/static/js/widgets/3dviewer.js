@@ -5036,16 +5036,17 @@
     });
 
     var users = CATMAID.User.all();
-    var userIDs = Object.keys(this.space.userColormap);
-    userIDs.forEach(function (userID) {
-      if (userID !== "-1") {
-        var user = users[userID];
-        var rowElement = $('<tr/>');
-        rowElement.append( $('<td/>').text( user.login ) );
-        rowElement.append( $('<td/>').text( user.fullName ) );
-        rowElement.append( $('<div/>').css('width', '100px').css('height', '20px').css('background-color', '#' + this.space.userColormap[userID].getHexString()) );
-        $('#usercolormap-table > tbody:last').append( rowElement );
-      }
+    users = Object.keys(this.space.userColormap)
+        .map(function (userID) { return users[userID]; })
+        .filter(function (user) { return !!user && user.id !== "-1"; })
+        .sort(CATMAID.User.displayNameCompare);
+    users.forEach(function (user) {
+      var userID = user.id;
+      var rowElement = $('<tr/>');
+      rowElement.append( $('<td/>').text( user.login ) );
+      rowElement.append( $('<td/>').text( user.fullName ) );
+      rowElement.append( $('<div/>').css('width', '100px').css('height', '20px').css('background-color', '#' + this.space.userColormap[userID].getHexString()) );
+      $('#usercolormap-table > tbody:last').append( rowElement );
     }, this);
   };
 

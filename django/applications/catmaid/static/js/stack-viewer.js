@@ -106,9 +106,9 @@
     this.overview = new CATMAID.Overview( this );
     this._view.appendChild( this.overview.getView() );
 
-    this.tilelayercontrol = new CATMAID.TileLayerControl( this );
-    $(this.tilelayercontrol.getView()).hide();
-    this._view.appendChild( this.tilelayercontrol.getView() );
+    this.layercontrol = new CATMAID.LayerControl( this );
+    $(this.layercontrol.getView()).hide();
+    this._view.appendChild( this.layercontrol.getView() );
 
     // Ask for confirmation before closing the stack via the close button
     $(this._stackWindow.getFrame()).find('.stackClose').get(0).onmousedown = function (e) {
@@ -132,7 +132,7 @@
         event.cancelBubble = true;
       if ( e && e.stopPropagation )
         e.stopPropagation();
-      var state = $(this).siblings('.TileLayerControl').toggle().is(':visible');
+      var state = $(this).siblings('.LayerControl').toggle().is(':visible');
       $(this).attr('class', state ? 'stackControlToggle' : 'stackControlToggle_hidden');
     };
     this._view.appendChild( controlToggle );
@@ -611,7 +611,7 @@
       this._layers.get(key).unregister();
     this._layers.set(key, layer);
     if (this._layerOrder.indexOf(key) === -1) this._layerOrder.push(key);
-    this.tilelayercontrol.refresh();
+    this.layercontrol.refresh();
   };
 
   /**
@@ -644,7 +644,7 @@
         }
       }
 
-      this.tilelayercontrol.refresh();
+      this.layercontrol.refresh();
       return layer;
     }
     else
@@ -693,7 +693,7 @@
       layerA.notifyReorder(layerB);
 
     this._layerOrder.splice(newIndex, 0, this._layerOrder.splice(currIndex, 1)[0]);
-    this.tilelayercontrol.refresh();
+    this.layercontrol.refresh();
   };
 
   /**

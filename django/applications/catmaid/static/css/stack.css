@@ -120,7 +120,7 @@ div.smallMapView_hidden div.smallMapRect div {
   opacity: .25;
 }
 
-div.TileLayerControl {
+div.LayerControl {
   border: solid 1px #00F;
   margin: 0;
   padding: 8px;
@@ -138,18 +138,18 @@ div.TileLayerControl {
   opacity: 0.8;
 }
 
-div.TileLayerControl .setting {
+div.LayerControl .setting {
   float: none;
 }
 
-div.TileLayerControl ol {
+div.LayerControl ol {
   list-style-type: none;
   margin: 0;
   padding: 1em 0;
   clear: both;
 }
 
-div.TileLayerControl .layerControl {
+div.LayerControl .layerControl {
   margin: 0 4px 6px 4px;
   padding: 0.4em;
   counter-increment: order-counter;
@@ -171,11 +171,11 @@ li.layerControl:before {
   float: left;
 }
 
-div.TileLayerControl h4 {
+div.LayerControl h4 {
   margin: 0.5em 0;
 }
 
-div.TileLayerControl .layerClose {
+div.LayerControl .layerClose {
   float: right;
   margin: 0.3em;
   cursor: pointer;
@@ -186,7 +186,7 @@ div.TileLayerControl .layerClose {
   margin: 0.5em 0;
 }
 
-div.TileLayerControl .hSliderView {
+div.LayerControl .hSliderView {
   float: none;
   display: inline-block;
   vertical-align: middle;
@@ -198,7 +198,7 @@ li.layerControl ol {
   list-style-type: decimal;
 }
 
-div.TileLayerControl li.highlight {
+div.LayerControl li.highlight {
   min-height: 1em;
   border: solid 1px #00F;
 }

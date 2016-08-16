@@ -1160,7 +1160,7 @@ var project;
         project.addStackViewer( stackViewer );
 
         // refresh the overview handler to also register the mouse events on the buttons
-        stackViewer.tilelayercontrol.refresh();
+        stackViewer.layercontrol.refresh();
       } else {
         stackViewer.addStackLayer(stack, tilelayer);
       }

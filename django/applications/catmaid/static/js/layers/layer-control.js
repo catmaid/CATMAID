@@ -8,23 +8,23 @@
   /**
    * The tilelayer control element on the top-left of the stackViewer window
    */
-  var TileLayerControl = function ( stackViewer )
+  var LayerControl = function ( stackViewer )
   {
     this.stackViewer = stackViewer;
     this.view = document.createElement( "div" );
-    this.view.className = "TileLayerControl";
-    this.view.id = "TileLayerControl" + stackViewer.id;
+    this.view.className = "LayerControl";
+    this.view.id = "LayerControl" + stackViewer.id;
     this.view.style.zIndex = 8;
 
     stackViewer.getView().appendChild( this.view );
   };
 
-  TileLayerControl.prototype = {};
+  LayerControl.prototype = {};
 
   /**
    * get the view object
    */
-  TileLayerControl.prototype.getView = function()
+  LayerControl.prototype.getView = function()
   {
     return this.view;
   };
@@ -32,7 +32,7 @@
   /**
    * removes existing layer controls and re-creates them.
    */
-  TileLayerControl.prototype.refresh = function()
+  LayerControl.prototype.refresh = function()
   {
     // Get current set of layers
     var stackViewer = this.stackViewer;
@@ -308,6 +308,6 @@
     });
   };
 
-  CATMAID.TileLayerControl = TileLayerControl;
+  CATMAID.LayerControl = LayerControl;
 
 })(CATMAID);

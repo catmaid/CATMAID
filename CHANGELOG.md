@@ -3,6 +3,13 @@
 
 ### Features and enhancements
 
+3D viewer:
+
+- When coloring by creator the user colormap dialog only shows users who have
+  created at least one node loaded in the view. Additionally, a new coloring
+  mode, "By Creator (relevant users)", will generate a new set of colors for
+  these users from the CATMAID color scheme. This is useful if many users have
+  similar colors in their user profiles.
 
 
 ### Bug fixes

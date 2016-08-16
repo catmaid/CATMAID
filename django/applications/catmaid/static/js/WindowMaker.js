@@ -1278,7 +1278,8 @@ var WindowMaker = new function()
     var colorMenu = document.createElement('select');
     colorMenu.setAttribute('id', 'webglapp_color_menu' + WA.widgetID);
     [['none', 'Source'],
-     ['creator', 'By Creator'],
+     ['creator', 'By Creator (all users)'],
+     ['creator-relevant', 'By Creator (relevant users)'],
      ['all-reviewed', 'All Reviewed'],
      ['whitelist-reviewed', 'Team Reviewed'],
      ['own-reviewed', 'Own Reviewed'],
@@ -1307,7 +1308,7 @@ var WindowMaker = new function()
           [colorMenu],
           [document.createTextNode(' Synapse color:')],
           [synColors],
-          ['User colormap', WA.toggle_usercolormap_dialog.bind(WA)],
+          ['User colormap', WA.toggleUserColormapDialog.bind(WA)],
         ]);
 
     var adjustFn = function(param_name) {

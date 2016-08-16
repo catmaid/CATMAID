@@ -842,6 +842,7 @@
     }
 
     this.options.color_method = colorMenu.value;
+    this.space.userColormap = {};
     this.updateSkeletonColors();
   };
 
@@ -1677,6 +1678,8 @@
         stack.resolution.y, stack.resolution.z);
     // Make the scaling factor look a bit prettier by rounding to two decimals
     options.skeleton_node_scaling = Number(options.skeleton_node_scaling.toFixed(2));
+
+    this.userColormap = {};
 
     // WebGL space
     this.scene = new THREE.Scene();
@@ -4196,8 +4199,24 @@
       var axonColor = new THREE.Color().setRGB(0, 1, 0),
           dendriteColor = new THREE.Color().setRGB(0, 0, 1),
           notComputable = new THREE.Color().setRGB(0.4, 0.4, 0.4);
-      if ('creator' === options.color_method) {
-        pickColor = function(vertex) { return CATMAID.User(vertex.user_id).color; };
+      if (options.color_method.startsWith('creator')) {
+        var userColor;
+        if ('creator' === options.color_method) {
+          userColor = function (userID) { return CATMAID.User(userID).color; };
+        } else if ('creator-relevant' === options.color_method) {
+          var userColorGen = {};
+          CATMAID.asColorizer(userColorGen);
+          userColor = userColorGen.pickColor.bind(userColorGen);
+        }
+
+        pickColor = (function (vertex) {
+          var userID = vertex.user_id;
+          if (!this.space.userColormap.hasOwnProperty(userID)) {
+            this.space.userColormap[userID] = userColor(userID);
+          }
+
+          return this.space.userColormap[userID];
+        }).bind(this);
       } else if ('all-reviewed' === options.color_method) {
         pickColor = this.reviews ?
           (function(vertex) {
@@ -4976,7 +4995,7 @@
    * Toggles the display of a JQuery UI dialog that shows which user has which
    * color assigned.
    */
-  WebGLApplication.prototype.toggle_usercolormap_dialog = function() {
+  WebGLApplication.prototype.toggleUserColormapDialog = function() {
     // In case a color dialog exists already, close it and return.
     if ($('#user-colormap-dialog').length > 0) {
         $('#user-colormap-dialog').remove();
@@ -5017,16 +5036,17 @@
     });
 
     var users = CATMAID.User.all();
-    for (var userID in users) {
-      if (users.hasOwnProperty(userID) && userID !== "-1") {
+    var userIDs = Object.keys(this.space.userColormap);
+    userIDs.forEach(function (userID) {
+      if (userID !== "-1") {
         var user = users[userID];
         var rowElement = $('<tr/>');
         rowElement.append( $('<td/>').text( user.login ) );
         rowElement.append( $('<td/>').text( user.fullName ) );
-        rowElement.append( $('<div/>').css('width', '100px').css('height', '20px').css('background-color', '#' + user.color.getHexString()) );
+        rowElement.append( $('<div/>').css('width', '100px').css('height', '20px').css('background-color', '#' + this.space.userColormap[userID].getHexString()) );
         $('#usercolormap-table > tbody:last').append( rowElement );
       }
-    }
+    }, this);
   };
 
   WebGLApplication.prototype.toggleInvertShading = function() {

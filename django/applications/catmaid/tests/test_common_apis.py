@@ -510,7 +510,6 @@ class PermissionTests(TestCase):
             '/%(pid)s/stacks' % url_params,
             '/%(pid)s/search' % url_params,
             '/%(pid)s/tracing/setup/test' % url_params,
-            '/%(pid)s/stats' % url_params,
             '/%(pid)s/stats/nodecount' % url_params,
             '/%(pid)s/stats/user-history' % url_params,
         ]

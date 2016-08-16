@@ -4204,9 +4204,12 @@
         if ('creator' === options.color_method) {
           userColor = function (userID) { return CATMAID.User(userID).color; };
         } else if ('creator-relevant' === options.color_method) {
-          var userColorGen = {};
-          CATMAID.asColorizer(userColorGen);
-          userColor = userColorGen.pickColor.bind(userColorGen);
+          if (!this.space.userColormap.colorizer) {
+            this.space.userColormap.colorizer = {};
+            CATMAID.asColorizer(this.space.userColormap.colorizer);
+          }
+          var colorizer = this.space.userColormap.colorizer;
+          userColor = colorizer.pickColor.bind(colorizer);
         }
 
         pickColor = (function (vertex) {

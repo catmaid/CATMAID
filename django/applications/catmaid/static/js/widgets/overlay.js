@@ -2018,7 +2018,7 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodeCoordinatesInDB = functio
     }
 
     update.virtual.forEach(function (node) {
-      promise.then(this.promiseNode.bind(this, node));
+      promise = promise.then(this.promiseNode.bind(this, node));
     }, this);
 
     return promise;

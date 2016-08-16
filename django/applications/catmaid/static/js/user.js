@@ -48,6 +48,26 @@
   };
 
   /**
+   * Return a list of all user IDs, sorted by the given field. If non is given,
+   * the full name is used.
+   */
+  User.sortedIds = function(field) {
+    field = field || 'fullName';
+    var users = User.prototype.users;
+    var userIds = Object.keys(users);
+    userIds.sort(function(id1, id2) {
+      var value1 = users[id1][field];
+      var value2 = users[id2][field];
+      if (undefined === value1 || undefined === value2) {
+        throw new CATMAID.ValueError('Could not read field ' + field +
+            ' of users ' + id1 + ' and ' + id2);
+      }
+      return CATMAID.tools.compareStrings(value1, value2);
+    });
+    return userIds;
+  };
+
+  /**
    * Returns a user object that matches the given ID or a dummy object if the ID
    * was not found.
    */

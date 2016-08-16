@@ -19,7 +19,9 @@ None.
 
 ### Removals
 
-None.
+- `GET /{project_id}/stats`
+  This endpoint returned an HTML document displayed by CATMAIDs statistics
+  widget.
 
 
 ## 2016.08.12

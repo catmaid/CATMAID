@@ -496,7 +496,7 @@
      * Recreates the summary table based on the selected time unit. It can be
      * one of "day", "week", "month" or "year".
      */
-    self.refresh_timeunit = function(unit) {
+    this.refresh_timeunit = function(unit) {
       timeUnit = unit;
       update_user_history(statisticsData, timeUnit);
     };
@@ -510,28 +510,61 @@
     return {
       contentID: "project_stats_widget",
       createContent: function(container) {
+        container.innerHTML =
+          '<div class="project-stats">' +
+          '<h3>Contribution Record</h3>' +
+          '<p>' +
+            '<div class="left">' +
+            'beween <input type="text" class="stats-history-setting"' +
+                'id="stats-history-start-date" />' +
+            'and <input type="text" class="stats-history-setting"' +
+                'id="stats-history-end-date" />' +
+            '<input type="button" class="stats-history-setting"' +
+                'id="stats-history-refresh" value="Refresh" />' +
+            '</div>' +
+            '<div class="right">' +
+              'Time unit' +
+              '<select id="stats-time-unit" class="stats-history-setting">' +
+                '<option value="day">Day</option>' +
+                '<option value="week">Week</option>' +
+                '<option value="month">Month</option>' +
+                '<option value="year">Year</option>' +
+              '</select>' +
+            '</div>' +
+          '</p>' +
+          '<div class="clear">' +
+            '<br />' +
+            'per cell values: new cable length (nm) / completed connector links / reviewed nodes' +
+            '<table cellpadding="0" cellspacing="0" border="1" class="project-stats"' +
+                'id="project_stats_history_table">' +
+            '</table>' +
+          '</div>' +
+          '<br clear="all" />' +
+          '<h3>Nodes created by user</h3>' +
+          '<div id="piechart_treenode_holder"></div>' +
+          '<br clear="all" />' +
+          '</div>';
+      },
+      init: function() {
         var self = this;
-        $(container).load(CATMAID.makeURL(project.id + '/stats'), null,
-            function() {
-              // Make the contribution record input fields date selectors
-              $("#stats-history-start-date")
-                .datepicker({ dateFormat: "yy-mm-dd", defaultDate: -10 })
-                .datepicker('setDate', "-10");
-              $("#stats-history-end-date")
-                .datepicker({ dateFormat: "yy-mm-dd", defaultDate: 0 })
-                .datepicker('setDate', "0");
-              // Attach handler to history refresh button
-              $("#stats-history-refresh").click(function() {
-                self.refresh_history();
-              });
-              // Attach handler to time unit selector
-              $("#stats-time-unit").change(function() {
-                self.refresh_timeunit(this.options[this.selectedIndex].value);
-              });
+        // Make the contribution record input fields date selectors
+        $("#stats-history-start-date")
+          .datepicker({ dateFormat: "yy-mm-dd", defaultDate: -10 })
+          .datepicker('setDate', "-10");
+        $("#stats-history-end-date")
+          .datepicker({ dateFormat: "yy-mm-dd", defaultDate: 0 })
+          .datepicker('setDate', "0");
+        // Attach handler to history refresh button
+        $("#stats-history-refresh").click(function() {
+          self.refresh_history();
+        });
+        // Attach handler to time unit selector
+        $("#stats-time-unit").change(function() {
+          self.refresh_timeunit(this.options[this.selectedIndex].value);
+        });
 
-              // Updae the actual statistics
-              self.refresh_project_statistics();
-            });
+        // Updae the actual statistics
+        this.refresh_project_statistics();
       }
     };
   };

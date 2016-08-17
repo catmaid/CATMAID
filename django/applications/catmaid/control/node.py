@@ -37,13 +37,7 @@ def node_list_tuples(request, project_id=None, provider=None):
     '''
     project_id = int(project_id) # sanitize
     params = {}
-    # z: the section index in calibrated units.
-    # width: the width of the field of view in calibrated units.
-    # height: the height of the field of view in calibrated units.
-    # zres: the resolution in the Z axis, used to determine the thickness of a section.
-    # as: the ID of the active skeleton
-    # top: the Y coordinate of the bounding box (field of view) in calibrated units
-    # left: the X coordinate of the bounding box (field of view) in calibrated units
+
     atnid = int(request.POST.get('atnid', -1))
     atntype = request.POST.get('atntype','treenode')
     for p in ('top', 'left', 'bottom', 'right', 'z1', 'z2'):

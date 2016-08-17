@@ -2660,7 +2660,7 @@ SkeletonAnnotations.TracingOverlay.prototype.simpleUpdateNodes = function () {
  * database.
  */
 SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
-    future_active_node_id, errCallback) {
+    futureActiveNodeID, errCallback) {
   var self = this;
 
   if (this.suspended) {
@@ -2673,44 +2673,44 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
       return;
     }
 
-    var atnid = null;
-    var atntype = null;
+    var treenodeIDs = [];
+    var connectorIDs = [];
+    var extraNodes;
     var activeNodeId = SkeletonAnnotations.getActiveNodeId();
     if (activeNodeId) {
       var activeNodeType = SkeletonAnnotations.getActiveNodeType();
       if (activeNodeType === SkeletonAnnotations.TYPE_NODE) {
-        atntype = 'treenode';
-        if (future_active_node_id) {
-          atnid = future_active_node_id;
+        if (futureActiveNodeID) {
+          treenodeIDs = futureActiveNodeID;
         } else {
-          atnid = activeNodeId;
+          treenodeIDs = activeNodeId;
+        }
+
+        // If the active node is virtual, explicitly request both the child
+        // and parent from the backend and inject the virtual node into the
+        // result.
+        if (!SkeletonAnnotations.isRealNode(treenodeIDs)) {
+          var n = self.nodes[treenodeIDs];
+          if (n) {
+            treenodeIDs = [
+              SkeletonAnnotations.getChildOfVirtualNode(n.id),
+              n.parent_id];
+            extraNodes = [{
+              id: n.id,
+              parent_id: n.parent_id,
+              radius: n.radius,
+              x: n.x,
+              y: n.y,
+              z: n.z,
+              confidence: n.confidence,
+              skeleton_id: n.skeleton_id,
+              user_id: n.user_id
+            }];
+          }
         }
       } else if (activeNodeType === SkeletonAnnotations.TYPE_CONNECTORNODE) {
-        atnid = activeNodeId;
-        atntype = 'connector';
+        connectorIDs.push(activeNodeId);
       }
-    }
-    // Include ID only in request, if it is real. Otherwise, keep the active
-    // virtual node in the client and inject it into the result.
-    var extraNodes;
-    if (atnid && !SkeletonAnnotations.isRealNode(atnid)) {
-      var n = self.nodes[atnid];
-      if (n) {
-        extraNodes = [{
-          id: n.id,
-          parent_id: n.parent_id,
-          radius: n.radius,
-          x: n.x,
-          y: n.y,
-          z: n.z,
-          confidence: n.confidence,
-          skeleton_id: n.skeleton_id,
-          user_id: n.user_id
-        }];
-      } else {
-        console.log('Could not pin virtual node before update: ' + atnid);
-      }
-      atnid = -1;
     }
 
     // stackViewer.viewWidth and .viewHeight are in screen pixels, so they must
@@ -2765,8 +2765,8 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
       right: wx1,
       bottom: wy1,
       z2: wz1,
-      atnid: atnid,
-      atntype: atntype,
+      treenode_ids: treenodeIDs,
+      connector_ids: connectorIDs,
       labels: self.getLabelStatus()
     };
 

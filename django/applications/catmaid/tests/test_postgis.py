@@ -37,7 +37,6 @@ class PostGISTests(TestCase):
         Make sure nodes returned by a PostGIS based query are the same as the
         regular ones.
         """
-        atnid = -1
         params = {
             'sid': 3,
             'limit': 5000,
@@ -52,11 +51,11 @@ class PostGISTests(TestCase):
         }
 
         non_postgis_nodes_r = node.node_list_tuples_query(params,
-                self.test_project_id, atnid, None, include_labels=False,
+                self.test_project_id, None, None, include_labels=False,
                 tn_provider=node.get_treenodes_classic)
 
         postgis_nodes_r = node.node_list_tuples_query(params,
-                self.test_project_id, atnid, None, include_labels=False,
+                self.test_project_id, None, None, include_labels=False,
                 tn_provider=node.get_treenodes_postgis)
 
         self.assertEqual(non_postgis_nodes_r.status_code, 200)

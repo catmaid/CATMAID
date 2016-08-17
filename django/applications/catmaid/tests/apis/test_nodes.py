@@ -355,7 +355,6 @@ class NodesApiTests(CatmaidApiTestCase):
             'right': 12625,
             'bottom': 8075,
             'z2': 9,
-            'atnid': -1,
             'labels': 'true',
         })
         self.assertEqual(response.status_code, 200)
@@ -435,7 +434,7 @@ class NodesApiTests(CatmaidApiTestCase):
                 'right': 12430,
                 'bottom': 5730,
                 'z2': 9,
-                'atnid': 2423,
+                'treenode_ids': 2423,
                 'labels': False,})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)

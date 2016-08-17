@@ -38,8 +38,8 @@ def node_list_tuples(request, project_id=None, provider=None):
     project_id = int(project_id) # sanitize
     params = {}
 
-    atnid = int(request.POST.get('atnid', -1))
-    atntype = request.POST.get('atntype','treenode')
+    treenode_ids = get_request_list(request.POST, 'treenode_ids', map_fn=int)
+    connector_ids = get_request_list(request.POST, 'connector_ids', map_fn=int)
     for p in ('top', 'left', 'bottom', 'right', 'z1', 'z2'):
         params[p] = float(request.POST.get(p, 0))
     # Limit the number of retrieved treenodes within the section
@@ -49,7 +49,7 @@ def node_list_tuples(request, project_id=None, provider=None):
 
     provider = get_treenodes_postgis
 
-    return node_list_tuples_query(params, project_id, atnid, atntype,
+    return node_list_tuples_query(params, project_id, treenode_ids, connector_ids,
                                   include_labels, provider)
 
 
@@ -317,7 +317,7 @@ def get_connector_nodes_postgis(cursor, params, treenode_ids, missing_connector_
     return list(cursor.fetchall())
 
 
-def node_list_tuples_query(params, project_id, atnid, atntype, include_labels, tn_provider):
+def node_list_tuples_query(params, project_id, explicit_treenode_ids, explicit_connector_ids, include_labels, tn_provider):
     try:
         cursor = connection.cursor()
 
@@ -351,12 +351,16 @@ def node_list_tuples_query(params, project_id, atnid, atntype, include_labels, t
         missing_treenode_ids = set()
         missing_connector_ids = set()
 
-        # Check if the active treenode or connector is present; if not, load it
-        if atnid and -1 != atnid:
-            if atntype == 'treenode' and atnid not in treenode_ids:
-                missing_treenode_ids.add(atnid)
-            elif atntype == 'connector':
-                missing_connector_ids.add(atnid)
+        # Add explicitly requested treenodes and connectors, if necessary.
+        if explicit_treenode_ids:
+            for treenode_id in explicit_treenode_ids:
+                if -1 != treenode_id and treenode_id not in treenode_ids:
+                    missing_treenode_ids.add(treenode_id)
+
+        if explicit_connector_ids:
+            for connector_id in explicit_connector_ids:
+                if -1 != connector_id:
+                    missing_connector_ids.add(connector_id)
 
         # Find connectors related to treenodes in the field of view
         # Connectors found attached to treenodes

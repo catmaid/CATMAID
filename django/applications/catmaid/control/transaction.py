@@ -235,15 +235,11 @@ location_queries.update({
             ON (cici_s.class_instance_b = cici_e.class_instance_a
             AND cici_e.{txid} = %s)
     """),
-    'connectors.create': LocationQuery("""
-        SELECT c.location_x, c.location_y, c.location_z
-        FROM connector{history} c
-        WHERE c.{txid} = %s
-    """),
+    'connectors.create': LocationRef(location_queries, "nodes.update_location"),
     'connectors.remove': LocationQuery("""
         SELECT c.location_x, c.location_y, c.location_z
-        FROM connector__history c
-        WHERE c.{txid} = %s
+        FROM location__history c
+        WHERE c.exec_transaction_id = %s
     """),
     'labels.remove': LocationQuery("""
         SELECT t.location_x, t.location_y, t.location_z
@@ -324,7 +320,7 @@ location_queries.update({
     # location.
     'treenodes.create': LocationRef(location_queries, "nodes.update_location"),
     'treenodes.insert': LocationRef(location_queries, "nodes.update_location"),
-    'treenodes.remove': LocationRef(location_queries, "nodes.update_location"),
+    'treenodes.remove': LocationRef(location_queries, "connectors.remove"),
     'treenodes.update_confidence': LocationRef(location_queries, "nodes.update_location"),
     'treenodes.update_parent': LocationRef(location_queries, "nodes.update_location"),
     'treenodes.update_radius': LocationRef(location_queries, "nodes.update_location"),

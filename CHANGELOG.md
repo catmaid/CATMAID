@@ -25,11 +25,20 @@ Tracing overlay:
   in the active skeleton, or all nodes through the Settings Widget.
 
 
+Miscellaneous:
+
+- The log now displays times in the local timezone.
+
+
 ### Bug fixes
 
 - Remove major cause of CATMAID freezing after the display of an error message.
 
 - Annotation search lists all results again, not only first page.
+
+- Fixed an error preventing branching from virtual nodes in some cases.
+
+- The history widget correctly displays the action time, not the current time.
 
 
 ## 2016.08.12

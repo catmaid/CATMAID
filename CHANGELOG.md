@@ -29,6 +29,8 @@ Tracing overlay:
 
 - Remove major cause of CATMAID freezing after the display of an error message.
 
+- Annotation search lists all results again, not only first page.
+
 
 ## 2016.08.12
 

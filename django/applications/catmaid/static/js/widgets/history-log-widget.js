@@ -137,7 +137,7 @@
             '<tr>' +
                 '<th>user</th>' +
                 '<th>operation</th>' +
-                '<th>timestamp</th>' +
+                '<th>time (local)</th>' +
                 '<th>x</th>' +
                 '<th>y</th>' +
                 '<th>z</th>' +
@@ -148,7 +148,7 @@
             '<tr>' +
                 '<th>user</th>' +
                 '<th>operation</th>' +
-                '<th>timestamp</th>' +
+                '<th>time (local)</th>' +
                 '<th>x</th>' +
                 '<th>y</th>' +
                 '<th>z</th>' +
@@ -222,7 +222,12 @@
               { // timestamp
                   "sClass": "center",
                   "bSearchable": false,
-                  "bSortable": true
+                  "bSortable": true,
+                  render: function(data, type, row, meta) {
+                    var d = new Date(data);
+                    return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate()
+                        + ' ' + d.toLocaleTimeString();
+                  }
               },
               { // x
                   "sClass": "center",

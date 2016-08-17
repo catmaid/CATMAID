@@ -57,7 +57,7 @@ def list_logs(request, project_id=None):
     whitelist = bool(json.loads(request.POST.get('whitelist', 'false')))
     operation_type = request.POST.get('operation_type', "-1")
     search_freetext = request.POST.get('search_freetext', "")
-    
+
     display_start = int(request.POST.get('iDisplayStart', 0))
     display_length = int(request.POST.get('iDisplayLength', -1))
     if display_length < 0:
@@ -88,8 +88,7 @@ def list_logs(request, project_id=None):
         'x': '("log"."location")."x"',
         'y': '("log"."location")."y"',
         'z': '("log"."location")."z"',
-        'username': '"auth_user"."username"',
-        'timestamp': '''to_char("log"."creation_time", 'DD-MM-YYYY HH24:MI')'''
+        'username': '"auth_user"."username"'
     })
     if should_sort:
         log_query = log_query.extra(order_by=[di + col for (di, col) in zip(sorting_directions, sorting_cols)])
@@ -101,7 +100,7 @@ def list_logs(request, project_id=None):
         response['aaData'] += [[
             log.username,
             log.operation_type,
-            log.timestamp,
+            str(log.creation_time.isoformat()),
             log.x,
             log.y,
             log.z,

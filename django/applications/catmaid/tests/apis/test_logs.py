@@ -8,7 +8,7 @@ class LogsApiTests(CatmaidApiTestCase):
                     [
                         'test2',
                         'create_neuron',
-                        '22-07-2012 16:50',
+                        '2012-07-22T16:50:57.758000+00:00',
                         5290.0,
                         3930.0,
                         279.0,
@@ -16,7 +16,7 @@ class LogsApiTests(CatmaidApiTestCase):
                     [
                         'test2',
                         'create_neuron',
-                        '22-07-2012 19:12',
+                        '2012-07-22T19:12:54.541000+00:00',
                         4470.0,
                         2110.0,
                         180.0,
@@ -24,7 +24,7 @@ class LogsApiTests(CatmaidApiTestCase):
                     [
                         'test2',
                         'create_neuron',
-                        '22-07-2012 19:15',
+                        '2012-07-22T19:15:24.010000+00:00',
                         3680.0,
                         2530.0,
                         180.0,

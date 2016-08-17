@@ -135,6 +135,7 @@ JAVASCRIPT['catmaid'] = {
         'js/layers/tile-layer.js',
         'js/layers/pixi-layer.js',
         'js/layers/*.js',
+        'js/widgets/detail-dialog.js',
         'js/widgets/options-dialog.js',
         'js/widgets/*.js',
     ),

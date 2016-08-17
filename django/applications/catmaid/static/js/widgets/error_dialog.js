@@ -3,68 +3,50 @@
 
 (function(CATMAID) {
 
+  "use strict";
+
     /**
      * Creates a jQuery UI based error dialog. If detail is passed, it is hidden by
      * default. The dialog allows to expand it, however.
      */
     var ErrorDialog = function(text, detail) {
-      this.dialog = document.getElementById("error-dialog-confirm");
-      if (null === this.dialog) {
-        this.dialog = document.createElement('div');
-        this.dialog.setAttribute("id", "error-dialog-confirm");
-        this.dialog.setAttribute("title", "An error occured");
-      } else {
-        var metaMsg = "Several errors have occured:";
-        if (this.dialog.firstChild.textContent !== metaMsg) {
-          this.dialog.insertAdjacentHTML("afterbegin", "<h3>" + metaMsg + "</h3>");
-        }
-      }
-      // Create error message tags
-      var msg = document.createElement('p');
-      msg.appendChild(document.createTextNode(text));
-      this.dialog.appendChild(msg);
-      // Create detail field, if detail available
-      if (detail) {
-        var detail_head = document.createElement('p');
-        var detail_head_em = document.createElement('em');
-        detail_head_em.appendChild(document.createTextNode('Show/hide detail'));
-        detail_head.appendChild(detail_head_em);
-        this.dialog.appendChild(detail_head);
-        var detail_text = document.createElement('p');
-        detail_text.appendChild(document.createTextNode(detail));
-        this.dialog.appendChild(detail_text);
-        // Hide detail by default and toggle display by click on header
-        $(detail_text).hide();
-        $(detail_head).click(function() {
-          $(detail_text).toggle();
-        });
-        $(detail_head_em).css('cursor', 'pointer');
-      }
+      var title = "An error occured";
+      var metaMsg = "Several errors have occured";
+      var id = "error-dialog-confirm";
+      CATMAID.DetailDialog.call(this, text, detail, title, metaMsg, id);
     };
 
-    ErrorDialog.prototype = {};
+    ErrorDialog.prototype = Object.create(CATMAID.DetailDialog.prototype);
+
 
     /**
-     * Displays the error dialog.
+     * A special form of the error dialog is the version mismatch dialog.
+     * Optionally, an alternative text can be provided.
      */
-    ErrorDialog.prototype.show = function() {
-      $(this.dialog).dialog({
-        width: '400px',
-        height: 'auto',
-        maxHeight: 600,
-        modal: true,
-        buttons: {
-          "OK": function() {
-            $(this).dialog("destroy");
-          }
-        },
-        close: function() {
-          $( this ).dialog( "destroy" );
-        }
-      });
+    var VersionMismatchDialog = function(clientVersion, serverVersion, text, detail) {
+      this.clientVersion = clientVersion;
+      this.serverVersion = serverVersion;
+
+      text = text || "Your version of CATMAID is different " +
+          "from the server's version. Please refresh your browser " +
+          "immediately to update to the server's version. Continuing to " +
+          "use a different version than the server can cause " +
+          "unintended behavior and data loss.";
+      detail = 'Client version: ' + clientVersion + '; ' +
+          'Server version: ' + serverVersion;
+
+      var title = "New CATMAID version";
+
+      var metaMsg = "The version check was done multiple times";
+      var id = "version-dialog-confirm";
+      CATMAID.DetailDialog.call(this, text, detail, title, metaMsg, id);
     };
 
-    // Make ErrorDialog available in CATMAID namespace
+    VersionMismatchDialog.prototype = CATMAID.DetailDialog.prototype;
+
+
+    // Make in CATMAID namespace
     CATMAID.ErrorDialog = ErrorDialog;
+    CATMAID.VersionMismatchDialog = VersionMismatchDialog;
 
 })(CATMAID);

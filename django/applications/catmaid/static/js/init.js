@@ -31,13 +31,9 @@ var project;
       requestQueue.register(django_url + 'version', 'GET', undefined,
           CATMAID.jsonResponseHandler(function(data) {
             if (CATMAID.CLIENT_VERSION !== data.SERVER_VERSION) {
-              new CATMAID.ErrorDialog("Your version of CATMAID is different " +
-                  "from the server's version. Please refresh your browser " +
-                  "immediately to update to the server's version. Continuing to " +
-                  "use a different version than the server can cause " +
-                  "unintended behavior and data loss.",
-                  'Client version: ' + CATMAID.CLIENT_VERSION + '; ' +
-                  'Server version: ' + data.SERVER_VERSION).show();
+              var dialog = new CATMAID.VersionMismatchDialog(
+                  CATMAID.CLIENT_VERSION, data.SERVER_VERSION);
+              dialog.show();
             }
 
             window.setTimeout(CATMAID.Init.checkVersion, CATMAID.Init.CHECK_VERSION_TIMEOUT_INTERVAL);

@@ -323,7 +323,7 @@
               title: "Time",
               orderable: false,
               render: function(data, type, row, meta) {
-                return Date(row.execution_time);
+                return new Date(row.execution_time);
               }
             },
             {data: "transaction_id", title: "Transaction", orderable: false},

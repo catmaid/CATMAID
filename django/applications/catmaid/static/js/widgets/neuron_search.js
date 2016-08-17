@@ -468,8 +468,6 @@
     }
 
     // Augment form data with offset and limit information
-    params.range_start = this.display_start;
-    params.range_length = this.display_length;
     params.with_annotations = this.displayAnnotations;
 
     // Here, $.proxy is used to bind 'this' to the anonymous function

@@ -1493,7 +1493,7 @@ var WindowMaker = new function()
                 WA.setAnimationNeuronVisibility(type, {n: 1});
               } else if ('n-per-rotation' === type) {
                 // Ask for n
-                var dialog = new CATMAID.OptionsDialog();
+                var dialog = new CATMAID.OptionsDialog("Visible skeletons");
                 dialog.appendMessage('Please enter the number of skeletons ' +
                     'to make visible after one rotation.');
                 var nSkeletonsPerRot = dialog.appendField('Show n skeletons per rotation ',
@@ -1507,7 +1507,7 @@ var WindowMaker = new function()
                 dialog.show('auto', 'auto', true);
               } else if ('explicit-order' === type) {
                 // Ask for order
-                var dialog = new CATMAID.OptionsDialog();
+                var dialog = new CATMAID.OptionsDialog("Visible skeletons");
                 dialog.appendMessage('Please map a list of skleton IDs to ' +
                     'rotations after which they should be shown. This has ' +
                     'to follow the pattern "(0: id1); (1: id2, id3); (4: id4); ...". ' +

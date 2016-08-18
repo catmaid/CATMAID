@@ -526,7 +526,7 @@
   /**
    * move to pixel coordinates
    */
-  StackViewer.prototype.moveToPixel = function (zs, ys, xs, ss) {
+  StackViewer.prototype.moveToPixel = function (zs, ys, xs, ss, completionCallback) {
     if (this.navigateWithProject) {
       zs -= this._offset[2];
       ys -= this._offset[1];
@@ -535,13 +535,15 @@
         this.primaryStack.stackToProjectZ( zs, ys, xs ),
         this.primaryStack.stackToProjectY( zs, ys, xs ),
         this.primaryStack.stackToProjectX( zs, ys, xs ),
-        this.primaryStack.stackToProjectSX( ss ));
+        this.primaryStack.stackToProjectSX( ss ),
+        completionCallback);
     } else {
       this.moveTo(
         this.primaryStack.stackToProjectZ( zs, ys, xs ),
         this.primaryStack.stackToProjectY( zs, ys, xs ),
         this.primaryStack.stackToProjectX( zs, ys, xs ),
-        ss);
+        ss,
+        completionCallback);
     }
 
     return true;

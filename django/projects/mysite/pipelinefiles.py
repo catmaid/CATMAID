@@ -137,6 +137,7 @@ JAVASCRIPT['catmaid'] = {
         'js/layers/*.js',
         'js/widgets/detail-dialog.js',
         'js/widgets/options-dialog.js',
+        'js/3d/*.js',
         'js/widgets/*.js',
     ),
     'output_filename': 'js/catmaid.js',

@@ -52,6 +52,14 @@
     this._tool = null;
     this._layers = new Map();
     this._layerOrder = [];
+    /**
+     * Whether redraws in this stack viewer should be blocking, that is,
+     * whether layers that have asynchronous redraws must wait for redraw to
+     * be complete before invoking callbacks. Note that layers can choose to
+     * be blocking even if this is false (e.g., the tracing overlay).
+     * @type {Boolean}
+     */
+    this.blockingRedraws = false;
 
     //-------------------------------------------------------------------------
 
@@ -381,16 +389,7 @@
         continue;
       }
       ++ semaphore;
-      layer.redraw(onAnyCompletion);
-    }
-
-    allQueued = true;
-    /* Also check at the end, in case none of these
-       redraws invovled an AJAX call: */
-    if (semaphore === 0) {
-      if (typeof completionCallback !== "undefined") {
-        completionCallback();
-      }
+      layer.redraw(onAnyCompletion, this.blockingRedraws);
     }
 
     this.old_z = this.z;
@@ -400,6 +399,15 @@
     this.old_scale = this.scale;
     this.old_yc = this.yc;
     this.old_xc = this.xc;
+
+    allQueued = true;
+    /* Also check at the end, in case none of these
+       redraws invovled an AJAX call: */
+    if (semaphore === 0) {
+      if (typeof completionCallback !== "undefined") {
+        completionCallback();
+      }
+    }
   };
 
   /**

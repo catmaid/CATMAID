@@ -105,7 +105,7 @@
   };
 
   /** @inheritdoc */
-  PixiTileLayer.prototype.redraw = function (completionCallback) {
+  PixiTileLayer.prototype.redraw = function (completionCallback, blocking) {
     var scaledStackPosition = this.stackViewer.scaledPositionInStack(this.stack);
     var tileInfo = this.tilesForLocation(
         scaledStackPosition.xc,
@@ -227,6 +227,7 @@
       var newRequest = CATMAID.PixiContext.GlobalTextureManager.load(toLoad, this._swapBuffers.bind(this, false, this._swapBuffersTimeout));
       CATMAID.PixiContext.GlobalTextureManager.cancel(this._tileRequest);
       this._tileRequest = newRequest;
+      loading = true;
     } else if (!loading) {
       this._oldZoom = this._swapZoom;
       this._oldZ    = this._swapZ;
@@ -234,7 +235,12 @@
     }
 
     if (typeof completionCallback !== 'undefined') {
-      completionCallback();
+      if (loading && blocking) {
+        this._completionCallback = completionCallback;
+      } else {
+        this._completionCallback = null;
+        completionCallback();
+      }
     }
   };
 
@@ -275,6 +281,14 @@
     this._oldZ    = this._swapZ;
 
     this._renderIfReady();
+
+    // If the redraw was blocking, its completion callback needs to be invoked
+    // now that the async redraw is finished.
+    if (this._completionCallback) {
+      var completionCallback = this._completionCallback;
+      this._completionCallback = null;
+      completionCallback();
+    }
   };
 
   CATMAID.PixiTileLayer = PixiTileLayer;

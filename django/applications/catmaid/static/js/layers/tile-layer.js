@@ -192,7 +192,7 @@
   /**
    * Update and draw the tile grid based on the current stack position and scale.
    */
-  TileLayer.prototype.redraw = function (completionCallback) {
+  TileLayer.prototype.redraw = function (completionCallback, blocking) {
     var scaledStackPosition = this.stackViewer.scaledPositionInStack(this.stack);
     var tileInfo = this.tilesForLocation(
         scaledStackPosition.xc,
@@ -361,7 +361,12 @@
     }
 
     if (typeof completionCallback !== 'undefined') {
-      completionCallback();
+      if (this._buffering && blocking) {
+        this._completionCallback = completionCallback;
+      } else {
+        this._completionCallback = null;
+        completionCallback();
+      }
     }
   };
 
@@ -385,6 +390,14 @@
         tile.style.left = buf.style.left;
         tile.src = buf.src;
       }
+    }
+
+    // If the redraw was blocking, its completion callback needs to be invoked
+    // now that the async redraw is finished.
+    if (this._completionCallback) {
+      var completionCallback = this._completionCallback;
+      this._completionCallback = null;
+      completionCallback();
     }
   };
 

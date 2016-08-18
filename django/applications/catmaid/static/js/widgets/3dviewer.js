@@ -4029,7 +4029,7 @@
         arbor;
     if ('near_active_node_z_camera' !== options.shading_method &&
         'near_active_node_z_project' !== options.shading_method &&
-        this.line_material instanceof WebGLApplication.ShaderLineBasicMaterial) {
+        this.line_material instanceof CATMAID.ShaderLineBasicMaterial) {
       this.line_material = this.actor.neurite.material = new THREE.LineBasicMaterial({
         color: this.line_material.color,
         opacity: this.line_material.opacity,
@@ -4184,7 +4184,7 @@
       } else if ('near_active_node_z_camera' === options.shading_method ||
                  'near_active_node_z_project' === options.shading_method) {
         this.line_material = this.actor.neurite.material =
-            new WebGLApplication.ShaderLineBasicMaterial(this.line_material);
+            new CATMAID.ShaderLineBasicMaterial(this.line_material);
 
         // Determine active node distance in the vertex shader and pass to the
         // fragment shader as a varying.
@@ -4912,7 +4912,7 @@
 
     labelGeometry.computeBoundingSphere();
 
-    var labelMaterial = new WebGLApplication.FlexibleShaderLambertMaterial(label[1]);
+    var labelMaterial = new CATMAID.FlexibleShaderLambertMaterial(label[1]);
 
     this.specialTagSphereCollection = new THREE.Mesh(labelGeometry, labelMaterial);
     this.space.add(this.specialTagSphereCollection);
@@ -6039,214 +6039,6 @@
       position, scale, material, r) {
     return new this.BufferObject(start, id, position, scale, material, r);
   };
-
-  /**
-   * This is a wrapper that allows insertion of snippets of vertex and fragment
-   * shaders at critical sections while otherwise behaving like the shaders for
-   * THREE's built-in BasicLineMaterial.
-   *
-   * Note that this class may need to be updated whenever THREE.js is upgraded.
-   *
-   * @class
-   * @param {THREE.LineBasicMaterial} lineBasicMaterial
-   *        A material to use for color and line property initialization.
-   */
-  WebGLApplication.ShaderLineBasicMaterial = function (lineBasicMaterial) {
-    THREE.ShaderMaterial.call(this);
-
-    this.uniforms = jQuery.extend(true, {}, THREE.ShaderLib.basic.uniforms);
-    this.vertexShader = THREE.ShaderLib.basic.vertexShader;
-    this.fragmentShader = THREE.ShaderLib.basic.fragmentShader;
-
-    // Copy properties from LineBasicMaterial.
-    this.color = lineBasicMaterial.color.clone();
-    this.fog = lineBasicMaterial.fog;
-    this.linewidth = lineBasicMaterial.linewidth;
-    this.linecap = lineBasicMaterial.linecap;
-    this.linejoin = lineBasicMaterial.linejoin;
-    this.vertexColors = lineBasicMaterial.vertexColors;
-  };
-
-  WebGLApplication.ShaderLineBasicMaterial.prototype = Object.create(THREE.ShaderMaterial.prototype);
-  WebGLApplication.ShaderLineBasicMaterial.prototype.constructor = WebGLApplication.ShaderLineBasicMaterial;
-
-  WebGLApplication.ShaderLineBasicMaterial.INSERTION_LOCATIONS = {
-    vertexDeclarations: {
-      shader: 'vertex',
-      regex: /void\s+main\(\s*\)\s+\{/,
-      replacement: 'void main() {'},
-    vertexPosition: {
-      shader: 'vertex',
-      regex: /#include\s+<project_vertex>/,
-      replacement: '#include <project_vertex>;'},
-    fragmentDeclarations: {
-      shader: 'fragment',
-      regex: /void\s+main\(\s*\)\s+\{/,
-      replacement: 'void main() {'},
-    fragmentColor: {
-      shader: 'fragment',
-      regex: /gl_FragColor\s*=\s*vec4\(\s*outgoingLight,\s*diffuseColor\.a\s*\);/,
-      replacement: ''}
-  };
-
-  /**
-   * Add uniforms to the vertex and fragment shaders.
-   * @param {object} uniforms THREE.js uniform definitions.
-   */
-  WebGLApplication.ShaderLineBasicMaterial.prototype.addUniforms = function (uniforms) {
-    $.extend(this.uniforms, uniforms);
-  };
-
-  /**
-   * Insert a GLSL snippet into a vertex or fragment shader at a known location.
-   * @param  {string} insertionName Name of a insertion location defined in
-   *                                INSERTION_LOCATIONS.
-   * @param  {string} glsl          GLSL code to insert into the shader.
-   */
-  WebGLApplication.ShaderLineBasicMaterial.prototype.insertSnippet = function (insertionName, glsl) {
-    var insertionPoint = WebGLApplication.ShaderLineBasicMaterial.INSERTION_LOCATIONS[insertionName];
-    var shaderSource = insertionPoint.shader === 'vertex' ? this.vertexShader : this.fragmentShader;
-    shaderSource = shaderSource.replace(insertionPoint.regex, glsl + insertionPoint.replacement);
-    if (insertionPoint.shader === 'vertex') {
-      this.vertexShader = shaderSource;
-    } else {
-      this.fragmentShader = shaderSource;
-    }
-    this.needsUpdate = true;
-  };
-
-  /**
-   * Refresh built-in THREE.js material uniform values from this material's
-   * properties. Necessary because THREE.js performs this in WebGLRenderer's
-   * setProgram only for its built-in materials.
-   */
-  WebGLApplication.ShaderLineBasicMaterial.prototype.refresh = function () {
-    this.uniforms.diffuse.value = this.color;
-    this.uniforms.opacity.value = this.opacity;
-  };
-
-  /**
-   * This is a wrapper that allows insertion of snippets of vertex and fragment
-   * shaders at critical sections while otherwise behaving like the shaders for
-   * THREE's built-in MeshLambertMaterial.
-   *
-   * Note that this class may need to be updated whenever THREE.js is upgraded.
-   *
-   * @class
-   * @param {THREE.MeshLambertMaterial} meshLambertMaterial
-   *        A material to use for color and line property initialization.
-   */
-  WebGLApplication.ShaderLambertMaterial = function (meshLambertMaterial) {
-    THREE.ShaderMaterial.call(this);
-
-    this.uniforms = jQuery.extend(true, {}, THREE.ShaderLib.lambert.uniforms);
-    this.vertexShader = THREE.ShaderLib.lambert.vertexShader;
-    this.fragmentShader = THREE.ShaderLib.lambert.fragmentShader;
-
-    // Copy properties from LambertMaterial
-    this.color = meshLambertMaterial.color.clone();
-    this.fog = meshLambertMaterial.fog;
-    this.lights = meshLambertMaterial.lights;
-    this.side = meshLambertMaterial.side;
-  };
-
-  WebGLApplication.ShaderLambertMaterial.prototype =
-    Object.create(THREE.ShaderMaterial.prototype);
-  WebGLApplication.ShaderLambertMaterial.prototype.constructor =
-    WebGLApplication.ShaderLambertMaterial;
-
-  WebGLApplication.ShaderLambertMaterial.INSERTION_LOCATIONS = {
-    vertexDeclarations: {
-      shader: 'vertex',
-      regex: /void\s+main\(\s*\)\s+\{/,
-      replacement: 'void main() {'},
-    vertexPosition: {
-      shader: 'vertex',
-      regex: /#include\s+<project_vertex>/,
-      replacement: '#include <project_vertex>;'},
-    fragmentDeclarations: {
-      shader: 'fragment',
-      regex: /void\s+main\(\s*\)\s+\{/,
-      replacement: 'void main() {'},
-    fragmentColor: {
-      shader: 'fragment',
-      regex: /vec4\s+diffuseColor\s*=\s*vec4\(\s*diffuse,\s*opacity\s*\);/,
-      replacement: ''}
-  };
-
-  /**
-   * Add uniforms to the vertex and fragment shaders.
-   * @param {object} uniforms THREE.js uniform definitions.
-   */
-  WebGLApplication.ShaderLambertMaterial.prototype.addUniforms = function (uniforms) {
-    $.extend(this.uniforms, uniforms);
-  };
-
-  /**
-   * Insert a GLSL snippet into a vertex or fragment shader at a known location.
-   * @param  {string} insertionName Name of a insertion location defined in
-   *                                INSERTION_LOCATIONS.
-   * @param  {string} glsl          GLSL code to insert into the shader.
-   */
-  WebGLApplication.ShaderLambertMaterial.prototype.insertSnippet = function (insertionName, glsl) {
-    var insertionPoint = WebGLApplication.ShaderLambertMaterial.INSERTION_LOCATIONS[insertionName];
-    var shaderSource = insertionPoint.shader === 'vertex' ? this.vertexShader : this.fragmentShader;
-    shaderSource = shaderSource.replace(insertionPoint.regex, glsl + insertionPoint.replacement);
-    if (insertionPoint.shader === 'vertex') {
-      this.vertexShader = shaderSource;
-    } else {
-      this.fragmentShader = shaderSource;
-    }
-    this.needsUpdate = true;
-  };
-
-  /**
-   * This is a shader material that is based on THREE's built-in
-   * MeshLambertMaterial. It injects shader code to control color, alpha and
-   * visibility with varying shader parameters.
-   *
-   * Note that this class may need to be updated whenever THREE.js is upgraded.
-   *
-   * @class
-   * @param {THREE.MeshLambertMaterial} meshLambertMaterial
-   *        A material to use for color and line property initialization.
-   */
-  WebGLApplication.FlexibleShaderLambertMaterial = function (meshLambertMaterial) {
-    WebGLApplication.ShaderLambertMaterial.call(this, meshLambertMaterial);
-
-    // Needed for buffer geometry shader modifications
-    this.transparent = true;
-    this.depthTest = true;
-    this.depthWrite = false;
-
-    // Install snippets
-    this.insertSnippet('vertexDeclarations',
-        ['attribute float alphaNew;',
-         'attribute float visibleNew;',
-         'attribute vec3 colorNew;',
-         'varying float vAlphaNew;',
-         'varying float vVisibleNew;',
-         'varying vec3 vColorNew;', ''].join('\n'));
-    this.insertSnippet('vertexPosition',
-        ['vColorNew = colorNew;',
-         'vVisibleNew = visibleNew;',
-         'vAlphaNew = alphaNew;',''].join('\n'));
-
-    this.insertSnippet('fragmentDeclarations',
-      ['varying float vAlphaNew;',
-       'varying float vVisibleNew;',
-       'varying vec3 vColorNew;', ''].join('\n'));
-    this.insertSnippet('fragmentColor',
-      ['if (vVisibleNew == 0.0) {',
-       '  discard;',
-       '}',
-       'vec4 diffuseColor = vec4(vColorNew, vAlphaNew);', ''].join('\n'));
-  };
-
-  WebGLApplication.FlexibleShaderLambertMaterial.prototype =
-    Object.create(WebGLApplication.ShaderLambertMaterial.prototype);
-  WebGLApplication.FlexibleShaderLambertMaterial.prototype.constructor =
-    WebGLApplication.FlexibleShaderLambertMaterial;
 
   // Make 3D viewer available in CATMAID namespace
   CATMAID.WebGLApplication = WebGLApplication;

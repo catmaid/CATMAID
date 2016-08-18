@@ -4841,7 +4841,7 @@
         continue;
       }
       var labelColor = label[1].color;
-      var labelAlpha = 1.0 - label[1].opacity;
+      var labelAlpha = label[1].opacity;
 
       labelMesh.position.set(v.x, v.y, v.z);
       CATMAID.tools.setXYZ(labelMesh.scale, scaling);
@@ -5942,7 +5942,7 @@
       this._isVisible = true;
       this._scale = scale;
       this._color = material.color;
-      this._alpha = 1.0 - material.opacity;
+      this._alpha = material.opacity;
       ++nObjects;
     };
 

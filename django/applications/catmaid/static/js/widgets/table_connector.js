@@ -152,6 +152,11 @@
               "bSortable": true,
               "bVisible": true,
               data: 11,
+              render: function(data, type, row, meta) {
+                var d = new Date(data);
+                return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate()
+                    + ' ' + d.getHours() + ':' + d.getMinutes();
+              }
             } // last modified
           ]
         });

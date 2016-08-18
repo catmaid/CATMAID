@@ -210,7 +210,7 @@ def list_connector(request, project_id=None):
             tc_this.confidence AS confidence,
             tc_other.relation_id AS connector_to_other_relation_id,
             tc_other.confidence AS target_confidence,
-            to_char(connector.edition_time, 'DD-MM-YYYY HH24:MI') AS last_modified
+            connector.edition_time AS last_modified
             FROM
             treenode tn_other,
             treenode_connector tc_other,
@@ -261,7 +261,7 @@ def list_connector(request, project_id=None):
             tn_this.id AS this_treenode_id,
             tc_this.relation_id AS this_to_connector_relation_id,
             tc_this.confidence AS confidence,
-            to_char(connector.edition_time, 'DD-MM-YYYY HH24:MI') AS last_modified
+            connector.edition_time AS last_modified
             FROM
             connector,
             "auth_user" connector_user,
@@ -348,7 +348,7 @@ def list_connector(request, project_id=None):
             row.append(connected_skeleton_treenode_count)
             row.append(c['connector_username'])
             row.append(c['other_treenode_id'])
-            row.append(c['last_modified'])
+            row.append(str(c['last_modified'].isoformat()))
             aaData_output.append(row)
 
         # Sort output

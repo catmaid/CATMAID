@@ -41,8 +41,8 @@ class ConnectorsApiTests(CatmaidApiTestCase):
                 u'iTotalRecords': 4,
                 u'iTotalDisplayRecords': 4,
                 u'aaData': [
-                    [421, 373, 6630.00, 4330.00, 0.0, 5, 5, u"", 5, u"test2", 409, u'07-10-2011 07:02'],
-                    [356, 373, 7620.00, 2890.00, 0.0, 5, 5, u"", 5, u"test2", 377, u'27-10-2011 10:45']]}
+                    [421, 373, 6630.00, 4330.00, 0.0, 5, 5, u"", 5, u"test2", 409, u'2011-10-07T07:02:30.396000+00:00'],
+                    [356, 373, 7620.00, 2890.00, 0.0, 5, 5, u"", 5, u"test2", 377, u'2011-10-27T10:45:09.870000+00:00']]}
         self.assertEqual(expected_result, parsed_response)
 
 
@@ -63,10 +63,10 @@ class ConnectorsApiTests(CatmaidApiTestCase):
                 u'iTotalRecords': 4,
                 u'iTotalDisplayRecords': 4,
                 u'aaData': [
-                    [432, u"", 2640.00, 3450.00, 0.0, 5, u"", u"synapse with more targets, TODO", 0, u"test2", u"", u'31-10-2011 05:22'],
-                    [421, 373, 6630.00, 4330.00, 0.0, 5, 5, u"", 5, u"test2", 409, u'07-10-2011 07:02'],
-                    [356, 373, 7620.00, 2890.00, 0.0, 5, 5, u"", 5, u"test2", 377, u'27-10-2011 10:45'],
-                    [356, 361, 7030.00, 1980.00, 0.0, 5, 5, u"", 9, u"test2", 367, u'27-10-2011 10:45']]
+                    [432, u"", 2640.00, 3450.00, 0.0, 5, u"", u"synapse with more targets, TODO", 0, u"test2", u"", u'2011-10-31T05:22:37.263000+00:00'],
+                    [421, 373, 6630.00, 4330.00, 0.0, 5, 5, u"", 5, u"test2", 409, u'2011-10-07T07:02:30.396000+00:00'],
+                    [356, 373, 7620.00, 2890.00, 0.0, 5, 5, u"", 5, u"test2", 377, u'2011-10-27T10:45:09.870000+00:00'],
+                    [356, 361, 7030.00, 1980.00, 0.0, 5, 5, u"", 9, u"test2", 367, u'2011-10-27T10:45:09.870000+00:00']]
         }
         self.assertEqual(expected_result, parsed_response)
 
@@ -89,9 +89,9 @@ class ConnectorsApiTests(CatmaidApiTestCase):
                 u'iTotalDisplayRecords': 2,
                 u'aaData': [
                     [356, 235, 6100.00, 2980.00, 0.0, 5, 5, u"", 28,
-                     u"test2", 285, u'27-10-2011 10:45'],
+                     u"test2", 285, u'2011-10-27T10:45:09.870000+00:00'],
                     [421, 235, 5810.00, 3950.00, 0.0, 5, 5, u"", 28,
-                     u"test2", 415, u'07-10-2011 07:02']]}
+                     u"test2", 415, u'2011-10-07T07:02:30.396000+00:00']]}
         self.assertEqual(expected_result, parsed_response)
 
 

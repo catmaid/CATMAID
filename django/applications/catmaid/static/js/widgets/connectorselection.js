@@ -17,7 +17,7 @@
         relation: relation},
         function(status, text) {
           if (200 !== status) return;
-          var json = $.parseJSON(text);
+          var json = JSON.parse(text);
           if (json.error) {
             alert(json.error);
             return;

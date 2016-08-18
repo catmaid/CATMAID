@@ -1441,7 +1441,7 @@
   GroupGraph.prototype.appendGroup = function(models) {
     var f = (function (status, text) {
       if (200 !== status) return;
-      var json = $.parseJSON(text);
+      var json = JSON.parse(text);
       if (json.error) return alert(json.error);
 
       function hasAnnotation(aid, annotation) {
@@ -1549,7 +1549,7 @@
         {skeleton_ids: skeleton_ids},
         (function (status, text) {
             if (200 !== status) return;
-            var json = $.parseJSON(text);
+            var json = JSON.parse(text);
             if (json.error) {
               if ('REPLACED' === json.error) return;
               alert(json.error);
@@ -1872,7 +1872,7 @@
            min_synapses: min_synapses},
            function(status, text) {
              if (200 !== status) return;
-             var json = $.parseJSON(text);
+             var json = JSON.parse(text);
              if (json.error) return alert(json.error);
              else process(json);
              continuation();
@@ -2098,7 +2098,7 @@
           postData,
           function(status, text) {
             if (status !== 200) return;
-            var json = $.parseJSON(text);
+            var json = JSON.parse(text);
             cy.nodes().each(function(i, node) {
               var skeletons = node.data("skeletons");
               // Compute average
@@ -3168,7 +3168,7 @@
       var reader = new FileReader();
       reader.onload = (function(e) {
         try {
-          var json = $.parseJSON(e.target.result);
+          var json = JSON.parse(e.target.result);
           var skids = {};
           var asModel = function(ob) {
             skids[ob.id] = true;
@@ -3204,7 +3204,7 @@
               {skids: Object.keys(skids)},
               (function(status, text) {
                 if (200 !== status) return;
-                var json = $.parseJSON(text);
+                var json = JSON.parse(text);
                 if (json.error) return alert(json.error);
                 var missing = Object.keys(skids).filter(function(skid) {
                   return undefined === json[skid];

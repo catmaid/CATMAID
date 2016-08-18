@@ -1181,7 +1181,7 @@
       if (status !== 200) {
         alert("Finding the nearest node failed with HTTP status code: "+status);
       } else {
-        data = $.parseJSON(text);
+        data = JSON.parse(text);
         if (data.error) {
           alert("An error was returned when trying to fetch the nearest node: "+data.error);
         } else {
@@ -1215,7 +1215,7 @@
       if (status !== 200) {
         setSearchingMessage('Search failed with HTTP status'+status);
       } else {
-        data = $.parseJSON(text);
+        data = JSON.parse(text);
         if (null === data) {
           setSearchingMessage('Search failed, parseJSON returned null. Check javascript console.');
           return;
@@ -1560,7 +1560,7 @@
                 if (status !== 200) {
                   alert("Setting up tracing failed with HTTP status code: "+status);
                 } else {
-                  var json = $.parseJSON(data);
+                  var json = JSON.parse(data);
                   project.setTool( new CATMAID.Navigator() );
                   if (json.error) {
                     alert("An error was returned when trying to set up tracing: " +

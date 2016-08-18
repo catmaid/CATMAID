@@ -898,7 +898,7 @@ var project;
       requestQueue.register(django_url + 'dataviews/type/' + view_id,
         'GET', undefined, function(status, text, xml) {
           if (status == 200 && text) {
-            var e = $.parseJSON(text);
+            var e = JSON.parse(text);
             if (e.error) {
               alert(e.error);
             } else {
@@ -1467,7 +1467,7 @@ var project;
       requestQueue.register(django_url + project_id + '/stacks',
           'GET', undefined, function(status, text, xml) {
               if (status == 200 && text) {
-                  var e = $.parseJSON(text);
+                  var e = JSON.parse(text);
                   if (e.error) {
                       alert(e.error);
                   } else if (callback){

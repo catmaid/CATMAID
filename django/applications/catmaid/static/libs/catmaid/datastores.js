@@ -66,7 +66,7 @@
 
                       try {
                         var value = (typeof d.value === 'string' || d.value instanceof String) ?
-                            $.parseJSON(d.value) :
+                            JSON.parse(d.value) :
                             d.value;
                         e.get(d.key)[scope] = {
                           dirty: false,

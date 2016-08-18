@@ -123,7 +123,7 @@
         function (status, text, xml) {
           if (status == 200 && text)
           {
-            var jsonData = $.parseJSON(text);
+            var jsonData = JSON.parse(text);
             for (var i = 0; i < jsonData.length; i++)
             {
               var userData = jsonData[i];
@@ -195,7 +195,7 @@
         options_to_save,
         function (status, text, xml) {
           if (status == 200 && text) {
-              var e = $.parseJSON(text);
+              var e = JSON.parse(text);
               if (e.error) {
                 new CATMAID.ErrorDialog("Couldn't update user settings!",
                     e.error).show();

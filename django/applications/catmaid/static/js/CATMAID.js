@@ -171,7 +171,7 @@ window.onbeforeunload = function() {
       if (status >= 200 && status <= 204 &&
           (typeof text === 'string' || text instanceof String)) {
         // `text` may be empty for no content responses.
-        var json = text.length ? $.parseJSON(text) : {};
+        var json = text.length ? JSON.parse(text) : {};
         if (json.error) {
           // Call error handler, if any, and force silence if it returned true.
           if (CATMAID.tools.isFn(error)) {

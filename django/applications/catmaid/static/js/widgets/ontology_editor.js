@@ -1094,7 +1094,7 @@
         this.show_error_msg( status, text );
         return;
       }
-      var jsonData = $.parseJSON(data);
+      var jsonData = JSON.parse(data);
       if (jsonData.error) {
         this.show_error_status( "Error", jsonData.error, 5000 );
       } else {

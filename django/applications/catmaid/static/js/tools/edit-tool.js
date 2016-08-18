@@ -94,7 +94,7 @@
                     alert("Testing the tracing setup failed with HTTP status code: "
                       + status);
                   } else {
-                    data = $.parseJSON(text);
+                    data = JSON.parse(text);
                     if (data.error) {
                       alert("An error was returned when trying to test the tracing setup: "
                         + data.error);

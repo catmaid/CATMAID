@@ -242,7 +242,7 @@
         {skeleton_ids: skids},
         (function(status, text) {
           if (200 !== status) return;
-          var json = $.parseJSON(text);
+          var json = JSON.parse(text);
           if (json.error) { alert(json.error); return; }
           // Create adjacency matrix
           var AdjM = this.ids.map(function(id) { return new Uint32Array(this.ids.length); }, this);

@@ -92,7 +92,7 @@ var fetchSkeletons = function(skeleton_ids, fnMakeURL, fnPost, fnLoadedOne, fnFa
             function(status, text) {
               try {
                 if (200 === status) {
-                  var json = $.parseJSON(text);
+                  var json = JSON.parse(text);
                   if (json.error) {
                     if (0 === json.error.indexOf("Skeleton #" + skeleton_id + " doesn't exist")) {
                       missing.push(skeleton_id);

@@ -74,7 +74,7 @@
         {tnid: tnid},
         function(status, text) {
           if (200 !== status || 'REPLACED' === text) return;
-          var json = $.parseJSON(text);
+          var json = JSON.parse(text);
           if (!json) {
             alert("Could not find node #" + tnid);
             return;

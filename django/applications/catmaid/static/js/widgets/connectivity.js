@@ -332,7 +332,7 @@
                       status).show();
               return;
             }
-            var json = $.parseJSON(text);
+            var json = JSON.parse(text);
             if (json.error) {
               if ('REPLACED' !== json.error) {
                 self.incoming = {};

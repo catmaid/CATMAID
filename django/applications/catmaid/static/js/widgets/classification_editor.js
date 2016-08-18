@@ -407,7 +407,7 @@
           "rel": mynode.attr("rel")
         }, function (r) {
           $.unblockUI();
-          r = $.parseJSON(r);
+          r = JSON.parse(r);
           if (r['error']) {
             CATMAID.error(r['error']);
             $.jstree.rollback(treebefore);
@@ -438,7 +438,7 @@
            "pid": pid,
         }, function(r) {
           $.unblockUI();
-          r = $.parseJSON(r);
+          r = JSON.parse(r);
           if (r['error']) {
             CATMAID.error(r);
             $.jstree.rollback(treebefore);
@@ -545,7 +545,7 @@
       requestQueue.register(roi_remove_url, 'GET', null,
         self.create_error_aware_callback(
           function(status, text, xml) {
-            var result = $.parseJSON(text);
+            var result = JSON.parse(text);
             if (result.status) {
               self.show_status("Success", result.status);
             } else {
@@ -570,7 +570,7 @@
               return;
             }
             // Parse JSON data into object
-            var roi = $.parseJSON(text);
+            var roi = JSON.parse(text);
             var pid_changes = roi.project_id !== project.id;
             // If the project changes, detach the current
             // classification editor content and to reinsert it later.
@@ -826,7 +826,7 @@
           url: form.attr('action'),
           data: form.serialize(),
           success: function(data, textStatus) {
-            var e = $.parseJSON(data);
+            var e = JSON.parse(data);
             container.innerHTML = e.content;
             self.handleContent( e.page, container, pid, e.link );
           }

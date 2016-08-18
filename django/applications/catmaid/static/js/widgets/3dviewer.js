@@ -739,7 +739,7 @@
         requestQueue.register(django_url + project.id + '/skeletons/' + query, "POST", post,
           function(status, text) {
             if (200 !== status) return;
-            var json = $.parseJSON(text);
+            var json = JSON.parse(text);
             if (json.error) return new CATMAID.ErrorDialog(
                 "Could not fetch skeletons.", json.error);
             if (json.skeletons) {
@@ -4538,7 +4538,7 @@
           (function(status, text) {
             try {
               if (200 !== status) return;
-              var json = $.parseJSON(text);
+              var json = JSON.parse(text);
               if (json.error) return alert(json.error);
 
               skeletons.forEach(function(skeleton) {

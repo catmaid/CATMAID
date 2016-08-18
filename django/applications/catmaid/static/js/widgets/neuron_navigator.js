@@ -2008,7 +2008,7 @@
     root_button.onclick = (function() {
       requestQueue.register(django_url + project.id + '/skeletons/' + this.skeleton_ids[0] + '/root', 'GET', undefined, function (status, text) {
         if (200 !== status) return;
-        var json = $.parseJSON(text);
+        var json = JSON.parse(text);
         if (json.error) return new CATMAID.ErrorDialog(json.error,
             json.detail).show();
         SkeletonAnnotations.staticMoveTo(json.z, json.y, json.x, function() {
@@ -2126,7 +2126,7 @@
           '/' + skeleton_id + '/0/1/compact-skeleton', 'POST', {},
           function(status, text) {
             if (200 !== status) return;
-            var json = $.parseJSON(text);
+            var json = JSON.parse(text);
             if (json.error) {
               new CATMAID.ErrorDialog(json.error, json.detail).show();
               return;
@@ -2307,7 +2307,7 @@
             if (200 !== status) {
               alert("Unexpected status code: " + status);
             } else {
-              var json = $.parseJSON(text);
+              var json = JSON.parse(text);
               if (json.error) {
                 new CATMAID.ErrorDialog(json.error, json.detail).show();
               } else {

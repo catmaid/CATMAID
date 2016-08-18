@@ -427,7 +427,7 @@
         statisticsData = null;
         if (status == 200) {
           if (text && text != " ") {
-            var jso = $.parseJSON(text);
+            var jso = JSON.parse(text);
             if (jso.error) {
               alert(jso.error);
             } else {
@@ -445,7 +445,7 @@
       }, function (status, text, xml) {
         if (status == 200) {
           if (text && text != " ") {
-            var jso = $.parseJSON(text);
+            var jso = JSON.parse(text);
             if (jso.error) {
               alert(jso.error);
             } else {
@@ -462,7 +462,7 @@
       }, function (status, text, xml) {
         if (status == 200) {
           if (text && text != " ") {
-            var jso = $.parseJSON(text);
+            var jso = JSON.parse(text);
             if (jso.error) {
               alert(jso.error);
             } else {
@@ -479,7 +479,7 @@
       }, function (status, text, xml) {
         if (status == 200) {
           if (text && text != " ") {
-            var jso = $.parseJSON(text);
+            var jso = JSON.parse(text);
             if (jso.error) {
               alert(jso.error);
             }

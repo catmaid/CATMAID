@@ -394,7 +394,7 @@ the selected neurons.
       requestQueue.register(django_url + project.id + url,
             'POST', query_data, function(status, text, xml) {
               if (status === 200) {
-                var e = $.parseJSON(text);
+                var e = JSON.parse(text);
                 if (e.error) {
                   new ErrorDialog(e.error, e.detail).show();
                 } else {

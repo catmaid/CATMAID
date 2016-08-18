@@ -474,7 +474,7 @@
     requestQueue.register(django_url + this.pid + '/annotations/query-targets',
         'POST', params, $.proxy( function(status, text, xml) {
           if (status === 200) {
-            var e = $.parseJSON(text);
+            var e = JSON.parse(text);
             if (e.error) {
               new CATMAID.ErrorDialog(e.error, e.detail).show();
             } else {
@@ -713,7 +713,7 @@
         requestQueue.register(django_url + project.id + '/annotations/query-targets',
             'POST', query_data, function(status, text, xml) {
               if (status === 200) {
-                var e = $.parseJSON(text);
+                var e = JSON.parse(text);
                 if (e.error) {
                   new CATMAID.ErrorDialog(e.error, e.detail).show();
                 } else {

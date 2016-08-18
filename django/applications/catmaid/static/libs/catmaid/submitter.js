@@ -140,7 +140,7 @@ var submitterFn = function() {
       }
       var json;
       try {
-        json = $.parseJSON(text);
+        json = JSON.parse(text);
       } catch (e) {
         alert(e);
         return reset(q, "Unable to parse json text: " + text + "\n for URL: " + q.url);

@@ -99,7 +99,7 @@
         (function (status, text, xml) {
           if (200 !== status) return;
           if (!text || text === " ") return;
-          var json = $.parseJSON(text);
+          var json = JSON.parse(text);
           if (json.error) return alert(json.error);
 
           var dialog = document.createElement('div');
@@ -295,7 +295,7 @@
       {skids: ids},
       function(status, text) {
         if (200 !== status) return;
-        var json = $.parseJSON(text);
+        var json = JSON.parse(text);
         if (json.error) { alert(json.error); return; }
         self.insertSkeletons(json, callback);
       });
@@ -317,7 +317,7 @@
       postData,
       (function(status, text) {
         if (200 !== status) return;
-        var json = $.parseJSON(text);
+        var json = JSON.parse(text);
         if (json.error) {
           new CATMAID.ErrorDialog(json.error, json.detail).show();
           return;
@@ -537,7 +537,7 @@
       {skids: Object.keys(models)},
       function(status, text) {
         if (200 !== status) return;
-        var json = $.parseJSON(text);
+        var json = JSON.parse(text);
         var o = {};
         Object.keys(json).forEach(function(skid) {
           o[indices[skid]] = skid;

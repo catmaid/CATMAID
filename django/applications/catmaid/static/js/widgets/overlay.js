@@ -1041,7 +1041,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createViewMouseMoveFn = function(st
       // This function is called often, so the least memory consuming way should
       // be used to create the status bar update.
       CATMAID.statusBar.printCoords('['+ Math.round(coords.lastX) + ", " +
-          Math.round(coords.lastY) + ", " + Math.round(project.coordinates.z) +']');
+          Math.round(coords.lastY) + ", " + Math.round(stackViewer.z) +']');
     }
     return true; // Bubble mousemove events.
   };

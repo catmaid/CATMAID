@@ -182,6 +182,17 @@
         }
       });
 
+      $(tableid + " tbody").on('dblclick', 'td', function () {
+        // Allow clicking on the connector ID (column 0) to select it rather
+        // than the target treenode.
+        if ($(this).index() !== 0) return;
+        var idToActivate = self.connectorTable.fnGetData(this);
+
+        SkeletonAnnotations.staticMoveToAndSelectNode(idToActivate);
+
+        return false;
+      });
+
       $(tableid + " tbody").on('dblclick', 'tr', function () {
         var idToActivate, skeletonID;
         var aData = self.connectorTable.fnGetData(this);

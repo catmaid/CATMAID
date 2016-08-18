@@ -4807,116 +4807,25 @@
    */
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createLabelSpheres =
       function(labels, scaling) {
-    var labelGeometry = new THREE.BufferGeometry();
-    var labelTemplateGeometry = this.space.staticContent.labelspheregeometry;
-    var nPointsPerLabel = labelTemplateGeometry.vertices.length;
-    var facesOfLabel = labelTemplateGeometry.faces;
-    var nFacesPerLabel = facesOfLabel.length;
-    var boFactory = new CATMAID.BufferObjectFactory(labelGeometry, nPointsPerLabel);
 
-    var indexCount     = labels.length * nFacesPerLabel * 3;
-    var IndexType      = indexCount > 65535 ? Uint32Array : Uint16Array;
-    var labelIndices   = new IndexType(indexCount);
+    var geometry = new CATMAID.MultiObjectBufferGeometry({
+      templateGeometry: this.space.staticContent.labelspheregeometry,
+      nObjects: labels.length,
+    });
+    var boFactory = geometry.createObjectFactory();
 
-    var labelPositions = new Float32Array(labels.length * nPointsPerLabel * 3);
-    var labelNormals   = new Float32Array(labels.length * nPointsPerLabel * 3);
-    var labelColors    = new Float32Array(labels.length * nPointsPerLabel * 3);
-    var labelVisible   = new Float32Array(labels.length * nPointsPerLabel);
-    var labelAlphas    = new Float32Array(labels.length * nPointsPerLabel);
+    boFactory.createAll(labels, scaling, (function(v, m) {
+      return !this.specialTagSpheres.hasOwnProperty(v.node_id);
+    }).bind(this), (function(v, m, bufferObject) {
+      this.specialTagSpheres[v.node_id] = bufferObject;
+    }).bind(this));
 
-    // Find radius
-    var tmp = new THREE.Vector3();
-    var radius = labelTemplateGeometry.boundingSphere.radius * scaling;
+    var material = new CATMAID.FlexibleShaderLambertMaterial();
 
-    // Create actual label geometry data based on the static label sphere
-    // geometry instance.
-    var labelMesh = new THREE.Mesh(labelTemplateGeometry);
-    var labelVertex = new THREE.Vector3();
-    var labelNormal = new THREE.Vector3();
-    for (var li=0, max=labels.length; li<max; ++li) {
-      var label = labels[li];
-      var v = label[0];
-      if (this.specialTagSpheres.hasOwnProperty(v.node_id)) {
-        // There already is a tag sphere at the node
-        continue;
-      }
-      var labelColor = label[1].color;
-      var labelAlpha = label[1].opacity;
-
-      labelMesh.position.set(v.x, v.y, v.z);
-      CATMAID.tools.setXYZ(labelMesh.scale, scaling);
-      labelMesh.updateMatrix();
-      var matrix = labelMesh.matrix;
-
-      var pointStart = li * nPointsPerLabel;
-      var vertexStart = pointStart * 3;
-      for (var j=0; j<nPointsPerLabel; ++j) {
-        labelVertex.copy(labelTemplateGeometry.vertices[j]);
-        labelVertex.applyMatrix4(matrix);
-
-        var vIndex =  vertexStart + j * 3;
-        labelPositions[vIndex + 0] = labelVertex.x;
-        labelPositions[vIndex + 1] = labelVertex.y;
-        labelPositions[vIndex + 2] = labelVertex.z;
-
-        labelColors[vIndex + 0] = labelColor.r;
-        labelColors[vIndex + 1] = labelColor.g;
-        labelColors[vIndex + 2] = labelColor.b;
-
-        labelVisible[pointStart + j] = 1.0;
-        labelAlphas[pointStart + j] = labelAlpha;
-      }
-
-      var faceStart = li * nFacesPerLabel * 3;
-      for (var j=0; j<nFacesPerLabel; ++j) {
-        var face = facesOfLabel[j];
-        var offset = faceStart + j * 3;
-        var a, b, c;
-        labelIndices[offset + 0] = a = pointStart + face.a;
-        labelIndices[offset + 1] = b = pointStart + face.b;
-        labelIndices[offset + 2] = c = pointStart + face.c;
-
-        var vertexNormals = face.vertexNormals;
-        a *= 3;
-        labelNormals[a + 0] = vertexNormals[0].x;
-        labelNormals[a + 1] = vertexNormals[0].y;
-        labelNormals[a + 2] = vertexNormals[0].z;
-        b *= 3;
-        labelNormals[b + 0] = vertexNormals[1].x;
-        labelNormals[b + 1] = vertexNormals[1].y;
-        labelNormals[b + 2] = vertexNormals[1].z;
-        c *= 3;
-        labelNormals[c + 0] = vertexNormals[2].x;
-        labelNormals[c + 1] = vertexNormals[2].y;
-        labelNormals[c + 2] = vertexNormals[2].z;
-      }
-
-      this.specialTagSpheres[v.node_id] = boFactory.create(pointStart, v.node_id, v,
-          scaling, label[1], radius);
-    }
-
-    // Create buffer geometry
-    labelGeometry.setIndex(new THREE.BufferAttribute(labelIndices, 1));
-    labelGeometry.addAttribute('position', new THREE.BufferAttribute(labelPositions, 3));
-    labelGeometry.addAttribute('normal', new THREE.BufferAttribute(labelNormals, 3));
-    labelGeometry.addAttribute('colorNew', new THREE.BufferAttribute(labelColors, 3));
-    labelGeometry.addAttribute('visibleNew', new THREE.BufferAttribute(labelVisible, 1));
-    labelGeometry.addAttribute('alphaNew', new THREE.BufferAttribute(labelAlphas, 1));
-
-    // Mark position, visible and alpha attributes as dynamic so that they can
-    // be changed during runtime.
-    labelGeometry.attributes.position.setDynamic(true);
-    labelGeometry.attributes.visibleNew.setDynamic(true);
-    labelGeometry.attributes.alphaNew.setDynamic(true);
-    labelGeometry.attributes.colorNew.setDynamic(true);
-
-    labelGeometry.computeBoundingSphere();
-
-    var labelMaterial = new CATMAID.FlexibleShaderLambertMaterial(label[1]);
-
-    this.specialTagSphereCollection = new THREE.Mesh(labelGeometry, labelMaterial);
+    this.specialTagSphereCollection = new THREE.Mesh(geometry, material);
     this.space.add(this.specialTagSphereCollection);
   };
+
 
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createEdge = function(v1, v2, type) {
     // Create edge between child (id1) and parent (id2) nodes:

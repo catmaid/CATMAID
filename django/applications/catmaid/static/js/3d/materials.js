@@ -113,10 +113,17 @@
     this.fragmentShader = THREE.ShaderLib.lambert.fragmentShader;
 
     // Copy properties from LambertMaterial
-    this.color = meshLambertMaterial.color.clone();
-    this.fog = meshLambertMaterial.fog;
-    this.lights = meshLambertMaterial.lights;
-    this.side = meshLambertMaterial.side;
+    if (meshLambertMaterial) {
+      this.color = meshLambertMaterial.color.clone();
+      this.fog = meshLambertMaterial.fog;
+      this.lights = meshLambertMaterial.lights;
+      this.side = meshLambertMaterial.side;
+    } else {
+      this.color = new THREE.Color();
+      this.fog = true;
+      this.lights = true;
+      this.side = THREE.FrontSide;
+    }
   };
 
   ShaderLambertMaterial.prototype =

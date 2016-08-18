@@ -148,7 +148,6 @@ def _many_to_many_synapses(skids1, skids2, relation_name, project_id):
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def list_connector(request, project_id=None):
-    stack_id = request.POST.get('stack_id', None)
     skeleton_id = request.POST.get('skeleton_id', None)
 
     def empty_result():
@@ -166,6 +165,10 @@ def list_connector(request, project_id=None):
     display_start = int(request.POST.get('iDisplayStart', 0))
     display_length = int(request.POST.get('iDisplayLength', -1))
     sorting_column = int(request.POST.get('iSortCol_0', 0))
+    # Have to correct for DataTables including computed columns (stack section)
+    # in column count:
+    if sorting_column > 4:
+        sorting_column = sorting_column - 1
     sort_descending = upper(request.POST.get('sSortDir_0', 'DESC')) != 'ASC'
 
     response_on_error = ''
@@ -311,14 +314,6 @@ def list_connector(request, project_id=None):
             connectors = connectors[display_start:display_start + display_length]
             connector_ids = connector_ids[display_start:display_start + display_length]
 
-        response_on_error = 'Could not retrieve resolution and translation parameters for project.'
-        if stack_id:
-            resolution = get_object_or_404(Stack, id=int(stack_id)).resolution
-            translation = get_object_or_404(ProjectStack, stack=int(stack_id), project=project_id).translation
-        else:
-            resolution = Double3D(1.0, 1.0, 1.0)
-            translation = Double3D(0.0, 0.0, 0.0)
-
         # Format output
         aaData_output = []
         for c in connectors:
@@ -345,10 +340,6 @@ def list_connector(request, project_id=None):
             row.append(c['other_treenode_y'])
             z = c['other_treenode_z']
             row.append(z)
-            # FIXME: This is the only place we need a stack nad this can be
-            # done in the client as well. So we really want to keep this and
-            # have a more complicated API?
-            row.append(int((z - translation.z) / resolution.z))
             row.append(c['confidence'])
             row.append(labels)
             row.append(connected_skeleton_treenode_count)

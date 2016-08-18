@@ -70,10 +70,6 @@
               "name" : "skeleton_id",
               "value" : skeletonID
             });
-            aoData.push({
-              "name": "stack_id",
-              "value": project.focusedStackViewer.primaryStack.id
-            });
 
             $.ajax({
               "dataType": 'json',
@@ -114,33 +110,43 @@
             {
               "sClass": "center",
               "bSearchable": false,
-              "bSortable": true
+              "bSortable": true,
+              data: 4,
+              render: function(data, type, row, meta) {
+                return project.focusedStackViewer.primaryStack.projectToStackZ(row[4], row[3], row[2]);
+              },
             }, // section index
             {
               "bSearchable": false,
-              "bSortable": true
+              "bSortable": true,
+              data: 5,
             }, // connectortags
             {
               "bSearchable": false,
-              "bSortable": true
+              "bSortable": true,
+              data: 6,
             }, // confidence
             {
               "bSearchable": false,
-              "bSortable": true
+              "bSortable": true,
+              data: 7,
             }, // number of nodes
             {
               "bVisible": true,
-              "bSortable": true
+              "bSortable": true,
+              data: 8,
             }, // username
             {
               "bSearchable": false,
               "bSortable": true,
-              "bVisible": true
+              "bVisible": true,
+              data: 9,
             }, // treenodes
             {
               "bSearchable": false,
               "bSortable": true,
-              "bVisible": true
+              "bVisible": true,
+              data: 10,
             } // last modified
           ]
         });
@@ -181,8 +187,8 @@
 
         // If there is a partner treenode, activate that - otherwise
         // activate the connector itself:
-        if (aData[10]) {
-          idToActivate = parseInt(aData[10], 10);
+        if (aData[9]) {
+          idToActivate = parseInt(aData[9], 10);
           skeletonID = parseInt(aData[1], 10);
         } else {
           idToActivate = parseInt(aData[0], 10);

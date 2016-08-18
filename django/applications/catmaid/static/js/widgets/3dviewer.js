@@ -4869,16 +4869,26 @@
 
       var faceStart = li * nFacesPerLabel * 3;
       for (var j=0; j<nFacesPerLabel; ++j) {
+        var face = facesOfLabel[j];
         var offset = faceStart + j * 3;
-        labelIndices[offset + 0] = pointStart + facesOfLabel[j].a;
-        labelIndices[offset + 1] = pointStart + facesOfLabel[j].b;
-        labelIndices[offset + 2] = pointStart + facesOfLabel[j].c;
+        var a, b, c;
+        labelIndices[offset + 0] = a = pointStart + face.a;
+        labelIndices[offset + 1] = b = pointStart + face.b;
+        labelIndices[offset + 2] = c = pointStart + face.c;
 
-        labelNormal.copy(facesOfLabel[j].normal);
-        //labelNormal.applyMatrix4(matrix);
-        labelNormals[offset + 0] = labelNormal.x;
-        labelNormals[offset + 1] = labelNormal.y;
-        labelNormals[offset + 2] = labelNormal.z;
+        var vertexNormals = face.vertexNormals;
+        a *= 3;
+        labelNormals[a + 0] = vertexNormals[0].x;
+        labelNormals[a + 1] = vertexNormals[0].y;
+        labelNormals[a + 2] = vertexNormals[0].z;
+        b *= 3;
+        labelNormals[b + 0] = vertexNormals[1].x;
+        labelNormals[b + 1] = vertexNormals[1].y;
+        labelNormals[b + 2] = vertexNormals[1].z;
+        c *= 3;
+        labelNormals[c + 0] = vertexNormals[2].x;
+        labelNormals[c + 1] = vertexNormals[2].y;
+        labelNormals[c + 2] = vertexNormals[2].z;
       }
 
       this.specialTagSpheres[v.node_id] = boFactory.create(pointStart, v.node_id, v,
@@ -4889,81 +4899,20 @@
     labelGeometry.setIndex(new THREE.BufferAttribute(labelIndices, 1));
     labelGeometry.addAttribute('position', new THREE.BufferAttribute(labelPositions, 3));
     labelGeometry.addAttribute('normal', new THREE.BufferAttribute(labelNormals, 3));
-    labelGeometry.addAttribute('color', new THREE.BufferAttribute(labelColors, 3));
-    labelGeometry.addAttribute('visible', new THREE.BufferAttribute(labelVisible, 1));
-    labelGeometry.addAttribute('alpha', new THREE.BufferAttribute(labelAlphas, 1));
+    labelGeometry.addAttribute('colorNew', new THREE.BufferAttribute(labelColors, 3));
+    labelGeometry.addAttribute('visibleNew', new THREE.BufferAttribute(labelVisible, 1));
+    labelGeometry.addAttribute('alphaNew', new THREE.BufferAttribute(labelAlphas, 1));
 
     // Mark position, visible and alpha attributes as dynamic so that they can
     // be changed during runtime.
     labelGeometry.attributes.position.setDynamic(true);
-    labelGeometry.attributes.visible.setDynamic(true);
-    labelGeometry.attributes.alpha.setDynamic(true);
-    labelGeometry.attributes.color.setDynamic(true);
+    labelGeometry.attributes.visibleNew.setDynamic(true);
+    labelGeometry.attributes.alphaNew.setDynamic(true);
+    labelGeometry.attributes.colorNew.setDynamic(true);
 
     labelGeometry.computeBoundingSphere();
 
-    var labelMaterial = new THREE.ShaderMaterial({
-      vertexShader: [
-        'attribute float alpha;',
-        'attribute float visible;',
-        'attribute vec3 color;',
-        'varying float vAlpha;',
-        'varying float vVisible;',
-        'varying vec3 vColor;',
-
-        '#define EPSILON 1e-6',
-
-        '#ifdef USE_LOGDEPTHBUF',
-        '  #ifdef USE_LOGDEPTHBUF_EXT',
-        '    varying float vFragDepth;',
-        '  #endif',
-        '  uniform float logDepthBufFC;',
-        '#endif',
-
-        'void main() {',
-        '   gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);',
-        '   #ifdef USE_LOGDEPTHBUF',
-        '     gl_Position.z = log2(max( EPSILON, gl_Position.w + 1.0 )) * logDepthBufFC;',
-        '     #ifdef USE_LOGDEPTHBUF_EXT',
-        '       vFragDepth = 1.0 + gl_Position.w;',
-        '     #else',
-        '       gl_Position.z = (gl_Position.z - 1.0) * gl_Position.w;',
-        '     #endif',
-        '   #endif',
-        '   vColor = color;',
-        '   vVisible = visible;',
-        '   vAlpha = alpha;',
-        '}'
-      ].join('\n'),
-      fragmentShader: [
-        'varying float vAlpha;',
-        'varying float vVisible;',
-        'varying vec3 vColor;',
-
-        '#ifdef USE_LOGDEPTHBUF',
-        '  uniform float logDepthBufFC;',
-        '  #ifdef USE_LOGDEPTHBUF_EXT',
-        '    varying float vFragDepth;',
-        '  #endif',
-        '#endif',
-
-        'void main() {',
-        '  #if defined(USE_LOGDEPTHBUF) && defined(USE_LOGDEPTHBUF_EXT)',
-        '    gl_FragDepthEXT = log2(vFragDepth) * logDepthBufFC * 0.5;',
-        '  #endif',
-
-        '  if (vVisible > 0.0) {',
-        '    gl_FragColor = vec4(vColor, vAlpha);',
-        '  } else {',
-        '    discard;',
-        '  }',
-        '}'
-      ].join('\n'),
-      side: THREE.DoubleSide,
-      transparent: true,
-      depthTest: true,
-      depthWrite: false
-    });
+    var labelMaterial = new WebGLApplication.FlexibleShaderLambertMaterial(label[1]);
 
     this.specialTagSphereCollection = new THREE.Mesh(labelGeometry, labelMaterial);
     this.space.add(this.specialTagSphereCollection);
@@ -6032,7 +5981,7 @@
       set: function(value) {
         this._isVisible = value;
         // Update 'visible' aray of the buffer
-        var visibility = this.buffer.getAttribute('visible');
+        var visibility = this.buffer.getAttribute('visibleNew');
         for (var i=0; i<this.length; ++i) {
           visibility.array[this.start + i] = value ? 1.0 : 0;
         }
@@ -6045,7 +5994,7 @@
         return this._color;
       },
       set: function(value) {
-        var attribute = this.buffer.attributes.color;
+        var attribute = this.buffer.attributes.colorNew;
         var col = attribute.array;
         var r = value.r;
         var g = value.g;
@@ -6069,7 +6018,7 @@
       set: function(value) {
         this._alpha = value;
         // Update 'alpha' aray of the buffer
-        var attribute = this.buffer.attributes.alpha;
+        var attribute = this.buffer.attributes.alphaNew;
         var alpha = attribute.array;
         for (var i=0; i<this.length; ++i) {
           alpha[this.start + i] = value;
@@ -6175,6 +6124,129 @@
     this.uniforms.diffuse.value = this.color;
     this.uniforms.opacity.value = this.opacity;
   };
+
+  /**
+   * This is a wrapper that allows insertion of snippets of vertex and fragment
+   * shaders at critical sections while otherwise behaving like the shaders for
+   * THREE's built-in MeshLambertMaterial.
+   *
+   * Note that this class may need to be updated whenever THREE.js is upgraded.
+   *
+   * @class
+   * @param {THREE.MeshLambertMaterial} meshLambertMaterial
+   *        A material to use for color and line property initialization.
+   */
+  WebGLApplication.ShaderLambertMaterial = function (meshLambertMaterial) {
+    THREE.ShaderMaterial.call(this);
+
+    this.uniforms = jQuery.extend(true, {}, THREE.ShaderLib.lambert.uniforms);
+    this.vertexShader = THREE.ShaderLib.lambert.vertexShader;
+    this.fragmentShader = THREE.ShaderLib.lambert.fragmentShader;
+
+    // Copy properties from LambertMaterial
+    this.color = meshLambertMaterial.color.clone();
+    this.fog = meshLambertMaterial.fog;
+    this.lights = meshLambertMaterial.lights;
+    this.side = meshLambertMaterial.side;
+  };
+
+  WebGLApplication.ShaderLambertMaterial.prototype =
+    Object.create(THREE.ShaderMaterial.prototype);
+  WebGLApplication.ShaderLambertMaterial.prototype.constructor =
+    WebGLApplication.ShaderLambertMaterial;
+
+  WebGLApplication.ShaderLambertMaterial.INSERTION_LOCATIONS = {
+    vertexDeclarations: {
+      shader: 'vertex',
+      regex: /void\s+main\(\s*\)\s+\{/,
+      replacement: 'void main() {'},
+    vertexPosition: {
+      shader: 'vertex',
+      regex: /#include\s+<project_vertex>/,
+      replacement: '#include <project_vertex>;'},
+    fragmentDeclarations: {
+      shader: 'fragment',
+      regex: /void\s+main\(\s*\)\s+\{/,
+      replacement: 'void main() {'},
+    fragmentColor: {
+      shader: 'fragment',
+      regex: /vec4\s+diffuseColor\s*=\s*vec4\(\s*diffuse,\s*opacity\s*\);/,
+      replacement: ''}
+  };
+
+  /**
+   * Add uniforms to the vertex and fragment shaders.
+   * @param {object} uniforms THREE.js uniform definitions.
+   */
+  WebGLApplication.ShaderLambertMaterial.prototype.addUniforms = function (uniforms) {
+    $.extend(this.uniforms, uniforms);
+  };
+
+  /**
+   * Insert a GLSL snippet into a vertex or fragment shader at a known location.
+   * @param  {string} insertionName Name of a insertion location defined in
+   *                                INSERTION_LOCATIONS.
+   * @param  {string} glsl          GLSL code to insert into the shader.
+   */
+  WebGLApplication.ShaderLambertMaterial.prototype.insertSnippet = function (insertionName, glsl) {
+    var insertionPoint = WebGLApplication.ShaderLambertMaterial.INSERTION_LOCATIONS[insertionName];
+    var shaderSource = insertionPoint.shader === 'vertex' ? this.vertexShader : this.fragmentShader;
+    shaderSource = shaderSource.replace(insertionPoint.regex, glsl + insertionPoint.replacement);
+    if (insertionPoint.shader === 'vertex') {
+      this.vertexShader = shaderSource;
+    } else {
+      this.fragmentShader = shaderSource;
+    }
+    this.needsUpdate = true;
+  };
+
+  /**
+   * This is a shader material that is based on THREE's built-in
+   * MeshLambertMaterial. It injects shader code to control color, alpha and
+   * visibility with varying shader parameters.
+   *
+   * Note that this class may need to be updated whenever THREE.js is upgraded.
+   *
+   * @class
+   * @param {THREE.MeshLambertMaterial} meshLambertMaterial
+   *        A material to use for color and line property initialization.
+   */
+  WebGLApplication.FlexibleShaderLambertMaterial = function (meshLambertMaterial) {
+    WebGLApplication.ShaderLambertMaterial.call(this, meshLambertMaterial);
+
+    // Needed for buffer geometry shader modifications
+    this.transparent = true;
+    this.depthTest = true;
+    this.depthWrite = false;
+
+    // Install snippets
+    this.insertSnippet('vertexDeclarations',
+        ['attribute float alphaNew;',
+         'attribute float visibleNew;',
+         'attribute vec3 colorNew;',
+         'varying float vAlphaNew;',
+         'varying float vVisibleNew;',
+         'varying vec3 vColorNew;', ''].join('\n'));
+    this.insertSnippet('vertexPosition',
+        ['vColorNew = colorNew;',
+         'vVisibleNew = visibleNew;',
+         'vAlphaNew = alphaNew;',''].join('\n'));
+
+    this.insertSnippet('fragmentDeclarations',
+      ['varying float vAlphaNew;',
+       'varying float vVisibleNew;',
+       'varying vec3 vColorNew;', ''].join('\n'));
+    this.insertSnippet('fragmentColor',
+      ['if (vVisibleNew == 0.0) {',
+       '  discard;',
+       '}',
+       'vec4 diffuseColor = vec4(vColorNew, vAlphaNew);', ''].join('\n'));
+  };
+
+  WebGLApplication.FlexibleShaderLambertMaterial.prototype =
+    Object.create(WebGLApplication.ShaderLambertMaterial.prototype);
+  WebGLApplication.FlexibleShaderLambertMaterial.prototype.constructor =
+    WebGLApplication.FlexibleShaderLambertMaterial;
 
   // Make 3D viewer available in CATMAID namespace
   CATMAID.WebGLApplication = WebGLApplication;

@@ -29,6 +29,9 @@ Miscellaneous:
 
 - The log now displays times in the local timezone.
 
+- The connector table now lists the confidence of both the link to the
+  connector and from the connector to the target treenode.
+
 
 ### Bug fixes
 

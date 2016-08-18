@@ -207,8 +207,9 @@ def list_connector(request, project_id=None):
             tn_this.location_z AS this_treenode_z,
             tn_this.id AS this_treenode_id,
             tc_this.relation_id AS this_to_connector_relation_id,
+            tc_this.confidence AS confidence,
             tc_other.relation_id AS connector_to_other_relation_id,
-            tc_other.confidence AS confidence,
+            tc_other.confidence AS target_confidence,
             to_char(connector.edition_time, 'DD-MM-YYYY HH24:MI') AS last_modified
             FROM
             treenode tn_other,
@@ -326,6 +327,7 @@ def list_connector(request, project_id=None):
                 c['other_treenode_x'] = c['connector_x']
                 c['other_treenode_y'] = c['connector_y']
                 c['other_treenode_z'] = c['connector_z']
+                c['target_confidence'] = ''
                 connected_skeleton_treenode_count = 0
 
             if c['connector_id'] in labels_by_connector:
@@ -341,6 +343,7 @@ def list_connector(request, project_id=None):
             z = c['other_treenode_z']
             row.append(z)
             row.append(c['confidence'])
+            row.append(c['target_confidence'])
             row.append(labels)
             row.append(connected_skeleton_treenode_count)
             row.append(c['connector_username'])

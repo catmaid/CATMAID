@@ -130,23 +130,28 @@
               "bSearchable": false,
               "bSortable": true,
               data: 7,
+            }, // target confidence
+            {
+              "bSearchable": false,
+              "bSortable": true,
+              data: 8,
             }, // number of nodes
             {
               "bVisible": true,
               "bSortable": true,
-              data: 8,
+              data: 9,
             }, // username
             {
               "bSearchable": false,
               "bSortable": true,
               "bVisible": true,
-              data: 9,
+              data: 10,
             }, // treenodes
             {
               "bSearchable": false,
               "bSortable": true,
               "bVisible": true,
-              data: 10,
+              data: 11,
             } // last modified
           ]
         });
@@ -187,8 +192,8 @@
 
         // If there is a partner treenode, activate that - otherwise
         // activate the connector itself:
-        if (aData[9]) {
-          idToActivate = parseInt(aData[9], 10);
+        if (aData[10]) {
+          idToActivate = parseInt(aData[10], 10);
           skeletonID = parseInt(aData[1], 10);
         } else {
           idToActivate = parseInt(aData[0], 10);

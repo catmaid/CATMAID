@@ -104,7 +104,7 @@
     if (!CATMAID.tools.isEmpty(updated)) {
       this.triggerChange(updated);
     }
-    
+
     // Update names and trigger addition event
     CATMAID.NeuronNameService.getInstance().registerAll(this, added, (function() {
       this.update();
@@ -1175,7 +1175,7 @@
     content.append(tables);
 
     // Add handler to layout toggle
-    $('#connectivity-layout-toggle-' + widgetID).unbind('change')
+    $('#connectivity-layout-toggle-' + widgetID).off('change')
         .change((function(widget) {
           return function() {
             widget.tablesSideBySide = this.checked;
@@ -1184,7 +1184,7 @@
         })(this)).change();
 
     // Add handler to gap junction table toggle
-    $('#connectivity-gapjunctiontable-toggle-' + widgetID).unbind('change')
+    $('#connectivity-gapjunctiontable-toggle-' + widgetID).off('change')
         .change((function(widget) {
           return function() {
             widget.showGapjunctionTable = this.checked;

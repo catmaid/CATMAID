@@ -331,7 +331,7 @@
       tree.bind("open_node.jstree", function (e, data) {
         // If there are ROI links, adjust behaviour when clicked. Be
         // on the save side and make sure this is the only handler.
-        $("img.roiimage", data.rslt.obj).unbind('click').bind('click',
+        $("img.roiimage", data.rslt.obj).off('click').on('click',
           function() {
             // Hide preview in mouse-out handler
             $("#imagepreview").remove();

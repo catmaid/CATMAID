@@ -4818,9 +4818,9 @@
       scaling: scaling
     });
 
-    geometry.createAll(labels, scaling, (function(v, m) {
+    geometry.createAll(labels, scaling, (function(v, m, o) {
       return !this.specialTagSpheres.hasOwnProperty(v.node_id);
-    }).bind(this), (function(v, m, bufferObject) {
+    }).bind(this), (function(v, m, o, bufferObject) {
       this.specialTagSpheres[v.node_id] = bufferObject;
     }).bind(this));
 

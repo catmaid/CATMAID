@@ -268,7 +268,7 @@
       var object = objects[i];
       var v = object[0];
       var m = object[1];
-      if (!filter(v, m)) {
+      if (!filter(v, m, object)) {
         continue;
       }
 
@@ -323,7 +323,7 @@
       }
 
       var bufferObject = factory.create(v.node_id, v, scaling, m);
-      handler(v, m, bufferObject);
+      handler(v, m, object, bufferObject);
     }
 
     indices.needsUpdate = true;

@@ -27,6 +27,10 @@ Tracing overlay:
 
 Miscellaneous:
 
+- Holding Ctrl with < or > will now smoothly animate through sections as
+  fast as the active layers will allow. This also works with Shift to move
+  10 sections at a time.
+
 - The log now displays times in the local timezone.
 
 - The connector table now lists the confidence of both the link to the

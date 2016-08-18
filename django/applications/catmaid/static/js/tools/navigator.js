@@ -182,6 +182,34 @@
     {
       self.stackViewer.moveToPixel( val, self.stackViewer.y, self.stackViewer.x, self.stackViewer.s );
     };
+
+    var smoothChangeSlice = function (e, step) {
+      if (self.smoothScrolling) return true;
+      self.smoothScrolling = true;
+      var callback = function () {
+        var zOffset = self.stackViewer.primaryStack.validZDistanceByStep(self.slider_z.val, step);
+        if (!zOffset) return;
+        self.stackViewer.moveToPixel(
+            self.slider_z.val + zOffset,
+            self.stackViewer.y,
+            self.stackViewer.x,
+            self.stackViewer.s,
+            function () { CATMAID.tools.callIfFn(callbackWrapper.callback); });
+      };
+      callbackWrapper = {callback: callback};
+      var target = e.target;
+      var oldListener = target.onkeyup;
+      var oldBlocking = self.stackViewer.blockingRedraws;
+      self.stackViewer.blockingRedraws = true;
+      target.onkeyup = function (e) {
+        callbackWrapper.callback = undefined;
+        target.onkeyup = oldListener;
+        self.smoothScrolling = false;
+        self.stackViewer.blockingRedraws = oldBlocking;
+      };
+      callback();
+    };
+
     //--------------------------------------------------------------------------
 
     //--------------------------------------------------------------------------
@@ -312,23 +340,33 @@
       }),
 
       new CATMAID.Action({
-        helpText: "Move up 1 slice in z (or 10 with <kbd>Shift</kbd> held)",
+        helpText: "Move up 1 slice in z (or 10 with <kbd>Shift</kbd> held; hold with <kbd>Ctrl</kbd> to animate)",
         keyShortcuts: {
           ',': [ 44, 188 ]
         },
         run: function (e) {
-          self.slider_z.move(-(e.shiftKey ? 10 : 1));
+          var step = e.shiftKey ? -10 : -1;
+          if (e.ctrlKey) {
+            smoothChangeSlice(e, step);
+          } else {
+            self.slider_z.move(step);
+          }
           return true;
         }
       }),
 
       new CATMAID.Action({
-        helpText: "Move down 1 slice in z (or 10 with <kbd>Shift</kbd> held)",
+        helpText: "Move down 1 slice in z (or 10 with <kbd>Shift</kbd> held; hold with <kbd>Ctrl</kbd> to animate)",
         keyShortcuts: {
           '.': [ 190 ]
         },
         run: function (e) {
-          self.slider_z.move((e.shiftKey ? 10 : 1));
+          var step = e.shiftKey ? 10 : 1;
+          if (e.ctrlKey) {
+            smoothChangeSlice(e, step);
+          } else {
+            self.slider_z.move(step);
+          }
           return true;
         }
       }),

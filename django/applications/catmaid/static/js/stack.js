@@ -321,24 +321,27 @@
      * given one. Or null if there is none.
      */
     self.validZDistanceBefore = function(section) {
-      var adj = section;
-      while (true) {
-      --adj;
-      if (adj < 0) return null;
-      if (!self.isSliceBroken(adj)) return adj - section;
-      }
+      return self.validZDistanceByStep(section, -1);
     };
 
     /**
      * Return the distance to the closest valid section after the given one.
      * Or null if there is none.
      */
-    self.validZDistanceAfter = function(section) {
+    self.validZDistanceAfter = function (section) {
+      return self.validZDistanceByStep(section, 1);
+    };
+
+    /**
+     * Return the distance to the closest valid section relative to the given
+     * one in strided steps.
+     */
+    self.validZDistanceByStep = function (section, step) {
       var adj = section;
       while (true) {
-      ++adj;
-      if (adj > self.MAX_Z) return null;
-      if (!self.isSliceBroken(adj)) return adj - section;
+        adj = adj + step;
+        if (adj > self.MAX_Z || adj < 0) return null;
+        if (!self.isSliceBroken(adj)) return adj - section;
       }
     };
   }

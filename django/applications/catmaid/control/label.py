@@ -298,13 +298,20 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
                   AND ci.project_id = %s
                   AND ci.class_id = %s
                   AND tci.class_instance_id = ci.id
+                  AND tci.relation_id = %s
                   AND tn.id = tci.treenode_id
                   AND tn.skeleton_id = %s
                 GROUP BY
                   ll.name, ll.max
                 HAVING
                   COUNT(tci.treenode_id) > ll.max
-            """, (list(ll_names), list(ll_maxes), p.id, label_class.id, node.skeleton_id))
+            """, (
+                list(ll_names),
+                list(ll_maxes),
+                p.id,
+                label_class.id,
+                labeled_as_relation.id,
+                node.skeleton_id))
 
             if cursor.rowcount:
                 response['warning'] = 'The skeleton has too many of the following tags: ' + \

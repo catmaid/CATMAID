@@ -63,7 +63,7 @@
       },
       set: function(value) {
         this._isVisible = value;
-        // Update 'visible' aray of the buffer
+        // Update 'visible' array of the buffer
         var visibility = this.buffer.getAttribute('visibleNew');
         for (var i=0; i<this.length; ++i) {
           visibility.array[this.start + i] = value ? 1.0 : 0;
@@ -100,7 +100,7 @@
       },
       set: function(value) {
         this._alpha = value;
-        // Update 'alpha' aray of the buffer
+        // Update 'alpha' array of the buffer
         var attribute = this.buffer.attributes.alphaNew;
         var alpha = attribute.array;
         for (var i=0; i<this.length; ++i) {

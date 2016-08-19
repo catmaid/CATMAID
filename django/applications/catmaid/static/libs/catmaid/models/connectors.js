@@ -138,6 +138,9 @@
 
       return CATMAID.fetch(url, 'POST', params)
         .then(function(result) {
+          if (result.warning) {
+            CATMAID.warn(result.warning);
+          }
           CATMAID.Connectors.trigger(CATMAID.Connectors.EVENT_LINK_CREATED,
               result.link_id, linkType, nodeId);
           return {

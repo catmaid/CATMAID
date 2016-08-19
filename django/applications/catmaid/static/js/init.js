@@ -194,9 +194,9 @@ var project;
       if ( options[ "x" ] ) x = parseInt( options[ "x" ] );
       if ( isNaN( x ) ) x = undefined;
       if ( options[ "s" ] ) s = parseFloat( options[ "s" ] );
-          if ( isNaN( s ) ) s = undefined;
-          if ( options[ "active_skeleton_id" ] ) init_active_skeleton = parseInt( options[ "active_skeleton_id" ] );
-          if ( options[ "active_node_id" ] ) init_active_node_id = parseInt( options[ "active_node_id" ] );
+      if ( isNaN( s ) ) s = undefined;
+      if ( options[ "active_skeleton_id" ] ) init_active_skeleton = parseInt( options[ "active_skeleton_id" ] );
+      if ( options[ "active_node_id" ] ) init_active_node_id = parseInt( options[ "active_node_id" ] );
 
       if ( !(
           typeof z == "undefined" ||

@@ -1988,6 +1988,10 @@
     this.cylinder = new THREE.CylinderGeometry(1, 1, 1, 10, 1, false);
     this.textMaterial = new THREE.MeshNormalMaterial();
 
+    // Make sure normals are computed on tempalte geometry
+    this.labelspheregeometry.computeFaceNormals();
+    this.labelspheregeometry.computeVertexNormals();
+
     // Mesh materials for spheres on nodes tagged with 'uncertain end', 'undertain continuation' or 'TODO'
     this.updateDynamicMaterials(options, false);
     this.textGeometryCache = new WebGLApplication.prototype.Space.prototype.TextGeometryCache(options);
@@ -4808,9 +4812,10 @@
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createLabelSpheres =
       function(labels, scaling) {
 
-    var geometry = new CATMAID.MultiObjectBufferGeometry({
+    var geometry = new CATMAID.MultiObjectInstancedBufferGeometry({
       templateGeometry: this.space.staticContent.labelspheregeometry,
       nObjects: labels.length,
+      scaling: scaling
     });
 
     geometry.createAll(labels, scaling, (function(v, m) {

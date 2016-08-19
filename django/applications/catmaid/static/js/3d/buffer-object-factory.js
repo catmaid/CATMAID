@@ -337,8 +337,227 @@
   };
 
 
+  /**
+   * A wrapper around THREE's InstancedBufferGeometry that initializes common
+   * attributes based on the passed in parameters.
+   */
+  var MultiObjectInstancedBufferGeometry = function(options) {
+    if (!options) throw new CATMAID.ValueError('Initialization options needed');
+
+    var scaling = options.scaling || 1.0;
+
+    var nObjects = options.nObjects;
+    if (!nObjects) throw new CATMAID.ValueError('Need number of objects');
+
+    this.templateGeometry = options.templateGeometry;
+    if (!this.templateGeometry) throw new CATMAID.ValueError('Need template geometry');
+
+    THREE.InstancedBufferGeometry.call(this);
+
+    this.maxInstancedCount = nObjects;
+
+    // Per mesh data
+    var templateVertices = this.templateGeometry.vertices;
+    var nVerticesPerObject = templateVertices.length;
+    var templateFaces = this.templateGeometry.faces;
+    var nFacesPerObject = templateFaces.length;
+
+    var vertices = new Float32Array(nVerticesPerObject * 3);
+    var normals  = new Float32Array(nVerticesPerObject * 3);
+
+    var indexCount     = nFacesPerObject * 3;
+    var IndexType      = indexCount > 65535 ? Uint32Array : Uint16Array;
+    var indices        = new IndexType(indexCount);
+
+    for (var i=0; i<nVerticesPerObject; ++i) {
+      var v = templateVertices[i];
+      var offset = i * 3;
+      vertices[offset + 0] = v.x;
+      vertices[offset + 1] = v.y;
+      vertices[offset + 2] = v.z;
+    }
+
+    for (var i=0; i<nFacesPerObject; ++i) {
+      var face = templateFaces[i];
+      var offset = i * 3;
+      var a, b, c;
+      indices[offset + 0] = a = face.a;
+      indices[offset + 1] = b = face.b;
+      indices[offset + 2] = c = face.c;
+
+      var vertexNormals = face.vertexNormals;
+      a *= 3;
+      normals[a + 0] = vertexNormals[0].x;
+      normals[a + 1] = vertexNormals[0].y;
+      normals[a + 2] = vertexNormals[0].z;
+      b *= 3;
+      normals[b + 0] = vertexNormals[1].x;
+      normals[b + 1] = vertexNormals[1].y;
+      normals[b + 2] = vertexNormals[1].z;
+      c *= 3;
+      normals[c + 0] = vertexNormals[2].x;
+      normals[c + 1] = vertexNormals[2].y;
+      normals[c + 2] = vertexNormals[2].z;
+    }
+
+    var scaleMatrix = new THREE.Matrix4();
+    scaleMatrix.makeScale(scaling, scaling, scaling);
+    scaleMatrix.applyToVector3Array(vertices);
+
+    this.setIndex(new THREE.BufferAttribute(indices, 1));
+    this.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
+    this.addAttribute('position', new THREE.BufferAttribute(vertices, 3));
+
+    this.computeBoundingBox();
+    this.computeBoundingSphere();
+
+    // Per instance data
+    var offsets   = new Float32Array(nObjects * 3);
+    var colors    = new Float32Array(nObjects * 3);
+    var visible   = new Float32Array(nObjects);
+    var alphas    = new Float32Array(nObjects);
+
+    // Create buffer geometry, add 'New' suffix to custom attributes to not
+    // conflict with THREE.js internal arguments.
+    this.addAttribute('offset', new THREE.InstancedBufferAttribute(offsets, 3));
+    this.addAttribute('colorNew', new THREE.InstancedBufferAttribute(colors, 3));
+    this.addAttribute('visibleNew', new THREE.InstancedBufferAttribute(visible, 1));
+    this.addAttribute('alphaNew', new THREE.InstancedBufferAttribute(alphas, 1));
+
+    // Mark position, visible and alpha attributes as dynamic so that they can
+    // be changed during runtime.
+    this.attributes.offset.setDynamic(true);
+    this.attributes.colorNew.setDynamic(true);
+    this.attributes.visibleNew.setDynamic(true);
+    this.attributes.alphaNew.setDynamic(true);
+
+    this.nVerticesPerObject = nVerticesPerObject;
+  };
+
+  MultiObjectInstancedBufferGeometry.prototype = Object.create(THREE.InstancedBufferGeometry.prototype);
+  MultiObjectInstancedBufferGeometry.prototype.constructor = MultiObjectInstancedBufferGeometry;
+
+  MultiObjectInstancedBufferGeometry.prototype.createObjectFactory = function() {
+    return new CATMAID.BufferObjectFactory(this, this.templateGeometry);
+  };
+
+  /**
+   * This creates a shader material that is based on THREE's built-in
+   * MeshLambertMaterial. It injects shader code to control color, alpha and
+   * visibility with varying shader parameters. Since for a buffer geometry the
+   * material is tightly coupled to the geometry, this is defined as a member
+   * function.
+   *
+   * @param {THREE.MeshLambertMaterial} meshLambertMaterial
+   *        An optional material to use for color and line property initialization.
+   */
+  MultiObjectInstancedBufferGeometry.prototype.createLambertMaterial = function(meshLambertMaterial) {
+    var material = new CATMAID.ShaderLambertMaterial(meshLambertMaterial);
+
+    // Needed for buffer geometry shader modifications
+    material.transparent = true;
+    material.depthTest = true;
+    material.depthWrite = false;
+
+    // Install snippets
+    // Warning: morphing doesn't work with current THREE.js version, because
+    // the GLSL position attribute is used in places that aren't easy to replace
+    // in morphing code.
+    material.insertSnippet('vertexDeclarations',
+        ['attribute vec3 offset;',
+         'attribute float alphaNew;',
+         'attribute float visibleNew;',
+         'attribute vec3 colorNew;',
+         'varying float vAlphaNew;',
+         'varying float vVisibleNew;',
+         'varying vec3 vColorNew;', ''].join('\n'));
+    material.insertSnippet('vertexBegin',
+        '\ntransformed = offset + transformed;\n', true);
+    material.insertSnippet('vertexPosition',
+        ['vColorNew = colorNew;',
+         'vVisibleNew = visibleNew;',
+         'vAlphaNew = alphaNew;',''].join('\n'));
+
+    material.insertSnippet('fragmentDeclarations',
+      ['varying float vAlphaNew;',
+       'varying float vVisibleNew;',
+       'varying vec3 vColorNew;', ''].join('\n'));
+    material.insertSnippet('fragmentColor',
+      ['if (vVisibleNew == 0.0) {',
+       '  discard;',
+       '}',
+       'vec4 diffuseColor = vec4(vColorNew, vAlphaNew);', ''].join('\n'));
+
+    return material;
+  };
+
+  /**
+   * Create buffer objects for all passed in object/material combinations. This
+   * is more performant for larger numbers of nodes.
+   */
+  MultiObjectInstancedBufferGeometry.prototype.createAll = function(objects, scaling, filter, handler) {
+    filter = filter || returnTrue;
+    handler = handler || CATMAID.noop;
+
+    var templateGeometry = this.templateGeometry;
+    if (!templateGeometry) {
+      throw new CATMAID.Error('Can only create buffer objects if buffer has template assigned');
+    }
+
+    var factory = this.createObjectFactory();
+
+    var offsetAttr = this.attributes.offset;
+    var colorsAttr = this.attributes.colorNew;
+    var visibleAttr = this.attributes.visibleNew;
+    var alphasAttr = this.attributes.alphaNew;
+
+    var offsets = offsetAttr.array;
+    var colors = colorsAttr.array;
+    var visible = visibleAttr.array;
+    var alphas = alphasAttr.array;
+
+    for (var i=0, max=objects.length; i<max; ++i) {
+      var object = objects[i];
+      var v = object[0];
+      var m = object[1];
+      if (!filter(v, m)) {
+        continue;
+      }
+
+      var color = m.color;
+      var alpha = m.opacity;
+
+      var oIndex =  i * 3;
+      offsets[oIndex + 0] = v.x;
+      offsets[oIndex + 1] = v.y;
+      offsets[oIndex + 2] = v.z;
+
+      colors[oIndex + 0] = color.r;
+      colors[oIndex + 1] = color.g;
+      colors[oIndex + 2] = color.b;
+
+      visible[i] = 1.0;
+      alphas[i] = alpha;
+
+      var bufferObject = factory.create(v.node_id, v, scaling, m);
+      handler(v, m, bufferObject);
+    }
+
+    offsetAttr.needsUpdate = true;
+    colorsAttr.needsUpdate = true;
+    visibleAttr.needsUpdate = true;
+    alphasAttr.needsUpdate = true;
+
+    // Calculate bounding box and bounding sphere based on offsets. A direct
+    // call of computeBoundingBox() or computeBoundingSphere() won't be enough,
+    // because the actual vertex positions are only calculated on the GPU.
+    this.boundingBox.setFromArray(offsets);
+    this.boundingSphere.copy(this.boundingBox.getBoundingSphere());
+  };
+
   // Export
   CATMAID.BufferObjectFactory = BufferObjectFactory;
   CATMAID.MultiObjectBufferGeometry = MultiObjectBufferGeometry;
+  CATMAID.MultiObjectInstancedBufferGeometry = MultiObjectInstancedBufferGeometry;
 
 })(CATMAID);

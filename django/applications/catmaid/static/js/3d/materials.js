@@ -136,6 +136,10 @@
       shader: 'vertex',
       regex: /void\s+main\(\s*\)\s+\{/,
       replacement: 'void main() {'},
+    vertexBegin: {
+      shader: 'vertex',
+      regex: /#include\s+<begin_vertex>/,
+      replacement: '#include <begin_vertex>;'},
     vertexPosition: {
       shader: 'vertex',
       regex: /#include\s+<project_vertex>/,
@@ -163,11 +167,15 @@
    * @param  {string} insertionName Name of a insertion location defined in
    *                                INSERTION_LOCATIONS.
    * @param  {string} glsl          GLSL code to insert into the shader.
+   * @param  {bool}   after         Optional, if true the glsl code iserted
+   *                                after the match.
    */
-  ShaderLambertMaterial.prototype.insertSnippet = function (insertionName, glsl) {
+  ShaderLambertMaterial.prototype.insertSnippet = function (insertionName, glsl, after) {
     var insertionPoint = ShaderLambertMaterial.INSERTION_LOCATIONS[insertionName];
     var shaderSource = insertionPoint.shader === 'vertex' ? this.vertexShader : this.fragmentShader;
-    shaderSource = shaderSource.replace(insertionPoint.regex, glsl + insertionPoint.replacement);
+    var replacement = after ? (insertionPoint.replacement + glsl) :
+        (glsl + insertionPoint.replacement);
+    shaderSource = shaderSource.replace(insertionPoint.regex, replacement);
     if (insertionPoint.shader === 'vertex') {
       this.vertexShader = shaderSource;
     } else {

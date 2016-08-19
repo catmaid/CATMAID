@@ -131,12 +131,12 @@ def insert_treenode(request, project_id=None):
     # come children of the inserted node. This requires extra state
     # information: the child state for the paren.
     takeover_child_ids = get_request_list(request.POST,
-            'takeover_child_ids', None, lambda x: int(x))
+            'takeover_child_ids', None, int)
 
     # Get optional initial links to connectors, expect each entry to be a list
     # of connector ID and relation ID.
     try:
-        links = get_request_list(request.POST, 'links', [], lambda x: int(x))
+        links = get_request_list(request.POST, 'links', [], int)
     except Exception, e:
         raise ValueError("Couldn't parse list parameter: {}".format(e))
 
@@ -206,7 +206,7 @@ def insert_treenode(request, project_id=None):
     # Create all initial links
     if links:
         created_links = create_connector_link(project_id, request.user.id,
-                new_treenode.treenode_id, new_treenode.skeleton_id, links);
+                new_treenode.treenode_id, new_treenode.skeleton_id, links)
     else:
         created_links = []
 
@@ -340,7 +340,7 @@ def _create_treenode(project_id, creator, editor, x, y, z, radius, confidence,
                         # Find starting values for each substitution.
                         counts = [int(m.groups()[1]) for m in counting_pattern.finditer(neuron_name)]
                         # Find existing matching neurons in database.
-                        name_match = counting_pattern.sub("(\d+)", neuron_name)
+                        name_match = counting_pattern.sub(r"(\d+)", neuron_name)
                         name_pattern = re.compile(name_match)
                         matching_neurons = ClassInstance.objects.filter(
                                 project_id=project_id,
@@ -728,10 +728,10 @@ def _treenode_info(project_id, treenode_id):
         dict(zip([col[0] for col in c.description], row))
         for row in c.fetchall()
     ]
-    if (len(results) > 1):
+    if len(results) > 1:
         raise ValueError('Found more than one skeleton and neuron for '
                         'treenode %s' % treenode_id)
-    elif (len(results) == 0):
+    elif len(results) == 0:
         raise ValueError('No skeleton and neuron for treenode %s' % treenode_id)
 
     return results[0]
@@ -1007,9 +1007,9 @@ def find_next_branchnode_or_end(request, project_id=None, treenode_id=None):
             seq = [child_node_id] # Does not include the starting node tnid
             branch_end = child_node_id
             while True:
-                branchChildren = graph.successors(branch_end)
-                if 1 == len(branchChildren):
-                    branch_end = branchChildren[0]
+                branch_children = graph.successors(branch_end)
+                if 1 == len(branch_children):
+                    branch_end = branch_children[0]
                     seq.append(branch_end)
                 else:
                     break # Found an end node or a branch node
@@ -1030,7 +1030,7 @@ def find_next_branchnode_or_end(request, project_id=None, treenode_id=None):
             node_ids_flat = list(itertools.chain.from_iterable(branches))
             node_locations = {row[0]: row for row in _fetch_locations(node_ids_flat)}
 
-        branches = [[node_locations[id] for id in branch] for branch in branches]
+        branches = [[node_locations[node_id] for node_id in branch] for branch in branches]
         return JsonResponse(branches, safe=False)
     except Exception as e:
         raise Exception('Could not obtain next branch node or leaf: ' + str(e))

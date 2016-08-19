@@ -4812,9 +4812,8 @@
       templateGeometry: this.space.staticContent.labelspheregeometry,
       nObjects: labels.length,
     });
-    var boFactory = geometry.createObjectFactory();
 
-    boFactory.createAll(labels, scaling, (function(v, m) {
+    geometry.createAll(labels, scaling, (function(v, m) {
       return !this.specialTagSpheres.hasOwnProperty(v.node_id);
     }).bind(this), (function(v, m, bufferObject) {
       this.specialTagSpheres[v.node_id] = bufferObject;

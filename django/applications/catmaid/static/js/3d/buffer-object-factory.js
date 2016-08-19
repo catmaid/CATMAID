@@ -123,115 +123,6 @@
   var returnTrue = function() { return true; };
 
   /**
-   * Create buffer objects for all passed in object/material combinations. This
-   * is more performant for larger numbers of nodes.
-   */
-  BufferObjectFactory.prototype.createAll = function(objects, scaling, filter, handler) {
-    filter = filter || returnTrue;
-    handler = handler || CATMAID.noop;
-
-    var templateGeometry = this.buffer.templateGeometry;
-    if (!templateGeometry) {
-      throw new CATMAID.Error('Can only create buffer objects if buffer has template assigned');
-    }
-
-    var faces = templateGeometry.faces;
-    var nFacesPerObject = faces.length;
-    var vertices = templateGeometry.vertices;
-    var nVerticesPerObject = templateGeometry.vertices.length;
-
-    var matrix = new THREE.Matrix4();
-    var vertex = new THREE.Vector3();
-    var normal = new THREE.Vector3();
-
-    var indexAttr = this.buffer.index;
-    var positionsAttr = this.buffer.attributes.position;
-    var normalsAttr = this.buffer.attributes.normal;
-    var colorsAttr = this.buffer.attributes.colorNew;
-    var visibleAttr = this.buffer.attributes.visibleNew;
-    var alphasAttr = this.buffer.attributes.alphaNew;
-
-    var indices = indexAttr.array;
-    var positions = positionsAttr.array;
-    var normals = normalsAttr.array;
-    var colors = colorsAttr.array;
-    var visible = visibleAttr.array;
-    var alphas = alphasAttr.array;
-
-    for (var i=0, max=objects.length; i<max; ++i) {
-      var object = objects[i];
-      var v = object[0];
-      var m = object[1];
-      if (!filter(v, m)) {
-        continue;
-      }
-
-      var color = m.color;
-      var alpha = m.opacity;
-
-      // Reset matrix to scale points and set position
-      matrix.makeScale(scaling, scaling, scaling);
-      matrix.setPosition(v);
-
-      var objectStart = i * nVerticesPerObject;
-      var vertexStart = objectStart * 3;
-      for (var j=0; j<nVerticesPerObject; ++j) {
-        vertex.copy(vertices[j]);
-        vertex.applyMatrix4(matrix);
-
-        var vIndex =  vertexStart + j * 3;
-        positions[vIndex + 0] = vertex.x;
-        positions[vIndex + 1] = vertex.y;
-        positions[vIndex + 2] = vertex.z;
-
-        colors[vIndex + 0] = color.r;
-        colors[vIndex + 1] = color.g;
-        colors[vIndex + 2] = color.b;
-
-        visible[objectStart + j] = 1.0;
-        alphas[objectStart + j] = alpha;
-      }
-
-      var faceStart = i * nFacesPerObject * 3;
-      for (var j=0; j<nFacesPerObject; ++j) {
-        var face = faces[j];
-        var offset = faceStart + j * 3;
-        var a, b, c;
-        indices[offset + 0] = a = objectStart + face.a;
-        indices[offset + 1] = b = objectStart + face.b;
-        indices[offset + 2] = c = objectStart + face.c;
-
-        var vertexNormals = face.vertexNormals;
-        a *= 3;
-        normals[a + 0] = vertexNormals[0].x;
-        normals[a + 1] = vertexNormals[0].y;
-        normals[a + 2] = vertexNormals[0].z;
-        b *= 3;
-        normals[b + 0] = vertexNormals[1].x;
-        normals[b + 1] = vertexNormals[1].y;
-        normals[b + 2] = vertexNormals[1].z;
-        c *= 3;
-        normals[c + 0] = vertexNormals[2].x;
-        normals[c + 1] = vertexNormals[2].y;
-        normals[c + 2] = vertexNormals[2].z;
-      }
-
-      var bufferObject = this.create(v.node_id, v, scaling, m);
-      handler(v, m, bufferObject);
-    }
-
-    indices.needsUpdate = true;
-    positionsAttr.needsUpdate = true;
-    normalsAttr.needsUpdate = true;
-    colorsAttr.needsUpdate = true;
-    visibleAttr.needsUpdate = true;
-    alphasAttr.needsUpdate = true;
-
-    this.buffer.computeBoundingSphere();
-  };
-
-
-  /**
    * A wrapper around THREE's BufferGeometry that initilizes common attributes
    * based on the passed in parameters.
    */
@@ -259,7 +150,6 @@
       var colors    = new Float32Array(nObjects * nPointsPerObject * 3);
       var visible   = new Float32Array(nObjects * nPointsPerObject);
       var alphas    = new Float32Array(nObjects * nPointsPerObject);
-
 
       // Create buffer geometry, add 'New' suffix to custom attributes to not
       // conflict with THREE.js internal arguments.
@@ -334,6 +224,116 @@
        'vec4 diffuseColor = vec4(vColorNew, vAlphaNew);', ''].join('\n'));
 
     return material;
+  };
+
+  /**
+   * Create buffer objects for all passed in object/material combinations. This
+   * is more performant for larger numbers of nodes.
+   */
+  MultiObjectBufferGeometry.prototype.createAll = function(objects, scaling, filter, handler) {
+    filter = filter || returnTrue;
+    handler = handler || CATMAID.noop;
+
+    var templateGeometry = this.templateGeometry;
+    if (!templateGeometry) {
+      throw new CATMAID.Error('Can only create buffer objects if buffer has template assigned');
+    }
+
+    var factory = this.createObjectFactory();
+
+    var faces = templateGeometry.faces;
+    var nFacesPerObject = faces.length;
+    var vertices = templateGeometry.vertices;
+    var nVerticesPerObject = templateGeometry.vertices.length;
+
+    var matrix = new THREE.Matrix4();
+    var vertex = new THREE.Vector3();
+    var normal = new THREE.Vector3();
+
+    var indexAttr = this.index;
+    var positionsAttr = this.attributes.position;
+    var normalsAttr = this.attributes.normal;
+    var colorsAttr = this.attributes.colorNew;
+    var visibleAttr = this.attributes.visibleNew;
+    var alphasAttr = this.attributes.alphaNew;
+
+    var indices = indexAttr.array;
+    var positions = positionsAttr.array;
+    var normals = normalsAttr.array;
+    var colors = colorsAttr.array;
+    var visible = visibleAttr.array;
+    var alphas = alphasAttr.array;
+
+    for (var i=0, max=objects.length; i<max; ++i) {
+      var object = objects[i];
+      var v = object[0];
+      var m = object[1];
+      if (!filter(v, m)) {
+        continue;
+      }
+
+      var color = m.color;
+      var alpha = m.opacity;
+
+      // Reset matrix to scale points and set position
+      matrix.makeScale(scaling, scaling, scaling);
+      matrix.setPosition(v);
+
+      var objectStart = i * nVerticesPerObject;
+      var vertexStart = objectStart * 3;
+      for (var j=0; j<nVerticesPerObject; ++j) {
+        vertex.copy(vertices[j]);
+        vertex.applyMatrix4(matrix);
+
+        var vIndex =  vertexStart + j * 3;
+        positions[vIndex + 0] = vertex.x;
+        positions[vIndex + 1] = vertex.y;
+        positions[vIndex + 2] = vertex.z;
+
+        colors[vIndex + 0] = color.r;
+        colors[vIndex + 1] = color.g;
+        colors[vIndex + 2] = color.b;
+
+        visible[objectStart + j] = 1.0;
+        alphas[objectStart + j] = alpha;
+      }
+
+      var faceStart = i * nFacesPerObject * 3;
+      for (var j=0; j<nFacesPerObject; ++j) {
+        var face = faces[j];
+        var offset = faceStart + j * 3;
+        var a, b, c;
+        indices[offset + 0] = a = objectStart + face.a;
+        indices[offset + 1] = b = objectStart + face.b;
+        indices[offset + 2] = c = objectStart + face.c;
+
+        var vertexNormals = face.vertexNormals;
+        a *= 3;
+        normals[a + 0] = vertexNormals[0].x;
+        normals[a + 1] = vertexNormals[0].y;
+        normals[a + 2] = vertexNormals[0].z;
+        b *= 3;
+        normals[b + 0] = vertexNormals[1].x;
+        normals[b + 1] = vertexNormals[1].y;
+        normals[b + 2] = vertexNormals[1].z;
+        c *= 3;
+        normals[c + 0] = vertexNormals[2].x;
+        normals[c + 1] = vertexNormals[2].y;
+        normals[c + 2] = vertexNormals[2].z;
+      }
+
+      var bufferObject = factory.create(v.node_id, v, scaling, m);
+      handler(v, m, bufferObject);
+    }
+
+    indices.needsUpdate = true;
+    positionsAttr.needsUpdate = true;
+    normalsAttr.needsUpdate = true;
+    colorsAttr.needsUpdate = true;
+    visibleAttr.needsUpdate = true;
+    alphasAttr.needsUpdate = true;
+
+    this.computeBoundingSphere();
   };
 
 

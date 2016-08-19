@@ -315,7 +315,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
             'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
-        expected_result = {'error': 'No skeleton and neuron for treenode %d' % parent_id}
+        expected_result = {'error': 'Parent treenode %d does not exist' % parent_id}
         self.assertIn(expected_result['error'], parsed_response['error'])
         self.assertEqual(treenode_count, Treenode.objects.all().count())
         self.assertEqual(relation_count, TreenodeClassInstance.objects.all().count())

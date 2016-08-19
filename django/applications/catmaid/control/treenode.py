@@ -31,6 +31,28 @@ def can_edit_treenode_or_fail(user, project_id, treenode_id):
     return can_edit_class_instance_or_fail(user, info['neuron_id'], 'neuron')
 
 
+def can_edit_skeleton_or_fail(user, project_id, skeleton_id, model_of_relation_id):
+    """Test if a user has permission to edit a neuron modeled by a skeleton."""
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT
+            ci2.id as neuron_id
+        FROM
+            class_instance ci,
+            class_instance ci2,
+            class_instance_class_instance cici
+        WHERE ci.project_id = %s
+          AND ci.id = %s
+          AND ci.id = cici.class_instance_a
+          AND ci2.id = cici.class_instance_b
+          AND cici.relation_id = %s
+        """, (project_id, skeleton_id, model_of_relation_id))
+    if cursor.rowcount == 0:
+        raise ValueError('No neuron modeled by skeleton %s' % skeleton_id)
+    neuron_id = cursor.fetchone()[0]
+    return can_edit_class_instance_or_fail(user, neuron_id, 'neuron')
+
+
 @requires_user_role(UserRole.Annotate)
 def create_treenode(request, project_id=None):
     """
@@ -266,10 +288,6 @@ def _create_treenode(project_id, creator, editor, x, y, z, radius, confidence,
     response_on_error = ''
     try:
         if -1 != int(parent_id):  # A root node and parent node exist
-            # Raise an Exception if the user doesn't have permission to edit
-            # the neuron the skeleton of the treenode is modeling.
-            can_edit_treenode_or_fail(editor, project_id, parent_id)
-
             # Select the parent treenode for update to prevent race condition
             # updates to its skeleton ID while this node is being created.
             cursor = connection.cursor()
@@ -277,9 +295,18 @@ def _create_treenode(project_id, creator, editor, x, y, z, radius, confidence,
                 SELECT t.skeleton_id, t.edition_time FROM treenode t
                 WHERE t.id = %s FOR NO KEY UPDATE OF t
                 ''', (parent_id,))
+
+            if cursor.rowcount != 1:
+                raise ValueError('Parent treenode %s does not exist' % parent_id)
+
             parent_node = cursor.fetchone()
             parent_skeleton_id = parent_node[0]
             parent_edition_time = parent_node[1]
+
+            # Raise an Exception if the user doesn't have permission to edit
+            # the neuron the skeleton of the treenode is modeling.
+            can_edit_skeleton_or_fail(editor, project_id, parent_skeleton_id,
+                                      relation_map['model_of'])
 
             response_on_error = 'Could not insert new treenode!'
             new_treenode = insert_new_treenode(parent_id, parent_skeleton_id)

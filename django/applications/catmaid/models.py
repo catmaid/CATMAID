@@ -743,7 +743,7 @@ class CardinalityRestriction(models.Model):
             return too_much_items
         elif self.cardinality_type == 2:
             # Type 2: at least <value> number of class instances can be
-            # instantiated. A new instance violates never.
+            # instantiated. A new instance never violates.
             return False
         elif self.cardinality_type == 3 or self.cardinality_type == 4:
             # Type 3 and type 4: exactly <value> number of class instances are
@@ -753,8 +753,8 @@ class CardinalityRestriction(models.Model):
             too_much_items = num_linked_ci >= self.value
             return too_much_items
         elif self.cardinality_type == 5:
-            # Type 5: at maximum <value> number of class instances are allowed
-            # for each sub-type. A new insatnce violates never.
+            # Type 5: at minimum <value> number of class instances are allowed
+            # for each sub-type. A new instance never violates.
             return False
         else:
             raise Exception("Unsupported cardinality type.")

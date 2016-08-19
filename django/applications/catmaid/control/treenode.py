@@ -1,5 +1,4 @@
 import itertools
-import json
 import math
 import networkx as nx
 import re
@@ -7,7 +6,7 @@ import re
 from collections import defaultdict
 
 from django.db import connection
-from django.http import HttpResponse, JsonResponse
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 
 from rest_framework.decorators import api_view
@@ -652,9 +651,9 @@ def delete_treenode(request, project_id=None):
                 ClassInstance.objects.filter(pk=treenode.skeleton_id) \
                     .delete()
             else:
-                return HttpResponse(json.dumps({"error": "Can't delete " \
+                return JsonResponse({"error": "Can't delete " \
                     "isolated node: erroneously, its skeleton contains more " \
-                    "than one treenode! Check for multiple root nodes."}))
+                    "than one treenode! Check for multiple root nodes."})
 
             # If the neuron modeled by the skeleton of the treenode is empty,
             # delete it.
@@ -762,7 +761,7 @@ def treenode_info(request, project_id=None, treenode_id=None):
         required: true
     """
     info = _treenode_info(int(project_id), int(treenode_id))
-    return HttpResponse(json.dumps(info))
+    return JsonResponse(info)
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -777,7 +776,7 @@ def find_children(request, project_id=None, treenode_id=None):
             ''', (tnid,))
 
         children = [[row] for row in cursor.fetchall()]
-        return HttpResponse(json.dumps(children), content_type='application/json')
+        return JsonResponse(children, safe=False)
     except Exception as e:
         raise Exception('Could not obtain next branch node or leaf: ' + str(e))
 
@@ -988,7 +987,7 @@ def find_previous_branchnode_or_root(request, project_id=None, treenode_id=None)
         if seq and alt:
             tnid = _find_first_interesting_node(seq)
 
-        return HttpResponse(json.dumps(_fetch_location(tnid)))
+        return JsonResponse(_fetch_location(tnid), safe=False)
     except Exception as e:
         raise Exception('Could not obtain previous branch node or root:' + str(e))
 
@@ -1032,6 +1031,6 @@ def find_next_branchnode_or_end(request, project_id=None, treenode_id=None):
             node_locations = {row[0]: row for row in _fetch_locations(node_ids_flat)}
 
         branches = [[node_locations[id] for id in branch] for branch in branches]
-        return HttpResponse(json.dumps(branches))
+        return JsonResponse(branches, safe=False)
     except Exception as e:
         raise Exception('Could not obtain next branch node or leaf: ' + str(e))

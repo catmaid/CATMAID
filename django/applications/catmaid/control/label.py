@@ -14,6 +14,16 @@ from catmaid.models import Project, Class, ClassInstance, Relation, Connector, \
 from catmaid.control.authentication import requires_user_role, can_edit_or_fail
 from catmaid.fields import Double3D
 
+
+SKELETON_LABEL_CARDINALITY = {
+    'soma': 1,
+}
+"""
+The maximum number of relationships specific labels should have with nodes of a
+single skeleton. This is only used to generate warnings, not enforced.
+"""
+
+
 def get_link_model(node_type):
     """ Return the model class that represents the a label link for nodes of
     the given node type.
@@ -258,13 +268,49 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
                 }
                 ChangeRequest(**change_request_params).save()
 
-    return JsonResponse({
+    response = {
         'message': 'success',
         'new_labels': new_labels,
         'duplicate_labels': [l.class_instance.name for l in duplicate_labels
                              if l not in deleted_labels],
         'deleted_labels': [l.class_instance.name for l in deleted_labels],
-    })
+    }
+
+    # Check if any labels on this node violate cardinality restrictions on
+    # its skeleton.
+    if 'treenode' == ntype:
+        limited_labels = {l: SKELETON_LABEL_CARDINALITY[l] for l in new_tags if l in SKELETON_LABEL_CARDINALITY}
+
+        if limited_labels:
+            ll_names, ll_maxes = zip(*limited_labels.items())
+            cursor = connection.cursor()
+            cursor.execute("""
+                SELECT
+                  ll.name,
+                  COUNT(tci.treenode_id),
+                  ll.max
+                FROM
+                  class_instance ci,
+                  treenode_class_instance tci,
+                  treenode tn,
+                  unnest(%s::text[], %s::integer[]) AS ll (name, max)
+                WHERE ci.name = ll.name
+                  AND ci.project_id = %s
+                  AND ci.class_id = %s
+                  AND tci.class_instance_id = ci.id
+                  AND tn.id = tci.treenode_id
+                  AND tn.skeleton_id = %s
+                GROUP BY
+                  ll.name, ll.max
+                HAVING
+                  COUNT(tci.treenode_id) > ll.max
+            """, (list(ll_names), list(ll_maxes), p.id, label_class.id, node.skeleton_id))
+
+            if cursor.rowcount:
+                response['warning'] = 'The skeleton has too many of the following tags: ' + \
+                    ', '.join('{0} ({1}, max. {2})'.format(*row) for row in cursor.fetchall())
+
+    return JsonResponse(response)
 
 
 def label_exists(label_id, node_type):

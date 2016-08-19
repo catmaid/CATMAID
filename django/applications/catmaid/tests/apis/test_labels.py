@@ -88,3 +88,21 @@ class LabelsApiTests(CatmaidApiTestCase):
         returned_labels = json.loads(response.content)
         self.assertEqual(len(returned_labels), 3)
         self.assertEqual(set(returned_labels), set(['foo', 'green', 'apple']))
+
+
+    def test_label_cardinality_warning(self):
+        self.fake_authentication()
+        response = self.client.post('/%d/label/treenode/%d/update' % (self.test_project_id,
+                                                                      393),
+                                    {'tags': ",".join(['soma', 'fake'])})
+        parsed_response = json.loads(response.content)
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse('warning' in parsed_response)
+
+        response = self.client.post('/%d/label/treenode/%d/update' % (self.test_project_id,
+                                                                      395),
+                                    {'tags': ",".join(['soma', 'fake'])})
+        parsed_response = json.loads(response.content)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue('warning' in parsed_response)
+        self.assertTrue('soma (2, max. 1)' in parsed_response['warning'])

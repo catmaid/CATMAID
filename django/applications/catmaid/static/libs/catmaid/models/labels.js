@@ -61,6 +61,9 @@
       };
 
       return CATMAID.fetch(url, 'POST', params).then(function(json) {
+        if (json.warning) {
+          CATMAID.warn(json.warning);
+        }
         return {
           'newLabels': json.new_labels,
           'duplicateLabels': json.duplicate_labels,

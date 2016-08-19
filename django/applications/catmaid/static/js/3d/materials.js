@@ -176,58 +176,9 @@
     this.needsUpdate = true;
   };
 
-  /**
-   * This is a shader material that is based on THREE's built-in
-   * MeshLambertMaterial. It injects shader code to control color, alpha and
-   * visibility with varying shader parameters.
-   *
-   * Note that this class may need to be updated whenever THREE.js is upgraded.
-   *
-   * @class
-   * @param {THREE.MeshLambertMaterial} meshLambertMaterial
-   *        A material to use for color and line property initialization.
-   */
-  var FlexibleShaderLambertMaterial = function (meshLambertMaterial) {
-    ShaderLambertMaterial.call(this, meshLambertMaterial);
-
-    // Needed for buffer geometry shader modifications
-    this.transparent = true;
-    this.depthTest = true;
-    this.depthWrite = false;
-
-    // Install snippets
-    this.insertSnippet('vertexDeclarations',
-        ['attribute float alphaNew;',
-         'attribute float visibleNew;',
-         'attribute vec3 colorNew;',
-         'varying float vAlphaNew;',
-         'varying float vVisibleNew;',
-         'varying vec3 vColorNew;', ''].join('\n'));
-    this.insertSnippet('vertexPosition',
-        ['vColorNew = colorNew;',
-         'vVisibleNew = visibleNew;',
-         'vAlphaNew = alphaNew;',''].join('\n'));
-
-    this.insertSnippet('fragmentDeclarations',
-      ['varying float vAlphaNew;',
-       'varying float vVisibleNew;',
-       'varying vec3 vColorNew;', ''].join('\n'));
-    this.insertSnippet('fragmentColor',
-      ['if (vVisibleNew == 0.0) {',
-       '  discard;',
-       '}',
-       'vec4 diffuseColor = vec4(vColorNew, vAlphaNew);', ''].join('\n'));
-  };
-
-  FlexibleShaderLambertMaterial.prototype =
-    Object.create(ShaderLambertMaterial.prototype);
-  FlexibleShaderLambertMaterial.prototype.constructor =
-    FlexibleShaderLambertMaterial;
-
 
   // Exports
   CATMAID.ShaderLineBasicMaterial = ShaderLineBasicMaterial;
   CATMAID.ShaderLambertMaterial = ShaderLambertMaterial;
-  CATMAID.FlexibleShaderLambertMaterial = FlexibleShaderLambertMaterial;
 
 })(CATMAID);

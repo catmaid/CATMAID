@@ -292,6 +292,51 @@
     return new CATMAID.BufferObjectFactory(this, this.templateGeometry);
   };
 
+  /**
+   * This creates a shader material that is based on THREE's built-in
+   * MeshLambertMaterial. It injects shader code to control color, alpha and
+   * visibility with varying shader parameters. Since for a buffer geometry the
+   * material is tightly coupled to the geometry, this is defined as a member
+   * function.
+   *
+   * @param {THREE.MeshLambertMaterial} meshLambertMaterial
+   *        An optional material to use for color and line property initialization.
+   */
+  MultiObjectBufferGeometry.prototype.createLambertMaterial = function(meshLambertMaterial) {
+    var material = new CATMAID.ShaderLambertMaterial(meshLambertMaterial);
+
+    // Needed for buffer geometry shader modifications
+    material.transparent = true;
+    material.depthTest = true;
+    material.depthWrite = false;
+
+    // Install snippets
+    material.insertSnippet('vertexDeclarations',
+        ['attribute float alphaNew;',
+         'attribute float visibleNew;',
+         'attribute vec3 colorNew;',
+         'varying float vAlphaNew;',
+         'varying float vVisibleNew;',
+         'varying vec3 vColorNew;', ''].join('\n'));
+    material.insertSnippet('vertexPosition',
+        ['vColorNew = colorNew;',
+         'vVisibleNew = visibleNew;',
+         'vAlphaNew = alphaNew;',''].join('\n'));
+
+    material.insertSnippet('fragmentDeclarations',
+      ['varying float vAlphaNew;',
+       'varying float vVisibleNew;',
+       'varying vec3 vColorNew;', ''].join('\n'));
+    material.insertSnippet('fragmentColor',
+      ['if (vVisibleNew == 0.0) {',
+       '  discard;',
+       '}',
+       'vec4 diffuseColor = vec4(vColorNew, vAlphaNew);', ''].join('\n'));
+
+    return material;
+  };
+
+
   // Export
   CATMAID.BufferObjectFactory = BufferObjectFactory;
   CATMAID.MultiObjectBufferGeometry = MultiObjectBufferGeometry;

@@ -4820,7 +4820,7 @@
       this.specialTagSpheres[v.node_id] = bufferObject;
     }).bind(this));
 
-    var material = new CATMAID.FlexibleShaderLambertMaterial();
+    var material = geometry.createLambertMaterial();
 
     this.specialTagSphereCollection = new THREE.Mesh(geometry, material);
     this.space.add(this.specialTagSphereCollection);

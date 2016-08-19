@@ -178,6 +178,21 @@ class StateCheckingTest(CatmaidTestCase):
         self.assertRaises(ValueError,
                 lambda: state.validate_state([247, 249, 251, 253], s1, multinode=True))
 
+    def test_correct_multinode_shared_state(self):
+        ps1 = {
+            'edition_time': '2011-12-05T13:51:36.955Z'
+        }
+        s1 = json.dumps(ps1)
+        state.validate_state([247, 249, 251], s1, multinode=False, node=True)
+
+    def test_wrong_multinode_shared_state(self):
+        ps1 = {
+            'edition_time': '2011-12-05T13:51:00.000Z'
+        }
+        s1 = json.dumps(ps1)
+        self.assertRaises(state.StateMatchingError,
+                lambda: state.validate_state([247, 249, 251], s1, multinode=False, node=True))
+
     def test_wrong_multinode_state(self):
         ps1 = [
             [247, '2011-12-05T13:51:36.955Z'],

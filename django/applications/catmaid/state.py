@@ -299,7 +299,8 @@ def validate_state(node_ids, state, node=False, is_parent=False,
                     is_parent=is_parent, parent_edittime=parent_edittime,
                     multinode=multinode, children=children, links=links,
                     c_links=c_links) for n in node_ids]
-            state_checks = reduce(lambda x: x + y, check_sets)
+            # Flatten list of per-node state checks into one list of checks
+            state_checks = reduce(lambda x, y: x + y, check_sets)
             check_state(state, state_checks, cursor)
 
     # Acquire lock on treenode

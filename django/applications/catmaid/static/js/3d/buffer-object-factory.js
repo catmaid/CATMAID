@@ -46,14 +46,16 @@
      */
     this.BufferObject.prototype.setFromMaterial = function(material) {
       this.color = material.color;
-      this.alpha = material.opacity;
+      this.alpha = material.transparent ? material.opacity : 1.0;
     };
 
     Object.defineProperty(this.BufferObject.prototype, 'scale', {
       get: function() {
         return this._scale;
       },
-      set: function(value) {
+      set: isInstance ? function(value) {
+        throw new CATMAID.Error('Not implemented for instance geometry');
+      } : function(value) {
         var scaleRatio = value / this._scale;
         this._scale = value;
 
@@ -421,6 +423,7 @@
       normals[c + 2] = vertexNormals[2].z;
     }
 
+    this.scale = scaling;
     var scaleMatrix = new THREE.Matrix4();
     scaleMatrix.makeScale(scaling, scaling, scaling);
     scaleMatrix.applyToVector3Array(vertices);
@@ -575,6 +578,26 @@
     this.boundingBox.setFromArray(offsets);
     this.boundingSphere.copy(this.boundingBox.getBoundingSphere());
   };
+
+  /**
+   * Scale template geometry buffer with respect to the original scale.
+   */
+  MultiObjectInstancedBufferGeometry.prototype.scaleTemplate = function(scale) {
+    var scaleRatio = scale / this.scale;
+    this.scale = scale;
+    var attribute = this.attributes.position;
+    var vertices = attribute.array;
+
+    var scaleMatrix = new THREE.Matrix4();
+    scaleMatrix.makeScale(scaleRatio, scaleRatio, scaleRatio);
+    scaleMatrix.applyToVector3Array(vertices);
+
+    attribute.needsUpdate = true;
+
+    // Update bounding sphere
+    this.boundingSphere.radius *= scaleRatio;
+  };
+
 
   // Export
   CATMAID.BufferObjectFactory = BufferObjectFactory;

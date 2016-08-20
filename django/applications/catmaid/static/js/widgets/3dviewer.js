@@ -2036,6 +2036,7 @@
     this.synapticColors[0].dispose();
     this.synapticColors[1].dispose();
     this.synapticColors[2].dispose();
+    this.synapticColors.default.dispose();
   };
 
   /**
@@ -2066,6 +2067,7 @@
     this.synapticColors = [makeMaterial({color: 0xff0000, opacity:0.6, transparent:false}, this.synapticColors, 0),
                            makeMaterial({color: 0x00f6ff, opacity:0.6, transparent:false}, this.synapticColors, 1),
                            makeMaterial({color: 0x9f25c2, opacity:0.6, transparent:false}, this.synapticColors, 2)];
+    this.synapticColors.default = makeMaterial({color: 0xff9100, opacity:0.6, transparent:false}, this.synapticColors, 'default');
   };
 
   WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createBoundingBox = function(stack) {
@@ -2772,7 +2774,7 @@
     var o = options || {};
 
     // Find all spheres
-    var fields = ['synapticSpheres', 'radiusVolumes'];
+    var fields = ['radiusVolumes'];
     var skeletons = this.space.content.skeletons;
     var visibleSpheres = Object.keys(skeletons).reduce(function(o, skeleton_id) {
       var skeleton = skeletons[skeleton_id];
@@ -2796,19 +2798,30 @@
       // for them. The whole buffers added below are only used to make all
       // objects of this bufffer invisible for rendering (doesn't work with with
       // the meshes only in SVG renderer).
+      var bufferObjects = [];
+      var bufferConnectorSpheres = skeleton['synapticSpheres'];
+      for (var id in bufferConnectorSpheres) {
+        var bo = bufferConnectorSpheres[id];
+        bufferObjects.push(bo);
+      }
       var bufferSpheres = skeleton['specialTagSpheres'];
       for (var id in bufferSpheres) {
         var bo = bufferSpheres[id];
-        meshes.push(bo);
+        bufferObjects.push(bo);
       }
 
       o.meshes[skeleton_id] = meshes;
-      o.buffers[skeleton_id] = skeleton.specialTagSphereCollection ?
-        [skeleton.specialTagSphereCollection] : [];
+      o.bufferObjects[skeleton_id] = bufferObjects;
+      o.buffers[skeleton_id] = [];
+      if (skeleton.specialTagSphereCollection)
+        o.buffers[skeleton_id].push(skeleton.specialTagSphereCollection);
+      if (skeleton.connectorSphereCollection)
+        o.buffers[skeleton_id].push(skeleton.connectorSphereCollection);
 
       return o;
     }, {
       meshes: {},
+      bufferObjects: {},
       buffers: {}
     });
 
@@ -2819,9 +2832,11 @@
     // Render
     var svgData = null;
     if ('catalog' === o['layout']) {
-      svgData = createCatalogData(visibleSpheres.meshes, visibleSpheres.buffers, o);
+      svgData = createCatalogData(visibleSpheres.meshes,
+          visibleSpheres.bufferObjects, visibleSpheres.buffers, o);
     } else {
-      svgData = renderSkeletons(visibleSpheres.meshes, visibleSpheres.buffers);
+      svgData = renderSkeletons(visibleSpheres.meshes,
+          visibleSpheres.bufferObjects, visibleSpheres.buffers);
     }
 
     // Show active node, if it was visible before
@@ -2843,7 +2858,7 @@
       });
     }
 
-    function addSphereReplacements(meshes, scene)
+    function addSphereReplacements(meshes, buffers, scene)
     {
       // Spheres will be replaced with very short lines
       var geometry = new THREE.Geometry();
@@ -2862,44 +2877,87 @@
       // Use the camera's up vector to constuct a normalized vector embedded in
       // the screen space plane.
       var up = self.camera.up.clone().normalize();
-      addedData.d = meshes.map(function(mesh) {
-        var hex = mesh.material.color.getHexString();
-        // Get radius of sphere in 3D world coordinates, but only use a 3x3 world
-        // matrix, since we don't need the translation.
-        if (mesh instanceof THREE.Mesh) {
-          tmp.set(mesh.geometry.boundingSphere.radius, 0, 0)
-            .applyMatrix3(mesh.matrixWorld).length();
-        } else {
-          tmp.set(mesh.radius, 0, 0);
-        }
-        var r = tmp.length();
-        // The radius has to be corrected for perspective
-        var sr = tmp.copy(up).multiplyScalar(r);
-        line.set(mesh.position.clone(), sr.add(mesh.position));
-        line.start.project(self.camera);
-        line.end.project(self.camera);
-        // The projected line distance is given in a screen space that ranges from
-        // (-1,-1) to (1,1). We therefore have to divide by 2 to get a normalized
-        // value that we can use to create actual screen distances.  For the final
-        // length, there is no need to be more precise than 1 decimal
-        var l = (0.5 * line.distance() * self.space.canvasWidth).toFixed(1);
-        // Get material from index or create a new one
-        var key = hex + "-" + l;
-        var material = this.m[key];
-        if (!material) {
-          material = new THREE.LineBasicMaterial({
-            color: mesh.material.color.clone(),
-            opacity: mesh.material.opacity,
-            linewidth: l
-          });
-          this.m[key] = material;
-        }
-        var newMesh = new THREE.LineSegments( this.g, material );
-        // Move new mesh to position of replaced mesh and adapt size
-        newMesh.position.copy(mesh.position);
-        scene.add(newMesh);
-        return newMesh;
-      }, addedData);
+      if (meshes) {
+        var meshReplacements = meshes.map(function(mesh) {
+          var hex = mesh.material.color.getHexString();
+          // Get radius of sphere in 3D world coordinates, but only use a 3x3 world
+          // matrix, since we don't need the translation.
+          if (mesh instanceof THREE.Mesh) {
+            tmp.set(mesh.geometry.boundingSphere.radius, 0, 0)
+              .applyMatrix3(mesh.matrixWorld).length();
+          } else {
+            tmp.set(mesh.radius, 0, 0);
+          }
+          var r = tmp.length();
+          // The radius has to be corrected for perspective
+          var sr = tmp.copy(up).multiplyScalar(r);
+          line.set(mesh.position.clone(), sr.add(mesh.position));
+          line.start.project(self.camera);
+          line.end.project(self.camera);
+          // The projected line distance is given in a screen space that ranges from
+          // (-1,-1) to (1,1). We therefore have to divide by 2 to get a normalized
+          // value that we can use to create actual screen distances.  For the final
+          // length, there is no need to be more precise than 1 decimal
+          var l = (0.5 * line.distance() * self.space.canvasWidth).toFixed(1);
+          // Get material from index or create a new one
+          var key = hex + "-" + l;
+          var material = this.m[key];
+          if (!material) {
+            material = new THREE.LineBasicMaterial({
+              color: mesh.material.color.clone(),
+              opacity: mesh.material.opacity,
+              linewidth: l
+            });
+            this.m[key] = material;
+          }
+          var newMesh = new THREE.LineSegments( this.g, material );
+          // Move new mesh to position of replaced mesh and adapt size
+          newMesh.position.copy(mesh.position);
+          scene.add(newMesh);
+          return newMesh;
+        }, addedData);
+
+        addedData.d = addedData.d.concat(meshReplacements);
+      }
+
+
+      if (buffers) {
+        var bufferReplacements = buffers.filter(function(buffer) {
+          return buffer.visible;
+        }).map(function(buffer) {
+          var hex = buffer.color.getHexString();
+          tmp.set(buffer.boundingSphere.radius, 0, 0);
+          var r = tmp.length();
+          // The radius has to be corrected for perspective
+          var sr = tmp.copy(up).multiplyScalar(r);
+          line.set(buffer.position.clone(), sr.add(buffer.position));
+          line.start.project(self.camera);
+          line.end.project(self.camera);
+          // The projected line distance is given in a screen space that ranges from
+          // (-1,-1) to (1,1). We therefore have to divide by 2 to get a normalized
+          // value that we can use to create actual screen distances.  For the final
+          // length, there is no need to be more precise than 1 decimal
+          var l = (0.5 * line.distance() * self.space.canvasWidth).toFixed(1);
+          // Get material from index or create a new one
+          var key = hex + "-" + l;
+          var material = this.m[key];
+          if (!material) {
+            material = new THREE.LineBasicMaterial({
+              color: buffer.color.clone(),
+              opacity: buffer.alpha,
+              linewidth: l
+            });
+            this.m[key] = material;
+          }
+          var newMesh = new THREE.LineSegments( this.g, material );
+          // Move new mesh to position of replaced mesh and adapt size
+          newMesh.position.copy(buffer.position);
+          scene.add(newMesh);
+          return newMesh;
+        }, addedData);
+
+        addedData.d = addedData.d.concat(bufferReplacements);
+      }
 
       return addedData;
     }
@@ -2916,7 +2974,7 @@
     /**
      * Create an SVG catalog of the current view.
      */
-    function createCatalogData(sphereMeshes, sphereBuffers, options)
+    function createCatalogData(sphereMeshes, bufferObjects, sphereBuffers, options)
     {
       // Sort skeletons
       var skeletons;
@@ -2968,12 +3026,14 @@
         var spheres = visibleSkids.reduce(function(o, s) {
           o.meshes[s] = sphereMeshes[s];
           o.buffers[s] = sphereBuffers[s];
+          o.bufferObjects[s] = bufferObjects[s];
           return o;
         }, {
           meshes: {},
+          bufferObjects: {},
           buffers: {}
         });
-        var svg = renderSkeletons(spheres.meshes, spheres.buffers);
+        var svg = renderSkeletons(spheres.meshes, spheres.bufferObjects, spheres.buffers);
 
         if (displayNames) {
           // Add name of neuron
@@ -3028,16 +3088,17 @@
     /**
      * Render the current scene and replace the given sphere meshes beforehand.
      */
-    function renderSkeletons(sphereMeshes, bufferCollections)
+    function renderSkeletons(sphereMeshes, bufferObjects, bufferCollections)
     {
       // Hide spherical meshes of all given skeletons
       var sphereReplacemens = {};
       for (var skid in sphereMeshes) {
         var meshes = sphereMeshes[skid];
-        var buffers = bufferCollections[skid];
+        var skeletonBufferObjects = bufferObjects[skid];
+        var skeletonBuffers = bufferCollections[skid];
         setVisibility(meshes, false);
-        setVisibility(buffers, false);
-        sphereReplacemens[skid] = addSphereReplacements(meshes, self.space);
+        setVisibility(skeletonBuffers, false);
+        sphereReplacemens[skid] = addSphereReplacements(meshes, skeletonBufferObjects, self.space);
       }
 
       // Create a new SVG renderer (which is faster than cleaning an existing one)
@@ -3470,7 +3531,7 @@
      * elements (defined in fields.
      */
     function mapToPickables(space, skeletons, fnSkeleton, fnPickable) {
-      var fields = ['synapticSpheres', 'radiusVolumes'];
+      var fields = ['radiusVolumes'];
       Object.keys(skeletons).forEach(function(skeleton_id) {
         var skeleton = skeletons[skeleton_id];
         fnSkeleton(skeleton);
@@ -3483,6 +3544,10 @@
           });
         });
         // Buffer geometry
+        var connectorSpheres = skeleton['synapticSpheres'];
+        for (var id in connectorSpheres) {
+          fnPickable(id, connectorSpheres[id], true);
+        }
         var tagSpheres = skeleton['specialTagSpheres'];
         for (var id in tagSpheres) {
           fnPickable(id, tagSpheres[id], true);
@@ -3494,7 +3559,7 @@
 
   WebGLApplication.prototype.Space.prototype.pickNodeWithIntersectionRay = function(x, y, xOffset, camera) {
     // Attempt to intersect visible skeleton spheres, stopping at the first found
-    var fields = ['synapticSpheres', 'radiusVolumes'];
+    var fields = ['radiusVolumes'];
     var skeletons = this.content.skeletons;
 
     // Step, which is normalized screen coordinates, is choosen so that it will
@@ -3652,6 +3717,7 @@
 
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype = {};
 
+  // Find better way to define connector types
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.CTYPES = ['neurite', 'presynaptic_to', 'postsynaptic_to', 'gapjunction_with'];
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.synapticTypes = ['presynaptic_to', 'postsynaptic_to', 'gapjunction_with'];
 
@@ -3665,6 +3731,7 @@
     var CTYPES = this.CTYPES;
     this.line_material = new THREE.LineBasicMaterial({color: 0xffff00, opacity: 1.0, linewidth: options.skeleton_line_width});
 
+    // Connector links
     this.geometry = {};
     this.geometry[CTYPES[0]] = new THREE.Geometry();
     this.geometry[CTYPES[1]] = new THREE.Geometry();
@@ -3720,13 +3787,21 @@
     this.actor[this.CTYPES[3]].geometry.dispose();
 
     var meshes = collection || [];
-    [this.actor, this.synapticSpheres, this.radiusVolumes].forEach(function(ob) {
+    [this.actor, this.radiusVolumes].forEach(function(ob) {
       if (ob) {
         for (var key in ob) {
           if (ob.hasOwnProperty(key)) this.push(ob[key]);
         }
       }
     }, meshes);
+
+    if (this.connectorSphereCollection) {
+      this.connectorSphereCollection.geometry.dispose();
+      this.connectorSphereCollection.geometry = null;
+      this.connectorSphereCollection.material.dispose();
+      this.connectorSphereCollection.material = null;
+      meshes.push(this.connectorSphereCollection);
+    }
 
     if (this.specialTagSphereCollection) {
       this.specialTagSphereCollection.geometry.dispose();
@@ -4435,22 +4510,15 @@
    * synaptic spheres.
    */
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.scaleNodeHandles = function(value) {
-      // Scale special tag spheres
-      for (var k in this.specialTagSpheres) {
-        // All special tag spheres are stored in one buffer geometry. Iterate
-        // over each buffer object, get node location, translate each point of
-        // the object to origin and scale.
-        if (this.specialTagSpheres.hasOwnProperty(k)) {
-          this.specialTagSpheres[k].scale = value;
-        }
-      }
-
-      // Scale synaptic spheres
-      for (var k in this.synapticSpheres) {
-        if (this.synapticSpheres.hasOwnProperty(k)) {
-          CATMAID.tools.setXYZ(this.synapticSpheres[k].scale, value);
-        }
-      }
+    // Both special tag handlers and connector partner nodes are stored as
+    // indexed buffer geometry. Therefore, only the template geometry has to be
+    // scaled.
+    if (this.specialTagSphereCollection) {
+      this.specialTagSphereCollection.geometry.scaleTemplate(value, value, value);
+    }
+    if (this.connectorSphereCollection) {
+      this.connectorSphereCollection.geometry.scaleTemplate(value, value, value);
+    }
   };
 
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.changeColor = function(color, options) {
@@ -4592,8 +4660,10 @@
       }, this);
 
       Object.keys(this.synapticSpheres).forEach(function(idx) {
-        var mesh = this.synapticSpheres[idx];
-        mesh.material = this.synapticColors[this.CTYPES[1] === mesh.type ? 0 : 1];
+        var bufferObject = this.synapticSpheres[idx];
+        // TODO: Handle other connector types
+        var meshType = this.CTYPES[1] === bufferObject.type ? 0 : 1;
+        bufferObject.setFromMaterial(this.synapticColors[meshType]);
       }, this);
 
     } else if ('by-amount' === options.connector_color) {
@@ -4694,7 +4764,8 @@
     }
   };
 
-  WebGLApplication.prototype.Space.prototype.Skeleton.prototype._colorConnectorsBy = function(type, fnConnectorValue, fnMakeColor) {
+  WebGLApplication.prototype.Space.prototype.Skeleton.prototype._colorConnectorsBy =
+      function(type, fnConnectorValue, fnMakeColor) {
     // Set colors per-vertex
     var seen = {},
         seen_materials = {},
@@ -4717,17 +4788,18 @@
       colors.push(color);
       colors.push(color);
 
-      var mesh = this.synapticSpheres[node_id];
-      if (mesh) {
-        mesh.material.color = color;
-        mesh.material.needsUpdate = true;
+      var bufferObject = this.synapticSpheres[node_id];
+      if (bufferObject) {
+        bufferObject.color = color;
+        // TODO: Might not be needed anymore: why should we store this extra
+        // material anyway.
         var material = seen_materials[value];
         if (!material) {
-          material = mesh.material.clone();
+          material = bufferObject.material.clone();
           material.color = color;
           seen_materials[value] = material;
         }
-        mesh.material = material;
+        bufferObject.material = material;
       }
     }
 
@@ -4830,6 +4902,33 @@
     this.space.add(this.specialTagSphereCollection);
   };
 
+  /**
+   * The itype is 0 (pre) or 1 (post), and chooses from the two arrays:
+   * synapticTypes and synapticColors.
+   */
+  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createPartnerSpheres =
+      function(connectors, scaling) {
+
+    var geometry = new CATMAID.MultiObjectInstancedBufferGeometry({
+      templateGeometry: this.space.staticContent.radiusSphere,
+      nObjects: connectors.length,
+      scaling: scaling
+    });
+
+    geometry.createAll(connectors, scaling, (function(v, m, o) {
+      // There already is a synaptic sphere at the node
+      return !this.synapticSpheres.hasOwnProperty(v.node_id);
+    }).bind(this), (function(v, m, o, bufferObject) {
+      bufferObject.node_id = v.node_id;
+      bufferObject.type = this.synapticTypes[o[2]];
+      this.synapticSpheres[v.node_id] = bufferObject;
+    }).bind(this));
+
+    var material = geometry.createLambertMaterial();
+
+    this.connectorSphereCollection = new THREE.Mesh(geometry, material);
+    this.space.add(this.connectorSphereCollection);
+  };
 
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createEdge = function(v1, v2, type) {
     // Create edge between child (id1) and parent (id2) nodes:
@@ -4878,22 +4977,6 @@
     this.space.add(mesh);
   };
 
-  /* The itype is 0 (pre) or 1 (post), and chooses from the two arrays: synapticTypes and synapticColors. */
-  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createSynapticSphere = function(v, itype, scaling) {
-    if (this.synapticSpheres.hasOwnProperty(v.node_id)) {
-      // There already is a synaptic sphere at the node
-      return;
-    }
-    var mesh = new THREE.Mesh( this.space.staticContent.radiusSphere, this.synapticColors[itype] );
-    mesh.position.set( v.x, v.y, v.z );
-    mesh.node_id = v.node_id;
-    mesh.type = this.synapticTypes[itype];
-    CATMAID.tools.setXYZ(mesh.scale, scaling);
-    this.synapticSpheres[v.node_id] = mesh;
-    this.space.add( mesh );
-  };
-
-
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = function(skeletonmodel, json, options) {
     if (this.actor) {
       this.destroy();
@@ -4927,6 +5010,7 @@
     material.transparent = material.opacity !== 1;
 
     // Collect all labels first, before creating its geometry
+    var partner_nodes = [];
     var labels = [];
 
     // Create edges between all skeleton nodes
@@ -5019,12 +5103,15 @@
       // con[2]: 0 for pre, 1 for post, 2 for gap junction, -1 for other to be skipped
       // indices 3,4,5 are x,y,z for connector
       // indices 4,5,6 are x,y,z for node
-      if (con[2] === -1) return;
+      var type = con[2];
+      if (type === -1) return;
       var v1 = new THREE.Vector3(con[3], con[4], con[5]);
       v1.node_id = con[1];
       var v2 = vs[con[0]];
-      this.createEdge(v1, v2, this.synapticTypes[con[2]]);
-      this.createSynapticSphere(v2, con[2], options.skeleton_node_scaling);
+      this.createEdge(v1, v2, this.synapticTypes[type]);
+      var defaultMaterial = this.space.staticContent.synapticColors[type] ||
+        this.space.staticContent.synapticColors.default;
+      partner_nodes.push([v2, defaultMaterial, type]);
     }, this);
 
     // Place spheres on nodes with special labels, if they don't have a sphere there already
@@ -5054,7 +5141,12 @@
       }
     }
 
-    // Create label geometry, if needed
+    // Create buffer geometry for connectors
+    if (partner_nodes.length > 0) {
+      this.createPartnerSpheres(partner_nodes, options.skeleton_node_scaling);
+    }
+
+    // Create buffer geometry for labels
     if (labels.length > 0) {
       this.createLabelSpheres(labels, options.skeleton_node_scaling);
     }

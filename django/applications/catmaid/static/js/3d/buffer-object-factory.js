@@ -11,14 +11,19 @@
 
   /**
    * Wrap a group of vertices in a buffer geometry as an individual 3D object
+   *
+   * @param {integer} templateLength Number of vertices in template geometry.
+   * @param {boolean} isInstanced    If objcets for an instance geometry will be
+   *                                 created.
    */
-  var BufferObjectFactory = function(buffer, templateGeometry) {
+  var BufferObjectFactory = function(buffer, templateGeometry, isInstance) {
     this.buffer = buffer;
-    var length = templateGeometry.vertices.length;
     var nCreatedObjects = 0;
+    var templateLength = templateGeometry.vertices.length;
+    var objectLength = isInstance ? 1 : templateLength;
 
     this.BufferObject = function(id, position, scale, material) {
-      this.start = this.length * nCreatedObjects;
+      this.start = this.objectLength * nCreatedObjects;
       this.id = id;
       this.position = position;
       this.material = material;
@@ -26,11 +31,23 @@
       this._scale = scale;
       this._color = material.color;
       this._alpha = material.opacity;
+      this.boundingSphere = this.templateGeometry.boundingSphere.clone();
+      this.boundingSphere.radius *= scale;
       ++nCreatedObjects;
     };
 
     this.BufferObject.prototype.buffer = buffer;
-    this.BufferObject.prototype.length = length;
+    this.BufferObject.prototype.templateGeometry = templateGeometry;
+    this.BufferObject.prototype.templateLength = templateLength;
+    this.BufferObject.prototype.objectLength = objectLength;
+
+    /**
+     * Set color and opacity from passed in material.
+     */
+    this.BufferObject.prototype.setFromMaterial = function(material) {
+      this.color = material.color;
+      this.alpha = material.opacity;
+    };
 
     Object.defineProperty(this.BufferObject.prototype, 'scale', {
       get: function() {
@@ -47,25 +64,30 @@
         var attribute = this.buffer.attributes.position;
         var pos = attribute.array;
         var offset = this.start * 3;
-        for (var i=0; i<this.length; ++i) {
+
+        // Scale vertices that match template
+        for (var i=0; i<this.templateLength; ++i) {
           var start = offset + i * 3;
           pos[start    ] = (pos[start    ] - cx) * scaleRatio + cx;
           pos[start + 1] = (pos[start + 1] - cy) * scaleRatio + cy;
           pos[start + 2] = (pos[start + 2] - cz) * scaleRatio + cz;
         }
         attribute.needsUpdate = true;
+
+        // Update bounding sphere
+        this.boundingSphere.radius *= scaleRatio;
       }
     });
 
     Object.defineProperty(this.BufferObject.prototype, 'visible', {
       get: function() {
-        return this.buffer.visible;
+        return this._isVisible;
       },
       set: function(value) {
         this._isVisible = value;
         // Update 'visible' array of the buffer
         var visibility = this.buffer.getAttribute('visibleNew');
-        for (var i=0; i<this.length; ++i) {
+        for (var i=0; i<this.objectLength; ++i) {
           visibility.array[this.start + i] = value ? 1.0 : 0;
         }
         visibility.needsUpdate = true;
@@ -83,7 +105,7 @@
         var g = value.g;
         var b = value.b;
         var offset = this.start * 3;
-        for (var i=0, max=this.length; i<max; ++i) {
+        for (var i=0, max=this.objectLength; i<max; ++i) {
           var start = offset + i*3;
           col[start    ] = r;
           col[start + 1] = g;
@@ -103,13 +125,12 @@
         // Update 'alpha' array of the buffer
         var attribute = this.buffer.attributes.alphaNew;
         var alpha = attribute.array;
-        for (var i=0; i<this.length; ++i) {
+        for (var i=0; i<this.objectLength; ++i) {
           alpha[this.start + i] = value;
         }
         attribute.needsUpdate = true;
       }
     });
-
   };
 
   /**
@@ -179,7 +200,7 @@
   MultiObjectBufferGeometry.prototype.constructor = MultiObjectBufferGeometry;
 
   MultiObjectBufferGeometry.prototype.createObjectFactory = function() {
-    return new CATMAID.BufferObjectFactory(this, this.templateGeometry);
+    return new CATMAID.BufferObjectFactory(this, this.templateGeometry, false);
   };
 
   /**
@@ -438,7 +459,7 @@
   MultiObjectInstancedBufferGeometry.prototype.constructor = MultiObjectInstancedBufferGeometry;
 
   MultiObjectInstancedBufferGeometry.prototype.createObjectFactory = function() {
-    return new CATMAID.BufferObjectFactory(this, this.templateGeometry);
+    return new CATMAID.BufferObjectFactory(this, this.templateGeometry, true);
   };
 
   /**

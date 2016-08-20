@@ -541,7 +541,7 @@
       var object = objects[i];
       var v = object[0];
       var m = object[1];
-      if (!filter(v, m)) {
+      if (!filter(v, m, object)) {
         continue;
       }
 
@@ -561,7 +561,7 @@
       alphas[i] = alpha;
 
       var bufferObject = factory.create(v.node_id, v, scaling, m);
-      handler(v, m, bufferObject);
+      handler(v, m, object, bufferObject);
     }
 
     offsetAttr.needsUpdate = true;

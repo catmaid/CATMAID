@@ -4676,6 +4676,7 @@
       };
 
       this.CTYPES.slice(1).forEach(function(type) {
+        if (!json) return;
         var partners = json[type];
         if (!partners) return;
         var connectors = Object.keys(partners).reduce(function(o, skid) {
@@ -4704,6 +4705,7 @@
       }, this);
 
     } else if ('synapse-clustering' === options.connector_color) {
+      if (!json) return;
       var synapse_map = new CATMAID.ArborParser().synapses(json[1]).createSynapseMap(),
           sc = new SynapseClustering(this.createArbor(), this.getPositions(), synapse_map, options.synapse_clustering_bandwidth),
           density_hill_map = sc.densityHillMap(),

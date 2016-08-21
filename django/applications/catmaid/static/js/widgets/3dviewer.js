@@ -2064,9 +2064,9 @@
     this.labelColors = {uncertain: makeMaterial({color: 0xff8000, opacity:0.6, transparent: true}, this.labelColors, 'uncertain'),
                         todo:      makeMaterial({color: 0xff0000, opacity:0.6, transparent: true}, this.labelColors, 'todo'),
                         custom:    makeMaterial({color: 0xaa70ff, opacity:0.6, transparent: true}, this.labelColors, 'custom')};
-    this.synapticColors = [makeMaterial({color: 0xff0000, opacity:0.6, transparent:false}, this.synapticColors, 0),
-                           makeMaterial({color: 0x00f6ff, opacity:0.6, transparent:false}, this.synapticColors, 1),
-                           makeMaterial({color: 0x9f25c2, opacity:0.6, transparent:false}, this.synapticColors, 2)];
+    this.synapticColors = [makeMaterial({color: 0xff0000, opacity:1.0, transparent:false}, this.synapticColors, 0),
+                           makeMaterial({color: 0x00f6ff, opacity:1.0, transparent:false}, this.synapticColors, 1),
+                           makeMaterial({color: 0x9f25c2, opacity:1.0, transparent:false}, this.synapticColors, 2)];
     this.synapticColors.default = makeMaterial({color: 0xff9100, opacity:0.6, transparent:false}, this.synapticColors, 'default');
   };
 

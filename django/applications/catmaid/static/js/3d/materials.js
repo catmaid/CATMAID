@@ -102,22 +102,32 @@
    * Note that this class may need to be updated whenever THREE.js is upgraded.
    *
    * @class
-   * @param {THREE.MeshLambertMaterial} meshLambertMaterial
+   * @param {THREE.Material} material
    *        A material to use for color and line property initialization.
+   * @param {String}         sourceShaderName
+   *        Optional, THREE.js ShaderLib identifier for a particular shader to
+   *        base this one on (e.g. 'lambert'), defaults to 'basic').
    */
-  var ShaderLambertMaterial = function (meshLambertMaterial) {
+  var ShaderMeshBasicMaterial = function (material, sourceShaderName) {
+    sourceShaderName = sourceShaderName || 'basic';
+    var shaderTemplate = THREE.ShaderLib[sourceShaderName];
+    if (!shaderTemplate) {
+      throw new CATMAID.ValueError('Couödn\'t find a source shader with ' +
+          'identifier "' + sourceShaderName + '"');
+    }
+
     THREE.ShaderMaterial.call(this);
 
-    this.uniforms = jQuery.extend(true, {}, THREE.ShaderLib.lambert.uniforms);
-    this.vertexShader = THREE.ShaderLib.lambert.vertexShader;
-    this.fragmentShader = THREE.ShaderLib.lambert.fragmentShader;
+    this.uniforms = jQuery.extend(true, {}, shaderTemplate.uniforms);
+    this.vertexShader = shaderTemplate.vertexShader;
+    this.fragmentShader = shaderTemplate.fragmentShader;
 
     // Copy properties from LambertMaterial
-    if (meshLambertMaterial) {
-      this.color = meshLambertMaterial.color.clone();
-      this.fog = meshLambertMaterial.fog;
-      this.lights = meshLambertMaterial.lights;
-      this.side = meshLambertMaterial.side;
+    if (material) {
+      this.color = material.color.clone();
+      this.fog = material.fog;
+      this.lights = material.lights;
+      this.side = material.side;
     } else {
       this.color = new THREE.Color();
       this.fog = true;
@@ -126,12 +136,12 @@
     }
   };
 
-  ShaderLambertMaterial.prototype =
+  ShaderMeshBasicMaterial.prototype =
     Object.create(THREE.ShaderMaterial.prototype);
-  ShaderLambertMaterial.prototype.constructor =
-    ShaderLambertMaterial;
+  ShaderMeshBasicMaterial.prototype.constructor =
+    ShaderMeshBasicMaterial;
 
-  ShaderLambertMaterial.INSERTION_LOCATIONS = {
+  ShaderMeshBasicMaterial.prototype.INSERTION_LOCATIONS = {
     vertexDeclarations: {
       shader: 'vertex',
       regex: /void\s+main\(\s*\)\s+\{/,
@@ -147,18 +157,14 @@
     fragmentDeclarations: {
       shader: 'fragment',
       regex: /void\s+main\(\s*\)\s+\{/,
-      replacement: 'void main() {'},
-    fragmentColor: {
-      shader: 'fragment',
-      regex: /vec4\s+diffuseColor\s*=\s*vec4\(\s*diffuse,\s*opacity\s*\);/,
-      replacement: ''}
+      replacement: 'void main() {'}
   };
 
   /**
    * Add uniforms to the vertex and fragment shaders.
    * @param {object} uniforms THREE.js uniform definitions.
    */
-  ShaderLambertMaterial.prototype.addUniforms = function (uniforms) {
+  ShaderMeshBasicMaterial.prototype.addUniforms = function (uniforms) {
     $.extend(this.uniforms, uniforms);
   };
 
@@ -170,8 +176,8 @@
    * @param  {bool}   after         Optional, if true the glsl code iserted
    *                                after the match.
    */
-  ShaderLambertMaterial.prototype.insertSnippet = function (insertionName, glsl, after) {
-    var insertionPoint = ShaderLambertMaterial.INSERTION_LOCATIONS[insertionName];
+  ShaderMeshBasicMaterial.prototype.insertSnippet = function (insertionName, glsl, after) {
+    var insertionPoint = this.INSERTION_LOCATIONS[insertionName];
     var shaderSource = insertionPoint.shader === 'vertex' ? this.vertexShader : this.fragmentShader;
     var replacement = after ? (insertionPoint.replacement + glsl) :
         (glsl + insertionPoint.replacement);
@@ -184,9 +190,41 @@
     this.needsUpdate = true;
   };
 
+  /**
+   * This is a wrapper that allows insertion of snippets of vertex and fragment
+   * shaders at critical sections while otherwise behaving like the shaders for
+   * THREE's built-in MeshLambertMaterial.
+   *
+   * Note that this class may need to be updated whenever THREE.js is upgraded.
+   *
+   * @class
+   * @param {THREE.MeshLambertMaterial} meshLambertMaterial
+   *        A material to use for color and line property initialization.
+   */
+  var ShaderLambertMaterial = function (material) {
+    ShaderMeshBasicMaterial.call(this, material, 'lambert');
+  };
+
+  ShaderLambertMaterial.prototype =
+    Object.create(ShaderMeshBasicMaterial.prototype);
+  ShaderLambertMaterial.prototype.constructor =
+    ShaderLambertMaterial;
+
+  /**
+   * Additional insertion locations.
+   */
+  ShaderLambertMaterial.prototype.INSERTION_LOCATIONS = $.extend({},
+      ShaderMeshBasicMaterial.prototype.INSERTION_LOCATIONS, {
+        fragmentColor: {
+          shader: 'fragment',
+          regex: /vec4\s+diffuseColor\s*=\s*vec4\(\s*diffuse,\s*opacity\s*\);/,
+          replacement: ''}
+      });
+
 
   // Exports
   CATMAID.ShaderLineBasicMaterial = ShaderLineBasicMaterial;
+  CATMAID.ShaderMeshBasicMaterial = ShaderMeshBasicMaterial;
   CATMAID.ShaderLambertMaterial = ShaderLambertMaterial;
 
 })(CATMAID);

@@ -126,12 +126,10 @@
     if (material) {
       this.color = material.color.clone();
       this.fog = material.fog;
-      this.lights = material.lights;
       this.side = material.side;
     } else {
       this.color = new THREE.Color();
       this.fog = true;
-      this.lights = true;
       this.side = THREE.FrontSide;
     }
   };
@@ -157,7 +155,11 @@
     fragmentDeclarations: {
       shader: 'fragment',
       regex: /void\s+main\(\s*\)\s+\{/,
-      replacement: 'void main() {'}
+      replacement: 'void main() {'},
+    fragmentColor: {
+      shader: 'fragment',
+      regex: /vec4\s+diffuseColor\s*=\s*vec4\(\s*diffuse,\s*opacity\s*\);/,
+      replacement: ''}
   };
 
   /**
@@ -203,23 +205,13 @@
    */
   var ShaderLambertMaterial = function (material) {
     ShaderMeshBasicMaterial.call(this, material, 'lambert');
+    this.lights = material ? material.lights : true;
   };
 
   ShaderLambertMaterial.prototype =
     Object.create(ShaderMeshBasicMaterial.prototype);
   ShaderLambertMaterial.prototype.constructor =
     ShaderLambertMaterial;
-
-  /**
-   * Additional insertion locations.
-   */
-  ShaderLambertMaterial.prototype.INSERTION_LOCATIONS = $.extend({},
-      ShaderMeshBasicMaterial.prototype.INSERTION_LOCATIONS, {
-        fragmentColor: {
-          shader: 'fragment',
-          regex: /vec4\s+diffuseColor\s*=\s*vec4\(\s*diffuse,\s*opacity\s*\);/,
-          replacement: ''}
-      });
 
 
   // Exports

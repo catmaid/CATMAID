@@ -908,6 +908,14 @@
     }
   };
 
+  WebGLApplication.prototype.setSkeletonShadingType = function(shading) {
+    var skeletons = this.space.content.skeletons;
+    Object.keys(skeletons).filter(function(skid) {
+      skeletons[skid].setShadingType(shading);
+    });
+    this.space.render();
+  };
+
   WebGLApplication.prototype.XYView = function() {
     this.space.view.XY();
     this.space.render();
@@ -1958,12 +1966,12 @@
   /**
    * Get the constructor for the material used for skeleton meshes.
    *
-   * @param {String} neuron_material Expected to be either 'flat' or 'lambert'
+   * @param {String} neuron_material Expected to be either 'basic' or 'lambert'
    *
    * @return a THREE.js constructor for a material
    */
   var getSkeletonMaterialType = function(neuron_material) {
-    if ('flat' === neuron_material) {
+    if ('basic' === neuron_material) {
       return THREE.MeshBasicMaterial;
     } else if ('lambert' === neuron_material) {
       return THREE.MeshLambertMaterial;
@@ -2067,7 +2075,7 @@
     this.synapticColors = [makeMaterial({color: 0xff0000, opacity:1.0, transparent:false}, this.synapticColors, 0),
                            makeMaterial({color: 0x00f6ff, opacity:1.0, transparent:false}, this.synapticColors, 1),
                            makeMaterial({color: 0x9f25c2, opacity:1.0, transparent:false}, this.synapticColors, 2)];
-    this.synapticColors.default = makeMaterial({color: 0xff9100, opacity:0.6, transparent:false}, this.synapticColors, 'default');
+    this.synapticColors.default = makeMaterial({color: 0xff9100, opacity:0.6, transparent:false});
   };
 
   WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createBoundingBox = function(stack) {
@@ -4506,6 +4514,25 @@
   };
 
   /**
+   * Set the material type for connector partner nodes, connector links and tag
+   * nodes.
+   */
+  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.setShadingType = function(shading) {
+    if (this.specialTagSphereCollection) {
+      var bufferGeometry = this.specialTagSphereCollection.geometry;
+      var newMaterial = bufferGeometry.createMaterial(shading);
+      this.specialTagSphereCollection.material = newMaterial;
+      this.specialTagSphereCollection.material.needsUpdate = true;
+    }
+    if (this.connectorSphereCollection) {
+      var bufferGeometry = this.connectorSphereCollection.geometry;
+      var newMaterial = bufferGeometry.createMaterial(shading);
+      this.connectorSphereCollection.material = newMaterial;
+      this.connectorSphereCollection.material.needsUpdate = true;
+    }
+  };
+
+  /**
    * Scale node handles of a skeletons. These are the special tag spheres and the
    * synaptic spheres.
    */
@@ -4884,7 +4911,7 @@
    * better performance.
    */
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createLabelSpheres =
-      function(labels, scaling) {
+      function(labels, scaling, shading) {
 
     var geometry = new CATMAID.MultiObjectInstancedBufferGeometry({
       templateGeometry: this.space.staticContent.labelspheregeometry,
@@ -4898,7 +4925,7 @@
       this.specialTagSpheres[v.node_id] = bufferObject;
     }).bind(this));
 
-    var material = geometry.createLambertMaterial();
+    var material = geometry.createMaterial(shading);
 
     this.specialTagSphereCollection = new THREE.Mesh(geometry, material);
     this.space.add(this.specialTagSphereCollection);
@@ -4909,7 +4936,7 @@
    * synapticTypes and synapticColors.
    */
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createPartnerSpheres =
-      function(connectors, scaling) {
+      function(connectors, scaling, shading) {
 
     var geometry = new CATMAID.MultiObjectInstancedBufferGeometry({
       templateGeometry: this.space.staticContent.radiusSphere,
@@ -4926,7 +4953,7 @@
       this.synapticSpheres[v.node_id] = bufferObject;
     }).bind(this));
 
-    var material = geometry.createLambertMaterial();
+    var material = geometry.createMaterial(shading);
 
     this.connectorSphereCollection = new THREE.Mesh(geometry, material);
     this.space.add(this.connectorSphereCollection);
@@ -5145,12 +5172,14 @@
 
     // Create buffer geometry for connectors
     if (partner_nodes.length > 0) {
-      this.createPartnerSpheres(partner_nodes, options.skeleton_node_scaling);
+      this.createPartnerSpheres(partner_nodes, options.skeleton_node_scaling,
+          options.neuron_material);
     }
 
     // Create buffer geometry for labels
     if (labels.length > 0) {
-      this.createLabelSpheres(labels, options.skeleton_node_scaling);
+      this.createLabelSpheres(labels, options.skeleton_node_scaling,
+          options.neuron_material);
     }
 
     if (options.resample_skeletons) {
@@ -5449,7 +5478,7 @@
    * This will re-create all skeleton meshes if the shading changed.
    */
   WebGLApplication.prototype.updateNeuronShading = function(shading) {
-    if ('flat' !== shading && 'lambert' !== shading) {
+    if ('basic' !== shading && 'lambert' !== shading) {
       CATMAID.error("Unknown shading: " + shading);
       return;
     }
@@ -5465,7 +5494,7 @@
     // Update nodeSphere and cylinder of each skeleton
     var staticContent = this.space.staticContent;
     staticContent.updateDynamicMaterials(this.options, true);
-    this.updateSkeletonColors();
+    this.setSkeletonShadingType(shading);
   };
 
   /**

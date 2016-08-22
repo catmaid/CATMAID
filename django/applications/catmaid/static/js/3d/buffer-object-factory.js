@@ -206,17 +206,26 @@
   };
 
   /**
-   * This creates a shader material that is based on THREE's built-in
-   * MeshLambertMaterial. It injects shader code to control color, alpha and
-   * visibility with varying shader parameters. Since for a buffer geometry the
-   * material is tightly coupled to the geometry, this is defined as a member
-   * function.
+   * This creates a shader material that is based on either THREE's built-in
+   * MeshLambertMaterial (type: 'lambert') or MeshBasicMaterial (type: 'basic').
+   * It injects shader code to control color, alpha and visibility with varying
+   * shader parameters. Since for a buffer geometry the material is tightly
+   * coupled to the geometry, this is defined as a member function.
    *
-   * @param {THREE.MeshLambertMaterial} meshLambertMaterial
-   *        An optional material to use for color and line property initialization.
+   * @param {String}         type     Optional, either 'basic' (default) or
+   *                                  'lambert'. Defines shading type used with
+   *                                   this geometry.
+   * @param {THREE.Material} material An optional material to use for color and
+   *                                  line property initialization.
    */
-  MultiObjectBufferGeometry.prototype.createLambertMaterial = function(meshLambertMaterial) {
-    var material = new CATMAID.ShaderLambertMaterial(meshLambertMaterial);
+  MultiObjectBufferGeometry.prototype.createMaterial = function(type, templateMaterial) {
+    type = type || 'lambert';
+    var material;
+    if ('lambert' === type) {
+      material = new CATMAID.ShaderLambertMaterial(templateMaterial);
+    } else if ('basic' === type) {
+      material = new CATMAID.ShaderMeshBasicMaterial(templateMaterial);
+    }
 
     // Needed for buffer geometry shader modifications
     material.transparent = true;
@@ -466,17 +475,27 @@
   };
 
   /**
-   * This creates a shader material that is based on THREE's built-in
-   * MeshLambertMaterial. It injects shader code to control color, alpha and
-   * visibility with varying shader parameters. Since for a buffer geometry the
-   * material is tightly coupled to the geometry, this is defined as a member
-   * function.
+   * This creates a shader material that is based on either THREE's built-in
+   * MeshLambertMaterial (type: 'lambert') or MeshBasicMaterial (type: 'basic').
+   * It injects shader code to control color, alpha and visibility with varying
+   * shader parameters. Since for a buffer geometry the material is tightly
+   * coupled to the geometry, this is defined as a member function.
    *
-   * @param {THREE.MeshLambertMaterial} meshLambertMaterial
-   *        An optional material to use for color and line property initialization.
+   * @param {String}         type     Optional, either 'basic' (default) or
+   *                                  'lambert'. Defines shading type used with
+   *                                   this geometry.
+   * @param {THREE.Material} material An optional material to use for color and
+   *                                  line property initialization.
    */
-  MultiObjectInstancedBufferGeometry.prototype.createLambertMaterial = function(meshLambertMaterial) {
-    var material = new CATMAID.ShaderLambertMaterial(meshLambertMaterial);
+  MultiObjectInstancedBufferGeometry.prototype.createMaterial = function(
+      type, templateMaterial) {
+    type = type || 'lambert';
+    var material;
+    if ('lambert' === type) {
+      material = new CATMAID.ShaderLambertMaterial(templateMaterial);
+    } else if ('basic' === type) {
+      material = new CATMAID.ShaderMeshBasicMaterial(templateMaterial);
+    }
 
     // Needed for buffer geometry shader modifications
     material.transparent = true;
@@ -506,6 +525,7 @@
       ['varying float vAlphaNew;',
        'varying float vVisibleNew;',
        'varying vec3 vColorNew;', ''].join('\n'));
+
     material.insertSnippet('fragmentColor',
       ['if (vVisibleNew == 0.0) {',
        '  discard;',

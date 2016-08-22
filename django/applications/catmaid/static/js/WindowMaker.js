@@ -1369,9 +1369,9 @@ var WindowMaker = new function()
           {
             type: 'checkbox',
             label: 'Flat neuron material',
-            value: o.neuron_material === 'flat',
+            value: o.neuron_material === 'basic',
             onclickFn: function() {
-              WA.updateNeuronShading(this.checked ? 'flat' : 'lambert');
+              WA.updateNeuronShading(this.checked ? 'basic' : 'lambert');
             },
             title: 'If checked, neurons will ignore light sources and appear "flat"'
           },

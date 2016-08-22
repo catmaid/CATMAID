@@ -560,6 +560,7 @@
     var visible = visibleAttr.array;
     var alphas = alphasAttr.array;
 
+    var addedObjects = 0;
     for (var i=0, max=objects.length; i<max; ++i) {
       var object = objects[i];
       var v = object[0];
@@ -571,7 +572,7 @@
       var color = m.color;
       var alpha = m.opacity;
 
-      var oIndex =  i * 3;
+      var oIndex =  addedObjects * 3;
       offsets[oIndex + 0] = v.x;
       offsets[oIndex + 1] = v.y;
       offsets[oIndex + 2] = v.z;
@@ -580,8 +581,10 @@
       colors[oIndex + 1] = color.g;
       colors[oIndex + 2] = color.b;
 
-      visible[i] = 1.0;
-      alphas[i] = alpha;
+      visible[addedObjects] = 1.0;
+      alphas[addedObjects] = alpha;
+
+      ++addedObjects;
 
       var bufferObject = factory.create(v.node_id, v, scaling, m);
       handler(v, m, object, bufferObject);

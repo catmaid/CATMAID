@@ -484,6 +484,7 @@ def node_count(request, project_id=None, skeleton_id=None, treenode_id=None):
     p = get_object_or_404(Project, pk=project_id)
     if not skeleton_id:
         skeleton_id = Treenode.objects.get(pk=treenode_id).skeleton_id
+    skeleton_id = int(skeleton_id)
     return JsonResponse({
         'count': Treenode.objects.filter(skeleton_id=skeleton_id).count(),
         'skeleton_id': skeleton_id})

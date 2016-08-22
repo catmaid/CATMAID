@@ -115,6 +115,26 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         self.assertEqual(parsed_response, expected_response)
 
 
+    def test_skeleton_node_count(self):
+        self.fake_authentication()
+
+        skeleton_id = 235
+        response = self.client.post(
+            '/%d/skeleton/%s/node_count' % (self.test_project_id, skeleton_id))
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_response = {
+                "count": 28,
+                "skeleton_id": skeleton_id}
+        self.assertEqual(parsed_response, expected_response)
+
+        response = self.client.post(
+            '/%d/skeleton/node/%s/node_count' % (self.test_project_id, 253))
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        self.assertEqual(parsed_response, expected_response)
+
+
     def test_split_skeleton(self):
         self.fake_authentication()
 

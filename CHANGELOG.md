@@ -11,6 +11,11 @@
   these users from the CATMAID color scheme. This is useful if many users have
   similar colors in their user profiles.
 
+- Rendering and removal of skeletons is much faster, which is especially
+  noticeable for > 100 loaded skeletons. This also enables the use of a more
+  accurate node picking (Shift+click) algorithm as default, which before was
+  only used as fallback.
+
 
 Statistics widget:
 

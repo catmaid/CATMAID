@@ -112,7 +112,7 @@
     sourceShaderName = sourceShaderName || 'basic';
     var shaderTemplate = THREE.ShaderLib[sourceShaderName];
     if (!shaderTemplate) {
-      throw new CATMAID.ValueError('Couödn\'t find a source shader with ' +
+      throw new CATMAID.ValueError('Couldn\'t find a source shader with ' +
           'identifier "' + sourceShaderName + '"');
     }
 
@@ -175,7 +175,7 @@
    * @param  {string} insertionName Name of a insertion location defined in
    *                                INSERTION_LOCATIONS.
    * @param  {string} glsl          GLSL code to insert into the shader.
-   * @param  {bool}   after         Optional, if true the glsl code iserted
+   * @param  {bool}   after         Optional, if true the GLSL code inserted
    *                                after the match.
    */
   ShaderMeshBasicMaterial.prototype.insertSnippet = function (insertionName, glsl, after) {

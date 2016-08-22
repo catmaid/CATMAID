@@ -157,6 +157,34 @@ class ConnectorsApiTests(CatmaidApiTestCase):
         self.assertEqual(expected_result, parsed_response)
 
 
+    def test_connector_skeletons(self):
+        self.fake_authentication()
+
+        response = self.client.post(
+                '/%d/connector/skeletons' % self.test_project_id, {
+                    'connector_ids[0]': 356,
+                    'connector_ids[1]': 2463
+                })
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = [
+            [356, {
+                'presynaptic_to': 235,
+                'presynaptic_to_node': 285,
+                'postsynaptic_to': [361, 373],
+                'postsynaptic_to_node': [367, 377]
+            }],
+            [2463, {
+                'presynaptic_to': 2462,
+                'presynaptic_to_node': 2462,
+                'postsynaptic_to': [2462],
+                'postsynaptic_to_node': [2461]
+            }],
+        ]
+        self.assertEqual(len(expected_result), len(parsed_response))
+        self.assertItemsEqual(expected_result, parsed_response)
+
+
     def test_create_connector(self):
         self.fake_authentication()
         connector_count = Connector.objects.all().count()

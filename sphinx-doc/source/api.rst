@@ -129,7 +129,7 @@ running on ``localhost`` using the `Requests Python package
     response = requests.post(
             'https://localhost/{}/annotations/query'.format(project_id),
             auth=CatmaidApiTokenAuth(token),
-            data={'object_ids[]': object_ids})
+            data={'object_ids': object_ids})
 
 Other API Clients
 -----------------

@@ -441,6 +441,8 @@
       // ID of the disabled nodes
       this.DISABLED = -1;
 
+      this.type = SkeletonAnnotations.TYPE_NODE;
+
       this.addChildNode = function(childNode) {
         if (!this.children.hasOwnProperty(childNode.id)) {
           ++ this.numberOfChildren;
@@ -719,7 +721,6 @@
         this.id = null;
         this.parent = null;
         this.parent_id = null;
-        this.type = null;
         this.children = null;
         this.connectors = null;
         this.visibilityGroups = null;
@@ -988,7 +989,6 @@
       user_id)   // id of the user who owns the node
     {
       this.id = id;
-      this.type = SkeletonAnnotations.TYPE_NODE;
       this.parent = parent;
       this.parent_id = parent_id;
       this.children = {};
@@ -1015,6 +1015,8 @@
       // For drawing:
       this.NODE_RADIUS = 8;
       this.CATCH_RADIUS = 0;
+
+      this.type = SkeletonAnnotations.TYPE_CONNECTORNODE;
 
       this.linkGroups = ['pregroup', 'postgroup', 'gjgroup', 'unidirgroup'];
       this.lineGroups = ['preLines', 'postLines', 'gjLines', 'undirLines'];
@@ -1277,7 +1279,6 @@
       user_id)   // id of the user who owns the node
     {
       this.id = id;
-      this.type = SkeletonAnnotations.TYPE_CONNECTORNODE;
       this.subtype = subtype;
       this.needsync = false; // state variable; whether this node is already synchronized with the database
       this.x = x;

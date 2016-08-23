@@ -2690,11 +2690,11 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
         // and parent from the backend and inject the virtual node into the
         // result.
         if (!SkeletonAnnotations.isRealNode(treenodeIDs)) {
+          treenodeIDs = [
+            SkeletonAnnotations.getChildOfVirtualNode(treenodeIDs),
+            SkeletonAnnotations.getParentOfVirtualNode(treenodeIDs)];
           var n = self.nodes[treenodeIDs];
           if (n) {
-            treenodeIDs = [
-              SkeletonAnnotations.getChildOfVirtualNode(n.id),
-              n.parent_id];
             extraNodes = [{
               id: n.id,
               parent_id: n.parent_id,

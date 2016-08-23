@@ -8,11 +8,11 @@ Remove all postgres version 8.4 packages (this removes also the databases).
 Then change the port in /etc/postgresql/9.1/main/postgresql.conf to::
 
    port = 5432
-   
+
 Restart postgres::
 
    sudo /etc/init.d/postgresql restart
-   
+
 Now you should be able to call the ./scripts/createuser.sh script.
 
 My CATMAID instance is working in debug mode, but can't be reached in production. What is the problem?
@@ -102,3 +102,20 @@ update the PostGIS extension::
     sudo -u postgres psql -d <CATMAID-DB-NAME>
     ALTER EXTENSION postgis UPDATE;
 
+No image data due to lack of Cross-Origin Resource Sharing (CORS) headers
+-------------------------------------------------------------------------
+
+You might get an error like this if you don't serve images with CORS header fields::
+
+  Image from origin 'http://images.catmaid-host.org' has been blocked from
+  loading by Cross-Origin Resource Sharing policy: No
+  'Access-Control-Allow-Origin' header is present on the requested resource.
+  Origin 'http://other.catmaid-host.org' is therefore not allowed access.
+  """
+
+This can be fixed by sending an access policy header along with the images,
+coming in the form of this header field::
+
+  Access-Control-Allow-Origin *
+
+An example setup for Nginx can be found :ref:`here <nginx-image-data>`.

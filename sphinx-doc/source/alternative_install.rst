@@ -88,6 +88,35 @@ placeholder needs to be replaced with the absolute path to your CATMAID
 folder. The second location block passes all requests to the WSGI server
 defined before and allows therefore the execution of Django.
 
+.. _nginx-image-data:
+
+Image data
+**********
+
+Serving image data works the same way as serving CATMAID static data. However,
+you might want to add a so called
+`CORS <https://en.wikipedia.org/wiki/Cross-origin_resource_sharing>`_ header to
+your Nginx location block::
+
+ Access-Control-Allow-Origin *
+
+Without this header, only a CATMAID instance served from the *same* domain name
+as the image data will be able to access it. If the image data should be accessed
+by CATMAID instances served  on other domains, this header is required. A
+typical tile data location block could look like this::
+
+ location /tiles/ {
+   # Regular cached tile access
+   alias /path/to/tiles/;
+   expires max;
+   add_header Cache-Control public;
+   # CORS header to allow cross-site access to the tile data
+   add_header Access-Control-Allow-Origin *;
+ }
+
+Besides adding the CORS header, caching is also set to be explicitly allowed,
+which might be helpful for data that doesn't change often.
+
 A note on the ``proxy_redirect`` command
 ****************************************
 
@@ -171,7 +200,7 @@ There, you put the following lines into a file (e.g. run-gevent.py)::
       except KeyboardInterrupt:
           server.stop()
           sys.exit(0)
-  
+
   if __name__ == '__main__':
       runserver()
 
@@ -191,7 +220,7 @@ On Ubuntu 12.04, install nginx and uwsgi::
 
   sudo apt-get install nginx uwsgi uwsgi-plugin-python
 
-Here is a sample uWSGI configuration file.  On Ubuntu, this can be saved as 
+Here is a sample uWSGI configuration file.  On Ubuntu, this can be saved as
 */etc/uwsgi/apps-available/catmaid.ini*, with a soft link to */etc/uwsgi/apps-enabled/catmaid.ini*::
 
   ; uWSGI instance configuration for CATMAID
@@ -206,7 +235,7 @@ Here is a sample uWSGI configuration file.  On Ubuntu, this can be saved as
 
 You now be able to start uWSGI manually with one of the following::
 
-   uwsgi --ini /etc/uwsgi/apps-available/catmaid.ini 
+   uwsgi --ini /etc/uwsgi/apps-available/catmaid.ini
    (or)
    service uwsgi start catmaid.ini
 

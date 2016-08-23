@@ -2818,7 +2818,7 @@ SkeletonAnnotations.TracingOverlay.prototype.setConfidence = function(newConfide
   var nodeID = SkeletonAnnotations.getActiveNodeId();
   if (!nodeID) return;
   var node = this.nodes[nodeID];
-  if (!node || 'treenode' !== node.type) {
+  if (!node || SkeletonAnnotations.TYPE_NODE !== node.type) {
     return;
   }
   if (node.parent_id || toConnector) {

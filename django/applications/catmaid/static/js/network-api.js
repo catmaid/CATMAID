@@ -480,7 +480,7 @@ var CM = function()
   this.selectedNode = function() {
     var ID = SkeletonAnnotations.getActiveNodeId();
     if (!ID) return null; // nothing selected
-    return SkeletonAnnotations.getActiveNodeType() === "treenode" ?
+    return SkeletonAnnotations.getActiveNodeType() === SkeletonAnnotations.TYPE_NODE ?
         cm.node(ID)
       : cm.connector(ID);
   };

@@ -378,7 +378,7 @@ def list_connector(request, project_id=None):
 
 def _connector_skeletons(connector_ids, project_id):
     """ Return a dictionary of connector ID as keys and a dictionary as value
-    containing two entries: 'presynaptic_to' with a skeleton ID of None,
+    containing two entries: 'presynaptic_to' with a skeleton ID or None,
     and 'postsynaptic_to' with a list of skeleton IDs (maybe empty). """
     cursor = connection.cursor()
 

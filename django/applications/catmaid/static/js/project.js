@@ -282,42 +282,6 @@
     };
 
     /**
-     * This is a helper function for the moveTo() API function. It moves each
-     * stack in <stacks> to the physical location given. It passes itself as
-     * callback to the moveTo() API function of each stack. This is done to give
-     * each stack the chance to wait for asynchronous calls to be finished before
-     * the next stack is moved. After the last stack has been moved, the actual
-     * <completionCallback> is executed. Using a loop to call moveTo() for each
-     * stack wouldn't allow to account for asynchronous calls during moving a
-     * stack.
-     */
-    this.moveToInStacks = function(zp, yp, xp, sp, stackViewers,
-        completionCallback) {
-      var stackToMove;
-      if (stackViewers.length === 0) {
-        // FIXME: do we need a callback for tool.redraw as well?
-        if ( tool && tool.redraw )
-          tool.redraw();
-        this.trigger(Project.EVENT_LOCATION_CHANGED, this.coordinates.x,
-          this.coordinates.y, this.coordinates.z);
-        if (typeof completionCallback !== "undefined") {
-          completionCallback();
-        }
-      } else {
-        // Move current stack and continue with next one (or the completion
-        // callback) as a continuation of the moveTo() call on the current stack.
-        stackToMove = stackViewers.shift();
-        stackToMove.moveTo( zp,
-                yp,
-                xp,
-                sp,
-                function () {
-                  self.moveToInStacks( zp, yp, xp, sp, stackViewers, completionCallback );
-                });
-      }
-    };
-
-    /**
      * move all stacks to the physical coordinates, except sp, sp is a
      * stack specific scale level that cannot be traced back to where it
      * came from, so we just pass it through.
@@ -328,46 +292,27 @@
      * move might imply (e.g. requesting more treenodes for the tracing tool).
      */
     this.moveTo = function(zp, yp, xp, sp, completionCallback) {
-      var stacksToMove = [];
       self.coordinates.x = xp;
       self.coordinates.y = yp;
       self.coordinates.z = zp;
 
+      var movePromises = stackViewers.map(function (sv) {
+        return sv.navigateWithProject ?
+          new Promise(function (resolve, reject) {
+            sv.moveTo(zp, yp, xp, sp, resolve);
+          }) :
+          Promise.resolve();
+      });
 
-      for ( var i = 0; i < stackViewers.length; ++i )
-      {
-        if ( stackViewers[ i ].navigateWithProject ) stacksToMove.push( stackViewers[ i ] );
-      }
-
-      // Call recursive moving function which executes the completion callback as
-      // a continuation after the last stack has been moved.
-      self.moveToInStacks( zp, yp, xp, sp, stacksToMove, completionCallback );
-    };
-
-
-    this.moveToProjectInStacks = function(zp, yp, xp, res, stackViewers,
-        completionCallback) {
-      var stackToMove;
-      if (stackViewers.length === 0) {
-        // FIXME: do we need a callback for tool.redraw as well?
-        if ( tool && tool.redraw )
+      Promise.all(movePromises).then(function () {
+        if (tool && tool.redraw)
           tool.redraw();
-        // Emit location change event and call callback
-        this.trigger(Project.EVENT_LOCATION_CHANGED, this.coordinates.x,
-          this.coordinates.y, this.coordinates.z);
+        self.trigger(Project.EVENT_LOCATION_CHANGED, self.coordinates.x,
+          self.coordinates.y, self.coordinates.z);
         if (typeof completionCallback !== "undefined") {
           completionCallback();
         }
-      } else {
-        stackToMove = stackViewers.shift();
-        stackToMove.moveToProject( zp,
-                yp,
-                xp,
-                res,
-                function () {
-                  self.moveToProjectInStacks( zp, yp, xp, res, stackViewers, completionCallback );
-                });
-      }
+      });
     };
 
     /**
@@ -375,18 +320,27 @@
      * in units per pixels
      */
     this.moveToProject = function(zp, yp, xp, res, completionCallback) {
-      var stacksToMove = [];
       self.coordinates.x = xp;
       self.coordinates.y = yp;
       self.coordinates.z = zp;
 
+      var movePromises = stackViewers.map(function (sv) {
+        return sv.navigateWithProject ?
+          new Promise(function (resolve, reject) {
+            sv.moveToProject(zp, yp, xp, res, resolve);
+          }) :
+          Promise.resolve();
+      });
 
-      for ( var i = 0; i < stackViewers.length; ++i )
-      {
-        if ( stackViewers[ i ].navigateWithProject ) stacksToMove.push( stackViewers[ i ] );
-      }
-
-      self.moveToProjectInStacks( zp, yp, xp, res, stacksToMove, completionCallback );
+      Promise.all(movePromises).then(function () {
+        if (tool && tool.redraw)
+          tool.redraw();
+        self.trigger(Project.EVENT_LOCATION_CHANGED, self.coordinates.x,
+          self.coordinates.y, self.coordinates.z);
+        if (typeof completionCallback !== "undefined") {
+          completionCallback();
+        }
+      });
     };
 
     this.updateTool = function() {

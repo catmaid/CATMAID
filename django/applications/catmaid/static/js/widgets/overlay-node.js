@@ -496,7 +496,7 @@
               color = SkeletonAnnotations.TracingOverlay.Settings.session.active_virtual_node_color;
             }
           }
-        } else if (this.isroot) {
+        } else if (null === this.parent_id) {
           // The root node should be colored red unless it's active:
           color = SkeletonAnnotations.TracingOverlay.Settings.session.root_node_color;
         } else if (0 === this.numberOfChildren) {
@@ -528,7 +528,7 @@
               return SkeletonAnnotations.TracingOverlay.Settings.session.active_virtual_node_color;
             }
           }
-        } else if (this.isroot) {
+        } else if (null === this.parent_id) {
           return baseColor.clone().offsetHSL(0, 0, 0.25).getHex();
         } else if (0 === this.numberOfChildren) {
           return baseColor.clone().offsetHSL(0, 0, -0.25).getHex();
@@ -795,7 +795,6 @@
         this.zdiff = zdiff;
         this.confidence = confidence;
         this.skeleton_id = skeleton_id;
-        this.isroot = null === parent_id || isNaN(parent_id) || parseInt(parent_id) < 0;
         this.edition_time = edition_time;
         this.user_id = user_id;
         this.needsync = false;
@@ -1003,7 +1002,6 @@
       this.skeleton_id = skeleton_id;
       this.edition_time = edition_time;
       this.user_id = user_id;
-      this.isroot = null === parent_id || isNaN(parent_id) || parseInt(parent_id) < 0;
       this.c = null; // The circle for drawing and interacting with the node.
       this.radiusGraphics = null; // The circle for visualing skeleton radius.
       this.line = null; // The line element that represents an edge between nodes

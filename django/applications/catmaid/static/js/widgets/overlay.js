@@ -1548,7 +1548,7 @@ SkeletonAnnotations.TracingOverlay.prototype.checkLoadedAndIsNotRoot = function(
     CATMAID.warn("Cannot find node with ID " + nodeID);
     return false;
   }
-  if (this.nodes[nodeID].isroot) {
+  if (null === this.nodes[nodeID].parent_id) {
     CATMAID.info("Node is already root!");
     return false;
   }
@@ -2984,7 +2984,7 @@ SkeletonAnnotations.TracingOverlay.prototype.goToParentNode = function(treenode_
       CATMAID.info("Connector nodes do not have parent nodes");
       return;
     }
-    if (node.isroot) {
+    if (null === node.parent_id) {
       CATMAID.info("This is the root node, can't move to its parent");
       return;
     }

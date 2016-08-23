@@ -1,7 +1,7 @@
 from django.http import HttpResponse
 
 from django.template.loader_tags import BlockNode, ExtendsNode
-from django.template.context import Context, RequestContext
+from django.template.context import Context
 from django.template import loader
 
 # Most parts of this code has been taken from this Django snippet:
@@ -21,7 +21,7 @@ def render_template_block(template, block, context):
     """
     return render_template_block_nodelist(template.template.nodelist, block,
             context)
-    
+
 def render_template_block_nodelist(nodelist, block, context):
     for node in nodelist:
         if isinstance(node, BlockNode) and node.name == block:

@@ -1,5 +1,4 @@
 import json
-import re
 
 from collections import defaultdict
 
@@ -13,7 +12,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view
 
 from catmaid import state
-from catmaid.models import UserRole, Treenode, Connector, \
+from catmaid.models import UserRole, Treenode, \
         ClassInstanceClassInstance, Review
 from catmaid.control.authentication import requires_user_role, \
         can_edit_all_or_fail

@@ -6,12 +6,10 @@ from collections import defaultdict
 
 from django.conf import settings
 from django.http import HttpResponse
-from django.shortcuts import render_to_response
-from django.template.context import RequestContext
 
 from catmaid.fields import Double3D
 from catmaid.models import Log, NeuronSearch, CELL_BODY_CHOICES, \
-        SORT_ORDERS_DICT, User, Relation, Class, ClassInstance, \
+        SORT_ORDERS_DICT, Relation, Class, ClassInstance, \
         ClassInstanceClassInstance
 
 def identity(x):

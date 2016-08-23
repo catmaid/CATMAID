@@ -1,4 +1,3 @@
-import json
 import logging
 import scipy.cluster.hierarchy as hier
 import scipy.spatial.distance as dist
@@ -8,14 +7,12 @@ from django import forms
 from django.forms.formsets import formset_factory
 from django.forms.widgets import CheckboxSelectMultiple
 from django.http import JsonResponse
-from django.shortcuts import render
-from django.template.context import RequestContext
 
 from formtools.wizard.views import SessionWizardView
 
 from catmaid.models import Class
 from catmaid.control.classification import (ClassInstanceProxy,
-    get_root_classes_qs, graph_instanciates_feature, graphs_instanciate_features)
+    get_root_classes_qs, graphs_instanciate_features)
 from catmaid.control.ontology import get_features
 
 

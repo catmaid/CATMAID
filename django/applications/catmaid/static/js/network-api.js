@@ -1,11 +1,11 @@
 /** A high-level object to inspect the contents of
  * the reconstructed skeletons and their relations.
  * Intended for use from the console.
- * 
+ *
  * All access is read-only: no changes in the database.
  * All constructors have the side effect of registering themselves
  * into the appropriate cache of ID vs instance.
- * 
+ *
  * Example 1:
  *   var cm = new CM();
  *   var node = cm.fetchNode(4199);
@@ -13,7 +13,7 @@
  *   var nodes = sk.nodes();
  *   var connectors = skeleton.connectors();
  *   var downstreamPartners = skeleton.downstreamPartners();
- * 
+ *
  * Example 2:
  *   var cm = new CM();
  *   var node = cm.selectedNode();
@@ -23,7 +23,7 @@
  *   // An object with multiple measurements:
  *   var m = node.measure();
  *   console.log("cable length:", m.cable);
- * 
+ *
  * Example 3:
  *   var cm = new CM();
  *   var sk = cm.selectedSkeleton();
@@ -32,7 +32,7 @@
  *   var nodes = sk.nodes();
  *   // An array of Node instances that are presynaptic:
  *   var nodesWithPre = Object.getOwnPropertyNames(cs.pre).map(cm.node);
- * 
+ *
  * Example 4: AVOID poluting the global namespace, by creating a single var 'ns':
  *   var ns = new function() {
  *     this.cm = new CM();
@@ -153,7 +153,7 @@ var CM = function()
     this.node = function(ID) {
       return this.nodes()[ID];
     };
-    
+
     this.size = function() {
       return Object.keys(this.nodes()).length;
     };
@@ -161,13 +161,13 @@ var CM = function()
     this.neuron = function() {
       return cm.neuron(this.neuron_id);
     };
-    
+
     /** Returns a new object:
      *      {
      *       pre: {123: [Connector, ...], 456: [Connector, ...], ...},
      *       post: {789: [Connector, ...], ...}
      *      }
-     * 
+     *
      *  ... where the numbers are the IDs of the nodes in this skeleton
      *  that link to an array containing one or more connectors.
      */
@@ -258,7 +258,7 @@ var CM = function()
     this.upstreamPartners = function() {
       return partners(this.postConnectors(), "preSkeletons");
     };
-    
+
     this.measure = function() {
       var node_map = this.nodes();
       var count = 0;
@@ -315,7 +315,7 @@ var CM = function()
         upstreamPartnersSingleNode: upstreamPartnersSingleNode
       };
     };
-    
+
     /** Return an array of nodes tagged with 'tag'.
      * If none found, returns an empty array. */
     this.tagged = function(tag) {
@@ -347,7 +347,7 @@ var CM = function()
     jQuery.extend(this, json);
     // Register
     cm.IDConnectors[this.id] = this;
-    
+
     this.preSkeletons = function() {
       return this.pre.map(function(o) { return cm.skeleton(o.skeleton_id); });
     };
@@ -367,7 +367,7 @@ var CM = function()
   // TODO
   var Synapse = function(json) {
     jQuery.extend(this, json);
-    
+
     this.node = function() {
     };
     this.presynapticNodes = function() {
@@ -381,14 +381,14 @@ var CM = function()
     jQuery.extend(this, json);
     // Register instance
     cm.IDNeurons[this.id] = this;
-    
+
     // TODO there could be more than one skeleton in this Neuron!
     // If so, the json with which this neuron is initialized will be unexpected!
     this.skeleton = function() {
       return cm.skeleton(this.skeleton_id);
     };
   };
- 
+
   /** Query the remote database and wait for output. */
   var synchFetch = function(URL, params) {
     var r = null;
@@ -414,19 +414,19 @@ var CM = function()
     });
     return r;
   };
-  
+
   this.skeleton = function(ID) {
     var sk = cm.IDSkeletons[ID];
     if (sk) return sk;
     return cm.fetchSkeleton(ID);
   };
-  
+
   this.neuron = function(ID) {
     var neu = cm.IDNeurons[ID];
     if (neu) return neu;
     return cm.fetchNeuron(ID);
   };
-  
+
   this.node = function(ID) {
     var node = cm.IDNodes[ID];
     if (node) return node;
@@ -445,7 +445,7 @@ var CM = function()
     if (null !== json) return create(Node, cm.IDNodes, json);
     return null;
   };
-  
+
   this.fetchConnector = function(ID) {
     var json = synchFetch("model/network.api/connector.php", {cid: ID});
     if (null !== json) return create(Connector, cm.IDConnectors, json);

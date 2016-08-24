@@ -78,7 +78,7 @@
         var header = table.createTHead();
         var hrow = header.insertRow(0);
         var columns = ['Name', 'Comment', 'User', 'Creation time',
-            'Editor', 'Edition time'];
+            'Editor', 'Edition time', 'Action'];
         columns.forEach(function(c) {
           hrow.insertCell().appendChild(document.createTextNode(c));
         });
@@ -99,8 +99,37 @@
             {data: "user"},
             {data: "creation_time"},
             {data: "editor"},
-            {data: "edition_time"}
+            {data: "edition_time"},
+            {
+              data: null,
+              orderable: false,
+              defaultContent: '<a href="#">remove</a>'
+            }
           ],
+        });
+
+        // Remove volume if 'remove' was clicked
+        $(table).on('click', 'a', function() {
+          var tr = $(this).closest("tr");
+          var volume = self.datatable.row(tr).data();
+
+          var confirmDialog = new CATMAID.OptionsDialog("Remove volume", {
+            "Yes": function() {
+              CATMAID.fetch(project.id + '/volumes/' + volume.id + '/', 'DELETE')
+                .then(function(json) {
+                  CATMAID.msg('Success', 'Volume ' + json.volume_id + ' removed');
+                  self.redraw();
+                })
+                .catch(CATMAID.handleError);
+            },
+            "No": CATMAID.noop
+          });
+          confirmDialog.appendMessage("Are you sure you want to delete volume "
+              + volume.id + " (" + volume.name + ")?");
+          confirmDialog.show(500,'auto');
+
+          // Prevent other events from dealing with this click
+          return false;
         });
 
         // Display a volume if clicked

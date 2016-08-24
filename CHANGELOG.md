@@ -17,6 +17,12 @@
   only used as fallback.
 
 
+Volume manager:
+
+- Volumes an now be removed (given a user has the required permissions) by
+  clicking on the 'remove' link in the last column of the volume table.
+
+
 Statistics widget:
 
 - If a user has the can_administer permission for a project, the Statistics

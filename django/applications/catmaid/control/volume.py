@@ -1,7 +1,7 @@
 import json
 import re
 
-from catmaid.control.authentication import requires_user_role, can_edit_or_fail
+from catmaid.control.authentication import requires_user_role, user_can_edit
 from catmaid.models import UserRole, Project, Volume
 from catmaid.serializers import VolumeSerializer
 
@@ -214,7 +214,7 @@ def volume_collection(request, project_id):
         volumes = Volume.objects.filter(project_id=project_id).values(*fields)
         return Response(volumes)
 
-@api_view(['GET', 'POST'])
+@api_view(['GET', 'POST', 'DELETE'])
 @requires_user_role([UserRole.Browse])
 def volume_detail(request, project_id, volume_id):
     """Get detailed information on a spatial volume or set its properties..
@@ -259,6 +259,33 @@ def volume_detail(request, project_id, volume_id):
         return Response(volume)
     elif request.method == 'POST':
         return update_volume(request, project_id=project_id, volume_id=volume_id)
+    elif request.method == 'DELETE':
+        return remove_volume(request, project_id=project_id, volume_id=volume_id)
+
+@requires_user_role([UserRole.Annotate])
+def remove_volume(request, project_id, volume_id):
+    """Remove a particular volume, if the user has permission to it.
+    """
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT user_id FROM catmaid_volume WHERE id=%s
+    """, (volume_id,))
+    rows = cursor.fetchall()
+    if 0 == len(rows):
+        raise ValueError("Could not find volume with ID {}".format(volume_id))
+    volume_user_id = rows[0][0]
+
+    if not user_can_edit(connection.cursor(), request.user.id, volume_user_id) and not request.user.is_superuser:
+        raise Exception("You don't have permissions to delete this volume")
+
+    cursor.execute("""
+        DELETE FROM catmaid_volume WHERE id=%s
+    """, (volume_id,))
+
+    return Response({
+        "success": True,
+        "volume_id": volume_id
+    })
 
 @requires_user_role([UserRole.Annotate])
 def update_volume(request, project_id, volume_id):

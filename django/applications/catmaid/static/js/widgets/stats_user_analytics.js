@@ -54,6 +54,17 @@
         endDate.setAttribute('data-name', 'end_date');
         endDateLabel.appendChild(endDate);
 
+        var maxInactivityLabel = document.createElement('label');
+        maxInactivityLabel.appendChild(document.createTextNode('Max inactivity (min) '));
+        var maxInactivity = document.createElement('input');
+        maxInactivity.setAttribute('type', 'number');
+        maxInactivity.setAttribute('size', '1');
+        maxInactivity.setAttribute('min', '0');
+        maxInactivity.value = 10;
+        maxInactivity.style.width = '4em';
+        maxInactivity.setAttribute('data-name', 'max_inactivity');
+        maxInactivityLabel.appendChild(maxInactivity);
+
         var allWrites = document.createElement('label');
         var allWritesCb = document.createElement('input');
         allWritesCb.setAttribute('type', 'checkbox');
@@ -76,6 +87,7 @@
         controls.appendChild(userSelectLabel);
         controls.appendChild(startDateLabel);
         controls.appendChild(endDateLabel);
+        controls.appendChild(maxInactivityLabel);
         controls.appendChild(allWrites);
         controls.appendChild(refresh);
       },
@@ -112,17 +124,19 @@
       var userSelect = document.querySelector('#user-analytics-controls select[data-name=user]');
       var startInput = document.querySelector('#user-analytics-controls input[data-name=start_date]');
       var endInput = document.querySelector('#user-analytics-controls input[data-name=end_date]');
+      var maxInactivityInput = document.querySelector('#user-analytics-controls input[data-name=max_inactivity]');
       var allWritesInput = document.querySelector('#user-analytics-controls input[data-name=all_writes]');
       var start = startInput.value,
           end = endInput.value,
           userId = userSelect.value,
           allWrites = allWritesInput.checked,
+          maxInactivity = maxInactivityInput.value,
           project_id = project.id;
 
       var img = document.querySelector('#user-analytics-content img[data-name=useranalyticsimg]');
       img.src = CATMAID.makeURL('useranalytics' + "?userid=" + userId +
           '&project_id=' + project_id) + "&start=" + start + "&end=" + end +
-          '&all_writes=' + allWrites;
+          '&all_writes=' + allWrites + '&max_inactivity=' + maxInactivity;
     } catch (e) {
       CATMAID.error(e);
       console.log(e, e.stack);

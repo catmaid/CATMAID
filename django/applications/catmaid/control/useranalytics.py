@@ -63,12 +63,13 @@ def plot_useranalytics(request):
     start_date = request.GET.get('start')
     end_date = request.GET.get('end')
     all_writes = request.GET.get('all_writes', 'false') == 'true'
+    maxInactivity = int(request.GET.get('max_inactivity', 10))
 
     if request.user.is_superuser or \
             project and request.user.has_perm('can_administer', project):
         end = dateparser.parse(end_date).replace(tzinfo=pytz.utc) if end_date else timezone.now()
         start = dateparser.parse(start_date).replace(tzinfo=pytz.utc) if start_date else end - timedelta(end.isoweekday() + 7)
-        f = generateReport( userid, project_id, 10, start, end, all_writes )
+        f = generateReport( userid, project_id, maxInactivity, start, end, all_writes )
     else:
         f = generateErrorImage('You lack permissions to view this report.')
 

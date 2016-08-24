@@ -25,10 +25,12 @@
 <select id="project">
   <option value="all">All projects</option>
 </select>
-<label><input type="checkbox" id="all_writes" />All writes</label>
-<button id="refresh" >Refresh</button>
 Start date: <input type="text" id="start_date" />
 End date: <input type="text" id="end_date" />
+<label>Max inactivity (min)<input type="number" min="0"
+      size"1" value="10" id="max_inactivity" /></label>
+<label><input type="checkbox" id="all_writes" />All writes</label>
+<button id="refresh" >Refresh</button>
 <br />
 <img src="{{ CATMAID_URL }}useranalytics" id="useranalyticsimg" />
 
@@ -98,6 +100,7 @@ End date: <input type="text" id="end_date" />
 
         var start = format(document.getElementById('start_date').value),
             end = format(document.getElementById('end_date').value),
+            maxInactivity = document.getElementById('max_inactivity').value,
             allWrites = document.getElementById("all_writes").checked;
             project_id = $('#project').val();
 
@@ -107,7 +110,8 @@ End date: <input type="text" id="end_date" />
             (project_id === 'all' ? '' : '&project_id=' + project_id) +
             "&start=" + start +
             "&end=" + end +
-            "&all_writes=" + allWrites;
+            "&all_writes=" + allWrites +
+            "&max_inactivity=" + maxInactivity;
       } catch (e) {
         alert(e);
         console.log(e, e.stack);

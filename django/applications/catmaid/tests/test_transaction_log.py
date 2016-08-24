@@ -146,7 +146,9 @@ class TransactionLogTests(TransactionTestCase):
         self.assertEqual(self.project.id, nt['project_id'])
 
     def test_locaton_lookup_treenode(self):
-        """"""
+        """Test if the location of a newly created treenode can be retrieved
+        through the transaction log. Also test if this works for the updated
+        location and the historic creation event."""
         cursor = connection.cursor()
 
         # Create a new treenode

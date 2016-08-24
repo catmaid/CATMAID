@@ -39,8 +39,19 @@ End date: <input type="text" id="end_date" />
   CATMAID.configure("{{ CATMAID_URL }}",
             "{{ STATIC_URL|escapejs }}",
             "{{ STATIC_EXTENSION_URL|escapejs }}",
-            "{% csrf_cookie_name %}");
+            "{% csrf_cookie_name %}",
+            undefined,
+            {{ HISTORY_TRACKING|make_js_bool }});
   CATMAID.CLIENT_VERSION = "{% catmaid_version %}";
+
+  var allWritesCb = document.getElementById("all_writes");
+  if (CATMAID.historyTracking) {
+    allWritesCb.setAttribute('checked', 'checked');
+    allWritesCb.title = "Include all writing operations in statistics (e.g. annotating, taggin).";
+  } else {
+    allWritesCb.setAttribute('disabled', 'disabled');
+    allWritesCb.title = "History tracking needs to be enabled for this functionality";
+  }
 
   $.ajax({
     "dataType": 'json',
@@ -50,7 +61,6 @@ End date: <input type="text" id="end_date" />
     "data": {},
     "success": function( json ) {
       var select = document.getElementById("logtable_username");
-      var allWritesCb = document.getElementById("all_writes");
       select.options.length = 0; // remove all elements
       json.sort(function(u1, u2) {
         return u1.last_name.toLowerCase() > u2.last_name.toLowerCase() ? 1 : -1;

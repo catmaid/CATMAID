@@ -58,6 +58,13 @@
         var allWritesCb = document.createElement('input');
         allWritesCb.setAttribute('type', 'checkbox');
         allWritesCb.setAttribute('data-name', 'all_writes');
+        if (CATMAID.historyTracking) {
+          allWritesCb.setAttribute('checked', 'checked');
+          allWrites.title = "Include all writing operations in statistics (e.g. annotating, taggin).";
+        } else {
+          allWritesCb.setAttribute('disabled', 'disabled');
+          allWrites.title = "History tracking needs to be enabled for this functionality";
+        }
         allWrites.appendChild(allWritesCb);
         allWrites.appendChild(document.createTextNode('All writes'));
 

@@ -17,6 +17,7 @@ class CatmaidView(TemplateView):
         context['NON_COMPRESSED_FILES'] = settings.NON_COMPRESSED_FILES
         context['STATIC_EXTENSION_URL'] = settings.STATIC_EXTENSION_URL
         context['STATIC_EXTENSION_FILES'] = settings.STATIC_EXTENSION_FILES
+        context['HISTORY_TRACKING'] = settings.HISTORY_TRACKING
         profile_context = self.request.user.userprofile.as_dict()
         return dict(context.items() + profile_context.items())
 

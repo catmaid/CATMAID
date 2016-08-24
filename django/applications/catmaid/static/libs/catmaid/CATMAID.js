@@ -64,8 +64,10 @@ var requestQueue = new RequestQueue();
    *                                CSRF token to be sent to the backend with XHRs.
    * @param {Object} permissions    (Optional) Instead of getting permission from
    *                                the back-end, use these instead.
+   * @param {bool}   history        (Optional) Indicate if history tracking is
+   *                                enabled in the back-end, default is true.
    */
-  CATMAID.configure = function(backendURL, staticURL, staticExtURL, csrfCookieName, permissions) {
+  CATMAID.configure = function(backendURL, staticURL, staticExtURL, csrfCookieName, permissions, history) {
     validateString(backendURL, "back-end URL");
     validateString(staticURL, "static URL");
     if (typeof staticExtURL === 'undefined') staticExtURL = '';
@@ -96,6 +98,13 @@ var requestQueue = new RequestQueue();
       configurable: true,
       writable: false,
       value: csrfCookieName
+    });
+
+    Object.defineProperty(CATMAID, "historyTracking", {
+      enumerable: false,
+      configurable: true,
+      writable: false,
+      value: history === 'undefined' ? true : !!history
     });
 
     CATMAID.setupCsrfProtection();

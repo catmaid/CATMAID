@@ -20,6 +20,13 @@ def is_none(val):
     return val is None
 
 @register.filter
+def make_js_bool(val):
+    """Return a JavasScript "true" or "false" value if the input is truthy or
+    falsy, respectively.
+    """
+    return "true" if val else "false";
+
+@register.filter
 def get(dictionary, key):
     return dictionary[key]
 

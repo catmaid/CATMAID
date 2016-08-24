@@ -28,7 +28,9 @@
       CATMAID.configure("{{ CATMAID_URL }}",
                 "{{ STATIC_URL|escapejs }}",
                 "{{ STATIC_EXTENSION_URL|escapejs }}",
-                "{% csrf_cookie_name %}");
+                "{% csrf_cookie_name %}",
+                undefined,
+                {{ HISTORY_TRACKING|make_js_bool }});
       CATMAID.CLIENT_VERSION = "{% catmaid_version %}";
     </script>
 

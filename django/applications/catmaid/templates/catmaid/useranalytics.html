@@ -25,6 +25,7 @@
 <select id="project">
   <option value="all">All projects</option>
 </select>
+<label><input type="checkbox" id="all_writes" />All writes</label>
 <button id="refresh" >Refresh</button>
 Start date: <input type="text" id="start_date" />
 End date: <input type="text" id="end_date" />
@@ -49,6 +50,7 @@ End date: <input type="text" id="end_date" />
     "data": {},
     "success": function( json ) {
       var select = document.getElementById("logtable_username");
+      var allWritesCb = document.getElementById("all_writes");
       select.options.length = 0; // remove all elements
       json.sort(function(u1, u2) {
         return u1.last_name.toLowerCase() > u2.last_name.toLowerCase() ? 1 : -1;
@@ -86,6 +88,7 @@ End date: <input type="text" id="end_date" />
 
         var start = format(document.getElementById('start_date').value),
             end = format(document.getElementById('end_date').value),
+            allWrites = document.getElementById("all_writes").checked;
             project_id = $('#project').val();
 
         document.getElementById("useranalyticsimg").src =
@@ -93,7 +96,8 @@ End date: <input type="text" id="end_date" />
             "?userid=" + $('#logtable_username').val() +
             (project_id === 'all' ? '' : '&project_id=' + project_id) +
             "&start=" + start +
-            "&end=" + end;
+            "&end=" + end +
+            "&all_writes=" + allWrites;
       } catch (e) {
         alert(e);
         console.log(e, e.stack);

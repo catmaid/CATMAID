@@ -54,6 +54,13 @@
         endDate.setAttribute('data-name', 'end_date');
         endDateLabel.appendChild(endDate);
 
+        var allWrites = document.createElement('label');
+        var allWritesCb = document.createElement('input');
+        allWritesCb.setAttribute('type', 'checkbox');
+        allWritesCb.setAttribute('data-name', 'all_writes');
+        allWrites.appendChild(allWritesCb);
+        allWrites.appendChild(document.createTextNode('All writes'));
+
         var refresh = document.createElement('input');
         refresh.setAttribute('type', 'button');
         refresh.setAttribute('value', 'Refresh');
@@ -62,6 +69,7 @@
         controls.appendChild(userSelectLabel);
         controls.appendChild(startDateLabel);
         controls.appendChild(endDateLabel);
+        controls.appendChild(allWrites);
         controls.appendChild(refresh);
       },
       contentID: "user-analytics-content",
@@ -97,14 +105,17 @@
       var userSelect = document.querySelector('#user-analytics-controls select[data-name=user]');
       var startInput = document.querySelector('#user-analytics-controls input[data-name=start_date]');
       var endInput = document.querySelector('#user-analytics-controls input[data-name=end_date]');
+      var allWritesInput = document.querySelector('#user-analytics-controls input[data-name=all_writes]');
       var start = startInput.value,
           end = endInput.value,
           userId = userSelect.value,
+          allWrites = allWritesInput.checked,
           project_id = project.id;
 
       var img = document.querySelector('#user-analytics-content img[data-name=useranalyticsimg]');
       img.src = CATMAID.makeURL('useranalytics' + "?userid=" + userId +
-          '&project_id=' + project_id) + "&start=" + start + "&end=" + end;
+          '&project_id=' + project_id) + "&start=" + start + "&end=" + end +
+          '&all_writes=' + allWrites;
     } catch (e) {
       CATMAID.error(e);
       console.log(e, e.stack);

@@ -3,6 +3,7 @@ from datetime import timedelta
 from dateutil import parser as dateparser
 import pytz
 
+from django.db import connection
 from django.http import HttpResponse
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
@@ -61,12 +62,13 @@ def plot_useranalytics(request):
     project = get_object_or_404(Project, pk=project_id) if project_id else None
     start_date = request.GET.get('start')
     end_date = request.GET.get('end')
+    all_writes = request.GET.get('all_writes', 'false') == 'true'
 
     if request.user.is_superuser or \
             project and request.user.has_perm('can_administer', project):
         end = dateparser.parse(end_date).replace(tzinfo=pytz.utc) if end_date else timezone.now()
         start = dateparser.parse(start_date).replace(tzinfo=pytz.utc) if start_date else end - timedelta(end.isoweekday() + 7)
-        f = generateReport( userid, project_id, 10, start, end )
+        f = generateReport( userid, project_id, 10, start, end, all_writes )
     else:
         f = generateErrorImage('You lack permissions to view this report.')
 
@@ -75,7 +77,7 @@ def plot_useranalytics(request):
     canvas.print_png(response)
     return response
 
-def eventTimes(user_id, project_id, start_date, end_date):
+def eventTimes(user_id, project_id, start_date, end_date, all_writes=True):
     """ Returns a tuple containing a list of tree node edition times, connector
     edition times and tree node review times within the date range specified
     where the editor/reviewer is the given user.
@@ -100,7 +102,34 @@ def eventTimes(user_id, project_id, start_date, end_date):
     cns = cns.values_list('edition_time', flat=True)
     rns = rns.values_list('review_time', flat=True)
 
-    return list(tns), list(cns), list(rns)
+    events = {
+        'treenode_events': list(tns),
+        'connector_events': list(cns),
+        'review_events': list(rns)
+    }
+
+    if all_writes:
+        if project_id:
+            params = (start_date, end_date, user_id, project_id)
+            project_filter = "AND project_id = %s"
+        else:
+            params = (start_date, end_date, user_id)
+            project_filter = ""
+
+        # Query transaction log. This makes this feature only useful of history
+        # tracking is available.
+        cursor = connection.cursor()
+        cursor.execute("""
+            SELECT execution_time
+            FROM catmaid_transaction_info
+            WHERE execution_time >= %s
+            AND execution_time <= %s
+            AND user_id = %s
+            {}
+        """.format(project_filter), params)
+        events['write_events'] = [r[0] for r in cursor.fetchall()]
+
+    return events
 
 def eventsPerInterval(times, start_date, end_date, interval='day'):
     """ Creates a histogram of how many events fall into all intervals between
@@ -297,11 +326,15 @@ def generateErrorImage(msg):
     fig.suptitle(msg)
     return fig
 
-def generateReport( user_id, project_id, activeTimeThresh, start_date, end_date ):
+def generateReport(user_id, project_id, activeTimeThresh, start_date, end_date, all_writes=True):
     """ nts: node times
         cts: connector times
         rts: review times """
-    nts, cts, rts = eventTimes( user_id, project_id, start_date, end_date )
+    events = eventTimes(user_id, project_id, start_date, end_date, all_writes)
+
+    nts = events['treenode_events']
+    cts = events['connector_events']
+    rts = events['review_events']
 
     # If no nodes have been found, return an image with a descriptive text.
     if len(nts) == 0:
@@ -311,7 +344,14 @@ def generateReport( user_id, project_id, activeTimeThresh, start_date, end_date 
     annotationEvents, ae_timeaxis = eventsPerInterval( nts + cts, start_date, end_date )
     reviewEvents, re_timeaxis = eventsPerInterval( rts, start_date, end_date )
 
-    activeBouts = list(activeTimes( nts+cts+rts, activeTimeThresh ))
+    if all_writes:
+        write_events = events['write_events']
+        other_write_events = write_events
+        writeEvents, we_timeaxis = eventsPerInterval(other_write_events, start_date, end_date)
+    else:
+        other_write_events = []
+
+    activeBouts = list(activeTimes( nts+cts+rts+other_write_events, activeTimeThresh ))
     netActiveTime, at_timeaxis = activeTimesPerDay( activeBouts )
 
     dayformat = DateFormatter('%b %d')
@@ -320,12 +360,24 @@ def generateReport( user_id, project_id, activeTimeThresh, start_date, end_date 
 
     # Top left plot: created and edited nodes per day
     ax1 = plt.subplot2grid((2,2), (0,0))
-    an = ax1.bar( ae_timeaxis, annotationEvents, color='#0000AA')
-    rv = ax1.bar( re_timeaxis, reviewEvents, bottom=annotationEvents, color='#AA0000')
+
+    # If other writes should be shown, draw accumulated write bar first. This
+    # makes the regular bar draw over it, so that only the difference is
+    # visible, which is exactly what we want.
+    if all_writes:
+        we = ax1.bar(we_timeaxis, writeEvents, color='#00AA00')
+
+    an = ax1.bar(ae_timeaxis, annotationEvents, color='#0000AA')
+    rv = ax1.bar(re_timeaxis, reviewEvents, bottom=annotationEvents, color='#AA0000')
     ax1.set_xlim((start_date,end_date))
 
-    ax1.legend( (an, rv), ('Annotated', 'Reviewed'), loc=2,frameon=False )
-    ax1.set_ylabel('Nodes')
+    if all_writes:
+        ax1.legend( (we, an, rv), ('Other changes','Annotated', 'Reviewed'), loc=2,frameon=False )
+        ax1.set_ylabel('Nodes and changes')
+    else:
+        ax1.legend( (an, rv), ('Annotated', 'Reviewed'), loc=2,frameon=False )
+        ax1.set_ylabel('Nodes')
+
     yl = ax1.get_yticklabels()
     plt.setp(yl, fontsize=10)
     ax1.xaxis.set_major_formatter(dayformat)

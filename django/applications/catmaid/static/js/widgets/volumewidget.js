@@ -96,9 +96,19 @@
           columns: [
             {data: "name"},
             {data: "comment"},
-            {data: "user"},
+            {
+              data: "user",
+              render: function(data, type, row, meta) {
+                return CATMAID.User.safe_get(data).login;
+              }
+            },
             {data: "creation_time"},
-            {data: "editor"},
+            {
+              data: "editor",
+              render: function(data, type, row, meta) {
+                return CATMAID.User.safe_get(data).login;
+              }
+            },
             {data: "edition_time"},
             {
               data: null,

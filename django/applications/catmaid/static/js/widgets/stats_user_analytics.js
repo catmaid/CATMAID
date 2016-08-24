@@ -33,8 +33,9 @@
           if (user.isAnonymous) {
             continue;
           }
+          var name = user.fullName ? user.fullName : user.login;
           var selected = (user.id == CATMAID.session.userid);
-          var option = new Option(user.fullName, user.id, selected, selected);
+          var option = new Option(name, user.id, selected, selected);
           userSelect.add(option);
         }
         userSelectLabel.appendChild(userSelect);

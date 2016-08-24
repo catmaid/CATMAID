@@ -21,7 +21,10 @@ Statistics widget:
 
 - If a user has the can_administer permission for a project, the Statistics
   widget now displays an extra button to open the new User Analytics widget. It
-  displays the same information as the admin view with the same name.
+  displays the same information as the admin view with the same name. The user
+  analytics view now offers also options to adjust the max. inactivity time and
+  whether all write operations should be included (as opposed to only node and
+  review changes).
 
 
 Tracing overlay:

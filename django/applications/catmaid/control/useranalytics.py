@@ -6,6 +6,7 @@ import pytz
 from django.http import HttpResponse
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
+from django.views.decorators.cache import never_cache
 
 from catmaid.models import Connector, Project, Treenode, Review
 
@@ -50,6 +51,7 @@ class Bout(object):
         return "Bout with %s events [%s, %s]" % \
                 (self.nrEvents, self.start, self.end)
 
+@never_cache
 def plot_useranalytics(request):
     """ Creates a PNG image containing different plots for analzing the
     performance of individual users over time.

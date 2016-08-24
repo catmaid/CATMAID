@@ -111,6 +111,8 @@
         $('#user-analytics-controls input[data-name=end_date]')
           .datepicker({ dateFormat: "yy-mm-dd", defaultDate: 0 })
           .datepicker('setDate', "0");
+
+        this.refresh();
       }
     };
   };

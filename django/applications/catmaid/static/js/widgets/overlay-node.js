@@ -1413,7 +1413,8 @@
 
         var newPosition = o.data.getLocalPosition(this.parent);
         if (!dragging) {
-          if (Math.abs(newPosition.x - node.x) + Math.abs(newPosition.y - node.y)  > 6) {
+          var l1Distance = Math.abs(newPosition.x - node.x) + Math.abs(newPosition.y - node.y);
+          if (l1Distance > node.scaling * 0.5) {
             dragging = true;
             this.alpha = 0.7;
           } else {

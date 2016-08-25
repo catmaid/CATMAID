@@ -311,4 +311,8 @@ in place, ``supervisord`` can be instructed to reload its configuration and
 start the catmaid group::
 
   $ sudo supervisorctl reread
+  $ sudo supervisorctl update
   $ sudo supervisorctl start catmaid:
+
+For changed configuration files also both ``reread`` and ``update`` are
+required.

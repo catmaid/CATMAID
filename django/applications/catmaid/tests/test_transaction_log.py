@@ -41,8 +41,8 @@ class TransactionLogTests(TransactionTestCase):
         truncated after every test run. This table isn't taken care of by
         Django, because it is not known as a model to it.
         """
-        result = super(TransactionLogTests, self).run(*args)
         self.reset_tx_log()
+        result = super(TransactionLogTests, self).run(*args)
         return result
 
     def authenticate(self):
@@ -51,16 +51,22 @@ class TransactionLogTests(TransactionTestCase):
     @staticmethod
     def reset_tx_log(cursor=None):
         cursor = cursor or connection.cursor()
+        # Reset transaction log
         cursor.execute("""
             TRUNCATE TABLE catmaid_transaction_info;
         """)
+        # Reset history
+        cursor.execute("""
+            TRUNCATE TABLE treenode__history;
+        """)
+        transaction.commit()
 
     @staticmethod
     def get_tx_entries(cursor):
         cursor.execute("""
             SELECT row_to_json(t)
             FROM (SELECT * FROM catmaid_transaction_info txi
-                  ORDER BY execution_time) t
+                  ORDER BY execution_time ASC) t
         """)
         return cursor.fetchall()
 
@@ -159,9 +165,9 @@ class TransactionLogTests(TransactionTestCase):
             'confidence': 5,
             'parent_id': -1,
             'radius': 2})
+        transaction.commit()
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
-        transaction.commit()
 
         self.assertTrue('treenode_id' in parsed_response)
         self.assertTrue('skeleton_id' in parsed_response)
@@ -191,9 +197,9 @@ class TransactionLogTests(TransactionTestCase):
                     't[0][1]': 6.2,
                     't[0][2]': 11.2,
                     't[0][3]': 16.2})
+        transaction.commit()
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
-        transaction.commit()
 
         after_update_tx_entries = self.get_tx_entries(cursor)
         n_after_update_tx_entries = len(after_update_tx_entries)
@@ -215,7 +221,6 @@ class TransactionLogTests(TransactionTestCase):
 
         # Test locaton of updated node with new transaction
         txid_locaton_2 = self.get_location(txid_2, exec_time_2, label_2)
-        transaction.commit()
 
         self.assertEqual(6.2, txid_locaton_2['x'])
         self.assertEqual(11.2, txid_locaton_2['y'])

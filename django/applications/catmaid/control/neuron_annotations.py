@@ -1,9 +1,8 @@
-import json
 import re
 from string import upper
 from itertools import izip
 
-from django.http import HttpResponse
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.db import connection
 
@@ -14,6 +13,7 @@ from catmaid.models import UserRole, Project, Class, ClassInstance, \
 from catmaid.control.authentication import requires_user_role, can_edit_or_fail
 from catmaid.control.common import defaultdict, get_relation_to_id_map, \
         get_class_to_id_map, get_request_list
+
 
 def create_basic_annotated_entity_query(project, params, relations, classes,
         allowed_classes=['neuron', 'annotation']):
@@ -361,10 +361,11 @@ def query_annotated_classinstances(request, project_id = None):
                 with_annotations)
         num_records = len(entities)
 
-    return HttpResponse(json.dumps({
+    return JsonResponse({
       'entities': entities,
       'totalRecords': num_records,
-    }))
+    })
+
 
 def _update_neuron_annotations(project_id, user, neuron_id, annotation_map):
     """ Ensure that the neuron is annotated_with only the annotations given.
@@ -541,7 +542,8 @@ def annotate_entities(request, project_id = None):
         'new_annotations': list(new_annotations)
     }
 
-    return HttpResponse(json.dumps(result), content_type='application/json')
+    return JsonResponse(result)
+
 
 @requires_user_role(UserRole.Annotate)
 def remove_annotations(request, project_id=None):
@@ -576,11 +578,11 @@ def remove_annotations(request, project_id=None):
                 'targetIds': targetIds
             }
 
-    return HttpResponse(json.dumps({
+    return JsonResponse({
         'deleted_annotations': deleted_annotations,
         'deleted_links': deleted_links,
         'left_uses': num_left_annotations
-    }), content_type='application/json')
+    })
 
 
 @requires_user_role(UserRole.Annotate)
@@ -609,11 +611,12 @@ def remove_annotation(request, project_id=None, annotation_id=None):
     else:
         message += " There are %s links left to this annotation." % num_left
 
-    return HttpResponse(json.dumps({
+    return JsonResponse({
         'message': message,
         'deleted_annotation': deleted,
         'left_uses': num_left
-    }), content_type='application/json')
+    })
+
 
 def _remove_annotation(user, project_id, entity_ids, annotation_id):
     """Remove an annotation made by a certain user in a given project on a set
@@ -955,7 +958,8 @@ def list_annotations(request, project_id=None):
             ls.append({'id': uid, 'name': username})
     # Flatten dictionary to list
     annotations = tuple({'name': ids[aid], 'id': aid, 'users': users} for aid, users in annotation_dict.iteritems())
-    return HttpResponse(json.dumps({'annotations': annotations}), content_type="application/json")
+    return JsonResponse({'annotations': annotations})
+
 
 def _fast_co_annotations(request, project_id, display_start, display_length):
     classIDs = dict(Class.objects.filter(project_id=project_id).values_list('class_name', 'id'))
@@ -1021,7 +1025,8 @@ def _fast_co_annotations(request, project_id, display_start, display_length):
                        row[0]])
 
     response['aaData'] = aaData
-    return HttpResponse(json.dumps(response), content_type='application/json')
+
+    return JsonResponse(response)
 
 
 @requires_user_role([UserRole.Browse])
@@ -1123,7 +1128,7 @@ def list_annotations_datatable(request, project_id=None):
             annotation[4], # Annotator ID
             annotation[0]]) # ID
 
-    return HttpResponse(json.dumps(response), content_type='application/json')
+    return JsonResponse(response)
 
 
 @api_view(['POST'])
@@ -1173,10 +1178,10 @@ def annotations_for_skeletons(request, project_id=None):
         m[skid].append({'id': aid, 'uid': uid})
         a[aid] = name
 
-    return HttpResponse(json.dumps({
+    return JsonResponse({
         'skeletons': m,
         'annotations': a
-    }, separators=(',', ':')))
+    }, json_dumps_params={'separators': (',', ':')})
 
 
 @api_view(['POST'])
@@ -1232,7 +1237,7 @@ def annotations_for_entities(request, project_id=None):
         m[eid].append({'id': aid, 'uid': uid})
         a[aid] = name
 
-    return HttpResponse(json.dumps({
+    return JsonResponse({
         'entities': m,
         'annotations': a
-    }, separators=(',', ':')))
+    }, json_dumps_params={'separators': (',', ':')})

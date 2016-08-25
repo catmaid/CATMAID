@@ -651,13 +651,13 @@
     }));
 
     this.addAction(new CATMAID.Action({
-      helpText: "Edit the radius of the active node (<kbd>Shift</kbd>: without measurment tool)",
+      helpText: "Edit the radius of the active node (<kbd>Shift</kbd>: without measurment tool; <kbd>Ctrl</kbd>: without confirmation dialog)",
       keyShortcuts: { "O": [ 79 ] },
       run: function (e) {
         if (!CATMAID.mayView())
           return false;
         activeTracingLayer.tracingOverlay.editRadius(SkeletonAnnotations.getActiveNodeId(),
-            e.shiftKey);
+            e.shiftKey, false, e.ctrlKey);
         return true;
       }
     }));

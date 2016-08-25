@@ -38,6 +38,9 @@ Tracing overlay:
 - Radii can now be set to be visible for no nodes, the active node, all nodes
   in the active skeleton, or all nodes through the Settings Widget.
 
+- Pressing Ctrl + O will set a radius with the measurement tool without
+  bringing up the confirmation dialog.
+
 
 Miscellaneous:
 

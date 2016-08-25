@@ -1146,7 +1146,7 @@ def list_annotations_datatable(request, project_id=None):
     for annotation in annotation_query[display_start:display_start + display_length]:
         # Format last used time
         if annotation[2]:
-            last_used = annotation[2].strftime("%Y-%m-%d %H:%M:%S")
+            last_used = annotation[2].isoformat()
         else:
             last_used = 'never'
         # Build datatable data structure

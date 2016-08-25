@@ -628,7 +628,7 @@
   var getAnnotationColumTitles = function(usage, annotator, unlink) {
     // Prepare column definition, depending on whether there is a removal handler
     // and if the annotator should be displayed.
-    var columns = ['Annotation', 'Last used'];
+    var columns = ['Annotation', 'Last used (local)'];
 
     if (usage) {
         columns.push('# used');
@@ -675,7 +675,14 @@
       { // Last used date
         "bSearchable": false,
         "bSortable": true,
-        "mData": 1
+        "mData": 1,
+        render: function(data) {
+          var d = new Date(data);
+          return isNaN(d) ?
+              'never' :
+              d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate()
+              + ' ' + d.toLocaleTimeString(undefined, {hour12: false});
+        }
       }];
 
     if (usage) {

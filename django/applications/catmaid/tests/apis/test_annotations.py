@@ -229,13 +229,13 @@ class AnnotationsApiTests(CatmaidApiTestCase):
         self.assertEqual(parsed_response['totalRecords'], 2)
         self.assertItemsEqual(parsed_response['entities'], expected_entities)
 
-        # Test that an empty request returns nothing, not everything.
+        # Test that an empty request returns everything.
         response = self.client.post(
             '/%d/annotations/query-targets' % (self.test_project_id,),
             {})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
-        self.assertEqual(parsed_response['totalRecords'], 0)
+        self.assertEqual(parsed_response['totalRecords'], 17)
 
         # Test that searching by name without any annotation still works.
         response = self.client.post(

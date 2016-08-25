@@ -289,6 +289,15 @@ class HistoryTableTests(TransactionTestCase):
         return cursor.fetchall()
 
     @staticmethod
+    def get_history_view_entries(cursor, live_table, time_column='edition_time'):
+        cursor.execute("""
+            SELECT row_to_json(t)
+            FROM (SELECT * FROM {}__with_history) t
+                  ORDER BY ({})
+        """.format(live_table, time_column))
+        return cursor.fetchall()
+
+    @staticmethod
     def get_time_entries(cursor, live_table):
         cursor.execute("""
             SELECT row_to_json(t)
@@ -1092,3 +1101,71 @@ class HistoryTableTests(TransactionTestCase):
         expected_interval_2 = self.format_range(creation_time_2, truncate_timestamp)
         self.assertEqual(project_1_history_entry['sys_period'], expected_interval_1)
         self.assertEqual(project_2_history_entry['sys_period'], expected_interval_2)
+
+    def test_history_view_existence(self):
+        """Test if the there is a history for every versioned table.
+        """
+        cursor = connection.cursor()
+
+        # This will raise an error if the history view doesn't exist for a
+        # particular versioned table.
+        cmt_template = ",".join(('(%s)',) * len(HistoryTableTests.tables_with_history))
+        cursor.execute("""
+                SELECT t.table_name, get_history_view_name(t.table_name::regclass) v
+                FROM pg_class pc
+                JOIN (VALUES {}) t(table_name)
+                    ON pc.oid = get_history_view_name(t.table_name::regclass)::regclass
+        """.format(cmt_template), HistoryTableTests.tables_with_history)
+        result = cursor.fetchall()
+        self.assertEqual(len(HistoryTableTests.tables_with_history), len(result))
+
+
+    def test_history_view(self):
+        """Test if a particular history view contains the expected information.
+        """
+
+        cursor = connection.cursor()
+        original_class_history = self.get_history_entries(cursor, 'class')
+        original_class_history_view = self.get_history_view_entries(cursor, 'class')
+        n_original_entries = len(original_class_history)
+
+        # Create initial row that will be modified
+        cursor.execute("""
+            INSERT INTO "class" (user_id, project_id, class_name)
+            VALUES (%(user_id)s, %(project_id)s, 'testclass')
+            RETURNING row_to_json(class.*)
+        """, {
+            'user_id': self.user.id,
+            'project_id': self.project.id
+        })
+        class_details = cursor.fetchone()[0]
+        transaction.commit()
+
+        after_insert_history_view = self.get_history_view_entries(cursor, 'class')
+
+        self.assertEqual(len(after_insert_history_view),
+			len(original_class_history_view) + 1)
+        last_view_entry = after_insert_history_view[-1][0]
+        for k, v in class_details.iteritems():
+            self.assertEqual(v, last_view_entry[k])
+
+        # Update row in new transaction (to have new timestamp)
+        cursor.execute("""
+            UPDATE "class" SET class_name='newname'
+            WHERE id=%s
+            RETURNING row_to_json(class.*);
+        """, (class_details['id'],))
+        updated_class_details = cursor.fetchone()[0]
+        transaction.commit()
+
+        # Expect one more history entry for the class name update
+        after_update_history_view = self.get_history_view_entries(cursor, 'class')
+
+        self.assertEqual(len(after_update_history_view),
+			len(after_insert_history_view) + 1)
+        last_view_entry = after_update_history_view[-1][0]
+        for k, v in updated_class_details.iteritems():
+            self.assertEqual(v, last_view_entry[k])
+        second_last_view_entry = after_update_history_view[-2][0]
+        for k, v in class_details.iteritems():
+            self.assertEqual(v, second_last_view_entry[k])

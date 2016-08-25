@@ -163,8 +163,7 @@ def get_location(request, project_id):
         provider = location_queries.get(label)
         if not provider:
             raise LocationLookupError("A representative location for this change was not found")
-        query = provider.get(False)
-        checked_history = False
+        query = provider.get()
         while query:
             cursor.execute(query, (transaction_id, ))
             query = None
@@ -177,9 +176,6 @@ def get_location(request, project_id):
                 else:
                     raise ValueError("Couldn't read location information, "
                         "expected 3 columns, got {}".format(len(loc)))
-            elif not checked_history:
-                query = provider.get(True)
-                checked_history = True
 
         if not location or len(location) != 3:
             raise ValueError("Couldn't find location for transaction {}".format(transaction_id))
@@ -192,25 +188,24 @@ def get_location(request, project_id):
 
 class LocationQuery(object):
 
-    def __init__(self, query, history_suffix='__history', txid_column='txid'):
+    def __init__(self, query, history_suffix='__with_history', txid_column='txid'):
         """ The query is a query string that selects tuples of three,
         representing X, Y and Z coordinates of a location. If this string
         contains "{history}", this part will be replaced by the history suffix,
-        if a historic location is asked for.
+        which will replace the tablename with a reference to a history view,
+        which includes the live table as well as the history.
         """
         self.txid_column = txid_column
         self.history_suffix = history_suffix
-        self.query = query.format(history='', txid=txid_column)
-        self.history_query = query.format(history=history_suffix,
-                txid=txid_column)
+        self.query = query.format(history=history_suffix, txid=txid_column)
 
-    def get(self, history=False):
-        return self.history_query if history else self.query
+    def get(self):
+        return self.query
 
 
 class LocationRef(object):
     def __init__(self, d, key): self.d, self.key = d, key
-    def get(self, history=False): return self.d[self.key].get(history=history)
+    def get(self): return self.d[self.key].get()
 
 location_queries = {}
 location_queries.update({
@@ -218,12 +213,13 @@ location_queries.update({
     'annotations.add': LocationQuery("""
         SELECT location_x, location_y, location_z
         FROM treenode t
-        JOIN class_instance_class_instance cici_s
+        JOIN class_instance_class_instance{history} cici_s
             ON (cici_s.class_instance_a = t.skeleton_id
             AND t.parent_id IS NULL)
         JOIN class_instance_class_instance{history} cici_e
             ON (cici_s.class_instance_b = cici_e.class_instance_a
             AND cici_e.{txid} = %s)
+        LIMIT 1
     """),
     'annotations.remove': LocationQuery("""
         SELECT location_x, location_y, location_z
@@ -233,20 +229,23 @@ location_queries.update({
             AND t.parent_id IS NULL)
         JOIN class_instance_class_instance__history cici_e
             ON (cici_s.class_instance_b = cici_e.class_instance_a
-            AND cici_e.{txid} = %s)
+            AND cici_e.exec_transaction_id = %s)
+        LIMIT 1
     """),
     'connectors.create': LocationRef(location_queries, "nodes.update_location"),
     'connectors.remove': LocationQuery("""
         SELECT c.location_x, c.location_y, c.location_z
         FROM location__history c
         WHERE c.exec_transaction_id = %s
+        LIMIT 1
     """),
     'labels.remove': LocationQuery("""
         SELECT t.location_x, t.location_y, t.location_z
         FROM treenode_class_instance__history tci
         JOIN treenode{history} t
         ON t.id = tci.treenode_id
-        WHERE tci.{txid} = %s
+        WHERE tci.exec_transaction_id = %s
+        LIMIT 1
     """),
     'labels.update': LocationQuery("""
         SELECT t.location_x, t.location_y, t.location_z
@@ -254,6 +253,7 @@ location_queries.update({
         JOIN treenode{history} t
         ON t.id = tci.treenode_id
         WHERE tci.{txid} = %s
+        LIMIT 1
     """),
     'links.create': LocationQuery("""
         SELECT t.location_x, t.location_y, t.location_z
@@ -261,6 +261,7 @@ location_queries.update({
         JOIN treenode{history} t
         ON t.id = tc.treenode_id
         WHERE tc.{txid} = %s
+        LIMIT 1
     """),
     'links.remove': LocationQuery("""
         SELECT t.location_x, t.location_y, t.location_z
@@ -278,6 +279,7 @@ location_queries.update({
         JOIN class_instance_class_instance__history cici_e
             ON (cici_s.class_instance_b = cici_e.class_instance_a
             AND cici_e.{txid} = %s)
+        LIMIT 1
     """),
     'neurons.rename': LocationQuery("""
         SELECT location_x, location_y, location_z
@@ -288,6 +290,7 @@ location_queries.update({
         JOIN class_instance_class_instance__history{history} cici_e
             ON (cici_s.class_instance_b = cici_e.class_instance_a
             AND cici_e.{txid} = %s)
+        LIMIT 1
     """),
     'nodes.add_or_update_review': LocationQuery("""
         SELECT t.location_x, t.location_y, t.location_z
@@ -295,11 +298,13 @@ location_queries.update({
         JOIN treenode{history} t
         ON t.id = r.treenode_id
         WHERE r.{txid} = %s
+        LIMIT 1
     """),
     'nodes.update_location': LocationQuery("""
         SELECT location_x, location_y, location_z
         FROM location{history}
         WHERE {txid} = %s
+        LIMIT 1
     """),
     'textlabels.create': LocationQuery("""
         SELECT t.location_x, t.location_y, t.location_z
@@ -307,6 +312,7 @@ location_queries.update({
         JOIN textlabel_location{history} tl
         ON t.id = tl.textlabel_id
         WHERE t.{txid} = %s
+        LIMIT 1
     """),
     'textlabels.update': LocationRef(location_queries, "textlabels.create"),
     'textlabels.delete': LocationQuery("""
@@ -315,6 +321,7 @@ location_queries.update({
         JOIN textlabel_location{history} tl
         ON t.id = tl.textlabel_id
         WHERE t.{txid} = %s
+        LIMIT 1
     """),
     # Look transaction and edition time up in treenode table and return node
     # location.
@@ -330,6 +337,7 @@ location_queries.update({
         JOIN treenode{history} t
         ON t.id = svt.child_id
         WHERE svt.{txid} = %s
+        LIMIT 1
     """),
     'treenodes.unsuppress_virtual_node': LocationRef(location_queries,
             "treenodes.suppress_virtual_node"),

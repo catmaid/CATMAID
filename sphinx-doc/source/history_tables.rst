@@ -22,7 +22,9 @@ History tables
 --------------
 
 Each versioned table has a so called history table associated, indicated by the
-``__history`` suffix (e.g. ``project`` and ``project__history``). A double
+``__history`` suffix (e.g. ``project`` and ``project__history``). A convenient
+view that includes live and history data, is available with the
+``__with_history`` suffix. This is simply a union between both tables. A double
 underscore is used to minimize collisions with existing names. This history
 table is populated automatically through database triggers: whenever data in a
 live table is updated or deleted, the history table will be be updated. It

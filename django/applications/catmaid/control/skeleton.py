@@ -1374,9 +1374,6 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
         response_on_error = 'Could not delete skeleton with ID %s.' % to_skid
         ClassInstance.objects.filter(pk=to_skid).delete()
 
-        # Remove the 'losing' neuron if it is empty
-        _delete_if_empty(to_neuron['neuronid'])
-
         # Update the parent of to_treenode.
         response_on_error = 'Could not update parent of treenode with ID %s' % to_treenode_id
         Treenode.objects.filter(id=to_treenode_id).update(parent=from_treenode_id, editor=user)
@@ -1385,7 +1382,10 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
         response_on_error = 'Could not update annotations of neuron ' \
                 'with ID %s' % from_neuron['neuronid']
         _update_neuron_annotations(project_id, user, from_neuron['neuronid'],
-                annotation_map)
+                annotation_map, to_neuron['neuronid'])
+
+        # Remove the 'losing' neuron if it is empty
+        _delete_if_empty(to_neuron['neuronid'])
 
         from_location = (from_treenode.location_x, from_treenode.location_y,
                          from_treenode.location_z)

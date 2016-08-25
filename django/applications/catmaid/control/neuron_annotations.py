@@ -367,10 +367,14 @@ def query_annotated_classinstances(request, project_id = None):
     })
 
 
-def _update_neuron_annotations(project_id, user, neuron_id, annotation_map):
+def _update_neuron_annotations(project_id, user, neuron_id, annotation_map, losing_neuron_id=None):
     """ Ensure that the neuron is annotated_with only the annotations given.
     These annotations are expected to come as dictornary of annotation name
     versus annotator ID.
+
+    If losing_neuron_id is provided, annotations missing on the neuron that
+    exist for the losing neuron will be updated to refer to neuon_id, rather
+    than created from scratch. This preserves provenance such as creation times.
     """
     annotated_with = Relation.objects.get(project_id=project_id,
             relation_name='annotated_with')
@@ -384,9 +388,34 @@ def _update_neuron_annotations(project_id, user, neuron_id, annotation_map):
 
     update = set(annotation_map.iterkeys())
     existing = set(existing_annotations.iterkeys())
+    missing = update - existing
 
-    missing = {k:v for k,v in annotation_map.items() if k in update - existing}
-    _annotate_entities(project_id, [neuron_id], missing)
+    if losing_neuron_id:
+        qs = ClassInstanceClassInstance.objects.filter(
+                class_instance_a__id=losing_neuron_id, relation=annotated_with)
+        qs = qs.select_related('class_instance_b').values_list(
+                'class_instance_b__name', 'id')
+
+        losing_existing_annotations = dict(qs)
+        losing_missing = frozenset(losing_existing_annotations.iterkeys()) & missing
+
+        if losing_missing:
+            cici_ids = [losing_existing_annotations[k] for k in losing_missing]
+            u_ids = [annotation_map[k] for k in losing_missing]
+
+            cursor = connection.cursor()
+
+            cursor.execute('''
+                UPDATE class_instance_class_instance
+                SET class_instance_a = %s, user_id = missing.u_id
+                FROM UNNEST(%s::integer[], %s::integer[]) AS missing(cici_id, u_id)
+                WHERE id = missing.cici_id;
+                ''', (neuron_id, cici_ids, u_ids))
+
+            missing = missing - losing_missing
+
+    missing_map = {k:v for k,v in annotation_map.items() if k in missing}
+    _annotate_entities(project_id, [neuron_id], missing_map)
 
     to_delete = existing - update
     to_delete_ids = tuple(aid for name, aid in existing_annotations.iteritems() \

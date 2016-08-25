@@ -60,6 +60,8 @@ Miscellaneous:
 
 - Annotation search lists all results again, not only first page.
 
+- When joining skeletons, the creation time of annotations is preserved.
+
 - Fixed an error preventing branching from virtual nodes in some cases.
 
 - The history widget correctly displays the action time, not the current time.

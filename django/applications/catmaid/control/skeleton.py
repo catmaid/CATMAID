@@ -101,57 +101,73 @@ def open_leaves(request, project_id=None, skeleton_id=None):
     tnid = int(request.POST['treenode_id'])
     cursor = connection.cursor()
 
-    cursor.execute("SELECT id FROM relation WHERE project_id=%s AND relation_name='labeled_as'" % int(project_id))
+    cursor.execute("""
+        SELECT id
+        FROM relation
+        WHERE project_id = %s
+        AND relation_name='labeled_as'
+        """, (int(project_id),))
     labeled_as = cursor.fetchone()[0]
 
     # Select all nodes and their tags
     cursor.execute('''
-    SELECT t.id, t.parent_id, t.location_x, t.location_y, t.location_z, t.creation_time, ci.name
-    FROM treenode t LEFT OUTER JOIN (treenode_class_instance tci INNER JOIN class_instance ci ON tci.class_instance_id = ci.id AND tci.relation_id = %s) ON t.id = tci.treenode_id
-    WHERE t.skeleton_id = %s
-    ''' % (labeled_as, int(skeleton_id)))
+        SELECT t.id, t.parent_id
+        FROM treenode t
+        WHERE t.skeleton_id = %s
+        ''', (int(skeleton_id),))
 
     # Some entries repeated, when a node has more than one tag
     # Create a graph with edges from parent to child, and accumulate parents
     tree = nx.DiGraph()
     for row in cursor.fetchall():
-        nodeID = row[0]
+        node_id = row[0]
         if row[1]:
             # It is ok to add edges that already exist: DiGraph doesn't keep duplicates
-            tree.add_edge(row[1], nodeID)
+            tree.add_edge(row[1], node_id)
         else:
-            tree.add_node(nodeID)
-        tree.node[nodeID]['loc'] = (row[2], row[3], row[4])
-        tree.node[nodeID]['ct'] = row[5]
-        if row[6]:
-            props = tree.node[nodeID]
-            tags = props.get('tags')
-            if tags:
-                tags.append(row[6])
-            else:
-                props['tags'] = [row[6]]
+            tree.add_node(node_id)
 
     if tnid not in tree:
         raise Exception("Could not find %s in skeleton %s" % (tnid, int(skeleton_id)))
 
     reroot(tree, tnid)
     distances = edge_count_to_root(tree, root_node=tnid)
+    leaves = set()
+
+    for node_id, out_degree in tree.out_degree_iter():
+        if 0 == out_degree or node_id == tnid and 1 == out_degree:
+            # Found an end node
+            leaves.add(node_id)
+
+    # Select all nodes and their tags
+    cursor.execute('''
+        SELECT t.id, t.location_x, t.location_y, t.location_z, t.creation_time, array_agg(ci.name)
+        FROM treenode t
+        JOIN UNNEST(%s::bigint[]) AS leaves (tnid)
+          ON t.id = leaves.tnid
+        LEFT OUTER JOIN (
+            treenode_class_instance tci
+            INNER JOIN class_instance ci
+              ON tci.class_instance_id = ci.id
+                AND tci.relation_id = %s)
+          ON t.id = tci.treenode_id
+        GROUP BY t.id
+        ''', (list(leaves), labeled_as))
 
     # Iterate end nodes to find which are open.
     nearest = []
     end_tags = ['uncertain continuation', 'not a branch', 'soma',
-            '^(?i)(really|uncertain|anterior|posterior)?\s?ends?$']
+                r'^(?i)(really|uncertain|anterior|posterior)?\s?ends?$']
     end_regex = re.compile('(?:' + ')|(?:'.join(end_tags) + ')')
 
-    for nodeID, out_degree in tree.out_degree_iter():
-        if 0 == out_degree or nodeID == tnid and 1 == out_degree:
-            # Found an end node
-            props = tree.node[nodeID]
-            # Check if not tagged with a tag containing 'end'
-            if not 'tags' in props or not any(end_regex.match(s) for s in props['tags']):
-                # Found an open end
-                d = distances[nodeID]
-                nearest.append([nodeID, props['loc'], d, props['ct']])
+    for row in cursor.fetchall():
+        node_id = row[0]
+        tags = row[5]
+        # Check if not tagged with a tag containing 'end'
+        if tags == [None] or not any(end_regex.match(s) for s in tags):
+            # Found an open end
+            d = distances[node_id]
+            nearest.append([node_id, (row[1], row[2], row[3]), d, row[4]])
 
     return JsonResponse(nearest, safe=False)
 

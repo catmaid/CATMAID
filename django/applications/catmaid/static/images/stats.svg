@@ -601,19 +601,19 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="90.509668"
-     inkscape:cx="13.25148"
-     inkscape:cy="15.128206"
+     inkscape:zoom="27.86"
+     inkscape:cx="28.986535"
+     inkscape:cy="8.7641897"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="true"
      inkscape:snap-bbox="true"
      inkscape:bbox-nodes="true"
      inkscape:object-paths="true"
-     inkscape:window-width="2556"
-     inkscape:window-height="1561"
-     inkscape:window-x="2560"
-     inkscape:window-y="37"
+     inkscape:window-width="2870"
+     inkscape:window-height="1734"
+     inkscape:window-x="0"
+     inkscape:window-y="61"
      inkscape:window-maximized="0"
      inkscape:snap-page="true"
      inkscape:bbox-paths="true"
@@ -632,7 +632,10 @@
      fit-margin-right="0"
      fit-margin-bottom="0"
      inkscape:snap-object-midpoints="true"
-     inkscape:snap-grids="false">
+     inkscape:snap-grids="false"
+     showguides="true"
+     inkscape:guide-bbox="true"
+     inkscape:snap-to-guides="false">
     <inkscape:grid
        type="xygrid"
        id="grid3058"
@@ -642,6 +645,10 @@
        snapvisiblegridlinesonly="true"
        originx="0px"
        originy="0.0127826px" />
+    <sodipodi:guide
+       position="12.562814,7.8248385"
+       orientation="1,0"
+       id="guide10100" />
   </sodipodi:namedview>
   <metadata
      id="metadata7">
@@ -651,7 +658,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -661,7 +668,7 @@
      id="layer1"
      transform="translate(0,-1028.375)">
     <g
-       transform="matrix(0.89856757,0,0,0.89856757,0.63428404,104.94214)"
+       transform="matrix(0.72441276,0,0,0.71739479,3.4685887,293.75914)"
        id="g4365-9">
       <path
          inkscape:connector-curvature="0"
@@ -680,7 +687,7 @@
     </g>
     <g
        id="g4365"
-       transform="matrix(0.89856757,0,0,0.89856757,1.186047,105.4952)">
+       transform="matrix(0.72441276,0,0,0.71739479,3.9134126,294.2007)">
       <path
          id="rect3534"
          transform="translate(0,1028.375)"

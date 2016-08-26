@@ -187,6 +187,7 @@
       if (self.smoothScrolling) return true;
       self.smoothScrolling = true;
       var callback = function () {
+        if (!self.smoothScrolling) return;
         var zOffset = self.stackViewer.primaryStack.validZDistanceByStep(self.slider_z.val, step);
         if (!zOffset) return;
         self.stackViewer.moveToPixel(
@@ -194,15 +195,13 @@
             self.stackViewer.y,
             self.stackViewer.x,
             self.stackViewer.s,
-            function () { CATMAID.tools.callIfFn(callbackWrapper.callback); });
+            callback);
       };
-      callbackWrapper = {callback: callback};
       var target = e.target;
       var oldListener = target.onkeyup;
       var oldBlocking = self.stackViewer.blockingRedraws;
       self.stackViewer.blockingRedraws = true;
       target.onkeyup = function (e) {
-        callbackWrapper.callback = undefined;
         target.onkeyup = oldListener;
         self.smoothScrolling = false;
         self.stackViewer.blockingRedraws = oldBlocking;

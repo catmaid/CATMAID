@@ -1382,7 +1382,16 @@ var WindowMaker = new function()
             value: o.custom_tag_spheres_regex,
             onchangeFn: function () { WA.options.custom_tag_spheres_regex = this.value; },
             length: 10
-          }
+          },
+          {
+            type: 'checkbox',
+            label: 'Native resolution',
+            value: o.use_native_resolution,
+            onclickFn: function() {
+              WA.setNativeResolution(this.checked);
+            },
+            title: 'If checked, the native pixel resolution will be used. Improves quality on HiDPI displays.'
+          },
         ]);
 
     var nodeScalingInput = appendNumericField(tabs['View settings'],

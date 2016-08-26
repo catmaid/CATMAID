@@ -3,6 +3,13 @@
 
 ### Features and enhancements
 
+3D viewer:
+
+- The 'View settings' has a new option: 'Use native resolution'. When
+  activated (default), the native resolution of the current display will
+  be used. This improves image quality on HiDPI displays like Apple Retina.
+  If the performance penality is too big for large scenes, this can be
+  switched off again.
 
 
 ### Bug fixes

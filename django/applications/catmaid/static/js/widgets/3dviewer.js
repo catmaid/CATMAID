@@ -801,6 +801,7 @@
     this.animation_stepwise_visibility_type = 'all';
     this.animation_stepwise_visibility_options = null;
     this.strahler_cut = 2; // to approximate twigs
+    this.use_native_resolution = true;
   };
 
   WebGLApplication.prototype.Options.prototype = {};
@@ -991,6 +992,18 @@
     // Update options
     this.options.camera_view = view.orthographic ? 'orthographic' : 'perspective';
     // Render scene
+    this.space.render();
+  };
+
+  /**
+   * Activate or deactivate the use of native resolution. If activated, quality
+   * is improved for HiDPI displays for the cost of performance.
+   *
+   * @param {boolean} useNativeResolution If native resolution should be used.
+   */
+  WebGLApplication.prototype.setNativeResolution = function(useNativeResolution) {
+    this.options.use_native_resolution = !!useNativeResolution;
+    this.space.view.initRenderer();
     this.space.render();
   };
 
@@ -2717,7 +2730,14 @@
   WebGLApplication.prototype.Space.prototype.View.prototype.createRenderer = function(type) {
     var renderer = null;
     if ('webgl' === type) {
-      renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: this.logDepthBuffer });
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        logarithmicDepthBuffer: this.logDepthBuffer,
+      });
+      // Set pixel ratio, needed for HiDPI displays, if enabled
+      if (this.space.options.use_native_resolution) {
+        renderer.setPixelRatio(window.devicePixelRatio || 1);
+      }
     } else if ('svg' === type) {
       renderer = new THREE.SVGRenderer();
     } else {

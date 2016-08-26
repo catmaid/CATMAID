@@ -1446,7 +1446,7 @@
     new CATMAID.Action({
       helpText: "Navigate Neurons",
       buttonID: 'data_button_neuron_navigator',
-      buttonName: 'neuron_navigator_button',
+      buttonName: 'neuron_navigator',
       run: function (e) {
         WindowMaker.create('neuron-navigator');
         return true;

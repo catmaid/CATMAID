@@ -1174,8 +1174,10 @@
         var params = {};
 
         // Set general parameters
-        params['range_start'] = data.start;
-        params['range_length'] = data.length;
+        if (-1 !== data.length) {
+          params['range_start'] = data.start;
+          params['range_length'] = data.length;
+        }
         params['sort_by'] = "name";
         params['sort_dir'] = data.order[0].dir;
         params['types[0]'] = 'neuron';

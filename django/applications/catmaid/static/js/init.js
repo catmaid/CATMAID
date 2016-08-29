@@ -168,6 +168,7 @@ var project;
     var pid;
     var sids = [];
     var ss = [];
+    var sg, sgs;
     var inittool;
     var z;
     var y;
@@ -240,6 +241,12 @@ var project;
           }
         }
       }
+
+      if ( options[ "sg" ] ) sg = Number( options[ "sg" ] );
+      if ( isNaN( sg ) ) sg = undefined;
+
+      if ( options[ "sgs" ] ) sgs = Number( options[ "sgs" ] );
+      if ( isNaN( sgs ) ) sgs = undefined;
 
       if ( options[ "account" ] && options[ "password" ] )
       {
@@ -322,7 +329,17 @@ var project;
         classification_editor: null
       };
 
-      loadStacksFromURL(singleStackViewer);
+      if (sg) {
+        CATMAID.openStackGroup(pid, sg)
+          .then(function() {
+            if (typeof zp == "number" && typeof yp == "number" &&
+                typeof xp == "number") {
+              project.moveTo(zp, yp, xp, sgs);
+            }
+          });
+      } else  {
+        loadStacksFromURL(singleStackViewer);
+      }
 
       // Open stacks one after another and move to the requested location. Load
       // the requested tool after everything has been loaded.
@@ -973,10 +990,11 @@ var project;
    *
    * @param  {number}    pid       ID of the project to open.
    * @param  {number}    sgid      ID of the stack group to open.
-   * @param  {function=} successFn Callback on success (unused).
+   *
+   * @returns promise that will be resolved on success
    */
-  CATMAID.openStackGroup = function(pid, sgid, successFn) {
-    CATMAID.fetch(pid + "/stackgroup/" + sgid + "/info", "GET")
+  CATMAID.openStackGroup = function(pid, sgid) {
+    var request = CATMAID.fetch(pid + "/stackgroup/" + sgid + "/info", "GET")
       .then(function(json) {
         if (!json.stacks || 0 === json.stacks.length) {
           // If a stack group has no stacks associated, cancel loading.
@@ -1016,10 +1034,14 @@ var project;
                   error.detail);
             });
         }
-      })
-      .catch(function(error) {
-        CATMAID.error("Couldn't load stack group: " + error.error, error.detail);
       });
+
+    // Catch error, but return rejected promise
+    request.catch(function(error) {
+      CATMAID.error("Couldn't load stack group: " + error.error, error.detail);
+    });
+
+    return request;
   };
 
   /*
@@ -1411,7 +1433,7 @@ var project;
               'title': s.title,
               'comment': s.comment,
               'note': '',
-              'action': CATMAID.openProjectStack.bind(window, p.id, s.id, false)
+              'action': CATMAID.openProjectStack.bind(window, p.id, s.id)
             };
             return o;
           }, {});
@@ -1420,7 +1442,7 @@ var project;
               'title': sg.title,
               'comment': sg.comment,
               'note': '',
-              'action': CATMAID.openStackGroup.bind(window, p.id, sg.id, false)
+              'action': CATMAID.openStackGroup.bind(window, p.id, sg.id)
             };
             return o;
           }, {});

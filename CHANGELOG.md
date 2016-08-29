@@ -11,6 +11,11 @@
   If the performance penality is too big for large scenes, this can be
   switched off again.
 
+Miscellaneous:
+
+- With the help of the 'sg' and 'sgs' deep link parameters, stack groups can now
+  be loaded directly through a URL.
+
 
 ### Bug fixes
 

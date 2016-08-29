@@ -47,7 +47,7 @@
             <dt>{{ p.title }}</dt>
             {% if show_stackgroups and stackgroups_of|get:p.id %}
                 {% for sg in stackgroups_of|get:p.id|dictsort:"id" %}
-                    <dd><a href="#"
+                    <dd><a href="?pid={{ p.id }}&tool=navigator&sg={{ sg.id }}"
                         onclick="CATMAID.openStackGroup({{p.id}}, {{sg.id}});return false">{{ sg.name }}</a></dd>
                 {% endfor %}
             {% endif %}

@@ -51,6 +51,12 @@ Optional Query Parameters
     If ``1``, load all stacks as layers in a single stack viewer rather than
     separate stack viewers.
 
+``sg`` (integer)
+    Open a stack group. If present, individual stacks are ignored.
+
+``sgs`` (integer)
+    Initial zoom level for a loaded stack group.
+
 ``current_dataview`` (integer)
     ID of a data view to switch to.
 

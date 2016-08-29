@@ -743,7 +743,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('catmaid', '0011_fix_transaction_label_typo'),
-        ('performancetests', '0002_use_django_1_9_jsonfield')
+        ('performancetests', '0003_update_history_tables')
     ]
 
     operations = [

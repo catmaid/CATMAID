@@ -69,6 +69,13 @@
     });
 
     var refreshWithMeta = function(includeMeta) {
+      // If the annotation is invalid, its skeleton set is empty.
+      if (!tracked.id) {
+        tracked.skeletonIDs[includeMeta ? 1 : 0] = new Set();
+        self.notify(annotationName, includeMeta);
+        return;
+      }
+
       var params = {annotated_with: tracked.id, types: 'neuron'};
       if (includeMeta) params.sub_annotated_with = tracked.id;
       CATMAID

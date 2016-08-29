@@ -3,14 +3,14 @@
 {% load admin_static %}
 
 {% block extrahead %}
-<script type="text/javascript" src="{% static 'admin/js/jquery.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'admin/js/vendor/jquery/jquery.min.js' %}"></script>
 <script type="text/javascript" src="{% static 'admin/js/jquery.init.js' %}"></script>
 <script type="text/javascript">
 	(function ($) {$(document).ready(function() {
 		// update the data view type comment according to selection
 		update_data_view_comment = function() {
 			$.ajax({
-				type: 'POST',
+				type: 'GET',
 				url: "{% url 'catmaid:get_dataview_type_comment' %}",
 				data: {'data_view_type_id': $('#id_data_view_type').val()},
 				success: function(data, status) {

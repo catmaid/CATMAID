@@ -252,7 +252,7 @@ class OverlayAdmin(GuardedModelAdmin):
 class DataViewConfigWidget(forms.widgets.Textarea):
     def render(self, name, value, attrs=None):
         output = super(DataViewConfigWidget, self).render(name, value, attrs)
-        output += "<p id='data_view_config_help'></p>"
+        output += "<p id='data_view_config_help' class='help'></p>"
         return mark_safe(output)
 
 

@@ -555,6 +555,10 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
   this.state = new CATMAID.GenericState({
     getNode: function(nodeId) {
       var node = self.nodes[nodeId];
+      if (!node) {
+        throw new CATMAID.ValueError("Couldn't find node with ID " + nodeId +
+            " in tracing layer");
+      }
       return nodeToStateList(node);
     },
     getParent: function(nodeId) {
@@ -2544,7 +2548,10 @@ SkeletonAnnotations.TracingOverlay.prototype.createNodeOrLink = function(insert,
                 CATMAID.statusBar.replaceLast("Created new node as child of node #" + atnId);
                 self.createNode(atnId, null, phys_x, phys_y, phys_z, -1, 5,
                     pos_x, pos_y, pos_z, postCreateFn).then(resolve, reject);
-              }, reject);
+              }).catch(function(error) {
+                reject();
+                CATMAID.handleError(error);
+              });
             });
           } else {
             // Create root node

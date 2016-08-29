@@ -4557,7 +4557,7 @@ SkeletonAnnotations.VisibilityGroups = new (function () {
   this.setGroup = function (groupID, groupSetting) {
     var group = this.groups[groupID];
 
-    if (group.metaAnnotationName) {
+    if (group.metaAnnotationName !== null) {
       CATMAID.annotatedSkeletons.unregister(group.metaAnnotationName, group.callback, true);
     }
 

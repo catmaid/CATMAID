@@ -404,7 +404,7 @@
         this.confidenceFontSize = this.CONFIDENCE_FONT_PT*this.stackScaling + 'pt';
         this.textResolution = resScale;
 
-        this.pixelsPerUnitSq = 1 / (this.scaling * this.scaling);
+        this.pixelsPerUnitSq = 1 / (this.stackScaling * this.stackScaling);
 
         if (oldScaling !== this.scaling) this.initTextures();
       };

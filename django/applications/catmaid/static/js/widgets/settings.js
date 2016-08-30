@@ -24,9 +24,10 @@
 
     /**
      * Add meta controls and information about settings cascade, scope and
-     * overrides/locking to a settings element.
+     * overrides/locking to a settings element. Optionally, a toStr() function
+     * can be provided to format the string representation of a settings value.
      */
-    var wrapSettingsControl = function (control, settings, key, scope, update) {
+    var wrapSettingsControl = function (control, settings, key, scope, update, toStr) {
       var valueScope = settings.rendered[scope][key].valueScope;
       var fromThisScope = valueScope === scope;
       var overridable = settings.rendered[scope][key].overridable;
@@ -48,9 +49,12 @@
         meta.append($('<li />').text('This value is locked by ' + valueScope + ' settings.'));
       }
 
+      var defaultValue = settings.schema.entries[key].default;
+      if (toStr) {
+        defaultValue = toStr(defaultValue);
+      }
       meta.append($('<li />')
-          .text('CATMAID\'s default is ' +
-                JSON.stringify(settings.schema.entries[key].default) + '.'));
+          .text('CATMAID\'s default is ' + JSON.stringify(defaultValue) + '.'));
 
       meta = $('<div class="settingsMeta" />').append(meta);
 
@@ -664,6 +668,10 @@
         updateTracingColors();
       };
 
+      var hexColorToStr = function(hex) {
+        return new THREE.Color(hex).getStyle();
+      };
+
       var colorControls = new Map();
       colors.forEach(function(field, label) {
         var color = new THREE.Color(SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE][field]);
@@ -672,7 +680,8 @@
                                         SkeletonAnnotations.TracingOverlay.Settings,
                                         field,
                                         SETTINGS_SCOPE,
-                                        updateTracingColors));
+                                        updateTracingColors,
+                                        hexColorToStr));
         var colorField = $(input).find('input');
         CATMAID.ColorPicker.enable(colorField, {
           initialColor: color.getHex(),

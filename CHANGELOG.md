@@ -19,6 +19,9 @@ Miscellaneous:
 
 ### Bug fixes
 
+- If multiple stack viewers are open, skeletons can now me modified again across
+  all open tracing layers. E.g. with orthogonal views, selecting a node in one
+  view and adding a child in another view work again.
 
 
 ## 2016.08.26

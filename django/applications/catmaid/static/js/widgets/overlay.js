@@ -29,7 +29,10 @@ var SkeletonAnnotations = {
     y: null,
     z: null,
     parent_id: null,
+    radius: null,
+    confidence: null,
     edition_time: null,
+    user_id: null,
     stack_viewer_id: null
   },
 
@@ -129,7 +132,11 @@ SkeletonAnnotations.atn.set = function(node, stack_viewer_id) {
               (this.y !== node.y)  ||
               (this.x !== node.x) ||
               (this.parent_id !== node.parent_id) ||
-              (this.stack_viewer_id !== stack_viewer_id);
+              (this.stack_viewer_id !== stack_viewer_id) ||
+              (this.radius !== node.radius) ||
+              (this.confidence !== node.confidence) ||
+              (this.edition_time !== node.edition_time) ||
+              (this.user_id !== node.user_id);
 
     SkeletonAnnotations.atn.validate(node);
 
@@ -142,6 +149,10 @@ SkeletonAnnotations.atn.set = function(node, stack_viewer_id) {
     this.y = node.y;
     this.z = node.z;
     this.parent_id = node.parent ? node.parent.id : null;
+    this.radius = node.radius;
+    this.confidence = node.confidence;
+    this.edition_time = node.edition_time;
+    this.user_id = node.user_id;
     this.stack_viewer_id = stack_viewer_id;
   } else {
     changed = true;
@@ -641,6 +652,12 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
   // justified.
   this.old_width = stackViewer.viewWidth;
   this.old_height = stackViewer.viewHeight;
+
+  // By default, active node changes triggered by other stack viewers add a copy
+  // of the new active node to this tracing layer's state. This is required to
+  // start actions in one viewer and finish them in another one (useful in ortho
+  // views).
+  this.copyActiveNode = true;
 
   this._skeletonDisplaySource = new CATMAID.BasicSkeletonSource(
       'Tracing overlay (' + this.stackViewer.primaryStack.title + ')');
@@ -4218,14 +4235,64 @@ SkeletonAnnotations.TracingOverlay.prototype.nodeIsPartOfSkeleton = function(ske
 };
 
 /**
- * Handle update of active node with recoloring all nodes.
+ * Handle update of active node with recoloring all nodes. Additionally, if not
+ * disabled and the node new node is not part of the current view,, make the
+ * selected node "known" to this overlay. This makes it possible to finish
+ * actions started in another view by being able to create state
+ * representations involving the active node, e.g. branching or interpolation.
  */
 SkeletonAnnotations.TracingOverlay.prototype.handleActiveNodeChange = function(node) {
   if (node.id && SkeletonAnnotations.Settings.session.skip_suppressed_virtual_nodes) {
     var self = this;
     this.promiseSuppressedVirtualNodes(node.id).then(function () { self.recolorAllNodes(); });
   }
+  if (this.copyActiveNode) {
+    this.importActiveNode(node);
+  }
   this.recolorAllNodes();
+};
+
+/**
+ * Add the passed in active node to this overlay's state, if it isn't present
+ * already.
+ *
+ * @param {SkeletonAnnotations.atn} node The node to import
+ */
+SkeletonAnnotations.TracingOverlay.prototype.importActiveNode = function(node) {
+  if (!node || !node.id) {
+    return;
+  }
+  var knownNode = this.nodes[node.id];
+  if (knownNode) {
+    return;
+  }
+  var sourceStackViewer = project.getStackViewer(node.stack_viewer_id);
+  if (!sourceStackViewer) {
+    CATMAID.warn('No stack viewer found for active node');
+    return;
+  }
+
+  // Get project coordinates
+  var x = sourceStackViewer.primaryStack.stackToProjectX(node.z, node.y, node.z);
+  var y = sourceStackViewer.primaryStack.stackToProjectY(node.z, node.y, node.z);
+  var z = sourceStackViewer.primaryStack.stackToProjectZ(node.z, node.y, node.z);
+
+  // Get stack coordinates for target stack
+  var xs = this.stackViewer.primaryStack.projectToUnclampedStackX(z, y, x);
+  var ys = this.stackViewer.primaryStack.projectToUnclampedStackY(z, y, x);
+  var zs = this.stackViewer.primaryStack.projectToUnclampedStackZ(z, y, x);
+
+  if (SkeletonAnnotations.TYPE_NODE === node.type) {
+    // Create new treenode. There is no need to include a parent node for this
+    // imported node at the moment.
+    this.nodes[node.id] = this.graphics.newNode(node.id, null, node.parent_id,
+        node.radius, xs, ys, zs, zs - this.stackViewer.z, node.confidence,
+        node.skeleton_id, node.edition_time, node.user_id);
+  } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === node.type) {
+    this.nodes[node.id] = this.graphics.newConnectorNode(
+        node.id, xs, ys, zs, zs = this.stackViewer.z, node.confidence,
+        node.subtype, node.edition_time, node.user_id);
+  }
 };
 
 /**

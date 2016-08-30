@@ -837,12 +837,12 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2, model_o
     SELECT t1.skeleton_id, t2.skeleton_id, LEAST(t1.confidence, t2.confidence)
     FROM treenode_connector t1,
          treenode_connector t2
-    WHERE t1.skeleton_id IN (%s)
+    WHERE t1.skeleton_id = ANY(%s::integer[])
       AND t1.relation_id = %s
       AND t1.connector_id = t2.connector_id
       AND t1.id != t2.id
       AND t2.relation_id = %s
-    ''' % (','.join(map(str, skeleton_ids)), int(relation_id_1), int(relation_id_2)))
+    ''', (list(skeleton_ids), int(relation_id_1), int(relation_id_2)))
 
     # Sum the number of synapses
     for srcID, partnerID, confidence in cursor.fetchall():
@@ -862,27 +862,25 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2, model_o
     if not partners:
         return partners, []
 
-    # Obtain a string with unique skeletons
-    skids_string = '),('.join(map(str, partners.iterkeys()))
+    # Obtain unique partner skeletons
+    partner_skids = list(partners.iterkeys())
 
     # Count nodes of each partner skeleton
     cursor.execute('''
     SELECT skeleton_id, count(skeleton_id)
-    FROM treenode,
-         (VALUES (%s)) skeletons(skid)
-    WHERE skeleton_id = skid
+    FROM treenode
+    WHERE skeleton_id = ANY(%s::integer[])
     GROUP BY skeleton_id
-    ''' % skids_string) # no need to sanitize
+    ''', (partner_skids,))
     for row in cursor.fetchall():
         partners[row[0]].num_nodes = row[1]
 
     # Find which reviewers have reviewed any partner skeletons
     cursor.execute('''
     SELECT DISTINCT reviewer_id
-    FROM review,
-         (VALUES (%s)) skeletons(skid)
-    WHERE skeleton_id = skid
-    ''' % skids_string) # no need to sanitize
+    FROM review
+    WHERE skeleton_id = ANY(%s::integer[])
+    ''', (partner_skids,))
     reviewers = [row[0] for row in cursor]
 
     return partners, reviewers

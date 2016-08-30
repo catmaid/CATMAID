@@ -229,6 +229,7 @@
 
   SkeletonProjectionLayer.prototype.unregister = function() {
     CATMAID.PixiLayer.prototype.unregister.call(this);
+    this.skeletonSource.destroy();
 
     SkeletonAnnotations.off(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
         this.handleActiveNodeChange, this);

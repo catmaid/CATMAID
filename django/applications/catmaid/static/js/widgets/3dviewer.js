@@ -5373,9 +5373,12 @@
           this.filteredConnectors.connectorIds,
           this.filteredConnectors.skeletonIds);
     } else {
-      CATMAID.ConnectorSelection.showConnectors(
-          null,
-          this.getSelectedSkeletons());
+      var skeletonIds = this.getSelectedSkeletons();
+      if (!skeletonIds.length) {
+        CATMAID.warn('No skeletons loaded, no connectors to show');
+        return;
+      }
+      CATMAID.ConnectorSelection.showConnectors(null, skeletonIds);
     }
   };
 

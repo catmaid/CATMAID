@@ -179,166 +179,6 @@ var WindowMaker = new function()
     return {window: win, widget: instance};
   };
 
-  var createSelect = function(id, items, selectedValue) {
-    var select = document.createElement('select');
-    if (id) {
-      select.setAttribute("id", id);
-    }
-    items.forEach(function(item, i) {
-      var option = document.createElement("option");
-      var itemType = typeof item;
-      var text, value;
-      if ('object' === itemType) {
-        text = item.title;
-        value = item.value;
-      } else {
-        text = item;
-        value = item;
-      }
-      option.text = text;
-      option.value = value;
-      if (option.value === selectedValue) {
-        option.defaultSelected = true;
-        option.selected = true;
-      }
-      select.appendChild(option);
-    });
-    return select;
-  };
-
-  var appendSelect = function(div, id, label, entries, title, value, onChangeFn) {
-    id = id ? (div.id + '_' + id) : undefined;
-    var select = createSelect(id, entries, value);
-    div.appendChild(select);
-    if (title) {
-      select.title = title;
-    }
-    if (onChangeFn) {
-      select.onchange= onChangeFn;
-    }
-    if (label) {
-      var labelElement = document.createElement('label');
-      labelElement.setAttribute('title', title);
-      labelElement.appendChild(document.createTextNode(label));
-      labelElement.appendChild(select);
-      div.appendChild(labelElement);
-    }
-    return select;
-  };
-
-  var appendButton = function(div, label, onclickFn, attr) {
-    var b = document.createElement('input');
-    if (attr) Object.keys(attr).forEach(function(key) { b.setAttribute(key, attr[key]); });
-    b.setAttribute('type', 'button');
-    b.setAttribute('value', label);
-    b.onclick = onclickFn;
-    div.appendChild(b);
-    return b;
-  };
-
-  var createCheckbox = function(label, value, onclickFn) {
-    var cb = document.createElement('input');
-    cb.setAttribute('type', 'checkbox');
-    cb.checked = value ? true : false;
-    cb.onclick = onclickFn;
-    return [cb, document.createTextNode(label)];
-  };
-
-  var appendCheckbox = function(div, label, title, value, onclickFn, left) {
-    var labelEl = document.createElement('label');
-    labelEl.setAttribute('title', title);
-    var elems = createCheckbox(label, value, onclickFn);
-    if (left) elems.reverse();
-    elems.forEach(function(elem) { labelEl.appendChild(elem); });
-    div.appendChild(labelEl);
-    return left ? elems[elems.length - 1] : elems[0];
-  };
-
-  var createNumericField = function(id, label, title, value, postlabel, onchangeFn, length) {
-    var nf = document.createElement('input');
-    if (id) nf.setAttribute('id', id);
-    nf.setAttribute('type', 'text');
-    nf.setAttribute('value', value);
-    if (length) nf.setAttribute('size', length);
-    if (onchangeFn) nf.onchange = onchangeFn;
-    if (label || postlabel) {
-      var labelEl = document.createElement('label');
-      labelEl.setAttribute('title', title);
-      if (label) labelEl.appendChild(document.createTextNode(label));
-      labelEl.appendChild(nf);
-      if (postlabel) labelEl.appendChild(document.createTextNode(postlabel));
-      return labelEl;
-    } else {
-      return nf;
-    }
-  };
-
-  var appendNumericField = function(div, label, title, value, postlabel, onchangeFn, length) {
-    var field = createNumericField(undefined, label, title, value, postlabel, onchangeFn, length);
-    div.appendChild(field);
-    return field;
-  };
-
-  /**
-   * Construct elements from an array of parameters and append them to a tab
-   * element.
-   * @param  {Element}     tab   The tab to which to append constructed elements.
-   * @param  {Array.<(Object|Array)>} elems
-   *                             An array of parameters from which to construct
-   *                             elements. The elements of the array are either
-   *                             arrays of parameters, in which case the length
-   *                             of the array is used to choose element type, or
-   *                             an object specifying parameters, in which case
-   *                             the `type` property specifies element type.
-   * @return {Element[]}         An array of the constructed elements.
-   */
-  var appendToTab = function(tab, elems) {
-    return elems.map(function(e) {
-      if (Array.isArray(e)) {
-        switch (e.length) {
-          case 1: return tab.appendChild(e[0]);
-          case 2: return appendButton(tab, e[0], e[1]);
-          case 3: return appendButton(tab, e[0], e[1], e[2]);
-          case 4: return appendCheckbox(tab, e[0], e[0], e[1], e[2], e[3]);
-          case 5: return appendNumericField(tab, e[0], e[0], e[1], e[2], e[3], e[4]);
-          default: return undefined;
-        }
-      } else {
-        switch (e.type) {
-          case 'child':
-            return tab.appendChild(e.element);
-          case 'button':
-            return appendButton(tab, e.label, e.onclickFn, e.attr);
-          case 'checkbox':
-            return appendCheckbox(tab, e.label, e.title, e.value, e.onclickFn, e.left);
-          case 'numeric':
-            return appendNumericField(tab, e.label, e.title, e.value, e.postlabel, e.onchangeFn, e.length);
-          case 'select':
-            return appendSelect(tab, e.id, e.label, e.entries, e.title, e.value, e.onchangeFn);
-          default: return undefined;
-        }
-      }
-    });
-  };
-
-  /**
-   * Create a tab group and add it to the given container. The widget ID is
-   * expected to be unique.
-   */
-  var appendTabs = function(container, widgetID, titles) {
-    var ul = document.createElement('ul');
-    container.appendChild(ul);
-    return titles.reduce(function(o, name) {
-      var id = name.replace(/ /, '') + widgetID;
-      ul.appendChild($('<li><a href="#' + id + '">' + name + '</a></li>')[0]);
-      var div = document.createElement('div');
-      div.setAttribute('id', id);
-      container.appendChild(div);
-      o[name] = div;
-      return o;
-    }, {});
-  };
-
   var createConnectorSelectionWindow = function()
   {
     var win = new CMWWindow("Connector Selection Table");
@@ -852,7 +692,7 @@ var WindowMaker = new function()
     update.onclick = ST.update.bind(ST);
     buttons.appendChild(update);
 
-    var fileButton = buttons.appendChild(CATMAID.DOM.createFileButton(
+    var fileButton = buttons.appendChild(DOM.createFileButton(
           'st-file-dialog-' + ST.widgetID, false, function(evt) {
             ST.loadFromFiles(evt.target.files);
           }));
@@ -875,7 +715,7 @@ var WindowMaker = new function()
     annotate.onclick = ST.annotate_skeleton_list.bind(ST);
     buttons.appendChild(annotate);
 
-    var c = appendSelect(buttons, null, 'Color scheme ',
+    var c = DOM.appendSelect(buttons, null, 'Color scheme ',
         ['CATMAID',
          'category10',
          'category20',
@@ -1140,13 +980,13 @@ var WindowMaker = new function()
     DOM.addSourceControlsToggle(win, WA);
     DOM.addButtonDisplayToggle(win);
 
-    var tabs = appendTabs(bar, WA.widgetID, ['Main', 'View', 'Shading',
+    var tabs = DOM.addTabGroup(bar, WA.widgetID, ['Main', 'View', 'Shading',
         'Skeleton filters', 'View settings', 'Stacks', 'Shading parameters',
         'Animation', 'Export']);
 
     var select_source = CATMAID.skeletonListSources.createSelect(WA);
 
-    appendToTab(tabs['Main'],
+    DOM.appendToTab(tabs['Main'],
         [
           [document.createTextNode('From')],
           [select_source],
@@ -1175,7 +1015,7 @@ var WindowMaker = new function()
     connectorRestrictions.appendChild(document.createTextNode('Connector restriction'));
     connectorRestrictions.appendChild(connectorRestrictionsSl);
 
-    var viewControls = appendToTab(tabs['View'],
+    var viewControls = DOM.appendToTab(tabs['View'],
         [
           ['Center active', WA.look_at_active_node.bind(WA)],
           ['Follow active', false, function() { WA.setFollowActive(this.checked); }, false],
@@ -1299,7 +1139,7 @@ var WindowMaker = new function()
     synColors.options.add(new Option('Same as skeleton', 'skeleton'));
     synColors.onchange = WA.updateConnectorColors.bind(WA, synColors);
 
-    appendToTab(tabs['Shading'],
+    DOM.appendToTab(tabs['Shading'],
         [
           [document.createTextNode('Shading: ')],
           [shadingMenu],
@@ -1328,7 +1168,7 @@ var WindowMaker = new function()
           }, {});
           var selectedVolumes = WA.getLoadedVolumeIds();
           // Create actual element based on the returned data
-          var node = CATMAID.DOM.createCheckboxSelect('Volumes', volumes, selectedVolumes);
+          var node = DOM.createCheckboxSelect('Volumes', volumes, selectedVolumes);
           // Add a selection handler
           node.onchange = function(e) {
             var visible = e.srcElement.checked;
@@ -1341,7 +1181,7 @@ var WindowMaker = new function()
 
     // Create async selection and wrap it in container to have handle on initial
     // DOM location
-    var volumeSelection = CATMAID.DOM.createAsyncPlaceholder(initVolumeList());
+    var volumeSelection = DOM.createAsyncPlaceholder(initVolumeList());
     var volumeSelectionWrapper = document.createElement('span');
     volumeSelectionWrapper.appendChild(volumeSelection);
 
@@ -1350,11 +1190,11 @@ var WindowMaker = new function()
       while (0 !== volumeSelectionWrapper.children.length) {
         volumeSelectionWrapper.removeChild(volumeSelectionWrapper.children[0]);
       }
-      var volumeSelection = CATMAID.DOM.createAsyncPlaceholder(initVolumeList());
+      var volumeSelection = DOM.createAsyncPlaceholder(initVolumeList());
       volumeSelectionWrapper.appendChild(volumeSelection);
     };
 
-    appendToTab(tabs['View settings'],
+    DOM.appendToTab(tabs['View settings'],
         [
           ['Meshes ', false, function() { WA.options.show_meshes = this.checked; WA.adjustContent(); }, false],
           [volumeSelectionWrapper],
@@ -1370,7 +1210,7 @@ var WindowMaker = new function()
             type: 'checkbox',
             label: 'Flat neuron material',
             value: o.neuron_material === 'basic',
-            onclickFn: function() {
+            onclick: function() {
               WA.updateNeuronShading(this.checked ? 'basic' : 'lambert');
             },
             title: 'If checked, neurons will ignore light sources and appear "flat"'
@@ -1380,21 +1220,21 @@ var WindowMaker = new function()
             label: 'Custom Tags (regex):',
             title: 'Display handle spheres for nodes with tags matching this regex (must refresh 3D viewer after changing).',
             value: o.custom_tag_spheres_regex,
-            onchangeFn: function () { WA.options.custom_tag_spheres_regex = this.value; },
+            onchange: function () { WA.options.custom_tag_spheres_regex = this.value; },
             length: 10
           },
           {
             type: 'checkbox',
             label: 'Native resolution',
             value: o.use_native_resolution,
-            onclickFn: function() {
+            onclick: function() {
               WA.setNativeResolution(this.checked);
             },
             title: 'If checked, the native pixel resolution will be used. Improves quality on HiDPI displays.'
           },
         ]);
 
-    var nodeScalingInput = appendNumericField(tabs['View settings'],
+    var nodeScalingInput = DOM.appendNumericField(tabs['View settings'],
         'Node handle scaling', 'Size of handle spheres for tagged nodes.',
               o.skeleton_node_scaling, null, function() {
               WA.options.skeleton_node_scaling = Math.max(0, this.value) || 1.0;
@@ -1402,24 +1242,24 @@ var WindowMaker = new function()
               WA.updateSkeletonNodeHandleScaling(this.value);
         }, 5);
 
-    appendToTab(tabs['Stacks'],
+    DOM.appendToTab(tabs['Stacks'],
         [
           ['Bounding box', true, adjustFn('show_box'), false],
           ['Z plane', false, adjustFn('show_zplane'), false],
           {type: 'checkbox', label: 'with stack images', value: true,
-           onclickFn: adjustFn('zplane_texture'), title: 'If checked, images ' +
+           onclick: adjustFn('zplane_texture'), title: 'If checked, images ' +
              'of the current section of the active stack will be displayed on a Z plane.'},
           {type: 'numeric', label: 'Z plane zoom level ', value: o.zplane_zoomlevel,
            title: 'The zoom-level to use (slider value in top toolbar) for image tiles ' +
            'in a Z plane. If set to "max", the highest zoom-level available will be ' +
            'which in turn means the worst resolution available.', length: 2,
-           onchangeFn: function() {
+           onchange: function() {
              WA.options.zplane_zoomlevel = ("max" === this.value) ? this.value :
                  Math.max(0, this.value);
              WA.adjustStaticContent();
             }},
           {type: 'numeric', label: 'Z plane opacity', value: o.zplane_opacity, length: 2,
-            title: 'The opacity of displayed Z planes', onchangeFn: function(e) {
+            title: 'The opacity of displayed Z planes', onchange: function(e) {
               var value = parseFloat(this.value);
               if (value) {
                 WA.options.zplane_opacity = value;
@@ -1433,7 +1273,7 @@ var WindowMaker = new function()
             }, 4]
         ]);
 
-    appendToTab(tabs['Skeleton filters'],
+    DOM.appendToTab(tabs['Skeleton filters'],
         [
           ['Smooth', o.smooth_skeletons, function() { WA.options.smooth_skeletons = this.checked; WA.updateSkeletons(); }, false],
           ['with sigma', o.smooth_skeletons_sigma, ' nm', function() { WA.updateSmoothSkeletonsSigma(this.value); }, 10],
@@ -1442,7 +1282,7 @@ var WindowMaker = new function()
           ['Lean mode (no synapses, no tags)', o.lean_mode, function() { WA.options.lean_mode = this.checked; WA.updateSkeletons();}, false],
         ]);
 
-    appendToTab(tabs['Shading parameters'],
+    DOM.appendToTab(tabs['Shading parameters'],
         [
           ['Synapse clustering bandwidth', o.synapse_clustering_bandwidth, ' nm', function() { WA.updateSynapseClusteringBandwidth(this.value); }, 6],
           ['Near active node', o.distance_to_active_node, ' nm', function() {
@@ -1465,7 +1305,7 @@ var WindowMaker = new function()
     axisOptionsLabel.appendChild(document.createTextNode('Rotation axis:'));
     axisOptionsLabel.appendChild(axisOptions);
 
-    appendToTab(tabs['Animation'],
+    DOM.appendToTab(tabs['Animation'],
         [
           ['Play', function() {
             try {
@@ -1495,7 +1335,7 @@ var WindowMaker = new function()
             title: 'Select a neuron visibility pattern that is applied ' +
                    'over the course of the animation.',
             value: o.animation_stepwise_visibility,
-            onchangeFn: function(e) {
+            onchange: function(e) {
               var type = this.value;
               if ('one-per-rotation' === type) {
                 type = 'n-per-rotation';
@@ -1550,7 +1390,7 @@ var WindowMaker = new function()
           }, false]
         ]);
 
-    appendToTab(tabs['Export'],
+    DOM.appendToTab(tabs['Export'],
         [
           ['Export PNG', WA.exportPNG.bind(WA)],
           ['Export SVG', WA.exportSVG.bind(WA)],
@@ -1692,15 +1532,15 @@ var WindowMaker = new function()
     bar.setAttribute("id", "synapse_fractions_buttons" + SF.widgetID);
     bar.setAttribute('class', 'buttonpanel');
 
-    var tabs = appendTabs(bar, SF.widgetID, ['Main', 'Filter', 'Color', 'Partner groups']);
+    var tabs = DOM.addTabGroup(bar, SF.widgetID, ['Main', 'Filter', 'Color', 'Partner groups']);
 
     var partners_source = CATMAID.skeletonListSources.createPushSelect(SF, "filter");
     partners_source.onchange = SF.onchangeFilterPartnerSkeletons.bind(SF);
 
-    var modes = createSelect("synapse_fraction_mode" + SF.widgetID, SF.MODES);
+    var modes = DOM.createSelect("synapse_fraction_mode" + SF.widgetID, SF.MODES);
     modes.onchange = SF.onchangeMode.bind(SF, modes);
 
-    appendToTab(tabs['Main'],
+    DOM.appendToTab(tabs['Main'],
         [[document.createTextNode('From')],
          [CATMAID.skeletonListSources.createSelect(SF)],
          ['Append', SF.loadSource.bind(SF)],
@@ -1711,17 +1551,17 @@ var WindowMaker = new function()
          [document.createTextNode(' - ')],
          ['Export SVG', SF.exportSVG.bind(SF)]]);
 
-    var nf = createNumericField("synapse_threshold" + SF.widgetID, // id
+    var nf = DOM.createNumericField("synapse_threshold" + SF.widgetID, // id
                                 "By synapse threshold: ",             // label
                                 "Below this number, neuron gets added to the 'others' heap", // title
                                 SF.threshold,                            // initial value
                                 undefined,                               // postlabel
-                                SF.onchangeSynapseThreshold.bind(SF),    // onchangeFn
+                                SF.onchangeSynapseThreshold.bind(SF),    // onchange
                                 5);                                      // textfield length in number of chars
 
-    var cb = createCheckbox('show others', SF.show_others, SF.toggleOthers.bind(SF));
+    var cb = DOM.createCheckbox('show others', SF.show_others, SF.toggleOthers.bind(SF));
 
-    appendToTab(tabs['Filter'],
+    DOM.appendToTab(tabs['Filter'],
         [[nf],
          [document.createTextNode(' - Only in: ')],
          [partners_source],
@@ -1732,7 +1572,7 @@ var WindowMaker = new function()
     var partners_color = CATMAID.skeletonListSources.createPushSelect(SF, "color");
     partners_color.onchange = SF.onchangeColorPartnerSkeletons.bind(SF);
 
-    var c = createSelect('color-scheme-synapse-fractions' + SF.widgetID,
+    var c = DOM.createSelect('color-scheme-synapse-fractions' + SF.widgetID,
         ['category10',
          'category20',
          'category20b',
@@ -1741,7 +1581,7 @@ var WindowMaker = new function()
     c.selectedIndex = 1;
     c.onchange = SF.onchangeColorScheme.bind(SF, c);
 
-    appendToTab(tabs['Color'],
+    DOM.appendToTab(tabs['Color'],
         [[document.createTextNode("Color scheme: ")],
          [c],
          [document.createTextNode("Color by: ")],
@@ -1749,7 +1589,7 @@ var WindowMaker = new function()
 
     var partner_group = CATMAID.skeletonListSources.createPushSelect(SF, "group");
 
-    appendToTab(tabs['Partner groups'],
+    DOM.appendToTab(tabs['Partner groups'],
         [[partner_group],
          ['Create group', SF.createPartnerGroup.bind(SF)]]);
 
@@ -1791,12 +1631,12 @@ var WindowMaker = new function()
     bar.setAttribute('class', 'buttonpanel');
     DOM.addButtonDisplayToggle(win);
 
-    var tabs = appendTabs(bar, SP.widgetID, ['Main', 'Options']);
+    var tabs = DOM.addTabGroup(bar, SP.widgetID, ['Main', 'Options']);
 
-    var compartment = createSelect("synapse_plot_compartment" + SP.widgetID, SP.COMPARTMENTS);
+    var compartment = DOM.createSelect("synapse_plot_compartment" + SP.widgetID, SP.COMPARTMENTS);
     compartment.onchange = SP.onchangeCompartment.bind(SP, compartment);
 
-    appendToTab(tabs['Main'],
+    DOM.appendToTab(tabs['Main'],
         [[document.createTextNode('From')],
          [CATMAID.skeletonListSources.createSelect(SP)],
          ['Append', SP.loadSource.bind(SP)],
@@ -1808,20 +1648,20 @@ var WindowMaker = new function()
          ['Export SVG', SP.exportSVG.bind(SP)],
          ['Export CSV', SP.exportCSV.bind(SP)]]);
 
-    var nf = createNumericField("synapse_count_threshold" + SP.widgetID, // id
+    var nf = DOM.createNumericField("synapse_count_threshold" + SP.widgetID, // id
                                 "Synapse count threshold: ",             // label
                                 "Synapse count threshold",               // title
                                 SP.threshold,                            // initial value
                                 undefined,                               // postlabel
-                                SP.onchangeSynapseThreshold.bind(SP),    // onchangeFn
+                                SP.onchangeSynapseThreshold.bind(SP),    // onchange
                                 5);                                      // textfield length in number of chars
 
     var filter = CATMAID.skeletonListSources.createPushSelect(SP, "filter");
     filter.onchange = SP.onchangeFilterPresynapticSkeletons.bind(SP);
 
-    var ais_choice = createSelect("synapse_plot_AIS_" + SP.widgetID, ["Computed", "Node tagged with..."], "Computed");
+    var ais_choice = DOM.createSelect("synapse_plot_AIS_" + SP.widgetID, ["Computed", "Node tagged with..."], "Computed");
 
-    var tag = createNumericField("synapse_count_tag" + SP.widgetID,
+    var tag = DOM.createNumericField("synapse_count_tag" + SP.widgetID,
                                  undefined,
                                  "Tag",
                                  "",
@@ -1832,7 +1672,7 @@ var WindowMaker = new function()
 
     ais_choice.onchange = SP.onchangeChoiceAxonInitialSegment.bind(SP, ais_choice, tag);
 
-    var jitter = createNumericField("synapse_plot_jitter" + SP.widgetID,
+    var jitter = DOM.createNumericField("synapse_plot_jitter" + SP.widgetID,
                                    undefined,
                                    "Jitter",
                                    SP.jitter,
@@ -1845,7 +1685,7 @@ var WindowMaker = new function()
     var choice_coloring = CATMAID.skeletonListSources.createPushSelect(SP, "coloring");
     choice_coloring.onchange = SP.onchangeColoring.bind(SP);
 
-    var sigma = createNumericField("synapse_plot_smooth" + SP.widgetID,
+    var sigma = DOM.createNumericField("synapse_plot_smooth" + SP.widgetID,
                                    "Arbor smoothing: ",
                                    "Gaussian smoothing sigma",
                                    SP.sigma,
@@ -1853,7 +1693,7 @@ var WindowMaker = new function()
                                    SP.onchangeSigma.bind(SP),
                                    5);
 
-    appendToTab(tabs['Options'],
+    DOM.appendToTab(tabs['Options'],
         [[nf],
          [document.createTextNode(' Only in: ')],
          [filter],
@@ -1911,10 +1751,10 @@ var WindowMaker = new function()
     DOM.addHelpButton(win, 'Help: ' + GG.getName(), "<h3>Visualize connecticity networks</h3>" +
         "<h4>How to...</h4><p><em>Hide edges/links:</em> Select an edge and use the <em>Hide</em> button in the <em>Selection</em> tab.</p>");
 
-    var tabs = appendTabs(bar, GG.widgetID, ['Main', 'Grow', 'Graph',
+    var tabs = DOM.addTabGroup(bar, GG.widgetID, ['Main', 'Grow', 'Graph',
         'Selection', 'Subgraphs', 'Align', 'Export']);
 
-    appendToTab(tabs['Main'],
+    DOM.appendToTab(tabs['Main'],
         [[document.createTextNode('From')],
          [CATMAID.skeletonListSources.createSelect(GG)],
          ['Append', GG.loadSource.bind(GG)],
@@ -1927,7 +1767,7 @@ var WindowMaker = new function()
          ['Save', GG.saveJSON.bind(GG)],
          ['Open...', function() { document.querySelector('#gg-file-dialog-' + GG.widgetID).click(); }]]);
 
-    tabs['Export'].appendChild(CATMAID.DOM.createFileButton(
+    tabs['Export'].appendChild(DOM.createFileButton(
           'gg-file-dialog-' + GG.widgetID, false, function(evt) {
             GG.loadFromJSON(evt.target.files);
           }));
@@ -1944,7 +1784,7 @@ var WindowMaker = new function()
     color.options.add(new Option('circles of hell (downstream)', 'circles_of_hell_downstream'));
     color.onchange = GG._colorize.bind(GG, color);
 
-    var layout = appendSelect(tabs['Graph'], null, null, GG.layoutStrings);
+    var layout = DOM.appendSelect(tabs['Graph'], null, null, GG.layoutStrings);
 
     var edges = document.createElement('select');
     edges.setAttribute('id', 'graph_edge_threshold' + GG.widgetID);
@@ -1957,7 +1797,7 @@ var WindowMaker = new function()
         GG.filterEdges($('#graph_edge_threshold' + GG.widgetID).val(),
                        $('#graph_edge_confidence_threshold' + GG.widgetID).val()); };
 
-    appendToTab(tabs['Graph'],
+    DOM.appendToTab(tabs['Graph'],
         [['Re-layout', GG.updateLayout.bind(GG, layout)],
          [' fit', true, GG.toggleLayoutFit.bind(GG), true],
          [document.createTextNode(' - Color: ')],
@@ -1969,7 +1809,7 @@ var WindowMaker = new function()
          [edgeConfidence],
         ]);
 
-    appendToTab(tabs['Selection'],
+    DOM.appendToTab(tabs['Selection'],
         [['Annotate', GG.annotate_skeleton_list.bind(GG)],
          [document.createTextNode(' - ')],
          ['Measure edge risk', GG.annotateEdgeRisk.bind(GG)],
@@ -1986,7 +1826,7 @@ var WindowMaker = new function()
          [document.createTextNode(' - ')],
         ]);
 
-    appendToTab(tabs['Align'],
+    DOM.appendToTab(tabs['Align'],
         [[document.createTextNode('Align: ')],
          [' X ', GG.equalizeCoordinate.bind(GG, 'x')],
          [' Y ', GG.equalizeCoordinate.bind(GG, 'y')],
@@ -2006,21 +1846,21 @@ var WindowMaker = new function()
       return e;
     };
 
-    appendToTab(tabs['Grow'],
+    DOM.appendToTab(tabs['Grow'],
         [[document.createTextNode('Grow ')],
          ['Circles', GG.growGraph.bind(GG)],
          [document.createTextNode(" by ")],
-         [createSelect("gg_n_circles_of_hell" + GG.widgetID, [1, 2, 3, 4, 5])],
+         [DOM.createSelect("gg_n_circles_of_hell" + GG.widgetID, [1, 2, 3, 4, 5])],
          [document.createTextNode(" orders, limit:")],
          [f("upstream")],
          [f("downstream")],
-         [createNumericField('gg_filter_regex' + GG.widgetID, 'filter (regex):',
+         [DOM.createNumericField('gg_filter_regex' + GG.widgetID, 'filter (regex):',
                              'Only include neighbors with annotations matching this regex.',
                              '', '', undefined, 4)],
          [document.createTextNode(" - Find ")],
          ['paths', GG.growPaths.bind(GG)],
          [document.createTextNode(" by ")],
-         [createSelect("gg_n_hops" + GG.widgetID, [2, 3, 4, 5, 6])],
+         [DOM.createSelect("gg_n_hops" + GG.widgetID, [2, 3, 4, 5, 6])],
          [document.createTextNode(" hops, limit:")],
          [f("path_synapses")],
          ['pick sources', GG.pickPathOrigins.bind(GG, 'source'), {id: 'gg_path_source' + GG.widgetID}],
@@ -2028,7 +1868,7 @@ var WindowMaker = new function()
          ['pick targets', GG.pickPathOrigins.bind(GG, 'target'), {id: 'gg_path_target' + GG.widgetID}],
          ['X', GG.clearPathOrigins.bind(GG, 'target')]]);
 
-    appendToTab(tabs['Export'],
+    DOM.appendToTab(tabs['Export'],
         [['Export GML', GG.exportGML.bind(GG)],
          ['Export SVG', GG.exportSVG.bind(GG)],
          ['Export Adjacency Matrix', GG.exportAdjacencyMatrix.bind(GG)],
@@ -2036,7 +1876,7 @@ var WindowMaker = new function()
          ['Open plot', GG.openPlot.bind(GG)],
          ['Quantify', GG.quantificationDialog.bind(GG)]]);
 
-    appendToTab(tabs['Subgraphs'],
+    DOM.appendToTab(tabs['Subgraphs'],
         [[document.createTextNode('Select node(s) and split by: ')],
          ['Axon & dendrite', GG.splitAxonAndDendrite.bind(GG)],
          ['Axon, backbone dendrite & dendritic terminals', GG.splitAxonAndTwoPartDendrite.bind(GG)],
@@ -2257,7 +2097,7 @@ var WindowMaker = new function()
 
     buttons.appendChild(document.createElement('br'));
 
-    appendSelect(buttons, "function", null,
+    DOM.appendSelect(buttons, "function", null,
         ['Sholl analysis',
          'Radial density of cable',
          'Radial density of branch nodes',
@@ -2273,7 +2113,7 @@ var WindowMaker = new function()
     radius.style.width = "40px";
     buttons.appendChild(radius);
 
-    appendSelect(buttons, "center", ' Center: ',
+    DOM.appendSelect(buttons, "center", ' Center: ',
         ['First branch node',
          'Root node',
          'Active node',
@@ -2637,14 +2477,14 @@ var WindowMaker = new function()
 
     div.appendChild(CATMAID.skeletonListSources.createSelect(SA));
 
-    appendSelect(div, "extra" + SA.widgetID, ' extra ', [
+    DOM.appendSelect(div, "extra" + SA.widgetID, ' extra ', [
         {title: "No others", value: 0},
         {title: "Downstream skeletons", value: 1},
         {title: "Upstream skeletons", value: 2},
         {title: "Both upstream and downstream", value: 3}]);
     var adjacents = [];
     for (var i=0; i<5; ++i) adjacents.push(i);
-    appendSelect(div, "adjacents" + SA.widgetID, ' adjacents ', adjacents);
+    DOM.appendSelect(div, "adjacents" + SA.widgetID, ' adjacents ', adjacents);
 
     var update = document.createElement('input');
     update.setAttribute('type', 'button');
@@ -2702,9 +2542,9 @@ var WindowMaker = new function()
         var RS = CATMAID.ReviewSystem;
         RS.init();
 
-        var tabs = appendTabs(bar, '-review', ['Main', 'Miscellaneous']);
+        var tabs = DOM.addTabGroup(bar, '-review', ['Main', 'Miscellaneous']);
 
-        appendToTab(tabs['Main'],
+        DOM.appendToTab(tabs['Main'],
             [
               ['Start to review skeleton',
                   RS.startReviewActiveSkeleton.bind(RS, false)],
@@ -2716,7 +2556,7 @@ var WindowMaker = new function()
                   function() { RS.setAutoCentering(this.checked); }, false]
             ]);
 
-        appendToTab(tabs['Miscellaneous'],
+        DOM.appendToTab(tabs['Miscellaneous'],
             [
               ['In-between node step', RS.virtualNodeStep, null, function() {
                   RS.virtualNodeStep = parseInt(this.value, 10);

@@ -457,6 +457,63 @@
     return placeholder;
   };
 
+	DOM.createCheckbox = function(label, value, onclickFn) {
+		var cb = document.createElement('input');
+		cb.setAttribute('type', 'checkbox');
+		cb.checked = value ? true : false;
+		cb.onclick = onclickFn;
+		return [cb, document.createTextNode(label)];
+	};
+
+  /**
+   * Create a new numeric field based on the passed in configuration.
+   */
+  DOM.createNumericField = function(id, label, title, value, postlabel, onchangeFn, length) {
+    var nf = document.createElement('input');
+    if (id) nf.setAttribute('id', id);
+    nf.setAttribute('type', 'text');
+    nf.setAttribute('value', value);
+    if (length) nf.setAttribute('size', length);
+    if (onchangeFn) nf.onchange = onchangeFn;
+    if (label || postlabel) {
+      var labelEl = document.createElement('label');
+      labelEl.setAttribute('title', title);
+      if (label) labelEl.appendChild(document.createTextNode(label));
+      labelEl.appendChild(nf);
+      if (postlabel) labelEl.appendChild(document.createTextNode(postlabel));
+      return labelEl;
+    } else {
+      return nf;
+    }
+  };
+
+  DOM.createSelect = function(id, items, selectedValue) {
+    var select = document.createElement('select');
+    if (id) {
+      select.setAttribute("id", id);
+    }
+    items.forEach(function(item, i) {
+      var option = document.createElement("option");
+      var itemType = typeof item;
+      var text, value;
+      if ('object' === itemType) {
+        text = item.title;
+        value = item.value;
+      } else {
+        text = item;
+        value = item;
+      }
+      option.text = text;
+      option.value = value;
+      if (option.value === selectedValue) {
+        option.defaultSelected = true;
+        option.selected = true;
+      }
+      select.appendChild(option);
+    });
+    return select;
+  };
+
   /**
    * Create a tab group and add it to the passed in container. The widget ID is
    * expected to be unique.
@@ -473,6 +530,107 @@
       o[name] = div;
       return o;
     }, {});
+  };
+
+  /**
+   * Construct elements from an array of parameters and append them to a tab
+   * element.
+
+   * @param {Element}     tab   The tab to which to append constructed elements.
+   * @param {Array.<(Object|Array)>} elements
+   *                             An array of parameters from which to construct
+   *                             elements. The elements of the array are either
+   *                             arrays of parameters, in which case the length
+   *                             of the array is used to choose element type, or
+   *                             an object specifying parameters, in which case
+   *                             the `type` property specifies element type.
+   * @return {Element[]}         An array of the constructed elements.
+   */
+  DOM.appendToTab = function(tab, elements) {
+    return elements.map(function(e) {
+      if (Array.isArray(e)) {
+        switch (e.length) {
+          case 1: return tab.appendChild(e[0]);
+          case 2: return CATMAID.DOM.appendButton(tab, e[0], e[1]);
+          case 3: return CATMAID.DOM.appendButton(tab, e[0], e[1], e[2]);
+          case 4: return CATMAID.DOM.appendCheckbox(tab, e[0], e[0], e[1], e[2], e[3]);
+          case 5: return CATMAID.DOM.appendNumericField(tab, e[0], e[0], e[1], e[2], e[3], e[4]);
+          default: return undefined;
+        }
+      } else {
+        switch (e.type) {
+          case 'child':
+            return tab.appendChild(e.element);
+          case 'button':
+            return CATMAID.DOM.appendButton(tab, e.label, e.onclick, e.attr);
+          case 'checkbox':
+            return CATMAID.DOM.appendCheckbox(tab, e.label, e.title, e.value, e.onclick, e.left);
+          case 'numeric':
+            return CATMAID.DOM.appendNumericField(tab, e.label, e.title, e.value, e.postlabel, e.onchange, e.length);
+          case 'select':
+            return CATMAID.DOM.appendSelect(tab, e.id, e.label, e.entries, e.title, e.value, e.onchange);
+          default: return undefined;
+        }
+      }
+    });
+  }
+
+  /**
+   * Append a new button to another element.
+   */
+  DOM.appendButton = function(div, label, onclickFn, attr) {
+    var b = document.createElement('input');
+    if (attr) Object.keys(attr).forEach(function(key) { b.setAttribute(key, attr[key]); });
+    b.setAttribute('type', 'button');
+    b.setAttribute('value', label);
+    b.onclick = onclickFn;
+    div.appendChild(b);
+    return b;
+  };
+
+  /**
+   * Append a new checkbox to another element.
+   */
+  DOM.appendCheckbox = function(div, label, title, value, onclickFn, left) {
+    var labelEl = document.createElement('label');
+    labelEl.setAttribute('title', title);
+    var elems = DOM.createCheckbox(label, value, onclickFn);
+    if (left) elems.reverse();
+    elems.forEach(function(elem) { labelEl.appendChild(elem); });
+    div.appendChild(labelEl);
+    return left ? elems[elems.length - 1] : elems[0];
+  };
+
+  /**
+   * Append a new numeric input field to another element.
+   */
+  DOM.appendNumericField = function(div, label, title, value, postlabel, onchangeFn, length) {
+    var field = DOM.createNumericField(undefined, label, title, value, postlabel, onchangeFn, length);
+    div.appendChild(field);
+    return field;
+  };
+
+  /**
+   * Append a new select element to another element.
+   */
+  DOM.appendSelect = function(div, id, label, entries, title, value, onChangeFn) {
+    id = id ? (div.id + '_' + id) : undefined;
+    var select = CATMAID.DOM.createSelect(id, entries, value);
+    div.appendChild(select);
+    if (title) {
+      select.title = title;
+    }
+    if (onChangeFn) {
+      select.onchange= onChangeFn;
+    }
+    if (label) {
+      var labelElement = document.createElement('label');
+      labelElement.setAttribute('title', title);
+      labelElement.appendChild(document.createTextNode(label));
+      labelElement.appendChild(select);
+      div.appendChild(labelElement);
+    }
+    return select;
   };
 
   // Export DOM namespace

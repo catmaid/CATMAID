@@ -243,6 +243,13 @@
         exportPDF.onclick = this.exportPDF.bind(this);
         tabs['Main'].appendChild(exportPDF);
 
+        var exportXLSX = document.createElement('input');
+        exportXLSX.setAttribute("type", "button");
+        exportXLSX.setAttribute("value", "Export XLSX");
+        exportXLSX.setAttribute("title", "Export a spreadsheet file compatible to Microsoft Excel and Libre Office, colors are preserved");
+        exportXLSX.onclick = this.exportXLSX.bind(this);
+        tabs['Main'].appendChild(exportXLSX);
+
         var sortOptionNames = sortOptions.map(function(o) {
           return o.name;
         });
@@ -1144,6 +1151,217 @@
   };
 
   /**
+   * Export the currently displayed matrix as XLSX file using jQuery DataTables.
+   */
+  ConnectivityMatrixWidget.prototype.exportXLSX = function() {
+    if (!this.matrix) {
+      CATMAIR.error("Please load some data first.");
+      return;
+    }
+
+    // Create a new array that contains entries for each line. Pre-pulate with
+    // first element (empty upper left cell). Unfortunately, an empty string
+    // doesn't work correctly, and some content has to be provided.
+    var lines = [[' ']];
+
+    // Create header
+    function handleColumn(line, id, colGroup, name, skeletonIDs) {
+      var n = (name && name.length) ? name : '""';
+      line.push(n);
+    }
+
+    // Create row
+    function handleRow(lines, id, rowGroup, name, skeletonIDs) {
+      var n = (name && name.length) ? name : '""';
+      var line = [n];
+      lines.push(line);
+      return line;
+    }
+
+    // Create cell
+    function handleCell(line, rowName, rowSkids, colName, colSkids, connections) {
+      line.push(connections);
+    }
+
+    var walked = this.walkMatrix(this.matrix, handleColumn.bind(window, lines[0]),
+        handleRow.bind(window, lines), handleCell);
+
+    // Export concatenation of all lines, delimited buy new-line characters
+    if (!walked) {
+      CATMAID.warn("Couldn't export XLSX file");
+      return;
+    }
+
+    // Create color index
+    var colorScheme = colorOptions[this.color];
+    var maxConnections = this.matrix.getMaxConnections();
+    var colorIndex = {};
+    for (var r=0, maxr=lines.length; r<maxr; ++r) {
+      var row = lines[r];
+      for (var c=0, maxc=row.length; c<maxc; ++c) {
+        var value = parseInt(row[c], 10);
+        if (Number.isNaN(value)) {
+          continue;
+        }
+        var color = getColor(colorScheme, value,
+            this.synapseThreshold, maxConnections);
+        if (color) {
+          colorIndex[value] = color;
+        }
+      }
+    }
+
+    // Construct temporary data table instance
+    var content = document.getElementById('connectivity_matrix' + this.widgetID);
+    var container = document.createElement('table');
+    container.style.display = 'none';
+    content.appendChild(container);
+
+    try {
+      var table = $(container).DataTable({
+        dom: 'Bfrtip',
+        paging: false,
+        order: [],
+        buttons: [{
+          extend: 'excelHtml5',
+          header: false, // We take care of heder ourselves
+          footer: false,
+          filename: 'catmaid-connectivity-matrix.xlsx',
+          customize: function(xlsx) {
+            var sheet = xlsx.xl.worksheets['sheet1.xml'];
+            // Find style definitions
+            var styles = xlsx.xl['styles.xml'];
+            var cellStyles = null, cellFills = null, fonts = null;
+            var nextStyleIndex = -1, nextFillIndex = -1, nextFontIndex = -1;
+            if (styles) {
+              // Style reference
+              cellStyles = $('cellXfs', styles);
+              if (1 !== cellStyles.length) {
+                CATMAID.warn('Could\'t find XLSX cell style definition');
+              } else {
+                nextStyleIndex = cellStyles.attr('count');
+              }
+              // Fill reference
+              cellFills = $('fills', styles);
+              if (1 !== cellFills.length) {
+                CATMAID.warn('Could\'t find XLSX cell fill definition');
+              } else {
+                nextFillIndex = cellFills.attr('count');
+              }
+              // Font reference
+              fonts = $('fonts', styles);
+              if (1 !== fonts.length) {
+                CATMAID.warn('Could\'t find XLSX cell font definition');
+              } else {
+                nextFontIndex = fonts.attr('count');
+              }
+            } else {
+              CATMAID.warn('Could\'t find XLSX style definition');
+            }
+            // Make fist column use a bold font
+            $('row c[r$="1"]', sheet).filter(function(c) {
+              return this.attributes.r.value.match(/^[A-Z]+1$/);
+            }).each( function () {
+              $(this).attr( 's', '2' );
+            });
+            // Make firt row  use a bold font
+            $('row c[r^="A"]', sheet).filter(function(c) {
+              return this.attributes.r.value.match(/^A[0-9]+$/);
+            }).each( function () {
+              $(this).attr( 's', '2' );
+            });
+            // Export colors
+            var foundStyles = [];
+            var foundStylesIndex = {};
+            $('row c', sheet).each( function () {
+              var value = $('v', this).text();
+              var color = colorIndex[value];
+              // Only add style information if there is a color available for
+              // the value of this cell.
+              if (color) {
+                var style = foundStylesIndex[value];
+                if (!style) {
+                  style = {
+                    value: value,
+                    bgColor: color.replace(/#/, ''),
+                    fgColor: CATMAID.tools.getContrastColor(color, true).replace(/#/, ''),
+                    styleIndex: nextStyleIndex,
+                    fillIndex: nextFillIndex,
+                    fontIndex: nextFontIndex
+                  };
+                  foundStyles.push(style);
+                  foundStylesIndex[value] = style;
+
+
+                  // Increment style index counters
+                  ++nextStyleIndex;
+                  ++nextFillIndex;
+                  ++nextFontIndex;
+                } 
+                $(this).attr( 's', style.styleIndex );
+              }
+            });
+            // Store all found styles in XLSX stylesheet section. We use cell
+            // styles, which are part of the <cellXfs> collection.
+            if (foundStyles.length > 0) {
+              if (styles && cellStyles && cellFills) {
+                for (var i=0; i<foundStyles.length; ++i) {
+                  var style = foundStyles[i];
+                  // Add a new pattern fill with ARGB color format
+                  var bgColor = 'FF' + style.bgColor;
+                  var fill = '<fill><patternFill patternType="solid"><fgColor rgb="' +
+                      bgColor + '"></fgColor></patternFill></fill>';
+                  cellFills.append(fill);
+
+                  // Add a font entry for each fill. While a little bit
+                  // redundant in most cases, it allows more flexibility.
+                  var fontColor = 'FF' + style.fgColor;
+                  var font = '<font><sz val="11" /><name val="Calibri" /><color rgb="' +
+                      fontColor + '" /></font>';
+                  fonts.append(font);
+
+                  // Add a new <xf> entry:
+                  var xf = '<xf numFmtId="0" fontId="' + style.fontIndex +'" fillId="' + style.fillIndex +
+                      '" borderId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1">' +
+                      '<alignment horizontal="center"/></xf>';
+                  cellStyles.append(xf);
+                }
+                // Set required count properties for syles and fills
+                cellFills.attr('count', nextFillIndex);
+                cellStyles.attr('count', nextStyleIndex);
+                fonts.attr('count', nextFontIndex);
+              }
+            }
+          }
+        }],
+        data: lines,
+        columns: lines[0].map(function(l) {
+          return {
+            title: l
+          };
+        })
+      });
+  
+      // Press excel export button
+      var exportButton = $('a.buttons-excel', content);
+      if (0 === exportButton.length) {
+        CATMAID.warn('Could not load XLSX extension');
+        if (container) {
+          table.destroy();
+          content.removeChild(container);
+        }
+        return;
+      }
+      exportButton.trigger('click');
+    } finally {
+      if (container) {
+        table.destroy();
+        content.removeChild(container);
+      }
+    }
+  };
+
+  /**
    * Aggregate the values of a connectivity matrix over the specified number of
    * rows and columns, starting from the given position.
    */
@@ -1374,9 +1592,10 @@
   };
 
   /**
-   * Set background color of a DOM element according to the given color scheme.
+   * Get color for a particular cell value, optionally bounded with a minimum
+   * and maximum value.
    */
-  var colorize = function(element, scheme, value, minValue, maxValue) {
+  var getColor = function(scheme, value, minValue, maxValue) {
     var bg = null;
     if (!scheme || "None" === scheme) return;
     else if (value < minValue) return;
@@ -1398,7 +1617,18 @@
       }
     }
 
-    // Set background
+    return bg;
+  };
+
+  /**
+   * Set background color of a DOM element according to the given color scheme.
+   */
+  var colorize = function(element, scheme, value, minValue, maxValue) {
+    // Set background or return if there was no color found for this value
+    var bg = getColor(scheme, value, minValue, maxValue);
+    if (!bg) {
+      return;
+    }
     element.style.backgroundColor = bg;
 
     // Heuristic to find foreground color for children

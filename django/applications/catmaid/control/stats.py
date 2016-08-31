@@ -153,6 +153,9 @@ def stats_user_activity(request, project_id=None):
     return HttpResponse(json.dumps({'skeleton_nodes': timepoints,
          'presynaptic': prelinks, 'postsynaptic': postlinks}), content_type='application/json')
 
+def utc_to_tz(timestamp, time_zone):
+    return timestamp.replace(tzinfo=pytz.utc).astimezone(time_zone)
+
 @api_view(['GET'])
 def stats_user_history(request, project_id=None):
     """Get per user contribution statistics
@@ -348,17 +351,17 @@ def stats_user_history(request, project_id=None):
 
     for di in treenode_stats:
         user_id = str(di[0])
-        date = di[1].strftime('%Y%m%d')
+        date = utc_to_tz(di[1], time_zone).strftime('%Y%m%d')
         stats_table[user_id][date]['new_treenodes'] = di[2]
 
     for di in connector_stats:
         user_id = str(di[0])
-        date = di[1].strftime('%Y%m%d')
+        date = utc_to_tz(di[1], time_zone).strftime('%Y%m%d')
         stats_table[user_id][date]['new_connectors'] = di[2]
 
     for di in tree_reviewed_nodes:
         user_id = str(di[0])
-        date = di[1].strftime('%Y%m%d')
+        date = utc_to_tz(di[1], time_zone).strftime('%Y%m%d')
         stats_table[user_id][date]['new_reviewed_nodes'] = di[2]
 
     return HttpResponse(json.dumps({

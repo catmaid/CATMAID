@@ -2307,6 +2307,13 @@
     }).bind(this));
 
     if (this.current_skid) {
+      var info = document.createElement('p');
+      info.classList.add('help');
+      info.appendChild(document.createTextNode('Below you find information on ' +
+            'the currenyly selected neuron as well as its annotations. Its ' +
+            'skeleton ID is #' + this.current_skid));
+      container.append(info);
+
       // Prepare a container that is filled by the async request
       var node_content = $(document.createElement('div'));
       container.append(node_content);
@@ -2337,8 +2344,9 @@
       this.neuron_id = -1;
       this.skeleton_ids = [];
       // Print message
-      var message = document.createElement('em');
-      var text = 'There is currently no active node';
+      var message = document.createElement('p');
+      message.classList.add('help');
+      var text = 'There is currently no active neuron';
       message.appendChild(document.createTextNode(text));
       container.append(message);
     }
@@ -2465,7 +2473,7 @@
     }, this));
 
     // Add some space
-    var neuron_title = document.createElement('h4');
+    var neuron_title = document.createElement('h1');
     neuron_title.appendChild(document.createTextNode('Active neuron'));
     container.append(neuron_title);
 

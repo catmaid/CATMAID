@@ -404,6 +404,15 @@ div#classification_graph_object img.roiimage {
   margin-left: 0;
 }
 
+.navigator_content h1 {
+  margin-left: 0.2em;
+  font-size: 150%
+}
+
+.navigator_content p {
+  margin-left: 0.2em;
+}
+
 .neuron_annotations_query_results_table td {
   padding: 2px;
   vertical-align: top;
@@ -763,6 +772,7 @@ div#classification_graph_object img.roiimage {
   min-width: 20em;
   margin-top: 0.25em;
   margin-bottom: 0.5em;
+  margin-left: 15em;
 }
 
 .setting input[type=checkbox] {
@@ -1029,7 +1039,6 @@ div.selection-table.windowContent {
 
 .help {
   color: #999;
-  margin-left: 15em;
 }
 
 .checkbox-row .help {

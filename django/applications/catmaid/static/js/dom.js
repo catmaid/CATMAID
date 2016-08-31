@@ -573,7 +573,7 @@
         }
       }
     });
-  }
+  };
 
   /**
    * Append a new button to another element.

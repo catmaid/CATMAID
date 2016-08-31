@@ -857,13 +857,6 @@ div#classification_graph_object img.roiimage {
   height: 8em;
 }
 
-.ontology_search .helptext {
-  display: block;
-  color: #888;
-  font-style: italic;
-}
-
-
 .node circle {
   fill: #fff;
   stroke: steelblue;

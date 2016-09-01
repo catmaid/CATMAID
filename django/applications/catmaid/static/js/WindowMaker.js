@@ -31,7 +31,7 @@ var WindowMaker = new function()
     return height;
   };
 
-  var addListener = function(win, container, button_bar, destroy, resize) {
+  var addListener = function(win, container, button_bar, destroy, resize, focus) {
     win.addListener(
       function(callingWindow, signal) {
 
@@ -82,6 +82,9 @@ var WindowMaker = new function()
             break;
           case CMWWindow.POINTER_ENTER:
             if (CATMAID.FOCUS_ALL === CATMAID.focusBehavior) win.focus();
+            break;
+          case CMWWindow.FOCUS:
+            CATMAID.tools.callIfFn(focus);
             break;
         }
         return true;
@@ -169,7 +172,8 @@ var WindowMaker = new function()
     // Register to events
     var destroy = instance.destroy ? instance.destroy.bind(instance) : undefined;
     var resize = instance.resize ? instance.resize.bind(instance) : undefined;
-    addListener(win, content, config.controlsID, destroy, resize);
+    var focus = instance.focus ? instance.focus.bind(instance) : undefined;
+    addListener(win, content, config.controlsID, destroy, resize, focus);
     addLogic(win);
 
     if (CATMAID.tools.isFn(config.init)) {

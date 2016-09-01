@@ -291,10 +291,14 @@ CATMAID.tools = CATMAID.tools || {};
    * background of the given hex color. The heuristic is to use black if the
    * approximate luminance is above 50%.
    */
-  tools.getContrastColor = function(hex) {
+  tools.getContrastColor = function(hex, getHex) {
     var rgb = CATMAID.tools.hexToRGB(hex);
     var lum = CATMAID.tools.rgbToLuminance(rgb.r, rgb.g, rgb.b);
-    return lum <= 128 ? "white" : "black";
+    if (getHex) {
+      return lum <= 128 ? "#ffffff" : "#000000";
+    } else {
+      return lum <= 128 ? "white" : "black";
+    }
   };
 
   /**

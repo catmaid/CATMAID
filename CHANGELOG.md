@@ -11,6 +11,13 @@
   If the performance penality is too big for large scenes, this can be
   switched off again.
 
+
+Connectivity Matrix:
+
+- With the help of the "Export XLSX" button, the currently displayed matrix can
+  be exported as a Microsoft Excel compatible XLSX file. Colors are preserved.
+
+
 Miscellaneous:
 
 - With the help of the 'sg' and 'sgs' deep link parameters, stack groups can now

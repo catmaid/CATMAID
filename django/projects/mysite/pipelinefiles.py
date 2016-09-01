@@ -24,6 +24,7 @@ STYLESHEETS = {
         'source_filenames': (
             'libs/jquery/themes/smoothness/jquery-ui.css',
             'libs/jquery/datatable/css/demo_table.css',
+            'libs/jquery/datatable/extras/Buttons/css/buttons.dataTables.css',
             'libs/jquery/datatable/extras/ColReorder/css/dataTables.colReorder.css',
             'libs/jquery/jquery.growl.css',
             'libs/jquery/jquery-ui.combobox.css',
@@ -50,7 +51,9 @@ libraries_js = {
     'jquery': ['jquery-2.1.3.min.js',
                'jquery-ui.min.js', 'jquery-ui.*.js',
                'jquery.dataTables.min.js', 'jquery.*.js',
-               'dataTables.colReorder.js'],
+               'dataTables.buttons.js', 'dataTables.colReorder.js',
+		'buttons.html5.min.js'],
+    'jszip': ['*.js'],
     'colorpicker': ['colors.js', 'colorPicker.data.js', 'colorPicker.js',
                     'jqColor.js'],
     'fabric.js': ['all.modified.js'],

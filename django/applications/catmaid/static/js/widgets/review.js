@@ -8,8 +8,7 @@
 
   "use strict";
 
-  CATMAID.ReviewSystem = new function()
-  {
+  CATMAID.ReviewSystem = function() {
     var projectID, skeletonID, subarborNodeId;
     var self = this;
     self.skeleton_segments = null;
@@ -957,11 +956,127 @@
         }
       });
     };
-  }();
 
-  // Register to the active node change event
-  SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
-    CATMAID.ReviewSystem.handleActiveNodeChange, CATMAID.ReviewSystem);
+
+    // Register to the active node change event
+    SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
+      this.handleActiveNodeChange, this);
+  };
+
+  CATMAID.ReviewSystem.prototype.getName = function() {
+    return "Review System";
+  };
+
+  CATMAID.ReviewSystem.prototype.getWidgetConfiguration = function() {
+    return {
+      controlsID: "review_widget_buttons",
+      createControls: function(controls) {
+        var self = this;
+        var tabs = CATMAID.DOM.addTabGroup(controls, '-review', ['Main', 'Miscellaneous']);
+
+        CATMAID.DOM.appendToTab(tabs['Main'], [{
+            type: 'button',
+            label: 'Start to review skeleton',
+            onclick: this.startReviewActiveSkeleton.bind(this, false)
+          }, {
+            type: 'button',
+            label: 'Start to review current sub-arbor',
+            onclick:  this.startReviewActiveSkeleton.bind(this, true)
+          }, {
+            type: 'button',
+            label: 'End review',
+            onclick: this.endReview.bind(this)
+          }, {
+            type: 'button',
+            label: 'Reset own revisions',
+            onclick: this.resetOwnRevisions.bind(this)
+          }, {
+            type: 'checkbox',
+            label: 'Auto centering',
+            value: this.getAutoCentering(),
+            onchange: function() { this.setAutoCentering(this.checked); }
+          }
+        ]);
+
+        CATMAID.DOM.appendToTab(tabs['Miscellaneous'], [{
+            type: 'numeric',
+            label: 'In-between node step',
+            value: this.virtualNodeStep,
+            length: 3,
+            onchange: function() {
+              self.virtualNodeStep = parseInt(this.value, 10);
+            }
+          }, {
+            type: 'checkbox',
+            label: 'Cache tiles',
+            value: false,
+            onclick: this.cacheImages.bind(this)
+          }, {
+            type: 'checkbox',
+            label: 'No refresh after segment done',
+            value: this.noRefreshBetwenSegments,
+            onclick: function() {
+              self.noRefreshBetwenSegments = this.checked;
+            }
+          }
+        ]);
+
+        $(controls).tabs();
+      },
+      contentID: "review_widget",
+      createContent: function(content) {
+        var cacheCounter = document.createElement('div');
+        cacheCounter.setAttribute("id", "counting-cache");
+        content.appendChild(cacheCounter);
+
+        var cacheInfoCounter = document.createElement('div');
+        cacheInfoCounter.setAttribute("id", "counting-cache-info");
+        content.appendChild(cacheInfoCounter);
+
+        var label = document.createElement('div');
+        label.setAttribute("id", "reviewing_skeleton");
+        content.appendChild(label);
+
+        var table = document.createElement("div");
+        table.setAttribute("id", "project_review_widget");
+        table.style.position = "relative";
+        table.style.width = "100%";
+        table.style.overflow = "auto";
+        table.style.backgroundColor = "#ffffff";
+        content.appendChild(table);
+      },
+      init: function() {
+        this.init();
+      }
+    };
+  };
+
+  // Allow access to the last active instance
+  var lastFocused = null;
+
+  /**
+   * Update referene to last focused instance.
+   */
+  CATMAID.ReviewSystem.prototype.focus = function() {
+    lastFocused = this;
+  };
+
+  /**
+   * Clear referene to last focused instance if this instance was the last
+   * focused instance.
+   */
+  CATMAID.ReviewSystem.prototype.destroy = function() {
+    if (lastFocused === this) {
+      lastFocused = null;
+    }
+  };
+
+  /**
+   * Get the review widget that was focused last.
+   */
+  CATMAID.ReviewSystem.getLastFocused = function() {
+    return lastFocused;
+  };
 
   CATMAID.ReviewSystem.STATUS_COLOR_FULL    = '#6fff5c';
   CATMAID.ReviewSystem.STATUS_COLOR_PARTIAL = '#ffc71d';
@@ -1076,4 +1191,10 @@
 
   CATMAID.Init.on(CATMAID.Init.EVENT_PROJECT_CHANGED, CATMAID.ReviewSystem.Whitelist.refresh);
   CATMAID.Init.on(CATMAID.Init.EVENT_USER_CHANGED, CATMAID.ReviewSystem.Whitelist.refresh);
+
+  CATMAID.registerWidget({
+    key: "review-system",
+    creator: CATMAID.ReviewSystem
+  });
+
 })(CATMAID);

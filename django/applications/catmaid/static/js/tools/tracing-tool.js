@@ -971,8 +971,12 @@
       run: function (e) {
         if (!CATMAID.mayEdit())
           return false;
-        if (CATMAID.ReviewSystem.validSegment())
-          CATMAID.ReviewSystem.moveNodeInSegmentBackward();
+        var reviewWidget = CATMAID.ReviewSystem.getLastFocused();
+        if (reviewWidget) {
+          if (reviewWidget.validSegment()) {
+            reviewWidget.moveNodeInSegmentBackward();
+          }
+        }
         return true;
       }
     }));
@@ -983,8 +987,12 @@
       run: function (e) {
         if (!CATMAID.mayEdit())
           return false;
-        if (CATMAID.ReviewSystem.validSegment())
-          CATMAID.ReviewSystem.moveNodeInSegmentForward(e.shiftKey);
+        var reviewWidget = CATMAID.ReviewSystem.getLastFocused();
+        if (reviewWidget) {
+          if (reviewWidget.validSegment()) {
+            reviewWidget.moveNodeInSegmentForward(e.shiftKey);
+          }
+        }
         return true;
       }
     }));
@@ -995,10 +1003,14 @@
       run: function (e) {
         if (!CATMAID.mayEdit())
           return false;
-        if (CATMAID.ReviewSystem.validSegment())
-          CATMAID.ReviewSystem.selectNextSegment();
-        return true;
+        var reviewWidget = CATMAID.ReviewSystem.getLastFocused();
+        if (reviewWidget) {
+          if (reviewWidget.validSegment()) {
+            reviewWidget.selectNextSegment();
+          }
         }
+        return true;
+      }
     }));
 
     this.addAction(new CATMAID.Action({

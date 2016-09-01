@@ -2532,76 +2532,6 @@ var WindowMaker = new function()
     return {window: win, widget: SA};
   };
 
-    var createReviewWindow = function()
-    {
-        var win = new CMWWindow("Review System");
-        var content = win.getFrame();
-        content.style.backgroundColor = "#ffffff";
-
-        var bar = document.createElement( "div" );
-        bar.id = "review_widget_buttons";
-        bar.setAttribute('class', 'buttonpanel');
-        DOM.addButtonDisplayToggle(win);
-
-        var RS = CATMAID.ReviewSystem;
-        RS.init();
-
-        var tabs = DOM.addTabGroup(bar, '-review', ['Main', 'Miscellaneous']);
-
-        DOM.appendToTab(tabs['Main'],
-            [
-              ['Start to review skeleton',
-                  RS.startReviewActiveSkeleton.bind(RS, false)],
-              ['Start to review current sub-arbor',
-                  RS.startReviewActiveSkeleton.bind(RS, true)],
-              ['End review', RS.endReview.bind(RS)],
-              ['Reset own revisions', RS.resetOwnRevisions.bind(RS)],
-              ['Auto centering', RS.getAutoCentering(),
-                  function() { RS.setAutoCentering(this.checked); }, false]
-            ]);
-
-        DOM.appendToTab(tabs['Miscellaneous'],
-            [
-              ['In-between node step', RS.virtualNodeStep, null, function() {
-                  RS.virtualNodeStep = parseInt(this.value, 10);
-                }, 3],
-              ['Cache tiles', false, RS.cacheImages.bind(this), false],
-              ['No refresh after segment done', RS.noRefreshBetwenSegments,
-                  function() { RS.noRefreshBetwenSegments = this.checked; }, false]
-            ]);
-
-        content.appendChild(bar);
-        $(bar).tabs();
-
-        var container = createContainer('review_widget');
-
-        var cacheCounter = document.createElement('div');
-        cacheCounter.setAttribute("id", "counting-cache");
-        container.appendChild(cacheCounter);
-
-        var cacheInfoCounter = document.createElement('div');
-        cacheInfoCounter.setAttribute("id", "counting-cache-info");
-        container.appendChild(cacheInfoCounter);
-
-        var label = document.createElement('div');
-        label.setAttribute("id", "reviewing_skeleton");
-        container.appendChild(label);
-
-        var table = document.createElement("div");
-        table.setAttribute("id", "project_review_widget");
-        table.style.position = "relative";
-        table.style.width = "100%";
-        table.style.overflow = "auto";
-        table.style.backgroundColor = "#ffffff";
-        container.appendChild(table);
-
-        content.appendChild(container);
-        addListener(win, container, 'review_widget_buttons');
-        addLogic(win);
-
-        return {window: win, widget: RS};
-    };
-
     var createConnectivityWindow = function()
     {
         var SC = new CATMAID.SkeletonConnectivity();
@@ -3364,7 +3294,6 @@ var WindowMaker = new function()
     "connectivity-graph-plot": createConnectivityGraphPlot,
     "assemblygraph-widget": createAssemblyGraphWindow,
     "sliceinfo-widget": createSliceInfoWindow,
-    "review-system": createReviewWindow,
     "connectivity-widget": createConnectivityWindow,
     "adjacencymatrix-widget": createAdjacencyMatrixWindow,
     "skeleton-analytics-widget": createSkeletonAnalyticsWindow,

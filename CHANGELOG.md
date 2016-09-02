@@ -1,5 +1,6 @@
-## Under development
+## 2016.09.01
 
+Contributors: Andrew Champion, Tom Kazimiers
 
 ### Features and enhancements
 

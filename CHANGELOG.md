@@ -8,6 +8,7 @@
 
 ### Bug fixes
 
+- The statistics widget now properly respects time zones when grouping by day.
 
 
 ## 2016.09.01

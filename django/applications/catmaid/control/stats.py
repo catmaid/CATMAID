@@ -153,9 +153,6 @@ def stats_user_activity(request, project_id=None):
     return HttpResponse(json.dumps({'skeleton_nodes': timepoints,
          'presynaptic': prelinks, 'postsynaptic': postlinks}), content_type='application/json')
 
-def utc_to_tz(timestamp, time_zone):
-    return timestamp.replace(tzinfo=pytz.utc).astimezone(time_zone)
-
 @api_view(['GET'])
 def stats_user_history(request, project_id=None):
     """Get per user contribution statistics
@@ -291,7 +288,7 @@ def stats_user_history(request, project_id=None):
         FROM (
             SELECT
                 child.user_id AS uid,
-                date_trunc('day', child.creation_time) AS day,
+                date_trunc('day', timezone(%(tz)s, child.creation_time)) AS day,
                 child.parent_id,
                 child.location_x,
                 child.location_y,
@@ -311,7 +308,7 @@ def stats_user_history(request, project_id=None):
             LIMIT 1
         ) AS edge ON TRUE
         GROUP BY child.uid, child.day
-    ''', dict(project_id=project_id, start_date=start_date, end_date=end_date))
+    ''', dict(tz=time_zone.zone, project_id=project_id, start_date=start_date, end_date=end_date))
 
     treenode_stats = cursor.fetchall()
 
@@ -325,7 +322,7 @@ def stats_user_history(request, project_id=None):
     # 'half connection'. To avoid duplicates, only links are counted, where the
     # second node is younger than the first one
     cursor.execute('''
-        SELECT t1.user_id, (date_trunc('day', t1.creation_time)) AS date, count(*)
+        SELECT t1.user_id, (date_trunc('day', timezone(%s, t1.creation_time))) AS date, count(*)
         FROM treenode_connector t1
         JOIN treenode_connector t2 ON t1.connector_id = t2.connector_id
         WHERE t1.project_id=%s
@@ -335,33 +332,33 @@ def stats_user_history(request, project_id=None):
         AND (t2.relation_id = %s OR t2.relation_id = %s)
         AND t1.creation_time > t2.creation_time
         GROUP BY t1.user_id, date
-    ''', (project_id, start_date, end_date, preId, postId, preId, postId))
+    ''', (time_zone.zone, project_id, start_date, end_date, preId, postId, preId, postId))
     connector_stats = cursor.fetchall()
 
     # Get review information
     cursor.execute('''
-        SELECT r.reviewer_id, (date_trunc('day', r.review_time)) AS date, count(*)
+        SELECT r.reviewer_id, (date_trunc('day', timezone(%(tz)s, r.review_time))) AS date, count(*)
         FROM review r
         WHERE r.project_id = %(project_id)s
         AND r.review_time >= %(start_date)s
         AND r.review_time < %(end_date)s
         GROUP BY r.reviewer_id, date
-    ''', dict(project_id=project_id, start_date=start_date, end_date=end_date))
+    ''', dict(tz=time_zone.zone, project_id=project_id, start_date=start_date, end_date=end_date))
     tree_reviewed_nodes = cursor.fetchall()
 
     for di in treenode_stats:
         user_id = str(di[0])
-        date = utc_to_tz(di[1], time_zone).strftime('%Y%m%d')
+        date = di[1].strftime('%Y%m%d')
         stats_table[user_id][date]['new_treenodes'] = di[2]
 
     for di in connector_stats:
         user_id = str(di[0])
-        date = utc_to_tz(di[1], time_zone).strftime('%Y%m%d')
+        date = di[1].strftime('%Y%m%d')
         stats_table[user_id][date]['new_connectors'] = di[2]
 
     for di in tree_reviewed_nodes:
         user_id = str(di[0])
-        date = utc_to_tz(di[1], time_zone).strftime('%Y%m%d')
+        date = di[1].strftime('%Y%m%d')
         stats_table[user_id][date]['new_reviewed_nodes'] = di[2]
 
     return HttpResponse(json.dumps({

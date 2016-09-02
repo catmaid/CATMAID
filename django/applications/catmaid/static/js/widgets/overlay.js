@@ -333,6 +333,14 @@ SkeletonAnnotations.getActiveNodeProjectVector3 = function() {
 };
 
 /**
+ * Get the radius, if any, of the active node. This will typically only make
+ * sense with treenodes.
+ */
+SkeletonAnnotations.getActiveNodeRadius = function() {
+  return this.atn.radius;
+};
+
+/**
  * Get the ID of the stack viewer the active node was selected from or null if
  * there is no active node.
  */

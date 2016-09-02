@@ -3700,9 +3700,9 @@
 
     this.mesh.position.set(pos.x, pos.y, pos.z);
 
-    var overlay = SkeletonAnnotations.getTracingOverlay(SkeletonAnnotations.getActiveStackViewerId());
-    var radius = overlay.nodes[SkeletonAnnotations.getActiveNodeId()].radius;
-    CATMAID.tools.setXYZ(this.mesh.scale, radius > 0 ? radius : 40 * options.skeleton_node_scaling);
+    var radius = SkeletonAnnotations.getActiveNodeRadius();
+    radius = (radius && radius > 0) ? radius : 40 * options.skeleton_node_scaling;
+    CATMAID.tools.setXYZ(this.mesh.scale, radius);
   };
 
   WebGLApplication.prototype.Space.prototype.updateSkeleton = function(skeletonmodel, json, options) {

@@ -261,6 +261,10 @@ def stats_user_history(request, project_id=None):
     # Calculate number of days between (including) start and end
     daydelta = (end_date - start_date).days
 
+    # To query data with raw SQL we need the UTC version of start and end time
+    start_date_utc = start_date.astimezone(pytz.utc)
+    end_date_utc = end_date.astimezone(pytz.utc)
+
     all_users = User.objects.filter().values_list('id', flat=True)
     days = []
     daysformatted = []
@@ -308,7 +312,8 @@ def stats_user_history(request, project_id=None):
             LIMIT 1
         ) AS edge ON TRUE
         GROUP BY child.uid, child.day
-    ''', dict(tz=time_zone.zone, project_id=project_id, start_date=start_date, end_date=end_date))
+    ''', dict(tz=time_zone.zone, project_id=project_id, start_date=start_date_utc,
+              end_date=end_date_utc))
 
     treenode_stats = cursor.fetchall()
 
@@ -332,7 +337,7 @@ def stats_user_history(request, project_id=None):
         AND (t2.relation_id = %s OR t2.relation_id = %s)
         AND t1.creation_time > t2.creation_time
         GROUP BY t1.user_id, date
-    ''', (time_zone.zone, project_id, start_date, end_date, preId, postId, preId, postId))
+    ''', (time_zone.zone, project_id, start_date_utc, end_date_utc, preId, postId, preId, postId))
     connector_stats = cursor.fetchall()
 
     # Get review information
@@ -343,7 +348,8 @@ def stats_user_history(request, project_id=None):
         AND r.review_time >= %(start_date)s
         AND r.review_time < %(end_date)s
         GROUP BY r.reviewer_id, date
-    ''', dict(tz=time_zone.zone, project_id=project_id, start_date=start_date, end_date=end_date))
+    ''', dict(tz=time_zone.zone, project_id=project_id, start_date=start_date_utc,
+              end_date=end_date_utc))
     tree_reviewed_nodes = cursor.fetchall()
 
     for di in treenode_stats:

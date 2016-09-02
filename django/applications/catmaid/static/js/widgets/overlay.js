@@ -183,7 +183,11 @@ SkeletonAnnotations.atn.set = function(node, stack_viewer_id) {
 SkeletonAnnotations.atn.promise = function()
 {
   var overlay = SkeletonAnnotations.getTracingOverlay(this.stack_viewer_id);
-  var nodePromise = overlay.promiseNode(overlay.nodes[this.id]);
+  var node = overlay.nodes[this.id];
+  if (!node) {
+    return Promise.reject("Couldn't find node " + this.id + " in tracing layer");
+  }
+  var nodePromise = overlay.promiseNode(node);
   var isNewSkeleton = !this.skeleton_id;
 
   return nodePromise.then((function(result) {

@@ -1251,6 +1251,7 @@
         .append($('<div class="dataTables_filter">')
           .append($('<label />')
             .text('Filter partners:')
+            .attr('title', 'Starting with / enables regular expressions')
             .append($('<input type="search" />').on('keyup', function () {
               var search = this.value;
               if (search.length > 0 && search[0] === '/') {
@@ -1261,14 +1262,14 @@
                   var re = new RegExp(search);
                   // Regex is valid
                   $(this).removeClass('ui-state-error');
-                  self.DataTable().search(search, true, false).draw();
+                  self.DataTable().column(1).search(search, true, false).draw();
                 } catch (error) {
                   $(this).addClass('ui-state-error');
                 }
               } else {
                 // Treat the search as plain text input. Use DataTables' smart search.
                 $(this).removeClass('ui-state-error');
-                self.DataTable().search(search, false, true).draw();
+                self.DataTable().column(1).search(search, false, true).draw();
               }
             }))
           )

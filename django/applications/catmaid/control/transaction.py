@@ -212,7 +212,7 @@ location_queries.update({
     # For annotations, select the root of the annotated neuron
     'annotations.add': LocationQuery("""
         SELECT location_x, location_y, location_z
-        FROM treenode t
+        FROM treenode{history} t
         JOIN class_instance_class_instance{history} cici_s
             ON (cici_s.class_instance_a = t.skeleton_id
             AND t.parent_id IS NULL)
@@ -223,7 +223,7 @@ location_queries.update({
     """),
     'annotations.remove': LocationQuery("""
         SELECT location_x, location_y, location_z
-        FROM treenode t
+        FROM treenode{history} t
         JOIN class_instance_class_instance{history} cici_s
             ON (cici_s.class_instance_a = t.skeleton_id
             AND t.parent_id IS NULL)
@@ -272,7 +272,7 @@ location_queries.update({
     """),
     'neurons.remove': LocationQuery("""
         SELECT location_x, location_y, location_z
-        FROM treenode t
+        FROM treenode{history} t
         JOIN class_instance_class_instance{history} cici_s
             ON (cici_s.class_instance_a = t.skeleton_id
             AND t.parent_id IS NULL)
@@ -283,7 +283,7 @@ location_queries.update({
     """),
     'neurons.rename': LocationQuery("""
         SELECT location_x, location_y, location_z
-        FROM treenode t
+        FROM treenode{history} t
         JOIN class_instance_class_instance{history} cici_s
             ON (cici_s.class_instance_a = t.skeleton_id
             AND t.parent_id IS NULL)

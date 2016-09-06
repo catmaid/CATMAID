@@ -127,7 +127,7 @@ var project;
       version: 0,
       entries: {
         table_page_length_options: {
-          default: [25, 100, 500, 2000, -1]
+          default: [25, 50, 100, 500, 2000, -1]
         }
       }
     });

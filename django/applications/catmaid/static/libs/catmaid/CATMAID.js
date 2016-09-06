@@ -292,7 +292,7 @@ var requestQueue = new RequestQueue();
    * @param {Boolean} raw (Optional) If truty, no JSON validation and parsing is
    *                                 performed.
    */
-  CATMAID.fetch = function(relativeURL, method, data, raw) {
+  CATMAID.fetch = function(relativeURL, method, data, raw, id) {
     return new Promise(function(resolve, reject) {
       var url = CATMAID.makeURL(relativeURL);
       requestQueue.register(url, method, data, function(status, text, xml) {
@@ -310,7 +310,7 @@ var requestQueue = new RequestQueue();
         } catch (e) {
           reject(e);
         }
-      });
+      }, id);
     });
   };
 

@@ -977,9 +977,9 @@
       controlsID: "review_widget_buttons",
       createControls: function(controls) {
         var self = this;
-        var tabs = CATMAID.DOM.addTabGroup(controls, '-review', ['Main', 'Skeleton analytics', 'Miscellaneous']);
+        var tabs = CATMAID.DOM.addTabGroup(controls, '-review', ['Node review', 'Skeleton analytics']);
 
-        CATMAID.DOM.appendToTab(tabs['Main'], [{
+        CATMAID.DOM.appendToTab(tabs['Node review'], [{
             type: 'button',
             label: 'Start to review skeleton',
             onclick: this.startReviewActiveSkeleton.bind(this, false)
@@ -996,15 +996,6 @@
             label: 'Reset own revisions',
             onclick: this.resetOwnRevisions.bind(this)
           }, {
-            type: 'checkbox',
-            label: 'Auto centering',
-            value: this.getAutoCentering(),
-            onchange: function() { this.setAutoCentering(this.checked); }
-          }
-        ]);
-        tabs['Main'].dataset.mode = 'node-review';
-
-        CATMAID.DOM.appendToTab(tabs['Miscellaneous'], [{
             type: 'numeric',
             label: 'In-between node step',
             value: this.virtualNodeStep,
@@ -1012,6 +1003,11 @@
             onchange: function() {
               self.virtualNodeStep = parseInt(this.value, 10);
             }
+          }, {
+            type: 'checkbox',
+            label: 'Auto centering',
+            value: this.getAutoCentering(),
+            onchange: function() { this.setAutoCentering(this.checked); }
           }, {
             type: 'checkbox',
             label: 'Cache tiles',
@@ -1026,7 +1022,7 @@
             }
           }
         ]);
-        tabs['Miscellaneous'].dataset.mode = 'misc';
+        tabs['Node review'].dataset.mode = 'node-review';
 
         // Skeleton analytics
         var adjacents = [];

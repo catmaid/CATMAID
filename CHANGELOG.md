@@ -10,6 +10,9 @@
 
 - The statistics widget now properly respects time zones when grouping by day.
 
+- Partner neurons listed in the Connectivity Widget can now be filtered again
+  with regular expressions (when the filter pattern starts with "/").
+
 
 ## 2016.09.01
 

@@ -9,8 +9,10 @@
   "use strict";
 
   CATMAID.ReviewSystem = function() {
+    this.widgetID = this.registerInstance();
     var projectID, skeletonID, subarborNodeId;
     var self = this;
+    self.mode = 'node-review';
     self.skeleton_segments = null;
     self.current_segment = null;
     self.current_segment_index = 0;
@@ -33,6 +35,7 @@
     this.init = function() {
       projectID = project.id;
       followedUsers = [CATMAID.session.userid];
+      this.redraw();
     };
 
     this.setAutoCentering = function(centering) {
@@ -963,8 +966,10 @@
       this.handleActiveNodeChange, this);
   };
 
+  CATMAID.ReviewSystem.prototype = new InstanceRegistry();
+
   CATMAID.ReviewSystem.prototype.getName = function() {
-    return "Review System";
+    return "Review System " + this.widgetID;
   };
 
   CATMAID.ReviewSystem.prototype.getWidgetConfiguration = function() {
@@ -972,7 +977,7 @@
       controlsID: "review_widget_buttons",
       createControls: function(controls) {
         var self = this;
-        var tabs = CATMAID.DOM.addTabGroup(controls, '-review', ['Main', 'Miscellaneous']);
+        var tabs = CATMAID.DOM.addTabGroup(controls, '-review', ['Main', 'Skeleton analytics', 'Miscellaneous']);
 
         CATMAID.DOM.appendToTab(tabs['Main'], [{
             type: 'button',
@@ -997,6 +1002,7 @@
             onchange: function() { this.setAutoCentering(this.checked); }
           }
         ]);
+        tabs['Main'].dataset.mode = 'node-review';
 
         CATMAID.DOM.appendToTab(tabs['Miscellaneous'], [{
             type: 'numeric',
@@ -1020,22 +1026,66 @@
             }
           }
         ]);
+        tabs['Miscellaneous'].dataset.mode = 'misc';
 
-        $(controls).tabs();
+        // Skeleton analytics
+        var adjacents = [];
+        for (var i=0; i<5; ++i) adjacents.push(i);
+        tabs['Skeleton analytics'].dataset.mode = 'analytics';
+        CATMAID.DOM.appendToTab(tabs['Skeleton analytics'], [{
+            type: 'child',
+            element: CATMAID.skeletonListSources.createSelect(this)
+          }, {
+            type: 'select',
+            id: 'extra' + this.widgetID,
+            label: 'Extra',
+            title: 'List problems with connected neurons',
+            entries: [
+              {title: "No others", value: 0},
+              {title: "Downstream skeletons", value: 1},
+              {title: "Upstream skeletons", value: 2},
+              {title: "Both upstream and downstream", value: 3}
+            ]
+          }, {
+            type: 'select',
+            id: 'adjacents' + this.widgetID,
+            label: 'Adjacents',
+            title: 'Maximum distance (hops) from a node when checking of duplicate connectors',
+            entries: adjacents
+          }, {
+            type: 'button',
+            label: 'Update',
+            onclick: this.reloadSkeletonAnalyticsData.bind(this)
+          }
+        ]);
+
+        $(controls).tabs({
+          activate: function(event, ui) {
+            var mode = ui.newPanel.attr('data-mode');
+            if (mode === 'node-review' || mode === 'analytics') {
+              self.mode = mode;
+              self.redraw();
+            }
+          }
+        });
       },
       contentID: "review_widget",
       createContent: function(content) {
+        var self = this;
+
+        // Node review container
+        this.nodeReviewContainer = document.createElement('div');
         var cacheCounter = document.createElement('div');
         cacheCounter.setAttribute("id", "counting-cache");
-        content.appendChild(cacheCounter);
+        this.nodeReviewContainer.appendChild(cacheCounter);
 
         var cacheInfoCounter = document.createElement('div');
         cacheInfoCounter.setAttribute("id", "counting-cache-info");
-        content.appendChild(cacheInfoCounter);
+        this.nodeReviewContainer.appendChild(cacheInfoCounter);
 
         var label = document.createElement('div');
         label.setAttribute("id", "reviewing_skeleton");
-        content.appendChild(label);
+        this.nodeReviewContainer.appendChild(label);
 
         var table = document.createElement("div");
         table.setAttribute("id", "project_review_widget");
@@ -1043,12 +1093,151 @@
         table.style.width = "100%";
         table.style.overflow = "auto";
         table.style.backgroundColor = "#ffffff";
-        content.appendChild(table);
+        this.nodeReviewContainer.appendChild(table);
+
+        content.appendChild(this.nodeReviewContainer);
+
+        // Skeleton analytics
+        this.analyticsContainer = document.createElement('div');
+        this.analyticsContainer.innerHTML =
+          '<table cellpadding="0" cellspacing="0" border="0" class="display" id="skeletonanalyticstable' + this.widgetID + '">' +
+            '<thead>' +
+              '<tr>' +
+                '<th>Issue</th>' +
+                '<th>Neuron ID</th>' +
+                '<th>Treenode ID</th>' +
+                '<th>Skeleton ID</th>' +
+              '</tr>' +
+            '</thead>' +
+            '<tbody>' +
+            '</tbody>' +
+            '<tfoot>' +
+              '<tr>' +
+                '<th>Issue</th>' +
+                '<th>Neuron ID</th>' +
+                '<th>Treenode ID</th>' +
+                '<th>Skeleton ID</th>' +
+              '</tr>' +
+            '</tfoot>' +
+          '</table>';
+        this.skeletonAnalyticsTable = $('table', this.analyticsContainer).DataTable({
+          destroy: true,
+          dom: 'lfrtip',
+          processing: true,
+          // Enable sorting locally, and prevent sorting from calling the
+          // fnServerData to reload the table -- an expensive and undesirable
+          // operation.
+          serverSide: false,
+          autoWidth: false,
+          pageLength: -1,
+          lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
+          columns: [
+            { // Type
+              "searchable": true,
+              "sortable": true
+            },
+            { // Neuron name
+              "searchable": true,
+              "sortable": true
+            },
+            { // Treenode ID
+              "searchable": true,
+              "sortable": true,
+            },
+            { // Skeleton ID
+              "searchable": true,
+              "sortable": true
+            }
+          ]
+        });
+
+        /** Make rows double-clickable to go to the treenode location and select it. */
+        var table = this.skeletonAnalyticsTable;
+        $('table tbody', this.analyticsContainer).on('dblclick', 'tr', function() {
+          var data = table.row(this).data();
+          var tnid = parseInt(data[2]);
+          var skeleton_id = parseInt(data[3]);
+          CATMAID.fetch(CATMAID.makeURL(project.id + '/node/get_location'), 'POST',
+              { tnid: tnid }, false, "skeleton_analytics_go_to_node")
+            .then(function(json) {
+              SkeletonAnnotations.staticMoveTo(json[3], json[2], json[1],
+                function() {
+                  SkeletonAnnotations.staticSelectNode(tnid, skeleton_id);
+                });
+            }).catch(CATMAID.handleError);
+        });
+
+        content.appendChild(this.analyticsContainer);
       },
       init: function() {
         this.init();
       }
     };
+  };
+
+  /**
+   * Redraw the review widget.
+   */
+  CATMAID.ReviewSystem.prototype.redraw = function() {
+    if (this.mode === 'node-review') {
+      this.nodeReviewContainer.style.display = 'block';
+      this.analyticsContainer.style.display = 'none';
+    } else if (this.mode === 'analytics') {
+      this.nodeReviewContainer.style.display = 'none';
+      this.analyticsContainer.style.display = 'block';
+    }
+  };
+
+  /**
+   * Refresh the skeleton analytics data based on the current settings.
+   */
+  CATMAID.ReviewSystem.prototype.reloadSkeletonAnalyticsData = function() {
+    var table = this.skeletonAnalyticsTable;
+    if (!table) {
+      CATMAID.warn("Couldn't find skeleton analytics table");
+      return;
+    }
+    // Clear
+    table.clear();
+    // Reload
+    var skids = CATMAID.skeletonListSources.getSelectedSource(this).getSelectedSkeletons();
+    if (!skids || !skids[0]) {
+      CATMAID.msg("Oops", "Select skeleton(s) first!");
+      return;
+    }
+    // sSource is the sAjaxSource
+    var extra = $('#Skeletonanalytics-review_extra' + this.widgetID).val();
+    if (undefined === extra) {
+      throw new CATMAID.Error("Couldn't find parameter 'extra'");
+    }
+    var adjacents = $('#Skeletonanalytics-review_adjacents' + this.widgetID).val();
+    if (undefined === adjacents) {
+      throw new CATMAID.Error("Couldn't find parameter 'adjacents'");
+    }
+
+    requestQueue.replace(django_url + project.id + '/skeleton/analytics', 'POST',
+      {skeleton_ids: skids,
+       extra: extra,
+       adjacents: adjacents},
+       CATMAID.jsonResponseHandler(function(json) {
+        var rows = [];
+        json.issues.forEach(function (sk) {
+          // sk[0]: skeleton ID
+          // sk[1]: array of pairs like [issue ID, treenode ID]
+          var name = json.names[sk[0]];
+          sk[1].forEach(function(p) {
+            rows.push([json[p[0]], // issue name
+                       name, // neuron name
+                       p[1], // treenode ID
+                       sk[0]]); // skeleton ID
+          });
+        });
+
+        if (rows.length > 0) {
+          table.rows.add(rows);
+        }
+        table.draw();
+      }), 'skeleton_analytics_update');
   };
 
   // Allow access to the last active instance

@@ -4,6 +4,11 @@
 
 ### Features and enhancements
 
+Review widget:
+
+- Skeleton Analytics, which was a separate widget before, is now available
+  through a new tab in the Review Widget. It still lists the same problems for
+  selected neurons as before (i.e.  missing end tags).
 
 
 ### Bug fixes

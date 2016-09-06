@@ -2466,72 +2466,6 @@ var WindowMaker = new function()
     return {window: win, widget: CT};
   };
 
-
-  var createSkeletonAnalyticsWindow = function()
-  {
-    var SA = new CATMAID.SkeletonAnalytics();
-
-    var win = new CMWWindow(SA.getName());
-    var content = win.getFrame();
-    content.style.backgroundColor = "#ffffff";
-
-    var div = document.createElement('div');
-    div.setAttribute('id', 'skeleton_analytics');
-    content.appendChild(div);
-
-    div.appendChild(CATMAID.skeletonListSources.createSelect(SA));
-
-    DOM.appendSelect(div, "extra" + SA.widgetID, ' extra ', [
-        {title: "No others", value: 0},
-        {title: "Downstream skeletons", value: 1},
-        {title: "Upstream skeletons", value: 2},
-        {title: "Both upstream and downstream", value: 3}]);
-    var adjacents = [];
-    for (var i=0; i<5; ++i) adjacents.push(i);
-    DOM.appendSelect(div, "adjacents" + SA.widgetID, ' adjacents ', adjacents);
-
-    var update = document.createElement('input');
-    update.setAttribute('type', 'button');
-    update.setAttribute('value', 'Update');
-    update.onclick = SA.load.bind(SA);
-    div.appendChild(update);
-
-    var container = createContainer('skeleton_analytics_widget');
-    content.appendChild(container);
-
-    container.innerHTML =
-      '<table cellpadding="0" cellspacing="0" border="0" class="display" id="skeletonanalyticstable' + SA.widgetID + '">' +
-        '<thead>' +
-          '<tr>' +
-            '<th>Issue</th>' +
-            '<th>Neuron ID</th>' +
-            '<th>Treenode ID</th>' +
-            '<th>Skeleton ID</th>' +
-          '</tr>' +
-        '</thead>' +
-        '<tfoot>' +
-          '<tr>' +
-            '<th>Issue</th>' +
-            '<th>Neuron ID</th>' +
-            '<th>Treenode ID</th>' +
-            '<th>Skeleton ID</th>' +
-          '</tr>' +
-        '</tfoot>' +
-        '<tbody>' +
-          '<tr><td></td><td></td><td></td><td></td></tr>' +
-        '</tbody>' +
-      '</table>';
-    // ABOVE, notice the table needs one dummy row
-
-    addListener(win, container, 'skeleton_analytics', SA.destroy.bind(SA));
-    addLogic(win);
-
-    SA.init(); // must be called after the above placeholder table is created
-    CATMAID.skeletonListSources.updateGUI();
-
-    return {window: win, widget: SA};
-  };
-
     var createConnectivityWindow = function()
     {
         var SC = new CATMAID.SkeletonConnectivity();
@@ -3296,7 +3230,6 @@ var WindowMaker = new function()
     "sliceinfo-widget": createSliceInfoWindow,
     "connectivity-widget": createConnectivityWindow,
     "adjacencymatrix-widget": createAdjacencyMatrixWindow,
-    "skeleton-analytics-widget": createSkeletonAnalyticsWindow,
     "ontology-search": createOntologySearchWidget,
     "classification-editor": createClassificationWidget,
     "notifications": createNotificationsWindow,

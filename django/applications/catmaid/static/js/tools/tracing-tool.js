@@ -1386,16 +1386,6 @@
     }),
 
     new CATMAID.Action({
-      helpText: "Skeleton Analytics widget",
-      buttonID: "button_skeleton_analytics_widget",
-      buttonName: 'skeleton_analytics_widget',
-      run: function (e) {
-        WindowMaker.create('skeleton-analytics-widget');
-        return true;
-      }
-    }),
-
-    new CATMAID.Action({
       helpText: "Graph widget",
       buttonID: "data_button_compartment_graph_widget",
       buttonName: 'graph_widget',

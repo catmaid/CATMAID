@@ -77,7 +77,7 @@ clone the virtualenv by calling::
    other adjustments are required, which the changelog will provide information
    on for the respective release.
 
-Backup an restore the database
+Backup and restore the database
 ------------------------------
 
 Backing CATMAID's database up as well as restoring it, is currently a

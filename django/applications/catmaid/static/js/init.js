@@ -1008,10 +1008,10 @@ var project;
         }
 
         // Open first stack
-        loadNextStack(json.project_id, json.stacks.shift(), json.stacks);
+        return loadNextStack(json.project_id, json.stacks.shift(), json.stacks);
 
         function loadNextStack(pid, stack, stacks, firstStackViewer) {
-          CATMAID.fetch(pid + '/stack/' + stack.id + '/info', 'GET')
+          return CATMAID.fetch(pid + '/stack/' + stack.id + '/info', 'GET')
             .then(function(json) {
               var stackViewer;
               // If there is already a stack loaded and this stack is a channel of
@@ -1020,18 +1020,15 @@ var project;
               if (firstStackViewer && 'has_channel' === stack.relation) {
                 stackViewer = firstStackViewer;
               }
-              handle_openProjectStack(json, stackViewer).then(function (newStackViewer) {
-                if (0 < stacks.length) {
-                  var sv = firstStackViewer ? firstStackViewer : newStackViewer;
-                  loadNextStack(pid, stacks.shift(), stacks, sv);
-                } else {
-                  CATMAID.layoutStackViewers();
-                }
-              });
-            })
-            .catch(function(error) {
-              CATMAID.error("Couldn't load stack of stack group: " + error.error,
-                  error.detail);
+              return handle_openProjectStack(json, stackViewer)
+                .then(function (newStackViewer) {
+                  if (0 < stacks.length) {
+                    var sv = firstStackViewer ? firstStackViewer : newStackViewer;
+                    return loadNextStack(pid, stacks.shift(), stacks, sv);
+                  } else {
+                    CATMAID.layoutStackViewers();
+                  }
+                });
             });
         }
       });

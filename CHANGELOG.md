@@ -18,6 +18,8 @@ Review widget:
 - Partner neurons listed in the Connectivity Widget can now be filtered again
   with regular expressions (when the filter pattern starts with "/").
 
+- Loading stack groups through URLs now correctly respects the specified location.
+
 
 ## 2016.09.01
 

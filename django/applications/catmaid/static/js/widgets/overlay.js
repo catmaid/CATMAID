@@ -2729,7 +2729,7 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
           treenodeIDs = [
             SkeletonAnnotations.getChildOfVirtualNode(treenodeIDs),
             SkeletonAnnotations.getParentOfVirtualNode(treenodeIDs)];
-          var n = self.nodes[treenodeIDs];
+          var n = self.nodes[activeNodeId];
           if (n) {
             extraNodes = [{
               id: n.id,

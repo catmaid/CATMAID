@@ -304,7 +304,7 @@
           Promise.resolve();
       });
 
-      Promise.all(movePromises).then(function () {
+      return Promise.all(movePromises).then(function () {
         if (tool && tool.redraw)
           tool.redraw();
         self.trigger(Project.EVENT_LOCATION_CHANGED, self.coordinates.x,
@@ -332,7 +332,7 @@
           Promise.resolve();
       });
 
-      Promise.all(movePromises).then(function () {
+      return Promise.all(movePromises).then(function () {
         if (tool && tool.redraw)
           tool.redraw();
         self.trigger(Project.EVENT_LOCATION_CHANGED, self.coordinates.x,

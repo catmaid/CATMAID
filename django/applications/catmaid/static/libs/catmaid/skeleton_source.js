@@ -191,18 +191,39 @@
     }
   };
 
-  SkeletonSource.prototype.loadSource = function() {
+  /**
+   * Load all skeletons from the currently selected source (of the target
+   * instance).
+   *
+   * @param silent {bool} Optional, don't show warnings and confirmation
+   *                      dialogs. Defaults to false.
+   */
+  SkeletonSource.prototype.loadSource = function(silent) {
     var models = CATMAID.skeletonListSources.getSelectedSkeletonModels(this);
     var numModels = Object.keys(models).length;
     if (0 === numModels) {
-      CATMAID.info('Selected source is empty.');
-      return;
+      if (!silent) {
+        CATMAID.info('Selected source is empty.');
+      }
+      return false;
     }
-    if (numModels <= this.APPEND_WARNING_THRESHOLD ||
-        window.confirm('This will load a large number of skeletons (' +
-                       numModels + '). Are you sure you want to continue?')) {
-      this.append(models);
+    if (numModels > this.APPEND_WARNING_THRESHOLD && !silent) {
+      if (!window.confirm('This will load a large number of skeletons (' +
+          numModels + '). Are you sure you want to continue?')) {
+        return false;
+      }
     }
+
+    this.append(models);
+    return true;
+  };
+
+  /**
+   * Get a list of source skeleton IDs.
+   */
+  SkeletonSource.prototype.getSourceSkeletons = function(silent) {
+    var skeletons = CATMAID.skeletonListSources.getSelectedSkeletons(this, silent);
+    return skeletons;
   };
 
   SkeletonSource.prototype.updateOneModel = function(model, source_chain) {

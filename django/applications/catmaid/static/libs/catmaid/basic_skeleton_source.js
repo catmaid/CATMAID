@@ -288,12 +288,12 @@
     this.nextGroupName = null;
   };
 
-  BasicSkeletonSource.prototype.loadAsGroup = function(groupName) {
+  BasicSkeletonSource.prototype.loadAsGroup = function(groupName, silent) {
     checkGroupName(this.groups, groupName);
 
     // Add the skeletons loaded next to the new group
     this.nextGroupName = groupName;
-    this.loadSource();
+    this.loadSource(silent);
     this.nextGroupName = null;
   };
 

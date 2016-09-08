@@ -481,14 +481,14 @@
     return Object.keys(this.sources);
   };
 
-  SkeletonSourceManager.prototype.getSelectedSkeletons = function(ref_source) {
+  SkeletonSourceManager.prototype.getSelectedSkeletons = function(ref_source, silent) {
     var source = this.getSelectedSource(ref_source);
     if (!source) {
       console.log("No source found for reference source " + ref_source.getName());
       return [];
     }
     var skeletons = source.getSelectedSkeletons();
-    if (0 === skeletons.length) {
+    if (0 === skeletons.length && !silent) {
       CATMAID.info('No skeletons available at ' + source.getName());
     }
     return skeletons;

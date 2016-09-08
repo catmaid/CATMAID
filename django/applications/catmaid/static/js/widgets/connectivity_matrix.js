@@ -118,6 +118,33 @@
         // Indicates if loaded skeletons should be part of a group
         var loadAsGroup = false;
 
+        // Do own loading confirmation
+        var silent = true;
+        var loadConfirm = function(widget, withRows, withCols) {
+            var nSkeletonsToLoad = 0;
+            if (withRows) {
+              nSkeletonsToLoad += widget.rowDimension.getSourceSkeletons(silent).length;
+            }
+            if (withCols) {
+              nSkeletonsToLoad += widget.colDimension.getSourceSkeletons(silent).length;
+            }
+
+            if (0 === nSkeletonsToLoad) {
+              CATMAID.warn('No skeletons available from selected source(s)');
+              return false;
+            }
+
+            // Use the row source append limit, it is expected to be the same
+            // for both sources.
+            var limit = widget.rowDimension.APPEND_WARNING_THRESHOLD;
+            if (nSkeletonsToLoad > limit) {
+              return window.confirm('This will load a large number of skeletons (' +
+                  nSkeletonsToLoad + '). Are you sure you want to continue?');
+            }
+
+            return true;
+        };
+
         /**
          * Load rows and/or coulmns and refresh.
          */
@@ -130,14 +157,18 @@
                      (!withCols || isValidGroupName(Object.keys(
                                    this.colDimension.groups), name));
             }).bind(this), (function(groupName) {
-              if (withRows) this.rowDimension.loadAsGroup(groupName);
-              if (withCols) this.colDimension.loadAsGroup(groupName);
-              if (withRows || withCols) this.update();
+              if (loadConfirm(this, withRows, withCols)) {
+                if (withRows) this.rowDimension.loadAsGroup(groupName, silent);
+                if (withCols) this.colDimension.loadAsGroup(groupName, silent);
+                if (withRows || withCols) this.update();
+              }
             }).bind(this));
           } else {
-            if (withRows) this.rowDimension.loadSource();
-            if (withCols) this.colDimension.loadSource();
-            if (withRows || withCols) this.update();
+            if (loadConfirm(this, withRows, withCols)) {
+              if (withRows) this.rowDimension.loadSource(silent);
+              if (withCols) this.colDimension.loadSource(silent);
+              if (withRows || withCols) this.update();
+            }
           }
         };
 

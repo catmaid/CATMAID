@@ -65,6 +65,7 @@ script:
   # Remove login requirement from QUnit test page
   - sed -i 's/login_required(\([^)]*\))/\1/g' ../../applications/catmaid/urls.py
   - python manage.py runserver &
+  - python manage.py celery -A catmaid worker -l info &
   - sleep 5
   - cd ../../..
   # Run QUnit tests through SlimerJS with Firefox

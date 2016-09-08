@@ -329,8 +329,9 @@ var project;
         classification_editor: null
       };
 
+      var load = null
       if (sg) {
-        CATMAID.openStackGroup(pid, sg)
+        load = CATMAID.openStackGroup(pid, sg)
           .then(function() {
             if (typeof zp == "number" && typeof yp == "number" &&
                 typeof xp == "number") {
@@ -338,8 +339,20 @@ var project;
             }
           });
       } else  {
-        loadStacksFromURL(singleStackViewer);
+        load = loadStacksFromURL(singleStackViewer);
       }
+
+      // After stacks or stack groups have been loaded, init selected tool.
+      load.then(function() {
+        var tool = tools[inittool];
+        if (tool) {
+          project.setTool(new tool());
+        }
+        if (init_active_node_id) {
+          // initialization hack
+          SkeletonAnnotations.init_active_node_id = init_active_node_id;
+        }
+      });
 
       // Open stacks one after another and move to the requested location. Load
       // the requested tool after everything has been loaded.
@@ -351,28 +364,19 @@ var project;
             // Open stack and queue test/loading for next one
             var sid = sids.shift();
             var s = ss.shift();
-            CATMAID.openProjectStack(pid, sid, useExistingStackViewer).then(function() {
-              // Moving every stack is not really necessary, but for now a
-              // convenient way to apply the requested scale to each stack.
-              if (typeof zp == "number" && typeof yp == "number" &&
-                  typeof xp == "number" && typeof s == "number" ) {
-                project.moveTo(zp, yp, xp, s, function() {
-                  // Load next stack
-                  loadStacksFromURL(composite, loaded + 1);
-                });
-              }
-            });
-          } else {
-            // Set the tool only after the move; otherwise, thousands of skeleton
-            // nodes may be fetched and painted unnecessarily.
-            var tool = tools[inittool];
-            if (tool) {
-              project.setTool(new tool());
-            }
-            if (init_active_node_id) {
-              // initialization hack
-              SkeletonAnnotations.init_active_node_id = init_active_node_id;
-            }
+            return CATMAID.openProjectStack(pid, sid, useExistingStackViewer)
+              .then(function() {
+                // Moving every stack is not really necessary, but for now a
+                // convenient way to apply the requested scale to each stack.
+                if (typeof zp == "number" && typeof yp == "number" &&
+                    typeof xp == "number" && typeof s == "number" ) {
+                  return project.moveTo(zp, yp, xp, s)
+                    .then(function() {
+                      // Queue loading of next stack
+                      return loadStacksFromURL(composite, loaded + 1);
+                    });
+                }
+              });
           }
         }
       }

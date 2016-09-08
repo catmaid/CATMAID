@@ -754,13 +754,23 @@
       }
 
       // Create string with user's reviewed counts:
-      var user_revisions = reviewers.reduce(function(s, u) {
+      var user_revisions = reviewers.map(function(u) {
         u = users[u];
-        s += u.name + ": " + u.count + "; ";
-        return s;
-      }, "");
+        return u.name + ": " + u.count;
+      }).join(', ');
 
-      $('#reviewing_skeleton').text( 'Skeleton ID under review: ' + skeletonID + " -- " + user_revisions );
+      var header = document.getElementById('reviewing_skeleton');
+      var neuronInfo = document.createElement('span');
+      neuronInfo.classList.add('left');
+      var reviewInfo = document.createElement('span');
+      reviewInfo.classList.add('right');
+
+      var neuronName = CATMAID.NeuronNameService.getInstance().getName(skeletonID);
+      neuronInfo.appendChild(document.createTextNode('Neuron under review: ' + neuronName));
+      reviewInfo.appendChild(document.createTextNode('Revisions: ' + user_revisions));
+      header.appendChild(neuronInfo);
+      header.appendChild(reviewInfo);
+
       table = $('<table />').attr('cellpadding', '3').attr('cellspacing', '0').attr('id', 'review_segment_table').attr('border', '0');
       // create header
       row = $('<tr />');

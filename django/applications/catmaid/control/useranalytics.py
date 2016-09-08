@@ -63,7 +63,7 @@ def plot_useranalytics(request):
     start_date = request.GET.get('start')
     end_date = request.GET.get('end')
     all_writes = request.GET.get('all_writes', 'false') == 'true'
-    maxInactivity = int(request.GET.get('max_inactivity', 10))
+    maxInactivity = int(request.GET.get('max_inactivity', 3))
 
     if request.user.is_superuser or \
             project and request.user.has_perm('can_administer', project):

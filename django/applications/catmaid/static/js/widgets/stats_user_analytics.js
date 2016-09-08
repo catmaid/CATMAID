@@ -60,7 +60,7 @@
         maxInactivity.setAttribute('type', 'number');
         maxInactivity.setAttribute('size', '1');
         maxInactivity.setAttribute('min', '0');
-        maxInactivity.value = 10;
+        maxInactivity.value = 3;
         maxInactivity.style.width = '4em';
         maxInactivity.setAttribute('data-name', 'max_inactivity');
         maxInactivityLabel.appendChild(maxInactivity);

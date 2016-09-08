@@ -3425,11 +3425,17 @@
       // Try to pick a node using a color map. This option is more precise, but
       // also slower than casting a ray, which is not used anymore because
       // buffer geometries don't support it.
-      var nodeId = space.pickNodeWithColorMap(ev.offsetX, ev.offsetY, camera);
-      if (!nodeId) {
+      var pickResult = space.pickNodeWithColorMap(ev.offsetX, ev.offsetY,
+          mouse.position.x, mouse.position.y, camera);
+      if (!pickResult) {
         CATMAID.msg("Oops", "Couldn't find any intersectable object under the mouse.");
       } else {
-        SkeletonAnnotations.staticMoveToAndSelectNode(nodeId);
+        if ('node' === pickResult.type) {
+          SkeletonAnnotations.staticMoveToAndSelectNode(pickResult.id);
+        } else if ('location' === pickResult.type) {
+          var loc = pickResult.location;
+          project.moveTo(loc.z, loc.y, loc.x);
+        }
       }
     };
   };
@@ -3439,12 +3445,14 @@
    *
    * @param x First mouse position component, relativ to WebGL canvas
    * @param y First mouse position component, relativ to WebGL canvas
+   * @param xs First mouse position component, normalized screen scape [-1, 1]
+   * @param ys First mouse position component, normalized screen scape [-1, 1]
    * @param camera The camera the picking map should be created with
    * @param savePickingMap Export the picking color map as PNG image
    * @return the picked node's ID or null if no node was found
    */
   WebGLApplication.prototype.Space.prototype.pickNodeWithColorMap =
-      function(x, y, camera, savePickingMap) {
+      function(x, y, xs, ys, camera, savePickingMap) {
     // Attempt to intersect visible skeleton spheres, stopping at the first found
     var color = 0;
     var idMap = {};
@@ -3464,7 +3472,6 @@
     o.show_floor = false;
     o.show_background = false;
     o.show_box = false;
-    o.show_zplane = false;
     this.staticContent.adjust(o, this);
     this.content.adjust(o, this, submit);
     // Hide pre and post synaptic flags
@@ -3501,6 +3508,15 @@
       }
     });
 
+    // Prepare Z plane for picking, if visible
+    var zplane = this.staticContent.zplane;
+    if (o.show_zplane && zplane) {
+      color++;
+      idMap[color] = 'zplane';
+      originalMaterials.set(zplane, zplane.material);
+      zplane.material = new THREE.MeshBasicMaterial({color: color});
+    }
+
     // Render scene to picking texture
     var gl = this.view.renderer.getContext();
     this.view.renderer.render(this.scene, camera, this.pickingTexture);
@@ -3522,6 +3538,11 @@
         obj.material = originalMaterials.get(obj);
       }
     });
+
+    // Reset Z plane material
+    if (o.show_zplane && zplane) {
+      zplane.material = originalMaterials.get(zplane);
+    }
 
     // Reset lighting, assuming no change in position
     this.scene.remove(ambientLight);
@@ -3552,7 +3573,33 @@
       return null;
     }
 
-    return idMap[colorId];
+    var id = idMap[colorId];
+    if (id) {
+      if ('zplane' === id) {
+        // Intersect ray with z plane to get location
+        var intersection = this.getIntersectionWithRay(xs, ys, x, camera, [zplane]);
+        if (intersection) {
+          return {
+            type: 'location',
+            location: {
+              x: Math.round(intersection.point.x),
+              y: Math.round(intersection.point.y),
+              z: Math.round(intersection.point.z)
+            }
+          };
+        } else {
+          return null;
+        }
+      } else {
+        return {
+          type: 'node',
+          id: id
+        };
+      }
+    } else {
+      return null;
+    }
+
 
     /**
      * Execute a function for every skeleton and one for each of its pickable
@@ -3585,11 +3632,11 @@
     }
   };
 
-  WebGLApplication.prototype.Space.prototype.pickNodeWithIntersectionRay = function(x, y, xOffset, camera) {
-    // Attempt to intersect visible skeleton spheres, stopping at the first found
-    var fields = ['radiusVolumes'];
-    var skeletons = this.content.skeletons;
-
+  /**
+   * Attempt to intersect passed in objects using raycasting, stopping at the
+   * first found intersection.
+   */
+  WebGLApplication.prototype.Space.prototype.getIntersectionWithRay = function(x, y, xOffset, camera, objects) {
     // Step, which is normalized screen coordinates, is choosen so that it will
     // span half a pixel width in screen space.
     var adjPxNSC = ((xOffset + 1) / this.canvasWidth) * 2 - 1;
@@ -3613,27 +3660,19 @@
       }
     })(raycaster, camera);
 
-    // Iterate over all skeletons and find the ones that are intersected
-    var nodeId = null;
-    var intersectionFound = Object.keys(skeletons).some(function(skeleton_id) {
-      var skeleton = skeletons[skeleton_id];
-      if (!skeleton.visible) return false;
-      var all_spheres = fields.map(function(field) { return skeleton[field]; })
-                              .reduce(function(a, spheres) {
-                                return Object.keys(spheres).reduce(function(a, id) {
-                                  a.push(spheres[id]);
-                                  return a;
-                                }, a);
-                              }, []);
-      nodeId = intersect(all_spheres, x, y, step, increments, raycaster, setupRay);
-      return nodeId !== null;
+    // Iterate over all objects and find the ones that are intersected
+    var intersection = null;
+    var intersectionFound = objects.some(function(object) {
+      if (!object.visible) return false;
+      intersection = intersect([object], x, y, step, increments, raycaster, setupRay);
+      return intersection !== null;
     });
 
-    return nodeId;
+    return intersection;
 
     /**
      * Returns if a ray shot through X/Y (in normalized screen coordinates
-     * [-1,1]) inersects at least one of the intersectable spheres. If no
+     * [-1,1]) inersects at least one of the intersectable objects. If no
      * intersection is found for the click position, concentric circles are
      * created and rays are shoot along it. These circles are enlarged in every
      * iteration by <step> until a maximum of <increment> circles was tested or
@@ -3643,7 +3682,7 @@
     function intersect(objects, x, y, step, increments, raycaster, setupRay)
     {
       var found = false;
-      var nodeId = null;
+      var intersection = null;
       for (var i=0; i<=increments; ++i) {
         var numRays = i ? 4 * i : 1;
         var a = 2 * Math.PI / numRays;
@@ -3654,9 +3693,9 @@
           // Test intersection
           var intersects = raycaster.intersectObjects(objects);
           if (intersects.length > 0) {
-            found = objects.some(function(sphere) {
-              if (sphere.id !== intersects[0].object.id) return false;
-              nodeId = sphere.node_id;
+            found = objects.some(function(object) {
+              if (object.id !== intersects[0].object.id) return false;
+              intersection = intersects[0];
               return true;
             });
           }
@@ -3670,7 +3709,7 @@
         }
       }
 
-      return nodeId;
+      return intersection;
     }
   };
 

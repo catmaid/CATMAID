@@ -4,6 +4,13 @@
 
 ### Features and enhancements
 
+3D viewer:
+
+- Picking now respects the Z plane. if displayed. Shift+click any location on
+  it and the stack viewer position is changed accordingly. This works just like
+  picking nodes, except that the active node doesn't change.
+
+
 Review widget:
 
 - Skeleton Analytics, which was a separate widget before, is now available

@@ -883,15 +883,14 @@
         return;
       }
 
-      // empty caching text
-      $('#counting-cache').text('');
-
       submit(django_url + "accounts/" + projectID + "/all-usernames", "POST", {},
         function(usernames) {
           submit(django_url + projectID + "/skeletons/" + skeletonID + "/review",
             "POST",
             {'subarbor_node_id': subarborNodeId},
             function(skeleton_data) {
+                // Reset display
+                self.endReview();
                 self.createReviewSkeletonTable( skeleton_data, usernames );
             });
         });

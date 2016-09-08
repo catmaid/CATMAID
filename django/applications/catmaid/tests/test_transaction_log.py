@@ -1,6 +1,8 @@
 import json
 import time
+from unittest import skipUnless
 
+from django.conf import settings
 from django.core.cache import cache
 from django.db import connection, transaction, InternalError
 from django.test import Client, TestCase, TransactionTestCase
@@ -151,6 +153,7 @@ class TransactionLogTests(TransactionTestCase):
         self.assertEqual(None, nt['parent_id'])
         self.assertEqual(self.project.id, nt['project_id'])
 
+    @skipUnless(getattr(settings, 'HISTORY_TRACKING', True), 'History tracking is not enabled')
     def test_locaton_lookup_treenode(self):
         """Test if the location of a newly created treenode can be retrieved
         through the transaction log. Also test if this works for the updated

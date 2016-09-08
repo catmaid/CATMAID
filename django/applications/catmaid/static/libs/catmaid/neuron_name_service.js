@@ -485,7 +485,8 @@
 
                 var index = parseInt(component, 10);
                 if (index >= 0 && index < componentValues.length) {
-                  return componentValues[index].join(delimiter);
+                  var cv = componentValues[index];
+                  return cv ? cv.join(delimiter) : "";
                 } else return match;
               });
 

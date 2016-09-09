@@ -117,30 +117,20 @@
   User.getUsers = function(completionCallback)
   {
     // Asynchronously request the list of users from the server.
-    requestQueue.register(django_url + 'user-list',
-        'GET',
-        undefined,
-        function (status, text, xml) {
-          if (status == 200 && text)
-          {
-            var jsonData = JSON.parse(text);
-            for (var i = 0; i < jsonData.length; i++)
-            {
-              var userData = jsonData[i];
-              new User(userData.id, userData.login, userData.full_name,
-                  userData.first_name, userData.last_name, new THREE.Color().setRGB(
-                      userData.color[0], userData.color[1], userData.color[2]));
-            }
-          }
-          else
-          {
-            new CATMAID.ErrorDialog("The list of users could not be " +
-                "retrieved.", text + "\n\n(Status: " + status + ")").show();
-          }
-          if (completionCallback !== undefined) {
-            completionCallback();
-          }
-        });
+    return CATMAID.fetch(CATMAID.makeURL('user-list'))
+      .then(function(json) {
+        for (var i = 0; i < json.length; i++)
+        {
+          var userData = json[i];
+          new User(userData.id, userData.login, userData.full_name,
+              userData.first_name, userData.last_name, new THREE.Color().setRGB(
+                  userData.color[0], userData.color[1], userData.color[2]));
+        }
+      })
+      .catch(CATMAID.handleError)
+      .then(function() {
+        CATMAID.tools.callIfFn(completionCallback);
+      });
   };
 
   /**

@@ -13,7 +13,7 @@
       }
       // Add short login text
       var login_text = "Please enter the credentials for a user with the " +
-          "necessary credentials to continue to the requested information";
+          "necessary credentials to continue";
       this.dialog.appendMessage(login_text);
       // Add input fields
       var user_field = this.dialog.appendField('Username', 'username', '', true);

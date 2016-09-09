@@ -120,7 +120,8 @@ var submitterFn = function() {
     if (!handled) {
       console.log(error, q);
       if (!q.quiet && error.error) {
-        CATMAID.error(error.error, error.detail);
+        var err = CATMAID.parseErrorResponse(error);
+        CATMAID.handleError(err);
       }
     }
 

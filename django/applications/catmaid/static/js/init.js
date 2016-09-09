@@ -1402,13 +1402,6 @@ var project;
     w.appendChild(document.createTextNode("loading ..."));
     pp.appendChild(w);
 
-    // Destroy active project
-    // TODO: Does this really have to happen here?
-    if (project) {
-      project.destroy();
-      project = undefined;
-    }
-
     CATMAID.fetch('projects/', 'GET')
       .catch(function(error) {
         // Show error and continue with null JSON
@@ -1416,12 +1409,15 @@ var project;
         return null;
       })
       .then(function(json) {
-        // recreate the project data view
-        if (current_dataview) {
-          CATMAID.client.switch_dataview(current_dataview);
-        } else {
-          CATMAID.client.load_default_dataview();
+        // Update data view display if there is no active project
+        if (!project) {
+          if (current_dataview) {
+            CATMAID.client.switch_dataview(current_dataview);
+          } else {
+            CATMAID.client.load_default_dataview();
+          }
         }
+
         cachedProjectsInfo = json;
 
         // Prepare JSON so that a menu can be created from it. Display only

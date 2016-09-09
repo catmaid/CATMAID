@@ -10,12 +10,16 @@ class DatastoresApiTests(CatmaidApiTestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
-        self.assertTrue(parsed_response['permission_error'])
+        self.assertIn('error', parsed_response)
+        self.assertIn('type', parsed_response)
+        self.assertEquals('PermissionError', parsed_response['type'])
 
         response = self.client.post(url)
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
-        self.assertTrue(parsed_response['permission_error'])
+        self.assertIn('error', parsed_response)
+        self.assertIn('type', parsed_response)
+        self.assertEquals('PermissionError', parsed_response['type'])
 
         # Test basic datastore creation.
         self.fake_authentication()

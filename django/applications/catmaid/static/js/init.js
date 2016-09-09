@@ -1077,7 +1077,7 @@ var project;
           }, function(e) {
             reject();
             // Handle login errors
-            if (e && e.permission_error) {
+            if (e && e.type === 'PermissionError') {
               new CATMAID.LoginDialog(e.error, CATMAID.initWebClient).show();
               return true;
             }

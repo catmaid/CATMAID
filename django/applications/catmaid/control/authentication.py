@@ -28,6 +28,15 @@ from catmaid.models import Project, UserRole, ClassInstance, \
         ClassInstanceClassInstance
 
 
+class PermissionError(Exception):
+    """Indicates the lack of permissions for a particular action."""
+    def __init__(self, message):
+        super(PermissionError, self).__init__(message)
+
+    def __str__(self):
+        return self.message
+
+
 def login_user(request):
     profile_context = {}
     if request.method == 'POST':
@@ -133,8 +142,7 @@ def requires_user_role(roles):
                 msg = "The user '%s' with ID %s does not have a necessary role in the " \
                       "project %d" % (u.first_name + ' ' + u.last_name, u.id, \
                       int(kwargs['project_id']))
-                return HttpResponse(json.dumps({'error': msg,
-                        'permission_error': True}), content_type='application/json')
+                raise PermissionError(msg)
 
         return wraps(f)(inner_decorator)
     return decorated_with_requires_user_role
@@ -175,9 +183,7 @@ def requires_user_role_for_any_project(roles):
                 msg = "The user '%s' with ID %s does not have a necessary " \
                       "role in any project" \
                       % (u.first_name + ' ' + u.last_name, u.id)
-                return HttpResponse(
-                        json.dumps({'error': msg, 'permission_error': True}),
-                        content_type='application/json')
+                raise PermissionError(msg);
 
         return wraps(f)(inner_decorator)
     return decorated_with_requires_user_role_for_any_project

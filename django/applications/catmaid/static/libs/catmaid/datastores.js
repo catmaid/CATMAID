@@ -87,7 +87,7 @@
                 resolve();
               },
               function (error) {
-                if (error.status === 404 || error.permission_error) {
+                if (error.status === 404 || error.type === 'PermissionError') {
                   self.entries = new Map();
                   self.trigger(DataStore.EVENT_LOADED, self);
                   resolve();

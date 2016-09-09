@@ -807,7 +807,11 @@ var project;
    * @param  {Object}    xml                XHR response XML (unused).
    */
   function handle_logout(status, text, xml) {
-    if ( project && project.id ) project.setTool( new CATMAID.Navigator() );
+    // Destroy current project on logout
+    if ( project && project.id ) {
+      project.destroy();
+      project = null;
+    }
 
     handle_login(status, text, xml);
   }

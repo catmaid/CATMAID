@@ -909,6 +909,12 @@ function CMWWindow( title )
     if ( root == parent )
     {
       var rootFrame = root.getFrame();
+      // Remove all child views from root
+      while (rootFrame.firstChild) {
+        rootFrame.removeChild(rootFrame.firstChild);
+      }
+
+      // Remove root frame from DOM
       if ( rootFrame.parentNode )
         rootFrame.parentNode.removeChild( rootFrame );
       root.close();

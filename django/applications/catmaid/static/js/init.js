@@ -1025,7 +1025,9 @@ var project;
               if (firstStackViewer && 'has_channel' === stack.relation) {
                 stackViewer = firstStackViewer;
               }
+              // Try to load stacks and continue trying if loading fails for one
               return handle_openProjectStack(json, stackViewer)
+                .catch(CATMAID.handleError)
                 .then(function (newStackViewer) {
                   if (0 < stacks.length) {
                     var sv = firstStackViewer ? firstStackViewer : newStackViewer;
@@ -1064,28 +1066,27 @@ var project;
     }
 
     CATMAID.ui.catchEvents("wait");
-    return new Promise(function (resolve, reject) {
-      requestQueue.register(
-        django_url + projectID + '/stack/' + stackID + '/info',
-        'GET',
-        undefined,
-        CATMAID.jsonResponseHandler(
-          function(json) {
-            handle_openProjectStack(
-                  json,
-                  useExistingViewer ? project.focusedStackViewer : undefined)
-                .then(resolve, reject);
-          }, function(e) {
-            reject();
-            // Handle login errors
-            if (e && e.permission_error) {
-              new CATMAID.LoginDialog(e.error, CATMAID.initWebClient).show();
-              return true;
-            }
-            return false;
-          })
-      );
-    });
+    var open = CATMAID.fetch(projectID + '/stack/' + stackID + '/info')
+      .then(function(json) {
+        return handle_openProjectStack(json,
+            useExistingViewer ? project.focusedStackViewer : undefined);
+      });
+
+    // Catch any error, but return original rejected promise
+    open.catch(function(e) {
+        CATMAID.ui.releaseEvents();
+        // Handle login errors explicitely to re-init the web client after
+        // re-login.
+        if (e && e.permission_error) {
+          new CATMAID.LoginDialog(e.error, CATMAID.initWebClient).show();
+          return true;
+        } else {
+          CATMAID.handleError(e);
+        }
+        return Promise.reject(e);
+      });
+
+    return open;
   };
 
   /**

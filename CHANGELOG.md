@@ -18,6 +18,16 @@ Review widget:
   selected neurons as before (i.e.  missing end tags).
 
 
+Miscellaneous:
+
+- The tracing tool has a new icon.
+
+- If users get a permission denied error (e.g. due to being logged out or just
+  having not enough permissions), a login dialog is now shown. It allows users
+  to re-login or change the user entirely. The action causing the permission
+  error, is *not* repeated automatically.
+
+
 ### Bug fixes
 
 - The statistics widget now properly respects time zones when grouping by day.

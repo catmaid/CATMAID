@@ -559,28 +559,28 @@ class PermissionTests(TestCase):
 
 
         # Make sure we get no permission error on anonymous accessible get
-        # methods
+        # methods. Test for all errors, since none of them should occur.
         for api in self.can_browse_get_api:
             msg = "GET %s" % api
             response = self.client.get(api)
             self.assertEqual(response.status_code, 200, msg)
             try:
                 parsed_response = json.loads(response.content)
-                self.assertFalse('permission_error' in parsed_response, msg)
+                self.assertFalse('error' in parsed_response, msg)
             except ValueError, e:
                 # If a response is no JSON, everything is fine as well
                 if str(e) != "No JSON object could be decoded":
                     raise e
 
         # Make sure we get no permission error on anonymous accessible post
-        # methods
+        # methods. Test for all errors, since none of them should occur.
         for api in self.can_browse_post_api:
             msg = "POST %s" % api
             response = self.client.post(api)
             self.assertEqual(response.status_code, 200, msg)
             try:
                 parsed_response = json.loads(response.content)
-                self.assertFalse('permission_error' in parsed_response, msg)
+                self.assertFalse('error' in parsed_response, msg)
             except ValueError, e:
                 # If a response is no JSON, everything is fine as well
                 if str(e) != "No JSON object could be decoded":

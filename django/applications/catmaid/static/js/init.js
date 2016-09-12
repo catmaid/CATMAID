@@ -409,6 +409,35 @@ var project;
   };
 
   /**
+   * Update profile dependent information, e.g., the visibility of tools in the
+   * toolbar. If a project is open and the user has browse permission, the
+   * active project stays open.
+   */
+  Client.prototype.refresh = function() {
+    var backgroundDataView = !!project;
+
+    // Update data view display, in the background if a project is open
+    if (current_dataview) {
+      CATMAID.client.switch_dataview(current_dataview, backgroundDataView);
+    } else {
+      CATMAID.client.load_default_dataview(backgroundDataView);
+    }
+
+    // Close an active project, if the active user doesn't have permission to
+    // browse it.
+    if (project && !CATMAID.mayView()) {
+      project.destroy();
+      project = null;
+    }
+
+    // update the edit tool actions and its div container
+    var new_edit_actions = CATMAID.createButtonsFromActions(CATMAID.EditTool.actions,
+      'toolbox_edit', '');
+    $('#toolbox_edit').replaceWith(new_edit_actions);
+    $('#toolbox_edit').hide();
+  };
+
+  /**
    * Resize the main content and root window.
    *
    * Called by the window.onresize event.
@@ -564,17 +593,45 @@ var project;
 
       // Continuation for user list retrieval
       var done = function () {
-        handle_profile_update(e);
+        // Try to update user profile
+        try {
+          if (e.userprofile) {
+            CATMAID.userprofile = new CATMAID.Userprofile(e.userprofile);
+          } else {
+            throw "The server returned no valid user profile.";
+          }
+        } catch (error) {
+          /* A valid user profile is needed to start CATMAID. This is a severe error
+          * and a message box will tell the user to report this problem.
+          */
+          new CATMAID.ErrorDialog("The user profile couldn't be loaded. This " +
+              "however, is required to start CATMAID. Please report this problem " +
+              "to your administrator and try again later.", error).show();
+          return;
+        }
+
+        CATMAID.client.refresh();
         CATMAID.updateProjects(completionCallback);
+
+        // Update all datastores to reflect the current user before triggering
+        // any events. This is necessary so that settings are correct when
+        // updating for user change.
+        CATMAID.DataStoreManager.reloadAll().then(function () {
+          CATMAID.Init.trigger(CATMAID.Init.EVENT_USER_CHANGED);
+        });
       };
 
+      // Re-configure CSRF protection to update the CSRF cookie.
+      CATMAID.setupCsrfProtection();
+
+      var load = CATMAID.updatePermissions();
       if (e.id || (e.permissions && -1 !== e.permissions.indexOf('catmaid.can_browse'))) {
         // Asynchronously, try to get a full list of users if a user is logged in
         // or the anonymous user has can_browse permissions.
-        CATMAID.User.getUsers(done);
-      } else {
-        done();
+        load = load.then(CATMAID.User.getUsers.bind(CATMAID.User));
       }
+
+      load.then(done);
     } else if (status != 200) {
       // Of course, lots of non-200 errors are fine - just report
       // all for the moment, however:
@@ -812,8 +869,6 @@ var project;
    * @param  {Object}    xml                XHR response XML (unused).
    */
   function handle_logout(status, text, xml) {
-    if ( project && project.id ) project.setTool( new CATMAID.Navigator() );
-
     handle_login(status, text, xml);
   }
 
@@ -822,46 +877,6 @@ var project;
    * @type {CATMAID.Userprofile}
    */
   CATMAID.userprofile = null;
-
-  /**
-   * Update profile dependent information, e.g., the visibility of tools in the
-   * toolbar.
-   *
-   * @param  {Object} e The parsed JSON response object.
-   */
-  function handle_profile_update(e) {
-    try {
-      if (e.userprofile) {
-        CATMAID.userprofile = new CATMAID.Userprofile(e.userprofile);
-      } else {
-        throw "The server returned no valid user profile.";
-      }
-    } catch (error) {
-      /* A valid user profile is needed to start CATMAID. This is a severe error
-       * and a message box will tell the user to report this problem.
-       */
-      new CATMAID.ErrorDialog("The user profile couldn't be loaded. This " +
-          "however, is required to start CATMAID. Please report this problem " +
-          "to your administrator and try again later.", error).show();
-      return;
-    }
-
-    // update the edit tool actions and its div container
-    var new_edit_actions = CATMAID.createButtonsFromActions(CATMAID.EditTool.actions,
-      'toolbox_edit', '');
-    $('#toolbox_edit').replaceWith(new_edit_actions);
-    $('#toolbox_edit').hide();
-
-    // Re-configure CSRF protection to update the CSRF cookie.
-    CATMAID.setupCsrfProtection();
-
-    // Update all datastores to reflect the current user before triggering
-    // any events. This is necessary so that settings are correct when
-    // updating for user change.
-    CATMAID.DataStoreManager.reloadAll().then(function () {
-      CATMAID.Init.trigger(CATMAID.Init.EVENT_USER_CHANGED);
-    });
-  }
 
   function handle_dataviews(e) {
     // a function for creating data view menu handlers
@@ -890,7 +905,13 @@ var project;
     dataview_menu.update( e );
   }
 
-  Client.prototype.switch_dataview = function(view_id, view_type) {
+  /**
+   * Load a particular data view.
+   *
+   * @param background {bool} Optional, if the data view should only be loaded,
+   *                          not activated.
+   */
+  Client.prototype.switch_dataview = function(view_id, view_type, background) {
     /* Some views are dynamic, e.g. the plain list view offers a
      * live filter of projects. Therefore we treat different types
      * of dataviews differently and need to know whether the
@@ -899,13 +920,17 @@ var project;
     var do_switch_dataview = function( view_id, view_type ) {
       if ( view_type == "legacy_project_list_data_view" ) {
         // Show the standard plain list data view
-        document.getElementById("data_view").style.display = "none";
-        document.getElementById("clientside_data_view").style.display = "block";
+        if (!background) {
+          document.getElementById("data_view").style.display = "none";
+          document.getElementById("clientside_data_view").style.display = "block";
+        }
         CATMAID.updateProjectListFromCache();
       } else {
         // let Django render the requested view and display it
-        document.getElementById("clientside_data_view").style.display = "none";
-        document.getElementById("data_view").style.display = "block";
+        if (!background) {
+          document.getElementById("clientside_data_view").style.display = "none";
+          document.getElementById("data_view").style.display = "block";
+        }
         CATMAID.DataViews.get(view_id).then(handle_load_dataview)
           .catch(handle_dataview_load_error);
       }
@@ -935,11 +960,14 @@ var project;
 
   /**
    * Load the default data view.
+   *
+   * @param background {bool} Optional, if the data view should only be loaded,
+   *                          not activated.
    */
-  Client.prototype.load_default_dataview = function() {
+  Client.prototype.load_default_dataview = function(background) {
     var self = this;
     CATMAID.DataViews.getDefaultConfig().then(function(info) {
-      self.switch_dataview(info.id, info.code_type);
+      self.switch_dataview(info.id, info.code_type, background);
     }).catch(CATMAID.handleError);
   };
 
@@ -1388,8 +1416,6 @@ var project;
    * @param  {function=} completionCallback Completion callback (no arguments).
    */
   CATMAID.updateProjects = function(completionCallback) {
-    CATMAID.updatePermissions();
-
     project_menu.update(null);
 
     document.getElementById("projects_h").style.display = "none";
@@ -1404,13 +1430,6 @@ var project;
     w.appendChild(document.createTextNode("loading ..."));
     pp.appendChild(w);
 
-    // Destroy active project
-    // TODO: Does this really have to happen here?
-    if (project) {
-      project.destroy();
-      project = undefined;
-    }
-
     CATMAID.fetch('projects/', 'GET')
       .catch(function(error) {
         // Show error and continue with null JSON
@@ -1418,12 +1437,6 @@ var project;
         return null;
       })
       .then(function(json) {
-        // recreate the project data view
-        if (current_dataview) {
-          CATMAID.client.switch_dataview(current_dataview);
-        } else {
-          CATMAID.client.load_default_dataview();
-        }
         cachedProjectsInfo = json;
 
         // Prepare JSON so that a menu can be created from it. Display only

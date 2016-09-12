@@ -269,18 +269,28 @@ var requestQueue = new RequestQueue();
     // `text` may be empty for no content responses.
     var json = text.length ? JSON.parse(text) : {};
     if (json.error) {
-      if ('ValueError' === json.type) {
-        throw new CATMAID.ValueError(json.error, json.detail);
-      } else if ('StateMatchingError' === json.type) {
-        throw new CATMAID.StateMatchingError(json.error, json.detail);
-      } else if ('LocationLookupError' === json.type) {
-        throw new CATMAID.LocationLookupError(json.error, json.detail);
-      } else {
-        throw new CATMAID.Error("Unsuccessful request: " + json.error,
-            json.detail, json.type);
-      }
+      var error = CATMAID.parseErrorResponse(json);
+      throw error;
     } else {
       return json;
+    }
+  };
+
+  /**
+   * Translate an error response into the appropriate front-end type.
+   */
+  CATMAID.parseErrorResponse = function(error) {
+    if ('ValueError' === error.type) {
+      return new CATMAID.ValueError(error.error, error.detail);
+    } else if ('StateMatchingError' === error.type) {
+      return new CATMAID.StateMatchingError(error.error, error.detail);
+    } else if ('LocationLookupError' === error.type) {
+      return new CATMAID.LocationLookupError(error.error, error.detail);
+    } else if ('PermissionError' === error.type) {
+      return new CATMAID.PermissionError(error.error, error.detail);
+    } else {
+      return new CATMAID.Error("Unsuccessful request: " + error.error,
+          error.detail, error.type);
     }
   };
 

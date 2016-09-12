@@ -329,7 +329,7 @@ var project;
         classification_editor: null
       };
 
-      var load = null
+      var load = null;
       if (sg) {
         load = CATMAID.openStackGroup(pid, sg)
           .then(function() {

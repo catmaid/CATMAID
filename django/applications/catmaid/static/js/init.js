@@ -423,18 +423,27 @@ var project;
       CATMAID.client.load_default_dataview(backgroundDataView);
     }
 
-    // Close an active project, if the active user doesn't have permission to
-    // browse it.
-    if (project && !CATMAID.mayView()) {
-      project.destroy();
-      project = null;
+    if (project) {
+      // Close an active project, if the active user doesn't have permission to
+      // browse it.
+      if (!CATMAID.mayView()) {
+        project.destroy();
+        project = null;
+      } else {
+        // Reset current tool
+        project.setTool(project.getTool());
+      }
     }
 
     // update the edit tool actions and its div container
     var new_edit_actions = CATMAID.createButtonsFromActions(CATMAID.EditTool.actions,
       'toolbox_edit', '');
     $('#toolbox_edit').replaceWith(new_edit_actions);
-    $('#toolbox_edit').hide();
+    if (project) {
+      $('#toolbox_edit').show();
+    } else {
+      $('#toolbox_edit').hide();
+    }
   };
 
   /**

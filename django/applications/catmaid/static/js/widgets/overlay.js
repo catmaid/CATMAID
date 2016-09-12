@@ -3489,21 +3489,37 @@ SkeletonAnnotations.TracingOverlay.prototype.getNodeOnSectionAndEdge = function 
         return {id: toID, x: to.x, y: to.y, z: to.z};
       }
 
-      // Find intersection and return virtual node
-      var pos = CATMAID.tools.intersectLineWithZPlane(from.x, from.y, from.z,
-          to.x, to.y, to.z, z);
+      // To calculate the location of a new virtual node, use the real child
+      // and parent. This is done to prevent rounding errors to accumulate,
+      // which might be part of the virtual node's location.
+      var realChildP = SkeletonAnnotations.isRealNode(childID) ? locations[0] :
+        self.promiseNodeLocation(SkeletonAnnotations.getChildOfVirtualNode(childID), false);
+      var realParentP = SkeletonAnnotations.isRealNode(parentID) ? locations[1] :
+        self.promiseNodeLocation(SkeletonAnnotations.getParentOfVirtualNode(parentID), false);
 
-      var xp = stack.stackToProjectX(z, pos[1], pos[0]);
-      var yp = stack.stackToProjectY(z, pos[1], pos[0]);
-      var zp = stack.stackToProjectZ(z, pos[1], pos[0]);
+      var realFromLoc = reverse ? realParentP : realChildP;
+      var realToLoc = reverse ? realChildP : realParentP;
 
-      var vnID = SkeletonAnnotations.getVirtualNodeID(childID, parentID, xp, yp, zp);
-      return {
-        id: vnID,
-        x: pos[0],
-        y: pos[1],
-        z: z
-      };
+      return Promise.all([realFromLoc, realToLoc])
+        .then(function(locations) {
+          var realFrom = locations[0];
+          var realTo = locations[1];
+          // Find intersection and return virtual node
+          var pos = CATMAID.tools.intersectLineWithZPlane(realFrom.x, realFrom.y, realFrom.z,
+              realTo.x, realTo.y, realTo.z, z);
+
+          var xp = stack.stackToProjectX(z, pos[1], pos[0]);
+          var yp = stack.stackToProjectY(z, pos[1], pos[0]);
+          var zp = stack.stackToProjectZ(z, pos[1], pos[0]);
+
+          var vnID = SkeletonAnnotations.getVirtualNodeID(childID, parentID, xp, yp, zp);
+          return {
+            id: vnID,
+            x: pos[0],
+            y: pos[1],
+            z: z
+          };
+        });
     }).then(function(node) {
       // Convert previous result to project cooridnates
       return {

@@ -379,6 +379,7 @@ var project;
               });
           }
         }
+        return Promise.resolve();
       }
     });
 

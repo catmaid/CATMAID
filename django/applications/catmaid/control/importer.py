@@ -4,9 +4,10 @@ import yaml
 import urllib
 import requests
 
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 
 from django import forms
+from django.db import connection
 from django.db.models import Count
 from django.conf import settings
 from django.contrib.auth.models import User, Group
@@ -64,6 +65,9 @@ class ImageBaseMixin:
         field, however, also requires the existence of the
         'fileextension' and 'zoomlevels' field.
         """
+        zoom_available = 'zoomlevels' in info_object
+        ext_available = 'fileextension' in info_object
+
         if 'url' in info_object:
             # Make sure all required data is available
             required_fields = ['fileextension',]
@@ -86,8 +90,6 @@ class ImageBaseMixin:
             # Favor 'zoomlevel' and 'fileextension' fields, if
             # available, but try to find this information if those
             # fields are not present.
-            zoom_available = 'zoomlevels' in info_object
-            ext_available = 'fileextension' in info_object
             if zoom_available and needs_zoom:
                 self.num_zoom_levels = info_object['zoomlevels']
             if ext_available:
@@ -120,7 +122,8 @@ class ImageBaseMixin:
             self.image_base = self.image_base + '/'
 
         # Test if the data is accessible through HTTP
-        self.accessible = check_http_accessibility( self.image_base, self.file_extension )
+        self.accessible = check_http_accessibility(self.image_base,
+                self.file_extension, auth=None)
 
 class PreOverlay(ImageBaseMixin):
     def __init__(self, info_object, project_url, data_folder):
@@ -143,7 +146,7 @@ class PreStackGroup():
                     "one of: {}.".format(self.relation, ", ".join(valid_relations)))
 
 class PreStack(ImageBaseMixin):
-    def __init__(self, info_object, project_url, data_folder, only_unknown):
+    def __init__(self, info_object, project_url, data_folder, already_known=False):
         # Make sure everything is there
         required_fields = ['name', 'dimension', 'resolution']
         for f in required_fields:
@@ -182,13 +185,17 @@ class PreStack(ImageBaseMixin):
             for stackgroup in info_object['stackgroups']:
                 self.stackgroups.append(PreStackGroup(stackgroup))
 
-        # Test if this stack is already known
-        if only_unknown:
-            num_same_image_base = Stack.objects.filter(image_base=self.image_base).count()
-            self.already_known = (num_same_image_base > 0)
+        # Don't be considered known by default
+        self.already_known = already_known
+
+    def equals(self, stack):
+        return self.image_base == stack.image_base
+
+    def get_matching_objects(self, stack):
+        return Stack.objects.filter(image_base=self.image_base)
 
 class PreProject:
-    def __init__(self, properties, project_url, data_folder, only_unknown):
+    def __init__(self, properties, project_url, data_folder, already_known_pid=None):
         info = properties
 
         # Make sure everything is there
@@ -206,14 +213,23 @@ class PreProject:
         self.has_been_imported = False
         self.import_status = None
         for s in p['stacks']:
-            self.stacks.append( PreStack( s, project_url, data_folder, only_unknown ) )
-        if only_unknown:
-            # Mark this project as already known if all stacks are already known
-            already_known_stacks = 0
-            for s in self.stacks:
-                if s.already_known:
-                    already_known_stacks = already_known_stacks + 1
-            self.already_known = (already_known_stacks == len(self.stacks))
+            self.stacks.append(PreStack(s, project_url, data_folder))
+
+        # Don't be considered known by default
+        self.already_known = already_known_pid != None
+        self.already_known_pid = already_known_pid
+        self.action = None
+
+    def set_known_pid(self, pid):
+        self.already_known = pid != None
+        self.already_known_pid = pid
+
+    def imports_stack(self, stack):
+        for s in self.stacks:
+            if s.equals(stack):
+                return True
+        return False
+
 
 def find_zoom_levels_and_file_ext( base_folder, stack_folder, needs_zoom=True ):
     """ Looks at the first file of the first zoom level and
@@ -254,24 +270,23 @@ def find_zoom_levels_and_file_ext( base_folder, stack_folder, needs_zoom=True ):
                 break
     return (file_ext, zoom_level)
 
-def check_http_accessibility( image_base, file_extension ):
+def check_http_accessibility(image_base, file_extension, auth=None):
     """ Returns true if data below this image base can be accessed through HTTP.
     """
     slice_zero_url = urljoin(image_base, "0")
     first_file_url = urljoin(slice_zero_url, "0_0_0." + file_extension)
     try:
-        code = urllib.urlopen(first_file_url).getcode()
+        response = requests.get(first_file_url, auth=auth)
     except IOError:
         return False
-    return code == 200
+    return response.status_code == 200
 
-def find_project_folders(image_base, path, filter_term, only_unknown, depth=1):
+def find_project_folders(image_base, path, filter_term, depth=1):
     """ Finds projects in a folder structure by testing for the presence of an
     info/project YAML file.
     """
-    dirs = []
+    index = []
     projects = {}
-    already_available = []
     not_readable = []
     for current_file in glob.glob( os.path.join(path, filter_term) ):
         if os.path.isdir(current_file):
@@ -292,65 +307,151 @@ def find_project_folders(image_base, path, filter_term, only_unknown, depth=1):
                     yaml_data = yaml.load_all(open(info_file))
                     for project_yaml_data in yaml_data:
                         project = PreProject(project_yaml_data, project_url,
-                                short_name, only_unknown )
-                        if only_unknown and project.already_known:
-                            already_available.append((current_file, short_name))
-                            continue
-                        else:
-                            key = current_file
-                            new_key_index = 1
-                            while key in projects:
-                                new_key_index += 1
-                                key = "{} #{}".format(current_file, new_key_index)
-                            # Remember this project if it isn't available yet
-                            projects[key] = project
-                            dirs.append((key, short_name))
+                                short_name)
+                        key = current_file
+                        new_key_index = 1
+                        while key in projects:
+                            new_key_index += 1
+                            key = "{} #{}".format(current_file, new_key_index)
+                        # Remember this project if it isn't available yet
+                        projects[key] = project
+                        index.append((key, short_name))
                 except Exception as e:
                     not_readable.append( (info_file, e) )
             elif depth > 1:
                 # Recurse in subdir if requested
-                dirs = dirs + find_files( current_file, depth - 1)
-    return (dirs, projects, not_readable, already_available)
+                index = index + find_files( current_file, depth - 1)
+    return (index, projects, not_readable)
 
-def get_projects_from_url(url, filter_term, only_unknown, headers=None):
+def get_projects_from_url(url, filter_term, headers=None, auth=None):
     if not url:
         raise ValueError("No URL provided")
+    if auth and len(auth) != 2:
+        raise ValueError("HTTP Authentication needs to be a 2-tuple")
     # Sanitize and add protocol, if not there
     url = url.strip()
     if not (url.startswith("http://") or url.startswith("https://")):
         url = "http://" + url
 
-    dirs = []
+    index = []
     projects = {}
     not_readable = []
-    already_available = []
 
     # Ask remote server for data
-    r = requests.get(url, headers=headers)
+    r = requests.get(url, headers=headers, auth=auth)
     content_type = r.headers['content-type']
     # Both YAML and JSON should end up in the same directories of directories
     # structure.
     if 'json' in content_type:
         content = r.json()
         for p in content:
-            project = PreProject(p, None, None, only_unknown )
+            project = PreProject(p, None, None)
             short_name = project.name
             key = "{}-{}".format(url, short_name)
             projects[key] = project
-            dirs.append((key, short_name))
+            index.append((key, short_name))
     elif 'yaml' in content_type:
         content = yaml.load_all(r.content)
         for p in content:
             for pp in p:
-                project = PreProject(pp, None, None, only_unknown )
+                project = PreProject(pp, None, None)
                 short_name = project.name
                 key = "{}-{}".format(url, short_name)
                 projects[key] = project
-                dirs.append((key, short_name))
+                index.append((key, short_name))
     else:
-        raise ValuleError("Unrecognized content type in response of remote")
+        raise ValueError("Unrecognized content type in response of remote: " +
+            content_type, r.content)
 
-    return (dirs, projects, not_readable, already_available)
+    return (index, projects, not_readable)
+
+class ProjectSelector(object):
+    """Mark projects as either ignored, merged or replaced"""
+
+    def __init__(self, projects, project_index, known_project_filter,
+            known_project_strategy, cursor=None):
+        self.ignored_projects = []
+        self.merged_projects = []
+        self.replacing_projects = []
+        self.new_projects = []
+
+        self.known_project_filter = known_project_filter
+        self.known_project_strategy = known_project_strategy
+
+        # Mark projects as known
+        if projects and known_project_filter:
+            # Mark known stacks, i.e. the ones having the same image base
+            for key, p in projects.iteritems():
+                for s in p.stacks:
+                    s.already_known = Stack.objects.filter(image_base=s.image_base).exists()
+
+            cursor = cursor or connection.cursor()
+            # Mark all projects as known that have the same name as an already
+            # existing project
+            if 'name' in known_project_filter:
+                ip_template = ",".join(("(%s,%s)",) * len(projects))
+                ip_data = []
+                for pi in project_index:
+                    ip_data.append(pi[0])
+                    ip_data.append(projects[pi[0]].name)
+                cursor.execute("""
+                    SELECT p.id, ip.key, ip.name
+                    FROM project p
+                    JOIN (VALUES {}) ip(key, name)
+                        ON p.title = ip.name
+                """.format(ip_template), ip_data)
+                for row in cursor.fetchall():
+                    known_project = row[1]
+                    p = projects[known_project]
+                    p.set_known_pid(row[0])
+
+            # Mark all projects as known that have the same stacks assigned as
+            # an already existing project.
+            if 'stacks' in known_project_filter:
+                # Get a mapping of stack ID sets to project IDs
+                cursor.execute("""
+                  SELECT project_id, array_agg(s.image_base)
+                  FROM project_stack ps
+                  JOIN stack s ON ps.stack_id = s.id
+                  GROUP BY project_id
+                  ORDER BY project_id
+                """)
+                stack_map = defaultdict(list)
+                for row in cursor.fetchall():
+                  stack_map[tuple(sorted(row[1]))].append(row[0])
+
+                for key, p in projects.iteritems():
+                    if p.already_known:
+                        # Name matches have precedence
+                        continue
+                    # Mark project known if all of its stacks are known
+                    all_stacks_known = all(s.already_known for s in p.stacks)
+                    if all_stacks_known:
+                        known_stack_image_bases = tuple(sorted(s.image_base for s in p.stacks))
+                        known_projects = stack_map[known_stack_image_bases]
+                        if known_projects:
+                          # First one wins
+                          p.set_known_pid(known_projects[0])
+
+        # Check for each project if it is already known
+        for key,name in project_index:
+            p = projects[key]
+            self.add_project(key, p)
+
+    def add_project(self, key, project):
+        project.action = self.known_project_strategy
+        if not project.already_known:
+            self.new_projects.append((key, project))
+        elif 'add-anyway' == self.known_project_strategy:
+            self.new_projects.append((key, project))
+        elif 'ignore' == self.known_project_strategy:
+            self.ignored_projects.append((key, project))
+        elif 'merge' == self.known_project_strategy:
+            self.merged_projects.append((key, project))
+        elif 'merge-override' == self.known_project_strategy:
+            self.merged_projects.append((key, project))
+        elif 'replace' == self.known_project_strategy:
+            self.replacing_projects.append((key, project))
 
 class ImportingWizard(SessionWizardView):
     def get_template_names(self):
@@ -378,15 +479,22 @@ class ImportingWizard(SessionWizardView):
             catmaid_host = cleaned_path_data['catmaid_host']
             api_key = cleaned_path_data['api_key'].strip()
             filter_term = cleaned_path_data['filter_term']
-            only_unknown = cleaned_path_data['only_unknown_projects']
+            http_auth_user = cleaned_path_data['http_auth_user'].strip()
+            http_auth_pass = cleaned_path_data['http_auth_pass']
+            known_project_filter = cleaned_path_data['known_project_filter']
+            known_project_strategy = cleaned_path_data['known_project_strategy']
             base_url = cleaned_path_data['base_url']
 
             if len(filter_term.strip()) == 0:
                 filter_term = "*"
 
+            auth = None
+            if http_auth_user and http_auth_pass:
+                auth = (http_auth_user, http_auth_pass)
+
             if source == 'remote':
-                folders, projects, not_readable, already_available = get_projects_from_url(
-                        remote_host, filter_term, only_unknown)
+                project_index, projects, not_readable = get_projects_from_url(
+                        remote_host, filter_term, auth=auth)
             if source == 'remote-catmaid':
                 complete_catmaid_host = "{}{}{}".format(catmaid_host,
                     "" if catmaid_host[-1] == "/" else "/", "projects/export")
@@ -395,27 +503,38 @@ class ImportingWizard(SessionWizardView):
                     headers = {
                         'X-Authorization': 'Token {}'.format(api_key)
                     }
-                folders, projects, not_readable, already_available = get_projects_from_url(
-                        complete_catmaid_host, filter_term, only_unknown, headers)
+                project_index, projects, not_readable = get_projects_from_url(
+                        complete_catmaid_host, filter_term, headers, auth)
             else:
                 # Get all folders that match the selected criteria
                 data_dir = os.path.join(settings.CATMAID_IMPORT_PATH, path)
                 if data_dir[-1] != os.sep:
                     data_dir = data_dir + os.sep
-                folders, projects, not_readable, already_available = find_project_folders(
-                    base_url, data_dir, filter_term, only_unknown)
+                project_index, projects, not_readable = find_project_folders(
+                    base_url, data_dir, filter_term)
 
-            # Sort the folders (wrt. short name) to be better readable
-            folders = sorted(folders, key=lambda folder: folder[1])
+            # Handle known projects
+            project_selector = ProjectSelector(projects, project_index, known_project_filter,
+                    known_project_strategy)
+
+            # Sort the index (wrt. short name) to be better readable
             # Save these settings in the form
-            form.folders = folders
             form.not_readable = not_readable
-            form.already_available = already_available
+            form.new_projects       = np = project_selector.new_projects
+            form.ignored_projects   = ip = project_selector.ignored_projects
+            form.merged_projects    = mp = project_selector.merged_projects
+            form.replacing_projects = rp = project_selector.replacing_projects
             self.projects = projects
             # Update the folder list and select all by default
-            form.fields['projects'].choices = folders
-            form.fields['projects'].initial = [f[0] for f in folders]
+            displayed_projects = [(t[0], t[1].name) for t in np + mp + rp];
+            displayed_projects = sorted(displayed_projects, key=lambda key: key[1])
+            form.displayed_projects = displayed_projects
+            form.fields['projects'].choices = displayed_projects
+            form.fields['projects'].initial = [i[0] for i in displayed_projects]
             # Get the available user permissions and update the list
+
+
+
             user_permissions = get_element_permissions(UserProxy, Project)
             form.user_permissions = user_permissions
             user_perm_tuples = get_element_permission_tuples(user_permissions)
@@ -479,9 +598,12 @@ class ImportingWizard(SessionWizardView):
                 })
             elif self.steps.current == 'projectselection':
                 context.update({
-                    'folders': getattr(form, "folders", []),
+                    'displayed_projects': getattr(form, "displayed_projects", []),
+                    'new_projects': getattr(form, "new_projects", []),
                     'not_readable': getattr(form, "not_readable", []),
-                    'already_available': getattr(form, "already_available", []),
+                    'ignored_projects': getattr(form, "ignored_projects", []),
+                    'merged_projects': getattr(form, "merged_projects", []),
+                    'replacing_projects': getattr(form, "replacing_projects", [])
                 })
             elif self.steps.current == 'classification':
                 context.update({
@@ -574,13 +696,14 @@ class ImportingWizard(SessionWizardView):
                 'classification')['classification_graph_suggestions']
         # Get remaining properties
         project_selection_data = self.get_cleaned_data_for_step('projectselection')
+        remove_unref_stack_data = project_selection_data['remove_unref_stack_data']
         default_tile_width = project_selection_data['default_tile_width']
         default_tile_height = project_selection_data['default_tile_height']
         default_tile_source_type = project_selection_data['default_tile_source_type']
         imported_projects, not_imported_projects = import_projects(
             self.request.user, selected_projects, tags,
             permissions, default_tile_width, default_tile_height,
-            default_tile_source_type, cls_graph_ids)
+            default_tile_source_type, cls_graph_ids, remove_unref_stack_data)
         # Show final page
         return render_to_response('catmaid/import/done.html', {
             'projects': selected_projects,
@@ -656,6 +779,19 @@ def get_permissions_from_selection(cls, selection):
         permission_list.append( (elem, perm) )
     return permission_list
 
+KNOWN_PROJECT_FILTERS = (
+    ('name',    'Name matches'),
+    ('stacks', 'Same stacks linked and all new stacks are known'),
+)
+
+KNOWN_PROJECT_STRATEGIES = (
+    ('add-anyway',     'Add imported project anyway'),
+    ('ignore',         'Ignore imported project'),
+    ('merge',          'Merge with existing project, add new stacks'),
+    ('merge-override', 'Merge with existing project, override stacks'),
+    ('replace',        'Replace existing projects with new version')
+)
+
 class DataFileForm(forms.Form):
     """ A form to select basic properties on the data to be
     imported. Path and filter constraints can be set here.
@@ -682,13 +818,26 @@ class DataFileForm(forms.Form):
     api_key = forms.CharField(required=False, widget=forms.TextInput(
         attrs={'size':'40', 'class': 'import-source-setting api-key'}),
         help_text="(Optional) API-Key of your user on the remote CATMAID instance.")
+    http_auth_user = forms.CharField(required=False, widget=forms.TextInput(
+        attrs={'size':'20', 'class': 'import-source-setting http-auth-user'}),
+        help_text="(Optional) HTTP-Auth username for the remote server.")
+    http_auth_pass = forms.CharField(required=False, widget=forms.PasswordInput(
+        attrs={'size':'20', 'class': 'import-source-setting http-auth-user'}),
+        help_text="(Optional) HTTP-Auth password for the remote server.")
     filter_term = forms.CharField(initial="*", required=False,
         widget=forms.TextInput(attrs={'size':'40'}),
         help_text="Optionally, you can apply a <em>glob filter</em> to the " \
                   "projects found in your data folder.")
-    only_unknown_projects = forms.BooleanField(initial=True, required=False,
-        help_text="A project is marked as <em>known</em> if (and only if) \
-                   all of its stacks are already known to the CATMAID instance.")
+    known_project_filter = forms.MultipleChoiceField(KNOWN_PROJECT_FILTERS,
+            label='Projects are known if', initial=('name', 'stacks'),
+            widget=forms.CheckboxSelectMultiple(), required=False,
+            help_text='Select what makes makes a project known. An OR operation ' \
+                    'will be used to combine multiple selections.')
+    known_project_strategy = forms.ChoiceField(
+            initial=getattr(settings, 'IMPORTER_DEFAULT_EXISTING_DATA_STRATEGY', 'merge'),
+            choices=KNOWN_PROJECT_STRATEGIES,
+            help_text="Decide if imported projects that are already known " \
+                    "(see above) should be ignored, merged or replaced.")
     base_url = forms.CharField(required=True,
         widget=forms.TextInput(attrs={'size':'40'}),
         help_text="The <em>base URL</em> should give read access to the data \
@@ -717,6 +866,10 @@ class ProjectSelectionForm(forms.Form):
         widget=forms.CheckboxSelectMultiple(
             attrs={'class': 'autoselectable'}),
         help_text="Only selected projects will be imported.")
+    remove_unref_stack_data = forms.BooleanField(initial=False,
+        required=False, label="Remove unreferenced stacks and stack groups",
+         help_text="If checked, all stacks and stack groups that are not "
+         "referenced after the import will be removed.")
     tags = forms.CharField(initial="", required=False,
         widget=forms.TextInput(attrs={'size':'50'}),
         help_text="A comma separated list of unquoted tags.")
@@ -732,7 +885,7 @@ class ProjectSelectionForm(forms.Form):
             initial=settings.IMPORTER_DEFAULT_TILE_SOURCE_TYPE,
             choices=TILE_SOURCE_TYPES,
             help_text="The default tile source type is used if there " \
-                    "none defined for n imported stack. It represents " \
+                    "none defined for an imported stack. It represents " \
                     "how the tile data is organized. See " \
                     "<a href=\"http://catmaid.org/page/tile_sources.html\">"\
                     "tile source conventions documentation</a>.")
@@ -783,44 +936,182 @@ class ConfirmationForm(forms.Form):
 
 def import_projects( user, pre_projects, tags, permissions,
         default_tile_width, default_tile_height, default_tile_source_type,
-        cls_graph_ids_to_link ):
-    """ Creates real CATMAID projects out of the PreProject objects
+        cls_graph_ids_to_link, remove_unref_stack_data):
+    """ Creates real CATMAID ojects out of the PreProject objects
     and imports them into CATMAID.
     """
+    remove_unimported_linked_stacks = False
+    known_stack_action = None
+    known_stackgroup_action = None
     imported = []
     not_imported = []
+    cursor = connection.cursor()
     for pp in pre_projects:
+        project = None
+        currently_linked_stacks = []
+        currently_linked_stack_ids = []
+        links = {}
+        all_stacks_known = all(s.already_known for s in pp.stacks)
         try:
+            if pp.already_known:
+                project = Project.objects.get(pk=pp.already_known_pid)
+                currently_linked_stacks = [ps.stack for ps in \
+                        ProjectStack.objects.filter(project=project)]
+                currently_linked_stack_ids = [s.id for s in \
+                        currently_linked_stacks]
+
+                # Check if all imported stacks are already linked to the
+                # exisiting project. For now onlt consider a stack linked if the
+                # existing project is the only link.
+                links = {ss:[l for l in currently_linked_stacks if ss.equals(l)] \
+                        for ss in pp.stacks}
+                all_stacks_linked = all(len(l) == 1 for l in links.values())
+
+                if 'ignore' == pp.action:
+                    # Ignore all projects that are marked to be ignored
+                    continue
+                elif 'add-anyway' == pp.action:
+                    project = None
+                    known_stack_action = 'import'
+                    known_stackgroup_action = 'import'
+                elif 'merge' == pp.action:
+                    # If all stacks are known already and linked to the existing
+                    # project, there is nothing left to do here. Otherwise, ignore
+                    # existing stacks.
+                    if all_stacks_linked:
+                      continue
+                    # Merging projects means adding new stacks to an existing
+                    # project, ignoring all existing linked stacks.
+                    known_stack_action = 'ignore'
+                    known_stackgroup_action = 'merge'
+                    remove_unimported_linked_stacks = False
+                elif 'merge-override' == pp.action:
+                    # Re-use existing project, but override properties of
+                    # existing stacks and remove links that are not part of the
+                    # new project definition
+                    known_stack_action = 'override'
+                    known_stackgroup_action = 'override'
+                    remove_unimported_linked_stacks = True
+                elif 'replace' == pp.action:
+                    # Delete existg projects and import all stacks
+                    project.delete()
+                    project = None
+                    known_stack_action = 'import'
+                    known_stackgroup_action = 'import'
+                    remove_unimported_linked_stacks = False
+                else:
+                    raise ValueError('Invalid known project action: ' + pp.action)
+
+                if remove_unimported_linked_stacks:
+                    # Remove all existing links that don't link to existing
+                    # projects.
+                    for stack in currently_linked_stacks:
+                        if not pp.imports_stack(stack):
+                            # Delete project stack entry and stack group membership.
+                            stack.delete()
+
             # Create stacks and add them to project
             stacks = []
+            updated_stacks = []
             stack_groups = {}
             translations = {}
             for s in pp.stacks:
-                stack = Stack.objects.create(
-                    title=s.name,
-                    dimension=s.dimension,
-                    resolution=s.resolution,
-                    image_base=s.image_base,
-                    num_zoom_levels=s.num_zoom_levels,
-                    file_extension=s.file_extension,
-                    tile_width=getattr(s, "tile_width", default_tile_width),
-                    tile_height=getattr(s, "tile_height", default_tile_height),
-                    tile_source_type=getattr(s, "tile_source_type",
+
+                # Test if stack is alrady known. This can change with every
+                # iteration. At least if we want to re-use stacks defined
+                # multiple times in import. Maybe make this an option?
+                known_before = s.already_known
+                linked_objects = links.get(s) or []
+                valid_link = len(linked_objects) == 1
+                existing_stack = linked_objects[0] if valid_link else None
+
+                stack_properties = {
+                    'title': s.name,
+                    'dimension': s.dimension,
+                    'resolution': s.resolution,
+                    'image_base': s.image_base,
+                    'num_zoom_levels': s.num_zoom_levels,
+                    'file_extension': s.file_extension,
+                    'tile_width': getattr(s, "tile_width", default_tile_width),
+                    'tile_height': getattr(s, "tile_height", default_tile_height),
+                    'tile_source_type': getattr(s, "tile_source_type",
                         default_tile_source_type),
-                    metadata=s.metadata)
-                stacks.append( stack )
+                    'metadata': s.metadata
+                }
+
+                stack = None
+
+                if valid_link:
+                  if 'ignore' ==  known_stack_action:
+                      continue
+                  elif 'import' == known_stack_action:
+                      # Nothing to do, just for completeness
+                      pass
+                  elif 'override' == known_stack_action:
+                      # Copy properties of known imported stacks to matching
+                      # existing ones that have a valid link to the existing
+                      # project.
+                      stack = existing_stack
+                      for k,v in stack_properties.iteritems():
+                        if hasattr(stack, k):
+                            setattr(stack, k, v)
+                        else:
+                            raise ValueError("Unknown stack field: " + k)
+                      stack.save()
+                      updated_stacks.append(stack)
+                  else:
+                      raise ValueError("Invalid action for known stacks: " +
+                          str(known_stack_action))
+
+                # TODO This breaks if the same stack is imported multiple times
+                # into the same imported project. Maybe we shouldn't only
+                # consider a single linked stack as valid.
+                if not stack:
+                    stack = Stack.objects.create(**stack_properties)
+                    stacks.append(stack)
+
                 # Add overlays of this stack
                 for o in s.overlays:
-                    Overlay.objects.create(
-                        title=o.name,
-                        stack=stack,
-                        image_base=o.image_base,
-                        default_opacity=o.default_opacity,
-                        file_extension=o.file_extension,
-                        tile_width=getattr(o, "tile_width", default_tile_width),
-                        tile_height=getattr(o, "tile_height", default_tile_height),
-                        tile_source_type=getattr(o, "tile_source_type",
-                            default_tile_source_type))
+
+                    overlay_properties = {
+                        'title': o.name,
+                        'stack': stack,
+                        'image_base': o.image_base,
+                        'default_opacity': o.default_opacity,
+                        'file_extension': o.file_extension,
+                        'tile_width': getattr(o, "tile_width", default_tile_width),
+                        'tile_height': getattr(o, "tile_height", default_tile_height),
+                        'tile_source_type': getattr(o, "tile_source_type",
+                            default_tile_source_type)
+                    }
+
+                    overlay = None
+                    known_overlay = None
+                    if existing_stack:
+                        known_overlay = Overlay.objects.filter(
+                            image_base=o.image_base, stack=existing_stack)
+                    if len(known_overlays) > 0:
+                      if 'ignore' == known_stack_action:
+                          continue
+                      elif 'import' == known_stack_action:
+                          pass
+                      elif 'override' == known_stack_action:
+                          # Find a linked (!) and matching overlay
+                          overlay = existing_overlay
+                          for k,v in overlay_properties.iteritems():
+                            if hasattr(overlay, k):
+                                setattr(ovrelay, k, v)
+                            else:
+                                raise ValueError("Unknown stack field: " + k)
+                          overlay.save()
+                      else:
+                          raise ValueError("Invalid action for known stacks: " +
+                              known_stack_action)
+
+                      # Default to overlay creation
+                      if not overlay:
+                         overlay = Overlay.objects.create(**overlay_properties)
+
                 # Collect stack group information
                 for sg in s.stackgroups:
                     stack_group = stack_groups.get(sg.name)
@@ -834,9 +1125,8 @@ def import_projects( user, pre_projects, tags, permissions,
                 # Keep track of project-stack offsets
                 translations[stack] = s.project_translation
 
-            # Create new project
-            p = Project.objects.create(
-                title=pp.name)
+            # Create new project, if no existing one has been selected before
+            p = project or Project.objects.create(title=pp.name)
             # Assign permissions to project
             assigned_permissions = []
             for user_or_group, perm in permissions:
@@ -844,16 +1134,34 @@ def import_projects( user, pre_projects, tags, permissions,
                 assigned_permissions.append( assigned_perm )
             # Tag the project
             p.tags.add( *tags )
-            # Add stacks to project
+            # Add stacks to import to project
             for s in stacks:
                 trln = Double3D.from_str(translations[s])
                 ps = ProjectStack.objects.create(
                     project=p, stack=s, translation=trln)
-            # Make project persistent
+            # Update project links of updated projects
+            for us in updated_stacks:
+                trln = Double3D.from_str(translations[us])
+                ps = ProjectStack.objects.create(project=p, stack=us,
+                    translation=trln)
+            # Make project changes persistent
             p.save()
 
-            # Save stack groups
+            # Save stack groups. If
             for sg, linked_stacks in stack_groups.iteritems():
+                existing_stackgroups = ClassInstance.objects.filter(project=p,
+                    class_column__class_name="stackgroup")
+                
+                if len(existing_stackgroups) > 0:
+                    if 'ignore' == known_stackgroup_action:
+                        continue
+                    elif 'import' == known_stackgroup_action:
+                        pass
+                    elif 'merge' == known_stackgroup_action:
+                        pass
+                    elif 'override' == known_stackgroup_action:
+                        existing_stackgroups.delete()
+                
                 stack_group = ClassInstance.objects.create(
                     user=user, project=p, name=sg,
                     class_column=Class.objects.get(project=p, class_name="stackgroup")
@@ -874,7 +1182,39 @@ def import_projects( user, pre_projects, tags, permissions,
                 link_existing_classification(workspace, user, p, cgroot)
             # Remember created project
             imported.append( pp )
+
+            # If unrefernced stacks and implicitely unreferenced stack groups
+            # should be removed, find all of them and and remove them in one go.
+            if remove_unref_stack_data:
+              cursor.execute("""
+                  SELECT s.id
+                  FROM  stack s
+                  LEFT OUTER JOIN project_stack ps
+                    ON s.id = ps.stack_id
+                  WHERE
+                    ps.id IS NULL
+              """)
+              unused_stack_ids = [r[0] for r in cursor.fetchall()]
+              # Delete cascaded with the help of Django
+              Stack.objects.filter(id__in=unused_stack_ids).delete()
+              # Delete all empty stack groups
+              cursor.execute("""
+                  DELETE FROM class_instance
+                  USING class_instance ci
+                  LEFT OUTER JOIN stack_class_instance sci
+                    ON ci.id = sci.class_instance_id
+                  JOIN class c
+                    ON ci.class_id = c.id
+                  WHERE sci.class_instance_id IS NULL
+                    AND c.class_name = 'stackgroup'
+              """)
+
         except Exception as e:
-            not_imported.append( (pp, e) )
+            import traceback
+            not_imported.append((
+                pp,
+                Exception("Couldn't import project: {} {}".format(str(e),
+                        str(traceback.format_exc())))
+            ))
 
     return (imported, not_imported)

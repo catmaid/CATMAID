@@ -37,6 +37,16 @@ Connector table (available through Neuron Navigator):
   skeleton IDs.
 
 
+Importer:
+
+- The project and stack importer now supports the customization of when projects
+  are considered known as well as what to do with known projects: ignore, merge
+  or replace.
+
+- If remote hosts are used as a project or stack import source, HTTP
+  Authentication can now be used to get access to a server.
+
+
 Miscellaneous:
 
 - The tracing tool has a new icon.

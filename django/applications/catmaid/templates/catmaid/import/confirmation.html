@@ -50,7 +50,14 @@
               {% for s in p.stacks %}
                 <tr>
                   {% if forloop.first %}
-                    <td>{{ p.name }}</td>
+                    <td>{{ p.name }}
+                    {% if p.already_known %}
+                        <br /><span class="help">Known project</span>
+                        <br /><span class="help">Action: {{ p.action }}</span>
+                    {% else %}
+                        <br /><span class="help">New project</span>
+                    {% endif %}
+                    </td>
                   {% else %}
                     <td></td>
                   {% endif %}

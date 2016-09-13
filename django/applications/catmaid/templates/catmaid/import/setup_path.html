@@ -30,10 +30,14 @@
       } else if ('remote' === source) {
         hideAll(document.querySelectorAll('.import-source-setting'));
         showAll(document.querySelectorAll('.remote-import'));
+        showAll(document.querySelectorAll('.http-auth-user'));
+        showAll(document.querySelectorAll('.http-auth-pass'));
       } else if ('remote-catmaid' === source) {
         hideAll(document.querySelectorAll('.import-source-setting'));
         showAll(document.querySelectorAll('.catmaid-host'));
         showAll(document.querySelectorAll('.api-key'));
+        showAll(document.querySelectorAll('.http-auth-user'));
+        showAll(document.querySelectorAll('.http-auth-pass'));
       } else {
         alert("Unknown import source: " + source);
       }

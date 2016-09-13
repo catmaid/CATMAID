@@ -286,21 +286,24 @@ in for potential projects:
 
 .. image:: _static/importer/path_setup.png
 
-With these settings, you can narrow down the set of folders looked at.
-The relative path setting can be used to specify a sub-directory below
-the import path. When doing so, the working directory will be changed
-to ``CATMAID_IMPORT_PATH`` plus the *relative path*. If left empty, just
-the ``CATMAID_IMPORT_PATH`` setting will be used. Additionally, you
-can *filter folders* in tho working directory by specifying a filter
-term. You can use Unix shell-style wildcards there. With the check-box
-below this setting, you can make sure the tool looks only at unknown
-projects. Here, a project is unknown if all of its stacks are known to
-CATMAID. A stack in turn is known if there is already a stack with the
-same image base. The last setting on this dialog is the *Base URL*. By default
-it is set to the value of ``IMPORTER_DEFAULT_IMAGE_BASE`` (if available). This
-setting plus the relative path stay the same for every project to be imported in
-this run. It is used if imported stacks don't provide a URL explicitly. To
-continue, click on the *next step* button.
+With these settings, you can narrow down the set of folders looked at.  The
+relative path setting can be used to specify a sub-directory below the import
+path. When doing so, the working directory will be changed to
+``CATMAID_IMPORT_PATH`` plus the *relative path*. If left empty, just the
+``CATMAID_IMPORT_PATH`` setting will be used. Additionally, you can *filter
+folders* in tho working directory by specifying a filter term, which supports
+Unix shell-style wildcards. The next setting lets you decide how to deal with
+already existing (known) projects and what is considered known in the first
+place.  A project is known can be declared to be known if the name of an
+imported project matches the name of an already existing one. Or, it can be
+considered known if if there is a project that is linked to the very same
+stacks like the project to be imported. A stack in turn is known if there is
+already a stack with the same image base. The last setting on this dialog is
+the *Base URL*. By default it is set to the value of
+``IMPORTER_DEFAULT_IMAGE_BASE`` (if available). This setting plus the relative
+path stay the same for every project to be imported in this run. It is used if
+imported stacks don't provide a URL explicitly. To continue, click on the *next
+step* button.
 
 The importer will tell you if it doesn't find any projects based on
 the settings of the first step. However, if it does find potential

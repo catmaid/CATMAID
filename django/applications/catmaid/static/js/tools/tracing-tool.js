@@ -420,7 +420,8 @@
     }
 
     this.prototype.changeSlice = function(val) {
-      activeStackViewer.moveToPixel( val, activeStackViewer.y, activeStackViewer.x, activeStackViewer.s );
+      activeStackViewer.moveToPixel( val, activeStackViewer.y, activeStackViewer.x, activeStackViewer.s )
+        .catch(CATMAID.warn);
     };
 
 

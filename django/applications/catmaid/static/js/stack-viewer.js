@@ -455,6 +455,21 @@
   };
 
   /**
+   * Indicate if location changes are blocked for this stack viewer. In
+   * contrast to not navigating with a project, this setting is checked
+   * before any attempt to move the project. If one stack viewer blocks
+   * the location change, no stack viewer is moved. Location changes are
+   * blocked if any layer has the 'blockLocationChange' flag set.
+   */
+  StackViewer.prototype.canMove = function() {
+    var blocked = false;
+    this._layers.forEach(function(layer) {
+      blocked = blocked || layer.blockLocationChange;
+    });
+    return !blocked;
+  };
+
+  /**
    * Move this stack to the given project coordinates and call the completion
    * callback as a continuation of the update() call. Before the actual move,
    * all layers in <layersWithBeforeMove> are notified about the upcoming move
@@ -504,6 +519,10 @@
    * @Deprecated Do not use this method as it mixes project coordinates with a stack-dependent scale level parameter
    */
   StackViewer.prototype.moveTo = function (zp, yp, xp, sp, completionCallback) {
+    // Cancel move if there are blocking layers
+    if (!this.canMove()) {
+      return Project.reject('The location of this viewer can\'t be changed at the moment');
+    }
     // Collect all layers in this stack that require a call before the stack is
     // moved (that is all the layers that have a beforeMove() function).
     var layersWithBeforeMove = [];
@@ -514,7 +533,15 @@
       }
     });
 
-    this.moveToAfterBeforeMoves( zp, yp, xp, sp, completionCallback, layersWithBeforeMove );
+    var self = this;
+    return new Promise(function(resolve, reject) {
+      var done = completionCallback ? function() {
+        completionCallback();
+        resolve();
+      } : resolve;
+
+      self.moveToAfterBeforeMoves( zp, yp, xp, sp, done, layersWithBeforeMove );
+    });
   };
 
   /**
@@ -528,7 +555,7 @@
   StackViewer.prototype.moveToProject = function (zp, yp, xp, res, completionCallback) {
     var sp = this.primaryStack.projectToStackSX( res );
 
-    this.moveTo( zp, yp, xp, sp, completionCallback );
+    return this.moveTo( zp, yp, xp, sp, completionCallback );
   };
 
   /**
@@ -539,22 +566,20 @@
       zs -= this._offset[2];
       ys -= this._offset[1];
       xs -= this._offset[0];
-      this._project.moveToProject(
+      return this._project.moveToProject(
         this.primaryStack.stackToProjectZ( zs, ys, xs ),
         this.primaryStack.stackToProjectY( zs, ys, xs ),
         this.primaryStack.stackToProjectX( zs, ys, xs ),
         this.primaryStack.stackToProjectSX( ss ),
         completionCallback);
     } else {
-      this.moveTo(
+      return this.moveTo(
         this.primaryStack.stackToProjectZ( zs, ys, xs ),
         this.primaryStack.stackToProjectY( zs, ys, xs ),
         this.primaryStack.stackToProjectX( zs, ys, xs ),
         ss,
         completionCallback);
     }
-
-    return true;
   };
 
   StackViewer.prototype.resize = function () {

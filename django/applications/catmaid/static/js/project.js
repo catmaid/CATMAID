@@ -282,6 +282,17 @@
     };
 
     /**
+     * Indicate if the project location can be changed. Stack viewers
+     * can block location change requests (e.g. to not interrupt user
+     * input).
+     */
+    this.canMove = function() {
+      return stackViewers.every(function(sv) {
+        return sv.navigateWithProject ? sv.canMove() : true;
+      });
+    };
+
+    /**
      * move all stacks to the physical coordinates, except sp, sp is a
      * stack specific scale level that cannot be traced back to where it
      * came from, so we just pass it through.
@@ -292,6 +303,10 @@
      * move might imply (e.g. requesting more treenodes for the tracing tool).
      */
     this.moveTo = function(zp, yp, xp, sp, completionCallback) {
+      if (!this.canMove()) {
+        return Promise.resolve("A location change is not possible at this moment");
+      }
+
       self.coordinates.x = xp;
       self.coordinates.y = yp;
       self.coordinates.z = zp;
@@ -320,6 +335,10 @@
      * in units per pixels
      */
     this.moveToProject = function(zp, yp, xp, res, completionCallback) {
+      if (!this.canMove()) {
+        return Promise.reject("A location change is not possible at this moment");
+      }
+
       self.coordinates.x = xp;
       self.coordinates.y = yp;
       self.coordinates.z = zp;

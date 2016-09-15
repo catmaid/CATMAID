@@ -487,9 +487,14 @@
               $("#connectivity_widget" + self.widgetID)
                   .find('.review-summary[skid]')
                   .each(function (index, element) {
-                    var counts = json[this.getAttribute('skid')];
-                    var pReviewed = parseInt(Math.floor(100 * counts[1] / counts[0])) | 0;
-                    this.textContent = pReviewed + '%';
+                    var pReviewed, counts = json[this.getAttribute('skid')];
+                    if (counts) {
+                      pReviewed = parseInt(Math.floor(100 * counts[1] / counts[0])) || 0;
+                      this.textContent = pReviewed + '%';
+                    } else {
+                      pReviewed = 0;
+                      this.textContent = 'unknown';
+                    }
                     this.style.backgroundColor = CATMAID.ReviewSystem.getBackgroundColor(pReviewed);
               });
 

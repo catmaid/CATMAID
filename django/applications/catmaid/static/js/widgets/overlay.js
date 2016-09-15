@@ -3144,11 +3144,16 @@ SkeletonAnnotations.TracingOverlay.prototype.selectRadius = function(treenode_id
     if (originalNode.surroundingCircleElements) {
       hideCircleAndCallback();
     } else {
+      // Block location changes while selecting a radius
+      self.pixiLayer.blockLocationChange = true;
+
       originalNode.drawSurroundingCircle(false, toStack, stackToProject,
           hideCircleAndCallback);
       // Attach a handler for the ESC key to cancel selection
       $('body').on('keydown.catmaidRadiusSelect', function(event) {
         if (27 === event.keyCode) {
+          // Allow location changes again
+          self.pixiLayer.blockLocationChange = false;
           // Unbind key handler and remove circle
           $('body').off('keydown.catmaidRadiusSelect');
           originalNode.removeSurroundingCircle();
@@ -3160,6 +3165,9 @@ SkeletonAnnotations.TracingOverlay.prototype.selectRadius = function(treenode_id
 
     function hideCircleAndCallback()
     {
+      // Allow location changes again
+      self.pixiLayer.blockLocationChange = false;
+
       // Unbind key handler
       $('body').off('keydown.catmaidRadiusSelect');
       var node = verifyNode(treenode_id);

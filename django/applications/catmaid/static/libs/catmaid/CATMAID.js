@@ -303,6 +303,7 @@ var requestQueue = new RequestQueue();
    *                                 performed.
    */
   CATMAID.fetch = function(relativeURL, method, data, raw, id) {
+    method = method || 'GET';
     return new Promise(function(resolve, reject) {
       var url = CATMAID.makeURL(relativeURL);
       requestQueue.register(url, method, data, function(status, text, xml) {

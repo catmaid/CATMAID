@@ -117,7 +117,7 @@
   User.getUsers = function(completionCallback)
   {
     // Asynchronously request the list of users from the server.
-    return CATMAID.fetch(CATMAID.makeURL('user-list'))
+    return CATMAID.fetch('user-list')
       .then(function(json) {
         for (var i = 0; i < json.length; i++)
         {

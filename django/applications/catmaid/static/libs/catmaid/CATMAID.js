@@ -397,4 +397,27 @@ var requestQueue = new RequestQueue();
    */
   CATMAID.noop = function() {};
 
+  /**
+   * A function call wrapper that will one particular field of a target object
+   * during a function call and resets it afterwards.
+   */
+  CATMAID.with = function(target, field, value, isPromise, fn, resetValue) {
+    var originalValue = 5 === arguments.length ? target[field] : resetValue;
+    target[field] = value;
+    var result = fn();
+    if (isPromise) {
+      var done = function(r) {
+        target[field] = originalValue;
+        return r;
+      };
+      result = result.then(done);
+      // Reset in error case separetly from general error handling of this
+      // promise.
+      result.catch(done);
+    } else {
+      target[field] = originalValue;
+    }
+    return result;
+  };
+
 })(CATMAID);

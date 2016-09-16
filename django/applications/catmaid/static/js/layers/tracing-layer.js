@@ -23,6 +23,9 @@
     this.tracingOverlay = new SkeletonAnnotations.TracingOverlay(stackViewer, this, options);
     this.isHideable = true;
 
+    // If the tracing layer state should be updated even though it is hidden
+    this.updateHidden = false;
+
     if (!this.stackViewer.getLayersView().contains(this.renderer.view)) {
       this.stackViewer.getLayersView().appendChild(this.renderer.view);
       this.renderer.view.className = 'sliceTiles';

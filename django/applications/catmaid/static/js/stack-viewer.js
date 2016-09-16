@@ -385,7 +385,7 @@
     for (var i = 0; i < this._layerOrder.length; i++) {
       layer = this._layers.get(this._layerOrder[i]);
       // If a layer is invisble, continue with the next one.
-      if (layer.hasOwnProperty('visible') && !layer.visible) {
+      if (layer.hasOwnProperty('visible') && !layer.visible && !layer.updateHidden) {
         continue;
       }
       ++ semaphore;

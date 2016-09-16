@@ -633,7 +633,9 @@
           return false;
         var modifierKey = e.ctrlKey || e.metaKey;
         if (CATMAID.TracingTool.Settings.session.invert_virtual_node_ignore_modifier) modifierKey = !modifierKey;
-        activeTracingLayer.tracingOverlay.goToParentNode(SkeletonAnnotations.getActiveNodeId(), modifierKey);
+        var fn = activeTracingLayer.tracingOverlay.goToParentNode.bind(activeTracingLayer.tracingOverlay,
+            SkeletonAnnotations.getActiveNodeId(), modifierKey);
+        activeTracingLayer.withHiddenUpdate(true, fn);
         return true;
       }
     }));
@@ -646,7 +648,9 @@
           return false;
         var modifierKey = e.ctrlKey || e.metaKey;
         if (CATMAID.TracingTool.Settings.session.invert_virtual_node_ignore_modifier) modifierKey = !modifierKey;
-        activeTracingLayer.tracingOverlay.goToChildNode(SkeletonAnnotations.getActiveNodeId(), e.shiftKey, modifierKey);
+        var fn = activeTracingLayer.tracingOverlay.goToChildNode.bind(activeTracingLayer.tracingOverlay,
+            SkeletonAnnotations.getActiveNodeId(), e.shiftKey, modifierKey);
+        activeTracingLayer.withHiddenUpdate(true, fn);
         return true;
       }
     }));

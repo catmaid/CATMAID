@@ -27,6 +27,9 @@ Miscellaneous:
   to re-login or change the user entirely. The action causing the permission
   error, is *not* repeated automatically.
 
+- Using brackets to navigate along a skeleton now also works if the
+  reconstruction data is hidden (e.g. when the space bar is held down).
+
 
 ### Bug fixes
 

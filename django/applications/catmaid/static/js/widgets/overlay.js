@@ -1157,7 +1157,9 @@ SkeletonAnnotations.TracingOverlay.prototype.selectNode = function(id) {
   var node = this.nodes[id];
   if (node) {
     this.activateNode(node);
+    return Promise.resolve(node);
   }
+  Promise.reject(id);
 };
 
 /**
@@ -2991,9 +2993,9 @@ SkeletonAnnotations.TracingOverlay.prototype.cycleThroughBranches = function (
   // If virtual nodes should be respected, jump to the next section. Otherwise,
   // move to the child node (which might not be on the next section).
   if (ignoreVirtual) {
-    this.moveTo(node[3], node[2], node[1], this.selectNode.bind(this, node[0]));
+    return this.moveTo(node[3], node[2], node[1], this.selectNode.bind(this, node[0]));
   } else {
-    this.moveToNodeOnSectionAndEdge(node[0], this.nextBranches.tnid, true, true);
+    return this.moveToNodeOnSectionAndEdge(node[0], this.nextBranches.tnid, true, true);
   }
 };
 
@@ -3006,23 +3008,26 @@ SkeletonAnnotations.TracingOverlay.prototype.cycleThroughBranches = function (
  * a jump to a location that is farther away than one section.
  */
 SkeletonAnnotations.TracingOverlay.prototype.goToParentNode = function(treenode_id, ignoreVirtual) {
-  if (this.isIDNull(treenode_id)) return;
+  if (this.isIDNull(treenode_id)) return Promise.reject("No treenode to select provided");
 
   // Find parent of node
   var parentID;
   if (SkeletonAnnotations.isRealNode(treenode_id)) {
     var node = this.nodes[treenode_id];
     if (!node) {
-      CATMAID.error("Could not find node with id #" + treenode_id);
-      return;
+      var msg = "Could not find node with id #" + treenode_id;
+      CATMAID.error(msg);
+      return Promise.reject(msg);
     }
     if (node.type === SkeletonAnnotations.TYPE_CONNECTORNODE) {
-      CATMAID.info("Connector nodes do not have parent nodes");
-      return;
+      var msg = "Connector nodes do not have parent nodes";
+      CATMAID.info(msg);
+      return Promise.reject(msg);
     }
     if (null === node.parent_id) {
-      CATMAID.info("This is the root node, can't move to its parent");
-      return;
+      var msg = "This is the root node, can't move to its parent";
+      CATMAID.info(msg);
+      return Promise.reject(msg);
     }
     parentID = node.parent_id;
   } else {
@@ -3030,11 +3035,11 @@ SkeletonAnnotations.TracingOverlay.prototype.goToParentNode = function(treenode_
   }
 
   if (ignoreVirtual) {
-    this.moveToAndSelectNode(parentID);
+    return this.moveToAndSelectNode(parentID);
   } else {
     // Move to clostest node on section after the current node in direction of
     // parent node (which may be the parent node or a virtual node).
-    this.moveToNodeOnSectionAndEdge(treenode_id, parentID, true, false);
+    return this.moveToNodeOnSectionAndEdge(treenode_id, parentID, true, false);
   }
 };
 
@@ -3046,12 +3051,12 @@ SkeletonAnnotations.TracingOverlay.prototype.goToParentNode = function(treenode_
  * @param {boolean} cycle - If true, subsequent calls cycle through children
  */
 SkeletonAnnotations.TracingOverlay.prototype.goToChildNode = function (treenode_id, cycle, ignoreVirtual) {
-  if (this.isIDNull(treenode_id)) return;
+  if (this.isIDNull(treenode_id)) return Promise.reject("No valid node provided");
 
   // If the existing nextBranches was fetched for this treenode, reuse it to
   // prevent repeated queries when quickly alternating between child and parent.
   if (cycle || this.hasCachedBranches(0, treenode_id)) {
-    this.cycleThroughBranches(treenode_id, 0, ignoreVirtual);
+    return this.cycleThroughBranches(treenode_id, 0, ignoreVirtual);
   } else {
     var self = this;
     var startFromRealNode = SkeletonAnnotations.isRealNode(treenode_id);
@@ -3059,26 +3064,32 @@ SkeletonAnnotations.TracingOverlay.prototype.goToChildNode = function (treenode_
     // parent. All result nodes will be after the virtual node.
     var queryNode = startFromRealNode ? treenode_id :
         SkeletonAnnotations.getParentOfVirtualNode(treenode_id);
-    this.submit(
-        django_url + project.id + "/treenodes/" + queryNode + "/children",
-        'POST',
-        undefined,
-        function(json) {
-          // See goToNextBranchOrEndNode for JSON schema description.
-          if (json.length === 0) {
-            // Already at a branch or end node
-            CATMAID.msg('Already there', 'You are at an end node');
-          } else {
-            // In case of a virtual node, we need to filter the returned array
-            // to only include the branch that contains the virtual node.
-            if (!startFromRealNode) {
-              var childID = parseInt(SkeletonAnnotations.getChildOfVirtualNode(treenode_id), 10);
-              json = json.filter(function(b) { return b[0][0] === childID; });
+    return new Promise(function(resolve, reject) {
+      self.submit(
+          django_url + project.id + "/treenodes/" + queryNode + "/children",
+          'POST',
+          undefined,
+          function(json) {
+            // See goToNextBranchOrEndNode for JSON schema description.
+            if (json.length === 0) {
+              // Already at a branch or end node
+              CATMAID.msg('Already there', 'You are at an end node');
+            } else {
+              // In case of a virtual node, we need to filter the returned array
+              // to only include the branch that contains the virtual node.
+              if (!startFromRealNode) {
+                var childID = parseInt(SkeletonAnnotations.getChildOfVirtualNode(treenode_id), 10);
+                json = json.filter(function(b) { return b[0][0] === childID; });
+              }
+              self.cacheBranches(treenode_id, json);
+              self.cycleThroughBranches(null, 0, ignoreVirtual)
+                .then(resolve);
             }
-            self.cacheBranches(treenode_id, json);
-            self.cycleThroughBranches(null, 0, ignoreVirtual);
-          }
-        });
+          },
+          undefined,
+          undefined,
+          reject);
+    });
   }
 };
 
@@ -3369,9 +3380,11 @@ SkeletonAnnotations.TracingOverlay.prototype.measureRadius = function () {
  * otherwise, coordinates for moved nodes would not be updated.
  */
 SkeletonAnnotations.TracingOverlay.prototype.moveTo = function(z, y, x, fn) {
-  var stackViewer = this.stackViewer;
-  this.updateNodeCoordinatesInDB(function() {
-    stackViewer.getProject().moveTo(z, y, x, undefined, fn);
+  var self = this;
+  return new Promise(function(resolve, reject) {
+    self.updateNodeCoordinatesInDB(resolve);
+  }).then(function() {
+    return self.stackViewer.getProject().moveTo(z, y, x, undefined, fn);
   });
 };
 
@@ -3380,9 +3393,9 @@ SkeletonAnnotations.TracingOverlay.prototype.moveTo = function(z, y, x, fn) {
  * Move to a node and select it. Can handle virtual nodes.
  */
 SkeletonAnnotations.TracingOverlay.prototype.moveToAndSelectNode = function(nodeID, fn) {
-  if (this.isIDNull(nodeID)) return;
+  if (this.isIDNull(nodeID)) return Promise.reject("Couldn't select node " + nodeID);
   var self = this;
-  this.goToNode(nodeID,
+  return this.goToNode(nodeID,
       function() {
         self.selectNode(nodeID);
         if (fn) fn();
@@ -3395,26 +3408,30 @@ SkeletonAnnotations.TracingOverlay.prototype.moveToAndSelectNode = function(node
  * real parent and real child of it and determine the correct position.
  */
 SkeletonAnnotations.TracingOverlay.prototype.goToNode = function (nodeID, fn) {
-  if (this.isIDNull(nodeID)) return;
+  if (this.isIDNull(nodeID)) return Promise.reject("No node provided for selection");
+
   var node = this.nodes[nodeID];
   if (node) {
-    this.moveTo(
+    return this.moveTo(
       this.pix2physZ(node.z, node.y, node.x),
       this.pix2physY(node.z, node.y, node.x),
       this.pix2physX(node.z, node.y, node.x),
       fn);
   } else if (SkeletonAnnotations.isRealNode(nodeID)) {
     var self = this;
-    this.submit(
-        django_url + project.id + "/node/get_location",
-        'POST',
-        {tnid: nodeID},
-        function(json) {
-          // json[0], [1], [2], [3]: id, x, y, z
-          self.moveTo(json[3], json[2], json[1], fn);
-        },
-        false,
-        true);
+    return new Promise(function(resolve, reject) {
+      self.submit(
+          django_url + project.id + "/node/get_location",
+          'POST',
+          {tnid: nodeID},
+          function(json) {
+            // json[0], [1], [2], [3]: id, x, y, z
+            resolve(self.moveTo(json[3], json[2], json[1], fn));
+          },
+          false,
+          true,
+          reject);
+    });
   } else {
     // Get parent and child ID locations
     var vnComponents = SkeletonAnnotations.getVirtualNodeComponents(nodeID);
@@ -3425,11 +3442,15 @@ SkeletonAnnotations.TracingOverlay.prototype.goToNode = function (nodeID, fn) {
     var vnZ = SkeletonAnnotations.getZOfVirtualNode(nodeID, vnComponents);
 
     if (parentID && childID && vnX && vnY && vnZ) {
-      this.moveTo(vnZ, vnY, vnX, fn);
+      return this.moveTo(vnZ, vnY, vnX, fn);
     } else {
-      CATMAID.warn("Could not find location for node " + nodeID);
+      var msg = "Could not find location for node " + nodeID;
+      CATMAID.warn(msg);
+      return Promise.reject(msg);
     }
   }
+
+  return Promise.reject("Could not select node " + nodeID);
 };
 
 /**
@@ -3659,9 +3680,15 @@ SkeletonAnnotations.TracingOverlay.prototype.moveToNodeOnSectionAndEdge = functi
   return this.getNodeOnSectionAndEdge(childID, parentID, reverse)
     .then((function(node) {
       var callback = select ? this.selectNode.bind(this, node.id) : undefined;
-      this.moveTo(node.z, node.y, node.x, callback);
-      return node;
-    }).bind(this));
+      return Promise.all([
+        Promise.resolve(node),
+        this.moveTo(node.z, node.y, node.x, callback)
+      ]);
+    }).bind(this))
+    .then(function(results) {
+      // Return node
+      return results[0];
+    });
 };
 
 /**

@@ -80,6 +80,19 @@
     CATMAID.PixiLayer.prototype.unregister.call(this);
   };
 
+  /**
+   * Execute the passed in function, optionally asyncronously as a promise,
+   * while making sure nodes get updated even though this layer might not be
+   * visible.
+   */
+  TracingLayer.prototype.withHiddenUpdate = function(isPromise, fn) {
+    // Explicitly reset this value to false, because executing many requests in
+    // a row won't have individual requests wait until the previous one finishes
+    // and resets this value. Therefore, reading out the original value isn't
+    // necessarily reliable.
+    return CATMAID.with(this, 'updateHidden', true, isPromise, fn, false);
+  };
+
   CATMAID.TracingLayer = TracingLayer;
 
 })(CATMAID);

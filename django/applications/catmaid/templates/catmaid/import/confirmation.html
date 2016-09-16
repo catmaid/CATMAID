@@ -40,6 +40,7 @@
             <th>Stack Resolution</th>
             <th>Stack Name</th>
             <th>Stack Zoom Levels</th>
+            <th>Tile size (w x h)</th>
             <th>Stack Extension</th>
             <th>Stack Image Base</th>
             <th>Stack Metadata</th>
@@ -57,6 +58,7 @@
                   <td>{{ s.resolution }}</td>
                   <td>{{ s.name }}</td>
                   <td>{{ s.num_zoom_levels }}</td>
+                  <td>{{ s.tile_width }} x {{ s.tile_height }}</td>
                   <td>{{ s.file_extension }}</td>
                   {% if s.accessible %}
                       <td class="accessible">{{ s.image_base }}</td>
@@ -106,7 +108,8 @@
         {% endfor %}
     </table></p>
 
-    <p>Also, all projects share some options:</p>
+    <p>Additionally the following default options are shared by all projects
+    (only used if unavailable otherwise).</p>
     <p><table>
         <tr>
             <th>Tags</th>

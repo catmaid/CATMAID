@@ -551,8 +551,8 @@
       if (Array.isArray(e)) {
         switch (e.length) {
           case 1: return tab.appendChild(e[0]);
-          case 2: return CATMAID.DOM.appendButton(tab, e[0], e[1]);
-          case 3: return CATMAID.DOM.appendButton(tab, e[0], e[1], e[2]);
+          case 2: return CATMAID.DOM.appendButton(tab, e[0], undefined, e[1]);
+          case 3: return CATMAID.DOM.appendButton(tab, e[0], undefined, e[1], e[2]);
           case 4: return CATMAID.DOM.appendCheckbox(tab, e[0], e[0], e[1], e[2], e[3]);
           case 5: return CATMAID.DOM.appendNumericField(tab, e[0], e[0], e[1], e[2], e[3], e[4]);
           default: return undefined;
@@ -562,7 +562,7 @@
           case 'child':
             return tab.appendChild(e.element);
           case 'button':
-            return CATMAID.DOM.appendButton(tab, e.label, e.onclick, e.attr);
+            return CATMAID.DOM.appendButton(tab, e.label, e.title, e.onclick, e.attr);
           case 'checkbox':
             return CATMAID.DOM.appendCheckbox(tab, e.label, e.title, e.value, e.onclick, e.left);
           case 'numeric':
@@ -578,11 +578,14 @@
   /**
    * Append a new button to another element.
    */
-  DOM.appendButton = function(div, label, onclickFn, attr) {
+  DOM.appendButton = function(div, label, title, onclickFn, attr) {
     var b = document.createElement('input');
     if (attr) Object.keys(attr).forEach(function(key) { b.setAttribute(key, attr[key]); });
     b.setAttribute('type', 'button');
     b.setAttribute('value', label);
+    if (title) {
+      b.setAttribute('title', title);
+    }
     b.onclick = onclickFn;
     div.appendChild(b);
     return b;

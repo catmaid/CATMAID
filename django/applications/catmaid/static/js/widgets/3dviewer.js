@@ -5308,6 +5308,17 @@
         return;
     }
 
+    var users = CATMAID.User.all();
+    users = Object.keys(this.space.userColormap)
+        .map(function (userID) { return users[userID]; })
+        .filter(function (user) { return !!user && user.id !== "-1"; })
+        .sort(CATMAID.User.displayNameCompare);
+
+    if (0 === users.length) {
+      CATMAID.warn("No user-based coloring mode selected");
+      return;
+    }
+
     // Create a new color dialog
     var dialog = document.createElement('div');
     dialog.setAttribute("id", "user-colormap-dialog");
@@ -5325,6 +5336,14 @@
         '</thead>' +
         '<tbody></tbody>';
     dialog.appendChild(tab);
+    users.forEach(function (user) {
+      var userID = user.id;
+      var rowElement = $('<tr/>');
+      rowElement.append( $('<td/>').text( user.login ) );
+      rowElement.append( $('<td/>').text( user.fullName ) );
+      rowElement.append( $('<div/>').css('width', '100px').css('height', '20px').css('background-color', '#' + this.space.userColormap[userID].getHexString()) );
+      $('tbody:last', tab).append( rowElement );
+    }, this);
 
     $(dialog).dialog({
       height: 440,
@@ -5340,20 +5359,6 @@
         $('#user-colormap-dialog').remove();
       }
     });
-
-    var users = CATMAID.User.all();
-    users = Object.keys(this.space.userColormap)
-        .map(function (userID) { return users[userID]; })
-        .filter(function (user) { return !!user && user.id !== "-1"; })
-        .sort(CATMAID.User.displayNameCompare);
-    users.forEach(function (user) {
-      var userID = user.id;
-      var rowElement = $('<tr/>');
-      rowElement.append( $('<td/>').text( user.login ) );
-      rowElement.append( $('<td/>').text( user.fullName ) );
-      rowElement.append( $('<div/>').css('width', '100px').css('height', '20px').css('background-color', '#' + this.space.userColormap[userID].getHexString()) );
-      $('#usercolormap-table > tbody:last').append( rowElement );
-    }, this);
   };
 
   WebGLApplication.prototype.toggleInvertShading = function() {

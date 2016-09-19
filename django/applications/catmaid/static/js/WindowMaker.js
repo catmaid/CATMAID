@@ -1152,7 +1152,12 @@ var WindowMaker = new function()
           [colorMenu],
           [document.createTextNode(' Synapse color:')],
           [synColors],
-          ['User colormap', WA.toggleUserColormapDialog.bind(WA)],
+          {
+            type: 'button',
+            label: 'User colormap',
+            title: 'Show usernames associated to used colors. Requires user-based coloring mode.',
+            onclick: WA.toggleUserColormapDialog.bind(WA)
+          }
         ]);
 
     var adjustFn = function(param_name) {

@@ -1899,7 +1899,7 @@
     } else {
       prepare = new Promise(function(resolve, reject) {
         var loader = new THREE.FontLoader();
-        var url = CATMAID.makeStaticURL('libs/three.js/fonts/helvetiker_regular.typeface.js');
+        var url = CATMAID.makeStaticURL('libs/three.js/fonts/helvetiker_regular.typeface.json');
         loader.load(url, function(newFont) {
           // Share font
           options.font = newFont;

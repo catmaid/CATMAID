@@ -5724,6 +5724,8 @@
         "animation-export-frame-rate", '25');
     var backforthField = dialog.appendCheckbox('Back and forth',
         'animation-export-backforth', false);
+    var restoreViewField = dialog.appendCheckbox('Restore view',
+        'animation-export-restore-view', true);
     var camera = this.space.view.camera;
     var target = this.space.view.controls.target;
     var rotationAxis = this.options.animation_axis;
@@ -5735,7 +5737,7 @@
 
     dialog.onOK = handleOK.bind(this);
 
-    dialog.show(400, 450, true);
+    dialog.show(400, "auto", true);
 
     function handleOK() {
       /* jshint validthis: true */ // `this` is bound to this WebGLApplication
@@ -5771,6 +5773,7 @@
             camera: camera,
             target: target,
             backandforth: backforthField.checked,
+            restoreView: restoreViewField.checked
           };
 
           // Add a notification handler for stepwise visibility, if enabled and at least
@@ -5805,7 +5808,7 @@
           // Get frame images
           var animation = CATMAID.AnimationFactory.createAnimation(options);
           this.getAnimationFrames(animation, nframes, undefined,
-              width, height, onDone, onStep);
+              width, height, onDone, onStep, options);
         } catch (e) {
           // Unblock UI and re-throw exception
           this.space.setSkeletonVisibility(visMap);
@@ -5823,7 +5826,7 @@
    * frame.
    */
   WebGLApplication.prototype.getAnimationFrames = function(animation, nframes,
-      startTime, width, height, onDone, onStep)
+      startTime, width, height, onDone, onStep, options)
   {
     // Save current dimensions and set new ones, if available
     var originalWidth, originalHeight;
@@ -5833,6 +5836,9 @@
         originalHeight = this.space.canvasHeight;
       }
     }
+
+    // Save current view
+    var originalView = options.camera.position.clone();
 
     onStep = onStep || function() {};
     nframes = nframes || 100;
@@ -5859,6 +5865,10 @@
         setTimeout(renderFrame.bind(this, animation, startTime, nextFrame,
               nframes, frames, w, h, onDone, onStep), 5);
       } else {
+        // Restore original view, if not disabled
+        if (options.restoreView) {
+          options.camera.position.copy(originalView);
+        }
         // Restore original dimensions
         if (originalWidth && originalHeight) {
           this.resizeView(originalWidth, originalHeight);

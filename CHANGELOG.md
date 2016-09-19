@@ -10,6 +10,9 @@
   it and the stack viewer position is changed accordingly. This works just like
   picking nodes, except that the active node doesn't change.
 
+- The original camera location is now restored by default after exporting an
+  animation.
+
 
 Review widget:
 

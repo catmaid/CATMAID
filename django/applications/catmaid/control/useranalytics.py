@@ -1,5 +1,5 @@
 import numpy as np
-from datetime import timedelta
+from datetime import timedelta, datetime
 from dateutil import parser as dateparser
 import pytz
 
@@ -57,19 +57,43 @@ def plot_useranalytics(request):
     """ Creates a PNG image containing different plots for analzing the
     performance of individual users over time.
     """
+    time_zone = pytz.utc
+
     userid = request.GET.get('userid', -1)
     project_id = request.GET.get('project_id', None)
     project = get_object_or_404(Project, pk=project_id) if project_id else None
-    start_date = request.GET.get('start')
-    end_date = request.GET.get('end')
     all_writes = request.GET.get('all_writes', 'false') == 'true'
     maxInactivity = int(request.GET.get('max_inactivity', 3))
 
+    # Get the start date for the query, defaulting to 7 days ago.
+    start_date = request.GET.get('start', None)
+    if start_date:
+        start_date = dateparser.parse(start_date)
+    else:
+        with timezone.override(time_zone):
+            start_date = timezone.now() - timedelta(7)
+    start_date = datetime(start_date.year, start_date.month, start_date.day,
+                        tzinfo=time_zone)
+
+    # Get the end date for the query, defaulting to now.
+    end_date = request.GET.get('end', None)
+    if end_date:
+        end_date = dateparser.parse(end_date)
+    else:
+        with timezone.override(time_zone):
+            end_date = timezone.now()
+
+    # The API is inclusive and should return stats for the end date as
+    # well. The actual query is easier with an exclusive end and therefore
+    # the end date is set to the beginning of the next day.
+    end_date = end_date + timedelta(days=1)
+    end_date = datetime(end_date.year, end_date.month, end_date.day,
+                        tzinfo=time_zone)
+
     if request.user.is_superuser or \
             project and request.user.has_perm('can_administer', project):
-        end = dateparser.parse(end_date).replace(tzinfo=pytz.utc) if end_date else timezone.now()
-        start = dateparser.parse(start_date).replace(tzinfo=pytz.utc) if start_date else end - timedelta(end.isoweekday() + 7)
-        f = generateReport( userid, project_id, maxInactivity, start, end, all_writes )
+        f = generateReport( userid, project_id, maxInactivity, start_date,
+                end_date, all_writes )
     else:
         f = generateErrorImage('You lack permissions to view this report.')
 

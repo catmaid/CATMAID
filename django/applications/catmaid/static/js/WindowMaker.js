@@ -1494,7 +1494,7 @@ var WindowMaker = new function()
     // skeletons on visibility changes.
     var Subscription = CATMAID.SkeletonSourceSubscription;
     WA.addSubscription(new Subscription(st.widget, true, false,
-          CATMAID.SkeletonSource.UNION, Subscription.ALL_EVENTS));
+          CATMAID.SkeletonSource.UNION, Subscription.ALL_EVENTS), true);
     // Override existing local models if subscriptions are updated
     WA.ignoreLocal = true;
 

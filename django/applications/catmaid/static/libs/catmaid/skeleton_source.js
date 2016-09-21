@@ -75,8 +75,13 @@
    * Have this source subscribe to another skeleton source. Besides storing
    * required options this method will also register the source to relevant
    * events on the source subscribed to.
+   *
+   * @param {Subscription} subscriptions The subscription instance to add
+   * @param {boolean}      ignoreEmpty   If an initial subscription update
+   *                                     should also be performed without source
+   *                                     skeletons.
    */
-  SkeletonSource.prototype.addSubscription = function(subscription) {
+  SkeletonSource.prototype.addSubscription = function(subscription, ignoreEmpty) {
     // Don't allow multiple subscriptions to the same source
     var index = this.subscriptions.indexOf(subscription);
     if (-1 !== index) {
@@ -87,7 +92,7 @@
     this.subscriptions.push(subscription);
 
     // Do initial update
-    this.loadSubscriptions();
+    this.loadSubscriptions(ignoreEmpty);
 
     this.trigger(this.EVENT_SUBSCRIPTION_ADDED, this, subscription);
   };
@@ -132,8 +137,11 @@
    * Clear and rebuild skeleton selection of this widget, based on current
    * subscription states. This is currently done in the most naive way without
    * incorporating any hinting to avoid recomputation.
+   *
+   * @param {boolean} ignoreEmpty Optional, if true no initial target update
+   *                              will be performed if the source is empty.
    */
-  SkeletonSource.prototype.loadSubscriptions = function() {
+  SkeletonSource.prototype.loadSubscriptions = function(ignoreEmpty) {
 
     // Find a set of skeletons that are removed and one that is added/modified
     // to not require unnecessary reloads.
@@ -186,7 +194,7 @@
     }
 
     // Update all others
-    if (result) {
+    if (!ignoreEmpty || (result && !CATMAID.tools.isEmpty(result))) {
       this.updateModels(result);
     }
   };

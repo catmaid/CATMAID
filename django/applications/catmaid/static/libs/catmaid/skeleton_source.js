@@ -76,10 +76,10 @@
    * required options this method will also register the source to relevant
    * events on the source subscribed to.
    *
-   * @param {Subscription} subscriptions The subscription instance to add
-   * @param {boolean}      ignoreEmpty   If an initial subscription update
-   *                                     should also be performed without source
-   *                                     skeletons.
+   * @param {Subscription} subscription The subscription instance to add
+   * @param {boolean}      ignoreEmpty  Optional, if an initial subscription
+   *                                    update should also be performed without
+   *                                    source skeletons. Default is true.
    */
   SkeletonSource.prototype.addSubscription = function(subscription, ignoreEmpty) {
     // Don't allow multiple subscriptions to the same source

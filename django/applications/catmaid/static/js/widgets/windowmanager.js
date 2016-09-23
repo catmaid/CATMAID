@@ -765,6 +765,8 @@ function CMWTabbedNode( children )
   };
 
   this.activateChild = function (child) {
+    if (activeChild === child) return;
+
     childIndex = children.indexOf(child);
     if (childIndex === -1) return;
 

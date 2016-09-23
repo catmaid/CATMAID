@@ -3702,7 +3702,7 @@ SkeletonAnnotations.TracingOverlay.prototype.goToLastEditedNode = function(skele
   this.submit(
     django_url + project.id + '/node/most_recent',
     'POST',
-    {treenode_id: SkeletonAnnotations.getActiveNodeId()},
+    {skeleton_id: skeletonID},
     function (json) {
       if (json.id) {
         self.moveTo(json.z, json.y, json.x,

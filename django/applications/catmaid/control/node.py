@@ -511,8 +511,7 @@ def update_location_reviewer(request, project_id=None, node_id=None):
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def most_recent_treenode(request, project_id=None):
-    treenode_id = int(request.POST.get('treenode_id', -1))
-    skeleton_id = Treenode.objects.get(pk=treenode_id).skeleton_id
+    skeleton_id = int(request.POST.get('skeleton_id', -1))
 
     try:
         # Select the most recently edited node

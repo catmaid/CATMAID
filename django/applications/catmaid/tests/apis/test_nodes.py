@@ -13,11 +13,11 @@ class NodesApiTests(CatmaidApiTestCase):
         self.fake_authentication()
 
         most_recent_node_id = 2423
-        treenode_id = 2415
+        skeleton_id = 2411
 
         response = self.client.post(
                 '/%d/node/most_recent' % self.test_project_id,
-                {'treenode_id': treenode_id})
+                {'skeleton_id': skeleton_id})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {

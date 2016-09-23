@@ -43,6 +43,8 @@ Miscellaneous:
 
 - Loading stack groups through URLs now correctly respects the specified location.
 
+- H works correctly when a virtual node is active.
+
 
 ## 2016.09.01
 

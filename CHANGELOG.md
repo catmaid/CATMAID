@@ -50,6 +50,9 @@ Miscellaneous:
 
 - H works correctly when a virtual node is active.
 
+- Pressing E in the Review widget now works again when a segment was completely
+  reviewed.
+
 
 ## 2016.09.01
 

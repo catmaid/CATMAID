@@ -769,7 +769,11 @@
         return u.name + ": " + u.count;
       }).join(', ');
 
+      // Empty header and add new info
       var header = document.getElementById('reviewing_skeleton');
+      while (header.firstChild) {
+        header.removeChild(header.firstChild);
+      }
       var neuronInfo = document.createElement('span');
       neuronInfo.classList.add('left');
       var reviewInfo = document.createElement('span');
@@ -899,8 +903,6 @@
             "POST",
             {'subarbor_node_id': subarborNodeId},
             function(skeleton_data) {
-                // Reset display
-                self.endReview();
                 self.createReviewSkeletonTable( skeleton_data, usernames );
             });
         });

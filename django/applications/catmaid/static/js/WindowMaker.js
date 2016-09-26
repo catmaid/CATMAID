@@ -2405,18 +2405,12 @@ var WindowMaker = new function()
     add.onclick = CT.refreshConnectorTable.bind(CT);
     contentbutton.appendChild(add);
 
-    var direction = document.createElement('select');
-    direction.setAttribute("id", "connector_relation_type" + CT.widgetID);
-    var objOption = document.createElement("option");
-    objOption.innerHTML = "Incoming connectors";
-    objOption.value = "0";
-    direction.appendChild(objOption);
-    var objOption2 = document.createElement("option");
-    objOption2.innerHTML = "Outgoing connectors";
-    objOption2.value = "1";
-    objOption2.selected = "selected";
-    direction.appendChild(objOption2);
-    contentbutton.appendChild(direction);
+    var relation = CATMAID.DOM.createSelect(
+      "connector_relation_type" + CT.widgetID, [
+      {title: 'Incoming connectors', value: "postsynaptic_to"},
+      {title: 'Outgoing connectors', value: "presynaptic_to"}],
+      "presynaptic_to");
+    contentbutton.appendChild(relation);
 
     content.appendChild( contentbutton );
 

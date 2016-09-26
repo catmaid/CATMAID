@@ -16,7 +16,7 @@ class ConnectorsApiTests(CatmaidApiTestCase):
                     'iSortingCols': 1,
                     'iSortCol_0': 0,
                     'sSortDir_0': 'asc',
-                    'relation_type': 1,
+                    'relation_type': 'presynaptic_to',
                     'skeleton_id': 0})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
@@ -33,7 +33,7 @@ class ConnectorsApiTests(CatmaidApiTestCase):
                     'iSortingCols': 1,
                     'iSortCol_0': 6,
                     'sSortDir_0': 'desc',
-                    'relation_type': 1,
+                    'relation_type': 'presynaptic_to',
                     'skeleton_id': 235})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
@@ -55,7 +55,7 @@ class ConnectorsApiTests(CatmaidApiTestCase):
                     'iSortingCols': 1,
                     'iSortCol_0': 6,
                     'sSortDir_0': 'desc',
-                    'relation_type': 1,
+                    'relation_type': 'presynaptic_to',
                     'skeleton_id': 235})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
@@ -80,7 +80,7 @@ class ConnectorsApiTests(CatmaidApiTestCase):
                     'iSortingCols': 1,
                     'iSortCol_0': 0,
                     'sSortDir_0': 'asc',
-                    'relation_type': 0,
+                    'relation_type': 'postsynaptic_to',
                     'skeleton_id': 373})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)

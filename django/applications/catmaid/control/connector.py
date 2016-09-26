@@ -161,7 +161,7 @@ def list_connector(request, project_id=None):
     else:
         skeleton_id = int(skeleton_id)
 
-    relation_type = int(request.POST.get('relation_type', 0))  # 0: Presyn, 1 Postsyn
+    relation_type = request.POST.get('relation_type', 'presynaptic_to')
     display_start = int(request.POST.get('iDisplayStart', 0))
     display_length = int(request.POST.get('iDisplayLength', -1))
     sorting_column = int(request.POST.get('iSortCol_0', 0))
@@ -180,12 +180,16 @@ def list_connector(request, project_id=None):
             if rel not in relation_map:
                 raise Exception('Failed to find the required relation %s' % rel)
 
-        if relation_type == 1:
-            relation_type_id = relation_map['presynaptic_to']
+        relation_type_id = relation_map.get(relation_type)
+        if relation_map is None:
+            raise ValueError("Unknown relation type: " + relation_type)
+
+        if relation_type == 'presynaptic_to':
             inverse_relation_type_id = relation_map['postsynaptic_to']
-        else:
-            relation_type_id = relation_map['postsynaptic_to']
+        elif relation_type == 'postsynaptic_to':
             inverse_relation_type_id = relation_map['presynaptic_to']
+        else:
+            raise ValueError("Unsupported relation type: " + relation_type)
 
         response_on_error = 'Failed to select connectors.'
         cursor.execute(

@@ -10,7 +10,10 @@ None.
 
 ### Modifications
 
-None.
+- `POST /{project_id}/connector/table/list`
+  The "relation_type" parameter is now expected to contain the actual relation
+  name instead of a numeric alias: The value "0" is replaced with
+  "postsynaptic_to" and "1" is replaced with "presynaptic_to".
 
 ### Deprecations
 

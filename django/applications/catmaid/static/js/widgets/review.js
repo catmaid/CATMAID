@@ -202,7 +202,7 @@
 
       var sequence = self.current_segment['sequence'];
 
-      if (!skipStep) self.markAsReviewed(sequence[self.current_segment_index]);
+      if (!skipStep) self.markAsReviewed(sequence, self.current_segment_index);
 
       // By default, the selected node is changed and centering not enforced.
       var changeSelectedNode = true;
@@ -398,14 +398,15 @@
       // Mark current node as reviewed, if this is no intermediate step.
       if (!skipStep) {
         //  Don't wait for the server to respond
-        self.markAsReviewed( sequence[self.current_segment_index] );
+        self.markAsReviewed(sequence, self.current_segment_index)
+          .then(updateReviewStatus.bind(window, self.current_segment, [CATMAID.session.userid, 'union']))
+          .catch(CATMAID.handleError);
 
         if( self.current_segment_index === sequenceLength - 1  ) {
           CATMAID.msg('Done', 'Segment fully reviewed: ' +
               self.current_segment['nr_nodes'] + ' nodes');
           if (self.noRefreshBetwenSegments) {
             end_puffer_count += 1;
-            markSegmentDone(self.current_segment, [CATMAID.session.userid]);
             // do not directly jump to the next segment to review
             if( end_puffer_count < 3) {
               return;
@@ -496,7 +497,7 @@
                   self.current_segment['nr_nodes'] + ' nodes');
             }
             if (i_union === sequenceLength) cellIDs.push('union');
-            if (cellIDs.length > 0) markSegmentDone(self.current_segment, cellIDs);
+            if (cellIDs.length > 0) updateReviewStatus(self.current_segment, cellIDs);
             // Don't startSkeletonToReview, because self.current_segment_index
             // would be lost, losing state for q/w navigation.
           }
@@ -517,7 +518,7 @@
      * Calculate the review status for a set of user IDs (including "union")
      * and reflect this in the appropriate table cells.
      */
-    function markSegmentDone(segment, reviewerIds) {
+    function updateReviewStatus(segment, reviewerIds) {
       reviewerIds.forEach(function(s) {
         var reviewedByCell = reviewedByUser.bind(self, s);
         var status = (segment.sequence.reduce(function (count, n) {
@@ -583,29 +584,38 @@
     /**
      * Mark the given node as reviewed in the back-end.
      */
-    this.markAsReviewed = function( node_ob ) {
-      submit(django_url + projectID + "/node/" + node_ob['id'] + "/reviewed",
-          'POST',
-          {},
-          function(json) {
-            if (json.reviewer_id) {
-              // Append the new review to the list of reviewers of
-              // this node, if not already present.
-              var lastIndex;
-              var known = node_ob['rids'].some(function(r, i) {
-                lastIndex = i;
-                return r[0] === json.reviewer_id;
-              });
+    this.markAsReviewed = function(segment, index) {
+      return new Promise(function(resolve, reject) {
+        var node = segment[index];
+        if (!node) {
+          throw new CATMAID.ValueError("Couldn't find node in segment");
+        }
 
-              // Either update an existing entry or create a new one
-              var reviewInfo = [json.reviewer_id, json.review_time];
-              if (known) {
-                node_ob['rids'][lastIndex] = reviewInfo;
-              } else {
-                node_ob['rids'].push(reviewInfo);
+        submit(django_url + projectID + "/node/" + node['id'] + "/reviewed",
+            'POST',
+            {},
+            function(json) {
+              if (json.reviewer_id) {
+                // Append the new review to the list of reviewers of
+                // this node, if not already present.
+                var lastIndex;
+                var known = node['rids'].some(function(r, i) {
+                  lastIndex = i;
+                  return r[0] === json.reviewer_id;
+                });
+
+                // Either update an existing entry or create a new one
+                var reviewInfo = [json.reviewer_id, json.review_time];
+                if (known) {
+                  node['rids'][lastIndex] = reviewInfo;
+                } else {
+                  node['rids'].push(reviewInfo);
+                }
+
+                resolve(node);
               }
-            }
-          });
+            });
+      });
     };
 
     /**

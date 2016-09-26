@@ -188,6 +188,10 @@ def list_connector(request, project_id=None):
             inverse_relation_type_id = relation_map['postsynaptic_to']
         elif relation_type == 'postsynaptic_to':
             inverse_relation_type_id = relation_map['presynaptic_to']
+        elif relation_type in ('abutting', 'gapjunction_with'):
+            # For abutting and gap junction relations, the inverse is expected
+            # to be the same relation.
+            inverse_relation_type_id = relation_type_id
         else:
             raise ValueError("Unsupported relation type: " + relation_type)
 
@@ -230,7 +234,8 @@ def list_connector(request, project_id=None):
             tc_this.connector_id = connector.id AND
             tn_this.id = tc_this.treenode_id AND
             tn_this.skeleton_id = %s AND
-            tc_this.relation_id = %s
+            tc_this.relation_id = %s AND
+            tn_this.id <> tn_other.id
             ORDER BY
             connector_id, other_treenode_id, this_treenode_id
             ''',  [inverse_relation_type_id, skeleton_id, relation_type_id])

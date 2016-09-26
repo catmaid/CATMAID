@@ -2408,7 +2408,9 @@ var WindowMaker = new function()
     var relation = CATMAID.DOM.createSelect(
       "connector_relation_type" + CT.widgetID, [
       {title: 'Incoming connectors', value: "postsynaptic_to"},
-      {title: 'Outgoing connectors', value: "presynaptic_to"}],
+      {title: 'Outgoing connectors', value: "presynaptic_to"},
+      {title: 'Gap junction connectors', value: "gapjunction_with"},
+      {title: 'Abutting connectors', value: "abutting"}],
       "presynaptic_to");
     contentbutton.appendChild(relation);
 

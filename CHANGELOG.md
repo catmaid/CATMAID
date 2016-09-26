@@ -21,6 +21,11 @@ Review widget:
   selected neurons as before (i.e.  missing end tags).
 
 
+Conenctor table:
+
+- Support for abutting connectors and gap junctions has been added.
+
+
 Miscellaneous:
 
 - The tracing tool has a new icon.

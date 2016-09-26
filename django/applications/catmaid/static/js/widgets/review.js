@@ -24,7 +24,7 @@
     // Set to true, if one deselects the current skeleton
     self.segmentUnfocused = false;
     // Set to true, if no auto-refresh should happen after a segment has been
-    // rully reviewed.
+    // fully reviewed.
     self.noRefreshBetwenSegments = false;
     // Specify step size for skipping consecutive virtual nodes
     self.virtualNodeStep = 1;
@@ -170,7 +170,7 @@
     };
 
     /**
-     * Move to the a specific node of the segment currently under review.
+     * Move to a specific node of the segment currently under review.
      */
     this.goToNodeIndexOfSegmentSequence = function(idx, forceCentering) {
       if (self.skeleton_segments===null)
@@ -180,7 +180,7 @@
     };
 
     /**
-     * Move to the a specific node of the segment currently under review.
+     * Move to a specific node of the segment currently under review.
      */
     this.goToNodeOfSegmentSequence = function(node, forceCentering) {
       if (self.skeleton_segments===null)
@@ -536,7 +536,7 @@
     }
 
     /**
-     * Tests if a review was reviewd by the given user.
+     * Tests if review response indicates a review by the given user.
      */
     function reviewedByUser(userId, review)
     {
@@ -629,7 +629,7 @@
     this.selectNextSegment = function() {
       // Reset skipping step, if any
       skipStep = null;
-      // Find nexte segment
+      // Find next segment
       if (self.skeleton_segments) {
         var fn = function() {
           var nSegments = self.skeleton_segments.length;
@@ -652,7 +652,7 @@
             // Get index of next segment, starting from current segment
             var segmentIndex = (fromIndex + i) % nSegments;
             var nodes = self.skeleton_segments[segmentIndex].sequence;
-            // Check if the next segment has unreveviewed nodes
+            // Check if the next segment has unreviewed nodes
             if (nodes.some(isUnreviewed)) {
               nextSegmentIndex = segmentIndex;
               break;
@@ -904,7 +904,6 @@
                 self.createReviewSkeletonTable( skeleton_data, usernames );
             });
         });
-
     };
 
     var resetFn = function(fnName) {
@@ -1259,14 +1258,14 @@
   var lastFocused = null;
 
   /**
-   * Update referene to last focused instance.
+   * Update reference to last focused instance.
    */
   CATMAID.ReviewSystem.prototype.focus = function() {
     lastFocused = this;
   };
 
   /**
-   * Clear referene to last focused instance if this instance was the last
+   * Clear reference to last focused instance if this instance was the last
    * focused instance.
    */
   CATMAID.ReviewSystem.prototype.destroy = function() {

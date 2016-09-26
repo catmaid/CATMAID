@@ -1016,7 +1016,7 @@
 
       this.type = SkeletonAnnotations.TYPE_CONNECTORNODE;
 
-      this.linkGroups = ['pregroup', 'postgroup', 'gjgroup', 'unidirgroup'];
+      this.linkGroups = ['pregroup', 'postgroup', 'gjgroup', 'undirgroup'];
       this.lineGroups = ['preLines', 'postLines', 'gjLines', 'undirLines'];
 
       this.getVisibilityGroups = function () {

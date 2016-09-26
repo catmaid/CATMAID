@@ -25,6 +25,8 @@ Conenctor table:
 
 - Support for abutting connectors and gap junctions has been added.
 
+- The displayed table can now be exported as CSV file.
+
 
 Miscellaneous:
 

@@ -33,6 +33,10 @@
       skeletonID = skeleton_id;
     };
 
+    this.getSkeletonId = function() {
+      return skeletonID;
+    };
+
     this.init = function (pid) {
       var widgetID = this.widgetID;
       var tableid = '#connectortable' + widgetID;
@@ -253,6 +257,25 @@
 
   ConnectorTable.prototype.destroy = function() {
     this.unregisterInstance();
+  };
+
+  /**
+   * Export the currently displayed table as CSV.
+   */
+  ConnectorTable.prototype.exportCSV = function() {
+    if (!this.connectorTable) return;
+    var relation = $('#connector_relation_type' + this.widgetID + ' :selected').val();
+    var table = this.connectorTable.DataTable();
+    var header = table.columns().header().map(function(h) {
+      return $(h).text();
+    });
+    var connectorRows = table.rows({"order": "current"}).data();
+    var csv = header.join(',') + '\n' + connectorRows.map(function(row) {
+      return row.join(',');
+    }).join('\n');
+    var blob = new Blob([csv], {type: 'text/plain'});
+    saveAs(blob, "catmaid-connectors-" + relation + "-skeleton-" +
+        this.getSkeletonId() + ".csv");
   };
 
   // Export widget

@@ -2412,7 +2412,17 @@ var WindowMaker = new function()
       {title: 'Gap junction connectors', value: "gapjunction_with"},
       {title: 'Abutting connectors', value: "abutting"}],
       "presynaptic_to");
-    contentbutton.appendChild(relation);
+    var relationLabel = document.createElement('label');
+    relationLabel.appendChild(document.createTextNode('Type'));
+    relationLabel.appendChild(relation);
+    contentbutton.appendChild(relationLabel);
+
+    var exportCSV = document.createElement('input');
+    exportCSV.setAttribute("type", "button");
+    exportCSV.setAttribute("value", "Export CSV");
+    exportCSV.setAttribute("title", "Export a CSV file for the currently displayed table");
+    exportCSV.onclick = CT.exportCSV.bind(CT);
+    contentbutton.appendChild(exportCSV);
 
     content.appendChild( contentbutton );
 

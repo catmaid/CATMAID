@@ -270,6 +270,9 @@ def list_connector(request, project_id=None):
             tn_this.id AS this_treenode_id,
             tc_this.relation_id AS this_to_connector_relation_id,
             tc_this.confidence AS confidence,
+            tn_this.location_x AS this_treenode_x,
+            tn_this.location_y AS this_treenode_y,
+            tn_this.location_z AS this_treenode_z,
             connector.edition_time AS last_modified
             FROM
             connector,
@@ -331,12 +334,12 @@ def list_connector(request, project_id=None):
             if 'other_skeleton_id' in c:
                 connected_skeleton_treenode_count = skeleton_to_treenode_count[c['other_skeleton_id']]
             else:
-                c['other_skeleton_id'] = ''
-                c['other_treenode_id'] = ''
-                c['other_treenode_x'] = c['connector_x']
-                c['other_treenode_y'] = c['connector_y']
-                c['other_treenode_z'] = c['connector_z']
-                c['target_confidence'] = ''
+                c['other_skeleton_id'] = skeleton_id
+                c['other_treenode_id'] = c['this_treenode_id']
+                c['other_treenode_x'] = c['this_treenode_x']
+                c['other_treenode_y'] = c['this_treenode_y']
+                c['other_treenode_z'] = c['this_treenode_z']
+                c['target_confidence'] = c['confidence']
                 connected_skeleton_treenode_count = 0
 
             if c['connector_id'] in labels_by_connector:

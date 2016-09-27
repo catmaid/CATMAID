@@ -27,6 +27,11 @@ Conenctor table:
 
 - The displayed table can now be exported as CSV file.
 
+- The listed information for connector relations with only one partner is now
+  consistent with multi-relation cases: the linked node ID, node location and
+  skeleton ID are shown instead of the connector location along an empty node
+  and skeleton fields.
+
 
 Miscellaneous:
 

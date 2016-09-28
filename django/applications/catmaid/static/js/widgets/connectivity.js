@@ -130,6 +130,99 @@
         this.handleDeletedSkeleton, this);
   };
 
+  SkeletonConnectivity.prototype.getWidgetConfiguration = function() {
+    return {
+      controlsID: 'skeleton_connectivity_buttons' + this.widgetID,
+      createControls: function(controls) {
+        controls.appendChild(document.createTextNode('From'));
+        controls.appendChild(CATMAID.skeletonListSources.createSelect(this));
+
+        var op = document.createElement('select');
+        op.setAttribute('id', 'connectivity_operation' + this.widgetID);
+        op.appendChild(new Option('All partners', 'OR'));
+        op.appendChild(new Option('Common partners', 'AND')); // added prefix, otherwise gets sent as nonsense
+        controls.appendChild(op);
+
+        var add = document.createElement('input');
+        add.setAttribute("type", "button");
+        add.setAttribute("value", "Append");
+        add.onclick = this.loadSource.bind(this);
+        controls.appendChild(add);
+
+        var clear = document.createElement('input');
+        clear.setAttribute("type", "button");
+        clear.setAttribute("value", "Clear");
+        clear.onclick = this.clear.bind(this);
+        controls.appendChild(clear);
+
+        var update = document.createElement('input');
+        update.setAttribute("type", "button");
+        update.setAttribute("value", "Refresh");
+        update.onclick = this.update.bind(this);
+        controls.appendChild(update);
+
+        var plot = document.createElement('input');
+        plot.setAttribute("type", "button");
+        plot.setAttribute("value", "Open plot");
+        plot.onclick = this.openPlot.bind(this);
+        controls.appendChild(plot);
+
+        var plot2 = document.createElement('input');
+        plot2.setAttribute("type", "button");
+        plot2.setAttribute("value", "Open partner chart");
+        plot2.onclick = this.openStackedBarChart.bind(this);
+        controls.appendChild(plot2);
+
+        var layoutToggle = document.createElement('input');
+        layoutToggle.setAttribute('id', 'connectivity-layout-toggle-' + this.widgetID);
+        layoutToggle.setAttribute('type', 'checkbox');
+        if (this.tablesSideBySide) {
+          layoutToggle.setAttribute('checked', 'checked');
+        }
+        layoutToggle.onchange = (function() {
+          this.tablesSideBySide = this.checked;
+        }).bind(this);
+        var layoutLabel = document.createElement('label');
+        layoutLabel.appendChild(document.createTextNode('Tables side by side'));
+        layoutLabel.appendChild(layoutToggle);
+        controls.appendChild(layoutLabel);
+
+        var autoUpdate = document.createElement('input');
+        autoUpdate.setAttribute('id', 'connectivity-auto-update-' + this.widgetID);
+        autoUpdate.setAttribute('type', 'checkbox');
+        if (this.autoUpdate) {
+          autoUpdate.setAttribute('checked', 'checked');
+        }
+        autoUpdate.onchange = function(e) {
+          this.autoUpdate = this.checked;
+        };
+        var autoUpdateLabel = document.createElement('label');
+        autoUpdateLabel.appendChild(document.createTextNode('Auto update'));
+        autoUpdateLabel.appendChild(autoUpdate);
+        controls.appendChild(autoUpdateLabel);
+
+        var gapjunctionToggle = document.createElement('input');
+        gapjunctionToggle.setAttribute('id', 'connectivity-gapjunctiontable-toggle-' + this.widgetID);
+        gapjunctionToggle.setAttribute('type', 'checkbox');
+        if (this.showGapjunctionTable) {
+          gapjunctionToggle.setAttribute('checked', 'checked');
+        }
+        gapjunctionToggle.onchange = (function() {
+          this.showGapjunctionTable = this.checked;
+        }).bind(this);
+        var gapjunctionLabel = document.createElement('label');
+        gapjunctionLabel.appendChild(document.createTextNode('Show gap junctions'));
+        gapjunctionLabel.appendChild(gapjunctionToggle);
+        controls.appendChild(gapjunctionLabel);
+      },
+
+      contentID: "connectivity_widget" + this.widgetID,
+      class: 'connectivity_widget',
+      createContent: function() {}
+    };
+  };
+
+
   SkeletonConnectivity.prototype.clear = function(source_chain) {
     var models = this.getSkeletonModels();
     this.init();
@@ -1591,5 +1684,11 @@
 
   // Make skeleton connectivity widget available in CATMAID namespace
   CATMAID.SkeletonConnectivity = SkeletonConnectivity;
+
+  // Register widget with CATMAID
+  CATMAID.registerWidget({
+    key: "connectivity-widget",
+    creator: SkeletonConnectivity
+  });
 
 })(CATMAID);

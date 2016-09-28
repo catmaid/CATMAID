@@ -2379,116 +2379,6 @@ var WindowMaker = new function()
     return {window: win, widget: TNT};
   };
 
-    var createConnectivityWindow = function()
-    {
-        var SC = new CATMAID.SkeletonConnectivity();
-        var widgetID = SC.widgetID;
-
-        var win = new CMWWindow(SC.getName());
-        var content = win.getFrame();
-        content.style.backgroundColor = "#ffffff";
-
-        var contentbutton = document.createElement('div');
-        contentbutton.setAttribute("class", "buttonpanel");
-        contentbutton.setAttribute("id", 'skeleton_connectivity_buttons' + widgetID);
-        DOM.addSourceControlsToggle(win, SC);
-        DOM.addButtonDisplayToggle(win);
-
-        contentbutton.appendChild(document.createTextNode('From'));
-        contentbutton.appendChild(CATMAID.skeletonListSources.createSelect(SC));
-
-        var op = document.createElement('select');
-        op.setAttribute('id', 'connectivity_operation' + widgetID);
-        op.appendChild(new Option('All partners', 'OR'));
-        op.appendChild(new Option('Common partners', 'AND')); // added prefix, otherwise gets sent as nonsense
-        contentbutton.appendChild(op);
-
-        var add = document.createElement('input');
-        add.setAttribute("type", "button");
-        add.setAttribute("value", "Append");
-        add.onclick = SC.loadSource.bind(SC);
-        contentbutton.appendChild(add);
-
-        var clear = document.createElement('input');
-        clear.setAttribute("type", "button");
-        clear.setAttribute("value", "Clear");
-        clear.onclick = SC.clear.bind(SC);
-        contentbutton.appendChild(clear);
-
-        var update = document.createElement('input');
-        update.setAttribute("type", "button");
-        update.setAttribute("value", "Refresh");
-        update.onclick = SC.update.bind(SC);
-        contentbutton.appendChild(update);
-
-        var plot = document.createElement('input');
-        plot.setAttribute("type", "button");
-        plot.setAttribute("value", "Open plot");
-        plot.onclick = SC.openPlot.bind(SC);
-        contentbutton.appendChild(plot);
-
-        var plot2 = document.createElement('input');
-        plot2.setAttribute("type", "button");
-        plot2.setAttribute("value", "Open partner chart");
-        plot2.onclick = SC.openStackedBarChart.bind(SC);
-        contentbutton.appendChild(plot2);
-
-        var layoutToggle = document.createElement('input');
-        layoutToggle.setAttribute('id', 'connectivity-layout-toggle-' + widgetID);
-        layoutToggle.setAttribute('type', 'checkbox');
-        if (SC.tablesSideBySide) {
-          layoutToggle.setAttribute('checked', 'checked');
-        }
-        layoutToggle.onchange = (function() {
-          this.tablesSideBySide = this.checked;
-        }).bind(SC);
-        var layoutLabel = document.createElement('label');
-        layoutLabel.appendChild(document.createTextNode('Tables side by side'));
-        layoutLabel.appendChild(layoutToggle);
-        contentbutton.appendChild(layoutLabel);
-
-        var autoUpdate = document.createElement('input');
-        autoUpdate.setAttribute('id', 'connectivity-auto-update-' + widgetID);
-        autoUpdate.setAttribute('type', 'checkbox');
-        if (SC.autoUpdate) {
-          autoUpdate.setAttribute('checked', 'checked');
-        }
-        autoUpdate.onchange = function(e) {
-          SC.autoUpdate = this.checked;
-        };
-        var autoUpdateLabel = document.createElement('label');
-        autoUpdateLabel.appendChild(document.createTextNode('Auto update'));
-        autoUpdateLabel.appendChild(autoUpdate);
-        contentbutton.appendChild(autoUpdateLabel);
-
-        var gapjunctionToggle = document.createElement('input');
-        gapjunctionToggle.setAttribute('id', 'connectivity-gapjunctiontable-toggle-' + widgetID);
-        gapjunctionToggle.setAttribute('type', 'checkbox');
-        if (SC.showGapjunctionTable) {
-          gapjunctionToggle.setAttribute('checked', 'checked');
-        }
-        gapjunctionToggle.onchange = (function() {
-          this.showGapjunctionTable = this.checked;
-        }).bind(SC);
-        var gapjunctionLabel = document.createElement('label');
-        gapjunctionLabel.appendChild(document.createTextNode('Show gap junctions'));
-        gapjunctionLabel.appendChild(gapjunctionToggle);
-        contentbutton.appendChild(gapjunctionLabel);
-
-        content.appendChild( contentbutton );
-
-        var container = createContainer( "connectivity_widget" + widgetID );
-        container.classList.add('connectivity_widget');
-        content.appendChild( container );
-
-        addListener(win, container, 'skeleton_connectivity_buttons' + widgetID, SC.destroy.bind(SC));
-
-        addLogic(win);
-        CATMAID.skeletonListSources.updateGUI();
-
-        return {window: win, widget: SC};
-    };
-
   var createConnectivityGraphPlot = function(instance) {
     var GP = instance ? instance : new ConnectivityGraphPlot();
 
@@ -3140,7 +3030,6 @@ var WindowMaker = new function()
     "connectivity-graph-plot": createConnectivityGraphPlot,
     "assemblygraph-widget": createAssemblyGraphWindow,
     "sliceinfo-widget": createSliceInfoWindow,
-    "connectivity-widget": createConnectivityWindow,
     "adjacencymatrix-widget": createAdjacencyMatrixWindow,
     "ontology-search": createOntologySearchWidget,
     "classification-editor": createClassificationWidget,

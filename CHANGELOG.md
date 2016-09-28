@@ -32,6 +32,10 @@ Conenctor table:
   skeleton ID are shown instead of the connector location along an empty node
   and skeleton fields.
 
+- The widget can now pull skeletons to list connectors for from other skeleton
+  sources. It acts itself as a skeleton source as well and provides all result
+  skeleton IDs.
+
 
 Miscellaneous:
 

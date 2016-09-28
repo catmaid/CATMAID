@@ -160,10 +160,10 @@ urlpatterns += [
 ]
 
 # Connector access
+UrlParser.explicit_root_paths |= set(['{project_id}/connectors'])
 urlpatterns += [
     url(r'^(?P<project_id>\d+)/connector/create$', record_view("connectors.create")(connector.create_connector)),
     url(r'^(?P<project_id>\d+)/connector/delete$', record_view("connectors.remove")(connector.delete_connector)),
-    url(r'^(?P<project_id>\d+)/connector/table/list$', connector.list_connector),
     url(r'^(?P<project_id>\d+)/connector/list/graphedge$', connector.graphedge_list),
     url(r'^(?P<project_id>\d+)/connector/list/one_to_many$', connector.one_to_many_synapses),
     url(r'^(?P<project_id>\d+)/connector/list/many_to_many$', connector.many_to_many_synapses),
@@ -172,6 +172,7 @@ urlpatterns += [
     url(r'^(?P<project_id>\d+)/connector/edgetimes$', connector.connector_associated_edgetimes),
     url(r'^(?P<project_id>\d+)/connector/info$', connector.connectors_info),
     url(r'^(?P<project_id>\d+)/connector/user-info$', connector.connector_user_info),
+    url(r'^(?P<project_id>\d+)/connectors/$', connector.list_connector),
     url(r'^(?P<project_id>\d+)/connectors/(?P<connector_id>\d+)/$',
         connector.connector_detail),
 ]

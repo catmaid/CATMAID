@@ -9,38 +9,38 @@ from .common import CatmaidApiTestCase
 class ConnectorsApiTests(CatmaidApiTestCase):
     def test_list_connector_empty(self):
         self.fake_authentication()
-        response = self.client.post(
-                '/%d/connector/table/list' % self.test_project_id, {
-                    'iDisplayStart': 0,
-                    'iDisplayLength': 25,
-                    'iSortingCols': 1,
-                    'iSortCol_0': 0,
-                    'sSortDir_0': 'asc',
+        response = self.client.get(
+                '/%d/connectors/' % self.test_project_id, {
+                    'range_start': 0,
+                    'range_length': 25,
+                    'sort_column': 0,
+                    'sort_dir': 'asc',
                     'relation_type': 'presynaptic_to',
-                    'skeleton_id': 0})
+                    'skeleton_ids': [0]})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
-        expected_result = {'iTotalRecords': 0, 'iTotalDisplayRecords': 0, 'aaData': []}
+        expected_result = {
+            'total_count': 0,
+            'links': []
+        }
         self.assertEqual(expected_result, parsed_response)
 
 
     def test_list_connector_outgoing_with_sorting_and_paging(self):
         self.fake_authentication()
-        response = self.client.post(
-                '/%d/connector/table/list' % self.test_project_id, {
-                    'iDisplayStart': 1,
-                    'iDisplayLength': 2,
-                    'iSortingCols': 1,
-                    'iSortCol_0': 6,
-                    'sSortDir_0': 'desc',
+        response = self.client.get(
+                '/%d/connectors/' % self.test_project_id, {
+                    'range_start': 1,
+                    'range_length': 2,
+                    'sort_column': 6,
+                    'sort_dir': 'desc',
                     'relation_type': 'presynaptic_to',
-                    'skeleton_id': 235})
+                    'skeleton_ids': [235]})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {
-                u'iTotalRecords': 4,
-                u'iTotalDisplayRecords': 4,
-                u'aaData': [
+                u'total_count': 4,
+                u'links': [
                     [421, 373, 6630.00, 4330.00, 0.0, 5, 5, u"", 5, u"test2", 409, u'2011-10-07T07:02:30.396000+00:00'],
                     [356, 373, 7620.00, 2890.00, 0.0, 5, 5, u"", 5, u"test2", 377, u'2011-10-27T10:45:09.870000+00:00']]}
         self.assertEqual(expected_result, parsed_response)
@@ -48,22 +48,20 @@ class ConnectorsApiTests(CatmaidApiTestCase):
 
     def test_list_connector_outgoing_with_sorting(self):
         self.fake_authentication()
-        response = self.client.post(
-                '/%d/connector/table/list' % self.test_project_id, {
-                    'iDisplayStart': 0,
-                    'iDisplayLength': 25,
-                    'iSortingCols': 1,
-                    'iSortCol_0': 6,
-                    'sSortDir_0': 'desc',
+        response = self.client.get(
+                '/%d/connectors/' % self.test_project_id, {
+                    'range_start': 0,
+                    'range_length': 25,
+                    'sort_column': 6,
+                    'sort_dir': 'desc',
                     'relation_type': 'presynaptic_to',
-                    'skeleton_id': 235})
+                    'skeleton_ids': [235]})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {
-                u'iTotalRecords': 4,
-                u'iTotalDisplayRecords': 4,
-                u'aaData': [
-                    [432, 235, 2610.00, 2700.00, 0.0, 5, 5, u"synapse with more targets, TODO", 0, u"test2", 247, u'2011-10-31T05:22:37.263000+00:00'],
+                u'total_count': 4,
+                u'links': [
+                    [432, 235, 2610.00, 2700.00, 0.0, 5, "", u"synapse with more targets, TODO", 0, u"test2", 247, u'2011-10-31T05:22:37.263000+00:00'],
                     [421, 373, 6630.00, 4330.00, 0.0, 5, 5, u"", 5, u"test2", 409, u'2011-10-07T07:02:30.396000+00:00'],
                     [356, 373, 7620.00, 2890.00, 0.0, 5, 5, u"", 5, u"test2", 377, u'2011-10-27T10:45:09.870000+00:00'],
                     [356, 361, 7030.00, 1980.00, 0.0, 5, 5, u"", 9, u"test2", 367, u'2011-10-27T10:45:09.870000+00:00']]
@@ -73,21 +71,19 @@ class ConnectorsApiTests(CatmaidApiTestCase):
 
     def test_list_connector_incoming_with_connecting_skeletons(self):
         self.fake_authentication()
-        response = self.client.post(
-                '/%d/connector/table/list' % self.test_project_id, {
-                    'iDisplayStart': 0,
-                    'iDisplayLength': 25,
-                    'iSortingCols': 1,
-                    'iSortCol_0': 0,
-                    'sSortDir_0': 'asc',
+        response = self.client.get(
+                '/%d/connectors/' % self.test_project_id, {
+                    'range_start': 0,
+                    'range_length': 25,
+                    'sort_column': 0,
+                    'sort_dir': 'asc',
                     'relation_type': 'postsynaptic_to',
-                    'skeleton_id': 373})
+                    'skeleton_ids': [373]})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {
-                u'iTotalRecords': 2,
-                u'iTotalDisplayRecords': 2,
-                u'aaData': [
+                u'total_count': 2,
+                u'links': [
                     [356, 235, 6100.00, 2980.00, 0.0, 5, 5, u"", 28,
                      u"test2", 285, u'2011-10-27T10:45:09.870000+00:00'],
                     [421, 235, 5810.00, 3950.00, 0.0, 5, 5, u"", 28,

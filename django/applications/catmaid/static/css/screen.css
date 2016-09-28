@@ -74,6 +74,10 @@ dd {
 	margin-left: 1em;
 }
 
+.cm-center {
+  text-align: center;
+}
+
 #imprint {
 	height: 32px;
 	width: 100%;
@@ -971,11 +975,6 @@ table.skeleton-table select {
 /* Center checkboxes in selection table */
 table.skeleton-table td input[type=checkbox] {
   width: 100%;
-}
-
-/* Center buttons in selection table */
-table.skeleton-table tr td.centering {
-  text-align: center;
 }
 
 /* Exception for display problem in datatables*/

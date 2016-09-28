@@ -6,14 +6,16 @@ included in this changelog.
 
 ### Additions
 
-None.
+- `GET /{project_id}/connectors/`
+  Replaces the `POST /{project_id}/connector/table/list` endpoint, but also
+  changes the parameter names. Additionally, the "relation_type" parameter is
+  now expected to contain the actual relation name instead of a numeric alias:
+  The value "0" is replaced with "postsynaptic_to" and "1" is replaced with
+  "presynaptic_to". See /apis documentation for details.
 
 ### Modifications
 
-- `POST /{project_id}/connector/table/list`
-  The "relation_type" parameter is now expected to contain the actual relation
-  name instead of a numeric alias: The value "0" is replaced with
-  "postsynaptic_to" and "1" is replaced with "presynaptic_to".
+None.
 
 ### Deprecations
 
@@ -21,7 +23,9 @@ None.
 
 ### Removals
 
-None.
+- `POST /{project_id}/connector/table/list`
+  This endpoint is replaced by the `GET /{project_id}/connectors` endpoint,
+  described above.
 
 
 ## 2016.09.01

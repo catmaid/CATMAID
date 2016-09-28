@@ -145,31 +145,105 @@ def _many_to_many_synapses(skids1, skids2, relation_name, project_id):
                   row[11], row[12], row[13], row[14],
                   (row[15], row[16], row[17])) for row in cursor.fetchall())
 
-
+@api_view(['GET'])
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def list_connector(request, project_id=None):
-    skeleton_id = request.POST.get('skeleton_id', None)
+    """Get connectors linked to a set of skeletons.
+
+    The result data set includes information about linked connectors and
+    partner skeletons linked to the connector for a given input set of
+    skeletons. These links are further constrained by relation type, with
+    currently support available for: postsynaptic_to, presynaptic_to, abutting,
+    gapjunction_with. The first two will also list the inverse connecting links,
+    i.e. if postsynaptic_to relations are queried, the link from the query
+    skeleton to the connector has to be presynaptic_to and vice versa.
+    ---
+    parameters:
+      - name: skeleton_ids
+        description: Skeletons to list connectors for
+        type: array
+        items:
+          type: integer
+        paramType: form
+        required: true
+      - name: relation_type
+        description: Relation of listed connector links
+        type: string
+        paramType: form
+        required: true
+      - name: range_start
+        description: The first result element index
+        type: integer
+        paramType: form
+        required: false
+      - name: range_length
+        description: The maximum number result elements
+        type: integer
+        paramType: form
+        required: false
+      - name: sort_column
+        description: The result column index to sort by
+        type: integer
+        paramType: form
+        required: false
+      - name: sort_dir
+        description: The sorting direction of a sorted result
+        type: string
+        paramType: form
+        required: false
+    type:
+      links:
+        type: array
+        items:
+          type: array
+          items:
+            type: string
+        description: Matching connector links
+        required: true
+      total_count:
+        type: integer
+        description: The total number of elements
+        required: true
+    """
+    skeleton_ids = get_request_list(request.GET, 'skeleton_ids', map_fn=int)
+
+    if not skeleton_ids:
+        raise ValueError("At least one skeleton ID required")
+
+    relation_type = request.GET.get('relation_type', 'presynaptic_to')
+    display_start = int(request.GET.get('range_start', 0))
+    display_length = int(request.GET.get('range_length', -1))
+    sorting_column = int(request.GET.get('sort_column', 0))
+    sort_descending = upper(request.GET.get('sort_dir', 'DESC')) != 'ASC'
+
+    result = {}
+
+    for skeleton_id in skeleton_ids:
+        skeletonResult = get_connector_list(project_id, skeleton_id,
+                relation_type, display_start, display_length, sorting_column,
+                sort_descending)
+        if result:
+          result['total_count'] += skeletonResult['total_count']
+          result['links'].extend(skeletonResult['links'])
+        else:
+          result = skeletonResult
+
+    return JsonResponse(result)
+
+
+def get_connector_list(project_id, skeleton_id, relation_type, display_start,
+                       display_length, sorting_column, sort_descending):
 
     def empty_result():
-        return HttpResponse(json.dumps({
-            'iTotalRecords': 0,
-            'iTotalDisplayRecords': 0,
-            'aaData': []}))
+        return {
+            'total_count': 0,
+            'links': []
+        }
 
     if not skeleton_id:
         return empty_result()
     else:
         skeleton_id = int(skeleton_id)
-
-    relation_type = request.POST.get('relation_type', 'presynaptic_to')
-    display_start = int(request.POST.get('iDisplayStart', 0))
-    display_length = int(request.POST.get('iDisplayLength', -1))
-    sorting_column = int(request.POST.get('iSortCol_0', 0))
-    # Have to correct for DataTables including computed columns (stack section)
-    # in column count:
-    if sorting_column > 4:
-        sorting_column = sorting_column - 1
-    sort_descending = upper(request.POST.get('sSortDir_0', 'DESC')) != 'ASC'
 
     response_on_error = ''
     try:
@@ -339,7 +413,7 @@ def list_connector(request, project_id=None):
                 c['other_treenode_x'] = c['this_treenode_x']
                 c['other_treenode_y'] = c['this_treenode_y']
                 c['other_treenode_z'] = c['this_treenode_z']
-                c['target_confidence'] = c['confidence']
+                c['target_confidence'] = ''
                 connected_skeleton_treenode_count = 0
 
             if c['connector_id'] in labels_by_connector:
@@ -380,13 +454,15 @@ def list_connector(request, project_id=None):
         if sort_descending:
             aaData_output.reverse()
 
-        return HttpResponse(json.dumps({
-            'iTotalRecords': total_result_count,
-            'iTotalDisplayRecords': total_result_count,
-            'aaData': aaData_output}))
+        return {
+            'total_count': total_result_count,
+            'links': aaData_output
+        }
 
     except Exception as e:
-        raise Exception(response_on_error + ':' + str(e))
+        import traceback
+        raise Exception("%s: %s %s" % (response_on_error, str(e),
+                                       str(traceback.format_exc())))
 
 def _connector_skeletons(connector_ids, project_id):
     """ Return a dictionary of connector ID as keys and a dictionary as value

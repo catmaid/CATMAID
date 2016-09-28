@@ -2379,104 +2379,6 @@ var WindowMaker = new function()
     return {window: win, widget: TNT};
   };
 
-  var createConnectorTableWindow = function(ct_instance)
-  {
-    var CT = ct_instance ? ct_instance : new CATMAID.ConnectorTable();
-    var win = new CMWWindow(CT.getName());
-    var content = win.getFrame();
-    content.style.backgroundColor = "#ffffff";
-
-    var contentbutton = document.createElement('div');
-    contentbutton.setAttribute("id", 'table_of_connector_buttons' + CT.widgetID);
-    contentbutton.setAttribute('class', 'buttonpanel');
-    DOM.addButtonDisplayToggle(win);
-
-    var add = document.createElement('input');
-    add.setAttribute("type", "button");
-    add.setAttribute("id", "update_connectortable_current_skeleton" + CT.widgetID);
-    add.setAttribute("value", "List current skeleton");
-    add.onclick = CT.updateConnectorTable.bind(CT);
-    contentbutton.appendChild(add);
-
-    var add = document.createElement('input');
-    add.setAttribute("type", "button");
-    add.setAttribute("id", "refresh_connectortable_current_skeleton" + CT.widgetID);
-    add.setAttribute("value", "Refresh");
-    add.onclick = CT.refreshConnectorTable.bind(CT);
-    contentbutton.appendChild(add);
-
-    var relation = CATMAID.DOM.createSelect(
-      "connector_relation_type" + CT.widgetID, [
-      {title: 'Incoming connectors', value: "postsynaptic_to"},
-      {title: 'Outgoing connectors', value: "presynaptic_to"},
-      {title: 'Gap junction connectors', value: "gapjunction_with"},
-      {title: 'Abutting connectors', value: "abutting"}],
-      "presynaptic_to");
-    var relationLabel = document.createElement('label');
-    relationLabel.appendChild(document.createTextNode('Type'));
-    relationLabel.appendChild(relation);
-    contentbutton.appendChild(relationLabel);
-
-    var exportCSV = document.createElement('input');
-    exportCSV.setAttribute("type", "button");
-    exportCSV.setAttribute("value", "Export CSV");
-    exportCSV.setAttribute("title", "Export a CSV file for the currently displayed table");
-    exportCSV.onclick = CT.exportCSV.bind(CT);
-    contentbutton.appendChild(exportCSV);
-
-    content.appendChild( contentbutton );
-
-    var container = createContainer("connectortable_widget" + CT.widgetID);
-    content.appendChild(container);
-
-    container.innerHTML =
-      '<table cellpadding="0" cellspacing="0" border="0" class="display" id="connectortable'+ CT.widgetID + '">' +
-        '<thead>' +
-          '<tr>' +
-            '<th>connector id</th>' +
-            '<th id="other_skeleton_top' + CT.widgetID + '">target skeleton ID</th>' +
-            '<th>x</th>' +
-            '<th>y</th>' +
-            '<th>z</th>' +
-            '<th>s</ht>' +
-            '<th>confidence</ht>' +
-            '<th>target confidence</ht>' +
-            '<th>tags</th>' +
-            '<th id="connector_nr_nodes_top' + CT.widgetID + '"># nodes for target(s)</th>' +
-            '<th>username</th>' +
-            '<th id="other_treenode_top' + CT.widgetID + '">target treenode ID</th>' +
-            '<th>last modified</th>' +
-          '</tr>' +
-        '</thead>' +
-        '<tfoot>' +
-          '<tr>' +
-            '<th>connector id</th>' +
-            '<th id="other_skeleton_bottom' + CT.widgetID + '">target skeleton ID</th>' +
-            '<th>x</th>' +
-            '<th>y</th>' +
-            '<th>z</th>' +
-            '<th>s</ht>' +
-            '<th>confidence</ht>' +
-            '<th>target confidence</ht>' +
-            '<th>tags</th>' +
-            '<th id="connector_nr_nodes_bottom' + CT.widgetID + '"># nodes for target(s)</th>' +
-            '<th>username</th>' +
-            '<th id="other_treenode_bottom' + CT.widgetID + '">target treenode ID</th>' +
-            '<th>last modified</th>' +
-          '</tr>' +
-        '</tfoot>' +
-      '</table>';
-
-
-    addListener(win, container, 'table_of_connector_buttons' + CT.widgetID, CT.destroy.bind(CT));
-
-    addLogic(win);
-
-    CT.init( project.getId() );
-
-    return {window: win, widget: CT};
-  };
-
     var createConnectivityWindow = function()
     {
         var SC = new CATMAID.SkeletonConnectivity();
@@ -3231,7 +3133,6 @@ var WindowMaker = new function()
     "search": createSearchWindow,
     "3d-webgl-view": create3dWebGLWindow,
     "node-table": createNodeTableWindow,
-    "connector-table": createConnectorTableWindow,
     "neuron-staging-area": createStagingListWindow,
     "create-connector-selection": createConnectorSelectionWindow,
     "skeleton-measurements-table": createSkeletonMeasurementsTable,
@@ -3322,8 +3223,9 @@ var WindowMaker = new function()
       throw new CATMAID.ValueError("No valid constructor function provided");
     }
 
-    creators[key] = function(options) {
-      return createWidget(new creator(options));
+    creators[key] = function(options, isInstance) {
+      instance = isInstance ? options : new creator(options);
+      return createWidget(instance);
     };
   };
 }();

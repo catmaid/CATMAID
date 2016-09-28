@@ -9,10 +9,11 @@
    * managed skeletons is possible.
    */
   var BasicSkeletonSource = function(name, options) {
-    // Call super-constructor
-    CATMAID.SkeletonSource.call(this);
-
     options = options || {};
+
+    // Call super-constructor
+    var register = options.register === undefined ? true : options.register;
+    CATMAID.SkeletonSource.call(this, register);
 
     this.name = name;
     this.registerSource();

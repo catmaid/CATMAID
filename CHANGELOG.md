@@ -21,7 +21,7 @@ Review widget:
   selected neurons as before (i.e.  missing end tags).
 
 
-Conenctor table:
+Connector table (available through Neuron Navigator):
 
 - Support for abutting connectors and gap junctions has been added.
 

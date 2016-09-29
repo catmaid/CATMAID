@@ -151,7 +151,6 @@
                 // Populate result skeleton source
                 var models = result.links.reduce(function(o, link) {
                   var skid = link[1];
-                  // TODO Color according to relation type for this link
                   o[skid]  = new CATMAID.SkeletonModel(skid);
                   return o;
                 }, {});

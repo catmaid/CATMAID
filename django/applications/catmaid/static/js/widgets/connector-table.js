@@ -195,7 +195,7 @@
             {
               data: 8,
               title: "Last modified",
-              className: "catmaid.center",
+              className: "cm-center",
               render: function(data, type, row, meta) {
                 var d = new Date(data);
                 return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate()

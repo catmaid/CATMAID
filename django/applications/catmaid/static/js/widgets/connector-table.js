@@ -219,6 +219,21 @@
           var data = row.data();
           var connectorId = data[1];
           SkeletonAnnotations.staticMoveToAndSelectNode(connectorId);
+        }).on('init.dt', function() {
+          // Add column filter inputs
+          var head = $('th', this);
+          if (head.length >= 8) {
+            var input = document.createElement('input');
+            input.setAttribute('type', 'text');
+            input.setAttribute('placeholder', 'Filter tags');
+            $(input).on('keyup change', function() {
+              if (self.connectorTable.search() !== this.value) {
+                self.connectorTable.search(this.value).draw();
+              }
+            });
+            var tagHead = head[7];
+            tagHead.appendChild(input);
+          }
         });
       }
     };

@@ -11,38 +11,14 @@ class ConnectorsApiTests(CatmaidApiTestCase):
         self.fake_authentication()
         response = self.client.get(
                 '/%d/connectors/' % self.test_project_id, {
-                    'range_start': 0,
-                    'range_length': 25,
-                    'sort_column': 0,
-                    'sort_dir': 'asc',
                     'relation_type': 'presynaptic_to',
                     'skeleton_ids': [0]})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {
-            'total_count': 0,
-            'links': []
+            'links': [],
+            'tags': {}
         }
-        self.assertEqual(expected_result, parsed_response)
-
-
-    def test_list_connector_outgoing_with_sorting_and_paging(self):
-        self.fake_authentication()
-        response = self.client.get(
-                '/%d/connectors/' % self.test_project_id, {
-                    'range_start': 1,
-                    'range_length': 2,
-                    'sort_column': 6,
-                    'sort_dir': 'desc',
-                    'relation_type': 'presynaptic_to',
-                    'skeleton_ids': [235]})
-        self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
-        expected_result = {
-                u'total_count': 4,
-                u'links': [
-                    [421, 373, 6630.00, 4330.00, 0.0, 5, 5, u"", 5, u"test2", 409, u'2011-10-07T07:02:30.396000+00:00'],
-                    [356, 373, 7620.00, 2890.00, 0.0, 5, 5, u"", 5, u"test2", 377, u'2011-10-27T10:45:09.870000+00:00']]}
         self.assertEqual(expected_result, parsed_response)
 
 
@@ -50,21 +26,19 @@ class ConnectorsApiTests(CatmaidApiTestCase):
         self.fake_authentication()
         response = self.client.get(
                 '/%d/connectors/' % self.test_project_id, {
-                    'range_start': 0,
-                    'range_length': 25,
-                    'sort_column': 6,
-                    'sort_dir': 'desc',
                     'relation_type': 'presynaptic_to',
                     'skeleton_ids': [235]})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {
-                u'total_count': 4,
-                u'links': [
-                    [432, 235, 2610.00, 2700.00, 0.0, 5, "", u"synapse with more targets, TODO", 0, u"test2", 247, u'2011-10-31T05:22:37.263000+00:00'],
-                    [421, 373, 6630.00, 4330.00, 0.0, 5, 5, u"", 5, u"test2", 409, u'2011-10-07T07:02:30.396000+00:00'],
-                    [356, 373, 7620.00, 2890.00, 0.0, 5, 5, u"", 5, u"test2", 377, u'2011-10-27T10:45:09.870000+00:00'],
-                    [356, 361, 7030.00, 1980.00, 0.0, 5, 5, u"", 9, u"test2", 367, u'2011-10-27T10:45:09.870000+00:00']]
+          'links': [
+            [235, 356, 6730.0, 2700.0, 0.0, 5, 3, 285, u'2011-12-20T10:46:01.360000+00:00'],
+            [235, 421, 6260.0, 3990.0, 0.0, 5, 3, 415, u'2011-12-20T10:46:01.360000+00:00'],
+            [235, 432, 2640.0, 3450.0, 0.0, 5, 3, 247, u'2011-12-20T10:46:01.360000+00:00']
+           ],
+           'tags': {
+             '432': ['synapse with more targets', 'TODO']
+            }
         }
         self.assertEqual(expected_result, parsed_response)
 
@@ -73,21 +47,15 @@ class ConnectorsApiTests(CatmaidApiTestCase):
         self.fake_authentication()
         response = self.client.get(
                 '/%d/connectors/' % self.test_project_id, {
-                    'range_start': 0,
-                    'range_length': 25,
-                    'sort_column': 0,
-                    'sort_dir': 'asc',
                     'relation_type': 'postsynaptic_to',
                     'skeleton_ids': [373]})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = {
-                u'total_count': 2,
+                u'tags': {},
                 u'links': [
-                    [356, 235, 6100.00, 2980.00, 0.0, 5, 5, u"", 28,
-                     u"test2", 285, u'2011-10-27T10:45:09.870000+00:00'],
-                    [421, 235, 5810.00, 3950.00, 0.0, 5, 5, u"", 28,
-                     u"test2", 415, u'2011-10-07T07:02:30.396000+00:00']]}
+                    [373, 356, 6730.00, 2700.00, 0.0, 5, 3, 377, u'2011-12-20T10:46:01.360000+00:00'],
+                    [373, 421, 6260.00, 3990.00, 0.0, 5, 3, 409, u'2011-12-20T10:46:01.360000+00:00']]}
         self.assertEqual(expected_result, parsed_response)
 
 

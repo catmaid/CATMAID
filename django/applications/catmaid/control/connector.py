@@ -3,6 +3,7 @@ import json
 from string import upper
 from itertools import imap
 from datetime import datetime, timedelta
+from collections import defaultdict
 
 from django.db import connection
 from django.db.models import Count
@@ -150,13 +151,16 @@ def _many_to_many_synapses(skids1, skids2, relation_name, project_id):
 def list_connector(request, project_id=None):
     """Get connectors linked to a set of skeletons.
 
-    The result data set includes information about linked connectors and
-    partner skeletons linked to the connector for a given input set of
-    skeletons. These links are further constrained by relation type, with
-    currently support available for: postsynaptic_to, presynaptic_to, abutting,
-    gapjunction_with. The first two will also list the inverse connecting links,
-    i.e. if postsynaptic_to relations are queried, the link from the query
-    skeleton to the connector has to be presynaptic_to and vice versa.
+    The result data set includes information about linked connectors on a given
+    input set of skeletons. These links are further constrained by relation
+    type, with currently support available for: postsynaptic_to,
+    presynaptic_to, abutting, gapjunction_with.
+
+    Returned is an object containing an array of links to connectors and a set
+    of tags for all connectors found (if not disabled). The link array contains
+    one array per connector link with the following content: [Linked skeleton ID,
+    Connector ID, Connector X, Connector Y, Connector Z, Link confidence, Link
+    creator ID, Linked treenode ID, Link edit time].
     ---
     parameters:
       - name: skeleton_ids
@@ -171,25 +175,11 @@ def list_connector(request, project_id=None):
         type: string
         paramType: form
         required: true
-      - name: range_start
-        description: The first result element index
-        type: integer
+      - name: with_tags
+        description: If connector tags should be fetched
+        type: boolean
         paramType: form
-        required: false
-      - name: range_length
-        description: The maximum number result elements
-        type: integer
-        paramType: form
-        required: false
-      - name: sort_column
-        description: The result column index to sort by
-        type: integer
-        paramType: form
-        required: false
-      - name: sort_dir
-        description: The sorting direction of a sorted result
-        type: string
-        paramType: form
+        defaultValue: true
         required: false
     type:
       links:
@@ -200,10 +190,8 @@ def list_connector(request, project_id=None):
             type: string
         description: Matching connector links
         required: true
-      total_count:
-        type: integer
-        description: The total number of elements
-        required: true
+      tags:
+         type array
     """
     skeleton_ids = get_request_list(request.GET, 'skeleton_ids', map_fn=int)
 
@@ -211,258 +199,59 @@ def list_connector(request, project_id=None):
         raise ValueError("At least one skeleton ID required")
 
     relation_type = request.GET.get('relation_type', 'presynaptic_to')
-    display_start = int(request.GET.get('range_start', 0))
-    display_length = int(request.GET.get('range_length', -1))
-    sorting_column = int(request.GET.get('sort_column', 0))
-    sort_descending = upper(request.GET.get('sort_dir', 'DESC')) != 'ASC'
+    with_tags = request.GET.get('with_tags', 'true') == 'true'
 
-    result = {}
+    cursor = connection.cursor()
+    relation_map = get_relation_to_id_map(project_id, cursor=cursor)
+    relation_id = relation_map.get(relation_type)
+    if not relation_id:
+        raise ValueError("Unknown relation: " + relation_type)
+    sk_template = ",".join(("(%s)",) * len(skeleton_ids))
 
-    for skeleton_id in skeleton_ids:
-        skeletonResult = get_connector_list(project_id, skeleton_id,
-                relation_type, display_start, display_length, sorting_column,
-                sort_descending)
-        if result:
-          result['total_count'] += skeletonResult['total_count']
-          result['links'].extend(skeletonResult['links'])
-        else:
-          result = skeletonResult
+    cursor.execute('''
+        SELECT tc.skeleton_id, c.id, c.location_x, c.location_y, c.location_z,
+              tc.confidence, tc.user_id, tc.treenode_id, tc.edition_time
+        FROM treenode_connector tc
+        JOIN (VALUES {}) q_skeleton(id)
+            ON tc.skeleton_id = q_skeleton.id
+        JOIN (VALUES (%s)) q_relation(id)
+            ON tc.relation_id = q_relation.id
+        JOIN connector c
+            ON tc.connector_id = c.id
+    '''.format(sk_template), skeleton_ids + [relation_id])
 
-    return JsonResponse(result)
+    links = []
+    for row in cursor.fetchall():
+        l = list(row)
+        l[8] = l[8].isoformat()
+        links.append(l)
 
+    connector_ids = [l[1] for l in links]
+    tags = defaultdict(list)
+    if connector_ids and with_tags:
+        c_template = ",".join(("(%s)",) * len(connector_ids))
+        cursor.execute('''
+            SELECT cci.connector_id, ci.name
+            FROM connector_class_instance cci
+            JOIN (VALUES {}) q_connector(id)
+                ON cci.connector_id = q_connector.id
+            JOIN (VALUES (%s)) q_relation(id)
+                ON cci.relation_id = q_relation.id
+            JOIN class_instance ci
+                ON cci.class_instance_id = ci.id
+        '''.format(c_template), connector_ids + [relation_map['labeled_as']])
 
-def get_connector_list(project_id, skeleton_id, relation_type, display_start,
-                       display_length, sorting_column, sort_descending):
+        for row in cursor.fetchall():
+            tags[row[0]].append(row[1])
 
-    def empty_result():
-        return {
-            'total_count': 0,
-            'links': []
-        }
+        # Sort labels by name
+        for connector_id, labels in tags.iteritems():
+            labels.sort(key=upper)
 
-    if not skeleton_id:
-        return empty_result()
-    else:
-        skeleton_id = int(skeleton_id)
-
-    response_on_error = ''
-    try:
-        cursor = connection.cursor()
-        response_on_error = 'Could not fetch relations.'
-        relation_map = get_relation_to_id_map(project_id, cursor=cursor)
-        for rel in ['presynaptic_to', 'postsynaptic_to', 'element_of', 'labeled_as']:
-            if rel not in relation_map:
-                raise Exception('Failed to find the required relation %s' % rel)
-
-        relation_type_id = relation_map.get(relation_type)
-        if relation_map is None:
-            raise ValueError("Unknown relation type: " + relation_type)
-
-        if relation_type == 'presynaptic_to':
-            inverse_relation_type_id = relation_map['postsynaptic_to']
-        elif relation_type == 'postsynaptic_to':
-            inverse_relation_type_id = relation_map['presynaptic_to']
-        elif relation_type in ('abutting', 'gapjunction_with'):
-            # For abutting and gap junction relations, the inverse is expected
-            # to be the same relation.
-            inverse_relation_type_id = relation_type_id
-        else:
-            raise ValueError("Unsupported relation type: " + relation_type)
-
-        response_on_error = 'Failed to select connectors.'
-        cursor.execute(
-            '''
-            SELECT
-            connector.id AS connector_id,
-            tn_other.user_id AS connector_user_id,
-            treenode_user.username AS connector_username,
-            connector.location_x AS connector_x,
-            connector.location_y AS connector_y,
-            connector.location_z AS connector_z,
-            tn_other.id AS other_treenode_id,
-            tn_other.location_x AS other_treenode_x,
-            tn_other.location_y AS other_treenode_y,
-            tn_other.location_z AS other_treenode_z,
-            tn_other.skeleton_id AS other_skeleton_id,
-            tn_this.location_x AS this_treenode_x,
-            tn_this.location_y AS this_treenode_y,
-            tn_this.location_z AS this_treenode_z,
-            tn_this.id AS this_treenode_id,
-            tc_this.relation_id AS this_to_connector_relation_id,
-            tc_this.confidence AS confidence,
-            tc_other.relation_id AS connector_to_other_relation_id,
-            tc_other.confidence AS target_confidence,
-            connector.edition_time AS last_modified
-            FROM
-            treenode tn_other,
-            treenode_connector tc_other,
-            connector,
-            "auth_user" treenode_user,
-            treenode_connector tc_this,
-            treenode tn_this
-            WHERE
-            treenode_user.id = tn_other.user_id AND
-            tn_other.id = tc_other.treenode_id AND
-            tc_other.connector_id = connector.id AND
-            tc_other.relation_id = %s AND
-            tc_this.connector_id = connector.id AND
-            tn_this.id = tc_this.treenode_id AND
-            tn_this.skeleton_id = %s AND
-            tc_this.relation_id = %s AND
-            tn_this.id <> tn_other.id
-            ORDER BY
-            connector_id, other_treenode_id, this_treenode_id
-            ''',  [inverse_relation_type_id, skeleton_id, relation_type_id])
-
-        connectors = cursor_fetch_dictionary(cursor)
-        connected_skeletons = map(lambda con: con['other_skeleton_id'], connectors)
-        connector_ids = map(lambda con: con['connector_id'], connectors)
-
-        response_on_error = 'Failed to find counts of treenodes in skeletons.'
-        skel_tn_count = Treenode.objects.filter(skeleton__in=connected_skeletons)\
-        .values('skeleton').annotate(treenode_count=Count('skeleton'))
-        # .values to group by skeleton_id. See http://tinyurl.com/dj-values-annotate
-
-        skeleton_to_treenode_count = {}
-        for s in skel_tn_count:
-            skeleton_to_treenode_count[s['skeleton']] = s['treenode_count']
-
-        # Rather than do a LEFT OUTER JOIN to also include the connectors
-        # with no partners, just do another query to find the connectors
-        # without the conditions:
-
-        response_on_error = 'Failed to select all connectors.'
-        cursor.execute(
-            '''
-            SELECT
-            connector.id AS connector_id,
-            connector.user_id AS connector_user_id,
-            connector_user.username AS connector_username,
-            connector.location_x AS connector_x,
-            connector.location_y AS connector_y,
-            connector.location_z AS connector_z,
-            tn_this.id AS this_treenode_id,
-            tc_this.relation_id AS this_to_connector_relation_id,
-            tc_this.confidence AS confidence,
-            tn_this.location_x AS this_treenode_x,
-            tn_this.location_y AS this_treenode_y,
-            tn_this.location_z AS this_treenode_z,
-            connector.edition_time AS last_modified
-            FROM
-            connector,
-            "auth_user" connector_user,
-            treenode_connector tc_this,
-            treenode tn_this
-            WHERE
-            connector_user.id = connector.user_id AND
-            tc_this.connector_id = connector.id AND
-            tn_this.id = tc_this.treenode_id AND
-            tn_this.skeleton_id = %s AND
-            tc_this.relation_id = %s
-            ORDER BY
-            connector_id, this_treenode_id
-            ''',  [skeleton_id, relation_type_id])
-        for row in cursor_fetch_dictionary(cursor):
-            connector_id = row['connector_id']
-            if connector_id not in connector_ids:
-                connectors.append(row)
-                connector_ids.append(connector_id)
-
-        # For each of the connectors, find all of its labels:
-        response_on_error = 'Failed to find the labels for connectors'
-        if (connector_ids > 0):
-            connector_labels = ConnectorClassInstance.objects.filter(
-                project=project_id,
-                connector__in=connector_ids,
-                relation=relation_map['labeled_as']).values(
-                'connector',
-                'class_instance__name')
-
-            labels_by_connector = {}  # Key: Connector ID, Value: List of labels.
-            for label in connector_labels:
-                if label['connector'] not in labels_by_connector:
-                    labels_by_connector[label['connector']] = [label['class_instance__name']]
-                else:
-                    labels_by_connector[label['connector']].append(label['class_instance__name'])
-                # Sort labels by name
-            for labels in labels_by_connector.values():
-                labels.sort(key=upper)
-
-        total_result_count = len(connectors)
-
-        if 0 == total_result_count:
-            return empty_result()
-
-        # Paging
-        if display_length == -1:
-            connectors = connectors[display_start:]
-            connector_ids = connector_ids[display_start:]
-        else:
-            connectors = connectors[display_start:display_start + display_length]
-            connector_ids = connector_ids[display_start:display_start + display_length]
-
-        # Format output
-        aaData_output = []
-        for c in connectors:
-            response_on_error = 'Failed to format output for connector with ID %s.' % c['connector_id']
-            if 'other_skeleton_id' in c:
-                connected_skeleton_treenode_count = skeleton_to_treenode_count[c['other_skeleton_id']]
-            else:
-                c['other_skeleton_id'] = skeleton_id
-                c['other_treenode_id'] = c['this_treenode_id']
-                c['other_treenode_x'] = c['this_treenode_x']
-                c['other_treenode_y'] = c['this_treenode_y']
-                c['other_treenode_z'] = c['this_treenode_z']
-                c['target_confidence'] = ''
-                connected_skeleton_treenode_count = 0
-
-            if c['connector_id'] in labels_by_connector:
-                labels = ', '.join(map(str, labels_by_connector[c['connector_id']]))
-            else:
-                labels = ''
-
-            row = []
-            row.append(c['connector_id'])
-            row.append(c['other_skeleton_id'])
-            row.append(c['other_treenode_x']) #('%.2f' % )
-            row.append(c['other_treenode_y'])
-            z = c['other_treenode_z']
-            row.append(z)
-            row.append(c['confidence'])
-            row.append(c['target_confidence'])
-            row.append(labels)
-            row.append(connected_skeleton_treenode_count)
-            row.append(c['connector_username'])
-            row.append(c['other_treenode_id'])
-            row.append(str(c['last_modified'].isoformat()))
-            aaData_output.append(row)
-
-        # Sort output
-        def fetch_value_for_sorting(row):
-            value = row[sorting_column]
-            if isinstance(value, str) or isinstance(value, unicode):
-                return upper(value)
-            return value
-        aaData_output.sort(key=fetch_value_for_sorting)
-
-        # Fix excessive decimal precision in coordinates
-        for row in aaData_output:
-            row[2] = float('%.2f' % row[2])
-            row[3] = float('%.2f' % row[3])
-            row[4] = float('%.2f' % row[4])
-
-        if sort_descending:
-            aaData_output.reverse()
-
-        return {
-            'total_count': total_result_count,
-            'links': aaData_output
-        }
-
-    except Exception as e:
-        import traceback
-        raise Exception("%s: %s %s" % (response_on_error, str(e),
-                                       str(traceback.format_exc())))
+    return JsonResponse({
+        "links": links,
+        "tags": tags
+    }, safe=False)
 
 def _connector_skeletons(connector_ids, project_id):
     """ Return a dictionary of connector ID as keys and a dictionary as value

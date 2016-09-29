@@ -17,7 +17,7 @@
     // not registered. It is the input skeleton sink, but the output is handled
     // with a second soucre
     var update = this.update.bind(this);
-    this.skeletonSource = new CATMAID.BasicSkeletonSource(this.getName() + " (input)", {
+    this.skeletonSource = new CATMAID.BasicSkeletonSource(this.getName() + " Input", {
       register: false,
       handleAddedModels: update,
       handleChangedModels: update,
@@ -28,6 +28,9 @@
 
     // The displayed data table
     this.connectorTable = null;
+
+    // Wi1l keep an up-to-date mapping of connector tags
+    this.connectorTags = null;
 
     if (skeletonModels) {
       this.skeletonSource.append(skeletonModels);
@@ -114,13 +117,13 @@
           dom: "lrphtip",
           paging: true,
           order: [],
-          serverSide: true,
           lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
           ajax: function(data, callback, settings) {
             var relationType = $('#connector_relation_type' + widgetID + ' :selected').val();
             var params = {
               skeleton_ids: self.skeletonSource.getSelectedSkeletons(),
-              relation_type: relationType
+              relation_type: relationType,
+              with_tags: true
             };
 
             // Locally resolve request if no skeletons are provided
@@ -134,23 +137,10 @@
               return;
             }
               
-            if (undefined !== data.length) {
-              params.range_start = data.start;
-              params.range_length = data.length;
-            }
-
-            if (data.order && data.order.length > 0) {
-              params.sort_column = data.order[0].column;
-              params.sort_dir = data.order[0].dir;
-
-              // Correct for artificial stack section column
-              if (params.sort_column > 4) {
-                params.sort_column = params.sort_column - 1;
-              }
-            }
-
             CATMAID.fetch(project.id +  "/connectors/", "GET", params)
               .then(function(result) {
+                // Store connector tags
+                self.connectorTags = result.tags || {};
                 // Populate table
                 callback({
                   draw: data.draw,
@@ -171,8 +161,8 @@
               .catch(CATMAID.handleError);
           },
           columns: [
-            {data: 0, className: "cm-center", title: "Connector"},
-            {data: 1, className: "cm-center", title: "Skeleton ID"},
+            {data: 0, className: "cm-center", title: "Skeleton ID"},
+            {data: 1, className: "cm-center", title: "Connector ID"},
             {data: 2, className: "cm-center", title: "X"},
             {data: 3, className: "cm-center", title: "Y"},
             {data: 4, className: "cm-center", title: "Z"},
@@ -184,14 +174,27 @@
                 return project.focusedStackViewer.primaryStack.projectToStackZ(row[4], row[3], row[2]);
               },
             }, // section index
-            {data: 5, className: "cm-center", title: "Source confidence"},
-            {data: 6, className: "cm-center", title: "Partner confidence"},
-            {data: 7, className: "cm-center", title: "Tags"},
-            {data: 8, className: "cm-center", title: "# Skeleton nodes"},
-            {data: 9, className: "cm-center", title: "User"},
-            {data: 10, className: "cm-center", title: "Treenode ID"},
+            {data: 5, className: "cm-center", title: "Link confidence"},
             {
-              data: 11,
+              data: 1,
+              className: "cm-center",
+              title: "Tags",
+              render: function(data, type, row, meta) {
+                var tags = self.connectorTags[data];
+                return tags || '';
+              },
+            },
+            {
+              data: 6,
+              className: "cm-center",
+              title: "User",
+              render: function(data, type, row, meta) {
+                return CATMAID.User.safe_get(data).login;
+              }
+            },
+            {data: 7, className: "cm-center", title: "Treenode ID"},
+            {
+              data: 8,
               title: "Last modified",
               className: "catmaid.center",
               render: function(data, type, row, meta) {
@@ -203,7 +206,8 @@
           ]
         }).on('dblclick', 'tbody td', function() {
           var cell = self.connectorTable.cell( this );
-          if (!cell || cell[0][0].column !== 0) {
+          var col = cell[0][0].column;
+          if (!cell || col !== 9) {
             return;
           }
 
@@ -214,25 +218,8 @@
         }).on('dblclick', 'tbody tr', function () {
           var row = self.connectorTable.row(this);
           var data = row.data();
-          // retrieve coordinates and moveTo
-          var x = parseFloat(data[2]);
-          var y = parseFloat(data[3]);
-          var z = parseFloat(data[4]);
-
-          // If there is a partner treenode, activate that - otherwise
-          // activate the connector itself:
-          var idToActivate, skeletonID;
-          if (data[10]) {
-            idToActivate = parseInt(data[10], 10);
-            skeletonID = parseInt(data[1], 10);
-          } else {
-            idToActivate = parseInt(data[0], 10);
-            skeletonID = null;
-          }
-
-          SkeletonAnnotations.staticMoveTo(z, y, x, function() {
-            SkeletonAnnotations.staticSelectNode(idToActivate, skeletonID);
-          });
+          var connectorId = data[1];
+          SkeletonAnnotations.staticMoveToAndSelectNode(connectorId);
         });
       }
     };

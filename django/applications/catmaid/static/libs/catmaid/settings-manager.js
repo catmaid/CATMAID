@@ -258,7 +258,6 @@
 
           self._storeThrottleTimeout = window.setTimeout(function () {
             self.settingsStore._storeDirty();
-            CATMAID.msg('Success', 'User profile updated successfully.');
             self.load();
             self._storeThrottleTimeout = null;
           }, Settings.STORE_THROTTLE_INTERVAL);

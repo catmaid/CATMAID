@@ -89,7 +89,15 @@ class GroupMembershipHelper(TemplateView):
         # allows us to create the requested group memberships. Each source
         # user is added to each target user group.
         for target_user in target_users:
-            user = User.objects.get(id=target_user)
+            user = User.objects.filter(id=target_user)
+            n_user_instances = len(user)
+            if 0 == n_user_instances:
+                messages.warning(request, 'Could not find user with ID {}'.format(target_user))
+                continue
+            if 1 < n_user_instances:
+                messages.warning(request, 'Found more than one user with ID {}'.format(target_user))
+                continue
+
             group, _ = Group.objects.get_or_create(name=user.username)
             if 'add' == action:
                 group.user_set.add(*source_users)

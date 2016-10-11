@@ -71,7 +71,7 @@ class GroupMembershipHelper(TemplateView):
             if groups:
                 group_users = User.objects.filter(groups__in=groups) \
                     .values_list('id', flat=True)
-                users.add(group_users)
+                users.update(group_users)
 
         explode_group_into_users(source_groups, source_users)
         if not source_users:

@@ -64,6 +64,9 @@ Miscellaneous:
 - Pressing E in the Review widget now works again when a segment was completely
   reviewed.
 
+- The group membership permission tool in CATMAID's admin area works with groups
+  again.
+
 
 ## 2016.09.01
 

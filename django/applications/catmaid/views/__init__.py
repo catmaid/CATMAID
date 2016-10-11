@@ -49,7 +49,7 @@ class GroupMembershipHelper(TemplateView):
         return context
 
     def post(self, request, *args, **kwargs):
-        redirect_url = urlresolvers.reverse('admin:index')
+        redirect_url = urlresolvers.reverse('admin:groupmembershiphelper')
         # Make sure only superusers can update permissions
         if not request.user.is_superuser:
             messages.error(request, 'Only superusers can update permissions')

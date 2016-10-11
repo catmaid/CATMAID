@@ -377,6 +377,7 @@ admin.site.register_view('classificationadmin',
                          view=classification_admin_view)
 admin.site.register_view('groupmembershiphelper',
                          'Group membership helper',
+                         urlname='groupmembershiphelper',
                          view=GroupMembershipHelper.as_view())
 admin.site.register_view('dvidimporter', 'DVID stack importer',
                          view=DVIDImportWizard.as_view())

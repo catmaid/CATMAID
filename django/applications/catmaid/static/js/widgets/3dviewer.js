@@ -5177,11 +5177,17 @@
 
       // Update to most recent skeleton
       this.resetToPointInTime(skeletonModel, options);
+      this.history.nextChange = undefined;
     } else {
       this.reinit_actor(skeletonModel, nodes, connectors, tags, null, options);
     }
   };
 
+  /**
+   * Get all nodes valid to a passed in time stamp (inclusive) as well as the
+   * next time stamp a change happens. Returned is a list of the following form:
+   * [nodes, nextChangeDate].
+   */
   function getDataUntil(elements, timestamp) {
     return Object.keys(elements).reduce(function(o, n) {
       var versions = elements[n];
@@ -5190,18 +5196,27 @@
       for (var i=0; i<versions.length; ++i) {
         var validFrom = versions[i][0];
         var validTo = versions[i][1];
-        if (validFrom <= timestamp &&
-            (validTo === null || validTo > timestamp)) {
-          match = i;
-          break;
+        if (validTo === null || validTo > timestamp) {
+          if (validFrom <= timestamp) {
+            match = i;
+            break;
+          } else {
+            // Record time of next version of this node, if larger than
+            // previous recording.
+            if (null === o[1]) {
+              o[1] = new Date(validFrom.getTime());
+            } else if (validFrom < o[1]) {
+              o[1].setTime(validFrom.getTime());
+            }
+          }
         }
       }
       if (null !== match) {
         var version = versions[match];
-        o.push(version[2]);
+        o[0].push(version[2]);
       }
       return o;
-    }, []);
+    }, [[], null]);
   }
 
   /**
@@ -5225,13 +5240,26 @@
     // If no timestamp is given, the present point in time is implied
     timestamp = timestamp || new Date();
 
+    // Only generate a new skeleton version if new changes are visible at this
+    // point in time (and if no next change time has been recorded yet).
+    var nextChange = this.history.nextChange;
+    if (undefined !== nextChange) {
+      if (!nextChange || nextChange > timestamp) {
+        return;
+      }
+    }
+
     // The skeleton history is a regular JSON response with potentially
     // duplicate IDs and timestamps for each element. The first step is
     // therefore to find all nodes, connectors and tags that were valid at the
     // passed in timestamp.
-    var nodes = getDataUntil(this.history.nodes, timestamp);
-    var connectors = getDataUntil(this.history.connectors, timestamp);
-    var tags = null; // getDataUntil(this.history.tags, timestamp);
+    var nodesInfo = getDataUntil(this.history.nodes, timestamp);
+    var connectorsInfo = getDataUntil(this.history.connectors, timestamp);
+    var nodes = nodesInfo[0];
+    var connectors = connectorsInfo[0];
+
+    // TODO Tags are currently not supported by the history animation
+    var tags = null;
 
     // Due to ambiguities with nodes that were modified without history tracking
     // being active, we silence node reference errors during skeleton
@@ -5241,6 +5269,23 @@
     // makes it possible that it references a parent node that was not
     // available at its creation time.
     this.reinit_actor(skeletonModel, nodes, connectors, tags, this.history, options, true);
+
+    // Remember this rebuild date
+    this.history.rebuildTime = timestamp;
+
+    // Set time of next change
+    if (nodesInfo[1]) {
+      if (connectorsInfo[1]) {
+        this.history.nextChange = nodesInfo[1] > connectorsInfo[1] ?
+            nodesInfo[1] : connectorsInfo[1];
+      } else {
+        this.history.nextChange = nodesInfo[1];
+      }
+    } else if (connectorsInfo[1]) {
+      this.history.nextChange = connectorsInfo[1];
+    } else {
+      this.history.nextChange = null;
+    }
   };
 
   /**

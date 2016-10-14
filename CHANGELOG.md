@@ -13,6 +13,12 @@
 - The original camera location is now restored by default after exporting an
   animation.
 
+- A new tab called 'History' gives access to tools for replaying the
+  reconstruction of the currently loaded skeletons. At the moment, only the time
+  advance per frame can be adjusted. The time range covered starts ith the first
+  change and ends with the last one. Tags on individual nodes are currently
+  hidden during animation.
+
 
 Review widget:
 

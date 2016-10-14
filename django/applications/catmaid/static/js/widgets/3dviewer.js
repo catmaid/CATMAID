@@ -32,6 +32,10 @@
     this.animationRequestId = undefined;
     // The current animation, if any
     this.animation = undefined;
+    // Indicates if there is a history animation running
+    this.historyRequestId = undefined;
+    // The current history animation, if any
+    this.history = undefined;
     // Map loaed volume IDs to an array of Three.js meshes
     this.loadedVolumes = {};
     // Current set of filtered connectors (if any)
@@ -800,6 +804,7 @@
     this.animation_back_forth = false;
     this.animation_stepwise_visibility_type = 'all';
     this.animation_stepwise_visibility_options = null;
+    this.animation_hours_per_tick = 4;
     this.strahler_cut = 2; // to approximate twigs
     this.use_native_resolution = true;
   };
@@ -1298,6 +1303,9 @@
           visibleSkeletons.push(skeletonId);
         });
       }
+    },
+    'history': function(options, skeletonIds, visibleSkeletons, r) {
+      console.log('animation visibility: ' + r);
     }
   };
 
@@ -3744,12 +3752,17 @@
     CATMAID.tools.setXYZ(this.mesh.scale, radius);
   };
 
-  WebGLApplication.prototype.Space.prototype.updateSkeleton = function(skeletonmodel, json, options) {
-    if (!this.content.skeletons.hasOwnProperty(skeletonmodel.id)) {
-      this.content.skeletons[skeletonmodel.id] = new this.Skeleton(this, skeletonmodel);
+  WebGLApplication.prototype.Space.prototype.updateSkeleton =
+      function(skeletonModel, json, options, with_history) {
+
+    var skeleton = this.content.skeletons[skeletonModel.id];
+    if (!skeleton) {
+      skeleton = new this.Skeleton(this, skeletonModel);
+      this.content.skeletons[skeletonModel.id] = skeleton;
     }
-    this.content.skeletons[skeletonmodel.id].reinit_actor(skeletonmodel, json, options);
-    return this.content.skeletons[skeletonmodel.id];
+    skeleton.loadJson(skeletonModel, json, options, with_history);
+
+    return skeleton;
   };
 
   /** An object to represent a skeleton in the WebGL space.
@@ -3763,7 +3776,10 @@
    *  Nodes matching a custom tag filter or with an 'uncertain' or 'todo' in their
    *  text tags also get a sphere.
    *
-   *  When visualizing only the connectors among the skeletons visible in the WebGL space, the geometries of the pre- and postsynaptic edges are hidden away, and a new pair of geometries are created to represent just the edges that converge onto connectors also related to by the other skeletons.
+   *  When visualizing only the connectors among the skeletons visible in the
+   *  WebGL space, the geometries of the pre- and postsynaptic edges are hidden
+   *  away, and a new pair of geometries are created to represent just the edges
+   *  that converge onto connectors also related to by the other skeletons.
    *
    */
   WebGLApplication.prototype.Space.prototype.Skeleton = function(space, skeletonmodel) {
@@ -3774,12 +3790,16 @@
     this.synapticColors = space.staticContent.synapticColors;
     this.skeletonmodel = skeletonmodel;
     this.opacity = skeletonmodel.opacity;
-    // This is an index mapping treenode IDs to lists of [reviewer_id, review_time].
-    // Attaching them directly to the nodes is too much of a performance hit.
-    // Gets loaded dynamically, and erased when refreshing (because a new Skeleton is instantiated with the same model).
+    // This is an index mapping treenode IDs to lists of [reviewer_id,
+    // review_time].  Attaching them directly to the nodes is too much of a
+    // performance hit.  Gets loaded dynamically, and erased when refreshing
+    // (because a new Skeleton is instantiated with the same model).
     this.reviews = null;
-    // The arbor of the axon, as computed by splitByFlowCentrality. Loaded dynamically, and erased when refreshing like this.reviews.
+    // The arbor of the axon, as computed by splitByFlowCentrality. Loaded
+    // dynamically, and erased when refreshing like this.reviews.
     this.axon = null;
+    // Optional history information
+    this.history = null;
   };
 
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype = {};
@@ -3788,7 +3808,8 @@
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.CTYPES = ['neurite', 'presynaptic_to', 'postsynaptic_to', 'gapjunction_with'];
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.synapticTypes = ['presynaptic_to', 'postsynaptic_to', 'gapjunction_with'];
 
-  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.initialize_objects = function(options) {
+  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.initialize_objects =
+      function(options) {
     this.visible = true;
     if (undefined === this.skeletonmodel) {
       console.log('Can not initialize skeleton object');
@@ -3868,6 +3889,7 @@
       this.connectorSphereCollection.material.dispose();
       this.connectorSphereCollection.material = null;
       meshes.push(this.connectorSphereCollection);
+      this.connectorSphereCollection = null;
     }
 
     if (this.specialTagSphereCollection) {
@@ -3876,6 +3898,7 @@
       this.specialTagSphereCollection.material.dispose();
       this.specialTagSphereCollection.material = null;
       meshes.push(this.specialTagSphereCollection);
+      this.specialTagSphereCollection = null;
     }
 
     // If no collection was given, remove objects right away
@@ -5065,16 +5088,220 @@
     this.space.add(mesh);
   };
 
-  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor = function(skeletonmodel, json, options) {
+  // Sort functions for sorting history data newest first. Since JavaScript
+  // Date objects only support Microsecond precision, we need to compare
+  // Postgres strings if two timestamps are equal up to the microsecond.
+  var compareTimestampEntry = function(timeIndexA, timeIndexB, a, b) {
+    // The time stamp is added as first element
+    var ta = a[0];
+    var tb = b[0];
+    if (ta > tb) {
+      return -1;
+    }
+    if (ta < tb) {
+      return 1;
+    }
+    if (ta.getTime() === tb.getTime()) {
+      // Compare microseconds in string representation, which is a hack,
+      // but works
+      var taS = a[2][timeIndexA];
+      var tbS = b[2][timeIndexB];
+      return -1 * CATMAID.tools.compareStrings(taS, tbS);
+    }
+  };
+  var sortElements = function(timeIndex, n) {
+    var elements = this[n];
+    elements.sort(compareTimestampEntry.bind(window, timeIndex, timeIndex));
+  };
+
+  /**
+   * Recreate the skeleton represention based on the passed in JSON data. If
+   * historic data is part of this, the skeleton will contain multiple
+   * representations at the same time, where each node has a time stamp
+   * associated when it became valid.
+   */
+  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.loadJson =
+      function(skeletonModel, json, options, withHistory) {
+    
+    var nodes = json[0];
+    var connectors = json[1];
+    var tags = json[2];
+    var history;
+    
+    if (withHistory) {
+      var makeHistoryAppender = function(timestampIndex) {
+       return function(o, n) {
+          var entries = o[n[0]];
+          if (!entries) {
+            entries = [];
+            o[n[0]] = entries;
+          }
+          var lowerBound = new Date(n[timestampIndex]);
+          var upperBound = new Date(n[timestampIndex + 1]);
+
+          // Make sure the entry which encodes the creation time (live entry),
+          // has its upper bound set to null (to represent infinity). All
+          // entries are sorted already, we therefore only need to check the
+          // first (youngest) entry.
+          if (upperBound <= lowerBound ||
+              upperBound.getTime() === lowerBound.getTime()) {
+            lowerBound = upperBound;
+            upperBound = null;
+            n[timestampIndex] = n[timestampIndex + 1];
+            n[timestampIndex + 1] = null;
+          }
+
+          entries.push([lowerBound, upperBound, n]);
+          return o;
+        };
+      };
+      // Create history data structure to make timestamp based look-up easier.
+      // Each data type has its own map of IDs to historic and present data,
+      // with each datum represented by an actual date, which in turn maps to
+      // element data.
+      this.history = {
+        nodes: !nodes ? {} : nodes.reduce(
+            makeHistoryAppender(8), {}),
+        connectors: !connectors ? {} : connectors.reduce(
+            makeHistoryAppender(6), {})//,
+      };
+
+      var nodeIds = Object.keys(this.history.nodes);
+      var connectorIds = Object.keys(this.history.connectors);
+
+      // Sort all history lists for each element
+      nodeIds.forEach(
+					sortElements.bind(this.history.nodes, 8));
+      connectorIds.forEach(
+					sortElements.bind(this.history.connectors, 6));
+
+      // Update to most recent skeleton
+      this.resetToPointInTime(skeletonModel, options);
+      this.history.nextChange = undefined;
+    } else {
+      this.reinit_actor(skeletonModel, nodes, connectors, tags, null, options);
+    }
+  };
+
+  /**
+   * Get all nodes valid to a passed in time stamp (inclusive) as well as the
+   * next time stamp a change happens. Returned is a list of the following form:
+   * [nodes, nextChangeDate].
+   */
+  function getDataUntil(elements, timestamp) {
+    return Object.keys(elements).reduce(function(o, n) {
+      var versions = elements[n];
+      var match = null;
+      // Individual versions are sorted newest first
+      for (var i=0; i<versions.length; ++i) {
+        var validFrom = versions[i][0];
+        var validTo = versions[i][1];
+        if (validTo === null || validTo > timestamp) {
+          if (validFrom <= timestamp) {
+            match = i;
+            break;
+          } else {
+            // Record time of next version of this node, if larger than
+            // previous recording.
+            if (null === o[1]) {
+              o[1] = new Date(validFrom.getTime());
+            } else if (validFrom < o[1]) {
+              o[1].setTime(validFrom.getTime());
+            }
+          }
+        }
+      }
+      if (null !== match) {
+        var version = versions[match];
+        o[0].push(version[2]);
+      }
+      return o;
+    }, [[], null]);
+  }
+
+  /**
+   * Reset a skeleton to particular point in time. Expects skeleton history to
+   * be available.
+   */
+  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.resetToPointInTime =
+      function(skeletonModel, options, timestamp) {
+
+    if (!this.history) {
+      throw new CATMAID.ValueError("Historic data for skeleton missing");
+    }
+
+    if (!skeletonModel) {
+      if (!this.skeletonmodel) {
+        throw new CATMAID.ValueError("Need either own or new skeleton model");
+      }
+      skeletonModel = this.skeletonModel;
+    }
+
+    // If no timestamp is given, the present point in time is implied
+    timestamp = timestamp || new Date();
+
+    // Only generate a new skeleton version if new changes are visible at this
+    // point in time (and if no next change time has been recorded yet).
+    var nextChange = this.history.nextChange;
+    if (undefined !== nextChange) {
+      if (!nextChange || nextChange > timestamp) {
+        return;
+      }
+    }
+
+    // The skeleton history is a regular JSON response with potentially
+    // duplicate IDs and timestamps for each element. The first step is
+    // therefore to find all nodes, connectors and tags that were valid at the
+    // passed in timestamp.
+    var nodesInfo = getDataUntil(this.history.nodes, timestamp);
+    var connectorsInfo = getDataUntil(this.history.connectors, timestamp);
+    var nodes = nodesInfo[0];
+    var connectors = connectorsInfo[0];
+
+    // TODO Tags are currently not supported by the history animation
+    var tags = null;
+
+    // Due to ambiguities with nodes that were modified without history tracking
+    // being active, we silence node reference errors during skeleton
+    // construction. The problem is we need such a node availabel starting from
+    // its creation time, because it might referenced at that point in time.
+    // However, its data is only valid stating from its edition time, which
+    // makes it possible that it references a parent node that was not
+    // available at its creation time.
+    this.reinit_actor(skeletonModel, nodes, connectors, tags, this.history, options, true);
+
+    // Remember this rebuild date
+    this.history.rebuildTime = timestamp;
+
+    // Set time of next change
+    if (nodesInfo[1]) {
+      if (connectorsInfo[1]) {
+        this.history.nextChange = nodesInfo[1] > connectorsInfo[1] ?
+            nodesInfo[1] : connectorsInfo[1];
+      } else {
+        this.history.nextChange = nodesInfo[1];
+      }
+    } else if (connectorsInfo[1]) {
+      this.history.nextChange = connectorsInfo[1];
+    } else {
+      this.history.nextChange = null;
+    }
+  };
+
+  /**
+   * Recreate the skeleton represention based on the passed in JSON data. If
+   * historic data is part of this, the skeleton will contain multiple
+   * representations at the same time, where each node has a time stamp
+   * associated when it became valid.
+   */
+  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.reinit_actor =
+      function(skeletonmodel, nodes, connectors, tags, history, options, silent) {
     if (this.actor) {
       this.destroy();
     }
     this.skeletonmodel = skeletonmodel;
     this.initialize_objects(options);
-
-    var nodes = json[0];
-    var connectors = json[1];
-    var tags = json[2];
+    this.history = history;
 
     var lean = options.lean_mode;
 
@@ -5110,9 +5337,16 @@
       // 3,4,5: x,y,z
       // node[6]: radius
       // node[7]: confidence
+      // node[8]: edition timr, when queried
       // If node has a parent
       var v1;
-      if (node[1]) {
+      var hasParentNode = !!node[1];
+      if (hasParentNode && silent) {
+        // Silencing missing parent information is needed for history based
+        // construction.
+        hasParentNode = nodeProps.hasOwnProperty(node[1]);
+      }
+      if (hasParentNode) {
         v1 = vs[node[0]];
         if (!v1) {
           v1 = new THREE.Vector3(node[3], node[4], node[5]);
@@ -5128,9 +5362,11 @@
           v2.user_id = p[2];
           vs[p[0]] = v2;
         }
+
         var nodeID = node[0];
         if (node[6] > 0 && p[6] > 0) {
-          // Create cylinder using the node's radius only (not the parent) so that the geometry can be reused
+          // Create cylinder using the node's radius only (not the parent) so
+          // that the geometry can be reused
           this.createCylinder(v1, v2, node[6], material);
           // Create skeleton line as well
           this.createEdge(v1, v2, 'neurite');
@@ -5161,6 +5397,7 @@
           this.createNodeSphere(v1, node[6], material);
         }
       }
+
       if (!lean && node[7] < 5) {
         // Edge with confidence lower than 5
         labels.push([v1, this.space.staticContent.labelColors.uncertain]);
@@ -5196,10 +5433,14 @@
       var v1 = new THREE.Vector3(con[3], con[4], con[5]);
       v1.node_id = con[1];
       var v2 = vs[con[0]];
-      this.createEdge(v1, v2, this.synapticTypes[type]);
-      var defaultMaterial = this.space.staticContent.synapticColors[type] ||
-        this.space.staticContent.synapticColors.default;
-      partner_nodes.push([v2, defaultMaterial, type]);
+      if (v1 && v2) {
+        this.createEdge(v1, v2, this.synapticTypes[type]);
+        var defaultMaterial = this.space.staticContent.synapticColors[type] ||
+          this.space.staticContent.synapticColors.default;
+        partner_nodes.push([v2, defaultMaterial, type]);
+      } else if (!silent) {
+        throw new CATMAID.ValueError("Connector loading failed, not all vertices available");
+      }
     }, this);
 
     // Place spheres on nodes with special labels, if they don't have a sphere there already
@@ -5274,11 +5515,17 @@
     }
   };
 
-  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.show = function(options) {
+  /**
+   * Make a skeleton or parts of it visible. If the optional timestamp parameter
+   * is passed in, only nodes/edges/connectors will be displayed that are
+   * visible at this point in time.
+   */
+  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.show = function(
+      options) {
 
     this.addCompositeActorToScene();
 
-    this.setActorVisibility( this.skeletonmodel.selected ); // the skeleton, radius spheres and label spheres
+    this.setActorVisibility(this.skeletonmodel.selected); // the skeleton, radius spheres and label spheres
 
     if (options.connector_filter) {
       this.setPreVisibility( false ); // the presynaptic edges and spheres
@@ -5295,6 +5542,20 @@
 
     // Will query the server
     if ('cyan-red' !== options.connector_color) this.space.updateConnectorColors(options, [this]);
+  };
+
+  /**
+   * Only show nodes of this skeleton if they are visible at the passed in point
+   * in time. Expectes history information to be available.
+   */
+  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.setVisibileByTime =
+      function(timestamp) {
+    // Make sure there is history data available.
+    if (!this.history) {
+      throw new CATMAID.ValueError("Skeleton " + this.id +
+          " doesn't have history data attached");
+    }
+
   };
 
   /**
@@ -5620,33 +5881,203 @@
   /**
    * Create a new animation, based on the 3D viewers current state.
    */
-  WebGLApplication.prototype.createAnimation = function()
+  WebGLApplication.prototype.createAnimation = function(type, params)
   {
-    // For now it is always the Y axis rotation
-    var options = {
-      type: 'rotation',
-      axis: this.options.animation_axis,
-      camera: this.space.view.camera,
-      target: this.space.view.controls.target,
-      speed: this.options.animation_rotation_speed,
-      backandforth: this.options.animation_back_forth,
-    };
+    params = params || {};
 
-    // Add a notification handler for stepwise visibility, if enabled and at least
-    // one skeleton is loaded.
-    var visType = this.options.animation_stepwise_visibility_type;
-    if (visType !== 'all') {
-      // Get current visibility map and create notify handler
-      var visMap = this.space.getVisibilityMap();
-      var visOpts = this.options.animation_stepwise_visibility_options;
-      options['notify'] = this.createStepwiseVisibilityHandler(visMap,
-          visType, visOpts);
-      // Create a stop handler that resets visibility to the state we found before
-      // the animation.
-      options['stop'] = this.createVisibibilityResetHandler(visMap);
+    // Default to rotation type
+    type = type || 'rotation';
+
+    if ('rotation' === type) {
+      // For now it is always the Y axis rotation
+      var options = {
+        type: 'rotation',
+        axis: this.options.animation_axis,
+        camera: this.space.view.camera,
+        target: this.space.view.controls.target,
+        speed: this.options.animation_rotation_speed,
+        backandforth: this.options.animation_back_forth,
+      };
+
+      // Add a notification handler for stepwise visibility, if enabled and at least
+      // one skeleton is loaded.
+      var visType = this.options.animation_stepwise_visibility_type;
+      if (visType !== 'all') {
+        // Get current visibility map and create notify handler
+        var visMap = this.space.getVisibilityMap();
+        var visOpts = this.options.animation_stepwise_visibility_options;
+        options['notify'] = this.createStepwiseVisibilityHandler(visMap,
+            visType, visOpts);
+        // Create a stop handler that resets visibility to the state we found before
+        // the animation.
+        options['stop'] = this.createVisibibilityResetHandler(visMap);
+      }
+
+      var animation = CATMAID.AnimationFactory.createAnimation(options);
+      return Promise.resolve(animation);
+    } else if ('history' === type) {
+      // This animation type will make all existing skeletons invisible and add
+      // history versions of the same skeletons to the scene. These will store
+      // different versions of the skeletons and can switch on and off
+      // individual edges based on a time.
+      return new Promise((function(resolve, reject) {
+        var options = {
+          type: 'history'
+        };
+        // Get current visibility information and set per-skeleton visibility
+        // mode to 'history'. This makes skeletons appear with the creation time
+        // of their oldest node. Individual nodes and edges of the
+        // representation may also be hidden by a location on a time line.
+        var visType = 'history';
+        // Create notify handler
+        var visMap = this.space.getVisibilityMap();
+        var visOpts = this.options.animation_stepwise_visibility_options;
+
+        var widget = this;
+        options['notify'] = function(currentDate, endDate) {
+          CATMAID.tools.callIfFn(params.notify, currentDate, endDate);
+
+          // Color skeletons
+          if (widget.options.connector_filter) {
+            widget.updateSkeletonColors(widget.refreshRestrictedConnectors.bind(widget));
+          } else {
+            widget.updateSkeletonColors();
+          }
+        };
+        // Create a stop handler that resets visibility to the state we found before
+        // the animation.
+        var resetVisibility = this.createVisibibilityResetHandler(visMap);
+        options['stop'] = function() {
+          widget.reloadSkeletons(widget.getSelectedSkeletons());
+          resetVisibility();
+        };
+        options['tickLength'] = this.options.animation_hours_per_tick;
+        options["skeletonOptions"] = this.options;
+
+        var models = this.getSelectedSkeletonModels();
+        var skeletonIds = this.getSelectedSkeletons();
+
+        if (!skeletonIds || 0 === skeletonIds.length) {
+          reject("No skeletons available");
+          return;
+        }
+        var url1 = django_url + project.id + '/',
+            lean = this.options.lean_mode ? 0 : 1,
+            url2 = '/' + lean  + '/' + lean + '/compact-skeleton';
+        // Get historic data of current skeletons. Create a map of events, Which
+        // are consumed if their time is ready.
+        var now = new Date();
+        fetchSkeletons.call(this,
+            skeletonIds,
+            function(skeletonId) {
+              return url1 + skeletonId + url2;
+            },
+            function(skeleton_id) {
+              return {
+                with_history: true
+              };
+            },
+            (function(skeleton_id, json) {
+              // Update existing skeletons with history information
+              this.space.updateSkeleton(models[skeleton_id], json, this.options, true);
+            }).bind(this),
+            function(skeleton_id) {
+              // Failed loading: will be handled elsewhere via fnMissing in
+              // fetchCompactSkeletons
+            },
+            (function() {
+              function findMinDate(nodes, currentMin, nodeId) {
+                var versions = nodes[nodeId];
+                // Expect at least one entry, should be safe
+                var min = versions[0][0];
+                for (var i=1; i<versions.length; ++i) {
+                  var d = versions[i][0];
+                  if (d < min) {
+                    min = d;
+                  }
+                }
+                if (null === currentMin) {
+                  currentMin = min;
+                } else {
+                  if (min < currentMin) {
+                    currentMin = min;
+                  }
+                }
+
+                return currentMin;
+              }
+
+              function findMaxDate(nodes, currentMax, nodeId) {
+                var versions = nodes[nodeId];
+                // Expect at least one entry, should be safe
+                var max = versions[0][0];
+                for (var i=1; i<versions.length; ++i) {
+                  var d = versions[i][0];
+                  if (d > max) {
+                    max = d;
+                  }
+                }
+                if (null === currentMax) {
+                  currentMax = max;
+                } else {
+                  if (max > currentMax) {
+                    currentMax = max;
+                  }
+                }
+
+                return currentMax;
+              }
+
+              // Create animation
+              var skeletons = this.space.content.skeletons;
+              options["skeletons"] = skeletons;
+              options["startDate"] = Object.keys(skeletons).reduce(function(d, s) {
+                var skeleton = skeletons[s];
+                if (!skeleton.history) {
+                  throw new CATMAID.ValueError('Skeleton ' + skeleton.id +
+                      ' is missing history information');
+                }
+                // Find oldest node date
+                var nodes = skeleton.history.nodes;
+                var find = findMinDate.bind(this, nodes);
+                var minDate = Object.keys(nodes).reduce(find, null);
+
+                if (null === d) {
+                  d = minDate;
+                } else if (minDate < d) {
+                  d = minDate;
+                }
+
+                return d;
+              }, null);
+              options["endDate"] = Object.keys(skeletons).reduce(function(d, s) {
+                var skeleton = skeletons[s];
+                if (!skeleton.history) {
+                  throw new CATMAID.ValueError('Skeleton ' + skeleton.id +
+                      ' is missing history information');
+                }
+                // Find oldest node date
+                var nodes = skeleton.history.nodes;
+                var find = findMaxDate.bind(this, nodes);
+                var maxDate = Object.keys(nodes).reduce(find, null);
+
+                if (null === d) {
+                  d = maxDate;
+                } else if (maxDate < d) {
+                  d = maxDate;
+                }
+
+                return d;
+              }, null);
+
+              var animation = CATMAID.AnimationFactory.createAnimation(options);
+              resolve(animation);
+            }).bind(this),
+            'GET');
+      }).bind(this));
+    } else {
+      throw new CATMAID.ValueError("Unknown animation type: " + type);
     }
-
-    return CATMAID.AnimationFactory.createAnimation(options);
   };
 
   /**
@@ -6040,5 +6471,6 @@
 
   // Make 3D viewer available in CATMAID namespace
   CATMAID.WebGLApplication = WebGLApplication;
+
 
 })(CATMAID);

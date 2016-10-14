@@ -10,7 +10,7 @@ from datetime import datetime
 
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import connection
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 
 from rest_framework.decorators import api_view
 
@@ -21,6 +21,8 @@ from catmaid.control.authentication import requires_user_role
 from catmaid.control.common import get_relation_to_id_map
 from catmaid.control.review import get_treenodes_to_reviews, \
         get_treenodes_to_reviews_with_time
+
+from psycopg2.extras import DateTimeTZRange
 
 from tree_util import edge_count_to_root, partition
 try:
@@ -73,10 +75,23 @@ def export_skeleton_response(request, project_id=None, skeleton_id=None, format=
 
 @requires_user_role(UserRole.Browse)
 def compact_skeleton(request, project_id=None, skeleton_id=None, with_connectors=None, with_tags=None):
-    """
-        Performance-critical function. Do not edit unless to improve performance.
+    """Get a compact treenode representation of a skeleton, optionally with the
+    history of individual nodes and connectors. Note that this is a
+    performance-critical function, performance reduction can have negative
+    front-end effects.
 
-        Returns, in JSON, [[nodes], [connectors], {nodeID: [tags]}], with connectors and tags being empty when 0 == with_connectors and 0 == with_tags, respectively
+    Returns, in JSON, [[nodes], [connectors], {nodeID: [tags]}], with
+    connectors and tags being empty when 0 == with_connectors and 0 ==
+    with_tags, respectively.
+
+    If history data is requested, each row contains a validity interval. Note
+    that for the live table entry, there are special semantics for this
+    interval. The upper bound is older than or the same as the lower bound.
+    This means that the node is valid to infinity from the lower bound while
+    encoding the node's creation time at the same time. This is done to safe
+    space and require less queries to get all required data for the cost of
+    requiring the client to do more work. The creation time is needed for data
+    that was created without history tables enabled.
     """
 
     # Sanitize
@@ -84,16 +99,50 @@ def compact_skeleton(request, project_id=None, skeleton_id=None, with_connectors
     skeleton_id = int(skeleton_id)
     with_connectors  = int(with_connectors)
     with_tags = int(with_tags)
+    with_history = bool(request.GET.get("with_history", False))
+
+    history_suffix = '__with_history' if with_history else ''
 
     cursor = connection.cursor()
 
-    cursor.execute('''
-        SELECT id, parent_id, user_id,
-               location_x, location_y, location_z,
-               radius, confidence
-        FROM treenode
-        WHERE skeleton_id = %s
-    ''' % skeleton_id)
+    if not with_history:
+        cursor.execute('''
+            SELECT id, parent_id, user_id,
+                location_x, location_y, location_z,
+                radius, confidence
+            FROM treenode
+            WHERE skeleton_id = %s
+        ''', (skeleton_id,))
+    else:
+        cursor.execute('''
+            SELECT
+                treenode.id,
+                treenode.parent_id,
+                treenode.user_id,
+                treenode.location_x,
+                treenode.location_y,
+                treenode.location_z,
+                treenode.radius,
+                treenode.confidence,
+                treenode.edition_time,
+                treenode.creation_time
+            FROM treenode
+            WHERE treenode.skeleton_id = %s
+            UNION ALL
+            SELECT
+                treenode__history.id,
+                treenode__history.parent_id,
+                treenode__history.user_id,
+                treenode__history.location_x,
+                treenode__history.location_y,
+                treenode__history.location_z,
+                treenode__history.radius,
+                treenode__history.confidence,
+                lower(treenode__history.sys_period),
+                upper(treenode__history.sys_period)
+            FROM treenode__history
+            WHERE treenode__history.skeleton_id = %s
+        ''', (skeleton_id, skeleton_id))
 
     nodes = tuple(cursor.fetchall())
 
@@ -116,37 +165,79 @@ def compact_skeleton(request, project_id=None, skeleton_id=None, with_connectors
         pre = relations['presynaptic_to']
         post = relations['postsynaptic_to']
         gj = relations.get('gapjunction_with', -1)
-        cursor.execute('''
-            SELECT tc.treenode_id, tc.connector_id, tc.relation_id,
-                   c.location_x, c.location_y, c.location_z
-            FROM treenode_connector tc,
-                 connector c
-            WHERE tc.skeleton_id = %s
-              AND tc.connector_id = c.id
-              AND (tc.relation_id = %s OR tc.relation_id = %s OR tc.relation_id = %s)
-        ''' % (skeleton_id, pre, post, gj))
-
         relation_index = {pre: 0, post: 1, gj: 2}
+        if not with_history:
+            cursor.execute('''
+                SELECT tc.treenode_id, tc.connector_id, tc.relation_id,
+                    c.location_x, c.location_y, c.location_z
+                FROM treenode_connector tc,
+                    connector c
+                WHERE tc.skeleton_id = %s
+                AND tc.connector_id = c.id
+                AND (tc.relation_id = %s OR tc.relation_id = %s OR tc.relation_id = %s)
+            ''', (skeleton_id, pre, post, gj))
 
-        connectors = tuple((row[0], row[1], relation_index.get(row[2], -1), row[3], row[4], row[5]) for row in cursor.fetchall())
+            connectors = tuple((row[0], row[1], relation_index.get(row[2], -1), row[3], row[4], row[5]) for row in cursor.fetchall())
+        else:
+            cursor.execute('''
+                SELECT links.treenode_id, links.connector_id, links.relation_id,
+                        c.location_x, c.location_y, c.location_z,
+                        links.valid_from, links.valid_to
+                FROM (
+                    SELECT tc.treenode_id, tc.connector_id, tc.relation_id,
+                        tc.edition_time, tc.creation_time
+                    FROM treenode_connector tc
+                    WHERE tc.skeleton_id = %s
+                    UNION ALL
+                    SELECT tc.treenode_id, tc.connector_id, tc.relation_id,
+                        lower(tc.sys_period), upper(tc.sys_period)
+                    FROM treenode_connector__history tc
+                    WHERE tc.skeleton_id = %s
+                ) links(treenode_id, connector_id, relation_id, valid_from, valid_to)
+                JOIN connector__with_history c
+                    ON links.connector_id = c.id
+                WHERE (links.relation_id = %s OR links.relation_id = %s OR links.relation_id = %s)
+            ''', (skeleton_id, skeleton_id, pre, post, gj))
+
+            connectors = tuple((row[0], row[1], relation_index.get(row[2], -1), row[3], row[4], row[5], row[6], row[7]) for row in cursor.fetchall())
 
     if 0 != with_tags:
+        t_history_query = ', tci.edition_time' if with_history else ''
         # Fetch all node tags
         cursor.execute('''
             SELECT c.name, tci.treenode_id
-            FROM treenode t,
-                 treenode_class_instance tci,
-                 class_instance c
+                   {0}
+            FROM treenode{1} t,
+                 treenode_class_instance{1} tci,
+                 class_instance{1} c
             WHERE t.skeleton_id = %s
               AND t.id = tci.treenode_id
               AND tci.relation_id = %s
               AND c.id = tci.class_instance_id
-        ''' % (skeleton_id, relations['labeled_as']))
+        '''.format(t_history_query, history_suffix), (skeleton_id, relations['labeled_as']))
 
         for row in cursor.fetchall():
             tags[row[0]].append(row[1])
 
-    return HttpResponse(json.dumps((nodes, connectors, tags), separators=(',', ':')))
+    result = [nodes, connectors, tags]
+
+    return JsonResponse(result, safe=False,
+            json_dumps_params={
+                'separators': (',', ':'),
+                'default': default
+            })
+
+def default(obj):
+    """Default JSON serializer."""
+
+    if isinstance(obj, DateTimeTZRange):
+		l_bound = "[" if obj.lower_inc else "("
+		u_bound = "]" if obj.upper_inc else ")"
+		return "{}{},{}{}".format(l_bound, obj.lower, obj.upper, u_bound)
+    elif isinstance(obj, datetime):
+        return str(obj)
+
+    raise TypeError('Not sure how to serialize object of type %s: %s' % (type(obj), obj,))
 
 
 @requires_user_role(UserRole.Browse)

@@ -74,6 +74,29 @@
 
         animation.update = CATMAID.AnimationFactory.AxisRotation(camera,
             target, axis, speed, backAndForth, notify);
+      } else if (options.type === "history") {
+        if (!options.skeletons) {
+          throw new CATMAID.ValueError("Need skeleton information for history animation");
+        }
+        if (!options.startDate) {
+          throw new CATMAID.ValueError("Need start date information for " +
+              "history animation");
+        }
+        if (!options.endDate) {
+          throw new CATMAID.ValueError("Need end date information for " +
+              "history animation");
+        }
+        if (!options.tickLength) {
+          throw new CATMAID.ValueError("Need tick length information for " +
+              "history animation");
+        }
+        if (!options.skeletonOptions) {
+          throw new CATMAID.ValueError("Need skeleton options for " +
+              "history animation");
+        }
+        animation.update = CATMAID.AnimationFactory.History(options.skeletons,
+            options.startDate, options.endDate, options.tickLength,
+            options.skeletonOptions, notify);
       } else {
         throw Error("Could not create animation, don't know type: " +
             options.type);
@@ -142,6 +165,35 @@
       // (relative to target), rotating it and make it a world position by adding
       // it to the target.
       camera.position.copy(startPosition).applyMatrix4(m).add(targetPosition);
+    };
+  };
+
+  /**
+   * Crate a history animation update function. It will make pars of the
+   * available skeletons visible based on the tick count. It expects a history
+   * of all visible skeletons as argument.
+   */
+  CATMAID.AnimationFactory.History = function(skeletons, startDate, endDate, tickLength,
+        skeletonOptions, notify) {
+    var skeletonIds = Object.keys(skeletons);
+    var startEpoch = startDate.getTime();
+
+    // Calculate tick length in milliseconds: h * min * s * ms
+    var msTickLength = tickLength * 60 * 60 * 1000;
+
+    var currentDate = new Date(startEpoch);
+
+    return function(t) {
+
+      // Reload skeleton data for current point in time
+      for (var i=0; i < skeletonIds.length; ++i) {
+        var skeleton = skeletons[skeletonIds[i]];
+        skeleton.resetToPointInTime(skeleton.skeletonmodel, skeletonOptions, currentDate);
+        skeleton.show(skeletonOptions, currentDate);
+      }
+
+      currentDate.setTime(startEpoch + t * msTickLength);
+      CATMAID.tools.callIfFn(notify, currentDate, endDate);
     };
   };
 

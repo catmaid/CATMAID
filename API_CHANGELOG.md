@@ -16,6 +16,9 @@ included in this changelog.
 ### Modifications
 
 None.
+- `GET/POST /{project_id}/[0|1]/[0|1]/compact-skeleton`
+  The new parameter with_history allows to include historic data in th
+  response.  Will also include timestamps for regular nodes.
 
 ### Deprecations
 

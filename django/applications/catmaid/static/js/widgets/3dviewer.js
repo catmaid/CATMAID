@@ -5176,8 +5176,7 @@
 					sortElements.bind(this.history.connectors, 6));
 
       // Update to most recent skeleton
-      this.resetToPointInTime(skeletonModel, options);
-      this.history.nextChange = undefined;
+      this.resetToPointInTime(skeletonModel, options, null, true);
     } else {
       this.reinit_actor(skeletonModel, nodes, connectors, tags, null, options);
     }
@@ -5224,7 +5223,7 @@
    * be available.
    */
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.resetToPointInTime =
-      function(skeletonModel, options, timestamp) {
+      function(skeletonModel, options, timestamp, noCache) {
 
     if (!this.history) {
       throw new CATMAID.ValueError("Historic data for skeleton missing");
@@ -5274,17 +5273,19 @@
     this.history.rebuildTime = timestamp;
 
     // Set time of next change
-    if (nodesInfo[1]) {
-      if (connectorsInfo[1]) {
-        this.history.nextChange = nodesInfo[1] > connectorsInfo[1] ?
-            nodesInfo[1] : connectorsInfo[1];
+    if (!noCache) {
+      if (nodesInfo[1]) {
+        if (connectorsInfo[1]) {
+          this.history.nextChange = nodesInfo[1] > connectorsInfo[1] ?
+              nodesInfo[1] : connectorsInfo[1];
+        } else {
+          this.history.nextChange = nodesInfo[1];
+        }
+      } else if (connectorsInfo[1]) {
+        this.history.nextChange = connectorsInfo[1];
       } else {
-        this.history.nextChange = nodesInfo[1];
+        this.history.nextChange = null;
       }
-    } else if (connectorsInfo[1]) {
-      this.history.nextChange = connectorsInfo[1];
-    } else {
-      this.history.nextChange = null;
     }
   };
 

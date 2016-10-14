@@ -11,12 +11,13 @@
   var BasicSkeletonSource = function(name, options) {
     options = options || {};
 
-    // Call super-constructor
+    this.name = name;
+
+    // Call super-constructor, which takes also care of registering this source
+    // (if not disabled).
     var register = options.register === undefined ? true : options.register;
     CATMAID.SkeletonSource.call(this, register);
 
-    this.name = name;
-    this.registerSource();
     this.skeletonModels = {};
     // Elements can be groups or single skeletons. A group is represented with
     // its name in here. If it is present as a field in the groups object, it is

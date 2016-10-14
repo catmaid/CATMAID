@@ -5433,10 +5433,14 @@
       var v1 = new THREE.Vector3(con[3], con[4], con[5]);
       v1.node_id = con[1];
       var v2 = vs[con[0]];
-      this.createEdge(v1, v2, this.synapticTypes[type]);
-      var defaultMaterial = this.space.staticContent.synapticColors[type] ||
-        this.space.staticContent.synapticColors.default;
-      partner_nodes.push([v2, defaultMaterial, type]);
+      if (v1 && v2) {
+        this.createEdge(v1, v2, this.synapticTypes[type]);
+        var defaultMaterial = this.space.staticContent.synapticColors[type] ||
+          this.space.staticContent.synapticColors.default;
+        partner_nodes.push([v2, defaultMaterial, type]);
+      } else if (!silent) {
+        throw new CATMAID.ValueError("Connector loading failed, not all vertices available");
+      }
     }, this);
 
     // Place spheres on nodes with special labels, if they don't have a sphere there already

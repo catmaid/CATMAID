@@ -15,9 +15,11 @@
 
 - A new tab called 'History' gives access to tools for replaying the
   reconstruction of the currently loaded skeletons. The time range as well as
-  the time advance per frame can be adjusted. The time range covered starts ith
-  the first change and ends with the last one. Tags on individual nodes are
-  currently hidden during animation.
+  the time advance per frame can be adjusted. By default, the time range covered
+  starts ith the first change and ends with the last one (when no custom date is
+  entered). If not disabled through the 'Include merges' checkbox, arbors that
+  only where merged in at one point will also be displayed before such a merge.
+  Tags on individual nodes are currently hidden during animation.
 
 
 Review widget:

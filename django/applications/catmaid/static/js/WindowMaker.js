@@ -1492,7 +1492,16 @@ var WindowMaker = new function()
           [historyTimeDisplay],
           [startDateField],
           [endDateField],
-          [storeTimeRange]
+          [storeTimeRange],
+          {
+            type: 'checkbox',
+            label: 'Include merges',
+            value: o.animation_history_include_merges,
+            onclick: function() {
+              WA.options.animation_history_include_merges = this.checked;
+            },
+            title: 'If checked, history of merged in arbors will also be shown for a skeleton'
+          },
         ]);
 
     DOM.appendToTab(tabs['Export'],

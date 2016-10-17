@@ -808,6 +808,7 @@
     this.animation_start_date = null;
     this.animation_end_date = null;
     this.animation_record_timerange = false;
+    this.animation_history_include_merges = true;
     this.strahler_cut = 2; // to approximate twigs
     this.use_native_resolution = true;
   };
@@ -5971,6 +5972,7 @@
         // Get historic data of current skeletons. Create a map of events, Which
         // are consumed if their time is ready.
         var now = new Date();
+        var include_merges = this.options.animation_history_include_merges;
         fetchSkeletons.call(this,
             skeletonIds,
             function(skeletonId) {
@@ -5978,7 +5980,8 @@
             },
             function(skeleton_id) {
               return {
-                with_history: true
+                with_history: true,
+                with_merge_history: include_merges
               };
             },
             (function(skeleton_id, json) {

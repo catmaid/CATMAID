@@ -100,8 +100,9 @@ def compact_skeleton(request, project_id=None, skeleton_id=None, with_connectors
     with_connectors  = int(with_connectors)
     with_tags = int(with_tags)
     with_history = bool(request.GET.get("with_history", False))
-
-    history_suffix = '__with_history' if with_history else ''
+    # Indicate if history of merged in skeletons should also be included if
+    # history is returned. Ignored if history is not retrieved.
+    with_merge_history = bool(request.GET.get("with_history", True))
 
     cursor = connection.cursor()
 
@@ -113,8 +114,17 @@ def compact_skeleton(request, project_id=None, skeleton_id=None, with_connectors
             FROM treenode
             WHERE skeleton_id = %s
         ''', (skeleton_id,))
+
+        nodes = tuple(cursor.fetchall())
     else:
-        cursor.execute('''
+        params = {
+            'skeleton_id': skeleton_id
+        }
+        # Get present and historic nodes. If a historic validity range is empty
+        # (e.g. due to a change in the same transaction), the edition time is
+        # taken for both start and end validity, because this is what actually
+        # happened.
+        query = '''
             SELECT
                 treenode.id,
                 treenode.parent_id,
@@ -127,7 +137,7 @@ def compact_skeleton(request, project_id=None, skeleton_id=None, with_connectors
                 treenode.edition_time,
                 treenode.creation_time
             FROM treenode
-            WHERE treenode.skeleton_id = %s
+            WHERE treenode.skeleton_id = %(skeleton_id)s
             UNION ALL
             SELECT
                 treenode__history.id,
@@ -138,13 +148,37 @@ def compact_skeleton(request, project_id=None, skeleton_id=None, with_connectors
                 treenode__history.location_z,
                 treenode__history.radius,
                 treenode__history.confidence,
-                lower(treenode__history.sys_period),
-                upper(treenode__history.sys_period)
+                COALESCE(lower(treenode__history.sys_period), treenode__history.edition_time),
+                COALESCE(upper(treenode__history.sys_period), treenode__history.edition_time)
             FROM treenode__history
-            WHERE treenode__history.skeleton_id = %s
-        ''', (skeleton_id, skeleton_id))
+            WHERE treenode__history.skeleton_id = %(skeleton_id)s
+        '''
 
-    nodes = tuple(cursor.fetchall())
+        if with_merge_history:
+            query =  '''
+                {}
+                UNION ALL
+                SELECT
+                    th.id,
+                    th.parent_id,
+                    th.user_id,
+                    th.location_x,
+                    th.location_y,
+                    th.location_z,
+                    th.radius,
+                    th.confidence,
+                    COALESCE(lower(th.sys_period), th.edition_time),
+                    COALESCE(upper(th.sys_period), th.edition_time)
+                FROM treenode__history th
+                JOIN treenode t
+                    ON th.id = t.id
+                    AND t.skeleton_id = %(skeleton_id)s
+                    AND th.skeleton_id <> t.skeleton_id
+            '''.format(query)
+
+        cursor.execute(query, params)
+
+        nodes = tuple(cursor.fetchall())
 
     if 0 == len(nodes):
         # Check if the skeleton exists
@@ -179,7 +213,18 @@ def compact_skeleton(request, project_id=None, skeleton_id=None, with_connectors
 
             connectors = tuple((row[0], row[1], relation_index.get(row[2], -1), row[3], row[4], row[5]) for row in cursor.fetchall())
         else:
-            cursor.execute('''
+            params = {
+                'skeleton_id': skeleton_id,
+                'pre': pre,
+                'post': post,
+                'gj': gj
+            }
+
+            # Get present and historic connectors. If a historic validity range
+            # is empty (e.g. due to a change in the same transaction), the
+            # edition time is taken for both start and end validity, because
+            # this is what actually happened.
+            query = '''
                 SELECT links.treenode_id, links.connector_id, links.relation_id,
                         c.location_x, c.location_y, c.location_z,
                         links.valid_from, links.valid_to
@@ -187,21 +232,41 @@ def compact_skeleton(request, project_id=None, skeleton_id=None, with_connectors
                     SELECT tc.treenode_id, tc.connector_id, tc.relation_id,
                         tc.edition_time, tc.creation_time
                     FROM treenode_connector tc
-                    WHERE tc.skeleton_id = %s
+                    WHERE tc.skeleton_id = %(skeleton_id)s
                     UNION ALL
                     SELECT tc.treenode_id, tc.connector_id, tc.relation_id,
-                        lower(tc.sys_period), upper(tc.sys_period)
+                        COALESCE(lower(tc.sys_period), tc.edition_time),
+                        COALESCE(upper(tc.sys_period), tc.edition_time)
                     FROM treenode_connector__history tc
-                    WHERE tc.skeleton_id = %s
+                    WHERE tc.skeleton_id = %(skeleton_id)s
+                    {}
                 ) links(treenode_id, connector_id, relation_id, valid_from, valid_to)
                 JOIN connector__with_history c
                     ON links.connector_id = c.id
-                WHERE (links.relation_id = %s OR links.relation_id = %s OR links.relation_id = %s)
-            ''', (skeleton_id, skeleton_id, pre, post, gj))
+                WHERE (links.relation_id = %(pre)s OR links.relation_id = %(post)s OR links.relation_id = %(gj)s)
+            '''
+
+            if with_merge_history:
+                query =  query.format('''
+                    UNION ALL
+                    SELECT tch.treenode_id, tch.connector_id, tch.relation_id,
+                        COALESCE(lower(tch.sys_period), tch.edition_time),
+                        COALESCE(upper(tch.sys_period), tch.edition_time)
+                    FROM treenode_connector__history tch
+                    JOIN treenode_connector tc
+                        ON tc.id = tch.id
+                        AND tc.skeleton_id = %(skeleton_id)s
+                        AND tch.skeleton_id <> tc.skeleton_id
+                ''')
+            else:
+                query = query.format('')
+
+            cursor.execute(query, params)
 
             connectors = tuple((row[0], row[1], relation_index.get(row[2], -1), row[3], row[4], row[5], row[6], row[7]) for row in cursor.fetchall())
 
     if 0 != with_tags:
+        history_suffix = '__with_history' if with_history else ''
         t_history_query = ', tci.edition_time' if with_history else ''
         # Fetch all node tags
         cursor.execute('''

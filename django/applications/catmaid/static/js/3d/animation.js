@@ -193,7 +193,7 @@
       }
 
       currentDate.setTime(startEpoch + t * msTickLength);
-      CATMAID.tools.callIfFn(notify, currentDate, endDate);
+      CATMAID.tools.callIfFn(notify, currentDate, startDate, endDate);
     };
   };
 

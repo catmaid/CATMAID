@@ -1404,34 +1404,84 @@ var WindowMaker = new function()
     var historyTimeDisplay = document.createElement('span');
     historyTimeDisplay.classList.add('right');
 
-    var stopAnimation = WA.stopAnimation.bind(WA);
+    var timeRangeRecorded = false;
+
+    var storeTimeRange = document.createElement('label');
+    storeTimeRange.setAttribute('title', 'If checked, start and end time of ' +
+        'the current animation will be recorded into the respective text fields.');
+    var storeTimeRangeCb = document.createElement('input');
+    storeTimeRangeCb.setAttribute('type', 'checkbox');
+    storeTimeRangeCb.value = !!o.animation_record_timerange;
+    storeTimeRangeCb.onchange = function() {
+      WA.options.animation_record_timerange = this.checked;
+    };
+    storeTimeRange.appendChild(storeTimeRangeCb);
+    storeTimeRange.appendChild(document.createTextNode('Record start and end date'));
+
+    var startDateField = CATMAID.DOM.createDateField(null, 'Start',
+        'Set start date of the animation. If empty, oldest skeleton date is used.',
+        '', false, function() {
+          WA.options.animation_start_date = this.value.length > 0 ?
+              new Date(Date.parse(this.value)) : null;
+          timeRangeRecorded = false;
+          storeTimeRangeCb.checked = false;
+          WA.options.animation_record_timerange = false;
+        }, null, 'YYYY-MM-DD hh:mm', true);
+
+    var endDateField = CATMAID.DOM.createDateField(null, 'End',
+        'Set end date of the animation. If empty, oldest skeleton date is used.',
+        '', false, function() {
+          WA.options.animation_end_date = this.value.length > 0 ?
+              new Date(Date.parse(this.value)) : null;
+          timeRangeRecorded = false;
+          storeTimeRangeCb.checked = false;
+          WA.options.animation_record_timerange = false;
+        }, null, 'YYYY-MM-DD hh:mm', true);
+
+    var stopAnimation = function() {
+      WA.stopAnimation();
+      timeRangeRecorded = false;
+    };
+    var startAnimation = function() {
+      try {
+        var options = {
+          notify: function(currentDate, startDate, endDate) {
+            // Update time display and if the end is reached, stop animation
+            if (currentDate > endDate) {
+              stopAnimation();
+              historyTimeDisplay.textContent = "";
+            } else {
+              historyTimeDisplay.textContent = currentDate.toString();
+            }
+
+            // Record time if requested
+            if (WA.options.animation_record_timerange && !timeRangeRecorded) {
+              WA.options.animation_start_date = startDate;
+              WA.options.animation_end_date = endDate;
+              $('input',
+              startDateField).val(startDate.toISOString()
+                  .replace(/\..*$/, '').replace(/T/, ' ').replace(/:\d\d$/, ''));
+              $('input', endDateField).val(endDate.toISOString()
+                  .replace(/\..*$/, '').replace(/T/, ' ').replace(/:\d\d$/, ''));
+              timeRangeRecorded = true;
+            }
+          }
+        };
+        WA.createAnimation('history', options)
+          .then(WA.startAnimation.bind(WA))
+          .catch(CATMAID.handleError);
+      } catch(e) {
+        if (e instanceof CATMAID.ValueError) {
+          CATMAID.msg("Error", e.message);
+        } else {
+          throw e;
+        }
+      }
+    };
 
     DOM.appendToTab(tabs['History'],
         [
-          ['Play', function() {
-            try {
-              var options = {
-                notify: function(currentDate, endDate) {
-                  // Update time display and if the end is reached, stop animation
-                  if (currentDate > endDate) {
-                    stopAnimation();
-                    historyTimeDisplay.textContent = "";
-                  } else {
-                    historyTimeDisplay.textContent = currentDate.toString();
-                  }
-                }
-              };
-              WA.createAnimation('history', options)
-                .then(WA.startAnimation.bind(WA))
-                .catch(CATMAID.handleError);
-            } catch(e) {
-              if (e instanceof CATMAID.ValueError) {
-                CATMAID.msg("Error", e.message);
-              } else {
-                throw e;
-              }
-            }
-          }],
+          ['Play', startAnimation],
           ['Stop', function() {
             stopAnimation();
             historyTimeDisplay.textContent = "";
@@ -1439,7 +1489,10 @@ var WindowMaker = new function()
           ['Hours per tick', o.animation_hours_per_tick, '', function() {
             WA.options.animation_hours_per_tick = parseFloat(this.value);
            }, 5],
-          [historyTimeDisplay]
+          [historyTimeDisplay],
+          [startDateField],
+          [endDateField],
+          [storeTimeRange]
         ]);
 
     DOM.appendToTab(tabs['Export'],

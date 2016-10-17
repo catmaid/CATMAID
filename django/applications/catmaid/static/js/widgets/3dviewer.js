@@ -805,6 +805,9 @@
     this.animation_stepwise_visibility_type = 'all';
     this.animation_stepwise_visibility_options = null;
     this.animation_hours_per_tick = 4;
+    this.animation_start_date = null;
+    this.animation_end_date = null;
+    this.animation_record_timerange = false;
     this.strahler_cut = 2; // to approximate twigs
     this.use_native_resolution = true;
   };
@@ -5935,8 +5938,8 @@
         var visOpts = this.options.animation_stepwise_visibility_options;
 
         var widget = this;
-        options['notify'] = function(currentDate, endDate) {
-          CATMAID.tools.callIfFn(params.notify, currentDate, endDate);
+        options['notify'] = function(currentDate, startDate, endDate) {
+          CATMAID.tools.callIfFn(params.notify, currentDate, startDate, endDate);
 
           // Color skeletons
           if (widget.options.connector_filter) {
@@ -6032,44 +6035,52 @@
               // Create animation
               var skeletons = this.space.content.skeletons;
               options["skeletons"] = skeletons;
-              options["startDate"] = Object.keys(skeletons).reduce(function(d, s) {
-                var skeleton = skeletons[s];
-                if (!skeleton.history) {
-                  throw new CATMAID.ValueError('Skeleton ' + skeleton.id +
-                      ' is missing history information');
-                }
-                // Find oldest node date
-                var nodes = skeleton.history.nodes;
-                var find = findMinDate.bind(this, nodes);
-                var minDate = Object.keys(nodes).reduce(find, null);
+              if (this.options.animation_start_date) {
+                options['startDate'] = this.options.animation_start_date;
+              } else {
+                options["startDate"] = Object.keys(skeletons).reduce(function(d, s) {
+                  var skeleton = skeletons[s];
+                  if (!skeleton.history) {
+                    throw new CATMAID.ValueError('Skeleton ' + skeleton.id +
+                        ' is missing history information');
+                  }
+                  // Find oldest node date
+                  var nodes = skeleton.history.nodes;
+                  var find = findMinDate.bind(this, nodes);
+                  var minDate = Object.keys(nodes).reduce(find, null);
 
-                if (null === d) {
-                  d = minDate;
-                } else if (minDate < d) {
-                  d = minDate;
-                }
+                  if (null === d) {
+                    d = minDate;
+                  } else if (minDate < d) {
+                    d = minDate;
+                  }
 
-                return d;
-              }, null);
-              options["endDate"] = Object.keys(skeletons).reduce(function(d, s) {
-                var skeleton = skeletons[s];
-                if (!skeleton.history) {
-                  throw new CATMAID.ValueError('Skeleton ' + skeleton.id +
-                      ' is missing history information');
-                }
-                // Find oldest node date
-                var nodes = skeleton.history.nodes;
-                var find = findMaxDate.bind(this, nodes);
-                var maxDate = Object.keys(nodes).reduce(find, null);
+                  return d;
+                }, null);
+              }
+              if (this.options.animation_end_date) {
+                options['endDate'] = this.options.animation_end_date;
+              } else {
+                options["endDate"] = Object.keys(skeletons).reduce(function(d, s) {
+                  var skeleton = skeletons[s];
+                  if (!skeleton.history) {
+                    throw new CATMAID.ValueError('Skeleton ' + skeleton.id +
+                        ' is missing history information');
+                  }
+                  // Find oldest node date
+                  var nodes = skeleton.history.nodes;
+                  var find = findMaxDate.bind(this, nodes);
+                  var maxDate = Object.keys(nodes).reduce(find, null);
 
-                if (null === d) {
-                  d = maxDate;
-                } else if (maxDate < d) {
-                  d = maxDate;
-                }
+                  if (null === d) {
+                    d = maxDate;
+                  } else if (maxDate < d) {
+                    d = maxDate;
+                  }
 
-                return d;
-              }, null);
+                  return d;
+                }, null);
+              }
 
               var animation = CATMAID.AnimationFactory.createAnimation(options);
               resolve(animation);

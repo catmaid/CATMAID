@@ -468,11 +468,16 @@
   /**
    * Create a new numeric field based on the passed in configuration.
    */
-  DOM.createNumericField = function(id, label, title, value, postlabel, onchangeFn, length) {
+  DOM.createNumericField = function(id, label, title, value, postlabel, onchangeFn, length, placeholder) {
     var nf = document.createElement('input');
     if (id) nf.setAttribute('id', id);
     nf.setAttribute('type', 'text');
     nf.setAttribute('value', value);
+
+    if (placeholder) {
+      nf.setAttribute('placeholder', placeholder);
+    }
+
     if (length) nf.setAttribute('size', length);
     if (onchangeFn) nf.onchange = onchangeFn;
     if (label || postlabel) {
@@ -595,7 +600,7 @@
           case 'checkbox':
             return CATMAID.DOM.appendCheckbox(tab, e.label, e.title, e.value, e.onclick, e.left);
           case 'numeric':
-            return CATMAID.DOM.appendNumericField(tab, e.label, e.title, e.value, e.postlabel, e.onchange, e.length);
+            return CATMAID.DOM.appendNumericField(tab, e.label, e.title, e.value, e.postlabel, e.onchange, e.length, e.placeholder);
           case 'date':
             return CATMAID.DOM.appendDateField(tab, e.label, e.title, e.value,
                 e.postlabel, e.onchange, e.length, e.placeholder, e.time);
@@ -639,8 +644,8 @@
   /**
    * Append a new numeric input field to another element.
    */
-  DOM.appendNumericField = function(div, label, title, value, postlabel, onchangeFn, length) {
-    var field = DOM.createNumericField(undefined, label, title, value, postlabel, onchangeFn, length);
+  DOM.appendNumericField = function(div, label, title, value, postlabel, onchangeFn, length, placeholder) {
+    var field = DOM.createNumericField(undefined, label, title, value, postlabel, onchangeFn, length, placeholder);
     div.appendChild(field);
     return field;
   };

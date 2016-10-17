@@ -463,6 +463,7 @@ div#classification_graph_object img.roiimage {
 
 .buttonpanel input {
   vertical-align: middle;
+  margin-left: 0.3em;
 }
 
 .buttonpanel label {

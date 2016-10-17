@@ -1498,7 +1498,7 @@ var WindowMaker = new function()
               WA.options.animation_history_empy_bout_length = 0 === this.value.length ?
                   null : Number(this.value);
             },
-            length: 5,
+            length: 4,
             placeholder: 'minutes'
           },
           [historyTimeDisplay],

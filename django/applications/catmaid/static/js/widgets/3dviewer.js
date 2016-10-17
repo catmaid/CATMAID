@@ -5280,7 +5280,7 @@
     if (!noCache) {
       if (nodesInfo[1]) {
         if (connectorsInfo[1]) {
-          this.history.nextChange = nodesInfo[1] > connectorsInfo[1] ?
+          this.history.nextChange = nodesInfo[1] < connectorsInfo[1] ?
               nodesInfo[1] : connectorsInfo[1];
         } else {
           this.history.nextChange = nodesInfo[1];

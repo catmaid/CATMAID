@@ -1489,6 +1489,18 @@ var WindowMaker = new function()
           ['Hours per tick', o.animation_hours_per_tick, '', function() {
             WA.options.animation_hours_per_tick = parseFloat(this.value);
            }, 5],
+          {
+            type: 'numeric',
+            label: 'Empty bout length',
+            title: 'If set, empty bouts exceeding more minutes than this, will be skipped.',
+            value: o.animation_history_empy_bout_length || '',
+            onchange: function() {
+              WA.options.animation_history_empy_bout_length = 0 === this.value.length ?
+                  null : Number(this.value);
+            },
+            length: 5,
+            placeholder: 'minutes'
+          },
           [historyTimeDisplay],
           [startDateField],
           [endDateField],

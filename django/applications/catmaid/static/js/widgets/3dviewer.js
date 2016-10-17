@@ -809,6 +809,7 @@
     this.animation_end_date = null;
     this.animation_record_timerange = false;
     this.animation_history_include_merges = true;
+    this.animation_history_empy_bout_length = null;
     this.strahler_cut = 2; // to approximate twigs
     this.use_native_resolution = true;
   };
@@ -5957,6 +5958,7 @@
           resetVisibility();
         };
         options['tickLength'] = this.options.animation_hours_per_tick;
+        options['emptyBoutLength'] = this.options.animation_history_empy_bout_length;
         options["skeletonOptions"] = this.options;
 
         var models = this.getSelectedSkeletonModels();
@@ -5973,6 +5975,7 @@
         // are consumed if their time is ready.
         var now = new Date();
         var include_merges = this.options.animation_history_include_merges;
+
         fetchSkeletons.call(this,
             skeletonIds,
             function(skeletonId) {

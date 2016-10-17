@@ -96,7 +96,7 @@
         }
         animation.update = CATMAID.AnimationFactory.History(options.skeletons,
             options.startDate, options.endDate, options.tickLength,
-            options.skeletonOptions, notify);
+            options.skeletonOptions, options.emptyBoutLength, notify);
       } else {
         throw Error("Could not create animation, don't know type: " +
             options.type);
@@ -171,19 +171,44 @@
   /**
    * Crate a history animation update function. It will make pars of the
    * available skeletons visible based on the tick count. It expects a history
-   * of all visible skeletons as argument.
+   * of all visible skeletons as argument. Optionally, empty bouts can be
+   * skipped if they exceed a specified number of minutes.
    */
   CATMAID.AnimationFactory.History = function(skeletons, startDate, endDate, tickLength,
-        skeletonOptions, notify) {
+        skeletonOptions, emptyBoutLength, notify) {
     var skeletonIds = Object.keys(skeletons);
     var startEpoch = startDate.getTime();
 
     // Calculate tick length in milliseconds: h * min * s * ms
     var msTickLength = tickLength * 60 * 60 * 1000;
+    // Calculate the seconds in a skipped empty bout, if any.
+    if (emptyBoutLength) {
+      emptyBoutLength = emptyBoutLength * 60;
+    }
 
     var currentDate = new Date(startEpoch);
 
     return function(t) {
+
+      // If empty bouts should be skipped, find the closest next change and
+      // forward time to it if its farther away than the empty bout skip time.
+      if (emptyBoutLength) {
+        var closestChange = null;
+        for (var i=0; i < skeletonIds.length; ++i) {
+          var skeleton = skeletons[skeletonIds[i]];
+          var nextChange = skeleton.history.nextChange;
+          if (nextChange) {
+            if (null === closestChange || nextChange < closestChange) {
+              closestChange = nextChange;
+            }
+          }
+        }
+        if (closestChange) {
+          if (closestChange.getTime() - currentDate.getTime() > emptyBoutLength) {
+            currentDate.setTime(closestChange.getTime());
+          }
+        }
+      }
 
       // Reload skeleton data for current point in time
       for (var i=0; i < skeletonIds.length; ++i) {

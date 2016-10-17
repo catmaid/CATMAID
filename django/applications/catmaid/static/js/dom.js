@@ -487,6 +487,35 @@
     }
   };
 
+  /**
+   * Create a new date field based on the passed in configuration, optionally
+   * show time selector.
+   */
+  DOM.createDateField = function(id, label, title, value, postlabel, onchangeFn,
+      length, placeholder, time) {
+    var df = document.createElement('input');
+    if (id) df.setAttribute('id', id);
+    df.setAttribute('type', 'text');
+    df.setAttribute('value', value);
+
+    if (placeholder) {
+      df.setAttribute('placeholder', placeholder);
+    }
+
+    if (length) df.setAttribute('size', length);
+    if (onchangeFn) df.onchange = onchangeFn;
+    if (label || postlabel) {
+      var labelEl = document.createElement('label');
+      labelEl.setAttribute('title', title);
+      if (label) labelEl.appendChild(document.createTextNode(label));
+      labelEl.appendChild(df);
+      if (postlabel) labelEl.appendChild(document.createTextNode(postlabel));
+      return labelEl;
+    } else {
+      return df;
+    }
+  };
+
   DOM.createSelect = function(id, items, selectedValue) {
     var select = document.createElement('select');
     if (id) {
@@ -567,6 +596,9 @@
             return CATMAID.DOM.appendCheckbox(tab, e.label, e.title, e.value, e.onclick, e.left);
           case 'numeric':
             return CATMAID.DOM.appendNumericField(tab, e.label, e.title, e.value, e.postlabel, e.onchange, e.length);
+          case 'date':
+            return CATMAID.DOM.appendDateField(tab, e.label, e.title, e.value,
+                e.postlabel, e.onchange, e.length, e.placeholder, e.time);
           case 'select':
             return CATMAID.DOM.appendSelect(tab, e.id, e.label, e.entries, e.title, e.value, e.onchange);
           default: return undefined;
@@ -609,6 +641,17 @@
    */
   DOM.appendNumericField = function(div, label, title, value, postlabel, onchangeFn, length) {
     var field = DOM.createNumericField(undefined, label, title, value, postlabel, onchangeFn, length);
+    div.appendChild(field);
+    return field;
+  };
+
+  /**
+   * Append a new date input field to another element.
+   */
+  DOM.appendDateField = function(div, label, title, value, postlabel,
+      onchangeFn, length, placeholder, time) {
+    var field = DOM.createDateField(undefined, label, title, value, postlabel,
+        onchangeFn, length, placeholder, time);
     div.appendChild(field);
     return field;
   };

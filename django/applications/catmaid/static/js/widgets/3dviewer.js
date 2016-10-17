@@ -6035,7 +6035,8 @@
               // Create animation
               var skeletons = this.space.content.skeletons;
               options["skeletons"] = skeletons;
-              if (this.options.animation_start_date) {
+              if (!this.options.animation_record_timerange &&
+                  this.options.animation_start_date) {
                 options['startDate'] = this.options.animation_start_date;
               } else {
                 options["startDate"] = Object.keys(skeletons).reduce(function(d, s) {
@@ -6058,7 +6059,8 @@
                   return d;
                 }, null);
               }
-              if (this.options.animation_end_date) {
+              if (!this.options.animation_record_timerange &&
+                  this.options.animation_end_date) {
                 options['endDate'] = this.options.animation_end_date;
               } else {
                 options["endDate"] = Object.keys(skeletons).reduce(function(d, s) {

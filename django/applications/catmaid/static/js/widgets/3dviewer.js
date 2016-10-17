@@ -809,7 +809,8 @@
     this.animation_end_date = null;
     this.animation_record_timerange = false;
     this.animation_history_include_merges = true;
-    this.animation_history_empy_bout_length = null;
+    this.animation_history_empy_bout_length = 10;
+    this.animation_history_reset_after_stop = true;
     this.strahler_cut = 2; // to approximate twigs
     this.use_native_resolution = true;
   };
@@ -5954,7 +5955,9 @@
         // the animation.
         var resetVisibility = this.createVisibibilityResetHandler(visMap);
         options['stop'] = function() {
-          widget.reloadSkeletons(widget.getSelectedSkeletons());
+          if (widget.options.animation_history_reset_after_stop) {
+            widget.reloadSkeletons(widget.getSelectedSkeletons());
+          }
           resetVisibility();
         };
         options['tickLength'] = this.options.animation_hours_per_tick;

@@ -1514,6 +1514,15 @@ var WindowMaker = new function()
             },
             title: 'If checked, history of merged in arbors will also be shown for a skeleton'
           },
+          {
+            type: 'checkbox',
+            label: 'Reset after animation',
+            value: o.animation_history_reset_after_stop,
+            onclick: function() {
+              WA.options.animation_history_reset_after_stop = this.checked;
+            },
+            title: 'If checked, all skeletons will be reset to their original state once the animation stops.'
+          }
         ]);
 
     DOM.appendToTab(tabs['Export'],

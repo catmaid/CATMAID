@@ -104,6 +104,7 @@ SkeletonAnnotations.atn.validate = (function() {
 SkeletonAnnotations.MODES = Object.freeze({SKELETON: 0, SYNAPSE: 1});
 SkeletonAnnotations.currentmode = SkeletonAnnotations.MODES.skeleton;
 SkeletonAnnotations.newConnectorType = SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR;
+SkeletonAnnotations.useNewConnectorTypeAsDefault = false;
 SkeletonAnnotations.setRadiusAfterNodeCreation = false;
 SkeletonAnnotations.defaultNewNeuronName = '';
 // Don't show merging UI for single node skeletons
@@ -2515,31 +2516,78 @@ SkeletonAnnotations.TracingOverlay.prototype.createNodeOrLink = function(insert,
     } else {
       if (SkeletonAnnotations.TYPE_NODE === atn.type) {
         var targetTreenode = this.nodes[atn.id];
-        var msg, linkType, self = this;
+        var self = this;
         var newConnectorType = SkeletonAnnotations.newConnectorType;
+
+        var createConnector = function(linkType, connectorType, msg) {
+          if (SkeletonAnnotations.useNewConnectorTypeAsDefault) {
+            SkeletonAnnotations.newConnectorType = connectorType;
+          }
+          if (msg) {
+            CATMAID.statusBar.replaceLast(msg);
+          }
+          self.createSingleConnector(phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, 5, connectorType)
+            .then(function (connectorId) {
+              return self.createLink(targetTreenode.id, connectorId, linkType);
+            });
+        };
+
         if (postLink && !link) {
-          // Create a new gap junction connector
-          msg = "Created gap junction connector with treenode #" + atn.id;
-          linkType = "gapjunction_with";
-          newConnectorType = SkeletonAnnotations.SUBTYPE_GAPJUNCTION_CONNECTOR;
-        } else if (SkeletonAnnotations.SUBTYPE_ABUTTING_CONNECTOR === SkeletonAnnotations.newConnectorType) {
+          // Display connector link type selection UI
+          var contextMenu = new CATMAID.ContextMenu({
+            select: function(selection) {
+              // Create a new custom connector
+              var msg = "Created " + selection.item.title.toLowerCase() +
+                  " connector with treenode #" + atn.id;
+              var data = selection.item.data;
+              createConnector(selection.item.data.relation, selection.item.value, msg);
+            },
+            items: [{
+              title: "Gab junction",
+              value: SkeletonAnnotations.SUBTYPE_GAPJUNCTION_CONNECTOR,
+              data: {
+                relation: 'gapjunction_with'
+              }
+            }, {
+              title: "Abutting",
+              value: SkeletonAnnotations.SUBTYPE_ABUTTING_CONNECTOR,
+              data: {
+                relation: 'abutting'
+              }
+            },
+            {
+              title: "Presynaptic",
+              value: SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR,
+              data: {
+                relation: 'presynaptic_to'
+              }
+            },
+            {
+              title: "Postsynaptic",
+              value: SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR,
+              data: {
+                relation: 'postsynaptic_to'
+              }
+            }]
+          });
+          contextMenu.show(true);
+        } else if (SkeletonAnnotations.SUBTYPE_ABUTTING_CONNECTOR === newConnectorType) {
           // Create a new abutting connection
-          msg = "Created abutting connector with treenode #" + atn.id;
-          linkType = "abutting";
-        } else if (SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR === SkeletonAnnotations.newConnectorType) {
+          createConnector("abutting", newConnectorType,
+              "Created abutting connector with treenode #" + atn.id);
+        } else if (SkeletonAnnotations.SUBTYPE_GAPJUNCTION_CONNECTOR === newConnectorType) {
+          // Create a new abutting connection
+          createConnector("gapjunction_with", newConnectorType,
+              "Created gap junction connector with treenode #" + atn.id);
+        } else if (SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR === newConnectorType) {
           // Create a new synaptic connector
           var synapseType = postLink ? 'post' : 'pre';
-          msg = "Created connector with " + synapseType + "synaptic treenode #" + atn.id;
-          linkType = synapseType + "synaptic_to";
+          createConnector(synapseType + "synaptic_to", newConnectorType,
+              "Created connector with " + synapseType + "synaptic treenode #" + atn.id);
         } else {
           CATMAID.warn("Unknown connector type selected");
           return true;
         }
-        CATMAID.statusBar.replaceLast(msg);
-        this.createSingleConnector(phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, 5, newConnectorType)
-          .then(function (connectorId) {
-            return self.createLink(targetTreenode.id, connectorId, linkType);
-          });
       } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === atn.type) {
         if (SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR === atn.subtype) {
           // create new treenode (and skeleton) postsynaptic to activated connector

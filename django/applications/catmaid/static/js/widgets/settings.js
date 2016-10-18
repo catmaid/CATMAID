@@ -1084,16 +1084,28 @@
         function() {
           SkeletonAnnotations.setRadiusAfterNodeCreation = this.checked;
         }));
-      ds.append(CATMAID.DOM.createCheckboxSetting("Create abutting connectors",
-        SkeletonAnnotations.newConnectorType === SkeletonAnnotations.SUBTYPE_ABUTTING_CONNECTOR,
-        "Instead of creating synaptic connectors, abutting ones will be created",
+      ds.append(CATMAID.DOM.createCheckboxSetting("Use connector type created last as new default",
+        SkeletonAnnotations.useNewConnectorTypeAsDefault,
+        "If enabled, the type of newly created connectors (synaptic, abutting, " +
+        "gap-junction) will be used as new default. This default is used with " +
+        "regular Shift+Click",
         function() {
-          if (this.checked) {
-            SkeletonAnnotations.newConnectorType = SkeletonAnnotations.SUBTYPE_ABUTTING_CONNECTOR;
-          } else {
-            SkeletonAnnotations.newConnectorType = SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR;
-          }
+          SkeletonAnnotations.useNewConnectorTypeAsDefault = this.checked;
         }));
+      ds.append(CATMAID.DOM.createSelectSetting(
+        "Default connector type",
+        {
+          'Synaptic': SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR,
+          'Abutting': SkeletonAnnotations.SUBTYPE_ABUTTING_CONNECTOR,
+          'Gap junction': SkeletonAnnotations.SUBTYPE_GAPJUNCTION_CONNECTOR
+        },
+        "Select the connector type created by default.",
+        function() {
+          SkeletonAnnotations.newConnectorType = this.value;
+        },
+        SkeletonAnnotations.newConnectorType));
+
+
       ds.append(wrapSettingsControl(
           CATMAID.DOM.createCheckboxSetting(
               "Invert behavior of modifier key to ignore/respect virtual nodes",

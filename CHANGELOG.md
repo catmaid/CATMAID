@@ -1,6 +1,17 @@
 ## Under development
 
 
+### Features and enhancements
+
+Tracing layer:
+
+- Alt+Click so far created gap junction connectors. This behavior is replaced
+  with opening a small context menu that provides access to all currently
+  available connector types (abutting, gap junction, presynaptic, postsynaptic).
+  Optionally, through the Settings Widget, remembering the last connector type
+  created can be enabled. If this is the case, regular Shift+Click behavior is
+  to create the last connector type, as opposed to pre/post-synaptic connectors.
+
 
 ### Features and enhancements
 

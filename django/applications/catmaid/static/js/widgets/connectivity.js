@@ -30,6 +30,8 @@
       this.handleChangedSkeleton, this);
     CATMAID.Skeletons.on(CATMAID.Skeletons.EVENT_SKELETON_DELETED,
       this.handleDeletedSkeleton, this);
+
+    CATMAID.skeletonListSources.updateGUI();
   };
 
   SkeletonConnectivity.prototype = {};

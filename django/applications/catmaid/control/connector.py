@@ -1,3 +1,4 @@
+import copy
 import json
 
 from string import upper
@@ -20,6 +21,45 @@ from catmaid.control.authentication import requires_user_role, can_edit_or_fail
 from catmaid.control.link import create_treenode_links
 from catmaid.control.common import cursor_fetch_dictionary, \
         get_relation_to_id_map, get_request_list
+
+
+LINK_TYPES = [
+    {
+        'name': 'Presynaptic',
+        'type': 'Synaptic',
+        'relation': 'presynaptic_to'
+    }, {
+        'name': 'Postsynaptic',
+        'type': 'Synaptic',
+        'relation': 'postsynaptic_to'
+    }, {
+        'name': 'Abutting',
+        'type': 'Abutting',
+        'relation': 'abutting'
+    }, {
+        'name': 'Gap junction',
+        'type': 'Gap junction',
+        'relation': 'gapjunction_with'
+    }
+]
+
+
+@api_view(['GET'])
+@requires_user_role(UserRole.Browse)
+def connector_types(request, project_id):
+    """Get a list of available connector types.
+
+    Returns a list of all available connector link types in a project. Each
+    list element consists of an object with the following fields: type,
+    relation, relation_id.
+    """
+    relation_map = get_relation_to_id_map(project_id)
+
+    types = copy.deepcopy(LINK_TYPES)
+    for t in types:
+        t['relation_id'] = relation_map[t['relation']]
+
+    return JsonResponse(types, safe=False)
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def graphedge_list(request, project_id=None):

@@ -211,14 +211,89 @@
             connectors: result
           };
         });
+    },
+
+    /**
+     * Get a list of available connector types. These are retrieved only the
+     * first time this function is called. Later calls will use a cached result,
+     * because this information is not expected to change often. If this is not
+     * wanted, a cache update can be forced.
+     */
+    linkTypes: function(projectId, forceCacheUpdate) {
+      if (forceCacheUpdate || !connectorTypeCache) {
+        var url = projectId + '/connectors/types/';
+        return CATMAID.fetch(url)
+          .then(function(result) {
+            // Make sure we know all returned types
+            for (var i=0; i<result.length; ++i) {
+              var t = result[i];
+              t['type_id'] = Connectors.relationToSubtype(t['relation']);
+            }
+
+            // Update cache and return a copy
+            connectorTypeCache = result;
+            return JSON.parse(JSON.stringify(connectorTypeCache));
+          });
+      } else {
+        // Return copy of cached result
+        return Promise.resolve(JSON.parse(JSON.stringify(connectorTypeCache)));
+      }
+    },
+
+    /**
+     * Get a list of available connector types.
+     */
+    connectorTypes: function(projectId, forceCacheUpdate) {
+      return Connectors.linkTypes(projectId, forceCacheUpdate)
+        .then(function(linkTypes) {
+          var types = {};
+          for (var i=0; i<linkTypes.length; ++i) {
+            var t = linkTypes[i];
+            var type = types[t['type_id']];
+            if (!type) {
+              type = {
+                'type': t['type_id'],
+                'name': t['type'],
+                'relations': []
+              };
+              types[t['type_id']] = type;
+            }
+            type.relations.push(t.relation);
+          }
+
+          return Object.keys(types).map(function(t) {
+            return types[t];
+          });
+        });
     }
   };
+
+  // Keeps a copy of the available connector types
+  var connectorTypeCache = null;
 
   CATMAID.asEventSource(Connectors);
   Connectors.EVENT_CONNECTOR_CREATED = "connector_created";
   Connectors.EVENT_CONNECTOR_REMOVED = "connector_removed";
   Connectors.EVENT_LINK_CREATED = "link_created";
   Connectors.EVENT_LINK_REMOVED = "link_removed";
+
+  // Connector nodes can have different subtypes
+  Connectors.SUBTYPE_SYNAPTIC_CONNECTOR = "synaptic-connector";
+  Connectors.SUBTYPE_ABUTTING_CONNECTOR = "abutting-connector";
+  Connectors.SUBTYPE_GAPJUNCTION_CONNECTOR = "gapjunction-connector";
+
+  Connectors.relationToSubtype = function(relationName) {
+    if ('presynaptic_to' === relationName || 'postsynaptic_to' === relationName) {
+      return Connectors.SUBTYPE_SYNAPTIC_CONNECTOR;
+    } else if ('gapjunction_with' === relationName) {
+      return Connectors.SUBTYPE_GAPJUNCTION_CONNECTOR;
+    } else if ('abutting' === relationName) {
+      return Connectors.SUBTYPE_ABUTTING_CONNECTOR;
+    } else {
+      throw new CATMAID.ValueError('Unknown connector link relation: ' + relationName);
+    }
+  };
+
 
   // Export connector namespace
   CATMAID.Connectors = Connectors;

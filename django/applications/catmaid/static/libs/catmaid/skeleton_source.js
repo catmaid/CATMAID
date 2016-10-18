@@ -12,6 +12,9 @@
   var SkeletonSource = function(register) {
     this.widgetId = register ? this.registerSource() : null;
     this.APPEND_WARNING_THRESHOLD = 50;
+    // Initialize subscriptions
+    this.subscriptions = [];
+    this.ignoreLocal = false;
   };
 
   // Operations that can be used to combine multiple sources.
@@ -53,9 +56,6 @@
 
   SkeletonSource.prototype.registerSource = function() {
     CATMAID.skeletonListSources.add(this);
-    // Initialize subscriptions
-    this.subscriptions = [];
-    this.ignoreLocal = false;
   };
 
   SkeletonSource.prototype.unregisterSource = function() {

@@ -5886,6 +5886,58 @@
   };
 
   /**
+   * Find minimum date in in a set of nodes. Nodes are represented as a list of
+   * different versions, ordered newest first. Each list elements consists of a
+   * three element list: [validFrom, validTo, nodeData].
+   */
+  function findMinDate(nodes, currentMin, nodeId) {
+    var versions = nodes[nodeId];
+    // Expect at least one entry, should be safe
+    var min = versions[0][0];
+    for (var i=1; i<versions.length; ++i) {
+      var d = versions[i][0];
+      if (d < min) {
+        min = d;
+      }
+    }
+    if (null === currentMin) {
+      currentMin = min;
+    } else {
+      if (min < currentMin) {
+        currentMin = min;
+      }
+    }
+
+    return currentMin;
+  }
+
+  /**
+   * Find maximum date in in a set of nodes. Nodes are represented as a list of
+   * different versions, ordered newest first. Each list elements consists of a
+   * three element list: [validFrom, validTo, nodeData].
+   */
+  function findMaxDate(nodes, currentMax, nodeId) {
+    var versions = nodes[nodeId];
+    // Expect at least one entry, should be safe
+    var max = versions[0][0];
+    for (var i=1; i<versions.length; ++i) {
+      var d = versions[i][0];
+      if (d > max) {
+        max = d;
+      }
+    }
+    if (null === currentMax) {
+      currentMax = max;
+    } else {
+      if (max > currentMax) {
+        currentMax = max;
+      }
+    }
+
+    return currentMax;
+  }
+
+  /**
    * Create a new animation, based on the 3D viewers current state.
    */
   WebGLApplication.prototype.createAnimation = function(type, params)
@@ -5999,47 +6051,6 @@
               // fetchCompactSkeletons
             },
             (function() {
-              function findMinDate(nodes, currentMin, nodeId) {
-                var versions = nodes[nodeId];
-                // Expect at least one entry, should be safe
-                var min = versions[0][0];
-                for (var i=1; i<versions.length; ++i) {
-                  var d = versions[i][0];
-                  if (d < min) {
-                    min = d;
-                  }
-                }
-                if (null === currentMin) {
-                  currentMin = min;
-                } else {
-                  if (min < currentMin) {
-                    currentMin = min;
-                  }
-                }
-
-                return currentMin;
-              }
-
-              function findMaxDate(nodes, currentMax, nodeId) {
-                var versions = nodes[nodeId];
-                // Expect at least one entry, should be safe
-                var max = versions[0][0];
-                for (var i=1; i<versions.length; ++i) {
-                  var d = versions[i][0];
-                  if (d > max) {
-                    max = d;
-                  }
-                }
-                if (null === currentMax) {
-                  currentMax = max;
-                } else {
-                  if (max > currentMax) {
-                    currentMax = max;
-                  }
-                }
-
-                return currentMax;
-              }
 
               // Create animation
               var skeletons = this.space.content.skeletons;

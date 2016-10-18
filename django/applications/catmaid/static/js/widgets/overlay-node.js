@@ -1340,16 +1340,16 @@
             if (atnType === SkeletonAnnotations.TYPE_CONNECTORNODE) {
               var atnSubType = SkeletonAnnotations.getActiveNodeSubType();
               if ((e.altKey && !e.shiftKey) ||
-                  atnSubType === SkeletonAnnotations.SUBTYPE_GAPJUNCTION_CONNECTOR) {
+                  atnSubType === CATMAID.Connectors.SUBTYPE_GAPJUNCTION_CONNECTOR) {
                 if (!CATMAID.mayEdit()) {
                   CATMAID.error("You lack permissions to declare node #" + node.id +
                       " as having a gap junction with connector #" + atnID);
                   return;
                 }
                 // careful, atnID is a connector
-                SkeletonAnnotations.atn.subtype = SkeletonAnnotations.SUBTYPE_GAPJUNCTION_CONNECTOR;
+                SkeletonAnnotations.atn.subtype = CATMAID.Connectors.SUBTYPE_GAPJUNCTION_CONNECTOR;
                 catmaidTracingOverlay.createLink(node.id, atnID, "gapjunction_with");
-              }  else if (atnSubType === SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR) {
+              }  else if (atnSubType === CATMAID.Connectors.SUBTYPE_SYNAPTIC_CONNECTOR) {
                 if (!CATMAID.mayEdit()) {
                   CATMAID.error("You lack permissions to declare node #" + node.id +
                       " as postsynaptic to connector #" + atnID);
@@ -1357,7 +1357,7 @@
                 }
                 // careful, atnID is a connector
                 catmaidTracingOverlay.createLink(node.id, atnID, "postsynaptic_to");
-              } else if (atnSubType === SkeletonAnnotations.SUBTYPE_ABUTTING_CONNECTOR) {
+              } else if (atnSubType === CATMAID.Connectors.SUBTYPE_ABUTTING_CONNECTOR) {
                 if (!CATMAID.mayEdit()) {
                   CATMAID.error("You lack permissions to declare node #" + node.id +
                       " as abutting against connector #" + atnID);
@@ -1550,12 +1550,12 @@
             } else if (atnType === SkeletonAnnotations.TYPE_NODE) {
               var linkType;
               if ((e.altKey && !e.shiftKey) ||
-                  connectornode.subtype === SkeletonAnnotations.SUBTYPE_GAPJUNCTION_CONNECTOR) {
+                  connectornode.subtype === CATMAID.Connectors.SUBTYPE_GAPJUNCTION_CONNECTOR) {
                 linkType = "gapjunction_with";
-                connectornode.subtype = SkeletonAnnotations.SUBTYPE_GAPJUNCTION_CONNECTOR;
-              } else if (SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR === connectornode.subtype) {
+                connectornode.subtype = CATMAID.Connectors.SUBTYPE_GAPJUNCTION_CONNECTOR;
+              } else if (CATMAID.Connectors.SUBTYPE_SYNAPTIC_CONNECTOR === connectornode.subtype) {
                 linkType = (e.altKey ? 'post' : 'pre') + "synaptic_to";
-              } else if (SkeletonAnnotations.SUBTYPE_ABUTTING_CONNECTOR === connectornode.subtype) {
+              } else if (CATMAID.Connectors.SUBTYPE_ABUTTING_CONNECTOR === connectornode.subtype) {
                 linkType = "abutting";
               } else {
                 CATMAID.error("The selected connector is of unknown type: " + connectornode.subtype);

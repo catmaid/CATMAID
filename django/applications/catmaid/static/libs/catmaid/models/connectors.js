@@ -211,14 +211,44 @@
             connectors: result
           };
         });
+    },
+
+    /**
+     * Get a list of available connector types. These are retrieved only the
+     * first time this function is called. Later calls will use a cached result,
+     * because this information is not expected to change often. If this is not
+     * wanted, a cache update can be forced.
+     */
+    types: function(projectId, forceCacheUpdate) {
+      if (forceCacheUpdate || !connectorTypeCache) {
+        var url = projectId + '/connector/types/';
+        return CATMAID.fetch(url)
+          .then(function(result) {
+            // Update cache and return a copy
+            connectorTypeCache = result;
+            return CATMAID.tools.deepCopy(connectorTypeCache);
+          });
+      } else {
+        // Return copy of cached result
+        return Promise.resolve(CATMAID.tools.deepCopy(connectorTypeCache));
+      }
     }
   };
+
+  // Keeps a copy of the available connector types
+  var connectorTypeCache = null;
 
   CATMAID.asEventSource(Connectors);
   Connectors.EVENT_CONNECTOR_CREATED = "connector_created";
   Connectors.EVENT_CONNECTOR_REMOVED = "connector_removed";
   Connectors.EVENT_LINK_CREATED = "link_created";
   Connectors.EVENT_LINK_REMOVED = "link_removed";
+
+  // Connector nodes can have different subtypes
+  Connectors.SUBTYPE_SYNAPTIC_CONNECTOR = "synaptic-connector";
+  Connectors.SUBTYPE_ABUTTING_CONNECTOR = "abutting-connector";
+  Connectors.SUBTYPE_GAPJUNCTION_CONNECTOR = "gapjunction-connector";
+
 
   // Export connector namespace
   CATMAID.Connectors = Connectors;

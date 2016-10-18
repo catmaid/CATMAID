@@ -394,7 +394,7 @@
         if (skeletonChanged && SkeletonAnnotations.TYPE_NODE === node.type) {
           setNeuronNameInTopbars(node.skeleton_id);
         } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === node.type) {
-          if (SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR === node.subtype) {
+          if (CATMAID.Connectors.SUBTYPE_SYNAPTIC_CONNECTOR === node.subtype) {
             // Retrieve presynaptic skeleton
             requestQueue.register(django_url + project.id + "/connector/skeletons",
                 "POST",
@@ -408,7 +408,7 @@
                     clearTopbars('Connector ' + node.id + ' (no presynatpic partner)');
                   }
                 }));
-          } else if (SkeletonAnnotations.SUBTYPE_GAPJUNCTION_CONNECTOR === node.subtype) {
+          } else if (CATMAID.Connectors.SUBTYPE_GAPJUNCTION_CONNECTOR === node.subtype) {
             clearTopbars('Gap junction connector #' + node.id);
           } else {
             clearTopbars('Abutting connector #' + node.id);

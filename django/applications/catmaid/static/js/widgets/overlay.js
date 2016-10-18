@@ -2528,44 +2528,29 @@ SkeletonAnnotations.TracingOverlay.prototype.createNodeOrLink = function(insert,
         };
 
         if (postLink && !link) {
-          // Display connector link type selection UI
-          var contextMenu = new CATMAID.ContextMenu({
-            select: function(selection) {
-              // Create a new custom connector
-              var msg = "Created " + selection.item.title.toLowerCase() +
-                  " connector with treenode #" + atn.id;
-              var data = selection.item.data;
-              createConnector(selection.item.data.relation, selection.item.value, msg);
-            },
-            items: [{
-              title: "Gab junction",
-              value: CATMAID.Connectors.SUBTYPE_GAPJUNCTION_CONNECTOR,
-              data: {
-                relation: 'gapjunction_with'
-              }
-            }, {
-              title: "Abutting",
-              value: CATMAID.Connectors.SUBTYPE_ABUTTING_CONNECTOR,
-              data: {
-                relation: 'abutting'
-              }
-            },
-            {
-              title: "Presynaptic",
-              value: CATMAID.Connectors.SUBTYPE_SYNAPTIC_CONNECTOR,
-              data: {
-                relation: 'presynaptic_to'
-              }
-            },
-            {
-              title: "Postsynaptic",
-              value: CATMAID.Connectors.SUBTYPE_SYNAPTIC_CONNECTOR,
-              data: {
-                relation: 'postsynaptic_to'
-              }
-            }]
-          });
-          contextMenu.show(true);
+          CATMAID.Connectors.linkTypes(project.id)
+            .then(function(linkTypes) {
+              // Display connector link type selection UI
+              var contextMenu = new CATMAID.ContextMenu({
+                select: function(selection) {
+                  // Create a new custom connector
+                  var msg = "Created " + selection.item.title.toLowerCase() +
+                      " connector with treenode #" + atn.id;
+                  var data = selection.item.data;
+                  createConnector(selection.item.data.relation, selection.item.value, msg);
+                },
+                items: linkTypes.map(function(t) {
+                  return {
+                    title: t.name,
+                    value: t.type_id,
+                    data: {
+                      relation: t.relation
+                    }
+                  };
+                })
+              });
+              contextMenu.show(true);
+            });
         } else if (CATMAID.Connectors.SUBTYPE_ABUTTING_CONNECTOR === newConnectorType) {
           // Create a new abutting connection
           createConnector("abutting", newConnectorType,

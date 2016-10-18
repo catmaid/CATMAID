@@ -1092,18 +1092,25 @@
         function() {
           SkeletonAnnotations.useNewConnectorTypeAsDefault = this.checked;
         }));
-      ds.append(CATMAID.DOM.createSelectSetting(
-        "Default connector type",
-        {
-          'Synaptic': SkeletonAnnotations.SUBTYPE_SYNAPTIC_CONNECTOR,
-          'Abutting': SkeletonAnnotations.SUBTYPE_ABUTTING_CONNECTOR,
-          'Gap junction': SkeletonAnnotations.SUBTYPE_GAPJUNCTION_CONNECTOR
-        },
-        "Select the connector type created by default.",
-        function() {
-          SkeletonAnnotations.newConnectorType = this.value;
-        },
-        SkeletonAnnotations.newConnectorType));
+
+      var connectorTypesPlaceholder = document.createElement('div');
+      ds.append(connectorTypesPlaceholder);
+      CATMAID.Connectors.connectorTypes(project.id)
+        .then(function(connectorTypes) {
+          var items = connectorTypes.reduce(function(o, e) {
+            o[e.name] = e.type;
+            return o;
+          }, {});
+          var typeSelect = CATMAID.DOM.createSelectSetting(
+              "Default connector type", items,
+              "Select the connector type created by default.",
+              function() {
+                SkeletonAnnotations.newConnectorType = this.value;
+              },
+              SkeletonAnnotations.newConnectorType);
+
+          $(connectorTypesPlaceholder).replaceWith(typeSelect);
+      });
 
 
       ds.append(wrapSettingsControl(

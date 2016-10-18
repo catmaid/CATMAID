@@ -175,6 +175,7 @@ urlpatterns += [
     url(r'^(?P<project_id>\d+)/connectors/$', connector.list_connector),
     url(r'^(?P<project_id>\d+)/connectors/(?P<connector_id>\d+)/$',
         connector.connector_detail),
+    url(r'^(?P<project_id>\d+)/connectors/types/$', connector.connector_types),
 ]
 
 # Neuron access

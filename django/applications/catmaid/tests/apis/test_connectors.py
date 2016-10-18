@@ -7,6 +7,41 @@ from .common import CatmaidApiTestCase
 
 
 class ConnectorsApiTests(CatmaidApiTestCase):
+    def test_list_connector_types(self):
+        self.fake_authentication()
+        response = self.client.get('/%d/connectors/types/' % self.test_project_id)
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = [
+            {
+                'name': 'Presynaptic',
+                'relation': 'presynaptic_to',
+                'relation_id': 23,
+                'type': 'Synaptic'
+            },
+            {
+                'name': 'Postsynaptic',
+                'relation': 'postsynaptic_to',
+                'relation_id': 24,
+                'type': 'Synaptic'
+            },
+            {
+                'name': 'Abutting',
+                'relation': 'abutting',
+                'relation_id': 2461,
+                'type': 'Abutting'
+            },
+            {
+                'name': 'Gap junction',
+                'relation': 'gapjunction_with',
+                'relation_id': 25,
+                'type': 'Gap junction'
+            }]
+
+
+        self.assertListEqual(expected_result, parsed_response)
+
+
     def test_list_connector_empty(self):
         self.fake_authentication()
         response = self.client.get(

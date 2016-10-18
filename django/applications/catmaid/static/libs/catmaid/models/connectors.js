@@ -219,19 +219,52 @@
      * because this information is not expected to change often. If this is not
      * wanted, a cache update can be forced.
      */
-    types: function(projectId, forceCacheUpdate) {
+    linkTypes: function(projectId, forceCacheUpdate) {
       if (forceCacheUpdate || !connectorTypeCache) {
-        var url = projectId + '/connector/types/';
+        var url = projectId + '/connectors/types/';
         return CATMAID.fetch(url)
           .then(function(result) {
+            // Make sure we know all returned types
+            for (var i=0; i<result.length; ++i) {
+              var t = result[i];
+              t['type_id'] = Connectors.relationToSubtype(t['relation']);
+            }
+
             // Update cache and return a copy
             connectorTypeCache = result;
-            return CATMAID.tools.deepCopy(connectorTypeCache);
+            return JSON.parse(JSON.stringify(connectorTypeCache));
           });
       } else {
         // Return copy of cached result
-        return Promise.resolve(CATMAID.tools.deepCopy(connectorTypeCache));
+        return Promise.resolve(JSON.parse(JSON.stringify(connectorTypeCache)));
       }
+    },
+
+    /**
+     * Get a list of available connector types.
+     */
+    connectorTypes: function(projectId, forceCacheUpdate) {
+      return Connectors.linkTypes(projectId, forceCacheUpdate)
+        .then(function(linkTypes) {
+          var types = {};
+          for (var i=0; i<linkTypes.length; ++i) {
+            var t = linkTypes[i];
+            var type = types[t['type_id']];
+            if (!type) {
+              type = {
+                'type': t['type_id'],
+                'name': t['type'],
+                'relations': []
+              };
+              types[t['type_id']] = type;
+            }
+            type.relations.push(t.relation);
+          }
+
+          return Object.keys(types).map(function(t) {
+            return types[t];
+          });
+        });
     }
   };
 
@@ -248,6 +281,18 @@
   Connectors.SUBTYPE_SYNAPTIC_CONNECTOR = "synaptic-connector";
   Connectors.SUBTYPE_ABUTTING_CONNECTOR = "abutting-connector";
   Connectors.SUBTYPE_GAPJUNCTION_CONNECTOR = "gapjunction-connector";
+
+  Connectors.relationToSubtype = function(relationName) {
+    if ('presynaptic_to' === relationName || 'postsynaptic_to' === relationName) {
+      return Connectors.SUBTYPE_SYNAPTIC_CONNECTOR;
+    } else if ('gapjunction_with' === relationName) {
+      return Connectors.SUBTYPE_GAPJUNCTION_CONNECTOR;
+    } else if ('abutting' === relationName) {
+      return Connectors.SUBTYPE_ABUTTING_CONNECTOR;
+    } else {
+      throw new CATMAID.ValueError('Unknown connector link relation: ' + relationName);
+    }
+  };
 
 
   // Export connector namespace

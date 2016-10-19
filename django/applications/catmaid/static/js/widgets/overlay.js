@@ -568,6 +568,9 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
   this.show_labels = options.show_labels || false;
   /** Indicate if this overlay is suspended and won't update nodes on redraw. */
   this.suspended = options.suspended || false;
+  /** Current connector selection menu, if any */
+  this.connectorTypeMenu = null;
+
   /** An accessor to the internal nodes array to get information about the
    * layer's current state */
   var self = this;
@@ -2530,14 +2533,20 @@ SkeletonAnnotations.TracingOverlay.prototype.createNodeOrLink = function(insert,
         if (postLink && !link) {
           CATMAID.Connectors.linkTypes(project.id)
             .then(function(linkTypes) {
+              if (self.connectorTypeMenu) {
+                self.connectorTypeMenu.hide();
+              }
               // Display connector link type selection UI
-              var contextMenu = new CATMAID.ContextMenu({
+              self.connectorTypeMenu = new CATMAID.ContextMenu({
                 select: function(selection) {
                   // Create a new custom connector
                   var msg = "Created " + selection.item.title.toLowerCase() +
                       " connector with treenode #" + atn.id;
                   var data = selection.item.data;
                   createConnector(selection.item.data.relation, selection.item.value, msg);
+                },
+                hide: function() {
+                  self.connectorTypeMenu = null;
                 },
                 items: linkTypes.map(function(t) {
                   return {
@@ -2549,7 +2558,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createNodeOrLink = function(insert,
                   };
                 })
               });
-              contextMenu.show(true);
+              self.connectorTypeMenu.show(true);
             });
         } else if (CATMAID.Connectors.SUBTYPE_ABUTTING_CONNECTOR === newConnectorType) {
           // Create a new abutting connection

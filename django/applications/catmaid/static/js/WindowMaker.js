@@ -3184,13 +3184,13 @@ var WindowMaker = new function()
 
   /** If the window for the given name is already showing, just focus it.
    * Otherwise, create it new. */
-  this.show = function(name)
+  this.show = function(name, params)
   {
     if (creators.hasOwnProperty(name)) {
       if (windows.has(name)) {
         windows.get(name).keys().next().value.focus();
       } else {
-        var handles = creators[name]();
+        var handles = creators[name](params);
         windows.set(name, new Map([[handles.window, handles.widget]]));
       }
     } else {

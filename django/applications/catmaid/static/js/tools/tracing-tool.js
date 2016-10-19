@@ -628,31 +628,67 @@
     this.addAction(new CATMAID.Action({
       helpText: "Go to the parent of the active node (<kbd>Ctrl</kbd>: ignore virtual nodes)",
       keyShortcuts: { "[": [ 219, 56 ] },
-      run: function (e) {
-        if (!CATMAID.mayView())
-          return false;
-        var modifierKey = e.ctrlKey || e.metaKey;
-        if (CATMAID.TracingTool.Settings.session.invert_virtual_node_ignore_modifier) modifierKey = !modifierKey;
-        var fn = activeTracingLayer.tracingOverlay.goToParentNode.bind(activeTracingLayer.tracingOverlay,
-            SkeletonAnnotations.getActiveNodeId(), modifierKey);
-        activeTracingLayer.withHiddenUpdate(true, fn);
-        return true;
-      }
+      run: (function() {
+        var updateInProgress = false;
+        return function (e) {
+          if (updateInProgress) {
+            return false;
+          }
+          if (!CATMAID.mayView()) {
+            return false;
+          }
+
+          var modifierKey = e.ctrlKey || e.metaKey;
+          if (CATMAID.TracingTool.Settings.session.invert_virtual_node_ignore_modifier) modifierKey = !modifierKey;
+          updateInProgress = true;
+          var fn = activeTracingLayer.tracingOverlay.goToParentNode.bind(activeTracingLayer.tracingOverlay,
+              SkeletonAnnotations.getActiveNodeId(), modifierKey);
+          var update = activeTracingLayer.withHiddenUpdate(true, fn);
+
+          // Only allow further parent selections if the last one has been
+          // completed.
+          update.then(function() {
+            updateInProgress = false;
+          }).catch(function() {
+            updateInProgress = false;
+          });
+
+          return true;
+        };
+      })()
     }));
 
     this.addAction(new CATMAID.Action({
       helpText: "Go to the child of the active node (<kbd>Ctrl</kbd>: ignore virtual nodes; Subsequent <kbd>Shift</kbd>+<kbd>]</kbd>: cycle through children)",
       keyShortcuts: { "]": [ 221, 57 ] },
-      run: function (e) {
-        if (!CATMAID.mayView())
-          return false;
-        var modifierKey = e.ctrlKey || e.metaKey;
-        if (CATMAID.TracingTool.Settings.session.invert_virtual_node_ignore_modifier) modifierKey = !modifierKey;
-        var fn = activeTracingLayer.tracingOverlay.goToChildNode.bind(activeTracingLayer.tracingOverlay,
-            SkeletonAnnotations.getActiveNodeId(), e.shiftKey, modifierKey);
-        activeTracingLayer.withHiddenUpdate(true, fn);
-        return true;
-      }
+      run: (function() {
+        var updateInProgress = false;
+        return function (e) {
+          if (updateInProgress) {
+            return false;
+          }
+          if (!CATMAID.mayView()) {
+            return false;
+          }
+
+          var modifierKey = e.ctrlKey || e.metaKey;
+          if (CATMAID.TracingTool.Settings.session.invert_virtual_node_ignore_modifier) modifierKey = !modifierKey;
+          updateInProgress = true;
+          var fn = activeTracingLayer.tracingOverlay.goToChildNode.bind(activeTracingLayer.tracingOverlay,
+              SkeletonAnnotations.getActiveNodeId(), e.shiftKey, modifierKey);
+          var update = activeTracingLayer.withHiddenUpdate(true, fn);
+
+          // Only allow further parent selections if the last one has been
+          // completed.
+          update.then(function() {
+            updateInProgress = false;
+          }).catch(function() {
+            updateInProgress = false;
+          });
+
+          return true;
+        };
+      })()
     }));
 
     this.addAction(new CATMAID.Action({

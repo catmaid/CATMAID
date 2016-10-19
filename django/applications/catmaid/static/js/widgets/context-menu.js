@@ -113,7 +113,7 @@
     this.show = function(useCurrentLocation) {
       document.body.appendChild(wrapper);
       if (useCurrentLocation) {
-        var mouse = CATMAID.ui.getMouse();
+        var mouse = CATMAID.UI.getLastMouse();
         menuX = mouse.x;
         menuY = mouse.y;
       }

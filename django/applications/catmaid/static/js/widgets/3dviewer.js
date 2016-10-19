@@ -810,7 +810,7 @@
     this.animation_record_timerange = false;
     this.animation_history_include_merges = true;
     this.animation_history_empy_bout_length = 10;
-    this.animation_history_reset_after_stop = true;
+    this.animation_history_reset_after_stop = false;
     this.strahler_cut = 2; // to approximate twigs
     this.use_native_resolution = true;
   };

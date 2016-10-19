@@ -13,8 +13,10 @@ Tracing layer:
   to create the last connector type, as opposed to pre/post-synaptic connectors.
 
 
-### Features and enhancements
+3D viewer:
 
+- History replay now has a reset button to load the most recent version of each
+  skeleton.
 
 
 ### Bug fixes

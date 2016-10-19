@@ -18,6 +18,7 @@
    */
   var ContextMenu = function(options) {
     options = options || {};
+    this.options = options;
 
     var self = this;
 
@@ -121,6 +122,16 @@
       wrapper.style.top = menuY + "px";
       wrapper.style.display = "block";
       menuVisible = true;
+
+      // Attach a handler for the ESC key to cancel context menu
+      var self = this;
+      $('body').on('keydown.catmaidConnectorSelect', function(event) {
+        if (27 === event.keyCode) {
+          self.hide();
+          return true;
+        }
+        return false;
+      });
     };
 
     /**
@@ -130,6 +141,10 @@
       wrapper.style.display = "none";
       menuVisible = false;
       document.body.removeChild(wrapper);
+      // Unbind key handler and hide context menu
+      $('body').off('keydown.catmaidConnectorSelect');
+      // Execute hide callback, if any
+      CATMAID.tools.callIfFn(this.options.hide);
     };
 
     /**

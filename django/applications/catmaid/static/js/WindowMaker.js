@@ -1486,6 +1486,13 @@ var WindowMaker = new function()
             stopAnimation();
             historyTimeDisplay.textContent = "";
           }],
+          ['Reset', function() {
+            stopAnimation();
+            historyTimeDisplay.textContent = "";
+            if (!WA.options.animation_history_reset_after_stop) {
+              WA.reloadSkeletons(WA.getSelectedSkeletons());
+            }
+          }],
           ['Hours per tick', o.animation_hours_per_tick, '', function() {
             WA.options.animation_hours_per_tick = parseFloat(this.value);
            }, 5],

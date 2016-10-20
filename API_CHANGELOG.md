@@ -11,6 +11,10 @@ included in this changelog.
   `GET/POST /{project_id}/{skeleton_id}/[0|1]/[0|1]/compact-skeleton`, but uses
   explicit GET parameters.
 
+- `POST /{project_id}/nodes/`
+  Provides the same data as the former `POST /{project_id}/nodes/list` and takes
+  the same parameters.
+
 ### Modifications
 
 None.
@@ -18,8 +22,12 @@ None.
 ### Deprecations
 
 - `GET/POST /{project_id}/{skeleton_id}/[0|1]/[0|1]/compact-skeleton`
-  This endpoint will be replaced the future with the newly introduced
+  This endpoint will be replaced in the future with the newly introduced
   endpoint `GET /{project_id}/skeletons/{skeleton_id}/compact-detail`.
+
+- `POST /{project_id}/node/list`
+  This endpoint will be replaced in the future with the newly introduced
+  endpoint `POST /{project_id}/nodes/`. It takes the same parameters.
 
 ### Removals
 

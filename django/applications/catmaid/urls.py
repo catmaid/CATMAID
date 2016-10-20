@@ -7,6 +7,7 @@ import django.contrib.auth.views as djauth
 
 # For adding explicit grouping resource endpoints in API documentation.
 from rest_framework_swagger.urlparser import UrlParser
+from rest_framework.decorators import api_view
 
 from catmaid.control import (authentication, user, log, message, client, common,
         project, stack, stackgroup, tile, tracing, stats, neuron_annotations as
@@ -199,6 +200,7 @@ urlpatterns += [
     url(r'^(?P<project_id>\d+)/node/get_location$', node.get_location),
     url(r'^(?P<project_id>\d+)/node/user-info$', node.user_info),
     url(r'^(?P<project_id>\d+)/nodes/find-labels$', node.find_labels),
+    url(r'^(?P<project_id>\d+)/nodes/$', api_view(['POST'])(node.node_list_tuples)),
 ]
 
 # Treenode access

@@ -21,18 +21,108 @@ from catmaid.control.common import get_relation_to_id_map, get_request_list
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def node_list_tuples(request, project_id=None, provider=None):
-    ''' Retrieve an JSON array with four entries:
-    [0] an array of arrays, each array representing a treenode
-    [1] an array of arrays, each array representing a connector and containing
-    arrays inside that specify the relations between the connector and treenodes.
-    In this function tuples are used as much as possible for immutable list,
-    and uses directly the tuples returned by the database cursor.
-    [2] the labels, if requested.
-    [3] a boolean which is true when the node limit has been reached.
-    The returned JSON data is therefore sensitive to indices in the array,
-    so care must be taken never to alter the order of the variables in the SQL
-    statements without modifying the accesses to said data both in this function
-    and in the client that consumes it.
+    '''Retrieve all nodes intersecting a bounding box
+
+    The intersection bounding box is defined in terms of its minimum and
+    maximum project space coordinates. The number of returned nodes can be
+    limited to constrain query execution time. Optionally, lists of treenodes
+    and connector IDs can be provided to make sure they are included in the
+    result set, regardless of intersection.
+
+    Returned is an array with four entries:
+
+    [[treenodes], [connectors], {labels}, node_limit_reached, {relation_map}]
+
+    The list of treenodes has elements of this form:
+
+    [id, parent_id, location_x, location_y, location_z, confidence, radius, skeleton_id, edition_time, user_id]
+
+    The list connectors has elements of this form:
+
+    [id, location_x, location_y, location_z, confidence, edition_time, user_id, [partners]]
+
+    The partners arrary represents linked partner nodes, each one represented like this:
+
+    [treenode_id, relation_id, link_confidence, link_edition_time, link_id]
+
+    If labels are returned, they are represented as an object of the following
+    form, with the labels just being simple strings:
+
+    {treenode_id: [labels]}
+
+    The fourth top level entry, node_limit_reached, is a boolean that
+    represents if there are more nodes available than the ones returned.
+
+    With the last top level element returned the present connector linked
+    relations are mapped to their textural representations:
+
+    {relation_id: relation_name}
+    ---
+    parameters:
+    - name: treenode_ids
+      description: |
+        Whether linked connectors should be returned.
+      required: false
+      type: array
+      items:
+        type: integer
+      paramType: form
+    - name: connector_ids
+      description: |
+        Whether tags should be returned.
+      required: false
+      type: array
+      items:
+        type: integer
+      paramType: form
+    - name: limit
+      description: |
+        Limit the number of returned nodes.
+      required: false
+      type: integer
+      defaultValue: 3500
+      paramType: form
+    - name: left
+      description: |
+        Minimum world space X coordinate
+      required: true
+      type: float
+      paramType: form
+    - name: top
+      description: |
+        Minimum world space Y coordinate
+      required: true
+      type: float
+      paramType: form
+    - name: z1
+      description: |
+        Minimum world space Z coordinate
+      required: true
+      type: float
+      paramType: form
+    - name: right
+      description: |
+        Maximum world space X coordinate
+      required: true
+      type: float
+      paramType: form
+    - name: bottom
+      description: |
+        Maximum world space Y coordinate
+      required: true
+      type: float
+      paramType: form
+    - name: z2
+      description: |
+        Maximum world space Z coordinate
+      required: true
+      type: float
+      paramType: form
+    type:
+    - type: array
+      items:
+        type: string
+      required: true
     '''
     project_id = int(project_id) # sanitize
     params = {}
@@ -317,6 +407,11 @@ def get_connector_nodes_postgis(cursor, params, treenode_ids, missing_connector_
 
 
 def node_list_tuples_query(params, project_id, explicit_treenode_ids, explicit_connector_ids, include_labels, tn_provider):
+    """The returned JSON data is sensitive to indices in the array, so care
+    must be taken never to alter the order of the variables in the SQL
+    statements without modifying the accesses to said data both in this
+    function and in the client that consumes it.
+    """
     try:
         cursor = connection.cursor()
 

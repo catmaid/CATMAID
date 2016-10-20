@@ -31,6 +31,19 @@ except ImportError:
     logging.getLogger(__name__).warn("NeuroML module could not be loaded.")
 
 
+def default(obj):
+    """Default JSON serializer."""
+
+    if isinstance(obj, DateTimeTZRange):
+        l_bound = "[" if obj.lower_inc else "("
+        u_bound = "]" if obj.upper_inc else ")"
+        return "{}{},{}{}".format(l_bound, obj.lower, obj.upper, u_bound)
+    elif isinstance(obj, datetime):
+        return str(obj)
+
+    raise TypeError('Not sure how to serialize object of type %s: %s' % (type(obj), obj,))
+
+
 def get_treenodes_qs(project_id=None, skeleton_id=None, with_labels=True):
     treenode_qs = Treenode.objects.filter(skeleton_id=skeleton_id)
     if with_labels:
@@ -73,36 +86,132 @@ def export_skeleton_response(request, project_id=None, skeleton_id=None, format=
         raise Exception, "Unknown format ('%s') in export_skeleton_response" % (format,)
 
 
+@api_view(['GET'])
+@requires_user_role(UserRole.Browse)
+def compact_skeleton_detail(request, project_id=None, skeleton_id=None):
+    """Get a compact treenode representation of a skeleton, optionally with the
+    history of individual nodes and connectors.
+
+    Returns, in JSON, [[nodes], [connectors], {nodeID: [tags]}], with
+    connectors and tags being empty when 0 == with_connectors and 0 ==
+    with_tags, respectively.
+
+    Each element in the [nodes] array has the following form:
+
+    [id, parent_id, user_id, location_x, location_y, location_z, radius, confidence].
+
+    Each element in the [connectors] array has the following form, with the
+    third element representing the connector link as 0 = presynaptic, 1 =
+    postsynaptic, 2 = gap junction, -1 = other:
+
+    [treenode_id, connector_id, 0|1|2|-1, location_x, location_y, location_z]
+
+    If history data is requested, each row contains a validity interval. Note
+    that for the live table entry (the currently valid version), there are
+    special semantics for this interval: The upper bound is older than or the
+    same as the lower bound. This is done to encode the information of this row
+    being the most recent version and including the original creation time at
+    the same time, plus it requires less queries on the back-end to retireve
+    data. This requires the client to do slightly more work, but unfortunately
+    the original creation time is needed for data that was created without
+    history tables enabled.
+    ---
+    parameters:
+    - name: with_connectors
+      description: |
+        Whether linked connectors should be returned.
+      required: false
+      type: boolean
+      defaultValue: "false"
+      paramType: form
+    - name: with_tags
+      description: |
+        Whether tags should be returned.
+      required: false
+      type: boolean
+      defaultValue: "false"
+      paramType: form
+    - name: with_history
+      description: |
+        Whether history information should be returned for each treenode and connector.
+      required: false
+      type: boolean
+      defaultValue: "false"
+      paramType: form
+    - name: with_merge_history
+      description: |
+        Whether the history of arbors merged into the requested skeleton should be returned. Only used if history is returned.
+      required: false
+      type: boolean
+      defaultValue: "false"
+      paramType: form
+    type:
+    - type: array
+      items:
+        type: string
+      required: true
+    """
+    # Sanitize
+    project_id = int(project_id)
+    skeleton_id = int(skeleton_id)
+    with_connectors = request.GET.get("with_connectors", "false") == "true"
+    with_tags = request.GET.get("with_tags", "false")
+    with_history = request.GET.get("with_history", "false") == "true"
+    with_merge_history = request.GET.get("with_merge_history", "false") == "true"
+
+    result = _compact_skeleton(project_id, skeleton_id, with_connectors,
+                               with_tags, with_history, with_merge_history)
+
+    return JsonResponse(result, safe=False,
+            json_dumps_params={
+                'separators': (',', ':'),
+                'default': default
+            })
+
 @requires_user_role(UserRole.Browse)
 def compact_skeleton(request, project_id=None, skeleton_id=None, with_connectors=None, with_tags=None):
     """Get a compact treenode representation of a skeleton, optionally with the
-    history of individual nodes and connectors. Note that this is a
-    performance-critical function, performance reduction can have negative
-    front-end effects.
+    history of individual nodes and connectors.
+    """
+    # Sanitize
+    project_id = int(project_id)
+    skeleton_id = int(skeleton_id)
+    with_connectors  = int(with_connectors) != 0
+    with_tags = int(with_tags) != 0
+    with_history = request.GET.get("with_history", "false") == "true"
+    # Indicate if history of merged in skeletons should also be included if
+    # history is returned. Ignored if history is not retrieved.
+    with_merge_history = request.GET.get("with_merge_history", "false") == "true"
+
+    result = _compact_skeleton(project_id, skeleton_id, with_connectors,
+                               with_tags, with_history, with_merge_history)
+
+    return JsonResponse(result, safe=False,
+            json_dumps_params={
+                'separators': (',', ':'),
+                'default': default
+            })
+
+
+def _compact_skeleton(project_id, skeleton_id, with_connectors=True, with_tags=True, with_history=False, with_merge_history=True):
+    """Get a compact treenode representation of a skeleton, optionally with the
+    history of individual nodes and connectors. Note this function is
+    performance critical!
 
     Returns, in JSON, [[nodes], [connectors], {nodeID: [tags]}], with
     connectors and tags being empty when 0 == with_connectors and 0 ==
     with_tags, respectively.
 
     If history data is requested, each row contains a validity interval. Note
-    that for the live table entry, there are special semantics for this
-    interval. The upper bound is older than or the same as the lower bound.
-    This means that the node is valid to infinity from the lower bound while
-    encoding the node's creation time at the same time. This is done to safe
-    space and require less queries to get all required data for the cost of
-    requiring the client to do more work. The creation time is needed for data
-    that was created without history tables enabled.
+    that for the live table entry (the currently valid version), there are
+    special semantics for this interval: The upper bound is older than or the
+    same as the lower bound. This is done to encode the information of this row
+    being the most recent version and including the original creation time at
+    the same time, plus it requires less queries on the back-end to retireve
+    data. This requires the client to do slightly more work, but unfortunately
+    the original creation time is needed for data that was created without
+    history tables enabled.
     """
-
-    # Sanitize
-    project_id = int(project_id)
-    skeleton_id = int(skeleton_id)
-    with_connectors  = int(with_connectors)
-    with_tags = int(with_tags)
-    with_history = bool(request.GET.get("with_history", False))
-    # Indicate if history of merged in skeletons should also be included if
-    # history is returned. Ignored if history is not retrieved.
-    with_merge_history = bool(request.GET.get("with_history", True))
 
     cursor = connection.cursor()
 
@@ -189,12 +298,12 @@ def compact_skeleton(request, project_id=None, skeleton_id=None, with_connectors
     connectors = ()
     tags = defaultdict(list)
 
-    if 0 != with_connectors or 0 != with_tags:
+    if with_connectors or with_tags:
         # postgres is caching this query
         cursor.execute("SELECT relation_name, id FROM relation WHERE project_id=%s" % project_id)
         relations = dict(cursor.fetchall())
 
-    if 0 != with_connectors:
+    if with_connectors:
         # Fetch all connectors with their partner treenode IDs
         pre = relations['presynaptic_to']
         post = relations['postsynaptic_to']
@@ -265,7 +374,7 @@ def compact_skeleton(request, project_id=None, skeleton_id=None, with_connectors
 
             connectors = tuple((row[0], row[1], relation_index.get(row[2], -1), row[3], row[4], row[5], row[6], row[7]) for row in cursor.fetchall())
 
-    if 0 != with_tags:
+    if with_tags:
         history_suffix = '__with_history' if with_history else ''
         t_history_query = ', tci.edition_time' if with_history else ''
         # Fetch all node tags
@@ -284,25 +393,7 @@ def compact_skeleton(request, project_id=None, skeleton_id=None, with_connectors
         for row in cursor.fetchall():
             tags[row[0]].append(row[1])
 
-    result = [nodes, connectors, tags]
-
-    return JsonResponse(result, safe=False,
-            json_dumps_params={
-                'separators': (',', ':'),
-                'default': default
-            })
-
-def default(obj):
-    """Default JSON serializer."""
-
-    if isinstance(obj, DateTimeTZRange):
-		l_bound = "[" if obj.lower_inc else "("
-		u_bound = "]" if obj.upper_inc else ")"
-		return "{}{},{}{}".format(l_bound, obj.lower, obj.upper, u_bound)
-    elif isinstance(obj, datetime):
-        return str(obj)
-
-    raise TypeError('Not sure how to serialize object of type %s: %s' % (type(obj), obj,))
+    return [nodes, connectors, tags]
 
 
 @requires_user_role(UserRole.Browse)

@@ -6,7 +6,10 @@ included in this changelog.
 
 ### Additions
 
-None.
+- `GET /{project_id}/skeletons/{skeleton_id}/compact-detail`
+  Provides same functionality as
+  `GET/POST /{project_id}/{skeleton_id}/[0|1]/[0|1]/compact-skeleton`, but uses
+  explicit GET parameters.
 
 ### Modifications
 
@@ -14,7 +17,9 @@ None.
 
 ### Deprecations
 
-None.
+- `GET/POST /{project_id}/{skeleton_id}/[0|1]/[0|1]/compact-skeleton`
+  This endpoint will be replaced the future with the newly introduced
+  endpoint `GET /{project_id}/skeletons/{skeleton_id}/compact-detail`.
 
 ### Removals
 

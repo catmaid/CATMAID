@@ -270,6 +270,7 @@ urlpatterns += [
     url(r'^(?P<project_id>\d+)/skeletons/measure$', skeletonexport.measure_skeletons),
     url(r'^(?P<project_id>\d+)/skeleton/connectors-by-partner$', skeletonexport.skeleton_connectors_by_partner),
     url(r'^(?P<project_id>\d+)/skeletons/partners-by-connector$', skeletonexport.partners_by_connector),
+    url(r'^(?P<project_id>\d+)/skeletons/(?P<skeleton_id>\d+)/compact-detail$', skeletonexport.compact_skeleton_detail)
 ]
 
 # Treenode and Connector image stack archive export

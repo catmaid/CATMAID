@@ -1400,10 +1400,9 @@
     if (0 === skeleton_ids.length) return;
 
     var options = this.options;
-    var url1 = django_url + project.id + '/',
-        lean = options.lean_mode ? 0 : 1,
-        url2 = '/' + lean  + '/' + lean + '/compact-skeleton';
-
+    var url1 = CATMAID.makeURL(project.id + '/skeletons/'),
+        lean = options.lean_mode,
+        url2 = '/compact-detail';
 
     // Register with the neuron name service and fetch the skeleton data
     CATMAID.NeuronNameService.getInstance().registerAll(this, models,
@@ -1413,7 +1412,11 @@
             return url1 + skeleton_id + url2;
           },
           function(skeleton_id) {
-            return {}; // the post
+            return {
+                with_tags: !lean,
+                with_connectors: !lean,
+                with_history: false,
+            };
           },
           (function(skeleton_id, json) {
             var sk = this.space.updateSkeleton(models[skeleton_id], json, options);
@@ -1430,7 +1433,8 @@
                     try { callback(); } catch (e) { alert(e); }
                   }
               }).bind(this));
-          }).bind(this)));
+          }).bind(this),
+          'GET'));
   };
 
   /** Reload skeletons from database. */
@@ -6023,9 +6027,9 @@
           reject("No skeletons available");
           return;
         }
-        var url1 = django_url + project.id + '/',
-            lean = this.options.lean_mode ? 0 : 1,
-            url2 = '/' + lean  + '/' + lean + '/compact-skeleton';
+        var url1 = CATMAID.makeURL(project.id + '/skeletons/'),
+            lean = this.options.lean_mode,
+            url2 = '/compact-detail';
         // Get historic data of current skeletons. Create a map of events, Which
         // are consumed if their time is ready.
         var now = new Date();
@@ -6038,6 +6042,8 @@
             },
             function(skeleton_id) {
               return {
+                with_tags: !lean,
+                with_connectors: !lean,
                 with_history: true,
                 with_merge_history: include_merges
               };

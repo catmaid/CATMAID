@@ -3188,10 +3188,17 @@ var WindowMaker = new function()
   {
     if (creators.hasOwnProperty(name)) {
       if (windows.has(name)) {
-        windows.get(name).keys().next().value.focus();
+        var instances = windows.get(name);
+        var win = instances.keys().next().value;
+        win.focus();
+        return {
+          window: win,
+          widget: instances.get(win)
+        };
       } else {
         var handles = creators[name](params);
         windows.set(name, new Map([[handles.window, handles.widget]]));
+        return handles;
       }
     } else {
       CATMAID.error("No known window with name " + name);

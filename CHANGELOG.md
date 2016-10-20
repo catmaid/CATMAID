@@ -19,6 +19,13 @@ Tracing layer:
   skeleton.
 
 
+Miscellaneous:
+
+- If users have sufficient permissions, they can click on individual names in
+  the Project Statistics Widget to show a User Analytics window for the
+  respective user and currently selected time frame.
+
+
 ### Bug fixes
 
 

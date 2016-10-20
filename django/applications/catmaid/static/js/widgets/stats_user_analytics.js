@@ -9,7 +9,14 @@
 
   "use strict";
 
-  var UserAnalytics = function() {};
+  var UserAnalytics = function(options) {
+    options = options || {};
+    this.userId = options.userId || CATMAID.session.userid;
+    this.startDate = options.startDate || "-10";
+    this.endDate = options.endDate || "0";
+    this.initialUpdate = undefined === options.initialUpdate ?
+        true : options.initialUpdate;
+  };
 
   UserAnalytics.prototype.getName = function() {
     return "User Analytics";
@@ -34,7 +41,7 @@
             continue;
           }
           var name = user.fullName ? user.fullName : user.login;
-          var selected = (user.id == CATMAID.session.userid);
+          var selected = (user.id == this.userId);
           var option = new Option(name, user.id, selected, selected);
           userSelect.add(option);
         }
@@ -107,12 +114,14 @@
         // Init date fields
         $('#user-analytics-controls input[data-name=start_date]')
           .datepicker({ dateFormat: "yy-mm-dd", defaultDate: -10 })
-          .datepicker('setDate', "-10");
+          .datepicker('setDate', this.startDate);
         $('#user-analytics-controls input[data-name=end_date]')
           .datepicker({ dateFormat: "yy-mm-dd", defaultDate: 0 })
-          .datepicker('setDate', "0");
+          .datepicker('setDate', this.endDate);
 
-        this.refresh();
+        if (this.initialUpdate) {
+          this.refresh();
+        }
       }
     };
   };
@@ -146,6 +155,23 @@
     $.unblockUI();
   };
 
+  UserAnalytics.prototype.setStartDate = function(newDate) {
+    this.startDate = newDate;
+    $('#user-analytics-controls input[data-name=start_date]')
+      .datepicker('setDate', this.startDate);
+  };
+
+  UserAnalytics.prototype.setEndDate = function(newDate) {
+    this.endDate = newDate;
+    $('#user-analytics-controls input[data-name=end_date]')
+      .datepicker('setDate', this.endDate);
+  };
+
+  UserAnalytics.prototype.setUserId = function(newUserId) {
+    this.userId = newUserId;
+    $('#user-analytics-controls select[data-name=user]')
+        .combobox('set_value', newUserId);
+  };
 
   // Export statistics widget
   CATMAID.UserAnalytics = UserAnalytics;

@@ -105,12 +105,17 @@
         return o;
       }, {});
       // Draw table body, add up numbers for each interval
+      var showUserAnalytics = userAnalyticsAccessible(project.id);
       Object.keys(usernamesToIds).sort().forEach(function(username) {
         var uid = usernamesToIds[username];
         var row = '', weekpointcount = 0;
         row += '<tr class="' + (odd_row ? "odd" : "") + '">';
         if( data['stats_table'].hasOwnProperty( uid ) ) {
-          row += '<td>' + username + '</td>';
+          if (showUserAnalytics) {
+            row += '<td><a href="#" data-user-id="' + uid + '">' + username + '</a></td>';
+          } else {
+            row += '<td>' + username + '</td>';
+          }
           // Print statistics cells, wrt. time interval
           for (var i = 0; i < data['days'].length; i=i+timeinterval) {
             var intervalData = {
@@ -151,8 +156,20 @@
         }
       });
 
+      if (showUserAnalytics) {
+        // Add user analytics link handler
+        $('#project_stats_history_table').find('a[data-user-id]').click(function(e) {
+          var userId = this.getAttribute('data-user-id');
+          openUserAnalytics({
+            userId: userId,
+            startDate: $("#stats-history-start-date").val(),
+            endDate: $("#stats-history-end-date").val()
+          });
+        });
+      }
+
       // Add handler for embedded links
-      $('#project_stats_history_table').find('a').click(function(e) {
+      $('#project_stats_history_table').find('a[data-type]').click(function(e) {
         var type = this.getAttribute('data-type');
         var user_id = this.getAttribute('data-user');
         var from = this.getAttribute('data-from');
@@ -570,13 +587,18 @@
 
     // If this user has has can_administer permissions in this project,
     // buttons to access additional tools are addeed.
-    if (CATMAID.hasPermission(project.id, 'can_administer')) {
+    if (userAnalyticsAccessible(project.id)) {
       config['controlsID'] = 'project_stats_controls';
       config['createControls'] = function(controls) {
         var userAnalytics = document.createElement('input');
         userAnalytics.setAttribute("type", "button");
         userAnalytics.setAttribute("value", "User Analytics");
-        userAnalytics.onclick = openUserAnalytics;
+        userAnalytics.onclick = function() {
+          openUserAnalytics({
+            startDate: $("#stats-history-start-date").val(),
+            endDate: $("#stats-history-end-date").val()
+          });
+        };
         controls.appendChild(userAnalytics);
       };
     }
@@ -584,8 +606,19 @@
     return config;
   };
 
-  var openUserAnalytics = function() {
-    WindowMaker.show('user-analytics');
+  var userAnalyticsAccessible = function(projectId) {
+    return CATMAID.hasPermission(projectId, 'can_administer');
+  };
+
+  var openUserAnalytics = function(options) {
+    var ui = WindowMaker.show('user-analytics', {
+      'initialUpdate': false
+    });
+    var widget = ui.widget;
+    widget.setUserId(options.userId);
+    widget.setStartDate(options.startDate);
+    widget.setEndDate(options.endDate);
+    widget.refresh();
   };
 
   var openUserProficiency = function() {

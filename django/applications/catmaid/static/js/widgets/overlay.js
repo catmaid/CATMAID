@@ -2072,6 +2072,60 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodeCoordinatesInDB = functio
   return promise;
 };
 
+/**
+ * Create and return a virtual node. It is actually non-existant and the given
+ * child and parent are connected directly. However, both of them (!) are not
+ * part of the current section. The node will be placed on the XY plane of the
+ * given Z. If child and parent have the same Z, null is returned.
+ */
+function createVirtualNode(graphics, child, parent, stackViewer)
+{
+  // Make sure child and parent are at different sections
+  if (child.z === parent.z) {
+    console.log('Child and parent have same Z, can\'t create virtual node.');
+    return null;
+  }
+
+  var z = stackViewer.z;
+
+  // Define X and Y so that they are on the intersection of the line between
+  // child and parent and the current section.
+  var pos = CATMAID.tools.intersectLineWithZPlane(child.x, child.y, child.z,
+      parent.x, parent.y, parent.z, z);
+
+  // The ID should be different for the the same child and parent in different
+  // Z sections to distinguish virtual nodes on different sections. Therefore,
+  // the complete location is part of the ID.
+  var xp = stackViewer.primaryStack.stackToProjectX(z, pos[1], pos[0]);
+  var yp = stackViewer.primaryStack.stackToProjectY(z, pos[1], pos[0]);
+  var zp = stackViewer.primaryStack.stackToProjectZ(z, pos[1], pos[0]);
+  var id = SkeletonAnnotations.getVirtualNodeID(child.id, parent.id, xp, yp, zp);
+
+  if (child.radius && parent.radius) {
+    var a = (parent.z - z)/(parent.z - child.z);
+    var r = parent.radius + a * (child.radius - parent.radius);
+  } else {
+    var r = -1;
+  }
+  var c = 5;
+
+  var vn = graphics.newNode(id, parent, parent.id, r, pos[0], pos[1], z, 0, c,
+      child.skeleton_id, child.edition_time, child.user_id);
+
+  // Update child information of virtual node and parent as if the virtual
+  // node was a real node. That is, replace the original child of the parent
+  // with the virtual node, and add the original child as child of the virtual
+  // node.
+  delete parent.children[child.id];
+  parent.numberOfChildren--;
+  parent.addChildNode(vn);
+  child.parent = vn;
+  child.parent_id = id;
+  vn.addChildNode(child);
+
+  return vn;
+}
+
 
 /**
  * Recreate all nodes (or reuse existing ones if possible).
@@ -2255,60 +2309,6 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
     CATMAID.statusBar.replaceLast("*WARNING*: " + msg);
     CATMAID.warn(msg);
     this.trigger(this.EVENT_HIT_NODE_DISPLAY_LIMIT);
-  }
-
-  /**
-   * Create and return a virtual node. It is actually non-existant and the given
-   * child and parent are connected directly. However, both of them (!) are not
-   * part of the current section. The node will be placed on the XY plane of the
-   * given Z. If child and parent have the same Z, null is returned.
-   */
-  function createVirtualNode(graphics, child, parent, stackViewer)
-  {
-    // Make sure child and parent are at different sections
-    if (child.z === parent.z) {
-      console.log('Child and parent have same Z, can\'t create virtual node.');
-      return null;
-    }
-
-    var z = stackViewer.z;
-
-    // Define X and Y so that they are on the intersection of the line between
-    // child and parent and the current section.
-    var pos = CATMAID.tools.intersectLineWithZPlane(child.x, child.y, child.z,
-        parent.x, parent.y, parent.z, z);
-
-    // The ID should be different for the the same child and parent in different
-    // Z sections to distinguish virtual nodes on different sections. Therefore,
-    // the complete location is part of the ID.
-    var xp = stackViewer.primaryStack.stackToProjectX(z, pos[1], pos[0]);
-    var yp = stackViewer.primaryStack.stackToProjectY(z, pos[1], pos[0]);
-    var zp = stackViewer.primaryStack.stackToProjectZ(z, pos[1], pos[0]);
-    var id = SkeletonAnnotations.getVirtualNodeID(child.id, parent.id, xp, yp, zp);
-
-    if (child.radius && parent.radius) {
-      var a = (parent.z - z)/(parent.z - child.z);
-      var r = parent.radius + a * (child.radius - parent.radius);
-    } else {
-      var r = -1;
-    }
-    var c = 5;
-
-    var vn = graphics.newNode(id, parent, parent.id, r, pos[0], pos[1], z, 0, c,
-        child.skeleton_id, child.edition_time, child.user_id);
-
-    // Update child information of virtual node and parent as if the virtual
-    // node was a real node. That is, replace the original child of the parent
-    // with the virtual node, and add the original child as child of the virtual
-    // node.
-    delete parent.children[child.id];
-    parent.numberOfChildren--;
-    parent.addChildNode(vn);
-    child.parent = vn;
-    child.parent_id = id;
-    vn.addChildNode(child);
-
-    return vn;
   }
 };
 

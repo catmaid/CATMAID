@@ -28,6 +28,10 @@ Miscellaneous:
 - Pressing F6 will now open a dialog which allows opening a widget based on its
   short name (e.g. neuron-dendrogram).
 
+- A small system check widget has been added, mainly useful for development. It
+  currently only supports FPS measurement and can be opened by pressing F6 and
+  entering "system-check".
+
 
 ### Bug fixes
 

@@ -25,6 +25,9 @@ Miscellaneous:
   the Project Statistics Widget to show a User Analytics window for the
   respective user and currently selected time frame.
 
+- Pressing F6 will now open a dialog which allows opening a widget based on its
+  short name (e.g. neuron-dendrogram).
+
 
 ### Bug fixes
 

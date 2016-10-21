@@ -139,6 +139,18 @@
         }));
     }
 
+    editToolActions.push(new CATMAID.Action({
+      helpText: "Open widget",
+      keyShortcuts: {
+        'F6': [ 117 ]
+      },
+      run: function (e) {
+        var dialog = new CATMAID.OpenWidgetDialog();
+        dialog.show();
+        return true;
+      }
+    }));
+
     return editToolActions;
   };
 

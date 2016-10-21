@@ -3257,6 +3257,14 @@ var WindowMaker = new function()
       return createWidget(instance);
     };
   };
+
+  /**
+   *  * Get a list of all available widget names.
+   *   */
+  this.getAvailableWidgetNames = function() {
+      return Object.keys(creators);
+  };
+
 }();
 
 

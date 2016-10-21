@@ -3621,7 +3621,7 @@
 
     /**
      * Execute a function for every skeleton and one for each of its pickable
-     * elements (defined in fields.
+     * elements (defined in fields).
      */
     function mapToPickables(space, skeletons, fnSkeleton, fnPickable) {
       var fields = ['radiusVolumes'];

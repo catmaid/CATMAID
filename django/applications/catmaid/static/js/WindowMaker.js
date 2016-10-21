@@ -237,101 +237,6 @@ var WindowMaker = new function()
     return {window: win, widget: null};
   };
 
-  var createAnalyzeArbor = function() {
-    var AA = new AnalyzeArbor();
-    var win = new CMWWindow(AA.getName());
-    var content = win.getFrame();
-    content.style.backgroundColor = "#ffffff";
-
-    var buttons = document.createElement("div");
-
-    buttons.appendChild(document.createTextNode('From'));
-    buttons.appendChild(CATMAID.skeletonListSources.createSelect(AA));
-
-    var load = document.createElement('input');
-    load.setAttribute("type", "button");
-    load.setAttribute("value", "Append");
-    load.onclick = AA.loadSource.bind(AA);
-    buttons.appendChild(load);
-
-    var clear = document.createElement('input');
-    clear.setAttribute("type", "button");
-    clear.setAttribute("value", "Clear");
-    clear.onclick = AA.clear.bind(AA);
-    buttons.appendChild(clear);
-
-    var update = document.createElement('input');
-    update.setAttribute("type", "button");
-    update.setAttribute("value", "Refresh");
-    update.onclick = AA.update.bind(AA);
-    buttons.appendChild(update);
-
-    var options = document.createElement('input');
-    options.setAttribute("type", "button");
-    options.setAttribute("value", "Options");
-    options.onclick = AA.adjustOptions.bind(AA);
-    buttons.appendChild(options);
-
-    var pies = document.createElement('input');
-    pies.setAttribute("type", "button");
-    pies.setAttribute("value", "Export charts as SVG");
-    pies.onclick = AA.exportSVG.bind(AA);
-    buttons.appendChild(pies);
-
-    content.appendChild(buttons);
-
-    var container = createContainer("table_analyze_arbor_widget" + AA.widgetID);
-    content.appendChild(container);
-
-    container.innerHTML =
-      '<table cellpadding="0" cellspacing="0" border="0" class="display" id="analyzearbor' + AA.widgetID + '">' +
-        '<thead>' +
-          '<tr>' +
-            '<th rowspan="2">Neuron name</th>' +
-            '<th colspan="5">Arbor</th>' +
-            '<th colspan="5">Backbone</th>' +
-            '<th colspan="5">Dendrites</th>' +
-            '<th colspan="5">Axon terminals</th>' +
-          '</tr>' +
-          '<tr>' +
-            '<th>Cable (nm)</th>' +
-            '<th>Inputs</th>' +
-            '<th>Outputs</th>' +
-            '<th>Time (min)</th>' +
-            '<th>Mito -chondria</th>' +
-            '<th>Cable (nm)</th>' +
-            '<th>Inputs</th>' +
-            '<th>Outputs</th>' +
-            '<th>Time (min)</th>' +
-            '<th>Mito -chondria</th>' +
-            '<th>Cable (nm)</th>' +
-            '<th>Inputs</th>' +
-            '<th>Outputs</th>' +
-            '<th>Time (min)</th>' +
-            '<th>Mito -chondria</th>' +
-            '<th>Cable (nm)</th>' +
-            '<th>Inputs</th>' +
-            '<th>Outputs</th>' +
-            '<th>Time (min)</th>' +
-            '<th>Mito -chondria</th>' +
-          '</tr>' +
-        '</thead>' +
-      '</table>';
-
-    container.appendChild(document.createElement('br'));
-    container.appendChild(createContainer('analyze_widget_charts_div' + AA.widgetID));
-
-    addListener(win, container, 'analyze_arbor' + AA.widgetID, AA.destroy.bind(AA));
-
-    addLogic(win);
-
-    CATMAID.skeletonListSources.updateGUI();
-    AA.init();
-
-    return {window: win, widget: AA};
-  };
-
-
   var createNeuronDendrogram = function(ndInstance) {
     var ND = ndInstance ? ndInstance : new NeuronDendrogram();
     var win = new CMWWindow(ND.getName());
@@ -3105,7 +3010,6 @@ var WindowMaker = new function()
     "neuron-annotations": createNeuronAnnotationsWindow,
     "neuron-navigator": createNeuronNavigatorWindow,
     "settings": createSettingsWindow,
-    "analyze-arbor": createAnalyzeArbor,
     "neuron-dendrogram": createNeuronDendrogram,
     "connectivity-matrix": createConnectivityMatrixWindow,
     "synapse-plot": createSynapsePlotWindow,

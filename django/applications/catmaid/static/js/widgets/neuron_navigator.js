@@ -2,7 +2,6 @@
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
   CATMAID
-  AnalyzeArbor,
   Arbor,
   InstanceRegistry,
   NeuronDendrogram,
@@ -1996,7 +1995,7 @@
     analyze_button.onclick = (function() {
       WindowMaker.create('analyze-arbor');
       // Assumes only one skeleton per neuron
-      AnalyzeArbor.prototype.getLastInstance().append(this.getSelectedSkeletonModels());
+      CATMAID.AnalyzeArbor.prototype.getLastInstance().append(this.getSelectedSkeletonModels());
     }).bind(this);
 
     var activate_button = document.createElement('input');

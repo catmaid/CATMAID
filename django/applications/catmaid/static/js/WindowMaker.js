@@ -237,74 +237,6 @@ var WindowMaker = new function()
     return {window: win, widget: null};
   };
 
-  var createSkeletonMeasurementsTable = function()
-  {
-    var SMT = new CATMAID.SkeletonMeasurementsTable();
-    var win = new CMWWindow("Skeleton Measurements Table " + SMT.widgetID);
-    var content = win.getFrame();
-    content.style.backgroundColor = "#ffffff";
-
-    var buttons = document.createElement("div");
-
-    buttons.appendChild(document.createTextNode('From'));
-    buttons.appendChild(CATMAID.skeletonListSources.createSelect(SMT));
-
-    var load = document.createElement('input');
-    load.setAttribute("type", "button");
-    load.setAttribute("value", "Append");
-    load.onclick = SMT.loadSource.bind(SMT);
-    buttons.appendChild(load);
-
-    var clear = document.createElement('input');
-    clear.setAttribute("type", "button");
-    clear.setAttribute("value", "Clear");
-    clear.onclick = SMT.clear.bind(SMT);
-    buttons.appendChild(clear);
-
-    var update = document.createElement('input');
-    update.setAttribute("type", "button");
-    update.setAttribute("value", "Refresh");
-    update.onclick = SMT.update.bind(SMT);
-    buttons.appendChild(update);
-
-    var options = document.createElement('input');
-    options.setAttribute("type", "button");
-    options.setAttribute("value", "Options");
-    options.onclick = SMT.adjustOptions.bind(SMT);
-    buttons.appendChild(options);
-
-    var csv = document.createElement('input');
-    csv.setAttribute("type", "button");
-    csv.setAttribute("value", "Export CSV");
-    csv.onclick = SMT.exportCSV.bind(SMT);
-    buttons.appendChild(csv);
-
-    var container = createContainer("skeleton_measurements_widget" + SMT.widgetID);
-
-    content.appendChild(buttons);
-    content.appendChild(container);
-
-    var headings = '<tr>' + SMT.labels.map(function(label) { return '<th>' + label + '</th>'; }).join('') + '</tr>';
-
-    container.innerHTML =
-      '<table cellpadding="0" cellspacing="0" border="0" class="display" id="skeleton_measurements_table' + SMT.widgetID + '">' +
-        '<thead>' + headings + '</thead>' +
-        '<tfoot>' + headings + '</tfoot>' +
-        '<tbody>' +
-          '<tr>' + SMT.labels.map(function() { return '<td></td>'; }).join('') + '</tr>' +
-        '</tbody>' +
-      '</table>';
-    // ABOVE, notice the table needs one dummy row
-
-    addListener(win, container, null, SMT.destroy.bind(SMT));
-    addLogic(win);
-
-    SMT.init(); // Must be invoked after the table template has been created above.
-
-    return {window: win, widget: SMT};
-  };
-
-
   var createAnalyzeArbor = function() {
     var AA = new AnalyzeArbor();
     var win = new CMWWindow(AA.getName());
@@ -3158,7 +3090,6 @@ var WindowMaker = new function()
     "node-table": createNodeTableWindow,
     "neuron-staging-area": createStagingListWindow,
     "create-connector-selection": createConnectorSelectionWindow,
-    "skeleton-measurements-table": createSkeletonMeasurementsTable,
     "graph-widget": createGraphWindow,
     "connectivity-graph-plot": createConnectivityGraphPlot,
     "assemblygraph-widget": createAssemblyGraphWindow,

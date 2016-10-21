@@ -28,6 +28,63 @@
     return "Measurements " + this.widgetID;
   };
 
+  SkeletonMeasurementsTable.prototype.getWidgetConfiguration = function() {
+    return {
+      controlsID: "skeleton_measurements_table_controls" + this.widgetID,
+      contentID: "skeleton_measurements_table" + this.widgetID,
+      createControls: function(controls) {
+        controls.appendChild(document.createTextNode('From'));
+        controls.appendChild(CATMAID.skeletonListSources.createSelect(this));
+
+        var load = document.createElement('input');
+        load.setAttribute("type", "button");
+        load.setAttribute("value", "Append");
+        load.onclick = this.loadSource.bind(this);
+        controls.appendChild(load);
+
+        var clear = document.createElement('input');
+        clear.setAttribute("type", "button");
+        clear.setAttribute("value", "Clear");
+        clear.onclick = this.clear.bind(this);
+        controls.appendChild(clear);
+
+        var update = document.createElement('input');
+        update.setAttribute("type", "button");
+        update.setAttribute("value", "Refresh");
+        update.onclick = this.update.bind(this);
+        controls.appendChild(update);
+
+        var options = document.createElement('input');
+        options.setAttribute("type", "button");
+        options.setAttribute("value", "Options");
+        options.onclick = this.adjustOptions.bind(this);
+        controls.appendChild(options);
+
+        var csv = document.createElement('input');
+        csv.setAttribute("type", "button");
+        csv.setAttribute("value", "Export CSV");
+        csv.onclick = this.exportCSV.bind(this);
+        controls.appendChild(csv);
+      },
+      createContent: function(content) {
+        var headings = '<tr>' + this.labels.map(function(label) { return '<th>' + label + '</th>'; }).join('') + '</tr>';
+
+        content.innerHTML =
+          '<table cellpadding="0" cellspacing="0" border="0" class="display" id="skeleton_measurements_table' + this.widgetID + '">' +
+            '<thead>' + headings + '</thead>' +
+            '<tfoot>' + headings + '</tfoot>' +
+            '<tbody>' +
+              '<tr>' + this.labels.map(function() { return '<td></td>'; }).join('') + '</tr>' +
+            '</tbody>' +
+          '</table>';
+        // ABOVE, notice the table needs one dummy row
+      },
+      init: function() {
+        this.init();
+      }
+    };
+  };
+
   SkeletonMeasurementsTable.prototype.destroy = function() {
     this.clear();
     this.table = null;
@@ -174,7 +231,7 @@
 
     var n_labels = this.labels.length;
 
-    this.table = $('#skeleton_measurements_table' + this.widgetID).dataTable({
+    this.table = $('table#skeleton_measurements_table' + this.widgetID).dataTable({
         // http://www.datatables.net/usage/options
         "bDestroy": true,
         "sDom": '<"H"lr>t<"F"ip>',
@@ -228,5 +285,11 @@
 
   // Make measurement table available in CATMAID namespace
   CATMAID.SkeletonMeasurementsTable = SkeletonMeasurementsTable;
+
+  // Register widget with CATMAID
+  CATMAID.registerWidget({
+    key: "skeleton-measurements-table",
+    creator: SkeletonMeasurementsTable
+  });
 
 })(CATMAID);

@@ -64,6 +64,250 @@ NeuronDendrogram.prototype.getName = function()
   return "Neuron Dendrogram " + this.widgetID;
 };
 
+NeuronDendrogram.prototype.getWidgetConfiguration = function() {
+  return {
+    controlsID: "dendrogram_buttons" + this.widgetID,
+    contentID: "dendrogram" + this.widgetID,
+    createControls: function(controls) {
+      var self = this;
+
+      var load = document.createElement('input');
+      load.setAttribute("type", "button");
+      load.setAttribute("value", "Display active skeleton");
+      load.onclick = this.loadActiveSkeleton.bind(this);
+      controls.appendChild(load);
+
+      var exportSVG = document.createElement('input');
+      exportSVG.setAttribute("type", "button");
+      exportSVG.setAttribute("value", "Export SVG");
+      exportSVG.onclick = this.exportSVG.bind(this);
+      controls.appendChild(exportSVG);
+
+      var highlightTags = document.createElement('input');
+      highlightTags.setAttribute("type", "button");
+      highlightTags.setAttribute("value", "Highlight tags");
+      highlightTags.onclick = this.chooseHighlightTags.bind(this);
+      controls.appendChild(highlightTags);
+
+      var minStrahler = document.createElement('label');
+      minStrahler.appendChild(document.createTextNode('Collapse Strahler <'));
+      var minStrahlerInput = document.createElement('input');
+      minStrahlerInput.setAttribute('type', 'number');
+      minStrahlerInput.setAttribute('min', 1);
+      minStrahlerInput.setAttribute('max', 999);
+      minStrahlerInput.setAttribute('id', 'dendrogram-minStrahler-' + this.widgetID);
+      if (this.minStrahler) {
+        minStrahlerInput.value = this.minStrahler;
+      }
+      minStrahlerInput.onchange = function(e) {
+          self.setMinStrahler(parseInt(this.value, 10));
+          self.update();
+      };
+      minStrahlerInput.oninput = function(e) {
+        if (13 === e.keyCode) {
+          self.update();
+        } else {
+          self.setMinStrahler(parseInt(this.value, 10));
+        }
+      };
+      minStrahlerInput.onwheel = function(e) {
+          if ((e.deltaX + e.deltaY) > 0) {
+            if (this.value > 1) {
+              this.value = parseInt(this.value, 10) - 1;
+              this.onchange();
+            }
+          } else {
+            this.value = parseInt(this.value, 10) + 1;
+            this.onchange();
+          }
+
+          return false;
+      };
+      minStrahler.appendChild(minStrahlerInput);
+      controls.appendChild(minStrahler);
+
+      var hSpacingFactor = document.createElement('label');
+      hSpacingFactor.appendChild(document.createTextNode('H Space Factor'));
+      var hSpacingFactorInput = document.createElement('input');
+      hSpacingFactorInput.setAttribute('type', 'number');
+      hSpacingFactorInput.setAttribute('min', 0.01);
+      hSpacingFactorInput.setAttribute('max', 10);
+      hSpacingFactorInput.setAttribute('step', 0.01);
+      hSpacingFactorInput.setAttribute('id', 'dendrogram-hSpacingFactor-' + this.widgetID);
+      if (this.hNodeSpaceFactor) {
+        hSpacingFactorInput.value = this.hNodeSpaceFactor.toFixed(2);
+      }
+      hSpacingFactorInput.onchange = function(e) {
+          self.setHSpaceFactor(parseFloat(this.value));
+          self.update();
+      };
+      hSpacingFactorInput.oninput = function(e) {
+        if (13 === e.keyCode) {
+          self.update();
+        } else {
+          self.setHSpaceFactor(parseFloat(this.value));
+        }
+      };
+      hSpacingFactorInput.onwheel = function(e) {
+          if ((e.deltaX + e.deltaY) > 0) {
+            if (this.value > 0.01) {
+              this.value = (parseFloat(this.value) - 0.01).toFixed(2);
+              this.onchange();
+            }
+          } else {
+            this.value = (parseFloat(this.value) + 0.01).toFixed(2);
+            this.onchange();
+          }
+
+          return false;
+      };
+      hSpacingFactor.appendChild(hSpacingFactorInput);
+      controls.appendChild(hSpacingFactor);
+
+      var vSpacingFactor = document.createElement('label');
+      vSpacingFactor.appendChild(document.createTextNode('V Space Factor'));
+      var vSpacingFactorInput = document.createElement('input');
+      vSpacingFactorInput.setAttribute('type', 'number');
+      vSpacingFactorInput.setAttribute('min', 0.01);
+      vSpacingFactorInput.setAttribute('max', 10);
+      vSpacingFactorInput.setAttribute('step', 0.01);
+      vSpacingFactorInput.setAttribute('id', 'dendrogram-vSpacingFactor-' + this.widgetID);
+      if (this.hNodeSpaceFactor) {
+        vSpacingFactorInput.value = this.vNodeSpaceFactor.toFixed(2);
+      }
+      vSpacingFactorInput.onchange = function(e) {
+          self.setVSpaceFactor(parseFloat(this.value));
+          self.update();
+      };
+      vSpacingFactorInput.oninput = function(e) {
+        if (13 === e.keyCode) {
+          self.update();
+        } else {
+          self.setVSpaceFactor(parseFloat(this.value));
+        }
+      };
+      vSpacingFactorInput.onwheel = function(e) {
+          if ((e.deltaX + e.deltaY) > 0) {
+            if (this.value > 0.01) {
+              this.value = (parseFloat(this.value) - 0.01).toFixed(2);
+              this.onchange();
+            }
+          } else {
+            this.value = (parseFloat(this.value) + 0.01).toFixed(2);
+            this.onchange();
+          }
+
+          return false;
+      };
+      vSpacingFactor.appendChild(vSpacingFactorInput);
+      controls.appendChild(vSpacingFactor);
+
+      var collapse = document.createElement('label');
+      var collapseInput = document.createElement('input');
+      collapseInput.setAttribute('type', 'checkbox');
+      if (this.collapsed) {
+        collapseInput.setAttribute('checked', 'checked');
+      }
+      collapseInput.onchange = function() {
+        self.setCollapsed(this.checked);
+        self.update();
+      };
+      collapse.appendChild(collapseInput);
+      collapse.appendChild(document.createTextNode('Only branches and tagged nodes'));
+      controls.appendChild(collapse);
+
+      var collapseNotABranch = document.createElement('label');
+      var collapseNotABranchInput = document.createElement('input');
+      collapseNotABranchInput.setAttribute('type', 'checkbox');
+      if (this.collapseNotABranch) {
+        collapseNotABranchInput.setAttribute('checked', 'checked');
+      }
+      collapseNotABranchInput.onchange = function() {
+        self.setCollapseNotABranch(this.checked);
+        self.update();
+      };
+      collapseNotABranch.appendChild(collapseNotABranchInput);
+      collapseNotABranch.appendChild(document.createTextNode('Collapse \"not a branch\" nodes'));
+      controls.appendChild(collapseNotABranch);
+
+      var naming = document.createElement('label');
+      var namingInput = document.createElement('input');
+      namingInput.setAttribute('type', 'checkbox');
+      if (this.showNodeIDs) {
+        namingInput.setAttribute('checked', 'checked');
+      }
+      namingInput.onchange = function() {
+        self.setShowNodeIds(this.checked);
+        self.update();
+      };
+      naming.appendChild(namingInput);
+      naming.appendChild(document.createTextNode('Show node IDs'));
+      controls.appendChild(naming);
+
+      var showTags = document.createElement('label');
+      var showTagsInput = document.createElement('input');
+      showTagsInput.setAttribute('type', 'checkbox');
+      if (this.showTags) {
+        showTagsInput.setAttribute('checked', 'checked');
+      }
+      showTagsInput.onchange = function() {
+        self.setShowTags(this.checked);
+        self.update();
+      };
+      showTags.appendChild(showTagsInput);
+      showTags.appendChild(document.createTextNode('Show tags'));
+      controls.appendChild(showTags);
+
+      var showStrahler = document.createElement('label');
+      var showStrahlerInput = document.createElement('input');
+      showStrahlerInput.setAttribute('type', 'checkbox');
+      if (this.showStrahler) {
+        showStrahlerInput.setAttribute('checked', 'checked');
+      }
+      showStrahlerInput.onchange = function() {
+        self.setShowStrahler(this.checked);
+        self.update();
+      };
+      showStrahler.appendChild(showStrahlerInput);
+      showStrahler.appendChild(document.createTextNode('Show Strahler'));
+      controls.appendChild(showStrahler);
+
+      var warnCollapsed = document.createElement('label');
+      var warnCollapsedInput = document.createElement('input');
+      warnCollapsedInput.setAttribute('type', 'checkbox');
+      if (this.warnCollapsed) {
+        warnCollapsedInput.setAttribute('checked', 'checked');
+      }
+      warnCollapsedInput.onchange = function() {
+        self.setWarnCollapsed(this.checked);
+        self.update();
+      };
+      warnCollapsed.appendChild(warnCollapsedInput);
+      warnCollapsed.appendChild(document.createTextNode('Warn if collapsed'));
+      warnCollapsed.setAttribute('alt', 'If activated, a warning is displayed ' +
+          'everytime one tries to select a node that is currently collapsed.');
+      controls.appendChild(warnCollapsed);
+
+      var radial = document.createElement('label');
+      var radialInput = document.createElement('input');
+      radialInput.setAttribute('type', 'checkbox');
+      if (this.radialDisplay) {
+        radialInput.setAttribute('checked', 'checked');
+      }
+      radialInput.onchange = function() {
+        self.setRadialDisplay(this.checked);
+        self.update();
+      };
+      radial.appendChild(radialInput);
+      radial.appendChild(document.createTextNode('Radial'));
+      controls.appendChild(radial);
+    },
+    createContent: function(content) {
+      this.init(content);
+    }
+  };
+};
+
 NeuronDendrogram.prototype.destroy = function() {
   SkeletonAnnotations.off(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
       this.selectActiveNode, this);
@@ -863,3 +1107,9 @@ NeuronDendrogram.prototype.setVSpaceFactor = function(value)
 {
   this.vNodeSpaceFactor = value;
 };
+
+// Register widget with CATMAID
+CATMAID.registerWidget({
+  key: "neuron-dendrogram",
+  creator: NeuronDendrogram
+});

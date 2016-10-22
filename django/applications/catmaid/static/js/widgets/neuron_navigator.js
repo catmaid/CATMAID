@@ -2057,9 +2057,8 @@
 
     dendrogram_button.onclick = (function() {
       if (this.skeleton_ids.length > 0) {
-        var ND = new NeuronDendrogram();
-        WindowMaker.create('neuron-dendrogram', ND);
-        ND.loadSkeleton(this.skeleton_ids[0]);
+        var handles = WindowMaker.create('neuron-dendrogram');
+        handles.widget.loadSkeleton(this.skeleton_ids[0]);
       }
     }).bind(this);
 

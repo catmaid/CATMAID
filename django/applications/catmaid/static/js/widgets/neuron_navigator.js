@@ -4,7 +4,6 @@
   CATMAID
   Arbor,
   InstanceRegistry,
-  NeuronDendrogram,
   project,
   requestQueue,
   SkeletonAnnotations,

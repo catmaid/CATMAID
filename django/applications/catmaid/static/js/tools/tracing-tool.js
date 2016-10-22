@@ -1387,7 +1387,7 @@
   TracingTool.actions = [
 
     new CATMAID.Action({
-      helpText: "Review system",
+      helpText: "Review Widget: Review existing skeletons",
       buttonID: "data_button_review",
       buttonName: 'table_review',
       run: function (e) {
@@ -1397,7 +1397,7 @@
     }),
 
     new CATMAID.Action({
-      helpText: "Notifications",
+      helpText: "Notifications: Accept or reject action requests by other users",
       buttonID: "data_button_notifications",
       buttonName: 'table_notifications',
       run: function (e) {
@@ -1407,7 +1407,7 @@
     }),
 
     new CATMAID.Action({
-      helpText: "Connectivity widget",
+      helpText: "Connectivity Widget: List all connected partners to one or more skeletons",
       buttonID: "data_button_connectivity",
       buttonName: 'table_connectivity',
       run: function (e) {
@@ -1417,7 +1417,7 @@
     }),
 
     new CATMAID.Action({
-      helpText: "Connectivity Matrix",
+      helpText: "Connectivity Matrix: Quantify connections between skeletons",
       buttonID: "data_button_connectivity_matrix",
       buttonName: 'adj_matrix',
       run: function (e) {
@@ -1427,7 +1427,7 @@
     }),
 
     new CATMAID.Action({
-      helpText: "Graph widget",
+      helpText: "Graph Widget: Work with graph representation of connectivity between skeletons",
       buttonID: "data_button_compartment_graph_widget",
       buttonName: 'graph_widget',
       run: function (e) {
@@ -1447,7 +1447,7 @@
     }),
 
     new CATMAID.Action({
-      helpText: "Morphology Plot",
+      helpText: "Morphology Plot: Plot skeleton properties over distance from root node",
       buttonID: "data_button_morphology_plot",
       buttonName: 'morphology_plot',
       run: function (e) {
@@ -1457,7 +1457,7 @@
     }),
 
     new CATMAID.Action({
-      helpText: "Venn Diagram",
+      helpText: "Venn Diagram: Find overlap and difference between sets of skeletons",
       buttonID: "venn_diagram_button",
       buttonName: 'venn',
       run: function (e) {
@@ -1467,7 +1467,7 @@
     }),
 
     new CATMAID.Action({
-      helpText: "Selection Table",
+      helpText: "Selection Table: Manage lists of skeletons",
       buttonID: "data_button_neuron_staging_area_widget",
       buttonName: 'neuron_staging',
       run: function (e) {
@@ -1477,7 +1477,7 @@
     }),
 
     new CATMAID.Action({
-      helpText: "Search",
+      helpText: "Global Search: Search on skeleton and neuron properties as well as labels",
       buttonID: "data_button_search",
       buttonName: 'search',
       run: function (e) {
@@ -1487,7 +1487,7 @@
     }),
 
     new CATMAID.Action({
-      helpText: "Navigate Neurons",
+      helpText: "Neuron Navigator: View details and analytics of individual skeletons",
       buttonID: 'data_button_neuron_navigator',
       buttonName: 'neuron_navigator',
       run: function (e) {
@@ -1497,7 +1497,7 @@
     }),
 
     new CATMAID.Action({
-      helpText: "Query Neurons by Annotations",
+      helpText: "Neuron Search: Search for skeletons and annotations based on names, annotations, contributors and timestamps",
       buttonID: "data_button_query_neurons",
       buttonName: 'query_neurons',
       run: function (e) {
@@ -1507,7 +1507,7 @@
     }),
 
     new CATMAID.Action({
-      helpText: "Show 3D WebGL view",
+      helpText: "3D Viewer: 3D visualization of selected skeletons",
       buttonID: "view_3d_webgl_button",
       buttonName: '3d-view-webgl',
       run: function (e) {
@@ -1516,7 +1516,7 @@
     }),
 
     new CATMAID.Action({
-      helpText: "Show project statistics",
+      helpText: "Project Statistics: Display user contribution statistics",
       buttonID: "data_button_stats",
       buttonName: 'stats',
       run: function (e) {
@@ -1526,7 +1526,7 @@
     }),
 
     new CATMAID.Action({
-      helpText: "Show log",
+      helpText: "Log Widget: Show record of user activity",
       buttonID: "data_button_table_log",
       buttonName: 'table_log',
       run: function (e) {
@@ -1536,7 +1536,7 @@
     }),
 
     new CATMAID.Action({
-      helpText: "Synapse Distribution Plot",
+      helpText: "Synapse Distribution Plot: Show synapse distribution with partners over distance from root node",
       buttonID: "data_button_synapse_plot",
       buttonName: 'synapse_plot',
       run: function (e) {

@@ -495,7 +495,7 @@ the selected neurons.
 
   // Add an action to the tracing tool that will open this widget
   CATMAID.TracingTool.actions.push(new CATMAID.Action({
-      helpText: "Export widget",
+      helpText: "Export Widget: Export skeletons in various formats",
       buttonID: "data_button_export_widget",
       buttonName: 'export_widget',
     run: function (e) {

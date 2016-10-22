@@ -882,7 +882,7 @@
 
   // Add an action to the tracing tool that will open this widget
   CATMAID.TracingTool.actions.push(new CATMAID.Action({
-    helpText: "Manage spatial volumes",
+    helpText: "Volume Manger: Create and manage volumes based on skeletons and spatial properties",
     buttonID: "data_button_volume_manager",
     buttonName: 'volume_manager',
     iconURL: CATMAID.makeStaticURL('images/volume-manager.svg'),

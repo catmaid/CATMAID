@@ -198,6 +198,7 @@
         hSpacingFactorInput.setAttribute('max', 10);
         hSpacingFactorInput.setAttribute('step', 0.01);
         hSpacingFactorInput.setAttribute('id', 'dendrogram-hSpacingFactor-' + this.widgetID);
+        hSpacingFactorInput.style.width = '5em';
         if (this.hNodeSpaceFactor) {
           hSpacingFactorInput.value = this.hNodeSpaceFactor.toFixed(2);
         }
@@ -236,6 +237,7 @@
         vSpacingFactorInput.setAttribute('max', 10);
         vSpacingFactorInput.setAttribute('step', 0.01);
         vSpacingFactorInput.setAttribute('id', 'dendrogram-vSpacingFactor-' + this.widgetID);
+        vSpacingFactorInput.style.width = '5em';
         if (this.hNodeSpaceFactor) {
           vSpacingFactorInput.value = this.vNodeSpaceFactor.toFixed(2);
         }

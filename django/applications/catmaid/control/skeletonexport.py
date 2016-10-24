@@ -171,7 +171,10 @@ def compact_skeleton_detail(request, project_id=None, skeleton_id=None):
 @requires_user_role(UserRole.Browse)
 def compact_skeleton(request, project_id=None, skeleton_id=None, with_connectors=None, with_tags=None):
     """Get a compact treenode representation of a skeleton, optionally with the
-    history of individual nodes and connectors.
+    history of individual nodes and connectors. This does exactly the same as
+    compact_skeleton_detail(), but provides a slightly different interface. This
+    is done to provide backward compatibility, because many external tools still
+    use this endpoint.
     """
     # Sanitize
     project_id = int(project_id)

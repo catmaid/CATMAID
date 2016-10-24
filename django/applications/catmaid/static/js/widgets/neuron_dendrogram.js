@@ -73,23 +73,27 @@
       createControls: function(controls) {
         var self = this;
 
+        // Create tabs
+        var tabs = CATMAID.DOM.addTabGroup(controls,
+            'dendrogram_buttons' + this.widgetID, ['Main', 'Display']);
+
         var load = document.createElement('input');
         load.setAttribute("type", "button");
         load.setAttribute("value", "Display active skeleton");
         load.onclick = this.loadActiveSkeleton.bind(this);
-        controls.appendChild(load);
+        tabs['Main'].appendChild(load);
 
         var exportSVG = document.createElement('input');
         exportSVG.setAttribute("type", "button");
         exportSVG.setAttribute("value", "Export SVG");
         exportSVG.onclick = this.exportSVG.bind(this);
-        controls.appendChild(exportSVG);
+        tabs['Main'].appendChild(exportSVG);
 
         var highlightTags = document.createElement('input');
         highlightTags.setAttribute("type", "button");
         highlightTags.setAttribute("value", "Highlight tags");
         highlightTags.onclick = this.chooseHighlightTags.bind(this);
-        controls.appendChild(highlightTags);
+        tabs['Main'].appendChild(highlightTags);
 
         var minStrahler = document.createElement('label');
         minStrahler.appendChild(document.createTextNode('Collapse Strahler <'));
@@ -126,7 +130,65 @@
             return false;
         };
         minStrahler.appendChild(minStrahlerInput);
-        controls.appendChild(minStrahler);
+        tabs['Main'].appendChild(minStrahler);
+
+        var collapse = document.createElement('label');
+        var collapseInput = document.createElement('input');
+        collapseInput.setAttribute('type', 'checkbox');
+        if (this.collapsed) {
+          collapseInput.setAttribute('checked', 'checked');
+        }
+        collapseInput.onchange = function() {
+          self.setCollapsed(this.checked);
+          self.update();
+        };
+        collapse.appendChild(collapseInput);
+        collapse.appendChild(document.createTextNode('Only branches and tagged nodes'));
+        tabs['Main'].appendChild(collapse);
+
+        var collapseNotABranch = document.createElement('label');
+        var collapseNotABranchInput = document.createElement('input');
+        collapseNotABranchInput.setAttribute('type', 'checkbox');
+        if (this.collapseNotABranch) {
+          collapseNotABranchInput.setAttribute('checked', 'checked');
+        }
+        collapseNotABranchInput.onchange = function() {
+          self.setCollapseNotABranch(this.checked);
+          self.update();
+        };
+        collapseNotABranch.appendChild(collapseNotABranchInput);
+        collapseNotABranch.appendChild(document.createTextNode('Collapse \"not a branch\" nodes'));
+        tabs['Main'].appendChild(collapseNotABranch);
+
+        var warnCollapsed = document.createElement('label');
+        var warnCollapsedInput = document.createElement('input');
+        warnCollapsedInput.setAttribute('type', 'checkbox');
+        if (this.warnCollapsed) {
+          warnCollapsedInput.setAttribute('checked', 'checked');
+        }
+        warnCollapsedInput.onchange = function() {
+          self.setWarnCollapsed(this.checked);
+          self.update();
+        };
+        warnCollapsed.appendChild(warnCollapsedInput);
+        warnCollapsed.appendChild(document.createTextNode('Warn if collapsed'));
+        warnCollapsed.setAttribute('alt', 'If activated, a warning is displayed ' +
+            'everytime one tries to select a node that is currently collapsed.');
+        tabs['Main'].appendChild(warnCollapsed);
+
+        var radial = document.createElement('label');
+        var radialInput = document.createElement('input');
+        radialInput.setAttribute('type', 'checkbox');
+        if (this.radialDisplay) {
+          radialInput.setAttribute('checked', 'checked');
+        }
+        radialInput.onchange = function() {
+          self.setRadialDisplay(this.checked);
+          self.update();
+        };
+        radial.appendChild(radialInput);
+        radial.appendChild(document.createTextNode('Radial'));
+        tabs['Main'].appendChild(radial);
 
         var hSpacingFactor = document.createElement('label');
         hSpacingFactor.appendChild(document.createTextNode('H Space Factor'));
@@ -164,7 +226,7 @@
             return false;
         };
         hSpacingFactor.appendChild(hSpacingFactorInput);
-        controls.appendChild(hSpacingFactor);
+        tabs['Display'].appendChild(hSpacingFactor);
 
         var vSpacingFactor = document.createElement('label');
         vSpacingFactor.appendChild(document.createTextNode('V Space Factor'));
@@ -202,35 +264,7 @@
             return false;
         };
         vSpacingFactor.appendChild(vSpacingFactorInput);
-        controls.appendChild(vSpacingFactor);
-
-        var collapse = document.createElement('label');
-        var collapseInput = document.createElement('input');
-        collapseInput.setAttribute('type', 'checkbox');
-        if (this.collapsed) {
-          collapseInput.setAttribute('checked', 'checked');
-        }
-        collapseInput.onchange = function() {
-          self.setCollapsed(this.checked);
-          self.update();
-        };
-        collapse.appendChild(collapseInput);
-        collapse.appendChild(document.createTextNode('Only branches and tagged nodes'));
-        controls.appendChild(collapse);
-
-        var collapseNotABranch = document.createElement('label');
-        var collapseNotABranchInput = document.createElement('input');
-        collapseNotABranchInput.setAttribute('type', 'checkbox');
-        if (this.collapseNotABranch) {
-          collapseNotABranchInput.setAttribute('checked', 'checked');
-        }
-        collapseNotABranchInput.onchange = function() {
-          self.setCollapseNotABranch(this.checked);
-          self.update();
-        };
-        collapseNotABranch.appendChild(collapseNotABranchInput);
-        collapseNotABranch.appendChild(document.createTextNode('Collapse \"not a branch\" nodes'));
-        controls.appendChild(collapseNotABranch);
+        tabs['Display'].appendChild(vSpacingFactor);
 
         var naming = document.createElement('label');
         var namingInput = document.createElement('input');
@@ -244,7 +278,7 @@
         };
         naming.appendChild(namingInput);
         naming.appendChild(document.createTextNode('Show node IDs'));
-        controls.appendChild(naming);
+        tabs['Display'].appendChild(naming);
 
         var showTags = document.createElement('label');
         var showTagsInput = document.createElement('input');
@@ -258,7 +292,7 @@
         };
         showTags.appendChild(showTagsInput);
         showTags.appendChild(document.createTextNode('Show tags'));
-        controls.appendChild(showTags);
+        tabs['Display'].appendChild(showTags);
 
         var showStrahler = document.createElement('label');
         var showStrahlerInput = document.createElement('input');
@@ -272,37 +306,10 @@
         };
         showStrahler.appendChild(showStrahlerInput);
         showStrahler.appendChild(document.createTextNode('Show Strahler'));
-        controls.appendChild(showStrahler);
+        tabs['Display'].appendChild(showStrahler);
 
-        var warnCollapsed = document.createElement('label');
-        var warnCollapsedInput = document.createElement('input');
-        warnCollapsedInput.setAttribute('type', 'checkbox');
-        if (this.warnCollapsed) {
-          warnCollapsedInput.setAttribute('checked', 'checked');
-        }
-        warnCollapsedInput.onchange = function() {
-          self.setWarnCollapsed(this.checked);
-          self.update();
-        };
-        warnCollapsed.appendChild(warnCollapsedInput);
-        warnCollapsed.appendChild(document.createTextNode('Warn if collapsed'));
-        warnCollapsed.setAttribute('alt', 'If activated, a warning is displayed ' +
-            'everytime one tries to select a node that is currently collapsed.');
-        controls.appendChild(warnCollapsed);
-
-        var radial = document.createElement('label');
-        var radialInput = document.createElement('input');
-        radialInput.setAttribute('type', 'checkbox');
-        if (this.radialDisplay) {
-          radialInput.setAttribute('checked', 'checked');
-        }
-        radialInput.onchange = function() {
-          self.setRadialDisplay(this.checked);
-          self.update();
-        };
-        radial.appendChild(radialInput);
-        radial.appendChild(document.createTextNode('Radial'));
-        controls.appendChild(radial);
+        // Initialize tabs
+        $(controls).tabs();
       },
       createContent: function(content) {
         this.init(content);

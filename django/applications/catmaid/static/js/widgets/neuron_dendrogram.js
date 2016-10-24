@@ -47,6 +47,9 @@
     this.hNodeSpaceFactor = 1.0;
     this.vNodeSpaceFactor = 1.0;
 
+    // Factor for the default line width
+    this.lineWidthFactor = 1.0;
+
     // Listen to change events of the active node and skeletons
     SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
         this.selectActiveNode, this);
@@ -269,6 +272,45 @@
         };
         vSpacingFactor.appendChild(vSpacingFactorInput);
         tabs['Display'].appendChild(vSpacingFactor);
+
+        var lineWidthFactor = document.createElement('label');
+        lineWidthFactor.appendChild(document.createTextNode('Line Width Factor'));
+        var lineWidthFactorInput = document.createElement('input');
+        lineWidthFactorInput.setAttribute('type', 'number');
+        lineWidthFactorInput.setAttribute('min', 0);
+        lineWidthFactorInput.setAttribute('step', 1);
+        lineWidthFactorInput.setAttribute('id', 'dendrogram-lineWidthFactor-' + this.widgetID);
+        lineWidthFactorInput.style.width = '5em';
+        if (this.lineWidthFactor) {
+          lineWidthFactorInput.value = this.lineWidthFactor.toFixed(1);
+        }
+        lineWidthFactorInput.onchange = function(e) {
+            self.lineWidthFactor = parseFloat(this.value);
+            self.update();
+        };
+        lineWidthFactorInput.oninput = function(e) {
+          if (13 === e.keyCode) {
+            self.update();
+          } else {
+            self.lineWidthFactor = parseFloat(this.value);
+          }
+        };
+        lineWidthFactorInput.onwheel = function(e) {
+          var step = Number(this.step);
+          if ((e.deltaX + e.deltaY) > 0) {
+            if (this.value > 0) {
+              this.value = (parseFloat(this.value) - step).toFixed(1);
+              this.onchange();
+            }
+          } else {
+            this.value = (parseFloat(this.value) + step).toFixed(1);
+            this.onchange();
+          }
+
+          return false;
+        };
+        lineWidthFactor.appendChild(lineWidthFactorInput);
+        tabs['Display'].appendChild(lineWidthFactor);
 
         var naming = document.createElement('label');
         var namingInput = document.createElement('input');
@@ -905,8 +947,11 @@
       .classed('tagged', function(d) { return d.source.belowTag; })
       .attr("d", pathGenerator);
 
+    var lineWidth = this.lineWidthFactor;
     if (this.showStrahler) {
-      upLink.style("stroke-width", function (d) { return d.target.strahler; });
+      upLink.style("stroke-width", function (d) { return lineWidth * target.strahler; });
+    } else {
+      upLink.style("stroke-width", function (d) { return lineWidth; });
     }
 
     /**

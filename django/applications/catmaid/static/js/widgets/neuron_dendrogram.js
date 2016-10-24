@@ -214,17 +214,18 @@
           }
         };
         hSpacingFactorInput.onwheel = function(e) {
-            if ((e.deltaX + e.deltaY) > 0) {
-              if (this.value > 0.01) {
-                this.value = (parseFloat(this.value) - 0.01).toFixed(2);
-                this.onchange();
-              }
-            } else {
-              this.value = (parseFloat(this.value) + 0.01).toFixed(2);
+          var step = Number(this.step);
+          if ((e.deltaX + e.deltaY) > 0) {
+            if (this.value > 0.01) {
+              this.value = (parseFloat(this.value) - step).toFixed(2);
               this.onchange();
             }
+          } else {
+            this.value = (parseFloat(this.value) + step).toFixed(2);
+            this.onchange();
+          }
 
-            return false;
+          return false;
         };
         hSpacingFactor.appendChild(hSpacingFactorInput);
         tabs['Display'].appendChild(hSpacingFactor);
@@ -253,17 +254,18 @@
           }
         };
         vSpacingFactorInput.onwheel = function(e) {
-            if ((e.deltaX + e.deltaY) > 0) {
-              if (this.value > 0.01) {
-                this.value = (parseFloat(this.value) - 0.01).toFixed(2);
-                this.onchange();
-              }
-            } else {
-              this.value = (parseFloat(this.value) + 0.01).toFixed(2);
+          var step = Number(this.step);
+          if ((e.deltaX + e.deltaY) > 0) {
+            if (this.value > 0.01) {
+              this.value = (parseFloat(this.value) - step).toFixed(2);
               this.onchange();
             }
+          } else {
+            this.value = (parseFloat(this.value) + step).toFixed(2);
+            this.onchange();
+          }
 
-            return false;
+          return false;
         };
         vSpacingFactor.appendChild(vSpacingFactorInput);
         tabs['Display'].appendChild(vSpacingFactor);

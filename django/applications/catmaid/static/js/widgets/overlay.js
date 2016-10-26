@@ -4767,6 +4767,9 @@ SkeletonAnnotations.VisibilityGroups = new (function () {
 
 // TODO: this results in annotations being updated multiple times.
 CATMAID.Init.on(CATMAID.Init.EVENT_PROJECT_CHANGED, function () {
+  if (Number.isNaN(parseInt(project.id, 10))) {
+    return;
+  }
   CATMAID.annotations.update(function () {
     SkeletonAnnotations.VisibilityGroups.refresh();
     SkeletonAnnotations.TracingOverlay.Settings.session.visibility_groups.forEach(function (group, i) {

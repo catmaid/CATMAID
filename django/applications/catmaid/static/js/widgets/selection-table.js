@@ -4,7 +4,6 @@
   CATMAID,
   InstanceRegistry,
   project,
-  requestQueue,
   Set,
   SkeletonAnnotations,
   WindowMaker,
@@ -94,14 +93,9 @@
   };
 
   SelectionTable.prototype.skeleton_info = function(skeleton_ids) {
-    // If the skeleton is loaded in the WebGLApp, then all of this information is already present in the client, but potentially not up to date: so reload.
-    requestQueue.register(django_url + project.id + '/skeleton/contributor_statistics_multiple', "POST", {skids: skeleton_ids},
-        (function (status, text, xml) {
-          if (200 !== status) return;
-          if (!text || text === " ") return;
-          var json = JSON.parse(text);
-          if (json.error) return alert(json.error);
-
+    CATMAID.fetch(project.id + '/skeleton/contributor_statistics_multiple', "POST",
+        {skids: skeleton_ids})
+      .then((function(json) {
           var dialog = document.createElement('div');
           dialog.setAttribute("id", "dialog-confirm");
           dialog.setAttribute("title", "Skeleton Information");
@@ -290,15 +284,11 @@
       if (!(skid in skeleton_ids)) a.push(parseInt(skid));
       return a;
     }, []);
-    var self = this;
-    requestQueue.register(django_url + project.id + '/skeleton/neuronnames', 'POST',
-      {skids: ids},
-      function(status, text) {
-        if (200 !== status) return;
-        var json = JSON.parse(text);
-        if (json.error) { alert(json.error); return; }
-        self.insertSkeletons(json, callback);
-      });
+    CATMAID.fetch(project.id + '/skeleton/neuronnames', 'POST',
+        {skids: ids})
+      .then((function(json) {
+        this.insertSkeletons(json, callback);
+      }).bind(this));
   };
 
   SelectionTable.prototype.append = function(models) {
@@ -313,16 +303,8 @@
         skeleton_ids: skeleton_ids,
         whitelist: this.review_filter === 'Team'};
     if (this.review_filter === 'Self') postData.user_ids = [CATMAID.session.userid];
-    requestQueue.register(django_url + project.id + '/skeletons/review-status', 'POST',
-      postData,
-      (function(status, text) {
-        if (200 !== status) return;
-        var json = JSON.parse(text);
-        if (json.error) {
-          new CATMAID.ErrorDialog(json.error, json.detail).show();
-          return;
-        }
-
+    CATMAID.fetch(project.id + '/skeletons/review-status', 'POST', postData)
+      .then((function(json) {
         var valid_skeletons = skeleton_ids.filter(function(skid) {
           return !!this[skid];
         }, json);
@@ -533,11 +515,9 @@
     var indices = this.skeleton_ids;
     var prev_skeleton_ids = Object.keys(models);
 
-    requestQueue.register(django_url + project.id + '/skeleton/neuronnames', 'POST',
-      {skids: Object.keys(models)},
-      function(status, text) {
-        if (200 !== status) return;
-        var json = JSON.parse(text);
+    CATMAID.fetch(project.id + '/skeleton/neuronnames', 'POST',
+        {skids: Object.keys(models)})
+      .then(function(json) {
         var o = {};
         Object.keys(json).forEach(function(skid) {
           o[indices[skid]] = skid;
@@ -575,9 +555,8 @@
               skeleton_ids: skeleton_ids,
               whitelist: self.review_filter === 'Team'};
           if (self.review_filter === 'Self') postData.user_ids = [CATMAID.session.userid];
-          requestQueue.register(django_url + project.id + '/skeletons/review-status', 'POST',
-            postData,
-            CATMAID.jsonResponseHandler(function(json) {
+          CATMAID.fetch(project.id + '/skeletons/review-status', 'POST', postData)
+            .then(function(json) {
               // Update review information
               skeleton_ids.forEach(function(skeleton_id) {
                 var counts = json[skeleton_id];
@@ -585,7 +564,7 @@
               }, this);
               // Update user interface
               self.gui.update();
-            }));
+            });
         } else {
           // Update user interface
           self.gui.update();
@@ -977,14 +956,12 @@
       // Update local annotation information
       if (!this.annotationMapping) {
         // Get all data that is needed for the fallback list
-        requestQueue.register(django_url + project.id + '/skeleton/annotationlist',
-          'POST',
-          {
-            skeleton_ids: Object.keys(this.skeleton_ids),
-            metaannotations: 0,
-            neuronnames: 0,
-          },
-          CATMAID.jsonResponseHandler((function(json) {
+        CATMAID.fetch(project.id + '/skeleton/annotationlist', 'POST', {
+              skeleton_ids: Object.keys(this.skeleton_ids),
+              metaannotations: 0,
+              neuronnames: 0,
+            })
+          .then((function(json) {
             // Store mapping and update UI
             this.annotationMapping = new Map();
             for (var skeletonID in json.skeletons) {
@@ -996,7 +973,7 @@
               this.annotationMapping.set(parseInt(skeletonID, 10), annotations);
             }
             this.gui.update();
-          }).bind(this)));
+          }).bind(this));
         // Return without update
         return;
       }
@@ -1247,32 +1224,33 @@
             return s.skeleton_id;
           });
           // Get names
-          requestQueue.register(CATMAID.makeURL(project.id + '/skeleton/neuronnames'),
-              "POST", {skids: skeletonIds}, CATMAID.jsonResponseHandler(function(json) {
-                // Check if there are skeletons missing
-                var foundSkeletons = skeletonIds.filter(function(skid) {
-                  return undefined !== json[skid];
-                });
-                var missing = skeletonIds.length - foundSkeletons.length;
-                if (missing> 0) {
-                  CATMAID.warn("Could not load " + missing + " missing skeleton" +
-                      (1 === missing ? "" : "s"));
-                }
+          CATMAID.fetch(project.id + '/skeleton/neuronnames', 'POST',
+              {skids: skeletonIds})
+            .then(function(json) {
+              // Check if there are skeletons missing
+              var foundSkeletons = skeletonIds.filter(function(skid) {
+                return undefined !== json[skid];
+              });
+              var missing = skeletonIds.length - foundSkeletons.length;
+              if (missing> 0) {
+                CATMAID.warn("Could not load " + missing + " missing skeleton" +
+                    (1 === missing ? "" : "s"));
+              }
 
-                // Create models for valid skeletons
-                var models = validSkeletons.reduce(function(m, s) {
-                  var color = s.color ? s.color : self.batchColor;
-                  var name = json[s.skeleton_id];
-                  var model = new CATMAID.SkeletonModel(s.skeleton_id, name,
-                      new THREE.Color(color));
-                  model.opacity = s.opacity ? s.opacity : self.batchOpacity;
-                  m[s.skeleton_id] = model;
-                  return m;
-                }, {});
+              // Create models for valid skeletons
+              var models = validSkeletons.reduce(function(m, s) {
+                var color = s.color ? s.color : self.batchColor;
+                var name = json[s.skeleton_id];
+                var model = new CATMAID.SkeletonModel(s.skeleton_id, name,
+                    new THREE.Color(color));
+                model.opacity = s.opacity ? s.opacity : self.batchOpacity;
+                m[s.skeleton_id] = model;
+                return m;
+              }, {});
 
-                // Load models
-                self.append(models);
-          }));
+              // Load models
+              self.append(models);
+          });
       };
       reader.readAsText(files[0]);
   };

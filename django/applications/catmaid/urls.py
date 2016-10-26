@@ -458,6 +458,8 @@ urlpatterns += [
     url(r'^(?P<project_id>.+)/user/reviewer-whitelist$', flytemreview.reviewer_whitelist),
     url(r'^flytem/(?P<project_id>.+)/stack/(?P<stack_id>.+)/info$', flytem.stack.stack_info),
     url(r'^flytem/(?P<project_id>.+)/stacks$', flytemstack.stacks),
+    url(r'^flytem/(?P<project_id>.+)/annotations/$', flytem.list_annotations),
+    url(r'^flytem/client/datastores/(?P<name>[\w-]+)/$', flytem.datastore_settings),
 ]
 
 # Patterns for DVID access
@@ -468,4 +470,6 @@ urlpatterns += [
     url(r'^(?P<project_id>.+)/user/reviewer-whitelist$', dvidreview.reviewer_whitelist),
     url(r'^dvid/(?P<project_id>.+)/stack/(?P<stack_id>.+)/info$', dvidstack.stack_info),
     url(r'^dvid/(?P<project_id>.+)/stacks$', dvidstack.stacks),
+    url(r'^dvid/(?P<project_id>.+)/annotations/$', dvid.list_annotations),
+    url(r'^dvid/client/datastores/(?P<name>[\w-]+)/$', dvid.datastore_settings),
 ]

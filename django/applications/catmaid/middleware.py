@@ -84,11 +84,16 @@ class BasicModelMapMiddleware(object):
     url_prefix = ''
     stack_info_pattern = re.compile(r'^/.+/stack/.+/info$')
     stacks_pattern = re.compile(r'/.+/stacks')
+    datastores_pattern = re.compile(r'/client/datastores/.*/')
+    annotations_patterns = re.compile(r'/.+/annotations/')
 
     def process_request(self, request):
         new_path = (request.path == '/projects/') or \
                     self.stack_info_pattern.search(request.path) or \
-                    self.stacks_pattern.search(request.path)
+                    self.stacks_pattern.search(request.path) or \
+                    self.datastores_pattern.search(request.path) or \
+                    self.annotations_patterns.search(request.path)
+
 
         if new_path:
             request.path_info = self.url_prefix + request.path_info

@@ -765,34 +765,42 @@
           this.table.reapplyOrder();
         }
 
-        // Filtering
-        var filteredSkeletons = this.table.filteredSkeletons(false);
+        var request = (function() {
+          var filteredSkeletons = this.table.filteredSkeletons(false);
 
-        // Pagination, if data.length is -1, all skeletons should be displayed
-        var skeletonsOnPage;
-        if (-1 === data.length) {
-          skeletonsOnPage = filteredSkeletons;
+          // Pagination, if data.length is -1, all skeletons should be displayed
+          var skeletonsOnPage;
+          if (-1 === data.length) {
+            skeletonsOnPage = filteredSkeletons;
+          } else {
+            var lastIndex = Math.min(filteredSkeletons.length, data.start + data.length);
+            skeletonsOnPage = filteredSkeletons.slice(data.start, lastIndex);
+          }
+
+          var reviews = this.table.reviews;
+          var skeletonData = skeletonsOnPage.reduce(function(d, s, i) {
+            d[i] = {
+              index: i, // For initial sorting
+              skeleton: s,
+              reviewPercentage: reviews[s.id],
+            };
+            return d;
+          }, new Array(skeletonsOnPage.length));
+
+          callback({
+            draw: data.draw,
+            recordsTotal: this.table.skeletons.length,
+            recordsFiltered: filteredSkeletons.length,
+            data: skeletonData
+          });
+        }).bind(this);
+
+        if (this.table.annotationFilter) {
+          this.table._updateAnnotationMap().then(request)
+            .catch(CATMAID.handleError);
         } else {
-          var lastIndex = Math.min(filteredSkeletons.length, data.start + data.length);
-          skeletonsOnPage = filteredSkeletons.slice(data.start, lastIndex);
+          request();
         }
-
-        var reviews = this.table.reviews;
-        var skeletonData = skeletonsOnPage.reduce(function(d, s, i) {
-          d[i] = {
-            index: i, // For initial sorting
-            skeleton: s,
-            reviewPercentage: reviews[s.id],
-          };
-          return d;
-        }, new Array(skeletonsOnPage.length));
-
-        callback({
-          draw: data.draw,
-          recordsTotal: this.table.skeletons.length,
-          recordsFiltered: filteredSkeletons.length,
-          data: skeletonData
-        });
       }).bind(this),
       autoWidth: false,
       order: this.order,
@@ -947,38 +955,51 @@
     }
     if (!annotation || 0 === annotation.length) {
       this.annotationFilter = null;
+      this.gui.update();
     } else {
       // Build a regular expression for the search
       var pattern = '/' === annotation.substr(0, 1) ? annotation.substr(1) :
           CATMAID.tools.escapeRegEx(annotation);
       this.annotationFilter = new RegExp(pattern);
 
-      // Update local annotation information
-      if (!this.annotationMapping) {
-        // Get all data that is needed for the fallback list
-        CATMAID.fetch(project.id + '/skeleton/annotationlist', 'POST', {
-              skeleton_ids: Object.keys(this.skeleton_ids),
-              metaannotations: 0,
-              neuronnames: 0,
-            })
-          .then((function(json) {
-            // Store mapping and update UI
-            this.annotationMapping = new Map();
-            for (var skeletonID in json.skeletons) {
-              // We know that we want to use this for filtering, so we can store
-              // the annotation names directly.
-              var annotations = json.skeletons[skeletonID].annotations.map(function(a) {
-                return json.annotations[a.id];
-              });
-              this.annotationMapping.set(parseInt(skeletonID, 10), annotations);
-            }
-            this.gui.update();
-          }).bind(this));
-        // Return without update
-        return;
-      }
+      // Make sure local annotation mapping is available and update UI
+      this._updateAnnotationMap()
+        .then((function() {
+          this.gui.update();
+        }).bind(this));
     }
-    this.gui.update();
+  };
+
+  /**
+   * Update the local annotation cache.
+   */
+  SelectionTable.prototype._updateAnnotationMap = function(force) {
+    var get;
+    if (!this.annotationMapping || force) {
+      // Get all data that is needed for the fallback list
+      get = CATMAID.fetch(project.id + '/skeleton/annotationlist', 'POST', {
+            skeleton_ids: Object.keys(this.skeleton_ids),
+            metaannotations: 0,
+            neuronnames: 0,
+          })
+        .then((function(json) {
+          // Store mapping and update UI
+          this.annotationMapping = new Map();
+          for (var skeletonID in json.skeletons) {
+            // We know that we want to use this for filtering, so we can store
+            // the annotation names directly.
+            var annotations = json.skeletons[skeletonID].annotations.map(function(a) {
+              return json.annotations[a.id];
+            });
+            this.annotationMapping.set(parseInt(skeletonID, 10), annotations);
+          }
+          return this.annotationMapping;
+        }).bind(this));
+    } else {
+      get = Promise.resolve(this.annotationMapping);
+    }
+
+    return get;
   };
 
   /** Returns an array of Skeleton instances,

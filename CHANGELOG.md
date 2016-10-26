@@ -19,6 +19,12 @@ Tracing layer:
   skeleton.
 
 
+Neuron dendrogram:
+
+- Controls are now organized in tabs and a new setting was added to change the
+  line width.
+
+
 Miscellaneous:
 
 - If users have sufficient permissions, they can click on individual names in

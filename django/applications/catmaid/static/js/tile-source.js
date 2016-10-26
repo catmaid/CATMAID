@@ -239,10 +239,34 @@
    */
   CATMAID.RenderServTileSource = function(baseURL, fileExtension, tileWidth, tileHeight)
   {
+    this.maxTiles = null;
+
+    this.getSettings = function() {
+      return [
+        {name: 'maxTiles', displayName: 'Maximum tiles', type: 'number', range: [0, 100000],
+          value: this.maxTiles, help: 'Maximum number of image tiles to load for a section'}
+      ];
+    };
+
+    this.setSetting = function(name, value) {
+      this[name] = value;
+    };
+
     this.getTileURL = function(project, stack, slicePixelPosition, col, row, zoomLevel) {
       var baseName = CATMAID.getTileBaseName(slicePixelPosition);
-      return baseURL + 'largeDataTileSource/' + tileWidth + '/' + tileHeight + '/' +
+      var url = baseURL + 'largeDataTileSource/' + tileWidth + '/' + tileHeight + '/' +
              zoomLevel + '/' + baseName + row + '/' +  col + '.' + fileExtension;
+
+      var params = [];
+      if (null !== this.maxTiles && undefined !== this.maxTiles) {
+          params.push('maxTileSpecsToRender=' + this.maxTiles);
+      }
+
+      if (0 < params.length) {
+        url += "?" + params.join("&");
+      }
+
+      return url;
     };
 
     this.getOverviewURL = function(stack, slicePixelPosition) {

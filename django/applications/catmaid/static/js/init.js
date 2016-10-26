@@ -1458,7 +1458,7 @@ var project;
               'title': s.title,
               'comment': s.comment,
               'note': '',
-              'action': CATMAID.openProjectStack.bind(window, p.id, s.id)
+              'action': CATMAID.openProjectStack.bind(window, p.id, s.id, false)
             };
             return o;
           }, {});
@@ -1467,7 +1467,7 @@ var project;
               'title': sg.title,
               'comment': sg.comment,
               'note': '',
-              'action': CATMAID.openStackGroup.bind(window, p.id, sg.id)
+              'action': CATMAID.openStackGroup.bind(window, p.id, sg.id, false)
             };
             return o;
           }, {});

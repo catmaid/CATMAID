@@ -1159,7 +1159,7 @@ SkeletonAnnotations.TracingOverlay.prototype.selectNode = function(id) {
     this.activateNode(node);
     return Promise.resolve(node);
   }
-  Promise.reject(id);
+  return Promise.reject(id);
 };
 
 /**

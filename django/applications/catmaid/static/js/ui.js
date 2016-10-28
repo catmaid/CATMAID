@@ -154,6 +154,21 @@
           return false;
         }
       }),
+      new CATMAID.Action({
+        helpText: "Open widget",
+        keyShortcuts: {
+          'SPACE': [ 32 ]
+        },
+        run: function (e) {
+          // Only if Ctrl + Space is pressed, the dialog will be shown
+          if (e.ctrlKey) {
+            var dialog = new CATMAID.OpenWidgetDialog();
+            dialog.show();
+            return true;
+          }
+          return false;
+        }
+      })
     ];
 
     /**

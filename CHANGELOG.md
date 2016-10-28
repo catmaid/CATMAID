@@ -31,8 +31,8 @@ Miscellaneous:
   the Project Statistics Widget to show a User Analytics window for the
   respective user and currently selected time frame.
 
-- Pressing F6 will now open a dialog which allows opening a widget based on its
-  short name (e.g. neuron-dendrogram).
+- Pressing Ctrl+Space will now open a dialog which allows opening a widget based
+  on its short name (e.g. neuron-dendrogram) or parts of it.
 
 - A small system check widget has been added, mainly useful for development. It
   currently only supports FPS measurement and can be opened by pressing F6 and

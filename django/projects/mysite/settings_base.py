@@ -322,3 +322,8 @@ SWAGGER_SETTINGS = {
     },
     'doc_expansion': 'list'
 }
+
+# Intersection grid settings, dimensions in project coordinates (nm)
+INTERSECTION_GRID_CELL_WIDTH = 100000
+INTERSECTION_GRID_CELL_HEIGHT = 100000
+INTERSECTION_GRID_CELL_DEPTH = 350

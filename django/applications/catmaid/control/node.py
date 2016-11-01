@@ -136,7 +136,7 @@ def node_list_tuples(request, project_id=None, provider=None):
     params['project_id'] = project_id
     include_labels = (request.POST.get('labels', None) == 'true')
 
-    provider = get_treenodes_postgis
+    provider = get_treenodes_postgis_isect_grid
 
     return node_list_tuples_query(params, project_id, treenode_ids, connector_ids,
                                   include_labels, provider)
@@ -319,8 +319,8 @@ def get_treenodes_postgis(cursor, params):
     FROM
       (SELECT te.id
          FROM treenode_edge te
-         WHERE te.edge &&& 'LINESTRINGZ(%(left)s %(bottom)s %(z2)s,
-                                       %(right)s %(top)s %(z1)s)'
+         WHERE te.edge &&& ST_MakeLine(ST_MakePoint(%(left)s, %(top)s, %(z1)s),
+                                       ST_MakePoint(%(right)s, %(bottom)s, %(z2)s))
            AND ST_3DDWithin(te.edge, ST_MakePolygon(ST_GeomFromText(
             'LINESTRING(%(left)s %(top)s %(halfz)s, %(right)s %(top)s %(halfz)s,
                         %(right)s %(bottom)s %(halfz)s, %(left)s %(bottom)s %(halfz)s,
@@ -328,10 +328,81 @@ def get_treenodes_postgis(cursor, params):
            AND te.project_id = %(project_id)s
       ) edges(edge_child_id)
     JOIN treenode t1 ON edge_child_id = t1.id
+      AND t1.project_id = %(project_id)s
     LEFT JOIN treenode t2 ON t2.id = t1.parent_id
-    WHERE t1.project_id = %(project_id)s
     LIMIT %(limit)s
     ''', params)
+
+    return cursor.fetchall()
+
+
+def get_treenodes_postgis_isect_grid(cursor, params):
+    """ Selects all treenodes of which links to other treenodes intersect with
+    the request bounding box.
+    """
+    params['halfzdiff'] = abs(params['z2'] - params['z1']) * 0.5
+    params['halfz'] = params['z1'] + (params['z2'] - params['z1']) * 0.5
+
+    # TODO Fetch treenodes with the help of two PostGIS filters: The &&& operator
+    # to exclude all edges that don't have a bounding box that intersect with
+    # the query bounding box. This leads to false positives, because edge
+    # bounding boxes can intersect without the edge actually intersecting. To
+    # limit the result set, ST_3DDWithin is used. It allows to limit the result
+    # set by a distance to another geometry. Here it only allows edges that are
+    # no farther away than half the height of the query bounding box from a
+    # plane that cuts the query bounding box in half in Z. There are still false
+    # positives, but much fewer. Even though ST_3DDWithin is used, it seems to
+    # be enough to have a n-d index available (the query plan says ST_3DDWithin
+    # wouldn't use a 2-d index in this query, even if present).
+    cursor.execute('''
+      WITH filtered_grid_match AS (
+        SELECT DISTINCT te.id as id
+        FROM treenode_edge te,
+        (
+          SELECT unnest(igc.intersections) as id FROM intersection_grid_cells igc
+          WHERE project_id = %(project_id)s AND
+            ((min_x <= %(left)s AND max_x > %(left)s) OR
+             (min_x >= %(left)s AND max_x < %(right)s) OR
+             (min_x <= %(right)s AND max_x > %(right)s)) AND
+            ((min_y <= %(top)s AND max_y > %(top)s) OR
+             (min_y >= %(top)s AND max_y < %(bottom)s) OR
+             (min_y <= %(bottom)s AND max_y > %(bottom)s)) AND
+            ((min_z <= %(z1)s AND max_z > %(z1)s) OR
+             (min_z >= %(z1)s AND max_z < %(z2)s) OR
+             (min_z <= %(z2)s AND max_z > %(z2)s))
+        ) grid_match
+        WHERE grid_match.id = te.id
+          AND ST_3DDWithin(te.edge, ST_MakePolygon(ST_GeomFromText(
+            'LINESTRING(%(left)s %(top)s %(halfz)s, %(right)s %(top)s %(halfz)s,
+                        %(right)s %(bottom)s %(halfz)s, %(left)s %(bottom)s %(halfz)s,
+                        %(left)s %(top)s %(halfz)s)')), %(halfzdiff)s)
+      )
+      SELECT
+              t1.id,
+              t1.parent_id,
+              t1.location_x,
+              t1.location_y,
+              t1.location_z,
+              t1.confidence,
+              t1.radius,
+              t1.skeleton_id,
+              t1.edition_time,
+              t1.user_id,
+              t2.id,
+              t2.parent_id,
+              t2.location_x,
+              t2.location_y,
+              t2.location_z,
+              t2.confidence,
+              t2.radius,
+              t2.skeleton_id,
+              t2.edition_time,
+              t2.user_id
+          FROM filtered_grid_match fgm
+          JOIN treenode t1 ON fgm.id = t1.id
+          LEFT JOIN treenode t2 ON t2.id = t1.parent_id
+          LIMIT %(limit)s;
+      ''', params)
 
     return cursor.fetchall()
 
@@ -367,9 +438,10 @@ def get_connector_nodes_postgis(cursor, params, treenode_ids, missing_connector_
       ) edges(edge_tc_id)
     JOIN treenode_connector tc
       ON (tc.id = edge_tc_id)
+     AND tc.project_id = %(project_id)s
     JOIN connector c
       ON (c.id = tc.connector_id)
-    WHERE c.project_id = %(project_id)s
+     AND c.project_id = %(project_id)s
 
     UNION
 
@@ -399,7 +471,7 @@ def get_connector_nodes_postgis(cursor, params, treenode_ids, missing_connector_
       ) geoms(geom_connector_id)
     JOIN connector c
       ON (geom_connector_id = c.id)
-    WHERE c.project_id = %(project_id)s
+     AND c.project_id = %(project_id)s
     LIMIT %(limit)s
     ''', params)
 

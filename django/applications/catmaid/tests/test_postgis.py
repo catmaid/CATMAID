@@ -92,6 +92,66 @@ class PostGISTests(TestCase):
         for c in postgis_nodes[1]:
             self.assertTrue(c in non_postgis_nodes[1])
 
+    def test_node_query(self):
+        """
+        Make sure nodes returned by a PostGIS based query are the same as the
+        regular ones. This version makes use of the intersection grid.
+        """
+        params = {
+            'sid': 3,
+            'limit': 5000,
+            'project_id': self.test_project_id,
+            'z1': 0,
+            'z2': 9,
+            'top': 4625.0,
+            'left': 2860.0,
+            'bottom': 8075.0,
+            'right': 10860.0,
+            'labels': False,
+        }
+
+        non_postgis_nodes_r = node.node_list_tuples_query(params,
+                self.test_project_id, None, None, include_labels=False,
+                tn_provider=node.get_treenodes_classic)
+
+        postgis_nodes_r = node.node_list_tuples_query(params,
+                self.test_project_id, None, None, include_labels=False,
+                tn_provider=node.get_treenodes_postgis_isect_grid)
+
+        self.assertEqual(non_postgis_nodes_r.status_code, 200)
+        self.assertEqual(postgis_nodes_r.status_code, 200)
+        non_postgis_nodes = json.loads(non_postgis_nodes_r.content)
+        postgis_nodes = json.loads(postgis_nodes_r.content)
+
+        for n in non_postgis_nodes[1]:
+            n[5] = frozenset([tuple(l) for l in n[5]])
+        for n in postgis_nodes[1]:
+            n[5] = frozenset([tuple(l) for l in n[5]])
+
+        self.assertEqual(len(non_postgis_nodes), len(postgis_nodes))
+        self.assertEqual(len(non_postgis_nodes[0]), len(postgis_nodes[0]))
+        self.assertEqual(len(non_postgis_nodes[1]), len(postgis_nodes[1]))
+        self.assertEqual(len(non_postgis_nodes[2]), len(postgis_nodes[2]))
+        self.assertEqual(non_postgis_nodes[3], postgis_nodes[3])
+
+        for tn in non_postgis_nodes[0]:
+            self.assertTrue(tn in postgis_nodes[0])
+
+        for tn in postgis_nodes[0]:
+            self.assertTrue(tn in non_postgis_nodes[0])
+
+        for c in non_postgis_nodes[1]:
+            c[7] = sorted(c[7])
+
+        for c in postgis_nodes[1]:
+            c[7] = sorted(c[7])
+
+        for c in non_postgis_nodes[1]:
+            self.assertTrue(c in postgis_nodes[1])
+
+        for c in postgis_nodes[1]:
+            self.assertTrue(c in non_postgis_nodes[1])
+
     def get_edges(self, cursor, tnid):
         cursor.execute("""
             SELECT edge FROM treenode_edge WHERE id=%s AND project_id=%s

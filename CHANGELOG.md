@@ -1,6 +1,10 @@
 ## Under development
 
 
+### Notes
+
+- Virtualenv update required
+
 ### Features and enhancements
 
 Tracing layer:

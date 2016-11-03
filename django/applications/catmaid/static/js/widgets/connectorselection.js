@@ -24,9 +24,9 @@
           }
           var text;
           if ('presynaptic_to' === relation) {
-            text = 'Synapses presynaptic to';
-          } else if ('postsynaptic_to' === relation) {
             text = 'Synapses postsynaptic to';
+          } else if ('postsynaptic_to' === relation) {
+            text = 'Synapses presynaptic to';
           } else if ('gapjunction_with' === relation) {
             text = 'Gap junctions with';
           }

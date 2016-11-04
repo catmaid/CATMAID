@@ -992,7 +992,7 @@ var WindowMaker = new function()
       timeSliderTimeout = window.setTimeout(timeSliderDelayedUpdate, 50);
     };
     var timeSlider = new CATMAID.Slider(CATMAID.Slider.HORIZONTAL,
-        false, 0, 10, 100, 0, timeSliderUpdate, undefined, false);
+        false, 0, 10, 100, 0, timeSliderUpdate, undefined, false, false);
     var timeSliderLabel = document.createElement('label');
     timeSliderLabel.appendChild(document.createTextNode('Time'));
     timeSliderLabel.appendChild(timeSlider.getView());
@@ -1043,7 +1043,7 @@ var WindowMaker = new function()
             if (!sliderInitialized) {
               var epochTotalDiff = endDate.getTime() - startDate.getTime();
               var hourTotalDiff = Number((epochTotalDiff / 1000 / 60 / 60).toFixed(1));
-              timeSlider.update(0, hourTotalDiff, 10, 0, timeSliderUpdate);
+              timeSlider.update(0, hourTotalDiff, 100, 0, timeSliderUpdate);
               sliderInitialized = true;
             }
 

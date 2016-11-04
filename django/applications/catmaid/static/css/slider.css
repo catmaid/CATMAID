@@ -95,3 +95,8 @@ div.hSliderBarBottom_2 {
   background: url(../images/hslider_bar_right_b.gif) no-repeat right center;
   background-image: url(../images/hslider_bar_right_b.svg), none;
 }
+
+p.hSliderInputView,
+p.vSliderInputView {
+  display: block;
+}

@@ -50,6 +50,8 @@
     this._barTop.onmousedown = this._barMouseDown.bind(this, -1);
     this._barBottom.onmousedown = this._barMouseDown.bind(this, 1);
 
+    var inputViewClass;
+
     switch ( type )
     {
     case Slider.VERTICAL:
@@ -57,12 +59,14 @@
       this._barTop.className = "vSliderBarTop";
       this._barBottom.className = "vSliderBarBottom";
       this._handle.className = "vSliderHandle";
+      inputViewClass = "vSliderInputView";
       break;
     case Slider.HORIZONTAL:
       this._view.className = "hSliderView";
       this._barTop.className = "hSliderBarTop";
       this._barBottom.className = "hSliderBarBottom";
       this._handle.className = "hSliderHandle";
+      inputViewClass = "hSliderInputView";
       break;
     }
 
@@ -82,6 +86,7 @@
       var name = CATMAID.tools.uniqueId();
 
       this._inputView = document.createElement( "p" );
+      this._inputView.classList.add(inputViewClass);
       this._inputView.style.paddingLeft = "0.5em";
       this._input = document.createElement( "input" );
       this._input.type = "text";
@@ -127,9 +132,6 @@
       this._inputView.appendChild( map );
       this._inputView.appendChild( this._input );
       this._inputView.appendChild( img );
-
-      this._inputView.style.display = "none";
-      this._inputView.style.display = "block";
 
       this._input.onchange = this._setByInputHandler();
       this._input.addEventListener( "wheel", this._mouseWheel.bind(this), false );

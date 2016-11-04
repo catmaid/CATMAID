@@ -1027,7 +1027,7 @@
             type: 'checkbox',
             label: 'Auto centering',
             value: this.getAutoCentering(),
-            onchange: function() { this.setAutoCentering(this.checked); }
+            onclick: function() { self.setAutoCentering(this.checked); }
           }, {
             type: 'checkbox',
             label: 'Cache tiles',

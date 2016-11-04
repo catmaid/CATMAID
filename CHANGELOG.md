@@ -1,5 +1,6 @@
-## Under development
+## 2016.11.04
 
+Contributors: Gregory Jefferis, Tom Kazimiers
 
 ### Notes
 

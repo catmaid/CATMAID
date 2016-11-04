@@ -40,6 +40,61 @@
         });
   };
 
+  ConnectorSelection.prototype.getName = function() {
+    return 'Connector Selection Table';
+  };
+
+  ConnectorSelection.prototype.getWidgetConfiguration = function() {
+    return {
+      contentID: 'connector_selection_widget',
+      createContent: function(content) {
+        var div = document.createElement('div');
+        div.setAttribute('id', 'connector-selection-label');
+        content.appendChild(div);
+
+        var container = document.createElement('div');
+        container.setAttribute("id", "connector_selection_widget");
+        content.appendChild(container);
+
+        container.innerHTML =
+          '<table cellpadding="0" cellspacing="0" border="0" class="display" id="connectorselectiontable">' +
+            '<thead>' +
+              '<tr>' +
+                '<th>Connector</th>' +
+                '<th>Node 1</th>' +
+                '<th class="preheader">Presyn. neuron</th>' +
+                '<th>C 1</th>' +
+                '<th>Creator 1</th>' +
+                '<th>Node 2</th>' +
+                '<th class="postheader">Postsyn. neuron</th>' +
+                '<th>C 2</th>' +
+                '<th>Creator 2</th>' +
+              '</tr>' +
+            '</thead>' +
+            '<tfoot>' +
+              '<tr>' +
+                '<th>Connector</th>' +
+                '<th>Node 1</th>' +
+                '<th class="preheader">Presyn. neuron</th>' +
+                '<th>C 1</th>' +
+                '<th>Creator 1</th>' +
+                '<th>Node 2</th>' +
+                '<th class="postheader">Postsyn. neuron</th>' +
+                '<th>C 2</th>' +
+                '<th>Creator 2</th>' +
+              '</tr>' +
+            '</tfoot>' +
+            '<tbody>' +
+              '<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>' +
+            '</tbody>' +
+          '</table>';
+      },
+      init: function() {
+        CATMAID.ConnectorSelection.init();
+      }
+    };
+  };
+
   /**
    * Load all connectors in the passed in list and display a connector selcetion
    * for the result.
@@ -192,5 +247,11 @@
 
   // Make widget available in CATMAID namespace
   CATMAID.ConnectorSelection = new ConnectorSelection();
+
+  // Register widget with CATMAID
+  CATMAID.registerWidget({
+    key: "create-connector-selection",
+    creator: ConnectorSelection
+  });
 
 })(CATMAID);

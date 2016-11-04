@@ -183,60 +183,6 @@ var WindowMaker = new function()
     return {window: win, widget: instance};
   };
 
-  var createConnectorSelectionWindow = function()
-  {
-    var win = new CMWWindow("Connector Selection Table");
-    var content = win.getFrame();
-    content.style.backgroundColor = "#ffffff";
-
-    var div = document.createElement('div');
-    div.setAttribute('id', 'connector-selection-label');
-    content.appendChild(div);
-
-    var container = createContainer("connector_selection_widget");
-    content.appendChild(container);
-
-    container.innerHTML =
-      '<table cellpadding="0" cellspacing="0" border="0" class="display" id="connectorselectiontable">' +
-        '<thead>' +
-          '<tr>' +
-            '<th>Connector</th>' +
-            '<th>Node 1</th>' +
-            '<th class="preheader">Presyn. neuron</th>' +
-            '<th>C 1</th>' +
-            '<th>Creator 1</th>' +
-            '<th>Node 2</th>' +
-            '<th class="postheader">Postsyn. neuron</th>' +
-            '<th>C 2</th>' +
-            '<th>Creator 2</th>' +
-          '</tr>' +
-        '</thead>' +
-        '<tfoot>' +
-          '<tr>' +
-            '<th>Connector</th>' +
-            '<th>Node 1</th>' +
-            '<th class="preheader">Presyn. neuron</th>' +
-            '<th>C 1</th>' +
-            '<th>Creator 1</th>' +
-            '<th>Node 2</th>' +
-            '<th class="postheader">Postsyn. neuron</th>' +
-            '<th>C 2</th>' +
-            '<th>Creator 2</th>' +
-          '</tr>' +
-        '</tfoot>' +
-        '<tbody>' +
-          '<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>' +
-        '</tbody>' +
-      '</table>';
-    // ABOVE, notice the table needs one dummy row
-
-    addListener(win, container);
-    addLogic(win);
-    CATMAID.ConnectorSelection.init(); // MUST go after adding the container to the window, otherwise one gets "cannot read property 'aoData' of null" when trying to add data to the table
-
-    return {window: win, widget: null};
-  };
-
   var createConnectivityMatrixWindow = function(instance) {
     var CM = instance ? instance : new CATMAID.ConnectivityMatrixWidget();
     return createWidget(CM);
@@ -2739,7 +2685,6 @@ var WindowMaker = new function()
     "3d-webgl-view": create3dWebGLWindow,
     "node-table": createNodeTableWindow,
     "neuron-staging-area": createStagingListWindow,
-    "create-connector-selection": createConnectorSelectionWindow,
     "graph-widget": createGraphWindow,
     "connectivity-graph-plot": createConnectivityGraphPlot,
     "assemblygraph-widget": createAssemblyGraphWindow,

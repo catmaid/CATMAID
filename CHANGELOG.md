@@ -8,6 +8,7 @@
 
 ### Bug fixes
 
+- Review widget: auto centering works again
 
 
 ## 2016.11.04

@@ -10,6 +10,8 @@
 
 - Review widget: auto centering works again
 
+- Review widget: location lookup of warnings now works again in all cases.
+
 
 ## 2016.11.04
 

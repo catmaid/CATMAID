@@ -186,6 +186,11 @@
       emptyBoutLength = emptyBoutLength * 60;
     }
 
+    // Make basic properties accessible
+    this.startDate = startDate;
+    this.endDate = endDate;
+    this.tickLength = tickLength;
+
     var currentDate = new Date(startEpoch);
 
     return function(t, options) {

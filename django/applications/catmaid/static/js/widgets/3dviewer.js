@@ -6188,23 +6188,42 @@
        'the 3D viewer.');
 
     // Add options to dialog
+    var historyField = dialog.appendCheckbox('Reconstruction history',
+        'animation-export-history', false);
     var rotationsField = dialog.appendField("# Rotations: ",
         "animation-export-num-rotations", '1');
     var rotationtimeField = dialog.appendField("Rotation time (s): ",
         "animation-export-rotation-time", '5');
+    var backforthField = dialog.appendCheckbox('Back and forth',
+        'animation-export-backforth', false);
+    var nframesField = dialog.appendField("# Frames: ",
+        "animation-export-nframes", '100');
     var frameWidthField = dialog.appendField("Frame width (px): ",
         "animation-export-frame-width", this.space.canvasWidth);
     var frameHeightField = dialog.appendField("Frame height (px): ",
         "animation-export-frame-height", this.space.canvasHeight);
     var framerateField = dialog.appendField("Frame rate: ",
         "animation-export-frame-rate", '25');
-    var backforthField = dialog.appendCheckbox('Back and forth',
-        'animation-export-backforth', false);
     var restoreViewField = dialog.appendCheckbox('Restore view',
         'animation-export-restore-view', true);
     var camera = this.space.view.camera;
     var target = this.space.view.controls.target;
     var rotationAxis = this.options.animation_axis;
+
+    nframesField.parentNode.style.display = 'none';
+    historyField.onchange = function() {
+      if (this.checked) {
+        rotationsField.parentNode.style.display = 'none';
+        rotationtimeField.parentNode.style.display = 'none';
+        backforthField.parentNode.style.display = 'none';
+        nframesField.parentNode.style.display = 'block';
+      } else {
+        rotationsField.parentNode.style.display = 'block';
+        rotationtimeField.parentNode.style.display = 'block';
+        backforthField.parentNode.style.display = 'block';
+        nframesField.parentNode.style.display = 'none';
+      }
+    };
 
     var docURL = CATMAID.makeDocURL('user_faq.html#faq-3dviewer-webm');
     dialog.appendHTML('Note: you can convert the resulting WebM file to ' +
@@ -6231,26 +6250,29 @@
         var visMap = this.space.getVisibilityMap();
 
         try {
-          var axis = rotationAxis;
-          var rotations = parseInt(rotationsField.value);
-          var rotationtime = parseFloat(rotationtimeField.value);
           var framerate = parseInt(framerateField.value);
 
-          var nframes = Math.ceil(rotations * rotationtime * framerate);
-          var speed = 2 * Math.PI / (rotationtime * framerate);
           var width = parseInt(frameWidthField.value);
           var height = parseInt(frameHeightField.value);
 
           // Collect options
+          var nframes;
           var options = {
-            type: 'rotation',
-            axis: axis,
-            speed: speed,
             camera: camera,
             target: target,
-            backandforth: backforthField.checked,
-            restoreView: restoreViewField.checked
           };
+          if (historyField.checked) {
+            nframes = parseInt(nframesField.value);
+          } else {
+            var rotations = parseInt(rotationsField.value);
+            var rotationtime = parseFloat(rotationtimeField.value);
+            nframes = Math.ceil(rotations * rotationtime * framerate);
+            options.type = 'rotation';
+            options.axis = rotationAxis;
+            options.speed = 2 * Math.PI / (rotationtime * framerate);
+            options.backandforth = backforthField.checked;
+            options.restoreView = restoreViewField.checked;
+          }
 
           // Add a notification handler for stepwise visibility, if enabled and at least
           // one skeleton is loaded.
@@ -6271,6 +6293,7 @@
           };
 
           // Save result to file
+          var reload = historyField.checked;
           var onDone = (function(frames) {
             // Export movie
             var output = Whammy.fromImageArray(frames, framerate);
@@ -6278,13 +6301,25 @@
 
             // Reset visibility and unblock UI
             this.space.setSkeletonVisibility(visMap);
+
+            if (reload) {
+              this.reloadSkeletons(this.getSelectedSkeletons());
+            }
             $.unblockUI();
           }).bind(this);
 
           // Get frame images
-          var animation = CATMAID.AnimationFactory.createAnimation(options);
-          this.getAnimationFrames(animation, nframes, undefined,
-              width, height, onDone, onStep, options);
+          var prepare;
+          if (historyField.checked) {
+            prepare = this.createAnimation('history', options);
+          } else {
+            prepare = Promise.resolve(CATMAID.AnimationFactory.createAnimation(options));
+          }
+
+          prepare.then((function(animation) {
+              this.getAnimationFrames(animation, nframes, undefined,
+                  width, height, onDone, onStep, options);
+            }).bind(this));
         } catch (e) {
           // Unblock UI and re-throw exception
           this.space.setSkeletonVisibility(visMap);

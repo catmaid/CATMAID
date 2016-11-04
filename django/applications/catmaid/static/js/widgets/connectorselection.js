@@ -190,8 +190,10 @@
     
     // Set proper table titles
     var titles;
-    if (relation == 'presynaptic_to' || relation == 'postsynaptic_to' || relation === undefined) {
+    if (relation == 'presynaptic_to') {
       titles = ['Presyn. neuron', 'Postsyn. neuron'];
+    } else if (relation == 'postsynaptic_to') {
+      titles = ['Postsyn. neuron', 'Presyn. neuron'];
     } else {
       titles = ['Neuron 1', 'Neuron 2'];
     }

@@ -153,11 +153,11 @@
 
     var start_date = $("#start_date");
     start_date.datepicker();
-    start_date.val(back.getMonth() + "/" + back.getDate() + "/" + back.getFullYear());
+    start_date.val((back.getMonth() + 1) + "/" + back.getDate() + "/" + back.getFullYear());
 
     var end_date = $("#end_date");
     end_date.datepicker();
-    end_date.val(today.getMonth() + "/" + today.getDate() + "/" + today.getFullYear());
+    end_date.val((today.getMonth() + 1) + "/" + today.getDate() + "/" + today.getFullYear());
   });
 
   var update = function(project_id, user_id, start, end, max_gap, min_nodes) {

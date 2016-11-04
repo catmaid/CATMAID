@@ -1173,7 +1173,7 @@
           var data = table.row(this).data();
           var tnid = parseInt(data[2]);
           var skeleton_id = parseInt(data[3]);
-          CATMAID.fetch(CATMAID.makeURL(project.id + '/node/get_location'), 'POST',
+          CATMAID.fetch(project.id + '/node/get_location', 'POST',
               { tnid: tnid }, false, "skeleton_analytics_go_to_node")
             .then(function(json) {
               SkeletonAnnotations.staticMoveTo(json[3], json[2], json[1],

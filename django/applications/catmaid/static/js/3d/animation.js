@@ -188,11 +188,23 @@
 
     var currentDate = new Date(startEpoch);
 
-    return function(t) {
+    return function(t, options) {
+
+      var ebl = emptyBoutLength;
+      var noCache = false;
+
+      if (options) {
+        if (undefined !== emptyBoutLength) {
+          ebl = options.emptyBoutLength;
+        }
+        if (undefined !== noCache) {
+          noCache = options.noCache;
+        }
+      }
 
       // If empty bouts should be skipped, find the closest next change and
       // forward time to it if its farther away than the empty bout skip time.
-      if (emptyBoutLength) {
+      if (ebl) {
         var closestChange = null;
         for (var i=0; i < skeletonIds.length; ++i) {
           var skeleton = skeletons[skeletonIds[i]];
@@ -204,7 +216,7 @@
           }
         }
         if (closestChange) {
-          if (closestChange.getTime() - currentDate.getTime() > emptyBoutLength) {
+          if (closestChange.getTime() - currentDate.getTime() > ebl) {
             currentDate.setTime(closestChange.getTime());
           }
         }
@@ -213,7 +225,8 @@
       // Reload skeleton data for current point in time
       for (var i=0; i < skeletonIds.length; ++i) {
         var skeleton = skeletons[skeletonIds[i]];
-        skeleton.resetToPointInTime(skeleton.skeletonmodel, skeletonOptions, currentDate);
+        skeleton.resetToPointInTime(skeleton.skeletonmodel, skeletonOptions,
+            currentDate, noCache);
         skeleton.show(skeletonOptions, currentDate);
       }
 

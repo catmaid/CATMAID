@@ -5252,7 +5252,7 @@
     // Only generate a new skeleton version if new changes are visible at this
     // point in time (and if no next change time has been recorded yet).
     var nextChange = this.history.nextChange;
-    if (undefined !== nextChange) {
+    if (undefined !== nextChange && !noCache) {
       if (!nextChange || nextChange > timestamp) {
         return;
       }
@@ -5839,23 +5839,26 @@
   /**
    * Render loop for the given animation.
    */
-  WebGLApplication.prototype.renderAnimation = function(animation, t)
+  WebGLApplication.prototype.renderAnimation = function(animation, t, singleFrame, options)
   {
     // Make sure we know this animation
     this.animation = animation;
+    this.animationTime = t;
     // Quere next frame for next time point
-    this.animationRequestId = window.requestAnimationFrame(
-        this.renderAnimation.bind(this, animation, t + 1));
+    if (!singleFrame) {
+      this.animationRequestId = window.requestAnimationFrame(
+          this.renderAnimation.bind(this, animation, t + 1, false));
+    }
 
     // Update animation and then render
-    animation.update(t);
+    animation.update(t, options);
     this.space.render();
   };
 
   /**
    * Start the given animation.
    */
-  WebGLApplication.prototype.startAnimation = function(animation)
+  WebGLApplication.prototype.startAnimation = function(animation, time)
   {
     if (this.animationRequestId) {
       CATMAID.info('There is already an animation running');
@@ -5868,20 +5871,22 @@
     }
 
     // Start animation at time point 0
-    this.renderAnimation(animation, 0);
+    this.renderAnimation(animation, time ? time : 0);
   };
 
   /**
    * Stop the current animation.
+   *
+   * @param {boolean} pause Don't dispose animation, only stop animating
    */
-  WebGLApplication.prototype.stopAnimation = function()
+  WebGLApplication.prototype.stopAnimation = function(pause)
   {
     if (this.animationRequestId) {
       window.cancelAnimationFrame(this.animationRequestId);
       this.animationRequestId = undefined;
     }
 
-    if (this.animation) {
+    if (this.animation && !pause) {
       if (this.animation.stop) {
         this.animation.stop();
       }

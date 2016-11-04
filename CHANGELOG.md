@@ -20,7 +20,10 @@ Tracing layer:
 3D viewer:
 
 - History replay now has a reset button to load the most recent version of each
-  skeleton.
+  skeleton. The new pause button will stop the animation at the current time and
+  pressing start will resume playback. Additionally, a slider control now allows
+  to move to arbitrary points in time of the history animations. Touching the
+  slider will automatically pause the replay.
 
 
 Neuron dendrogram:

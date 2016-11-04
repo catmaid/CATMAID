@@ -966,18 +966,63 @@ var WindowMaker = new function()
           WA.options.animation_record_timerange = false;
         }, null, 'YYYY-MM-DD hh:mm', true);
 
+    var animationFinished = false;
+    var animationPaused = false;
+    var sliderInitialized = false;
+    var timeSliderTimeout = null;
+    var historyPauseOptions = {
+      emptyBoutLength: null,
+      noCache: true
+    };
+
+    var timeSliderUpdate = function(val) {
+      window.clearTimeout(timeSliderTimeout);
+      timeSliderTimeout = null;
+      if (WA.animation) {
+        animationFinished = false;
+        WA.stopAnimation(true);
+        var time = Math.round(val / WA.options.animation_hours_per_tick);
+        WA.renderAnimation(WA.animation, time, true, historyPauseOptions);
+      }
+    };
+    var timeSliderDelayedUpdate = function(val) {
+      if (timeSliderTimeout) {
+          window.clearTimeout(timeSliderTimeout);
+      }
+      timeSliderTimeout = window.setTimeout(timeSliderDelayedUpdate, 50);
+    };
+    var timeSlider = new CATMAID.Slider(CATMAID.Slider.HORIZONTAL,
+        false, 0, 10, 100, 0, timeSliderUpdate, undefined, false);
+    var timeSliderLabel = document.createElement('label');
+    timeSliderLabel.appendChild(document.createTextNode('Time'));
+    timeSliderLabel.appendChild(timeSlider.getView());
+
     var stopAnimation = function() {
       WA.stopAnimation();
       timeRangeRecorded = false;
+      sliderInitialized = false;
+      animationPaused = false;
+    };
+    var pauseAnimation = function() {
+      WA.stopAnimation(true);
+      animationPaused = true;
     };
     var startAnimation = function() {
+      if (animationFinished) {
+        animationPaused = false;
+      }
+      if (animationPaused) {
+        animationPaused = false;
+        WA.startAnimation(WA.animation, WA.animationTime);
+        return;
+      }
       try {
         var options = {
           notify: function(currentDate, startDate, endDate) {
             // Update time display and if the end is reached, stop animation
             if (currentDate > endDate) {
-              stopAnimation();
-              historyTimeDisplay.textContent = "";
+              animationFinished = true;
+              pauseAnimation();
             } else {
               historyTimeDisplay.textContent = currentDate.toString();
             }
@@ -993,6 +1038,19 @@ var WindowMaker = new function()
                   .replace(/\..*$/, '').replace(/T/, ' ').replace(/:\d\d$/, ''));
               timeRangeRecorded = true;
             }
+
+            // Init time slider, if not already done
+            if (!sliderInitialized) {
+              var epochTotalDiff = endDate.getTime() - startDate.getTime();
+              var hourTotalDiff = Number((epochTotalDiff / 1000 / 60 / 60).toFixed(1));
+              timeSlider.update(0, hourTotalDiff, 10, 0, timeSliderUpdate);
+              sliderInitialized = true;
+            }
+
+            // Set time slider value to current hour since start
+            var epochDiff = currentDate.getTime() - startDate.getTime();
+            var hourDiff = Number((epochDiff / 1000 / 60 / 60).toFixed(1));
+            timeSlider.setByValue(hourDiff, true);
           }
         };
         WA.createAnimation('history', options)
@@ -1014,13 +1072,20 @@ var WindowMaker = new function()
             stopAnimation();
             historyTimeDisplay.textContent = "";
           }],
+          ['Pause', function() {
+            pauseAnimation();
+          }],
           ['Reset', function() {
             stopAnimation();
+            animationPaused = false;
+            animationFinished = false;
             historyTimeDisplay.textContent = "";
             if (!WA.options.animation_history_reset_after_stop) {
               WA.reloadSkeletons(WA.getSelectedSkeletons());
             }
+            timeSlider.setByValue(0, true);
           }],
+          [timeSliderLabel],
           ['Hours per tick', o.animation_hours_per_tick, '', function() {
             WA.options.animation_hours_per_tick = parseFloat(this.value);
            }, 5],

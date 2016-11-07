@@ -74,7 +74,6 @@
             '<thead>' + headings + '</thead>' +
             '<tfoot>' + headings + '</tfoot>' +
             '<tbody>' +
-              '<tr>' + this.labels.map(function() { return '<td></td>'; }).join('') + '</tr>' +
             '</tbody>' +
           '</table>';
         // ABOVE, notice the table needs one dummy row
@@ -108,9 +107,11 @@
     if (0 === Object.keys(new_models).length) return;
 
     CATMAID.NeuronNameService.getInstance().registerAll(this, new_models,
-        (function() {
-          this.load(new_models, this.sigma, this.table.fnAddData.bind(this.table));
+      (function() {
+        this.load(new_models, this.sigma, (function(rows) {
+          this.table.rows.add(rows).draw();
         }).bind(this));
+      }).bind(this));
   };
 
   SkeletonMeasurementsTable.prototype.load = function(models, sigma, fnDone) {
@@ -161,7 +162,7 @@
   SkeletonMeasurementsTable.prototype.clear = function() {
       if (!this.table) return;
       this.models = {};
-      this.table.fnClearTable();
+      this.table.clear().draw();
   };
 
   SkeletonMeasurementsTable.prototype.removeSkeletons = function(skids) {
@@ -179,10 +180,11 @@
         return !to_remove.hasOwnProperty(row[1]);
       });
 
-      this.table.fnClearTable();
+      this.table.clear();
       if (rows.length > 0) {
-        this.table.fnAddData(rows);
+        this.table.rows.add(rows);
       }
+      this.table.draw();
   };
 
   SkeletonMeasurementsTable.prototype.update = function() {
@@ -227,33 +229,38 @@
   };
 
   SkeletonMeasurementsTable.prototype.init = function() {
-    if (this.table) this.table.remove();
+    if (this.table) this.table.destroy();
 
     var n_labels = this.labels.length;
 
-    this.table = $('table#skeleton_measurements_table' + this.widgetID).dataTable({
-        // http://www.datatables.net/usage/options
-        "bDestroy": true,
-        "sDom": '<"H"lr>t<"F"ip>',
-        // default: <"H"lfr>t<"F"ip>
-        "bProcessing": true,
-        "bServerSide": false, // Enable sorting locally, and prevent sorting from calling the fnServerData to reload the table -- an expensive and undesirable operation.
-        "bAutoWidth": false,
-        "iDisplayLength": -1,
-        "aLengthMenu": [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
-        //"aLengthChange": false,
-        "bJQueryUI": true,
-        "aoColumns": this.labels.map((function() { return this; }).bind({bSearchable: true, bSortable: true}))
+    this.table = $('table#skeleton_measurements_table' + this.widgetID).DataTable({
+        destroy: true,
+        dom: '<"H"lr>t<"F"ip>',
+        processing: true,
+        // Enable sorting locally, and prevent sorting from calling the
+        // fnServerData to reload the table -- an expensive and undesirable
+        // operation.
+        serverSide: false,
+        autoWidth: false,
+        pageLength: -1,
+        lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
+        jQueryUI: true,
+        columns: this.labels.map((function() {
+          return this;
+        }).bind({
+          searchable: true,
+          sortable: true
+        }))
     });
-
-    // Remove default dummy row
-    this.table.fnClearTable();
   };
 
   SkeletonMeasurementsTable.prototype.updateNeuronNames = function() {
-      this.table.fnGetData().forEach(function(row, i) {
-          this.table.fnUpdate(this._makeStringLink(CATMAID.NeuronNameService.getInstance().getName(row[1]), row[1]), i, 0);
-      }, this);
+    var nns = CATMAID.NeuronNameService.getInstance();
+    this.table.rows().each(function(i) {
+      var row = this.data();
+      row[0] = this._makeStringLink(nns.getName(row[1]), row[1]);
+    }, this);
+    this.table.draw();
   };
 
   SkeletonMeasurementsTable.prototype.adjustOptions = function() {
@@ -275,11 +282,11 @@
 
   SkeletonMeasurementsTable.prototype.exportCSV = function() {
     if (!this.table) return;
-    var skeletonRows = this.table._('tr', {"filter":"applied"});
+    var skeletonRows = this.table.rows({search: 'applied'}).data();
     var csv = this.labels.join(',') + '\n' + skeletonRows.map(function(row) {
       return $(row[0]).text() + ',' + row.slice(1).join(',');
-    }).join('\n'),
-        blob = new Blob([csv], {type: 'text/plain'});
+    }).join('\n');
+    var blob = new Blob([csv], {type: 'text/plain'});
     saveAs(blob, "skeleton_measurements.csv");
   };
 

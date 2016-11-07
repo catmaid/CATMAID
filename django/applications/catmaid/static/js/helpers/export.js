@@ -9,8 +9,8 @@
    * Export an array of arrays as XLSX file. The following optional parameters
    * can be provided as fields of the options argument:
    *
-   * boldFirstRow: boolean, whether first row should be bold 
-   * boldFirstCol: boolean, whether first column should be bold 
+   * boldFirstRow: boolean, whether first row should be bold
+   * boldFirstCol: boolean, whether first column should be bold
    * colorIndex:   object, map cell content to background colors
    *
    * @param {Array}  lines   An array of arrays (rows) to be exported.
@@ -120,7 +120,7 @@
                   ++nextStyleIndex;
                   ++nextFillIndex;
                   ++nextFontIndex;
-                } 
+                }
                 $(this).attr( 's', style.styleIndex );
               }
             });
@@ -164,7 +164,7 @@
           };
         })
       });
-  
+
       // Press excel export button
       var exportButton = $('a.buttons-excel', content);
       if (0 === exportButton.length) {

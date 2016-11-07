@@ -65,6 +65,13 @@
         csv.setAttribute("value", "Export CSV");
         csv.onclick = this.exportCSV.bind(this);
         controls.appendChild(csv);
+
+        var exportXLSX = document.createElement('input');
+        exportXLSX.setAttribute("type", "button");
+        exportXLSX.setAttribute("value", "Export XLSX");
+        exportXLSX.setAttribute("title", "Export a spreadsheet file compatible to Microsoft Excel and Libre Office, colors are preserved");
+        exportXLSX.onclick = this.exportXLSX.bind(this);
+        controls.appendChild(exportXLSX);
       },
       createContent: function(content) {
         var headings = '<tr>' + this.labels.map(function(label) { return '<th>' + label + '</th>'; }).join('') + '</tr>';
@@ -288,6 +295,40 @@
     }).join('\n');
     var blob = new Blob([csv], {type: 'text/plain'});
     saveAs(blob, "skeleton_measurements.csv");
+  };
+
+  /**
+   * Export the currently displayed measurmenent table as XLSX file using jQuery DataTables.
+   */
+  SkeletonMeasurementsTable.prototype.exportXLSX = function() {
+    var data = this.table ? this.table.rows({search: 'applied'}).data().toArray() : [];
+    if (0 === data.length) {
+      CATMAIR.error("Please load some data first.");
+      return;
+    }
+    // Create a new array that contains entries for each line. Pre-pulate with
+    // first element (empty upper left cell). Unfortunately, an empty string
+    // doesn't work correctly, and some content has to be provided.
+    var lines = [];
+
+    // Add header
+    lines.push(this.labels.slice(0));
+
+    // Add data
+    data.forEach(function(row) {
+      // Add a copy of the row
+      var line = row.slice(0);
+      line[0] = $(line[0]).text();
+      this.push(line);
+    }, lines);
+
+    var now = new Date();
+    var date = now.getFullYear() + '-' + now.getMonth() + '-' + now.getDay();
+
+    CATMAID.exportXLSX(lines, {
+      boldFirstRow: true,
+      filename: 'catmaid-skeleton-metrics-' + date,
+    });
   };
 
   // Make measurement table available in CATMAID namespace

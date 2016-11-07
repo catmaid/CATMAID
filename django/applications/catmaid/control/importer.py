@@ -22,8 +22,8 @@ from formtools.wizard.views import SessionWizardView
 from guardian.models import Permission
 from guardian.shortcuts import get_perms_for_model, assign
 
-from catmaid.models import (Class, Relation, ClassInstance, Project, Stack,
-        ProjectStack, Overlay, StackClassInstance, TILE_SOURCE_TYPES)
+from catmaid.models import (Class, Relation, ClassClass, ClassInstance, Project,
+        Stack, ProjectStack, Overlay, StackClassInstance, TILE_SOURCE_TYPES)
 from catmaid.fields import Double3D
 from catmaid.control.common import urljoin
 from catmaid.control.classification import get_classification_links_qs, \
@@ -219,6 +219,9 @@ class PreProject:
         self.already_known = already_known_pid != None
         self.already_known_pid = already_known_pid
         self.action = None
+
+        # Collect classification information, if available
+        self.ontology = p.get('ontology', None)
 
     def set_known_pid(self, pid):
         self.already_known = pid != None
@@ -934,6 +937,56 @@ class ConfirmationForm(forms.Form):
     """
     something = forms.CharField(initial="", required=False)
 
+def ensure_classes(project, classes, user):
+    """ Make sure the given project has all referenced classes and relations.
+    The classes argument is expected to be a list of root class names, each one
+    forming a tree of {relation, class, children} objects. The relation
+    properties refers to the parent element.
+    """
+
+    def create(node, parent=None):
+        name = node['class']
+        cls, _ = Class.objects.get_or_create(project=project, class_name=name,
+              defaults={
+                  'user': user
+              })
+
+        if parent:
+            parent_relation_name = node.get('relation', None)
+            if not parent_relation_name:
+                raise ValueError("Need parent relation for class \"" + name + "\"")
+            rel, _ = Relation.objects.get_or_create(project=project,
+                    relation_name=parent_relation_name, defaults={
+                      'user': user
+                    })
+            cls_cls, _ = ClassClass.objects.get_or_create(project=project,
+                    class_a=cls, class_b=parent, relation=rel, defaults={
+                      'user': user
+                    })
+
+        for child in node.get('children', []):
+            create(child, cls)
+
+        return cls
+
+    for root_node in classes:
+        root_class = create(root_node)
+        # Make sure roots are classification roots
+        classification_root_class, _ = Class.objects.get_or_create(project=project,
+                class_name="classification_root", defaults={
+                    'user': user
+                })
+        is_a, _ = Relation.objects.get_or_create(project=project,
+                relation_name="is_a", defaults={
+                    'user': user
+                })
+        classification_root_link, _ = ClassClass.objects.get_or_create(
+                project=project, class_a=root_class,
+                class_b=classification_root_class, relation=is_a, defaults={
+                  'user': user
+                })
+
+
 def import_projects( user, pre_projects, tags, permissions,
         default_tile_width, default_tile_height, default_tile_source_type,
         cls_graph_ids_to_link, remove_unref_stack_data):
@@ -1175,6 +1228,9 @@ def import_projects( user, pre_projects, tags, permissions,
                         stack=ls['stack'],
                     )
 
+            # Add ontology information, if provided
+            if pp.ontology:
+                ensure_classes(p, pp.ontology, user)
             # Link classification graphs
             for cg in cls_graph_ids_to_link:
                 workspace = settings.ONTOLOGY_DUMMY_PROJECT_ID

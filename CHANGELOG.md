@@ -4,6 +4,10 @@
 
 ### Features and enhancements
 
+Measurement Table:
+
+- The neuron name is now quoted in the CSV file export. This makes it more
+  robust when commas are used in the name representation (e.g. if annotations).
 
 
 ### Bug fixes

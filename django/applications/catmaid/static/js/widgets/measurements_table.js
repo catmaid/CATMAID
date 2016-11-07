@@ -284,7 +284,7 @@
     if (!this.table) return;
     var skeletonRows = this.table.rows({search: 'applied'}).data();
     var csv = this.labels.join(',') + '\n' + skeletonRows.map(function(row) {
-      return $(row[0]).text() + ',' + row.slice(1).join(',');
+      return '"' + $(row[0]).text() + '",' + row.slice(1).join(',');
     }).join('\n');
     var blob = new Blob([csv], {type: 'text/plain'});
     saveAs(blob, "skeleton_measurements.csv");

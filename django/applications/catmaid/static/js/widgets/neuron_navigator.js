@@ -7,7 +7,6 @@
   project,
   requestQueue,
   SkeletonAnnotations,
-  TreenodeTable,
   WindowMaker
 */
 
@@ -2069,7 +2068,7 @@
 
     treenodetable_button.onclick = (function() {
       if (this.skeleton_ids.length > 0) {
-        var TNT = new TreenodeTable();
+        var TNT = new CATMAID.TreenodeTable();
         WindowMaker.create('node-table', TNT);
         TNT.append(this.getSelectedSkeletonModels());
       }

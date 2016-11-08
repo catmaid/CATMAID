@@ -1897,7 +1897,7 @@ var WindowMaker = new function()
 
   var createNodeTableWindow = function(tnt_instance)
   {
-    var TNT = tnt_instance ? tnt_instance : new TreenodeTable();
+    var TNT = tnt_instance ? tnt_instance : new CATMAID.TreenodeTable();
     var win = new CMWWindow(TNT.getName());
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";

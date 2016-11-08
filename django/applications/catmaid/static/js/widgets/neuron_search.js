@@ -14,7 +14,7 @@
   var NeuronAnnotations = function()
   {
     this.widgetID = this.registerInstance();
-    this.registerSource();
+    CATMAID.SkeletonSource.call(this, true);
 
     this.nextFieldID = 1;    // unique ID for annotation fields added by the "+" button
     // Results of main and sub queries. The main query will be index 0,
@@ -43,9 +43,10 @@
         this.handleAnnotationUpdate, this);
   };
 
-  NeuronAnnotations.prototype = {};
+  NeuronAnnotations.prototype = Object.create(CATMAID.SkeletonSource.prototype);
+  NeuronAnnotations.prototype.constuctor = NeuronAnnotations;
+
   $.extend(NeuronAnnotations.prototype, new InstanceRegistry());
-  $.extend(NeuronAnnotations.prototype, new CATMAID.SkeletonSource());
 
   /* Implement interfaces */
 

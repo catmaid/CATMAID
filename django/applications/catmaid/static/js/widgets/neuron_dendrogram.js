@@ -17,7 +17,7 @@
    */
   var NeuronDendrogram = function() {
     this.widgetID = this.registerInstance();
-    this.registerSource();
+    CATMAID.SkeletonSource.call(this, true);
 
     this.collapsed = true;
     this.showNodeIDs = false;
@@ -57,9 +57,10 @@
         this.handleSkeletonChange, this);
   };
 
-  NeuronDendrogram.prototype = {};
+  NeuronDendrogram.prototype = Object.create(CATMAID.SkeletonSource.prototype);
+  NeuronDendrogram.prototype.constructor = NeuronDendrogram;
+
   $.extend(NeuronDendrogram.prototype, new InstanceRegistry());
-  $.extend(NeuronDendrogram.prototype, new CATMAID.SkeletonSource());
   CATMAID.asEventSource(NeuronDendrogram.prototype);
 
   /* Implement interfaces */

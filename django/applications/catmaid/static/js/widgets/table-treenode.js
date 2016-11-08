@@ -4,7 +4,7 @@
 
 var TreenodeTable = function() {
   this.widgetID = this.registerInstance();
-  this.registerSource();
+  CATMAID.SkeletonSource.call(this, true);
 
   this.models = {};
   this.ranges = {};
@@ -13,9 +13,10 @@ var TreenodeTable = function() {
   this.filter_searchtag = '';
 };
 
-TreenodeTable.prototype = {};
+TreenodeTable.prototype = Object.create(CATMAID.SkeletonSource.prototype);
+TreenodeTable.prototype.constructor = TreenodeTable;
+
 $.extend(TreenodeTable.prototype, new InstanceRegistry());
-$.extend(TreenodeTable.prototype, new CATMAID.SkeletonSource());
 
 TreenodeTable.prototype.getName = function() {
   return "Treenode table " + this.widgetID;

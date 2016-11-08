@@ -29,6 +29,89 @@
     return "Morphology Plot " + this.widgetID;
   };
 
+  MorphologyPlot.prototype.getWidgetConfiguration = function() {
+    return {
+      controlsID: 'morphology_plot_buttons' + this.widgetID,
+      contentID: 'morphology_plot_div' + this.widgetID,
+      createControls: function(controls) {
+        controls.appendChild(document.createTextNode('From'));
+        controls.appendChild(CATMAID.skeletonListSources.createSelect(this));
+
+        var add = document.createElement('input');
+        add.setAttribute("type", "button");
+        add.setAttribute("value", "Append");
+        add.onclick = this.loadSource.bind(this);
+        controls.appendChild(add);
+
+        var clear = document.createElement('input');
+        clear.setAttribute("type", "button");
+        clear.setAttribute("value", "Clear");
+        clear.onclick = this.clear.bind(this);
+        controls.appendChild(clear);
+
+        var update = document.createElement('input');
+        update.setAttribute("type", "button");
+        update.setAttribute("value", "Refresh");
+        update.onclick = this.update.bind(this);
+        controls.appendChild(update);
+
+        var annotate = document.createElement('input');
+        annotate.setAttribute("type", "button");
+        annotate.setAttribute("value", "Annotate");
+        annotate.onclick = this.annotate_skeleton_list.bind(this);
+        controls.appendChild(annotate);
+
+        controls.appendChild(document.createTextNode(' - '));
+
+        var csv = document.createElement('input');
+        csv.setAttribute("type", "button");
+        csv.setAttribute("value", "Export CSV");
+        csv.onclick = this.exportCSV.bind(this);
+        controls.appendChild(csv);
+
+        var svg = document.createElement('input');
+        svg.setAttribute("type", "button");
+        svg.setAttribute("value", "Export SVG");
+        svg.onclick = this.exportSVG.bind(this);
+        controls.appendChild(svg);
+
+        controls.appendChild(document.createElement('br'));
+
+        CATMAID.DOM.appendSelect(controls, "function", null,
+            ['Sholl analysis',
+             'Radial density of cable',
+             'Radial density of branch nodes',
+             'Radial density of ends',
+             'Radial density of input synapses',
+             'Radial density of output synapses']);
+
+        controls.appendChild(document.createTextNode(' Radius (nm): '));
+        var radius = document.createElement('input');
+        radius.setAttribute("id", "morphology_plot_step" + this.widgetID);
+        radius.setAttribute("type", "text");
+        radius.setAttribute("value", "1000");
+        radius.style.width = "40px";
+        controls.appendChild(radius);
+
+        CATMAID.DOM.appendSelect(controls, "center", ' Center: ',
+            ['First branch node',
+             'Root node',
+             'Active node',
+             'Bounding box center',
+             'Average node position',
+             'Highest centrality node',
+             'Highest signal flow centrality']);
+
+        var redraw = document.createElement('input');
+        redraw.setAttribute("type", "button");
+        redraw.setAttribute("value", "Draw");
+        redraw.onclick = this.redraw.bind(this);
+        controls.appendChild(redraw);
+      },
+      createContent: function(content) {}
+    };
+  };
+
   MorphologyPlot.prototype.destroy = function() {
     this.unregisterInstance();
     this.unregisterSource();
@@ -523,5 +606,11 @@
 
   // Export widget
   CATMAID.MorphologyPlot = MorphologyPlot;
+
+  // Register widget with CATMAID
+  CATMAID.registerWidget({
+    key: "morphology-plot",
+    creator: MorphologyPlot
+  });
 
 })(CATMAID);

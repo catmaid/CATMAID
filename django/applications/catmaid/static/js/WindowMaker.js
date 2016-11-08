@@ -1774,109 +1774,6 @@ var WindowMaker = new function()
     return {window: win, widget: GP};
   };
 
-
-  var createMorphologyPlotWindow = function() {
-
-    var MA = new CATMAID.MorphologyPlot();
-
-    var win = new CMWWindow(MA.getName());
-    var content = win.getFrame();
-    content.style.backgroundColor = "#ffffff";
-
-    var buttons = document.createElement('div');
-    buttons.setAttribute('id', 'morphology_plot_buttons' + MA.widgetID);
-    buttons.setAttribute('class', 'buttonpanel');
-    DOM.addSourceControlsToggle(win, MA);
-    DOM.addButtonDisplayToggle(win);
-
-    buttons.appendChild(document.createTextNode('From'));
-    buttons.appendChild(CATMAID.skeletonListSources.createSelect(MA));
-
-    var add = document.createElement('input');
-    add.setAttribute("type", "button");
-    add.setAttribute("value", "Append");
-    add.onclick = MA.loadSource.bind(MA);
-    buttons.appendChild(add);
-
-    var clear = document.createElement('input');
-    clear.setAttribute("type", "button");
-    clear.setAttribute("value", "Clear");
-    clear.onclick = MA.clear.bind(MA);
-    buttons.appendChild(clear);
-
-    var update = document.createElement('input');
-    update.setAttribute("type", "button");
-    update.setAttribute("value", "Refresh");
-    update.onclick = MA.update.bind(MA);
-    buttons.appendChild(update);
-
-    var annotate = document.createElement('input');
-    annotate.setAttribute("type", "button");
-    annotate.setAttribute("value", "Annotate");
-    annotate.onclick = MA.annotate_skeleton_list.bind(MA);
-    buttons.appendChild(annotate);
-
-    buttons.appendChild(document.createTextNode(' - '));
-
-    var csv = document.createElement('input');
-    csv.setAttribute("type", "button");
-    csv.setAttribute("value", "Export CSV");
-    csv.onclick = MA.exportCSV.bind(MA);
-    buttons.appendChild(csv);
-
-    var svg = document.createElement('input');
-    svg.setAttribute("type", "button");
-    svg.setAttribute("value", "Export SVG");
-    svg.onclick = MA.exportSVG.bind(MA);
-    buttons.appendChild(svg);
-
-    buttons.appendChild(document.createElement('br'));
-
-    DOM.appendSelect(buttons, "function", null,
-        ['Sholl analysis',
-         'Radial density of cable',
-         'Radial density of branch nodes',
-         'Radial density of ends',
-         'Radial density of input synapses',
-         'Radial density of output synapses']);
-
-    buttons.appendChild(document.createTextNode(' Radius (nm): '));
-    var radius = document.createElement('input');
-    radius.setAttribute("id", "morphology_plot_step" + MA.widgetID);
-    radius.setAttribute("type", "text");
-    radius.setAttribute("value", "1000");
-    radius.style.width = "40px";
-    buttons.appendChild(radius);
-
-    DOM.appendSelect(buttons, "center", ' Center: ',
-        ['First branch node',
-         'Root node',
-         'Active node',
-         'Bounding box center',
-         'Average node position',
-         'Highest centrality node',
-         'Highest signal flow centrality']);
-
-    var redraw = document.createElement('input');
-    redraw.setAttribute("type", "button");
-    redraw.setAttribute("value", "Draw");
-    redraw.onclick = MA.redraw.bind(MA);
-    buttons.appendChild(redraw);
-
-    content.appendChild(buttons);
-
-    var container = createContainer('morphology_plot_div' + MA.widgetID);
-    content.appendChild(container);
-
-    addListener(win, container, 'morphology_plot_buttons' + MA.widgetID, MA.destroy.bind(MA), MA.resize.bind(MA));
-
-    addLogic(win);
-
-    CATMAID.skeletonListSources.updateGUI();
-
-    return {window: win, widget: MA};
-  };
-
   var createVennDiagramWindow = function() {
 
     var VD = new VennDiagram();
@@ -2760,7 +2657,6 @@ var WindowMaker = new function()
     "notifications": createNotificationsWindow,
     "clustering-widget": createClusteringWidget,
     "circuit-graph-plot": createCircuitGraphPlot,
-    "morphology-plot": createMorphologyPlotWindow,
     "venn-diagram": createVennDiagramWindow,
     "neuron-annotations": createNeuronAnnotationsWindow,
     "neuron-navigator": createNeuronNavigatorWindow,

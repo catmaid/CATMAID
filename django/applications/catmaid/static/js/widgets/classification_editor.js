@@ -43,19 +43,76 @@
     };
 
     /**
+     * Replace current content with a classification setup form.
+     */
+    this.show_setup_message = function(project_id, workspace_id) {
+      var container = document.getElementById(content_div_id);
+      if (!container) {
+        throw new CATMAID.Error("Could not find widget container");
+      }
+
+      var p1 = document.createElement('p');
+      p1.appendChild(document.createTextNode("The classification system " +
+          "doesn't seem to be set-up to work with this project. It needs " +
+          "certain classes and relations which have not been found (or only " +
+          "parts of it)."));
+      container.appendChild(p1);
+
+      if (!CATMAID.hasPermission(workspace_id, 'can_annotate')) {
+        var p2 = document.createElement('p');
+        p2.appendChild(document.createTextNode("Unfortunately, you don't " +
+            "have the permissions to add the missing bits to the current " +
+            "project. Please report this to your administrator."));
+        container.appendChild(p2);
+      } else {
+        var p2 = document.createElement('p');
+        p2.appendChild(document.createTextNode("Please press the \"Setup\" " +
+            "button below and all needed objects are created. Thereafter, " +
+            "the Classification Editor should work with this project."));
+        var button = document.createElement('input');
+        button.setAttribute('type', 'button');
+        button.setAttribute('value', 'Setup');
+        button.onclick = function() {
+          CATMAID.fetch(project_id + '/classification/' + workspace_id +
+              '/setup/rebuild', 'GET')
+            .then(function(json) {
+              if (json.all_good) {
+                CATMAID.msg("Success", "Classification initialized");
+                ClassificationEditor.refresh();
+              } else {
+                CATMAID.warn("There was a problem during classification setup");
+              }
+            })
+            .catch(CATMAID.handleError);
+        };
+        var p3 = document.createElement('p');
+        p3.appendChild(button);
+
+        container.appendChild(p2);
+        container.appendChild(p3);
+      }
+    };
+
+    /**
      * Load the classification data.
      */
     this.load_classification = function(pid, completionCallback) {
-      requestQueue.register(self.get_cls_url(pid, '/show'),
-        'GET', undefined, CATMAID.jsonResponseHandler(
-          function(e) {
-            var container = document.getElementById(content_div_id);
-            container.innerHTML = e.content;
-            self.handleContent( e.page, container, pid );
-            // execute callback if available
-            if (completionCallback)
-              completionCallback();
-          }));
+      CATMAID.fetch(pid + '/classification/' + self.workspace_pid + '/show', 'GET')
+        .then(function(e) {
+          var container = document.getElementById(content_div_id);
+          container.innerHTML = e.content;
+          self.handleContent( e.page, container, pid );
+          // execute callback if available
+          if (completionCallback)
+            completionCallback();
+        })
+        .catch(function(error) {
+          if ("ClassificationSetupError" === error.type) {
+            self.show_setup_message(pid, self.workspace_pid);
+          } else {
+            CATMAID.handleError(error);
+          }
+        });
     };
 
     this.load_tree = function(pid, link_id) {
@@ -700,11 +757,6 @@
         // Override the submit behaviour if select graph form is displayed
         self.overrideSelectGraphSubmit(container, pid);
        }
-       else if (page_type == 'setup')
-       {
-        // Override the submit behaviour if the setup form is displayed
-        self.overrideSetupSubmit(container, pid);
-       }
     };
 
   this.overrideNewGraphSubmit = function(container, pid) {
@@ -829,26 +881,6 @@
             var e = JSON.parse(data);
             container.innerHTML = e.content;
             self.handleContent( e.page, container, pid, e.link );
-          }
-        });
-        return false;
-      });
-    }
-
-    return found;
-  };
-
-  this.overrideSetupSubmit = function(container, pid) {
-    var form = $("#setup-classification-form");
-    var found = form.length !== 0;
-    if (found) {
-      form.submit(function(){
-        $.ajax({
-          type: "POST",
-          url: form.attr('action'),
-          data: form.serialize(),
-          success: function(data, textStatus) {
-            ClassificationEditor.refresh();
           }
         });
         return false;

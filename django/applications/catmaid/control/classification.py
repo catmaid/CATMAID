@@ -8,7 +8,7 @@ from django.db import connection
 from django.db.models import Q
 from django.conf import settings
 from django.forms.widgets import CheckboxSelectMultiple
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.views.generic.base import TemplateView
 from django.shortcuts import get_object_or_404, render
 from django.contrib.contenttypes.models import ContentType
@@ -44,6 +44,19 @@ needed_relations = {
     'is_a': "A basic is_a relation",
     'classified_by': "Link a classification to something",
     'linked_to': "Links a ROI to a class instance."}
+
+
+class ClassificationSetupError(Exception):
+    """Indicates missing needed classes or relations
+    """
+    def __init__(self, message, workspace_id):
+        super(ClassificationSetupError, self).__init__(message)
+        self.workspace_id = workspace_id
+
+    def __str__(self):
+        return "{}: Workspace #{}".format(self.message,
+            str(self.workspace_id) or "?")
+
 
 class ClassProxy(Class):
     """ A proxy class to allow custom labeling of class in model forms.
@@ -399,58 +412,57 @@ def show_classification_editor( request, workspace_pid=None, project_id=None, li
     # First, check if the classification system is correctly set-up
     setup_okay = check_classification_setup(workspace_pid, class_map, relation_map)
     if not setup_okay:
-        template_name = "catmaid/classification/setup.html"
-        page_type = 'setup'
-        link_if = -1
+        raise ClassificationSetupError("Required classes and relations are missing",
+            workspace.id)
+
+    if link_id is not None:
+        num_graphs = 1
+
+        selected_graph_q = ClassInstanceClassInstance.objects.filter(
+            id=link_id, project=workspace_pid)
+        # Make sure we actually got a graph:
+        if selected_graph_q.count() != 1:
+            raise Exception("Couldn't select requested classification graph with ID %d." % link_id)
+        else:
+            selected_graph = selected_graph_q[0]
+
+        context['num_graphs'] = 1
+        context['graph_id'] = link_id
+        context['settings'] = settings
+
+        template_name = "catmaid/classification/show_graph.html"
+        page_type = 'show_graph'
     else:
-        if link_id is not None:
-            num_graphs = 1
+        # Second, check how many graphs there are.
+        root_links_q = get_classification_links_qs( workspace_pid,
+                project_id, cursor=cursor)
+        num_roots = len(root_links_q)
 
-            selected_graph_q = ClassInstanceClassInstance.objects.filter(
-                id=link_id, project=workspace_pid)
-            # Make sure we actually got a graph:
-            if selected_graph_q.count() != 1:
-                raise Exception("Couldn't select requested classification graph with ID %d." % link_id)
-            else:
-                selected_graph = selected_graph_q[0]
+        context['num_graphs'] = num_roots
+        context['CATMAID_URL'] = settings.CATMAID_URL
 
-            context['num_graphs'] = 1
-            context['graph_id'] = link_id
-            context['settings'] = settings
-
+        if num_roots == 0:
+            new_graph_form_class = create_new_graph_form(workspace_pid)
+            context['new_graph_form'] = new_graph_form_class()
+            link_form = create_linked_graphs_form(workspace_pid, project_id)
+            context['link_graph_form'] = link_form()
+            num_root_classes = get_root_classes_count(workspace_pid)
+            context['num_root_classes'] = num_root_classes
+            template_name = "catmaid/classification/new_graph.html"
+            page_type = 'new_graph'
+            link_id = -1
+        elif num_roots == 1:
+            selected_graph = root_links_q[0]
+            context['graph_id'] = selected_graph.id
             template_name = "catmaid/classification/show_graph.html"
             page_type = 'show_graph'
+            link_id = selected_graph.id
         else:
-            # Second, check how many graphs there are.
-            root_links_q = get_classification_links_qs( workspace_pid,
-                    project_id, cursor=cursor)
-            num_roots = len(root_links_q)
-
-            context['num_graphs'] = num_roots
-            context['CATMAID_URL'] = settings.CATMAID_URL
-
-            if num_roots == 0:
-                new_graph_form_class = create_new_graph_form(workspace_pid)
-                context['new_graph_form'] = new_graph_form_class()
-                link_form = create_linked_graphs_form(workspace_pid, project_id)
-                context['link_graph_form'] = link_form()
-                num_root_classes = get_root_classes_count(workspace_pid)
-                context['num_root_classes'] = num_root_classes
-                template_name = "catmaid/classification/new_graph.html"
-                page_type = 'new_graph'
-                link_id = -1
-            elif num_roots == 1:
-                selected_graph = root_links_q[0]
-                context['graph_id'] = selected_graph.id
-                template_name = "catmaid/classification/show_graph.html"
-                page_type = 'show_graph'
-                link_id = selected_graph.id
-            else:
-                form = create_linked_graphs_form(workspace_pid, project_id, False)
-                context['select_graph_form'] = form()
-                template_name = "catmaid/classification/select_graph.html"
-                page_type = 'select_graph'
-                link_id = -1
+            form = create_linked_graphs_form(workspace_pid, project_id, False)
+            context['select_graph_form'] = form()
+            template_name = "catmaid/classification/select_graph.html"
+            page_type = 'select_graph'
+            link_id = -1
 
     rendered_block = render_block_to_string(template_name,
         'classification-content', {}, RequestContext(request, context))

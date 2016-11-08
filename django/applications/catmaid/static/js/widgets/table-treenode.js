@@ -25,6 +25,99 @@
     return "Treenode table " + this.widgetID;
   };
 
+  TreenodeTable.prototype.getWidgetConfiguration = function() {
+    return {
+      controlsID: "treenode_table_buttons" + this.widgetID,
+      contentID: "treenode_table_widget" + this.widgetID,
+      createControls: function(controls) {
+        controls.appendChild(document.createTextNode('From'));
+        controls.appendChild(CATMAID.skeletonListSources.createSelect(this));
+
+        var add = document.createElement('input');
+        add.setAttribute("type", "button");
+        add.setAttribute("value", "Append");
+        add.onclick = this.loadSource.bind(this);
+        controls.appendChild(add);
+
+        var clear = document.createElement('input');
+        clear.setAttribute("type", "button");
+        clear.setAttribute("value", "Clear");
+        clear.onclick = this.clear.bind(this);
+        controls.appendChild(clear);
+
+        var refresh = document.createElement('input');
+        refresh.setAttribute("type", "button");
+        refresh.setAttribute("value", "Refresh");
+        refresh.onclick = this.refresh.bind(this);
+        controls.appendChild(refresh);
+      },
+      createContent: function(content) {
+        content.innerHTML =
+          '<table cellpadding="0" cellspacing="0" border="0" class="display" id="treenodetable' + this.widgetID + '">' +
+            '<thead>' +
+              '<tr>' +
+                '<th>id</th>' +
+                '<th>type' +
+                  '' +
+                  '<select name="search_type" id="search_type' + this.widgetID + '" class="search_init">' +
+                  '<option value="">Any</option><option value="R">Root</option><option value="L" selected="selected">Leaf</option>' +
+                  '<option value="B">Branch</option><option value="S">Slab</option></select>' +
+                '</th>' +
+            // <input type="text" name="search_type" value="Search" class="search_init" />
+                '<th>tags<input type="text" name="search_labels" id="search_labels' + this.widgetID + '" value="Search" class="search_init" /></th>' +
+                '<th>c</th>' +
+                '<th>x</th>' +
+                '<th>y</th>' +
+                '<th>z</th>' +
+                '<th>s</th>' +
+                '<th>r</th>' +
+                '<th>user</th>' +
+                '<th>last modified</th>' +
+                '<th>reviewer</th>' +
+              '</tr>' +
+            '</thead>' +
+            '<tfoot>' +
+              '<tr>' +
+                '<th>id</th>' +
+                '<th>type</th>' +
+                '<th>tags</th>' +
+                '<th>c</th>' +
+                '<th>x</th>' +
+                '<th>y</th>' +
+                '<th>z</th>' +
+                '<th>s</th>' +
+                '<th>r</th>' +
+                '<th>user</th>' +
+                '<th>last modified</th>' +
+                '<th>reviewer</th>' +
+              '</tr>' +
+            '</tfoot>' +
+            '<tbody>' +
+              '<tr>' +
+                '<td></td>' +
+                '<td></td>' +
+                '<td></td>' +
+                '<td></td>' +
+                '<td></td>' +
+                '<td></td>' +
+                '<td></td>' +
+                '<td></td>' +
+                '<td></td>' +
+                '<td></td>' +
+                '<td></td>' +
+                '<td></td>' +
+              '</tr>' +
+            '</tbody>' +
+          '</table>';
+        // Above notice that without an empty row the table will fail to initialize.
+        // This empty row gets removed when calling fnClearTable
+      },
+      init: function() {
+        this.init(project.getId());
+      }
+    };
+  };
+
   TreenodeTable.prototype.destroy = function() {
     this.unregisterSource();
     this.unregisterInstance();
@@ -343,5 +436,11 @@
 
   // Export widget
   CATMAID.TreenodeTable = TreenodeTable;
+
+  // Register widget with CATMAID
+  CATMAID.registerWidget({
+    key: "node-table",
+    creator: TreenodeTable
+  });
 
 })(CATMAID);

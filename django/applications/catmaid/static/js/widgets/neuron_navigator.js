@@ -2068,9 +2068,8 @@
 
     treenodetable_button.onclick = (function() {
       if (this.skeleton_ids.length > 0) {
-        var TNT = new CATMAID.TreenodeTable();
-        WindowMaker.create('node-table', TNT);
-        TNT.append(this.getSelectedSkeletonModels());
+        var handlers = WindowMaker.create('node-table');
+        handlers.widget.append(this.getSelectedSkeletonModels());
       }
     }).bind(this);
 

@@ -1895,113 +1895,6 @@ var WindowMaker = new function()
     return {window: win, widget: null};
   };
 
-  var createNodeTableWindow = function(tnt_instance)
-  {
-    var TNT = tnt_instance ? tnt_instance : new CATMAID.TreenodeTable();
-    var win = new CMWWindow(TNT.getName());
-    var content = win.getFrame();
-    content.style.backgroundColor = "#ffffff";
-
-    var contentbutton = document.createElement('div');
-    contentbutton.setAttribute("id", 'table_of_skeleton_buttons' + TNT.widgetID);
-    contentbutton.setAttribute('class', 'buttonpanel');
-    DOM.addButtonDisplayToggle(win);
-
-    contentbutton.appendChild(document.createTextNode('From'));
-    contentbutton.appendChild(CATMAID.skeletonListSources.createSelect(TNT));
-
-    var add = document.createElement('input');
-    add.setAttribute("type", "button");
-    add.setAttribute("value", "Append");
-    add.onclick = TNT.loadSource.bind(TNT);
-    contentbutton.appendChild(add);
-
-    var clear = document.createElement('input');
-    clear.setAttribute("type", "button");
-    clear.setAttribute("value", "Clear");
-    clear.onclick = TNT.clear.bind(TNT);
-    contentbutton.appendChild(clear);
-
-    var refresh = document.createElement('input');
-    refresh.setAttribute("type", "button");
-    refresh.setAttribute("value", "Refresh");
-    refresh.onclick = TNT.refresh.bind(TNT);
-    contentbutton.appendChild(refresh);
-
-    content.appendChild( contentbutton );
-
-    var container = createContainer("treenode_table_widget" + TNT.widgetID);
-    content.appendChild( container );
-
-    container.innerHTML =
-      '<table cellpadding="0" cellspacing="0" border="0" class="display" id="treenodetable' + TNT.widgetID + '">' +
-        '<thead>' +
-          '<tr>' +
-            '<th>id</th>' +
-            '<th>type' +
-              '' +
-              '<select name="search_type" id="search_type' + TNT.widgetID + '" class="search_init">' +
-              '<option value="">Any</option><option value="R">Root</option><option value="L" selected="selected">Leaf</option>' +
-              '<option value="B">Branch</option><option value="S">Slab</option></select>' +
-            '</th>' +
-        // <input type="text" name="search_type" value="Search" class="search_init" />
-            '<th>tags<input type="text" name="search_labels" id="search_labels' + TNT.widgetID + '" value="Search" class="search_init" /></th>' +
-            '<th>c</th>' +
-            '<th>x</th>' +
-            '<th>y</th>' +
-            '<th>z</th>' +
-            '<th>s</th>' +
-            '<th>r</th>' +
-            '<th>user</th>' +
-            '<th>last modified</th>' +
-            '<th>reviewer</th>' +
-          '</tr>' +
-        '</thead>' +
-        '<tfoot>' +
-          '<tr>' +
-            '<th>id</th>' +
-            '<th>type</th>' +
-            '<th>tags</th>' +
-            '<th>c</th>' +
-            '<th>x</th>' +
-            '<th>y</th>' +
-            '<th>z</th>' +
-            '<th>s</th>' +
-            '<th>r</th>' +
-            '<th>user</th>' +
-            '<th>last modified</th>' +
-            '<th>reviewer</th>' +
-          '</tr>' +
-        '</tfoot>' +
-        '<tbody>' +
-          '<tr>' +
-            '<td></td>' +
-            '<td></td>' +
-            '<td></td>' +
-            '<td></td>' +
-            '<td></td>' +
-            '<td></td>' +
-            '<td></td>' +
-            '<td></td>' +
-            '<td></td>' +
-            '<td></td>' +
-            '<td></td>' +
-            '<td></td>' +
-          '</tr>' +
-        '</tbody>' +
-      '</table>';
-    // Above notice that without an empty row the table will fail to initialize.
-    // This empty row gets removed when calling fnClearTable
-
-    addListener(win, container, 'table_of_skeleton_buttons' + TNT.widgetID, TNT.destroy.bind(TNT));
-
-    addLogic(win);
-
-    TNT.init( project.getId() );
-
-    return {window: win, widget: TNT};
-  };
-
   var createConnectivityGraphPlot = function(instance) {
     var GP = instance ? instance : new ConnectivityGraphPlot();
 
@@ -2645,7 +2538,6 @@ var WindowMaker = new function()
     "keyboard-shortcuts": createKeyboardShortcutsWindow,
     "search": createSearchWindow,
     "3d-webgl-view": create3dWebGLWindow,
-    "node-table": createNodeTableWindow,
     "neuron-staging-area": createStagingListWindow,
     "graph-widget": createGraphWindow,
     "connectivity-graph-plot": createConnectivityGraphPlot,

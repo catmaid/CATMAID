@@ -8,15 +8,16 @@
 
 var VennDiagram = function() {
   this.widgetID = this.registerInstance();
-  this.registerSource();
+  CATMAID.SkeletonSource.call(this, true);
 
   this.groups = [];
   this.selected = {}; // skid vs model
 };
 
-VennDiagram.prototype = {};
+VennDiagram.prototype = Object.create(CATMAID.SkeletonSource.prototype);
+VennDiagram.prototype.constructor = VennDiagram;
+
 $.extend(VennDiagram.prototype, new InstanceRegistry());
-$.extend(VennDiagram.prototype, new CATMAID.SkeletonSource());
 
 VennDiagram.prototype.getName = function() {
   return "Venn Diagram " + this.widgetID;

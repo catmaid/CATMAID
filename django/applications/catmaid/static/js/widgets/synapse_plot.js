@@ -15,7 +15,7 @@
 
   var SynapsePlot = function() {
     this.widgetID = this.registerInstance();
-    this.registerSource();
+    CATMAID.SkeletonSource.call(this, true);
 
     // Each entry has an array of unique skeleton ids
     this.pre = {};
@@ -56,9 +56,10 @@
     this.preSource = new CATMAID.BasicSkeletonSource(this.getName() + ' Presynaptics');
   };
 
-  SynapsePlot.prototype = {};
+  SynapsePlot.prototype = Object.create(CATMAID.SkeletonSource.prototype);
+  SynapsePlot.prototype.constructor = SynapsePlot;
+
   $.extend(SynapsePlot.prototype, new InstanceRegistry());
-  $.extend(SynapsePlot.prototype, new CATMAID.SkeletonSource());
 
   SynapsePlot.prototype.getName = function() {
     return "Synapse Distribution Plot " + this.widgetID;

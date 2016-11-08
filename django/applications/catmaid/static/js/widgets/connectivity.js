@@ -13,7 +13,7 @@
 
   var SkeletonConnectivity = function() {
     this.widgetID = this.registerInstance();
-    this.registerSource();
+    CATMAID.SkeletonSource.call(this, true);
     this.init();
     // Default table layout to be side by side. Have it seperate from init() as
     // long as it is part of the top button row.
@@ -34,9 +34,10 @@
     CATMAID.skeletonListSources.updateGUI();
   };
 
-  SkeletonConnectivity.prototype = {};
+  SkeletonConnectivity.prototype = Object.create(CATMAID.SkeletonSource.prototype);
+  SkeletonConnectivity.prototype.constructor = SkeletonConnectivity;
+
   $.extend(SkeletonConnectivity.prototype, new InstanceRegistry());
-  $.extend(SkeletonConnectivity.prototype, new CATMAID.SkeletonSource());
 
   /**
    * Initializes the connectivity widget by setting all fields to their default

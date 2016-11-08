@@ -15,7 +15,7 @@
 
   var CircuitGraphPlot = function() {
     this.widgetID = this.registerInstance();
-    this.registerSource();
+    CATMAID.SkeletonSource.call(this, true);
 
     // Each entry has an array of one or more SkeletonModel instances
     this.models = [];
@@ -96,9 +96,10 @@
     this.pca = null;
   };
 
-  CircuitGraphPlot.prototype = {};
+  CircuitGraphPlot.prototype = Object.create(CATMAID.SkeletonSource.prototype);
+  CircuitGraphPlot.prototype.constructor = CircuitGraphPlot;
+
   $.extend(CircuitGraphPlot.prototype, new InstanceRegistry());
-  $.extend(CircuitGraphPlot.prototype, new CATMAID.SkeletonSource());
 
   CircuitGraphPlot.prototype.getName = function() {
     return "Circuit Graph Plot " + this.widgetID;

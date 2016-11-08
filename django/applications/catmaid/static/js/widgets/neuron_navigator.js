@@ -18,7 +18,7 @@
   var NeuronNavigator = function()
   {
     this.widgetID = this.registerInstance();
-    this.registerSource();
+    CATMAID.SkeletonSource.call(this, true);
     this.current_node = null;
     // Map registered neurons to the number of nodes referencing them
     this.registered_neurons = {};
@@ -29,9 +29,10 @@
       this.handleChangedAnnotations, this);
   };
 
-  NeuronNavigator.prototype = {};
+  NeuronNavigator.prototype = Object.create(CATMAID.SkeletonSource.prototype);
+  NeuronNavigator.prototype.constructor = NeuronNavigator;
+
   $.extend(NeuronNavigator.prototype, new InstanceRegistry());
-  $.extend(NeuronNavigator.prototype, new CATMAID.SkeletonSource());
 
   /* Implement interfaces */
 

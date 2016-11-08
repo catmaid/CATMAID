@@ -14,7 +14,7 @@
 
   var AnalyzeArbor = function() {
     this.widgetID = this.registerInstance();
-    this.registerSource();
+    CATMAID.SkeletonSource.call(this, true);
 
     this.table = null;
     this.skeleton_ids = [];
@@ -29,9 +29,10 @@
     this.override_microtubules_end = false;
   };
 
-  AnalyzeArbor.prototype = {};
+  AnalyzeArbor.prototype = Object.create(CATMAID.SkeletonSource.prototype);
+  AnalyzeArbor.prototype.constructor = AnalyzeArbor;
+
   $.extend(AnalyzeArbor.prototype, new InstanceRegistry());
-  $.extend(AnalyzeArbor.prototype, new CATMAID.SkeletonSource());
 
   AnalyzeArbor.prototype.getName = function() {
     return "Analyze Arbor " + this.widgetID;

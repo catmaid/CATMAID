@@ -24,7 +24,7 @@
    * compute with web workers (betweenness centrality shading). */
   var WebGLApplication = function() {
     this.widgetID = this.registerInstance();
-    this.registerSource();
+    CATMAID.SkeletonSource.call(this, true);
     this.APPEND_WARNING_THRESHOLD = 1000;
     // Indicates whether init has been called
     this.initialized = false;
@@ -49,9 +49,10 @@
         this.handleRadiusChange, this);
   };
 
-  WebGLApplication.prototype = {};
+  WebGLApplication.prototype = Object.create(CATMAID.SkeletonSource.prototype);
+  WebGLApplication.prototype.constructor = WebGLApplication;
+
   $.extend(WebGLApplication.prototype, new InstanceRegistry());
-  $.extend(WebGLApplication.prototype, new CATMAID.SkeletonSource());
 
   WebGLApplication.prototype.init = function(canvasWidth, canvasHeight, divID) {
     if (this.initialized) {

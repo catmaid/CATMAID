@@ -19,7 +19,7 @@
 
   var SynapseFractions = function() {
     this.widgetID = this.registerInstance();
-    this.registerSource();
+    CATMAID.SkeletonSource.call(this, true);
 
     // Appended neurons
     this.models = {};
@@ -59,9 +59,10 @@
     this.other_source = new CATMAID.BasicSkeletonSource(this.getName() + ' partners');
   };
 
-  SynapseFractions.prototype = {};
+  SynapseFractions.prototype = Object.create(CATMAID.SkeletonSource.prototype);
+  SynapseFractions.prototype.constructor = SynapseFractions;
+
   $.extend(SynapseFractions.prototype, new InstanceRegistry());
-  $.extend(SynapseFractions.prototype, new CATMAID.SkeletonSource());
 
   SynapseFractions.prototype.MODES = ["Downstream", "Upstream"];
   SynapseFractions.prototype.DOWNSTREAM = 1;

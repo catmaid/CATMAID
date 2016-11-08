@@ -12,15 +12,16 @@
 
 var MorphologyPlot = function() {
   this.widgetID = this.registerInstance();
-  this.registerSource();
+  CATMAID.SkeletonSource.call(this, true);
 
   this.models = {};
   this.lines = {};
 };
 
-MorphologyPlot.prototype = {};
+MorphologyPlot.prototype = Object.create(CATMAID.SkeletonSource.prototype);
+MorphologyPlot.prototype.constructor = MorphologyPlot;
+
 $.extend(MorphologyPlot.prototype, new InstanceRegistry());
-$.extend(MorphologyPlot.prototype, new CATMAID.SkeletonSource());
 
 MorphologyPlot.prototype.getName = function() {
   return "Morphology Plot " + this.widgetID;

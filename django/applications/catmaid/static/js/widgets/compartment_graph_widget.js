@@ -17,7 +17,7 @@
 
   var GroupGraph = function() {
     this.widgetID = this.registerInstance();
-    this.registerSource();
+    CATMAID.SkeletonSource.call(this, true);
 
     this.label_valign = 'top';
     this.label_halign = 'center';
@@ -267,9 +267,10 @@
     };
   };
 
-  GroupGraph.prototype = {};
+  GroupGraph.prototype = Object.create(CATMAID.SkeletonSource.prototype);
+  GroupGraph.prototype.constructor = GroupGraph;
+
   $.extend(GroupGraph.prototype, new InstanceRegistry());
-  $.extend(GroupGraph.prototype, new CATMAID.SkeletonSource());
 
   GroupGraph.prototype.SUBGRAPH_AXON_DENDRITE =  -1;
   GroupGraph.prototype.SUBGRAPH_AXON_BACKBONE_TERMINALS = -2;

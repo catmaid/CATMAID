@@ -12,15 +12,16 @@
 
   var SkeletonMeasurementsTable = function() {
     this.widgetID = this.registerInstance();
-    this.registerSource();
+    CATMAID.SkeletonSource.call(this, true);
     this.table = null;
     this.models = {};
     this.sigma = 200;
   };
 
-  SkeletonMeasurementsTable.prototype = {};
+  SkeletonMeasurementsTable.prototype = Object.create(CATMAID.SkeletonSource.prototype);
+  SkeletonMeasurementsTable.prototype.constructor = SkeletonMeasurementsTable;
+
   $.extend(SkeletonMeasurementsTable.prototype, new InstanceRegistry());
-  $.extend(SkeletonMeasurementsTable.prototype, new CATMAID.SkeletonSource());
 
   SkeletonMeasurementsTable.prototype.labels = ['Neuron', 'Skeleton', 'Raw cable (nm)', 'Smooth cable (nm)', 'Lower-bound cable (nm)', 'N inputs', 'N outputs', 'N presynaptic sites', 'N nodes', 'N branch nodes', 'N end nodes'];
 

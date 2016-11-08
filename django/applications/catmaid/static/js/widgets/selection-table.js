@@ -16,7 +16,7 @@
 
   var SelectionTable = function() {
     this.widgetID = this.registerInstance();
-    this.registerSource();
+    CATMAID.SkeletonSource.call(this, true);
     this.APPEND_WARNING_THRESHOLD = 1000;
 
     this.skeletons = [];
@@ -40,9 +40,10 @@
 
   SelectionTable._lastFocused = null; // Static reference to last focused instance
 
-  SelectionTable.prototype = {};
+  SelectionTable.prototype = Object.create(CATMAID.SkeletonSource.prototype);
+  SelectionTable.prototype.constructor = SelectionTable;
+
   $.extend(SelectionTable.prototype, new InstanceRegistry());
-  $.extend(SelectionTable.prototype, new CATMAID.SkeletonSource());
   CATMAID.asColorizer(SelectionTable.prototype);
 
   SelectionTable.prototype.highlighting_color = "#d6ffb5";

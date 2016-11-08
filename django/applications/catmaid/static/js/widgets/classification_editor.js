@@ -51,6 +51,11 @@
         throw new CATMAID.Error("Could not find widget container");
       }
 
+      // Empty container
+      while (container.lastChild) {
+        container.removeChild(container.lastChild);
+      }
+
       var p1 = document.createElement('p');
       p1.appendChild(document.createTextNode("The classification system " +
           "doesn't seem to be set-up to work with this project. It needs " +

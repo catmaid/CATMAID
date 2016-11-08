@@ -1777,7 +1777,7 @@ var WindowMaker = new function()
 
   var createMorphologyPlotWindow = function() {
 
-    var MA = new MorphologyPlot();
+    var MA = new CATMAID.MorphologyPlot();
 
     var win = new CMWWindow(MA.getName());
     var content = win.getFrame();

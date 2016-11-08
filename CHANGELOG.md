@@ -18,6 +18,10 @@ Measurement Table:
 
 - Review widget: location lookup of warnings now works again in all cases.
 
+- Skeleton source subscriptions: fix accidental sharing of skeleton sources.
+  This caused e.g. losing the connection between a Selection Table and a 3D
+  viewer as soon as another 3D viewer was opened.
+
 
 ## 2016.11.04
 

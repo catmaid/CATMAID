@@ -1090,7 +1090,7 @@ def import_projects( user, pre_projects, tags, permissions,
                     if existing_stack:
                         known_overlay = Overlay.objects.filter(
                             image_base=o.image_base, stack=existing_stack)
-                    if len(known_overlays) > 0:
+                    if known_overlay and len(known_overlay) > 0:
                       if 'ignore' == known_stack_action:
                           continue
                       elif 'import' == known_stack_action:

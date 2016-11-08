@@ -1,7 +1,7 @@
 import json
 import numpy as np
 
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.db import connection
 from django.shortcuts import get_object_or_404
 
@@ -72,6 +72,19 @@ def get_known_ontology_roots(request):
     """ Returns an array of all known root class names.
     """
     return HttpResponse(json.dumps({"knownroots": root_classes}))
+
+def get_existing_roots(request, project_id):
+    """Get all existing classification root nodes for a project.
+    """
+    links = get_class_links_qs(project_id, 'is_a', 'classification_root')
+    links = links.select_related('class_a')
+
+    return JsonResponse({
+        'root_classes': [{
+            'id': l.class_a.id,
+            'name': l.class_a.class_name
+        } for l in links]
+    })
 
 def get_children( parent_id, max_nodes = 5000 ):
     """ Returns all children of a node with id <parent_id>. The result

@@ -313,6 +313,7 @@ urlpatterns += [
 # Ontologies
 urlpatterns += [
     url(r'^ontology/knownroots$', ontology.get_known_ontology_roots),
+    url(r'^(?P<project_id>%s)/ontology/roots/$' % (integer), ontology.get_existing_roots),
     url(r'^(?P<project_id>%s)/ontology/list$' % (integer), ontology.list_ontology),
     url(r'^(?P<project_id>%s)/ontology/relations$' % (integer), ontology.get_available_relations),
     url(r'^(?P<project_id>%s)/ontology/relations/add$' % (integer), record_view("ontologies.add_relation")(ontology.add_relation_to_ontology)),
@@ -337,14 +338,10 @@ urlpatterns += [
 
 # Classification
 urlpatterns += [
+    url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/roots/$'.format(integer),
+        classification.get_classification_roots),
     url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/number$'.format(integer),
         classification.get_classification_number),
-    url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/show$'.format(integer),
-        classification.show_classification_editor),
-    url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/show/(?P<link_id>\d+)$'.format(integer),
-        classification.show_classification_editor),
-    url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/select$'.format(integer),
-        classification.select_classification_graph, name='select_classification_graph'),
     url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/setup/test$'.format(integer),
         classification.check_classification_setup_view, name='test_classification_setup'),
     url(r'^(?P<project_id>{0})/classification/(?P<workspace_pid>{0})/setup/rebuild$'.format(integer),

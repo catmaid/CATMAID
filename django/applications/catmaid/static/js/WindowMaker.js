@@ -1990,24 +1990,6 @@ var WindowMaker = new function()
     return {window: win, widget: OS};
   };
 
-  var createClassificationWidget = function()
-  {
-    var win = new CMWWindow( "Classification editor" );
-    var content = win.getFrame();
-    content.style.backgroundColor = "#ffffff";
-
-    var container = createContainer( "classification_editor_widget" );
-    content.appendChild( container );
-
-    addListener(win, container);
-
-    addLogic(win);
-
-    CATMAID.ClassificationEditor.init();
-
-    return {window: win, widget: null};
-  };
-
   var createClusteringWidget = function()
   {
     var win = new CMWWindow( "Clustering" );
@@ -2545,7 +2527,6 @@ var WindowMaker = new function()
     "sliceinfo-widget": createSliceInfoWindow,
     "adjacencymatrix-widget": createAdjacencyMatrixWindow,
     "ontology-search": createOntologySearchWidget,
-    "classification-editor": createClassificationWidget,
     "notifications": createNotificationsWindow,
     "clustering-widget": createClusteringWidget,
     "circuit-graph-plot": createCircuitGraphPlot,

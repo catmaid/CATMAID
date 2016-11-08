@@ -229,7 +229,7 @@ class ClassificationAdminWizard(SessionWizardView):
                         wid = pdata['workspace']
                         oroot = ClassInstance.objects.get(pk=ml)
                         p = Project.objects.get(pk=pid)
-                        link_existing_classification(wid, self.request.user, p, oroot)
+                        link_existing_classification(wid, self.request.user, p, oroot.id)
                         unified_tag_groups[eg] = group
                         num_added_links = num_added_links + 1
                     except Exception as e:

@@ -5,19 +5,31 @@
 
   "use strict";
 
-  var ClassificationEditor = new function()
+  var ClassificationEditor = function()
   {
     var self = this;
-    var content_div_id = 'classification_editor_widget';
-    var display_superclass_names = false;
-    var display_previews = true;
-    var display_edit_tools = true;
-    var workspace_pid;
+    this.widgetID = this.registerInstance();
+
+    this.workspace_pid = project.id;
+    this.project_id = project.id;
+
+    this.synchronize = true;
+    this.displaySuperClasses = false;
+    this.displayPreviews = true;
+    this.displayEditToos = true;
+
+    var content_div_id = 'classification_editor_widget' + this.widgetID;
     var bboxtool = new CATMAID.BoxSelectionTool();
     // Offsets for the image preview when hovering a
     // ROI indication icon.
     var preview_x_offset = 0;
     var preview_y_offset = 30;
+
+    // The currently selected graph
+    var currentRootLink = null;
+
+    // Reference to current jsTree instanec
+    var tree = null;
 
     /**
      * Initialization of the window.
@@ -43,19 +55,29 @@
     };
 
     /**
-     * Replace current content with a classification setup form.
+     * Get widget container and optionally empty it.
      */
-    this.show_setup_message = function(project_id, workspace_id) {
+    var getContainer = function(empty) {
       var container = document.getElementById(content_div_id);
       if (!container) {
         throw new CATMAID.Error("Could not find widget container");
       }
 
       // Empty container
-      while (container.lastChild) {
-        container.removeChild(container.lastChild);
+      if (empty) {
+        while (container.lastChild) {
+          container.removeChild(container.lastChild);
+        }
       }
 
+      return container;
+    };
+
+    /**
+     * Replace current content with a classification setup form.
+     */
+    this.show_setup_message = function(project_id, workspace_id) {
+      var container = getContainer(true);
       var p1 = document.createElement('p');
       p1.appendChild(document.createTextNode("The classification system " +
           "doesn't seem to be set-up to work with this project. It needs " +
@@ -83,7 +105,7 @@
             .then(function(json) {
               if (json.all_good) {
                 CATMAID.msg("Success", "Classification initialized");
-                ClassificationEditor.refresh();
+                self.refresh();
               } else {
                 CATMAID.warn("There was a problem during classification setup");
               }
@@ -99,70 +121,328 @@
     };
 
     /**
-     * Load the classification data.
+     * Display options to create a new graph.
      */
-    this.load_classification = function(pid, completionCallback) {
-      CATMAID.fetch(pid + '/classification/' + self.workspace_pid + '/show', 'GET')
-        .then(function(e) {
-          var container = document.getElementById(content_div_id);
-          container.innerHTML = e.content;
-          self.handleContent( e.page, container, pid );
-          // execute callback if available
-          if (completionCallback)
-            completionCallback();
-        })
-        .catch(function(error) {
-          if ("ClassificationSetupError" === error.type) {
-            self.show_setup_message(pid, self.workspace_pid);
+    this.show_new_graph_form = function(existingRoots) {
+      var container = getContainer(true);
+
+      // Don't attemt to find root classes, if user has no permission
+      if (!CATMAID.hasPermission(self.workspace_pid, 'can_annotate')) {
+        var p = document.createElement('p');
+        p.appendChild(document.createTextNode("Unfortunately, you don't " +
+            "have permission to create new annotation graphs for the current " +
+            "workspace."));
+        container.appendChild(p);
+        return;
+      }
+
+      var prepare = undefined !== existingRoots ?
+          Promise.resolve(existingRoots) :
+          CATMAID.fetch(self.project_id + '/classification/' + self.workspace_pid + '/roots/')
+          .then(function(json) {
+            return json.root_instances.length;
+          })
+          .catch(CATMAID.handleError);
+
+      // Request classification root classes
+      Promise.all([prepare, CATMAID.fetch(self.workspace_pid + '/ontology/roots/')])
+        .then(function(rootInfo) {
+          var root_instances = rootInfo[0];
+          var json = rootInfo[1];
+          var nExistingRoots = root_instances.length;
+
+          if (0 === json.root_classes.length) {
+            container.innerHTML = "<p>There are currently no valid " +
+                "classification ontologies available.<p>" +
+                " <p>Please create at least one classification ontology " +
+                "(e.g. with the help of the ontology editor) to start a " +
+                "new classification graph. A class is seen as the root node " +
+                "of a classification ontology if it is linked to the " +
+                "<em>classification_root</em> class with an <em>is_a</em> " +
+                "relation.</p>";
           } else {
-            CATMAID.handleError(error);
+            var intro = "";
+            if (0 === nExistingRoots) {
+              intro = "There is currently no classification graph associated " +
+                  "with this project. Feel free to create a new one. ";
+            }
+
+            var p1 = document.createElement('p');
+            p1.appendChild(document.createTextNode(intro + "To create a new " +
+                "classification graph, please select an ontology that you " +
+                "would like the new graph to be based on and click on " +
+                "\"Create\"."));
+
+            var p2 = document.createElement('div');
+            p2.style.marginTop = "1em";
+            var ontologySelect = document.createElement('select');
+            json.root_classes.forEach(function(rc) {
+              var option = new Option(rc.name, rc.id);
+              this.add(option);
+            }, ontologySelect);
+            var $ontologySelectLabel = CATMAID.DOM.createLabeledControl("Ontology",
+                ontologySelect, "Select the ontology the new graph is based on");
+            $(p2).append($ontologySelectLabel);
+
+            var p3 = document.createElement('div');
+            var createButton = document.createElement('input');
+            createButton.setAttribute('type', 'button');
+            createButton.setAttribute('value', 'Create');
+            createButton.onclick = function() {
+              var ontologyId = ontologySelect.value;
+              if (!ontologyId) {
+                CATMAID.warn('Please select ontolgy first');
+                return;
+              }
+              CATMAID.fetch(self.project_id + '/classification/' + self.workspace_pid + '/new',
+                  'POST', {
+                    ontology_id: ontologyId
+                  })
+                .then(function(json) {
+                  CATMAID.msg('Success', 'A new classification graph was created');
+                  self.refresh();
+                })
+                .catch(CATMAID.handleError);
+            };
+            p3.appendChild(createButton);
+
+            container.appendChild(p1);
+            container.appendChild(p2);
+            container.appendChild(p3);
+
+            // Request other existing classification roots, linked to other
+            // projects.
+            CATMAID.fetch(self.project_id + '/classification/' + self.workspace_pid + '/roots/',
+               'GET', {
+                  with_classnames: true
+                })
+              .then(function(json) {
+                if (0 === json.root_instances.length) {
+                  var p4 = document.createElement('p');
+                  p4.style.marginTop = "1em";
+                  p4.appendChild(document.createTextNode("If there were existing " +
+                      "classification graphs, you could also link to those. " +
+                      "However, there aren't any."));
+                  container.appendChild(p4);
+                } else {
+                  var p4 = document.createElement('p');
+                  p4.style.marginTop = "1em";
+                  p4.appendChild(document.createTextNode("Alternatively, you can " +
+                      "link an existing classification graph to this project. If " +
+                      "you want to do so, please select the tree below and click " +
+                      "\"Link\"."));
+
+                  var p5 = document.createElement('div');
+                  p5.style.marginTop = "1em";
+                  var classificationSelect = document.createElement('select');
+                  var seenRoots = new Set();
+                  json.root_instances.forEach(function(rc) {
+                    if (seenRoots.has(rc.id)) {
+                      return;
+                    }
+                    seenRoots.add(rc.id);
+                    var name = rc.name ? rc.name : rc.classname;
+                    name = name + " (" + rc.id + ")";
+                    var option = new Option(name, rc.id);
+                    this.add(option);
+                  }, classificationSelect);
+                  var $classificationSelectLabel = CATMAID.DOM.createLabeledControl("Classification",
+                      classificationSelect, "Select the classification graph to link this project to");
+                  $(p5).append($classificationSelectLabel);
+
+                  var p6 = document.createElement('div');
+                  var linkButton = document.createElement('input');
+                  linkButton.setAttribute('type', 'button');
+                  linkButton.setAttribute('value', 'Link');
+                  linkButton.onclick = function() {
+                    var rootId = classificationSelect.value;
+                    if (!this.value) {
+                      CATMAID.warn("Please select a classification root first");
+                      return;
+                    }
+                    CATMAID.fetch(self.project_id + '/classification/' + self.workspace_pid + '/link',
+                        'POST', {
+                          root_id: rootId
+                        })
+                      .then(function(json) {
+                        CATMAID.msg('Success', 'The classification graph was linked');
+                        self.show_graph(json.created_link_id);
+                      })
+                      .catch(CATMAID.handleError);
+                  };
+                  p6.appendChild(linkButton);
+
+                  container.appendChild(p4);
+                  container.appendChild(p5);
+                  container.appendChild(p6);
+                }
+              })
+              .catch(CATMAID.handleError);
           }
         });
     };
 
+    /**
+     * Show one particular graph.
+     */
+    this.show_graph = function(graphId) {
+      var container = getContainer(true);
+      this.currentRootLink = graphId;
+
+      var refresh = document.createElement('input');
+      refresh.setAttribute('type', 'button');
+      refresh.setAttribute('value', 'Refresh');
+      refresh.style.cssFloat = 'left';
+      refresh.onclick = function() {
+        self.refreshTree();
+      };
+      container.appendChild(refresh);
+
+      CATMAID.DOM.appendCheckbox(container, "Synchronize", null, this.synchronize,
+        function() {
+          self.synchronize = this.checked;
+        });
+
+      CATMAID.DOM.appendCheckbox(container, "Display types", null, this.displaySuperClasses,
+        function() {
+          self.displaySuperClasses = this.checked;
+          self.refreshTree();
+        });
+
+      CATMAID.DOM.appendCheckbox(container, "Previews", null, this.displayPreviews,
+        function() {
+          self.displayPreviews = this.checked;
+          self.refreshTree();
+        });
+
+      if (CATMAID.mayEdit()) {
+        CATMAID.DOM.appendCheckbox(container, "Edit toos", null, this.displayEditToos,
+          function() {
+            self.displayEditToos = this.checked;
+            self.refreshTree();
+          });
+
+        var removeLink = document.createElement('a');
+        removeLink.appendChild(document.createTextNode("Remove this graph"));
+        removeLink.href = "#";
+        removeLink.onclick = function() {
+          if (confirm("Are you sure you want to remove the whole classification graph?")) {
+            CATMAID.fetch(self.project_id + '/classification/' + self.workspace_pid +
+                '/' + graphId + '/remove', 'POST')
+              .then(function(json) {
+                CATMAID.msg('Success', 'The classification graph was removed');
+                self.refresh();
+              })
+              .catch(CATMAID.handleError);
+          }
+        };
+        container.appendChild(removeLink);
+
+        var addLink = document.createElement('a');
+        addLink.style.marginLeft = "0.5em";
+        addLink.appendChild(document.createTextNode("Add/link new graph"));
+        addLink.href = "#";
+        addLink.onclick = function() {
+          self.show_new_graph_form();
+        };
+        container.appendChild(addLink);
+
+        var autofill = document.createElement('a');
+        autofill.style.marginLeft = "0.5em";
+        autofill.appendChild(document.createTextNode("Auto fill this graph"));
+        autofill.href = "#";
+        autofill.onclick = function() {
+          if (confirm("Are you sure you want to autofill this classification graph?")) {
+            CATMAID.fetch(self.project_id + '/classification/' + self.workspace_pid +
+                '/' + graphId + '/autofill', 'POST')
+              .then(function(json) {
+                CATMAID.msg('Success', 'The classification graph was auto filled');
+                self.refresh();
+              })
+              .catch(CATMAID.handleError);
+          }
+        };
+        container.appendChild(autofill);
+      }
+
+      var spacer = document.createElement('br');
+      spacer.style.clear = "both";
+      container.appendChild(spacer);
+
+      var content = document.createElement('div');
+      content.style.marginTop = "1em";
+      content.setAttribute('data-role', 'classification_graph_object');
+      container.appendChild(content);
+
+      // Show the graph
+      this.load_tree(this.project_id, graphId);
+    };
+
+    this.show_graph_selection = function(existingRoots) {
+      var container = getContainer(true);
+
+      var prepare = undefined !== existingRoots ?
+          Promise.resolve(existingRoots) :
+          CATMAID.fetch(self.project_id + '/classification/' +
+              self.workspace_pid + '/roots/', 'GET', {
+                with_classnames: true
+              })
+          .then(function(json) {
+            return json.root_instances;
+          })
+          .catch(CATMAID.handleError);
+      prepare.then(function(graphs) {
+        var p1 = document.createElement('p');
+        p1.appendChild(document.createTextNode("There are " + graphs.length +
+            " classification graphs associated with this project. Please " +
+            "select which one you want to display."));
+
+        var p2 = document.createElement('div');
+        p2.style.marginTop = "1em";
+        var classificationSelect = document.createElement('select');
+        var seenLinks = new Set();
+        graphs.forEach(function(rc) {
+          if (seenLinks.has(rc.link_id)) {
+            return;
+          }
+          seenLinks.add(rc.link_id);
+          var name = rc.name ? rc.name : rc.classname;
+          name = name + " (" + rc.link_id + ")";
+          var option = new Option(name, rc.link_id);
+          this.add(option);
+        }, classificationSelect);
+        var $classificationSelectLabel = CATMAID.DOM.createLabeledControl("Classification graph",
+            classificationSelect, "Select the classification graph to show");
+        $(p2).append($classificationSelectLabel);
+
+        var show = document.createElement('input');
+        show.setAttribute('type', 'button');
+        show.setAttribute('value', 'Show');
+        show.onclick = function() {
+          var link_id = classificationSelect.value;
+          if (!link_id) {
+            CATMAID.warn("Please select a classification graph");
+            return;
+          }
+          self.show_graph(link_id);
+        };
+
+        container.appendChild(p1);
+        container.appendChild(p2);
+        container.appendChild(show);
+      });
+    };
+
     this.load_tree = function(pid, link_id) {
       // id of object tree
+      var container = getContainer(false);
       var tree_id = '#classification_graph_object';
-      var tree = $(tree_id);
-
-      $("#refresh_classification_graph").click(function () {
-        tree.jstree("refresh", -1);
-      });
-
-      $("#display_super_classes").click(function () {
-        if ($("#display_super_classes").attr('checked')) {
-          display_superclass_names = true;
-        } else {
-          display_superclass_names = false;
-        }
-        tree.jstree("refresh", -1);
-      });
-
-      $("#display_previews").click(function () {
-        if ($("#display_previews").attr('checked')) {
-          display_previews = true;
-        } else {
-          display_previews = false;
-        }
-      });
-
-      if ($("#display_edit_tools").length === 0) {
-        display_edit_tools = false;
-      } else {
-        $("#display_edit_tools").click(function () {
-          if ($("#display_edit_tools").attr('checked')) {
-            display_edit_tools = true;
-          } else {
-            display_edit_tools = false;
-          }
-          tree.jstree("refresh", -1);
-        });
-      }
+      tree = $('div[data-role=classification_graph_object]', container);
 
       tree.bind("reload_nodes.jstree",
         function (event, data) {
           if (self.currentExpandRequest) {
-            openTreePath($(tree_id), self.currentExpandRequest);
+            openTreePath(tree, self.currentExpandRequest);
           }
         });
 
@@ -189,8 +469,8 @@
           parameters = {
             "pid": pid,
             "parentid": n.attr ? n.attr("id").replace("node_", "") : 0,
-            "superclassnames": display_superclass_names ? 1 : 0,
-            "edittools": display_edit_tools ? 1 : 0
+            "superclassnames": self.displaySuperClasses ? 1 : 0,
+            "edittools": self.displayEditToos ? 1 : 0
           };
           if (self.currentExpandRequest) {
             parameters['expandtarget'] = self.currentExpandRequest.join(',');
@@ -222,7 +502,7 @@
             if (node_type === "root" || node_type === "element") {
               var child_groups = JSON.parse(obj.attr("child_groups"));
               var menu = {};
-              if (display_edit_tools) {
+              if (self.displayEditToos) {
                 // Add entries to create child class instances
                 for (var group_name in child_groups) {
                   var menu_id = 'add_child_' + group_name;
@@ -290,7 +570,7 @@
                   "label": "Link new region of interest",
                   "action": function (obj) {
                     var node_id = obj.attr("id").replace("node_", "");
-                    self.link_roi(tree_id, node_id);
+                    self.link_roi(node_id);
                   }
                 };
 
@@ -305,7 +585,7 @@
                     "label": "" + (i + 1) + ". Roi (" + roi + ")",
                     "action": function (r_id) {
                       return function (obj) {
-                        self.remove_roi(tree_id, r_id);
+                        self.remove_roi(r_id);
                       };
                     }(roi)
                   };
@@ -406,7 +686,7 @@
         // Add a preview when hovering a roi image
         $("img.roiimage", data.rslt.obj).hover(
           function(e) {
-            if (display_previews) {
+            if (self.displayPreviews) {
               // Show preview in mouse-in handler
               var roi_id = $(this).attr('roi_id');
               var no_cache = "?v=" + (new Date()).getTime();
@@ -422,14 +702,14 @@
             }
           },
           function(e) {
-            if (display_previews) {
+            if (self.displayPreviews) {
               // Hide preview in mouse-out handler
               $("#imagepreview").remove();
             }
           });
         $("img.roiimage", data.rslt.obj).mousemove(
           function(e) {
-            if (display_previews) {
+            if (self.displayPreviews) {
               $("#imagepreview")
                 .css("top", (e.pageY - preview_y_offset) + "px")
                 .css("left", (e.pageX + preview_x_offset) + "px");
@@ -445,7 +725,7 @@
       var classid = mynode.attr("classid");
       var relid = mynode.attr("relid");
       var name = data.rslt.name;
-      self.create_new_instance(tree_id, pid, parentid, classid, relid, name);
+      self.create_new_instance(pid, parentid, classid, relid, name);
       });
 
       // remove a node
@@ -517,14 +797,14 @@
       // things that need to be done when a node is loaded
       tree.bind("load_node.jstree", function(e, data) {
         // Add handlers to select elements available in edit mode
-        self.addEditSelectHandlers(tree_id, pid);
+        self.addEditSelectHandlers(pid);
       });
     };
 
     /**
      * Links the current view to the currently selected class instance.
      */
-    this.link_roi = function(tree_id, node_id) {
+    this.link_roi = function(node_id) {
       // Open Roi tool and register it with current stack. Bind own method
       // to apply button.
       var tool = new CATMAID.RoiTool();
@@ -553,7 +833,7 @@
               } else {
                 CATMAID.error("The server returned an unexpected response.");
               }
-              $(tree_id).jstree("refresh", -1);
+              tree.jstree("refresh", -1);
             }));
       };
 
@@ -595,7 +875,7 @@
      * Removes the ROI link having the passed ID after asking the
      * user for confirmation.
      */
-    this.remove_roi = function(tree_id, roi_id) {
+    this.remove_roi = function(roi_id) {
       // Make sure the user knows what (s)he is doing
       if (!confirm("Are you sure you want to remove the region of interest?")) {
         return false;
@@ -613,7 +893,7 @@
             } else {
               alert("The server returned an unexpected response.");
             }
-            $(tree_id).jstree("refresh", -1);
+            tree.jstree("refresh", -1);
           }));
     };
 
@@ -689,7 +969,7 @@
           }));
     };
 
-    this.create_new_instance = function(treeid, pid, parentid, classid, relid, name) {
+    this.create_new_instance = function(pid, parentid, classid, relid, name) {
       var data = {
         "operation": "create_node",
         "parentid": parentid,
@@ -709,14 +989,14 @@
         success: function (data2) {
         // Deselect all selected nodes first to prevent selection
         // confusion with the refreshed tree.
-        $(treeid).jstree("deselect_all");
+        tree.jstree("deselect_all");
         // update node id
         //mynode.attr("id", "node_" + data2.class_instance_id);
         // reload the node
         //tree.jstree("refresh", myparent);
         //tree.jstree("load_node", myparent, function() {}, function() {});
         // TODO: Refresh only the sub tree, startins from parent
-        $(treeid).jstree("refresh", -1);
+        tree.jstree("refresh", -1);
         }
       });
     };
@@ -733,174 +1013,12 @@
       };
     };
 
-    /* Depending on the type of the page, some rewrites need to
-     * to be done. That is to make sure that replies on actions
-     * taken on the current page are also rendered in this
-     * CATMAID window.
-     */
-    this.handleContent = function(page_type, container, pid, linkid) {
-     if (page_type == 'new_graph')
-       {
-        // Override the submit behaviour if the create graph is displayed
-        self.overrideNewGraphSubmit(container, pid);
-        // Override the submit behaviour if link graph form is displayed
-        self.overrideLinkGraphSubmit(container, pid);
-       }
-       else if (page_type == 'show_graph')
-       {
-        // Override the remove link behaviour
-        self.overrideRemoveGraphLink(container, pid);
-        // Override the add link behaviour
-        self.overrideAddGraphLink(container, pid);
-        // Override the autofill link behaviour
-        self.overrideAutofillLink(container, pid);
-        // Show the graph
-        self.load_tree(pid, linkid);
-       }
-       else if (page_type == 'select_graph')
-       {
-        // Override the submit behaviour if select graph form is displayed
-        self.overrideSelectGraphSubmit(container, pid);
-       }
-    };
-
-  this.overrideNewGraphSubmit = function(container, pid) {
-    var form = $("#add-new-classification-form");
-    var found = form.length !== 0;
-    if (found) {
-      form.submit(function(){
-        $.ajax({
-          type: "POST",
-          url: form.attr('action'),
-          data: form.serialize(),
-          success: function(data, textStatus) {
-            container.innerHTML = "<p>" + data + "</p><p>Reloading in a few seconds.</p>";
-            setTimeout(ClassificationEditor.refresh, 1500);
-          }
-        });
-        return false;
-      });
-    }
-
-    return found;
-  };
-
-  this.overrideLinkGraphSubmit = function(container, pid) {
-    var form = $("#link-classification-form");
-    var found = form.length !== 0;
-    if (found) {
-      form.submit(function(){
-        $.ajax({
-          type: "POST",
-          url: form.attr('action'),
-          data: form.serialize(),
-          success: function(data, textStatus) {
-            container.innerHTML = "<p>" + data + "</p><p>Reloading in a few seconds.</p>";
-            setTimeout(ClassificationEditor.refresh, 1500);
-          }
-        });
-        return false;
-      });
-    }
-
-    return found;
-  };
-
-  this.overrideRemoveGraphLink = function(container, pid) {
-    var remove_link = $("#remove_classification_link");
-    var found = remove_link.length !== 0;
-    if (found) {
-       remove_link.click(function(){
-         if (confirm("Are you sure you want to remove the whole classification graph?")) {
-           $.ajax({
-             type: "POST",
-             url: remove_link.attr('href'),
-             success: function(data, textStatus) {
-               container.innerHTML = "<p>" + data + "</p><p>Reloading in a few seconds.</p>";
-               setTimeout(ClassificationEditor.refresh, 3000);
-             }
-           });
-         }
-         return false;
-       });
-    }
-
-    return found;
-  };
-
-  this.overrideAddGraphLink = function(container, pid) {
-    var remove_link = $("#add_classification_link");
-    var found = remove_link.length !== 0;
-    if (found) {
-      remove_link.click(function(){
-        $.ajax({
-          type: "GET",
-          url: remove_link.attr('href'),
-          success: function(data, textStatus) {
-           container.innerHTML = data;
-           // Override the submit behaviour if the create graph is displayed
-           self.overrideNewGraphSubmit(container, pid);
-           // Override the submit behaviour if link graph form is displayed
-           self.overrideLinkGraphSubmit(container, pid);
-          }
-        });
-        return false;
-      });
-    }
-
-    return found;
-  };
-
-  this.overrideAutofillLink = function(container, pid) {
-    var remove_link = $("#autofill_classification_link");
-    var found = remove_link.length !== 0;
-    if (found) {
-       remove_link.click(function(){
-         if (confirm("Are you sure you want to autofill this classification graph?")) {
-           $.ajax({
-             type: "POST",
-             url: remove_link.attr('href'),
-             success: function(data, textStatus) {
-               container.innerHTML = "<p>" + data + "</p><p>Reloading in a few seconds.</p>";
-               setTimeout(ClassificationEditor.refresh, 3000);
-             }
-           });
-         }
-         return false;
-       });
-    }
-
-    return found;
-  };
-
-  this.overrideSelectGraphSubmit = function(container, pid) {
-    var form = $("#select-classification-form");
-    var found = form.length !== 0;
-    if (found) {
-      form.submit(function(){
-        $.ajax({
-          type: "POST",
-          url: form.attr('action'),
-          data: form.serialize(),
-          success: function(data, textStatus) {
-            var e = JSON.parse(data);
-            container.innerHTML = e.content;
-            self.handleContent( e.page, container, pid, e.link );
-          }
-        });
-        return false;
-      });
-    }
-
-    return found;
-  };
-
     /**
      * Adds an event handler to every edit mode select box. This
      * handler will create a new item. It uses a jQuery UI menu
      * to get user input.
      */
-    this.addEditSelectHandlers = function(treeid, pid) {
+    this.addEditSelectHandlers = function(pid) {
       var select_elements = $("a.editnode");
       var found = select_elements.length !== 0;
       if (found) {
@@ -917,7 +1035,7 @@
                 var classid = item.attr("value");
                 var relid = item.attr("relid");
                 var name = "";
-                self.create_new_instance(treeid, pid, parentid, classid, relid, name);
+                self.create_new_instance(pid, parentid, classid, relid, name);
                 return false;
               }});
             // hide the menu by default
@@ -952,10 +1070,48 @@
       }
     };
 
+    this.refreshTree = function() {
+      if (tree) {
+        tree.jstree("refresh", -1);
+      }
+    };
+
+    /**
+     * Refresh user interface based on current state. If a particular
+     * classification graph is selected, this graph is updated. Otherwise, if no
+     * graph is available, the user is provided an option to create a new one.
+     * If a single graph is available, this graph is shown and if multiple
+     * graphs are available options to select a graph are provided.
+     */
     this.refresh = function(completionCallback)
     {
-      if (project)
-        self.load_classification(project.id, completionCallback);
+      if (!project) {
+        return;
+      }
+
+      if (currentRootLink) {
+        self.show_graph(currentRootLink);
+      } else {
+        // Get all root classes
+        CATMAID.fetch(self.project_id + '/classification/' +
+            self.workspace_pid + '/roots/', 'GET', {
+              with_classnames: true
+            })
+          .then(function(json) {
+            var nRoots = json.root_instances.length;
+            if (0 === nRoots) {
+              // Show "New Graph" view
+              self.show_new_graph_form(json.root_instances);
+            } else if (1 === nRoots) {
+              // Show the one available graph
+              self.show_graph(json.root_instances[0].link_id);
+            } else {
+              // Show option to select a graph
+              self.show_graph_selection(json.root_instances);
+            }
+          })
+          .catch(CATMAID.handleError);
+      }
     };
 
     /**
@@ -966,9 +1122,38 @@
         delaytime = 2500;
       CATMAID.msg(title, message, {duration: delaytime});
     };
-  }();
+  };
+
+
+  $.extend(ClassificationEditor.prototype, new InstanceRegistry());
+
+  ClassificationEditor.prototype.getName = function() {
+    return "Classification Editor " + this.widgetID;
+  };
+
+  ClassificationEditor.prototype.getWidgetConfiguration = function() {
+    return {
+      controlsID: "classification_editor_widget" + this.widgetID,
+      contentID: "classification_editor_controls" + this.widgetID,
+      createControls: function() {},
+      createContent: function() {},
+      init: function() {
+        this.init(project.id);
+      }
+    };
+  };
+
+  ClassificationEditor.prototype.destroy = function() {
+    this.unregisterInstance();
+  };
 
   // Export classification editor into CATMAID namespace
   CATMAID.ClassificationEditor = ClassificationEditor;
+
+  // Register widget with CATMAID
+  CATMAID.registerWidget({
+    key: "classification-editor",
+    creator: ClassificationEditor
+  });
 
 })(CATMAID);

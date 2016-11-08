@@ -1179,7 +1179,7 @@ def import_projects( user, pre_projects, tags, permissions,
             for cg in cls_graph_ids_to_link:
                 workspace = settings.ONTOLOGY_DUMMY_PROJECT_ID
                 cgroot = ClassInstance.objects.get(pk=cg)
-                link_existing_classification(workspace, user, p, cgroot)
+                link_existing_classification(workspace, user, p, cgroot.id)
             # Remember created project
             imported.append( pp )
 

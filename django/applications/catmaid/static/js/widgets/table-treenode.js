@@ -93,24 +93,8 @@
               '</tr>' +
             '</tfoot>' +
             '<tbody>' +
-              '<tr>' +
-                '<td></td>' +
-                '<td></td>' +
-                '<td></td>' +
-                '<td></td>' +
-                '<td></td>' +
-                '<td></td>' +
-                '<td></td>' +
-                '<td></td>' +
-                '<td></td>' +
-                '<td></td>' +
-                '<td></td>' +
-                '<td></td>' +
-              '</tr>' +
             '</tbody>' +
           '</table>';
-        // Above notice that without an empty row the table will fail to initialize.
-        // This empty row gets removed when calling fnClearTable
       },
       init: function() {
         this.init(project.getId());

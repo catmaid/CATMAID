@@ -305,9 +305,15 @@ def add_relation(workspace_pid, rel_user, rel_name, rel_desc, is_reciprocal=Fals
         isreciprocal = is_reciprocal)
     return new_rel
 
-def check_classification_setup_view(request, project_id=None):
-    all_good = check_classification_setup()
-    return HttpResponse(json.dumps({'all_good': all_good}))
+def check_classification_setup_view(request, project_id=None, workspace_pid=None):
+    all_good = True
+    if project_id:
+        all_good = all_good and check_classification_setup(project_id)
+    if workspace_pid:
+        all_good = all_good and check_classification_setup(workspace_pid)
+    return JsonResponse({
+        'all_good': all_good
+    })
 
 def check_classification_setup(workspace_pid, class_map=None, relation_map=None):
     """ Checks if all classes and relations needed by the

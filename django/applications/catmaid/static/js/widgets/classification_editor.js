@@ -36,14 +36,22 @@
      */
     this.init = function( pid )
     {
-      // change to pid workspace if pid was passed
-      if (pid) {
-        this.change_workspace(pid, true);
-      } else if (CATMAID.userprofile.independent_ontology_workspace_is_default) {
-        this.change_workspace(-1, true);
-      } else {
-        this.change_workspace(project.id, true);
-      }
+      CATMAID.fetch(this.project_id + '/classification/' + this.workspace_pid + '/setup/test')
+        .then(function(json) {
+          if (!json.all_good) {
+            // Let user know about required setup/update
+            self.show_setup_message(self.project_id, self.workspace_pid);
+            return;
+          }
+          // change to pid workspace if pid was passed
+          if (pid) {
+            self.change_workspace(pid, true);
+          } else if (CATMAID.userprofile.independent_ontology_workspace_is_default) {
+            self.change_workspace(-1, true);
+          } else {
+            self.change_workspace(project.id, true);
+          }
+      });
     };
 
     /**

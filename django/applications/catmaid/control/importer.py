@@ -1058,18 +1058,22 @@ def ensure_class_instances(project, classification_paths, user, stack=None, stac
             relation_name="classified_by", defaults={
                 'user': user
             })
+    linked_to, _ = Relation.objects.get_or_create(project=project,
+            relation_name="linked_to", defaults={
+                'user': user
+            })
 
     t = type(classification_paths)
     if t is list or t is tuple:
         for path in classification_paths:
             parent_node = None
-            root_node = None
+            ci_path = []
             for class_name in path:
                 parent_node = create(class_name, parent_node)
-                print(class_name, parent_node) 
-                if not root_node:
-                    # The first node is considered the root
-                    root_node = parent_node
+                ci_path.append(parent_node)
+
+            root_node = ci_path[0]
+            last_node = ci_path[-1]
 
             # Link root to project
             classification_project, _ = ClassInstance.objects.get_or_create(
@@ -1083,11 +1087,20 @@ def ensure_class_instances(project, classification_paths, user, stack=None, stac
                         'user': user
                     })
 
-            # Link to stack and/or stack group
             if stack:
-                pass
+                # Link stack to class instance at end of path
+                StackClassInstance.objects.get_or_create(project=project,
+                        relation=linked_to, stack=stack,
+                        class_instance=last_node, defaults={
+                            'user': user
+                        })
             if stackgroup:
-                pass
+                # Link stack to class instance at end of path
+                ClassInstanceClassInstance.objects.get_or_create(
+                        project=project, class_instance_a=last_node,
+                        class_instance_b=stackgroup, relation=linked_to, defaults={
+                            'user': user
+                        })
     else:
         raise ValueError("Unknown classification syntax, expected list: " + t)
 
@@ -1320,12 +1333,16 @@ def import_projects( user, pre_projects, tags, permissions,
             for s, classification in stack_classification.iteritems():
                 ensure_class_instances(p, classification,  user, stack=s)
 
-            # Save stack groups. If
+            # Save stack groups
+            referenced_stackgroups = {}
             for sg, linked_stacks in stack_groups.iteritems():
                 existing_stackgroups = ClassInstance.objects.filter(project=p,
-                    class_column__class_name="stackgroup")
+                    name=sg, class_column__class_name="stackgroup")
                 
-                if len(existing_stackgroups) > 0:
+                if len(existing_stackgroups) > 1:
+                    raise ValueError("Found more than one existing stack group "
+                            "with the same name, expected zero or one.")
+                elif len(existing_stackgroups) > 0:
                     if 'ignore' == known_stackgroup_action:
                         continue
                     elif 'import' == known_stackgroup_action:
@@ -1339,6 +1356,7 @@ def import_projects( user, pre_projects, tags, permissions,
                     user=user, project=p, name=sg,
                     class_column=Class.objects.get(project=p, class_name="stackgroup")
                 )
+                referenced_stackgroups[sg] = stack_group
                 for ls in linked_stacks:
                     StackClassInstance.objects.create(
                         user=user, project=p,
@@ -1350,10 +1368,10 @@ def import_projects( user, pre_projects, tags, permissions,
 
             # Link project level defined stack group classification
             for sg in pp.stackgroups:
-                existing_stackgroups = ClassInstance.objects.get(project=p,
-                    class_column__class_name="stackgroup", name=sg.name)
-                if sg.classification:
-                    ensure_class_instances(p, sg.classification,  user, stackgroup=sg)
+                ref_ci = referenced_stackgroups.get(sg.name)
+                if ref_ci and sg.classification:
+                    ensure_class_instances(p, sg.classification,  user,
+                    stackgroup=ref_ci)
 
             # Link classification graphs
             for cg in cls_graph_ids_to_link:

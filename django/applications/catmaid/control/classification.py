@@ -362,7 +362,7 @@ def add_classification_graph(request, workspace_pid=None, project_id=None):
     ontology_root_ci = init_new_classification(workspace_pid,
         request.user, ontology_id)
     # Link this graph instance to the project
-    created_link.id = link_existing_classification(workspace_pid, request.user,
+    created_link = link_existing_classification(workspace_pid, request.user,
             project, ontology_root_ci.id)
     return JsonResponse({
         'success': 'A new graph has been initialized.',

@@ -22,6 +22,8 @@ Measurement Table:
   This caused e.g. losing the connection between a Selection Table and a 3D
   viewer as soon as another 3D viewer was opened.
 
+- The Classification Editor of CATMAID's Ontology Tool can be started again.
+
 
 ## 2016.11.04
 

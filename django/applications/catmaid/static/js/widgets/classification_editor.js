@@ -903,70 +903,81 @@
      */
     this.display_roi = function(roi_id) {
       // Get properties of the requested ROI
-      var roi_info_url = django_url + project.id + "/roi/" + roi_id + "/info";
-      requestQueue.register(roi_info_url, 'GET', null,
-        self.create_error_aware_callback(
-          function(status, text, xml) {
-            if (!project) {
-              console.log("There is currently no project definition available.");
-              return;
-            }
-            // Parse JSON data into object
-            var roi = JSON.parse(text);
-            var pid_changes = roi.project_id !== project.id;
-            // If the project changes, detach the current
-            // classification editor content and to reinsert it later.
-            var container;
-            if (pid_changes) {
-              container = $('#' + content_div_id).detach();
-            }
-            // Close all open stacks and open only the one belonging
-            // to the ROI. This might also include changing the
-            // current project. The classification editor would need
-            // to be reopened with the same view.
-            var callback = function() {
-              if (project) {
-                // Focus the classification editor when there isn't
-                // a project change, reload it otherwise. Do this
-                // first to let ROI display work on correct view size.
-                WindowMaker.show('classification-editor');
-                // Reinsert the copied content on a project change.
-                if (pid_changes) {
-                  container.appendTo( $('#' + content_div_id) );
-                }
-                // move the project to the ROI location
-                project.moveTo( roi.location[2], roi.location[1],
-                  roi.location[0], roi.zoom_level );
-                // draw a ROI rectangle
-                var stack = project.getStack(roi.stack_id);
-                var hwidth = roi.width * 0.5;
-                var hheight = roi.height * 0.5;
-                bboxtool.destroy();
-                bboxtool.register(stack);
-                bboxtool.createCropBoxByWorld(
-                  roi.location[0] - hwidth,
-                  roi.location[1] - hheight,
-                  roi.width, roi.height, roi.rotation_cw);
-                // Let the box be above the mouse catcher and
-                // make sure the crop box has no background
-                var cbview = bboxtool.getCropBox().layer.getView();
-                cbview.style.zIndex = "10";
-                cbview.style.background = "none";
-                // Add a closing button to the box
-                var closing_button = document.createElement("p");
-                closing_button.className = "close";
-                closing_button.appendChild(document.createTextNode("X"));
-                cbview.insertBefore(closing_button, cbview.firstChild);
-                // React to a click on that closing button
-                closing_button.onclick = function() {
-                  bboxtool.destroy();
-                };
-                // set tool to navigator
-                project.setTool( new CATMAID.Navigator() );
+      var url = django_url + project.id + "/roi/" + roi_id + "/info";
+      CATMAID.fetch(django_url + project.id + "/roi/" + roi_id + "/info")
+        .then(function(roi) {
+          if (!project) {
+            console.log("There is currently no project definition available.");
+            return;
+          }
+          var pid_changes = roi.project_id !== project.id;
+          // If the project changes, detach the current
+          // classification editor content and to reinsert it later.
+          var container;
+          // Close all open stacks and open only the one belonging
+          // to the ROI. This might also include changing the
+          // current project. The classification editor would need
+          // to be reopened with the same view.
+          var callback = function() {
+            if (project) {
+              // Focus the classification editor when there isn't
+              // a project change, reload it otherwise. Do this
+              // first to let ROI display work on correct view size.
+              WindowMaker.show('classification-editor');
+              // Reinsert the copied content on a project change.
+              if (pid_changes) {
+                container.appendTo( $('#' + content_div_id) );
               }
-            };
+              // move the project to the ROI location
+              project.moveTo( roi.location[2], roi.location[1],
+                roi.location[0], roi.zoom_level );
+              // draw a ROI rectangle
+              var stackviewers = project.getStackViewers();
+              var stackviewer = null;
+              for (var i=0; i<stackviewers.length; ++i) {
+                var sv = stackviewers[i];
+                if (sv.primaryStack.id == roi.stack_id) {
+                    stackviewer = sv;
+                    break;
+                }
+              }
+              if (!stackviewer) {
+                CATMAID.warn("Couldn't find stack for ROI");
+                return;
+              }
+              var hwidth = roi.width * 0.5;
+              var hheight = roi.height * 0.5;
+              bboxtool.destroy();
+              bboxtool.register(stackviewer);
+              bboxtool.createCropBoxByWorld(
+                roi.location[0] - hwidth,
+                roi.location[1] - hheight,
+                roi.width, roi.height, roi.rotation_cw);
+              // Let the box be above the mouse catcher and
+              // make sure the crop box has no background
+              var cbview = bboxtool.getCropBox().layer.getView();
+              cbview.style.zIndex = "10";
+              cbview.style.background = "none";
+              // Add a closing button to the box
+              var closing_button = document.createElement("p");
+              closing_button.className = "close";
+              closing_button.appendChild(document.createTextNode("X"));
+              cbview.insertBefore(closing_button, cbview.firstChild);
+              // React to a click on that closing button
+              closing_button.onclick = function() {
+                bboxtool.destroy();
+              };
+              // set tool to navigator
+              project.setTool( new CATMAID.Navigator() );
+            }
+          };
+          if (pid_changes) {
+            container = $('#' + content_div_id).detach();
             CATMAID.openProjectStack(roi.project_id, roi.stack_id).then(callback);
-          }));
+          } else {
+            callback();
+          }
+        });
     };
 
     this.create_new_instance = function(pid, parentid, classid, relid, name) {

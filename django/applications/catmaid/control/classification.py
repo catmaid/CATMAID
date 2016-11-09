@@ -731,7 +731,7 @@ def list_classification_graph(request, workspace_pid, project_id=None, link_id=N
         def get_class_name(class_id, class_name, relation_map):
             print("CLASS A", class_id, class_name)
             if superclass_in_name:
-                super_class_links_q = ClassClass.objects.filter(project_id=workspace_id,
+                super_class_links_q = ClassClass.objects.filter(project_id=workspace_pid,
                     relation=relation_map['is_a'], class_a_id=class_id)
                 if len(super_class_links_q) > 0:
                     cname = super_class_links_q[0].class_b.class_name

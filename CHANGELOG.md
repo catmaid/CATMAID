@@ -24,6 +24,9 @@ Measurement Table:
 
 - The Classification Editor of CATMAID's Ontology Tool can be started again.
 
+- Using the closing bracket ("]") to walk a neuron does not stop working
+  anymore after the end of a branch is reached.
+
 
 ## 2016.11.04
 

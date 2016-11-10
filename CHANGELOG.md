@@ -27,6 +27,10 @@ Measurement Table:
 - Using the closing bracket ("]") to walk a neuron does not stop working
   anymore after the end of a branch is reached.
 
+- 3D viewer: finding the date of the most recent change among all skeletons
+  considered in a history animation now works as expected. The end point of the
+  animation is now calculated correctly and all changes can be seen.
+
 
 ## 2016.11.04
 

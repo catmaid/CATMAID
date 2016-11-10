@@ -6101,14 +6101,14 @@
                     throw new CATMAID.ValueError('Skeleton ' + skeleton.id +
                         ' is missing history information');
                   }
-                  // Find oldest node date
+                  // Find newest node date
                   var nodes = skeleton.history.nodes;
                   var find = findMaxDate.bind(this, nodes);
                   var maxDate = Object.keys(nodes).reduce(find, null);
 
                   if (null === d) {
                     d = maxDate;
-                  } else if (maxDate < d) {
+                  } else if (maxDate > d) {
                     d = maxDate;
                   }
 

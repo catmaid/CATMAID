@@ -1728,6 +1728,8 @@
     // A render target used for picking objects
     this.pickingTexture = new THREE.WebGLRenderTarget(w, h);
     this.pickingTexture.texture.generateMipmaps = false;
+    this.pickingTexture.depthTexture = new THREE.DepthTexture();
+
 
     this.view = new this.View(this);
     this.lights = this.createLights(this.dimensions, this.center, this.view.camera);
@@ -3474,6 +3476,25 @@
   };
 
   /**
+   * Unpack a floating point value (e.g. depth) to a float value according to
+   * the packing rules defined in packing.glsl of THREE.js.
+   */
+  function unpackRGBAToFloat(rgba) {
+    var unpackDownscale = 255.0 / 256.0;
+    var packFactors = [256.0 * 256.0 * 256.0,
+                       256.0 * 256.0,
+                       256.0];
+    var unpackFactors = [unpackDownscale / packFactors[0],
+                         unpackDownscale / packFactors[1],
+                         unpackDownscale / packFactors[2],
+                         unpackDownscale];
+    return rgba[0] * unpackFactors[0] +
+           rgba[1] * unpackFactors[1] +
+           rgba[2] * unpackFactors[2] +
+           rgba[3] * unpackFactors[3];
+  };
+
+  /**
    * Tries to pick an element by creating a color map.
    *
    * @param x First mouse position component, relativ to WebGL canvas
@@ -3486,6 +3507,7 @@
    */
   WebGLApplication.prototype.Space.prototype.pickNodeWithColorMap =
       function(x, y, xs, ys, camera, savePickingMap) {
+savePickingMap = true;
     // Attempt to intersect visible skeleton spheres, stopping at the first found
     var color = 0;
     var idMap = {};
@@ -3524,7 +3546,7 @@
     // Prepare all spheres for picking by coloring them with an ID.
     mapToPickables(this, this.content.skeletons, function(skeleton) {
       originalVisibility[skeleton.id] = skeleton.actor.neurite.visible;
-      skeleton.actor.neurite.visible = false;
+      //skeleton.actor.neurite.visible = false;
     }, function(id, obj, isBuffer) {
       // IDs are expected to be 64 (bigint in Postgres) and can't be mapped to
       // colors directly. Since the space we are looking here at is likely to be
@@ -3552,12 +3574,105 @@
 
     // Render scene to picking texture
     var gl = this.view.renderer.getContext();
+
+    var useDepth;
+    if (!this.view.renderer.extensions.get('WEBGL_depth_texture')) {
+      CATMAID.warn('Your browser supports only picking of spheres');
+      useDepth = false;
+    } else {
+      useDepth = true;
+      this.pickingTexture.depthTexture.type = this.view.isWebGL2 ?
+          THREE.FloatType : THREE.UnsignedShortType;
+    }
+    this.pickingTexture.depthBuffer = useDepth;
+
     this.view.renderer.render(this.scene, camera, this.pickingTexture);
-    var pixelBuffer = new Uint8Array(4);
 
     // Read pixel under cursor
+    var pixelBuffer = new Uint8Array(4);
     gl.readPixels(x, this.pickingTexture.height - y, 1, 1, gl.RGBA,
         gl.UNSIGNED_BYTE, pixelBuffer);
+
+    if (useDepth) {
+      var depthVertexShader = [
+        "varying vec2 vUv;",
+        "void main() {",
+          "vUv = uv;",
+          "gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);",
+        "}"
+      ].join("\n");
+      var depthFragmentShader = [
+        "#include <packing>",
+        "#include <logdepthbuf_pars_fragment>",
+        "varying vec2 vUv;",
+        "uniform sampler2D tDepth;",
+        "uniform float cameraNear;",
+        "uniform float cameraFar;",
+
+        "float readDepth(sampler2D depthSampler, vec2 coord) {",
+        "  float fragCoordZ = texture2D(depthSampler, coord).x;",
+        "  float viewZ = perspectiveDepthToViewZ( fragCoordZ, cameraNear, cameraFar );",
+        "  return viewZToOrthographicDepth( viewZ, cameraNear, cameraFar );",
+        "}",
+        "float readDepthLog(sampler2D depthSampler, vec2 coord, float Fcoef) {",
+        "  float fragCoordZ = texture2D(depthSampler, coord).x;",
+        // Get depth value to [0,1] range
+        "  fragCoordZ = 2.0 * fragCoordZ - 1.0;",
+        // Calculate camera space depth [0, far]
+        "  float viewZ = (pow(Fcoef * cameraFar + 1.0, fragCoordZ) - 1.0) / Fcoef;",
+        "  return viewZ;",
+        //"  return viewZToOrthographicDepth( viewZ, cameraNear, cameraFar );",
+        "}",
+        "void main() {",
+        "  #if defined(USE_LOGDEPTHBUF)",
+        "    float depth = readDepthLog(tDepth, vUv, logDepthBufFC);",
+        "  #else",
+        "    float depth = readDepth(tDepth, vUv);",
+        "  #endif",
+        //"  gl_FragColor = vec4(vec3(depth), 1.0);",
+        "  gl_FragColor = packDepthToRGBA(depth);",
+        "}",
+      ].join("\n");
+      var postCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+      var postMaterial = new THREE.ShaderMaterial({
+        vertexShader: depthVertexShader,
+        fragmentShader: depthFragmentShader,
+        uniforms: {
+          cameraNear: { value: camera.near },
+          cameraFar:  { value: camera.far },
+          tDepth:     { value: this.pickingTexture.depthTexture }
+        }
+      });
+      var postPlane = new THREE.PlaneGeometry(2,2);
+      var postQuad = new THREE.Mesh(postPlane, postMaterial);
+      var postScene = new THREE.Scene();
+      postScene.add(postQuad);
+
+      this.pickingTexture.depthBuffer = false;
+
+      // A new render target is needed, because we can't read and write to the
+      // same texture at the same time.
+      var zPickingTexture = new THREE.WebGLRenderTarget(
+          this.pickingTexture.width, this.pickingTexture.height, {
+            format: THREE.RGBAFormat
+          });
+      zPickingTexture.texture.generateMipmaps = false;
+
+      // Render with same renderer as before to be able to correctly read the Z
+      // values in the depth buffer.
+      this.view.renderer.render(postScene, postCamera, zPickingTexture);
+
+      // Read z buffer under cursor
+      var zBuffer = new Uint8Array(4);
+      gl.readPixels(x, zPickingTexture.height - y, 1, 1, gl.RGBA,
+          gl.UNSIGNED_BYTE, zBuffer);
+console.log(zBuffer);
+
+      // Transform RGBA packed depth value back to a float, see packing.glsl
+      // from THREE.js.
+      var distance = unpackRGBAToFloat(zBuffer);
+console.log(distance);
+    }
 
     // Reset materials
     mapToPickables(this, this.content.skeletons, function(skeleton) {

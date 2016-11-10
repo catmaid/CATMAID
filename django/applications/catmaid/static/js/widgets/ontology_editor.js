@@ -393,7 +393,7 @@
                 "action": function (data) {
                   var instance = $.jstree.reference(data.reference);
                   var node = instance.get_node(data.reference).original;
-                  return self.rename_relation_handler(node.original.oid, node.name,
+                  return self.rename_relation_handler(node.id, node.name,
                       pid, tree_id);
                  }
               },
@@ -406,7 +406,7 @@
                   var node = instance.get_node(data.reference).original;
                   // assure that this was on purpose
                   if (confirm("Are you sure you want to remove this relation?")) {
-                    return self.remove_relation_handler(pid, node.original.oid, tree_id);
+                    return self.remove_relation_handler(pid, node.id, tree_id);
                   }
                  }
               }
@@ -537,7 +537,7 @@
                 "action": function (data) {
                   var instance = $.jstree.reference(data.reference);
                   var node = instance.get_node(data.reference).original;
-                  return self.rename_class_handler(node.original.oid, node.name, pid, tree_id);
+                  return self.rename_class_handler(node.id, node.name, pid, tree_id);
                  }
               },
               "remove_class": {
@@ -549,7 +549,7 @@
                   var node = instance.get_node(data.reference).original;
                   // assure that this was on purpose
                   if (confirm("Are you sure you want to remove this class?")) {
-                    return self.remove_class_handler(pid, node.original.oid, tree_id);
+                    return self.remove_class_handler(pid, node.id, tree_id);
                   }
                  }
               }
@@ -873,10 +873,10 @@
         var classbid = -1;
         if (is_relation) {
           classbid = node.classbid;
-          relid = node.original.oid;
+          relid = node.oid;
         } else {
           // class b is just the parent then
-          classbid = node.original.oid;
+          classbid = node.oid;
           // check if an available relation was selected
           relid = $('#relid').val();
         }

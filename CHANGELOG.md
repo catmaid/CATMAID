@@ -4,6 +4,13 @@
 
 ### Features and enhancements
 
+3D Viewer:
+
+- Shift+Click can now be used to jump to arbitrary locations on rendered
+  skeletons. Objects already clickable in the past (like tags or the soma
+  spheres) are still given precedence.
+
+
 Measurement Table:
 
 - The neuron name is now quoted in the CSV file export. This makes it more

@@ -1729,6 +1729,7 @@
     this.pickingTexture = new THREE.WebGLRenderTarget(w, h);
     this.pickingTexture.texture.generateMipmaps = false;
 
+
     this.view = new this.View(this);
     this.lights = this.createLights(this.dimensions, this.center, this.view.camera);
     this.lights.forEach(function(l) {
@@ -3454,10 +3455,35 @@
         } else if ('location' === pickResult.type) {
           var loc = pickResult.location;
           project.moveTo(loc.z, loc.y, loc.x);
+        } else if ('skeleton' === pickResult.type) {
+          var loc = pickResult.location;
+          var move = project.moveTo(loc.z, loc.y, loc.x);
+
+          if (pickResult.skeletonId) {
+            move.then(function() {
+              // Select node closest to edge in any of the open views
+              var respectVirtualNodes = true;
+              SkeletonAnnotations.staticMoveToAndSelectClosestNode(loc.z, loc.y, loc.x,
+                  pickResult.skeletonId, respectVirtualNodes);
+            });
+          }
         }
       }
     };
   };
+
+  var decodeFloat = (function() {
+    var UINT8_VIEW = new Uint8Array(4);
+    var FLOAT_VIEW = new Float32Array(UINT8_VIEW.buffer);
+
+    return function (rgba) {
+      UINT8_VIEW[0] = rgba[3];
+      UINT8_VIEW[1] = rgba[2];
+      UINT8_VIEW[2] = rgba[1];
+      UINT8_VIEW[3] = rgba[0];
+      return FLOAT_VIEW[0];
+    };
+  })();
 
   /**
    * Tries to pick an element by creating a color map.
@@ -3475,6 +3501,8 @@
     // Attempt to intersect visible skeleton spheres, stopping at the first found
     var color = 0;
     var idMap = {};
+    var skeletonIdMap = {};
+    var skeletonMap = {};
     var submit = new submitterFn();
     var originalMaterials = new Map();
     var originalVisibility = {};
@@ -3509,8 +3537,31 @@
 
     // Prepare all spheres for picking by coloring them with an ID.
     mapToPickables(this, this.content.skeletons, function(skeleton) {
+      color++;
+      var skeletonProperties = {
+        id: skeleton.id
+      };
       originalVisibility[skeleton.id] = skeleton.actor.neurite.visible;
-      skeleton.actor.neurite.visible = false;
+      skeletonIdMap[color] = skeletonProperties;
+      skeletonMap[skeleton.id] = skeletonProperties;
+
+      var skeletonColor = new THREE.Color(color);
+
+      // Re-color skeletons
+      skeletonProperties.colors = skeleton.geometry['neurite'].colors;
+      skeletonProperties.vertexColors = skeleton.line_material.vertexColors;
+      skeletonProperties.actorColor = skeleton.actor['neurite'].material.color;
+      skeletonProperties.opacity = skeleton.actor['neurite'].material.opacity;
+      skeletonProperties.transparent = skeleton.actor['neurite'].material.transparent;
+
+      skeleton.geometry['neurite'].colors = [];
+      skeleton.line_material.vertexColors = THREE.NoColors;
+      skeleton.line_material.needsUpdate = true;
+
+      skeleton.actor['neurite'].material.color = skeletonColor;
+      skeleton.actor['neurite'].material.opacity = 1.0;
+      skeleton.actor['neurite'].material.transparent = false;
+      skeleton.actor['neurite'].material.needsUpdate = true;
     }, function(id, obj, isBuffer) {
       // IDs are expected to be 64 (bigint in Postgres) and can't be mapped to
       // colors directly. Since the space we are looking here at is likely to be
@@ -3538,16 +3589,165 @@
 
     // Render scene to picking texture
     var gl = this.view.renderer.getContext();
-    this.view.renderer.render(this.scene, camera, this.pickingTexture);
-    var pixelBuffer = new Uint8Array(4);
 
-    // Read pixel under cursor
+    // Find clickd skeleton color
+    var pixelBuffer = new Uint8Array(4);
+    this.view.renderer.render(this.scene, camera, this.pickingTexture);
     gl.readPixels(x, this.pickingTexture.height - y, 1, 1, gl.RGBA,
         gl.UNSIGNED_BYTE, pixelBuffer);
+    var colorId = (pixelBuffer[0] << 16) | (pixelBuffer[1] << 8) | (pixelBuffer[2]);
+
+    // If wanted, the picking map can be exported
+    if (savePickingMap) {
+      var img = CATMAID.tools.createImageFromGlContext(gl,
+          this.pickingTexture.width, this.pickingTexture.height);
+      var blob = CATMAID.tools.dataURItoBlob(img.src);
+      saveAs(blob, "pickingmap.png");
+    }
+
+    // Find world location of clicked fragment
+    var originalOverrideMaterial = this.scene.overrideMaterial;
+    var posVertexShader = [
+      "#include <common>",
+      "#include <uv_pars_vertex>",
+      "#include <morphtarget_pars_vertex>",
+      "#include <skinning_pars_vertex>",
+      "#include <logdepthbuf_pars_vertex>",
+      "#include <clipping_planes_pars_vertex>",
+      "varying vec4 worldPosition;",
+
+      "void main() {",
+      "  worldPosition = modelMatrix * vec4(position, 1.0);",
+      "  #include <uv_vertex>",
+      "  #include <skinbase_vertex>",
+      "  #include <begin_vertex>",
+      "  #include <morphtarget_vertex>",
+      "  #include <skinning_vertex>",
+      "  #include <project_vertex>",
+      "  #include <logdepthbuf_vertex>",
+      "  #include <clipping_planes_vertex>",
+      "}"
+    ].join("\n");
+
+    // Original by Mikola Lysenko. MIT License (c) 2014, from:
+    // https://github.com/mikolalysenko/glsl-read-float/blob/master/index.glsl
+    var encodeFloat = [
+      "#define FLOAT_MAX  1.70141184e38",
+      "#define FLOAT_MIN  1.17549435e-38",
+      "",
+      "lowp vec4 encode_float(highp float v) {",
+      "  highp float av = abs(v);",
+      "",
+      "  //Handle special cases",
+      "  if(av < FLOAT_MIN) {",
+      "    return vec4(0.0, 0.0, 0.0, 0.0);",
+      "  } else if(v > FLOAT_MAX) {",
+      "    return vec4(127.0, 128.0, 0.0, 0.0) / 255.0;",
+      "  } else if(v < -FLOAT_MAX) {",
+      "    return vec4(255.0, 128.0, 0.0, 0.0) / 255.0;",
+      "  }",
+      "",
+      "  highp vec4 c = vec4(0,0,0,0);",
+      "",
+      "  //Compute exponent and mantissa",
+      "  highp float e = floor(log2(av));",
+      "  highp float m = av * pow(2.0, -e) - 1.0;",
+      "  ",
+      "  //Unpack mantissa",
+      "  c[1] = floor(128.0 * m);",
+      "  m -= c[1] / 128.0;",
+      "  c[2] = floor(32768.0 * m);",
+      "  m -= c[2] / 32768.0;",
+      "  c[3] = floor(8388608.0 * m);",
+      "  ",
+      "  //Unpack exponent",
+      "  highp float ebias = e + 127.0;",
+      "  c[0] = floor(ebias / 2.0);",
+      "  ebias -= c[0] * 2.0;",
+      "  c[1] += floor(ebias) * 128.0; ",
+      "",
+      "  //Unpack sign bit",
+      "  c[0] += 128.0 * step(0.0, -v);",
+      "",
+      "  //Scale back to range",
+      "  return c / 255.0;",
+      "}"
+    ].join("\n");
+
+    function makePositionShader(field) {
+      if (!("x" === field || "y" === field || "z" === field)) {
+        throw new CATMAID.Error("Unknown field: " + field);
+      }
+
+      return [
+        "#include <common>",
+        "#include <uv_pars_fragment>",
+        "#include <map_pars_fragment>",
+        "#include <alphamap_pars_fragment>",
+        "#include <logdepthbuf_pars_fragment>",
+        "#include <clipping_planes_pars_fragment>",
+        "#include <clipping_planes_fragment>",
+        "varying vec4 worldPosition;",
+        encodeFloat,
+
+        "void main() {",
+        "  #include <logdepthbuf_fragment>",
+        "  #include <map_fragment>",
+        "  #include <alphamap_fragment>",
+        "  #include <alphatest_fragment>",
+
+        "  gl_FragColor = encode_float(worldPosition." + field + ");",
+        "}",
+      ].join("\n");
+    }
+
+    // Create template shader material, fragment shader will be added further down
+    var postMaterial = new THREE.ShaderMaterial({
+      vertexShader: posVertexShader,
+      uniforms: {
+        cameraNear: { value: camera.near },
+        cameraFar:  { value: camera.far },
+      },
+      // TODO: Has no effect on windows systems, due to ANGLE limitations, see:
+      // https://threejs.org/docs/api/materials/ShaderMaterial.html
+      linewidth: o.skeleton_line_width
+    });
+
+    // Override material with custom shaders
+    this.scene.overrideMaterial = postMaterial;
+
+    // Get clicked fragment position
+    var position = ["x", "y", "z"].map(function(c) {
+      postMaterial.fragmentShader = makePositionShader(c);
+      postMaterial.needsUpdate = true;
+
+      this.view.renderer.render(this.scene, camera, this.pickingTexture);
+
+      // Read pixel under cursor
+      gl.readPixels(x, this.pickingTexture.height - y, 1, 1, gl.RGBA,
+          gl.UNSIGNED_BYTE, pixelBuffer);
+
+      // Map RGBA value to decoded float
+      return decodeFloat(pixelBuffer);
+    }, this);
+
+    // Reset override material to original state
+    this.scene.overrideMaterial = originalOverrideMaterial;
 
     // Reset materials
     mapToPickables(this, this.content.skeletons, function(skeleton) {
       skeleton.actor.neurite.visible = originalVisibility[skeleton.id];
+      var skeletonProperties = skeletonMap[skeleton.id];
+      if (skeletonProperties) {
+        skeleton.geometry['neurite'].colors = skeletonProperties.colors;
+        skeleton.line_material.vertexColors = skeletonProperties.vertexColors;
+        skeleton.actor['neurite'].material.color = skeletonProperties.actorColor;
+        skeleton.actor['neurite'].material.opacity = skeletonProperties.opacity;
+        skeleton.actor['neurite'].material.transparent = skeletonProperties.transparent;
+
+        skeleton.line_material.needsUpdate = true;
+        skeleton.actor['neurite'].material.needsUpdate = true;
+      }
     }, function(id, obj, isBuffer) {
       if (isBuffer) {
         var material = originalMaterials.get(obj);
@@ -3578,22 +3778,25 @@
     this.staticContent.connectorLineColors.postsynaptic_to.visible =
       originalConnectorPostVisibility;
 
-    var colorId = (pixelBuffer[0] << 16) | (pixelBuffer[1] << 8) | (pixelBuffer[2]);
-
-    // If wanted, the picking map can be exported
-    if (savePickingMap) {
-      var img = CATMAID.tools.createImageFromGlContext(gl,
-          this.pickingTexture.width, this.pickingTexture.height);
-      var blob = CATMAID.tools.dataURItoBlob(img.src);
-      saveAs(blob, "pickingmap.png");
-    }
-
-    if (0 === colorId || !idMap[colorId]) {
-      return null;
+    // Handle results, nothing has been found if color Id is zero
+    if (0 === colorId) {
+        return;
     }
 
     var id = idMap[colorId];
-    if (id) {
+    var skeleton = skeletonIdMap[colorId];
+    var skeletonId = skeleton ? skeleton.id : null;
+
+    // Check if a skeleton was found
+    if (!id && !Number.isNaN(position[0]) &&
+               !Number.isNaN(position[1]) &&
+               !Number.isNaN(position[2])) {
+      id = 'skeleton';
+    }
+
+    if (!id) {
+      return null;
+    } else {
       if ('zplane' === id) {
         // Intersect ray with z plane to get location
         var intersection = this.getIntersectionWithRay(xs, ys, x, camera, [zplane]);
@@ -3609,16 +3812,23 @@
         } else {
           return null;
         }
+      } else if ('skeleton' === id) {
+        return {
+          type: 'skeleton',
+          skeletonId: skeletonId,
+          location: {
+            x: Math.round(position[0]),
+            y: Math.round(position[1]),
+            z: Math.round(position[2])
+          }
+        };
       } else {
         return {
           type: 'node',
           id: id
         };
       }
-    } else {
-      return null;
     }
-
 
     /**
      * Execute a function for every skeleton and one for each of its pickable
@@ -5182,9 +5392,9 @@
 
       // Sort all history lists for each element
       nodeIds.forEach(
-					sortElements.bind(this.history.nodes, 8));
+          sortElements.bind(this.history.nodes, 8));
       connectorIds.forEach(
-					sortElements.bind(this.history.connectors, 6));
+          sortElements.bind(this.history.connectors, 6));
 
       // Update to most recent skeleton
       this.resetToPointInTime(skeletonModel, options, null, true);

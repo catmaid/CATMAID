@@ -261,6 +261,38 @@ SkeletonAnnotations.staticMoveToAndSelectNode = function(nodeID, fn) {
 };
 
 /**
+ * Move to a location and select the node cloest to the given location,
+ * optionally also require a particular skeleton ID.
+ */
+SkeletonAnnotations.staticMoveToAndSelectClosestNode = function(z, y, x,
+    skeletonId, respectVirtualNodes, fn) {
+  var instances = SkeletonAnnotations.TracingOverlay.prototype._instances;
+  var locations = [];
+  for (var stackViewerId in instances) {
+    if (instances.hasOwnProperty(stackViewerId)) {
+      var overlay = instances[stackViewerId];
+      var location = overlay.findNearestSkeletonPoint(x, y, z,
+          skeletonId, undefined, respectVirtualNodes);
+      if (location.node) {
+        locations.push(location);
+      }
+    }
+  }
+
+  // Find location with lowest distance to the given location
+  var closestLocation = locations.reduce(function(closest, loc) {
+    if (null === closest || (loc.distsq < closest.distsq)) {
+      closest = loc;
+    }
+    return closest;
+  }, null);
+
+  if (closestLocation) {
+      overlay.moveToAndSelectNode(location.node.id, fn);
+  }
+};
+
+/**
  * Get the ID of the active node or null if there is no active node.
  */
 SkeletonAnnotations.getActiveNodeId = function() {

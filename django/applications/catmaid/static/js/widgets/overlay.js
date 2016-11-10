@@ -3112,6 +3112,7 @@ SkeletonAnnotations.TracingOverlay.prototype.goToChildNode = function (treenode_
             if (json.length === 0) {
               // Already at a branch or end node
               CATMAID.msg('Already there', 'You are at an end node');
+              resolve();
             } else {
               // In case of a virtual node, we need to filter the returned array
               // to only include the branch that contains the virtual node.
@@ -3121,7 +3122,8 @@ SkeletonAnnotations.TracingOverlay.prototype.goToChildNode = function (treenode_
               }
               self.cacheBranches(treenode_id, json);
               self.cycleThroughBranches(null, 0, ignoreVirtual)
-                .then(resolve);
+                .then(resolve)
+                .catch(reject);
             }
           },
           undefined,

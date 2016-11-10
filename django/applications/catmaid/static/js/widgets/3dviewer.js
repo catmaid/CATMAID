@@ -2720,12 +2720,16 @@
       clearColor = this.renderer.getClearColor();
     }
 
-    this.renderer = this.createRenderer('webgl');
+    var canvas = document.createElement('canvas');
+    canvas.style.width = "100%";
+    canvas.style.height = "100%";
+    this.space.container.appendChild(canvas);
+
+    this.renderer = this.createRenderer('webgl', canvas);
     if (clearColor) {
       this.renderer.setClearColor(clearColor);
     }
 
-    this.space.container.appendChild(this.renderer.domElement);
     this.mouseControls = new this.MouseControls();
     this.mouseControls.attach(this, this.renderer.domElement);
 
@@ -2746,12 +2750,22 @@
   /**
    * Crate and setup a WebGL or SVG renderer.
    */
-  WebGLApplication.prototype.Space.prototype.View.prototype.createRenderer = function(type) {
+  WebGLApplication.prototype.Space.prototype.View.prototype.createRenderer = function(type, canvas) {
     var renderer = null;
     if ('webgl' === type) {
+      // Try to create a WebGL2 render to be able to access depth textures for
+      // picking.
+      var context = canvas.getContext('webgl2');
+      this.isWebGL2 = !!context;
+      if (!context) {
+        context = canvas.getContext('webgl');
+      }
+
       renderer = new THREE.WebGLRenderer({
         antialias: true,
         logarithmicDepthBuffer: this.logDepthBuffer,
+        canvas: canvas,
+        context: context
       });
       // Set pixel ratio, needed for HiDPI displays, if enabled
       if (this.space.options.use_native_resolution) {

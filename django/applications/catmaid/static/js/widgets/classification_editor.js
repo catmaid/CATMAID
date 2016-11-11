@@ -839,7 +839,7 @@
               var classid = item.data("value");
               var relid = item.data("relationId");
               var name = "";
-              self.create_new_instance(tree_id, pid, parentid, classid, relid, name);
+              self.create_new_instance(pid, parentid, classid, relid, name);
               return false;
             }
           });

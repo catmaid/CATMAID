@@ -12,6 +12,13 @@ Measurement Table:
 - XLSX spreadsheet export is now supported through an "Export XLSX" button.
 
 
+Importer:
+
+- Add support for importing ontology and classification information along with
+  projects, stacks and stack groups in project file based import ("Image data
+  importer" in admin view).
+
+
 ### Bug fixes
 
 - Review widget: auto centering works again

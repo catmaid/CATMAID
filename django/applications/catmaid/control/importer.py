@@ -22,8 +22,9 @@ from formtools.wizard.views import SessionWizardView
 from guardian.models import Permission
 from guardian.shortcuts import get_perms_for_model, assign
 
-from catmaid.models import (Class, Relation, ClassInstance, Project, Stack,
-        ProjectStack, Overlay, StackClassInstance, TILE_SOURCE_TYPES)
+from catmaid.models import (Class, Relation, ClassClass, ClassInstance, Project,
+        ClassInstanceClassInstance, Stack, ProjectStack, Overlay,
+        StackClassInstance, TILE_SOURCE_TYPES)
 from catmaid.fields import Double3D
 from catmaid.control.common import urljoin
 from catmaid.control.classification import get_classification_links_qs, \
@@ -139,9 +140,10 @@ class PreOverlay(ImageBaseMixin):
 class PreStackGroup():
     def __init__(self, info_object):
         self.name= info_object['name']
-        self.relation = info_object['relation']
+        self.classification = info_object.get('classification', None)
+        self.relation = info_object.get('relation', None)
         valid_relations = ("has_view", "has_channel")
-        if self.relation not in valid_relations:
+        if self.relation  and self.relation not in valid_relations:
             raise ValueError("Unsupported stack group relation: {}. Plese use "
                     "one of: {}.".format(self.relation, ", ".join(valid_relations)))
 
@@ -184,6 +186,11 @@ class PreStack(ImageBaseMixin):
         if 'stackgroups' in info_object:
             for stackgroup in info_object['stackgroups']:
                 self.stackgroups.append(PreStackGroup(stackgroup))
+        # Collect classification information, if available
+        if 'classification' in info_object:
+          self.classification = info_object['classification']
+        else:
+          self.classification = None
 
         # Don't be considered known by default
         self.already_known = already_known
@@ -219,6 +226,15 @@ class PreProject:
         self.already_known = already_known_pid != None
         self.already_known_pid = already_known_pid
         self.action = None
+
+        # Collect classification information, if available
+        self.ontology = p.get('ontology', None)
+        self.classification = p.get('classification', None)
+
+        # Collect stack group information, if available
+        self.stackgroups = []
+        for sg in p.get('stackgroups', []):
+            self.stackgroups.append(PreStackGroup(sg))
 
     def set_known_pid(self, pid):
         self.already_known = pid != None
@@ -934,6 +950,160 @@ class ConfirmationForm(forms.Form):
     """
     something = forms.CharField(initial="", required=False)
 
+def ensure_classes(project, classes, user):
+    """ Make sure the given project has all referenced classes and relations.
+    The classes argument is expected to be a list of root class names, each one
+    forming a tree of {relation, class, children} objects. The relation
+    properties refers to the parent element.
+    """
+
+    def create(node, parent=None):
+        name = node['class']
+        cls, _ = Class.objects.get_or_create(project=project, class_name=name,
+              defaults={
+                  'user': user
+              })
+
+        if parent:
+            parent_relation_name = node.get('relation', None)
+            if not parent_relation_name:
+                raise ValueError("Need parent relation for class \"" + name + "\"")
+            rel, _ = Relation.objects.get_or_create(project=project,
+                    relation_name=parent_relation_name, defaults={
+                      'user': user
+                    })
+            cls_cls, _ = ClassClass.objects.get_or_create(project=project,
+                    class_a=cls, class_b=parent, relation=rel, defaults={
+                      'user': user
+                    })
+
+        for child in node.get('children', []):
+            create(child, cls)
+
+        return cls
+
+    classification_root_class, _ = Class.objects.get_or_create(project=project,
+            class_name="classification_root", defaults={
+                'user': user
+            })
+    is_a, _ = Relation.objects.get_or_create(project=project,
+            relation_name="is_a", defaults={
+                'user': user
+            })
+    for root_node in classes:
+        root_class = create(root_node)
+        # Make sure roots are classification roots
+        classification_root_link, _ = ClassClass.objects.get_or_create(
+                project=project, class_a=root_class,
+                class_b=classification_root_class, relation=is_a, defaults={
+                  'user': user
+                })
+
+
+def ensure_class_instances(project, classification_paths, user, stack=None, stackgroup=None):
+    """ Make sure the given project has all referenced class instances (by name)
+    available. The names list is expected to be a classification root reference.
+    Note: This currently expects each class to be instantiated only once in each
+    graph.
+    """
+
+    def create(node, parent=None, path=[]):
+        print node
+        print parent
+        # Find existing class with passed in node name, expect unique names
+        cls = Class.objects.get(project=project, class_name=node)
+
+        if parent:
+            # Make sure link to parent is available. Use relation in ontology,
+            # expect only one.
+            parent_class = parent.class_column
+            parent_cc = ClassClass.objects.get(project=project, class_a=cls, class_b=parent_class)
+            rel = parent_cc.relation
+            ci = ClassInstance.objects.filter(project=project, class_column=cls,
+                    cici_via_a__class_instance_b=parent,
+                    cici_via_a__relation=rel)
+            print("CI", ci)
+            if 0 == len(ci):
+                ci, _ = ClassInstance.objects.get_or_create(project=project,
+                    class_column=cls, defaults={
+                        'user': user,
+                        'name': node
+                    })
+                cici, _ = ClassInstanceClassInstance.objects.get_or_create(project=project,
+                    class_instance_a=ci, class_instance_b=parent, relation=rel, defaults={
+                        'user': user
+                    })
+                print("cici", cici)
+            elif 1 < len(ci):
+                raise ValueError("Found more than one existing matching " +
+                        "classification entry for \"" + node + "\"")
+            else:
+                ci = ci[0]
+        else:
+          print("root")
+          # Find existing class instance, also with passed in node name, expect
+          # a single root instance.
+          ci, _ = ClassInstance.objects.get_or_create(project=project, class_column=cls,
+              defaults={
+                  'user': user,
+                  'name': node
+              })
+
+        return ci
+    classification_project_class, _ = Class.objects.get_or_create(project=project,
+            class_name="classification_project", defaults={
+                'user': user
+            })
+    classified_by, _ = Relation.objects.get_or_create(project=project,
+            relation_name="classified_by", defaults={
+                'user': user
+            })
+    linked_to, _ = Relation.objects.get_or_create(project=project,
+            relation_name="linked_to", defaults={
+                'user': user
+            })
+
+    t = type(classification_paths)
+    if t is list or t is tuple:
+        for path in classification_paths:
+            parent_node = None
+            ci_path = []
+            for class_name in path:
+                parent_node = create(class_name, parent_node)
+                ci_path.append(parent_node)
+
+            root_node = ci_path[0]
+            last_node = ci_path[-1]
+
+            # Link root to project
+            classification_project, _ = ClassInstance.objects.get_or_create(
+                    project=project, class_column=classification_project_class,
+                    defaults={
+                        'user': user
+                    })
+            classification_project_link, _ = ClassInstanceClassInstance.objects.get_or_create(
+                    project=project, class_instance_a=classification_project,
+                    class_instance_b=root_node, relation=classified_by, defaults={
+                        'user': user
+                    })
+
+            if stack:
+                # Link stack to class instance at end of path
+                StackClassInstance.objects.get_or_create(project=project,
+                        relation=linked_to, stack=stack,
+                        class_instance=last_node, defaults={
+                            'user': user
+                        })
+            if stackgroup:
+                # Link stack to class instance at end of path
+                ClassInstanceClassInstance.objects.get_or_create(
+                        project=project, class_instance_a=last_node,
+                        class_instance_b=stackgroup, relation=linked_to, defaults={
+                            'user': user
+                        })
+    else:
+        raise ValueError("Unknown classification syntax, expected list: " + t)
+
 def import_projects( user, pre_projects, tags, permissions,
         default_tile_width, default_tile_height, default_tile_source_type,
         cls_graph_ids_to_link, remove_unref_stack_data):
@@ -1015,6 +1185,8 @@ def import_projects( user, pre_projects, tags, permissions,
             updated_stacks = []
             stack_groups = {}
             translations = {}
+            stack_classification = {}
+            stackgroup_classification = {}
             for s in pp.stacks:
 
                 # Test if stack is alrady known. This can change with every
@@ -1069,6 +1241,10 @@ def import_projects( user, pre_projects, tags, permissions,
                 if not stack:
                     stack = Stack.objects.create(**stack_properties)
                     stacks.append(stack)
+
+                # Link to ontology, if wanted
+                if s.classification:
+                    stack_classification[stack] = s.classification
 
                 # Add overlays of this stack
                 for o in s.overlays:
@@ -1147,12 +1323,26 @@ def import_projects( user, pre_projects, tags, permissions,
             # Make project changes persistent
             p.save()
 
-            # Save stack groups. If
+            # Add ontology and classification information, if provided
+            if pp.ontology:
+                ensure_classes(p, pp.ontology, user)
+            if pp.classification:
+                ensure_class_instances(p, pp.classification, user)
+
+            # Add classification and link to stacks
+            for s, classification in stack_classification.iteritems():
+                ensure_class_instances(p, classification,  user, stack=s)
+
+            # Save stack groups
+            referenced_stackgroups = {}
             for sg, linked_stacks in stack_groups.iteritems():
                 existing_stackgroups = ClassInstance.objects.filter(project=p,
-                    class_column__class_name="stackgroup")
+                    name=sg, class_column__class_name="stackgroup")
                 
-                if len(existing_stackgroups) > 0:
+                if len(existing_stackgroups) > 1:
+                    raise ValueError("Found more than one existing stack group "
+                            "with the same name, expected zero or one.")
+                elif len(existing_stackgroups) > 0:
                     if 'ignore' == known_stackgroup_action:
                         continue
                     elif 'import' == known_stackgroup_action:
@@ -1166,6 +1356,7 @@ def import_projects( user, pre_projects, tags, permissions,
                     user=user, project=p, name=sg,
                     class_column=Class.objects.get(project=p, class_name="stackgroup")
                 )
+                referenced_stackgroups[sg] = stack_group
                 for ls in linked_stacks:
                     StackClassInstance.objects.create(
                         user=user, project=p,
@@ -1174,6 +1365,13 @@ def import_projects( user, pre_projects, tags, permissions,
                         class_instance=stack_group,
                         stack=ls['stack'],
                     )
+
+            # Link project level defined stack group classification
+            for sg in pp.stackgroups:
+                ref_ci = referenced_stackgroups.get(sg.name)
+                if ref_ci and sg.classification:
+                    ensure_class_instances(p, sg.classification,  user,
+                    stackgroup=ref_ci)
 
             # Link classification graphs
             for cg in cls_graph_ids_to_link:

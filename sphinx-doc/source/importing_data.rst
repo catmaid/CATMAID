@@ -226,6 +226,94 @@ above. But please keep in mind to *not use the tab character* in the
 whitespace indentation (but simple spaces) as this isn't allowed in
 YAML.
 
+Ontology and classification import
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+The project files explained in the last section can also be used to import
+ontologies and classifications. While CATMAID supports arbitrary graphs to
+represent ontologies and classifications,only tree structures can be imported at
+the moment.
+
+The ``project`` object supports an optional ``ontology`` field, which defines an
+ontology hierarchy with lists of lists. An optional ``classification`` field can
+be used to define a list of ontology paths that get instantiated based on the
+provided ontology. Classification fields require that an ontology is defined and
+can be used on ``project`` level, ``stack`` level and the ``stackgroup`` level.
+Consider this example::
+
+    project:
+       name: "test"
+       ontology:
+         - class: 'Metazoa'
+           children:
+             - relation: 'has_a'
+               class: 'Deuterostomia'
+             - relation: 'has_a'
+               class: 'Protostomia'
+               children:
+                 - relation: 'has_a'
+                   class: 'Lophotrochozoa'
+                   children:
+                     - relation: 'has_a'
+                       class: 'Nematostella'
+                       children:
+                         - relation: 'has_a'
+                           class: 'Lineus longissimus'
+       stackgroups:
+         - name: 'Test group'
+           classification:
+              - ['Metazoa', 'Protostomia', 'Lophotrochozoa', 'Nematostella', 'Lineus longissimus']
+       stacks:
+         - url: "https://example.org/data/imagestack/"
+           name: "Channel 1"
+           metadata: "PMT Offset: 10, Laser Power: 0.5, PMT Voltage: 550"
+           dimension: "(1024,1024,800)"
+           resolution: "(2.0,2.0,1.0)"
+           zoomlevels: 1
+           fileextension: "jpg"
+           translation: "(10.0, 20.0, 30.0)"
+           classification:
+              - ['Metazoa', 'Deuterostomia']
+         - url: "https://example.org/data/imagestack-sample-108/"
+           name: "Channel 1"
+           metadata: "PMT Offset: 10, Laser Power: 0.5, PMT Voltage: 550"
+           dimension: "(1024,1024,800)"
+           resolution: "(2.0,2.0,1.0)"
+           zoomlevels: 1
+           fileextension: "jpg"
+           translation: "(10.0, 20.0, 30.0)"
+           stackgroups:
+            - name: "Test group"
+              relation: "has_channel"
+         - folder: "Sample108_FIB_catmaid copy"
+           name: "Channel 2"
+           metadata: "PMT Offset: 10, Laser Power: 0.5, PMT Voltage: 550"
+           dimension: "(1024,1024,800)"
+           resolution: "(2.0,2.0,1.0)"
+           zoomlevels: 1
+           fileextension: "jpg"
+           stackgroups:
+            - name: "Test group"
+              relation: "has_channel"
+
+The project level ontology definition represent an ontology with the root node
+"Metazoa" which has two children: "Deuterostomia" and  "Protostomia", connected
+through a "has_a" relation. While the first child is a leaf node and has no
+children, the second child has a child node as well (and so on). It is possible
+to have multiple roots (i.e. separate ontology graphs) and multiple children,
+both are lists.
+
+Individual stacks and stackgroups are then allowed to instantiate a certain path
+of the ontology and be linked to the leaf node of the path. They do this by
+supporting a ``classification`` field. The example creates two classification
+paths and links one leaf node to the stack group and one to an individual stack.
+
+Currently, the importer expects that those two classes are only related on the
+ontology level a single time. This allows for an easier file syntax with a
+simple list. An import will fail if the project defined ontology doesn't
+contain a class used in a classification.
+
 File and Folder Layout
 ^^^^^^^^^^^^^^^^^^^^^^
 

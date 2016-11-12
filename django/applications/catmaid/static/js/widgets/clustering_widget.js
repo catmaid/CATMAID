@@ -5,10 +5,10 @@
 
   "use strict";
 
-  var ClusteringWidget = new function()
-  {
+  var ClusteringWidget = function() {
     var self = this;
-    var content_div_id = 'clustering_content';
+    this.widgetID = this.registerInstance();
+    var content_div_id = 'clustering_content' + this.widgetID;
     this.workspace_pid = null;
 
     /**
@@ -327,7 +327,7 @@
                 self.displayStep(data, container);
               } else {
                 container.innerHTML = "<p>" + data + "</p>";
-                ClusteringWidget.patch_clustering_setup( container );
+                self.patch_clustering_setup( container );
               }
             }
           });
@@ -862,12 +862,42 @@
 
       // get the view from Django
       container.innerHTML = "<p>Please select the features that should be used for clustering.</p>";
-      ClusteringWidget.render_to_content(container,
+      self.render_to_content(container,
         self.get_clustering_url('/setup'), self.patch_clustering_setup);
     };
-  }();
+  };
+
+  $.extend(ClusteringWidget.prototype, new InstanceRegistry());
+
+  ClusteringWidget.prototype.getName = function() {
+    return "Classification Clustering " + this.widgetID;
+  };
+
+  ClusteringWidget.prototype.getWidgetConfiguration = function() {
+    return {
+      controldID: "clustering_controls" + this.widgetID,
+      contentID: "clustering_content" + this.widgetID,
+      createControls: function(controls) {},
+      createContent: function(content) {
+        content.classList.add('clustering-content');
+      },
+      init: function() {
+        this.init();
+      }
+    };
+  };
+
+  ClusteringWidget.prototype.destroy = function() {
+    this.unregisterInstance();
+  };
 
   // Export Clustering Widget into CATMAID namespace
   CATMAID.ClusteringWidget = ClusteringWidget;
+
+  // Register widget with CATMAID
+  CATMAID.registerWidget({
+    key: "clustering-widget",
+    creator: ClusteringWidget
+  });
 
 })(CATMAID);

@@ -1990,26 +1990,6 @@ var WindowMaker = new function()
     return {window: win, widget: OS};
   };
 
-  var createClusteringWidget = function()
-  {
-    var win = new CMWWindow( "Clustering" );
-    var content = win.getFrame();
-    content.style.backgroundColor = "#ffffff";
-
-    var container = createContainer( "clustering_widget" );
-    content.appendChild( container );
-
-    container.innerHTML = '<div id="clustering_content"></div>';
-
-    addListener(win, container);
-
-    addLogic(win);
-
-    CATMAID.ClusteringWidget.init();
-
-    return {window: win, widget: null};
-  };
-
   var getHelpForActions = function(actions)
   {
     var action, keys, i, k, result = '<dl class="keyboardShortcuts">';
@@ -2528,7 +2508,6 @@ var WindowMaker = new function()
     "adjacencymatrix-widget": createAdjacencyMatrixWindow,
     "ontology-search": createOntologySearchWidget,
     "notifications": createNotificationsWindow,
-    "clustering-widget": createClusteringWidget,
     "circuit-graph-plot": createCircuitGraphPlot,
     "venn-diagram": createVennDiagramWindow,
     "neuron-annotations": createNeuronAnnotationsWindow,

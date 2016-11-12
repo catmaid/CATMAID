@@ -319,21 +319,21 @@ div[data-role=classification_graph_object] img.roiimage {
   color: #fff;
 }
 
-#clustering_content .indented {
+div.clustering-content .indented {
   margin: 1.5em 16px 0.5em 20px;
 }
 
-#clustering_content #distance_matrix td.lowertriangle {
+div.clustering-content #distance_matrix td.lowertriangle {
   background-color: #CED8F6;
 }
 
-#clustering_content .title {
+div.clustering-content .title {
 	font-weight: bold;
 }
 
 /* This is needed to make jQuery's slideToggle() not override
 * the overflow property to 'hidded' and thereby cause jumping. */
-#clustering_content .content {
+div.clustering-content .content {
   position: relative;
   overflow: visible !important;
 }

@@ -58,8 +58,12 @@
      * Creates the base URL, needed for all classification requests and
      * appends the passed string to it. The combined result is returned.
      */
-    this.get_cls_url = function( pid, sub_url ) {
-      return django_url + pid + '/classification/' + self.workspace_pid + sub_url;
+    this.get_cls_url = function( pid, sub_url, relative ) {
+      if (relative) {
+        return pid + '/classification/' + self.workspace_pid + sub_url;
+      } else {
+        return CATMAID.makeURL(pid + '/classification/' + self.workspace_pid + sub_url);
+      }
     };
 
     /**
@@ -444,7 +448,6 @@
     this.load_tree = function(pid, link_id) {
       // id of object tree
       var container = getContainer(false);
-      var tree_id = '#classification_graph_object';
       tree = $('div[data-role=classification_graph_object]', container);
 
       tree.bind("reload_nodes.jstree",
@@ -461,56 +464,82 @@
 
       tree.jstree({
         "core": {
-        "html_titles": true,
-        "load_open": true
+          "html_titles": true,
+          "load_open": true,
+          "check_callback": function(operation, node, node_parent, node_position, more) {
+            if ('rename_node' === operation) {
+              if (!confirm("Are you sure you want to rename this node?")) {
+                return false;
+              }
+              tree.jstree(true).save_state();
+            } else if ('delete_node' === operation) {
+              if (!confirm("Are you sure you want to remove '" + node.text.trim() +
+                  "' and anything it contains?")) {
+                return false;
+              }
+              tree.jstree(true).save_state();
+            } else if ('create_node' === operation) {
+              return true;
+            }
+          },
+          "data": {
+            "url": url,
+            "cache": false,
+            "data": function (n) {
+              // depending on which type of node it is, display those
+              // the result is fed to the AJAX request `data` option
+              var parameters = {
+                "parentid": n.parent !== null ? n.original.oid : 0,
+                "superclassnames": self.displaySuperClasses ? 1 : 0,
+                "edittools": self.displayEditToos ? 1 : 0
+              };
+              if (n[0]) {
+                parameters['parentname'] = n[0].innerText;
+              }
+              return parameters;
+              },
+              "converters": {
+                "text json": function(value) {
+                  var data = JSON.parse(value);
+                  if (!data.error) {
+                    // Mark non-edit nodes elements to potentially have children
+                    // and rename their "id" property to "oid".
+                    for (var i=0, l=data.length; i<l; ++i) {
+                      var d = data[i];
+                      if (d.type === 'editnode') {
+                        d['text'] = "<span>(Add " + d['child_type'] + ")</span>";
+                      } else {
+                        d['children'] = true;
+                      }
+                      // Rename ID field of result, since jsTree expects to be
+                      // unique, which we can't guarantee in our graph.
+                      if (undefined !== d.id) {
+                        d.oid = d.id;
+                        delete d.id;
+                      }
+                    }
+                  }
+                  return data;
+                }
+              },
+              "success": function (e) {
+                if (e.error) {
+                  CATMAID.error(e.error, e.detail);
+                }
+              }
+          },
         },
         // The UI plugin isn't used, because it doesn't let click events go
         // through to the node. This, however, is needed to support ROI links.
-        "plugins": ["themes", "json_data", "crrm", "types", "contextmenu"],
-        "json_data": {
-        "ajax": {
-          "url": url,
-          "data": function (n) {
-          var expandRequest, parentName, parameters;
-          // depending on which type of node it is, display those
-          // the result is fed to the AJAX request `data` option
-          parameters = {
-            "pid": pid,
-            "parentid": n.attr ? n.attr("id").replace("node_", "") : 0,
-            "superclassnames": self.displaySuperClasses ? 1 : 0,
-            "edittools": self.displayEditToos ? 1 : 0
-          };
-          if (self.currentExpandRequest) {
-            parameters['expandtarget'] = self.currentExpandRequest.join(',');
-          }
-          if (n[0]) {
-            parameters['parentname'] = n[0].innerText;
-          }
-          return parameters;
-          },
-          "success": function (e) {
-            if (e.error) {
-              CATMAID.error(e.error, e.detail);
-            }
-          }
-        },
-        "cache": false,
-        "progressive_render": true
-        },
-        "themes": {
-        "theme": "classic",
-        "url": STATIC_URL_JS + "libs/jsTree/classic/style.css",
-        "dots": false,
-        "icons": true
-        },
+        "plugins": ["types", "contextmenu", "state"],
         "contextmenu": {
-          "items": function(obj) {
-            var node_id = obj.attr("id");
-            var node_type = obj.attr("rel");
+          "items": function(node) {
+            var node_id = node.original.oid;
+            var node_type = node.type;
             if (node_type === "root" || node_type === "element") {
-              var child_groups = JSON.parse(obj.attr("child_groups"));
               var menu = {};
               if (self.displayEditToos) {
+                var child_groups = node.original.child_groups;
                 // Add entries to create child class instances
                 for (var group_name in child_groups) {
                   var menu_id = 'add_child_' + group_name;
@@ -526,35 +555,35 @@
                     var subchild = child_classes[i];
                     only_disabled_items = (only_disabled_items && subchild.disabled);
                     submenu['add_child_' + group_name + '_sub_' + i] = {
-                    "separator_before": false,
-                    "separator_after": false,
-                    "_disabled": subchild.disabled,
-                    "label": subchild.name,
-                    // the action function has to be created wth. of a closure
-                    "action": (function(cname, cid, rname, rid) {
-                      return function (obj) {
-                        var att = {
-                          "state": "open",
-                          "data": cname,
-                          "attr": {
+                      "separator_before": false,
+                      "separator_after": false,
+                      "_disabled": subchild.disabled,
+                      "label": subchild.name,
+                      // the action function has to be created wth. of a closure
+                      "action": (function(cname, cid, rname, rid) {
+                        return function (data) {
+                          var att = {
                             "classid": cid,
                             "classname": cname,
                             "relid": rid,
-                            "relname": rname
+                            "children:": false,
+                            "relname": rname,
+                            "name": cname
                             //"rel": type_of_node,
-                          }
+                          };
+                          var ref = $.jstree.reference(data.reference);
+                          ref.create_node(node, att, "last", null, true);
                         };
-                        this.create(obj, "inside", att, null, true);
-                      };})(subchild.name, subchild.id, subchild.relname, subchild.relid)
+                      })(subchild.name, subchild.id, subchild.relname, subchild.relid)
                     };
                   }
                   // add complete contextmenu
                   menu[menu_id] = {
-                  "separator_before": false,
-                  "separator_after": false,
-                  "label": 'Add ' + group_name,
-                  "_disabled": only_disabled_items,
-                  "submenu": submenu,
+                    "separator_before": false,
+                    "separator_after": false,
+                    "label": 'Add ' + group_name,
+                    "_disabled": only_disabled_items,
+                    "submenu": submenu,
                   };
                 }
                 // Add custom renames
@@ -564,8 +593,9 @@
                     "separator_before": true,
                     "separator_after": false,
                     "label": "Rename root",
-                    "action": function (obj) {
-                    this.rename(obj);
+                    "action": function (data) {
+                      var ref = $.jstree.reference(data.reference);
+                      ref.rename_node(data.node);
                     }
                   };
                 }
@@ -574,16 +604,14 @@
                 menu['link_roi'] = {
                   "separator_before": true,
                   "separator_after": false,
-                  "_class": "wider-context-menu",
                   "label": "Link new region of interest",
-                  "action": function (obj) {
-                    var node_id = obj.attr("id").replace("node_", "");
-                    self.link_roi(node_id);
+                  "action": function (data) {
+                    self.link_roi(node.original.oid);
                   }
                 };
 
                 // Add entry and submenu for removing a region of interest
-                var rois = JSON.parse(obj.attr("rois"));
+                var rois = JSON.parse(node.original.rois);
                 var submenu = {};
                 for (var i=0; i<rois.length; i++) {
                   var roi = rois[i];
@@ -592,7 +620,7 @@
                     "separator_after": false,
                     "label": "" + (i + 1) + ". Roi (" + roi + ")",
                     "action": function (r_id) {
-                      return function (obj) {
+                      return function (data) {
                         self.remove_roi(r_id);
                       };
                     }(roi)
@@ -602,7 +630,6 @@
                   "separator_before": false,
                   "separator_after": false,
                   "label": "Remove region of interest",
-                  "_class": "wider-context-menu",
                   "_disabled": rois.length === 0,
                   "submenu": submenu,
                 };
@@ -613,8 +640,11 @@
                     "separator_before": true,
                     "separator_after": false,
                     "label": "Remove",
-                    "action": function (obj) {
-                      this.remove(obj);
+                    "action": function (data) {
+                      var ref = $.jstree.reference(data.reference),
+                          sel = ref.get_selected();
+                      if(!sel.length) { return false; }
+                      ref.delete_node(sel);
                     }
                   };
                 }
@@ -625,8 +655,10 @@
                 "separator_before": true,
                 "separator_after": false,
                 "label": "Expand sub-tree",
-                "action": function (obj) {
-                  tree.jstree('open_all', obj);
+                "action": function (data) {
+                  var instance = $.jstree.reference(data.reference);
+                  var node = instance.get_node(data.reference);
+                  instance.open_all(node);
                  }
               };
 
@@ -635,40 +667,16 @@
           },
         },
         "types": {
-          // disable max root nodes checking
-          "max_children": -2,
-          // disable max depth checking
-          "max_depth": -2,
-          // allow all childres
-          "valid_children": "all",
-          "types": {
-          // the default type
-          "default": {
-            "valid_children": "all",
-          },
           "root": {
-            "icon": {
-            "image": STATIC_URL_JS + "images/ontology_root.png"
-            },
-            "valid_children": "all",
-            "start_drag": false,
-            "delete_node": false,
-            "remove": false
+            "icon": CATMAID.makeStaticURL("images/ontology_root.png"),
           },
           "editnode": {
-            "icon": {
-            "image": STATIC_URL_JS + "images/ontology_edit.png"
-            },
-            "valid_children": "all",
+            "icon": CATMAID.makeStaticURL("images/ontology_edit.png")
           },
           "element": {
-            "icon": {
-            "image": STATIC_URL_JS + "images/ontology_class_instance.png"
-            },
-            "valid_children": "all",
+            "icon": CATMAID.makeStaticURL("images/ontology_class_instance.png")
           },
           }
-        }
       });
 
       // handlers
@@ -678,10 +686,10 @@
       //  "rlbk" : /* an optional rollback object - it is not always present */
 
       // react to the opening of a node
-      tree.bind("open_node.jstree", function (e, data) {
+      tree.on("open_node.jstree", function (e, data) {
         // If there are ROI links, adjust behaviour when clicked. Be
         // on the save side and make sure this is the only handler.
-        $("img.roiimage", data.rslt.obj).off('click').on('click',
+        $("img.roiimage", e.target).off('click').on('click',
           function() {
             // Hide preview in mouse-out handler
             $("#imagepreview").remove();
@@ -692,7 +700,7 @@
           });
 
         // Add a preview when hovering a roi image
-        $("img.roiimage", data.rslt.obj).hover(
+        $("img.roiimage", e.target).hover(
           function(e) {
             if (self.displayPreviews) {
               // Show preview in mouse-in handler
@@ -715,7 +723,7 @@
               $("#imagepreview").remove();
             }
           });
-        $("img.roiimage", data.rslt.obj).mousemove(
+        $("img.roiimage", e.target).mousemove(
           function(e) {
             if (self.displayPreviews) {
               $("#imagepreview")
@@ -726,86 +734,129 @@
       });
 
       // create a node
-      tree.bind("create.jstree", function (e, data) {
-      var mynode = data.rslt.obj;
-      var myparent = data.rslt.parent;
-      var parentid = myparent.attr("id").replace("node_", "");
-      var classid = mynode.attr("classid");
-      var relid = mynode.attr("relid");
-      var name = data.rslt.name;
-      self.create_new_instance(pid, parentid, classid, relid, name);
+      tree.on("create_node.jstree", function (e, data) {
+        var mynode = e.target;
+        var myparent = data.instance.get_node(data.node.parent);
+        var parentid = myparent.original.oid;
+        var classid = data.node.original.classid;
+        var relid = data.node.original.relid;
+        var name = data.node.original.name;
+        self.create_new_instance(pid, parentid, classid, relid, name);
       });
 
       // remove a node
-      tree.bind("remove.jstree", function (e, data) {
-        var treebefore = data.rlbk;
-        var mynode = data.rslt.obj;
-        var friendly_name = mynode.text().trim();
-        if (!confirm("Are you sure you want to remove '" + friendly_name + "' and anything it contains?")) {
-          $.jstree.rollback(treebefore);
-          return false;
-        }
-
-        $.blockUI({ message: '<img src="' + STATIC_URL_JS + 'images/busy.gif" /><span>Removing classification graph node. Just a moment...</span>' });
+      tree.on("delete_node.jstree", function (e, data) {
+        var mynode = data.instance.get_node(data.node);
+        var friendly_name = mynode.text.trim();
+        $.blockUI({
+          message: '<img src="' + STATIC_URL_JS + 'images/busy.gif" />' +
+              '<span>Removing classification graph node. Just a moment...</span>'
+        });
         // Remove classes
-        $.post(self.get_cls_url(project.id, '/instance-operation'), {
-          "operation": "remove_node",
-          "id": mynode.attr("id").replace("node_", ""),
-          "linkid": mynode.attr("linkid"),
-          "title": data.rslt.new_name,
-          "pid": pid,
-          "rel": mynode.attr("rel")
-        }, function (r) {
+        CATMAID.fetch(self.get_cls_url(project.id, '/instance-operation', true),
+          'POST', {
+            "operation": "remove_node",
+            "id": mynode.original.oid,
+            "linkid": mynode.original.linkid,
+            "rel": mynode.original.type
+        }).then(function (r) {
           $.unblockUI();
-          r = JSON.parse(r);
-          if (r['error']) {
-            CATMAID.error(r['error']);
-            $.jstree.rollback(treebefore);
-            return;
-          }
           if(r['status']) {
-            $("#annotation_graph_object").jstree("refresh", -1);
+            data.instance.refresh(-1);
             project.updateTool();
             CATMAID.msg('SUCCESS',
               'Classification graph element "' + friendly_name + '" removed.');
           }
-        });
-      });
-
-      // rename the root node
-      tree.bind("rename.jstree", function(e, data) {
-        var treebefore = data.rlbk;
-        var node = data.rslt.obj;
-        if (!confirm("Are you sure you want to rename this node?")) {
-          $.jstree.rollback(treebefore);
-          return false;
-        }
-        $.blockUI({ message: '<img src="' + STATIC_URL_JS + 'images/busy.gif" /><span>Renaming classification graph node. Just a moment...</span>' });
-        $.post(self.get_cls_url(project.id, '/instance-operation'), {
-           "operation": "rename_node",
-           "id": node.attr("id").replace("node_", ""),
-           "title": data.rslt.new_name,
-           "pid": pid,
-        }, function(r) {
+        }).catch(function(r) {
           $.unblockUI();
-          r = JSON.parse(r);
-          if (r['error']) {
-            CATMAID.error(r);
-            $.jstree.rollback(treebefore);
-            return;
-          }
-          if(r['status']) {
-            $("#annotation_graph_object").jstree("refresh", -1);
-            project.updateTool();
-            CATMAID.msg('SUCCESS', 'Classification graph element renamed.');
-          }
-        });
+          data.instance.restore_state();
+          CATMAID.handleError(r.error, r.detail);
+          });
       });
 
-      // things that need to be done when a node is loaded
-      tree.bind("load_node.jstree", function(e, data) {
-        // Add handlers to select elements available in edit mode
-        self.addEditSelectHandlers(pid);
+      // rename a node
+      tree.on("rename_node.jstree", function(e, data) {
+        var mynode = data.instance.get_node(data.node);
+        var friendly_name = mynode.text.trim();
+        $.blockUI({
+          message: '<img src="' + STATIC_URL_JS + 'images/busy.gif" /' +
+            '><span>Renaming classification graph node. Just a moment...</span>'
+        });
+        CATMAID.fetch(self.get_cls_url(project.id, '/instance-operation', true),
+          'POST', {
+             "operation": "rename_node",
+             "id": mynode.original.oid,
+             "title": data.text,
+          }).then(function(r) {
+            $.unblockUI();
+            if(r['status']) {
+              data.instance.refresh(-1);
+              project.updateTool();
+              CATMAID.msg('SUCCESS', 'Classification graph element renamed.');
+            }
+          }).catch(function(r) {
+            $.unblockUI();
+            CATMAID.error(r);
+            data.instance.restore_state();
+          });
+      });
+
+      tree.on("hover_node.jstree", function(e, data) {
+        var node = data.node.original;
+        var parentNode = data.instance.get_node( data.node.parent);
+        if ("editnode" === node.type) {
+          var menu = document.createElement('div');
+          menu.classList.add('select_new_classification_instance');
+          for (var i=0, l=node.child_options.length; i<l; ++i) {
+            var c = node.child_options[i];
+            var entry = document.createElement('div');
+            entry.dataset.value = c.class_id;
+            entry.dataset.relationId = c.relation_id;
+            var a = document.createElement('a');
+            a.href = '#';
+            a.appendChild(document.createTextNode(c.name));
+            entry.appendChild(a);
+            menu.appendChild(entry);
+          }
+          // Make menu invisible by default
+          menu.style.display = "none";
+          node.editMenu = menu;
+
+          // Find SPAN element as part of the node's list element
+          // and add menu to it.
+          var li = $("#" + data.node.id, data.instance.element);
+          var span = $('span', li);
+
+          span.append(menu);
+          var jqMenu = $(menu).menu({
+            menus: 'div.select_new_classification_instance', // Needed?
+            select: function( ev, data ) {
+              // let a menu selection create a new class instance
+              var item = data.item;
+              var parentid = '#' === parentNode.original.oid ?
+                  undefined : parentNode.original.oid;
+              var classid = item.data("value");
+              var relid = item.data("relationId");
+              var name = "";
+              self.create_new_instance(pid, parentid, classid, relid, name);
+              return false;
+            }
+          });
+
+          $(node.editMenu).menu('widget').fadeIn(100);
+        }
+      });
+
+      tree.on("dehover_node.jstree", function(e, data) {
+        var node = data.node.original;
+        if ("editnode" === node.type) {
+          // Remove any visible edit menu
+          if (node.editMenu) {
+              $(node.editMenu).menu('widget').fadeOut(100);
+              node.editMenu.parentNode.removeChild(node.editMenu);
+              node.editMenu = null;
+          }
+        }
       });
     };
 
@@ -998,26 +1049,14 @@
         "pid": pid
       };
 
-      $.ajax({
-        async: false,
-        cache: false,
-        type: 'POST',
-        url: self.get_cls_url(project.id, '/instance-operation'),
-        data: data,
-        dataType: 'json',
-        success: function (data2) {
-        // Deselect all selected nodes first to prevent selection
-        // confusion with the refreshed tree.
-        tree.jstree("deselect_all");
-        // update node id
-        //mynode.attr("id", "node_" + data2.class_instance_id);
-        // reload the node
-        //tree.jstree("refresh", myparent);
-        //tree.jstree("load_node", myparent, function() {}, function() {});
-        // TODO: Refresh only the sub tree, startins from parent
-        tree.jstree("refresh", -1);
-        }
-      });
+      CATMAID.fetch(self.get_cls_url(project.id, '/instance-operation', true), 'POST',
+          data).then(function(r) {
+            // Deselect all selected nodes first to prevent selection
+            // confusion with the refreshed tree.
+            tree.jstree("deselect_all");
+            // TODO: Refresh only the sub tree, startins from parent
+            tree.jstree("refresh", -1);
+          }).catch(CATMAID.handleError);
     };
 
     this.create_error_aware_callback = function( fx )
@@ -1030,47 +1069,6 @@
           fx(status, data, text);
         }
       };
-    };
-
-    /**
-     * Adds an event handler to every edit mode select box. This
-     * handler will create a new item. It uses a jQuery UI menu
-     * to get user input.
-     */
-    this.addEditSelectHandlers = function(pid) {
-      var select_elements = $("a.editnode");
-      var found = select_elements.length !== 0;
-      if (found) {
-        $.each(select_elements, function(index, record) {
-          if (!this.hasChangeEventHandler) {
-            var menu_class = "div.select_new_classification_instance";
-            var menu_elem  = $(menu_class, this);
-            var menu = menu_elem.menu({
-              menus: menu_class,
-              select: function( ev, ui ) {
-                // let a menu selection create a new class instance
-                var item = ui.item;
-                var parentid = menu_elem.attr("parentid");
-                var classid = item.attr("value");
-                var relid = item.attr("relid");
-                var name = "";
-                self.create_new_instance(pid, parentid, classid, relid, name);
-                return false;
-              }});
-            // hide the menu by default
-            menu.menu('widget').hide();
-            // show it when hovering over the node
-            $(this).hover(function() {
-              menu.menu('widget').fadeIn(100);
-            }, function() {
-              menu.menu('widget').fadeOut(100);
-            });
-            this.hasChangeEventHandler = true;
-          }
-        });
-      }
-
-      return found;
     };
 
     /**
@@ -1152,10 +1150,10 @@
 
   ClassificationEditor.prototype.getWidgetConfiguration = function() {
     return {
-      controlsID: "classification_editor_widget" + this.widgetID,
-      contentID: "classification_editor_controls" + this.widgetID,
+      controlsID: "classification_editor_controls" + this.widgetID,
+      contentID: "classification_editor_widget" + this.widgetID,
       createControls: function() {},
-      createContent: function() {},
+      createContent: function(content) {},
       init: function() {
         this.init(project.id);
       }

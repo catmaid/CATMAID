@@ -660,10 +660,10 @@ def get_child_classes( workspace_pid, parent_ci, relation_map=None, cursor=None 
 
     return child_types
 
-def child_types_to_jstree_dict(child_types):
-    """ Converts a child type directory as created by the
-    get_child_classes function to a dictionary that can be
-    converted into JSON and consumed by jsTree.
+def describe_child_types(child_types):
+    """ Converts a child type directory as created by the get_child_classes
+    function to a dictionary that contains all required information to create
+    new child instances
     """
     json_dict = {}
     for ct in child_types:
@@ -688,15 +688,8 @@ def list_classification_graph(request, workspace_pid, project_id=None, link_id=N
     link_id = None if link_id is None else int(link_id)
     parent_id = int(request.GET.get('parentid', 0))
     parent_name = request.GET.get('parentname', '')
-    expand_request = request.GET.get('expandtarget', None)
     superclass_in_name = bool(int(request.GET.get('superclassnames', 0)))
     display_edit_tools = bool(int(request.GET.get('edittools', 0)))
-
-    if expand_request is None:
-        expand_request = tuple()
-    else:
-        # Parse to int to sanitize
-        expand_request = tuple(int(x) for x in expand_request.split(','))
 
     max_nodes = 5000  # Limit number of nodes retrievable.
 
@@ -772,7 +765,7 @@ def list_classification_graph(request, workspace_pid, project_id=None, link_id=N
             #add_template_fields( [child] )
             response_on_error = 'Could not select child classes.'
             child_types = get_child_classes( workspace_pid, cls_graph, relation_map, cursor )
-            child_types_jstree = child_types_to_jstree_dict( child_types )
+            child_types_info = describe_child_types( child_types )
 
             # Get ROI information
             roi_html, roi_links = get_rois(root_link.class_instance_b)
@@ -788,20 +781,20 @@ def list_classification_graph(request, workspace_pid, project_id=None, link_id=N
             else:
                 title = root_name
 
-            # Create JSTree data structure
-            data = {'data': {'title': title},
-                'attr': {'id': 'node_%s' % cls_graph.id,
-                         'linkid': root_link.id,
-                         'rel': 'root',
-                         'rois': roi_json,
-                         'child_groups': json.dumps(child_types_jstree)}}
-            # Test if there are children links present and mark
-            # node as leaf if there are none.
             child_links = get_child_links( cls_graph )
-            if len(child_links) > 0:
-                data['state'] = 'closed'
 
-            return HttpResponse(json.dumps([data]))
+            # Create JSTree data structure
+            data = {
+                'id': cls_graph.id,
+                'text': title,
+                'linkid': root_link.id,
+                'type': 'root',
+                'rois': roi_json,
+                'child_groups': child_types_info,
+                'leaf': len(child_links) > 0
+            }
+
+            return JsonResponse([data], safe=False)
         else:
             # Edit tools should only be displayed if wanted by the user and
             # if the user has the can_annotate permission
@@ -830,7 +823,7 @@ def list_classification_graph(request, workspace_pid, project_id=None, link_id=N
                 roi_json = json.dumps( [r.id for r in roi_links] )
                 # Get sub-child information
                 subchild_types = get_child_classes(workspace_pid, child, relation_map, cursor)
-                subchild_types_jstree = child_types_to_jstree_dict( subchild_types )
+                subchild_types_info = describe_child_types( subchild_types )
                 # Build title
                 if roi_html:
                     name = get_class_name(child.class_column.id, child.class_column,
@@ -839,18 +832,21 @@ def list_classification_graph(request, workspace_pid, project_id=None, link_id=N
                 else:
                     title = child.name if child.name else get_class_name(
                         child.class_column.id, child.class_column.class_name, relation_map)
+                sub_child_links = get_child_links( child )
                 # Build JSTree data structure
-                data = {'data': {'title': title},
-                    'attr': {'id': 'node_%s' % child.id,
-                             'linkid': child_link.id,
-                             'rel': 'element',
-                             'rois': roi_json,
-                             'child_groups': json.dumps(subchild_types_jstree)}}
+                data = {
+                    'id': child.id,
+                    'text': title,
+                    'linkid': child_link.id,
+                    'type': 'element',
+                    'rois': roi_json,
+                    'child_groups': subchild_types_info,
+                    'leaf': len(sub_child_links) > 0
+                }
 
                 # Test if there are children links present and mark
                 # node as leaf if there are none. Also, mark not as
                 # leaf if in edit mode and new nodes can be added.
-                sub_child_links = get_child_links( child )
                 if len(sub_child_links) > 0:
                     data['state'] = 'closed'
                 elif display_edit_tools and len(subchild_types) > 0:
@@ -861,34 +857,28 @@ def list_classification_graph(request, workspace_pid, project_id=None, link_id=N
             if display_edit_tools:
                 response_on_error = 'Could not create child node menu.'
                 for child_type in child_types:
-                    options = []
+                    child_options = []
                     children = child_types[child_type]
                     for child in children:
                         # Only add items that are not disabled, because
                         # only those items can actually be added.
                         if not child.disabled:
                             name = get_class_name(child.class_id, child.class_name, relation_map)
-                            options.append( (child.class_id, name, child.rel.id) )
+                            child_options.append({
+                                'class_id': child.class_id,
+                                'name': name,
+                                'relation_id': child.rel.id
+                            })
+
                     # Add drop down list if there are options
-                    if len(options) > 0:
-                        menu_class = 'select_new_classification_instance'
-                        select_menu = '<div name="add_instance" class="%s" parentid="%d">' \
-                            % (menu_class, parent_ci.id)
+                    if len(child_options) > 0:
+                        child_data.append({
+                            'type': 'editnode',
+                            'child_type': child_type,
+                            'child_options': child_options
+                        })
 
-                        for k,v,rel in options:
-                            select_menu = '%s<div value="%s" relid="%d"><a href="#">%s</a></div>' \
-                                % (select_menu, k, rel, v)
-                        select_menu = select_menu + '</div>'
-
-                        select_input = '<span>(Add %s)\n%s</span>' % (child_type, select_menu)
-                        data = {'data': {'title': select_input,
-                                         'attr': {'class': 'editnode'}},
-                                'attr': {'class': 'editnode',
-                                         'rel': 'editnode'}}
-                        child_data.append(data)
-
-
-            return HttpResponse(json.dumps(tuple(cd for cd in child_data)))
+            return JsonResponse(tuple(cd for cd in child_data), safe=False)
     except Exception as e:
         raise Exception(response_on_error + ':' + str(e))
 
@@ -977,12 +967,12 @@ def classification_instance_operation(request, workspace_pid=None, project_id=No
                     delete_node( rel.class_instance_a )
 
                 # Delete class instance
+                node_id, node_name = node.id, node.name
                 node.delete()
 
                 # Log
                 insert_into_log(project_id, request.user.id, 'remove_element', None,
-                    'Removed classification with ID %s and name %s' % (params['id'],
-                        params['title']))
+                    'Removed classification with ID %s and name %s' % (node_id, node_name))
 
             classification_instance_operation.res_on_err \
                 = 'Failed to select node from instance table.'

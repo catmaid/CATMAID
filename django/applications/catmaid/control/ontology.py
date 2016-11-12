@@ -140,19 +140,25 @@ def list_available_relations(request, project_id=None):
     relations = Relation.objects.filter(project=project_id)
 
     if 0 == parent_id:
-        data = {'data': {'title': 'Relations' },
-            'attr': {'id': 'node_1', 'rel': 'root'}}
+        data = {
+            'id': 'relations',
+            'text': 'Relations',
+            'type': 'root'
+        }
         # Test if there are relations present and mark the root
         # as leaf if there are none.
         if relations.count() > 0:
-            data['state'] = 'closed'
-        return HttpResponse(json.dumps([data]))
+            data['state'] = {
+                'opened': False
+            }
+        return JsonResponse([data], safe=False)
 
-    return HttpResponse(json.dumps(
-        tuple({'data' : {'title': '%s (%d)' % (r.relation_name, r.id) },
-               'attr' : {'id': 'node_%s' % r.id,
-                         'rel': 'relation',
-                         'name': r.relation_name}} for r in relations)))
+    return JsonResponse(tuple({
+        'id': r.id,
+        'text': '%s (%d)' % (r.relation_name, r.id),
+        'type': 'relation',
+        'name': r.relation_name
+    } for r in relations), safe=False)
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def list_available_classes(request, project_id=None):
@@ -168,25 +174,31 @@ def list_available_classes(request, project_id=None):
         classes = Class.objects.filter(project=project_id).exclude(class_name__in=root_classes)
 
     if 0 == parent_id:
-        data = {'data': {'title': 'Classes' },
-            'attr': {'id': 'node_1', 'rel': 'root'}}
+        data = {
+            'id': 'classes',
+            'text': 'Classes',
+            'type': 'root'
+        }
         # Test if there are classes present and mark the root
         # as leaf if there are none.
         if classes.count() > 0:
-            data['state'] = 'closed'
-        return HttpResponse(json.dumps([data]))
+            data['state'] = {
+                'opened': False
+            }
+        return JsonResponse([data], safe=False)
     else:
-        return HttpResponse(json.dumps(
-            tuple({'data' : {'title': '%s (%d)' % (c.class_name, c.id) },
-                   'attr' : {'id': 'node_%s' % c.id,
-                             'rel': 'class',
-                             'name': c.class_name}} for c in classes)))
+        return JsonResponse(
+            tuple({
+                'id': c.id,
+                'text': '%s (%d)' % (c.class_name, c.id),
+                'type': 'class',
+                'name': c.class_name
+            } for c in classes), safe=False)
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def list_ontology(request, project_id=None):
     root_class = request.GET.get('rootclass', None)
     parent_id = int(request.GET.get('parentid', 0))
-    parent_name = request.GET.get('parentname', '')
     expand_request = request.GET.get('expandtarget', None)
     parent_type = request.GET.get('parenttype', "relation")
     class_b_id  = int(request.GET.get('classbid', 0))
@@ -225,7 +237,7 @@ def list_ontology(request, project_id=None):
                     project=project_id)
 
                 # Make sure we actually got at least one root node
-                if 0 == root_node_q.count():
+                if 0 == len(root_node_q):
                     raise Exception("Couldn't select any root node")
 
                 roots = []
@@ -235,17 +247,22 @@ def list_ontology(request, project_id=None):
                     num_children = ClassClass.objects.filter(
                         class_b=root_id, project=project_id).count()
 
-                    data = {'data': {'title': '%s (%d)' % (root_name, root_id) },
-                        'attr': {'id': 'node_%s' % root_id, 'rel': 'root',
-                        'cname': root_name}}
+                    data = {
+                        'id': root_id,
+                        'text': '%s (%d)' % (root_name, root_id),
+                        'type': 'root',
+                        'cname': root_name
+                    }
                     # Test if there are links present and mark the root
                     # as leaf if there are none.
                     if num_children > 0:
-                        data['state'] = 'closed'
+                        data['state'] = {
+                            'opened': False
+                        }
                     # Add this root node to the output list
                     roots.append(data)
 
-                return HttpResponse(json.dumps(tuple(r for r in roots)))
+                return JsonResponse(tuple(r for r in roots), safe=False)
             else:
                 response_on_error = 'Could not retrieve child nodes.'
                 # Select all classes that are linked with the passed relation
@@ -262,23 +279,28 @@ def list_ontology(request, project_id=None):
                     if len(restrictions) > 0:
                         node_name = node_name + "*"
                     # Collect standard jSTree data
-                    data = {'data' : {'title': node_name},
-                            'attr' : {'id': 'node_%s' % cc.class_a.id,
-                                      'rel': 'class',
-                                      'restrictions': restrictions_json,
-                                      'cname': cc.class_a.class_name,
-                                      'ccid': cc.id}}
+                    data = {
+                        'id': cc.class_a.id,
+                        'text': node_name,
+                        'type': 'class',
+                        'restrictions': restrictions_json,
+                        'cname': cc.class_a.class_name,
+                        'ccid': cc.id
+                    }
+
                     # Only add a 'state' field if this node has children
                     # (i.e. relations where it is class_b).
                     num_children = ClassClass.objects.filter(
                         class_b=cc.class_a.id, project=project_id).count()
                     if num_children > 0:
-                        data['state'] = 'closed'
+                        data['state'] = {
+                            'opened': False
+                        }
                     # Add this class-class link to the list
                     links.append(data)
 
-                return HttpResponse(json.dumps(tuple(l for l in links)))
-        elif parent_type in ["class", "root"]:
+                return JsonResponse(tuple(l for l in links), safe=False)
+        elif parent_type in ("class", "root"):
             # A relation is wanted
             cc_q = ClassClass.objects.filter(
                 project=project_id, class_b_id=parent_id)
@@ -289,15 +311,14 @@ def list_ontology(request, project_id=None):
                     relations[ cc.relation ] = []
                 relations[ cc.relation ].append( cc )
 
-            return HttpResponse(json.dumps(
-                tuple({'data' : {'title': '%s (%d)' % (r.relation_name, r.id) },
-                       'attr' : {'id': 'node_%s' % r.id,
-                                 'rel': 'relation',
-                                 'name': r.relation_name,
-                                 'classbname': relations[r][0].class_b.class_name,
-                                 'classbid': parent_id},
-                       'state': 'closed'} for r in relations)))
-
+            return JsonResponse(tuple({
+                'id': r.id,
+                'text': '%s (%d)' % (r.relation_name, r.id),
+                'type': 'relation',
+                'name': r.relation_name,
+                'classbname': relations[r][0].class_b.class_name,
+                'classbid': parent_id
+            } for r in relations), safe=False)
         else:
             response_on_error = 'Unknown parent type'
             raise Exception(parent_type)

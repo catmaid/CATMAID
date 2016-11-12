@@ -38,6 +38,8 @@ Importer:
   considered in a history animation now works as expected. The end point of the
   animation is now calculated correctly and all changes can be seen.
 
+- The Classification Clustering Widget can be opened again.
+
 
 ## 2016.11.04
 

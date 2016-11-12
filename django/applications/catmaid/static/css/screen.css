@@ -287,18 +287,13 @@ div#classification_graph_object a {
   padding-bottom: 2px;
 }
 
-div#classification_graph_object a.jstree-hovered,
-div#classification_graph_object a.jstree-clicked {
-  padding-bottom: 1px;
-}
-
-div#classification_graph_object li.editnode a {
+div[data-role=classification_graph_object] li.editnode a {
   padding-bottom: 3px;
   color: #767676;
 }
 
-div#classification_graph_object li.editnode a.jstree-hovered,
-div#classification_graph_object li.editnode a.jstree-clicked {
+div[data-role=classification_graph_object] li.editnode a.jstree-hovered,
+div[data-role=classification_graph_object] li.editnode a.jstree-clicked {
   padding-bottom: 2px;
 }
 
@@ -310,9 +305,9 @@ div[data-role=classification_graph_object] div.select_new_classification_instanc
   overflow: visible;
 }
 
-div#classification_graph_object img.roiimage {
-  margin: -4px;
-  padding-left: 4px;
+div[data-role=classification_graph_object] img.roiimage {
+  position: relative;
+  top: 0.3em;
 }
 
 #imagepreview {

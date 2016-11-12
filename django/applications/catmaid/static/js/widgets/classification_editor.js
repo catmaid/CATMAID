@@ -448,7 +448,6 @@
     this.load_tree = function(pid, link_id) {
       // id of object tree
       var container = getContainer(false);
-      var tree_id = '#classification_graph_object';
       tree = $('div[data-role=classification_graph_object]', container);
 
       tree.bind("reload_nodes.jstree",
@@ -1151,10 +1150,10 @@
 
   ClassificationEditor.prototype.getWidgetConfiguration = function() {
     return {
-      controlsID: "classification_editor_widget" + this.widgetID,
-      contentID: "classification_editor_controls" + this.widgetID,
+      controlsID: "classification_editor_controls" + this.widgetID,
+      contentID: "classification_editor_widget" + this.widgetID,
       createControls: function() {},
-      createContent: function() {},
+      createContent: function(content) {},
       init: function() {
         this.init(project.id);
       }

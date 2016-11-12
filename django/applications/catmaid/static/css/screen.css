@@ -302,12 +302,12 @@ div#classification_graph_object li.editnode a.jstree-clicked {
   padding-bottom: 2px;
 }
 
-div#classification_graph_object div.select_new_classification_instance {
+div[data-role=classification_graph_object] div.select_new_classification_instance {
   cursor: pointer;
   background: white;
   color: #767676;
-  margin-top: 2px;
   position: absolute;
+  overflow: visible;
 }
 
 div#classification_graph_object img.roiimage {

@@ -52,7 +52,7 @@
           buttonName: 'clustering_widget',
           buttonID: "clustering_button",
           run: function (e) {
-              WindowMaker.show('clustering-widget');
+              WindowMaker.create('clustering-widget');
               return true;
           }
       }));

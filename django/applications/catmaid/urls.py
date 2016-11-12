@@ -391,9 +391,9 @@ urlpatterns += [
 
 # Clustering
 urlpatterns += [
-    url(r'^clustering/(?P<workspace_pid>{0})/setup$'.format(integer),
-        record_view("clusterings.setup_env")(clustering.setup_clustering), name="clustering_setup"),
-    url(r'^clustering/(?P<workspace_pid>{0})/show$'.format(integer),
+    url(r'^clustering/(?P<workspace_pid>\d+)/setup$',
+        record_view("clusterings.setup_env")(clustering.setup_clustering), name='clustering_setup'),
+    url(r'^clustering/(?P<workspace_pid>\d+)/show$',
         TemplateView.as_view(template_name="catmaid/clustering/display.html"),
         name="clustering_display"),
 ]

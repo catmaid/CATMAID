@@ -339,7 +339,7 @@ def find_project_folders(image_base, path, filter_term, depth=1):
                 index = index + find_files( current_file, depth - 1)
     return (index, projects, not_readable)
 
-def get_projects_from_url(url, filter_term, headers=None, auth=None):
+def get_projects_from_url(url, filter_term, headers=None, auth=None, base_url=None):
     if not url:
         raise ValueError("No URL provided")
     if auth and len(auth) != 2:
@@ -361,7 +361,7 @@ def get_projects_from_url(url, filter_term, headers=None, auth=None):
     if 'json' in content_type:
         content = r.json()
         for p in content:
-            project = PreProject(p, None, None)
+            project = PreProject(p, base_url, None)
             short_name = project.name
             key = "{}-{}".format(url, short_name)
             projects[key] = project
@@ -369,12 +369,11 @@ def get_projects_from_url(url, filter_term, headers=None, auth=None):
     elif 'yaml' in content_type:
         content = yaml.load_all(r.content)
         for p in content:
-            for pp in p:
-                project = PreProject(pp, None, None)
-                short_name = project.name
-                key = "{}-{}".format(url, short_name)
-                projects[key] = project
-                index.append((key, short_name))
+            project = PreProject(p, base_url, None)
+            short_name = project.name
+            key = "{}-{}".format(url, short_name)
+            projects[key] = project
+            index.append((key, short_name))
     else:
         raise ValueError("Unrecognized content type in response of remote: " +
             content_type, r.content)
@@ -510,7 +509,7 @@ class ImportingWizard(SessionWizardView):
 
             if source == 'remote':
                 project_index, projects, not_readable = get_projects_from_url(
-                        remote_host, filter_term, auth=auth)
+                        remote_host, filter_term, base_url=base_url, auth=auth)
             if source == 'remote-catmaid':
                 complete_catmaid_host = "{}{}{}".format(catmaid_host,
                     "" if catmaid_host[-1] == "/" else "/", "projects/export")

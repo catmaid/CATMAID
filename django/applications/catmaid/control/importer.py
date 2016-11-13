@@ -69,32 +69,20 @@ class ImageBaseMixin:
         zoom_available = 'zoomlevels' in info_object
         ext_available = 'fileextension' in info_object
 
+        if needs_zoom:
+            # Init with -1 if not available and override later, if needed
+            self.num_zoom_levels = info_object.get('zoomlevels', -1)
+
+        self.file_extension = info_object.get('fileextension', 'jpg')
+
         if 'url' in info_object:
-            # Make sure all required data is available
-            required_fields = ['fileextension',]
-            if needs_zoom:
-                required_fields.append('zoomlevels')
-            for f in required_fields:
-                if f not in info_object:
-                    raise RuntimeError("Missing required stack/overlay " \
-                            "field '%s'" % f)
             # Read out data
             self.image_base = info_object['url']
-            if needs_zoom:
-                self.num_zoom_levels = info_object['zoomlevels']
-            self.file_extension = info_object['fileextension']
         elif project_url:
             # The image base of a stack is the combination of the
             # project URL and the stack's folder name.
             folder = info_object['folder']
             self.image_base = urljoin(project_url, folder)
-            # Favor 'zoomlevel' and 'fileextension' fields, if
-            # available, but try to find this information if those
-            # fields are not present.
-            if zoom_available and needs_zoom:
-                self.num_zoom_levels = info_object['zoomlevels']
-            if ext_available:
-                self.file_extension = info_object['fileextension']
 
         if data_folder:
             # Only retrieve file extension and zoom level if one of
@@ -510,7 +498,7 @@ class ImportingWizard(SessionWizardView):
             if source == 'remote':
                 project_index, projects, not_readable = get_projects_from_url(
                         remote_host, filter_term, base_url=base_url, auth=auth)
-            if source == 'remote-catmaid':
+            elif source == 'remote-catmaid':
                 complete_catmaid_host = "{}{}{}".format(catmaid_host,
                     "" if catmaid_host[-1] == "/" else "/", "projects/export")
                 headers = None
@@ -1007,8 +995,6 @@ def ensure_class_instances(project, classification_paths, user, stack=None, stac
     """
 
     def create(node, parent=None, path=[]):
-        print node
-        print parent
         # Find existing class with passed in node name, expect unique names
         cls = Class.objects.get(project=project, class_name=node)
 
@@ -1021,7 +1007,6 @@ def ensure_class_instances(project, classification_paths, user, stack=None, stac
             ci = ClassInstance.objects.filter(project=project, class_column=cls,
                     cici_via_a__class_instance_b=parent,
                     cici_via_a__relation=rel)
-            print("CI", ci)
             if 0 == len(ci):
                 ci, _ = ClassInstance.objects.get_or_create(project=project,
                     class_column=cls, defaults={
@@ -1032,14 +1017,12 @@ def ensure_class_instances(project, classification_paths, user, stack=None, stac
                     class_instance_a=ci, class_instance_b=parent, relation=rel, defaults={
                         'user': user
                     })
-                print("cici", cici)
             elif 1 < len(ci):
                 raise ValueError("Found more than one existing matching " +
                         "classification entry for \"" + node + "\"")
             else:
                 ci = ci[0]
         else:
-          print("root")
           # Find existing class instance, also with passed in node name, expect
           # a single root instance.
           ci, _ = ClassInstance.objects.get_or_create(project=project, class_column=cls,

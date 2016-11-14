@@ -770,16 +770,15 @@
         self.display_wait_message("Adding class. Just a moment...");
         var classname= $('#ontology_add_dialog #classname').val();
         // add class with Ajax call
-        requestQueue.register(django_url + pid + '/ontology/classes/add',
-          'POST', { "classname": classname },
-          function(status, data, text) {
-            self.hide_wait_message();
-            self.handle_operation_response(status, data, text,
-              function() {
-                self.refresh_trees();
-                self.show_error_status( "Success", "A new class has been created." );
-              });
-          });
+        CATMAID.fetch(pid + '/ontology/classes/add', 'POST', {
+              "classname": classname
+            })
+          .then(function(json) {
+              self.hide_wait_message();
+              self.refresh_trees();
+              CATMAID.msg("Success", "A new class has been created.");
+          })
+          .catch(CATMAID.handleError);
         // clear input box
         $('#ontology_add_dialog #classname').val("");
       });

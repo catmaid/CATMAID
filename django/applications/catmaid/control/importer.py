@@ -206,7 +206,6 @@ class PreProject:
         self.name = p['name']
         self.stacks = []
         self.has_been_imported = False
-        self.import_status = None
         for s in p['stacks']:
             self.stacks.append(PreStack(s, project_url, data_folder))
 

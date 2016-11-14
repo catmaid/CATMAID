@@ -348,6 +348,7 @@ def add_relation_to_ontology(request, project_id=None):
     uri = request.POST.get('uri', '')
     description = request.POST.get('description', None)
     isreciprocal = bool(request.POST.get('isreciprocal', False))
+    silent = request.POST.get('silent', "false") == "true"
 
     if name is None:
         raise Exception("Couldn't find name for new relation.")
@@ -360,7 +361,12 @@ def add_relation_to_ontology(request, project_id=None):
         num_r = Relation.objects.filter(project_id = project_id,
             relation_name = name).count()
         if num_r > 0:
-            raise Exception("A relation with the name '%s' already exists." % name)
+            if silent:
+                return JsonResponse({
+                    'already_present': True
+                })
+            else:
+                raise Exception("A relation with the name '%s' already exists." % name)
 
     r = Relation.objects.create(user=request.user,
         project_id = project_id, relation_name = name, uri = uri,
@@ -484,6 +490,7 @@ def remove_all_relations_from_ontology(request, project_id=None):
 def add_class_to_ontology(request, project_id=None):
     name = request.POST.get('classname', None)
     description = request.POST.get('description', None)
+    silent = request.POST.get('silent', "false") == "true"
 
     if name is None:
         raise Exception("Couldn't find name for new class.")
@@ -496,7 +503,12 @@ def add_class_to_ontology(request, project_id=None):
         num_c = Class.objects.filter(project_id = project_id,
             class_name = name).count()
         if num_c > 0:
-            raise Exception("A class with the name '%s' already exists." % name)
+            if silent:
+                return JsonResponse({
+                    'already_present': True,
+                })
+            else:
+                raise Exception("A class with the name '%s' already exists." % name)
 
     c = Class.objects.create(user=request.user,
         project_id = project_id, class_name = name,

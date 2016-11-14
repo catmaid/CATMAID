@@ -1231,7 +1231,15 @@
 
   OntologyEditor.prototype.getWidgetConfiguration = function() {
     return {
+      controlsID: "ontology_editor_controls",
       contentID: 'ontology_editor_widget',
+      createControls: function(controls) {
+        var self = this;
+        CATMAID.DOM.appendButton(controls, "Refresh",
+            "Reload the displayed ontology information", function() {
+              self.refresh_trees();
+            });
+      },
 
       /**
        * Create content, which is basically a DataTable instance, getting Data
@@ -1239,8 +1247,6 @@
        */
       createContent: function(container) {
         container.innerHTML =
-          '<input type="button" id="refresh_ontology_editor" value="refresh" style="display:block; float:left;" />' +
-          '<br clear="all" />' +
           '<div id="ontology_known_roots">Known root class names: <span id="known_root_names"></span></div>' +
           '<div id="ontology_warnings"></div>' +
           '<div id="ontology_tree_name"><h4>Ontology</h4>' +
@@ -1266,12 +1272,6 @@
       },
 
       init: function() {
-        // Assign a function to the refresh button
-        var self = this;
-        $("#refresh_ontology_editor").click(function() {
-          self.refresh_trees();
-        });
-
         this.init();
       }
     };

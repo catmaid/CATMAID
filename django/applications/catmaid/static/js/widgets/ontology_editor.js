@@ -198,7 +198,7 @@
                   "separator_after": false,
                   "label": r_name,
                   "action": function(rid) {
-                    return function (obj) {
+                    return function (data) {
                       return self.remove_restriction(pid, node.original, rid);
                     };}(restriction.id)
                   };
@@ -220,7 +220,7 @@
               "separator_before": true,
               "separator_after": false,
               "label": "Remove parent relation link",
-              "action": function (obj) {
+              "action": function (data) {
                 // assure that this was on purpose
                 if (confirm("Are you sure you want to remove the class-class " +
                       "link between this class and the class connected with " +
@@ -261,8 +261,6 @@
             "separator_after": false,
             "label": "Expand sub-tree",
             "action": function (data) {
-              var instance = $.jstree.reference(data.reference);
-              var node = instance.get_node(data.reference);
               instance.open_all(node);
              }
           };

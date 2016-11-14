@@ -1,7 +1,7 @@
 import json
 import numpy as np
 
-from django.http import HttpResponse, JsonResponse
+from django.http import JsonResponse
 from django.db import connection
 from django.shortcuts import get_object_or_404
 
@@ -71,7 +71,7 @@ class FeatureLink:
 def get_known_ontology_roots(request):
     """ Returns an array of all known root class names.
     """
-    return HttpResponse(json.dumps({"knownroots": root_classes}))
+    return JsonResponse({"knownroots": root_classes})
 
 def get_existing_roots(request, project_id):
     """Get all existing classification root nodes for a project.
@@ -121,14 +121,14 @@ def get_available_relations(request, project_id=None):
     """ Returns a simple list of all relations available available
     for the given project."""
     relation_map = get_relation_to_id_map(project_id)
-    return HttpResponse(json.dumps(relation_map))
+    return JsonResponse(relation_map)
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def get_available_classes(request, project_id=None):
     """ Returns a simple list of all classes available available
     for the given project."""
     class_map = get_class_to_id_map(project_id)
-    return HttpResponse(json.dumps(class_map))
+    return JsonResponse(class_map)
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def list_available_relations(request, project_id=None):
@@ -227,7 +227,7 @@ def list_ontology(request, project_id=None):
                     if len(root_class_ids) == 0:
                         warning = {'warning': 'Could not find any of the known root classes. ' \
                             'Please add at least one of them to build an ontology.'}
-                        return HttpResponse(json.dumps(warning))
+                        return JsonResponse(warning)
                 else:
                     if root_class not in class_map:
                         raise Exception('Root class "{0}" not found'.format( root_class ))
@@ -366,7 +366,7 @@ def add_relation_to_ontology(request, project_id=None):
         project_id = project_id, relation_name = name, uri = uri,
         description = description, isreciprocal = isreciprocal)
 
-    return HttpResponse(json.dumps({'relation_id': r.id}))
+    return JsonResponse({'relation_id': r.id})
 
 def get_number_of_inverse_links( obj ):
     """ Returns the number of links that other model objects
@@ -407,7 +407,7 @@ def rename_class(request, project_id=None):
     class_obj.class_name = new_name
     class_obj.save()
 
-    return HttpResponse(json.dumps({'renamed_class': class_id}))
+    return JsonResponse({'renamed_class': class_id})
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def rename_relation(request, project_id=None):
@@ -437,7 +437,7 @@ def rename_relation(request, project_id=None):
     relation.relation_name = new_name
     relation.save()
 
-    return HttpResponse(json.dumps({'renamed_relation': rel_id}))
+    return JsonResponse({'renamed_relation': rel_id})
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def remove_relation_from_ontology(request, project_id=None):
@@ -452,7 +452,7 @@ def remove_relation_from_ontology(request, project_id=None):
 
     # Delete, if not used
     relation.delete()
-    return HttpResponse(json.dumps({'deleted_relation': relid}))
+    return JsonResponse({'deleted_relation': relid})
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def remove_all_relations_from_ontology(request, project_id=None):
@@ -475,9 +475,10 @@ def remove_all_relations_from_ontology(request, project_id=None):
             else:
                 not_deleted_ids.append(r.id)
 
-    return HttpResponse(json.dumps(
-        {'deleted_relations': deleted_ids,
-         'not_deleted_relations': not_deleted_ids}))
+    return JsonResponse({
+        'deleted_relations': deleted_ids,
+        'not_deleted_relations': not_deleted_ids
+    })
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def add_class_to_ontology(request, project_id=None):
@@ -501,7 +502,7 @@ def add_class_to_ontology(request, project_id=None):
         project_id = project_id, class_name = name,
         description = description)
 
-    return HttpResponse(json.dumps({'class_id': c.id}))
+    return JsonResponse({'class_id': c.id})
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def remove_class_from_ontology(request, project_id=None):
@@ -524,7 +525,7 @@ def remove_class_from_ontology(request, project_id=None):
 
     # Delete, if not used
     class_instance.delete()
-    return HttpResponse(json.dumps({'deleted_class': classid}))
+    return JsonResponse({'deleted_class': classid})
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def remove_all_classes_from_ontology(request, project_id=None):
@@ -552,9 +553,10 @@ def remove_all_classes_from_ontology(request, project_id=None):
             else:
                 not_deleted_ids.append(r.id)
 
-    return HttpResponse(json.dumps(
-        {'deleted_classes': deleted_ids,
-         'not_deleted_classes': not_deleted_ids}))
+    return JsonResponse({
+        'deleted_classes': deleted_ids,
+        'not_deleted_classes': not_deleted_ids
+    })
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def add_link_to_ontology(request, project_id=None):
@@ -575,7 +577,7 @@ def add_link_to_ontology(request, project_id=None):
         project_id = project_id, class_a_id = classaid,
         class_b_id = classbid, relation_id = relationid)
 
-    return HttpResponse(json.dumps({'class_class_id': cc.id}))
+    return JsonResponse({'class_class_id': cc.id})
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def remove_link_from_ontology(request, project_id=None):
@@ -585,7 +587,7 @@ def remove_link_from_ontology(request, project_id=None):
     ccid = int(request.POST.get('ccid', -1))
     link = get_object_or_404(ClassClass, id=ccid)
     link.delete()
-    return HttpResponse(json.dumps({'deleted_link': ccid}))
+    return JsonResponse({'deleted_link': ccid})
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def remove_selected_links_from_ontology(request, project_id=None):
@@ -605,7 +607,7 @@ def remove_selected_links_from_ontology(request, project_id=None):
         removed_links.append(cc.id)
         cc.delete()
 
-    return HttpResponse(json.dumps({'deleted_links': removed_links}))
+    return JsonResponse({'deleted_links': removed_links})
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def remove_all_links_from_ontology(request, project_id=None):
@@ -619,7 +621,7 @@ def remove_all_links_from_ontology(request, project_id=None):
         removed_links.append(cc.id)
     cc_q.delete()
 
-    return HttpResponse(json.dumps({'deleted_links': removed_links}))
+    return JsonResponse({'deleted_links': removed_links})
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def add_restriction(request, project_id=None):
@@ -658,7 +660,7 @@ def add_restriction(request, project_id=None):
 
     relationid = int(request.POST.get('relid', -1))
 
-    return HttpResponse(json.dumps({'new_restriction': new_restriction.id}))
+    return JsonResponse({'new_restriction': new_restriction.id})
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def remove_restriction(request, project_id=None):
@@ -671,7 +673,7 @@ def remove_restriction(request, project_id=None):
     restriction = get_object_or_404(Restriction, id=rid)
     restriction.delete()
 
-    return HttpResponse(json.dumps({'removed_restriction': rid}))
+    return JsonResponse({'removed_restriction': rid})
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def get_restriction_types(request, project_id=None, restriction=None):
@@ -679,7 +681,7 @@ def get_restriction_types(request, project_id=None, restriction=None):
     """
     if restriction == "cardinality":
         types = CardinalityRestriction.get_supported_types()
-        return HttpResponse(json.dumps({'types': types}))
+        return JsonResponse({'types': types})
     else:
         raise Exception("Unsupported restriction type encountered: " + restriction)
 

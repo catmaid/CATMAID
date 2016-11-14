@@ -10,7 +10,7 @@ from django import forms
 from django.db import connection
 from django.db.models import Count
 from django.conf import settings
-from django.contrib.auth.models import User, Group
+from django.contrib.auth.models import User, Group, Permission
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
@@ -535,17 +535,10 @@ class ImportingWizard(SessionWizardView):
             form.fields['projects'].choices = displayed_projects
             form.fields['projects'].initial = [i[0] for i in displayed_projects]
             # Get the available user permissions and update the list
-
-
-
-            user_permissions = get_element_permissions(UserProxy, Project)
-            form.user_permissions = user_permissions
-            user_perm_tuples = get_element_permission_tuples(user_permissions)
+            user_perm_tuples = get_element_permission_tuples(UserProxy, Project)
             form.fields['user_permissions'].choices = user_perm_tuples
             # Get the available group permissions and update the list
-            group_permissions = get_element_permissions(GroupProxy, Project)
-            form.group_permissions = group_permissions
-            group_perm_tuples = get_element_permission_tuples(group_permissions)
+            group_perm_tuples = get_element_permission_tuples(GroupProxy, Project)
             form.fields['group_permissions'].choices = group_perm_tuples
         elif current_step == 'classification':
             # Get tag set and all projects within it
@@ -739,37 +732,20 @@ def show_classification_suggestions(wizard):
 def importer_finish(request):
     return render_to_response('catmaid/import/done.html', {})
 
-def get_elements_with_perms_cls(element, cls, attach_perms=False):
-    """ This is a slightly adapted version of guardians
-    group retrieval. It doesn't need an object instance.
+def get_element_permission_tuples(element, cls):
+    """Get all available users mapped to all available project permissions.
     """
     ctype = ContentType.objects.get_for_model(cls)
-    if not attach_perms:
-        return element.objects.all()
-    else:
-        elements = {}
-        for elem in get_elements_with_perms_cls(element, cls):
-            if not elem in elements:
-                elements[elem] = get_perms_for_model(cls)
-        return elements
+    permissions = Permission.objects.filter(content_type=ctype)
+    elements = sorted(element.objects.all(), key=lambda x: x.get_name())
 
-def get_element_permissions(element, cls):
-    elem_perms = get_elements_with_perms_cls(element, cls, True)
-    sorted_elem_perms = OrderedDict(sorted(elem_perms.items(),
-                                           key=lambda x: x[0].get_name()))
-    return sorted_elem_perms
-
-def get_element_permission_tuples(element_perms):
-    """ Out of list of (element, [permissions] tuples, produce a
-    list of tuples, each of the form
-    (<element_id>_<perm_codename>, <element_name> | <parm_name>)
-    """
     tuples = []
-    for e in element_perms:
-        for p in element_perms[e]:
+    for e in elements:
+        for p in permissions:
             pg_id = str(e.id) + "_" + str(p.id)
             pg_title = e.get_name() + " | " + p.name
             tuples.append( (pg_id, pg_title) )
+
     return tuples
 
 def get_permissions_from_selection(cls, selection):

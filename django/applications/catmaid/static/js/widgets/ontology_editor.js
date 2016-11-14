@@ -586,18 +586,15 @@
         self.display_wait_message("Creating relation. Just a moment...");
         var relname= $('#ontology_add_dialog #relname').val();
         // add relation with Ajax call
-        requestQueue.register(django_url + pid + '/ontology/relations/add',
-          'POST', { "relname": relname },
-          function(status, data, text) {
+        self.create_new_relation(pid, relname)
+          .then(function() {
             self.hide_wait_message();
-            self.handle_operation_response(status, data, text,
-              function() {
-                self.refresh_tree(tree_id);
-                self.show_error_status( "Success", "A new relation has been created." );
-              });
-          });
-        // clear input box
-        $('#ontology_add_dialog #relname').val("");
+            self.refresh_tree(tree_id);
+            CATMAID.msg("Success", "A new relation has been created.");
+            // clear input box
+            $('#ontology_add_dialog #relname').val("");
+          })
+          .catch(CATMAID.handleError);
       });
       // show only relation field
       $('#ontology_add_dialog #input_rel').css("display", "block");
@@ -752,6 +749,22 @@
         });
     };
 
+    this.create_new_class = function(pid, classname, silent) {
+      // add class with Ajax call
+      return CATMAID.fetch(pid + '/ontology/classes/add', 'POST', {
+            "classname": classname,
+            "silent": silent
+          });
+    };
+
+    this.create_new_relation = function(pid, relationname, silent) {
+      return CATMAID.fetch(pid + '/ontology/relations/add', 'POST',
+          {
+            "relname": relationname,
+            "silent": silent
+          });
+    };
+
     /**
      * Handles the creation of a class out of the tree's context menu.
      */
@@ -765,23 +778,20 @@
         return false;
       });
       $('#ontology_add_dialog #add').off("click").on("click",
-      function() {
-        $.unblockUI();
-        self.display_wait_message("Adding class. Just a moment...");
-        var classname= $('#ontology_add_dialog #classname').val();
-        // add class with Ajax call
-        CATMAID.fetch(pid + '/ontology/classes/add', 'POST', {
-              "classname": classname
-            })
-          .then(function(json) {
-              self.hide_wait_message();
-              self.refresh_trees();
-              CATMAID.msg("Success", "A new class has been created.");
-          })
-          .catch(CATMAID.handleError);
-        // clear input box
-        $('#ontology_add_dialog #classname').val("");
-      });
+          function() {
+            $.unblockUI();
+            self.display_wait_message("Adding class. Just a moment...");
+            var classname= $('#ontology_add_dialog #classname').val();
+            self.create_new_class(pid, classname)
+              .then(function() {
+                self.hide_wait_message();
+                self.refresh_trees();
+                CATMAID.msg("Success", "A new class has been created.");
+                // clear input box
+                $('#ontology_add_dialog #classname').val("");
+              })
+              .catch(CATMAID.handlError);
+          });
       // show only class field
       $('#ontology_add_dialog #input_rel').css("display", "none");
       $('#ontology_add_dialog #input_class').css("display", "block");
@@ -1237,6 +1247,23 @@
         CATMAID.DOM.appendButton(controls, "Refresh",
             "Reload the displayed ontology information", function() {
               self.refresh_trees();
+            });
+        CATMAID.DOM.appendButton(controls, "Init classification system",
+            "Create all needed classes and relations to start creating " +
+            "classification ontologies", function() {
+              // Create "classification_root" class and "is_a" relation
+              Promise.all([
+                  self.create_new_class(self.workspace_pid, "classification_root", true),
+                  self.create_new_relation(self.workspace_pid, "is_a", true)])
+                .then(function([classJson, relJson]) {
+                  self.refresh_trees();
+                  if (classJson.already_present && relJson.already_present) {
+                    CATMAID.msg("Success", "Classification system alrady initialized");
+                  } else {
+                    CATMAID.msg("Success", "Initialized classification system");
+                  }
+                })
+                .catch(CATMAID.handleError);
             });
       },
 

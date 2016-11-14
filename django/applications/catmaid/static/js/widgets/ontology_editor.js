@@ -294,13 +294,13 @@
         // check what type of node has been created
         alert("yes");
         data = {
-        "operation": "create_node",
-        "parentid": data.rslt.parent.attr("id").replace("node_", ""),
-        "template_node_id": data.rslt.obj.attr("template_node_id"),
-        "classname": data.rslt.obj.attr("classname"),
-        "relationname": data.rslt.obj.attr("relname"),
-        "objname": data.rslt.name,
-        "pid": pid
+          "operation": "create_node",
+          "parentid": data.rslt.parent.attr("id").replace("node_", ""),
+          "template_node_id": data.rslt.obj.attr("template_node_id"),
+          "classname": data.rslt.obj.attr("classname"),
+          "relationname": data.rslt.obj.attr("relname"),
+          "objname": data.rslt.name,
+          "pid": pid
         };
 
       });

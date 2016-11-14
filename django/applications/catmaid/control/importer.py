@@ -215,8 +215,8 @@ class PreProject:
         self.action = None
 
         # Collect classification information, if available
-        self.ontology = p.get('ontology', None)
-        self.classification = p.get('classification', None)
+        self.ontology = p.get('ontology', [])
+        self.classification = p.get('classification', [])
 
         # Collect stack group information, if available
         self.stackgroups = []
@@ -233,6 +233,21 @@ class PreProject:
                 return True
         return False
 
+    def merge_with(self, other):
+        """Copy properties from other project
+        """
+        if self.has_been_imported:
+            raise ValueError("Can only merge into not yet imported pre projects")
+        if self.already_known:
+            raise ValueError("Can only merge into unknown pre projects")
+
+        if self.name != other.name:
+            self.name = "{}, {}".format(self.name, other.name)
+
+        self.stacks.extend(other.stacks)
+        self.ontology.extend(other.ontology)
+        self.classification.extend(other.classification)
+        self.stackgroups.extend(other.stackgroups)
 
 def find_zoom_levels_and_file_ext( base_folder, stack_folder, needs_zoom=True ):
     """ Looks at the first file of the first zoom level and
@@ -326,7 +341,8 @@ def find_project_folders(image_base, path, filter_term, depth=1):
                 index = index + find_files( current_file, depth - 1)
     return (index, projects, not_readable)
 
-def get_projects_from_url(url, filter_term, headers=None, auth=None, base_url=None):
+def get_projects_from_url(url, filter_term, headers=None, auth=None,
+        base_url=None, merge_same=True):
     if not url:
         raise ValueError("No URL provided")
     if auth and len(auth) != 2:
@@ -359,8 +375,13 @@ def get_projects_from_url(url, filter_term, headers=None, auth=None, base_url=No
             project = PreProject(p, base_url, None)
             short_name = project.name
             key = "{}-{}".format(url, short_name)
-            projects[key] = project
-            index.append((key, short_name))
+            if merge_same and key in projects:
+                # Merge newly found and existing projects
+                existing_project = projects[key]
+                existing_project.merge_with(project)
+            else:
+                projects[key] = project
+                index.append((key, short_name))
     else:
         raise ValueError("Unrecognized content type in response of remote: " +
             content_type, r.content)

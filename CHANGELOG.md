@@ -18,6 +18,9 @@ Importer:
   projects, stacks and stack groups in project file based import ("Image data
   importer" in admin view).
 
+- Projects to be imported can be split across multiple documents, if local or
+  remote file import is used. This helps organizing image collections manually.
+
 
 ### Bug fixes
 

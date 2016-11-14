@@ -20,7 +20,7 @@ from django.utils.translation import ugettext as _
 from formtools.wizard.views import SessionWizardView
 
 from guardian.models import Permission
-from guardian.shortcuts import get_perms_for_model, assign
+from guardian.shortcuts import get_perms_for_model, assign_perm
 
 from catmaid.models import (Class, Relation, ClassClass, ClassInstance, Project,
         ClassInstanceClassInstance, Stack, ProjectStack, Overlay,
@@ -1264,7 +1264,7 @@ def import_projects( user, pre_projects, tags, permissions,
             # Assign permissions to project
             assigned_permissions = []
             for user_or_group, perm in permissions:
-                assigned_perm = assign( perm.codename, user_or_group, p )
+                assigned_perm = assign_perm( perm.codename, user_or_group, p )
                 assigned_permissions.append( assigned_perm )
             # Tag the project
             p.tags.add( *tags )

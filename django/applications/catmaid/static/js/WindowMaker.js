@@ -2580,8 +2580,8 @@ var WindowMaker = new function()
   /**
    * Allow new widgets to register with a window maker.
    */
-  this.registerWidget = function(key, creator) {
-    if (key in creators) {
+  this.registerWidget = function(key, creator, replace) {
+    if (key in creators && !replace) {
       throw new CATMAID.ValueError("A widget with the following key is " +
           "already registered: " + key);
     }
@@ -2612,10 +2612,11 @@ var WindowMaker = new function()
   CATMAID.front = WindowMaker.getFocusedWindowWidget;
 
   /**
-   * Make new widgets available under the given unique key.
+   * Make new widgets available under the given unique key, optionally replacing
+   * existing widgets.
    */
   CATMAID.registerWidget = function(options) {
-    WindowMaker.registerWidget(options.key, options.creator);
+    WindowMaker.registerWidget(options.key, options.creator, options.replace);
   };
 
 })(CATMAID);

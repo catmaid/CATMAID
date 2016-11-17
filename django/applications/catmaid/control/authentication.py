@@ -433,13 +433,13 @@ def all_usernames(request, project_id=None):
 def register(request):
     # Return right away if user registration is not enabled
     if not settings.USER_REGISTRATION_ALLOWED:
-        return HttpResponseRedirect(reverse("home"))
+        return HttpResponseRedirect(reverse("catmaid:home"))
 
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
         if form.is_valid():
             new_user = form.save()
-            return HttpResponseRedirect(reverse("home"))
+            return HttpResponseRedirect(reverse("catmaid:home"))
     else:
         form = UserCreationForm()
     return render(request, "catmaid/registration/register.html", {

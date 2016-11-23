@@ -1372,6 +1372,13 @@
                 $(this).removeClass('ui-state-error');
                 self.DataTable().column(1).search(search, false, true).draw();
               }
+            }).on('search', function() {
+              // Update table after clearing
+              var search = this.value;
+              if (0 === search.length) {
+                $(this).removeClass('ui-state-error');
+                self.DataTable().column(1).search(search, false, true).draw();
+              }
             }))
           )
         )

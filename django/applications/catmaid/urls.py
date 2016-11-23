@@ -53,7 +53,7 @@ urlpatterns += [
     url(r'^user-list$', user.user_list),
     url(r'^user-table-list$', user.user_list_datatable),
     url(r'^user-profile/update$', user.update_user_profile),
-    url(r'^user/password_change/$', user.change_password, {'post_change_redirect': '/'}),
+    url(r'^user/password_change/$', user.change_password, {'post_change_redirect': 'catmaid:home'}),
 ]
 
 # Log

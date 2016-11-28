@@ -444,7 +444,7 @@ class ClientData(models.Model):
     project = models.ForeignKey(Project, on_delete=models.CASCADE, blank=True, null=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True)
     key = models.CharField(max_length=255)
-    value = JSONField(default={})
+    value = JSONField(default=dict)
 
     class Meta:
         db_table = "client_data"

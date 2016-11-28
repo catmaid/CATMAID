@@ -16,15 +16,12 @@ from rest_framework.decorators import api_view
 # All classes needed by the tracing system alongside their
 # descriptions.
 needed_classes = {
-    'stackgroup': "An identifier for a group of stacks",
     'annotation': "An arbitrary annotation",
 }
 
 # All relations needed by the tracing system alongside their
 # descriptions.
 needed_relations = {
-    'has_channel': "A stack group can have assosiated channels",
-    'has_view': "A stack group can have assosiated orthogonal views",
     'is_a': "A generic is-a relationship",
     'part_of': "One thing is part of something else.",
     'annotated_with': "Something is annotated by something else.",
@@ -210,13 +207,14 @@ def projects(request):
     # Get all stack groups for this project
     project_stack_groups = {}
     cursor.execute("""
-        SELECT ci.project_id, ci.id, ci.name
-        FROM class_instance ci
+        SELECT DISTINCT ps.project_id, sg.id, sg.title, sg.comment
+        FROM stack_group sg
+        JOIN stack_stack_group ssg
+          ON ssg.stack_group_id = sg.id
+        JOIN project_stack ps
+          ON ps.stack_id = ssg.stack_id
         INNER JOIN (VALUES {}) user_project(id)
-        ON ci.project_id = user_project.id
-        INNER JOIN class c
-        ON ci.class_id = c.id
-        WHERE c.class_name = 'stackgroup'
+          ON ps.project_id = user_project.id
     """.format(project_template), user_project_ids)
     for row in cursor.fetchall():
         groups = project_stack_groups.get(row[0])
@@ -226,7 +224,7 @@ def projects(request):
         groups.append({
             'id': row[1],
             'title': row[2],
-            'comment': '',
+            'comment': row[3],
         })
 
     result = []
@@ -294,51 +292,21 @@ def export_projects(request):
         stacks.append(stack)
         visible_stacks[row[1]] = stack
 
-    # Add overlay information
-    stack_template = ",".join(("(%s)",) * len(visible_stacks)) or "()"
-    cursor.execute("""
-        SELECT stack_id, o.id, title, image_base, default_opacity, file_extension,
-        tile_width, tile_height, tile_source_type
-        FROM overlay o
-        INNER JOIN (VALUES {}) visible_stack(id)
-        ON o.stack_id = visible_stack.id
-    """.format(stack_template), visible_stacks.keys())
-    stack_overlay_mapping = dict()
-    for row in cursor.fetchall():
-        stack = visible_stacks.get(row[0])
-        if not stack:
-            raise ValueError("Couldn't find stack {} for overlay {}".format(row[0], row[1]))
-        overlays = stack.get('overlays')
-        if not overlays:
-            overlays = []
-            stack['overlays'] = overlays
-        overlays.append({
-            'id': row[1],
-            'name': row[2],
-            'url': row[3],
-            'defaultopacity': row[4],
-            'fileextension': row[5],
-            'tile_width': row[6],
-            'tile_height': row[7],
-            'tile_source_type': row[8]
-        })
-
     # Add stack group information to stacks
     project_stack_groups = {}
     cursor.execute("""
-        SELECT sci.class_instance_id, ci.project_id, ci.name,
-               array_agg(sci.stack_id), array_agg(r.relation_name)
-        FROM class_instance ci
+        SELECT sg.id, ps.project_id, sg.title, sg.comment,
+               array_agg(ssg.stack_id), array_agg(sgr.name)
+        FROM stack_group sg
+        JOIN stack_stack_group ssg
+          ON ssg.stack_group_id = sg.id
+        JOIN project_stack ps
+          ON ps.stack_id = ssg.stack_id
         INNER JOIN (VALUES {}) user_project(id)
-        ON ci.project_id = user_project.id
-        INNER JOIN class c
-        ON ci.class_id = c.id
-        INNER JOIN stack_class_instance sci
-        ON ci.id = sci.class_instance_id
-        INNER JOIN relation r
-        ON sci.relation_id = r.id
-        WHERE c.class_name = 'stackgroup'
-        GROUP BY sci.class_instance_id, ci.project_id, ci.name;
+          ON ps.project_id = user_project.id
+        INNER JOIN stack_group_relation sgr
+          ON ssg.group_relation_id = sgr.id
+        GROUP BY sg.id, ps.project_id, sg.title
     """.format(project_template), user_project_ids)
     for row in cursor.fetchall():
         groups = project_stack_groups.get(row[1])
@@ -347,11 +315,11 @@ def export_projects(request):
             project_stack_groups[row[1]] = groups
         groups.append({
             'id': row[0],
-            'name': row[2],
-            'comment': '',
+            'title': row[2],
+            'comment': row[3],
         })
         # Add to stacks
-        for stack_id, relation_name in zip(row[3], row[4]):
+        for stack_id, relation_name in zip(row[4], row[5]):
             stack = visible_stacks.get(stack_id)
             if not stack:
                 # Only add visible stacks
@@ -362,7 +330,7 @@ def export_projects(request):
                 stack['stackgroups'] = stack_groups
             stack_groups.append({
                 'id': row[0],
-                'name': row[2],
+                'title': row[2],
                 'relation': relation_name
             })
 
@@ -375,7 +343,7 @@ def export_projects(request):
         result.append({
             'project': {
                 'id': p.id,
-                'name': p.title,
+                'title': p.title,
                 'stacks': stacks,
             }
         })

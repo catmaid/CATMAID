@@ -10,7 +10,7 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 
 from ..models import UserRole, Project, Stack, ProjectStack, \
-        BrokenSlice, Overlay
+        BrokenSlice, StackMirror
 from .authentication import requires_user_role
 
 logger = logging.getLogger(__name__)
@@ -35,32 +35,30 @@ def get_stack_info(project_id=None, stack_id=None):
 
     broken_slices = {i:1 for i in BrokenSlice.objects.filter(stack=stack_id) \
                      .values_list('index', flat=True)}
-    overlay_data = Overlay.objects.filter(stack=stack_id)
+    mirror_data = StackMirror.objects.filter(stack=stack_id)
 
-    return get_stack_info_response(p, s, ps, overlay_data, broken_slices)
+    return get_stack_info_response(p, s, ps, mirror_data, broken_slices)
 
-def get_stack_info_response(p, s, ps, overlay_data, broken_slices):
+def get_stack_info_response(p, s, ps, mirror_data, broken_slices):
 
-    overlays = []
-    for ele in overlay_data:
-        overlays.append({
+    mirrors = []
+    for ele in mirror_data:
+        mirrors.append({
             'id': ele.id,
             'title': ele.title,
             'image_base': ele.image_base,
-            'default_opacity': ele.default_opacity,
-            'tile_width': ele.tile_width,
-            'tile_height': ele.tile_height,
-            'tile_source_type': ele.tile_source_type,
-            'file_extension': ele.file_extension
+            'tile_width': int(ele.tile_width),
+            'tile_height': int(ele.tile_height),
+            'tile_source_type': int(ele.tile_source_type),
+            'file_extension': ele.file_extension,
+            'position': int(ele.position)
             })
     result = {
         'sid': s.id,
         'pid': p.id,
         'ptitle': p.title,
         'stitle': s.title,
-        'image_base': s.image_base,
         'num_zoom_levels': int(s.num_zoom_levels),
-        'file_extension': s.file_extension,
         'translation': {
             'x': ps.translation.x,
             'y': ps.translation.y,
@@ -76,14 +74,23 @@ def get_stack_info_response(p, s, ps, overlay_data, broken_slices):
             'y': int(s.dimension.y),
             'z': int(s.dimension.z)
         },
-        'tile_height': int(s.tile_height),
-        'tile_width': int(s.tile_width),
-        'tile_source_type': int(s.tile_source_type),
+        'description': s.description,
         'metadata' : s.metadata,
         'broken_slices': broken_slices,
-        'trakem2_project': int(s.trakem2_project),
-        'overlay': overlays,
+        'mirrors': mirrors,
         'orientation': ps.orientation,
+        'attribution': s.attribution,
+        'canary_location': {
+            'x': int(s.canary_location.x),
+            'y': int(s.canary_location.y),
+            'z': int(s.canary_location.z)
+        },
+        'placeholder_color': {
+            'r': float(s.placeholder_color.r),
+            'g': float(s.placeholder_color.g),
+            'b': float(s.placeholder_color.b),
+            'a': float(s.placeholder_color.a)
+        }
     }
 
     return result

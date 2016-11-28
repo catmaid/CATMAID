@@ -130,8 +130,8 @@
     this._view.appendChild( this._horr );
     this.showReferenceLines(StackViewer.Settings.session.display_stack_reference_lines);
 
-    if (primaryStack.metadata.length > 0) {
-      this.addLayer('Stack metadata', new CATMAID.MetadataLayer(this, primaryStack.metadata));
+    if (primaryStack.description.length > 0) {
+      this.addLayer('Stack description', new CATMAID.MetadataLayer(this, primaryStack.description));
     }
   }
 
@@ -797,6 +797,33 @@
       this._tool.register(this);
     }
     this.resize();
+  };
+
+  /**
+   * Replace a stack's tile layer with a new one.
+   *
+   * @param {Object} oldLayerKey Key for the layer to be replaced.
+   * @param {Object} newLayer    New layer, must be a tile layer for the
+   *                             same stack as the existing layer.
+   */
+  StackViewer.prototype.replaceStackLayer = function (oldLayerKey, newLayer) {
+    var oldLayer = this._layers.get(oldLayerKey);
+
+    if (!oldLayer || oldLayer.stack !== newLayer.stack) {
+      throw new Error('Can only replace a tile layer with a new tile layer for the same stack.');
+    }
+
+    this._layers.set(oldLayerKey, newLayer);
+
+    if (this._tool) {
+      this._tool.unregister(this);
+      this._tool.register(this);
+    }
+
+    oldLayer.unregister();
+    this.resize();
+    this.layercontrol.refresh();
+    this.redraw();
   };
 
   /**

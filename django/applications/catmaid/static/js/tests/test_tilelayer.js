@@ -1,4 +1,6 @@
 QUnit.test('Tile layer test', function (assert) {
+  var tileWidth = 10;
+  var tileHeight = 12;
   /**
    * Helper to create a new test stack.
    */
@@ -7,17 +9,23 @@ QUnit.test('Tile layer test', function (assert) {
     var res = {'x': 0.1, 'y': 0.5, 'z': 2.0};
     var trs = {'x': 0, 'y': 0, 'z': 0};
     return new CATMAID.Stack(1, name, dim, res, trs,
-        [], 3, 4, "", orientation);
+        [], 3, 4, "", null, orientation,
+        {x: 0, y: 0, z: 0},
+        {r: 0, g: 0, b: 0, a: 1},
+        [{
+          tile_width: tileWidth,
+          tile_height: tileHeight,
+          file_extension: 'png',
+          tile_source_type: 1,
+          image_base: 'fake',
+          position: 0
+        }]);
   }
 
   var stack = create_stack("Test Stack", CATMAID.Stack.ORIENTATION_XY);
   var stackViewer = new CATMAID.StackViewer(null, stack, false);
-  var tileWidth = 10;
-  var tileHeight = 12;
-  var tileSource = CATMAID.getTileSource(1, 'fake', 'png', tileWidth, tileHeight);
   var tilelayer = new CATMAID.TileLayer(stackViewer, "Test TileLayer", stack,
-      tileSource,
-      true, 1.0, false);
+      0, true, 1.0, false);
 
   var expCols = 5, expRows = 3;
   stackViewer.viewWidth = tileWidth * expCols - 1; // 49

@@ -23,7 +23,7 @@ from guardian.models import Permission
 from guardian.shortcuts import get_perms_for_model, assign_perm
 
 from catmaid.models import (Class, Relation, ClassClass, ClassInstance, Project,
-        ClassInstanceClassInstance, Stack, ProjectStack, Overlay,
+        ClassInstanceClassInstance, Stack, ProjectStack,
         StackClassInstance, TILE_SOURCE_TYPES)
 from catmaid.fields import Double3D
 from catmaid.control.common import urljoin

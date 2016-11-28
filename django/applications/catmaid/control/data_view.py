@@ -163,7 +163,7 @@ def get_data_view( request, data_view_id ):
     # Build a stack group index, if stack groups should be made available
     stackgroup_index = defaultdict(list)
     stackgroups_of = defaultdict(list)
-    if show_stackgroups:
+    if False and show_stackgroups:
         # Get all
         stackgroups = StackGroup.objects.filter(project__in=projects)
         for sg in stackgroups:

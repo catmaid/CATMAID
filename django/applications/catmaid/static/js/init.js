@@ -1083,7 +1083,7 @@ var project;
               // If there is already a stack loaded and this stack is a channel of
               // the group, add it to the existing stack viewer. Otherwise, open
               // the stack in a new stack viewer.
-              if (firstStackViewer && 'has_channel' === stack.relation) {
+              if (firstStackViewer && 'channel' === stack.relation) {
                 stackViewer = firstStackViewer;
               }
               // Try to load stacks and continue trying if loading fails for one
@@ -1183,9 +1183,6 @@ var project;
     function loadStack(e, stackViewer) {
       var useExistingViewer = typeof stackViewer !== 'undefined';
 
-      var tilesource = CATMAID.getTileSource(e.tile_source_type,
-          e.image_base, e.file_extension, e.tile_width, e.tile_height);
-
       var stack = new CATMAID.Stack(
           e.sid,
           e.stitle,
@@ -1195,9 +1192,12 @@ var project;
           e.broken_slices,
           e.num_zoom_levels,
           -2,
+          e.description,
           e.metadata,
           e.orientation,
-          tilesource );
+          e.canary_location,
+          e.placeholder_color,
+          e.mirrors);
 
       if (!useExistingViewer) {
         stackViewer = new CATMAID.StackViewer(project, stack);
@@ -1212,7 +1212,7 @@ var project;
           stackViewer,
           "Image data (" + stack.title + ")",
           stack,
-          tilesource,
+          0, // By default, use first stack mirror.
           true,
           1,
           !useExistingViewer,
@@ -1220,21 +1220,6 @@ var project;
 
       if (!useExistingViewer) {
         stackViewer.addLayer( "TileLayer", tilelayer );
-
-        $.each(e.overlay, function(key, value) {
-          var tilesource = CATMAID.getTileSource( value.tile_source_type,
-              value.image_base, value.file_extension, value.tile_width, value.tile_height );
-          var layer_visibility = parseInt(value.default_opacity) > 0;
-          var tilelayer2 = new tilelayerConstructor(
-                  stackViewer,
-                  value.title,
-                  stack,
-                  tilesource,
-                  layer_visibility,
-                  value.default_opacity / 100,
-                  false);
-          stackViewer.addLayer( value.title, tilelayer2 );
-        });
 
         project.addStackViewer( stackViewer );
 

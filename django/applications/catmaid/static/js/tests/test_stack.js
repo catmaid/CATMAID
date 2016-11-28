@@ -7,7 +7,16 @@ QUnit.test('Multi-view stack test', function( assert ) {
     var res = {'x': 0.1, 'y': 0.5, 'z': 2.0};
     var trs = {'x': 1, 'y': 2, 'z': 3};
     return new CATMAID.Stack(1, name, dim, res, trs,
-        [], 3, 4, "", orientation);
+        [], 3, 4, "", null, orientation,
+        {x: 0, y: 0, z: 0},
+        {r: 0, g: 0, b: 0, a: 1},
+        [{
+          tile_width: 10,
+          tile_height: 12,
+          file_extension: 'png',
+          tile_source_type: 1,
+          image_base: 'fake'
+        }]);
   }
 
   // Create test stacks for each orientation

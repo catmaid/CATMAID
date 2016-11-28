@@ -184,13 +184,26 @@
               }
               label.append(input);
 
+            } else if ('select' === setting.type) {
+              var select = $('<select />').attr({
+                'name': setting.name,
+              });
+              setting.options.forEach(function (option) {
+                select.append($('<option />', {
+                    value: option[0],
+                    text: option[1]
+                }));
+              });
+              select.val(setting.value);
+              select.addClass('layerSetting');
+              label.append(select);
             }
             layerSettings.append(settingElement);
           }
 
           container.append(layerSettings);
           var eventData = { 'layer': layer, 'stackViewer': stackViewer };
-          layerSettings.on('change', 'input.layerSetting', eventData, function(e) {
+          layerSettings.on('change', '.layerSetting', eventData, function(e) {
             if (CATMAID.tools.isFn(e.data.layer.setLayerSetting)) {
               var value = this.value.trim();
               if (0 === value.length) {

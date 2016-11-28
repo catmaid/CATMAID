@@ -9,8 +9,8 @@ from django.shortcuts import redirect
 from formtools.wizard.views import SessionWizardView
 
 from catmaid.models import (
-    Stack, Project, ProjectStack, Relation, Class, ClassInstance,
-    StackClassInstance
+    Stack, StackMirror, Project, ProjectStack, StackGroup,
+    StackStackGroup, StackGroupRelation,
 )
 from catmaid.control import dvid
 
@@ -61,7 +61,7 @@ class StackForm(forms.Form):
 class ConfirmForm(forms.Form):
     title = forms.CharField(help_text='Title of the new stack')
     comment = forms.CharField(help_text='Optional comment of the new stack', required=False)
-    metadata = forms.CharField(help_text='Optional metadata of the new stack', required=False)
+    description = forms.CharField(help_text='Optional description of the new stack', required=False)
     ortho_stacks = forms.BooleanField(required=False, label='Orthogonal stacks',
                                       help_text='Create three stacks instead '
                                       'of only one, each stack labeled to be '
@@ -98,7 +98,7 @@ class DVIDImportWizard(SessionWizardView):
         dvid_instance = self.get_cleaned_data_for_step('stack')['instance']
         title = self.get_cleaned_data_for_step('confirm')['title']
         comment = self.get_cleaned_data_for_step('confirm')['comment']
-        metadata = self.get_cleaned_data_for_step('confirm')['metadata']
+        description = self.get_cleaned_data_for_step('confirm')['description']
         dc = dvid.DVIDClient(dvid_server)
         stack_data = dc.get_instance_properties(dvid_repo, dvid_instance)
         dimension = (stack_data['dimension']['x'], stack_data['dimension']['y'],
@@ -122,15 +122,16 @@ class DVIDImportWizard(SessionWizardView):
                 comment=comment,
                 dimension=dimension,
                 resolution=resolution,
-                image_base=stack_data['image_base'],
-                trakem2_project=False,
                 num_zoom_levels=stack_data['zoom_levels'],
+                description=description)
+            stack.save()
+            mirror = StackMirror.objects.create(
+                stack=stack,
+                image_base=stack_data['image_base'],
                 file_extension=stack_data['file_extension'],
                 tile_width=stack_data['tile_width'],
                 tile_height=stack_data['tile_height'],
-                tile_source_type=stack_data['tile_source_type'],
-                metadata=metadata)
-            stack.save()
+                tile_source_type=stack_data['tile_source_type'])
             new_stacks.append((view, stack))
 
         if new_project:
@@ -147,23 +148,15 @@ class DVIDImportWizard(SessionWizardView):
 
             # Create a stack group if there are more than one views
             if len(views) > 1:
-                has_view = Relation.objects.get(project=project,
-                                                relation_name='has_view')
-                stack_group = Class.objects.get(project=project,
-                                                class_name='stackgroup')
-                sg = ClassInstance.objects.create(
-                    user=self.request.user,
-                    project=project,
-                    class_column=stack_group,
-                    name=project.title)
+                view_relation = StackGroupRelation.objects.get(name='view')
+                sg = StackGroup.objects.create(title=project.title)
 
                 for view, stack in new_stacks:
-                    StackClassInstance.objects.create(
-                        user=self.request.user,
-                        project=project,
-                        relation=has_view,
+                    StackStackGroup.objects.create(
+                        group_relation=view_relation,
                         stack=stack,
-                        class_instance=sg)
+                        stackgroup=sg,
+                        position=view)
 
         if new_project:
             if ortho_stacks:

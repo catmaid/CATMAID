@@ -16,6 +16,14 @@
   spheres) are still given precedence.
 
 
+Tag Table:
+
+- New widget allowing users to get information about node label usage in
+  the project, and select skeletons based on labels which their nodes
+  have.
+
+- Accessible with Ctrl+Space by the name 'tag-table'
+
 Measurement Table:
 
 - The neuron name is now quoted in the CSV file export. This makes it more
@@ -83,9 +91,6 @@ Tracing layer:
   animation is now calculated correctly and all changes can be seen.
 
 - The Classification Clustering Widget can be opened again.
-
-- 3D viewer: removing connector restrictions now correctly restores previous
-  connector visibility configuration instead of always showing all connectors.
 
 
 ## 2016.11.04

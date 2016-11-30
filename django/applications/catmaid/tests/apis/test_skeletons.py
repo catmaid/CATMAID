@@ -900,3 +900,15 @@ class SkeletonsApiTests(CatmaidApiTestCase):
 239 0 1135 2800 0 0 237
 '''
         self.compare_swc_data(response.content, swc_output_for_skeleton_235)
+
+
+    def test_skeletons_by_node_labels_0(self):
+        pass
+
+
+    def test_skeletons_by_node_labels_1(self):
+        pass
+
+
+    def test_skeletons_by_node_labels_multiple(self):
+        pass

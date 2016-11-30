@@ -19,6 +19,6 @@ os.name = "GDAL blocking OS"
 from django.contrib.gis import gdal
 os.name = original_os_name
 if not gdal.HAS_GDAL:
-    logging.getLogger(__name__).warn("GeoDjango's GDAL support was disabled by "
+    logging.warn("GeoDjango's GDAL support was disabled by "
            "CATMAID, because it breaks TIFF support in pgmagick. See "
            "https://github.com/catmaid/CATMAID/issues/1218 for more details.")

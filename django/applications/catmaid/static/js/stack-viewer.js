@@ -627,6 +627,24 @@
   };
 
   /**
+   * Look up a layer's key using the layer itself.
+   *
+   * @param  {Object}  needle The layer object.
+   * @return {?Object}        The layer key, or null if not in this viewer.
+   */
+  StackViewer.prototype.getLayerKey = function (needle) {
+    var layerKey = null;
+
+    this._layers.forEach(function (layer, key) {
+        if (layer === needle) {
+          layerKey = key;
+        }
+      });
+
+    return layerKey;
+  };
+
+  /**
    * Get an array of layer keys in their rendering order (back to front).
    * @return {string[]} An array of layer keys.
    */

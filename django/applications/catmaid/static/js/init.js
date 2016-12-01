@@ -1155,11 +1155,6 @@ var project;
 
     function loadStack(e, stackViewer) {
       var useExistingViewer = typeof stackViewer !== 'undefined';
-      var labelupload = '';
-
-      if( e.hasOwnProperty('labelupload_url') && e.tile_source_type === 2 ) {
-        labelupload = e.labelupload_url;
-      }
 
       var tilesource = CATMAID.getTileSource(e.tile_source_type,
           e.image_base, e.file_extension, e.tile_width, e.tile_height);
@@ -1173,7 +1168,6 @@ var project;
           e.broken_slices,
           e.num_zoom_levels,
           -2,
-          labelupload, // TODO: if there is any
           e.metadata,
           e.orientation,
           tilesource );

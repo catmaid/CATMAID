@@ -48,65 +48,50 @@ def get_stack_info(project_id=None, stack_id=None):
 
 def get_stack_info_response(p, s, ps, overlay_data, broken_slices):
 
-    if int(s.tile_source_type) == 2:
-        # request appropriate stack metadata from tile source
-        url = s.image_base.rstrip('/').lstrip('http://')
-        # Important: Do not use localhost, but 127.0.0.1 instead
-        # to prevent an namespace lookup error (gaierror)
-        # Important2: Do not put http:// in front!
-        conn = httplib.HTTPConnection(url)
-        conn.request('GET', '/metadata')
-        response = conn.getresponse()
-        # read JSON response according to metadata convention
-        # Tornado reponse is escaped JSON string
-        read_response = response.read()
-        # convert it back to dictionary str->dict
-        return json.loads(read_response)
-    else:
-        overlays = []
-        for ele in overlay_data:
-            overlays.append({
-                'id': ele.id,
-                'title': ele.title,
-                'image_base': ele.image_base,
-                'default_opacity': ele.default_opacity,
-                'tile_width': ele.tile_width,
-                'tile_height': ele.tile_height,
-                'tile_source_type': ele.tile_source_type,
-                'file_extension': ele.file_extension
-                })
-        result = {
-            'sid': s.id,
-            'pid': p.id,
-            'ptitle': p.title,
-            'stitle': s.title,
-            'image_base': s.image_base,
-            'num_zoom_levels': int(s.num_zoom_levels),
-            'file_extension': s.file_extension,
-            'translation': {
-                'x': ps.translation.x,
-                'y': ps.translation.y,
-                'z': ps.translation.z
-            },
-            'resolution': {
-                'x': float(s.resolution.x),
-                'y': float(s.resolution.y),
-                'z': float(s.resolution.z)
-            },
-            'dimension': {
-                'x': int(s.dimension.x),
-                'y': int(s.dimension.y),
-                'z': int(s.dimension.z)
-            },
-            'tile_height': int(s.tile_height),
-            'tile_width': int(s.tile_width),
-            'tile_source_type': int(s.tile_source_type),
-            'metadata' : s.metadata,
-            'broken_slices': broken_slices,
-            'trakem2_project': int(s.trakem2_project),
-            'overlay': overlays,
-            'orientation': ps.orientation,
-        }
+    overlays = []
+    for ele in overlay_data:
+        overlays.append({
+            'id': ele.id,
+            'title': ele.title,
+            'image_base': ele.image_base,
+            'default_opacity': ele.default_opacity,
+            'tile_width': ele.tile_width,
+            'tile_height': ele.tile_height,
+            'tile_source_type': ele.tile_source_type,
+            'file_extension': ele.file_extension
+            })
+    result = {
+        'sid': s.id,
+        'pid': p.id,
+        'ptitle': p.title,
+        'stitle': s.title,
+        'image_base': s.image_base,
+        'num_zoom_levels': int(s.num_zoom_levels),
+        'file_extension': s.file_extension,
+        'translation': {
+            'x': ps.translation.x,
+            'y': ps.translation.y,
+            'z': ps.translation.z
+        },
+        'resolution': {
+            'x': float(s.resolution.x),
+            'y': float(s.resolution.y),
+            'z': float(s.resolution.z)
+        },
+        'dimension': {
+            'x': int(s.dimension.x),
+            'y': int(s.dimension.y),
+            'z': int(s.dimension.z)
+        },
+        'tile_height': int(s.tile_height),
+        'tile_width': int(s.tile_width),
+        'tile_source_type': int(s.tile_source_type),
+        'metadata' : s.metadata,
+        'broken_slices': broken_slices,
+        'trakem2_project': int(s.trakem2_project),
+        'overlay': overlays,
+        'orientation': ps.orientation,
+    }
 
     return result
 

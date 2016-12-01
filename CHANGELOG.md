@@ -22,6 +22,12 @@ Importer:
   remote file import is used. This helps organizing image collections manually.
 
 
+### Deprecations and Removals
+
+- Special behavior of tile source type 2 stacks to interoperate with a Volumina
+  tile server prototype has been removed.
+
+
 ### Bug fixes
 
 - Review widget: auto centering works again

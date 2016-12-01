@@ -24,7 +24,6 @@
       skip_planes,        //!< {Array} planes to be excluded from the stack's view [[z,t,...], [z,t,...], ...]
       num_zoom_levels,      //!< {int} that defines the number of available non-artificial zoom levels
       max_zoom_level,       //!< {int} that defines the maximum available zoom level
-      labelupload_url,      //!< {String} that defines the label upload URL for labels (for tile_source_type==2)
       metadata,         //!< {String} of arbitrary meta data
       orientation,         //!< {Integer} orientation (0: xy, 1: xz, 2: yz)
       tileSource
@@ -69,7 +68,6 @@
     }
     self.MIN_S = max_zoom_level;
 
-    self.labelupload_url = labelupload_url;
     this.metadata = metadata;
     self.orientation = orientation;
     self.tileSource = tileSource;

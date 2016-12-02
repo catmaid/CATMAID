@@ -184,10 +184,26 @@
     };
 
     var smoothChangeSlice = function (e, step) {
+      var MIN_FRAME_TIME = 1000.0 / 60.0; // Throttle to 60 FPS.
+      var frameTimeout = null;
+      var lastFrameTime = null;
+
       if (self.smoothScrolling) return true;
       self.smoothScrolling = true;
+
       var callback = function () {
         if (!self.smoothScrolling) return;
+
+        // Throttle slice change rate to 60 FPS, because rendering can be much
+        // faster if image data is already cached.
+        var thisFrameTime = performance.now();
+        if (lastFrameTime && thisFrameTime - lastFrameTime < MIN_FRAME_TIME) {
+          window.clearTimeout(frameTimeout);
+          frameTimeout = window.setTimeout(callback, MIN_FRAME_TIME + lastFrameTime - thisFrameTime);
+          return;
+        }
+        lastFrameTime = thisFrameTime;
+
         var zOffset = self.stackViewer.primaryStack.validZDistanceByStep(self.slider_z.val, step);
         if (!zOffset) return;
         self.stackViewer.moveToPixel(
@@ -197,11 +213,13 @@
             self.stackViewer.s,
             callback);
       };
+
       var target = e.target;
       var oldListener = target.onkeyup;
       var oldBlocking = self.stackViewer.blockingRedraws;
       self.stackViewer.blockingRedraws = true;
       target.onkeyup = function (e) {
+        window.clearTimeout(frameTimeout);
         target.onkeyup = oldListener;
         self.smoothScrolling = false;
         self.stackViewer.blockingRedraws = oldBlocking;

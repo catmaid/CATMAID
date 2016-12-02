@@ -3498,7 +3498,7 @@
    */
   WebGLApplication.prototype.Space.prototype.pickNodeWithColorMap =
       function(x, y, xs, ys, camera, savePickingMap) {
-    // Attempt to intersect visible skeleton spheres, stopping at the first found
+    var savePosTexture = false;
     var color = 0;
     var idMap = {};
     var skeletonIdMap = {};
@@ -3596,6 +3596,39 @@
     gl.readPixels(x, this.pickingTexture.height - y, 1, 1, gl.RGBA,
         gl.UNSIGNED_BYTE, pixelBuffer);
     var colorId = (pixelBuffer[0] << 16) | (pixelBuffer[1] << 8) | (pixelBuffer[2]);
+
+    // Nothing has been found if color Id is zero, try to look at neighboring
+    // pixels, take first in surrounding 9x9 block.
+    var offsetX = 0;
+    var offsetY = 0;
+    if (0 === colorId) {
+        var retry = 0;
+        var offsets = [[0,1], [1,1], [1,0], [1,-1], [0,-1], [-1,-1], [-1,0]];
+        while (retry <  offsets.length) {
+          var o = offsets[retry];
+          var xq = x + o[0];
+          var yq = y + o[1];
+          if ((xq < 0 || xq >= this.pickingTexture.width) ||
+              (yq < 0 || yq >= this.pickingTexture.height)) {
+            continue;
+          }
+
+          gl.readPixels(xq, this.pickingTexture.height - yq, 1, 1, gl.RGBA,
+              gl.UNSIGNED_BYTE, pixelBuffer);
+          colorId = (pixelBuffer[0] << 16) | (pixelBuffer[1] << 8) | (pixelBuffer[2]);
+
+          if (0 !== colorId) {
+            offsetX = o[0];
+            offsetY = 0[1];
+            break;
+          }
+          ++retry;
+        }
+
+        if (0 === colorId) {
+          return;
+        }
+    }
 
     // If wanted, the picking map can be exported
     if (savePickingMap) {
@@ -3724,8 +3757,15 @@
       this.view.renderer.render(this.scene, camera, this.pickingTexture);
 
       // Read pixel under cursor
-      gl.readPixels(x, this.pickingTexture.height - y, 1, 1, gl.RGBA,
-          gl.UNSIGNED_BYTE, pixelBuffer);
+      gl.readPixels(x + offsetX, this.pickingTexture.height - y + offsetY,
+          1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixelBuffer);
+
+      if (savePosTexture) {
+        var img = CATMAID.tools.createImageFromGlContext(gl,
+            this.pickingTexture.width, this.pickingTexture.height);
+        var blob = CATMAID.tools.dataURItoBlob(img.src);
+        saveAs(blob, "pos-tex-" + c + ".png");
+      }
 
       // Map RGBA value to decoded float
       return decodeFloat(pixelBuffer);
@@ -3778,11 +3818,7 @@
     this.staticContent.connectorLineColors.postsynaptic_to.visible =
       originalConnectorPostVisibility;
 
-    // Handle results, nothing has been found if color Id is zero
-    if (0 === colorId) {
-        return;
-    }
-
+    // Handle results
     var id = idMap[colorId];
     var skeleton = skeletonIdMap[colorId];
     var skeletonId = skeleton ? skeleton.id : null;

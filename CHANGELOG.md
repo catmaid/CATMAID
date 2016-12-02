@@ -1,6 +1,10 @@
 ## Under development
 
 
+### Notes
+
+- Virtual env update required
+
 
 ### Features and enhancements
 

@@ -7,8 +7,6 @@ python:
 env:
   global:
     - SLIMERJSLAUNCHER=$(which firefox) DISPLAY=:99.0 PATH=$TRAVIS_BUILD_DIR/slimerjs:$PATH TMPDIR=$TRAVIS_BUILD_DIR/tmp
-    - PGPORT: 5433
-    - PGHOST: localhost
 addons:
   firefox: "38.0"
   apt:

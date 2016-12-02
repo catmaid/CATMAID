@@ -23,7 +23,7 @@ numpy==1.10.1
 pgmagick==0.6.2
 pillow==3.0.0
 progressbar2==3.6.2
-psycopg2==2.6.1
+psycopg2==2.6.2
 Pygments==2.0.2
 python-dateutil==2.1
 python-libuuid==0.9.0

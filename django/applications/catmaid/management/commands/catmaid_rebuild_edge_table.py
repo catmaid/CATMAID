@@ -23,7 +23,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         project_ids = options['project_id']
         if not project_ids:
-            raise CommandError('Please specify at least one project ID as argument')
+            self.stdout.write('Since no project IDs were given, all projects will be updated')
 
         # Check arguments
         dryrun = options['dryrun']
@@ -42,44 +42,75 @@ class Command(BaseCommand):
 
         try:
             with transaction.atomic():
-                for project_id in project_ids:
-                    try:
-                        project = Project.objects.get(pk=int(project_id))
-                        cursor.execute("SELECT count(*) FROM treenode_edge WHERE project_id = %s",
-                                       (project.id,))
-                        num_existing_edges = cursor.fetchone()[0]
-                        # Clear edge table
-                        cursor.execute('DELETE FROM treenode_edge WHERE project_id = %s',
-                                       (project_id,))
-                        self.stdout.write('Deleted edge information for project "%s" (%s edges)' % \
-                                        (project_id, num_existing_edges))
+                if project_ids:
+                    for project_id in project_ids:
+                        try:
+                            project = Project.objects.get(pk=int(project_id))
+                            cursor.execute("SELECT count(*) FROM treenode_edge WHERE project_id = %s",
+                                           (project.id,))
+                            num_existing_edges = cursor.fetchone()[0]
+                            # Clear edge table
+                            cursor.execute('DELETE FROM treenode_edge WHERE project_id = %s',
+                                           (project_id,))
+                            self.stdout.write('Deleted edge information for project "%s" (%s edges)' % \
+                                            (project_id, num_existing_edges))
 
-                        # Add edges of available treenodes
-                        cursor.execute('''
-                            INSERT INTO treenode_edge (id, project_id, edge) (
-                                SELECT c.id, c.project_id, ST_MakeLine(
-                                ST_MakePoint(c.location_x, c.location_y, c.location_z),
-                                ST_MakePoint(p.location_x, p.location_y, p.location_z))
-                                FROM treenode c JOIN treenode p ON c.parent_id = p.id
-                                WHERE c.parent_id IS NOT NULL AND c.project_id = %s)''',
-                            (project_id,))
-                        # Add self referencing adges for all root nodes
-                        cursor.execute('''
-                            INSERT INTO treenode_edge (id, project_id, edge) (
-                                SELECT r.id, r.project_id, ST_MakeLine(
-                                ST_MakePoint(r.location_x, r.location_y, r.location_z),
-                                ST_MakePoint(r.location_x, r.location_y, r.location_z))
-                                FROM treenode r
-                                WHERE r.parent_id IS NULL AND r.project_id = %s)''',
-                            (project_id,))
+                            # Add edges of available treenodes
+                            cursor.execute('''
+                                INSERT INTO treenode_edge (id, project_id, edge) (
+                                    SELECT c.id, c.project_id, ST_MakeLine(
+                                    ST_MakePoint(c.location_x, c.location_y, c.location_z),
+                                    ST_MakePoint(p.location_x, p.location_y, p.location_z))
+                                    FROM treenode c JOIN treenode p ON c.parent_id = p.id
+                                    WHERE c.parent_id IS NOT NULL AND c.project_id = %s)''',
+                                (project_id,))
+                            # Add self referencing adges for all root nodes
+                            cursor.execute('''
+                                INSERT INTO treenode_edge (id, project_id, edge) (
+                                    SELECT r.id, r.project_id, ST_MakeLine(
+                                    ST_MakePoint(r.location_x, r.location_y, r.location_z),
+                                    ST_MakePoint(r.location_x, r.location_y, r.location_z))
+                                    FROM treenode r
+                                    WHERE r.parent_id IS NULL AND r.project_id = %s)''',
+                                (project_id,))
 
-                        cursor.execute("SELECT count(*) FROM treenode_edge WHERE project_id = %s",
-                                       (project.id,))
-                        num_new_edges = cursor.fetchone()[0]
-                        self.stdout.write('Created edge information for project "%s" (%s edges)' % \
-                                        (project.id, num_new_edges))
-                    except Project.DoesNotExist:
-                        raise CommandError('Project "%s" does not exist' % project_id)
+                            cursor.execute("SELECT count(*) FROM treenode_edge WHERE project_id = %s",
+                                           (project.id,))
+                            num_new_edges = cursor.fetchone()[0]
+                            self.stdout.write('Created edge information for project "%s" (%s edges)' % \
+                                            (project.id, num_new_edges))
+                        except Project.DoesNotExist:
+                            raise CommandError('Project "%s" does not exist' % project_id)
+                else:
+                    cursor.execute("SELECT count(*) FROM treenode_edge")
+                    num_existing_edges = cursor.fetchone()[0]
+
+                    # Clear edge table
+                    cursor.execute("TRUNCATE treenode_edge")
+                    self.stdout.write('Deleted edge information for all '
+                            'projects (%s edges)' % (num_existing_edges,))
+
+                    # Add edges of available treenodes
+                    cursor.execute('''
+                        INSERT INTO treenode_edge (id, project_id, edge) (
+                            SELECT c.id, c.project_id, ST_MakeLine(
+                            ST_MakePoint(c.location_x, c.location_y, c.location_z),
+                            ST_MakePoint(p.location_x, p.location_y, p.location_z))
+                            FROM treenode c JOIN treenode p ON c.parent_id = p.id
+                            WHERE c.parent_id IS NOT NULL)''')
+                    # Add self referencing adges for all root nodes
+                    cursor.execute('''
+                        INSERT INTO treenode_edge (id, project_id, edge) (
+                            SELECT r.id, r.project_id, ST_MakeLine(
+                            ST_MakePoint(r.location_x, r.location_y, r.location_z),
+                            ST_MakePoint(r.location_x, r.location_y, r.location_z))
+                            FROM treenode r
+                            WHERE r.parent_id IS NULL)''')
+
+                    cursor.execute("SELECT count(*) FROM treenode_edge")
+                    num_new_edges = cursor.fetchone()[0]
+                    self.stdout.write('Created edge information for all '
+                            'projects (%s edges)' % (num_new_edges,))
 
                 if dryrun:
                     # For a dry run, cancel the transaction by raising an exception

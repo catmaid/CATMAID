@@ -20,6 +20,19 @@ button {
 	line-height: 13px;
 }
 
+input,
+select {
+  box-sizing: border-box;
+}
+
+input {
+  border-width: 2px;
+}
+
+select {
+  border-width: 1px;
+}
+
 h1 {
 	margin: 1.5em 16px 0.5em 20px;
 	font-size: 25px;

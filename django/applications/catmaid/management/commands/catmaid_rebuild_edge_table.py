@@ -33,6 +33,11 @@ class Command(BaseCommand):
         else:
             self.stdout.write('This will make changes to the database')
 
+        run = raw_input('Continue? [y/N]: ')
+        if run not in ('Y', 'y'):
+            self.stdout.write('Canceled on user request')
+            return
+
         cursor = connection.cursor()
 
         try:

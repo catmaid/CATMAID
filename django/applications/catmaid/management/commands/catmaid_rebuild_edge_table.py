@@ -10,14 +10,14 @@ class DryRunRollback(Exception):
     pass
 
 class Command(BaseCommand):
-    help = 'Rebuild the edge table for all skeletons in the specified ' \
-        'projects. No skeleton optimization will be done.'
+    help = 'Rebuild all edge tables for all skeletons and connectors in the ' \
+           'specified projects. No skeleton optimization will be done.'
 
     def add_arguments(self, parser):
         parser.add_argument('--dryrun', action='store_true', dest='dryrun',
             default=False, help='Don\'t actually apply changes')
         parser.add_argument('--project_id', dest='project_id', nargs='+',
-            help='Rebuild edge table for these projects')
+            help='Rebuild edge tables for these projects')
 
     @transaction.atomic
     def handle(self, *args, **options):
@@ -48,12 +48,23 @@ class Command(BaseCommand):
                             project = Project.objects.get(pk=int(project_id))
                             cursor.execute("SELECT count(*) FROM treenode_edge WHERE project_id = %s",
                                            (project.id,))
-                            num_existing_edges = cursor.fetchone()[0]
+                            num_existing_tn_edges = cursor.fetchone()[0]
+                            cursor.execute("SELECT count(*) FROM treenode_connector_edge WHERE project_id = %s",
+                                           (project.id,))
+                            num_existing_c_edges = cursor.fetchone()[0]
+                            cursor.execute("SELECT count(*) FROM connector_geom WHERE project_id = %s",
+                                           (project.id,))
+                            num_existing_c_geoms = cursor.fetchone()[0]
                             # Clear edge table
                             cursor.execute('DELETE FROM treenode_edge WHERE project_id = %s',
                                            (project_id,))
-                            self.stdout.write('Deleted edge information for project "%s" (%s edges)' % \
-                                            (project_id, num_existing_edges))
+                            cursor.execute('DELETE FROM treenode_connector_edge WHERE project_id = %s',
+                                           (project_id,))
+                            cursor.execute('DELETE FROM connector_geom WHERE project_id = %s',
+                                           (project_id,))
+                            self.stdout.write('Deleted edge information for project "%s": '
+                                    '%s treenode edges, %s connector edges, %s connectors' % \
+                                    (project_id, num_existing_tn_edges, num_existing_c_edges, num_existing_c_geoms))
 
                             # Add edges of available treenodes
                             cursor.execute('''
@@ -74,21 +85,61 @@ class Command(BaseCommand):
                                     WHERE r.parent_id IS NULL AND r.project_id = %s)''',
                                 (project_id,))
 
+                            # Add connector edge
+                            cursor.execute('''
+                                INSERT INTO treenode_connector_edge
+                                        SELECT
+                                            tc.id,
+                                            tc.project_id,
+                                            ST_MakeLine(
+                                                ST_MakePoint(t.location_x, t.location_y, t.location_z),
+                                                ST_MakePoint(c.location_x, c.location_y, c.location_z))
+                                        FROM treenode_connector tc, treenode t, connector c
+                                        WHERE t.id = tc.treenode_id
+                                          AND c.id = tc.connector_id
+                                          AND tc.project_id = %s;
+                            ''', (project_id,))
+
+                            # Add connector geometries
+                            cursor.execute('''
+                                    INSERT INTO connector_geom
+                                        SELECT
+                                            c.id,
+                                            c.project_id,
+                                            ST_MakePoint(c.location_x, c.location_y, c.location_z)
+                                        FROM connector c
+                                        WHERE c.project_id = %s;
+                            ''', (project_id,))
+
                             cursor.execute("SELECT count(*) FROM treenode_edge WHERE project_id = %s",
                                            (project.id,))
-                            num_new_edges = cursor.fetchone()[0]
-                            self.stdout.write('Created edge information for project "%s" (%s edges)' % \
-                                            (project.id, num_new_edges))
+                            num_new_tn_edges = cursor.fetchone()[0]
+                            cursor.execute("SELECT count(*) FROM treenode_connector_edge WHERE project_id = %s",
+                                           (project.id,))
+                            num_new_c_edges = cursor.fetchone()[0]
+                            cursor.execute("SELECT count(*) FROM connector_geom WHERE project_id = %s",
+                                           (project.id,))
+                            num_new_c_geoms = cursor.fetchone()[0]
+
+                            self.stdout.write('Created edge information for project "%s": '
+                                    '%s treenode edges, %s connector edges, %s connectors' % \
+                                    (project_id, num_new_tn_edges, num_new_c_edges, num_new_c_geoms))
                         except Project.DoesNotExist:
                             raise CommandError('Project "%s" does not exist' % project_id)
                 else:
                     cursor.execute("SELECT count(*) FROM treenode_edge")
-                    num_existing_edges = cursor.fetchone()[0]
-
+                    num_existing_tn_edges = cursor.fetchone()[0]
+                    cursor.execute("SELECT count(*) FROM treenode_connector_edge")
+                    num_existing_c_edges = cursor.fetchone()[0]
+                    cursor.execute("SELECT count(*) FROM connector_geom")
+                    num_existing_c_geoms = cursor.fetchone()[0]
                     # Clear edge table
-                    cursor.execute("TRUNCATE treenode_edge")
-                    self.stdout.write('Deleted edge information for all '
-                            'projects (%s edges)' % (num_existing_edges,))
+                    cursor.execute('TRUNCATE treenode_edge')
+                    cursor.execute('TRUNCATE treenode_connector_edge')
+                    cursor.execute('TRUNCATE connector_geom')
+                    self.stdout.write('Deleted edge information for all projects: '
+                            '%s treenode edges, %s connector edges, %s connectors' % \
+                            (num_existing_tn_edges, num_existing_c_edges, num_existing_c_geoms))
 
                     # Add edges of available treenodes
                     cursor.execute('''
@@ -107,16 +158,47 @@ class Command(BaseCommand):
                             FROM treenode r
                             WHERE r.parent_id IS NULL)''')
 
+                    # Add connector edges
+                    cursor.execute('''
+                        INSERT INTO treenode_connector_edge
+                                SELECT
+                                    tc.id,
+                                    tc.project_id,
+                                    ST_MakeLine(
+                                        ST_MakePoint(t.location_x, t.location_y, t.location_z),
+                                        ST_MakePoint(c.location_x, c.location_y, c.location_z))
+                                FROM treenode_connector tc, treenode t, connector c
+                                WHERE t.id = tc.treenode_id
+                                  AND c.id = tc.connector_id;
+                    ''')
+
+                    # Add connector geometries
+                    cursor.execute('''
+                            TRUNCATE connector_geom;
+                                INSERT INTO connector_geom
+                                    SELECT
+                                        c.id,
+                                        c.project_id,
+                                        ST_MakePoint(c.location_x, c.location_y, c.location_z)
+                                    FROM connector c;
+                    ''')
+
                     cursor.execute("SELECT count(*) FROM treenode_edge")
-                    num_new_edges = cursor.fetchone()[0]
-                    self.stdout.write('Created edge information for all '
-                            'projects (%s edges)' % (num_new_edges,))
+                    num_new_tn_edges = cursor.fetchone()[0]
+                    cursor.execute("SELECT count(*) FROM treenode_connector_edge")
+                    num_new_c_edges = cursor.fetchone()[0]
+                    cursor.execute("SELECT count(*) FROM connector_geom")
+                    num_new_c_geoms = cursor.fetchone()[0]
+
+                    self.stdout.write('Created edge information for all projects: '
+                            '%s treenode edges, %s connector edges, %s connectors' % \
+                            (num_new_tn_edges, num_new_c_edges, num_new_c_geoms))
 
                 if dryrun:
                     # For a dry run, cancel the transaction by raising an exception
                     raise DryRunRollback()
 
-                self.stdout.write('Successfully rebuilt edge table')
+                self.stdout.write('Successfully rebuilt edge tables')
 
         except DryRunRollback:
             self.stdout.write('Dry run completed')

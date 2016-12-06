@@ -10,7 +10,7 @@
    * subset can be marked as selected.
    */
   var SkeletonSource = function(register) {
-    this.widgetId = register ? this.registerSource() : null;
+    if (register) this.registerSource();
     this.APPEND_WARNING_THRESHOLD = 50;
     // Initialize subscriptions
     this.subscriptions = [];

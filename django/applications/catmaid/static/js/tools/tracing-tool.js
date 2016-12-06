@@ -563,7 +563,7 @@
     }));
 
     this.addAction(new CATMAID.Action({
-      helpText: "Go to active node",
+      helpText: "Go to active node (<kbd>Shift</kbd>: refresh active skeleton in 3D viewer)",
       buttonName: "goactive",
       buttonID: 'trace_button_goactive',
       keyShortcuts: { "A": [ 65 ] },

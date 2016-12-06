@@ -3,7 +3,6 @@
 /* global
   CATMAID,
   Arbor,
-  error,
   fetchSkeletons,
   InstanceRegistry,
   project,

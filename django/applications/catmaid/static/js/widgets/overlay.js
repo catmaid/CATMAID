@@ -4514,6 +4514,9 @@ SkeletonAnnotations.TracingOverlay.prototype.updateIfKnown = function(skeletonID
 SkeletonAnnotations.Tag = new (function() {
   this.tagbox = null;
 
+  this.RECENT_LABEL_COUNT = 5;
+  this.recentLabels = [];
+
   this.hasTagbox = function() {
     return this.tagbox !== null;
   };
@@ -4527,6 +4530,17 @@ SkeletonAnnotations.Tag = new (function() {
       this.tagbox.remove();
       this.tagbox = null;
     }
+  };
+
+  this.pushRecentLabel = function (label) {
+    var oldIndex = this.recentLabels.indexOf(label);
+    if (-1 !== oldIndex) {
+      this.recentLabels.splice(oldIndex);
+    }
+
+    this.recentLabels.unshift(label);
+
+    this.recentLabels.length = Math.min(this.recentLabels.length, this.RECENT_LABEL_COUNT);
   };
 
   this.tagATNwithLabel = function(label, tracingOverlay, deleteExisting) {
@@ -4615,7 +4629,18 @@ SkeletonAnnotations.Tag = new (function() {
           screenPos[0] + "px; top: " + screenPos[1] + "px;' />");
       this.tagbox.append("Tag: ");
       var input = $("<input id='Tags" + atnID + "' name='Tags' type='text' value='' />");
-      this.tagbox.append(input).append("<div style='color:#949494'>(Save&Close: Enter)</div>");
+      this.tagbox.append(input).append("<div style='color:#949494'>(Save&Close: <kbd>Enter</kbd>)</div>");
+
+      if (this.recentLabels.length) {
+        this.tagbox.append($("<span style='color:#949494'>Recent: </span>"));
+        this.tagbox.append(this.recentLabels
+            .sort(CATMAID.tools.compareStrings)
+            .map(function (label) {
+                return $("<button>" + label + "</button>").click(function () {
+                  input.tagEditorAddTag(label);
+                });
+              }, this));
+      }
 
       this.tagbox
         .css('background-color', 'white')
@@ -4634,10 +4659,13 @@ SkeletonAnnotations.Tag = new (function() {
         .keydown(function (event) {
           if (13 === event.keyCode) { // ENTER
             event.stopPropagation();
-            if ("" === input.val()) {
+            var val = input.val().trim();
+            if ("" === val) {
               SkeletonAnnotations.Tag.updateTags(tracingOverlay);
               SkeletonAnnotations.Tag.removeTagbox();
               tracingOverlay.updateNodes();
+            } else {
+              SkeletonAnnotations.Tag.pushRecentLabel(val);
             }
           }
         })

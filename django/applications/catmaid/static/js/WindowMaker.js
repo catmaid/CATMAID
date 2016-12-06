@@ -2542,6 +2542,32 @@ var WindowMaker = new function()
     }
   };
 
+  /**
+   * Retrieve a map from window objects to widget instances for all open widget
+   * windows of a given name.
+   * @param  {string}  name   Name of the widget window to search for.
+   * @param  {boolean} create Whether to create a new widget if none is open.
+   * @param  {Object}  params Parameters with which to create the window.
+   * @return {Map}            Map of window objects to widget instances.
+   */
+  this.getOpenWindows = function (name, create, params) {
+    if (creators.hasOwnProperty(name)) {
+      if (windows.has(name)) {
+        var instances = windows.get(name);
+        return new Map(instances);
+      } else if (create) {
+        var handles = creators[name](params);
+        handles = new Map([[handles.window, handles.widget]]);
+        windows.set(name, handles);
+        return new Map(handles);
+      } else {
+        return new Map();
+      }
+    } else {
+      CATMAID.error("No known window with name " + name);
+    }
+  };
+
   /** Always create a new instance of the widget. The caller is allowed to hand
    * in extra parameters that will be passed on to the actual creator method. */
   this.create = function(name, init_params) {

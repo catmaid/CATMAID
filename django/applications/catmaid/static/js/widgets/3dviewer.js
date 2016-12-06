@@ -1360,7 +1360,7 @@
     });
   };
 
-  WebGLApplication.prototype.has_skeleton = function(skeleton_id) {
+  WebGLApplication.prototype.hasSkeleton = function(skeleton_id) {
     return this.space.content.skeletons.hasOwnProperty(skeleton_id);
   };
 

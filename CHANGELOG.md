@@ -33,6 +33,11 @@ Importer:
   remote file import is used. This helps organizing image collections manually.
 
 
+Miscellaneous:
+
+- Holding P will show the active skeleton in all open 3D viewers.
+
+
 ### Deprecations and Removals
 
 - Special behavior of tile source type 2 stacks to interoperate with a Volumina

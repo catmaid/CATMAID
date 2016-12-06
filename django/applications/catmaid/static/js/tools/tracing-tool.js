@@ -1152,6 +1152,44 @@
       }
     }));
 
+    this.addAction(new CATMAID.Action({
+      helpText: "Peek: show the active skeleton in all open 3D viewers (while held)",
+      keyShortcuts: { 'P': [ 80 ] },
+      run: function (e) {
+        if (self.peekingSkeleton) return;
+        var skid = SkeletonAnnotations.getActiveSkeletonId();
+        if (skid === null) return;
+        self.peekingSkeleton = true;
+        var skeletonModels = {};
+        skeletonModels[skid] = new CATMAID.SkeletonModel(
+            skid,
+            undefined,
+            new THREE.Color(SkeletonAnnotations.TracingOverlay.Settings.session.active_node_color));
+        var viewersWithoutSkel = Array.from(WindowMaker.getOpenWindows('3d-webgl-view', true).values())
+            .filter(function (viewer) { return !viewer.hasSkeleton(skid); });
+
+        viewersWithoutSkel.forEach(function (viewer) {
+          viewer.append(skeletonModels);
+        });
+
+        // Set a key up a listener to remove the skeleton from these viewers
+        // when the key is released.
+        var target = e.target;
+        var oldListener = target.onkeyup;
+        target.onkeyup = function (e) {
+          if (e.keyCode == 80) {
+            viewersWithoutSkel.forEach(function (viewer) {
+              viewer.removeSkeletons([skid]);
+            });
+            target.onkeyup = oldListener;
+            self.peekingSkeleton = false;
+          } else if (oldListener) oldListener(e);
+        };
+
+        return true;
+      }
+    }));
+
 
     var keyCodeToAction = CATMAID.getKeyCodeToActionMap(actions);
 

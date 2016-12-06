@@ -1,3 +1,9 @@
+# Respected precision
+epsilon = 0.001
+
+def same(a, b, eps=epsilon):
+    return abs(a - b) < eps
+
 class Point3D:
     """A simple container to hold three coordinate values.
     """
@@ -6,7 +12,7 @@ class Point3D:
         self.x, self.y, self.z = x, y, z
 
 
-def is_collinear(a, b, c, between=False):
+def is_collinear(a, b, c, between=False, eps=epsilon):
     """Return true if all three points are collinear, i.e. on one line. If
     between is True, c has to be additionally between a and b.
     """
@@ -31,7 +37,8 @@ def is_collinear(a, b, c, between=False):
     c2z = a.z + t * dz
 
     # Return False if the calculated C doesn't match input
-    if not (c2x == c.x and c2y == c.y and c2z == c.z):
+
+    if not (same(c2x, c.x, eps) and same(c2y, c.y, eps) and same(c2z, c.z, eps)):
         return False
 
     if between:

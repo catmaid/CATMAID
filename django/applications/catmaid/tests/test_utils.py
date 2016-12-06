@@ -41,3 +41,23 @@ class UtilTests(TestCase):
 
         self.assertTrue(is_collinear(p1, p2, p3))
         self.assertFalse(is_collinear(p1, p2, p3, True))
+
+    def test_is_collinear_too_precise(self):
+        from catmaid.util import Point3D, is_collinear
+
+        p1 = Point3D(0.0, 0.0, 0.0)
+        p2 = Point3D(1.0, 0.0001, 0.0)
+        p3 = Point3D(1.5, 0.0, 0.0)
+
+        self.assertTrue(is_collinear(p1, p2, p3))
+        self.assertFalse(is_collinear(p1, p2, p3, True))
+
+    def test_is_collinear_precision(self):
+        from catmaid.util import Point3D, is_collinear
+
+        p1 = Point3D(0.0, 0.0, 0.0)
+        p2 = Point3D(1.0, 0.001, 0.0)
+        p3 = Point3D(1.5, 0.0, 0.0)
+
+        self.assertFalse(is_collinear(p1, p2, p3))
+        self.assertFalse(is_collinear(p1, p2, p3, True))

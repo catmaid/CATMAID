@@ -191,7 +191,7 @@ def insert_treenode(request, project_id=None):
         child_loc = Point3D(child.location_x, child.location_y, child.location_z)
         parent_loc = Point3D(parent.location_x, parent.location_y, parent.location_z)
         new_node_loc = Point3D(params['x'], params['y'], params['z'])
-        if not is_collinear(child_loc, parent_loc, new_node_loc, True):
+        if not is_collinear(child_loc, parent_loc, new_node_loc, True, 0.001):
             raise ValueError('New node location has to be between child and parent')
 
     # Use creator and creation time for neighboring node that was created last.

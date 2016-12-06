@@ -1522,11 +1522,6 @@
     return true;
   };
 
-  // TODO obsolete code from segmentationtool.js
-  WebGLApplication.prototype.addActiveObjectToStagingArea = function() {
-    alert("The function 'addActiveObjectToStagingArea' is no longer in use.");
-  };
-
   WebGLApplication.prototype.showActiveNode = function() {
     this.space.content.active_node.setVisible(true);
   };
@@ -5379,12 +5374,12 @@
    */
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.loadJson =
       function(skeletonModel, json, options, withHistory) {
-    
+
     var nodes = json[0];
     var connectors = json[1];
     var tags = json[2];
     var history;
-    
+
     if (withHistory) {
       var makeHistoryAppender = function(timestampIndex) {
        return function(o, n) {

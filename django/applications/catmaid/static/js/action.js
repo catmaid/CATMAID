@@ -3,6 +3,8 @@
 
 (function(CATMAID) {
 
+  "use strict";
+
   /**
    * An action represents a command that may be run from a keyboard
    * shortcut or a button press.  These objects encapsulate:
@@ -13,85 +15,13 @@
    *   - An optional explicit icon URL
    *   - The function that should be run to carry out the action
    */
+  function Action(properties) {
 
-
-  function Action (properties) {
-
-    var helpText = "[No help text set]";
-    var buttonID = null;
-    var buttonName = null;
-    var iconURL = null;
-    var keyShortcuts = {};
-
-    /**
-       Add a new key shortcut for this action.  'name' should be a
-       string representation of the key, and keyCodes should be an
-       array of keyCodes that correspond to that key on various
-       browsers.  For example, you might call:
-          action.addKey( "+", [107, 61, 187] );
-    */
-    this.addKey = function( name, keyCodes ) {
-      if (keyShortcuts.hasOwnProperty(name)) {
-        alert("BUG: replacing the keyCodes for "+name+" with Action.addKey");
-      }
-      keyShortcuts[name] = keyCodes;
-    };
-
-    this.hasButton = function( ) {
-      return buttonID !== null;
-    };
-
-    this.getKeys = function( ) {
-      return keyShortcuts;
-    };
-
-    this.getKeyShortcutsString = function( ) {
-      var result = [];
-      for (var name in keyShortcuts) {
-        if (keyShortcuts.hasOwnProperty(name)) {
-          result.push(name);
-        }
-      }
-      return result.join(', ');
-    };
-
-    this.getButtonID = function( ) {
-      return buttonID;
-    };
-
-    this.getButtonName = function( ) {
-      return buttonName;
-    };
-
-    this.getIconURL = function( ) {
-      return iconURL;
-    };
-
-    this.getHelpText = function( ) {
-      return helpText;
-    };
-
-    this.setButtonID = function( newButtonID ) {
-      buttonID = newButtonID;
-    };
-
-    this.setButtonName = function( newButtonName ) {
-      buttonName = newButtonName;
-    };
-
-    this.setIconURL = function( newIconURL ) {
-      iconURL = newIconURL;
-    };
-
-    this.setHelpText = function( newHelpText ) {
-      helpText = newHelpText;
-    };
-
-    this.setRun = function( newRun ) {
-      this.run = newRun;
-    };
-
-    // -------------------------------------------------------------------
+    this.helpText = "[No help text set]";
+    this.buttonID = null;
+    this.buttonName = null;
+    this.iconURL = null;
+    this.keyShortcuts = {};
 
     for (var key in properties) {
       if (properties.hasOwnProperty(key)) {
@@ -120,6 +50,75 @@
       }
     }
   }
+
+  /**
+   * Add a new key shortcut for this action. For example, you might call:
+   *    action.addKey( "+", [107, 61, 187] );
+   *
+   * @param {string}   name     Display string of the bound key.
+   * @param {number[]} keyCodes Array of key codes that will trigger this action.
+   */
+  Action.prototype.addKey = function (name, keyCodes) {
+    if (this.keyShortcuts.hasOwnProperty(name)) {
+      alert("BUG: replacing the keyCodes for " + name + " with Action.addKey");
+    }
+    this.keyShortcuts[name] = keyCodes;
+  };
+
+  Action.prototype.hasButton = function () {
+    return this.buttonID !== null;
+  };
+
+  Action.prototype.getKeys = function () {
+    return this.keyShortcuts;
+  };
+
+  Action.prototype.getKeyShortcutsString = function () {
+    var result = [];
+    for (var name in this.keyShortcuts) {
+      if (this.keyShortcuts.hasOwnProperty(name)) {
+        result.push(name);
+      }
+    }
+    return result.join(', ');
+  };
+
+  Action.prototype.getButtonID = function () {
+    return this.buttonID;
+  };
+
+  Action.prototype.getButtonName = function () {
+    return this.buttonName;
+  };
+
+  Action.prototype.getIconURL = function () {
+    return this.iconURL;
+  };
+
+  Action.prototype.getHelpText = function () {
+    return this.helpText;
+  };
+
+  Action.prototype.setButtonID = function (newButtonID) {
+    this.buttonID = newButtonID;
+  };
+
+  Action.prototype.setButtonName = function (newButtonName) {
+    this.buttonName = newButtonName;
+  };
+
+  Action.prototype.setIconURL = function (newIconURL) {
+    this.iconURL = newIconURL;
+  };
+
+  Action.prototype.setHelpText = function (newHelpText) {
+    this.helpText = newHelpText;
+  };
+
+  Action.prototype.setRun = function (newRun) {
+    this.run = newRun;
+  };
+
 
   var getKeyCodeToActionMap = function( actionArray ) {
     var i, j, keyCodeToKeyAction = {}, action;

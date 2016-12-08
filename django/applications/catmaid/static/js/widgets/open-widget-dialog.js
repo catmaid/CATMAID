@@ -36,6 +36,7 @@
     OpenWidgetDialog.prototype.show = function() {
       this.dialog.show('400', 'auto', true);
       $(this.widgetField).autocomplete({
+        autoFocus: true,
         source: WindowMaker.getAvailableWidgetNames()
       });
 

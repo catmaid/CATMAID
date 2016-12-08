@@ -33,12 +33,18 @@ Importer:
   remote file import is used. This helps organizing image collections manually.
 
 
-Miscellaneous:
+Tracing tool:
 
 - Holding P will show the active skeleton in all open 3D viewers.
 
 - The semicolon (';') key no longer switches to skeleton tracing mode, because
   it is active by default;
+
+- Bookmarks can be set by pressing semicolon (';') and then a marker key, which
+  will mark the active node (or location if no node is active) with that key.
+  Pressing tilde ('`') followed by the marker key will return to the marked
+  node or location. Pressing single quote (''') followed by the marker key will
+  instead activate the marked skeleton and move to the closest skeleton node.
 
 
 ### Deprecations and Removals

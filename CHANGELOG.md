@@ -37,6 +37,9 @@ Miscellaneous:
 
 - Holding P will show the active skeleton in all open 3D viewers.
 
+- The semicolon (';') key no longer switches to skeleton tracing mode, because
+  it is active by default;
+
 
 ### Deprecations and Removals
 

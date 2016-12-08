@@ -488,7 +488,6 @@
       helpText: "Switch to skeleton tracing mode",
       buttonName: "skeleton",
       buttonID: 'trace_button_skeleton',
-      keyShortcuts: { ";": [ 186 ] },
       run: function (e) {
         SkeletonAnnotations.setTracingMode(SkeletonAnnotations.MODES.SKELETON);
         return true;

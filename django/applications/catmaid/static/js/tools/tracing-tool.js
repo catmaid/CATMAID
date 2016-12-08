@@ -533,31 +533,31 @@
     };
 
     this.addAction(new CATMAID.Action({
-      helpText: "Add ends Tag (<kbd>Shift</kbd>: Remove) for the active node",
+      helpText: "Add 'ends' tag (<kbd>Shift</kbd>: Remove) for the active node",
       keyShortcuts: { "K": [ 75 ] },
       run: tagFn('ends')
     }));
 
     this.addAction(new CATMAID.Action({
-      helpText: "Add 'uncertain end' Tag (<kbd>Shift</kbd>: Remove) for the active node",
+      helpText: "Add 'uncertain end' tag (<kbd>Shift</kbd>: Remove) for the active node",
       keyShortcuts: { "U": [ 85 ] },
       run: tagFn('uncertain end')
     }));
 
     this.addAction(new CATMAID.Action({
-      helpText: "Add 'uncertain continuation' Tag (<kbd>Shift</kbd>: Remove) for the active node",
+      helpText: "Add 'uncertain continuation' tag (<kbd>Shift</kbd>: Remove) for the active node",
       keyShortcuts: { "C": [ 67 ] },
       run: tagFn('uncertain continuation')
     }));
 
     this.addAction(new CATMAID.Action({
-      helpText: "Add 'not a branch' Tag (<kbd>Shift</kbd>: Remove) for the active node",
+      helpText: "Add 'not a branch' tag (<kbd>Shift</kbd>: Remove) for the active node",
       keyShortcuts: { "N": [ 78 ] },
       run: tagFn('not a branch')
     }));
 
     this.addAction(new CATMAID.Action({
-      helpText: "Add 'soma' Tag (<kbd>Shift</kbd>: Remove) for the active node",
+      helpText: "Add 'soma' tag (<kbd>Shift</kbd>: Remove) for the active node",
       keyShortcuts: { "M": [ 77 ] },
       run: tagFn('soma')
     }));

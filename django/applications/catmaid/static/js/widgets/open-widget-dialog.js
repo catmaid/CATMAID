@@ -11,17 +11,16 @@
       if (text) {
         this.dialog.appendMessage(text);
       }
-      // Add short login text
+
       var message = "Please enter the name of the widget";
       this.dialog.appendMessage(message);
 
       // Add input fields
-      this.widgetField = this.dialog.appendField('Widget', 'username', '', true);
+      this.widgetField = this.dialog.appendField('Widget', 'widget-name', '', true);
       // Align input fields better
       $(this.dialog.dialog).find('label').css('width', '25%');
       $(this.dialog.dialog).find('label').css('display', 'inline-block');
 
-      // If OK is pressed, the dialog should cause a (re-)login
       var self = this;
       this.dialog.onOK = function() {
         var widgetName = self.widgetField.value;
@@ -32,7 +31,7 @@
     OpenWidgetDialog.prototype = {};
 
     /**
-     * Displays the login dialog.
+     * Displays the widget open dialog.
      */
     OpenWidgetDialog.prototype.show = function() {
       this.dialog.show('400', 'auto', true);

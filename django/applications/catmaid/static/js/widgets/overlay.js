@@ -4692,12 +4692,16 @@ SkeletonAnnotations.Tag = new (function() {
         });
         input.focus();
 
-        // TODO autocompletion should only be invoked after typing at least one character
-        // add autocompletion, only request after tagbox creation
+        // Add autocompletion, only request after tagbox creation.
         tracingOverlay.submit().then(function() {
           return CATMAID.Labels.listAll(project.id);
         }).then(function(labels) {
-          input.autocomplete({source: labels});
+          // Only display the first 20 matches in the autocompletion list.
+          input.autocomplete({source: function (request, result) {
+            var matches = $.ui.autocomplete.filter(labels, request.term);
+
+            result(matches.slice(0, 20));
+          }});
         });
       });
 

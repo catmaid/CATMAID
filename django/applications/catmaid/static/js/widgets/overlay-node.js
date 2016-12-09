@@ -1053,6 +1053,17 @@
         return this.visibilityGroups;
       };
 
+      this.isConnectedToActiveSkeleton = function () {
+        var atsID = SkeletonAnnotations.getActiveSkeletonId();
+        if (null === atsID) return false;
+
+        return this.linkGroups.some(function (group) {
+          return this[group] && Object.keys(this[group]).some(function (partner) {
+            return this[group][partner].treenode.skeleton_id === atsID;
+          }, this);
+        }, this);
+      };
+
       /**
        * Get al links of a specific connector group or an empty list.
        */
@@ -1144,6 +1155,9 @@
           return 0x00FF00;
         }
         if (this.zdiff >= 0 && this.zdiff < 1) {
+          if (this.isConnectedToActiveSkeleton()) {
+            return 0xFFB92F;
+          }
           return 0xEB7500;
         }
       };

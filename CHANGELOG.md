@@ -47,6 +47,13 @@ Tracing tool:
   instead activate the marked skeleton and move to the closest skeleton node.
 
 
+Tracing layer:
+
+- Connectors connected to the active skeleton are now colored with a distinct,
+  more yellow hue of orange, even if the connection is not in the visible
+  section.
+
+
 ### Deprecations and Removals
 
 - Special behavior of tile source type 2 stacks to interoperate with a Volumina

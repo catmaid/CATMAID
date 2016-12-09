@@ -13,7 +13,7 @@
    * items:         a list of objects with at least a title field, passed to
    *                callback
    * select:        a function called when an item is selected
-   * stackLocation: if true, the callback parameter object will also contain
+   * provideLocation: if true, the callback parameter object will also contain
    *                the clicked stack location
    */
   var ContextMenu = function(options) {
@@ -35,7 +35,7 @@
       };
       this.hide();
 
-      if (options.stackLocation) {
+      if (options.provideLocation) {
         // Get focused stack viewer to get click coordinates
         var stackViewer = project.focusedStackViewer;
         if (!stackViewer) {
@@ -44,12 +44,19 @@
         }
 
         // Figure out stack space coordinates from screen space location
+        var stack = stackViewer.primaryStack;
         var scaledOffsetX = menuX / stackViewer.scale;
         var scaledOffsetY = menuY / stackViewer.scale;
         var screenTopLeft = stackViewer.screenPosition();
-        selection.stackX = screenTopLeft.left + scaledOffsetX;
-        selection.stackY = screenTopLeft.top + scaledOffsetY;
-        selection.stackZ = stackViewer.z;
+        var stackX = selection.stackX = screenTopLeft.left + scaledOffsetX;
+        var stackY = selection.stackY = screenTopLeft.top + scaledOffsetY;
+        var stackZ = selection.stackZ = stackViewer.z;
+        selection.stackId = stack.id;
+
+        // Provide project location as well
+        selection.projectX = stack.stackToProjectX(stackZ, stackY, stackX);
+        selection.projectY = stack.stackToProjectY(stackZ, stackY, stackX);
+        selection.projectZ = stack.stackToProjectZ(stackZ, stackY, stackX);
       }
 
       innerSelect.call(this, selection);

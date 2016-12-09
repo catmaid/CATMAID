@@ -88,13 +88,6 @@
     wrapper.style.position = "absolute";
     wrapper.appendChild(container);
 
-    // Hide the menu container once the mouse leaves the container after a small
-    // delay.
-    var onMouseOut = function() {
-      CATMAID.msg("container.onmouseout");
-      hideContextMenu();
-    };
-
     /**
      * Show the context menu at the current mouse location.
      *
@@ -117,6 +110,10 @@
 
     /**
      * Make context menu visible.
+     *
+     * @param {Boolean} useCurrentLocation Whether the context menu should use
+     *                                     the current mouse location or the one
+     *                                     recorded last.
      */
     this.show = function(useCurrentLocation) {
       document.body.appendChild(wrapper);
@@ -158,14 +155,15 @@
      * Show a menu if it is hidden and hide it, if it is visible, optionally
      * setting the location if shown.
      *
-     * @param {integer} x (Optional) The x coordinate of the location
-     * @param {integer} y (Optional) The y coordinate of the location
+     * @param {Boolean} useCurrentLocation Whether the context menu should use
+     *                                     the current mouse location or the one
+     *                                     recorded last.
      */
-    var toggleContextMenu= function(x, y) {
+    this.toggleContextMenu = function(useCorrentLocation) {
       if (menuVisible) {
-        hideContextMenu();
+        this.hide();
       } else {
-        showContextMenu();
+        this.show(useCorrentLocation);
       }
     };
   };

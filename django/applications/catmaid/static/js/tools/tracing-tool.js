@@ -714,12 +714,13 @@
     }));
 
     this.addAction(new CATMAID.Action({
-      helpText: "Go to last node edited by you in this skeleton",
+      helpText: "Go to last node edited by you in this skeleton (<kbd>Shift</kbd>: in any skeleton)",
       keyShortcuts: { "H": [ 72 ] },
       run: function (e) {
         if (!CATMAID.mayView())
           return false;
-        activeTracingLayer.tracingOverlay.goToLastEditedNode(SkeletonAnnotations.getActiveSkeletonId());
+        activeTracingLayer.tracingOverlay.goToLastEditedNode(
+          e.shiftKey ? undefined : SkeletonAnnotations.getActiveSkeletonId());
         return true;
       }
     }));

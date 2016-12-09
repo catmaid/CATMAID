@@ -46,6 +46,8 @@ Tracing tool:
   node or location. Pressing single quote (''') followed by the marker key will
   instead activate the marked skeleton and move to the closest skeleton node.
 
+- Shift + H will go to the last node you edited in any skeleton.
+
 
 Tracing layer:
 

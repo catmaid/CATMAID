@@ -193,7 +193,7 @@ urlpatterns += [
 UrlParser.explicit_root_paths |= set(['{project_id}/nodes'])
 urlpatterns += [
     url(r'^(?P<project_id>\d+)/node/(?P<node_id>\d+)/reviewed$', record_view("nodes.add_or_update_review")(node.update_location_reviewer)),
-    url(r'^(?P<project_id>\d+)/node/most_recent$', node.most_recent_treenode),
+    url(r'^(?P<project_id>\d+)/nodes/most-recent$', node.most_recent_treenode),
     url(r'^(?P<project_id>\d+)/node/nearest$', node.node_nearest),
     url(r'^(?P<project_id>\d+)/node/update$', record_view("nodes.update_location")(node.node_update)),
     url(r'^(?P<project_id>\d+)/node/list$', node.node_list_tuples),

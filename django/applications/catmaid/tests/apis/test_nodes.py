@@ -12,11 +12,27 @@ class NodesApiTests(CatmaidApiTestCase):
     def test_most_recent_treenode(self):
         self.fake_authentication()
 
+        # Test without skeleton filter.
+        most_recent_node_id = 2465
+
+        response = self.client.post(
+                '/%d/nodes/most-recent' % self.test_project_id)
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content)
+        expected_result = {
+                'id': most_recent_node_id,
+                'x': 6485,
+                'y': 6345,
+                'z': 0,
+                }
+        self.assertEqual(expected_result, parsed_response)
+
+        # Test with skeleton filter.
         most_recent_node_id = 2423
         skeleton_id = 2411
 
         response = self.client.post(
-                '/%d/node/most_recent' % self.test_project_id,
+                '/%d/nodes/most-recent' % self.test_project_id,
                 {'skeleton_id': skeleton_id})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)

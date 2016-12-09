@@ -3768,13 +3768,16 @@ SkeletonAnnotations.TracingOverlay.prototype.moveToNodeOnSectionAndEdge = functi
  * real node.
  */
 SkeletonAnnotations.TracingOverlay.prototype.goToLastEditedNode = function(skeletonID) {
-  if (this.isIDNull(skeletonID)) return;
-  if (!skeletonID) return;
+  var params;
+  if (typeof skeletonID !== 'undefined') {
+    if (this.isIDNull(skeletonID)) return;
+    params = {skeleton_id: skeletonID};
+  }
   var self = this;
   this.submit(
-    django_url + project.id + '/node/most_recent',
+    django_url + project.id + '/nodes/most-recent',
     'POST',
-    {skeleton_id: skeletonID},
+    params,
     function (json) {
       if (json.id) {
         self.moveTo(json.z, json.y, json.x,

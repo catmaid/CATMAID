@@ -610,17 +610,16 @@ def most_recent_treenode(request, project_id=None):
 
     try:
         # Select the most recently edited node
-        tn = Treenode.objects\
-             .filter(project=project_id,
-            skeleton=skeleton_id,
-            editor=request.user)\
-             .extra(select={'most_recent': 'greatest(treenode.creation_time, treenode.edition_time)'})\
+        tn = Treenode.objects.filter(project=project_id, editor=request.user)
+        if not skeleton_id == -1:
+            tn = tn.filter(skeleton=skeleton_id)
+        tn = tn.extra(select={'most_recent': 'greatest(treenode.creation_time, treenode.edition_time)'})\
              .extra(order_by=['-most_recent', '-treenode.id'])[0] # [0] generates a LIMIT 1
     except IndexError:
         # No treenode edited by the user exists in this skeleton.
-        return HttpResponse(json.dumps({}), content_type='application/json')
+        return JsonResponse({})
 
-    return HttpResponse(json.dumps({
+    return JsonResponse({
         'id': tn.id,
         #'skeleton_id': tn.skeleton.id,
         'x': int(tn.location_x),
@@ -629,7 +628,7 @@ def most_recent_treenode(request, project_id=None):
         #'most_recent': str(tn.most_recent) + tn.most_recent.strftime('%z'),
         #'most_recent': tn.most_recent.strftime('%Y-%m-%d %H:%M:%S.%f'),
         #'type': 'treenode'
-    }), content_type='application/json')
+    })
 
 
 def _update_location(table, nodes, now, user, cursor):

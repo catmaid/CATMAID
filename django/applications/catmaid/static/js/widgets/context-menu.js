@@ -132,7 +132,7 @@
 
       // Attach a handler for the ESC key to cancel context menu
       var self = this;
-      $('body').on('keydown.catmaidConnectorSelect', function(event) {
+      $('body').on('keydown.catmaidContextMenu', function(event) {
         if (27 === event.keyCode) {
           self.hide();
           return true;
@@ -149,7 +149,7 @@
       menuVisible = false;
       document.body.removeChild(wrapper);
       // Unbind key handler and hide context menu
-      $('body').off('keydown.catmaidConnectorSelect');
+      $('body').off('keydown.catmaidContextMenu');
       // Execute hide callback, if any
       CATMAID.tools.callIfFn(this.options.hide);
     };

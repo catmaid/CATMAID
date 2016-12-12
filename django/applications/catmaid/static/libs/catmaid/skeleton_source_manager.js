@@ -349,9 +349,17 @@
         // Create and store new subscription
         var subscription = new CATMAID.SkeletonSourceSubscription(
             fromSource, syncColors, selectionBased, op, mode, group);
-        source.addSubscription(subscription);
-        // Update UI
-        datatable.row.add(subscription).draw();
+        try {
+          source.addSubscription(subscription);
+          // Update UI
+          datatable.row.add(subscription).draw();
+        } catch (error) {
+          if (error instanceof CATMAID.SubscriptionError) {
+            CATMAID.warn(error.message);
+          } else {
+            CATMAID.handleError(error);
+          }
+        }
       }
     }).bind(this);
 

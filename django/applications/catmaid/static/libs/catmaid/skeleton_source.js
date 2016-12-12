@@ -74,7 +74,7 @@
   /**
    * Have this source subscribe to another skeleton source. Besides storing
    * required options this method will also register the source to relevant
-   * events on the source subscribed to.
+   * events on the source subscribed to. Cycles are not allowed.
    *
    * @param {Subscription} subscription The subscription instance to add
    * @param {boolean}      ignoreEmpty  Optional, if an initial subscription
@@ -82,10 +82,26 @@
    *                                    source skeletons. Default is true.
    */
   SkeletonSource.prototype.addSubscription = function(subscription, ignoreEmpty) {
-    // Don't allow multiple subscriptions to the same source
+    // Don't allow same subscription instance to be added twice
     var index = this.subscriptions.indexOf(subscription);
     if (-1 !== index) {
-      throw new CATMAID.ValueError("Subscription already in use");
+      throw new CATMAID.SubscriptionError("Subscription already in use");
+    }
+
+    // Don't allow cycles, we want subscripts to form a DAG. Test if the
+    // new subscription's source is already referenced.
+    var seen = new Set([this]);
+    var workingSet = [subscription];
+    while (workingSet.length > 0) {
+      var sub = workingSet.pop();
+      // Raise error if this subscription's source has been seen already.
+      if (seen.has(sub.source)) {
+        throw new CATMAID.SubscriptionError("Cycles are not allowed when " +
+            "adding subscriptions");
+      }
+      // If the source was not seen, check its subscriptsions
+      seen.add(sub.source);
+      Array.prototype.push.apply(workingSet, sub.source.subscriptions);
     }
 
     subscription.register(this);
@@ -450,8 +466,19 @@
     }
   };
 
+  /**
+   * A simple permission error type to indicate some lack of permissions.
+   */
+  var SubscriptionError = function(message, detail) {
+    CATMAID.Error.call(this, message, detail);
+  };
+
+  SubscriptionError.prototype = Object.create(CATMAID.Error.prototype);
+  SubscriptionError.constructor = CATMAID.SubscriptionError;
+
   // Make skeleton source and subscription available in CATMAID namespace
   CATMAID.SkeletonSource = SkeletonSource;
   CATMAID.SkeletonSourceSubscription = SkeletonSourceSubscription;
+  CATMAID.SubscriptionError = SubscriptionError;
 
 })(CATMAID);

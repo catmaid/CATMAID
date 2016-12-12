@@ -83,6 +83,9 @@ Tracing layer:
 
 - The Classification Clustering Widget can be opened again.
 
+- 3D viewer: removing connector restrictions now correctly restores previous
+  connector visibility configuration instead of always showing all connectors.
+
 
 ## 2016.11.04
 

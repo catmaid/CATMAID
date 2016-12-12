@@ -1207,13 +1207,21 @@
     // Display regular markers only if no restriction is used
     var skeletons = this.space.content.skeletons;
     var skids = Object.keys(skeletons);
-    var regularMarkerVisible = this.options.connector_filter ? false : true;
-    skids.forEach(function(skid) {
-      skeletons[skid].setPreVisibility(regularMarkerVisible);
-      skeletons[skid].setPostVisibility(regularMarkerVisible);
-      $('#skeletonpre-'  + skid).attr('checked', regularMarkerVisible);
-      $('#skeletonpost-' + skid).attr('checked', regularMarkerVisible);
-    });
+    if (this.options.connector_filter) {
+      // Hide regular connector meshes
+      skids.forEach(function(skid) {
+        var skeleton = skeletons[skid];
+        skeleton.setPreVisibility(false);
+        skeleton.setPostVisibility(false);
+      });
+    } else {
+      // Refresh regular connector visibility from models
+      skids.forEach(function(skid) {
+        var skeleton = skeletons[skid];
+        skeleton.setPreVisibility(skeleton.skeletonmodel.pre_visible);
+        skeleton.setPostVisibility(skeleton.skeletonmodel.post_visible);
+      });
+    }
 
     if (this.options.connector_filter) {
       var restriction = this.options.connector_filter;

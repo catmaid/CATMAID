@@ -218,7 +218,7 @@ def find_labels(request, project_id=None, skeleton_id=None):
     - type: array
       items:
         $ref: find_labels_node
-      required: trueist open leaf nodes in a skeleton.
+      required: true
     """
     tnid = int(request.POST['treenode_id'])
     label_regex = str(request.POST['label_regex'])

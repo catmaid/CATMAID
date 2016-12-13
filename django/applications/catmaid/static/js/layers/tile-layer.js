@@ -548,11 +548,14 @@
     // Efficient mode: omit tiles at the periphery that are only partially
     // visible.
     if (efficiencyThreshold > 0.0) {
-      // If the efficiency margins would cause no tile be drawn, ignore them.
-      if ((2 * efficiencyThreshold + 1) * effectiveTileHeight > this.stackViewer.viewHeight ||
-          (2 * efficiencyThreshold + 1) * effectiveTileWidth  > this.stackViewer.viewWidth) {
-        efficiencyThreshold = 0.0;
-      }
+      // If the efficiency margins would cause no tile be drawn, limit it to a
+      // value that guarantees at least one tile will be drawn.
+      efficiencyThreshold = Math.min(
+          efficiencyThreshold,
+          (Math.min(
+              this.stackViewer.viewHeight / effectiveTileHeight,
+              this.stackViewer.viewWidth / effectiveTileWidth) - 1.0) / 2);
+      efficiencyThreshold = Math.max(0.0, efficiencyThreshold);
 
       if ((top + effectiveTileHeight) < (effectiveTileHeight * efficiencyThreshold)) {
         top += effectiveTileHeight;

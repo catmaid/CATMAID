@@ -1144,7 +1144,7 @@ class HistoryTableTests(TransactionTestCase):
         after_insert_history_view = self.get_history_view_entries(cursor, 'class')
 
         self.assertEqual(len(after_insert_history_view),
-			len(original_class_history_view) + 1)
+            len(original_class_history_view) + 1)
         last_view_entry = after_insert_history_view[-1][0]
         for k, v in class_details.iteritems():
             self.assertEqual(v, last_view_entry[k])
@@ -1162,7 +1162,7 @@ class HistoryTableTests(TransactionTestCase):
         after_update_history_view = self.get_history_view_entries(cursor, 'class')
 
         self.assertEqual(len(after_update_history_view),
-			len(after_insert_history_view) + 1)
+            len(after_insert_history_view) + 1)
         last_view_entry = after_update_history_view[-1][0]
         for k, v in updated_class_details.iteritems():
             self.assertEqual(v, last_view_entry[k])

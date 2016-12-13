@@ -1169,3 +1169,79 @@ class HistoryTableTests(TransactionTestCase):
         second_last_view_entry = after_update_history_view[-2][0]
         for k, v in class_details.iteritems():
             self.assertEqual(v, second_last_view_entry[k])
+
+    def test_history_table_creation_no_primary_key(self):
+        """Test if history tables are correctly created for new tables.
+        """
+        cursor = connection.cursor()
+        cursor.execute("""
+            CREATE TABLE _history_test_ (
+                id  SERIAL,
+                name text
+            );
+        """)
+        with self.assertRaises(InternalError):
+            cursor.execute("""
+                SELECT create_history_table('_history_test_'::regclass);
+            """)
+
+        cursor.execute("""
+            DROP TABLE _history_test_
+        """)
+
+    def test_history_table_creation_and_removal(self):
+        """Test if history tables are correctly created for new tables.
+        """
+        cursor = connection.cursor()
+        cursor.execute("""
+            CREATE TABLE _history_test_ (
+                id  SERIAL PRIMARY KEY,
+                name text
+            );
+        """)
+        cursor.execute("""
+            SELECT create_history_table('_history_test_'::regclass);
+        """)
+
+        # Make sure the history table is there
+        cursor.execute("""
+            SELECT 1
+            FROM pg_class pc
+            WHERE pc.oid = get_history_table_name('_history_test_'::regclass)::regclass
+        """)
+
+        result = cursor.fetchall()
+        self.assertEqual(1, len(result))
+
+        # Make sure the history table has all expected columns
+        cursor.execute("""
+            SELECT attname
+            FROM   pg_attribute
+            WHERE  attrelid = get_history_table_name('_history_test_'::regclass)::regclass
+            AND    attnum > 0
+            AND    NOT attisdropped
+            ORDER  BY attnum;
+        """)
+
+        attr_result = [r[0] for r in cursor.fetchall()]
+        expected_cols = ['id', 'name', 'sys_period', 'exec_transaction_id']
+
+        self.assertItemsEqual(attr_result, expected_cols)
+
+        cursor.execute("""
+            SELECT drop_history_table('_history_test_'::regclass);
+        """)
+
+        # Make sure the history table is there
+        cursor.execute("""
+            SELECT 1
+            FROM pg_class pc
+            WHERE pc.relname = get_history_table_name('_history_test_'::regclass)
+        """)
+
+        drop_result = cursor.fetchall()
+        self.assertEqual(0, len(drop_result))
+
+        cursor.execute("""
+            DROP TABLE _history_test_;
+        """)

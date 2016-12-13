@@ -45,7 +45,7 @@ By default, all tables of CATMAID itself plus the user table (a Django table)
 are set up to track history. To enable this for other tables (e.g. if new tables
 are added), the database function ``create_history_table( live_table )``
 can be used. This will create the history table and sets up all required
-triggers. Likewise, there is a ``delete_history_table( live_table )``
+triggers. Likewise, there is a ``drop_history_table( live_table )``
 function, which makes sure a history table and triggers are removed cleanly if
 this is wanted.  The table ``catmaid_history_table`` keeps track of all
 currently active history tables.

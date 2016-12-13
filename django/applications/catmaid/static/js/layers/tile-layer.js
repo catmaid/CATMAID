@@ -552,9 +552,9 @@
       // value that guarantees at least one tile will be drawn.
       efficiencyThreshold = Math.min(
           efficiencyThreshold,
-          (Math.min(
+          Math.min(
               this.stackViewer.viewHeight / effectiveTileHeight,
-              this.stackViewer.viewWidth / effectiveTileWidth) - 1.0) / 2);
+              this.stackViewer.viewWidth / effectiveTileWidth) / 2);
       efficiencyThreshold = Math.max(0.0, efficiencyThreshold);
 
       if ((top + effectiveTileHeight) < (effectiveTileHeight * efficiencyThreshold)) {

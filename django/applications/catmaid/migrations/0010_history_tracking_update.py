@@ -398,7 +398,7 @@ forward_history_update = """
         END IF;
 
         -- Get the OID of the new history table
-        history_table_oid = to_regclass(history_table_name::cstring);
+        history_table_oid = to_regclass(history_table_name);
 
         -- Make all history columns (except the later added sys_period and
         -- transaction info columns) default to NULL.
@@ -447,7 +447,7 @@ forward_history_update = """
 
         -- Create live table primary key index for the new history table. This
         -- is needed to quickly query older versions of an entity.
-        IF (SELECT to_regclass((history_table_name || '_live_pk_index')::cstring)) IS NULL THEN
+        IF (SELECT to_regclass(history_table_name || '_live_pk_index')) IS NULL THEN
             EXECUTE format(
                 'CREATE INDEX %I ON %s (%I)',
                 history_table_name || '_live_pk_index', history_table_oid, live_table_pkey_column);
@@ -455,7 +455,7 @@ forward_history_update = """
 
         -- Create sys_period (validity period) index for the new history
         -- table. This is needed to quickly query older state snapshots.
-        IF (SELECT to_regclass((history_table_name || '_sys_period')::cstring)) IS NULL THEN
+        IF (SELECT to_regclass(history_table_name || '_sys_period')) IS NULL THEN
             EXECUTE format(
                 'CREATE INDEX %I ON %s USING gist(sys_period)',
                 history_table_name || '_sys_period', history_table_oid);
@@ -463,7 +463,7 @@ forward_history_update = """
 
         -- Create index for transaction information, which is also needed to
         -- quickly find events that are part of the same transaction.
-        IF (SELECT to_regclass((history_table_name || '_exec_transaction_id')::cstring)) IS NULL THEN
+        IF (SELECT to_regclass(history_table_name || '_exec_transaction_id')) IS NULL THEN
             EXECUTE format(
                 'CREATE INDEX %I ON %s (exec_transaction_id)',
                 history_table_name || '_exec_transaction_id', history_table_oid);
@@ -488,10 +488,10 @@ forward_history_update = """
                 tracking_table_name, live_table_pkey_type);
 
             -- Get the OID of the new history table
-            tracking_table_oid = to_regclass(tracking_table_name::cstring);
+            tracking_table_oid = to_regclass(tracking_table_name);
 
             -- Create ID index for quick look-ups when updating the tracking table
-            IF (SELECT to_regclass((tracking_table_name || '_live_pk_index')::cstring)) IS NULL THEN
+            IF (SELECT to_regclass(tracking_table_name || '_live_pk_index')) IS NULL THEN
                 EXECUTE format(
                     'CREATE INDEX %I ON %s (%s)',
                     tracking_table_name || '_live_pk_index', tracking_table_oid, 'live_pk');
@@ -1530,7 +1530,7 @@ backward_add_previous_history_tracking = """
         END IF;
 
         -- Get the OID of the new history table
-        history_table_oid = to_regclass(history_table_name::cstring);
+        history_table_oid = to_regclass(history_table_name);
 
         -- Make all history columns (except the later added sys_period and
         -- transaction info columns) default to NULL.
@@ -1579,7 +1579,7 @@ backward_add_previous_history_tracking = """
 
         -- Create live table primary key index for the new history table. This
         -- is needed to quickly query older versions of an entity.
-        IF (SELECT to_regclass((history_table_name || '_live_pk_index')::cstring)) IS NULL THEN
+        IF (SELECT to_regclass(history_table_name || '_live_pk_index')) IS NULL THEN
             EXECUTE format(
                 'CREATE INDEX %I ON %I (%I)',
                 history_table_name || '_live_pk_index', history_table_name, live_table_pkey_column);
@@ -1587,7 +1587,7 @@ backward_add_previous_history_tracking = """
 
         -- Create sys_period (validity period) index for the new history
         -- table. This is needed to quickly query older state snapshots.
-        IF (SELECT to_regclass((history_table_name || '_sys_period')::cstring)) IS NULL THEN
+        IF (SELECT to_regclass(history_table_name || '_sys_period')) IS NULL THEN
             EXECUTE format(
                 'CREATE INDEX %I ON %I USING gist(sys_period)',
                 history_table_name || '_sys_period', history_table_name);
@@ -1595,7 +1595,7 @@ backward_add_previous_history_tracking = """
 
         -- Create index for transaction information, which is also needed to
         -- quickly find events that are part of the same transaction.
-        IF (SELECT to_regclass((history_table_name || '_exec_transaction_id')::cstring)) IS NULL THEN
+        IF (SELECT to_regclass(history_table_name || '_exec_transaction_id')) IS NULL THEN
             EXECUTE format(
                 'CREATE INDEX %I ON %I (exec_transaction_id)',
                 history_table_name || '_exec_transaction_id', history_table_name);
@@ -1619,10 +1619,10 @@ backward_add_previous_history_tracking = """
                 time_table_name, live_table_pkey_type);
 
             -- Get the OID of the new history table
-            time_table_oid = to_regclass(time_table_name::cstring);
+            time_table_oid = to_regclass(time_table_name);
 
             -- Create ID index for quick look-ups when updating the time table
-            IF (SELECT to_regclass((time_table_name || '_live_pk_index')::cstring)) IS NULL THEN
+            IF (SELECT to_regclass(time_table_name || '_live_pk_index')) IS NULL THEN
                 EXECUTE format(
                     'CREATE INDEX %I ON %s (%s)',
                     time_table_name || '_live_pk_index', time_table_oid, 'live_pk');

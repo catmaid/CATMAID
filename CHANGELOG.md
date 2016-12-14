@@ -5,6 +5,7 @@
 
 - Virtual env update required
 
+- Postgres 9.6 is now supported.
 
 ### Features and enhancements
 

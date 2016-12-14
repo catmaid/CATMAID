@@ -21,7 +21,7 @@ forward = """
     THEN
         CREATE INDEX treenode_class_instance_treenode_id
         ON treenode_class_instance USING btree (treenode_id);
-    ELSIF (SELECT to_regclass('treenode_id_index'::cstring)) IS NOT NULL
+    ELSIF (SELECT to_regclass('treenode_id_index')) IS NOT NULL
     THEN
         ALTER INDEX IF EXISTS treenode_id_index
         RENAME TO treenode_class_instance_treenode_id;
@@ -39,7 +39,7 @@ forward = """
     THEN
         CREATE INDEX connector_class_instance_connector_id
         ON connector_class_instance USING btree (connector_id);
-    ELSIF (SELECT to_regclass('connector_id_index'::cstring)) IS NOT NULL
+    ELSIF (SELECT to_regclass('connector_id_index')) IS NOT NULL
     THEN
         ALTER INDEX IF EXISTS connector_id_index
         RENAME TO connector_class_instance_connector_id;

@@ -503,7 +503,7 @@
    *                     tile indicies for all tiles in the requested view.
    */
   TileLayer.prototype.tilesForLocation = function (xc, yc, z, s, efficiencyThreshold) {
-    if (typeof efficiencyThreshold === 'undefined') efficiencyThreshold = 1.0;
+    if (typeof efficiencyThreshold === 'undefined') efficiencyThreshold = 0.0;
     var zoom = s;
     var mag = 1.0;
     var artificialZoom = false;

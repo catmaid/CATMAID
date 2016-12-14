@@ -82,6 +82,9 @@ class ImageBaseMixin:
             # The image base of a stack is the combination of the
             # project URL and the stack's folder name.
             folder = info_object['folder']
+            path = info_object.get('path', '')
+            if path:
+                folder = urljoin(path, folder)
             self.image_base = urljoin(project_url, folder)
 
         if data_folder:

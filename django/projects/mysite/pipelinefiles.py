@@ -69,7 +69,11 @@ libraries_js = {
                  'renderer/SVGRenderer.js'],
     'threex': ['*.js'],
     'pixi.js': ['*.js'],
-    'cytoscapejs': ['cytoscape.js'],
+    'cytoscapejs': ['cytoscape.js', 'cytoscape-spread.js',
+                    'arbor.js', 'cytoscape-arbor.js',
+                    'cola.js', 'cytoscape-cola.js',
+                    'dagre.js', 'cytoscape-dagre.js',
+                    'springy.js', 'cytoscape-springy.js'],
     'jsnetworkx': ['*.js'],
     'filesaver': ['*.js'],
     'whammy': ['whammy.js'],
@@ -91,15 +95,8 @@ for k, v in libraries_js.iteritems():
 
 # Some libraries expect their own JavaScript files to be available under a
 # particular name. Therefore, we can't use pipeline with them and include them
-# separately.
-non_pipeline_js = {
-    'arbor': 'libs/cytoscapejs/arbor.js',
-    'dagre': 'libs/cytoscapejs/dagre.js',
-    'cola': 'libs/cytoscapejs/cola.js',
-    'springy': 'libs/cytoscapejs/springy.js',
-    'foograph': 'libs/cytoscapejs/foograph.js',
-    'rhill-voronoi-core': 'libs/cytoscapejs/rhill-voronoi-core.js',
-}
+# separately. Entries follow the same pattern as above: key - path.
+non_pipeline_js = {}
 
 # Even non-pipeline files have to be made known to pipeline, because it takes
 # care of collecting them into the STATIC_ROOT directory.

@@ -4300,6 +4300,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('taggit', '0001_initial'),
+        ('pgcompat', '0001_prepare_postgres_9_6_compatibility'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 

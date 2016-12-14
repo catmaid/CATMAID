@@ -62,6 +62,7 @@ INSTALLED_APPS = (
     'adminplus',
     'guardian',
     'catmaid.apps.CATMAIDConfig',
+    'pgcompat',
     'performancetests',
     'pipeline',
     'rest_framework',

@@ -314,7 +314,7 @@ def export_projects(request):
         SELECT sci.class_instance_id, ci.project_id, ci.name,
                array_agg(sci.stack_id), array_agg(r.relation_name)
         FROM class_instance ci
-        INNER JOIN (VALUES (24)) user_project(id)
+        INNER JOIN (VALUES {}) user_project(id)
         ON ci.project_id = user_project.id
         INNER JOIN class c
         ON ci.class_id = c.id

@@ -669,6 +669,37 @@
   TileLayer.prototype.getView = function () { return this.tilesContainer; };
 
   /**
+   * Create a new tile layer with the same parameters as this tile layer.
+   *
+   * @param  {Object}    override    Constructor arguments to override.
+   * @param  {function=} constructor Optional PixiLayer subclass constructor.
+   * @return {PixiLayer}             Newly constructed PixiLayer subclass.
+   */
+  TileLayer.prototype.constructCopy = function (override, constructor) {
+    if (typeof constructor === 'undefined') constructor = this.constructor;
+    var args = {
+      stackViewer: this.stackViewer,
+      displayName: this.displayName,
+      stack: this.stack,
+      mirrorIndex: this.mirrorIndex,
+      visibility: this.visibility,
+      opacity: this.opacity,
+      showOverview: !!this.overviewLayer,
+      linearInterpolation: this._interpolationMode
+    };
+    $.extend(args, override);
+    return new constructor(
+        args.stackViewer,
+        args.diplayName,
+        args.stack,
+        args.mirrorIndex,
+        args.visibility,
+        args.opacity,
+        args.showOverview,
+        args.linearInterpolation);
+  };
+
+  /**
    * Switch to a mirror by replacing this tile layer in the stack viewer
    * with a new one for the specified mirror index.
    *
@@ -676,15 +707,7 @@
    */
   TileLayer.prototype.switchToMirror = function (mirrorIndex) {
     if (mirrorIndex === this.mirrorIndex) return;
-    var newTileLayer = new this.constructor(
-        this.stackViewer,
-        this.diplayName,
-        this.stack,
-        mirrorIndex,
-        this.visibility,
-        this.opacity,
-        !!this.overviewLayer,
-        this._interpolationMode);
+    var newTileLayer = this.constructCopy({mirrorIndex: mirrorIndex});
     var layerKey = this.stackViewer.getLayerKey(this);
     this.stackViewer.replaceStackLayer(layerKey, newTileLayer);
   };

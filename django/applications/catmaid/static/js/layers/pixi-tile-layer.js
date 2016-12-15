@@ -29,6 +29,13 @@
 
     this._tileRequest = {};
     this._pixiInterpolationMode = this._interpolationMode ? PIXI.SCALE_MODES.LINEAR : PIXI.SCALE_MODES.NEAREST;
+
+    CATMAID.checkTileSourceCanary(project, this.stack, this.tileSource).then((function (accessible) {
+      if (accessible.normal && !accessible.cors) {
+        CATMAID.warn('Stack mirror is not CORS accessible, so WebGL will not be used.');
+        this.switchToDomTileLayer();
+      }
+    }).bind(this));
   }
 
   PixiTileLayer.prototype = Object.create(CATMAID.TileLayer.prototype);
@@ -289,6 +296,34 @@
       this._completionCallback = null;
       completionCallback();
     }
+  };
+
+  /** @inheritdoc */
+  PixiTileLayer.prototype.constructCopy = function (override, constructor) {
+    var copy = CATMAID.TileLayer.prototype.constructCopy.apply(this, arguments);
+
+    if (copy instanceof PixiTileLayer) {
+      this.filters.forEach(function (filter) {
+        var filterCopy = new filter.constructor(
+            filter.displayName,
+            filter.pixiFilter.constructor,
+            filter.params,
+            copy);
+        copy.filters.push(filterCopy);
+      });
+    }
+
+    return copy;
+  };
+
+  /**
+   * Switch to a DOM tile layer by replacing this tile layer in the stack viewer
+   * with a new one.
+   */
+  PixiTileLayer.prototype.switchToDomTileLayer = function () {
+    var newTileLayer = this.constructCopy({}, CATMAID.TileLayer);
+    var layerKey = this.stackViewer.getLayerKey(this);
+    this.stackViewer.replaceStackLayer(layerKey, newTileLayer);
   };
 
   CATMAID.PixiTileLayer = PixiTileLayer;

@@ -63,7 +63,7 @@ def validate_project_setup(project_id, user_id, fix=False,
             missing_relations.append(nr)
             if fix:
                 rel_model.objects.get_or_create(project_id=project_id,
-                        relation_name=nr, user_id=user_id)
+                        relation_name=nr, defaults={'user_id': user_id, 'description': desc})
 
     for nd, desc in needed_datastores.iteritems():
         exists = datastore_model.objects.filter(name=nd).exists()

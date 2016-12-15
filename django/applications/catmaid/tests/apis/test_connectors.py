@@ -16,25 +16,25 @@ class ConnectorsApiTests(CatmaidApiTestCase):
             {
                 'name': 'Presynaptic',
                 'relation': 'presynaptic_to',
-                'relation_id': 23,
+                'relation_id': 1023,
                 'type': 'Synaptic'
             },
             {
                 'name': 'Postsynaptic',
                 'relation': 'postsynaptic_to',
-                'relation_id': 24,
+                'relation_id': 1024,
                 'type': 'Synaptic'
             },
             {
                 'name': 'Abutting',
                 'relation': 'abutting',
-                'relation_id': 2461,
+                'relation_id': 102461,
                 'type': 'Abutting'
             },
             {
                 'name': 'Gap junction',
                 'relation': 'gapjunction_with',
-                'relation_id': 25,
+                'relation_id': 1025,
                 'type': 'Gap junction'
             }]
 
@@ -225,21 +225,21 @@ class ConnectorsApiTests(CatmaidApiTestCase):
                     'id': 285,
                     'link_id': 360,
                     'rel': 'presynaptic_to',
-                    'rel_id': 23,
+                    'rel_id': 1023,
                     'confidence': 5,
                     'edition_time': '2011-12-04T13:51:36.955Z',
                 },{
                     'id': 367,
                     'link_id': 372,
                     'rel': 'postsynaptic_to',
-                    'rel_id': 24,
+                    'rel_id': 1024,
                     'confidence': 5,
                     'edition_time': '2011-12-05T13:51:36.955Z',
                 }, {
                     'id': 377,
                     'link_id': 382,
                     'rel': 'postsynaptic_to',
-                    'rel_id': 24,
+                    'rel_id': 1024,
                     'confidence': 5,
                     'edition_time': '2011-12-05T13:51:36.955Z',
                 }]
@@ -319,14 +319,14 @@ class ConnectorsApiTests(CatmaidApiTestCase):
                         'skeleton_id': 235,
                         'link_id': 425,
                         'relation_name': 'presynaptic_to',
-                        'relation_id': 23,
+                        'relation_id': 1023,
                         'partner_id': 415},
                     {
                         'confidence': 5,
                         'skeleton_id': 373,
                         'link_id': 429,
                         'relation_name': 'postsynaptic_to',
-                        'relation_id': 24,
+                        'relation_id': 1024,
                         'partner_id': 409}
                 ],
                 'confidence': 5,

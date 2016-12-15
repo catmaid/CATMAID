@@ -40,7 +40,7 @@ class LinksApiTests(CatmaidApiTestCase):
         expected_result = {
             'link_id': 382,
             'link_type': 'postsynaptic_to',
-            'link_type_id': 24,
+            'link_type_id': 1024,
             'result': 'Removed treenode to connector link'
         }
         self.assertEqual(expected_result, parsed_response)

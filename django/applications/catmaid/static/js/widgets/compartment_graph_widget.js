@@ -497,7 +497,7 @@
       this.edge_width_function = edgeFnNames[edgeFnSel.selectedIndex];
       this.edge_color = newEdgeColor;
       this.edge_text_color = newEdgeTextColor;
-      this.updateEdgeGraphics();
+      this.updateEdgeGraphics(true);
     }).bind(this);
 
     dialog.show(440, 300, true);
@@ -1184,6 +1184,9 @@
     // Re-add them
     this.cy.add( elements );
 
+    // Batch node property changes
+    this.startBatch();
+
     this.cy.nodes().each(function(i, node) {
       // Lock old nodes into place and restore their position
       var id = node.id();
@@ -1232,7 +1235,9 @@
     this.resetState();
     this.colorBy($('#graph_color_choice' + this.widgetID)[0].value);
 
-    this.updateEdgeGraphics();
+    this.updateEdgeGraphics(false);
+
+    this.endBatch();
 
     this.updateLayout();
   };
@@ -1586,8 +1591,14 @@
             log: Math.log}[this.edge_width_function];
   };
 
-  GroupGraph.prototype.updateEdgeGraphics = function() {
+  GroupGraph.prototype.updateEdgeGraphics = function(batch) {
     if (!this.cy) return;
+
+    if (batch) {
+      // Update all properties at once, without intermediate rendering updates
+      this.cy.startBatch();
+    }
+
     var directed = this.cy.edges().filter(function(i, edge) {
       return edge.data('directed');
     });
@@ -1608,6 +1619,10 @@
         edge.data('width', min + edgeWidth(edge.data('weight')));
       }
     });
+
+    if (batch) {
+      this.cy.endBatch();
+    }
   };
 
   GroupGraph.prototype.writeGML = function() {

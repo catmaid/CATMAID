@@ -65,6 +65,14 @@ Tracing layer:
   section.
 
 
+Miscellaneous:
+
+- The Graph Widget can handle larger graphs much better now. Also its mouse
+  action have slightly changed: moving while having the left mouse button down
+  will pan the view, pressing additionally the Ctrl key enters rectangular
+  selection mode.
+
+
 ### Deprecations and Removals
 
 - Special behavior of tile source type 2 stacks to interoperate with a Volumina

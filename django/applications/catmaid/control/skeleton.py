@@ -25,7 +25,7 @@ from catmaid.objects import Skeleton, SkeletonGroup, \
 from catmaid.control.authentication import requires_user_role, \
         can_edit_class_instance_or_fail, can_edit_or_fail
 from catmaid.control.common import insert_into_log, get_class_to_id_map, \
-        get_relation_to_id_map, _create_relation
+        get_relation_to_id_map, _create_relation, get_request_list
 from catmaid.control.neuron import _delete_if_empty
 from catmaid.control.neuron_annotations import create_annotation_query, \
         _annotate_entities, _update_neuron_annotations
@@ -1988,3 +1988,43 @@ def all_shared_connectors(request, project_id=None):
     p = get_object_or_404(Project, pk=project_id)
     skelgroup = SkeletonGroup( skeletonlist, p.id )
     return JsonResponse(dict.fromkeys(skelgroup.all_shared_connectors()))
+
+
+@api_view(['POST'])
+@requires_user_role([UserRole.Browse])
+def skeletons_by_node_labels(request, project_id=None):
+    """Return relationship between label IDs and skeleton IDs
+    ---
+    parameters:
+        - name: label_ids[]
+          description: IDs of the labels to find skeletons associated with
+          required: true
+          type: array
+          items:
+            type: integer
+          paramType: form
+    type:
+        - type: array
+          items:
+          type: integer
+          description: array of [label_id, [skel_id1, skel_id2, skel_id3, ...]] tuples
+          required: true
+    """
+    labels = get_request_list(request.POST, 'label_ids', map_fn=int)
+    interp_lst = ', '.join(['(%s)' for _ in labels]) if labels else '()'
+
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT ci.id, array_agg(t.skeleton_id)
+          FROM treenode t
+          JOIN treenode_class_instance tci
+            ON t.id = tci.treenode_id
+          JOIN class_instance ci
+            ON tci.class_instance_id = ci.id
+          JOIN (VALUES {}) label(id)
+            ON label.id = ci.id
+          WHERE ci.project_id = %s
+          GROUP BY ci.id;
+    """.format(interp_lst), labels + [int(project_id)])
+
+    return JsonResponse(cursor.fetchall(), safe=False)

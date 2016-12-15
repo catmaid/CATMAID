@@ -78,6 +78,25 @@ def labels_all(request, project_id=None):
     return HttpResponse(json.dumps(labels), content_type='application/json')
 
 @api_view(['GET'])
+@requires_user_role(UserRole.Browse)
+def get_label_stats(request, project_id=None):
+    """Get usage statistics of node labels.
+    """
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT ci.id, ci.name, COUNT(DISTINCT t.skeleton_id), COUNT(t.id)
+          FROM class_instance ci
+          JOIN treenode_class_instance tci
+            ON tci.class_instance_id = ci.id
+          JOIN treenode t
+            ON tci.treenode_id = t.id
+          WHERE ci.project_id = %s
+          GROUP BY ci.id;
+    """, [project_id])
+
+    return JsonResponse(cursor.fetchall(), safe=False)
+
+@api_view(['GET'])
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def labels_for_node(request, project_id=None, node_type=None, node_id=None):
     """List all labels (front-end node *tags*) attached to a particular node.

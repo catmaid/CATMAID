@@ -6,7 +6,12 @@ included in this changelog.
 
 ### Additions
 
-None.
+- `GET /{project_id}/labels/stats`
+  Get statistics on node label usage for the project.
+
+- `POST /{project_id}/skeletons/node-labels`
+  Return mappings from node label IDs to IDs of skeletons which include
+  a node with that label.
 
 ### Modifications
 

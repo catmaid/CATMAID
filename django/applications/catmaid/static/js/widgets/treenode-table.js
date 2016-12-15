@@ -382,7 +382,8 @@
       if (event.which == 13) {
         // Filter with a regular expression
         this.filter_searchtag = $('#search_labels' + this.widgetID).val();
-        this.oTable.fnFilter(this.filter_searchtag, 2, true);
+        var columnIdx = this.oTable.DataTable().column(event.currentTarget.closest('th')).index();
+        this.oTable.fnFilter(this.filter_searchtag, columnIdx, true);
       }
     }).bind(this));
 

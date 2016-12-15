@@ -719,7 +719,7 @@
       var headerRows = extraCols ? 2 : 1;
 
       /**
-       * Support function to sum up fields of elemends of an array.
+       * Support function to sum up fields of elements of an array.
        */
       var getSum = function(elements, field) {
         return elements.reduce(function(sum, e) {

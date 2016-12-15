@@ -2,7 +2,8 @@ FROM ubuntu:14.04
 MAINTAINER Andrew Champion "andrew.champion@gmail.com"
 
 # Install dependencies
-RUN apt-get install -y software-properties-common \
+RUN apt-get update -y \
+    && apt-get install -y software-properties-common \
     && add-apt-repository -y ppa:nginx/stable \
     && apt-get install -y wget ca-certificates \
     && wget --quiet -O - https://postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - \

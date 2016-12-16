@@ -22,7 +22,9 @@ Tag Table:
   the project, and select skeletons based on labels which their nodes
   have.
 
-- Accessible with Ctrl+Space by the name 'tag-table'
+- Accessible with Ctrl+Space by the name 'tag-table' or through the 'T' widget
+  button in the Tracing Tool.
+
 
 Measurement Table:
 

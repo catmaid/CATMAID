@@ -1525,6 +1525,16 @@
     }),
 
     new CATMAID.Action({
+      helpText: "Tag Table: Find skeletons based on their tags",
+      buttonID: "data_button_tag_table",
+      buttonName: 'tag-table',
+      run: function (e) {
+        WindowMaker.create('tag-table');
+        return true;
+      }
+    }),
+
+    new CATMAID.Action({
       helpText: "Venn Diagram: Find overlap and difference between sets of skeletons",
       buttonID: "venn_diagram_button",
       buttonName: 'venn',

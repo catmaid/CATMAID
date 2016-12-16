@@ -237,7 +237,7 @@
       "paging": true,
       "bLengthChange": true,
       "bAutoWidth": false,
-      "iDisplayLength": 30,
+      "iDisplayLength": CATMAID.pageLengthOptions[0],
       "aLengthMenu": [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
       "bJQueryUI": true,
       "processing": true,

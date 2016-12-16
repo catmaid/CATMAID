@@ -10,6 +10,7 @@
   var TagTable = function() {
     this.widgetID = this.registerInstance();
     this.selectedSkeletons = new CATMAID.BasicSkeletonSource(this.getName());
+    CATMAID.skeletonListSources.updateGUI();
   };
 
   $.extend(TagTable.prototype, new InstanceRegistry());
@@ -360,6 +361,7 @@
   };
 
   TagTable.prototype.destroy = function() {
+    this.selectedSkeletons.destroy();
     this.unregisterInstance();
   };
 

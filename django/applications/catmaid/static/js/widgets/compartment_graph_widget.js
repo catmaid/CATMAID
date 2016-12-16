@@ -1185,7 +1185,7 @@
     this.cy.add( elements );
 
     // Batch node property changes
-    this.startBatch();
+    this.cy.startBatch();
 
     this.cy.nodes().each(function(i, node) {
       // Lock old nodes into place and restore their position
@@ -1237,7 +1237,7 @@
 
     this.updateEdgeGraphics(false);
 
-    this.endBatch();
+    this.cy.endBatch();
 
     this.updateLayout();
   };

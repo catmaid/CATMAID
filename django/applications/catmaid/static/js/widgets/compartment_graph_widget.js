@@ -533,6 +533,7 @@
               "text-outline-opacity": 1.0,
               "text-outline-width": 0.2,
               "color": "data(label_color)", // color of the text label
+              "curve-style": "bezier"
             })
           .selector(":selected")
             .css({
@@ -1185,7 +1186,7 @@
     this.cy.add( elements );
 
     // Batch node property changes
-    this.startBatch();
+    this.cy.startBatch();
 
     this.cy.nodes().each(function(i, node) {
       // Lock old nodes into place and restore their position
@@ -1237,7 +1238,7 @@
 
     this.updateEdgeGraphics(false);
 
-    this.endBatch();
+    this.cy.endBatch();
 
     this.updateLayout();
   };

@@ -1546,7 +1546,7 @@
             new THREE.Color().setRGB(1, 1, 0));
         return o;
       }, {});
-      WindowMaker.create('neuron-staging-area', ST);
+      WindowMaker.create('selection-table', ST);
       ST.append(models);
     }
   }

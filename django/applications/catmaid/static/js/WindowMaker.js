@@ -2500,7 +2500,7 @@ var WindowMaker = new function()
     "keyboard-shortcuts": createKeyboardShortcutsWindow,
     "search": createSearchWindow,
     "3d-webgl-view": create3dWebGLWindow,
-    "neuron-staging-area": createStagingListWindow,
+    "selection-table": createStagingListWindow,
     "graph-widget": createGraphWindow,
     "connectivity-graph-plot": createConnectivityGraphPlot,
     "assemblygraph-widget": createAssemblyGraphWindow,

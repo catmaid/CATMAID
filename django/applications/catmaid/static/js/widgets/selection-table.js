@@ -192,7 +192,7 @@
   /** Static access to the first selection table found. */
   SelectionTable.prototype.getOrCreate = function() {
     var selection = SelectionTable.prototype.getFirstInstance();
-    if (!selection) WindowMaker.create('neuron-staging-area');
+    if (!selection) WindowMaker.create('selection-table');
     return SelectionTable.prototype.getFirstInstance();
   };
 

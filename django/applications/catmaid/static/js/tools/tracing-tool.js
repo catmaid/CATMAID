@@ -738,7 +738,7 @@
           var selectionCallback = (e.ctrlKey || e.metaKey) ?
               function (skids) { CATMAID.SelectionTable.getLastFocused().removeSkeletons(skids); } :
               (e.altKey ?
-                  function (skids) { WindowMaker.create('neuron-staging-area').widget.addSkeletons(skids); } :
+                  function (skids) { WindowMaker.create('selection-table').widget.addSkeletons(skids); } :
                   function (skids) { CATMAID.SelectionTable.getLastFocused().addSkeletons(skids); });
           var atnID = SkeletonAnnotations.getActiveNodeId();
 
@@ -767,7 +767,7 @@
                 SkeletonAnnotations.getActiveSkeletonId()]);
           } else {
             var selectionTable = e.altKey ?
-                WindowMaker.create('neuron-staging-area').widget :
+                WindowMaker.create('selection-table').widget :
                 CATMAID.SelectionTable.getLastFocused();
             selectionTable.append(SkeletonAnnotations.activeSkeleton.getSelectedSkeletonModels());
           }
@@ -1549,7 +1549,7 @@
       buttonID: "data_button_neuron_staging_area_widget",
       buttonName: 'neuron_staging',
       run: function (e) {
-        WindowMaker.create('neuron-staging-area');
+        WindowMaker.create('selection-table');
         return true;
       }
     }),

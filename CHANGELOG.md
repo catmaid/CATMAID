@@ -4,6 +4,10 @@
 
 ### Features and enhancements
 
+Miscellaneous:
+
+- The Selection Table can now be opened through Ctrl+Space by using the handle
+  'selection-table' instead of 'neuron-staging-area'.
 
 
 ### Bug fixes

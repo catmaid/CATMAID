@@ -652,7 +652,7 @@
         skids.forEach(function(skid) {
           models[skid] = new CATMAID.SkeletonModel(skid, "", new THREE.Color().setRGB(0.5, 0.5, 0.5));
         });
-        WindowMaker.create('neuron-staging-area');
+        WindowMaker.create('selection-table');
         var sel = CATMAID.SelectionTable.prototype.getLastInstance();
         sel.append(models);
       };

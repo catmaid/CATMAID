@@ -533,6 +533,7 @@
               "text-outline-opacity": 1.0,
               "text-outline-width": 0.2,
               "color": "data(label_color)", // color of the text label
+              "curve-style": "bezier"
             })
           .selector(":selected")
             .css({

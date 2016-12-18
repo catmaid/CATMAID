@@ -1551,11 +1551,8 @@
    * passed to the constructor to display plots for these skeletons right away.
    */
   var ConnectivityGraphPlot = function(skeletons, incoming, outgoing) {
-    this.skeletons = Object.keys(skeletons).reduce(function(o, skid) {
-      var skeleton = skeletons[skid];
-      o[skeleton.id] = skeleton.baseName;
-      return o;
-    }, {});
+    this.colorMode = 'source';
+    this.skeletons = skeletons;
     this.incoming = incoming;
     this.outgoing = outgoing;
     this.widgetID = this.registerInstance();
@@ -1672,7 +1669,8 @@
      * partners that receive/make that many synapses from/onto the skeletons
      * involved (the active or the selected ones).
      */
-    var makeMultipleBarChart = function(skeletons, partners, container, title, widgetID, container_width) {
+    var makeMultipleBarChart = function(skeletons, partners, container, title,
+        widgetID, container_width, colorizer) {
       // Cancel drawing if there is no data
       if (0 === Object.keys(partners).length) return null;
 
@@ -1680,16 +1678,18 @@
       var a = distribution(partners, 2, skeletons);
 
       // The names of the skeletons involved
-      var names = Object.keys(a.reduce(function(unique, block) {
-        if (block) block.forEach(function(ob) { unique[ob.series] = null; });
+      var skeletonIds = Object.keys(a.reduce(function(unique, block) {
+        if (block) block.forEach(function(ob) { unique[ob.series.id] = null; });
         return unique;
       }, {}));
 
-      if (0 === names.length) return null;
+      if (0 === skeletonIds.length) return null;
 
       // Colors: an array of hex values
-      var colorizer = d3.scale.category10(),
-          colors = names.map(function(_, i) { return colorizer(i); });
+      var colors = colorizer(skeletonIds);
+      var names = skeletonIds.map(function(skid) {
+        return this[skid].baseName;
+      }, skeletons);
 
       // Don't let the canvas be less than 400px wide
       if (container_width < 400) {
@@ -1701,8 +1701,7 @@
           id = "connectivity_plot_" + title + widgetID;
 
       CATMAID.svgutil.insertMultipleBarChart(container, id, width, height,
-          "N synapses", "N " + title + " Partners",
-          names, a, colors,
+          "N synapses", "N " + title + " Partners", names, a, colors,
           a.map(function(block, i) { return i+1; }));
     };
 
@@ -1711,11 +1710,36 @@
     var container = $(containerID);
     container.empty();
 
+    var colorizer;
+    if ('auto' === this.colorMode) {
+      colorizer = (function() {
+        var autoColorizer = d3.scale.category10();
+        return function(skeletonIds) {
+          names.map(function(_, i) { return autoColorizer(i); });
+        };
+      })();
+    } else if ('source' === this.colorMode) {
+      colorizer = (function(index) {
+        return function(skeletonIds) {
+          return skeletonIds.map(function(skid) {
+            var model = this[skid];
+            if (model) {
+              return '#' + model.color.getHexString();
+            } else {
+              return '#ffff00';
+            }
+          }, index);
+        };
+      })(this.skeletons);
+    } else {
+      throw new CATMAID.ValueError('Unknown color mode: ' + this.colorMode);
+    }
+
     // Draw plots
     makeMultipleBarChart(this.skeletons, this.incoming, containerID,
-        "Upstream", this.widgetID, container.width());
+        "Upstream", this.widgetID, container.width(), colorizer);
     makeMultipleBarChart(this.skeletons, this.outgoing, containerID,
-        "Downstream", this.widgetID, container.width());
+        "Downstream", this.widgetID, container.width(), colorizer);
   };
 
   // Make skeleton connectivity widget available in CATMAID namespace

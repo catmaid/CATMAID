@@ -24,6 +24,9 @@
     this.showGapjunctionTable = false;
     // Ordering of neuron table, by default no ordering is applied
     this.currentOrder = [];
+    // If no original colors are used, new skeleton models will be colored
+    // according to their conenctor link.
+    this.useOriginalColor = false;
 
     // Register for changed and removed skeletons
     CATMAID.Skeletons.on(CATMAID.Skeletons.EVENT_SKELETON_CHANGED,
@@ -46,7 +49,7 @@
   SkeletonConnectivity.prototype.init = function() {
     // An ordered list of neurons/skeletons for display
     this.ordered_skeleton_ids = [];
-    // An (per se unordered) object mapping skeletonIDs to skeleton names
+    // An (per se unordered) object mapping skeletonIDs to skeleton models
     this.skeletons = {};
     // Incoming an outgoing connections of current neurons
     this.incoming = {};
@@ -101,7 +104,7 @@
         this.ordered_skeleton_ids.push(parseInt(skid));
       }
       // Add or update
-      this.skeletons[skid] = model.baseName;
+      this.skeletons[skid] = model;
     }, this);
 
     if (!CATMAID.tools.isEmpty(updated)) {
@@ -206,6 +209,20 @@
         autoUpdateLabel.appendChild(autoUpdate);
         controls.appendChild(autoUpdateLabel);
 
+        var originalColor = document.createElement('input');
+        originalColor.setAttribute('id', 'connectivity-original-color-' + this.widgetID);
+        originalColor.setAttribute('type', 'checkbox');
+        if (this.useOriginalColor) {
+          originalColor.setAttribute('checked', 'checked');
+        }
+        originalColor.onchange = function(e) {
+          self.useOriginalColor = this.checked;
+        };
+        var originalColorLabel = document.createElement('label');
+        originalColorLabel.appendChild(document.createTextNode('Original color'));
+        originalColorLabel.appendChild(originalColor);
+        controls.appendChild(originalColorLabel);
+
         var gapjunctionToggle = document.createElement('input');
         gapjunctionToggle.setAttribute('id', 'connectivity-gapjunctiontable-toggle-' + this.widgetID);
         gapjunctionToggle.setAttribute('type', 'checkbox');
@@ -276,21 +293,25 @@
     return Object.keys(this.getSelectedSkeletonModels());
   };
 
-  var makeSkeletonModel = function(skeletonId, pre, post, selected, name) {
-    var color = new THREE.Color();
-    if (pre) {
-      if (post) {
-        color.setRGB(0.8, 0.6, 1); // both
-      } else {
-        color.setRGB(1, 0.4, 0.4); // pre
+  SkeletonConnectivity.prototype.makeSkeletonModel = function(skeletonId, pre, post, selected, name) {
+    var knownModel = this.skeletons[skeletonId];
+    var model = knownModel ? knownModel.clone() : new CATMAID.SkeletonModel(skeletonId);
+    model.baseName = name || CATMAID.NeuronNameService.getInstance().getName(skeletonId);
+
+    if (!this.useOriginalColor) {
+      if (pre) {
+        if (post) {
+          model.color.setRGB(0.8, 0.6, 1); // both
+        } else {
+          model.color.setRGB(1, 0.4, 0.4); // pre
+        }
+      } else if (post) {
+        model.color.setRGB(0.5, 1, 1); // post
       }
-    } else if (post) {
-      color.setRGB(0.5, 1, 1); // post
     }
 
-    name = name || CATMAID.NeuronNameService.getInstance().getName(skeletonId);
-    var model = new CATMAID.SkeletonModel(skeletonId, name, color);
     model.selected = !!selected;
+
     return model;
   };
 
@@ -303,7 +324,7 @@
     var post = $("#postsynaptic_to-show-skeleton-" + this.widgetID + "-" + skeleton_id);
 
     var selected = pre.prop('checked') || post.prop('checked');
-    return makeSkeletonModel(skeleton_id, pre.length > 0, post.length > 0, selected, name);
+    return this.makeSkeletonModel(skeleton_id, pre.length > 0, post.length > 0, selected, name);
   };
 
   SkeletonConnectivity.prototype.getSelectedSkeletonModels = function() {
@@ -323,9 +344,7 @@
           '[type=checkbox]');
       var selected = cb.prop('checked');
       if (!onlySelected || selected) {
-        var name = skeletons[skid];
-        var model = new CATMAID.SkeletonModel(skid,
-            skeletons[skid], new THREE.Color().setRGB(1, 1, 0));
+        var model = skeletons[skid].clone();
         model.selected = selected;
         o[skid] = model;
       }
@@ -342,6 +361,7 @@
       });
     });
     // Pick those for which at least one checkbox is checked (if they have more than one)
+    var self = this;
     Object.keys(sks).forEach(function(skid) {
       var sk = sks[skid];
       var selected = true === sk[0] || true === sk[1];
@@ -349,7 +369,7 @@
         var pre = 0 in sk;
         var post = 1 in sk;
         var name = $('#a-connectivity-table-' + widgetID + '-' + skid).text();
-        var model = makeSkeletonModel(skid, pre, post, selected, name);
+        var model = self.makeSkeletonModel(skid, pre, post, selected, name);
         models[skid] = model;
       }
     });
@@ -475,7 +495,7 @@
               self.redraw();
               // Create model container and announce new models
               for (var skid in newModels) {
-                newModels[skid] = makeSkeletonModel(skid, skid in self.incoming,
+                newModels[skid] = self.makeSkeletonModel(skid, skid in self.incoming,
                     skid in self.outgoing, false);
               }
               self.triggerAdd(newModels);
@@ -1094,7 +1114,7 @@
           .append($('<td />').attr('class', 'input-container')
               .append(selectionCb))
           .append($('<td />').append(
-              createNameElement(this.skeletons[skid], skid)))
+              createNameElement(this.skeletons[skid].baseName, skid)))
           .append(thresholdSelectors.map(function (selector, i) {
             return $('<td />').append(selector)
                 .attr('class', 'input-container' + (i > 3 ? ' gj_column column_hidden' : ''));
@@ -1531,7 +1551,11 @@
    * passed to the constructor to display plots for these skeletons right away.
    */
   var ConnectivityGraphPlot = function(skeletons, incoming, outgoing) {
-    this.skeletons = skeletons;
+    this.skeletons = Object.keys(skeletons).reduce(function(o, skid) {
+      var skeleton = skeletons[skid];
+      o[skeleton.id] = skeleton.baseName;
+      return o;
+    }, {});
     this.incoming = incoming;
     this.outgoing = outgoing;
     this.widgetID = this.registerInstance();

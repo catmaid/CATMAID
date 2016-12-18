@@ -4,11 +4,17 @@
 
 ### Features and enhancements
 
+Connectivity table:
+
+- Original colors of skeletons added to a Connectivity Table can now optionally
+  be used when using its skeletons in other widgets (new checkbox: "Original
+  color").
+
+
 Miscellaneous:
 
 - The Selection Table can now be opened through Ctrl+Space by using the handle
   'selection-table' instead of 'neuron-staging-area'.
-
 
 ### Bug fixes
 

@@ -22,6 +22,9 @@ Miscellaneous:
 
 ### Bug fixes
 
+- The size of the embedded 3D viewer in the split/merge dialog is now adjusted
+  dynamically based on the available space. This prevents some problems with
+  lower display resolutions.
 
 
 ## 2016.12.16

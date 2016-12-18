@@ -137,6 +137,8 @@
     return {
       controlsID: 'skeleton_connectivity_buttons' + this.widgetID,
       createControls: function(controls) {
+        var self = this;
+
         controls.appendChild(document.createTextNode('From'));
         controls.appendChild(CATMAID.skeletonListSources.createSelect(this));
 
@@ -182,9 +184,9 @@
         if (this.tablesSideBySide) {
           layoutToggle.setAttribute('checked', 'checked');
         }
-        layoutToggle.onchange = (function() {
-          this.tablesSideBySide = this.checked;
-        }).bind(this);
+        layoutToggle.onchange = function() {
+          self.tablesSideBySide = this.checked;
+        };
         var layoutLabel = document.createElement('label');
         layoutLabel.appendChild(document.createTextNode('Tables side by side'));
         layoutLabel.appendChild(layoutToggle);
@@ -197,7 +199,7 @@
           autoUpdate.setAttribute('checked', 'checked');
         }
         autoUpdate.onchange = function(e) {
-          this.autoUpdate = this.checked;
+          self.autoUpdate = this.checked;
         };
         var autoUpdateLabel = document.createElement('label');
         autoUpdateLabel.appendChild(document.createTextNode('Auto update'));
@@ -210,9 +212,9 @@
         if (this.showGapjunctionTable) {
           gapjunctionToggle.setAttribute('checked', 'checked');
         }
-        gapjunctionToggle.onchange = (function() {
-          this.showGapjunctionTable = this.checked;
-        }).bind(this);
+        gapjunctionToggle.onchange = function() {
+          self.showGapjunctionTable = this.checked;
+        };
         var gapjunctionLabel = document.createElement('label');
         gapjunctionLabel.appendChild(document.createTextNode('Show gap junctions'));
         gapjunctionLabel.appendChild(gapjunctionToggle);

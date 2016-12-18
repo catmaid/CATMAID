@@ -337,6 +337,13 @@
     // Add extra options to the button pane
     $(".ui-dialog-buttonpane", this.dialog.parent).prepend(customOptions);
 
+    // Resize 3D viewer if window size changes
+    $(this.dialog).on('dialogresize', function(event, ui) {
+      var newWidth = Math.floor(ui.size.width) - leftWidth - 50;
+      var newHeight = Math.floor(ui.size.height) - 100;
+      self.webglapp.resizeView(newWidth, newHeight);
+    });
+
     return this;
   };
 

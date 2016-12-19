@@ -18,7 +18,8 @@ None.
 
 ### Removals
 
-None.
+- `GET /{project_id}/stack/{stack_id}/models`
+  Meshes have been replaced with volumes.
 
 
 ## 2016.12.16

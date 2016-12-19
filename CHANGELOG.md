@@ -15,6 +15,12 @@ Connectivity table:
   turn are either its input skeleton color or the default skeleton color.
 
 
+3D Viewer
+
+- Meshes are replaced with volumes and the "Show meshes" checkbox has been
+  removed. Existing meshes have been transformed into volumes.
+
+
 Miscellaneous:
 
 - The Selection Table can now be opened through Ctrl+Space by using the handle

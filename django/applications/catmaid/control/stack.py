@@ -1,7 +1,6 @@
 from __future__ import absolute_import
 
 import os.path
-from contextlib import closing
 import json
 import httplib
 import logging
@@ -15,12 +14,6 @@ from ..models import UserRole, Project, Stack, ProjectStack, \
 from .authentication import requires_user_role
 
 logger = logging.getLogger(__name__)
-
-try:
-    import h5py
-except ImportError, e:
-    logger.warning("CATMAID was unable to import the h5py library. "
-          "Project/stack mesh loading is therefore disabled.")
 
 def get_stack_info(project_id=None, stack_id=None):
     """ Returns a dictionary with relevant information for stacks.
@@ -127,52 +120,6 @@ def update_stack_tags(request, project_id=None, stack_id=None, tags=None):
 def stack_info(request, project_id=None, stack_id=None):
     result = get_stack_info(project_id, stack_id)
     return HttpResponse(json.dumps(result, sort_keys=True, indent=4), content_type="application/json")
-
-
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
-def stack_models(request, project_id=None, stack_id=None):
-    """ Retrieve Mesh models for a stack
-    """
-    d = {}
-    patterns = (('%s_%s.hdf', (project_id, stack_id)),
-                ('%s.hdf', (project_id,)))
-
-    filename = None
-    for p in patterns:
-        test_filename = os.path.join(settings.HDF5_STORAGE_PATH, p[0] % p[1])
-        if os.path.exists(test_filename):
-            filename = test_filename
-            break
-
-    if not filename:
-        return HttpResponse(json.dumps(d), content_type="application/json")
-
-    with closing(h5py.File(filename, 'r')) as hfile:
-        meshnames = hfile['meshes'].keys()
-        for name in meshnames:
-            vertlist = hfile['meshes'][name]['vertices'].value.tolist()
-            facelist = hfile['meshes'][name]['faces'].value.tolist()
-            d[str(name)] = {
-                'metadata': {
-                    'colors': 0,
-                    'faces': 2,
-                    'formatVersion': 3,
-                    'generatedBy': 'NeuroHDF',
-                    'materials': 0,
-                    'morphTargets': 0,
-                    'normals': 0,
-                    'uvs': 0,
-                    'vertices': 4},
-                'morphTargets': [],
-                'normals': [],
-                'scale': 1.0,
-                'uvs': [[]],
-                'vertices': vertlist,
-                'faces': facelist,
-                'materials': [],
-                'colors': []
-            }
-    return HttpResponse(json.dumps(d), content_type="application/json")
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def stacks(request, project_id=None):

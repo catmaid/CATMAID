@@ -763,7 +763,6 @@
 
   WebGLApplication.prototype.Options = function() {
     this.debug = true;
-    this.show_meshes = false;
     this.meshes_color = "#ffffff";
     this.meshes_opacity = 0.2;
     this.meshes_faces = false;
@@ -1817,7 +1816,6 @@
   WebGLApplication.prototype.Space.prototype.destroy = function() {
     // remove active_node and project-wise meshes
     this.scene.remove(this.content.active_node.mesh);
-    this.content.meshes.forEach(function(m) { this.remove(m); }, this.scene);
 
     // dispose active_node and meshes
     this.content.dispose();
@@ -2592,8 +2590,6 @@
   WebGLApplication.prototype.Space.prototype.Content = function(options) {
     // A representation of the active node
     this.active_node = new this.ActiveNode(options);
-    // A list of extra meshes
-    this.meshes = [];
     // Map of skeleton IDs to skeleton representations
     this.skeletons = {};
   };
@@ -2603,53 +2599,14 @@
   WebGLApplication.prototype.Space.prototype.Content.prototype.dispose = function() {
     this.active_node.mesh.geometry.dispose();
     this.active_node.mesh.material.dispose();
-
-    this.meshes.forEach(function(mesh) {
-      mesh.geometry.dispose();
-      mesh.material.dispose();
-    });
-  };
-
-  WebGLApplication.prototype.Space.prototype.Content.prototype.loadMeshes = function(space, submit, material) {
-    submit(django_url + project.id + "/stack/" + space.stack.id + "/models",
-           'POST',
-           {},
-           function (models) {
-             var ids = Object.keys(models);
-             if (0 === ids.length) return;
-             var loader = space.content.newJSONLoader();
-             ids.forEach(function(id) {
-               var vs = models[id].vertices;
-               var geometry = loader.parse(models[id]).geometry;
-               var mesh = space.content.newMesh(geometry, material);
-               mesh.position.set(0, 0, 0);
-               mesh.rotation.set(0, 0, 0);
-               space.content.meshes.push(mesh);
-               space.add(mesh);
-             });
-             space.render();
-          });
   };
 
   WebGLApplication.prototype.Space.prototype.Content.prototype.newMesh = function(geometry, material) {
     return new THREE.Mesh(geometry, material);
   };
 
-  WebGLApplication.prototype.Space.prototype.Content.prototype.newJSONLoader = function() {
-    return new THREE.JSONLoader(true);
-  };
-
   /** Adjust content according to the persistent options. */
   WebGLApplication.prototype.Space.prototype.Content.prototype.adjust = function(options, space, submit) {
-    if (options.show_meshes) {
-      if (0 === this.meshes.length) {
-        this.loadMeshes(space, submit, options.createMeshMaterial());
-      }
-    } else {
-      this.meshes.forEach(function(m) { this.remove(m); }, space.scene);
-      this.meshes = [];
-    }
-
     this.active_node.mesh.material.depthTest = !options.active_node_on_top;
     this.active_node.setVisible(options.show_active_node);
     this.active_node.updatePosition(space, options);
@@ -3515,7 +3472,6 @@
 
     // Hide everthing unpickable
     var o = CATMAID.tools.deepCopy(this.options);
-    o.show_meshes = false;
     o.show_missing_sections = false;
     o.show_active_node = false;
     o.show_floor = false;
@@ -5999,13 +5955,6 @@
       var color = new THREE.Color().setRGB(rgb.r, rgb.g, rgb.b);
       this.options.meshes_color = '#' + color.getHexString();
       this.options.meshes_opacity = alpha;
-      if (this.options.show_meshes) {
-        var material = this.options.createMeshMaterial(color, alpha);
-        this.space.content.meshes.forEach(function(mesh) {
-          mesh.material = material;
-        });
-        this.space.render();
-      }
     }).bind(this);
 
     // Defaults for initialization:

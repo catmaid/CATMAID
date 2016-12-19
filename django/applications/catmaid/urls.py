@@ -93,7 +93,6 @@ urlpatterns += [
 urlpatterns += [
     url(r'^(?P<project_id>\d+)/stacks$', stack.stacks),
     url(r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/info$', stack.stack_info),
-    url(r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/models$', stack.stack_models),
 ]
 
 # General stack group access

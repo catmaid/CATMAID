@@ -733,7 +733,6 @@ var WindowMaker = new function()
 
     DOM.appendToTab(tabs['View settings'],
         [
-          ['Meshes ', false, function() { WA.options.show_meshes = this.checked; WA.adjustContent(); }, false],
           [volumeSelectionWrapper],
           ['Faces ', false, function() { WA.options.meshes_faces = this.checked;}, false],
           [WA.createMeshColorButton()],

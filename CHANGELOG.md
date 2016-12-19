@@ -1,6 +1,11 @@
 ## Under development
 
 
+### Notes:
+
+- The h5py dependency has been removed. If tile source tile 3 should be used in
+  a new instance, the h5py library has to be installed manually.
+
 
 ### Features and enhancements
 
@@ -15,10 +20,17 @@ Connectivity table:
   turn are either its input skeleton color or the default skeleton color.
 
 
+3D Viewer
+
+- Meshes are replaced with volumes and the "Show meshes" checkbox has been
+  removed. Existing meshes have been transformed into volumes.
+
+
 Miscellaneous:
 
 - The Selection Table can now be opened through Ctrl+Space by using the handle
   'selection-table' instead of 'neuron-staging-area'.
+
 
 ### Bug fixes
 

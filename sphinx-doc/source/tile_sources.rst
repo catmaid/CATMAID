@@ -109,6 +109,10 @@ Tile source types are listed by the enumeration integer ID referenced by
 3. HDF5 via CATMAID backend
 ***************************
 
+    .. note::
+
+       To use this tile source, the ``h5py`` Python library has to be installed.
+
    This is the only tile source type which the CATMAID backend serves directly.
    Django retrieves tile requests from an image volume stored in an HDF5 file.
    This is a convenience source intended for quick exploration of small volumes

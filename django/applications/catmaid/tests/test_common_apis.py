@@ -533,7 +533,6 @@ class PermissionTests(TestCase):
             '/%(pid)s/skeletons/review-status' % url_params,
             '/%(pid)s/skeleton/%(skid)s/neuronname' % url_params,
             '/%(pid)s/skeleton/connectors-by-partner' % url_params,
-            '/%(pid)s/stack/%(sid)s/models' % url_params,
             '/%(pid)s/logs/list' % url_params,
             '/%(pid)s/graphexport/json' % url_params,
             '/%(pid)s/neuroml/neuroml_level3_v181' % url_params,

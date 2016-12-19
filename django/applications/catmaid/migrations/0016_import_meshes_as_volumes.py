@@ -64,13 +64,17 @@ def import_meshes(apps, schema_editor):
     Project = apps.get_model("catmaid", "Project")
     Stack = apps.get_model("catmaid", "Stack")
 
-    user = get_system_user()
+    user = None
 
     for project in Project.objects.all():
         for stack in Stack.objects.all():
             meshes = get_mesh(project.id, stack.id)
             if not meshes:
                 continue
+
+            if not user:
+                # Lazy load system user
+                user = get_system_user()
 
             # The returned dictionary maps mesh names to a mesh representation
             for mesh_name, mesh_data in meshes.iteritems():

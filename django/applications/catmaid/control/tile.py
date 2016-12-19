@@ -6,6 +6,8 @@ import numpy as np
 import base64
 from django.conf import settings
 
+from catmaid.control.common import ConfigurationError
+
 try:
     from PIL import Image
 except:
@@ -13,15 +15,21 @@ except:
 
 logger = logging.getLogger(__name__)
 
+tile_loading_enabled = True
+
 try:
     import h5py
 except ImportError, e:
+    tile_loading_enabled = False
     logger.warning("CATMAID was unable to load the h5py library. "
           "HDF5 tiles are therefore disabled.")
 
 from django.http import HttpResponse
 
 def get_tile(request, project_id=None, stack_id=None):
+
+    if not tile_loading_enabled:
+        raise ConfigurationError("HDF5 tile loading is currently disabled")
 
     scale = float(request.GET.get('scale', '0'))
     height = int(request.GET.get('height', '0'))
@@ -67,6 +75,9 @@ def get_tile(request, project_id=None, stack_id=None):
 
 def put_tile(request, project_id=None, stack_id=None):
     """ Store labels to HDF5 """
+
+    if not tile_loading_enabled:
+        raise ConfigurationError("HDF5 tile loading is currently disabled")
 
     scale = float(request.POST.get('scale', '0'))
     height = int(request.POST.get('height', '0'))

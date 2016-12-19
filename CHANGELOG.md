@@ -1,6 +1,11 @@
 ## Under development
 
 
+### Notes:
+
+- The h5py dependency has been removed. If tile source tile 3 should be used in
+  a new instance, the h5py library has to be installed manually.
+
 
 ### Features and enhancements
 
@@ -25,6 +30,7 @@ Miscellaneous:
 
 - The Selection Table can now be opened through Ctrl+Space by using the handle
   'selection-table' instead of 'neuron-staging-area'.
+
 
 ### Bug fixes
 

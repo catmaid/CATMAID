@@ -12,7 +12,6 @@ git+https://github.com/aschampion/django-rest-swagger@057c47315cddbfebcc31150308
 django-taggit==0.20.2
 djangorestframework==3.4.3
 docutils==0.12
-h5py==2.5.0
 jsonfield==1.0.3
 kombu==3.0.32
 Markdown==2.6.2

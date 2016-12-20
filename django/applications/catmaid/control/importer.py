@@ -487,7 +487,6 @@ class ImportingWizard(SessionWizardView):
         form = super(ImportingWizard, self).get_form(step, data, files)
         current_step = step or self.steps.current
         if current_step == 'pathsettings':
-            pass
             # Pre-populate base URL field with settings variable, if available
             if hasattr(settings, base_url_setting):
                 form.fields['base_url'].initial = getattr(settings, base_url_setting)
@@ -840,7 +839,7 @@ class DataFileForm(forms.Form):
             choices=KNOWN_PROJECT_STRATEGIES,
             help_text="Decide if imported projects that are already known " \
                     "(see above) should be ignored, merged or replaced.")
-    base_url = forms.CharField(required=True,
+    base_url = forms.CharField(required=False,
         widget=forms.TextInput(attrs={'size':'40'}),
         help_text="The <em>base URL</em> should give read access to the data \
                    folder in use.")

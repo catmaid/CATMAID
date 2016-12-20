@@ -774,6 +774,7 @@
       while (header.firstChild) {
         header.removeChild(header.firstChild);
       }
+      var headerP1 = header.appendChild(document.createElement('p'));
       var neuronInfo = document.createElement('span');
       neuronInfo.classList.add('left');
       var reviewInfo = document.createElement('span');
@@ -782,8 +783,8 @@
       var neuronName = CATMAID.NeuronNameService.getInstance().getName(skeletonID);
       neuronInfo.appendChild(document.createTextNode('Neuron under review: ' + neuronName));
       reviewInfo.appendChild(document.createTextNode('Revisions: ' + user_revisions));
-      header.appendChild(neuronInfo);
-      header.appendChild(reviewInfo);
+      headerP1.appendChild(neuronInfo);
+      headerP1.appendChild(reviewInfo);
 
       table = $('<table />').attr('cellpadding', '3').attr('cellspacing', '0').attr('id', 'review_segment_table').attr('border', '0');
       // create header

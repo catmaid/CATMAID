@@ -4727,6 +4727,34 @@
             reviewedColor : unreviewedColor;
         }).bind(this)
           : function() { return notComputable; };
+      } else if ('last-reviewed' === options.color_method) {
+        var findLastReview = function(lastReview, review) {
+          if (!lastReview) {
+            return review;
+          } else if (new Date(lastReview[1]) < new Date(review[1])) {
+            return review;
+          }
+          return lastReview;
+        };
+        var users = CATMAID.User.all();
+        pickColor = this.reviews ?
+          (function(vertex) {
+            var reviewers = this.reviews[vertex.node_id];
+            if (reviewers) {
+              var lastReviewer = reviewers.reduce(findLastReview, null);
+              var lastReviewerId = lastReviewer[0];
+              var lastReviewerColor = users[lastReviewerId].color;
+
+              if (!this.space.userColormap.hasOwnProperty(lastReviewerId)) {
+                this.space.userColormap[lastReviewerId] = lastReviewerColor;
+              }
+
+              return lastReviewerColor;
+            } else {
+              return unreviewedColor;
+            }
+          }).bind(this)
+          : function() { return notComputable; };
       } else if ('axon-and-dendrite' === options.color_method) {
         pickColor = this.axon ?
           (function(vertex) {

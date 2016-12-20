@@ -25,6 +25,10 @@ Connectivity table:
 - Meshes are replaced with volumes and the "Show meshes" checkbox has been
   removed. Existing meshes have been transformed into volumes.
 
+- The new coloring mode "Last Reviewer" will color skeleton nodes by the user
+  color of the user that reviewed them last. The "User colormap" button can be
+  used to show the mapping from color to user name.
+
 
 Miscellaneous:
 

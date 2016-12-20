@@ -655,6 +655,7 @@ var WindowMaker = new function()
      ['all-reviewed', 'All Reviewed'],
      ['whitelist-reviewed', 'Team Reviewed'],
      ['own-reviewed', 'Own Reviewed'],
+     ['last-reviewed', 'Last Reviewer'],
      ['axon-and-dendrite', 'Axon and dendrite'],
     ].forEach(function(e) {
        colorMenu.options.add(new Option(e[1], e[0]));

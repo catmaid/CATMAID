@@ -95,6 +95,7 @@
                 </p>
                 <div class="aligned">
                     <div class="form-row">
+                        {{ field.errors }}
                         {{ field.label_tag }}
                         {{ field }}
                         <p class="help">{{ field.help_text|safe }}</p>
@@ -143,6 +144,7 @@
             {% if displayed_projects %}
                 <div class="aligned">
                     <div class="form-row">
+                        {{ field.errors }}
                         {{ field.label_tag }}
                         {{ field }}
                         <p class="help">{{ field.help_text|safe }}</p>

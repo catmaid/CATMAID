@@ -72,6 +72,7 @@
         {{ wizard.management_form }}
         {% for field in wizard.form %}
             <div class="form-row">
+                {{ field.errors }}
                 {{ field.label_tag }}
                 {{ field }}
                 <p class="help">{{ field.help_text|safe }}</p>

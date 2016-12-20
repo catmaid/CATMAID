@@ -1319,7 +1319,7 @@ def import_projects( user, pre_projects, tags, permissions,
             for sg, linked_stacks in stack_groups.iteritems():
                 existing_stackgroups = ClassInstance.objects.filter(project=p,
                     name=sg, class_column__class_name="stackgroup")
-                
+
                 if len(existing_stackgroups) > 1:
                     raise ValueError("Found more than one existing stack group "
                             "with the same name, expected zero or one.")
@@ -1332,7 +1332,7 @@ def import_projects( user, pre_projects, tags, permissions,
                         pass
                     elif 'override' == known_stackgroup_action:
                         existing_stackgroups.delete()
-                
+
                 stack_group = ClassInstance.objects.create(
                     user=user, project=p, name=sg,
                     class_column=Class.objects.get(project=p, class_name="stackgroup")

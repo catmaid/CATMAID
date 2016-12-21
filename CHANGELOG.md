@@ -20,6 +20,12 @@ Connectivity table:
   turn are either its input skeleton color or the default skeleton color.
 
 
+Graph widget:
+
+- Active Graph Widget windows will now zoom in smaller steps if the Shift key
+  is pressed.
+
+
 3D Viewer
 
 - Meshes are replaced with volumes and the "Show meshes" checkbox has been
@@ -37,6 +43,9 @@ Miscellaneous:
 
 - Project and stack menu entries are now sorted by default, which makes it easier
   to deal with many projects and stacks.
+
+- Node bookmarks can now be removed through an X icon in their respective row in
+  the bookmark dialog.
 
 
 ### Bug fixes

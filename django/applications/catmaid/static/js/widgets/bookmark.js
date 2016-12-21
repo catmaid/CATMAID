@@ -80,18 +80,27 @@
       }).bind(this));
 
       var bookmarkEntries = $('<tbody>');
-      BookmarkDialog.Bookmarks.forEach(function (bookmark) {
+      BookmarkDialog.Bookmarks.forEach(function (bookmark, keyCode) {
         bookmarkEntries.append($('<tr>')
             .append($('<td>').text(bookmark.key))
             .append($('<td>').text(bookmark.skeletonID))
             .append($('<td>').text(bookmark.nodeID))
             .append($('<td>').text(bookmark.projectPosition.x))
             .append($('<td>').text(bookmark.projectPosition.y))
-            .append($('<td>').text(bookmark.projectPosition.z)));
+            .append($('<td>').text(bookmark.projectPosition.z))
+            .append($('<td>').html('<span data-key="' + keyCode +
+                '" class="ui-icon ui-icon-close action-remove" alt="Remove bookmark" title="Remove bookmark"></span>')));
       });
       $(this.dialog.dialog).append($('<table>')
           .append($('<thead><tr><th>Key</th><th>Skeleton</th><th>Node</th><th>x</th><th>y</th><th>z</th></tr></thead>'))
-          .append(bookmarkEntries));
+          .append(bookmarkEntries))
+        .on('click', 'span.action-remove', this, function(event) {
+          var dialogInstance = event.data;
+          var key = $(this).data()['key'];
+          BookmarkDialog.Bookmarks.delete(key);
+          $(this).closest('div').find('input').focus();
+          $(this).closest('tr').remove();
+        });
     };
 
     BookmarkDialog.prototype = {};

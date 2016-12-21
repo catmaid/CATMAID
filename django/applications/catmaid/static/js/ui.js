@@ -43,8 +43,30 @@
     focusCatcher.id = "focusCatcher";
     document.body.appendChild( focusCatcher );
 
-    var onkeydown = function( e )
-    {
+    /**
+     * Return the result of the target's handleKeyUp() function if <released> is
+     * truthy, otherwise return the result of its handleKeyPress() function. If
+     * the respective function doesn't exist, return false.
+     */
+    var handledBy = function(target, event, released) {
+      if (released) {
+        if (CATMAID.tools.isFn(target.handleKeyUp)) {
+          return target.handleKeyUp(event);
+        }
+      } else {
+        if (CATMAID.tools.isFn(target.handleKeyPress)) {
+          return target.handleKeyPress(event);
+        }
+      }
+      return false;
+    };
+
+    /**
+     * Deal with key press and release in one function. If <released> is falsy,
+     * the keydown handler will be called, otherwise,
+     */
+    var handleKeyAction = function( e, released ) {
+      released = !!released;
       var projectKeyPress;
       var key;
       var shift;
@@ -120,16 +142,30 @@
 
         if (project) {
           var tool = project.getTool();
-          if (tool && tool.handleKeyPress(fakeEvent)) {
+          if (tool && handledBy(tool, fakeEvent, released)) {
+            return false;
+          } else if (handledBy(project, fakeEvent, released)) {
             return false;
           } else {
-            projectKeyPress = project.handleKeyPress(fakeEvent);
-            return ! projectKeyPress;
+            var activeWidget = CATMAID.front();
+            if (activeWidget && handledBy(activeWidget, fakeEvent, released)) {
+              return false;
+            } else {
+              return true;
+            }
           }
         }
       } else {
         return true;
       }
+    };
+
+    var onkeydown = function( e ) {
+      return handleKeyAction(e, false);
+    };
+
+    var onkeyup = function( e ) {
+      return handleKeyAction(e, true);
     };
 
     // A set of available global actions
@@ -508,6 +544,7 @@
 
     // Register global key listener
     document.onkeydown = onkeydown;
+    document.onkeyup = onkeyup;
   };
 
   CATMAID.UI.getFrameHeight = function()

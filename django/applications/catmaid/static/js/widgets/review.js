@@ -144,6 +144,9 @@
       $('#reviewing_skeleton').text('');
       $('#counting-cache').text('');
       $('#counting-cache-info').text('');
+      if (this._content) {
+        $(this._content).hide();
+      }
     };
 
     /**
@@ -771,7 +774,6 @@
 
       // Empty header and add new info
       var header = document.getElementById('reviewing_skeleton');
-      header.classList.add('review-block');
       while (header.firstChild) {
         header.removeChild(header.firstChild);
       }
@@ -905,6 +907,9 @@
             {'subarbor_node_id': subarborNodeId},
             function(skeleton_data) {
                 self.createReviewSkeletonTable( skeleton_data, usernames );
+                if (self._content) {
+                  $(self._content).show();
+                }
             });
         });
     };
@@ -1018,7 +1023,7 @@
             onclick: this.resetOwnRevisions.bind(this)
           }, {
             type: 'numeric',
-            label: 'In-between node step',
+            label: 'Virtual node step',
             value: this.virtualNodeStep,
             length: 3,
             onchange: function() {
@@ -1090,6 +1095,9 @@
       createContent: function(content) {
         var self = this;
 
+        this._content = content;
+        $(this._content).hide();
+
         // Node review container
         this.nodeReviewContainer = document.createElement('div');
         var cacheCounter = document.createElement('div');
@@ -1102,7 +1110,16 @@
 
         var label = document.createElement('div');
         label.setAttribute("id", "reviewing_skeleton");
+        label.classList.add('review-block');
         this.nodeReviewContainer.appendChild(label);
+
+        // Add note about virtual nodes not being counted
+        var note = document.createElement('div');
+        note.classList.add('review-block');
+        note.innerHTML = "<em class=\"help\">Note: Virtual nodes are selected " +
+            "during review, but don't contribute to the node count. They can " +
+            "be skipped by changing the 'Virtual node step' setting.</em>";
+        this.nodeReviewContainer.appendChild(note);
 
         var table = document.createElement("div");
         table.setAttribute("id", "project_review_widget");

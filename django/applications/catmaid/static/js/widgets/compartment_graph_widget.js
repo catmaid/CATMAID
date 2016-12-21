@@ -399,6 +399,22 @@
     }
   };
 
+  GroupGraph.prototype.handleKeyPress = function(event) {
+    // In case shift is pressed, the mousewheel sensitivity will be changed so
+    // that zooming happens in smaller steps.
+    if (event.keyCode === 16 && this.cy) {
+      this.cy._private.renderer.wheelSensitivity = 0.5;
+    }
+  };
+
+  GroupGraph.prototype.handleKeyUp = function(event) {
+    // In case shift is pressed, the mousewheel sensitivity will be set back to
+    // normal.
+    if (event.keyCode === 16 && this.cy) {
+      this.cy._private.renderer.wheelSensitivity = 1;
+    }
+  };
+
   GroupGraph.prototype.graph_properties = function() {
 
     var dialog = new CATMAID.OptionsDialog("Graph properties");

@@ -202,7 +202,8 @@
   {
       var self = this;
       // make sure the tool knows all (and only) open projecs
-      CATMAID.getStackMenuInfo(project.id, function(stacks) {
+      CATMAID.Stack.list(project.id, true)
+        .then(function(stacks) {
           $.each(stacks, function(i, s) {
               var id = s.id;
               var opened_stacks = project.getViewersForStack( id );
@@ -230,7 +231,7 @@
               if (is_active)
                   self.cropBox = cb;
           }
-      });
+        }).catch(CATMAID.handleError);
 
       this.stackViewer = parentStackViewer;
       this.zoomlevel = this.stackViewer.s;

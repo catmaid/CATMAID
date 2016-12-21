@@ -337,20 +337,21 @@
       CroppingTool.superproto.register.call( self, parentStackViewer );
 
       // initialize the stacks we offer to crop
-      CATMAID.getStackMenuInfo(project.id, function(stacks) {
-        self.stacks_to_crop = [];
-        $.each(stacks, function(index, value) {
-          // By default, mark only the current stack to be cropped
-          self.stacks_to_crop.push(
-            {
-              data : value,
-              marked : ( value.id == self.stackViewer.primaryStack.id )
-            });
-         });
+      CATMAID.Stack.list(project.id, true)
+        .then(function(stacks) {
+          self.stacks_to_crop = [];
+          $.each(stacks, function(index, value) {
+            // By default, mark only the current stack to be cropped
+            self.stacks_to_crop.push(
+              {
+                data : value,
+                marked : ( value.id == self.stackViewer.primaryStack.id )
+              });
+           });
 
-        // initialize the stacks menu
-        self.updateStacksMenu();
-      });
+          // initialize the stacks menu
+          self.updateStacksMenu();
+        }).catch(CATMAID.handleError);
 
       document.getElementById( "edit_button_crop" ).className = "button_active";
 

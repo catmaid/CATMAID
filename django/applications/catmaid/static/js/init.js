@@ -1221,35 +1221,35 @@ var project;
       than one stack linked to the current project, a submenu for easy
       access is generated. */
       stack_menu.update();
-      CATMAID.getStackMenuInfo(project.id, function(stacks) {
-        if (stacks.length > 1)
-        {
-          var stack_menu_content = [];
-          stacks.forEach(function(s) {
-            stack_menu_content.push({
-                id: s.id,
-                title: s.title,
-                note: '',
-                action: [{
-                    title: 'Open in new viewer',
-                    note: '',
-                    action: CATMAID.openProjectStack.bind(window, s.pid, s.id, false)
-                  },{
-                    title: 'Add to focused viewer',
-                    note: '',
-                    action: CATMAID.openProjectStack.bind(window, s.pid, s.id, true)
-                  }
-                ]
-              }
-            );
-          });
+      CATMAID.Stack.list(project.id, true)
+        .then(function(stacks) {
+          if (stacks.length > 1) {
+            var stack_menu_content = [];
+            stacks.forEach(function(s) {
+              stack_menu_content.push({
+                  id: s.id,
+                  title: s.title,
+                  note: '',
+                  action: [{
+                      title: 'Open in new viewer',
+                      note: '',
+                      action: CATMAID.openProjectStack.bind(window, s.pid, s.id, false)
+                    },{
+                      title: 'Add to focused viewer',
+                      note: '',
+                      action: CATMAID.openProjectStack.bind(window, s.pid, s.id, true)
+                    }
+                  ]
+                }
+              );
+            });
 
-          stack_menu.update( stack_menu_content );
-          var stackMenuBox = document.getElementById( "stackmenu_box" );
-          stackMenuBox.firstElementChild.lastElementChild.style.display = "none";
-          stackMenuBox.style.display = "block";
-        }
-      });
+            stack_menu.update( stack_menu_content );
+            var stackMenuBox = document.getElementById( "stackmenu_box" );
+            stackMenuBox.firstElementChild.lastElementChild.style.display = "none";
+            stackMenuBox.style.display = "block";
+          }
+        }).catch(CATMAID.handleError);
 
       CATMAID.ui.releaseEvents();
       return stackViewer;
@@ -1495,30 +1495,6 @@ var project;
   function updateProjectListMessage(text) {
     $('#project_list_message').text(text);
   }
-
-  /**
-   * Retrieve stack menu information from the back-end and
-   * executes a callback on success.
-   *
-   * @param  {number}            project_id  ID of the project to retrieve
-   * @param  {function(object)=} callback    Callback to receive the response
-   *                                         stack information object.
-   */
-  CATMAID.getStackMenuInfo = function(project_id, callback) {
-      requestQueue.register(django_url + project_id + '/stacks',
-          'GET', undefined, function(status, text, xml) {
-              if (status == 200 && text) {
-                  var e = JSON.parse(text);
-                  if (e.error) {
-                      alert(e.error);
-                  } else if (callback){
-                      callback(e);
-                  }
-              } else {
-                  alert("Sorry, the stacks for the current project couldn't be retrieved.");
-              }
-          });
-  };
 
   CATMAID.getAuthenticationToken = function() {
     var dialog = new CATMAID.OptionsDialog('API Authentication Token');

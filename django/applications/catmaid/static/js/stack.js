@@ -344,6 +344,22 @@
     };
   }
 
+  /**
+   * Get all available stacks for a given project, optionally sorted by name.
+   */
+  Stack.list = function(projectId, sort) {
+    var stacks = CATMAID.fetch(projectId + '/stacks');
+    if (sort) {
+      stacks = stacks.then(function(stacks) {
+        return stacks.sort(function(a, b) {
+          return CATMAID.tools.compareStrings(a.title, b.title);
+        });
+      });
+    }
+
+    return stacks;
+  };
+
   CATMAID.Stack = Stack;
 
 })(CATMAID);

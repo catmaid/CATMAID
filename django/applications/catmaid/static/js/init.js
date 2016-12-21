@@ -1433,12 +1433,7 @@ var project;
     w.appendChild(document.createTextNode("loading ..."));
     pp.appendChild(w);
 
-    CATMAID.fetch('projects/', 'GET')
-      .catch(function(error) {
-        // Show error and continue with null JSON
-        CATMAID.error("Could not load available projects: " + error.error, error.detail);
-        return null;
-      })
+    CATMAID.Project.list(true)
       .then(function(json) {
         cachedProjectsInfo = json;
 
@@ -1489,7 +1484,8 @@ var project;
         if (CATMAID.tools.isFn(completionCallback)) {
           completionCallback();
         }
-      });
+      })
+      .catch(CATMAID.handleError);
   };
 
   function updateProjectListMessage(text) {

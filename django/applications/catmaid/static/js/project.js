@@ -459,6 +459,22 @@
     var keyCodeToAction = CATMAID.getKeyCodeToActionMap(actions);
   }
 
+  /**
+   * Get all visible projects, optionally sorted by name.
+   */
+  Project.list = function(sort) {
+    var projects = CATMAID.fetch('projects/');
+    if (sort) {
+      projects = projects.then(function(projects) {
+        return projects.sort(function(a, b) {
+          return CATMAID.tools.compareStrings(a.title, b.title);
+        });
+      });
+    }
+
+    return projects;
+  };
+
   // Add event support to project and define some event constants
   CATMAID.asEventSource(Project.prototype);
   Project.EVENT_STACKVIEW_ADDED = 'project_stackview_added';

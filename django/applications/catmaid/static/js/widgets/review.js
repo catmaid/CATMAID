@@ -771,10 +771,10 @@
 
       // Empty header and add new info
       var header = document.getElementById('reviewing_skeleton');
+      header.classList.add('review-block');
       while (header.firstChild) {
         header.removeChild(header.firstChild);
       }
-      var headerP1 = header.appendChild(document.createElement('p'));
       var neuronInfo = document.createElement('span');
       neuronInfo.classList.add('left');
       var reviewInfo = document.createElement('span');
@@ -783,8 +783,8 @@
       var neuronName = CATMAID.NeuronNameService.getInstance().getName(skeletonID);
       neuronInfo.appendChild(document.createTextNode('Neuron under review: ' + neuronName));
       reviewInfo.appendChild(document.createTextNode('Revisions: ' + user_revisions));
-      headerP1.appendChild(neuronInfo);
-      headerP1.appendChild(reviewInfo);
+      header.appendChild(neuronInfo);
+      header.appendChild(reviewInfo);
 
       table = $('<table />').attr('cellpadding', '3').attr('cellspacing', '0').attr('id', 'review_segment_table').attr('border', '0');
       // create header
@@ -1106,6 +1106,7 @@
 
         var table = document.createElement("div");
         table.setAttribute("id", "project_review_widget");
+        table.classList.add('review-block');
         table.style.position = "relative";
         table.style.width = "100%";
         table.style.overflow = "auto";

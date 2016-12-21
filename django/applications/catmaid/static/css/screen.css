@@ -740,6 +740,17 @@ div.clustering-content .content {
   float: right;
 }
 
+div.review-block {
+  margin: 0.2em 0.2em 0.4em 0.2em;
+	box-sizing: border-box;
+}
+
+div.review-block::after {
+  content:"";
+  display:block;
+  clear:both;
+}
+
 #review_segment_table {
   border-collapse: collapse;
 }

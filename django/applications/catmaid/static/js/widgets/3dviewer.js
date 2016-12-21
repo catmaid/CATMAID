@@ -1606,7 +1606,7 @@
     var shapePrefix = "Shape {\n  geometry IndexedFaceSet {\n     ";
 
     // Indexed triangle set
-    vrml = vrml.replace(/<IndexedTriangleSet\s*index='([-\d\s]*)'\s*>/gi,
+    vrml = vrml.replace(/<IndexedTriangleSet[^>]*index='([-\d\s]*)'\s*>/gi,
         function(match, indexGroup) {
           var triIndices = indexGroup.split(" ");
           var nVertices = triIndices.length;
@@ -1626,7 +1626,7 @@
         }).replace(/<\/IndexedTriangleSet>/gi, "  }\n}");
 
     // Indexed face set
-    vrml = vrml.replace(/<IndexedFaceSet\s*coordIndex='([-\d\s]*)'\s*>/gi,
+    vrml = vrml.replace(/<IndexedFaceSet[^>]*coordIndex='([-\d\s]*)'\s*>/gi,
         function(match, indexGroup) {
           var indices = indexGroup.split(" ");
           return shapePrefix + "    coordIndex [" + indices.join(", ") + "]\n";

@@ -42,6 +42,8 @@ Miscellaneous:
   dynamically based on the available space. This prevents some problems with
   lower display resolutions.
 
+- 3D viewer: loading of box volumes workes again.
+
 
 ## 2016.12.16
 

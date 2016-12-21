@@ -35,6 +35,9 @@ Miscellaneous:
 - The Selection Table can now be opened through Ctrl+Space by using the handle
   'selection-table' instead of 'neuron-staging-area'.
 
+- Project and stack menu entries are now sorted by default, which makes it easier
+  to deal with many projects and stacks.
+
 
 ### Bug fixes
 

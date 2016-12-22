@@ -61,6 +61,7 @@
       };
 
       return CATMAID.fetch(url, 'POST', params).then(function(json) {
+        CATMAID.Labels.trigger(CATMAID.Labels.EVENT_NODE_LABELS_CHANGED, nodeId);
         if (json.warning) {
           CATMAID.warn(json.warning);
         }
@@ -86,12 +87,16 @@
     remove: function(projectId, nodeId, nodeType, label) {
       var url = projectId + '/label/' + nodeType + '/' + nodeId + '/remove';
       return CATMAID.fetch(url, 'POST', {tag: label}).then(function(json) {
+        CATMAID.Labels.trigger(CATMAID.Labels.EVENT_NODE_LABELS_CHANGED, nodeId);
         return {
           'deletedLabels': [label],
         };
       });
     },
   };
+
+  Labels.EVENT_NODE_LABELS_CHANGED = "node_labels_changed";
+  CATMAID.asEventSource(Labels);
 
   // Export labels namespace into CATMAID namespace
   CATMAID.Labels = Labels;

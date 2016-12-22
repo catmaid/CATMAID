@@ -92,7 +92,8 @@ class DVIDClient:
             raise ValueError("Couldn't find zoom level information for "
                              "instance %s" % instance_id)
 
-        ref_level_id = levels.keys()[0]
+        # Use the smallest zoom level as reference (should be 0).
+        ref_level_id = sorted(levels.keys())[0]
         ref_level = levels.get(ref_level_id)
 
         # Tile size
@@ -104,7 +105,7 @@ class DVIDClient:
         res_data = ref_level['Resolution']
         resolution = {'x': res_data[0], 'y': res_data[1], 'z': res_data[2]}
 
-        # Make sure all levels have the same tile zise and resolution
+        # Make sure all levels have the same tile size
         for level, level_data in levels.items():
             ts = ref_level.get('TileSize')
             if not tile_size:
@@ -112,14 +113,6 @@ class DVIDClient:
                                  "%s in instance %s " % (level, instance_id))
             if ts[0] != tile_size[0] or ts[1] != tile_size[1]:
                 raise ValueError("Tile sizes of zoom levels %s and %s of "
-                                 "instance %s differ, they need to be the "
-                                 "same" % (ref_level_id, level, instance_id))
-            res = ref_level.get('Resolution')
-            if not tile_size:
-                raise ValueError("Couldn't find resolution for zoom level "
-                                 "%s in instance %s " % (level, instance_id))
-            if res[0] != res_data[0] or res[1] != res_data[1] or res[2] != res_data[2]:
-                raise ValueError("Resolutions of zoom levels %s and %s of "
                                  "instance %s differ, they need to be the "
                                  "same" % (ref_level_id, level, instance_id))
 

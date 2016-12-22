@@ -657,7 +657,9 @@ class SkeletonsApiTests(CatmaidApiTestCase):
                 {'treenode_id': new_root})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
-        expected_result = {'newroot': 2394}
+        expected_result = {
+                'newroot': 2394,
+                'skeleton_id': 2388}
         self.assertEqual(expected_result, parsed_response)
 
         response = self.client.post(
@@ -753,7 +755,9 @@ class SkeletonsApiTests(CatmaidApiTestCase):
                 {'treenode_id': new_root})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
-        expected_result = {'newroot': 407}
+        expected_result = {
+                'newroot': 407,
+                'skeleton_id': 373}
         self.assertEqual(expected_result, parsed_response)
         self.assertEqual(1 + log_count, count_logs())
 

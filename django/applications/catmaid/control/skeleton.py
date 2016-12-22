@@ -1169,7 +1169,8 @@ def reroot_skeleton(request, project_id=None):
             insert_into_log(project_id, request.user.id, 'reroot_skeleton',
                             location, 'Rerooted skeleton for '
                             'treenode with ID %s' % treenode.id)
-            return JsonResponse({'newroot': treenode.id})
+            return JsonResponse({'newroot': treenode.id,
+                                 'skeleton_id': treenode.skeleton_id})
         # Else, already root
         return JsonResponse({'error': 'Node #%s is already root!' % treenode_id})
     except Exception as e:

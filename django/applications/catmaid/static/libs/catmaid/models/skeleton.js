@@ -86,7 +86,36 @@
             CATMAID.Skeletons.EVENT_SKELETON_CHANGED, json.result_skeleton_id);
         return json;
       }).bind(this));
-    }
+    },
+
+    /**
+     * Reroot a skeleton at a specific treenode.
+     *
+     * @param {State}   state      Neighborhood state for node
+     * @param {integer} projectID  The project space to work in
+     * @param {integer} treenodeID Treenode to reroot skeleton at
+     *
+     * @returns A new promise that is resolved once the skeleton is rerooted.
+     */
+    reroot: function(state, projectID, treenodeID) {
+
+      CATMAID.requirePermission(projectID, 'can_annotate',
+          'You don\'t have have permission to reroot skeletons');
+      var url = projectID + '/skeleton/reroot';
+      var params = {
+        treenode_id: treenodeID,
+        state: state.makeNeighborhoodState(treenodeID)
+      };
+
+      return CATMAID.fetch(url, 'POST', params).then((function(json) {
+        this.trigger(CATMAID.Skeletons.EVENT_SKELETON_REROOTED,
+            json.skeleton_id,
+            treenodeID);
+        this.trigger(CATMAID.Skeletons.EVENT_SKELETON_CHANGED,
+            json.skeleton_id);
+        return json;
+      }).bind(this));
+    },
 
   };
 
@@ -95,6 +124,7 @@
   Skeletons.EVENT_SKELETON_CHANGED = "skeleton_changed";
   Skeletons.EVENT_SKELETON_SPLIT = "skeleton_split";
   Skeletons.EVENT_SKELETONS_JOINED = "skeletons_joined";
+  Skeletons.EVENT_SKELETON_REROOTED = "skeleton_rerooted";
   CATMAID.asEventSource(Skeletons);
 
   // Export Skeleton namespace
@@ -158,6 +188,33 @@
     };
 
     var title = "Join skeleton throuh treenode " + toId + " into " + fromId + ".";
+
+    this.init(title, exec, undo);
+  });
+
+  /**
+   * A command that wraps rerooting skeletons. For now, it will block undo.
+   *
+   * @param {State}   state      Neighborhood state for node
+   * @param {integer} projectID  The project space to work in
+   * @param {integer} treenodeID Treenode to reroot skeleton at
+   */
+  CATMAID.RerootSkeletonCommand = CATMAID.makeCommand(
+      function(state, projectID, treenodeID) {
+
+    var exec = function(done, command, map) {
+      var reroot = CATMAID.Skeletons.reroot(state, projectID, treenodeID);
+      return reroot.then(function(result) {
+        done();
+        return result;
+      });
+    };
+
+    var undo = function(done, command, map) {
+      throw new CATMAID.ValueError("Undo of skeleton rerooting is not allowed at the moment");
+    };
+
+    var title = "Reroot skeleton at treenode " + treenodeID;
 
     this.init(title, exec, undo);
   });

@@ -1632,11 +1632,9 @@ SkeletonAnnotations.TracingOverlay.prototype.rerootSkeleton = function(nodeID) {
   if (!confirm("Do you really want to to reroot the skeleton?")) return;
   var self = this;
   this.promiseNode(this.nodes[nodeID]).then(function(nodeID) {
-    self.submit(
-        django_url + project.id + '/skeleton/reroot',
-        'POST',
-        {treenode_id: nodeID},
-        function() { self.updateNodes(); } );
+    var command = new CATMAID.RerootSkeletonCommand(self.state, project.id, nodeID);
+    CATMAID.commands.execute(command)
+      .then(function () { self.updateNodes(); });
   });
 };
 

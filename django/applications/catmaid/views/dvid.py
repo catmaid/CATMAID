@@ -4,7 +4,7 @@ import urllib2
 from django import forms
 from django.core.exceptions import ValidationError
 from django.contrib import messages
-from django.http import HttpResponseRedirect
+from django.shortcuts import redirect
 
 from formtools.wizard.views import SessionWizardView
 
@@ -177,7 +177,7 @@ class DVIDImportWizard(SessionWizardView):
             msg = 'A new DVID based stack was successfully created.'
 
         messages.add_message(self.request, messages.SUCCESS, msg)
-        return HttpResponseRedirect('/admin/')
+        return redirect('admin:index')
 
     def get_context_data(self, form, **kwargs):
         context = super(DVIDImportWizard, self).get_context_data(form=form, **kwargs)

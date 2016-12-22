@@ -74,7 +74,7 @@
     },
 
     /**
-     * Remoave a label from a specific node.
+     * Remove a label from a specific node.
      *
      * @param {integer} projectId The project the node is part of
      * @param {integer} nodeId    Id of node
@@ -104,7 +104,7 @@
   /**
    * Add a tag to the active treenode. If undo is called the tag set is
    * restored that existed for this node just before the new tag was added.
-   * This information will only be aquired if the command is executed.
+   * This information will only be acquired if the command is executed.
    */
   CATMAID.AddTagsToNodeCommand = CATMAID.makeCommand(function(projectId, nodeId, nodeType,
         tags, deleteExisting) {
@@ -174,7 +174,7 @@
 
       // If the list of added tags is empty, undo will do nothing. This can
       // happen due to multiple reasons, e.g. lack of permissions or the tag
-      // existed before. Othewise, remove all added tags.
+      // existed before. Otherwise, remove all added tags.
       var addLabel = (command._deletedLabels.length === 0) ? Promise.resolve() :
           CATMAID.Labels.update(projectId, nodeId, nodeType, command._deletedLabels);
 

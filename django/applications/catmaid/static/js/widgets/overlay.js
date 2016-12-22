@@ -603,6 +603,11 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
   /** Current connector selection menu, if any */
   this.connectorTypeMenu = null;
 
+  /** Cache of node list request responses. */
+  this.nodeListCache = new CATMAID.LRUCache(
+      SkeletonAnnotations.TracingOverlay.NODE_LIST_CACHE_CAPACITY,
+      SkeletonAnnotations.TracingOverlay.NODE_LIST_CACHE_LIFETIME);
+
   /** An accessor to the internal nodes array to get information about the
    * layer's current state */
   var self = this;
@@ -743,6 +748,30 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
       this._skeletonDisplaySource.skeletonModels);
   this.graphics.setNodeRadiiVisibility(SkeletonAnnotations.TracingOverlay.Settings.session.display_node_radii);
 
+  // Invalidate the node list cache aggressively.
+  CATMAID.Skeletons.on(CATMAID.Skeletons.EVENT_SKELETON_CHANGED,
+    this.nodeListCache.clear, this.nodeListCache);
+  CATMAID.Nodes.on(CATMAID.Nodes.EVENT_NODE_CREATED,
+    this.nodeListCache.clear, this.nodeListCache);
+  CATMAID.Nodes.on(CATMAID.Nodes.EVENT_NODE_UPDATED,
+    this.nodeListCache.clear, this.nodeListCache);
+  CATMAID.Nodes.on(CATMAID.Nodes.EVENT_NODE_CONFIDENCE_CHANGED,
+    this.nodeListCache.clear, this.nodeListCache);
+  CATMAID.Nodes.on(CATMAID.Nodes.EVENT_NODE_RADIUS_CHANGED,
+    this.nodeListCache.clear, this.nodeListCache);
+  CATMAID.Connectors.on(CATMAID.Connectors.EVENT_CONNECTOR_CREATED,
+    this.nodeListCache.clear, this.nodeListCache);
+  CATMAID.Connectors.on(CATMAID.Connectors.EVENT_CONNECTOR_REMOVED,
+    this.nodeListCache.clear, this.nodeListCache);
+  CATMAID.Connectors.on(CATMAID.Connectors.EVENT_LINK_CREATED,
+    this.nodeListCache.clear, this.nodeListCache);
+  CATMAID.Connectors.on(CATMAID.Connectors.EVENT_LINK_REMOVED,
+    this.nodeListCache.clear, this.nodeListCache);
+  CATMAID.Labels.on(CATMAID.Labels.EVENT_NODE_LABELS_CHANGED,
+    this.nodeListCache.clear, this.nodeListCache);
+  CATMAID.State.on(CATMAID.State.EVENT_STATE_NEEDS_UPDATE,
+    this.nodeListCache.clear, this.nodeListCache);
+
   // Listen to change and delete events of skeletons
   CATMAID.Skeletons.on(CATMAID.Skeletons.EVENT_SKELETON_CHANGED,
     this.handleChangedSkeleton, this);
@@ -778,6 +807,9 @@ SkeletonAnnotations.TracingOverlay.prototype = {
   EVENT_HIT_NODE_DISPLAY_LIMIT: "tracing_hit_node_display_limit"
 };
 CATMAID.asEventSource(SkeletonAnnotations.TracingOverlay.prototype);
+
+SkeletonAnnotations.TracingOverlay.NODE_LIST_CACHE_CAPACITY = 20;
+SkeletonAnnotations.TracingOverlay.NODE_LIST_CACHE_LIFETIME = 60 * 1000;
 
 SkeletonAnnotations.TracingOverlay.Settings = new CATMAID.Settings(
       'tracing-overlay',
@@ -2876,42 +2908,56 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
       labels: self.getLabelStatus()
     };
 
-    var url = django_url + project.id + '/node/list';
-    self.submit(
-      url,
-      'POST',
-      params,
-      function(json) {
-        if (json.needs_setup) {
-          CATMAID.TracingTool.display_tracing_setup_dialog(project.id,
-              json.has_needed_permissions, json.missing_classes,
-              json.missing_relations, json.missing_classinstances,
-              json.initialize);
-        } else {
-          // Bail if the overlay was destroyed or suspended before this callback.
-          if (self.suspended) {
-            return;
-          }
+    var success = function (json) {
+      // Bail if the overlay was destroyed or suspended before this callback.
+      if (self.suspended) {
+        return;
+      }
 
-          self.refreshNodesFromTuples(json, extraNodes);
+      self.refreshNodesFromTuples(json, extraNodes);
 
-          // initialization hack for "URL to this view"
-          if (SkeletonAnnotations.hasOwnProperty('init_active_node_id')) {
-            self.activateNode(self.nodes[SkeletonAnnotations.init_active_node_id]);
-            delete SkeletonAnnotations.init_active_node_id;
-          }
+      // initialization hack for "URL to this view"
+      if (SkeletonAnnotations.hasOwnProperty('init_active_node_id')) {
+        self.activateNode(self.nodes[SkeletonAnnotations.init_active_node_id]);
+        delete SkeletonAnnotations.init_active_node_id;
+      }
 
-          self.redraw();
-          if (typeof callback !== "undefined") {
-            callback();
+      self.redraw();
+      if (typeof callback !== "undefined") {
+        callback();
+      }
+    };
+
+    // Check the node list cache for an exactly matching request. Only request
+    // from the backend if not found.
+    var paramsKey = JSON.stringify(params);
+    var json = self.nodeListCache.get(paramsKey);
+
+    if (json) {
+      success(json);
+    } else {
+      var url = django_url + project.id + '/node/list';
+      self.submit(
+        url,
+        'POST',
+        params,
+        function(json) {
+          if (json.needs_setup) {
+            CATMAID.TracingTool.display_tracing_setup_dialog(project.id,
+                json.has_needed_permissions, json.missing_classes,
+                json.missing_relations, json.missing_classinstances,
+                json.initialize);
+          } else {
+            self.nodeListCache.set(paramsKey, json);
+            success(json);
           }
-        }
-      },
-      false,
-      true,
-      errCallback,
-      false,
-      'stack-' + self.stackViewer.primaryStack.id + '-url-' + url);
+        },
+        false,
+        true,
+        errCallback,
+        false,
+        'stack-' + self.stackViewer.primaryStack.id + '-url-' + url);
+    }
   });
 };
 

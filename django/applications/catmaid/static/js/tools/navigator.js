@@ -258,7 +258,7 @@
       var m = CATMAID.UI.getLastMouse();
       var x = m.x - offset.left,
         y = m.y - offset.top;
-      if (Navigator.Settings.use_cursor_following_zoom &&
+      if (Navigator.Settings.session.use_cursor_following_zoom &&
         x >= 0 && x <= self.stackViewer.viewWidth &&
         y >= 0 && y <= self.stackViewer.viewHeight) {
         x /= self.stackViewer.scale;

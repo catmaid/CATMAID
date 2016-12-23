@@ -700,13 +700,18 @@ var WindowMaker = new function()
     // Update volume list
     var initVolumeList = function() {
       return CATMAID.Volumes.listAll(project.id).then(function(json) {
-          var volumes = json.reduce(function(o, volume) {
-            o[volume.id] = volume.name;
-            return o;
-          }, {});
+          var volumes = json.sort(function(a, b) {
+            return CATMAID.tools.compareStrings(a.name, b.name);
+          }).map(function(volume) {
+            return {
+              title: volume.name,
+              value: volume.id
+            };
+          });
           var selectedVolumes = WA.getLoadedVolumeIds();
           // Create actual element based on the returned data
-          var node = DOM.createCheckboxSelect('Volumes', volumes, selectedVolumes);
+          var node = DOM.createCheckboxSelect('Volumes', volumes,
+              selectedVolumes);
           // Add a selection handler
           node.onchange = function(e) {
             var visible = e.srcElement.checked;

@@ -749,9 +749,13 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
   this.graphics.setNodeRadiiVisibility(SkeletonAnnotations.TracingOverlay.Settings.session.display_node_radii);
 
   // Invalidate the node list cache aggressively.
+  CATMAID.Neurons.on(CATMAID.Neurons.EVENT_NEURON_DELETED,
+    this.nodeListCache.clear, this.nodeListCache);
   CATMAID.Skeletons.on(CATMAID.Skeletons.EVENT_SKELETON_CHANGED,
     this.nodeListCache.clear, this.nodeListCache);
   CATMAID.Nodes.on(CATMAID.Nodes.EVENT_NODE_CREATED,
+    this.nodeListCache.clear, this.nodeListCache);
+  CATMAID.Nodes.on(CATMAID.Nodes.EVENT_NODE_DELETED,
     this.nodeListCache.clear, this.nodeListCache);
   CATMAID.Nodes.on(CATMAID.Nodes.EVENT_NODE_UPDATED,
     this.nodeListCache.clear, this.nodeListCache);
@@ -1184,6 +1188,33 @@ SkeletonAnnotations.TracingOverlay.prototype.destroy = function() {
   }
 
   // Unregister from models
+  CATMAID.Neurons.off(CATMAID.Neurons.EVENT_NEURON_DELETED,
+      this.nodeListCache.clear, this.nodeListCache);
+  CATMAID.Skeletons.off(CATMAID.Skeletons.EVENT_SKELETON_CHANGED,
+      this.nodeListCache.clear, this.nodeListCache);
+  CATMAID.Nodes.off(CATMAID.Nodes.EVENT_NODE_CREATED,
+      this.nodeListCache.clear, this.nodeListCache);
+  CATMAID.Nodes.off(CATMAID.Nodes.EVENT_NODE_DELETED,
+      this.nodeListCache.clear, this.nodeListCache);
+  CATMAID.Nodes.off(CATMAID.Nodes.EVENT_NODE_UPDATED,
+      this.nodeListCache.clear, this.nodeListCache);
+  CATMAID.Nodes.off(CATMAID.Nodes.EVENT_NODE_CONFIDENCE_CHANGED,
+      this.nodeListCache.clear, this.nodeListCache);
+  CATMAID.Nodes.off(CATMAID.Nodes.EVENT_NODE_RADIUS_CHANGED,
+      this.nodeListCache.clear, this.nodeListCache);
+  CATMAID.Connectors.off(CATMAID.Connectors.EVENT_CONNECTOR_CREATED,
+      this.nodeListCache.clear, this.nodeListCache);
+  CATMAID.Connectors.off(CATMAID.Connectors.EVENT_CONNECTOR_REMOVED,
+      this.nodeListCache.clear, this.nodeListCache);
+  CATMAID.Connectors.off(CATMAID.Connectors.EVENT_LINK_CREATED,
+      this.nodeListCache.clear, this.nodeListCache);
+  CATMAID.Connectors.off(CATMAID.Connectors.EVENT_LINK_REMOVED,
+      this.nodeListCache.clear, this.nodeListCache);
+  CATMAID.Labels.off(CATMAID.Labels.EVENT_NODE_LABELS_CHANGED,
+      this.nodeListCache.clear, this.nodeListCache);
+  CATMAID.State.off(CATMAID.State.EVENT_STATE_NEEDS_UPDATE,
+      this.nodeListCache.clear, this.nodeListCache);
+
   CATMAID.Skeletons.off(CATMAID.Skeletons.EVENT_SKELETON_CHANGED,
       this.handleChangedSkeleton, this);
   CATMAID.Skeletons.off(CATMAID.Skeletons.EVENT_SKELETON_DELETED,

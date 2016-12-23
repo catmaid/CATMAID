@@ -3,6 +3,7 @@
 from __future__ import unicode_literals
 
 import os
+import logging
 
 import django.contrib.postgres.fields.jsonb
 from django.conf import settings
@@ -13,6 +14,8 @@ from catmaid.control.volume import get_volume_instance
 
 from contextlib import closing
 
+# Get an instance of a logger
+logger = logging.getLogger(__name__)
 
 def get_mesh(project_id, stack_id):
     """Return a triangle mesh for a project/stack combination or None.

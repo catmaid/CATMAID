@@ -1250,7 +1250,7 @@
       throw new CATMAID.Error("Couldn't find parameter 'adjacents'");
     }
 
-    requestQueue.replace(django_url + project.id + '/skeleton/analytics', 'POST',
+    requestQueue.replace(django_url + project.id + '/analytics/skeletons', 'POST',
       {skeleton_ids: skids,
        extra: extra,
        adjacents: adjacents},

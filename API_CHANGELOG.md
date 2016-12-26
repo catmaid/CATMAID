@@ -10,7 +10,9 @@ None.
 
 ### Modifications
 
-None.
+- `POST /{project_id}/skeleton/analytics`
+  Is renamed to `POST /{project_id}/analytics/skeletons`.
+
 
 ### Deprecations
 

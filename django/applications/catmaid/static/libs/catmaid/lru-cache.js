@@ -50,6 +50,25 @@
   };
 
   /**
+   * Check whether the cache contains a key without updating its usage.
+   *
+   * @param  {Object}  key
+   * @return {boolean}     Whether the query key is a hit.
+   */
+  LRUCache.prototype.has = function (key) {
+    var now = Date.now();
+    for (var i = 0; i < this._store.length; ++i) {
+      var entry = this._store[i];
+
+      if (entry && entry.key === key) {
+        return now - entry.timestamp <= this.lifetime;
+      }
+    }
+
+    return false;
+  };
+
+  /**
    * Set a cached value in the cache by its key.
    *
    * @param {Object} key

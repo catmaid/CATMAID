@@ -81,7 +81,7 @@ def export_skeleton_response(request, project_id=None, skeleton_id=None, format=
     if format == 'swc':
         return HttpResponse(get_swc_string(treenode_qs), content_type='text/plain')
     elif format == 'json':
-        return HttpResponse(get_json_string(treenode_qs), content_type='application/json')
+        return JsonResponse(treenode_qs)
     else:
         raise Exception("Unknown format ('%s') in export_skeleton_response" % (format,))
 

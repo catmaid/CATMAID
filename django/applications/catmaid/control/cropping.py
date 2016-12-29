@@ -438,7 +438,8 @@ def extract_substack_no_rotation( job ):
         px_x_offset = abs(px_x_min_nobound) if px_x_min_nobound < 0 else 0
         px_y_offset = abs(px_y_min_nobound) if px_y_min_nobound < 0 else 0
         # Create a dictionary entry with a simple object
-        class BB: pass
+        class BB:
+            pass
         bb = BB()
         bb.px_x_min = px_x_min
         bb.px_x_max = px_x_max

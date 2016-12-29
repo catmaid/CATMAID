@@ -551,7 +551,7 @@ class ImportingWizard(SessionWizardView):
             form.replacing_projects = rp = project_selector.replacing_projects
             self.projects = projects
             # Update the folder list and select all by default
-            displayed_projects = [(t[0], t[1].name) for t in np + mp + rp];
+            displayed_projects = [(t[0], t[1].name) for t in np + mp + rp]
             displayed_projects = sorted(displayed_projects, key=lambda key: key[1])
             form.displayed_projects = displayed_projects
             form.fields['projects'].choices = displayed_projects

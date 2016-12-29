@@ -340,7 +340,7 @@ class HistoryTableTests(TransactionTestCase):
         """, {
             'user_id': self.user.id,
             'project_id': self.project.id
-        });
+        })
         class_details = cursor.fetchone()[0]
 
         new_class_history = self.get_history_entries(cursor, 'class')

@@ -183,7 +183,7 @@ def requires_user_role_for_any_project(roles):
                 msg = "The user '%s' with ID %s does not have a necessary " \
                       "role in any project" \
                       % (u.first_name + ' ' + u.last_name, u.id)
-                raise PermissionError(msg);
+                raise PermissionError(msg)
 
         return wraps(f)(inner_decorator)
     return decorated_with_requires_user_role_for_any_project

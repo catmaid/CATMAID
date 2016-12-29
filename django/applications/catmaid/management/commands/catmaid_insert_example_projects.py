@@ -14,7 +14,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
 
         if not options['user_id']:
-            raise CommandError, "You must specify a user ID with --user"
+            raise CommandError("You must specify a user ID with --user")
 
         user = User.objects.get(pk=options['user_id'])
 

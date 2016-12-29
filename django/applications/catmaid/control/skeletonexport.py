@@ -83,7 +83,7 @@ def export_skeleton_response(request, project_id=None, skeleton_id=None, format=
     elif format == 'json':
         return HttpResponse(get_json_string(treenode_qs), content_type='application/json')
     else:
-        raise Exception, "Unknown format ('%s') in export_skeleton_response" % (format,)
+        raise Exception("Unknown format ('%s') in export_skeleton_response" % (format,))
 
 
 @api_view(['GET'])

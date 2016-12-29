@@ -223,7 +223,7 @@ class ClassInstance(models.Model):
             this_to_syn = 'pre'
             syn_to_con = 'post'
         else:
-            raise Exception, "Unknown connectivity direction: "+str(direction)
+            raise Exception("Unknown connectivity direction: " + str(direction))
 
         relations = dict((r.relation_name, r.id) for r in Relation.objects.filter(project=project_id))
         classes = dict((c.class_name, c.id) for c in Class.objects.filter(project=project_id))
@@ -302,13 +302,13 @@ class ClassInstance(models.Model):
         elif len(qs) == 1:
             return qs[0].name
         elif qs:
-            raise Exception, "Multiple cell body locations found for neuron '%s'" % (self.name,)
+            raise Exception("Multiple cell body locations found for neuron '%s'" % (self.name,))
 
     def set_cell_body_location(self, new_location):
         # FIXME: for the moment, just hardcode the user ID:
         user = User.objects.get(pk=3)
         if new_location not in [x[1] for x in CELL_BODY_CHOICES]:
-            raise Exception, "Incorrect cell body location '%s'" % (new_location,)
+            raise Exception("Incorrect cell body location '%s'" % (new_location,))
         # Just delete the ClassInstance - ON DELETE CASCADE should deal with the rest:
         ClassInstance.objects.filter(
             cici_via_b__relation__relation_name='has_cell_body',

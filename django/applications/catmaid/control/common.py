@@ -141,9 +141,9 @@ def insert_into_log(project_id, user_id, op_type, location=None, freetext=None):
     new_log.user_id = user_id
     new_log.project_id = project_id
     new_log.operation_type = op_type
-    if not location is None:
+    if location is not None:
         new_log.location = Double3D(*location)
-    if not freetext is None:
+    if freetext is not None:
         new_log.freetext = freetext
 
     new_log.save()

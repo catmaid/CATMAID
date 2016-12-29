@@ -324,7 +324,7 @@ def lock_nodes(node_ids, cursor):
         raise ValueError("No nodes to lock")
 
 def is_disabled(state):
-    return state and type(state) == dict and True == state.get('nocheck')
+    return state and type(state) == dict and state.get('nocheck') is True
 
 def make_nocheck_state(parsed=False):
     """Get a state representation that causes skipping of actual state checks.

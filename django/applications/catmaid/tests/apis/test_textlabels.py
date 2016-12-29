@@ -165,7 +165,7 @@ class TextlabelsApiTests(CatmaidApiTestCase):
             # label_location_data = Double3D(x=0, y=0, z=0)
             for p, values in label_data:
                 value = values[i]
-                if (value == False):
+                if value is False:
                     continue  # Do not check for default values for now
 
                 if (p == 'type' and value != 'bubble'):

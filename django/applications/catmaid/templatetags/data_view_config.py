@@ -106,7 +106,7 @@ class ProjectListVarNode(template.Node):
             projects = Project.objects.filter(tags__name__in=current_tags).annotate(repeat_count=Count("id")).filter(repeat_count=len(current_tags))
             # Sort projects if requested. Default to true if
             # variable not given or not found.
-            if self.sort == None:
+            if self.sort is None:
                 sort = True
             else:
                 sort = self.sort.resolve(context)

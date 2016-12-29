@@ -167,7 +167,7 @@ def get_data_view( request, data_view_id ):
         projects = add_catalogue_info( request.user, projects )
 
     # Sort by default
-    if "sort" not in config or config["sort"] == True:
+    if "sort" not in config or config["sort"] is True:
         projects = natural_sort( projects, "title" )
 
     # Build project index

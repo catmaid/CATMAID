@@ -1312,7 +1312,7 @@ def graphs_instanciate_features(graphs, features, target=None, cursor=None):
     dimensions graphs x features is created.
     """
     cursor = cursor or connection.cursor()
-    if None == target:
+    if target is None:
         target = [[0 for j in range(len(features))] for i in range(len(graphs))]
 
     logger.debug("Getting paths for graphs")

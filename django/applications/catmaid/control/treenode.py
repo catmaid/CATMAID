@@ -478,14 +478,14 @@ def update_node_radii(node_ids, radii, cursor=None):
             zip(node_ids, radii))) + ")"
 
     cursor.execute('''
-	UPDATE treenode t SET radius = target.new_radius
-	FROM (SELECT x.id, x.radius AS old_radius, y.new_radius
-	      FROM treenode x
-	      INNER JOIN (VALUES {}) y(id, new_radius)
-	      ON x.id=y.id FOR NO KEY UPDATE) target
-	WHERE t.id = target.id
-	RETURNING t.id, target.old_radius, target.new_radius,
-                  t.edition_time, t.skeleton_id;
+        UPDATE treenode t SET radius = target.new_radius
+        FROM (SELECT x.id, x.radius AS old_radius, y.new_radius
+              FROM treenode x
+              INNER JOIN (VALUES {}) y(id, new_radius)
+              ON x.id=y.id FOR NO KEY UPDATE) target
+        WHERE t.id = target.id
+        RETURNING t.id, target.old_radius, target.new_radius,
+                      t.edition_time, t.skeleton_id;
     '''.format(node_radii))
 
     updated_rows = cursor.fetchall()

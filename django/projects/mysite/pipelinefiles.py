@@ -52,7 +52,7 @@ libraries_js = {
                'jquery-ui.min.js', 'jquery-ui.*.js',
                'jquery.dataTables.min.js', 'jquery.*.js',
                'dataTables.buttons.js', 'dataTables.colReorder.js',
-		           'buttons.html5.min.js'],
+               'buttons.html5.min.js'],
     'jszip': ['*.js'],
     'jsTree': ['jstree.js'],
     'colorpicker': ['colors.js', 'colorPicker.data.js', 'colorPicker.js',

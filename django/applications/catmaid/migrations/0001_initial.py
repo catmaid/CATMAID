@@ -32,9 +32,9 @@ SET search_path = public, pg_catalog;
 --
 
 CREATE TYPE double3d AS (
-	x double precision,
-	y double precision,
-	z double precision
+    x double precision,
+    y double precision,
+    z double precision
 );
 
 
@@ -43,7 +43,7 @@ CREATE TYPE double3d AS (
 --
 
 CREATE TYPE feature_type AS (
-	links integer[]
+    links integer[]
 );
 
 
@@ -52,9 +52,9 @@ CREATE TYPE feature_type AS (
 --
 
 CREATE TYPE float3d AS (
-	x real,
-	y real,
-	z real
+    x real,
+    y real,
+    z real
 );
 
 
@@ -63,9 +63,9 @@ CREATE TYPE float3d AS (
 --
 
 CREATE TYPE integer3d AS (
-	x integer,
-	y integer,
-	z integer
+    x integer,
+    y integer,
+    z integer
 );
 
 
@@ -74,10 +74,10 @@ CREATE TYPE integer3d AS (
 --
 
 CREATE TYPE rgba AS (
-	r real,
-	g real,
-	b real,
-	a real
+    r real,
+    g real,
+    b real,
+    a real
 );
 
 

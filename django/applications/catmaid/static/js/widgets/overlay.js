@@ -2892,15 +2892,15 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
     self.old_width = stackViewer.viewWidth;
     self.old_height = stackViewer.viewHeight;
 
-    var halfWidth =  (stackViewer.viewWidth  / 2) / stackViewer.scale,
-        halfHeight = (stackViewer.viewHeight / 2) / stackViewer.scale;
+    var paddedHalfWidth =  (stackViewer.viewWidth  / 2 + self.padding) / stackViewer.scale,
+        paddedhalfHeight = (stackViewer.viewHeight / 2 + self.padding) / stackViewer.scale;
 
-    var x0 = stackViewer.x - halfWidth,
-        y0 = stackViewer.y - halfHeight,
+    var x0 = stackViewer.x - paddedHalfWidth,
+        y0 = stackViewer.y - paddedhalfHeight,
         z0 = stackViewer.z;
 
-    var x1 = stackViewer.x + halfWidth,
-        y1 = stackViewer.y + halfHeight,
+    var x1 = stackViewer.x + paddedHalfWidth,
+        y1 = stackViewer.y + paddedhalfHeight,
         z1 = stackViewer.z + 1.0;
 
     var wx0 = stackViewer.primaryStack.stackToProjectX(z0, y0, x0),
@@ -2910,14 +2910,6 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
     var wx1 = stackViewer.primaryStack.stackToProjectX(z1, y1, x1),
         wy1 = stackViewer.primaryStack.stackToProjectY(z1, y1, x1),
         wz1 = stackViewer.primaryStack.stackToProjectZ(z1, y1, x1);
-
-    // Add padding to bounding box
-    var xPadP = self.padding * stackViewer.primaryStack.resolution.x / stackViewer.scale;
-    var yPadP = self.padding * stackViewer.primaryStack.resolution.y / stackViewer.scale;
-    wx0 -= xPadP;
-    wx1 += xPadP;
-    wy0 -= yPadP;
-    wy1 += yPadP;
 
     // As long as stack space Z coordinates are always clamped to the last
     // section (i.e. if floor() is used instead of round() when transforming),

@@ -712,15 +712,15 @@ def crop(request, project_id=None, stack_ids=None, x_min=None, x_max=None,
                 err_message += ", " + str( n+1 ) + ". " + e
         err_response = json_error_response( err_message )
         return err_response
-        
+
     result = start_asynch_process( job )
     return result
 
 def cleanup( max_age=1209600 ):
     """ Cleans up the temporarily space of the cropped stacks.
     Such a stack is deleted if it is older than max_age, which
-    is specified in seconds and  defaults to two weeks (1209600). 
-    """ 
+    is specified in seconds and  defaults to two weeks (1209600).
+    """
     search_pattern = os.path.join(crop_output_path, file_prefix + "*." + file_extension)
     now = time()
     files_to_remove = []

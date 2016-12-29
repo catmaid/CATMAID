@@ -33,7 +33,7 @@ class DVIDClient:
         instance = instances.get(instance_id) if instances else None
         if not instance:
             raise ValueError("Instance %s is not part of repository %s on DVID server %s" %
-                         (instance_id, repo_id, url))
+                         (instance_id, repo_id, self.url))
         return instance
 
     def get_instance_source(self, repo_id, instance_id):

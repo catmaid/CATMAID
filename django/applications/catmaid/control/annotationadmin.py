@@ -235,7 +235,7 @@ def copy_annotations(source_pid, target_pid, import_treenodes=True,
             ''', (target_pid, source_pid))
 
         # Link connectors to treenodes
-        currsor.execute('''
+        cursor.execute('''
             INSERT INTO connector_treenode ()
             SELECT
             FROM connector_treenode ct

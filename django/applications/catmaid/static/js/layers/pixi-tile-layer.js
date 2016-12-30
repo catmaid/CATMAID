@@ -29,18 +29,21 @@
 
     this._tileRequest = {};
     this._pixiInterpolationMode = this._interpolationMode ? PIXI.SCALE_MODES.LINEAR : PIXI.SCALE_MODES.NEAREST;
-
-    CATMAID.checkTileSourceCanary(project, this.stack, this.tileSource).then((function (accessible) {
-      if (accessible.normal && !accessible.cors) {
-        CATMAID.warn('Stack mirror is not CORS accessible, so WebGL will not be used.');
-        this.switchToDomTileLayer();
-      }
-    }).bind(this));
   }
 
   PixiTileLayer.prototype = Object.create(CATMAID.TileLayer.prototype);
   $.extend(PixiTileLayer.prototype, CATMAID.PixiLayer.prototype); // Mixin/multiple inherit PixiLayer.
   PixiTileLayer.prototype.constructor = PixiTileLayer;
+
+  /** @inheritdoc */
+  PixiTileLayer.prototype._handleCanaryCheck = function (accessible) {
+    if (accessible.normal && !accessible.cors) {
+      CATMAID.warn('Stack mirror is not CORS accessible, so WebGL will not be used.');
+      this.switchToDomTileLayer();
+    } else {
+      CATMAID.TileLayer.prototype._handleCanaryCheck.call(this, accessible);
+    }
+  };
 
   /** @inheritdoc */
   PixiTileLayer.prototype.setInterpolationMode = function (linear) {

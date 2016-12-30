@@ -109,7 +109,46 @@
       // currently not shown with a small image.
       this.overviewLayer = this.tileSource.getOverviewLayer(this);
     }
+
+    CATMAID.checkTileSourceCanary(project, this.stack, this.tileSource)
+        .then(this._handleCanaryCheck.bind(this));
   }
+
+  /**
+   * Handle a canary tile check for the tile source mirror.
+   *
+   * If the mirror is not accessible, switch to the first accessible mirror
+   * (ordered by mirror preference position). Otherwise, warn that no
+   * accessible mirror is available.
+   *
+   * @param  {Object} accessible Check result with normal and cors booleans.
+   */
+  TileLayer.prototype._handleCanaryCheck = function (accessible) {
+    if (!accessible.normal) {
+      Promise
+          .all(this.stack.mirrors.map(function (mirror, index) {
+            return CATMAID.checkTileSourceCanary(
+                project,
+                this.stack,
+                this.stack.createTileSourceForMirror(index));
+          }, this))
+          .then((function (mirrorAccessible) {
+            var mirrorIndex = mirrorAccessible.findIndex(function (accessible) {
+              return accessible.normal;
+            });
+
+            if (mirrorIndex !== -1) {
+              var oldMirrorTitle = this.stack.mirrors[this.mirrorIndex].title;
+              var newMirrorTitle = this.stack.mirrors[mirrorIndex].title;
+              CATMAID.warn('Stack mirror "' + oldMirrorTitle + '" is inaccessible. ' +
+                           'Switching to mirror "' + newMirrorTitle + '".');
+              this.switchToMirror(mirrorIndex);
+            } else {
+              CATMAID.warn('No mirrors for this stack are accessible. Image data may not load.');
+            }
+          }).bind(this));
+    }
+  };
 
   /**
    * Sets the interpolation mode for tile textures to linear pixel interpolation

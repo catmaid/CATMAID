@@ -69,15 +69,16 @@ def plot_useranalytics(request):
     start_date = request.GET.get('start', None)
     if start_date:
         start_date = dateparser.parse(start_date)
+        start_date = time_zone.localize(start_date)
     else:
         with timezone.override(time_zone):
             start_date = timezone.now() - timedelta(7)
-    start_date = time_zone.localize(start_date)
 
     # Get the end date for the query, defaulting to now.
     end_date = request.GET.get('end', None)
     if end_date:
         end_date = dateparser.parse(end_date)
+        end_date = time_zone.localize(end_date)
     else:
         with timezone.override(time_zone):
             end_date = timezone.now()
@@ -86,7 +87,6 @@ def plot_useranalytics(request):
     # well. The actual query is easier with an exclusive end and therefore
     # the end date is set to the beginning of the next day.
     end_date = end_date + timedelta(days=1)
-    end_date = time_zone.localize(end_date)
 
     if request.user.is_superuser or \
             project and request.user.has_perm('can_administer', project):

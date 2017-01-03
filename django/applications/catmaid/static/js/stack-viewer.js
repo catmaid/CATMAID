@@ -72,44 +72,7 @@
     this.viewWidth = this._stackWindow.getFrame().offsetWidth;
     this.viewHeight = this._stackWindow.getFrame().offsetHeight;
 
-    var self = this;
-    this._stackWindow.addListener(
-      function( callingWindow, signal )
-      {
-        switch ( signal )
-        {
-        case CMWWindow.CLOSE:
-          self._layers.forEach(function (layer) {
-            if (typeof layer.unregister === 'function') {
-              layer.unregister();
-            }
-          });
-          self._layers.clear();
-          self._project.removeStackViewer( self.getId() );
-          break;
-        case CMWWindow.RESIZE:
-          self.resize();
-          self.redraw();
-          break;
-        case CMWWindow.FOCUS:
-          self.overview.getView().style.zIndex = "6";
-          self._project.setFocusedStackViewer( self );
-          break;
-        case CMWWindow.BLUR:
-          self.overview.getView().style.zIndex = "5";
-          if ( self._tool )
-            self._tool.unregister();
-          self._tool = null;
-          break;
-        case CMWWindow.POINTER_ENTER:
-          if (CATMAID.FOCUS_ALL === CATMAID.focusBehavior ||
-              CATMAID.FOCUS_STACKS === CATMAID.focusBehavior) {
-            callingWindow.focus();
-          }
-          break;
-        }
-        return true;
-      } );
+    this._stackWindow.addListener(this._handleWindowSignal.bind(this));
 
     this.overview = new CATMAID.Overview( this );
     this._view.appendChild( this.overview.getView() );
@@ -119,11 +82,11 @@
     this._view.appendChild( this.layercontrol.getView() );
 
     // Ask for confirmation before closing the stack via the close button
-    $(this._stackWindow.getFrame()).find('.stackClose').get(0).onmousedown = function (e) {
-      if (self._project.getStackViewers().length > 1 || confirm('Closing this window will exit the project. Proceed?'))
-        self._stackWindow.close(e);
+    $(this._stackWindow.getFrame()).find('.stackClose').get(0).onmousedown = (function (e) {
+      if (this._project.getStackViewers().length > 1 || confirm('Closing this window will exit the project. Proceed?'))
+        this._stackWindow.close(e);
       else e.stopPropagation();
-    };
+    }).bind(this);
 
     this._scaleBar = document.createElement( "div" );
     this._scaleBar.className = "sliceBenchmark";
@@ -599,6 +562,49 @@
    * Get the stack window.
    */
   StackViewer.prototype.getWindow = function () { return this._stackWindow; };
+
+  /**
+   * Handle signals sent to the stack viewer's window.
+   */
+  StackViewer.prototype._handleWindowSignal = function(callingWindow, signal) {
+    switch (signal) {
+      case CMWWindow.CLOSE:
+        this._layers.forEach(function (layer) {
+          if (typeof layer.unregister === 'function') {
+            layer.unregister();
+          }
+        });
+        this._layers.clear();
+        this._project.removeStackViewer(this.getId());
+        break;
+
+      case CMWWindow.RESIZE:
+        this.resize();
+        this.redraw();
+        break;
+
+      case CMWWindow.FOCUS:
+        this.overview.getView().style.zIndex = "6";
+        this._project.setFocusedStackViewer(this);
+        break;
+
+      case CMWWindow.BLUR:
+        this.overview.getView().style.zIndex = "5";
+        if (this._tool) {
+          this._tool.unregister();
+        }
+        this._tool = null;
+        break;
+
+      case CMWWindow.POINTER_ENTER:
+        if (CATMAID.FOCUS_ALL === CATMAID.focusBehavior ||
+            CATMAID.FOCUS_STACKS === CATMAID.focusBehavior) {
+          callingWindow.focus();
+        }
+        break;
+    }
+    return true;
+  };
 
   /**
    * Get the project.

@@ -19,6 +19,10 @@ Connectivity table:
   input skeletons, i.e. the ones selected in the Connectiviy Widget. These in
   turn are either its input skeleton color or the default skeleton color.
 
+- Manual re-ordering of partner count columns has been removed. Neurons can now
+  be re re-ordered through the list at the top with the help of two icons in
+  each row (up and down).
+
 
 Graph widget:
 

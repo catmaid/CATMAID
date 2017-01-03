@@ -1103,14 +1103,29 @@
 
       // Create small icon to remove this neuron from list
       var removeSkeleton = $('<span />')
-        .attr('class', 'ui-icon ui-icon-close remove-skeleton')
+        .attr('class', 'ui-icon ui-icon-close skeleton-action')
         .attr('title', 'Remove this neuron from list')
-        .attr('skid', skid);
+        .attr('data-action', 'remove');
+
+      var moveSkeletonUp = $('<span />')
+        .attr('class', 'ui-icon ui-icon-triangle-1-n skeleton-action')
+        .attr('title', 'Move this neuron up in list')
+        .attr('data-action', 'move-up');
+
+      var moveSkeletonDown = $('<span />')
+        .attr('class', 'ui-icon ui-icon-triangle-1-s skeleton-action')
+        .attr('title', 'Move this neuron down in list')
+        .attr('data-action', 'move-down');
 
       // Create and append row for current skeleton
       var row = $('<tr />')
           .attr('data-skeleton-id', skid)
-          .append($('<td />').append((i + 1) + '.').append(removeSkeleton))
+          .attr('data-pos', i)
+          .append($('<td />')
+            .append((i + 1) + '.')
+            .append(removeSkeleton)
+            .append(moveSkeletonDown)
+            .append(moveSkeletonUp))
           .append($('<td />').attr('class', 'input-container')
               .append(selectionCb))
           .append($('<td />').append(
@@ -1156,9 +1171,41 @@
       widget.createConnectivityTable();
     });
 
-    neuronTable.on('click', '.remove-skeleton', this, function (e) {
-          e.data.removeSkeletons([parseInt($(this).attr('skid'), 10)]);
-        });
+    neuronTable.on('click', '.skeleton-action', this, function (e) {
+      var widget = e.data;
+      var tr = $(this).closest('tr');
+      var skeletonId = parseInt(tr.data('skeleton-id'), 10);
+      var pos = parseInt(tr.data('pos'), 10);
+
+      var action = $(this).data('action');
+      if ('remove' === action) {
+       e.data.removeSkeletons([skeletonId]);
+      } else if ('move-up' === action) {
+        if (0 === pos) {
+          CATMAID.warn('Already at first position');
+          return;
+        }
+        widget.currentOrder = [];
+        var prevSkeletonId = widget.ordered_skeleton_ids[pos - 1];
+        widget.ordered_skeleton_ids[pos - 1] = skeletonId;
+        widget.ordered_skeleton_ids[pos] = prevSkeletonId;
+        // Redraw tables
+        widget.createConnectivityTable();
+      } else if ('move-down' === action) {
+        if (widget.ordered_skeleton_ids.length - 1 === pos) {
+          CATMAID.warn('Already at last position');
+          return;
+        }
+        widget.currentOrder = [];
+        var nextSkeletonId = widget.ordered_skeleton_ids[pos + 1];
+        widget.ordered_skeleton_ids[pos + 1] = skeletonId;
+        widget.ordered_skeleton_ids[pos] = nextSkeletonId;
+        // Redraw tables
+        widget.createConnectivityTable();
+      } else {
+        throw new CATMAID.ValueError('Unknown skeleton action: ' + action);
+      }
+    });
 
     neuronTable.on('change', '.threshold', this, function (e) {
           var $this = $(this),
@@ -1346,9 +1393,6 @@
       bServerSide: false,
       bAutoWidth: false,
       iDisplayLength: -1,
-      oColReorder: {
-        iFixedColumns: 1
-      },
       aoColumnDefs: [
         { aTargets: [0], sSortDataType: 'dom-checkbox' }, // Checkbox column
         { aTargets: [1], sType: 'html', bSearchable: true }, // Neuron name column

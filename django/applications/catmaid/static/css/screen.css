@@ -680,7 +680,7 @@ div.clustering-content .content {
   clear: both;
 }
 
-.connectivity_widget .remove-skeleton {
+.connectivity_widget .skeleton-action {
   float: right;
   position: relative;
   top: -0.2em;

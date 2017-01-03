@@ -82,6 +82,8 @@ def labels_all(request, project_id=None):
 def get_label_stats(request, project_id=None):
     """Get usage statistics of node labels.
     """
+    labeled_as_relation = Relation.objects.get(project=project_id, relation_name='labeled_as')
+
     cursor = connection.cursor()
     cursor.execute("""
         SELECT ci.id, ci.name, COUNT(DISTINCT t.skeleton_id), COUNT(t.id)
@@ -91,8 +93,9 @@ def get_label_stats(request, project_id=None):
           JOIN treenode t
             ON tci.treenode_id = t.id
           WHERE ci.project_id = %s
+            AND tci.relation_id = %s
           GROUP BY ci.id;
-    """, [project_id])
+    """, [project_id, labeled_as_relation.id])
 
     return JsonResponse(cursor.fetchall(), safe=False)
 

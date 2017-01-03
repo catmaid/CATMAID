@@ -2018,6 +2018,8 @@ def skeletons_by_node_labels(request, project_id=None):
 
     interp_lst = ', '.join(['(%s)' for _ in labels])
 
+    labeled_as_relation = Relation.objects.get(project=project_id, relation_name='labeled_as')
+
     cursor = connection.cursor()
     cursor.execute("""
         SELECT ci.id, array_agg(DISTINCT t.skeleton_id)
@@ -2029,7 +2031,8 @@ def skeletons_by_node_labels(request, project_id=None):
           JOIN (VALUES {}) label(id)
             ON label.id = ci.id
           WHERE ci.project_id = %s
+            AND tci.relation_id = %s
           GROUP BY ci.id;
-    """.format(interp_lst), labels + [int(project_id)])
+    """.format(interp_lst), labels + [int(project_id), labeled_as_relation.id])
 
     return JsonResponse(cursor.fetchall(), safe=False)

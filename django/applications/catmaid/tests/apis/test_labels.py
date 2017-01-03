@@ -106,3 +106,28 @@ class LabelsApiTests(CatmaidApiTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTrue('warning' in parsed_response)
         self.assertTrue('soma (2, max. 1)' in parsed_response['warning'])
+
+
+    def test_stats(self):
+        self.fake_authentication()
+        url = '/{}/labels/stats'.format(self.test_project_id)
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+
+        expected_response = [
+            [1, 'dull skeleton', 1, 29],
+            [235, 'skeleton 235', 1, 28],
+            [351, 'TODO', 2, 2],
+            [361, 'skeleton 361', 1, 9],
+            [373, 'skeleton 373', 1, 5],
+            [2342, 'uncertain end', 1, 1],
+            [2364, 'skeleton 2364', 1, 6],
+            [2388, 'skeleton 2388', 1, 3],
+            [2411, 'skeleton 2411', 1, 4],
+            [2433, 'skeleton 2433', 1, 1],
+            [2440, 'skeleton 2440', 1, 3],
+            [2451, 'skeleton 2451', 1, 1]
+        ]
+
+        self.assertJSONEqual(response.content, expected_response)

@@ -906,13 +906,31 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         self.compare_swc_data(response.content, swc_output_for_skeleton_235)
 
 
+    def assert_skeletons_by_node_labels(self, label_ids, expected_response):
+        self.fake_authentication()
+        url = '/{}/skeletons/node-labels'.format(self.test_project_id)
+
+        response = self.client.post(url, {'label_ids': label_ids})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertJSONEqual(response.content, expected_response)
+
+
     def test_skeletons_by_node_labels_0(self):
-        pass
+        self.assert_skeletons_by_node_labels([], [])
 
 
     def test_skeletons_by_node_labels_1(self):
-        pass
+        # label with id=1 appears on a single skeleton, which has id=1
+        self.assert_skeletons_by_node_labels([1], [[1, [1]]])
+
+
+    def test_skeletons_by_node_labels_1_nonexistent(self):
+        # nonexistent label does not error
+        self.assert_skeletons_by_node_labels([999999999], [])
 
 
     def test_skeletons_by_node_labels_multiple(self):
-        pass
+        expected_result = [[1, [1]], [351, [1, 235]]]
+        self.assert_skeletons_by_node_labels([1, 351], expected_result)
+

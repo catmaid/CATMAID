@@ -240,8 +240,7 @@ def stats_user_history(request, project_id=None):
     else:
         with timezone.override(time_zone):
             start_date = timezone.now() - timedelta(10)
-    start_date = datetime(start_date.year, start_date.month, start_date.day,
-                        tzinfo=time_zone)
+    start_date = time_zone.localize(start_date)
 
     # Get the end date for the query, defaulting to now.
     end_date = request.GET.get('end_date', None)
@@ -255,8 +254,7 @@ def stats_user_history(request, project_id=None):
     # well. The actual query is easier with an exclusive end and therefore
     # the end date is set to the beginning of the next day.
     end_date = end_date + timedelta(days=1)
-    end_date = datetime(end_date.year, end_date.month, end_date.day,
-                        tzinfo=time_zone)
+    end_date = time_zone.localize(end_date)
 
     # Calculate number of days between (including) start and end
     daydelta = (end_date - start_date).days

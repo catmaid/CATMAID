@@ -56,6 +56,10 @@ Miscellaneous:
 
 - 3D viewer: loading of box volumes workes again.
 
+- The statistics widget back-end will now correctly use up-to-date time-zone
+  information for the query time range. This fixes some time zone conversion
+  corner cases.
+
 
 ## 2016.12.16
 

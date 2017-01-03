@@ -16,7 +16,7 @@ Connectivity table:
   color").
 
 - The colors used in the Connectivity Graph Plot are now the ones assigned to the
-  input skeletons, i.e. the ones selected in the Connectiviy Widget. These in
+  input skeletons, i.e. the ones selected in the Connectivity Widget. These in
   turn are either its input skeleton color or the default skeleton color.
 
 - Manual re-ordering of partner count columns has been removed. Neurons can now

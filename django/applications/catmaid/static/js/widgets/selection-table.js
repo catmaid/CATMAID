@@ -602,8 +602,8 @@
     }, {});
   };
 
-  SelectionTable.prototype.setVisbilitySettingsVisible = function(visible) {
-    this.gui.setVisbilitySettingsVisible(visible);
+  SelectionTable.prototype.setVisibilitySettingsVisible = function(visible) {
+    this.gui.setVisibilitySettingsVisible(visible);
   };
 
   SelectionTable.prototype.setVisible = function(skeleton_ids, visible) {
@@ -629,7 +629,7 @@
 
   SelectionTable.prototype.GUI.prototype = {};
 
-  SelectionTable.prototype.GUI.prototype.setVisbilitySettingsVisible = function(visible) {
+  SelectionTable.prototype.GUI.prototype.setVisibilitySettingsVisible = function(visible) {
     var tableSelector = "table#skeleton-table" + this.table.widgetID;
     if ($.fn.DataTable.isDataTable(tableSelector)) {
       this.showVisibilityControls = visible;

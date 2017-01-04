@@ -289,7 +289,7 @@ var WindowMaker = new function()
     var hideVisibilitySettigsCb = document.createElement('input');
     hideVisibilitySettigsCb.setAttribute('type', 'checkbox');
     hideVisibilitySettigsCb.onchange = function() {
-      ST.setVisbilitySettingsVisible(this.checked);
+      ST.setVisibilitySettingsVisible(this.checked);
     };
     var hideVisibilitySettigs = document.createElement('label');
     hideVisibilitySettigs.appendChild(hideVisibilitySettigsCb);

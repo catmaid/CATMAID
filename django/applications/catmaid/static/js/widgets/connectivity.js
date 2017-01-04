@@ -1397,37 +1397,32 @@
           this.gapjunctionCollapsed = !this.gapjunctionCollapsed;
         }).bind(this));
 
-    // Extend tables with DataTables for sorting, reordering and filtering
-    var dataTableOptions = {
-      aaSorting: [[2, 'desc']],
-      bDestroy: true,
-      sDom: 'R<"connectivity_table_actions">rtip',
-      bFilter: true,
-      bPaginate: true,
-      iDisplayLength: this.pageLength,
-      aLengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
-      bProcessing: true,
-      bServerSide: false,
-      bAutoWidth: false,
-      aoColumnDefs: [
-        { aTargets: [0], sSortDataType: 'dom-checkbox' }, // Checkbox column
-        { aTargets: [1], sType: 'html', bSearchable: true }, // Neuron name column
-        { aTargets: ['_all'], sType: 'html-num-fmt', bSearchable: false } // All other columns
-      ]
-    };
-
     incoming.append(table_incoming);
     outgoing.append(table_outgoing);
     gapjunctions.append(table_gapjunctions);
 
-    table_incoming.dataTable(dataTableOptions);
-    table_outgoing.dataTable(dataTableOptions);
-    table_gapjunctions.dataTable(dataTableOptions);
-
-    $('.dataTables_wrapper', tables).css('min-height', 0);
-
     var widget = this;
     $.each([table_incoming, table_outgoing, table_gapjunctions], function () {
+
+      // Initialize datatable
+      this.DataTable({
+        sorting: [[2, 'desc']],
+        destroy: true,
+        dom: 'R<"connectivity_table_actions">rtip',
+        filter: true,
+        paginate: true,
+        displayLength: widget.pageLength,
+        lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
+        processing: true,
+        serverSide: false,
+        autoWidth: false,
+        columnDefs: [
+          { targets: [0], sortDataType: 'dom-checkbox' }, // Checkbox column
+          { targets: [1], type: 'html', searchable: true }, // Neuron name column
+          { targets: ['_all'], type: 'html-num-fmt', searchable: false } // All other columns
+        ]
+      });
+
       var self = this;
       $(this).siblings('.connectivity_table_actions')
         // Add custom filter/search input to support regular expressions.
@@ -1521,6 +1516,8 @@
         }
       });
     });
+
+    $('.dataTables_wrapper', tables).css('min-height', 0);
 
     this.updateReviewSummaries();
 

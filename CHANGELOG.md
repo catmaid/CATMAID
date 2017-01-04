@@ -23,6 +23,10 @@ Connectivity table:
   be re re-ordered through the list at the top with the help of two icons in
   each row (up and down).
 
+- All partner tables are now paginated with a default page size of 50 entries.
+  The page size can be adjusted for all tables at the same time with a drop-down
+  menu at the top. "Select all" check-boxes select all entries across all pages.
+
 
 Graph widget:
 

@@ -111,7 +111,7 @@
             '<input type="number" name="searchInputID" id="tag-table' +
                 this.widgetID +
                 'searchInputID' +
-              '" value="Search"' +
+              '" value=""' +
             '/>' +
           '</th>' +
           '<th>tag name' +

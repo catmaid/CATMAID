@@ -88,6 +88,9 @@ Miscellaneous:
 - The front page project list can now be loaded as a widget using Ctrl-Space
   with 'project-list'.
 
+- Synaptic fractions: colors of groups and partners can now be changed through
+  legend of graph.
+
 
 ### Bug fixes
 

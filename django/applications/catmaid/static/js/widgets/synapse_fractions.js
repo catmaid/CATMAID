@@ -425,16 +425,7 @@
       .enter()
         .append("g")
         .attr("class", "legend")
-        .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; })
-        .on("click", (function(id) {
-          if ("others" === id) return;
-          // negative when it is a group
-          if (id < 0) {
-            this.groupEditor(id);
-            return;
-          }
-          CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', id);
-        }).bind(this));
+        .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
 
     legend.append("rect")
       .attr("x", width + 80)
@@ -451,6 +442,69 @@
         if ("others" === id) return id;
         if (id < 0) return this.groups[id].name;
         return CATMAID.NeuronNameService.getInstance().getName(id);
+      }).bind(this));
+
+    var self = this;
+
+    // Since our color picker refuses to work with SVG elements easily, we have
+    // to jump through some hoops to have the color assigned to the correct
+    // element. This keeps track of which element is currently modified.
+    var currentElementId = null;
+
+    // Show color picker if legend color box is clicked
+    var colorDummy = document.createElement('button');
+    colorDummy.style.border = "0";
+    colorDummy.style.left = -100;
+    //colorDummy.style.display = 'none';
+    container.append(colorDummy);
+    colorDummy.style.position = "absolute";
+    CATMAID.ColorPicker.enable(colorDummy, {
+      onColorChange: function(color, alpha, colorChanged, alphaChanged) {
+        if (!currentElementId || !(colorChanged || alphaChanged)) {
+          return;
+        }
+        // Update color mapping
+        var newColor = CATMAID.tools.rgbToHex(
+            Math.round(255 * color.r), Math.round(255 * color.g),
+            Math.round(255 * color.b));
+        if (currentElementId < 0) {
+          self.groups[currentElementId].color = newColor;
+        } else {
+          self.partner_colors[currentElementId] = newColor;
+        }
+        // Update graphics
+        self.redraw();
+      }
+    });
+
+    legend.selectAll('rect')
+      .on("click", function(id) {
+        // Move dummy button on top of current legend element
+        var offset = $(container).offset();
+        var legendPos = this.getBoundingClientRect();
+        colorDummy.style.left = (legendPos.left - offset.left) + "px";
+        colorDummy.style.top = (legendPos.top - offset.top) + "px";
+        colorDummy.style.width = legendPos.width + "px";
+        colorDummy.style.height = legendPos.height + "px";
+
+        // Set color
+        colorDummy.value = colors[id];
+        currentElementId = id;
+
+        // Click button
+        window.setTimeout(colorDummy.click.bind(colorDummy), 0);
+      });
+
+    // Select nearest node in skeleton if legend text is clicked
+    legend.selectAll('text')
+      .on("click", (function(id) {
+        if ("others" === id) return;
+        // negative when it is a group
+        if (id < 0) {
+          this.groupEditor(id);
+          return;
+        }
+        CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', id);
       }).bind(this));
 
   };

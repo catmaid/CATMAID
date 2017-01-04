@@ -1223,6 +1223,27 @@
     }
   };
 
+  // Available stack orientations
+  var orientations = {
+    "0": "XY",
+    "1": "XZ",
+    "2": "ZY"
+  };
+
+  /**
+   * Return a title for a given issue
+   */
+  function getIssueLabel(type, name, details) {
+    if (8 === type) {
+      // Node in broken section
+      return name + " " + details.section + " of " +
+          orientations[details.orientation] + " stack \"" +
+          details.stack_title  + "\" (id: " + details.stack + ")";
+    } else {
+      return name;
+    }
+  }
+
   /**
    * Refresh the skeleton analytics data based on the current settings.
    */
@@ -1259,11 +1280,15 @@
         json.issues.forEach(function (sk) {
           // sk[0]: skeleton ID
           // sk[1]: array of pairs like [issue ID, treenode ID]
-          var name = json.names[sk[0]];
-          sk[1].forEach(function(p) {
-            rows.push([json[p[0]], // issue name
+          // sk[2]: optional details
+          var skeletonId = sk[0];
+          var name = json.names[skeletonId];
+          sk[1].forEach(function(issue) {
+            var details = issue[2];
+            var label = getIssueLabel(issue[0], json[issue[0]], details);
+            rows.push([label, // issue label
                        name, // neuron name
-                       p[1], // treenode ID
+                       issue[1], // treenode ID
                        sk[0]]); // skeleton ID
           });
         });

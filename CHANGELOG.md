@@ -59,6 +59,9 @@ Miscellaneous:
 - Node bookmarks can now be removed through an X icon in their respective row in
   the bookmark dialog.
 
+- Skeleton Analytics in the Review Widget will now identify nodes in broken
+  sections of all stacks linked to the current project.
+
 
 ### Bug fixes
 

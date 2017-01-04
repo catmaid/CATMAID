@@ -6,7 +6,9 @@ included in this changelog.
 
 ### Additions
 
-None.
+- POST `/{project_id}/analytics/broken-section-nodes`:
+  Get s list of all nodes that are currently located in a broken section of any
+  stack linked to their project. Obtionally, specific skeletons can be checked.
 
 ### Modifications
 

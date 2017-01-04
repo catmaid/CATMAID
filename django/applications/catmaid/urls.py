@@ -408,8 +408,10 @@ urlpatterns += [
 ]
 
 # Analytics
+UrlParser.explicit_root_paths |= set(['{project_id}/analytics'])
 urlpatterns += [
-    url(r'^(?P<project_id>\d+)/analytics/skeletons$', analytics.analyze_skeletons)
+    url(r'^(?P<project_id>\d+)/analytics/skeletons$', analytics.analyze_skeletons),
+    url(r'^(?P<project_id>\d+)/analytics/broken-section-nodes$', analytics.list_broken_section_nodes)
 ]
 
 # Front-end tests

@@ -1,9 +1,4 @@
 /**
- * windowmanager.js
- *
- * requirements:
- *   resize_handle.js
- *
  * Tiled window manager for frame-like Javascript-`windows'.
  *
  * Tiled window configurations are expressed as a binary tree with branch

@@ -1189,7 +1189,7 @@
         if (self.peekingSkeleton) return;
         var skid = SkeletonAnnotations.getActiveSkeletonId();
         if (skid === null) return;
-        self.peekingSkeleton = true;
+        self.peekingSkeleton = skid;
         var skeletonModels = {};
         skeletonModels[skid] = new CATMAID.SkeletonModel(
             skid,
@@ -1198,8 +1198,19 @@
         var viewersWithoutSkel = Array.from(WindowMaker.getOpenWindows('3d-webgl-view', true).values())
             .filter(function (viewer) { return !viewer.hasSkeleton(skid); });
 
+        var removePeekingSkeleton = function () {
+          viewersWithoutSkel.forEach(function (viewer) {
+            viewer.removeSkeletons([skid]);
+          });
+          self.peekingSkeleton = false;
+        };
+
         viewersWithoutSkel.forEach(function (viewer) {
-          viewer.append(skeletonModels);
+          // In case the key is released before the skeleton has loaded,
+          // check after loading whether it is still being peeked.
+          viewer.addSkeletons(skeletonModels, function () {
+            if (self.peekingSkeleton !== skid) removePeekingSkeleton();
+          });
         });
 
         // Set a key up a listener to remove the skeleton from these viewers
@@ -1208,11 +1219,8 @@
         var oldListener = target.onkeyup;
         target.onkeyup = function (e) {
           if (e.keyCode == 80) {
-            viewersWithoutSkel.forEach(function (viewer) {
-              viewer.removeSkeletons([skid]);
-            });
             target.onkeyup = oldListener;
-            self.peekingSkeleton = false;
+            removePeekingSkeleton();
           } else if (oldListener) oldListener(e);
         };
 

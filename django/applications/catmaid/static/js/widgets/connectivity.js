@@ -316,15 +316,12 @@
   };
 
   SkeletonConnectivity.prototype.getSkeletonModel = function(skeleton_id) {
-    var e_name = $('#a-connectivity-table-' + this.widgetID + '-' + skeleton_id);
-    if (0 === e_name.length) return null;
-    var name = e_name.text();
+    var name = CATMAID.NeuronNameService.getInstance().getName(skeleton_id);
+    var selected = this.skeletonSelection[skeleton_id];
+    var isPre = skeleton_id in this.incoming;
+    var isPost = skeleton_id in this.outgoing;
 
-    var pre = $("#presynaptic_to-show-skeleton-" + this.widgetID + "-" + skeleton_id);
-    var post = $("#postsynaptic_to-show-skeleton-" + this.widgetID + "-" + skeleton_id);
-
-    var selected = pre.prop('checked') || post.prop('checked');
-    return this.makeSkeletonModel(skeleton_id, pre.length > 0, post.length > 0, selected, name);
+    return this.makeSkeletonModel(skeleton_id, isPre, isPost, selected, name);
   };
 
   SkeletonConnectivity.prototype.getSelectedSkeletonModels = function() {
@@ -335,44 +332,20 @@
    * Get models for all skeletons in this source.
    */
   SkeletonConnectivity.prototype.getSkeletonModels = function(onlySelected) {
+    var self = this;
     var widgetID = this.widgetID;
     var skeletons = this.skeletons;
-    // Read out skeletons from neuron list
-    var models = Object.keys(this.skeletons).reduce(function(o, skid) {
-      // Test if checked
-      var cb = $('input#neuron-selector-' + widgetID + '-' + skid +
-          '[type=checkbox]');
-      var selected = cb.prop('checked');
+
+    var models = Object.keys(this.skeletonSelection).reduce(function(o, skid) {
+      // Test if selected
+      var selected = self.skeletonSelection[skid];
       if (!onlySelected || selected) {
-        var model = skeletons[skid].clone();
+        var model = self.getSkeletonModel(skid);
         model.selected = selected;
         o[skid] = model;
       }
       return o;
     }, {});
-
-    // Read out all skeletons
-    var sks = {};
-    ['presynaptic_to', 'postsynaptic_to', 'gapjunction_with'].forEach(function(relation, index) {
-      $("input[id^='" + relation + "-show-skeleton-" + widgetID + "-']").each(function(i, e) {
-        var skid = parseInt(e.value);
-        if (!(skid in sks)) sks[skid] = {};
-        sks[skid][index] = e.checked;
-      });
-    });
-    // Pick those for which at least one checkbox is checked (if they have more than one)
-    var self = this;
-    Object.keys(sks).forEach(function(skid) {
-      var sk = sks[skid];
-      var selected = true === sk[0] || true === sk[1];
-      if (!onlySelected || selected) {
-        var pre = 0 in sk;
-        var post = 1 in sk;
-        var name = $('#a-connectivity-table-' + widgetID + '-' + skid).text();
-        var model = self.makeSkeletonModel(skid, pre, post, selected, name);
-        models[skid] = model;
-      }
-    });
 
     return models;
   };
@@ -529,6 +502,19 @@
       var model = this.getSkeletonModel(skid);
       model.selected = selected;
       this.triggerChange(CATMAID.tools.idMap(model));
+  };
+
+  /**
+   * Update the selection of displayed checkboxes, based on the internal
+   * selection state.
+   */
+  SkeletonConnectivity.prototype.redrawSelectionState = function() {
+    var self = this;
+    ['presynaptic_to', 'postsynaptic_to', 'gapjunction_with'].forEach(function(relation, index) {
+      $("[id^='" + relation + "-show-skeleton-" + self.widgetID + "-']").each(function(_, checkbox) {
+        checkbox.checked = self.skeletonSelection[this.dataset.skeletonId];
+      });
+    });
   };
 
   SkeletonConnectivity.prototype.redraw = function() {
@@ -965,7 +951,7 @@
     /**
      * Support function to add a 'select all' checkbox.
      */
-    var add_select_all_fn = function(widget, name, table, nSkeletons) {
+    var add_select_all_fn = function(widget, name, target, table, nSkeletons) {
       // Assign 'select all' checkbox handler
       $('#' + name + 'stream-selectall' + widgetID).click(function( event ) {
         event.stopPropagation();
@@ -975,13 +961,11 @@
         var selfChecked = this.checked;
 
         // Mark all checkboxes accordingly and set skeleton selection state
-        $('tbody input[type="checkbox"]', table).map(function () {
-          this.checked = selfChecked;
-          var skid = parseInt(this.value);
-          widget.skeletonSelection[skid] = selfChecked;
-          return skid;
+        Object.keys(target).forEach(function(skeletonId) {
+          widget.skeletonSelection[skeletonId] = selfChecked;
         });
 
+        widget.redrawSelectionState();
         widget.triggerChange(widget.getSkeletonModels());
       });
     };
@@ -1522,9 +1506,9 @@
 
     // Add 'select all' checkboxes
     var nSkeletons = Object.keys(this.skeletons).length;
-    add_select_all_fn(this, 'up', table_incoming, nSkeletons);
-    add_select_all_fn(this, 'down', table_outgoing, nSkeletons);
-    add_select_all_fn(this, 'gj', table_gapjunctions, nSkeletons);
+    add_select_all_fn(this, 'up', this.incoming, table_incoming, nSkeletons);
+    add_select_all_fn(this, 'down', this.outgoing, table_outgoing, nSkeletons);
+    add_select_all_fn(this, 'gj',this.gapjunctions, table_gapjunctions, nSkeletons);
 
     // Add handler for individual skeleton checkboxes
     incoming.on('click', 'input[data-skeleton-id][type=checkbox]',

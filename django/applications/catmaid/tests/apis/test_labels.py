@@ -106,3 +106,37 @@ class LabelsApiTests(CatmaidApiTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTrue('warning' in parsed_response)
         self.assertTrue('soma (2, max. 1)' in parsed_response['warning'])
+
+
+    def get_successful_stats_response(self):
+        self.fake_authentication()
+        url = '/{}/labels/stats'.format(self.test_project_id)
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+
+        return response
+
+
+    def test_stats(self):
+        expected_response = [
+            [351, 'TODO', 2, 2],
+            [2342, 'uncertain end', 1, 1],
+        ]
+
+        response = self.get_successful_stats_response()
+
+        self.assertJSONEqual(response.content, expected_response)
+
+
+    def test_stats_does_not_find_all_nodes_of_skeleton(self):
+        """catch a bug where every skeleton's ID was treated as a label, so every skID would be returned as well
+        """
+        msg = "Returned label ID '{}' which is probably actually the ID of skeleton '{}', applied to all nodes in " \
+              "that skeleton"
+
+        response = self.get_successful_stats_response()
+
+        for row in response:
+            self.assertFalse(row[1] == 'skeleton {}'.format(row[0]) and row[2] == 1, msg=msg.format(row[0], row[1]))
+

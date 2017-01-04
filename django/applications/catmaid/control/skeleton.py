@@ -2012,11 +2012,17 @@ def skeletons_by_node_labels(request, project_id=None):
           required: true
     """
     labels = get_request_list(request.POST, 'label_ids', map_fn=int)
-    interp_lst = ', '.join(['(%s)' for _ in labels]) if labels else '()'
+
+    if not labels:
+        return JsonResponse([], safe=False)
+
+    interp_lst = ', '.join(['(%s)' for _ in labels])
+
+    labeled_as_relation = Relation.objects.get(project=project_id, relation_name='labeled_as')
 
     cursor = connection.cursor()
     cursor.execute("""
-        SELECT ci.id, array_agg(t.skeleton_id)
+        SELECT ci.id, array_agg(DISTINCT t.skeleton_id)
           FROM treenode t
           JOIN treenode_class_instance tci
             ON t.id = tci.treenode_id
@@ -2025,7 +2031,8 @@ def skeletons_by_node_labels(request, project_id=None):
           JOIN (VALUES {}) label(id)
             ON label.id = ci.id
           WHERE ci.project_id = %s
+            AND tci.relation_id = %s
           GROUP BY ci.id;
-    """.format(interp_lst), labels + [int(project_id)])
+    """.format(interp_lst), labels + [int(project_id), labeled_as_relation.id])
 
     return JsonResponse(cursor.fetchall(), safe=False)

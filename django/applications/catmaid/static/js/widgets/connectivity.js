@@ -51,6 +51,33 @@
   $.extend(SkeletonConnectivity.prototype, new InstanceRegistry());
 
   /**
+   * A partner set represents a set of neurons connected to the input set
+   * through a particular relation, e.g. presynaptic_to, postsynaptic_to and
+   * others.
+   */
+  var PartnerSet = function(id, name, relation, partners, partnerTitle, connectorShort) {
+    this.id = id;
+    this.name = name;
+    this.partnerTitle = partnerTitle || (name + ' neuron');
+    this.connectorShort = connectorShort || 'syn';
+    this.relation = relation;
+    this.partners = partners;
+    this.collapsed = false;
+    // Synapse thresholds for current skeleton set.
+    // (Count is applied after confidence filtering.)
+    this.thresholds = {
+      confidence: {},
+      count: {}
+    };
+    // Update all synapse count threshold selection states
+    this.allThresholds = {
+      confidence: 1,
+      count: 1
+    };
+    this.allSelected = false;
+  };
+
+  /**
    * Initializes the connectivity widget by setting all fields to their default
    * value.
    */
@@ -59,42 +86,28 @@
     this.ordered_skeleton_ids = [];
     // An (per se unordered) object mapping skeletonIDs to skeleton models
     this.skeletons = {};
-    // Incoming an outgoing connections of current neurons
-    this.incoming = {};
-    this.outgoing = {};
-    this.gapjunctions = {};
+    // Sets of partners, based on relations
+    this.partnerSets = [];
+    // Map partner sets ids to partner sets
+    this.partnerSetMap = {};
+
     this.reviewers = new Set();
     // Last retrived reviews
     this.reivews = {};
-    // Default upstream and downstream tables to be not collapsed
-    this.upstreamCollapsed = false;
-    this.downstreamCollapsed = false;
-    this.gapjunctionCollapsed = false;
-    // Synapse thresholds for current skeleton set.
-    // (Count is applied after confidence filtering.)
-    this.thresholds = {
-      up:   {confidence: {}, count: {}},
-      down: {confidence: {}, count: {}},
-      gj:   {confidence: {}, count: {}}
-    };
-    // Update all synapse count threshold selection states
-    this.allThresholds = {
-      up:   {confidence: 1, count: 1},
-      down: {confidence: 1, count: 1},
-      gj:   {confidence: 1, count: 1}
-    };
     // Filter partners with fewer nodes than this threshold
     this.hidePartnerThreshold = 1;
     // ID of the user who is currently reviewing or null for 'union'
     this.reviewFilter = null;
     // An object mapping skeleton IDs to their selection state
     this.skeletonSelection = {};
-    // An object for remembering the selection state of the select-all controls
-    this.selectAllSelection = {
-      'up': false,
-      'down': false,
-      'gj': false
-    };
+  };
+
+  /**
+   * Check if a skeleton is part of a particular partner set.
+   */
+  SkeletonConnectivity.prototype.isInPartnerSet = function(skeletonId, partnerSetId) {
+    return partnerSetId in this.partnerSetMap &&
+        this.partnerSetMap[partnerSetId].partners.hasOwnProperty(skeletonId);
   };
 
   /** Appends only to the top list, that is, the set of seed skeletons
@@ -325,13 +338,13 @@
     return model;
   };
 
-  SkeletonConnectivity.prototype.getSkeletonModel = function(skeleton_id) {
-    var name = CATMAID.NeuronNameService.getInstance().getName(skeleton_id);
-    var selected = this.skeletonSelection[skeleton_id];
-    var isPre = skeleton_id in this.incoming;
-    var isPost = skeleton_id in this.outgoing;
+  SkeletonConnectivity.prototype.getSkeletonModel = function(skeletonId) {
+    var name = CATMAID.NeuronNameService.getInstance().getName(skeletonId);
+    var selected = this.skeletonSelection[skeletonId];
+    var isPre = this.isInPartnerSet(skeletonId, 'incoming');
+    var isPost = this.isInPartnerSet(skeletonId, 'outgoing');
 
-    return this.makeSkeletonModel(skeleton_id, isPre, isPost, selected, name);
+    return this.makeSkeletonModel(skeletonId, isPre, isPost, selected, name);
   };
 
   SkeletonConnectivity.prototype.getSelectedSkeletonModels = function() {
@@ -363,9 +376,10 @@
   /**
    * Return true if the given skeleton is a partner.
    */
-  SkeletonConnectivity.prototype.isPartner = function(skeletonID) {
-    return this.incoming.hasOwnProperty(skeletonID) ||
-      this.outgoing.hasOwnProperty(skeletonID);
+  SkeletonConnectivity.prototype.isPartner = function(skeletonId) {
+    return this.partnerSets.some(function(ps) {
+      return ps.partners.hasOwnProperty(skeletonId);
+    });
   };
 
   /**
@@ -400,6 +414,19 @@
     $("#connectivity_widget" + this.widgetID).empty();
   };
 
+  /**
+   * Add a new partner set and make sure it is correctly registered.
+   */
+  SkeletonConnectivity.prototype.addPartnerSet = function(partnerSet) {
+    if (partnerSet.id in this.partnerSetMap) {
+      throw new CATMAID.ValueError('A partner set with ID "' + partnerSet.id +
+          '" is already registered');
+    }
+
+    this.partnerSets.push(partnerSet);
+    this.partnerSetMap[partnerSet.id] = partnerSet;
+  };
+
   SkeletonConnectivity.prototype.update = function() {
     var skids = Object.keys(this.skeletons);
     if (0 === skids.length) {
@@ -422,10 +449,29 @@
               delete oldPartnerModels[skid];
             }
 
+            // Remove present partner sets
+            self.partnerSets = [];
+            self.partnerSetMap = {};
+
+            // Currently supported connector types plus their order
+            var partnerSetTypes = {
+              'incoming': {name: 'Upstream', rel: 'presynaptic_to'},
+              'outgoing': {name: 'Downstream', rel: 'postsynaptic_to'},
+              'gapjunctions': {name: 'Gap junction', rel: 'gapjunction_with',
+                  pTitle: 'Gap junction with neuron', ctrShort: 'gj'}
+            };
+            var partnerSetIds = ['incoming', 'outgoing'];
+
+            if (self.showGapjunctionTable) {
+              partnerSetIds.push('gapjunctions');
+            }
+
             if (200 !== status) {
-              self.incoming = {};
-              self.outgoing = {};
-              self.gapjunctions = {};
+              partnerSetIds.forEach(function(psId) {
+                var type = partnerSetTypes[psId];
+                self.addPartnerSet(new PartnerSet(psId, type.name, type.rel, {},
+                    type.pTitle, type.ctrShort));
+              });
               self.reviewers.clear();
               self.triggerRemove(oldPartnerModels);
               new CATMAID.ErrorDialog("Couldn't load connectivity information",
@@ -436,9 +482,11 @@
             var json = JSON.parse(text);
             if (json.error) {
               if ('REPLACED' !== json.error) {
-                self.incoming = {};
-                self.outgoing = {};
-                self.gapjunctions = {};
+                partnerSetIds.forEach(function(psId) {
+                  var type = partnerSetTypes[psId];
+                  self.addPartnerSet(new PartnerSet(psId, type.name, type.rel,
+                      {}, type.pTitle, type.ctrShort));
+                });
                 self.reviewers.clear();
                 self.triggerRemove(oldPartnerModels);
                 new CATMAID.ErrorDialog("Couldn't load connectivity information",
@@ -447,39 +495,37 @@
               return;
             }
 
-            // Save reference of incoming and outgoing nodes. These are needed to open
-            // the connectivity plots in a separate widget.
-            self.incoming = json.incoming;
-            self.outgoing = json.outgoing;
-            self.gapjunctions = json.gapjunctions;
             self.reviewers.clear();
-            json.incoming_reviewers.forEach(self.reviewers.add.bind(self.reviewers));
-            json.outgoing_reviewers.forEach(self.reviewers.add.bind(self.reviewers));
-            json.gapjunctions_reviewers.forEach(self.reviewers.add.bind(self.reviewers));
+
+            // Create partner sets
+            partnerSetIds.forEach(function(psId) {
+              var type = partnerSetTypes[psId];
+              self.addPartnerSet(new PartnerSet(psId, type.name, type.rel,
+                  json[psId], type.pTitle, type.ctrShort));
+
+              var reviewKey = psId + '_reviewers';
+              json[reviewKey].forEach(self.reviewers.add.bind(self.reviewers));
+            });
 
             // Register this widget with the name service for all neurons
             var newModels = {};
             var selected = false;
-            for (var skid in self.incoming) {
-              if (skid in self.skeletons || skid in oldPartnerModels) { continue; }
-              newModels[skid] = {};
-            }
-            for (var skid in self.outgoing) {
-              if (skid in self.skeletons || skid in oldPartnerModels) { continue; }
-              newModels[skid] = {};
-            }
-            for (var skid in self.gapjunctions) {
-              if (skid in self.skeletons || skid in oldPartnerModels) { continue; }
-              newModels[skid] = {};
-            }
+            self.partnerSets.forEach(function(ps) {
+              for (var skid in ps.partners) {
+                if (skid in self.skeletons || skid in oldPartnerModels) { continue; }
+                this[skid] = {};
+              }
+            }, newModels);
 
             // Make all partners known to the name service
             CATMAID.NeuronNameService.getInstance().registerAll(self, newModels, function() {
               self.redraw();
               // Create model container and announce new models
               for (var skid in newModels) {
-                newModels[skid] = self.makeSkeletonModel(skid, skid in self.incoming,
-                    skid in self.outgoing, false);
+                newModels[skid] = self.makeSkeletonModel(skid,
+                    self.isInPartnerSet(skid, 'incoming'),
+                    self.isInPartnerSet(skid, 'outgoing'),
+                    false);
               }
               self.triggerAdd(newModels);
             });
@@ -499,9 +545,9 @@
   SkeletonConnectivity.prototype.selectSkeleton = function(skid, selected) {
       this.skeletonSelection[skid] = selected;
       $('#neuron-selector-' + this.widgetID + '-' + skid).prop('checked', selected);
-      $('#presynaptic_to-show-skeleton-' + this.widgetID + '-' + skid).prop('checked', selected);
-      $('#postsynaptic_to-show-skeleton-' + this.widgetID + '-' + skid).prop('checked', selected);
-      $('#gapjunction_with-show-skeleton-' + this.widgetID + '-' + skid).prop('checked', selected);
+      this.partnerSets.forEach(function(ps) {
+        $('#' + ps.relation + '-show-skeleton-' + this.widgetID + '-' + skid).prop('checked', selected);
+      }, this);
 
       // Check the select all box, if all skeletons are selected
       var notSelected = function(skid) { return !this.skeletonSelection[skid]; };
@@ -520,38 +566,16 @@
    */
   SkeletonConnectivity.prototype.redrawSelectionState = function() {
     var self = this;
-    ['presynaptic_to', 'postsynaptic_to', 'gapjunction_with'].forEach(function(relation, index) {
-      $("[id^='" + relation + "-show-skeleton-" + self.widgetID + "-']").each(function(_, checkbox) {
+    this.partnerSets.forEach(function(ps) {
+      $("[id^='" + ps.relation + "-show-skeleton-" + this.widgetID + "-']").each(function(_, checkbox) {
         checkbox.checked = self.skeletonSelection[this.dataset.skeletonId];
       });
-    });
+    }, this);
   };
 
   SkeletonConnectivity.prototype.redraw = function() {
-
-    // Record the state of checkboxes
-    var checkboxes = [{}, {}, {}],
-        widgetID = this.widgetID,
-        relations = ['presynaptic_to', 'postsynaptic_to', 'gapjunction_with'];
-    relations.forEach(function(relation, index) {
-      $("[id^='" + relation + "-show-skeleton-" + widgetID + "-']").each(function(_, checkbox) {
-        checkboxes[index][checkbox.value] = checkbox.checked;
-      });
-    });
-
-    // Create connectivity tables
+    // Re-create connectivity tables
     this.createConnectivityTable();
-
-    // Restore checkbox state
-    checkboxes.forEach((function(c, i) {
-      var relation = relations[i];
-      Object.keys(c).forEach((function(skeleton_id) {
-        var sel = $('#' + relation + '-show-skeleton-' + this.widgetID + '-' + skeleton_id);
-        if (sel.length > 0) {
-          sel.prop('checked', c[skeleton_id]);
-        }
-      }).bind(this));
-    }).bind(this));
   };
 
   /**
@@ -574,8 +598,8 @@
     });
 
     var widgetID = this.widgetID;
-    ['presynaptic', 'postsynaptic'].forEach(function (partnerSet) {
-      var table = $("#" + partnerSet + '_tostream_connectivity_table' + widgetID);
+    this.partnerSets.forEach(function(partnerSet) {
+      var table = $("#" + partnerSet.id + '_connectivity_table' + widgetID);
 
       // Inform DataTables that the data has changed.
       table.DataTable().rows().invalidate().draw();
@@ -583,8 +607,9 @@
   };
 
   SkeletonConnectivity.prototype.updateReviewSummaries = function () {
-    var partnerSkids = [this.incoming, this.outgoing, this.gapjunctions].reduce(function (skids, partners) {
-      return skids.concat(Object.keys(partners));
+    var self = this;
+    var partnerSkids = this.partnerSets.reduce(function(skids, partnerSet) {
+      return skids.concat(Object.keys(partnerSet.partners));
     }, []);
 
     if (!partnerSkids.length) return new Promise(function (resolve) { resolve(); });
@@ -622,16 +647,16 @@
           this.textContent = (counts && counts.length > 0) ? counts[0] : '...';
     });
 
-    ['incoming', 'outgoing', 'gapjunctions'].forEach(function (partnerSet) {
-      var countSums = Object.keys(self[partnerSet]).reduce(function (nodes, partner) {
+    this.partnerSets.forEach(function(partnerSet) {
+
+      var countSums = Object.keys(partnerSet.partners).reduce(function (nodes, partner) {
         var count = self.reviews[partner];
         return [nodes[0] + count[0], nodes[1] + count[1]];
       }, [0, 0]);
 
       var pReviewed = parseInt(Math.floor(100 * countSums[1] / countSums[0])) | 0;
-      var table = $("#" +
-          (partnerSet === 'incoming' ? 'presynaptic' : 'postsynaptic') +
-          '_tostream_connectivity_table' + self.widgetID);
+
+      var table = $("#" + partnerSet.id + '_connectivity_table' + self.widgetID);
       table.find('.node-count-total').text(countSums[0]);
       table.find('.review-summary-total').each(function () {
         this.textContent = pReviewed + '%';
@@ -640,6 +665,16 @@
 
       // Inform DataTables that the data has changed.
       table.DataTable().rows().invalidate().draw();
+    });
+  };
+
+  /**
+   * Support function to updates the layout of the tables.
+   */
+  var layoutTables = function(tableContainers, sideBySide) {
+    tableContainers.forEach(function(tc) {
+      tc.toggleClass('table_container_half', sideBySide);
+      tc.toggleClass('table_container_wide', !sideBySide);
     });
   };
 
@@ -660,30 +695,6 @@
       a.setAttribute('id', 'a-connectivity-table-' + widgetID + '-' + skeleton_id);
       a.setAttribute('data-skeleton-id', skeleton_id);
       return a;
-    };
-
-    /**
-     * Support function to updates the layout of the tables.
-     */
-    var layoutTables = function(sideBySide) {
-      incoming.toggleClass('table_container_half', sideBySide);
-      incoming.toggleClass('table_container_wide', !sideBySide);
-      outgoing.toggleClass('table_container_half', sideBySide);
-      outgoing.toggleClass('table_container_wide', !sideBySide);
-      gapjunctions.toggleClass('table_container_half', sideBySide);
-      gapjunctions.toggleClass('table_container_wide', !sideBySide);
-    };
-
-    /**
-     * Support function to show or hide the gap junction table and gap junction
-     * threshold columns.
-     */
-    var gapjunctionTable = function(visible) {
-      gapjunctions.toggleClass('table_container_hidden', !visible);
-      incoming.toggleClass('gapjunction_visible', visible);
-      outgoing.toggleClass('gapjunction_visible', visible);
-      gapjunctions.toggleClass('gapjunction_visible', visible);
-      $(".gj_column", content).toggleClass('column_hidden', !visible);
     };
 
     /**
@@ -724,10 +735,20 @@
     /**
      * Support function for creating a partner table.
      */
-    var create_table = function(skids, skeletons, thresholds, partners, title, relation,
-        hidePartnerThreshold, reviewFilter, collapsed, collapsedCallback) {
+    var create_table = function(skids, skeletons, partnerSet,
+        hidePartnerThreshold, reviewFilter) {
+
+      var thresholds = partnerSet.thresholds;
+      var partners = to_sorted_array(partnerSet.partners, partnerSet.thresholds.confidence);
+      var title = partnerSet.partnerTitle;
+      var relation = partnerSet.relation;
+      var collapsed = partnerSet.collapsed;
+      var collapsedCallback = (function() {
+        this.collapsed = !this.collapsed;
+      }).bind(partnerSet);
+
       // Create table with unique ID and the class 'partner_table'
-      var table = $('<table />').attr('id', relation + 'stream_connectivity_table' + widgetID)
+      var table = $('<table />').attr('id', partnerSet.id  + '_connectivity_table' + widgetID)
               .attr('class', 'partner_table');
 
       /* The table header will be slightly different if there is more than one
@@ -753,9 +774,8 @@
       table.append( thead );
       var row = $('<tr />');
       row.append( $('<th />').text("select").attr('rowspan', headerRows));
-      row.append( $('<th />').text((title !== 'Gapjunction') ? title + "stream neuron" : "Gap junctions with neuron").attr('rowspan',
-          headerRows));
-      row.append( $('<th />').text((title !== 'Gapjunction') ? "syn count" : "gj count").attr('rowspan', 1).attr('colspan',
+      row.append( $('<th />').text(partnerSet.partnerTitle).attr('rowspan', headerRows));
+      row.append( $('<th />').text(partnerSet.connectorShort + " count").attr('rowspan', 1).attr('colspan',
           extraCols ? skids.length + 1 : 1));
       row.append( $('<th />').text("reviewed").attr('rowspan', headerRows));
       row.append( $('<th />').text("node count").attr('rowspan', headerRows));
@@ -771,8 +791,8 @@
 
       // The aggregate row
       row = $('<tr />');
-      var el = $('<input type="checkbox" id="' + title.toLowerCase() + 'stream-selectall' +  widgetID + '" />');
-      if (this.selectAllSelection[title.toLowerCase()]) {
+      var el = $('<input type="checkbox" id="' + partnerSet.id + '-selectall' +  widgetID + '" />');
+      if (partnerSet.allSelected) {
         el.prop('checked', true);
       }
       row.append( $('<td />').addClass('input-container').append( el ) );
@@ -963,11 +983,15 @@
      */
     var add_select_all_fn = function(widget, name, target, table, nSkeletons) {
       // Assign 'select all' checkbox handler
-      $('#' + name + 'stream-selectall' + widgetID).click(function( event ) {
+      $('#' + name + '-selectall' + widget.widgetID, table).click(function( event ) {
         event.stopPropagation();
 
         // Remember the check state of this control
-        widget.selectAllSelection[name] = this.checked;
+        var partnerSet = widget.partnerSetMap[name];
+        if (!partnerSet) {
+          throw new CATMAID.ValueError("Couldn't find parner set with ID " + name);
+        }
+        partnerSet.allSelected = this.checked;
         var selfChecked = this.checked;
 
         // Mark all checkboxes accordingly and set skeleton selection state
@@ -983,11 +1007,11 @@
     /**
      * Support function to create a threshold selector element.
      */
-    var createThresholdSelector = function(dir, type, skid, selected) {
+    var createThresholdSelector = function(partnerSetId, type, skid, selected) {
       var max = type === 'count' ? 21 : 6;
       var select = document.createElement('select');
       select.className = 'threshold';
-      select.setAttribute('data-dir', dir);
+      select.setAttribute('data-partner-set-id', partnerSetId);
       select.setAttribute('data-type', type);
       select.setAttribute('data-skeleton-id', skid);
       for (var i=1; i < max; ++i) {
@@ -1021,41 +1045,45 @@
       };
     })(this));
 
-    var thresholdKeys = Object.keys(this.thresholds).reduce((function (dirKeys, dir) {
-      return dirKeys.concat(Object.keys(this.thresholds[dir]).map(function (type) {
-        return {dir: dir, type: type};
-      }));
-    }).bind(this), []);
+    // All available thresholds to more easily create threshold controls below.
+    var thresholdSummary = this.partnerSets.reduce(function(l, ps) {
+      l.push({partnerSet: ps, type: 'confidence'});
+      l.push({partnerSet: ps, type: 'count'});
+      return l;
+    }, []);
 
-    var thresholdHeaders = Object.keys(this.thresholds).reduce((function (dirHeaders, dir) {
-      dirHeaders[dir] = Object.keys(this.thresholds[dir]).reduce(function (typeHeaders, type) {
-        typeHeaders[type] = $('<th />').text(
-              ('up' === dir ? 'Upstream ' : ('down' == dir ? 'Downstream ' : 'Gap junction ')) +
-              type + ' threshold').addClass('threshold-header' + ('gj' === dir ? ' gj_column column_hidden' : ''));
-        return typeHeaders;
-      }, {});
-      return dirHeaders;
-    }).bind(this), {});
+    var thresholdHeaders = thresholdSummary.reduce(function(headers, ts) {
+      var partnerHeaders = headers[ts.partnerSet.id];
+      if ((!partnerHeaders)) {
+        partnerHeaders = {};
+        headers[ts.partnerSet.id] = partnerHeaders;
+      }
+
+      partnerHeaders[ts.type] = $('<th />')
+          .text(ts.partnerSet.name + ' ' + ts.type + ' threshold')
+          .attr('data-partner-set', ts.partnerSet.id)
+          .addClass('threshold-header');
+      return headers;
+    }, {});
 
     // An input to update all thresholds for both upstream and downstream is
     // added if there is more than one seed neuron.
     if (this.ordered_skeleton_ids.length > 1) {
-      thresholdKeys.forEach((function (t) {
-        var selector = createThresholdSelector(
-          t.dir, t.type, 'all',
-          this.allThresholds[t.dir][t.type] || 1);
-        thresholdHeaders[t.dir][t.type].append(selector);
+      thresholdSummary.forEach(function(ts) {
+        var selector = createThresholdSelector(ts.partnerSet.id,
+            ts.type, 'all', ts.partnerSet.allThresholds[ts.type] || 1);
+        thresholdHeaders[ts.partnerSet.id][ts.type].append(selector);
 
         selector.change(this, function(e) {
           var widget = e.data;
           var threshold = parseInt(this.value, 10);
           for (var i=0; i<widget.ordered_skeleton_ids.length; ++i) {
-            widget.thresholds[t.dir][t.type][widget.ordered_skeleton_ids[i]] = threshold;
+            ts.partnerSet.thresholds[ts.type][widget.ordered_skeleton_ids[i]] = threshold;
           }
-          widget.allThresholds[t.dir][t.type] = threshold;
+          ts.partnerSet.allThresholds[t] = threshold;
           widget.redraw();
         });
-      }).bind(this));
+      });
     }
 
     // Create list of selected neurons
@@ -1064,18 +1092,17 @@
               .append($('<th />'))
               .append($('<th />').text('Selected').append(selectAllCb))
               .append($('<th />').text('Neuron'))
-              .append(thresholdKeys.map(function (t) {
-                return thresholdHeaders[t.dir][t.type];
+              .append(thresholdSummary.map(function(ts) {
+                return thresholdHeaders[ts.partnerSet.id][ts.type];
               }))));
     // Add a row for each neuron looked at
     this.ordered_skeleton_ids.forEach(function(skid, i) {
       var id = this.widgetID + '-' + skid;
 
-      var thresholdSelectors = thresholdKeys.map(function (t) {
-        return createThresholdSelector(
-          t.dir, t.type, skid,
-          this.thresholds[t.dir][t.type][skid] || 1);
-      }, this);
+      var thresholdSelectors = thresholdSummary.map(function (ts) {
+        return createThresholdSelector( ts.partnerSet.id, ts.type, skid,
+          ts.partnerSet.thresholds[ts.type][skid] || 1);
+      });
 
       // Make a neuron selected by default
       if (!(skid in this.skeletonSelection)) {
@@ -1132,6 +1159,17 @@
     }, this);
     content.append(neuronTable);
 
+    // The neuron table columns consist of three base columns and two threshold
+    // columns for each partner set.
+    var neuronTableColumns = [
+        {orderable: false},
+        {orderable: false},
+        null
+    ];
+    thresholdSummary.forEach(function(ts) {
+      this.push({orderable: false});
+    }, neuronTableColumns);
+
     // Make the target neuron table a data table so that sorting is done in a
     // consistent fashion.
     neuronTable.DataTable({
@@ -1139,17 +1177,7 @@
       paging: false,
       serverSide: false,
       order: this.currentOrder,
-      columns: [
-        {orderable: false},
-        {orderable: false},
-        null,
-        {orderable: false},
-        {orderable: false},
-        {orderable: false},
-        {orderable: false},
-        {orderable: false},
-        {orderable: false},
-      ]
+      columns: neuronTableColumns
     }).on("order.dt", this, function(e) {
       var widget = e.data;
       var table = $(this).DataTable();
@@ -1203,10 +1231,16 @@
 
     neuronTable.on('change', '.threshold', this, function (e) {
           var $this = $(this),
-              dir = $this.attr('data-dir'),
+              partnerSetId = $this.attr('data-partner-set-id'),
               type = $this.attr('data-type'),
               skid = $this.attr('data-skeleton-id');
-          e.data.thresholds[dir][type][skid] = parseInt(this.value);
+          var partnerSet = e.data.partnerSetMap[partnerSetId];
+          if (!partnerSet) {
+            CATMAID.warn("Couldn't find partner set with ID " + partnerSetId);
+            return;
+          }
+
+          partnerSet.thresholds[type][skid] = parseInt(this.value);
           if (skid === 'sum')
             e.data.createConnectivityTable();
           else
@@ -1223,12 +1257,11 @@
     if (this.ordered_skeleton_ids.length > 1) {
       var id = this.widgetID + '-sum';
 
-      var thresholdSelectors = thresholdKeys.map(function (t) {
-        if (t.type === 'confidence') return; // No meaningful sum for confidence.
-        return createThresholdSelector(
-            t.dir, t.type, 'sum',
-            this.thresholds[t.dir][t.type]['sum'] || 1);
-      }, this);
+      var thresholdSelectors = thresholdSummary.map(function (ts) {
+        if (ts.type === 'confidence') return; // No meaningful sum for confidence.
+        return createThresholdSelector(ts.partnerSet.id, ts.type, 'sum',
+            ts.partnerSet.thresholds[ts.type]['sum'] || 1);
+      });
 
       var row = $('<tfoot />').append($('<tr />')
           .append($('<td />'))
@@ -1352,63 +1385,15 @@
       .append(paginationControl);
     tableSettings.append(paginationContainer);
 
-    // Create containers for pre and postsynaptic partners
-    var incoming = $('<div />');
-    var outgoing = $('<div />');
-    var gapjunctions = $('<div />');
-    var tables = $('<div />').css('width', '100%').attr('class', 'content')
-       .append(incoming)
-       .append(outgoing)
-       .append(gapjunctions);
-    content.append(tables);
-
-    // Add handler to layout toggle
-    $('#connectivity-layout-toggle-' + widgetID).off('change')
-        .change((function(widget) {
-          return function() {
-            widget.tablesSideBySide = this.checked;
-            layoutTables(this.checked);
-          };
-        })(this)).change();
-
-    // Add handler to gap junction table toggle
-    $('#connectivity-gapjunctiontable-toggle-' + widgetID).off('change')
-        .change((function(widget) {
-          return function() {
-            widget.showGapjunctionTable = this.checked;
-            gapjunctionTable(this.checked);
-          };
-        })(this)).change();
-
-    // Create incomining and outgoing tables
-    var table_incoming = create_table.call(this, this.ordered_skeleton_ids,
-        this.skeletons, this.thresholds.up, to_sorted_array(this.incoming, this.thresholds.up.confidence),
-        'Up', 'presynaptic_to', this.hidePartnerThreshold, this.reviewFilter,
-        this.upstreamCollapsed, (function() {
-          this.upstreamCollapsed = !this.upstreamCollapsed;
-        }).bind(this));
-    var table_outgoing = create_table.call(this, this.ordered_skeleton_ids,
-        this.skeletons, this.thresholds.down, to_sorted_array(this.outgoing, this.thresholds.down.confidence),
-        'Down', 'postsynaptic_to', this.hidePartnerThreshold, this.reviewFilter,
-        this.downstreamCollapsed, (function() {
-          this.downstreamCollapsed = !this.downstreamCollapsed;
-        }).bind(this));
-    var table_gapjunctions = create_table.call(this, this.ordered_skeleton_ids,
-        this.skeletons, this.thresholds.gj, to_sorted_array(this.gapjunctions, this.thresholds.gj.confidence),
-        'Gapjunction', 'gapjunction_with', this.hidePartnerThreshold, this.reviewFilter,
-        this.gapjunctionCollapsed, (function() {
-          this.gapjunctionCollapsed = !this.gapjunctionCollapsed;
-        }).bind(this));
-
-    incoming.append(table_incoming);
-    outgoing.append(table_outgoing);
-    gapjunctions.append(table_gapjunctions);
-
     var widget = this;
-    $.each([table_incoming, table_outgoing, table_gapjunctions], function () {
+    var tableContainers = this.partnerSets.map(function(partnerSet) {
+      var tableContainer = $('<div />');
+      var table = create_table.call(this, this.ordered_skeleton_ids,
+          this.skeletons, partnerSet, this.hidePartnerThreshold, this.reviewFilter);
+      tableContainer.append(table);
 
       // Initialize datatable
-      this.DataTable({
+      var dataTable = table.DataTable({
         sorting: [[2, 'desc']],
         destroy: true,
         dom: 'R<"connectivity_table_actions">rtip',
@@ -1426,8 +1411,7 @@
         ]
       });
 
-      var self = this;
-      $(this).siblings('.connectivity_table_actions')
+      $(table).siblings('.connectivity_table_actions')
         // Add custom filter/search input to support regular expressions.
         .append($('<div class="dataTables_filter">')
           .append($('<label />')
@@ -1443,21 +1427,21 @@
                   var re = new RegExp(search);
                   // Regex is valid
                   $(this).removeClass('ui-state-error');
-                  self.DataTable().column(1).search(search, true, false).draw();
+                  table.DataTable().column(1).search(search, true, false).draw();
                 } catch (error) {
                   $(this).addClass('ui-state-error');
                 }
               } else {
                 // Treat the search as plain text input. Use DataTables' smart search.
                 $(this).removeClass('ui-state-error');
-                self.DataTable().column(1).search(search, false, true).draw();
+                table.DataTable().column(1).search(search, false, true).draw();
               }
             }).on('search', function() {
               // Update table after clearing
               var search = this.value;
               if (0 === search.length) {
                 $(this).removeClass('ui-state-error');
-                self.DataTable().column(1).search(search, false, true).draw();
+                table.DataTable().column(1).search(search, false, true).draw();
               }
             }))
           )
@@ -1491,13 +1475,13 @@
             var removeDuplicate = (1 === widget.ordered_skeleton_ids.length) ?
                 function() { return true; } : function(c, i) { return i > 0; };
             // Export CSV based on the HTML table content.
-            var text = self.fnSettings().aoHeader.filter(removeDuplicate).map(function (r, i) {
+            var text = table.fnSettings().aoHeader.filter(removeDuplicate).map(function (r, i) {
               return r.map(cellToText.bind(this, true))
                 .map(addNames.bind(this, i))
                 .filter(function(c, j) { return j > 0; }).join(',');
             }).join('\n');
             // Export table body
-            var data = self.DataTable().rows({order: 'current'}).data();
+            var data = table.DataTable().rows({order: 'current'}).data();
             text += '\n' + data.map(function (r) {
               return r.map(cellToText.bind(this, false))
                 .filter(function(c, i) { return i > 0; }).join(',');
@@ -1518,20 +1502,51 @@
           e.data.redrawSelectionState();
         }
       });
-    });
+
+      // Add a handler for openening connector selections for individual partners
+      tableContainer.on('click', 'a[partnerID]', createPartnerClickHandler(
+            partnerSet.partners, partnerSet.relation));
+
+      // Add 'select all' checkboxes
+      var nSkeletons = Object.keys(this.skeletons).length;
+      add_select_all_fn(this, partnerSet.id, partnerSet.partners, table, nSkeletons);
+
+      // Add handler for individual skeleton checkboxes
+      tableContainer.on('click', 'input[data-skeleton-id][type=checkbox]',
+         set_as_selected.bind(this, partnerSet.id, partnerSet.relation));
+
+      return tableContainer;
+    }, this);
+
+    // Append table containers to DOM
+    var tables = $('<div />')
+      .css('width', '100%')
+      .attr('class', 'content')
+      .append(tableContainers);
+    content.append(tables);
+
+    // Add handler to layout toggle
+    $('#connectivity-layout-toggle-' + widgetID).off('change')
+        .change((function(widget) {
+          return function() {
+            widget.tablesSideBySide = this.checked;
+            layoutTables(tableContainers, this.checked);
+          };
+        })(this));
+
+    // Add handler to gap junction table toggle
+    $('#connectivity-gapjunctiontable-toggle-' + widgetID).off('change')
+        .change((function(widget) {
+          return function() {
+            widget.showGapjunctionTable = this.checked;
+            widget.update();
+          };
+        })(this));
 
     $('.dataTables_wrapper', tables).css('min-height', 0);
 
     this.updateReviewSummaries();
 
-    // Add a handler for openening connector selections for individual partners
-
-    incoming.on('click', 'a[partnerID]', createPartnerClickHandler(
-          this.incoming, 'presynaptic_to'));
-    outgoing.on('click', 'a[partnerID]', createPartnerClickHandler(
-          this.outgoing, 'postsynaptic_to'));
-    gapjunctions.on('click', 'a[partnerID]', createPartnerClickHandler(
-          this.gapjunctions, 'gapjunction_with'));
     function createPartnerClickHandler(partners, relation) {
       return function() {
         var partnerID = $(this).attr('partnerID');
@@ -1547,20 +1562,6 @@
         return true;
       };
     }
-
-    // Add 'select all' checkboxes
-    var nSkeletons = Object.keys(this.skeletons).length;
-    add_select_all_fn(this, 'up', this.incoming, table_incoming, nSkeletons);
-    add_select_all_fn(this, 'down', this.outgoing, table_outgoing, nSkeletons);
-    add_select_all_fn(this, 'gj',this.gapjunctions, table_gapjunctions, nSkeletons);
-
-    // Add handler for individual skeleton checkboxes
-    incoming.on('click', 'input[data-skeleton-id][type=checkbox]',
-       set_as_selected.bind(this, 'up', 'presynaptic_to'));
-    outgoing.on('click', 'input[data-skeleton-id][type=checkbox]',
-       set_as_selected.bind(this, 'down', 'postsynaptic_to'));
-    gapjunctions.on('click', 'input[data-skeleton-id][type=checkbox]',
-       set_as_selected.bind(this, 'gj', 'gapjunction_with'));
 
     // Add handler for neuron name clicks
     content.off('click', 'a[data-skeleton-id]');
@@ -1594,7 +1595,7 @@
       // Uncheck the select-all checkbox if it is checked and this checkbox is
       // now unchecked
       if (!checked) {
-        $('#' + name + 'stream-selectall' + widgetID + ':checked')
+        $('#' + name + '-selectall' + widgetID + ':checked')
             .prop('checked', false);
       }
     }
@@ -1607,8 +1608,9 @@
     }
     // Create a new connectivity graph plot and hand it to the window maker to
     // show it in a new widget.
-    var GP = new ConnectivityGraphPlot(this.skeletons, this.incoming,
-        this.outgoing);
+    var GP = new ConnectivityGraphPlot(this.skeletons,
+        this.partnerSetMap['incoming'].partners,
+        this.partnerSetMap['outgoing'].partners);
     WindowMaker.create('connectivity-graph-plot', GP);
     GP.draw();
   };
@@ -1808,10 +1810,10 @@
     }
 
     // Draw plots
-    makeMultipleBarChart(this.skeletons, this.incoming, containerID,
-        "Upstream", this.widgetID, container.width(), colorizer);
-    makeMultipleBarChart(this.skeletons, this.outgoing, containerID,
-        "Downstream", this.widgetID, container.width(), colorizer);
+    makeMultipleBarChart(this.skeletons, this.incoming,
+        containerID, "Upstream", this.widgetID, container.width(), colorizer);
+    makeMultipleBarChart(this.skeletons, this.outgoing,
+        containerID, "Downstream", this.widgetID, container.width(), colorizer);
   };
 
   // Make skeleton connectivity widget available in CATMAID namespace

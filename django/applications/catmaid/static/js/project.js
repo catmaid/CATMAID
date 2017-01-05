@@ -42,12 +42,23 @@
 
       stackViewers.push( stackViewer );
 
-      var rootWindow = CATMAID.rootWindow;
-      if ( rootWindow.getChild() === null ) {
-        rootWindow.replaceChild( stackViewer.getWindow() );
-      } else {
-        rootWindow.replaceChild( new CMWHSplitNode( rootWindow.getChild(),
-             stackViewer.getWindow() ) );
+      var inTree = false;
+      var node = stackViewer.getWindow();
+
+      while (!inTree && node !== null) {
+        node = node.getParent();
+        inTree = node instanceof CMWRootNode;
+      }
+
+      if (!inTree) {
+        var rootWindow = CATMAID.rootWindow;
+
+        if ( rootWindow.getChild() === null ) {
+          rootWindow.replaceChild( stackViewer.getWindow() );
+        } else {
+          rootWindow.replaceChild( new CMWHSplitNode( rootWindow.getChild(),
+            stackViewer.getWindow() ) );
+        }
       }
 
       stackViewer.getWindow().focus();

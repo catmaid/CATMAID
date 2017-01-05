@@ -637,6 +637,9 @@
         this.textContent = pReviewed + '%';
         this.style.backgroundColor = CATMAID.ReviewSystem.getBackgroundColor(pReviewed);
       });
+
+      // Inform DataTables that the data has changed.
+      table.DataTable().rows().invalidate().draw();
     });
   };
 

@@ -19,7 +19,8 @@
    */
   function StackViewer(
       project,          //!< {CATMAID.Project} reference to the parent project
-      primaryStack
+      primaryStack,
+      catmaidWindow
   ) {
     this._project = project;
     this.primaryStack = primaryStack;
@@ -64,7 +65,7 @@
 
     //-------------------------------------------------------------------------
 
-    this._stackWindow = new CMWWindow( primaryStack.title );
+    this._stackWindow = catmaidWindow || new CMWWindow( primaryStack.title );
     this._view = this._stackWindow.getFrame();
     this._view.classList.add('stackViewer');
     this._layersView = document.createElement("div");

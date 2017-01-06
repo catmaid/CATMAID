@@ -59,8 +59,7 @@
         .attr('type', 'checkbox')
         .prop('checked', stackViewer.showScaleBar)
         .change(function () {
-          stackViewer.showScaleBar = this.checked;
-          stackViewer.updateScaleBar();
+          stackViewer.updateScaleBar(this.checked);
         });
     var label = $('<div/>')
         .addClass('setting')

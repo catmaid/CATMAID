@@ -33,7 +33,7 @@
   };
 
   HistoryDialog.prototype = Object.create(CATMAID.OptionsDialog.prototype);
-  HistoryDialog.constructor = HistoryDialog;
+  HistoryDialog.prototype.constructor = HistoryDialog;
 
   /**
    * Update UI of this dialog.
@@ -41,7 +41,7 @@
   HistoryDialog.prototype.update = function() {
     // Clear options of select
     var select = this._choice;
-    while(select.options.length > 0){                
+    while(select.options.length > 0){
       select.remove(0);
     }
     var lastCommand = CATMAID.commands.currentEntry();

@@ -341,7 +341,7 @@
    */
   CATMAID.makeCommand = function(cmd) {
     cmd.prototype = Object.create(CATMAID.Command.prototype);
-    cmd.constructor = cmd;
+    cmd.prototype.constructor = cmd;
     return cmd;
   };
 

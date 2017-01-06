@@ -474,7 +474,7 @@
   };
 
   SubscriptionError.prototype = Object.create(CATMAID.Error.prototype);
-  SubscriptionError.constructor = CATMAID.SubscriptionError;
+  SubscriptionError.prototype.constructor = CATMAID.SubscriptionError;
 
   // Make skeleton source and subscription available in CATMAID namespace
   CATMAID.SkeletonSource = SkeletonSource;

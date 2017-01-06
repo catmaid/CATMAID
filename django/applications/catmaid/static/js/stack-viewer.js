@@ -48,6 +48,7 @@
     this.old_scale = this.scale;
 
     this.navigateWithProject = true;
+    this.showScaleBar = true;
 
     this._tool = null;
     this._layers = new Map();
@@ -93,6 +94,7 @@
     this._scaleBar.appendChild( document.createElement( "p" ) );
     this._scaleBar.firstChild.appendChild( document.createElement( "span" ) );
     this._scaleBar.firstChild.firstChild.appendChild( document.createTextNode( "test" ) );
+    this._scaleBar.style.display = this.showScaleBar ? 'initial' : 'none';
     this._view.appendChild( this._scaleBar );
 
     var controlToggle = document.createElement( "div" );
@@ -140,6 +142,7 @@
    * update the scale bar (x-resolution) to a proper size
    */
   StackViewer.prototype.updateScaleBar = function () {
+    this._scaleBar.style.display = this.showScaleBar ? 'initial' : 'none';
     var meter = this.scale / this.primaryStack.resolution.x;
     var width = 0;
     var text = "";

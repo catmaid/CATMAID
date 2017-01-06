@@ -559,6 +559,10 @@
               "target-arrow-color": "#d6ffb5",
               "text-opacity": 1.0
             })
+          .selector(".hidden")
+            .css({
+              "display": "none"
+            })
           .selector(".ui-cytoscape-edgehandles-source")
             .css({
               "border-color": "#5CC2ED",
@@ -1213,7 +1217,7 @@
       // Restore selection state
       if (id in selected) node.select();
       // Restore visibility state
-      if (id in hidden) node.hide();
+      if (id in hidden) node.addClass('hidden');
       // Restore locked state
       if (id in locked) node.lock();
       // Make branch nodes, if any, be smaller
@@ -1232,9 +1236,9 @@
       // Restore selection state
       if (id in selected) edge.select();
       // Restore visibility state
-      if (id in hidden) edge.hide();
+      if (id in hidden) edge.addClass('hidden');
       // Hide edge if under threshold
-      if (edge.data('weight') < edge_threshold) edge.hide();
+      if (edge.data('weight') < edge_threshold) edge.addClass('hidden');
     });
 
     // If hide labels, hide them
@@ -1925,7 +1929,7 @@
       this.cy.nodes().each(function(i, node) {
         // If any of the new skeletons is present but hidden, make it visible
         node.data('skeletons').forEach(function(skeleton) {
-          if (new_skids[skeleton.id]) node.show();
+          if (new_skids[skeleton.id]) node.removeClass('hidden');
           all[skeleton.id] = true;
         });
       });
@@ -1965,7 +1969,7 @@
     var hidden = 0;
     this.cy.elements().each(function(i, e) {
       if (e.selected()) {
-        e.hide(); // if it's a node, hides edges too
+        e.addClass('hidden'); // if it's a node, hides edges too
         e.unselect();
         hidden += 1;
       }
@@ -1984,7 +1988,7 @@
 
   GroupGraph.prototype.showHidden = function() {
     if (!this.cy) return;
-    this.cy.elements().show();
+    this.cy.elements().removeClass('hidden');
     if (this.show_node_labels) {
       this.cy.elements().css('text-opacity', 1);
     } else {
@@ -3089,7 +3093,12 @@
       pan: this.cy.pan()
     };
 
-    var copier = function(elem) { return {data: $.extend(true, {}, elem.data())}; };
+    var copier = function(elem) {
+      return {
+        data: $.extend(true, {}, elem.data()),
+        classes: elem.hidden() ? 'hidden' : ''
+      };
+    };
 
     return {
       properties: properties,
@@ -3190,8 +3199,8 @@
         edge.data('weight', count);
         edge.data('label', count);
         edge.data('weight', count);
-        if (count < edge_threshold) edge.hide();
-        else edge.show();
+        if (count < edge_threshold) edge.addClass('hidden');
+        else edge.removeClass('hidden');
       }
     });
   };

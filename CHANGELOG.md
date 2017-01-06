@@ -33,6 +33,10 @@ Graph widget:
 - Active Graph Widget windows will now zoom in smaller steps if the Shift key
   is pressed.
 
+- Graphs saved to a JSON file now keep visibility information. Loading them
+  will load all nodes hidden that have been hidden when saving the file
+  initially..
+
 
 3D Viewer
 

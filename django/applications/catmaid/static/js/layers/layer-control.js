@@ -55,12 +55,12 @@
         .append($('<label/>').append(navcb).append('Navigate with project'));
     $view.append(navlabel);
 
-    var benchmark = $view.siblings('.sliceBenchmark');
     var cb = $('<input/>')
         .attr('type', 'checkbox')
-        .prop('checked', benchmark.is(':visible'))
+        .prop('checked', stackViewer.showScaleBar)
         .change(function () {
-          $view.siblings('.sliceBenchmark').toggle();
+          stackViewer.showScaleBar = this.checked;
+          stackViewer.updateScaleBar();
         });
     var label = $('<div/>')
         .addClass('setting')

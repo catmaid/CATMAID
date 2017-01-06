@@ -140,9 +140,14 @@
 
   /**
    * update the scale bar (x-resolution) to a proper size
+   * @param showScaleBar optional boolean, whether to show the scale bar on update. Default: do not change.
    */
-  StackViewer.prototype.updateScaleBar = function () {
-    this._scaleBar.style.display = this.showScaleBar ? 'initial' : 'none';
+  StackViewer.prototype.updateScaleBar = function (showScaleBar) {
+    if (showScaleBar !== undefined && this.showScaleBar !== showScaleBar) {
+      this.showScaleBar = showScaleBar;
+      this._scaleBar.style.display = showScaleBar ? 'initial' : 'none';
+      this.layercontrol.refresh();
+    }
     var meter = this.scale / this.primaryStack.resolution.x;
     var width = 0;
     var text = "";

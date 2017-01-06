@@ -68,6 +68,9 @@ Miscellaneous:
   information for the query time range. This fixes some time zone conversion
   corner cases.
 
+- Graph widget: SVG export works again. The exported SVG now groups labels with
+  node/edge. Now also single node exports are supported.
+
 
 ## 2016.12.16
 

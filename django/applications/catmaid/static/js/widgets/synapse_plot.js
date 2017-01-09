@@ -216,7 +216,7 @@
 
   SynapsePlot.prototype.onchangeSynapseThreshold = function(ev) {
     // Get the number from the event soure, which is a textfield
-    var val = Number(ev.srcElement.value);
+    var val = Number(ev.target.value);
     if (Number.isNaN(val)) {
       CATMAID.msg("Warning", "Invalid threshold value: not a number.");
       return;
@@ -293,7 +293,7 @@
   };
 
   SynapsePlot.prototype.onchangeSigma = function(ev) {
-    var sigma = Number(ev.srcElement.value);
+    var sigma = Number(ev.target.value);
     if (!Number.isNaN(sigma) && sigma !== this.sigma && sigma > 0) {
       this.sigma = sigma;
       this.updateGraph();

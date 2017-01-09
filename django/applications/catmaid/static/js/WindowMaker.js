@@ -714,8 +714,8 @@ var WindowMaker = new function()
               selectedVolumes);
           // Add a selection handler
           node.onchange = function(e) {
-            var visible = e.srcElement.checked;
-            var volumeId = e.srcElement.value;
+            var visible = e.target.checked;
+            var volumeId = e.target.value;
             WA.showVolume(volumeId, visible);
           };
           return node;

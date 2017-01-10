@@ -611,9 +611,7 @@
     var widgetID = this.widgetID;
     this.partnerSets.forEach(function(partnerSet) {
       var table = $("#" + partnerSet.id + '_connectivity_table' + widgetID);
-
-      // Inform DataTables that the data has changed.
-      table.DataTable().rows().invalidate().draw();
+      table.DataTable().draw(false);
     });
   };
 
@@ -905,26 +903,11 @@
 
         // Cell with checkbox for adding to Selection Table
         var td = document.createElement('td');
-        td.setAttribute('class', 'input-container');
-        var input = document.createElement('input');
-        input.setAttribute('id', relation + '-show-skeleton-' + widgetID + '-' + partner.id);
-        input.setAttribute('type', 'checkbox');
-        input.setAttribute('value', partner.id);
-        input.setAttribute('data-skeleton-id', partner.id);
-        if (partner.id in this.skeletonSelection) {
-          if (this.skeletonSelection[partner.id]) {
-            input.setAttribute('checked', 'checked');
-          }
-        } else {
-          this.skeletonSelection[partner.id] = false;
-        }
-        td.appendChild(input);
+        td.appendChild(document.createTextNode(partner.id));
         tr.appendChild(td);
 
         // Cell with partner neuron name
         var td = document.createElement('td');
-        var a = createNameElement(partner.name, partner.id);
-        td.appendChild(a);
         tr.appendChild(td);
 
         // Cell with synapses with partner neuron
@@ -1417,8 +1400,45 @@
         serverSide: false,
         autoWidth: false,
         columnDefs: [
-          { targets: [0], sortDataType: 'dom-checkbox' }, // Checkbox column
-          { targets: [1], type: 'html', searchable: true }, // Neuron name column
+          {
+            // Checkbox column
+            targets: [0],
+            className: 'input-container',
+            render: function(data, type, row, meta) {
+              var skeletonId = data;
+              if (type === "display") {
+                var checkbox = '<input id="' + partnerSet.relation +
+                    '-show-skeleton-' + widget.widgetID + '-' + skeletonId +
+                    '" type="checkbox" value="' + skeletonId +
+                    '" data-skeleton-id="' + skeletonId + '"';
+                if (widget.skeletonSelection[skeletonId]) {
+                  checkbox = checkbox + ' checked';
+                }
+                checkbox = checkbox + ' />';
+                return checkbox;
+              } else {
+                return !!widget.skeletonSelection[skeletonId];
+              }
+            }
+          },
+          {
+            // Neuron name column
+            targets: [1],
+            type: 'html',
+            searchable: true,
+            render: function(data, type, row, meta) {
+              var skeletonId = row[0];
+              var name = CATMAID.NeuronNameService.getInstance().getName(skeletonId);
+              if (type === "display") {
+                var nameLink = '<a href="#" id="a-connectivity-table-' +
+                    widget.widgetID + '-' + skeletonId + '" data-skeleton-id="' +
+                    skeletonId + '">' + name + '</a>';
+                return nameLink;
+              } else {
+                return name;
+              }
+            }
+          },
           { targets: ['_all'], type: 'html-num-fmt', searchable: false } // All other columns
         ]
       });

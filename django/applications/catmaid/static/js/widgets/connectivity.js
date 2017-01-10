@@ -359,16 +359,28 @@
     var widgetID = this.widgetID;
     var skeletons = this.skeletons;
 
-    var models = Object.keys(this.skeletonSelection).reduce(function(o, skid) {
-      // Test if selected
-      var selected = self.skeletonSelection[skid];
-      if (!onlySelected || selected) {
-        var model = self.getSkeletonModel(skid);
-        model.selected = selected;
-        o[skid] = model;
+    // Copy selected neurons from top list
+    var models = this.ordered_skeleton_ids.reduce(function(o, skid) {
+      if (self.skeletonSelection[skid]) {
+        o[skid] = self.getSkeletonModel(skid);
       }
       return o;
     }, {});
+
+    // Copy selected neurons from partner sets. Internal state doesn't reflect
+    // filtering at the moment. Therefore, the table is read.
+    this.partnerSets.forEach(function(ps) {
+      var table = $('#' + ps.id + '_connectivity_table' + this.widgetID);
+      var data = table.DataTable().rows({order: 'current'}).nodes();
+      data.reduce(function(o, tr) {
+        var skid = tr.dataset.skeletonId;
+        if (self.skeletonSelection[skid] && !models[skid]) {
+          models[skid] = self.getSkeletonModel(skid);
+        }
+        return o;
+      }, models);
+
+    }, this);
 
     return models;
   };
@@ -888,6 +900,7 @@
         }
 
         var tr = document.createElement('tr');
+        tr.dataset.skeletonId = partner.id;
         tbody.append(tr);
 
         // Cell with checkbox for adding to Selection Table

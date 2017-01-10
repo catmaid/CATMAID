@@ -1461,44 +1461,7 @@
         // Add table export buttons.
         .append($('<div class="dataTables_export"></div>').append(
           $('<input type="button" value="Export CSV" />').click(function () {
-            // Add neuron names to synapse count cells. The header is different
-            // if multiple neurons have been added to this widget.
-            var addNames = (1 === widget.ordered_skeleton_ids.length) ?
-                function(rowIndex, c, i) {
-                  // Include neuron name in "syn count" field of first header row.
-                  if (0 === rowIndex && 2 === i) {
-                    var sk = widget.ordered_skeleton_ids[0];
-                    return '"#Synapses with ' + CATMAID.NeuronNameService.getInstance().getName(sk) + '"';
-                  }
-                  return c;
-                } :
-                function(rowIndex, c, i) {
-                  // Include neuron name in "syn count" field of first header row.
-                  var nSkeletons = widget.ordered_skeleton_ids.length;
-                  if (0 === rowIndex && -1 === c.indexOf("Sum") &&
-                      1 < i && (3 + nSkeletons) > i) {
-                    var index = parseInt(c.replace(/\"/g, ''), 10);
-                    var sk = widget.ordered_skeleton_ids[index - 1];
-                    return '"#Synapses with ' + CATMAID.NeuronNameService.getInstance().getName(sk) + '"';
-                  }
-                  return c;
-                };
-            // Remove duplicate header row if there are multiple input neurons
-            var removeDuplicate = (1 === widget.ordered_skeleton_ids.length) ?
-                function() { return true; } : function(c, i) { return i > 0; };
-            // Export CSV based on the HTML table content.
-            var text = table.fnSettings().aoHeader.filter(removeDuplicate).map(function (r, i) {
-              return r.map(cellToText.bind(this, true))
-                .map(addNames.bind(this, i))
-                .filter(function(c, j) { return j > 0; }).join(',');
-            }).join('\n');
-            // Export table body
-            var data = table.DataTable().rows({order: 'current'}).data();
-            text += '\n' + data.map(function (r) {
-              return r.map(cellToText.bind(this, false))
-                .filter(function(c, i) { return i > 0; }).join(',');
-            }).join('\n');
-            saveAs(new Blob([text], {type: 'text/plain'}), 'connectivity.csv');
+            widget.exportCSV(partnerSet.id);
           })
         )
       );
@@ -1584,18 +1547,6 @@
     });
 
     /**
-     * Return a quoted string representation of table cell content.
-     */
-    function cellToText(useCell, c) {
-      try {
-        c = useCell ? c.cell : c;
-        return '"' + ($(c).text() || c) + '"';
-      } catch (e) {
-        return '"' + c + '"';
-      }
-    }
-
-    /**
      * Helper to handle selection of a neuron.
      */
     function set_as_selected(name, relation, ev) {
@@ -1611,6 +1562,82 @@
             .prop('checked', false);
       }
     }
+  };
+
+  /**
+   * Return a quoted string representation of table cell content.
+   */
+  function cellToText(c) {
+    try {
+      return '"' + ($(c).text() || c) + '"';
+    } catch (e) {
+      return '"' + c + '"';
+    }
+  }
+
+  /**
+   * Export a CVS file for a particular partner set.
+   */
+  SkeletonConnectivity.prototype.exportCSV = function(partnerSetId) {
+    var partnerSet = this.partnerSetMap[partnerSetId];
+    if (!partnerSet) {
+      CATMAID.warn('Couldn\'t find partner set "' + partnerSetId + '"');
+      return;
+    }
+
+    var self = this;
+
+    // Add neuron names to synapse count cells. The header is different
+    // if multiple neurons have been added to this widget.
+    var addNames = (1 === this.ordered_skeleton_ids.length) ?
+        function(rowIndex, i, c) {
+          // Include neuron name in "syn count" field of first header row.
+          if (0 === rowIndex && 2 === i) {
+            var sk = self.ordered_skeleton_ids[0];
+            return '"#Synapses with ' + CATMAID.NeuronNameService.getInstance().getName(sk) + '"';
+          }
+          return c;
+        } :
+        function(rowIndex, i, c) {
+          // Include neuron name in "syn count" field of first header row.
+          var nSkeletons = self.ordered_skeleton_ids.length;
+          if (0 === rowIndex && -1 === c.indexOf("Sum") &&
+              1 < i && (3 + nSkeletons) > i) {
+            var index = parseInt(c.replace(/\"/g, ''), 10);
+            var sk = self.ordered_skeleton_ids[index - 1];
+            return '"#Synapses with ' + CATMAID.NeuronNameService.getInstance().getName(sk) + '"';
+          }
+          return c;
+        };
+
+    // Export CSV based on the HTML table content. To do this, first
+    // parse header and remove selection column as well duplicate
+    // content.
+    var table = $('#' + partnerSet.id + '_connectivity_table' + this.widgetID);
+    var header = [];
+    table.DataTable().table().header().childNodes.forEach(function(tr, i) {
+      // If there is more than one top-list skeleton, skip second row of
+      // complex header, because it only
+      if (this.ordered_skeleton_ids.length === 1 || i !== 1) {
+        var headerCells = [];
+        // Skip first column ("selected")
+        for (var j=1; j<tr.childNodes.length; ++j) {
+          headerCells.push(addNames(i, j, cellToText(tr.childNodes[j])));
+        }
+        header.push(headerCells.join(','));
+      }
+    }, this);
+
+    // Start building the CVS file
+    var text = header.join('\n');
+
+    // Export table body
+    var greaterThanOne = function(c, i) { return i > 0; };
+    var data = table.DataTable().rows({order: 'current'}).data();
+    text += '\n' + data.map(function (r) {
+      return r.map(cellToText).filter(greaterThanOne).join(',');
+    }).join('\n');
+    saveAs(new Blob([text], {type: 'text/plain'}), 'connectivity.csv');
   };
 
   SkeletonConnectivity.prototype.openPlot = function() {

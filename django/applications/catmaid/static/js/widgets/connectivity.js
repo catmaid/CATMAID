@@ -556,7 +556,6 @@
 
       // Announce change
       var model = this.getSkeletonModel(skid);
-      model.selected = selected;
       this.triggerChange(CATMAID.tools.idMap(model));
   };
 

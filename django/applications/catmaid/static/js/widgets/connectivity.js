@@ -361,7 +361,7 @@
 
     // Copy selected neurons from top list
     var models = this.ordered_skeleton_ids.reduce(function(o, skid) {
-      if (self.skeletonSelection[skid]) {
+      if (self.skeletonSelection[skid] || !onlySelected) {
         o[skid] = self.getSkeletonModel(skid);
       }
       return o;
@@ -374,7 +374,7 @@
       var data = table.DataTable().rows({order: 'current'}).nodes();
       data.reduce(function(o, tr) {
         var skid = tr.dataset.skeletonId;
-        if (self.skeletonSelection[skid] && !models[skid]) {
+        if ((self.skeletonSelection[skid] || !onlySelected) && !models[skid]) {
           models[skid] = self.getSkeletonModel(skid);
         }
         return o;

@@ -75,6 +75,10 @@ Miscellaneous:
 - Graph widget: SVG export works again. The exported SVG now groups labels with
   node/edge. Now also single node exports are supported.
 
+- If Ctrl-Z was pressed and released very quickly, two undo steps were taken.
+  Now always only one undo step will be done per single Ctrl-Z click if not hold
+  down.
+
 
 ## 2016.12.16
 

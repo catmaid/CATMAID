@@ -578,9 +578,8 @@
   SkeletonConnectivity.prototype.redrawSelectionState = function() {
     var self = this;
     this.partnerSets.forEach(function(ps) {
-      $("[id^='" + ps.relation + "-show-skeleton-" + this.widgetID + "-']").each(function(_, checkbox) {
-        checkbox.checked = self.skeletonSelection[this.dataset.skeletonId];
-      });
+      var table = $("#" + ps.id + '_connectivity_table' + self.widgetID);
+      table.DataTable().rows().invalidate('data').draw(false);
     }, this);
   };
 

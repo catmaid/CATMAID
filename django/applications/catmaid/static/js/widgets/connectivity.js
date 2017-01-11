@@ -371,7 +371,7 @@
     // filtering at the moment. Therefore, the table is read.
     this.partnerSets.forEach(function(ps) {
       var table = $('#' + ps.id + '_connectivity_table' + this.widgetID);
-      var data = table.DataTable().rows({order: 'current'}).nodes();
+      var data = table.DataTable().rows({order: 'current', search: 'applied'}).nodes();
       data.reduce(function(o, tr) {
         var skid = tr.dataset.skeletonId;
         if ((self.skeletonSelection[skid] || !onlySelected) && !models[skid]) {

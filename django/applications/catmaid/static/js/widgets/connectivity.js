@@ -629,26 +629,46 @@
     return CATMAID.fetch(project.id + '/skeletons/review-status', 'POST', request)
       .then(function(json) {
         self.reviews = json;
-        self.redrawReviewSummaries();
+
+        self.partnerSets.forEach(function(partnerSet) {
+          var table = $("#" + partnerSet.id + '_connectivity_table' + self.widgetID);
+          var datatable = table.DataTable();
+
+          // Update table data
+          var data = datatable.rows().data();
+          for (var i=0; i<data.length; ++i) {
+            var row = data[i];
+            var skeletonId = row[0];
+
+            // Review column
+            var counts = self.reviews[skeletonId];
+            var p = counts ? parseInt(Math.floor(100 * counts[1] / counts[0])) || 0 : 0;
+            row[row.length - 2] = p;
+
+            // Node count column
+            row[row.length - 1] = (counts && counts.length > 0) ? counts[0] : '...';
+          }
+
+          // Queue a review background color update
+          self.updateReviewColors(datatable);
+
+          // Inform DataTables that the data has changed.
+          datatable.rows().invalidate('data').draw(false);
+        });
       });
+
+  };
+
+  SkeletonConnectivity.prototype.updateReviewColors = function(datatable) {
+    datatable.rows(function(idx, data, node) {
+      var td = node.childNodes[node.childNodes.length - 2];
+      var p = data[data.length - 2];
+      td.style.backgroundColor = CATMAID.ReviewSystem.getBackgroundColor(p);
+    });
   };
 
   SkeletonConnectivity.prototype.redrawReviewSummaries = function() {
     var self = this;
-    $("#connectivity_widget" + self.widgetID)
-        .find('.review-summary[skid]')
-        .each(function (index, element) {
-          var pReviewed, counts = self.reviews[this.getAttribute('skid')];
-          if (counts) {
-            pReviewed = parseInt(Math.floor(100 * counts[1] / counts[0])) || 0;
-            this.textContent = pReviewed + '%';
-          } else {
-            pReviewed = 0;
-            this.textContent = 'unknown';
-          }
-          this.style.backgroundColor = CATMAID.ReviewSystem.getBackgroundColor(pReviewed);
-    });
-
     $("#connectivity_widget" + self.widgetID)
         .find('.node-count[skid]')
         .each(function (index, element) {
@@ -657,7 +677,9 @@
     });
 
     this.partnerSets.forEach(function(partnerSet) {
+      var table = $("#" + partnerSet.id + '_connectivity_table' + self.widgetID);
 
+      // Update aggregate columns
       var countSums = Object.keys(partnerSet.partners).reduce(function (nodes, partner) {
         var count = self.reviews[partner];
         return [nodes[0] + count[0], nodes[1] + count[1]];
@@ -665,15 +687,11 @@
 
       var pReviewed = parseInt(Math.floor(100 * countSums[1] / countSums[0])) | 0;
 
-      var table = $("#" + partnerSet.id + '_connectivity_table' + self.widgetID);
       table.find('.node-count-total').text(countSums[0]);
       table.find('.review-summary-total').each(function () {
         this.textContent = pReviewed + '%';
         this.style.backgroundColor = CATMAID.ReviewSystem.getBackgroundColor(pReviewed);
       });
-
-      // Inform DataTables that the data has changed.
-      table.DataTable().rows().invalidate().draw();
     });
   };
 

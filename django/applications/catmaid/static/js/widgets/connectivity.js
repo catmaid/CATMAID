@@ -1006,8 +1006,11 @@
         partnerSet.allSelected = this.checked;
         var selfChecked = this.checked;
 
-        // Mark all checkboxes accordingly and set skeleton selection state
-        Object.keys(target).forEach(function(skeletonId) {
+        // Look at the table data to only update visible nodes
+        var table = $("#" + partnerSet.id + '_connectivity_table' + widget.widgetID);
+        var datatable = table.DataTable();
+        datatable.rows().data().each(function(row) {
+          var skeletonId = row[0];
           widget.skeletonSelection[skeletonId] = selfChecked;
         });
 

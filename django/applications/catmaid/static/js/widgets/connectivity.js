@@ -1006,14 +1006,9 @@
         partnerSet.allSelected = this.checked;
         var selfChecked = this.checked;
 
-        // First unselect all skeletons in this table
+        // If the checkbox was checked, check all *visible* skeletons in this table.
         var table = $("#" + partnerSet.id + '_connectivity_table' + widget.widgetID);
         var datatable = table.DataTable();
-        datatable.rows().data().each(function(row) {
-          var skeletonId = row[0];
-          widget.skeletonSelection[skeletonId] = false;
-        });
-        // If the checkbox was checked, check all *visible* skeletons in this table.
         if (selfChecked) {
           datatable.rows({search: 'applied'}).data().each(function(row) {
             var skeletonId = row[0];

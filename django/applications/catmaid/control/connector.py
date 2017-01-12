@@ -294,9 +294,13 @@ def list_connector(request, project_id=None):
     }, safe=False)
 
 def _connector_skeletons(connector_ids, project_id):
-    """ Return a dictionary of connector ID as keys and a dictionary as value
+    """Return a dictionary of connector ID as keys and a dictionary as value
     containing two entries: 'presynaptic_to' with a skeleton ID or None,
-    and 'postsynaptic_to' with a list of skeleton IDs (maybe empty). """
+    and 'postsynaptic_to' with a list of skeleton IDs (maybe empty).
+    """
+    if not connector_ids:
+        raise ValueError('No connector IDs provided')
+
     cursor = connection.cursor()
 
     relations = get_relation_to_id_map(project_id, ('presynaptic_to', 'postsynaptic_to'), cursor)

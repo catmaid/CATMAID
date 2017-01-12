@@ -6,10 +6,109 @@ from functools import partial
 from networkx import Graph, single_source_shortest_path
 
 from django.db import connection
-from django.http import HttpResponse
+from django.http import JsonResponse
 
+from catmaid.control.common import get_request_list
 from catmaid.control.authentication import requires_user_role
 from catmaid.models import UserRole
+
+from rest_framework.decorators import api_view
+
+
+@api_view(['POST'])
+@requires_user_role(UserRole.Browse)
+def list_broken_section_nodes(request, project_id=None):
+    """List nodes that are located in a broken section.
+
+    Broken secrions of all stacks linked to the current project are tested if
+    they contain any nodes. Stack orientatins are respected. Optionally, only
+    particular skeletons can be checked.
+    ---
+    parameters:
+      - name: 'skeleton_ids'
+        description: List of skeleton IDs to constrain tests on
+        type: array
+        item: integer
+        required: false
+    type:
+     - type: array
+       items:
+         type: string
+       description: A list of lists, each containing [treenode_id, stack_id,
+                    stack_title, orientation, section, section_physical]
+       required: true
+    """
+    project_id = int(project_id)
+    skeleton_ids = get_request_list(request.POST, 'skeleton_ids', map_fn=int)
+    broken_section_nodes = check_broken_section(project_id, skeleton_ids)
+
+    return JsonResponse(broken_section_nodes, safe=False)
+
+def check_broken_section(project_id, skeleton_ids=None, cursor=None):
+    """Test if there are treenodes in a broken section of any stack linked to
+    the given project ID. If there are skeleton IDs passed in, the test will
+    only be performed on these skeletons.
+
+    Returns tuples of the form (treenode_id, stack_id, stack_title, orientation, section, z)
+    """
+    params = [project_id]
+    if skeleton_ids:
+        params = params + skeleton_ids
+        skid_constraint = 'AND t.skeleton_id IN ({})'.format(
+            ','.join('%s' for _ in skeleton_ids))
+    else:
+        skid_constraint = ''
+
+    cursor = cursor or connection.cursor()
+    cursor.execute("""
+        WITH broken_project_slice AS (
+            SELECT p.id AS project_id,
+                s.id AS stack_id,
+                s.title AS stack_title,
+                ps.orientation AS orientation,
+                bs.index as broken_section,
+                CASE WHEN ps.orientation = 0 THEN (ps.translation).z + bs.index * (s.resolution).z
+                     WHEN ps.orientation = 1 THEN (ps.translation).y + bs.index * (s.resolution).y
+                     WHEN ps.orientation = 2 THEN (ps.translation).x + bs.index * (s.resolution).x
+                END AS broken_z,
+                CASE WHEN ps.orientation = 0 THEN (ps.translation).z + (bs.index + 1) * (s.resolution).z
+                     WHEN ps.orientation = 1 THEN (ps.translation).y + (bs.index + 1) * (s.resolution).y
+                     WHEN ps.orientation = 2 THEN (ps.translation).x + (bs.index + 1) * (s.resolution).x
+                END AS next_z
+            FROM project p
+            JOIN project_stack ps
+                ON ps.project_id = p.id
+            JOIN stack s
+                ON s.id = ps.stack_id
+            JOIN broken_slice bs
+                ON bs.stack_id = s.id
+        )
+        SELECT t.id, bps.stack_id, bps.stack_title, bps.orientation,
+            bps.broken_section, bps.broken_z
+        FROM treenode t
+        JOIN broken_project_slice bps
+            ON t.project_id = bps.project_id
+        WHERE t.project_id = %s
+            AND ((
+                -- XY orientation: check if node Z is in broken section, i.e. same
+                bps.orientation = 0
+                AND t.location_z >= bps.broken_z
+                AND t.location_z < bps.next_z
+            ) OR (
+                -- XZ orientation: check if node Y is in broken section, i.e. same
+                bps.orientation = 1
+                AND t.location_y >= bps.broken_z
+                AND t.location_y < bps.next_z
+            ) OR(
+                -- ZY orientation: check if node X is in broken section, i.e. same
+                bps.orientation = 2
+                AND t.location_x >= bps.broken_z
+                AND t.location_x < bps.next_z
+            ))
+            {}
+    """.format(skid_constraint), params)
+
+    return cursor.fetchall()
 
 @requires_user_role(UserRole.Browse)
 def analyze_skeletons(request, project_id=None):
@@ -67,18 +166,21 @@ def analyze_skeletons(request, project_id=None):
       AND r.relation_name = 'model_of'
     ''' % ",".join(map(str, skids)))
 
-    blob = {'issues': tuple((skid, _analyze_skeleton(project_id, skid, adjacents)) for skid in skids),
-            'names': dict(cursor.fetchall()),
-            0: "Autapse",
-            1: "Two or more times postsynaptic to the same connector",
-            2: "Connector without postsynaptic targets",
-            3: "Connector without presynaptic skeleton",
-            4: "Duplicated synapse?",
-            5: "End node without end tag",
-            6: "TODO tag",
-            7: "End-node tag in a non-end node."}
+    blob = {
+        'issues': tuple((skid, _analyze_skeleton(project_id, skid, adjacents)) for skid in skids),
+        'names': dict(cursor.fetchall()),
+        0: "Autapse",
+        1: "Two or more times postsynaptic to the same connector",
+        2: "Connector without postsynaptic targets",
+        3: "Connector without presynaptic skeleton",
+        4: "Duplicated synapse?",
+        5: "End node without end tag",
+        6: "TODO tag",
+        7: "End-node tag in a non-end node.",
+        8: "Node in broken section"
+    }
 
-    return HttpResponse(json.dumps(blob))
+    return JsonResponse(blob)
 
 def _analyze_skeleton(project_id, skeleton_id, adjacents):
     """ Takes a skeleton and returns a list of potentially problematic issues,
@@ -273,5 +375,15 @@ def _analyze_skeleton(project_id, skeleton_id, adjacents):
         if 'TODO' in labels:
             # Type 6: node with a tag containing the string 'TODO'
             issues.append((6, node_id))
+
+    # Type 8: node in broken section of project
+    for r in check_broken_section(project_id, cursor=cursor):
+        issues.append((8, r[0], {
+            'stack': r[1],
+            'stack_title': r[2],
+            'orientation': r[3],
+            'section': r[4],
+            'section_phys': r[5]
+        }))
 
     return issues

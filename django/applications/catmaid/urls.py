@@ -407,6 +407,13 @@ urlpatterns += [
    url(r'^(?P<project_id>\d+)/volumes/(?P<volume_id>\d+)/intersect$', volume.intersects),
 ]
 
+# Analytics
+UrlParser.explicit_root_paths |= set(['{project_id}/analytics'])
+urlpatterns += [
+    url(r'^(?P<project_id>\d+)/analytics/skeletons$', analytics.analyze_skeletons),
+    url(r'^(?P<project_id>\d+)/analytics/broken-section-nodes$', analytics.list_broken_section_nodes)
+]
+
 # Front-end tests
 urlpatterns += [
     url(r'^tests$', login_required(CatmaidView.as_view(template_name="catmaid/tests.html")), name="frontend_tests"),
@@ -428,9 +435,6 @@ urlpatterns += [
     # Circles
     url(r'^(?P<project_id>\d+)/graph/circlesofhell', circles.circles_of_hell),
     url(r'^(?P<project_id>\d+)/graph/directedpaths', circles.find_directed_paths),
-
-    # Analytics
-    url(r'^(?P<project_id>\d+)/skeleton/analytics$', analytics.analyze_skeletons),
 
     # Review
     url(r'^(?P<project_id>\d+)/user/reviewer-whitelist$', review.reviewer_whitelist),

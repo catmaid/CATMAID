@@ -1376,7 +1376,10 @@
           var removelabel = function(id) {
             return function() {
               CATMAID.fetch(project.id + '/label/remove', "POST", {
-                class_instance_id: id
+                label_id: id
+              })
+              .then(function(json) {
+                CATMAID.msg('Success', 'Label removed');
               })
               .catch(CATMAID.handleError);
             };

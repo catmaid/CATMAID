@@ -38,21 +38,22 @@ def get_link_model(node_type):
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def label_remove(request, project_id=None):
-    class_instance_for_label = int(request.POST['class_instance_id'])
+    label_id = int(request.POST['label_id'])
     if request.user.is_superuser:
-        label = ClassInstance.objects.filter(id=class_instance_for_label,
-                                             class_column__class_name='label')
-        if not label:
-            raise ValueError("Could not find label with ID %s" % class_instance_for_label)
+        try:
+            label = ClassInstance.objects.get(id=label_id,
+                                              class_column__class_name='label')
+        except ClassInstance.DoesNotExist:
+            raise ValueError("Could not find label with ID %s" % label_id)
 
         is_referenced = TreenodeClassInstance.objects.filter(
-            class_instance_id=class_instance_for_label).exists()
+            class_instance_id=label_id).exists()
         if is_referenced:
             raise ValueError("Only unreferenced labels are allowed to be removed")
         else:
             label.delete()
             return JsonResponse({
-                'deleted_labels': [label.id],
+                'deleted_labels': [label_id],
                 'message': 'success'
             })
 

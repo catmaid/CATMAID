@@ -11,7 +11,8 @@ from rest_framework.decorators import api_view
 from catmaid.models import Project, Class, ClassInstance, Relation, Connector, \
         ConnectorClassInstance, UserRole, Treenode, TreenodeClassInstance, \
         ChangeRequest
-from catmaid.control.authentication import requires_user_role, can_edit_or_fail
+from catmaid.control.authentication import (requires_user_role, can_edit_or_fail,
+        PermissionError)
 from catmaid.fields import Double3D
 
 
@@ -54,7 +55,8 @@ def label_remove(request, project_id=None):
                 'deleted_labels': [label.id],
                 'message': 'success'
             })
-    return JsonResponse({'error': 'Only super users can delete labels'})
+
+    raise PermissionError('Only super users can delete unreferenced labels')
 
 @api_view(['GET'])
 @requires_user_role([UserRole.Annotate, UserRole.Browse])

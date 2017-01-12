@@ -1375,10 +1375,10 @@
           };
           var removelabel = function(id) {
             return function() {
-              requestQueue.register(django_url + project.id + '/label/remove', "POST", {
-              class_instance_id: id
-              }, function (status, text) {});
-              return false;
+              CATMAID.fetch(project.id + '/label/remove', "POST", {
+                class_instance_id: id
+              })
+              .catch(CATMAID.handleError);
             };
           };
           for (i = 0; i < data.length; ++i) {

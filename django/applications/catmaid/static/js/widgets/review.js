@@ -1195,11 +1195,12 @@
           CATMAID.fetch(project.id + '/node/get_location', 'POST',
               { tnid: tnid }, false, "skeleton_analytics_go_to_node")
             .then(function(json) {
-              SkeletonAnnotations.staticMoveTo(json[3], json[2], json[1],
-                function() {
-                  SkeletonAnnotations.staticSelectNode(tnid, skeleton_id);
-                });
-            }).catch(CATMAID.handleError);
+              SkeletonAnnotations.staticMoveTo(json[3], json[2], json[1]);
+            })
+            .then(function() {
+              SkeletonAnnotations.staticSelectNode(tnid, skeleton_id);
+            })
+            .catch(CATMAID.handleError);
         });
 
         content.appendChild(this.analyticsContainer);

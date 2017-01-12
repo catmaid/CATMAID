@@ -237,37 +237,48 @@ SkeletonAnnotations.staticSelectNode = function(nodeID) {
 /**
  * Move to a location, ensuring that any edits to node coordinates are pushed
  * to the database. After the move, the fn is invoked.
+ *
+ * @return {Promise}               Promise succeeding after move.
  */
-SkeletonAnnotations.staticMoveTo = function(z, y, x, fn) {
+SkeletonAnnotations.staticMoveTo = function(z, y, x) {
   var instances = SkeletonAnnotations.TracingOverlay.prototype._instances;
+  var movePromises = [];
   for (var stackViewerId in instances) {
     if (instances.hasOwnProperty(stackViewerId)) {
-      instances[stackViewerId].moveTo(z, y, x, fn)
-        .catch(CATMAID.handleError);
+      movePromises.push(instances[stackViewerId].moveTo(z, y, x));
     }
   }
+
+  return Promise.all(movePromises).catch(CATMAID.handleError);
 };
 
 /**
  * Move to a location, ensuring that any edits to node coordinates are pushed to
- * the database. After the move, the given node is selected and fn is invoked.
+ * the database. After the move, the given node is selected.
+ *
+ * @param  {number|string} nodeID  ID of the node to move to and select.
+ * @return {Promise}               Promise succeeding after move and selection.
  */
-SkeletonAnnotations.staticMoveToAndSelectNode = function(nodeID, fn) {
+SkeletonAnnotations.staticMoveToAndSelectNode = function(nodeID) {
   var instances = SkeletonAnnotations.TracingOverlay.prototype._instances;
+  var movePromises = [];
   for (var stackViewerId in instances) {
     if (instances.hasOwnProperty(stackViewerId)) {
-      instances[stackViewerId].moveToAndSelectNode(nodeID, fn)
-        .catch(CATMAID.handleError);
+      movePromises.push(instances[stackViewerId].moveToAndSelectNode(nodeID));
     }
   }
+
+  return Promise.all(movePromises).catch(CATMAID.handleError);
 };
 
 /**
  * Move to a location and select the node cloest to the given location,
  * optionally also require a particular skeleton ID.
+ *
+ * @return {Promise}               Promise succeeding after move and selection.
  */
 SkeletonAnnotations.staticMoveToAndSelectClosestNode = function(z, y, x,
-    skeletonId, respectVirtualNodes, fn) {
+    skeletonId, respectVirtualNodes) {
   var instances = SkeletonAnnotations.TracingOverlay.prototype._instances;
   var locations = [];
   for (var stackViewerId in instances) {
@@ -290,7 +301,7 @@ SkeletonAnnotations.staticMoveToAndSelectClosestNode = function(z, y, x,
   }, null);
 
   if (closestLocation) {
-      overlay.moveToAndSelectNode(location.node.id, fn);
+      return overlay.moveToAndSelectNode(location.node.id);
   }
 };
 
@@ -3533,13 +3544,12 @@ SkeletonAnnotations.TracingOverlay.prototype.moveTo = function(z, y, x, fn) {
 /**
  * Move to a node and select it. Can handle virtual nodes.
  */
-SkeletonAnnotations.TracingOverlay.prototype.moveToAndSelectNode = function(nodeID, fn) {
+SkeletonAnnotations.TracingOverlay.prototype.moveToAndSelectNode = function(nodeID) {
   if (this.isIDNull(nodeID)) return Promise.reject("Couldn't select node " + nodeID);
   var self = this;
   return this.goToNode(nodeID,
       function() {
         self.selectNode(nodeID);
-        if (fn) fn();
       });
 };
 

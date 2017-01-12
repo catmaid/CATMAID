@@ -967,11 +967,11 @@
 
         // Select node in tracing layer
         SkeletonAnnotations.staticMoveTo(
-            n.loc_z,
-            n.loc_y,
-            n.loc_x,
-            function () {
-               SkeletonAnnotations.staticSelectNode(n.id);
+                n.loc_z,
+                n.loc_y,
+                n.loc_x)
+            .then(function () {
+              SkeletonAnnotations.staticSelectNode(n.id);
             });
         };
       }(this.currentSkeletonId);

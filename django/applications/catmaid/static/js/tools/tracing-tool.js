@@ -1317,10 +1317,10 @@
         } else {
           nodeIDToSelect = data.treenode_id;
           skeletonIDToSelect = data.skeleton_id;
-          SkeletonAnnotations.staticMoveTo(data.z, data.y, data.x,
-            function () {
-              SkeletonAnnotations.staticSelectNode(nodeIDToSelect, skeletonIDToSelect);
-            });
+          SkeletonAnnotations.staticMoveTo(data.z, data.y, data.x)
+              .then(function () {
+                SkeletonAnnotations.staticSelectNode(nodeIDToSelect, skeletonIDToSelect);
+              });
         }
       }
     });
@@ -1426,10 +1426,10 @@
                     $('<a/>').attr({'id': '' + id})
                              .attr({'href':''})
                              .click(function(event) {
-                               SkeletonAnnotations.staticMoveTo(z, y, x,
-                                 function() {
-                                   SkeletonAnnotations.staticSelectNode(id, skid);
-                                 });
+                               SkeletonAnnotations.staticMoveTo(z, y, x)
+                                  .then(function() {
+                                    SkeletonAnnotations.staticSelectNode(id, skid);
+                                  });
                                return false;
                              })
                              .text("[" + index + "]")

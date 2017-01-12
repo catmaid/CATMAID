@@ -410,10 +410,10 @@
       var x = parseFloat(aData[4]);
       var y = parseFloat(aData[5]);
       var z = parseFloat(aData[6]);
-      SkeletonAnnotations.staticMoveTo(z, y, x,
-        function () {
-          SkeletonAnnotations.staticSelectNode(id);
-        });
+      SkeletonAnnotations.staticMoveTo(z, y, x)
+          .then(function () {
+            SkeletonAnnotations.staticSelectNode(id);
+          });
     });
   };
 

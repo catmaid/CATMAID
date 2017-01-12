@@ -18,7 +18,7 @@ var NotificationsTable = new function()
       ns.oTable.fnDraw();
     }
   };
-  
+
   this.approve = function(changeRequestID) {
     requestQueue.register(django_url + project.id + '/changerequest/approve', "POST", {
       "id": changeRequestID
@@ -42,7 +42,7 @@ var NotificationsTable = new function()
       return true;
     });
   };
-  
+
   this.reject = function(changeRequestID) {
     requestQueue.register(django_url + project.id + '/changerequest/reject', "POST", {
       "id": changeRequestID
@@ -66,7 +66,7 @@ var NotificationsTable = new function()
       return true;
     });
   };
-  
+
   this.perform_action = function(row_id) {
     var node = document.getElementById('action_select_' + row_id);
 
@@ -80,7 +80,10 @@ var NotificationsTable = new function()
 
       var action = node.options[node.selectedIndex].value;
       if (action == 'Show') {
-        SkeletonAnnotations.staticMoveTo(row_data[6], row_data[5], row_data[4], function () {SkeletonAnnotations.staticSelectNode(row_data[7], row_data[8]);});
+        SkeletonAnnotations.staticMoveTo(row_data[6], row_data[5], row_data[4])
+            .then(function () {
+              SkeletonAnnotations.staticSelectNode(row_data[7]);
+            });
       }
       else if (action == 'Approve') {
         NotificationsTable.approve(row_data[0]);
@@ -93,7 +96,7 @@ var NotificationsTable = new function()
       node.selectedIndex = 0;
     }
   };
-  
+
   this.init = function (pid)
   {
     ns.pid = pid;
@@ -190,10 +193,10 @@ var NotificationsTable = new function()
            var id = full[0];
            var disabled = (full[3] == 'Open' ? '' : ' disabled');
            return '<select id="action_select_' + id + '" onchange="NotificationsTable.perform_action(' + id + ')">' +
-                  '  <option>Action:</option>' + 
-                  '  <option>Show</option>' + 
-                  '  <option' + disabled + '>Approve</option>' + 
-                  '  <option' + disabled + '>Reject</option>' + 
+                  '  <option>Action:</option>' +
+                  '  <option>Show</option>' +
+                  '  <option' + disabled + '>Approve</option>' +
+                  '  <option' + disabled + '>Reject</option>' +
                   '</select>';
         },
         "sWidth": "100px"

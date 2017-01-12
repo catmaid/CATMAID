@@ -109,7 +109,7 @@
       this.update();
       return Number(currentPageElement.value) - 1;
     } else if (newPage < 0 || newFirstConnectorIdx >= total) {  // page out of bounds
-      alert('This page does not exist! Returning to page 1.');
+      CATMAID.warn('This page does not exist! Returning to page 1.');
       return this.changePage(0);
     } else {
       this.firstConnectorIdx = newFirstConnectorIdx;
@@ -362,6 +362,7 @@
         var currentPage = document.createElement('input');
         currentPage.setAttribute('type', 'text');
         currentPage.setAttribute('size', '4');
+        currentPage.setAttribute('pattern', '\d+');
         currentPage.style.textAlign = 'right';
         currentPage.setAttribute('id', self.idPrefix + "current-page");
         currentPage.setAttribute('value', '1');
@@ -679,6 +680,9 @@
             panelStackViewer, connector.coords,
             setStackViewerSuspendState.bind(self, panelStackViewer, true)
           );
+          panelStackViewer.getLayersOfType(CATMAID.TracingLayer).forEach(function(tracingLayer) {
+            tracingLayer.forceRedraw();
+          });
 
           hider.style.display = 'none';
         } else {
@@ -698,7 +702,7 @@
   ConnectorViewer.prototype.updateWithSkels = function() {
     var self = this;
     this._updateResultSkelSource();
-    // this.cache.invalidateSort(this.currentConnectorRelation);
+
     return this.updateConnectorOrder().then(function(connectorOrder) {
       var maxPageElement = document.getElementById(self.idPrefix + 'max-page');
       var maxPage = Math.ceil(connectorOrder.length / (self.dimensions[0]*self.dimensions[1]));
@@ -1000,7 +1004,7 @@
    * function(connector1ID, connector2ID, relationType, selectedSkeletons)
    */
   ConnectorViewerCache.prototype.setSortFn = function (sortFnName) {
-      this.sortFn = sortFns[sortFnName].bind(this);  // is the binding necessary here?
+      this.sortFn = sortFns[sortFnName].bind(this);
   };
 
   /**

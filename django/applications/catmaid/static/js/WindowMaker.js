@@ -12,7 +12,9 @@ var WindowMaker = new function()
 
   var createContainer = function(id) {
     var container = document.createElement("div");
-    container.setAttribute("id", id);
+    if (id) {
+      container.setAttribute("id", id);
+    }
     container.setAttribute("class", "windowContent");
     return container;
   };
@@ -152,16 +154,18 @@ var WindowMaker = new function()
 
     // Create controls, if requested
     var controls;
-    if (config.controlsID && config.createControls) {
+    if (config.createControls) {
       var buttons = document.createElement("div");
-      buttons.setAttribute("id", config.controlsID);
+      if (config.controlsID) {
+        buttons.setAttribute("id", config.controlsID);
+      }
       buttons.setAttribute("class", "buttonpanel");
       config.createControls.call(instance, buttons);
       container.appendChild(buttons);
       DOM.addButtonDisplayToggle(win);
     }
 
-    // Create content
+    // Create content, the ID is optional
     var content = createContainer(config.contentID);
     if (config.class) {
       $(content).addClass(config.class);

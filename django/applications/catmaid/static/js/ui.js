@@ -136,7 +136,9 @@
            function should only return true if the
            event should carry on for default
            processing. */
-        if (handleKeyPress(fakeEvent)) {
+
+        // Let UI actions in closure only deal with key-down events.
+        if (!released && handleKeyPress(fakeEvent)) {
           return false;
         }
 

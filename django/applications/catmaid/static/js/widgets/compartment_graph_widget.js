@@ -6,7 +6,6 @@
   InstanceRegistry,
   project,
   requestQueue,
-  SVGCanvas,
   SynapseClustering,
   WindowMaker
 */
@@ -559,6 +558,10 @@
               "source-arrow-color": "#d6ffb5",
               "target-arrow-color": "#d6ffb5",
               "text-opacity": 1.0
+            })
+          .selector(".hidden")
+            .css({
+              "display": "none"
             })
           .selector(".ui-cytoscape-edgehandles-source")
             .css({
@@ -1214,7 +1217,7 @@
       // Restore selection state
       if (id in selected) node.select();
       // Restore visibility state
-      if (id in hidden) node.hide();
+      if (id in hidden) node.addClass('hidden');
       // Restore locked state
       if (id in locked) node.lock();
       // Make branch nodes, if any, be smaller
@@ -1233,9 +1236,9 @@
       // Restore selection state
       if (id in selected) edge.select();
       // Restore visibility state
-      if (id in hidden) edge.hide();
+      if (id in hidden) edge.addClass('hidden');
       // Hide edge if under threshold
-      if (edge.data('weight') < edge_threshold) edge.hide();
+      if (edge.data('weight') < edge_threshold) edge.addClass('hidden');
     });
 
     // If hide labels, hide them
@@ -1926,7 +1929,7 @@
       this.cy.nodes().each(function(i, node) {
         // If any of the new skeletons is present but hidden, make it visible
         node.data('skeletons').forEach(function(skeleton) {
-          if (new_skids[skeleton.id]) node.show();
+          if (new_skids[skeleton.id]) node.removeClass('hidden');
           all[skeleton.id] = true;
         });
       });
@@ -1966,7 +1969,7 @@
     var hidden = 0;
     this.cy.elements().each(function(i, e) {
       if (e.selected()) {
-        e.hide(); // if it's a node, hides edges too
+        e.addClass('hidden'); // if it's a node, hides edges too
         e.unselect();
         hidden += 1;
       }
@@ -1985,7 +1988,7 @@
 
   GroupGraph.prototype.showHidden = function() {
     if (!this.cy) return;
-    this.cy.elements().show();
+    this.cy.elements().removeClass('hidden');
     if (this.show_node_labels) {
       this.cy.elements().css('text-opacity', 1);
     } else {
@@ -2358,219 +2361,135 @@
     saveAs(blob, "adjacency_matrix.csv");
   };
 
-  /** Synchronously load the heavy-weight SVG libraries if not done already. */
-  GroupGraph.prototype.loadSVGLibraries = function(callback) {
-    if (GroupGraph.prototype.svg_libs_loaded) {
-      if (callback) callback();
-      return;
-    }
-
-    var libs = ["MochiKit/Base.js", "MochiKit/Iter.js", "MochiKit/Logging.js", "MochiKit/DateTime.js", "MochiKit/Format.js", "MochiKit/Async.js", "MochiKit/DOM.js", "MochiKit/Style.js", "MochiKit/Color.js", "MochiKit/Signal.js", "MochiKit/Position.js", "MochiKit/Visual.js", "MochiKit/LoggingPane.js", "SVGKit/SVGKit.js", "SVGKit/SVGCanvas.js"];
-
-    $.blockUI();
-
-    var scripts = document.getElementsByTagName("script"),
-        last = scripts[scripts.length -1];
-
-    var jQuery = $,
-        cleanup = function() {
-          // FIX DOM.js overwriting jQuery
-          window.$ = jQuery;
-          $.unblockUI();
-        },
-        error = function(e) {
-          console.log(e, e.stack);
-          alert("Sorry: failed to load SVG rendering libraries.");
-        },
-        fixAPI = function() {
-          // Fix up API mismatches between SVGCanvas and Canvas
-          SVGCanvas.prototype.fillText = SVGCanvas.prototype.text;
-          SVGCanvas.prototype.strokeText = function() {
-            // Fortunately always used in ways that can fixed below.
-            // Absence of this function explains the need to fix the stroke in SVG elements below.
-          };
-          SVGCanvas.prototype.setTransform = function() {
-            // Fortunately all calls are to the identity transform, that is, to reset,
-            // and explains perhaps the issues with the position of the M point in paths below,
-            // which is fixable.
-          };
-          // Monkey path SVGCanvas so that beginPath() does not perform a moveTo()
-          SVGCanvas.prototype.beginPath = function() {
-            // This is all the original function does, besides moveTo()
-            this._subpaths = [""];
-          };
-        },
-        chainLoad = function(libs, i) {
-      try {
-        var s = document.createElement('script');
-        s.type = 'text/javascript';
-        s.async = false;
-        s.src = STATIC_URL_JS + 'libs/' + libs[i];
-        var exec = false;
-        s.onreadystatechange = function() {
-          if (!exec && (!this.readyState || this.readyState === "loaded" || this.readyState === "complete")) {
-            exec = true;
-            console.log("Loaded script " + libs[i]);
-            console.log(window.SVGCanvas);
-            if (i < libs.length -1) chainLoad(libs, i + 1);
-            else {
-              GroupGraph.prototype.svg_libs_loaded = true;
-              cleanup();
-              fixAPI();
-              if (callback) callback();
-            }
-          }
-        };
-        s.onload = s.onreadystatechange;
-        last.parentNode.appendChild(s);
-      } catch (e) {
-        cleanup();
-        CATMAID.error(e);
-      }
-    };
-
-    chainLoad(libs, 0);
-  };
-
   GroupGraph.prototype.exportSVG = function() {
     if (0 === this.cy.nodes().size()) {
-      alert("Load a graph first!");
+      CATMAID.warn("Load a graph first!");
       return;
     }
 
-    if (0 === this.cy.edges().length) {
-      // This limitation has to do with:
-      // 1. Transforms and bounds are not correct for nodes when the graph lacks any edges.
-      // 2. Need at least one edge for the heuristics below to detect where the edges end and the nodes start--which could be overcome by testing if the graph has any edges, but given that without edges the rendering is wrong anyway, the best is to avoid it.
-      alert("The SVG exporter is currently limited to graphs with edges.");
-      return;
-    }
-
-    GroupGraph.prototype.loadSVGLibraries(this._exportSVG.bind(this));
-  };
-
-  /** Assumes SVG libraries are loaded, a graph exists and has at least one edge. */
-  GroupGraph.prototype._exportSVG = function() {
-
+    // Manually create SVG for graph, which is easier than making Cytoscapt.js
     var div= $('#graph_widget' + this.widgetID),
         width = div.width(),
         height = div.height();
-    var svg = new SVGCanvas(width, height);
+    var svg = new CATMAID.SVGFactory(width, height);
 
-    // Cytoscape uses Path2D if it is available. Unfortunately, SVGKit isn't able
-    // to make use of this as well and silently fails to draw paths. We therefore
-    // have to monkey-patch Cytoscape to not use Path2D by overriding its test.
-    // We reset to the original function after the graph has been rendered.
-    var CanvasRenderer = cytoscape('renderer', 'canvas');
-    var orignalUsePaths = CanvasRenderer.usePaths;
-    CanvasRenderer.usePaths = function() { return false; };
+    var templateTextStyle = {
+      'fill': null,
+      'stroke-width': '0px',
+      'font-family': 'Helvetica, sans-serif',
+      'fonr-size': '10'
+    };
 
-    this.cy.renderer().renderTo( svg, 1.0, {x: 0, y: 0}, 1.0 );
+    var templateLineStyle = {
+      'stroke': null,
+      'stroke-width': '1px',
+      'fill': 'none'
+    };
 
-    // Reset Path2D test of Cytoscape
-    CanvasRenderer.usePaths = orignalUsePaths;
+    var templateShapeStyle = {
+      'fill': null,
+      'stroke': null,
+      'stroke-width': null
+    };
 
-    // Fix rendering issues.
-    // Painting order is from bottom to top (logically).
-    // All edge lines are painted first. Then all edge strings. Then all nodes, as two circles: one is the contour and the other the filling. Then all node strings.
-    // Edges are painted as three consecutive path elements:
-    //   1. edge line
-    //   2. arrowhead line
-    //   3. arrowhead filling
-    // .. or just with one line when lacking arrowhead.
-    // Paths 2 and 3 are identical except one has stroke and the other fill.
+    var templateLineOptions = {
+      'edgeType': 'haystack'
+    };
 
-    var children = svg.svg.htmlElement.childNodes;
+    var cy = this.cy;
+    var renderer = cy.renderer();
 
-    var edges = [],
-        remove = [],
-        i = 0;
-    // Group the path elements of each edge
-    for (; i<children.length; ++i) {
-      var child = children[i];
-      if ('text' === child.localName) continue;
-      if (!child.pathSegList) continue;
-      switch(child.pathSegList.length) {
-        case 2:
-          // New graph edge
-          edges.push([child]);
+    // Add all edges, for now, draw from node centers
+    this.cy.edges().each(function(i, edge) {
+      var data = edge.data();
+      var startId = data.start;
+      var style = edge.style();
+
+      var rscratch = edge._private.rscratch;
+
+      templateTextStyle['fill'] = data.label_color;
+      templateTextStyle['font-family'] = style['font-family'];
+      templateTextStyle['font-size'] = style['font-size'];
+      templateLineStyle['stroke'] = style['line-color'];
+      templateLineStyle['stroke-width'] = 'width' in style ? style['width'] : '1px';
+
+      templateLineOptions['edgeType'] = rscratch.edgeType;
+      switch (rscratch.edgeType) {
+        case 'bezier':
+        case 'self':
+        case 'compound':
+        case 'multibezier':
+          templateLineOptions['controlPoints'] = rscratch.ctrlpts;
           break;
-        case 5:
-          // Arrowhead of previous edge
-          edges[edges.length -1].push(child);
-          break;
       }
-    }
-
-    // Fix edge arrowheads if necessary
-    for (var k=0; k<edges.length; ++k) {
-      var edge = edges[k];
-      if (edge.length < 3) continue; // undirected edge or edge without duplicates
-      // Fix the style
-      var path = edge[2],
-          attr = path.attributes;
-      attr.stroke.value = attr.fill.value;
-      // Remove bogus lineTo
-      path.pathSegList.removeItem(2);
-      remove.push(edge[1]);
-    }
-
-    // Fix edge labels: stroke should be white and of 0.2 thickness
-    for (; i<children.length; ++i) {
-        var child = children[i];
-        if ('text' !== child.localName) break;
-        child.attributes.stroke.value = '#ffffff';
-        child.style.strokeWidth = '0.2';
-    }
-
-    // Fix nodes: instead of two separate paths (one for the filling
-    // and one for the contour), add a fill value to the contour
-    // and delete the other.
-    // Also add the text-anchor: middle to the text.
-    for (; i<children.length;) {
-      // The second one is the contour
-      var child = children[i+1],
-          path = child.pathSegList;
-      // Find out the type
-      var commands = {};
-      for (var k=0; k<path.length; ++k) {
-        var letter = path[k].pathSegTypeAsLetter,
-            count = commands[letter];
-        if (count) commands[letter] = count + 1;
-        else commands[letter] = 1;
-      }
-      if (commands['A'] > 0) {
-        // Circle: the coordinates of the M are wrong:
-        // make the M have the coordinates of the first L
-        // Note: cannot remove the L, circle would draw as semicircle
-        path[0].x = path[1].x;
-        path[0].y = path[1].y;
-      }
-      // Set the fill value
-      child.attributes.fill.value = children[i].attributes.fill.value;
-      // Mark the first circle for removal
-      remove.push(children[i]);
-      // Fix text anchor if present
-      var c = children[i+2];
-      if (c && 'text' === c.nodeName) {
-        c.style.textAnchor = 'middle';
-        i += 3;
+      if (data.label) {
+        templateLineOptions['label'] = data.label;
+        templateLineOptions['labelOffsetX'] = 0;
+        templateLineOptions['labelOffsetY'] = 0;
+        templateLineOptions['labelStyle'] = templateTextStyle;
+        templateLineOptions['labelX'] = rscratch.labelX;
+        templateLineOptions['labelY'] = rscratch.labelY;
       } else {
-        // Node without text label (branch node in synapse clustering)
-        i += 2;
+        templateLineOptions['label'] = undefined;
       }
-    }
 
+      // Cytoscape.js luckily keeps render locations cached, so we don't need
+      // to do the math ourselves.
+      var x1 = rscratch.startX,
+          y1 = rscratch.startY,
+          x2 = rscratch.endX,
+          y2 = rscratch.endY;
 
-    remove.forEach(function(child) {
-      child.parentNode.removeChild(child);
+      if (data.arrow && data.arrow !== 'none') {
+        templateLineOptions['arrow'] = data.arrow;
+        templateLineOptions['arrowStyle'] = templateLineStyle;
+        x2 = rscratch.arrowEndX;
+        y2 = rscratch.arrowEndY;
+        if (data.arrow === 'triangle') {
+          templateLineOptions['arrowWidth'] = 10;
+          templateLineOptions['arrowHeight'] = 10;
+          templateLineOptions['refX'] = 0;
+          templateLineOptions['refY'] = 0;
+        } else {
+          CATMAID.warn('Could not export graph element. Unknown arrow: ' + data.arrow);
+        }
+      } else {
+        templateLineOptions['arrow'] = undefined;
+      }
+
+      svg.drawLine(x1, y1, x2, y2, templateLineStyle, templateLineOptions);
     });
 
+    // Add all nodes to SVG
+    this.cy.nodes().each(function(i, node) {
+      var data = node.data();
+      var pos = node.position();
+      var style = node.style();
 
-    var s = new XMLSerializer().serializeToString(svg.svg.htmlElement);
+      templateTextStyle['fill'] = style['color'];
+      templateTextStyle['font-family'] = style['font-family'];
+      templateTextStyle['font-size'] = style['font-size'];
+      templateShapeStyle['fill'] = style['background-color'];
+      templateShapeStyle['stroke'] = style['border-color'];
+      templateShapeStyle['stroke-width'] = style['border-width'];
 
-    var blob = new Blob([s], {type: 'text/svg'});
-    saveAs(blob, "graph-" + this.widgetID + ".svg");
+
+      if (data.shape === 'ellipse') {
+        var r = node.width() / 2.0;
+        svg.drawLabeledCircle(pos.x, pos.y, r, templateShapeStyle,
+            data.label, 0, -1.5 * r, templateTextStyle);
+      } else if (data.shape in renderer.nodeShapes) {
+        var w = node.width();
+        var h = node.height();
+        var shape = renderer.nodeShapes[data.shape].points;
+        svg.drawLabeledPolygonPath(pos.x, pos.y, w, h, shape,
+           templateShapeStyle, data.label, 0, -0.75 * h, templateTextStyle);
+      } else {
+        CATMAID.warn('Could not export graph element. Unknown shape: ' + data.shape);
+      }
+    });
+
+    svg.save("graph-" + this.widgetID + ".svg");
   };
 
   /**
@@ -3174,7 +3093,12 @@
       pan: this.cy.pan()
     };
 
-    var copier = function(elem) { return {data: $.extend(true, {}, elem.data())}; };
+    var copier = function(elem) {
+      return {
+        data: $.extend(true, {}, elem.data()),
+        classes: elem.hidden() ? 'hidden' : ''
+      };
+    };
 
     return {
       properties: properties,
@@ -3275,8 +3199,8 @@
         edge.data('weight', count);
         edge.data('label', count);
         edge.data('weight', count);
-        if (count < edge_threshold) edge.hide();
-        else edge.show();
+        if (count < edge_threshold) edge.addClass('hidden');
+        else edge.removeClass('hidden');
       }
     });
   };

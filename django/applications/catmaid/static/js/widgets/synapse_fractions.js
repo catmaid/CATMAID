@@ -550,7 +550,7 @@
 
   SynapseFractions.prototype.onchangeSynapseThreshold = function(ev) {
     // Get the number from the event soure, which is a textField
-    var val = Number(ev.srcElement.value);
+    var val = Number(ev.target.value);
     if (Number.isNaN(val)) {
       CATMAID.msg("Warning", "Invalid threshold value: not a number.");
       return;

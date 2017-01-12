@@ -598,10 +598,10 @@ def update_location_reviewer(request, project_id=None, node_id=None):
     r.review_time = timezone.now()
     r.save()
 
-    return HttpResponse(json.dumps({
+    return JsonResponse({
         'reviewer_id': request.user.id,
         'review_time': r.review_time.isoformat(),
-    }), content_type='application/json')
+    })
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -757,12 +757,12 @@ def node_nearest(request, project_id=None):
         if nearestTreenode is None:
             raise Exception('No treenodes were found for skeletons in %s' % skeletons)
 
-        return HttpResponse(json.dumps({
+        return JsonResponse({
             'treenode_id': nearestTreenode.id,
             'x': int(nearestTreenode.location_x),
             'y': int(nearestTreenode.location_y),
             'z': int(nearestTreenode.location_z),
-            'skeleton_id': nearestTreenode.skeleton_id}))
+            'skeleton_id': nearestTreenode.skeleton_id})
 
     except Exception as e:
         raise Exception(response_on_error + ':' + str(e))
@@ -934,8 +934,8 @@ def find_labels(request, project_id=None):
             """, (x, y, z, project_id, label_regex,
                   x, y, z, project_id, label_regex,))
 
-    return HttpResponse(json.dumps([
+    return JsonResponse([
             [row[0],
              [row[1], row[2], row[3]],
              row[4],
-             row[5]] for row in cursor.fetchall()]))
+             row[5]] for row in cursor.fetchall()], safe=False)

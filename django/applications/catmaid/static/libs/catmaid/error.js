@@ -19,7 +19,7 @@
   };
 
   CATMAID.Error.prototype = Object.create(Error.prototype);
-  CATMAID.Error.constructor = CATMAID.Error;
+  CATMAID.Error.prototype.constructor = CATMAID.Error;
 
   /**
    * A simple value error type to indicate some sort of input value problem.
@@ -29,7 +29,7 @@
   };
 
   CATMAID.ValueError.prototype = Object.create(CATMAID.Error.prototype);
-  CATMAID.ValueError.constructor = CATMAID.ValueError;
+  CATMAID.ValueError.prototype.constructor = CATMAID.ValueError;
 
   /**
    * A simple permission error type to indicate some lack of permissions.
@@ -39,7 +39,7 @@
   };
 
   CATMAID.PermissionError.prototype = Object.create(CATMAID.Error.prototype);
-  CATMAID.PermissionError.constructor = CATMAID.PermissionError;
+  CATMAID.PermissionError.prototype.constructor = CATMAID.PermissionError;
 
   /**
    * An error type to indicate out of range errors in a command history.
@@ -49,7 +49,7 @@
   };
 
   CATMAID.CommandHistoryError.prototype = Object.create(CATMAID.Error.prototype);
-  CATMAID.CommandHistoryError.constructor = CATMAID.CommandHistoryError;
+  CATMAID.CommandHistoryError.prototype.constructor = CATMAID.CommandHistoryError;
 
   /**
    * An error type to indicate a state mismatch between front-end and back-end.
@@ -59,7 +59,7 @@
   };
 
   CATMAID.StateMatchingError.prototype = Object.create(CATMAID.Error.prototype);
-  CATMAID.StateMatchingError.constructor = CATMAID.StateMatchingError;
+  CATMAID.StateMatchingError.prototype.constructor = CATMAID.StateMatchingError;
 
   /**
    * An error type to indicate an unsuccesful location lookup.
@@ -69,6 +69,6 @@
   };
 
   CATMAID.LocationLookupError.prototype = Object.create(CATMAID.Error.prototype);
-  CATMAID.LocationLookupError.constructor = CATMAID.LocationLookupError;
+  CATMAID.LocationLookupError.prototype.constructor = CATMAID.LocationLookupError;
 
 })(CATMAID);

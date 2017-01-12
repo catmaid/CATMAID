@@ -33,6 +33,10 @@ Graph widget:
 - Active Graph Widget windows will now zoom in smaller steps if the Shift key
   is pressed.
 
+- Graphs saved to a JSON file now keep visibility information. Loading them
+  will load all nodes hidden that have been hidden when saving the file
+  initially..
+
 
 3D Viewer
 
@@ -67,6 +71,13 @@ Miscellaneous:
 - The statistics widget back-end will now correctly use up-to-date time-zone
   information for the query time range. This fixes some time zone conversion
   corner cases.
+
+- Graph widget: SVG export works again. The exported SVG now groups labels with
+  node/edge. Now also single node exports are supported.
+
+- If Ctrl-Z was pressed and released very quickly, two undo steps were taken.
+  Now always only one undo step will be done per single Ctrl-Z click if not hold
+  down.
 
 
 ## 2016.12.16

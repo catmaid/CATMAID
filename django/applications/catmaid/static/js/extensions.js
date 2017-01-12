@@ -85,5 +85,5 @@ $.fn.dataTable.ext.oSort['hslcolor-desc']  = function(a, b) {
       }});
   };
   THREE.Geometry.prototype = originalGeometry.prototype;
-  THREE.Geometry.constructor = originalGeometry.constructor;
+  THREE.Geometry.prototype.constructor = originalGeometry.constructor;
 })();

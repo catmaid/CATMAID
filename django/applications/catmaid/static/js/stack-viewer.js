@@ -578,13 +578,7 @@
   StackViewer.prototype._handleWindowSignal = function(callingWindow, signal) {
     switch (signal) {
       case CMWWindow.CLOSE:
-        this._layers.forEach(function (layer) {
-          if (typeof layer.unregister === 'function') {
-            layer.unregister();
-          }
-        });
-        this._layers.clear();
-        this._project.removeStackViewer(this.getId());
+        this.destroy();
         break;
 
       case CMWWindow.RESIZE:
@@ -613,6 +607,17 @@
         break;
     }
     return true;
+  };
+
+  StackViewer.prototype.destroy = function() {
+    this._layers.forEach(function (layer) {
+      if (typeof layer.unregister === 'function') {
+        layer.unregister();
+      }
+    });
+    this._layers.clear();
+    this._layerOrder.length = 0;
+    this._project.removeStackViewer(this.getId());
   };
 
   /**

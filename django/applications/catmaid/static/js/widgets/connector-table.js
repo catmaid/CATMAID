@@ -12,6 +12,7 @@
   var ConnectorTable = function(skeletonModels)
   {
     this.widgetID = this.registerInstance();
+    this.idPrefix = `connector-table${this.widgetID}-`;
 
     // This skeleton source takes care of internal skeleton management. It is
     // not registered. It is the input skeleton sink, but the output is handled
@@ -50,7 +51,7 @@
 
   ConnectorTable.prototype.getWidgetConfiguration = function() {
     return {
-      controlsID: 'connector-table-controls',
+      controlsID: this.idPrefix + 'controls',
       createControls: function(controls) {
         var self = this;
         var sourceSelect = CATMAID.skeletonListSources.createSelect(this.skeletonSource);
@@ -71,15 +72,15 @@
         };
         controls.appendChild(clear);
 
-        var add = document.createElement('input');
-        add.setAttribute("type", "button");
-        add.setAttribute("id", "refresh_connectortable_current_skeleton" + this.widgetID);
-        add.setAttribute("value", "Refresh");
-        add.onclick = this.update.bind(this);
-        controls.appendChild(add);
+        var refresh = document.createElement('input');
+        refresh.setAttribute("type", "button");
+        refresh.setAttribute("id", self.idPrefix + "refresh-current-skeleton");
+        refresh.setAttribute("value", "Refresh");
+        refresh.onclick = this.update.bind(this);
+        controls.appendChild(refresh);
 
         var relation = CATMAID.DOM.createSelect(
-          "connector_relation_type" + this.widgetID, [
+          self.idPrefix + "relation-type", [
           {title: 'Incoming connectors', value: "postsynaptic_to"},
           {title: 'Outgoing connectors', value: "presynaptic_to"},
           {title: 'Gap junction connectors', value: "gapjunction_with"},
@@ -91,6 +92,15 @@
         relationLabel.appendChild(relation);
         controls.appendChild(relationLabel);
 
+        var openViewer = document.createElement('input');
+        openViewer.setAttribute('type', 'button');
+        openViewer.setAttribute('value', 'View');
+        openViewer.onclick = function() {
+          var selectedModels = self.resultSkeletonSource.getSelectedSkeletonModels();
+          WindowMaker.create('connector-viewer', selectedModels);
+        };
+        controls.appendChild(openViewer);
+
         var exportCSV = document.createElement('input');
         exportCSV.setAttribute("type", "button");
         exportCSV.setAttribute("value", "Export CSV");
@@ -98,13 +108,11 @@
         exportCSV.onclick = this.exportCSV.bind(this);
         controls.appendChild(exportCSV);
       },
-      contentID: ' connector-table-content',
+      contentID: this.idPrefix + 'content',
       createContent: function(content) {
         var self = this;
         var possibleLengths = CATMAID.pageLengthOptions;
         var possibleLengthsLabels = CATMAID.pageLengthLabels;
-        var widgetID = this.widgetID;
-        var tableid = '#connectortable' + widgetID;
 
         var container = document.createElement('div');
         content.appendChild(container);
@@ -119,7 +127,7 @@
           order: [],
           lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
           ajax: function(data, callback, settings) {
-            var relationType = $('#connector_relation_type' + widgetID + ' :selected').val();
+            var relationType = $(`#${self.idPrefix}relation-type`).find(':selected').val();
             var params = {
               skeleton_ids: self.skeletonSource.getSelectedSkeletons(),
               relation_type: relationType,
@@ -136,7 +144,7 @@
               });
               return;
             }
-              
+
             CATMAID.fetch(project.id +  "/connectors/", "GET", params)
               .then(function(result) {
                 // Store connector tags
@@ -150,7 +158,7 @@
                 });
                 // Populate result skeleton source
                 var models = result.links.reduce(function(o, link) {
-                  var skid = link[1];
+                  var skid = link[0];
                   o[skid]  = new CATMAID.SkeletonModel(skid);
                   return o;
                 }, {});
@@ -244,7 +252,7 @@
    */
   ConnectorTable.prototype.exportCSV = function() {
     if (!this.connectorTable) return;
-    var relation = $('#connector_relation_type' + this.widgetID + ' :selected').val();
+    var relation = $(`#${this.idPrefix}relation-type`).find(':selected').val();
     var header = this.connectorTable.columns().header().map(function(h) {
       return $(h).text();
     });

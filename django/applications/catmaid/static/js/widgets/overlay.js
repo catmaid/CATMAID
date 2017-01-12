@@ -242,7 +242,8 @@ SkeletonAnnotations.staticMoveTo = function(z, y, x, fn) {
   var instances = SkeletonAnnotations.TracingOverlay.prototype._instances;
   for (var stackViewerId in instances) {
     if (instances.hasOwnProperty(stackViewerId)) {
-      instances[stackViewerId].moveTo(z, y, x, fn);
+      instances[stackViewerId].moveTo(z, y, x, fn)
+        .catch(CATMAID.handleError);
     }
   }
 };
@@ -255,7 +256,8 @@ SkeletonAnnotations.staticMoveToAndSelectNode = function(nodeID, fn) {
   var instances = SkeletonAnnotations.TracingOverlay.prototype._instances;
   for (var stackViewerId in instances) {
     if (instances.hasOwnProperty(stackViewerId)) {
-      instances[stackViewerId].moveToAndSelectNode(nodeID, fn);
+      instances[stackViewerId].moveToAndSelectNode(nodeID, fn)
+        .catch(CATMAID.handleError);
     }
   }
 };

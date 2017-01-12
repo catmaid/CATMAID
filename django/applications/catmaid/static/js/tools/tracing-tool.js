@@ -396,18 +396,19 @@
         } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === node.type) {
           if (CATMAID.Connectors.SUBTYPE_SYNAPTIC_CONNECTOR === node.subtype) {
             // Retrieve presynaptic skeleton
-            requestQueue.register(django_url + project.id + "/connector/skeletons",
-                "POST",
-                { connector_ids: [node.id] },
-                CATMAID.jsonResponseHandler(function(json) {
-                  var presynaptic_to = json[0] ? json[0][1].presynaptic_to : false;
-                  if (presynaptic_to) {
-                    setNeuronNameInTopbars(presynaptic_to, 'Connector ' + node.id +
-                        ', presynaptic partner: ');
-                  } else {
-                    clearTopbars('Connector ' + node.id + ' (no presynatpic partner)');
-                  }
-                }));
+            CATMAID.fetch(project.id + "/connector/skeletons", "POST", {
+              connector_ids: [node.id]
+            })
+            .then(function(json) {
+              var presynaptic_to = json[0] ? json[0][1].presynaptic_to : false;
+              if (presynaptic_to) {
+                setNeuronNameInTopbars(presynaptic_to, 'Connector ' + node.id +
+                    ', presynaptic partner: ');
+              } else {
+                clearTopbars('Connector ' + node.id + ' (no presynatpic partner)');
+              }
+            })
+            .catch(CATMAID.handleError);
           } else if (CATMAID.Connectors.SUBTYPE_GAPJUNCTION_CONNECTOR === node.subtype) {
             clearTopbars('Gap junction connector #' + node.id);
           } else {

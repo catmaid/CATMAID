@@ -1,7 +1,7 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
-QUnit.test('SVG overlay test', function( assert ) {
+QUnit.test('Tracing overlay test', function( assert ) {
 
   // Don't run this test in PhantomJS, because ES6 Promises are not yet
   // supported, it seems.

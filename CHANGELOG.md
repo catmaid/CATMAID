@@ -9,6 +9,29 @@
 
 ### Features and enhancements
 
+Connector Viewer:
+
+- A new tool used to view the connectors associated with a skeleton set
+  of skeletons.
+
+- Shows a grid of mini stack viewers with their own tracing overlays,
+  focused on connectors associated with the skeleton by a user-selected
+  relation (i.e. outgoing, incoming, gap junction or other).
+
+- Connectors can be sorted by their absolute or proportional depth on
+  their respective skeleton trees, by the connector ID or by the
+  skeleton name.
+
+- Mini stack viewers can inherit settings from a user-defined main stack
+  viewer; users can focus the main stack viewer on any connector by
+  clicking on its ID in the mini stack viewer title bar.
+
+- Users can open a connector table from a connector viewer and vice
+  versa.
+
+- Accessible with Ctrl+Space 'connector-viewer'.
+
+
 Connectivity table:
 
 - Original colors of skeletons added to a Connectivity Table can now optionally
@@ -86,6 +109,12 @@ Miscellaneous:
   down.
 
 - 3D viewer: partner node spheres are now also shown for restricted connectors.
+
+- Multiple stack viewers no longer use the same ID to make requests to
+  the database.
+
+- The connector table can now be used as a skeleton source, where
+  previously an error would be raised.
 
 
 ## 2016.12.16

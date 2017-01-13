@@ -802,7 +802,6 @@
         this.skeleton_id = skeleton_id;
         this.edition_time = edition_time;
         this.user_id = user_id;
-        this.needsync = false;
         delete this.suppressed;
 
         if (this.c) {
@@ -1267,7 +1266,6 @@
         this.postgroup = {};
         this.undirgroup = {};
         this.gjgroup = {};
-        this.needsync = false;
 
         if (this.c) {
           if (!this.shouldDisplay()) {
@@ -1297,7 +1295,6 @@
     {
       this.id = id;
       this.subtype = subtype;
-      this.needsync = false; // state variable; whether this node is already synchronized with the database
       this.x = x;
       this.y = y;
       this.z = z;
@@ -1478,7 +1475,7 @@
         }
         CATMAID.statusBar.replaceLast("Moving node #" + node.id);
 
-        node.needsync = true;
+        catmaidTracingOverlay.nodeIDsNeedingSync.add(node.id);
 
         catmaidTracingOverlay.redraw();
       };

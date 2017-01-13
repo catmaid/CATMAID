@@ -611,6 +611,8 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
 
   /** The ID vs Node or ConnectorNode instance. */
   this.nodes = {};
+  /** A set of node IDs of nodes that need to be synced to the backend. */
+  this.nodeIDsNeedingSync = new Set();
   /** The DOM elements representing node labels. */
   this.labels = {};
   /** Toggle for text labels on nodes and connectors. */
@@ -2137,12 +2139,10 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodeCoordinatesInDB = functio
                   connector: [],
                   virtual: []};
     /* jshint validthis: true */ // "this" will be bound to the tracing overlay
-    var nodeIDs = Object.keys(this.nodes);
-    for (var i = 0; i < nodeIDs.length; ++i) {
-      var node = this.nodes[nodeIDs[i]];
+    for (var nodeID of this.nodeIDsNeedingSync) {
+      var node = this.nodes[nodeID];
       // only updated nodes that need sync, e.g.  when they changed position
-      if (node.needsync) {
-        node.needsync = false;
+      if (node) {
         if (SkeletonAnnotations.isRealNode(node.id)) {
           update[node.type].push([node.id,
                                   this.pix2physX(node.z, node.y, node.x),
@@ -2153,6 +2153,8 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodeCoordinatesInDB = functio
         }
       }
     }
+
+    this.nodeIDsNeedingSync.clear();
 
     var promise;
     if (update.treenode.length > 0 || update.connector.length > 0) {
@@ -4240,7 +4242,7 @@ SkeletonAnnotations.TracingOverlay.prototype.deleteNode = function(nodeId) {
     // events on the removed node.
     connectornode.suspend();
     self.submit.then(function() {
-      connectornode.needsync = false;
+      self.nodeIDsNeedingSync.delete(connectornode.id);
       var command = new CATMAID.RemoveConnectorCommand(self.state, project.id, connectornode.id);
       CATMAID.commands.execute(command)
         .then(function(result) {
@@ -4280,7 +4282,7 @@ SkeletonAnnotations.TracingOverlay.prototype.deleteNode = function(nodeId) {
     }).then(function(json) {
       // nodes not refreshed yet: node still contains the properties of the deleted node
       // ensure the node, if it had any changes, these won't be pushed to the database: doesn't exist anymore
-      node.needsync = false;
+      self.nodeIDsNeedingSync.delete(node.id);
       // activate parent node when deleted
       if (wasActiveNode) {
         if (json.parent_id) {

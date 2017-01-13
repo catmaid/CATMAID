@@ -58,15 +58,14 @@ QUnit.test('Tracing overlay test', function( assert ) {
           id: 41,
           canEdit: function () { return true; },
           type: SkeletonAnnotations.TYPE_NODE,
-          needsync: true
         },
         '42': {
           id: 42,
           canEdit: function () { return true; },
           type: SkeletonAnnotations.TYPE_NODE,
-          needsync: true
         }
       },
+      nodeIDsNeedingSync: new Set([41, 42]),
       state: new CATMAID.GenericState({
         getNode: function(nodeId) {
           return [nodeId, "fakeEditTime"];

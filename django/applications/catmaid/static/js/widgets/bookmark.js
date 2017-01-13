@@ -59,14 +59,18 @@
             return false;
           }
 
-          // TODO add fallbacks:
-          //   - if treenode is set but no longer exists, try skeleton, then pos
-          //   - if skeleton is set and request but no longer exists, try
-          //     treenode then pos
           if (mode === BookmarkDialog.MODES.SKELETON && bookmark.skeletonID) {
             CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', bookmark.skeletonID);
           } else if (bookmark.nodeID) {
-            SkeletonAnnotations.staticMoveToAndSelectNode(bookmark.nodeID);
+            SkeletonAnnotations.staticMoveToAndSelectNode(bookmark.nodeID)
+                .then(function () {
+                  var pos = SkeletonAnnotations.getActiveNodePositionW();
+                  if (pos.x !== bookmark.projectPosition.x ||
+                      pos.y !== bookmark.projectPosition.y ||
+                      pos.z !== bookmark.projectPosition.z) {
+                    CATMAID.info('This node has moved since it was bookmarked.');
+                  }
+                });
           } else {
             project.deselectActiveNode();
             SkeletonAnnotations.staticMoveTo(bookmark.projectPosition.z,

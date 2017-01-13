@@ -249,7 +249,7 @@ SkeletonAnnotations.staticMoveTo = function(z, y, x) {
     }
   }
 
-  return Promise.all(movePromises).catch(CATMAID.handleError);
+  return Promise.all(movePromises);
 };
 
 /**
@@ -268,7 +268,7 @@ SkeletonAnnotations.staticMoveToAndSelectNode = function(nodeID) {
     }
   }
 
-  return Promise.all(movePromises).catch(CATMAID.handleError);
+  return Promise.all(movePromises);
 };
 
 /**

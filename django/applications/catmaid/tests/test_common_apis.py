@@ -528,7 +528,7 @@ class PermissionTests(TestCase):
             '/%(pid)s/%(skid)s/1/1/0/compact-arbor' % url_params,
             '/%(pid)s/annotations/forskeletons' % url_params,
             '/%(pid)s/annotations/table-list' % url_params,
-            '/%(pid)s/skeleton/analytics' % url_params,
+            '/%(pid)s/analytics/skeletons' % url_params,
             '/%(pid)s/skeleton/annotationlist' % url_params,
             '/%(pid)s/skeletons/review-status' % url_params,
             '/%(pid)s/skeleton/%(skid)s/neuronname' % url_params,

@@ -1272,33 +1272,35 @@
       throw new CATMAID.Error("Couldn't find parameter 'adjacents'");
     }
 
-    requestQueue.replace(django_url + project.id + '/analytics/skeletons', 'POST',
-      {skeleton_ids: skids,
-       extra: extra,
-       adjacents: adjacents},
-       CATMAID.jsonResponseHandler(function(json) {
-        var rows = [];
-        json.issues.forEach(function (sk) {
-          // sk[0]: skeleton ID
-          // sk[1]: array of pairs like [issue ID, treenode ID]
-          // sk[2]: optional details
-          var skeletonId = sk[0];
-          var name = json.names[skeletonId];
-          sk[1].forEach(function(issue) {
-            var details = issue[2];
-            var label = getIssueLabel(issue[0], json[issue[0]], details);
-            rows.push([label, // issue label
-                       name, // neuron name
-                       issue[1], // treenode ID
-                       sk[0]]); // skeleton ID
-          });
+    CATMAID.fetch(project.id + '/analytics/skeletons', 'POST', {
+      skeleton_ids: skids,
+      extra: extra,
+      adjacents: adjacents
+    }, false, 'skeleton_analytics_update', true)
+    .then(function(json) {
+      var rows = [];
+      json.issues.forEach(function (sk) {
+        // sk[0]: skeleton ID
+        // sk[1]: array of pairs like [issue ID, treenode ID]
+        // sk[2]: optional details
+        var skeletonId = sk[0];
+        var name = json.names[skeletonId];
+        sk[1].forEach(function(issue) {
+          var details = issue[2];
+          var label = getIssueLabel(issue[0], json[issue[0]], details);
+          rows.push([label, // issue label
+                     name, // neuron name
+                     issue[1], // treenode ID
+                     sk[0]]); // skeleton ID
         });
+      });
 
-        if (rows.length > 0) {
-          table.rows.add(rows);
-        }
-        table.draw();
-      }), 'skeleton_analytics_update');
+      if (rows.length > 0) {
+        table.rows.add(rows);
+      }
+      table.draw();
+    })
+    .catch(CATMAID.handleError);
   };
 
   // Allow access to the last active instance
@@ -1405,17 +1407,15 @@
           return;
         }
 
-        requestQueue.register(
-            django_url + project.id + '/user/reviewer-whitelist',
-            'GET',
-            undefined,
-            CATMAID.jsonResponseHandler(function (json) {
-              whitelist = json.reduce(function (wl, entry) {
-                wl[entry.reviewer_id] = new Date(entry.accept_after);
-                return wl;
-              }, {});
-              if (typeof callback === 'function') callback();
-            }));
+        CATMAID.fetch(project.id + '/user/reviewer-whitelist')
+          .then(function(json) {
+            whitelist = json.reduce(function (wl, entry) {
+              wl[entry.reviewer_id] = new Date(entry.accept_after);
+              return wl;
+            }, {});
+            if (typeof callback === 'function') callback();
+          })
+          .catch(CATMAID.handleError);
       },
 
       /**
@@ -1429,12 +1429,10 @@
           ewl[userId] = whitelist[userId].toISOString();
           return ewl;
         }, {});
-        requestQueue.replace(
-            django_url + project.id + '/user/reviewer-whitelist',
-            'POST',
-            encodedWhitelist,
-            callback,
-            'reviewerwhitelist' + project.id);
+        CATMAID.fetch(project.id + '/user/reviewer-whitelist', 'POST',
+            encodedWhitelist, false, 'reviewerwhitelist' + project.id, true)
+          .then(callback)
+          .catch(CATMAID.handleError);
       }
     };
   })();

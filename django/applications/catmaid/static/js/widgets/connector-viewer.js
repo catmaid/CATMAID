@@ -14,7 +14,7 @@
 
   const DEFAULT_CONNECTOR_RELATION = 'presynaptic_to';
 
-  const HIDER_Z_INDEX = 100;
+  const HIDER_Z_INDEX = 100;  // must be < 101 (for error alerts)
   const PANEL_PADDING = 1;
 
   const TRACING_OVERLAY_BUFFER = 64;
@@ -462,7 +462,7 @@
     // do not suspend if the stack viewer is set to navigate with project
     suspended = stackViewer.navigateWithProject ? false : suspended;
 
-    for (let tracingLayer of stackViewer.getLayersOfType(CATMAID.TracingLayer)) {
+    for (var tracingLayer of stackViewer.getLayersOfType(CATMAID.TracingLayer)) {
       tracingLayer.tracingOverlay.suspended = suspended;
       if (!suspended) {
         tracingLayer.tracingOverlay.redraw(true);
@@ -494,16 +494,16 @@
    */
   ConnectorViewer.prototype.focusSuspendListener = function(cmwWindow, signal) {
     if (signal === CMWWindow.FOCUS) {
-      let focusedStackViewer = this.stackViewers[this.panelWindows.indexOf(cmwWindow)];
-      let focusedNodes = getNodeSet(focusedStackViewer);
+      var focusedStackViewer = this.stackViewers[this.panelWindows.indexOf(cmwWindow)];
+      var focusedNodes = getNodeSet(focusedStackViewer);
 
-      for (let stackViewer of this.stackViewers) {
+      for (var stackViewer of this.stackViewers) {
         if (stackViewer === focusedStackViewer) {
           // avoid doing unnecessary set operations for the focused stack viewer
           setStackViewerSuspendState(stackViewer, false);
         } else {
           // suspend unless nodes in the focused stack viewer also appear in this stack viewer
-          let otherNodes = getNodeSet(stackViewer);
+          var otherNodes = getNodeSet(stackViewer);
           setStackViewerSuspendState(stackViewer, !focusedNodes.intersection(otherNodes).size);
         }
       }
@@ -536,6 +536,7 @@
 
     for (var iIdx = 0; iIdx < this.dimensions[0]; iIdx++) {
       for (var jIdx = 0; jIdx < this.dimensions[1]; jIdx++) {
+        // split the widget content into equal-sized panels
         var panelContainer = document.createElement('div');
         panelContainer.style.position = 'absolute';
         panelContainer.style.height = `${100 / this.dimensions[0]}%`;
@@ -545,6 +546,7 @@
 
         widgetContent.appendChild(panelContainer);
 
+        // put a smaller div inside each of these panels, to allow for padding/ border
         var panelInnerContainer = document.createElement('div');
         panelInnerContainer.style.position = 'absolute';
         panelInnerContainer.style.top = `${PANEL_PADDING}px`;
@@ -554,7 +556,9 @@
 
         panelContainer.appendChild(panelInnerContainer);
 
+        // create the CMWWindow, stack viewer etc.
         var panelWindow = new CMWWindow('Connector');
+        this.panelWindows.push(panelWindow);
         // prevent dragging
         $(panelWindow.getFrame()).children('.stackInfo_selected').get(0).onmousedown = function () {return true;};
         panelWindow.parent = widgetWindow;
@@ -579,17 +583,19 @@
         panelStackViewer.addLayer("TileLayer", tileLayer);
 
         panelStackViewer.layercontrol.refresh();
-
-        var stackInfo = panelStackViewer._stackWindow.frame.querySelector('.stackInfo_selected');
-        var assocNeuronNameEl = document.createElement('p');
-        assocNeuronNameEl.classList.add('assoc-neuron-name');
-        stackInfo.appendChild(assocNeuronNameEl);
-
         this.stackViewers.push(panelStackViewer);
 
         panelInnerContainer.appendChild(panel);
         panelStackViewer.resize();
 
+        // add the associated skeleton name to the title bar
+        var stackInfo = panelStackViewer._stackWindow.frame.querySelector('.stackInfo_selected');
+        var assocNeuronNameEl = document.createElement('p');
+        assocNeuronNameEl.classList.add('assoc-neuron-name');
+
+        stackInfo.appendChild(assocNeuronNameEl);
+
+        // create div to hide stack viewers if they don't have a connector to show
         var panelHider = document.createElement('div');
         panelHider.style.position = 'absolute';
         panelHider.style.height = '100%';
@@ -609,24 +615,17 @@
 
         project.addStackViewer(panelStackViewer);
 
-        for (var keyVal of panelStackViewer.getLayers().entries()) {
-          if (keyVal[0].startsWith('TracingLayer')) {
-            keyVal[1].tracingOverlay.padding = TRACING_OVERLAY_BUFFER;
-            break;
-          }
+        for (var tracingLayer of panelStackViewer.getLayersOfType(CATMAID.TracingLayer)) {
+          tracingLayer.tracingOverlay.padding = TRACING_OVERLAY_BUFFER;
         }
 
         panelWindow.redraw();
 
-        panelWindow.addListener(this.focusSuspendListener.bind(this));  // todo: might need some binding here
+        panelWindow.addListener(this.focusSuspendListener.bind(this));
 
         setStackViewerSuspendState(panelStackViewer, true);
       }
     }
-
-    this.panelWindows = this.stackViewers.map(function(stackViewer) {
-      return stackViewer.getWindow();
-    });
 
     // todo: do this in the stack viewers rather than here
     // hide window controls
@@ -852,8 +851,8 @@
           coords: self.connectors[connID].coords,
           skelNames: Array.from(self.connectors[connID].relationType[relationType])
             .reduce(function(arr, treenodeID) {
-              let skelID = self.treenodes[treenodeID].skelID;
-              let skelName = self.skeletons[skelID].name;
+              var skelID = self.treenodes[treenodeID].skelID;
+              var skelName = self.skeletons[skelID].name;
 
               // only add distinct skeleton IDs, and only skeleton IDs which are in the selected skeletons (they
               // might just be associated with treenodes which are associated with connectors which are associated
@@ -918,11 +917,11 @@
         var connectorsResponse = json[1];
         for (var i = 0; i < connectorsResponse.length; i++) {
           // turn the array response into more readable objects
-          let connectorResponse = connectorsResponse[i];
-          let treenodeID = connectorResponse[0];
-          let connID = connectorResponse[1];
-          let relationType = self.relationTypes[connectorResponse[2]];
-          let coords = {
+          var connectorResponse = connectorsResponse[i];
+          var treenodeID = connectorResponse[0];
+          var connID = connectorResponse[1];
+          var relationType = self.relationTypes[connectorResponse[2]];
+          var coords = {
             x: connectorResponse[3],
             y: connectorResponse[4],
             z: connectorResponse[5]
@@ -1020,10 +1019,10 @@
   ConnectorViewerCache.prototype.getMinDepth = function(relationType, selectedSkeletons, proportional, connID) {
     var minConnDepth = Infinity;
 
-    for (let treenodeID of this.connectors[connID].relationType[relationType]) {
+    for (var treenodeID of this.connectors[connID].relationType[relationType]) {
       if (selectedSkeletons.includes(this.treenodes[treenodeID].skelID)) {
-        let treenodeInfo = this.treenodes[treenodeID];
-        let depth = proportional ? treenodeInfo.depth / this.skeletons[treenodeInfo.skelID].maxLength : treenodeInfo.depth;
+        var treenodeInfo = this.treenodes[treenodeID];
+        var depth = proportional ? treenodeInfo.depth / this.skeletons[treenodeInfo.skelID].maxLength : treenodeInfo.depth;
         minConnDepth = Math.min(minConnDepth, depth);
       }
     }
@@ -1045,7 +1044,7 @@
   ConnectorViewerCache.prototype.getFirstSkelName = function(relationType, selectedSkeletons, connID) {
     var skelNames = [];
 
-    for (let treenodeID of this.connectors[connID].relationType[relationType]) {
+    for (var treenodeID of this.connectors[connID].relationType[relationType]) {
       if (selectedSkeletons.includes(this.treenodes[treenodeID].skelID)) {
         skelNames.push(this.skeletons[this.treenodes[treenodeID].skelID].name);
       }

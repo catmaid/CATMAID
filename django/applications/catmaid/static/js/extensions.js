@@ -17,7 +17,7 @@
  */
 Set.prototype.difference = function(iterable) {
   var difference = new Set(this);
-  for (let item of iterable) {
+  for (var item of iterable) {
     difference.delete(item);
   }
   return difference;
@@ -30,7 +30,7 @@ Set.prototype.difference = function(iterable) {
  * @returns {Set}
  */
 Set.prototype.addAll = function(iterable) {
-  for (let item of iterable) {
+  for (var item of iterable) {
     this.add(item);
   }
   return this;
@@ -44,7 +44,7 @@ Set.prototype.addAll = function(iterable) {
  */
 Set.prototype.intersection = function(iterable) {
   var intersection = new Set();
-  for (let item of iterable) {
+  for (var item of iterable) {
     if (this.has(item)) {
       intersection.add(item);
     }

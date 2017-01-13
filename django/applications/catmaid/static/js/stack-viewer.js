@@ -647,6 +647,17 @@
   };
 
   /**
+   * Return an array of layers which are instances of the given type.
+   *
+   * @param type
+   */
+  StackViewer.prototype.getLayersOfType = function(type) {
+    return Array.from(this.getLayers().values()).filter(function(layer) {
+      return layer instanceof type;
+    });
+  };
+
+  /**
    * Look up a layer's key using the layer itself.
    *
    * @param  {Object}  needle The layer object.

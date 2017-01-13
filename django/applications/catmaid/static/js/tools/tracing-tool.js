@@ -1293,9 +1293,13 @@
         handleActiveNodeChange, this);
   }
 
-  /* Works as well for skeletons.
-   * @param type A 'neuron' or a 'skeleton'.
-   * @param objectID the ID of a neuron or a skeleton.
+  /**
+   * Move to and select a node in the specified neuron or skeleton nearest
+   * the current project position.
+   *
+   * @param  {string} type       A 'neuron' or a 'skeleton'.
+   * @param  {number} objectID   The ID of a neuron or a skeleton.
+   * @return {Promise}           A promise succeeding after the move and select.
    */
   TracingTool.goToNearestInNeuronOrSkeleton = function(type, objectID) {
     var projectCoordinates = project.focusedStackViewer.projectCoordinates();
@@ -1303,27 +1307,21 @@
       x: projectCoordinates.x,
       y: projectCoordinates.y,
       z: projectCoordinates.z
-    }, nodeIDToSelect, skeletonIDToSelect;
+    };
     parameters[type + '_id'] = objectID;
-    requestQueue.register(django_url + project.id + "/node/nearest", "POST",
-                          parameters, function (status, text) {
-      var data;
-      if (status !== 200) {
-        alert("Finding the nearest node failed with HTTP status code: "+status);
-      } else {
-        data = JSON.parse(text);
-        if (data.error) {
-          alert("An error was returned when trying to fetch the nearest node: "+data.error);
-        } else {
-          nodeIDToSelect = data.treenode_id;
-          skeletonIDToSelect = data.skeleton_id;
-          SkeletonAnnotations.staticMoveTo(data.z, data.y, data.x)
+    return CATMAID.fetch(project.id + "/node/nearest", "POST", parameters)
+        .then(function (data) {
+          var nodeIDToSelect = data.treenode_id;
+          // var skeletonIDToSelect = data.skeleton_id; // Unused, but available.
+          return SkeletonAnnotations.staticMoveTo(data.z, data.y, data.x)
               .then(function () {
-                SkeletonAnnotations.staticSelectNode(nodeIDToSelect, skeletonIDToSelect);
+                return SkeletonAnnotations.staticSelectNode(nodeIDToSelect);
               });
-        }
-      }
-    });
+        })
+        .catch(function () {
+          CATMAID.warn('Going to ' + type + ' ' + objectID + ' failed. ' +
+                       'The ' + type + ' may no longer exist.');
+        });
   };
 
   TracingTool.search = function() {

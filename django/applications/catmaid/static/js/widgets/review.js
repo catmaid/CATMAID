@@ -144,8 +144,8 @@
       $('#reviewing_skeleton').text('');
       $('#counting-cache').text('');
       $('#counting-cache-info').text('');
-      if (this._content) {
-        $(this._content).hide();
+      if (this.nodeReviewContainer) {
+        this.nodeReviewContainer.style.display = 'none';
       }
     };
 
@@ -907,8 +907,8 @@
             {'subarbor_node_id': subarborNodeId},
             function(skeleton_data) {
                 self.createReviewSkeletonTable( skeleton_data, usernames );
-                if (self._content) {
-                  $(self._content).show();
+                if (self.nodeReviewContainer) {
+                  self.nodeReviewContainer.style.display = 'block';
                 }
             });
         });
@@ -1096,10 +1096,11 @@
         var self = this;
 
         this._content = content;
-        $(this._content).hide();
 
         // Node review container
         this.nodeReviewContainer = document.createElement('div');
+        this.nodeReviewContainer.style.display = 'none';
+
         var cacheCounter = document.createElement('div');
         cacheCounter.setAttribute("id", "counting-cache");
         this.nodeReviewContainer.appendChild(cacheCounter);
@@ -1216,7 +1217,7 @@
    */
   CATMAID.ReviewSystem.prototype.redraw = function() {
     if (this.mode === 'node-review') {
-      this.nodeReviewContainer.style.display = 'block';
+      this.nodeReviewContainer.style.display = self.current_segment ? 'block' : 'none';
       this.analyticsContainer.style.display = 'none';
     } else if (this.mode === 'analytics') {
       this.nodeReviewContainer.style.display = 'none';

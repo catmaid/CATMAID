@@ -5,6 +5,52 @@
  * This file is a place for small global extensions of libraries used by CATMAID.
  */
 
+/**
+ * Set prototype extensions
+ */
+
+/**
+ * Return a new set of those items which exist in this set, but not in the given 'of'-able iterable.
+ *
+ * @param iterable
+ * @returns {Set}
+ */
+Set.prototype.difference = function(iterable) {
+  var difference = new Set(this);
+  for (let item of iterable) {
+    difference.delete(item);
+  }
+  return difference;
+};
+
+/**
+ * Add all of the items in a given 'of'-able iterable to this set in-place, and return this set (for chaining purposes).
+ *
+ * @param iterable
+ * @returns {Set}
+ */
+Set.prototype.addAll = function(iterable) {
+  for (let item of iterable) {
+    this.add(item);
+  }
+  return this;
+};
+
+/**
+ * Return a new set of those items which exist in both this set and the given 'of'-able iterable.
+ *
+ * @param iterable
+ * @returns {Set}
+ */
+Set.prototype.intersection = function(iterable) {
+  var intersection = new Set();
+  for (let item of iterable) {
+    if (this.has(item)) {
+      intersection.add(item);
+    }
+  }
+  return intersection;
+};
 
 /**
  * jQuery DataTables extensions

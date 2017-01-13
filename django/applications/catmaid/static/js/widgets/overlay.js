@@ -257,7 +257,9 @@ SkeletonAnnotations.staticMoveTo = function(z, y, x) {
  * the database. After the move, the given node is selected.
  *
  * @param  {number|string} nodeID  ID of the node to move to and select.
- * @return {Promise}               Promise succeeding after move and selection.
+ * @return {Promise}               Promise succeeding after move and selection,
+ *                                 yielding an array of the selected node from
+ *                                 all open tracing overlays.
  */
 SkeletonAnnotations.staticMoveToAndSelectNode = function(nodeID) {
   var instances = SkeletonAnnotations.TracingOverlay.prototype._instances;
@@ -275,7 +277,9 @@ SkeletonAnnotations.staticMoveToAndSelectNode = function(nodeID) {
  * Move to a location and select the node cloest to the given location,
  * optionally also require a particular skeleton ID.
  *
- * @return {Promise}               Promise succeeding after move and selection.
+ * @return {Promise}               Promise succeeding after move and selection,
+ *                                 yielding the selected node from the tracing
+ *                                 overlay where it was closest.
  */
 SkeletonAnnotations.staticMoveToAndSelectClosestNode = function(z, y, x,
     skeletonId, respectVirtualNodes) {
@@ -3543,13 +3547,15 @@ SkeletonAnnotations.TracingOverlay.prototype.moveTo = function(z, y, x, fn) {
 
 /**
  * Move to a node and select it. Can handle virtual nodes.
+ *
+ * @return {Promise} A promise yielding the selected node.
  */
 SkeletonAnnotations.TracingOverlay.prototype.moveToAndSelectNode = function(nodeID) {
   if (this.isIDNull(nodeID)) return Promise.reject("Couldn't select node " + nodeID);
   var self = this;
-  return this.goToNode(nodeID,
+  return this.goToNode(nodeID).then(
       function() {
-        self.selectNode(nodeID);
+        return self.selectNode(nodeID);
       });
 };
 

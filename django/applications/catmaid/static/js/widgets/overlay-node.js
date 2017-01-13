@@ -642,6 +642,7 @@
           this.line.node = this;
           this.line.interactive = true;
           this.line.on('click', ptype.mouseEventManager.edge_mc_click);
+          this.line.hitArea = new PIXI.Polygon(0, 0, 0, 0, 0, 0, 0, 0);
         }
 
         this.line.tooShort = false;
@@ -658,11 +659,15 @@
         var s = this.BASE_EDGE_WIDTH * 2.0;
         norm[0] *= s;
         norm[1] *= s;
-        this.line.hitArea = new PIXI.Polygon(
-            childLocation[0]  + norm[0], childLocation[1]  + norm[1],
-            parentLocation[0] + norm[0], parentLocation[1] + norm[1],
-            parentLocation[0] - norm[0], parentLocation[1] - norm[1],
-            childLocation[0]  - norm[0], childLocation[1]  - norm[1]);
+        // Assign hit area to existing points array to avoid allocation.
+        this.line.hitArea.points[0] = childLocation[0]  + norm[0];
+        this.line.hitArea.points[1] = childLocation[1]  + norm[1];
+        this.line.hitArea.points[2] = parentLocation[0] + norm[0];
+        this.line.hitArea.points[3] = parentLocation[1] + norm[1];
+        this.line.hitArea.points[4] = parentLocation[0] - norm[0];
+        this.line.hitArea.points[5] = parentLocation[1] - norm[1];
+        this.line.hitArea.points[6] = childLocation[0]  - norm[0];
+        this.line.hitArea.points[7] = childLocation[1]  - norm[1];
 
         this.line.visible = SkeletonAnnotations.VisibilityGroups.areGroupsVisible(this.getVisibilityGroups());
 
@@ -1632,6 +1637,7 @@
       this.line.interactive = true;
       this.line.on('mousedown', this.mousedown);
       this.line.on('mouseover', this.mouseover);
+      this.line.hitArea = new PIXI.Polygon(0, 0, 0, 0, 0, 0, 0, 0);
       this.line.link = this;
       this.confidence_text = null;
       this.treenode_id = null;
@@ -1758,11 +1764,15 @@
         s = this.EDGE_WIDTH * this.CATCH_SCALE;
         norm[0] *= s;
         norm[1] *= s;
-        this.line.hitArea = new PIXI.Polygon(
-            x1 + norm[0], y1 + norm[1],
-            x2new + norm[0], y2new + norm[1],
-            x2new - norm[0], y2new - norm[1],
-            x1 - norm[0], y1 - norm[1]);
+        // Assign hit area to existing points array to avoid allocation.
+        this.line.hitArea.points[0] = x1 + norm[0];
+        this.line.hitArea.points[1] = y1 + norm[1];
+        this.line.hitArea.points[2] = x2new + norm[0];
+        this.line.hitArea.points[3] = y2new + norm[1];
+        this.line.hitArea.points[4] = x2new - norm[0];
+        this.line.hitArea.points[5] = y2new - norm[1];
+        this.line.hitArea.points[6] = x1 - norm[0];
+        this.line.hitArea.points[7] = y1 - norm[1];
 
         var stroke_color;
         if (undefined === is_pre) stroke_color = this.OTHER_COLOR;

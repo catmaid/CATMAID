@@ -63,12 +63,17 @@
             CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', bookmark.skeletonID);
           } else if (bookmark.nodeID) {
             SkeletonAnnotations.staticMoveToAndSelectNode(bookmark.nodeID)
-                .then(function () {
+                .then(function (nodes) {
                   var pos = SkeletonAnnotations.getActiveNodePositionW();
                   if (pos.x !== bookmark.projectPosition.x ||
                       pos.y !== bookmark.projectPosition.y ||
                       pos.z !== bookmark.projectPosition.z) {
                     CATMAID.info('This node has moved since it was bookmarked.');
+                  }
+
+                  var node = nodes[0];
+                  if (node.id && node.skeleton_id !== bookmark.skeletonID) {
+                    CATMAID.info('This node has changed skeletons since it was bookmarked.');
                   }
                 });
           } else {

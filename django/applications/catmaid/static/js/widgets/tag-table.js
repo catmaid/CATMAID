@@ -195,21 +195,6 @@
     this.selectedSkeletons.removeSkeletons(obj.subtract);
   };
 
-  Set.prototype.difference = function(otherSet) {  // separate function?
-    var difference = new Set(this);
-    otherSet.forEach(function(elem) {
-      difference.delete(elem);
-    });
-    return difference;
-  };
-
-  Set.prototype.addAll = function(array) {  // separate function?
-    for (var i = 0; i < array.length; i++) {
-      this.add(array[i]);
-    }
-    return this;
-  };
-
   var createCheckbox = function(checked, type, row) {
     if (type ==='display') {
       var checkbox = $('<input />', {

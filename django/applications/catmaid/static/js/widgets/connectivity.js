@@ -3,7 +3,6 @@
 /* global
   InstanceRegistry,
   project,
-  requestQueue,
   WindowMaker
 */
 
@@ -1433,6 +1432,13 @@
               } else {
                 return name;
               }
+            }
+          },
+          {
+            // Review column
+            targets: [-2],
+            render: function(data, type, row, meta) {
+              return type === "display" ? (data + "%") : data;
             }
           },
           { targets: ['_all'], type: 'html-num-fmt', searchable: false } // All other columns

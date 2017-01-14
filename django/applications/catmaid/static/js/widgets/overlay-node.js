@@ -163,9 +163,9 @@
       parent,     // the parent node, if present within the subset of nodes retrieved for display; otherwise null.
       parent_id,  // the id of the parent node, or null if it is root
       radius,
-      x,          // the x coordinate in oriented project coordinates
-      y,          // the y coordinate in oriented project coordinates
-      z,          // the z coordinate in oriented project coordinates
+      x,          // the x coordinate in stack coordinates
+      y,          // the y coordinate in stack coordinates
+      z,          // the z coordinate in stack coordinates
       zdiff,      // the difference in Z from the current slice in stack space
       confidence,
       skeleton_id,// the id of the skeleton this node is an element of
@@ -188,9 +188,9 @@
      * See "newNode" for explanations. */
     this.newConnectorNode = function(
       id,         // unique id for the node from the database
-      x,          // the x coordinate in oriented project coordinates
-      y,          // the y coordinate in oriented project coordinates
-      z,          // the z coordinate in oriented project coordinates
+      x,          // the x coordinate in stack coordinates
+      y,          // the y coordinate in stack coordinates
+      z,          // the z coordinate in stack coordinates
       zdiff,      // the difference in Z from the current slice in stack space
       confidence,
       subtype,
@@ -993,9 +993,9 @@
       parent,     // the parent node (may be null if the node is not loaded)
       parent_id,  // is null only for the root node
       radius,     // the radius
-      x,          // the x coordinate in pixels
-      y,          // y coordinates in pixels
-      z,          // z coordinates in pixels
+      x,          // the x coordinate in stack coordinates
+      y,          // the y coordinate in stack coordinates
+      z,          // the z coordinate in stack coordinates
       zdiff,      // the difference in z from the current slice
       confidence, // confidence with the parent
       skeleton_id,// the id of the skeleton this node is an element of
@@ -1295,9 +1295,9 @@
 
     ptype.ConnectorNode = function(
       id,         // unique id for the node from the database
-      x,          // the x coordinate in oriented project coordinates
-      y,          // the y coordinate in oriented project coordinates
-      z,          // the z coordinate in oriented project coordinates
+      x,          // the x coordinate in stack coordinates
+      y,          // the y coordinate in stack coordinates
+      z,          // the z coordinate in stack coordinates
       zdiff,      // the difference in Z from the current slice in stack space
       confidence, // (TODO: UNUSED)
       subtype,    // the kind of connector node

@@ -247,7 +247,7 @@ class SkeletonGroup(object):
         connectors = {}
         for skeleton_id, skeleton in self.skeletons.items():
             for connector_id, v in skeleton.connected_connectors.items():
-                if not connectors.has_key(connector_id):
+                if not connector_id in connectors:
                     connectors[connector_id] = {
                         'pre': [], 'post': []
                     }
@@ -322,7 +322,7 @@ def edgecount_filtering( skeleton, edgecount ):
             tonode = graph.successors(nodeid)[0]
             #newdistance = graph.edge[fromnode][nodeid]['distance'] + graph.edge[nodeid][tonode]['distance']
             newedgecount = graph.edge[fromnode][nodeid]['edgecount'] + graph.edge[nodeid][tonode]['edgecount']
-            graph.add_edge(fromnode, tonode, {'edgecount': newedgecount}) # 'distance': newdistance, 
+            graph.add_edge(fromnode, tonode, {'edgecount': newedgecount}) # 'distance': newdistance,
             graph.remove_edge( fromnode, nodeid )
             graph.remove_edge( nodeid, tonode )
             graph.remove_node( nodeid )
@@ -334,7 +334,7 @@ def edgecount_filtering( skeleton, edgecount ):
             skeleton.graph.remove_edge( u, v )
 
 def compartmentalize_skeletongroup_by_confidence( skeleton_id_list, project_id, confidence_threshold = 4):
-    """ Splits all skeleton edges lower than the threshold into compartments 
+    """ Splits all skeleton edges lower than the threshold into compartments
     and returns a graph """
 
     return compartmentalize_skeletongroup( skeleton_id_list, project_id, confidence_threshold = confidence_threshold )
@@ -358,9 +358,9 @@ def compartmentalize_skeletongroup( skeleton_id_list, project_id, **kwargs ):
     resultgraph = nx.DiGraph()
 
     for skeleton_id, skeleton in skelgroup.skeletons.items():
-        if kwargs.has_key('confidence_threshold'):
+        if 'confidence_threshold' in kwargs:
             confidence_filtering( skeleton, kwargs['confidence_threshold'] )
-        elif kwargs.has_key('edgecount'):
+        elif 'edgecount' in kwargs:
             edgecount_filtering( skeleton, kwargs['edgecount'] )
 
         subgraphs = nx.weakly_connected_component_subgraphs( skeleton.graph )
@@ -386,7 +386,7 @@ def compartmentalize_skeletongroup( skeleton_id_list, project_id, **kwargs ):
     connectors = {}
     for skeleton_id, skeleton in skelgroup.skeletons.items():
         for connector_id, v in skeleton.connected_connectors.items():
-            if not connectors.has_key(connector_id):
+            if not connector_id in connectors:
                 connectors[connector_id] = {
                     'pre': [], 'post': []
                 }

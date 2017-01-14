@@ -23,6 +23,17 @@
     },
 
     /**
+     * Get a data view configuration.
+     *
+     * @returns {Promise} A promise that resolves with the ID and code type and
+     *                    configuration of a paricular data view.
+     */
+    getConfig: function(dataViewId) {
+      var url = 'dataviews/' + dataViewId + '/';
+      return CATMAID.fetch(url, 'GET', undefined);
+    },
+
+    /**
      * Get the default data view configuration.
      *
      * @returns {Promise} A promise that resolves with the ID and code type and

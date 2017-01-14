@@ -93,14 +93,8 @@ var project;
    */
   var MSG_TIMEOUT_INTERVAL = 60000;
 
-  // Previously loaded projects
-  var cachedProjectsInfo = null;
-
   // Height of status bar
   var global_bottom = 29;
-
-  // A reference to the currently displayed data view
-  var current_dataview;
 
 
   /**
@@ -114,6 +108,12 @@ var project;
       loadInvisible: true,
       errorClass: "missing-image"
     });
+
+    // A reference to the currently displayed data view
+    this.current_dataview = null;
+
+    // Currently visible projects
+    this.projects = null;
 
     // Do periodic update checks
     window.setTimeout(CATMAID.Init.checkVersion, CATMAID.Init.CHECK_VERSION_TIMEOUT_INTERVAL);
@@ -256,8 +256,8 @@ var project;
 
       // find data view setting
       if ( options[ "dataview" ] )
-        current_dataview = parseInt( options["dataview"] );
-      if ( isNaN( current_dataview ) ) current_dataview = undefined;
+        this.current_dataview = parseInt( options["dataview"] );
+      if ( isNaN( this.current_dataview ) ) this.current_dataview = null;
 
       // Check if only one stack viewer should be used for all stacks
       if ( options[ "composite" ] ) {
@@ -409,6 +409,80 @@ var project;
   };
 
   /**
+   * Update the list of known projects. This implies a menu and data view
+   * update.
+   *
+   * @returns {Promise} Resolved once the update is complete.
+   */
+  Client.prototype.updateProjects = function() {
+    project_menu.update(null);
+
+    // Set a temporary loading data view
+    this.switch_dataview(new CATMAID.DataView({
+       id: null,
+       type: 'empty',
+       message: 'Loading...',
+       classList: 'wait_bgwhite'
+    }));
+
+    var self = this;
+    return CATMAID.Project.list(true)
+      .then(function(json) {
+        self.projects = json;
+
+        self.refresh();
+
+        // Prepare JSON so that a menu can be created from it. Display only
+        // projects that have at least one stack linked to them.
+        var projects = json.filter(function(p) {
+          return p.stacks.length > 0;
+        }).map(function(p) {
+          var stacks = p.stacks.reduce(function(o, s) {
+            o[s.id] = {
+              'title': s.title,
+              'comment': s.comment,
+              'note': '',
+              'action': CATMAID.openProjectStack.bind(window, p.id, s.id, false)
+            };
+            return o;
+          }, {});
+          var stackgroups = p.stackgroups.reduce(function(o, sg) {
+            o[sg.id] = {
+              'title': sg.title,
+              'comment': sg.comment,
+              'note': '',
+              'action': CATMAID.openStackGroup.bind(window, p.id, sg.id, false)
+            };
+            return o;
+          }, {});
+
+          return {
+            'title': p.title,
+            'note': '',
+            'action': [{
+              'title': 'Stacks',
+              'comment': '',
+              'note': '',
+              'action': stacks
+            }, {
+              'title': 'Stack groups',
+              'comment': '',
+              'note': '',
+              'action': stackgroups
+            }]
+
+          };
+        });
+
+        project_menu.update(projects);
+        CATMAID.ui.releaseEvents();
+
+        return self.projects;
+      })
+      .catch(CATMAID.handleError);
+  };
+
+  /**
    * Update profile dependent information, e.g., the visibility of tools in the
    * toolbar. If a project is open and the user has browse permission, the
    * active project stays open.
@@ -417,8 +491,8 @@ var project;
     var backgroundDataView = !!project;
 
     // Update data view display, in the background if a project is open
-    if (current_dataview) {
-      CATMAID.client.switch_dataview(current_dataview, backgroundDataView);
+    if (this.current_dataview) {
+      CATMAID.client.switch_dataview(this.current_dataview, backgroundDataView);
     } else {
       CATMAID.client.load_default_dataview(backgroundDataView);
     }
@@ -619,8 +693,19 @@ var project;
           return;
         }
 
-        CATMAID.client.refresh();
-        CATMAID.updateProjects(completionCallback);
+        // Show loading data view
+        CATMAID.client.switch_dataview(new CATMAID.DataView({
+           id: null,
+           type: 'empty',
+           message: 'Loading list of available projects...'
+        }));
+
+        CATMAID.client.updateProjects()
+          .then(function() {
+            CATMAID.client.refresh();
+          })
+          .then(completionCallback)
+          .catch(CATMAID.handleError);
 
         // Update all datastores to reflect the current user before triggering
         // any events. This is necessary so that settings are correct when
@@ -889,12 +974,18 @@ var project;
 
   function handle_dataviews(e) {
     // a function for creating data view menu handlers
-    var create_handler = function( id, code_type ) {
+    var create_handler = function(id) {
       return function() {
         // close any open project and its windows
         CATMAID.rootWindow.closeAllChildren();
-        // open data view
-        CATMAID.client.switch_dataview( id, code_type );
+
+        CATMAID.DataViews.getConfig(id)
+          .then(function(config) {
+            // open data view
+            var dataview = CATMAID.DataView.makeDataView(config);
+            CATMAID.client.switch_dataview(dataview);
+          })
+          .catch(CATMAID.handleError);
       };
     };
     /* As we want to handle a data view change in JS,
@@ -904,8 +995,7 @@ var project;
      */
     for ( var i in e )
     {
-      e[i].action = create_handler( e[i].id,
-        e[i].code_type );
+      e[i].action = create_handler(e[i].id);
       var link = '<a class="hoverlink" href="' + django_url +
         '?dataview=' + e[i].id + '">&para;&nbsp;</a>';
       e[i].note = link + e[i].note;
@@ -920,51 +1010,23 @@ var project;
    * @param background {bool} Optional, if the data view should only be loaded,
    *                          not activated.
    */
-  Client.prototype.switch_dataview = function(view_id, view_type, background) {
-    /* Some views are dynamic, e.g. the plain list view offers a
-     * live filter of projects. Therefore we treat different types
-     * of dataviews differently and need to know whether the
-     * requested view is a legacy view.
-     */
-    var do_switch_dataview = function( view_id, view_type ) {
-      if ( view_type == "legacy_project_list_data_view" ) {
-        // Show the standard plain list data view
-        if (!background) {
-          document.getElementById("data_view").style.display = "none";
-          document.getElementById("clientside_data_view").style.display = "block";
-        }
-        CATMAID.updateProjectListFromCache();
-      } else {
-        // let Django render the requested view and display it
-        if (!background) {
-          document.getElementById("clientside_data_view").style.display = "none";
-          document.getElementById("data_view").style.display = "block";
-        }
-        CATMAID.DataViews.get(view_id).then(handle_load_dataview)
-          .catch(handle_dataview_load_error);
-      }
-    };
+  Client.prototype.switch_dataview = function(dataview, background) {
+    var container = document.getElementById("data_view");
 
-    /* If view type is passed, switch to the data view directly.
-     * Otherwise, retrieve the data view type first.
-     */
-    if (view_type) {
-      do_switch_dataview(view_id, view_type);
-    } else {
-      requestQueue.register(django_url + 'dataviews/type/' + view_id,
-        'GET', undefined, function(status, text, xml) {
-          if (status == 200 && text) {
-            var e = JSON.parse(text);
-            if (e.error) {
-              alert(e.error);
-            } else {
-              do_switch_dataview(view_id, e.type);
-            }
-          } else {
-            alert("A problem occurred while retrieving data view information.");
-          }
-      });
+    // Get container and remove old content
+    while (container.firstChild) {
+      container.removeChild(container.firstChild);
     }
+
+    dataview.createContent(container)
+      .then(function() {
+        dataview.refresh();
+        // Revalidate content to lazy-load
+        CATMAID.client.blazy.revalidate();
+      });
+
+    // Make sure container is visible
+    container.style.display = "block";
   };
 
   /**
@@ -975,53 +1037,13 @@ var project;
    */
   Client.prototype.load_default_dataview = function(background) {
     var self = this;
-    CATMAID.DataViews.getDefaultConfig().then(function(info) {
-      self.switch_dataview(info.id, info.code_type, background);
-    }).catch(CATMAID.handleError);
+    CATMAID.DataViews.getDefaultConfig()
+      .then(function(config) {
+        var dataview = CATMAID.DataView.makeDataView(config);
+        self.switch_dataview(dataview, background);
+      })
+      .catch(CATMAID.handleError);
   };
-
-  function handle_dataview_load_error(text) {
-    var data_view_container = document.getElementById("data_view");
-
-    if ( !( typeof data_view_container === "undefined" || data_view_container === null ) )
-    {
-      //! remove old content
-      while ( data_view_container.firstChild )
-      {
-        data_view_container.removeChild( data_view_container.firstChild );
-      }
-
-      // create error message
-      var error_paragraph = document.createElement( "p" );
-      data_view_container.appendChild( error_paragraph );
-      error_paragraph.appendChild( document.createTextNode(
-        "Sorry, there was a problem loading the requested data view." ) );
-      // create new error iframe
-      var error_iframe = document.createElement( "iframe" );
-      error_iframe.style.width = "100%";
-      error_iframe.style.height = "400px";
-      data_view_container.appendChild( error_iframe );
-      error_iframe.contentDocument.write( text );
-    }
-  }
-
-  function handle_load_dataview(text) {
-    var data_view_container = document.getElementById("data_view");
-
-    if ( !( typeof data_view_container === "undefined" || data_view_container === null ) )
-    {
-      //! remove old content
-      while ( data_view_container.firstChild )
-      {
-        data_view_container.removeChild( data_view_container.firstChild );
-      }
-
-      //! add new content
-      data_view_container.innerHTML = text;
-      // Revalidate content to lazy-load
-      CATMAID.client.blazy.revalidate();
-    }
-  }
 
   // Export Client
   CATMAID.Client = Client;
@@ -1304,193 +1326,6 @@ var project;
       CATMAID.rootWindow.replaceChild(new CMWHSplitNode(left, right));
     }
   };
-
-  /**
-   * Do a delayed call to updateProjectListFromCache() and indicate
-   * the progress.
-   */
-  var cacheLoadingTimeout = null;
-  CATMAID.updateProjectListFromCacheDelayed = function() {
-    // the filter form can already be displayed
-    $('#project_filter_form').show();
-    // indicate active filtered loading of the projects
-    var indicator = document.getElementById("project_filter_indicator");
-    window.setTimeout( function() { indicator.className = "filtering"; }, 1);
-
-    // clear timeout if already present and create a new one
-    if (cacheLoadingTimeout !== null)
-    {
-      clearTimeout(cacheLoadingTimeout);
-    }
-    cacheLoadingTimeout = window.setTimeout(
-      function() {
-        CATMAID.updateProjectListFromCache();
-        // indicate finish of filtered loading of the projects
-        indicator.className = "";
-      }, 500);
-  };
-
-  /**
-   * Update the displayed project list based on the cache
-   * entries. This can involve a filter in the text box
-   * "project_filter_text".
-   */
-  CATMAID.updateProjectListFromCache = function() {
-    var matchingProjects = 0,
-        searchString = $('#project_filter_text').val(),
-        display,
-        re = new RegExp(searchString, "i"),
-        title,
-        toappend,
-        i, j, k,
-        dt, dd, a, ddc,
-        p,
-        catalogueElement, catalogueElementLink,
-        pp = document.getElementById("projects_dl");
-    // remove all the projects
-    while (pp.firstChild) pp.removeChild(pp.firstChild);
-    updateProjectListMessage('');
-    // add new projects according to filter
-    for (i in cachedProjectsInfo) {
-      p = cachedProjectsInfo[i];
-      display = false;
-      toappend = [];
-
-      dt = document.createElement("dt");
-
-      title = p.title;
-      if (re.test(title)) {
-        display = true;
-      }
-      dt.appendChild(document.createTextNode(p.title));
-
-      document.getElementById("projects_h").style.display = "block";
-      document.getElementById("project_filter_form").style.display = "block";
-      toappend.push(dt);
-
-      // add a link for every action (e.g. a stack link)
-      for (j in p.action) {
-        var sid_title = p.action[j].title;
-        var sid_action = p.action[j].action;
-        var sid_note = p.action[j].comment;
-        dd = document.createElement("dd");
-        a = document.createElement("a");
-        ddc = document.createElement("dd");
-        a.href = sid_action;
-        if (re.test(sid_title)) {
-          display = true;
-        }
-        a.appendChild(document.createTextNode(sid_title));
-        dd.appendChild(a);
-        toappend.push(dd);
-        if (sid_note) {
-          ddc = document.createElement("dd");
-          ddc.innerHTML = sid_note;
-          toappend.push(ddc);
-        }
-      }
-      // optionally, add a neuron catalogue link
-      if (p.catalogue) {
-        catalogueElement = document.createElement('dd');
-        catalogueElementLink = document.createElement('a');
-        catalogueElementLink.href = django_url + p.pid;
-        catalogueElementLink.appendChild(document.createTextNode('Browse the Neuron Catalogue'));
-        catalogueElement.appendChild(catalogueElementLink);
-        toappend.push(catalogueElement);
-      }
-      if (display) {
-        ++ matchingProjects;
-        for (k = 0; k < toappend.length; ++k) {
-          pp.appendChild(toappend[k]);
-        }
-      }
-    }
-    if (cachedProjectsInfo.length === 0) {
-      updateProjectListMessage("No CATMAID projects have been created");
-    } else if (matchingProjects === 0) {
-      updateProjectListMessage("No projects matched '"+searchString+"'");
-    }
-    project_menu.update(cachedProjectsInfo);
-  };
-
-  /**
-   * Queue a project-menu-update request.
-   *
-   * @param  {function=} completionCallback Completion callback (no arguments).
-   */
-  CATMAID.updateProjects = function(completionCallback) {
-    project_menu.update(null);
-
-    document.getElementById("projects_h").style.display = "none";
-    document.getElementById("project_filter_form").style.display = "none";
-
-    var pp = document.getElementById("projects_dl");
-
-    while (pp.firstChild) pp.removeChild(pp.firstChild);
-
-    var w = document.createElement("dd");
-    w.className = "wait_bgwhite";
-    w.appendChild(document.createTextNode("loading ..."));
-    pp.appendChild(w);
-
-    CATMAID.Project.list(true)
-      .then(function(json) {
-        cachedProjectsInfo = json;
-
-        // Prepare JSON so that a menu can be created from it. Display only
-        // projects that have at least one stack linked to them.
-        var projects = json.filter(function(p) {
-          return p.stacks.length > 0;
-        }).map(function(p) {
-          var stacks = p.stacks.reduce(function(o, s) {
-            o[s.id] = {
-              'title': s.title,
-              'comment': s.comment,
-              'note': '',
-              'action': CATMAID.openProjectStack.bind(window, p.id, s.id, false)
-            };
-            return o;
-          }, {});
-          var stackgroups = p.stackgroups.reduce(function(o, sg) {
-            o[sg.id] = {
-              'title': sg.title,
-              'comment': sg.comment,
-              'note': '',
-              'action': CATMAID.openStackGroup.bind(window, p.id, sg.id, false)
-            };
-            return o;
-          }, {});
-
-          return {
-            'title': p.title,
-            'note': '',
-            'action': [{
-              'title': 'Stacks',
-              'comment': '',
-              'note': '',
-              'action': stacks
-            }, {
-              'title': 'Stack groups',
-              'comment': '',
-              'note': '',
-              'action': stackgroups
-            }]
-
-          };
-        });
-
-        project_menu.update(projects);
-        CATMAID.ui.releaseEvents();
-        if (CATMAID.tools.isFn(completionCallback)) {
-          completionCallback();
-        }
-      })
-      .catch(CATMAID.handleError);
-  };
-
-  function updateProjectListMessage(text) {
-    $('#project_list_message').text(text);
-  }
 
   CATMAID.getAuthenticationToken = function() {
     var dialog = new CATMAID.OptionsDialog('API Authentication Token');

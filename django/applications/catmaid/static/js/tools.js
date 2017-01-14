@@ -520,4 +520,19 @@ CATMAID.tools = CATMAID.tools || {};
     return true;
   };
 
+  /**
+   * Copy all fields from a default object to a target that are undefined in the
+   * target.
+   */
+  tools.updateFromDefaults = function(target, defaults) {
+    for (var key in defaults) {
+      var value = target[key];
+      if (undefined === value) {
+        target[key] = defaults[key];
+      }
+    }
+
+    return target;
+  };
+
 })(CATMAID.tools);

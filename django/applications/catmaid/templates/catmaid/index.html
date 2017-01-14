@@ -197,21 +197,6 @@
     -->
     <div id="content">
       <div id="data_view"></div>
-      <div id="clientside_data_view">
-        <h1 title="Version: {% catmaid_version %}">CATMAID</h1>
-        <div id="project_list">
-
-          <p>Please feel free to open one of the public projects or log in with your account and password.</p>
-
-          <h2 id="projects_h">Projects</h2>
-          <form id="project_filter_form" display="none">Filter projects:
-            <input id="project_filter_text" type="text" onkeyup="CATMAID.updateProjectListFromCacheDelayed();">
-            <span id="project_filter_indicator"></span>
-          </form>
-          <dl id="projects_dl"><dt></dt><dd></dd></dl>
-          <p id="project_list_message"></p>
-        </div>
-      </div>
     </div>
 
     <!-- Dump for elements that should be available in the DOM but not visible for now -->

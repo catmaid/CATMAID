@@ -642,16 +642,27 @@
           this.line.node = this;
           this.line.interactive = true;
           this.line.on('click', ptype.mouseEventManager.edge_mc_click);
+          this.line.lineStyle(this.EDGE_WIDTH, 0xFFFFFF, 1.0);
+          this.line.moveTo(0, 0);
+          this.line.lineTo(0, 0);
           this.line.hitArea = new PIXI.Polygon(0, 0, 0, 0, 0, 0, 0, 0);
         }
 
         this.line.tooShort = false;
 
+        // Rather than clear and re-draw the line, modify the PIXI.Graphics and
+        // GraphicsData directly to avoid needless allocation.
+        // Note: aliasing this.line.currentPath.shape.points with a local
+        // var prevents Chrome 55 from optimizing this function.
+        this.line.currentPath.lineWidth = this.EDGE_WIDTH;
+        this.line.currentPath.shape.points[0] = childLocation[0];
+        this.line.currentPath.shape.points[1] = childLocation[1];
+        this.line.currentPath.shape.points[2] = parentLocation[0];
+        this.line.currentPath.shape.points[3] = parentLocation[1];
+        this.line.dirty += 2;
+        this.line.clearDirty = 1;
+        this.line._spriteRect = null;
         var lineColor = this.colorFromZDiff();
-        this.line.clear();
-        this.line.lineStyle(this.EDGE_WIDTH, 0xFFFFFF, 1.0);
-        this.line.moveTo(childLocation[0], childLocation[1]);
-        this.line.lineTo(parentLocation[0], parentLocation[1]);
         this.line.tint = lineColor;
 
         var norm = lineNormal(childLocation[0], childLocation[1],

@@ -290,15 +290,6 @@
           toappend.push(ddc);
         }
       }
-      // optionally, add a neuron catalogue link
-      if (p.catalogue) {
-        catalogueElement = document.createElement('dd');
-        catalogueElementLink = document.createElement('a');
-        catalogueElementLink.href = django_url + p.pid;
-        catalogueElementLink.appendChild(document.createTextNode('Browse the Neuron Catalogue'));
-        catalogueElement.appendChild(catalogueElementLink);
-        toappend.push(catalogueElement);
-      }
       if (display) {
         ++ matchingProjects;
         for (k = 0; k < toappend.length; ++k) {

@@ -4726,8 +4726,9 @@ SkeletonAnnotations.Tag = new (function() {
         this.tagbox.append(this.recentLabels
             .sort(CATMAID.tools.compareStrings)
             .map(function (label) {
-                return $("<button>" + label + "</button>").click(function () {
+                return $("<button>" + label + "</button>").mousedown(function () {
                   input.tagEditorAddTag(label);
+                  return false;
                 });
               }, this));
       }

@@ -47,6 +47,7 @@
     }
     if (this.message) {
       var p = document.createElement('p');
+      p.setAttribute('data-role', 'message');
       if (this.classList) {
         p.setAttribute('class', this.classList);
       }
@@ -64,10 +65,10 @@
   DataView.prototype.refresh = function() {
     if (!this.container) return;
 
-    $('h1', this.container).attr('title',
+    $('div.header h1', this.container).attr('title',
         'Version: ' + CATMAID.CLIENT_VERSION);
 
-    $('p', this.container).text(this.message);
+    $('p[data-role=message]', this.container).text(this.message);
   };
 
   DataView.defaultOptions = {
@@ -120,7 +121,11 @@
   DataViewWidget.prototype.getWidgetConfiguration = function() {
     return {
       createContent: function(content) {
-         this.dataview.createContent(content);
+        var wrapper = document.createElement('div');
+        wrapper.classList.add('data-view');
+        content.appendChild(wrapper);
+        this.dataview.createContent(wrapper);
+
       },
       init: function() {
          this.dataview.refresh();
@@ -178,44 +183,48 @@
   ProjectListDataView.prototype.createContent = function(content) {
     DataView.prototype.createContent.call(this, content);
 
-    var container = document.createElement('div');
-    container.setAttribute('id', 'project_list');
+    var header = document.createElement('div');
+    header.setAttribute('data-role', 'header');
 
     var h = document.createElement('h2');
-    h.setAttribute('id', 'projects_h');
+    h.setAttribute('data-role', 'project-header');
     h.appendChild(document.createTextNode('Projects'));
-    container.appendChild(h);
+    header.appendChild(h);
+
+    var hp = document.createElement('p');
+    header.appendChild(hp);
 
     var searchForm = document.createElement('form');
-    searchForm.setAttribute('id', 'project_filter_form');
+    searchForm.setAttribute('data-role', 'filter');
     if (!this.filter) {
       searchForm.style.display = 'none';
     }
-    container.appendChild(searchForm);
+    hp.appendChild(searchForm);
 
     var searchInput = document.createElement('input');
-    searchInput.setAttribute('id', 'project_filter_text');
     searchInput.setAttribute('type', 'text');
     searchInput.onkeyup = this.refreshDelayed.bind(this);
     searchForm.appendChild(searchInput);
 
     var searchIndicator = document.createElement('span');
-    searchIndicator.setAttribute('id', 'project_filter_indicator');
+    searchIndicator.setAttribute('data-role', 'filter-indicator');
     searchForm.appendChild(searchIndicator);
 
-    var projectsList = document.createElement('dl');
-    projectsList.setAttribute('id', 'projects_dl');
-    projectsList.appendChild(document.createElement('dt'));
-    projectsList.appendChild(document.createElement('dd'));
-    container.appendChild(projectsList);
+    var projectDisplay = document.createElement('dl');
+    projectDisplay.setAttribute('data-role', 'project-display');
+    projectDisplay.appendChild(document.createElement('dt'));
+    projectDisplay.appendChild(document.createElement('dd'));
+    header.appendChild(projectDisplay);
 
     var message = document.createElement('p');
-    message.setAttribute('id', 'project_list_message');
-    container.appendChild(message);
+    message.setAttribute('data-role', 'filter-message');
+    header.appendChild(message);
 
-    content.appendChild(container);
+    content.appendChild(header);
 
-    this.refresh();
+    var projectList = document.createElement('div');
+    projectList.setAttribute('data-role', 'project-list');
+    content.appendChild(projectList);
 
     return Promise.resolve();
   };
@@ -228,7 +237,7 @@
     DataView.prototype.refresh.call(this, content);
 
     var matchingProjects = 0,
-        searchString = $('#project_filter_text').val(),
+        searchString = $('[data-role=filter] input', this.container).val(),
         display,
         re = new RegExp(searchString, "i"),
         title,
@@ -237,10 +246,10 @@
         dt, dd, a, ddc,
         p,
         catalogueElement, catalogueElementLink,
-        pp = document.getElementById("projects_dl");
+        pp = this.container.querySelector("[data-role=project-display]");
     // remove all the projects
     while (pp.firstChild) pp.removeChild(pp.firstChild);
-    $('#project_list_message').text('');
+    $('[data-role=filter-message]', this.container).text('');
     // add new projects according to filter
     var projects = CATMAID.client.projects;
     for (i in projects) {
@@ -256,8 +265,8 @@
       }
       dt.appendChild(document.createTextNode(p.title));
 
-      document.getElementById("projects_h").style.display = "block";
-      document.getElementById("project_filter_form").style.display = "block";
+      this.container.querySelector("[data-role=project-header]").style.display = "block";
+      this.container.querySelector("[data-role=filter]").style.display = "block";
       toappend.push(dt);
 
       // add a link for every action (e.g. a stack link)
@@ -298,9 +307,9 @@
       }
     }
     if (projects.length === 0) {
-      $('#project_list_message').text('Could not find any CATMAID projects');
+      $('[data-role=filter-message]', this.container).text('Could not find any CATMAID projects');
     } else if (matchingProjects === 0) {
-      $('#project_list_message').text('No projects matched "' + searchString + '"');
+      $('[data-role=filter-message]', this.container).text('No projects matched "' + searchString + '"');
     }
   };
 
@@ -309,9 +318,9 @@
    */
   ProjectListDataView.prototype.refreshDelayed = function(content) {
     // the filter form can already be displayed
-    $('#project_filter_form').show();
+    $('[data-role=filter]', this.container).show();
     // indicate active filtered loading of the projects
-    var indicator = document.getElementById("project_filter_indicator");
+    var indicator = this.container.querySelector("[data-role=filter-indicator]");
     window.setTimeout( function() { indicator.className = "filtering"; }, 1);
 
     // clear timeout if already present and create a new one

@@ -89,9 +89,50 @@
   // Export data view
   CATMAID.DataView = DataView;
 
+
+  /**
+   * Wrap a DataView instance in a widget.
+   */
+  var DataViewWidget = function(options) {
+    this.widgetID = this.registerInstance();
+    this.title = "Data view " + this.widgetID;
+    this.dataview = new ProjectListDataView({
+       id: null,
+       type: 'legacy_project_list_data_view',
+       header: false,
+       message: false,
+    });
+  };
+
+  $.extend(DataViewWidget.prototype, new InstanceRegistry());
+
+  DataViewWidget.prototype.getName = function() {
+    return this.title;
+  };
+
+  DataViewWidget.prototype.destroy = function() {
+    this.unregisterInstance();
+  };
+
+  /**
+   * Allow data views to be used as widgets
+   */
+  DataViewWidget.prototype.getWidgetConfiguration = function() {
+    return {
+      createContent: function(content) {
+         this.dataview.createContent(content);
+      },
+      init: function() {
+         this.dataview.refresh();
+      }
+    };
+  };
+
+  CATMAID.DataViewWidget = DataViewWidget;
+
   // Register widget with CATMAID
   CATMAID.registerWidget({
-    key: "dataiview",
+    key: "project-list",
     creator: DataViewWidget
   });
 

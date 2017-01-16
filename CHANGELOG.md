@@ -85,6 +85,8 @@ Miscellaneous:
   Now always only one undo step will be done per single Ctrl-Z click if not hold
   down.
 
+- 3D viewer: partner node spheres are now also shown for restricted connectors.
+
 
 ## 2016.12.16
 

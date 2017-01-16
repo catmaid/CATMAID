@@ -33,19 +33,19 @@
 
       var entry = '', points = 0;
       if( data.hasOwnProperty('new_treenodes') && data['new_treenodes'] > 0 ) {
-        entry += wrapWithLink(data['new_treenodes'], 'created') + ' /';
+        entry += wrapWithLink(data['new_treenodes'].toLocaleString(), 'created') + ' /';
         points += data['new_treenodes'];
       } else {
         entry += '0 /';
       }
       if( data.hasOwnProperty('new_connectors') && data['new_connectors'] > 0 ) {
-        entry += ' ' + wrapWithLink(data['new_connectors'], 'connectors') + ' /';
+        entry += ' ' + wrapWithLink(data['new_connectors'].toLocaleString(), 'connectors') + ' /';
         points += data['new_connectors'];
       } else {
         entry += ' 0 /';
       }
       if( data.hasOwnProperty('new_reviewed_nodes') && data['new_reviewed_nodes'] > 0 ) {
-        entry += ' ' + wrapWithLink(data['new_reviewed_nodes'], 'reviewed');
+        entry += ' ' + wrapWithLink(data['new_reviewed_nodes'].toLocaleString(), 'reviewed');
         points += data['new_reviewed_nodes'];
       } else {
         entry += ' 0';
@@ -321,7 +321,7 @@
           }
         });
     };
-    
+
     var parseDate = function(d) {
       var d_s = d.toString();
       var year = d_s.substring(0, 4);
@@ -329,7 +329,7 @@
       var day = d_s.substring(6, 8);
       return new Date(year + '-' + month + '-' + day);
     };
-    
+
     Date.prototype.addDays = function(days){
       var msPerDay = 1000 * 60 * 60 * 24;
       var ms = this.getTime() + (msPerDay * days);
@@ -424,7 +424,7 @@
         .attr("transform", "translate(" + (w - 12) + ", " + (h / 2) + ") rotate(90)")
         .text("Nodes edited");
     };
-    
+
     this.refresh_project_statistics = function() {
       refresh_nodecount();
       this.refresh_history();

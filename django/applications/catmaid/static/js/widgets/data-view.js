@@ -96,7 +96,7 @@
    */
   var DataViewWidget = function(options) {
     this.widgetID = this.registerInstance();
-    this.title = "Data view " + this.widgetID;
+    this.title = "Project list " + this.widgetID;
     this.dataview = new ProjectListDataView({
        id: null,
        type: 'legacy_project_list_data_view',
@@ -242,7 +242,6 @@
         re = new RegExp(searchString, "i"),
         title,
         toappend,
-        i, j, k,
         dt, dd, a, ddc,
         p,
         catalogueElement, catalogueElementLink,
@@ -252,8 +251,8 @@
     $('[data-role=filter-message]', this.container).text('');
     // add new projects according to filter
     var projects = CATMAID.client.projects;
-    for (i in projects) {
-      p = projects[i];
+    for (var projectId in projects) {
+      p = projects[projectId];
       display = false;
       toappend = [];
 
@@ -270,30 +269,29 @@
       toappend.push(dt);
 
       // add a link for every action (e.g. a stack link)
-      for (j in p.action) {
-        var sid_title = p.action[j].title;
-        var sid_action = p.action[j].action;
-        var sid_note = p.action[j].comment;
+      for (var i=0; i<p.stacks.length; ++i) {
+        var s = p.stacks[i];
         dd = document.createElement("dd");
         a = document.createElement("a");
         ddc = document.createElement("dd");
-        a.href = sid_action;
-        if (re.test(sid_title)) {
+        a.href = "#";
+        a.onclick = CATMAID.openProjectStack.bind(window, p.id, s.id, false);
+        if (re.test(s.title)) {
           display = true;
         }
-        a.appendChild(document.createTextNode(sid_title));
+        a.appendChild(document.createTextNode(s.title));
         dd.appendChild(a);
         toappend.push(dd);
-        if (sid_note) {
+        if (s.comment) {
           ddc = document.createElement("dd");
-          ddc.innerHTML = sid_note;
+          ddc.innerHTML = s.comment;
           toappend.push(ddc);
         }
       }
       if (display) {
         ++ matchingProjects;
-        for (k = 0; k < toappend.length; ++k) {
-          pp.appendChild(toappend[k]);
+        for (var i=0; i<toappend.length; ++i) {
+          pp.appendChild(toappend[i]);
         }
       }
     }

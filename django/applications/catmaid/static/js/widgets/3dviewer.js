@@ -5192,7 +5192,7 @@
 
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.remove_connector_selection = function() {
     if (this.connectoractor) {
-      for (var i=0; i<2; ++i) {
+      for (var i=0; i<this.synapticTypes.length; ++i) {
         var ca = this.connectoractor[this.synapticTypes[i]];
         if (ca) {
           ca.geometry.dispose(); // do not dispose material, it is shared

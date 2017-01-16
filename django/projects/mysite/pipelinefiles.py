@@ -108,11 +108,12 @@ for k, v in non_pipeline_js.iteritems():
 # Regular CATMAID front-end files
 JAVASCRIPT['catmaid'] = {
     'source_filenames': (
+        'js/tools.js',
         'js/CATMAID.js',
         'js/dom.js',
         'js/extensions.js',
+        'js/data-view.js',
         'js/action.js',
-        'js/tools.js',
         'js/settings-manager.js',
         'js/helpers/*.js',
         'js/init.js',

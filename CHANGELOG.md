@@ -62,6 +62,9 @@ Miscellaneous:
 - Skeleton Analytics in the Review Widget will now identify nodes in broken
   sections of all stacks linked to the current project.
 
+- The front page project list can now be loaded as a widget using Ctrl-Space
+  with 'project-list'.
+
 
 ### Bug fixes
 

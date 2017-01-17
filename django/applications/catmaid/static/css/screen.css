@@ -52,11 +52,7 @@ dl {
 	margin: 1.5em 16px 0.5em 20px;
 }
 
-#project_filter_form {
-	margin: 1.5em 16px 0.5em 20px;
-}
-
-#project_filter_indicator.filtering {
+.data-view [role=filter-indicator].filtering {
 	padding: 4px 24px 4px 0;
 	vertical-align: middle;
 	background: url(../images/wait_bgwhite.gif) no-repeat right center;

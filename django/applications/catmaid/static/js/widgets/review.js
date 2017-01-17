@@ -144,8 +144,8 @@
       $('#reviewing_skeleton').text('');
       $('#counting-cache').text('');
       $('#counting-cache-info').text('');
-      if (this._content) {
-        $(this._content).hide();
+      if (this.nodeReviewContainer) {
+        this.nodeReviewContainer.style.display = 'none';
       }
     };
 
@@ -907,8 +907,8 @@
             {'subarbor_node_id': subarborNodeId},
             function(skeleton_data) {
                 self.createReviewSkeletonTable( skeleton_data, usernames );
-                if (self._content) {
-                  $(self._content).show();
+                if (self.nodeReviewContainer) {
+                  self.nodeReviewContainer.style.display = 'block';
                 }
             });
         });
@@ -1096,10 +1096,11 @@
         var self = this;
 
         this._content = content;
-        $(this._content).hide();
 
         // Node review container
         this.nodeReviewContainer = document.createElement('div');
+        this.nodeReviewContainer.style.display = 'none';
+
         var cacheCounter = document.createElement('div');
         cacheCounter.setAttribute("id", "counting-cache");
         this.nodeReviewContainer.appendChild(cacheCounter);
@@ -1195,11 +1196,12 @@
           CATMAID.fetch(project.id + '/node/get_location', 'POST',
               { tnid: tnid }, false, "skeleton_analytics_go_to_node")
             .then(function(json) {
-              SkeletonAnnotations.staticMoveTo(json[3], json[2], json[1],
-                function() {
-                  SkeletonAnnotations.staticSelectNode(tnid, skeleton_id);
-                });
-            }).catch(CATMAID.handleError);
+              SkeletonAnnotations.staticMoveTo(json[3], json[2], json[1]);
+            })
+            .then(function() {
+              SkeletonAnnotations.staticSelectNode(tnid, skeleton_id);
+            })
+            .catch(CATMAID.handleError);
         });
 
         content.appendChild(this.analyticsContainer);
@@ -1215,13 +1217,34 @@
    */
   CATMAID.ReviewSystem.prototype.redraw = function() {
     if (this.mode === 'node-review') {
-      this.nodeReviewContainer.style.display = 'block';
+      this.nodeReviewContainer.style.display = self.current_segment ? 'block' : 'none';
       this.analyticsContainer.style.display = 'none';
     } else if (this.mode === 'analytics') {
       this.nodeReviewContainer.style.display = 'none';
       this.analyticsContainer.style.display = 'block';
     }
   };
+
+  // Available stack orientations
+  var orientations = {
+    "0": "XY",
+    "1": "XZ",
+    "2": "ZY"
+  };
+
+  /**
+   * Return a title for a given issue
+   */
+  function getIssueLabel(type, name, details) {
+    if (8 === type) {
+      // Node in broken section
+      return name + " " + details.section + " of " +
+          orientations[details.orientation] + " stack \"" +
+          details.stack_title  + "\" (id: " + details.stack + ")";
+    } else {
+      return name;
+    }
+  }
 
   /**
    * Refresh the skeleton analytics data based on the current settings.
@@ -1250,29 +1273,35 @@
       throw new CATMAID.Error("Couldn't find parameter 'adjacents'");
     }
 
-    requestQueue.replace(django_url + project.id + '/skeleton/analytics', 'POST',
-      {skeleton_ids: skids,
-       extra: extra,
-       adjacents: adjacents},
-       CATMAID.jsonResponseHandler(function(json) {
-        var rows = [];
-        json.issues.forEach(function (sk) {
-          // sk[0]: skeleton ID
-          // sk[1]: array of pairs like [issue ID, treenode ID]
-          var name = json.names[sk[0]];
-          sk[1].forEach(function(p) {
-            rows.push([json[p[0]], // issue name
-                       name, // neuron name
-                       p[1], // treenode ID
-                       sk[0]]); // skeleton ID
-          });
+    CATMAID.fetch(project.id + '/analytics/skeletons', 'POST', {
+      skeleton_ids: skids,
+      extra: extra,
+      adjacents: adjacents
+    }, false, 'skeleton_analytics_update', true)
+    .then(function(json) {
+      var rows = [];
+      json.issues.forEach(function (sk) {
+        // sk[0]: skeleton ID
+        // sk[1]: array of pairs like [issue ID, treenode ID]
+        // sk[2]: optional details
+        var skeletonId = sk[0];
+        var name = json.names[skeletonId];
+        sk[1].forEach(function(issue) {
+          var details = issue[2];
+          var label = getIssueLabel(issue[0], json[issue[0]], details);
+          rows.push([label, // issue label
+                     name, // neuron name
+                     issue[1], // treenode ID
+                     sk[0]]); // skeleton ID
         });
+      });
 
-        if (rows.length > 0) {
-          table.rows.add(rows);
-        }
-        table.draw();
-      }), 'skeleton_analytics_update');
+      if (rows.length > 0) {
+        table.rows.add(rows);
+      }
+      table.draw();
+    })
+    .catch(CATMAID.handleError);
   };
 
   // Allow access to the last active instance
@@ -1379,17 +1408,15 @@
           return;
         }
 
-        requestQueue.register(
-            django_url + project.id + '/user/reviewer-whitelist',
-            'GET',
-            undefined,
-            CATMAID.jsonResponseHandler(function (json) {
-              whitelist = json.reduce(function (wl, entry) {
-                wl[entry.reviewer_id] = new Date(entry.accept_after);
-                return wl;
-              }, {});
-              if (typeof callback === 'function') callback();
-            }));
+        CATMAID.fetch(project.id + '/user/reviewer-whitelist')
+          .then(function(json) {
+            whitelist = json.reduce(function (wl, entry) {
+              wl[entry.reviewer_id] = new Date(entry.accept_after);
+              return wl;
+            }, {});
+            if (typeof callback === 'function') callback();
+          })
+          .catch(CATMAID.handleError);
       },
 
       /**
@@ -1403,12 +1430,10 @@
           ewl[userId] = whitelist[userId].toISOString();
           return ewl;
         }, {});
-        requestQueue.replace(
-            django_url + project.id + '/user/reviewer-whitelist',
-            'POST',
-            encodedWhitelist,
-            callback,
-            'reviewerwhitelist' + project.id);
+        CATMAID.fetch(project.id + '/user/reviewer-whitelist', 'POST',
+            encodedWhitelist, false, 'reviewerwhitelist' + project.id, true)
+          .then(callback)
+          .catch(CATMAID.handleError);
       }
     };
   })();

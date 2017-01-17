@@ -5,7 +5,7 @@ from collections import defaultdict
 
 from django.conf import settings
 from django.db.models import Count
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.template import Context, loader
 from django.contrib.contenttypes.models import ContentType
@@ -68,7 +68,7 @@ def dataview_to_dict( dataview ):
     return {
         'id': dataview.id,
         'title': dataview.title,
-        'code_type': dataview.data_view_type.code_type,
+        'type': dataview.data_view_type.code_type,
         'config': dataview.config,
         'note': dataview.comment
     }
@@ -96,6 +96,14 @@ def get_default_properties( request ):
     default = dataview_to_dict( default )
 
     return HttpResponse(json.dumps(default), content_type="application/json")
+
+def get_detail(request, data_view_id):
+    """Get details on a particular data view.
+    """
+    default = DataView.objects.get(id=data_view_id)
+    default = dataview_to_dict(default)
+
+    return JsonResponse(default)
 
 def get_default_data_view( request ):
     """ Return the data view that is marked as the default. If there

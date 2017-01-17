@@ -306,7 +306,7 @@
 
     this.patch_clustering_setup = function( container )
     {
-      var form = $("#clustering-setup-form", container);
+      var form = $("form[name=clustering-setup-form]", container);
       var found = form.length !== 0;
       if (found) {
         // Take care of submission on our own
@@ -343,28 +343,28 @@
       }
 
       // additional functionality for the classification selection form
-      var selectAllCb = $("#select-all", container);
+      var selectAllCb = $("input[name=select_all]", container);
       if (selectAllCb.length > 0) {
         selectAllCb.click( function() {
-          var cbSelector = "#clustering-setup-form input[type=checkbox][class=autoselectable]";
+          var cbSelector = "form[name=clustering-setup-form] input[type=checkbox][class=autoselectable]";
           var val = this.checked;
-          var inputGraphCbSelection = $(cbSelector, $(this).closest("#clustering_widget"));
+          var inputGraphCbSelection = $(cbSelector, $(this).closest(".clustering-content"));
           inputGraphCbSelection.prop("checked", val);
         });
 
         $(container).on("change", ".autoselectable", function(e) {
-          var cbSelector = "#clustering-setup-form input[type=checkbox][class=autoselectable]";
+          var cbSelector = "form[name=clustering-setup-form] input[type=checkbox][class=autoselectable]";
           var val = this.checked;
           if (val) {
-            var inputGraphCbSelection = $(cbSelector, $(this).closest("#clustering_widget"));
+            var inputGraphCbSelection = $(cbSelector, $(this).closest(".clustering-content"));
             var allChecked = $.grep(inputGraphCbSelection, function(e) {
               return e.checked;
             }).length == inputGraphCbSelection.length;
             if (allChecked) {
-              $("#select-all", container).prop("checked", true);
+              $("input[name=select_all]", container).prop("checked", true);
             }
           } else {
-            $("#select-all", container).prop("checked", false);
+            $("input[name=select_all]", container).prop("checked", false);
           }
         });
       }

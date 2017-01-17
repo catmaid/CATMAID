@@ -237,35 +237,52 @@ SkeletonAnnotations.staticSelectNode = function(nodeID) {
 /**
  * Move to a location, ensuring that any edits to node coordinates are pushed
  * to the database. After the move, the fn is invoked.
+ *
+ * @return {Promise}               Promise succeeding after move.
  */
-SkeletonAnnotations.staticMoveTo = function(z, y, x, fn) {
+SkeletonAnnotations.staticMoveTo = function(z, y, x) {
   var instances = SkeletonAnnotations.TracingOverlay.prototype._instances;
+  var movePromises = [];
   for (var stackViewerId in instances) {
     if (instances.hasOwnProperty(stackViewerId)) {
-      instances[stackViewerId].moveTo(z, y, x, fn);
+      movePromises.push(instances[stackViewerId].moveTo(z, y, x));
     }
   }
+
+  return Promise.all(movePromises);
 };
 
 /**
  * Move to a location, ensuring that any edits to node coordinates are pushed to
- * the database. After the move, the given node is selected and fn is invoked.
+ * the database. After the move, the given node is selected.
+ *
+ * @param  {number|string} nodeID  ID of the node to move to and select.
+ * @return {Promise}               Promise succeeding after move and selection,
+ *                                 yielding an array of the selected node from
+ *                                 all open tracing overlays.
  */
-SkeletonAnnotations.staticMoveToAndSelectNode = function(nodeID, fn) {
+SkeletonAnnotations.staticMoveToAndSelectNode = function(nodeID) {
   var instances = SkeletonAnnotations.TracingOverlay.prototype._instances;
+  var movePromises = [];
   for (var stackViewerId in instances) {
     if (instances.hasOwnProperty(stackViewerId)) {
-      instances[stackViewerId].moveToAndSelectNode(nodeID, fn);
+      movePromises.push(instances[stackViewerId].moveToAndSelectNode(nodeID));
     }
   }
+
+  return Promise.all(movePromises);
 };
 
 /**
  * Move to a location and select the node cloest to the given location,
  * optionally also require a particular skeleton ID.
+ *
+ * @return {Promise}               Promise succeeding after move and selection,
+ *                                 yielding the selected node from the tracing
+ *                                 overlay where it was closest.
  */
 SkeletonAnnotations.staticMoveToAndSelectClosestNode = function(z, y, x,
-    skeletonId, respectVirtualNodes, fn) {
+    skeletonId, respectVirtualNodes) {
   var instances = SkeletonAnnotations.TracingOverlay.prototype._instances;
   var locations = [];
   for (var stackViewerId in instances) {
@@ -288,7 +305,7 @@ SkeletonAnnotations.staticMoveToAndSelectClosestNode = function(z, y, x,
   }, null);
 
   if (closestLocation) {
-      overlay.moveToAndSelectNode(location.node.id, fn);
+      return overlay.moveToAndSelectNode(location.node.id);
   }
 };
 
@@ -594,6 +611,8 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
 
   /** The ID vs Node or ConnectorNode instance. */
   this.nodes = {};
+  /** A set of node IDs of nodes that need to be synced to the backend. */
+  this.nodeIDsNeedingSync = new Set();
   /** The DOM elements representing node labels. */
   this.labels = {};
   /** Toggle for text labels on nodes and connectors. */
@@ -2120,12 +2139,10 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodeCoordinatesInDB = functio
                   connector: [],
                   virtual: []};
     /* jshint validthis: true */ // "this" will be bound to the tracing overlay
-    var nodeIDs = Object.keys(this.nodes);
-    for (var i = 0; i < nodeIDs.length; ++i) {
-      var node = this.nodes[nodeIDs[i]];
+    for (var nodeID of this.nodeIDsNeedingSync) {
+      var node = this.nodes[nodeID];
       // only updated nodes that need sync, e.g.  when they changed position
-      if (node.needsync) {
-        node.needsync = false;
+      if (node) {
         if (SkeletonAnnotations.isRealNode(node.id)) {
           update[node.type].push([node.id,
                                   this.pix2physX(node.z, node.y, node.x),
@@ -2136,6 +2153,8 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodeCoordinatesInDB = functio
         }
       }
     }
+
+    this.nodeIDsNeedingSync.clear();
 
     var promise;
     if (update.treenode.length > 0 || update.connector.length > 0) {
@@ -3530,14 +3549,15 @@ SkeletonAnnotations.TracingOverlay.prototype.moveTo = function(z, y, x, fn) {
 
 /**
  * Move to a node and select it. Can handle virtual nodes.
+ *
+ * @return {Promise} A promise yielding the selected node.
  */
-SkeletonAnnotations.TracingOverlay.prototype.moveToAndSelectNode = function(nodeID, fn) {
+SkeletonAnnotations.TracingOverlay.prototype.moveToAndSelectNode = function(nodeID) {
   if (this.isIDNull(nodeID)) return Promise.reject("Couldn't select node " + nodeID);
   var self = this;
-  return this.goToNode(nodeID,
+  return this.goToNode(nodeID).then(
       function() {
-        self.selectNode(nodeID);
-        if (fn) fn();
+        return self.selectNode(nodeID);
       });
 };
 
@@ -4222,7 +4242,7 @@ SkeletonAnnotations.TracingOverlay.prototype.deleteNode = function(nodeId) {
     // events on the removed node.
     connectornode.suspend();
     self.submit.then(function() {
-      connectornode.needsync = false;
+      self.nodeIDsNeedingSync.delete(connectornode.id);
       var command = new CATMAID.RemoveConnectorCommand(self.state, project.id, connectornode.id);
       CATMAID.commands.execute(command)
         .then(function(result) {
@@ -4262,7 +4282,7 @@ SkeletonAnnotations.TracingOverlay.prototype.deleteNode = function(nodeId) {
     }).then(function(json) {
       // nodes not refreshed yet: node still contains the properties of the deleted node
       // ensure the node, if it had any changes, these won't be pushed to the database: doesn't exist anymore
-      node.needsync = false;
+      self.nodeIDsNeedingSync.delete(node.id);
       // activate parent node when deleted
       if (wasActiveNode) {
         if (json.parent_id) {
@@ -4706,8 +4726,9 @@ SkeletonAnnotations.Tag = new (function() {
         this.tagbox.append(this.recentLabels
             .sort(CATMAID.tools.compareStrings)
             .map(function (label) {
-                return $("<button>" + label + "</button>").click(function () {
+                return $("<button>" + label + "</button>").mousedown(function () {
                   input.tagEditorAddTag(label);
+                  return false;
                 });
               }, this));
       }

@@ -2017,9 +2017,10 @@
         var json = JSON.parse(text);
         if (json.error) return new CATMAID.ErrorDialog(json.error,
             json.detail).show();
-        SkeletonAnnotations.staticMoveTo(json.z, json.y, json.x, function() {
-          SkeletonAnnotations.staticSelectNode(json.root_id);
-        });
+        SkeletonAnnotations.staticMoveTo(json.z, json.y, json.x)
+            .then(function() {
+              SkeletonAnnotations.staticSelectNode(json.root_id);
+            });
       });
     }).bind(this);
 

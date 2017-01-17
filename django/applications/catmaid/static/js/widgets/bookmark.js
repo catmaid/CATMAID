@@ -30,53 +30,17 @@
       $(this.dialog.dialog).find('label').css('display', 'inline-block');
 
       $(this.markerField).keypress((function (e) {
-        if (e.keyCode === $.ui.keyCode.ESCAPE ||
-            e.keyCode === $.ui.keyCode.ENTER) {
-          this.destroy();
-          return false;
-        } else if (mode === BookmarkDialog.MODES.MARK) {
-          var atnID = SkeletonAnnotations.getActiveNodeId();
-          var atnPos = SkeletonAnnotations.getActiveNodePositionW();
-
-          if (null === atnID) {
-            atnPos = project.focusedStackViewer.projectCoordinates();
-          }
-
-          BookmarkDialog.Bookmarks.set(e.keyCode, {
-            key: e.key,
-            nodeID: atnID,
-            skeletonID: SkeletonAnnotations.getActiveSkeletonId(),
-            projectPosition: atnPos
-          });
-
-          this.destroy();
-          return false;
-        } else {
-          var bookmark = BookmarkDialog.Bookmarks.get(e.keyCode);
-
-          if (!bookmark) {
-            this.destroy();
-            return false;
-          }
-
-          // TODO add fallbacks:
-          //   - if treenode is set but no longer exists, try skeleton, then pos
-          //   - if skeleton is set and request but no longer exists, try
-          //     treenode then pos
-          if (mode === BookmarkDialog.MODES.SKELETON && bookmark.skeletonID) {
-            CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', bookmark.skeletonID);
-          } else if (bookmark.nodeID) {
-            SkeletonAnnotations.staticMoveToAndSelectNode(bookmark.nodeID);
+        if (e.keyCode !== $.ui.keyCode.ESCAPE &&
+            e.keyCode !== $.ui.keyCode.ENTER) {
+          if (mode === BookmarkDialog.MODES.MARK) {
+            BookmarkDialog.mark(e.keyCode, e.key);
           } else {
-            project.deselectActiveNode();
-            SkeletonAnnotations.staticMoveTo(bookmark.projectPosition.z,
-                                             bookmark.projectPosition.y,
-                                             bookmark.projectPosition.x);
+            BookmarkDialog.goTo(e.keyCode, mode);
           }
-
-          this.destroy();
-          return false;
         }
+
+        this.destroy();
+        return false;
       }).bind(this));
 
       var bookmarkEntries = $('<tbody>');
@@ -113,6 +77,68 @@
      * @type {Map}
      */
     BookmarkDialog.Bookmarks = new Map();
+
+    /**
+     * Mark the current location, node and skeleton in the bookmarks.
+     *
+     * @param  {number} keyCode      Emitted browser code for the mark key.
+     * @param  {string} keyCharacter Display character for the mark key.
+     */
+    BookmarkDialog.mark = function (keyCode, keyCharacter) {
+      var atnID = SkeletonAnnotations.getActiveNodeId();
+      var atnPos = SkeletonAnnotations.getActiveNodePositionW();
+
+      if (null === atnID) {
+        atnPos = project.focusedStackViewer.projectCoordinates();
+      }
+
+      BookmarkDialog.Bookmarks.set(keyCode, {
+        key: keyCharacter,
+        nodeID: atnID,
+        skeletonID: SkeletonAnnotations.getActiveSkeletonId(),
+        projectPosition: atnPos
+      });
+    };
+
+    /**
+     * Go to a bookmark.
+     *
+     * @param  {number} keyCode      Emitted browser code for the mark key.
+     * @param  {string} mode         Retrieval mode, from BookmarkDialog.MODES.
+     * @return {Promise}             A promise succeeding after arriving at the
+     *                               bookmark.
+     */
+    BookmarkDialog.goTo = function (keyCode, mode) {
+      var bookmark = BookmarkDialog.Bookmarks.get(keyCode);
+
+      if (!bookmark) {
+        return Promise.reject();
+      }
+
+      if (mode === BookmarkDialog.MODES.SKELETON && bookmark.skeletonID) {
+        return CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', bookmark.skeletonID);
+      } else if (bookmark.nodeID) {
+        return SkeletonAnnotations.staticMoveToAndSelectNode(bookmark.nodeID)
+            .then(function (nodes) {
+              var pos = SkeletonAnnotations.getActiveNodePositionW();
+              if (pos.x !== bookmark.projectPosition.x ||
+                  pos.y !== bookmark.projectPosition.y ||
+                  pos.z !== bookmark.projectPosition.z) {
+                CATMAID.info('This node has moved since it was bookmarked.');
+              }
+
+              var node = nodes[0];
+              if (node.id && node.skeleton_id !== bookmark.skeletonID) {
+                CATMAID.info('This node has changed skeletons since it was bookmarked.');
+              }
+            });
+      } else {
+        project.deselectActiveNode();
+        return SkeletonAnnotations.staticMoveTo(bookmark.projectPosition.z,
+                                         bookmark.projectPosition.y,
+                                         bookmark.projectPosition.x);
+      }
+    };
 
     /**
      * Displays the bookmark dialog.

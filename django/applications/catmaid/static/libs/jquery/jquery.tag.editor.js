@@ -185,6 +185,7 @@ Joost Elfering
       {
         tagEditorGetTags: function ()
         {
+          buildArray();
           return itemBase.join(options.separator);
         },
         tagEditorResetTags: function ()

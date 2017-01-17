@@ -769,7 +769,10 @@ def node_nearest(request, project_id=None):
 
 
 def _fetch_location(location_id):
-    return _fetch_locations([location_id])[0]
+    locations = _fetch_locations([location_id])
+    if not locations:
+        raise ValueError('Could not find location for node {}'.format(location_id))
+    return locations[0]
 
 
 def _fetch_locations(location_ids):

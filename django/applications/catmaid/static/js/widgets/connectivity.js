@@ -3,7 +3,6 @@
 /* global
   InstanceRegistry,
   project,
-  requestQueue,
   WindowMaker
 */
 
@@ -446,108 +445,82 @@
       return;
     }
 
+    // Get current partnerModels
+    var oldPartnerModels = this.getSkeletonModels();
+    for(var skid in skids) {
+      delete oldPartnerModels[skid];
+    }
+
+    // Currently supported connector types plus their order
+    var partnerSetTypes = {
+      'incoming': {name: 'Upstream', rel: 'presynaptic_to'},
+      'outgoing': {name: 'Downstream', rel: 'postsynaptic_to'},
+      'gapjunctions': {name: 'Gap junction', rel: 'gapjunction_with',
+          pTitle: 'Gap junction with neuron', ctrShort: 'gj'}
+    };
+    var partnerSetIds = ['incoming', 'outgoing'];
+    if (this.showGapjunctionTable) {
+      partnerSetIds.push('gapjunctions');
+    }
+
     var self = this;
 
-    requestQueue.replace(
-        django_url + project.id + '/skeletons/connectivity',
-        'POST',
-        {'source_skeleton_ids': skids,
-         'boolean_op': $('#connectivity_operation' + this.widgetID).val()},
-        function(status, text) {
-          var handle = function(status, text) {
-            // Get current partnerModels
-            var oldPartnerModels = self.getSkeletonModels();
-            for(var skid in skids) {
-              delete oldPartnerModels[skid];
-            }
+    CATMAID.fetch(project.id + '/skeletons/connectivity', 'POST', {
+      'source_skeleton_ids': skids,
+      'boolean_op': $('#connectivity_operation' + this.widgetID).val(),
+    }, false, 'update_connectivity_table', true)
+    .then(function(json) {
+      // Remove present partner sets
+      self.partnerSets = [];
+      self.partnerSetMap = {};
 
-            // Remove present partner sets
-            self.partnerSets = [];
-            self.partnerSetMap = {};
+      self.reviewers.clear();
 
-            // Currently supported connector types plus their order
-            var partnerSetTypes = {
-              'incoming': {name: 'Upstream', rel: 'presynaptic_to'},
-              'outgoing': {name: 'Downstream', rel: 'postsynaptic_to'},
-              'gapjunctions': {name: 'Gap junction', rel: 'gapjunction_with',
-                  pTitle: 'Gap junction with neuron', ctrShort: 'gj'}
-            };
-            var partnerSetIds = ['incoming', 'outgoing'];
+      // Create partner sets
+      partnerSetIds.forEach(function(psId) {
+        var type = partnerSetTypes[psId];
+        self.addPartnerSet(new PartnerSet(psId, type.name, type.rel,
+            json[psId], type.pTitle, type.ctrShort));
 
-            if (self.showGapjunctionTable) {
-              partnerSetIds.push('gapjunctions');
-            }
+        var reviewKey = psId + '_reviewers';
+        json[reviewKey].forEach(self.reviewers.add.bind(self.reviewers));
+      });
 
-            if (200 !== status) {
-              partnerSetIds.forEach(function(psId) {
-                var type = partnerSetTypes[psId];
-                self.addPartnerSet(new PartnerSet(psId, type.name, type.rel, {},
-                    type.pTitle, type.ctrShort));
-              });
-              self.reviewers.clear();
-              self.triggerRemove(oldPartnerModels);
-              new CATMAID.ErrorDialog("Couldn't load connectivity information",
-                  "The server returned an unexpected status code: " +
-                      status).show();
-              return;
-            }
-            var json = JSON.parse(text);
-            if (json.error) {
-              if ('REPLACED' !== json.error) {
-                partnerSetIds.forEach(function(psId) {
-                  var type = partnerSetTypes[psId];
-                  self.addPartnerSet(new PartnerSet(psId, type.name, type.rel,
-                      {}, type.pTitle, type.ctrShort));
-                });
-                self.reviewers.clear();
-                self.triggerRemove(oldPartnerModels);
-                new CATMAID.ErrorDialog("Couldn't load connectivity information",
-                    json.error).show();
-              }
-              return;
-            }
+      // Register this widget with the name service for all neurons
+      var newModels = {};
+      var selected = false;
+      self.partnerSets.forEach(function(ps) {
+        for (var skid in ps.partners) {
+          if (skid in self.skeletons || skid in oldPartnerModels) { continue; }
+          this[skid] = {};
+        }
+      }, newModels);
 
-            self.reviewers.clear();
-
-            // Create partner sets
-            partnerSetIds.forEach(function(psId) {
-              var type = partnerSetTypes[psId];
-              self.addPartnerSet(new PartnerSet(psId, type.name, type.rel,
-                  json[psId], type.pTitle, type.ctrShort));
-
-              var reviewKey = psId + '_reviewers';
-              json[reviewKey].forEach(self.reviewers.add.bind(self.reviewers));
-            });
-
-            // Register this widget with the name service for all neurons
-            var newModels = {};
-            var selected = false;
-            self.partnerSets.forEach(function(ps) {
-              for (var skid in ps.partners) {
-                if (skid in self.skeletons || skid in oldPartnerModels) { continue; }
-                this[skid] = {};
-              }
-            }, newModels);
-
-            // Make all partners known to the name service
-            CATMAID.NeuronNameService.getInstance().registerAll(self, newModels, function() {
-              self.redraw();
-              // Create model container and announce new models
-              for (var skid in newModels) {
-                newModels[skid] = self.makeSkeletonModel(skid,
-                    self.isInPartnerSet(skid, 'incoming'),
-                    self.isInPartnerSet(skid, 'outgoing'),
-                    false);
-              }
-              self.triggerAdd(newModels);
-            });
-
-          };
-
-          // Handle result and create tables, if possible
-          handle(status, text);
-        },
-        'update_connectivity_table');
+      // Make all partners known to the name service
+      CATMAID.NeuronNameService.getInstance().registerAll(self, newModels, function() {
+        self.redraw();
+        // Create model container and announce new models
+        for (var skid in newModels) {
+          newModels[skid] = self.makeSkeletonModel(skid,
+              self.isInPartnerSet(skid, 'incoming'),
+              self.isInPartnerSet(skid, 'outgoing'),
+              false);
+        }
+        self.triggerAdd(newModels);
+      });
+    })
+    .catch(function(error) {
+      if (error !== 'REPLACED') {
+        partnerSetIds.forEach(function(psId) {
+          var type = partnerSetTypes[psId];
+          self.addPartnerSet(new PartnerSet(psId, type.name, type.rel,
+              {}, type.pTitle, type.ctrShort));
+        });
+        self.reviewers.clear();
+        self.triggerRemove(oldPartnerModels);
+        CATMAID.handleError(error);
+      }
+    });
   };
 
   /**
@@ -1459,6 +1432,13 @@
               } else {
                 return name;
               }
+            }
+          },
+          {
+            // Review column
+            targets: [-2],
+            render: function(data, type, row, meta) {
+              return type === "display" ? (data + "%") : data;
             }
           },
           { targets: ['_all'], type: 'html-num-fmt', searchable: false } // All other columns

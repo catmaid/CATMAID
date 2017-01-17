@@ -59,6 +59,12 @@ Miscellaneous:
 - Node bookmarks can now be removed through an X icon in their respective row in
   the bookmark dialog.
 
+- Skeleton Analytics in the Review Widget will now identify nodes in broken
+  sections of all stacks linked to the current project.
+
+- The front page project list can now be loaded as a widget using Ctrl-Space
+  with 'project-list'.
+
 
 ### Bug fixes
 
@@ -78,6 +84,8 @@ Miscellaneous:
 - If Ctrl-Z was pressed and released very quickly, two undo steps were taken.
   Now always only one undo step will be done per single Ctrl-Z click if not hold
   down.
+
+- 3D viewer: partner node spheres are now also shown for restricted connectors.
 
 
 ## 2016.12.16

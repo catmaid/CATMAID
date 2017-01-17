@@ -65,9 +65,9 @@ script:
   - sleep 5
   - cd ../../..
   # Run QUnit tests through SlimerJS with Firefox
-  - wget http://download.slimerjs.org/releases/0.9.6/slimerjs-0.9.6.zip
-  - unzip slimerjs-0.9.6.zip
-  - mv slimerjs-0.9.6 ./slimerjs
+  - wget https://github.com/laurentj/slimerjs/releases/download/0.10.0/slimerjs-0.10.0.zip
+  - unzip slimerjs-0.10.0.zip
+  - mv slimerjs-0.10.0 ./slimerjs
   - ./.travis-run-slimerjs.sh http://localhost:8000/tests
 after_success:
   - cd django/projects/mysite && coveralls

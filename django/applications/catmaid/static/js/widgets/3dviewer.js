@@ -4055,12 +4055,13 @@
     // Used only with restricted connectors
     this.connectoractor = null;
     this.connectorgeometry = {};
+    this.connectorSelection = null;
   };
 
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.destroy = function(collection) {
     this.removeActorFromScene(collection);
     [this.actor, this.geometry, this.connectorgeometry, this.connectoractor,
-     this.specialTagSpheres, this.synapticSpheres,
+     this.connectorSelection, this.specialTagSpheres, this.synapticSpheres,
      this.radiusVolumes, this.textlabels].forEach(function(ob) {
        if (ob) {
          for (var key in ob) {
@@ -4909,14 +4910,29 @@
     for (var i=0; i < skeletons.length; ++i) {
       var s = skeletons[i];
       // If there is restricted connector geometry displayed, update it, too
-      if (s.connectoractor) {
+      if (s.connectorSelection && s.connectoractor) {
         s.synapticTypes.forEach(function(type) {
           // A reference is fine, the connectoractor material and geometry color
           // aren't modified directly.
-          this.connectoractor[type].material = this.actor[type].material;
-          this.connectoractor[type].material.needsUpdate = true;
-          this.connectorgeometry[type].colors = this.geometry[type].colors;
-          this.connectorgeometry[type].colorsNeedUpdate = true;
+          var ca = this.connectoractor[type];
+          if (ca) {
+            ca.material = this.actor[type].material;
+            ca.material.needsUpdate = true;
+          }
+          var cg = this.connectorgeometry[type];
+          if (cg) {
+            cg.colors = this.geometry[type].colors;
+            cg.colorsNeedUpdate = true;
+          }
+          var cs = this.connectorSelection[type];
+          if (cs) {
+            for (var nodeId in cs.objects) {
+              var originalConnector = this.synapticSpheres[nodeId];
+              if (originalConnector) {
+                cs.objects[nodeId].color = originalConnector.color;
+              }
+            }
+          }
         }, s);
       }
     }
@@ -5191,42 +5207,90 @@
   };
 
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.remove_connector_selection = function() {
-    if (this.connectoractor) {
-      for (var i=0; i<2; ++i) {
-        var ca = this.connectoractor[this.synapticTypes[i]];
+    for (var i=0; i<this.synapticTypes.length; ++i) {
+      var type = this.synapticTypes[i];
+
+      if (this.connectoractor) {
+        var ca = this.connectoractor[type];
         if (ca) {
           ca.geometry.dispose(); // do not dispose material, it is shared
           this.space.remove(ca);
-          delete this.connectoractor[this.synapticTypes[i]];
+          delete this.connectoractor[type];
         }
       }
-      this.connectoractor = null;
+
+      if (this.connectorSelection) {
+        var cs = this.connectorSelection[type];
+        if (cs) {
+          cs.mesh.geometry.dispose(); // do not dispose material, it is shared
+          this.space.remove(cs.mesh);
+          delete this.connectoractor[type];
+        }
+      }
     }
   };
 
+  /**
+   *
+   */
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.create_connector_selection = function( common_connector_IDs ) {
+    this.connectorSelection = {};
     this.connectoractor = {};
     this.connectorgeometry = {};
     this.connectorgeometry[this.CTYPES[1]] = new THREE.Geometry();
     this.connectorgeometry[this.CTYPES[2]] = new THREE.Geometry();
     this.connectorgeometry[this.CTYPES[3]] = new THREE.Geometry();
 
+    var scaling = this.space.options.skeleton_node_scaling;
+    var materialType = this.space.options.neuron_material;
+
     this.synapticTypes.forEach(function(type) {
-      // Vertices is an array of Vector3, every two a pair, the first at the connector and the second at the node
+      var material = this.actor[type].material;
+
+      // Vertices is an array of Vector3, every two a pair, the first at the
+      // node and the second at the connector.
       var vertices1 = this.geometry[type].vertices;
       var vertices2 = this.connectorgeometry[type].vertices;
+      var connectors = [];
       for (var i=vertices1.length-2; i>-1; i-=2) {
         var v = vertices1[i];
         if (common_connector_IDs.hasOwnProperty(v.node_id)) {
-          vertices2.push(vertices1[i+1]);
+          var v2 = vertices1[i+1];
+          vertices2.push(v2);
           vertices2.push(v);
+          connectors.push([v2, material, type]);
         }
       }
-      this.connectoractor[type] = new THREE.LineSegments( this.connectorgeometry[type],
-          this.actor[type].material );
-      this.connectorgeometry[type].colors = this.geometry[type].colors;
-      this.connectorgeometry[type].colorsNeedUpdate = true;
-      this.space.add( this.connectoractor[type] );
+
+      if (connectors.length > 0) {
+        this.connectoractor[type] = new THREE.LineSegments(this.connectorgeometry[type],
+            material);
+        this.connectorgeometry[type].colors = this.geometry[type].colors;
+        this.connectorgeometry[type].colorsNeedUpdate = true;
+        this.space.add(this.connectoractor[type]);
+
+        // Create buffer geometry for connector spheres
+        var geometry = new CATMAID.MultiObjectInstancedBufferGeometry({
+          templateGeometry: this.space.staticContent.radiusSphere,
+          nObjects: connectors.length,
+          scaling: scaling
+        });
+
+        var partnerSpheres = {};
+        geometry.createAll(connectors, scaling, null, function(v, m, o, bufferObject) {
+          partnerSpheres[v.node_id] = bufferObject;
+        });
+
+        var sphereMaterial = geometry.createMaterial(materialType);
+
+        var sphereMesh = new THREE.Mesh(geometry, sphereMaterial);
+        this.connectorSelection[type] = {
+          mesh: sphereMesh,
+          objects: partnerSpheres
+        };
+        this.space.add(sphereMesh);
+      }
+
     }, this);
   };
 

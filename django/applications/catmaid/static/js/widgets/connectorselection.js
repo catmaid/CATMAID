@@ -187,7 +187,7 @@
     WindowMaker.show('create-connector-selection');
     // Write the label
     $('#connector-selection-label').text(header);
-    
+
     // Set proper table titles
     var titles;
     if (relation == 'presynaptic_to') {
@@ -240,10 +240,10 @@
         nid = aData[5];
       }
       var loc = locations[nid];
-      SkeletonAnnotations.staticMoveTo(loc[2], loc[1], loc[0],
-        function() {
-          SkeletonAnnotations.staticSelectNode(nid);
-        });
+      SkeletonAnnotations.staticMoveTo(loc[2], loc[1], loc[0])
+          .then(function() {
+            SkeletonAnnotations.staticSelectNode(nid);
+          });
     });
   };
 

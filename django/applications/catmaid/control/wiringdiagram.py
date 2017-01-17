@@ -87,10 +87,7 @@ def get_wiring_diagram(project_id=None, lower_treenode_number_limit=0):
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def export_wiring_diagram_nx(request, project_id=None):
 
-    if request.POST.has_key('lower_skeleton_count'):
-        lower_treenode_number_limit=request.POST['lower_skeleton_count']
-    else:
-        lower_treenode_number_limit=0
+    lower_treenode_number_limit = int(request.POST.get('lower_skeleton_count', 0))
 
     nodes_and_edges=get_wiring_diagram(project_id, lower_treenode_number_limit)
     g=nx.DiGraph()
@@ -109,10 +106,7 @@ def export_wiring_diagram_nx(request, project_id=None):
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def export_wiring_diagram(request, project_id=None):
 
-    if request.POST.has_key('lower_skeleton_count'):
-        lower_treenode_number_limit=request.POST['lower_skeleton_count']
-    else:
-        lower_treenode_number_limit=0
+    lower_treenode_number_limit = int(request.POST.get('lower_skeleton_count', 0))
 
     nodes_and_edges=get_wiring_diagram(project_id, lower_treenode_number_limit)
 

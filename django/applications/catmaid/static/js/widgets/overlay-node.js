@@ -163,9 +163,9 @@
       parent,     // the parent node, if present within the subset of nodes retrieved for display; otherwise null.
       parent_id,  // the id of the parent node, or null if it is root
       radius,
-      x,          // the x coordinate in oriented project coordinates
-      y,          // the y coordinate in oriented project coordinates
-      z,          // the z coordinate in oriented project coordinates
+      x,          // the x coordinate in stack coordinates
+      y,          // the y coordinate in stack coordinates
+      z,          // the z coordinate in stack coordinates
       zdiff,      // the difference in Z from the current slice in stack space
       confidence,
       skeleton_id,// the id of the skeleton this node is an element of
@@ -188,9 +188,9 @@
      * See "newNode" for explanations. */
     this.newConnectorNode = function(
       id,         // unique id for the node from the database
-      x,          // the x coordinate in oriented project coordinates
-      y,          // the y coordinate in oriented project coordinates
-      z,          // the z coordinate in oriented project coordinates
+      x,          // the x coordinate in stack coordinates
+      y,          // the y coordinate in stack coordinates
+      z,          // the z coordinate in stack coordinates
       zdiff,      // the difference in Z from the current slice in stack space
       confidence,
       subtype,
@@ -642,15 +642,27 @@
           this.line.node = this;
           this.line.interactive = true;
           this.line.on('click', ptype.mouseEventManager.edge_mc_click);
+          this.line.lineStyle(this.EDGE_WIDTH, 0xFFFFFF, 1.0);
+          this.line.moveTo(0, 0);
+          this.line.lineTo(0, 0);
+          this.line.hitArea = new PIXI.Polygon(0, 0, 0, 0, 0, 0, 0, 0);
         }
 
         this.line.tooShort = false;
 
+        // Rather than clear and re-draw the line, modify the PIXI.Graphics and
+        // GraphicsData directly to avoid needless allocation.
+        // Note: aliasing this.line.currentPath.shape.points with a local
+        // var prevents Chrome 55 from optimizing this function.
+        this.line.currentPath.lineWidth = this.EDGE_WIDTH;
+        this.line.currentPath.shape.points[0] = childLocation[0];
+        this.line.currentPath.shape.points[1] = childLocation[1];
+        this.line.currentPath.shape.points[2] = parentLocation[0];
+        this.line.currentPath.shape.points[3] = parentLocation[1];
+        this.line.dirty += 2;
+        this.line.clearDirty = 1;
+        this.line._spriteRect = null;
         var lineColor = this.colorFromZDiff();
-        this.line.clear();
-        this.line.lineStyle(this.EDGE_WIDTH, 0xFFFFFF, 1.0);
-        this.line.moveTo(childLocation[0], childLocation[1]);
-        this.line.lineTo(parentLocation[0], parentLocation[1]);
         this.line.tint = lineColor;
 
         var norm = lineNormal(childLocation[0], childLocation[1],
@@ -658,11 +670,15 @@
         var s = this.BASE_EDGE_WIDTH * 2.0;
         norm[0] *= s;
         norm[1] *= s;
-        this.line.hitArea = new PIXI.Polygon(
-            childLocation[0]  + norm[0], childLocation[1]  + norm[1],
-            parentLocation[0] + norm[0], parentLocation[1] + norm[1],
-            parentLocation[0] - norm[0], parentLocation[1] - norm[1],
-            childLocation[0]  - norm[0], childLocation[1]  - norm[1]);
+        // Assign hit area to existing points array to avoid allocation.
+        this.line.hitArea.points[0] = childLocation[0]  + norm[0];
+        this.line.hitArea.points[1] = childLocation[1]  + norm[1];
+        this.line.hitArea.points[2] = parentLocation[0] + norm[0];
+        this.line.hitArea.points[3] = parentLocation[1] + norm[1];
+        this.line.hitArea.points[4] = parentLocation[0] - norm[0];
+        this.line.hitArea.points[5] = parentLocation[1] - norm[1];
+        this.line.hitArea.points[6] = childLocation[0]  - norm[0];
+        this.line.hitArea.points[7] = childLocation[1]  - norm[1];
 
         this.line.visible = SkeletonAnnotations.VisibilityGroups.areGroupsVisible(this.getVisibilityGroups());
 
@@ -797,7 +813,6 @@
         this.skeleton_id = skeleton_id;
         this.edition_time = edition_time;
         this.user_id = user_id;
-        this.needsync = false;
         delete this.suppressed;
 
         if (this.c) {
@@ -978,9 +993,9 @@
       parent,     // the parent node (may be null if the node is not loaded)
       parent_id,  // is null only for the root node
       radius,     // the radius
-      x,          // the x coordinate in pixels
-      y,          // y coordinates in pixels
-      z,          // z coordinates in pixels
+      x,          // the x coordinate in stack coordinates
+      y,          // the y coordinate in stack coordinates
+      z,          // the z coordinate in stack coordinates
       zdiff,      // the difference in z from the current slice
       confidence, // confidence with the parent
       skeleton_id,// the id of the skeleton this node is an element of
@@ -1262,7 +1277,6 @@
         this.postgroup = {};
         this.undirgroup = {};
         this.gjgroup = {};
-        this.needsync = false;
 
         if (this.c) {
           if (!this.shouldDisplay()) {
@@ -1281,9 +1295,9 @@
 
     ptype.ConnectorNode = function(
       id,         // unique id for the node from the database
-      x,          // the x coordinate in oriented project coordinates
-      y,          // the y coordinate in oriented project coordinates
-      z,          // the z coordinate in oriented project coordinates
+      x,          // the x coordinate in stack coordinates
+      y,          // the y coordinate in stack coordinates
+      z,          // the z coordinate in stack coordinates
       zdiff,      // the difference in Z from the current slice in stack space
       confidence, // (TODO: UNUSED)
       subtype,    // the kind of connector node
@@ -1292,7 +1306,6 @@
     {
       this.id = id;
       this.subtype = subtype;
-      this.needsync = false; // state variable; whether this node is already synchronized with the database
       this.x = x;
       this.y = y;
       this.z = z;
@@ -1473,7 +1486,7 @@
         }
         CATMAID.statusBar.replaceLast("Moving node #" + node.id);
 
-        node.needsync = true;
+        catmaidTracingOverlay.nodeIDsNeedingSync.add(node.id);
 
         catmaidTracingOverlay.redraw();
       };
@@ -1632,6 +1645,7 @@
       this.line.interactive = true;
       this.line.on('mousedown', this.mousedown);
       this.line.on('mouseover', this.mouseover);
+      this.line.hitArea = new PIXI.Polygon(0, 0, 0, 0, 0, 0, 0, 0);
       this.line.link = this;
       this.confidence_text = null;
       this.treenode_id = null;
@@ -1758,11 +1772,15 @@
         s = this.EDGE_WIDTH * this.CATCH_SCALE;
         norm[0] *= s;
         norm[1] *= s;
-        this.line.hitArea = new PIXI.Polygon(
-            x1 + norm[0], y1 + norm[1],
-            x2new + norm[0], y2new + norm[1],
-            x2new - norm[0], y2new - norm[1],
-            x1 - norm[0], y1 - norm[1]);
+        // Assign hit area to existing points array to avoid allocation.
+        this.line.hitArea.points[0] = x1 + norm[0];
+        this.line.hitArea.points[1] = y1 + norm[1];
+        this.line.hitArea.points[2] = x2new + norm[0];
+        this.line.hitArea.points[3] = y2new + norm[1];
+        this.line.hitArea.points[4] = x2new - norm[0];
+        this.line.hitArea.points[5] = y2new - norm[1];
+        this.line.hitArea.points[6] = x1 - norm[0];
+        this.line.hitArea.points[7] = y1 - norm[1];
 
         var stroke_color;
         if (undefined === is_pre) stroke_color = this.OTHER_COLOR;

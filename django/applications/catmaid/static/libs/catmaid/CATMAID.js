@@ -299,14 +299,19 @@ var requestQueue = new RequestQueue();
    * expects a JSON response. A promise is returned. The URL passed in needs to
    * be relative to the back-end URL.
    *
-   * @param {Boolean} raw (Optional) If truty, no JSON validation and parsing is
-   *                                 performed.
+   * @param {Boolean} raw     (Optional) If truthy, no JSON validation and
+   *                          parsing is performed.
+   * @param {String}  id      (Optional) An ID for the request, to be able to
+   *                          refer to with replace.
+   * @param {Boolean} replace (Optional) If truthy, a request with the same ID
+   *                          is replaced by this one.
    */
-  CATMAID.fetch = function(relativeURL, method, data, raw, id) {
+  CATMAID.fetch = function(relativeURL, method, data, raw, id, replace) {
     method = method || 'GET';
     return new Promise(function(resolve, reject) {
       var url = CATMAID.makeURL(relativeURL);
-      requestQueue.register(url, method, data, function(status, text, xml) {
+      var fn = replace ? requestQueue.replace : requestQueue.register;
+      fn.call(requestQueue, url, method, data, function(status, text, xml) {
         // Validation throws an error for bad requests and wrong JSON data,
         // which would causes the promise to become rejected automatically if
         // this wasn't an asynchronously called function. But since this is the

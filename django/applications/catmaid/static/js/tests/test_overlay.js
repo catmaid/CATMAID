@@ -1,7 +1,7 @@
 /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 
-QUnit.test('SVG overlay test', function( assert ) {
+QUnit.test('Tracing overlay test', function( assert ) {
 
   // Don't run this test in PhantomJS, because ES6 Promises are not yet
   // supported, it seems.
@@ -58,15 +58,14 @@ QUnit.test('SVG overlay test', function( assert ) {
           id: 41,
           canEdit: function () { return true; },
           type: SkeletonAnnotations.TYPE_NODE,
-          needsync: true
         },
         '42': {
           id: 42,
           canEdit: function () { return true; },
           type: SkeletonAnnotations.TYPE_NODE,
-          needsync: true
         }
       },
+      nodeIDsNeedingSync: new Set([41, 42]),
       state: new CATMAID.GenericState({
         getNode: function(nodeId) {
           return [nodeId, "fakeEditTime"];

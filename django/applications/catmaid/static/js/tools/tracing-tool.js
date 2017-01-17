@@ -396,18 +396,19 @@
         } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === node.type) {
           if (CATMAID.Connectors.SUBTYPE_SYNAPTIC_CONNECTOR === node.subtype) {
             // Retrieve presynaptic skeleton
-            requestQueue.register(django_url + project.id + "/connector/skeletons",
-                "POST",
-                { connector_ids: [node.id] },
-                CATMAID.jsonResponseHandler(function(json) {
-                  var presynaptic_to = json[0] ? json[0][1].presynaptic_to : false;
-                  if (presynaptic_to) {
-                    setNeuronNameInTopbars(presynaptic_to, 'Connector ' + node.id +
-                        ', presynaptic partner: ');
-                  } else {
-                    clearTopbars('Connector ' + node.id + ' (no presynatpic partner)');
-                  }
-                }));
+            CATMAID.fetch(project.id + "/connector/skeletons", "POST", {
+              connector_ids: [node.id]
+            })
+            .then(function(json) {
+              var presynaptic_to = json[0] ? json[0][1].presynaptic_to : false;
+              if (presynaptic_to) {
+                setNeuronNameInTopbars(presynaptic_to, 'Connector ' + node.id +
+                    ', presynaptic partner: ');
+              } else {
+                clearTopbars('Connector ' + node.id + ' (no presynatpic partner)');
+              }
+            })
+            .catch(CATMAID.handleError);
           } else if (CATMAID.Connectors.SUBTYPE_GAPJUNCTION_CONNECTOR === node.subtype) {
             clearTopbars('Gap junction connector #' + node.id);
           } else {
@@ -1292,9 +1293,13 @@
         handleActiveNodeChange, this);
   }
 
-  /* Works as well for skeletons.
-   * @param type A 'neuron' or a 'skeleton'.
-   * @param objectID the ID of a neuron or a skeleton.
+  /**
+   * Move to and select a node in the specified neuron or skeleton nearest
+   * the current project position.
+   *
+   * @param  {string} type       A 'neuron' or a 'skeleton'.
+   * @param  {number} objectID   The ID of a neuron or a skeleton.
+   * @return {Promise}           A promise succeeding after the move and select.
    */
   TracingTool.goToNearestInNeuronOrSkeleton = function(type, objectID) {
     var projectCoordinates = project.focusedStackViewer.projectCoordinates();
@@ -1302,27 +1307,21 @@
       x: projectCoordinates.x,
       y: projectCoordinates.y,
       z: projectCoordinates.z
-    }, nodeIDToSelect, skeletonIDToSelect;
+    };
     parameters[type + '_id'] = objectID;
-    requestQueue.register(django_url + project.id + "/node/nearest", "POST",
-                          parameters, function (status, text) {
-      var data;
-      if (status !== 200) {
-        alert("Finding the nearest node failed with HTTP status code: "+status);
-      } else {
-        data = JSON.parse(text);
-        if (data.error) {
-          alert("An error was returned when trying to fetch the nearest node: "+data.error);
-        } else {
-          nodeIDToSelect = data.treenode_id;
-          skeletonIDToSelect = data.skeleton_id;
-          SkeletonAnnotations.staticMoveTo(data.z, data.y, data.x,
-            function () {
-              SkeletonAnnotations.staticSelectNode(nodeIDToSelect, skeletonIDToSelect);
-            });
-        }
-      }
-    });
+    return CATMAID.fetch(project.id + "/node/nearest", "POST", parameters)
+        .then(function (data) {
+          var nodeIDToSelect = data.treenode_id;
+          // var skeletonIDToSelect = data.skeleton_id; // Unused, but available.
+          return SkeletonAnnotations.staticMoveTo(data.z, data.y, data.x)
+              .then(function () {
+                return SkeletonAnnotations.staticSelectNode(nodeIDToSelect);
+              });
+        })
+        .catch(function () {
+          CATMAID.warn('Going to ' + type + ' ' + objectID + ' failed. ' +
+                       'The ' + type + ' may no longer exist.');
+        });
   };
 
   TracingTool.search = function() {
@@ -1375,10 +1374,13 @@
           };
           var removelabel = function(id) {
             return function() {
-              requestQueue.register(django_url + project.id + '/label/remove', "POST", {
-              class_instance_id: id
-              }, function (status, text) {});
-              return false;
+              CATMAID.fetch(project.id + '/label/remove', "POST", {
+                label_id: id
+              })
+              .then(function(json) {
+                CATMAID.msg('Success', 'Label removed');
+              })
+              .catch(CATMAID.handleError);
             };
           };
           for (i = 0; i < data.length; ++i) {
@@ -1422,10 +1424,10 @@
                     $('<a/>').attr({'id': '' + id})
                              .attr({'href':''})
                              .click(function(event) {
-                               SkeletonAnnotations.staticMoveTo(z, y, x,
-                                 function() {
-                                   SkeletonAnnotations.staticSelectNode(id, skid);
-                                 });
+                               SkeletonAnnotations.staticMoveTo(z, y, x)
+                                  .then(function() {
+                                    SkeletonAnnotations.staticSelectNode(id, skid);
+                                  });
                                return false;
                              })
                              .text("[" + index + "]")

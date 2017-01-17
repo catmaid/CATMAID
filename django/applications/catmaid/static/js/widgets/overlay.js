@@ -2998,7 +2998,7 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
         true,
         errCallback,
         false,
-        'stack-' + self.stackViewer.primaryStack.id + '-url-' + url);
+        'stack-' + self.stackViewer.getId() + '-url-' + url);
     }
   });
 };

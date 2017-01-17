@@ -19,7 +19,8 @@
    */
   function StackViewer(
       project,          //!< {CATMAID.Project} reference to the parent project
-      primaryStack
+      primaryStack,
+      catmaidWindow
   ) {
     this._project = project;
     this.primaryStack = primaryStack;
@@ -48,6 +49,7 @@
     this.old_scale = this.scale;
 
     this.navigateWithProject = true;
+    this.showScaleBar = true;
 
     this._tool = null;
     this._layers = new Map();
@@ -63,7 +65,7 @@
 
     //-------------------------------------------------------------------------
 
-    this._stackWindow = new CMWWindow( primaryStack.title );
+    this._stackWindow = catmaidWindow || new CMWWindow( primaryStack.title );
     this._view = this._stackWindow.getFrame();
     this._view.classList.add('stackViewer');
     this._layersView = document.createElement("div");
@@ -93,6 +95,7 @@
     this._scaleBar.appendChild( document.createElement( "p" ) );
     this._scaleBar.firstChild.appendChild( document.createElement( "span" ) );
     this._scaleBar.firstChild.firstChild.appendChild( document.createTextNode( "test" ) );
+    this._scaleBar.style.display = this.showScaleBar ? 'initial' : 'none';
     this._view.appendChild( this._scaleBar );
 
     var controlToggle = document.createElement( "div" );
@@ -138,8 +141,14 @@
 
   /**
    * update the scale bar (x-resolution) to a proper size
+   * @param showScaleBar optional boolean, whether to show the scale bar on update. Default: do not change.
    */
-  StackViewer.prototype.updateScaleBar = function () {
+  StackViewer.prototype.updateScaleBar = function (showScaleBar) {
+    if (showScaleBar !== undefined && this.showScaleBar !== showScaleBar) {
+      this.showScaleBar = showScaleBar;
+      this._scaleBar.style.display = showScaleBar ? 'initial' : 'none';
+      this.layercontrol.refresh();
+    }
     var meter = this.scale / this.primaryStack.resolution.x;
     var width = 0;
     var text = "";
@@ -569,13 +578,7 @@
   StackViewer.prototype._handleWindowSignal = function(callingWindow, signal) {
     switch (signal) {
       case CMWWindow.CLOSE:
-        this._layers.forEach(function (layer) {
-          if (typeof layer.unregister === 'function') {
-            layer.unregister();
-          }
-        });
-        this._layers.clear();
-        this._project.removeStackViewer(this.getId());
+        this.destroy();
         break;
 
       case CMWWindow.RESIZE:
@@ -606,6 +609,17 @@
     return true;
   };
 
+  StackViewer.prototype.destroy = function() {
+    this._layers.forEach(function (layer) {
+      if (typeof layer.unregister === 'function') {
+        layer.unregister();
+      }
+    });
+    this._layers.clear();
+    this._layerOrder.length = 0;
+    this._project.removeStackViewer(this.getId());
+  };
+
   /**
    * Get the project.
    */
@@ -630,6 +644,17 @@
    */
   StackViewer.prototype.getLayer = function (key) {
     return this._layers.get(key);
+  };
+
+  /**
+   * Return an array of layers which are instances of the given type.
+   *
+   * @param type
+   */
+  StackViewer.prototype.getLayersOfType = function(type) {
+    return Array.from(this.getLayers().values()).filter(function(layer) {
+      return layer instanceof type;
+    });
   };
 
   /**

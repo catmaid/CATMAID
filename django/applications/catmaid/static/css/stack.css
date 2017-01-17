@@ -341,6 +341,20 @@ div.stackControlToggle_hidden {
   background-color: #853c00;
 }
 
+.stackViewer p.sort-val {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: auto;
+  border: none;
+  margin: 0;
+  padding: 3px 6px 3px 6px;
+  vertical-align: bottom;
+  z-index: 7;
+  color: #ffffff;
+  background-color: #850084;
+}
+
 .stackViewer p.neuronname:empty {
   display: none;
 }

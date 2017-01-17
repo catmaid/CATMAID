@@ -308,11 +308,11 @@
         var sortingSelect = CATMAID.DOM.createSelect(
           self.idPrefix + "connector-sorting",
           [
-            {title: 'Connector depth (proportion)', value: 'depthProportionSort'},
-            {title: 'Connector depth (absolute)', value: 'depthSort'},
-            {title: 'Connector ID', value: 'connIdSort'},
-            {title: 'Skeleton name', value: 'skelNameSort'},
-            {title: 'None', value: 'nullSort'}
+            {title: 'Connector depth (proportion)', value: 'depthProportion'},
+            {title: 'Connector depth (absolute)', value: 'depth'},
+            {title: 'Connector ID', value: 'connId'},
+            {title: 'Skeleton name', value: 'skelName'},
+            {title: 'None', value: 'null'}
           ],
           DEFAULT_SORT_FN_TITLE  // might need to be value, not title
         );
@@ -596,6 +596,11 @@
 
         stackInfo.appendChild(assocNeuronNameEl);
 
+        // add the sort value to the bottom right of the frame
+        var sortVal = document.createElement('p');
+        sortVal.classList.add('sort-val');
+        panel.appendChild(sortVal);
+
         // create div to hide stack viewers if they don't have a connector to show
         var panelHider = document.createElement('div');
         panelHider.style.position = 'absolute';
@@ -668,11 +673,13 @@
 
         var connector = visibleConnectors[panelIdx];
         if (connector) {
+          var panel = panelStackViewer._stackWindow.frame;
+
           // change title bar
           panelStackViewer._stackWindow.setTitle('connector ID: ' + connector.connID);
-          panelStackViewer._stackWindow.frame.querySelector('.stackTitle').onclick = self.moveStackViewer
+          panel.querySelector('.stackTitle').onclick = self.moveStackViewer
             .bind(self, self.sourceStackViewer, connector.coords);
-          self.changeAssocNeuronName(panelStackViewer._stackWindow.frame, connector.skelNames);
+          self.changeAssocNeuronName(panel, connector.skelNames);
 
           // allow the tracing overlay to update for the move
           setStackViewerSuspendState(panelStackViewer, false);
@@ -683,6 +690,21 @@
           panelStackViewer.getLayersOfType(CATMAID.TracingLayer).forEach(function(tracingLayer) {
             tracingLayer.forceRedraw();
           });
+
+          var sortVal = panel.querySelector('.sort-val');
+          switch (self.cache.sortFnName) {
+            case 'depthProportion':
+              sortVal.innerHTML = 'Depth (ppn): ' + connector.sortVal.toFixed(3);
+              sortVal.style.display = 'initial';
+              break;
+            case 'depth':
+              sortVal.innerHTML = `Depth: ${connector.sortVal.toFixed(0)}nm`;
+              sortVal.style.display = 'initial';
+              break;
+            default:
+              sortVal.style.display = 'none';
+              break;
+          }
 
           hider.style.display = 'none';
         } else {
@@ -735,12 +757,15 @@
    * EDGE CASES:
    *  - Doesn't pick up if a treenode and connector lose their association during use
    *  - Doesn't pick up if a treenode's depth on a skeleton changes
+   *  - Minor sort order changes due to skeleton selection changes which do not affect the connectors involved, but
+   *  may impact on the sort order of the skeletons associated with the connector, may not be picked up
    *
    *  All are solved by clearing or refreshing the cache.
    *
    * @constructor
    */
   var ConnectorViewerCache = function(skeletonSource) {
+    var self = this;
     this.relationTypes = {
       '0': 'presynaptic_to',
       '1': 'postsynaptic_to',
@@ -757,7 +782,8 @@
      *        'presynaptic_to':    Set([treenodeID1, treenodeID2, ...]),
      *        'gapjunction_with':  Set([treenodeID1, treenodeID2, ...]),
      *        'abutting':          Set([treenodeID1, treenodeID2, ...])
-     *      }
+     *      },
+     *      sortVal: null
      *    },
      *    connID2...
      *  }
@@ -788,13 +814,21 @@
      */
     this.treenodes = {};
 
-    this.sortFn = null;
+    this.sortFnName = null;
+
+    this.sortFns = new Map([
+      ['depthProportion', this.getMinDepth.bind(this, true)],
+      ['depth', this.getMinDepth.bind(this, false)],
+      ['connId', function(_, connID) {return connID;}],
+      ['skelName', function(relationType, connID) {return self.getSkelNames(relationType, connID).join(', ');}],
+      ['null', function(){return '';}]
+    ]);
 
     this.sorting = {
-      'postsynaptic_to':   {sortFn: this.sortFn, order: new Set(), sorted: false},
-      'presynaptic_to':    {sortFn: this.sortFn, order: new Set(), sorted: false},
-      'gapjunction_with':  {sortFn: this.sortFn, order: new Set(), sorted: false},
-      'abutting':          {sortFn: this.sortFn, order: new Set(), sorted: false}
+      'postsynaptic_to':   {sortFnName: '', order: new Set(), sorted: false, sortVals: {}},
+      'presynaptic_to':    {sortFnName: '', order: new Set(), sorted: false, sortVals: {}},
+      'gapjunction_with':  {sortFnName: '', order: new Set(), sorted: false, sortVals: {}},
+      'abutting':          {sortFnName: '', order: new Set(), sorted: false, sortVals: {}}
     };
 
     this.skeletonSource = skeletonSource;
@@ -806,10 +840,10 @@
     this.connectors = {};
     this.skeletons = {};
     this.sorting = {
-      'postsynaptic_to':   {sortFn: this.sortFn, order: new Set(), sorted: false},
-      'presynaptic_to':    {sortFn: this.sortFn, order: new Set(), sorted: false},
-      'gapjunction_with':  {sortFn: this.sortFn, order: new Set(), sorted: false},
-      'abutting':          {sortFn: this.sortFn, order: new Set(), sorted: false}
+      'postsynaptic_to':   {sortFnName: '', order: new Set(), sorted: false, sortVals: {}},
+      'presynaptic_to':    {sortFnName: '', order: new Set(), sorted: false, sortVals: {}},
+      'gapjunction_with':  {sortFnName: '', order: new Set(), sorted: false, sortVals: {}},
+      'abutting':          {sortFnName: '', order: new Set(), sorted: false, sortVals: {}}
     };
     this.treenodes = {};
   };
@@ -824,7 +858,7 @@
    * the ConnectorViewerCache's stored sorting function.
    *
    * @param relationType
-   * @returns Promise of conector order
+   * @returns Promise of connector order
    */
   ConnectorViewerCache.prototype.updateConnectorOrder = function(relationType) {
     var self = this;
@@ -834,18 +868,29 @@
       var selectedSkeletons = self.skeletonSource.getSelectedSkeletons();
       var sortInfo = self.sorting[relationType];
 
-      if (sortInfo.sorted && sortInfo.sortFn === self.sortFn) {
+      if (sortInfo.sorted && sortInfo.sortFnName === self.sortFnName) {
         order = Array.from(sortInfo.order);
       } else {
         // re-sort using the stored sort function
-        sortInfo.sortFn = self.sortFn;
-        order = Array.from(sortInfo.order).sort(function(connID1, connID2) {
-          return self.sortFn(connID1, connID2, relationType, selectedSkeletons);
+        sortInfo.sortFnName = self.sortFnName;
+
+        var connIDs = Array.from(sortInfo.order);
+        // make an object of connector IDs to the value on which they will be sorted
+        var sortVals = connIDs.reduce(function (obj, connID) {
+          obj[connID] = self.sortFns.get(sortInfo.sortFnName)(relationType, connID);
+          return obj;
+        }, {});
+
+        order = connIDs.sort(function(connID1, connID2) {
+          if (sortVals[connID1] < sortVals[connID2]) {return -1;}
+          if (sortVals[connID1] > sortVals[connID2]) {return 1;}
+          return 0;
         });
 
         // update the sorting cache
         sortInfo.order = new Set(order);
         sortInfo.sorted = true;
+        sortInfo.sortVals = sortVals;
       }
 
       // turn the array of connector IDs into informative objects
@@ -866,8 +911,8 @@
               }
 
               return arr;
-            }, [])
-            .sort()  // sort alphanumerically to keep it deterministic
+            }, []).sort(),  // sort alphanumerically to keep it deterministic
+          sortVal: sortInfo.sortVals[connID]
         };
       });
     });
@@ -950,6 +995,7 @@
           if (!self.sorting[relationType].order.has(connID)) {
             self.sorting[relationType].order.add(connID);
             self.sorting[relationType].sorted = false;
+            self.sorting[relationType].sortVals[connID] = undefined;
           }
 
           // insert information from this skeleton into the treenodes cache (only treenodes associated with connectors)
@@ -1004,7 +1050,7 @@
    * function(connector1ID, connector2ID, relationType, selectedSkeletons)
    */
   ConnectorViewerCache.prototype.setSortFn = function (sortFnName) {
-      this.sortFn = sortFns[sortFnName].bind(this);
+    this.sortFnName = sortFnName; // todo: may need to bind to this
   };
 
   /**
@@ -1015,13 +1061,13 @@
    * in the given selection, and if there are multiple such skeletons, returns the smallest depth.
    *
    * @param relationType
-   * @param selectedSkeletons
    * @param proportional
    * @param connID
    * @returns {Number}
    */
-  ConnectorViewerCache.prototype.getMinDepth = function(relationType, selectedSkeletons, proportional, connID) {
+  ConnectorViewerCache.prototype.getMinDepth = function(proportional, relationType, connID) {
     var minConnDepth = Infinity;
+    var selectedSkeletons = this.skeletonSource.getSelectedSkeletons();
 
     for (var treenodeID of this.connectors[connID].relationType[relationType]) {
       if (selectedSkeletons.includes(this.treenodes[treenodeID].skelID)) {
@@ -1035,18 +1081,18 @@
   };
 
   /**
-   * Get a skeleton name associated with a connector by the given relation type.
+   * Get the array of skeleton names associated with a connector by the given relation type.
    *
    * As connectors of some relation type can be associated with multiple skeletons, this only counts those which are
-   * in the given selection, and if there are multiple such skeletons, returns the first skeleton by alphanumeric sort.
+   * in the given selection, and if there are multiple such skeletons, returns them in alphanumeric sort order.
    *
    * @param relationType
-   * @param selectedSkeletons
    * @param connID
-   * @returns {String}
+   * @returns {Array}
    */
-  ConnectorViewerCache.prototype.getFirstSkelName = function(relationType, selectedSkeletons, connID) {
+  ConnectorViewerCache.prototype.getSkelNames = function(relationType, connID) {
     var skelNames = [];
+    var selectedSkeletons = this.skeletonSource.getSelectedSkeletons();
 
     for (var treenodeID of this.connectors[connID].relationType[relationType]) {
       if (selectedSkeletons.includes(this.treenodes[treenodeID].skelID)) {
@@ -1054,69 +1100,7 @@
       }
     }
 
-    return skelNames.sort()[0];
-  };
-
-  /**
-   * Object containing comparator functions to be passed to Array.sort().
-   *
-   * Members will be bound to the ConnectorViewerCache before usage and should have the signature
-   * function(connector1ID, connector2ID, relationType, selectedSkeletons).
-   */
-  const sortFns = {};
-
-  /**
-   * Sort connectors by how far they are from their associated skeleton's root node. Only skeletons which are in
-   * the given array of selected skeletons are counted, and only if they are associated with the connector by the
-   * given relation type. If there are multiple such skeletons, the smallest depth is used.
-   *
-   * @param connID1
-   * @param connID2
-   * @param relationType
-   * @param selectedSkeletons
-   * @returns {number}
-   */
-  sortFns.depthSort = function(connID1, connID2, relationType, selectedSkeletons) {
-    var self = this;
-    var minConnDepths = [connID1, connID2]
-      .map(self.getMinDepth.bind(self, relationType, selectedSkeletons, false));
-
-    return minConnDepths[0] - minConnDepths[1];
-  };
-
-  /**
-   * Similar to sortFns.depthSort, but returns depths as a proportion of the maximum length of the skeleton.
-   *
-   * @param connID1
-   * @param connID2
-   * @param relationType
-   * @param selectedSkeletons
-   * @returns {number}
-   */
-  sortFns.depthProportionSort = function(connID1, connID2, relationType, selectedSkeletons) {
-    var self = this;
-    var minConnDepthPpns = [connID1, connID2]
-      .map(self.getMinDepth.bind(self, relationType, selectedSkeletons, true));
-
-    return minConnDepthPpns[0] - minConnDepthPpns[1];
-  };
-
-  sortFns.connIdSort = function(connID1, connID2) {
-    return connID1 - connID2;
-  };
-
-  /**
-   * Not guaranteed to preserve the current sort order
-   */
-  sortFns.nullSort = function() {
-    return 0;
-  };
-
-  sortFns.skelNameSort = function(connID1, connID2, relationType, selectedSkeletons) {
-    var self = this;
-    var skelNames = [connID1, connID2].map(self.getFirstSkelName.bind(self, relationType, selectedSkeletons));
-
-    return skelNames[0].localeCompare(skelNames[1]);
+    return skelNames.sort();
   };
 
 })(CATMAID);

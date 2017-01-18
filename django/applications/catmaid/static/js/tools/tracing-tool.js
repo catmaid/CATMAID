@@ -1119,7 +1119,7 @@
       keyShortcuts: { '/': [ 191 ] },
       run: function (e) {
         if (e.shiftKey) {
-          var nextSkid = CATMAID.NeuronAnnotations.prototype.getFirstInstance()
+          var nextSkid = CATMAID.NeuronSearch.prototype.getFirstInstance()
               .getNextSkeletonIdAfter(SkeletonAnnotations.getActiveSkeletonId());
           if (nextSkid) {
             CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', nextSkid);

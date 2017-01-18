@@ -11,7 +11,7 @@
 
   "use strict";
 
-  var NeuronAnnotations = function()
+  var NeuronSearch = function()
   {
     this.widgetID = this.registerInstance();
     CATMAID.SkeletonSource.call(this, true);
@@ -43,19 +43,19 @@
         this.handleAnnotationUpdate, this);
   };
 
-  NeuronAnnotations.prototype = Object.create(CATMAID.SkeletonSource.prototype);
-  NeuronAnnotations.prototype.constuctor = NeuronAnnotations;
+  NeuronSearch.prototype = Object.create(CATMAID.SkeletonSource.prototype);
+  NeuronSearch.prototype.constuctor = NeuronSearch;
 
-  $.extend(NeuronAnnotations.prototype, new InstanceRegistry());
+  $.extend(NeuronSearch.prototype, new InstanceRegistry());
 
   /* Implement interfaces */
 
-  NeuronAnnotations.prototype.getName = function()
+  NeuronSearch.prototype.getName = function()
   {
       return "Neuron Search " + this.widgetID;
   };
 
-  NeuronAnnotations.prototype.getWidgetConfiguration = function() {
+  NeuronSearch.prototype.getWidgetConfiguration = function() {
     return {
       controlsID: 'neuron_annotations_query_fields' + this.widgetID,
       contentID: 'neuron_annotations_query_results' + this.widgetID,
@@ -267,7 +267,7 @@
     };
   };
 
-  NeuronAnnotations.prototype.destroy = function()
+  NeuronSearch.prototype.destroy = function()
   {
     this.unregisterInstance();
     this.unregisterSource();
@@ -276,12 +276,12 @@
         this.handleAnnotationUpdate, this);
   };
 
-  NeuronAnnotations.prototype.append = function() {};
-  NeuronAnnotations.prototype.clear = function(source_chain) {};
-  NeuronAnnotations.prototype.removeSkeletons = function() {};
-  NeuronAnnotations.prototype.updateModels = function() {};
+  NeuronSearch.prototype.append = function() {};
+  NeuronSearch.prototype.clear = function(source_chain) {};
+  NeuronSearch.prototype.removeSkeletons = function() {};
+  NeuronSearch.prototype.updateModels = function() {};
 
-  NeuronAnnotations.prototype.getSelectedSkeletons = function() {
+  NeuronSearch.prototype.getSelectedSkeletons = function() {
     return this.get_selected_neurons().reduce( function(o, e) {
       if (e.type === 'neuron') {
         o = o.concat(e.skeleton_ids);
@@ -290,7 +290,7 @@
     }, []);
   };
 
-  NeuronAnnotations.prototype.hasSkeleton = function(skeleton_id) {
+  NeuronSearch.prototype.hasSkeleton = function(skeleton_id) {
     return this.queryResults.some(function(qs) {
       return qs.some(function(e) {
         return e.type === 'neuron' && e.skeleton_ids.some(function(id) {
@@ -300,7 +300,7 @@
     });
   };
 
-  NeuronAnnotations.prototype.getSkeletonModel = function(skeleton_id, nocheck) {
+  NeuronSearch.prototype.getSkeletonModel = function(skeleton_id, nocheck) {
     if (nocheck || this.hasSkeleton(skeleton_id)) {
       return new CATMAID.SkeletonModel(skeleton_id, "",
           new THREE.Color().setRGB(1, 1, 0));
@@ -309,7 +309,7 @@
     }
   };
 
-  NeuronAnnotations.prototype.getSkeletonModels = function() {
+  NeuronSearch.prototype.getSkeletonModels = function() {
     var self = this;
     return this.get_entities().reduce(function(o, e) {
       if (e.type === 'neuron') {
@@ -326,7 +326,7 @@
     }, {});
   };
 
-  NeuronAnnotations.prototype.getSelectedSkeletonModels = function() {
+  NeuronSearch.prototype.getSelectedSkeletonModels = function() {
     return this.get_selected_neurons().reduce(function(o, e) {
       if (e.type === 'neuron') {
         e.skeleton_ids.forEach(function(s) {
@@ -340,7 +340,7 @@
     }, {});
   };
 
-  NeuronAnnotations.prototype.highlight = function(skeleton_id)
+  NeuronSearch.prototype.highlight = function(skeleton_id)
   {
     // Don't try to highlight when no skeleton ID is given
     if (!skeleton_id) return;
@@ -378,7 +378,7 @@
    * Find the next selected skeleton ID following the given skeleton ID in the
    * table, if it is present.
    */
-  NeuronAnnotations.prototype.getNextSkeletonIdAfter = function (skeleton_id) {
+  NeuronSearch.prototype.getNextSkeletonIdAfter = function (skeleton_id) {
     var neurons = this.get_selected_neurons().filter(function(e) {
       return e.type === 'neuron';
     });
@@ -400,7 +400,7 @@
   /**
    * Will refresh the display to update neuron names.
    */
-  NeuronAnnotations.prototype.updateNeuronNames = function()
+  NeuronSearch.prototype.updateNeuronNames = function()
   {
     this.refresh();
   };
@@ -411,7 +411,7 @@
    * In the event of annotations being update while this widget is loaded,
    * update internal use of annotations (e.g. in auto completion).
    */
-  NeuronAnnotations.prototype.handleAnnotationUpdate = function(changedEntities) {
+  NeuronSearch.prototype.handleAnnotationUpdate = function(changedEntities) {
     CATMAID.annotations.add_autocomplete_to_input(
         $('.neuron_query_by_annotation_name' + this.widgetID));
     // Re-query if one of the affected enteties is displayed by this search
@@ -430,7 +430,7 @@
   /**
    * Refresh data table UI.
    */
-  NeuronAnnotations.prototype.makeDataTable = (function() {
+  NeuronSearch.prototype.makeDataTable = (function() {
     // Indicate if a redraw operation should be followd by updating the
     // annotation display.
     var requestAnnotationUpdate = false;
@@ -472,7 +472,7 @@
    * elements will also be expanded. Keeps track of already expanded elements to
    * avoid repetitions for cycling annotations.
    */
-  NeuronAnnotations.prototype.appendEntities = function(entities, appender, indent,
+  NeuronSearch.prototype.appendEntities = function(entities, appender, indent,
       expandedIds, sourceSlot) {
     // Mark entities as unselected and create result table rows
     entities.forEach(function(entity) {
@@ -502,7 +502,7 @@
    * whereever it wants. The third parameter specifies the number of indentation
    * steps that should be used.
    */
-  NeuronAnnotations.prototype.add_result_table_row = function(entity, add_row_fn,
+  NeuronSearch.prototype.add_result_table_row = function(entity, add_row_fn,
       indent)
   {
     // Build table row
@@ -590,7 +590,7 @@
     return tr;
   };
 
-  NeuronAnnotations.prototype.query = function(initialize)
+  NeuronSearch.prototype.query = function(initialize)
   {
     if (initialize) {
       this.display_start = 0;
@@ -747,7 +747,7 @@
   /**
    * Make sure the UI doesn't show any outdated data.
    */
-  NeuronAnnotations.prototype.invalidateUI = function() {
+  NeuronSearch.prototype.invalidateUI = function() {
     var selector = 'table#neuron_annotations_query_results_table' + this.widgetID;
     if ($.fn.DataTable.isDataTable(selector)) {
       var datatable = $(selector).DataTable();
@@ -760,7 +760,7 @@
   /**
    * Rebuild the search result table.
    */
-  NeuronAnnotations.prototype.refresh = function() {
+  NeuronSearch.prototype.refresh = function() {
     var entities = this.queryResults[0];
     // Clear table
     var $table = $('#neuron_annotations_query_results' + this.widgetID);
@@ -1032,7 +1032,7 @@
     });
   };
 
-  NeuronAnnotations.prototype.update_result_row_classes = function()
+  NeuronSearch.prototype.update_result_row_classes = function()
   {
     var $tableBody = $('#neuron_annotations_query_results' +
         this.widgetID + ' tbody');
@@ -1043,7 +1043,7 @@
     $("tr:nth-child(even)", $tableBody).addClass("even");
   };
 
-  NeuronAnnotations.prototype.add_query_field = function()
+  NeuronSearch.prototype.add_query_field = function()
   {
     // Create a copy of the first row.
     var $newRow = $("#neuron_query_by_annotation" + this.widgetID).clone();
@@ -1087,7 +1087,7 @@
     this.nextFieldID += 1;
   };
 
-  NeuronAnnotations.prototype.remove_query_field = function(rowNum)
+  NeuronSearch.prototype.remove_query_field = function(rowNum)
   {
     var $row = $("#neuron_query_by_annotation" + this.widgetID + "_" + rowNum);
     $row.remove();
@@ -1097,7 +1097,7 @@
    * Update selection state of all checkboxes, based on on the internal
    * selection model.
    */
-  NeuronAnnotations.prototype.updateSelectionUI = function() {
+  NeuronSearch.prototype.updateSelectionUI = function() {
     var self = this;
     $("#neuron_annotations_query_results_table" + this.widgetID).find(
         'tbody tr td input[class*=result' + this.widgetID + '_]').each(
@@ -1112,7 +1112,7 @@
             });
   };
 
-  NeuronAnnotations.prototype.toggle_neuron_selections = function()
+  NeuronSearch.prototype.toggle_neuron_selections = function()
   {
     // Get current check state and update checkboxes and selection map
     var newValue = $("#neuron_annotations_toggle_neuron_selections_checkbox" +
@@ -1137,7 +1137,7 @@
    * passed false, a list of unselected entities is returned. If undefined, all
    * all entities are returned.
    */
-  NeuronAnnotations.prototype.get_entities = function(checked)
+  NeuronSearch.prototype.get_entities = function(checked)
   {
     var visited = {};
     return this.queryResults.reduce((function(o, qs) {
@@ -1154,25 +1154,25 @@
       }).bind(this), []);
   };
 
-  NeuronAnnotations.prototype.get_selected_neurons = function()
+  NeuronSearch.prototype.get_selected_neurons = function()
   {
     return this.get_entities(true);
   };
 
-  NeuronAnnotations.prototype.get_unselected_neurons = function()
+  NeuronSearch.prototype.get_unselected_neurons = function()
   {
     return this.get_entities(false);
   };
   /**
    * Refresh display and auto-completion with updated annotation information.
    */
-  NeuronAnnotations.prototype.refresh_annotations = function() {
+  NeuronSearch.prototype.refresh_annotations = function() {
     // Update auto completion for input fields
     $('.neuron_query_by_annotation_name' + this.widgetID).autocomplete(
         "option", {source: CATMAID.annotations.getAllNames()});
   };
 
-  NeuronAnnotations.prototype.getEntitiesOnPage = function() {
+  NeuronSearch.prototype.getEntitiesOnPage = function() {
     var selector = 'table#neuron_annotations_query_results_table' + this.widgetID;
     if ($.fn.DataTable.isDataTable(selector)) {
       var datatable = $(selector).DataTable();
@@ -1189,7 +1189,7 @@
    * Query annotations for results on the current page that no annotations have
    * been queried for before.
    */
-  NeuronAnnotations.prototype.updateAnnotations = function() {
+  NeuronSearch.prototype.updateAnnotations = function() {
     if (!this.displayAnnotations) {
       this.refresh();
       return;
@@ -1248,7 +1248,7 @@
    * objects within the result table that hasn't been linked by the user passed
    * as second argument. Otherwise, it will show all annotations.
    */
-  NeuronAnnotations.prototype.updateAnnotationFiltering = function() {
+  NeuronSearch.prototype.updateAnnotationFiltering = function() {
     var $results= $('#neuron_annotations_query_results' + this.widgetID);
     if (this.annotationUserFilter) {
       $results.find('li[user_id!=' + this.annotationUserFilter + ']').hide();
@@ -1284,7 +1284,7 @@
    * the neuron ID and the second column the neuron name. If annotations are
    * displayed, they are exported as a third column
    */
-  NeuronAnnotations.prototype.exportCSV = function() {
+  NeuronSearch.prototype.exportCSV = function() {
     // Get IDs of selected entities
     var selectedNeurons = this.get_selected_neurons();
     // Cancel if there are no neurons selected
@@ -1311,12 +1311,12 @@
   };
 
   // Make neuron search widget available in CATMAID namespace
-  CATMAID.NeuronAnnotations = NeuronAnnotations;
+  CATMAID.NeuronSearch = NeuronSearch;
 
   // Register widget with CATMAID
   CATMAID.registerWidget({
     key: 'neuron-search',
-    creator: NeuronAnnotations
+    creator: NeuronSearch
   });
 
 })(CATMAID);

@@ -1270,6 +1270,7 @@ var WindowMaker = new function()
     var win = new CMWWindow(SF.getName());
     DOM.addButtonDisplayToggle(win);
     var content = win.getFrame();
+    content.classList.add('synapse-fractions');
     content.style.backgroundColor = '#ffffff';
 
     var bar = document.createElement('div');

@@ -192,304 +192,6 @@ var WindowMaker = new function()
     return createWidget(CM);
   };
 
-  var createStagingListWindow = function(instance, webglwin) {
-
-    var ST = instance ? instance : new CATMAID.SelectionTable();
-
-    var win = new CMWWindow(ST.getName());
-    var content = win.getFrame();
-    content.style.backgroundColor = "#ffffff";
-
-    var container = createContainer("neuron_staging_table" + ST.widgetID);
-    $(container).addClass("selection-table");
-
-    var buttons = document.createElement("div");
-    buttons.setAttribute('id', 'ST_button_bar' + ST.widgetID);
-    buttons.setAttribute('class', 'buttonpanel');
-
-    buttons.appendChild(document.createTextNode('From'));
-    buttons.appendChild(CATMAID.skeletonListSources.createSelect(ST));
-
-    var load = document.createElement('input');
-    load.setAttribute("type", "button");
-    load.setAttribute("value", "Append");
-    load.onclick = ST.loadSource.bind(ST);
-    buttons.appendChild(load);
-
-    var clear = document.createElement('input');
-    clear.setAttribute("type", "button");
-    clear.setAttribute("value", "Clear");
-    clear.onclick = ST.clear.bind(ST);
-    buttons.appendChild(clear);
-
-    var update = document.createElement('input');
-    update.setAttribute("type", "button");
-    update.setAttribute("value", "Refresh");
-    update.onclick = ST.update.bind(ST);
-    buttons.appendChild(update);
-
-    var fileButton = buttons.appendChild(DOM.createFileButton(
-          'st-file-dialog-' + ST.widgetID, false, function(evt) {
-            ST.loadFromFiles(evt.target.files);
-          }));
-    var open = document.createElement('input');
-    open.setAttribute("type", "button");
-    open.setAttribute("value", "Open");
-    open.onclick = function() { fileButton.click(); };
-    buttons.appendChild(open);
-
-    var save = document.createElement('input');
-    save.setAttribute("type", "button");
-    save.setAttribute("value", "Save");
-    save.onclick = ST.saveToFile.bind(ST);
-    buttons.appendChild(save);
-
-    var annotate = document.createElement('input');
-    annotate.setAttribute("type", "button");
-    annotate.setAttribute("value", "Annotate");
-    annotate.style.marginLeft = '1em';
-    annotate.onclick = ST.annotate_skeleton_list.bind(ST);
-    buttons.appendChild(annotate);
-
-    var c = DOM.appendSelect(buttons, null, 'Color scheme ',
-        ['CATMAID',
-         'category10',
-         'category20',
-         'category20b',
-         'category20c'].concat(Object.keys(colorbrewer)));
-
-
-    var random = document.createElement('input');
-    random.setAttribute("type", "button");
-    random.setAttribute("value", "Colorize");
-    random.onclick = function() { ST.colorizeWith(c.options[c.selectedIndex].text); };
-    buttons.appendChild(random);
-
-    var measure = document.createElement('input');
-    measure.setAttribute('type', 'button');
-    measure.setAttribute('value', 'Measure');
-    measure.onclick = ST.measure.bind(ST);
-    buttons.appendChild(measure);
-
-    var summaryInfoButton = document.createElement('input');
-    summaryInfoButton.setAttribute('type', 'button');
-    summaryInfoButton.setAttribute('value', 'Summary info');
-    summaryInfoButton.setAttribute('id', 'selection-table-info' + ST.widgetID);
-    summaryInfoButton.onclick = ST.summary_info.bind(ST);
-    buttons.appendChild(summaryInfoButton);
-
-    var appendWithBatchColorCb = document.createElement('input');
-    appendWithBatchColorCb.setAttribute('type', 'checkbox');
-    appendWithBatchColorCb.onchange = function() {
-      ST.appendWithBatchColor = this.checked;
-    };
-    var appendWithBatchColor = document.createElement('label');
-    appendWithBatchColor.appendChild(appendWithBatchColorCb);
-    appendWithBatchColorCb.checked = ST.appendWithBatchColor;
-    appendWithBatchColor.appendChild(document.createTextNode(
-          'Append with batch color'));
-    buttons.appendChild(appendWithBatchColor);
-
-    var hideVisibilitySettigsCb = document.createElement('input');
-    hideVisibilitySettigsCb.setAttribute('type', 'checkbox');
-    hideVisibilitySettigsCb.onchange = function() {
-      ST.setVisibilitySettingsVisible(this.checked);
-    };
-    var hideVisibilitySettigs = document.createElement('label');
-    hideVisibilitySettigs.appendChild(hideVisibilitySettigsCb);
-    hideVisibilitySettigsCb.checked = true;
-    hideVisibilitySettigs.appendChild(document.createTextNode(
-          'Show visibility controls'));
-    buttons.appendChild(hideVisibilitySettigs);
-
-    win.getFrame().appendChild(buttons);
-    content.appendChild(container);
-
-    var tab = document.createElement('table');
-    tab.setAttribute("id", "skeleton-table" + ST.widgetID);
-    tab.setAttribute("class", "skeleton-table");
-    tab.innerHTML =
-        '<thead>' +
-          '<tr>' +
-            '<th>nr</th>' +
-            '<th title="Remove one or all neurons"></th>' +
-            '<th class="expanding" title="Neuron name">name</th>' +
-            '<th title="% reviewed">rev</th>' +
-            '<th title="Select a neuron and control its visibility (3D viewer)">selected</th>' +
-            '<th title="Control visibility of pre-synaptic connections (3D viewer)">pre</th>' +
-            '<th title="Control visibility of post-synaptic connections (3D viewer)">post</th>' +
-            '<th title="Control visibility of tags (3D viewer)">text</th>' +
-            '<th title="Control visibility of special nodes (3D viewer)">meta</th>' +
-            '<th title="Control the color of a neuron (3D viewer)">color</th>' +
-            '<th>actions</th>' +
-          '</tr>' +
-          '<tr>' +
-            '<th></th>' +
-            '<th><span class="ui-icon ui-icon-close" id="selection-table-remove-all' + ST.widgetID + '" title="Remove all"></th>' +
-            '<th class="expanding"><input type="button" value="Filter" class="filter" />' +
-              '<input class="filter" type="text" title="Use / for regex" placeholder="name filter" id="selection-table-filter' + ST.widgetID + '" />' +
-              '<input class="filter" type="text" title="Use / for regex" placeholder="annotation filter" id="selection-table-ann-filter' + ST.widgetID + '" /></th>' +
-            '<th><select class="review-filter">' +
-              '<option value="Union" selected>Union</option>' +
-              '<option value="Team">Team</option>' +
-              '<option value="Self">Self</option>' +
-            '</select></th>' +
-            '<th><input type="checkbox" id="selection-table-show-all' + ST.widgetID + '" checked /></th>' +
-            '<th><input type="checkbox" id="selection-table-show-all-pre' + ST.widgetID + '" checked style="float: left" /></th>' +
-            '<th><input type="checkbox" id="selection-table-show-all-post' + ST.widgetID + '" checked style="float: left" /></th>' +
-            '<th><input type="checkbox" id="selection-table-show-all-text' + ST.widgetID + '" style="float: left" /></th>' +
-            '<th><input type="checkbox" id="selection-table-show-all-meta' + ST.widgetID + '" checked style="float: left" /></th>' +
-            '<th><button id="selection-table-batch-color-button' + ST.widgetID +
-                '" type="button" value="' + ST.batchColor + '" style="background-color: ' + ST.batchColor + '">Batch color</button></th>' +
-            '<th></th>' +
-          '</tr>' +
-        '</thead>' +
-        '<tbody>' +
-        '</tbody>';
-    container.appendChild(tab);
-
-    $("select.review-filter", tab).on("change",  function () {
-      ST.review_filter = this.value;
-      ST.update();
-    });
-    $("button#selection-table-batch-color-button" + ST.widgetID, tab).on("click",
-        function() {
-          if (CATMAID.ColorPicker.visible()) {
-            CATMAID.ColorPicker.hide(this);
-            // Apply color on closing, even if the color picker itself wasn't
-            // touched. This allows easier re-use of a previously set batch
-            // color.
-            var rgb = new THREE.Color(ST.batchColor);
-            ST.batchColorSelected(rgb, ST.batchOpacity, true, true);
-          } else {
-            CATMAID.ColorPicker.show(this, {
-              onColorChange: ST.batchColorSelected.bind(ST),
-              initialColor: ST.batchColor,
-              initialAlpha: ST.batchOpacity
-            });
-          }
-        });
-    $('th input[type=button].filter', tab).on("click", filterNeuronList);
-    $('th input[type=text].filter', tab).on("keyup", function(e) {
-      if (13 === e.keyCode) filterNeuronList();
-    });
-
-    // Add auto completetion to annotation filter
-    CATMAID.annotations.add_autocomplete_to_input(
-        $("#selection-table-ann-filter" + ST.widgetID, tab));
-
-    /**
-     * Trigger list filter.
-     */
-    function filterNeuronList() {
-      var filters = $('th input[type=text].filter', tab);
-      var nameFilter = filters[0].value;
-      var annotationFilter = filters[1].value;
-      ST.filterBy(nameFilter, annotationFilter);
-    }
-
-    $(tab)
-      .on("click", "td .action-remove", ST, function(e) {
-        var skeletonID = rowToSkeletonID(this);
-        e.data.removeSkeletons([skeletonID]);
-      })
-      .on("click", "td .action-select", ST, function(e) {
-        var skeletonID = rowToSkeletonID(this);
-        CATMAID.TracingTool.goToNearestInNeuronOrSkeleton( 'skeleton', skeletonID );
-      })
-      .on("click", "td .action-annotate", function() {
-        var skeletonID = rowToSkeletonID(this);
-        CATMAID.annotate_neurons_of_skeletons([skeletonID]);
-      })
-      .on("click", "td .action-info", function() {
-        var skeletonID = rowToSkeletonID(this);
-        CATMAID.SelectionTable.prototype.skeleton_info([skeletonID]);
-      })
-      .on("click", "td .action-navigator", function() {
-        var skeletonID = rowToSkeletonID(this);
-        var navigator = new CATMAID.NeuronNavigator();
-        WindowMaker.create('neuron-navigator', navigator);
-        navigator.set_neuron_node_from_skeleton(skeletonID);
-      })
-      .on("click", "td input.action-visibility", ST, function(e) {
-        var table = e.data;
-        var skeletonID = rowToSkeletonID(this);
-        var action = this.dataset.action;
-        var skeleton = table.skeletons[table.skeleton_ids[skeletonID]];
-        var visible = this.checked;
-        skeleton[action] = visible;
-
-        // The first checkbox controls all others
-        if ("selected" === action) {
-          ['pre_visible', 'post_visible', 'text_visible', 'meta_visible'].forEach(function(other, k) {
-            if (visible && 2 === k) return; // don't make text visible
-            skeleton[other] = visible;
-            $('#skeleton' + other + table.widgetID + '-' + skeletonID).prop('checked', visible);
-          });
-          // Update table information
-          table.updateTableInfo();
-        }
-        table.triggerChange(CATMAID.tools.idMap(skeleton));
-      })
-      .on("click", "td .action-changecolor", ST, function(e) {
-        var table = e.data;
-        var skeletonID = rowToSkeletonID(this);
-        CATMAID.ColorPicker.toggle(this, {
-          onColorChange: table.colorSkeleton.bind(table, skeletonID, false)
-        });
-      });
-
-    /**
-     * Find the closest table row element and read out skeleton ID.
-     */
-    function rowToSkeletonID(element) {
-      var skeletonID = $(element).closest("tr").attr("data-skeleton-id");
-      if (!skeletonID) throw new Error("Couldn't find skeleton ID");
-      return skeletonID;
-    }
-
-    addListener(win, container, buttons.id, ST.destroy.bind(ST));
-    win.addListener(
-      function(callingWindow, signal) {
-        switch (signal) {
-          case CMWWindow.FOCUS:
-            ST.setLastFocused();
-            break;
-        }
-        return true;
-      });
-
-    // addLogic(win);
-
-    document.getElementById("content").style.display = "none";
-
-    /* be the first window */
-    var rootWindow = CATMAID.rootWindow;
-    if (rootWindow.getFrame().parentNode != document.body) {
-      document.body.appendChild(rootWindow.getFrame());
-      document.getElementById("content").style.display = "none";
-    }
-
-    if (rootWindow.getChild() === null)
-      rootWindow.replaceChild(win);
-    else {
-        if( webglwin === undefined) {
-            rootWindow.replaceChild(new CMWHSplitNode(rootWindow.getChild(), win));
-        } else {
-          webglwin.getParent().replaceChild(new CMWVSplitNode(webglwin, win), webglwin);
-        }
-    }
-
-    DOM.addSourceControlsToggle(win, ST);
-    DOM.addButtonDisplayToggle(win);
-
-    CATMAID.skeletonListSources.updateGUI();
-    ST.init();
-    win.focus();
-
-    return {window: win, widget: ST};
-  };
-
   /** Creates and returns a new 3d webgl window */
   var create3dWebGLWindow = function()
   {
@@ -502,7 +204,7 @@ var WindowMaker = new function()
     // A selection table is opened alongside the 3D viewer. Initialize it first,
     // so that it will default to the last opened skeleton source to pull from
     // (which otherwise would be the 3D viewer).
-    var ST = new CATMAID.SelectionTable();
+    var selectionTable = WindowMaker.create('selection-table');
 
     var WA = new CATMAID.WebGLApplication();
 
@@ -1169,8 +871,27 @@ var WindowMaker = new function()
     // observer for this.
     nodeScalingInput.value = WA.options.skeleton_node_scaling;
 
-    // Create a Selection Table, preset as the sync target
-    var st = createStagingListWindow( ST, win, WA.getName() );
+    // Arrange previously created selection table below 3D viewer. To do this,
+    // the Selection Table has to be moved out of its split node and moved into
+    // a new one that is shared with the 3D viewer.
+    if (selectionTable) {
+      var webglSplitNode = win.getParent();
+      var webglSibling = webglSplitNode.getSiblingOf(win);
+      webglSplitNode.removeResizeHandle();
+      webglSplitNode.getParent().replaceChild(webglSibling, webglSplitNode);
+
+      // Make sibling expand over all available space
+      var siblingFrame = webglSibling.getFrame();
+      siblingFrame.style.top = "0px";
+      siblingFrame.style.left = "0px";
+      siblingFrame.style.width = "";
+      siblingFrame.style.height = "";
+
+      // create new split node with selection table below 3D viewer
+      var stWin = selectionTable.window;
+      stWin.getParent().replaceChild(new CMWVSplitNode(win, stWin), stWin);
+      stWin.getRootNode().redraw();
+    }
 
     CATMAID.Volumes.on(CATMAID.Volumes.EVENT_VOLUME_ADDED,
         refreshVolumeList, WA);
@@ -1228,7 +949,7 @@ var WindowMaker = new function()
     // make it ignore local models. Don't make it selection based, to not reload
     // skeletons on visibility changes.
     var Subscription = CATMAID.SkeletonSourceSubscription;
-    WA.addSubscription(new Subscription(st.widget, true, false,
+    WA.addSubscription(new Subscription(selectionTable.widget, true, false,
           CATMAID.SkeletonSource.UNION, Subscription.ALL_EVENTS), true);
     // Override existing local models if subscriptions are updated
     WA.ignoreLocal = true;
@@ -2291,7 +2012,6 @@ var WindowMaker = new function()
     "keyboard-shortcuts": createKeyboardShortcutsWindow,
     "search": createSearchWindow,
     "3d-webgl-view": create3dWebGLWindow,
-    "selection-table": createStagingListWindow,
     "graph-widget": createGraphWindow,
     "connectivity-graph-plot": createConnectivityGraphPlot,
     "assemblygraph-widget": createAssemblyGraphWindow,

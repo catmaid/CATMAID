@@ -52,6 +52,262 @@
     return "Selection " + this.widgetID;
   };
 
+  SelectionTable.prototype.getWidgetConfiguration = function() {
+    return {
+      class: "selection-table",
+      subscriptionSource: [this],
+      createControls: function(buttons) {
+        var self = this;
+        buttons.appendChild(document.createTextNode('From'));
+        buttons.appendChild(CATMAID.skeletonListSources.createSelect(this));
+
+        var load = document.createElement('input');
+        load.setAttribute("type", "button");
+        load.setAttribute("value", "Append");
+        load.onclick = this.loadSource.bind(this);
+        buttons.appendChild(load);
+
+        var clear = document.createElement('input');
+        clear.setAttribute("type", "button");
+        clear.setAttribute("value", "Clear");
+        clear.onclick = this.clear.bind(this);
+        buttons.appendChild(clear);
+
+        var update = document.createElement('input');
+        update.setAttribute("type", "button");
+        update.setAttribute("value", "Refresh");
+        update.onclick = this.update.bind(this);
+        buttons.appendChild(update);
+
+        var fileButton = buttons.appendChild(CATMAID.DOM.createFileButton(
+            'st-file-dialog-' + this.widgetID, false, function(evt) {
+              self.loadFromFiles(evt.target.files);
+            }));
+        var open = document.createElement('input');
+        open.setAttribute("type", "button");
+        open.setAttribute("value", "Open");
+        open.onclick = function() { fileButton.click(); };
+        buttons.appendChild(open);
+
+        var save = document.createElement('input');
+        save.setAttribute("type", "button");
+        save.setAttribute("value", "Save");
+        save.onclick = this.saveToFile.bind(this);
+        buttons.appendChild(save);
+
+        var annotate = document.createElement('input');
+        annotate.setAttribute("type", "button");
+        annotate.setAttribute("value", "Annotate");
+        annotate.style.marginLeft = '1em';
+        annotate.onclick = this.annotate_skeleton_list.bind(this);
+        buttons.appendChild(annotate);
+
+        var c = CATMAID.DOM.appendSelect(buttons, null, 'Color scheme ',
+            ['CATMAID',
+             'category10',
+             'category20',
+             'category20b',
+             'category20c'].concat(Object.keys(colorbrewer)));
+
+        var random = document.createElement('input');
+        random.setAttribute("type", "button");
+        random.setAttribute("value", "Colorize");
+        random.onclick = function() { self.colorizeWith(c.options[c.selectedIndex].text); };
+        buttons.appendChild(random);
+
+        var measure = document.createElement('input');
+        measure.setAttribute('type', 'button');
+        measure.setAttribute('value', 'Measure');
+        measure.onclick = this.measure.bind(this);
+        buttons.appendChild(measure);
+
+        var summaryInfoButton = document.createElement('input');
+        summaryInfoButton.setAttribute('type', 'button');
+        summaryInfoButton.setAttribute('value', 'Summary info');
+        summaryInfoButton.setAttribute('id', 'selection-table-info' + this.widgetID);
+        summaryInfoButton.onclick = this.summary_info.bind(this);
+        buttons.appendChild(summaryInfoButton);
+
+        var appendWithBatchColorCb = document.createElement('input');
+        appendWithBatchColorCb.setAttribute('type', 'checkbox');
+        appendWithBatchColorCb.onchange = function() {
+          self.appendWithBatchColor = this.checked;
+        };
+        var appendWithBatchColor = document.createElement('label');
+        appendWithBatchColor.appendChild(appendWithBatchColorCb);
+        appendWithBatchColorCb.checked = this.appendWithBatchColor;
+        appendWithBatchColor.appendChild(document.createTextNode(
+              'Append with batch color'));
+        buttons.appendChild(appendWithBatchColor);
+
+        var hideVisibilitySettigsCb = document.createElement('input');
+        hideVisibilitySettigsCb.setAttribute('type', 'checkbox');
+        hideVisibilitySettigsCb.onchange = function() {
+          self.setVisibilitySettingsVisible(this.checked);
+        };
+        var hideVisibilitySettigs = document.createElement('label');
+        hideVisibilitySettigs.appendChild(hideVisibilitySettigsCb);
+        hideVisibilitySettigsCb.checked = true;
+        hideVisibilitySettigs.appendChild(document.createTextNode(
+              'Show visibility controls'));
+        buttons.appendChild(hideVisibilitySettigs);
+      },
+      createContent: function(content) {
+        var self = this;
+        var tab = document.createElement('table');
+        tab.setAttribute("id", "skeleton-table" + this.widgetID);
+        tab.setAttribute("class", "skeleton-table");
+        tab.innerHTML =
+            '<thead>' +
+              '<tr>' +
+                '<th>nr</th>' +
+                '<th title="Remove one or all neurons"></th>' +
+                '<th class="expanding" title="Neuron name">name</th>' +
+                '<th title="% reviewed">rev</th>' +
+                '<th title="Select a neuron and control its visibility (3D viewer)">selected</th>' +
+                '<th title="Control visibility of pre-synaptic connections (3D viewer)">pre</th>' +
+                '<th title="Control visibility of post-synaptic connections (3D viewer)">post</th>' +
+                '<th title="Control visibility of tags (3D viewer)">text</th>' +
+                '<th title="Control visibility of special nodes (3D viewer)">meta</th>' +
+                '<th title="Control the color of a neuron (3D viewer)">color</th>' +
+                '<th>actions</th>' +
+              '</tr>' +
+              '<tr>' +
+                '<th></th>' +
+                '<th><span class="ui-icon ui-icon-close" id="selection-table-remove-all' + this.widgetID + '" title="Remove all"></th>' +
+                '<th class="expanding"><input type="button" value="Filter" class="filter" />' +
+                  '<input class="filter" type="text" title="Use / for regex" placeholder="name filter" id="selection-table-filter' + this.widgetID + '" />' +
+                  '<input class="filter" type="text" title="Use / for regex" placeholder="annotation filter" id="selection-table-ann-filter' + this.widgetID + '" /></th>' +
+                '<th><select class="review-filter">' +
+                  '<option value="Union" selected>Union</option>' +
+                  '<option value="Team">Team</option>' +
+                  '<option value="Self">Self</option>' +
+                '</select></th>' +
+                '<th><input type="checkbox" id="selection-table-show-all' + this.widgetID + '" checked /></th>' +
+                '<th><input type="checkbox" id="selection-table-show-all-pre' + this.widgetID + '" checked style="float: left" /></th>' +
+                '<th><input type="checkbox" id="selection-table-show-all-post' + this.widgetID + '" checked style="float: left" /></th>' +
+                '<th><input type="checkbox" id="selection-table-show-all-text' + this.widgetID + '" style="float: left" /></th>' +
+                '<th><input type="checkbox" id="selection-table-show-all-meta' + this.widgetID + '" checked style="float: left" /></th>' +
+                '<th><button id="selection-table-batch-color-button' + this.widgetID +
+                    '" type="button" value="' + this.batchColor + '" style="background-color: ' + this.batchColor + '">Batch color</button></th>' +
+                '<th></th>' +
+              '</tr>' +
+            '</thead>' +
+            '<tbody>' +
+            '</tbody>';
+        content.appendChild(tab);
+
+        $("select.review-filter", tab).on("change",  function () {
+          self.review_filter = this.value;
+          self.update();
+        });
+        $("button#selection-table-batch-color-button" + this.widgetID, tab).on("click",
+            function() {
+              if (CATMAID.ColorPicker.visible()) {
+                CATMAID.ColorPicker.hide(this);
+                // Apply color on closing, even if the color picker itself wasn't
+                // touched. This allows easier re-use of a previously set batch
+                // color.
+                var rgb = new THREE.Color(self.batchColor);
+                self.batchColorSelected(rgb, self.batchOpacity, true, true);
+              } else {
+                CATMAID.ColorPicker.show(this, {
+                  onColorChange: self.batchColorSelected.bind(self),
+                  initialColor: self.batchColor,
+                  initialAlpha: self.batchOpacity
+                });
+              }
+            });
+        $('th input[type=button].filter', tab).on("click", filterNeuronList);
+        $('th input[type=text].filter', tab).on("keyup", function(e) {
+          if (13 === e.keyCode) filterNeuronList();
+        });
+
+        /**
+         * Trigger list filter.
+         */
+        function filterNeuronList() {
+          var filters = $('th input[type=text].filter', tab);
+          var nameFilter = filters[0].value;
+          var annotationFilter = filters[1].value;
+          self.filterBy(nameFilter, annotationFilter);
+        }
+
+        $(tab)
+          .on("click", "td .action-remove", this, function(e) {
+            var skeletonID = rowToSkeletonID(this);
+            e.data.removeSkeletons([skeletonID]);
+          })
+          .on("click", "td .action-select", this, function(e) {
+            var skeletonID = rowToSkeletonID(this);
+            CATMAID.TracingTool.goToNearestInNeuronOrSkeleton( 'skeleton', skeletonID );
+          })
+          .on("click", "td .action-annotate", function() {
+            var skeletonID = rowToSkeletonID(this);
+            CATMAID.annotate_neurons_of_skeletons([skeletonID]);
+          })
+          .on("click", "td .action-info", function() {
+            var skeletonID = rowToSkeletonID(this);
+            CATMAID.SelectionTable.prototype.skeleton_info([skeletonID]);
+          })
+          .on("click", "td .action-navigator", function() {
+            var skeletonID = rowToSkeletonID(this);
+            var navigator = new CATMAID.NeuronNavigator();
+            WindowMaker.create('neuron-navigator', navigator);
+            navigator.set_neuron_node_from_skeleton(skeletonID);
+          })
+          .on("click", "td input.action-visibility", this, function(e) {
+            var table = e.data;
+            var skeletonID = rowToSkeletonID(this);
+            var action = this.dataset.action;
+            var skeleton = table.skeletons[table.skeleton_ids[skeletonID]];
+            var visible = this.checked;
+            skeleton[action] = visible;
+
+            // The first checkbox controls all others
+            if ("selected" === action) {
+              ['pre_visible', 'post_visible', 'text_visible', 'meta_visible'].forEach(function(other, k) {
+                if (visible && 2 === k) return; // don't make text visible
+                skeleton[other] = visible;
+                $('#skeleton' + other + table.widgetID + '-' + skeletonID).prop('checked', visible);
+              });
+              // Update table information
+              table.updateTableInfo();
+            }
+            table.triggerChange(CATMAID.tools.idMap(skeleton));
+          })
+          .on("click", "td .action-changecolor", this, function(e) {
+            var table = e.data;
+            var skeletonID = rowToSkeletonID(this);
+            CATMAID.ColorPicker.toggle(this, {
+              onColorChange: table.colorSkeleton.bind(table, skeletonID, false)
+            });
+          });
+
+        /**
+         * Find the closest table row element and read out skeleton ID.
+         */
+        function rowToSkeletonID(element) {
+          var skeletonID = $(element).closest("tr").attr("data-skeleton-id");
+          if (!skeletonID) throw new Error("Couldn't find skeleton ID");
+          return skeletonID;
+        }
+      },
+      init: function(win) {
+        // Add auto completetion to annotation filter
+        CATMAID.annotations.add_autocomplete_to_input(
+            $("#selection-table-ann-filter" + this.widgetID));
+        CATMAID.skeletonListSources.updateGUI();
+        this.init();
+        win.focus();
+      }
+    };
+  };
+
+  SelectionTable.prototype.focus = function() {
+    this.setLastFocused();
+  };
+
   SelectionTable.prototype.destroy = function() {
     this.clear();
     this.unregisterInstance();
@@ -1299,8 +1555,13 @@
     saveAs(new Blob([JSON.stringify(data, null, ' ')], {type: 'text/plain'}), filename);
   };
 
-
   // Export selection table
   CATMAID.SelectionTable = SelectionTable;
+
+  // Register widget with CATMAID
+  CATMAID.registerWidget({
+    key: 'selection-table',
+    creator: SelectionTable
+  });
 
 })(CATMAID);

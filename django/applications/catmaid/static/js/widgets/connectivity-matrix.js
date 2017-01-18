@@ -1540,14 +1540,12 @@
     if (1 === skeletonIDs.length) {
       CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeletonIDs[0]);
     } else {
-      var ST = new CATMAID.SelectionTable();
       var models = skeletonIDs.reduce(function(o, skid) {
         o[skid] = new CATMAID.SkeletonModel(skid, "",
             new THREE.Color().setRGB(1, 1, 0));
         return o;
       }, {});
-      WindowMaker.create('selection-table', ST);
-      ST.append(models);
+      WindowMaker.create('selection-table').widget.append(models);
     }
   }
 

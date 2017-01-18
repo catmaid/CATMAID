@@ -43,27 +43,19 @@
     // rendering, when the widget is set up completely.
     resizeOnRender = function() {
       // Fix position
-      var cp = $(colorPicker.nodes.colorPicker);
-      var pos = {left: parseFloat(cp.css('left')), top: parseFloat(cp.css('top'))};
-      var dim = {x: cp.width(), y: cp.height()};
-      var win = {width: $(window).width(), height: $(window).height()};
-      var newLeft = pos.left < 0 ? 0 :
-        ((pos.left + dim.x) > win.width ? win.width - dim.x : pos.left);
-      var newTop = pos.top < 0 ? 0 :
-        ((pos.top + dim.y) > win.height ? win.height - dim.y : pos.top);
-
-      cp.css({
-        left: newLeft,
-        top: newTop
-      });
+      var $colorPicker = $(colorPicker.nodes.colorPicker);
+      if($colorPicker.height() + $colorPicker.offset().top - window.pageYOffset > window.innerHeight) {
+        $colorPicker.css('top', (window.scrollY + window.innerHeight - $colorPicker.height())+'px');
+      }
+      if($colorPicker.width() + $colorPicker.offset().left - window.pageXOffset > window.innerWidth) {
+        $colorPicker.css('left', (window.scrollX + window.innerWidth - $colorPicker.width())+'px');
+      }
     };
+    resizeOnRender();
   }
 
   function onDisplay(colors, mode, options) {
-    if (resizeOnRender) {
-      CATMAID.tools.callIfFn(resizeOnRender);
-      resizeOnRender = null;
-    }
+    CATMAID.tools.callIfFn(resizeOnRender);
 
     // Make sure no width or height is explicitely set on the container
     // element, which would prevent proper resizing.

@@ -255,7 +255,10 @@
 
         // CONNECTOR SELECTION CONTROLS
 
-        var sourceSelect = CATMAID.skeletonListSources.createSelect(this.skeletonSource);
+        // Create skeleton source drop-down without showing own result skeleton
+        // source.
+        var sourceSelect = CATMAID.skeletonListSources.createSelect(this.skeletonSource,
+          [this.resultSkeletonSource.getName()]);
         controls.appendChild(sourceSelect);
 
         var add = document.createElement('input');

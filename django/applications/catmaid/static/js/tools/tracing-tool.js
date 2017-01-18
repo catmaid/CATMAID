@@ -1125,7 +1125,7 @@
             CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', nextSkid);
           }
         } else {
-          WindowMaker.create('neuron-annotations');
+          WindowMaker.create('neuron-search');
         }
         return true;
       }
@@ -1589,7 +1589,7 @@
       buttonID: "data_button_query_neurons",
       buttonName: 'query_neurons',
       run: function (e) {
-        WindowMaker.create('neuron-annotations');
+        WindowMaker.create('neuron-search');
         return true;
       }
     }),

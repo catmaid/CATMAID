@@ -55,6 +55,218 @@
       return "Neuron Search " + this.widgetID;
   };
 
+  NeuronAnnotations.prototype.getWidgetConfiguration = function() {
+    return {
+      controlsID: 'neuron_annotations_query_fields' + this.widgetID,
+      contentID: 'neuron_annotations_query_results' + this.widgetID,
+      createControls: function(content) {
+        // Create the query fields HTML and use {{NA-ID}} as template for the
+        // actual this.widgetID which will be replaced afterwards.
+        var queryFields_html =
+          '<form id="neuron_query_by_annotations{{NA-ID}}" autocomplete="on">' +
+          '<table cellpadding="0" cellspacing="0" border="0" ' +
+              'class="neuron_annotations_query_fields" ' +
+              'id="neuron_annotations_query_fields{{NA-ID}}">' +
+            '<tr id="neuron_query_by_name{{NA-ID}}">' +
+              '<td class="neuron_annotations_query_field_label">named as:</td> ' +
+              '<td class="neuron_annotations_query_field">' +
+                '<input type="text" name="neuron_query_by_name" ' +
+                    'id="neuron_query_by_name{{NA-ID}}" value="" class="" />' +
+                '<em>(optional)</em>' +
+              '</td> ' +
+            '</tr>' +
+            '<tr id="neuron_query_by_annotation{{NA-ID}}">' +
+              '<td class="neuron_annotations_query_field_label">annotated:</td> ' +
+              '<td class="neuron_annotations_query_field">' +
+                '<input type="text" name="neuron_query_by_annotation" autocomplete="off" ' +
+                    'class="neuron_query_by_annotation_name{{NA-ID}}" value="" placeholder="Use / for RegEx" />' +
+                '<input type="checkbox" name="neuron_query_include_subannotation" ' +
+                    'class="neuron_query_include_subannotation{{NA-ID}}" value="" />' +
+                'Include sub-annotations ' +
+                '<input type="button" name="neuron_annotations_add_annotation" ' +
+                    'id="neuron_annotations_add_annotation{{NA-ID}}" value="+" ' +
+                    'class="" />' +
+              '</td> ' +
+            '</tr>' +
+            '<tr id="neuron_query_by_annotator{{NA-ID}}">' +
+              '<td class="neuron_annotations_query_field_label">by:</td>' +
+              '<td class="neuron_annotations_query_field">' +
+                '<select name="neuron_query_by_annotator" ' +
+                    'id="neuron_query_by_annotator{{NA-ID}}" class="">' +
+                  '<option value="-2">Anyone</option>' +
+                  '<option value="Team">Team</option>' +
+                '</select>' +
+              '</td>' +
+            '</tr>' +
+            '<tr id="neuron_query_by_date_range{{NA-ID}}">' +
+              '<td class="neuron_annotations_query_field_label">between:</td>' +
+              '<td class="neuron_annotations_query_field">' +
+                '<input type="text" name="neuron_query_by_start_date" ' +
+                    'id="neuron_query_by_start_date{{NA-ID}}" size="10" ' +
+                    'value="" class=""/>' +
+                ' and ' +
+                '<input type="text" name="neuron_query_by_end_date" ' +
+                    'id="neuron_query_by_end_date{{NA-ID}}" size="10" ' +
+                    'value="" class=""/> ' +
+              '</td>' +
+            '</tr>' +
+          '</table>' +
+          '<input type="submit" />' +
+          '</form>';
+        // Replace {{NA-ID}} with the actual widget ID
+        var queryFields = document.createElement('div');
+        queryFields.innerHTML = queryFields_html.replace(/{{NA-ID}}/g, this.widgetID);
+        content.appendChild(queryFields);
+      },
+      createContent: function(content) {
+        this.content = content;
+
+        var container_html =
+          '<div id="neuron_annotations_query_footer{{NA-ID}}" ' +
+              'class="neuron_annotations_query_footer">' +
+            '<input type="button" id="neuron_annotations_annotate{{NA-ID}}" ' +
+                'value="Annotate" />' +
+            '<input type="button" id="neuron_annotations_export_csv{{NA-ID}}" ' +
+                'value="Export CSV" title="Export selected neuron IDs and names. ' +
+                'Annotations are exported if displayed."/>' +
+            '<label>' +
+              '<input type="checkbox" id="neuron_search_show_annotations{{NA-ID}}" />' +
+              'Show annotations' +
+            '</label>' +
+          '</div>' +
+          '<table cellpadding="0" cellspacing="0" border="0" ' +
+                'class="neuron_annotations_query_results_table display" ' +
+                'id="neuron_annotations_query_results_table{{NA-ID}}">' +
+            '<thead>' +
+              '<tr>' +
+                '<th>' +
+                  '<input type="checkbox" ' +
+                      'id="neuron_annotations_toggle_neuron_selections_checkbox{{NA-ID}}" />' +
+                  '<span>Entity Name</span>' +
+                '</th>' +
+                '<th>Type</th>' +
+                '<th>' +
+                  '<div class="result_annotations_column">Annotations</div>' +
+                  '<div>' +
+                    '<label for="neuron_annotations_user_filter{{NA-ID}}">' +
+                        'By ' +
+                    '</label>' +
+                    '<select name="annotator_filter" class="" ' +
+                        'id="neuron_annotations_user_filter{{NA-ID}}">' +
+                      '<option value="show_all" selected>Anyone</option>' +
+                    '</select>' +
+                  '</div>' +
+                '</th>' +
+              '</tr>' +
+            '</thead>' +
+            '<tbody>' +
+              '<tr><td colspan="3"></td></tr>' +
+            '</tbody>' +
+          '</table>';
+        // Replace {{NA-ID}} with the actual widget ID
+        content.innerHTML = container_html.replace(/{{NA-ID}}/g, this.widgetID);
+
+        // Add a container that gets displayed if no results could be found
+        var no_results = document.createElement('div');
+        no_results.setAttribute('id', 'neuron_annotations_query_no_results' + this.widgetID);
+        no_results.classList.add('windowContent');
+        no_results.innerHTML = '<em>No results could be found.</em>';
+        content.appendChild(no_results);
+        no_results.style.display = 'none';
+      },
+      init: function() {
+        var self = this;
+
+        // Update annotation cache and add autocompletion to annotation input field
+        CATMAID.annotations.update(this.handleAnnotationUpdate.bind(this));
+
+        $('#neuron_annotations_add_annotation' + this.widgetID)[0].onclick =
+            this.add_query_field.bind(this);
+        $('#neuron_query_by_annotations' + this.widgetID).submit(function(event) {
+              // Submit form in iframe to make browser save search terms for
+              // autocompletion.
+              var form = document.getElementById('neuron_query_by_annotations' + self.widgetID);
+              CATMAID.DOM.submitFormInIFrame(form);
+              // Do actual query
+              self.query.call(self, true);
+              event.preventDefault();
+              return false;
+            });
+        $('#neuron_annotations_annotate' + this.widgetID)[0].onclick = (function() {
+            // Get IDs of selected entities
+            var selected_entity_ids = this.get_selected_neurons().map( function(e) {
+              return e.id;
+            });
+            // Refresh display after annotations have been added
+            CATMAID.annotate_entities(selected_entity_ids,
+                this.refresh_annotations.bind(this));
+        }).bind(this);
+        $('#neuron_annotations_export_csv' + this.widgetID)[0].onclick = this.exportCSV.bind(this);
+        $('#neuron_search_show_annotations' + this.widgetID)
+          .prop('checked', this.displayAnnotations)
+          .on('change', this, function(e) {
+            var widget = e.data;
+            widget.displayAnnotations = this.checked;
+            widget.updateAnnotations();
+          });
+
+        $('#neuron_annotations_toggle_neuron_selections_checkbox' + this.widgetID)[0].onclick =
+            this.toggle_neuron_selections.bind(this);
+
+        // Fill user select boxes
+        var $select = $('tr #neuron_query_by_annotator' + this.widgetID);
+        var $filter_select = $("#neuron_annotations_query_results_table" +
+            this.widgetID + ' select[name=annotator_filter]');
+        var users = CATMAID.User.all();
+        for (var userID in users) {
+          if (users.hasOwnProperty(userID) && userID !== "-1") {
+            var user = users[userID];
+            {
+              // Add entry to query select
+              var opts = {value: user.id, text: user.fullName};
+              $("<option />", opts).appendTo($select);
+              // Add entry to filter select and select current user by default
+              $("<option />", opts)
+                  .prop('selected', userID == CATMAID.session.userid)
+                  .appendTo($filter_select);
+            }
+          }
+        }
+
+        // Make it support autocompletion
+        $select.combobox();
+
+        // Make annotation filter select support autocompletion and attach the
+        // selected event handler right away. Unfortunately, this can't be done
+        // later.
+        $filter_select.combobox({
+          selected: function(event, ui) {
+            var val = $(this).val();
+            self.annotationUserFilter = val != 'show_all' ? val : null;
+            self.updateAnnotationFiltering();
+          }
+        });
+
+        $( "#neuron_query_by_start_date" + this.widgetID ).datepicker(
+            { dateFormat: "yy-mm-dd" });
+        $( "#neuron_query_by_end_date" + this.widgetID ).datepicker(
+            { dateFormat: "yy-mm-dd" });
+
+        // Hide the result container by default. It would be more logical to do this
+        // right after the contaienr creation. However, adding auto completion to
+        // the filter select box doesn't work when it is hidden.
+        $(this.content).hide();
+
+        CATMAID.skeletonListSources.updateGUI();
+
+        // Focus search box
+        setTimeout(function() {
+          $('input#neuron_query_by_name' + this.widgetID).focus();
+        }, 10);
+      }
+    };
+  };
+
   NeuronAnnotations.prototype.destroy = function()
   {
     this.unregisterInstance();
@@ -1100,5 +1312,11 @@
 
   // Make neuron search widget available in CATMAID namespace
   CATMAID.NeuronAnnotations = NeuronAnnotations;
+
+  // Register widget with CATMAID
+  CATMAID.registerWidget({
+    key: 'neuron-search',
+    creator: NeuronAnnotations
+  });
 
 })(CATMAID);

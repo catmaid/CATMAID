@@ -263,7 +263,48 @@
         setTimeout(function() {
           $('input#neuron_query_by_name' + this.widgetID).focus();
         }, 10);
-      }
+      },
+      helpText: [
+        '<p>Find neurons and annotations by neuron name or by annotations ',
+        'or by Annotator or by date range of annotation (date of association ',
+        'of neuron and annotation).</p>',
+        '<p>As an example, consider the following setup with two neurons n1 and n2 as well as three annotations A, B and C:</p>',
+        '<p><svg height="200" with="200" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">',
+        '<path d="M 20,50 10,30" style="stroke-width: 0.5px; stroke: #000" />',
+        '<path d="M 20,50 30,30" style="stroke-width: 0.5px; stroke: #000" />',
+        '<path d="M 40,50 30,30" style="stroke-width: 0.5px; stroke: #000" />',
+        '<path d="M 30,30 30,10" style="stroke-width: 0.5px; stroke: #000" />',
+        '<circle cx="20" cy="50" r="7" style="fill: #fff"/>',
+        '<circle cx="40" cy="50" r="7" style="fill: #fff"/>',
+        '<circle cx="30" cy="28" r="4" style="fill: #fff"/>',
+        '<circle cx="30" cy="10" r="3" style="fill: #fff"/>',
+        '<circle cx="10" cy="30" r="3" style="fill: #fff"/>',
+        '<text x="20" y="50" style="font-size: 5px; text-anchor: middle">n1</text>',
+        '<text x="40" y="50" style="font-size: 5px; text-anchor: middle">n1</text>',
+        '<text x="30" y="30" style="font-size: 5px; text-anchor: middle">A</text>',
+        '<text x="30" y="10" style="font-size: 5px; text-anchor: middle">B</text>',
+        '<text x="10" y="30" style="font-size: 5px; text-anchor: middle">C</text>',
+        '</svg></p>',
+        '<p>If "Include sub-annotations" is checked, top-level results will ',
+        'include neurons n1 and n2 which are annotated with annotation A, ',
+        'which in turn is meta-annotated with annotation B. A Search for ',
+        'annotation B will display only annotation A. If "Include sub-annotations"',
+        'is checked n1 and n2 will also be displayed along with annotation ',
+        'A. A Search for C will display n1 only, even if "Include sub-annotations"',
+        'is checked.',
+        '<p>Additional annotations constraints can be added/removed with <kbd>+</kbd>/<kbd>-</kbd>.</p>',
+        '<p>Once search results are displayed, additional buttons make it ',
+        'possible to annotate selected neurons and export the result table ',
+        'as CSV file.</p>',
+        '<p>By default, annotations of result neurons are <em>not</em> shown ',
+        'in the search results. To view them check ‘Show annotations’. ',
+        'Annotations that are regular search results (i.e. the type column says ',
+        '"annotation") can be expanded to view further details (including ',
+        'skeletons and sub-annotations). If displayed, annotations on a ',
+        'particular result (i.e. on the right side with red minus button) ',
+        'can be clicked on to launch the Neuron Navigator. The minus sign ',
+        'will de-annotate the respective annotation.</p>'
+      ].join('\n')
     };
   };
 

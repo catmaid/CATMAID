@@ -91,6 +91,9 @@ Miscellaneous:
 - Synaptic fractions: colors of groups and partners can now be changed through
   legend of graph.
 
+- The tag table now has a refresh button to manually update the cache and
+  redraw the table.
+
 
 ### Bug fixes
 
@@ -118,6 +121,9 @@ Miscellaneous:
 
 - The connector table can now be used as a skeleton source, where
   previously an error would be raised.
+
+- The tag table now collapses any tags with identical names, but as a
+  consequence does not show the tag ID (as there may be multiple IDs)
 
 
 ## 2016.12.16

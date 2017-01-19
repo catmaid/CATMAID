@@ -21,13 +21,13 @@ var WindowMaker = new function()
 
   /**
    * Get content height of a window and take into account a potential button
-   * panel. If a button panel ID is provided, its height is substracted from the
-   * window content height.
+   * panel. If a button panel ID or element is provided, its height is
+   * substracted from the window content height.
    */
-  var getWindowContentHeight = function(win, buttonPanelId) {
+  var getWindowContentHeight = function(win, buttonPanel) {
     var height = win.getContentHeight();
-    if( buttonPanelId !== undefined ) {
-      var $bar = $('#' + buttonPanelId);
+    if (buttonPanel !== undefined) {
+      var $bar = typeof(buttonPanel) === "string" ? $('#' + buttonPanelId) : $(buttonPanel);
       height = height - ($bar.is(':visible') ? $bar.height() : 0);
     }
     return height;
@@ -155,13 +155,13 @@ var WindowMaker = new function()
     // Create controls, if requested
     var controls;
     if (config.createControls) {
-      var buttons = document.createElement("div");
+      controls = document.createElement("div");
       if (config.controlsID) {
-        buttons.setAttribute("id", config.controlsID);
+        controls.setAttribute("id", config.controlsID);
       }
-      buttons.setAttribute("class", "buttonpanel");
-      config.createControls.call(instance, buttons);
-      container.appendChild(buttons);
+      controls.setAttribute("class", "buttonpanel");
+      config.createControls.call(instance, controls);
+      container.appendChild(controls);
       DOM.addButtonDisplayToggle(win);
     }
 
@@ -177,7 +177,7 @@ var WindowMaker = new function()
     var destroy = instance.destroy ? instance.destroy.bind(instance) : undefined;
     var resize = instance.resize ? instance.resize.bind(instance) : undefined;
     var focus = instance.focus ? instance.focus.bind(instance) : undefined;
-    addListener(win, content, config.controlsID, destroy, resize, focus);
+    addListener(win, content, controls, destroy, resize, focus);
     addLogic(win);
 
     if (CATMAID.tools.isFn(config.init)) {

@@ -57,9 +57,23 @@
   TagTable.prototype.getWidgetConfiguration = function() {
     var tableSelector = "#tag-table" + this.widgetID;
     return {
-      // controlsID: 'tag-tableWidgetControls' + this.widgetID,
-      // createControls: function(controls) {
-      // },
+      controlsID: 'tag-tableWidgetControls' + this.widgetID,
+      createControls: function(controls) {
+        var self = this;
+
+        var refresh = document.createElement('input');
+        refresh.setAttribute("type", "button");
+        refresh.setAttribute("value", "Refresh");
+        refresh.onclick = function() {
+          $(tableSelector).DataTable().clear();
+          self.selectedSkeletons.clear();
+          for (var key of Object.keys(responseCache)) {
+            delete responseCache[key];
+          }
+          self.init();
+        };
+        controls.appendChild(refresh);
+      },
       contentID: 'tag-table-widget' + this.widgetID,
       createContent: function(container) {
         var self = this;
@@ -97,53 +111,6 @@
           '<tbody>' +
           '</tbody>' +
           '</table>';
-
-        CATMAID.fetch(project.id + '/labels/stats', 'GET')  // ~5s
-          .then(function(json) {
-            var responseObj = json.reduce(function(obj, arr) {
-              var labelID = arr[0];
-              var labelName = arr[1];
-              var skelID = arr[2];
-              var nodeID = arr[3];
-
-              if (!(labelName in obj)) {
-                obj[labelName] = {
-                  'labelIDs': new Set([labelID]),
-                  'skelIDs': new Set(),
-                  'nodeIDs': new Set(),
-                  'checked': false
-                };
-              } else {
-                obj[labelName].labelIDs.add(labelID);
-                obj[labelName].skelIDs.add(skelID);
-                obj[labelName].nodeIDs.add(nodeID);
-              }
-
-              return obj;
-            }, {});
-
-            responseCache = responseObj;
-
-            var rowObjs = [];
-            for (var key of Object.keys(responseObj)) {
-              if (responseObj[key].nodeIDs.size) {  // only labels applied to nodes
-                rowObjs.push({
-                  'labelName': key,
-                  'skelCount': responseObj[key].skelIDs.size,
-                  'nodeCount': responseObj[key].nodeIDs.size,
-                  'checked': false
-                });
-              }
-            }
-
-            var table = $(tableSelector).DataTable();
-
-            table.rows.add(rowObjs);
-            table.draw();
-
-            $(tableSelector + '_processing').hide();
-          }
-        );
       },
       init: function() {
         this.init(project.getId());
@@ -189,6 +156,53 @@
     var self = this;
     var widgetID = this.widgetID;
     var tableSelector = "#tag-table" + widgetID;
+
+    CATMAID.fetch(project.id + '/labels/stats', 'GET')
+      .then(function(json) {
+        var responseObj = json.reduce(function(obj, arr) {
+          var labelID = arr[0];
+          var labelName = arr[1];
+          var skelID = arr[2];
+          var nodeID = arr[3];
+
+          if (!(labelName in obj)) {
+            obj[labelName] = {
+              'labelIDs': new Set([labelID]),
+              'skelIDs': new Set(),
+              'nodeIDs': new Set(),
+              'checked': false
+            };
+          } else {
+            obj[labelName].labelIDs.add(labelID);
+            obj[labelName].skelIDs.add(skelID);
+            obj[labelName].nodeIDs.add(nodeID);
+          }
+
+          return obj;
+        }, {});
+
+        responseCache = responseObj;
+
+        var rowObjs = [];
+        for (var key of Object.keys(responseObj)) {
+          if (responseObj[key].nodeIDs.size) {  // only labels applied to nodes
+            rowObjs.push({
+              'labelName': key,
+              'skelCount': responseObj[key].skelIDs.size,
+              'nodeCount': responseObj[key].nodeIDs.size,
+              'checked': false
+            });
+          }
+        }
+
+        var table = $(tableSelector).DataTable();
+
+        table.rows.add(rowObjs);
+        table.draw();
+
+        $(tableSelector + '_processing').hide();
+      }
+    );
 
     this.oTable = $(tableSelector).dataTable({  // use ajax data source directly?
       // http://www.datatables.net/usage/options

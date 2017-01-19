@@ -7,19 +7,7 @@
 
   const CACHE_TIMEOUT = 5*60*1000;
 
-  const DEFAULT_WIDTH = 3;
-  const DEFAULT_HEIGHT = 3;
-  const MAX_WIDTH = 5;
-  const MAX_HEIGHT = 5;
-
   const DEFAULT_CONNECTOR_RELATION = 'presynaptic_to';
-
-  const HIDER_Z_INDEX = 100;  // must be < 101 (for error alerts)
-  const PANEL_PADDING = 1;
-
-  const TRACING_OVERLAY_BUFFER = 64;
-
-  const DEFAULT_SHOW_SCALE_BAR = false;
 
   const DEFAULT_SORT_FN_TITLE = 'Connector depth (proportion)';
 
@@ -35,27 +23,19 @@
     // This skeleton source takes care of internal skeleton management. It is
     // not registered. It is the input skeleton sink, but the output is handled
     // with a second source
-    var updateWithSkels = this.updateWithSkels.bind(this);
+    var update = this.update.bind(this);
     this.skeletonSource = new CATMAID.BasicSkeletonSource(this.getName() + " Input", {
       register: false,
-      handleAddedModels: updateWithSkels,
-      handleChangedModels: updateWithSkels,
-      handleRemovedModels: updateWithSkels
+      handleAddedModels: update,
+      handleChangedModels: update,
+      handleRemovedModels: update
     });
     // A skeleton source to collect results in
     this.resultSkeletonSource = new CATMAID.BasicSkeletonSource(this.getName());
 
     this.cache = new ConnectorViewerCache(this.skeletonSource);
-    this.currentConnectorOrder = [];
-    this.firstConnectorIdx = 0;
+    this.stackViewerGrid = null;  // instantiated in createContent()
 
-    this.currentConnectorRelation = DEFAULT_CONNECTOR_RELATION;
-    this.dimensions = [DEFAULT_HEIGHT, DEFAULT_WIDTH];
-
-    this.sourceStackViewer = project.getStackViewers()[0];
-    this.stackViewers = [];
-    this.panelWindows = [];
-    this.showScaleBar = DEFAULT_SHOW_SCALE_BAR;
 
     if (skeletonModels) {
       this.skeletonSource.append(skeletonModels);
@@ -70,104 +50,19 @@
   };
 
   ConnectorViewer.prototype.destroy = function() {
-    this.closeStackViewers();
+    this.stackViewerGrid.closeStackViewers();
     this.unregisterInstance();
-  };
-
-  /**
-   * Update the text describing which connectors are shown.
-   */
-  ConnectorViewer.prototype.updateShowingText = function() {
-    var total = this.currentConnectorOrder.length;
-    var start = Math.min(this.firstConnectorIdx + 1, total);
-    var stop = Math.min(this.firstConnectorIdx + this.dimensions[0] * this.dimensions[1], total);
-
-    var showingTextSelector = $(`#${this.idPrefix}showing`);
-    showingTextSelector.find(`.start`).text(start);
-    showingTextSelector.find(`.stop`).text(stop);
-    showingTextSelector.find(`.total`).text(total);
-  };
-
-  /**
-   *
-   * @param newPage zero-indexed
-   */
-  ConnectorViewer.prototype.changePage = function(newPage) {
-    var currentPageElement = document.getElementById(this.idPrefix + 'current-page');
-
-    var total = this.currentConnectorOrder.length;
-
-    if (total === 0) {
-      currentPageElement.value = 1;
-      this.update();
-      return 0;
-    }
-
-    var newFirstConnectorIdx = newPage * this.dimensions[0] * this.dimensions[1];
-
-    if (this.firstConnectorIdx === newFirstConnectorIdx) {  // page may not be changing
-      this.update();
-      return Number(currentPageElement.value) - 1;
-    } else if (newPage < 0 || newFirstConnectorIdx >= total) {  // page out of bounds
-      CATMAID.warn('This page does not exist! Returning to page 1.');
-      return this.changePage(0);
-    } else {
-      this.firstConnectorIdx = newFirstConnectorIdx;
-      currentPageElement.value = newPage + 1;
-      this.update();
-      return newPage;
-    }
-  };
-
-  ConnectorViewer.prototype.clearCache = function() {
-    this.currentConnectorOrder = [];
-    this.firstConnectorIdx = 0;
-    this.cache.clear();
-  };
-
-  ConnectorViewer.prototype.closeStackViewers = function () {
-    for (var stackViewer of this.stackViewers) {
-      stackViewer.destroy();
-    }
-  };
-
-  ConnectorViewer.prototype.getVisibleConnectors = function() {
-    var firstConnIdx = this.firstConnectorIdx;
-
-    return this.currentConnectorOrder.slice(
-      firstConnIdx,
-      firstConnIdx + this.dimensions[0] * this.dimensions[1]
-    );
-  };
-
-  /**
-   * Returns a list of stack windows not inside a connector viewer.
-   *
-   * @returns {Array} of objects {'title': stackViewerWindowTitle, 'stackViewer': stackViewerInstance}
-   */
-  ConnectorViewer.prototype.getOtherStackViewerOptions = function () {
-    return project.getStackViewers()
-      .filter(function(stackViewer) {
-        // only stack viewers not living in a connector-viewer panel window
-        return !stackViewer.getWindow().frame.classList.contains('connector-panel');
-      })
-      .map(function(stackViewer) {
-        return {
-          title: stackViewer.getWindow().title,
-          value: stackViewer
-        };
-      });
   };
 
   ConnectorViewer.prototype.updateConnectorOrder = function(){
     var self = this;
     return this.cache
-      .updateConnectorOrder(self.currentConnectorRelation)
+      .updateConnectorOrder(self.cache.currentConnectorRelation)
       .then(function(connectorOrder) {
           self.currentConnectorOrder = connectorOrder;
           return connectorOrder;
         });
-      };
+  };
 
   ConnectorViewer.prototype.getWidgetConfiguration = function() {
     return {
@@ -175,83 +70,6 @@
       controlsID: this.idPrefix + 'controls',
       createControls: function(controls) {
         var self = this;
-
-        // WIDGET SETTINGS CONTROLS
-
-        var sourceStackViewer = CATMAID.DOM.createSelect(
-          self.idPrefix + 'source-stack-viewer',
-          self.getOtherStackViewerOptions(),
-          this.sourceStackViewer._stackWindow.title
-        );
-        sourceStackViewer.onchange = function() {
-          self.sourceStackViewer = this.value;
-          self.redrawPanels();
-          self.updateWithSkels();
-        };
-
-        var sourceStackViewerLabel = document.createElement('label');
-        sourceStackViewerLabel.appendChild(document.createTextNode('Source stack viewer'));
-        sourceStackViewerLabel.appendChild(sourceStackViewer);
-        controls.appendChild(sourceStackViewerLabel);
-
-        var tileCounts = document.createElement('div');
-        tileCounts.style.display = 'inline-block';
-        controls.appendChild(tileCounts);
-
-        var makeTileCountOptions = function(max) {
-          var arr = [];
-          for (var i = 1; i <= max; i++) {
-            arr.push({title: i, value:i});
-          }
-          return arr;
-        };
-
-        var hTileCount = CATMAID.DOM.createSelect(
-          self.idPrefix + "h-tile-count",
-          makeTileCountOptions(MAX_HEIGHT),
-          String(DEFAULT_HEIGHT)
-        );
-        hTileCount.onchange = function() {
-          self.redrawPanels();
-          self.update();
-        };
-
-        var hTileCountLabel = document.createElement('label');
-        hTileCountLabel.appendChild(document.createTextNode('Height'));
-        hTileCountLabel.appendChild(hTileCount);
-        tileCounts.appendChild(hTileCountLabel);
-
-        var wTileCount = CATMAID.DOM.createSelect(
-          self.idPrefix + "w-tile-count",
-          makeTileCountOptions(MAX_WIDTH),
-          String(DEFAULT_WIDTH)
-        );
-        wTileCount.onchange = function() {
-          self.redrawPanels();
-          self.update();
-        };
-
-        var wTileCountLabel = document.createElement('label');
-        wTileCountLabel.appendChild(document.createTextNode('Width'));
-        wTileCountLabel.appendChild(wTileCount);
-        tileCounts.appendChild(wTileCountLabel);
-
-        var scaleBarCb = document.createElement('input');
-        scaleBarCb.setAttribute('type', 'checkbox');
-        scaleBarCb.checked = DEFAULT_SHOW_SCALE_BAR;
-        scaleBarCb.onchange = function() {
-          self.showScaleBar = this.checked;
-          for (var stackViewer of self.stackViewers) {
-            stackViewer.updateScaleBar(self.showScaleBar);
-          }
-        };
-
-        var scaleBarCbLabel = document.createElement('label');
-        scaleBarCbLabel.appendChild(document.createTextNode('Scale bars'));
-        scaleBarCbLabel.appendChild(scaleBarCb);
-        controls.appendChild(scaleBarCbLabel);
-
-        controls.appendChild(document.createElement('br'));
 
         // CONNECTOR SELECTION CONTROLS
 
@@ -273,7 +91,7 @@
         clear.setAttribute("type", "button");
         clear.setAttribute("value", "Clear");
         clear.onclick = function() {
-          self.clearCache();
+          self.cache.clear();
           self.skeletonSource.clear();
         };
         controls.appendChild(clear);
@@ -282,9 +100,10 @@
         refresh.setAttribute("type", "button");
         refresh.setAttribute("value", "Refresh");
         refresh.onclick = function() {
-          self.clearCache();
-          self.redrawPanels();
-          self.updateWithSkels();
+          self.cache.clear();
+          self.stackViewerGrid.clear();
+          self.stackViewerGrid.redrawPanels();
+          self.update();
         };
         controls.appendChild(refresh);
 
@@ -296,11 +115,11 @@
             {title: 'Gap junction connectors', value: "gapjunction_with"},
             {title: 'Abutting connectors', value: "abutting"}
           ],
-          this.currentConnectorRelation
+          this.cache.currentConnectorRelation
         );
         relation.onchange = function() {
-          self.currentConnectorRelation = this.value;
-          self.updateWithSkels();
+          self.cache.currentConnectorRelation = this.value;
+          self.update();
         };
 
         var relationLabel = document.createElement('label');
@@ -322,7 +141,7 @@
         sortingSelect.onchange = function() {
           self.currentConnectorOrder = [];
           self.cache.setSortFn(this.value);
-          self.updateWithSkels();
+          self.update();
         };
         self.cache.setSortFn(sortingSelect.value);
 
@@ -337,79 +156,22 @@
         openTable.onclick = function() {
           var selectedModels = self.resultSkeletonSource.getSelectedSkeletonModels();
           var connTable = WindowMaker.create('connector-table', selectedModels).widget;
-          document.getElementById(connTable.idPrefix + 'relation-type').value = self.currentConnectorRelation;
+          document.getElementById(connTable.idPrefix + 'relation-type').value = self.cache.currentConnectorRelation;
           connTable.update();
         };
         controls.appendChild(openTable);
 
         controls.appendChild(document.createElement('br'));
-
-        // PAGINATION CONTROLS
-
-        var prevButton = document.createElement('input');
-        prevButton.setAttribute('type', 'button');
-        prevButton.setAttribute('id', self.idPrefix + "prev");
-        prevButton.setAttribute('value', 'Previous');
-        prevButton.onclick = function() {
-          var prevPageIdx = Number(document.getElementById(self.idPrefix + "current-page").value) - 2;
-          if (prevPageIdx >= 0) {
-            self.changePage(prevPageIdx);
-          }
-        };
-        controls.appendChild(prevButton);
-
-        var pageCountContainer = document.createElement('div');
-        pageCountContainer.style.display = 'inline-block';
-        controls.appendChild(pageCountContainer);
-
-        var currentPage = document.createElement('input');
-        currentPage.setAttribute('type', 'text');
-        currentPage.setAttribute('size', '4');
-        currentPage.setAttribute('pattern', '\d+');
-        currentPage.style.textAlign = 'right';
-        currentPage.setAttribute('id', self.idPrefix + "current-page");
-        currentPage.setAttribute('value', '1');
-        currentPage.onchange = function() {
-          self.changePage(Number(this.value) - 1);
-        };
-
-        pageCountContainer.appendChild(currentPage);
-
-        pageCountContainer.appendChild(document.createTextNode(' / '));
-
-        var maxPage = document.createElement('p');
-        maxPage.innerHTML = '1';
-        maxPage.setAttribute('id', self.idPrefix + 'max-page');
-
-        pageCountContainer.appendChild(maxPage);
-
-        var nextButton = document.createElement('input');
-        nextButton.setAttribute('type', 'button');
-        nextButton.setAttribute('id', self.idPrefix + 'next');
-        nextButton.setAttribute('value', 'Next');
-        nextButton.onclick = function() {
-          // going from 1-base to 0-base so no +1 needed
-          var nextPageIdx = Number(document.getElementById(self.idPrefix + 'current-page').value);
-
-          var maxPageIdx = Number(document.getElementById(self.idPrefix + 'max-page').innerHTML) - 1;
-          if (nextPageIdx <= maxPageIdx) {
-            self.changePage(nextPageIdx);
-          }
-        };
-        controls.appendChild(nextButton);
-
-        var showing = document.createElement('p');
-        showing.setAttribute('id', self.idPrefix + 'showing');
-        showing.style.display = 'inline-block';
-        showing.innerHTML = 'Showing <b class="start">0</b>-<b class="stop">0</b> of <b class="total">0</b> connectors';
-        controls.appendChild(showing);
       },
       contentID: this.idPrefix + 'content',
       createContent: function(container) {
-        container.setAttribute('position', 'relative');
+        container.style.position = 'absolute';
       },
       init: function() {
-        this.init(project.getId());
+        var self = this;
+        var container = document.getElementById(self.idPrefix + 'content');
+        this.stackViewerGrid = new CATMAID.StackViewerGrid(container, self.idPrefix);
+        this.update();
       }
     };
   };
@@ -421,321 +183,16 @@
     }, {});
   };
 
-  ConnectorViewer.prototype.init = function() {
-    this.initWidgetWindow();
-    this.redrawPanels();
-    this.updateWithSkels();
-  };
-
-  ConnectorViewer.prototype.initWidgetWindow = function () {
-    var widgetWindow = this.getWidgetWindow();
-    var self = this;
-
-    widgetWindow.getWindows = function() {
-      return [this].concat(self.panelWindows);
-    };
-
-    widgetWindow.redraw = function() {
-      this.callListeners(CMWWindow.RESIZE);
-      self.panelWindows.forEach(function(w) {
-        w.redraw();
-      });
-    };
-  };
-
-  ConnectorViewer.prototype.getWidgetContent = function () {
-    return document.getElementById(this.idPrefix + 'content');
-  };
-
-  ConnectorViewer.prototype.getWidgetWindow = function () {
-    var widgetContent = this.getWidgetContent();
-    var widgetFrame = $(widgetContent).closest('.' + CMWNode.FRAME_CLASS).get(0);
-    return CATMAID.rootWindow.getWindows().find(function(w) {
-      return w.getFrame() === widgetFrame;
-    });
-  };
-
-  /**
-   * Set the suspend state of a stack viewer's tracing layers, and redraw if waking it. Stack viewers set to
-   * navigate with the project cannot be suspended.
-   *
-   * @param stackViewer
-   * @param suspended - new suspend state, 'true' to suspend, 'false' to wake and redraw
-   */
-  var setStackViewerSuspendState = function(stackViewer, suspended) {
-    // do not suspend if the stack viewer is set to navigate with project
-    suspended = stackViewer.navigateWithProject ? false : suspended;
-
-    for (var tracingLayer of stackViewer.getLayersOfType(CATMAID.TracingLayer)) {
-      tracingLayer.tracingOverlay.suspended = suspended;
-      if (!suspended) {
-        tracingLayer.tracingOverlay.redraw(true);
-      }
-    }
-  };
-
-  /**
-   * Return the set of nodes associated with any tracing overlay associated with the given stack viewer.
-   *
-   * @param stackViewer
-   */
-  var getNodeSet = function(stackViewer) {
-    return stackViewer.getLayersOfType(CATMAID.TracingLayer).reduce(function (set, tracingLayer) {
-      return set.addAll(Object.keys(tracingLayer.tracingOverlay.nodes));
-    }, new Set());
-  };
-
-  /**
-   * A listener to add to CMWWindows which will suspend tracing overlays which do not share nodes with the stack
-   * viewer in the focused window.
-   *
-   * EDGE CASE: suspend decisions are made on focus change, so if you trace in one stack viewer, into the field of
-   * view of a stack viewer which had been suspended due to being too far away, the latter will not unsuspend until
-   * focused.
-   *
-   * @param cmwWindow
-   * @param signal
-   */
-  ConnectorViewer.prototype.focusSuspendListener = function(cmwWindow, signal) {
-    if (signal === CMWWindow.FOCUS) {
-      var focusedStackViewer = this.stackViewers[this.panelWindows.indexOf(cmwWindow)];
-      var focusedNodes = getNodeSet(focusedStackViewer);
-
-      for (var stackViewer of this.stackViewers) {
-        if (stackViewer === focusedStackViewer) {
-          // avoid doing unnecessary set operations for the focused stack viewer
-          setStackViewerSuspendState(stackViewer, false);
-        } else {
-          // suspend unless nodes in the focused stack viewer also appear in this stack viewer
-          var otherNodes = getNodeSet(stackViewer);
-          setStackViewerSuspendState(stackViewer, !focusedNodes.intersection(otherNodes).size);
-        }
-      }
-    }
-  };
-
-  /**
-   * Handle the redrawing of stack viewer panels, e.g. in the case of changing dimensions or the first draw.
-   */
-  ConnectorViewer.prototype.redrawPanels = function() {
-    this.dimensions = [$(`#${this.idPrefix}h-tile-count`).val(), $(`#${this.idPrefix}w-tile-count`).val()];
-    var widgetContent = this.getWidgetContent();
-
-    // destroy existing
-    this.closeStackViewers();
-    this.stackViewers.length = 0;
-    this.panelWindows.length = 0;
-    while (widgetContent.lastChild) {
-      widgetContent.removeChild(widgetContent.lastChild);
-    }
-
-    var widgetWindow = this.getWidgetWindow();
-
-    var stack = this.sourceStackViewer.primaryStack;
-    var tileSource = this.sourceStackViewer.getLayer('TileLayer').tileSource;
-
-    var tileLayerConstructor = CATMAID.TileLayer.Settings.session.prefer_webgl ?
-      CATMAID.PixiTileLayer :
-      CATMAID.TileLayer;
-
-    for (var iIdx = 0; iIdx < this.dimensions[0]; iIdx++) {
-      for (var jIdx = 0; jIdx < this.dimensions[1]; jIdx++) {
-        // split the widget content into equal-sized panels
-        var panelContainer = document.createElement('div');
-        panelContainer.style.position = 'absolute';
-        panelContainer.style.height = `${100 / this.dimensions[0]}%`;
-        panelContainer.style.width = `${100 / this.dimensions[1]}%`;
-        panelContainer.style.top = `${(100 / this.dimensions[0]) * iIdx}%`;
-        panelContainer.style.left = `${(100 / this.dimensions[1]) * jIdx}%`;
-
-        widgetContent.appendChild(panelContainer);
-
-        // put a smaller div inside each of these panels, to allow for padding/ border
-        var panelInnerContainer = document.createElement('div');
-        panelInnerContainer.style.position = 'absolute';
-        panelInnerContainer.style.top = `${PANEL_PADDING}px`;
-        panelInnerContainer.style.bottom = `${iIdx === this.dimensions[0]-1 ? 0 : PANEL_PADDING}px`;
-        panelInnerContainer.style.left = `${jIdx ? PANEL_PADDING: 0}px`;
-        panelInnerContainer.style.right = `${jIdx === this.dimensions[1]-1 ? 0 : PANEL_PADDING}px`;
-
-        panelContainer.appendChild(panelInnerContainer);
-
-        // create the CMWWindow, stack viewer etc.
-        var panelWindow = new CMWWindow('Connector');
-        this.panelWindows.push(panelWindow);
-        // prevent dragging
-        $(panelWindow.getFrame()).children('.stackInfo_selected').get(0).onmousedown = function () {return true;};
-        panelWindow.parent = widgetWindow;
-
-        var panel = panelWindow.getFrame();
-        panel.style.position = 'absolute';
-        panel.classList.add('connector-panel', `i${iIdx}`, `j${jIdx}`);
-
-        var panelStackViewer = new CATMAID.StackViewer(project, stack, panelWindow);
-
-        var tileLayer = new tileLayerConstructor(
-          panelStackViewer,
-          "Image data (" + stack.title + ")",
-          stack,
-          tileSource,
-          true,
-          1,
-          false,
-          CATMAID.TileLayer.Settings.session.linear_interpolation
-        );
-
-        panelStackViewer.addLayer("TileLayer", tileLayer);
-
-        panelStackViewer.layercontrol.refresh();
-        this.stackViewers.push(panelStackViewer);
-
-        panelInnerContainer.appendChild(panel);
-        panelStackViewer.resize();
-
-        // add the associated skeleton name to the title bar
-        var stackInfo = panelStackViewer._stackWindow.frame.querySelector('.stackInfo_selected');
-        var assocNeuronNameEl = document.createElement('p');
-        assocNeuronNameEl.classList.add('note');
-
-        stackInfo.appendChild(assocNeuronNameEl);
-
-        // add the sort value to the bottom right of the frame
-        var sortVal = document.createElement('p');
-        sortVal.classList.add('sort-val');
-        panel.appendChild(sortVal);
-
-        // create div to hide stack viewers if they don't have a connector to show
-        var panelHider = document.createElement('div');
-        panelHider.style.position = 'absolute';
-        panelHider.style.height = '100%';
-        panelHider.style.width = '100%';
-        panelHider.style.backgroundColor = '#3d3d3d';
-        panelHider.style.zIndex = HIDER_Z_INDEX;
-        panelHider.setAttribute('id', `${this.idPrefix}hider-${iIdx}-${jIdx}`);
-
-        panelInnerContainer.appendChild(panelHider);
-
-        var hiderText = document.createElement('p');
-        hiderText.style.color = 'white';
-        hiderText.style.backgroundColor = 'transparent';
-        hiderText.innerHTML = 'No more connectors to show';
-
-        panelHider.appendChild(hiderText);
-
-        project.addStackViewer(panelStackViewer);
-
-        for (var tracingLayer of panelStackViewer.getLayersOfType(CATMAID.TracingLayer)) {
-          tracingLayer.tracingOverlay.padding = TRACING_OVERLAY_BUFFER;
-        }
-
-        panelWindow.redraw();
-
-        panelWindow.addListener(this.focusSuspendListener.bind(this));
-
-        setStackViewerSuspendState(panelStackViewer, true);
-      }
-    }
-
-    // todo: do this in the stack viewers rather than here
-    // hide window controls
-    var containerJq = $(widgetContent);
-    containerJq.find('.neuronname').hide();
-    containerJq.find('.stackClose').hide();
-    containerJq.find('.smallMapView_hidden').hide();  // doesn't work anyway
-  };
-
-  ConnectorViewer.prototype.changeAssocNeuronName = function(container, skelNames) {
-    container.querySelector('.note').innerHTML = skelNames.join(' | ');
-  };
-
-  ConnectorViewer.prototype.moveStackViewer = function(stackViewer, coords, completionCallback) {
-    stackViewer.moveToProject(
-      coords.z, coords.y, coords.x,
-      this.sourceStackViewer.primaryStack.stackToProjectSX(this.sourceStackViewer.s),
-      typeof completionCallback === "function" ? completionCallback : undefined
-    );
-  };
-
-  /**
-   * Update panel stack viewer state (hidden, title, position etc.) based on current skeleton source content. Used when
-   * dimensions or page changed.
-   */
-  ConnectorViewer.prototype.update = function() {
-    var self = this;
-    this.currentConnectorRelation = $(`#${this.idPrefix}relation-type`).val();
-
-    var visibleConnectors = this.getVisibleConnectors();
-    for (var iIdx = 0; iIdx < self.dimensions[0]; iIdx++) {
-      for (var jIdx = 0; jIdx < self.dimensions[1]; jIdx++) {
-        var panelIdx = jIdx + iIdx*self.dimensions[1];
-        var hider = document.getElementById(`${self.idPrefix}hider-${iIdx}-${jIdx}`);
-
-        var panelStackViewer = self.stackViewers[panelIdx];
-        panelStackViewer.navigateWithProject = false;
-        panelStackViewer.updateScaleBar(self.showScaleBar);
-
-        var connector = visibleConnectors[panelIdx];
-        if (connector) {
-          var panel = panelStackViewer._stackWindow.frame;
-
-          // change title bar
-          panelStackViewer._stackWindow.setTitle('connector ID: ' + connector.connID);
-          panel.querySelector('.stackTitle').onclick = self.moveStackViewer
-            .bind(self, self.sourceStackViewer, connector.coords);
-          self.changeAssocNeuronName(panel, connector.skelNames);
-
-          // allow the tracing overlay to update for the move
-          setStackViewerSuspendState(panelStackViewer, false);
-          self.moveStackViewer(
-            panelStackViewer, connector.coords,
-            setStackViewerSuspendState.bind(self, panelStackViewer, true)
-          );
-          panelStackViewer.getLayersOfType(CATMAID.TracingLayer).forEach(function(tracingLayer) {
-            tracingLayer.forceRedraw();
-          });
-
-          var sortVal = panel.querySelector('.sort-val');
-          switch (self.cache.sortFnName) {
-            case 'depthProportion':
-              sortVal.innerHTML = 'Depth (ppn): ' + connector.sortVal.toFixed(3);
-              sortVal.style.display = 'initial';
-              break;
-            case 'depth':
-              sortVal.innerHTML = `Depth: ${connector.sortVal.toFixed(0)}nm`;
-              sortVal.style.display = 'initial';
-              break;
-            default:
-              sortVal.style.display = 'none';
-              break;
-          }
-
-          hider.style.display = 'none';
-        } else {
-          hider.style.display = 'block';
-        }
-      }
-    }
-
-    self.updateShowingText();
-  };
-
   /**
    * Update result skeleton source, cache and connector order, and then panel stack viewer state.
    *
    * @returns Promise of connector order
    */
-  ConnectorViewer.prototype.updateWithSkels = function() {
+  ConnectorViewer.prototype.update = function() {
     var self = this;
     this._updateResultSkelSource();
 
-    return this.updateConnectorOrder().then(function(connectorOrder) {
-      var maxPageElement = document.getElementById(self.idPrefix + 'max-page');
-      var maxPage = Math.ceil(connectorOrder.length / (self.dimensions[0]*self.dimensions[1]));
-      maxPageElement.innerHTML = Math.max(maxPage, 1).toString();
-      self.changePage(0);
-
-      return connectorOrder;
-    });
+    this.updateConnectorOrder().then(self.stackViewerGrid.setTargets.bind(self.stackViewerGrid));
   };
 
   ConnectorViewer.prototype._updateResultSkelSource = function() {
@@ -818,6 +275,7 @@
     this.treenodes = {};
 
     this.sortFnName = null;
+    this.currentConnectorRelation = DEFAULT_CONNECTOR_RELATION;
 
     this.sortFns = new Map([
       ['depthProportion', this.getMinDepth.bind(this, true)],
@@ -857,6 +315,50 @@
   };
 
   /**
+   * Convert a connector ID into the object consumed by the stack viewer grid using cached information.
+   *
+   * @param connID
+   * @returns {{coords: (null|*|{x: *, y: *, z: *}|string|string|string), title: string, sortVal: *, note: (*|A|string)}}
+   */
+  ConnectorViewerCache.prototype.connectorIdToObj = function (connID) {
+    var self = this;
+    var selectedSkeletons = this.skeletonSource.getSelectedSkeletons();
+
+    var sortVal = self.sorting[self.currentConnectorRelation].sortVals[connID];
+
+    var sortValTxt;
+    switch (self.sorting[self.currentConnectorRelation].sortFnName) {
+      case 'depthProportion':
+        sortValTxt = 'Depth (ppn): ' + sortVal.toFixed(3);
+        break;
+      case 'depth':
+        sortValTxt = `Depth: ${sortVal.toFixed(0)}nm`;
+        break;
+      default:
+        sortValTxt = '';
+        break;
+    }
+
+    return {
+      coords: self.connectors[connID].coords,
+      title: 'connector ' + connID,
+      sortVal: sortValTxt,
+      note: Array.from(self.connectors[connID].relationType[self.currentConnectorRelation])
+            .reduce(function(arr, treenodeID) {
+              var skelID = self.treenodes[treenodeID].skelID;
+              var skelName = self.skeletons[skelID].name;
+
+              // only add distinct skeleton IDs, and only skeleton IDs which are in the selected skeletons
+              if (!arr.includes(skelName) && selectedSkeletons.includes(skelID)) {
+                arr.push(skelName);
+              }
+
+              return arr;
+            }, []).sort().join(' | '),
+    };
+  };
+
+  /**
    * Return the order of connectors associated with the current selected skeletons by the given relation type, using
    * the ConnectorViewerCache's stored sorting function.
    *
@@ -868,7 +370,6 @@
     var order;
 
     return this.ensureValidCache().then(function() {
-      var selectedSkeletons = self.skeletonSource.getSelectedSkeletons();
       var sortInfo = self.sorting[relationType];
 
       if (sortInfo.sorted && sortInfo.sortFnName === self.sortFnName) {
@@ -897,27 +398,7 @@
       }
 
       // turn the array of connector IDs into informative objects
-      return order.map(function(connID) {
-        return {
-          connID: connID,
-          coords: self.connectors[connID].coords,
-          skelNames: Array.from(self.connectors[connID].relationType[relationType])
-            .reduce(function(arr, treenodeID) {
-              var skelID = self.treenodes[treenodeID].skelID;
-              var skelName = self.skeletons[skelID].name;
-
-              // only add distinct skeleton IDs, and only skeleton IDs which are in the selected skeletons (they
-              // might just be associated with treenodes which are associated with connectors which are associated
-              // with selected skeletons)
-              if (!arr.includes(skelName) && selectedSkeletons.includes(skelID)) {
-                arr.push(skelName);
-              }
-
-              return arr;
-            }, []).sort(),  // sort alphanumerically to keep it deterministic
-          sortVal: sortInfo.sortVals[connID]
-        };
-      });
+      return order.map(self.connectorIdToObj.bind(self));
     });
   };
 

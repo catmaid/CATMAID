@@ -29,6 +29,10 @@ dl.keyboardShortcuts dt {
   margin-right: 4px;
 }
 
+dl.keyboardShortcuts.wide dt {
+  width: 9em;
+}
+
 dl.keyboardShortcuts dd {
   margin-left: 0.5em;
   margin-top: 0.1em;

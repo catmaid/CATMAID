@@ -1,4 +1,4 @@
-FROM ubuntu:14.04
+FROM ubuntu:16.04
 MAINTAINER Andrew Champion "andrew.champion@gmail.com"
 
 # Install dependencies
@@ -7,12 +7,12 @@ RUN apt-get update -y \
     && add-apt-repository -y ppa:nginx/stable \
     && apt-get install -y wget ca-certificates \
     && wget --quiet -O - https://postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - \
-    && add-apt-repository "deb http://apt.postgresql.org/pub/repos/apt/ trusty-pgdg main" \
+    && add-apt-repository "deb http://apt.postgresql.org/pub/repos/apt/ xenial-pgdg main" \
     && apt-get update -y \
     && apt-get install -y python-pip git \
     && apt-get install -y nginx supervisor uwsgi-plugin-python
-ADD packagelist-ubuntu-14.04-apt.txt /home/
-RUN xargs apt-get install -y < /home/packagelist-ubuntu-14.04-apt.txt
+ADD packagelist-ubuntu-16.04-apt.txt /home/
+RUN xargs apt-get install -y < /home/packagelist-ubuntu-16.04-apt.txt
 ADD django/requirements.txt /home/django/
 ENV WORKON_HOME /opt/virtualenvs
 RUN mkdir -p /opt/virtualenvs \
@@ -26,7 +26,7 @@ ADD . /home/
 # Postgres setup
 RUN sed -i '/# DO NOT DISABLE!/ilocal catmaid catmaid_user  md5' /etc/postgresql/9.5/main/pg_hba.conf \
     && service postgresql start \
-    && /home/scripts/createuser.sh catmaid catmaid_user p4ssw0rd | sudo -u postgres psql --cluster 9.5/main
+    && /home/scripts/createuser.sh catmaid catmaid_user p4ssw0rd | runuser -l postgres -c 'psql --cluster 9.5/main'
 
 # CATMAID setup
 RUN cp /home/django/configuration.py.example /home/django/configuration.py \

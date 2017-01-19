@@ -84,20 +84,34 @@ def labels_all(request, project_id=None):
 @requires_user_role(UserRole.Browse)
 def get_label_stats(request, project_id=None):
     """Get usage statistics of node labels.
+
+    ---
+    parameters:
+    - name: project_id
+      description: Project from which to get label stats
+      required: true
+    type:
+    - type: array
+      items:
+        type: array
+        items:
+          type: string
+          description: [labelID, labelName, skeletonID, treenodeID]
+      description: Labels used in this project
+      required: true
     """
     labeled_as_relation = Relation.objects.get(project=project_id, relation_name='labeled_as')
 
     cursor = connection.cursor()
     cursor.execute("""
-        SELECT ci.id, ci.name, COUNT(DISTINCT t.skeleton_id), COUNT(t.id)
+        SELECT ci.id, ci.name, t.skeleton_id, t.id
           FROM class_instance ci
           JOIN treenode_class_instance tci
             ON tci.class_instance_id = ci.id
           JOIN treenode t
             ON tci.treenode_id = t.id
           WHERE ci.project_id = %s
-            AND tci.relation_id = %s
-          GROUP BY ci.id;
+            AND tci.relation_id = %s;
     """, [project_id, labeled_as_relation.id])
 
     return JsonResponse(cursor.fetchall(), safe=False)

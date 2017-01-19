@@ -309,7 +309,7 @@
         'the Append button.</p>',
         '<h3>Buttons</h3>',
         '<dl class="keyboardShortcuts wide">',
-        '<dt><kbd>Clear</kbd></dt><dd>removes ALL skeletons from the table</dd>',
+        '<dt><kbd>Clear</kbd></dt><dd>Removes ALL skeletons from the table</dd>',
         '<dt><kbd>Refresh </kbd></dt><dd>Refreshes the table to reflect any updates made to listed skeletons such as Review status</dd>',
         '<dt><kbd>Open</kbd></dt><dd>Skeleton batches previously saved can be loaded into the Selection Table</dd>',
         '<dt><kbd>Save</kbd></dt><dd>Listed skeletons can be saved to a single json file</dd>',

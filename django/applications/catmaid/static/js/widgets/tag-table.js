@@ -54,6 +54,23 @@
     $("#tag-table" + this.widgetID + '_processing').hide();
   };
 
+  var escapeRegexStr = function(text) {
+    return text.replace(/[-[\]{}()*+?.,\\^$|#]/g, "\\$&");
+  };
+
+  var stringListToRegexStr = function(arr) {
+    var escapedStrings = arr.map(function(item) {
+      return '(((\\,\\s)|^)' + escapeRegexStr(item) + '((\\,\\s)|$))';
+    });
+    return escapedStrings.join('|');
+  };
+
+  TagTable.prototype.getSelectedLabelNames = function() {
+    return Object.keys(responseCache).filter(function(item) {
+      return responseCache[item].checked;
+    });
+  };
+
   TagTable.prototype.getWidgetConfiguration = function() {
     var tableSelector = "#tag-table" + this.widgetID;
     return {
@@ -73,6 +90,29 @@
           self.init();
         };
         controls.appendChild(refresh);
+
+        var openTable = document.createElement('input');
+        openTable.setAttribute('type', 'button');
+        openTable.setAttribute('value', 'Open Node Table');
+        openTable.setAttribute('title', 'Open a Treenode Table focused on the selected nodes');
+        openTable.onclick = function() {
+          var selectedModels = self.selectedSkeletons.getSelectedSkeletonModels();
+          var nodeTable = WindowMaker.create('node-table').widget;
+
+          // add skeletons which have the nodes in question
+          nodeTable.append(selectedModels);
+
+          // do not filter on treenode type
+          document.getElementById(nodeTable.idPrefix + 'search-type').value = '';
+
+          // add selected tags as a search string using alternation in regex, and trigger it
+          var searchLabel = document.getElementById(nodeTable.idPrefix + 'search-labels');
+          var regex = stringListToRegexStr(self.getSelectedLabelNames());
+          nodeTable.oTable.DataTable()
+            .column(searchLabel.closest('th'))
+            .search(regex, true, false, false);  // treat as regex, disable smart search, case sensitive
+        };
+        controls.appendChild(openTable);
       },
       contentID: 'tag-table-widget' + this.widgetID,
       createContent: function(container) {
@@ -118,6 +158,13 @@
     };
   };
 
+  var skelIDsToModels = function (skelIDs) {
+    return skelIDs.reduce(function (mappingObj, currentID) {
+      mappingObj[currentID] = new CATMAID.SkeletonModel(currentID);
+      return mappingObj;
+    }, {});
+  };
+
   /**
    * Update the skeleton source the widget uses to export skeletons
    *
@@ -127,12 +174,7 @@
    */
   TagTable.prototype.addAndSubtractFromSkeletonSource = function(obj) {
     // Update the skeleton source run by the widget
-    this.selectedSkeletons.append(
-      obj.add.reduce(function (mappingObj, currentID) {
-        mappingObj[currentID] = new CATMAID.SkeletonModel(currentID);
-        return mappingObj;
-      }, {})
-    );
+    this.selectedSkeletons.append(skelIDsToModels(obj.add));
     this.selectedSkeletons.removeSkeletons(obj.subtract);
   };
 

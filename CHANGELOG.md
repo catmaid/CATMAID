@@ -94,6 +94,9 @@ Miscellaneous:
 - The tag table now has a refresh button to manually update the cache and
   redraw the table.
 
+- The tag table can now open a treenode table pre-filtered for nodes with
+  the selected labels.
+
 
 ### Bug fixes
 

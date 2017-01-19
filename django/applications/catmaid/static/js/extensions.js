@@ -53,6 +53,18 @@ Set.prototype.intersection = function(iterable) {
 };
 
 /**
+ * Return a new set of those items which exist in either this set or the given 'of'-able iterable.
+ *
+ * @param iterable
+ * @returns {Set}
+ */
+Set.prototype.union = function(iterable) {
+  var union = new Set(this);
+  union.addAll(iterable);
+  return union;
+};
+
+/**
  * jQuery DataTables extensions
  */
 

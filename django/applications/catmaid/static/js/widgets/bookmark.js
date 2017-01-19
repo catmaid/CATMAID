@@ -20,7 +20,6 @@
   Bookmarks.store.on(CATMAID.DataStore.EVENT_LOADED, function () {
     Bookmarks.store.get('entries').then(function (values) {
       if (values.USER_PROJECT) {
-        console.log(values.USER_PROJECT);
         Bookmarks.entries = new Map(values.USER_PROJECT);
       } else {
         Bookmarks.entries.clear();

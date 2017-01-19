@@ -206,8 +206,12 @@
                         new THREE.Color().setRGB(1, 1, 0));
                     return o;
                   }, {});
-                  WindowMaker.create('selection-table', ST);
-                  ST.append(models);
+                  var widget = WindowMaker.create('selection-table').widget;
+                  if (widget) {
+                    widget.append(models);
+                  } else {
+                    CATMAID.warn('Couldn\'t open selection table');
+                  }
                 }));
             break;
           case 'connectors':

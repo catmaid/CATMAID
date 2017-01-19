@@ -200,7 +200,6 @@
                     CATMAID.info('No skeletons found for your selection');
                     return;
                   }
-                  var ST = new CATMAID.SelectionTable();
                   var models = skeleton_ids.reduce(function(o, skid) {
                     o[skid] = new CATMAID.SkeletonModel(skid, "",
                         new THREE.Color().setRGB(1, 1, 0));

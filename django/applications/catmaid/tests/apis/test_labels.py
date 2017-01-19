@@ -120,8 +120,9 @@ class LabelsApiTests(CatmaidApiTestCase):
 
     def test_stats(self):
         expected_response = [
-            [351, 'TODO', 2, 2],
-            [2342, 'uncertain end', 1, 1],
+            [2342, u'uncertain end', 373, 403],
+            [351, u'TODO', 1, 349],
+            [351, u'TODO', 235, 261]
         ]
 
         response = self.get_successful_stats_response()
@@ -139,4 +140,3 @@ class LabelsApiTests(CatmaidApiTestCase):
 
         for row in response:
             self.assertFalse(row[1] == 'skeleton {}'.format(row[0]) and row[2] == 1, msg=msg.format(row[0], row[1]))
-

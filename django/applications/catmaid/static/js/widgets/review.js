@@ -190,12 +190,13 @@
         return;
       var center = autoCentering || forceCentering;
       SkeletonAnnotations.staticMoveTo(
-        (self.isZView() || center) ? node.z : project.coordinates.z,
-        (self.isYView() || center) ? node.y : project.coordinates.y,
-        (self.isXView() || center) ? node.x : project.coordinates.x,
-        function () {
-           SkeletonAnnotations.staticSelectNode( node.id, skeletonID );
-        });
+          (self.isZView() || center) ? node.z : project.coordinates.z,
+          (self.isYView() || center) ? node.y : project.coordinates.y,
+          (self.isXView() || center) ? node.x : project.coordinates.x)
+      .then(function () {
+        SkeletonAnnotations.staticSelectNode( node.id, skeletonID );
+      })
+      .catch(CATMAID.handleError);
     };
 
     this.moveNodeInSegmentBackward = function() {

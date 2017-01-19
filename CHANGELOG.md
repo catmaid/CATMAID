@@ -4,6 +4,9 @@
 
 ### Features and enhancements
 
+Miscellaneous:
+
+- Bookmarks are now persistent for each project.
 
 
 ### Bug fixes

@@ -1144,7 +1144,7 @@
       helpText: "Bookmark the active node or current location",
       keyShortcuts: { ';': [ 186 ] },
       run: function (e) {
-          var dialog = new CATMAID.BookmarkDialog(CATMAID.BookmarkDialog.MODES.MARK);
+          var dialog = new CATMAID.Bookmarks.Dialog(CATMAID.Bookmarks.MODES.MARK);
           dialog.show();
           return true;
       }
@@ -1154,7 +1154,7 @@
       helpText: "Go to a bookmarked skeleton",
       keyShortcuts: { '\'': [ 222 ] },
       run: function (e) {
-          var dialog = new CATMAID.BookmarkDialog(CATMAID.BookmarkDialog.MODES.SKELETON);
+          var dialog = new CATMAID.Bookmarks.Dialog(CATMAID.Bookmarks.MODES.SKELETON);
           dialog.show();
           return true;
       }
@@ -1164,7 +1164,7 @@
       helpText: "Go to a bookmarked node",
       keyShortcuts: { '`': [ 192 ] },
       run: function (e) {
-          var dialog = new CATMAID.BookmarkDialog(CATMAID.BookmarkDialog.MODES.NODE);
+          var dialog = new CATMAID.Bookmarks.Dialog(CATMAID.Bookmarks.MODES.NODE);
           dialog.show();
           return true;
       }

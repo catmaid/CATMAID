@@ -32,7 +32,8 @@ needed_relations = {
 
 # All client datastores needed by the tracing system along their descriptions.
 needed_datastores = {
-    'settings': 'Store client settings',
+    'settings': 'Stores client settings',
+    'bookmarks': 'Stores bookmarked client locations',
 }
 
 

@@ -242,6 +242,7 @@ class CATMAIDConfig(AppConfig):
 
         Class = self.get_model("Class")
         Relation = self.get_model("Relation")
+        ClientDatastore = self.get_model("ClientDatastore")
         user = get_system_user(User)
         for p in Project.objects.all():
             validate_project_setup(p.id, user.id, True, Class, Relation)

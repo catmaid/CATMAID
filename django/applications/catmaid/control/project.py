@@ -7,7 +7,7 @@ from django.db import connection
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 
-from catmaid.models import UserRole, Class, Project, Relation, StackGroup
+from catmaid.models import UserRole, Class, ClientDatastore, Project, Relation, StackGroup
 from catmaid.control.authentication import requires_user_role
 
 from rest_framework.decorators import api_view
@@ -30,17 +30,24 @@ needed_relations = {
     'annotated_with': "Something is annotated by something else.",
 }
 
+# All client datastores needed by the tracing system along their descriptions.
+needed_datastores = {
+    'settings': 'Store client settings',
+}
+
 
 def validate_project_setup(project_id, user_id, fix=False,
-        class_model=None, rel_model=None):
+        class_model=None, rel_model=None, datastore_model=None):
     """Will check if needed classes and relations exist for every project. If
     <fix> is truthy, missing objects will be added.
     """
     missing_classes = []
     missing_relations = []
+    missing_datastores = []
 
     class_model = class_model or Class
     rel_model = rel_model or Relation
+    datastore_model = datastore_model or ClientDatastore
 
     for nc, desc in needed_classes.iteritems():
         try:
@@ -60,7 +67,14 @@ def validate_project_setup(project_id, user_id, fix=False,
                 rel_model.objects.get_or_create(project_id=project_id,
                         relation_name=nr, user_id=user_id)
 
-    return missing_classes, missing_relations
+    for nd, desc in needed_datastores.iteritems():
+        exists = datastore_model.objects.filter(name=nd).exists()
+        if not exists:
+            missing_datastores.append(nd)
+            if fix:
+                datastore_model.objects.get_or_create(name=nd)
+
+    return missing_classes, missing_relations, missing_datastores
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])

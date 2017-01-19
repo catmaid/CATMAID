@@ -17,6 +17,7 @@ def forwards(apps, schema_editor):
     Project = apps.get_model('catmaid', 'Project')
     Relation = apps.get_model('catmaid', 'Relation')
     User = apps.get_model('auth', 'User')
+    ClientDatastore = apps.get_model('catmaid', 'ClientDatastore')
 
     projects = Project.objects.all()
     # If there are no projects, don't continue, because there is nothing to
@@ -26,7 +27,7 @@ def forwards(apps, schema_editor):
 
     system_user = get_system_user(User)
     for p in projects:
-        validate_project_setup(p.id, system_user.id, True, Class, Relation)
+        validate_project_setup(p.id, system_user.id, True, Class, Relation, ClientDatastore)
 
 
 class Migration(migrations.Migration):

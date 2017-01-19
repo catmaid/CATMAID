@@ -135,6 +135,11 @@ var WindowMaker = new function()
     var container = win.getFrame();
     container.style.backgroundColor = "#ffffff";
 
+    // Add a button to open help documentation if it is provided by the widget.
+    if (config.helpText) {
+      DOM.addHelpButton(win, 'Help: ' + instance.getName(), config.helpText);
+    }
+
     // Add skeleton source subscription toggle if selected
     var source = config.subscriptionSource;
     if (source) {
@@ -145,11 +150,6 @@ var WindowMaker = new function()
       } else {
         addWidgetSourceToggle(win, s);
       }
-    }
-
-    // Add a button to open help documentation if it is provided by the widget.
-    if (config.helpText) {
-      DOM.addHelpButton(win, 'Help: ' + instance.getName(), config.helpText);
     }
 
     // Create controls, if requested

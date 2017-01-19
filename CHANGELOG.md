@@ -116,6 +116,9 @@ Miscellaneous:
 - The connector table can now be used as a skeleton source, where
   previously an error would be raised.
 
+- The tag table now collapses any tags with identical names, but as a
+  consequence does not show the tag ID (as there may be multiple IDs)
+
 
 ## 2016.12.16
 

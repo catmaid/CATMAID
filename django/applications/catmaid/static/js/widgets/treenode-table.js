@@ -9,6 +9,8 @@
     this.widgetID = this.registerInstance();
     CATMAID.SkeletonSource.call(this, true);
 
+    this.idPrefix = 'treenode-table-' + this.widgetID;
+
     this.models = {};
     this.ranges = {};
     this.oTable = null;
@@ -26,9 +28,10 @@
   };
 
   TreenodeTable.prototype.getWidgetConfiguration = function() {
+    var self = this;
     return {
-      controlsID: "treenode_table_buttons" + this.widgetID,
-      contentID: "treenode_table_widget" + this.widgetID,
+      controlsID: this.idPrefix + 'controls',
+      contentID: this.idPrefix + 'content',
       createControls: function(controls) {
         controls.appendChild(document.createTextNode('From'));
         controls.appendChild(CATMAID.skeletonListSources.createSelect(this));
@@ -58,13 +61,15 @@
               '<tr>' +
                 '<th>id</th>' +
                 '<th>type' +
-                  '' +
-                  '<select name="search_type" id="search_type' + this.widgetID + '" class="search_init">' +
-                  '<option value="">Any</option><option value="R">Root</option><option value="L" selected="selected">Leaf</option>' +
-                  '<option value="B">Branch</option><option value="S">Slab</option></select>' +
+                  '<select name="search_type" id="' + self.idPrefix + 'search-type" class="search_init">' +
+                    '<option value="">Any</option>' +
+                    '<option value="R">Root</option>' + '' +
+                    '<option value="L" selected="selected">Leaf</option>' +
+                    '<option value="B">Branch</option>' +
+                    '<option value="S">Slab</option>' + '' +
+                  '</select>' +
                 '</th>' +
-            // <input type="text" name="search_type" value="Search" class="search_init" />
-                '<th>tags<input type="text" name="search_labels" id="search_labels' + this.widgetID + '" value="Search" class="search_init" /></th>' +
+                '<th>tags<input type="text" name="search_labels" id="' + self.idPrefix + 'search-labels' + '" value="Search" class="search_init" /></th>' +
                 '<th>c</th>' +
                 '<th>x</th>' +
                 '<th>y</th>' +
@@ -274,7 +279,7 @@
             }
             // Insert tags
             var tag = tags[row[0]];
-            row.splice(2, 0, tag ? tag.join(', ') : '');
+            row.splice(2, 0, tag ? tag.sort().join(', ') : '');
             // Insert section number
             row.splice(7, 0, (row[6] - stack.translation.z) / stack.resolution.z);
             // Replace user_id with username
@@ -285,8 +290,6 @@
             var reviewers = reviews[row[0]];
             row.push(reviewers ? reviewers.join(', ') : 'None');
           }
-          // david tata
-          // g;[hcbfvged
 
           this.ranges[skid] = {start: n_rows,
                                length: rows.length};
@@ -302,7 +305,7 @@
         }).bind(this),
         (function() {
           this.oTable.fnAddData(all_rows);
-          this.filter_nodetype = $('select#search_type' + this.widgetID).val();
+          this.filter_nodetype = $('select#' + this.idPrefix + 'search-type').val();
           // fnFilter will call fnDraw
           this.oTable.fnFilter(this.filter_nodetype, 1);
         }).bind(this));
@@ -335,7 +338,7 @@
       }, // type
       {
         "bSearchable": true,
-        "bSortable": false,
+        "bSortable": true,
         "sWidth": "150px"
       }, // labels
       {
@@ -380,12 +383,19 @@
     $(tableSelector + " thead input").keydown((function (event) {
       // filter table on hit enter
       if (event.which == 13) {
+        event.stopPropagation();
+        event.preventDefault();
         // Filter with a regular expression
-        this.filter_searchtag = $('#search_labels' + this.widgetID).val();
+        this.filter_searchtag = $('#' + this.idPrefix + 'search-labels').val();
         var columnIdx = this.oTable.DataTable().column(event.currentTarget.closest('th')).index();
         this.oTable.fnFilter(this.filter_searchtag, columnIdx, true);
       }
     }).bind(this));
+
+    // don't sort when clicking on the input
+    $(tableSelector + " thead input").click(function (event) {
+      event.stopPropagation();
+    });
 
     // remove the 'Search' string when first focusing the search box
     $(tableSelector + " thead input").focus(function () {
@@ -395,8 +405,8 @@
       }
     });
 
-    $('select#search_type' + this.widgetID).change((function() {
-      this.filter_nodetype = $('select#search_type' + this.widgetID).val();
+    $('select#' + this.idPrefix + 'search-type').change((function() {
+      this.filter_nodetype = $('select#' + this.idPrefix + 'search-type').val();
       this.oTable.fnFilter(this.filter_nodetype, 1);
     }).bind(this));
 

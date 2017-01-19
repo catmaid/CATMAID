@@ -595,7 +595,7 @@
         // add the associated skeleton name to the title bar
         var stackInfo = panelStackViewer._stackWindow.frame.querySelector('.stackInfo_selected');
         var assocNeuronNameEl = document.createElement('p');
-        assocNeuronNameEl.classList.add('assoc-neuron-name');
+        assocNeuronNameEl.classList.add('note');
 
         stackInfo.appendChild(assocNeuronNameEl);
 
@@ -645,7 +645,7 @@
   };
 
   ConnectorViewer.prototype.changeAssocNeuronName = function(container, skelNames) {
-    container.querySelector('.assoc-neuron-name').innerHTML = skelNames.join(' | ');
+    container.querySelector('.note').innerHTML = skelNames.join(' | ');
   };
 
   ConnectorViewer.prototype.moveStackViewer = function(stackViewer, coords, completionCallback) {

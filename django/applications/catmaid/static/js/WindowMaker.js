@@ -27,7 +27,7 @@ var WindowMaker = new function()
   var getWindowContentHeight = function(win, buttonPanel) {
     var height = win.getContentHeight();
     if (buttonPanel !== undefined) {
-      var $bar = typeof(buttonPanel) === "string" ? $('#' + buttonPanelId) : $(buttonPanel);
+      var $bar = typeof(buttonPanel) === "string" ? $('#' + buttonPanel) : $(buttonPanel);
       height = height - ($bar.is(':visible') ? $bar.height() : 0);
     }
     return height;

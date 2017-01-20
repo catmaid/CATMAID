@@ -44,9 +44,24 @@
 
     VersionMismatchDialog.prototype = CATMAID.DetailDialog.prototype;
 
+    var TooManyWebGlContextsDialog = function(text, detail) {
+      var title = 'Too many WebGL contexts';
+      text = text || 'Browsers constrain how many graphics-heavy elements can be used at once. ' +
+        'You have tried to open more than your browser allows. Please close whatever widget you just tried to open,' +
+        ' and other stack viewers or 3D viewers, or other browser tabs if they have WebGL elements. Then re-open the' +
+        ' widget you wanted.';
+      var metaMsg = '';
+      detail = detail || `Stack / 3D Viewers currently open: ${CATMAID.countWebGlContexts()};` +
+        `Maximum allowed: ${CATMAID.MAX_WEBGL_CONTEXTS}`;
+      var id = 'too-many-webgl-contexts-confirm';
+      CATMAID.DetailDialog.call(this, text, detail, title, metaMsg, id);
+    };
+
+    TooManyWebGlContextsDialog.prototype = CATMAID.DetailDialog.prototype;
 
     // Make in CATMAID namespace
     CATMAID.ErrorDialog = ErrorDialog;
     CATMAID.VersionMismatchDialog = VersionMismatchDialog;
+    CATMAID.TooManyWebGlContextsDialog = TooManyWebGlContextsDialog;
 
 })(CATMAID);

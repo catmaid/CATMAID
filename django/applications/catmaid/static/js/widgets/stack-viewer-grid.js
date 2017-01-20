@@ -54,7 +54,13 @@
 
     this.firstTargetIdx = 0;
 
-    this.dimensions = [DEFAULT_HEIGHT, DEFAULT_WIDTH];
+    var freeWebGlContexts = CATMAID.MAX_WEBGL_CONTEXTS - CATMAID.countWebGlContexts();
+    if (freeWebGlContexts <= 0) {
+      CATMAID.TooManyWebGlContextsDialog().show();
+      return;
+    }
+    var allowedSides = Math.floor(Math.sqrt(freeWebGlContexts));
+    this.dimensions = [Math.min(DEFAULT_HEIGHT, allowedSides), Math.min(DEFAULT_WIDTH, allowedSides)];
 
     this.sourceStackViewer = project.getStackViewers()[0];
     this.stackViewers = [];
@@ -266,7 +272,7 @@
   StackViewerGrid.prototype.createControls = function(controlsContainer) {
     var self = this;
 
-    // WIDGET SETTINGS CONTROLS
+    // SETTINGS CONTROLS
 
     var sourceStackViewer = CATMAID.DOM.createSelect(
       self.idPrefix + 'source-stack-viewer',
@@ -295,15 +301,31 @@
       return arr;
     };
 
+    /**
+     *
+     * @param selectObject
+     * @param maxValue - inclusive
+     */
+    var disableHighOptions = function(selectObject, maxValue) {
+      var highestValidIdx = 0;
+      $(selectObject).find('option').each(function(idx, option) {
+        if ($(option).val() > maxValue){
+          if (selectObject.selectedIndex > highestValidIdx) {
+            selectObject.selectedIndex = highestValidIdx;
+          }
+          $(option).prop('disabled', true);
+        } else {
+          $(option).prop('disabled', false);
+          highestValidIdx = idx;
+        }
+      });
+    };
+
     var hTileCount = CATMAID.DOM.createSelect(
       self.idPrefix + "h-tile-count",
       makeTileCountOptions(MAX_HEIGHT),
-      String(DEFAULT_HEIGHT)
+      String(self.dimensions[0])
     );
-    hTileCount.onchange = function() {
-      self.redrawPanels();
-      self.update();
-    };
 
     var hTileCountLabel = document.createElement('label');
     hTileCountLabel.appendChild(document.createTextNode('Height'));
@@ -313,17 +335,35 @@
     var wTileCount = CATMAID.DOM.createSelect(
       self.idPrefix + "w-tile-count",
       makeTileCountOptions(MAX_WIDTH),
-      String(DEFAULT_WIDTH)
+      String(self.dimensions[1])
     );
-    wTileCount.onchange = function() {
-      self.redrawPanels();
-      self.update();
-    };
 
     var wTileCountLabel = document.createElement('label');
     wTileCountLabel.appendChild(document.createTextNode('Width'));
     wTileCountLabel.appendChild(wTileCount);
     tileCounts.appendChild(wTileCountLabel);
+
+    var allowedContexts = CATMAID.MAX_WEBGL_CONTEXTS - CATMAID.countWebGlContexts();
+    disableHighOptions(hTileCount, Math.floor(allowedContexts/self.dimensions[1]));
+    disableHighOptions(wTileCount, Math.floor(allowedContexts/self.dimensions[0]));
+
+    hTileCount.onchange = function() {
+      var highestOtherDimVal = Math.floor(
+        (CATMAID.MAX_WEBGL_CONTEXTS - CATMAID.countWebGlContexts() + self.stackViewers.length) / this.value
+      );
+      disableHighOptions(wTileCount, highestOtherDimVal);
+      self.redrawPanels();
+      self.update();
+    };
+
+    wTileCount.onchange = function() {
+      var highestOtherDimVal = Math.floor(
+        (CATMAID.MAX_WEBGL_CONTEXTS - CATMAID.countWebGlContexts() + self.stackViewers.length) / this.value
+      );
+      disableHighOptions(hTileCount, highestOtherDimVal);
+      self.redrawPanels();
+      self.update();
+    };
 
     var scaleBarCb = document.createElement('input');
     scaleBarCb.setAttribute('type', 'checkbox');
@@ -467,6 +507,7 @@
    */
   StackViewerGrid.prototype.redrawPanels = function() {
     this.dimensions = [$(`#${this.idPrefix}h-tile-count`).val(), $(`#${this.idPrefix}w-tile-count`).val()];
+
     var gridContent = this.getGridContent();
 
     // destroy existing
@@ -475,6 +516,11 @@
     this.panelWindows.length = 0;
     while (gridContent.lastChild) {
       gridContent.removeChild(gridContent.lastChild);
+    }
+
+    if (this.dimensions[0] * this.dimensions[1] > CATMAID.MAX_WEBGL_CONTEXTS - CATMAID.countWebGlContexts()) {
+      CATMAID.TooManyWebGlContextsDialog().show();
+      return;
     }
 
     var gridWindow = this.getGridWindow();
@@ -488,6 +534,8 @@
 
     for (var iIdx = 0; iIdx < this.dimensions[0]; iIdx++) {
       for (var jIdx = 0; jIdx < this.dimensions[1]; jIdx++) {
+        console.log(`iIdx = ${iIdx}, jIdx = ${jIdx}`);
+
         // split the widget content into equal-sized panels
         var panelContainer = document.createElement('div');
         panelContainer.style.position = 'absolute';

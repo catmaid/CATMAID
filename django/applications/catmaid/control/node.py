@@ -136,7 +136,7 @@ def node_list_tuples(request, project_id=None, provider=None):
     params['project_id'] = project_id
     include_labels = (request.POST.get('labels', None) == 'true')
 
-    provider = get_treenodes_postgis
+    provider = get_treenodes_postgis_separate_planes
 
     return node_list_tuples_query(params, project_id, treenode_ids, connector_ids,
                                   include_labels, provider)
@@ -336,6 +336,69 @@ def get_treenodes_postgis(cursor, params):
     return cursor.fetchall()
 
 
+def get_treenodes_postgis_separate_planes(cursor, params):
+    """ Selects all treenodes of which links to other treenodes intersect with
+    the request bounding box.
+    """
+    params['halfzdiff'] = abs(params['z2'] - params['z1']) * 0.5
+    params['halfz'] = params['z1'] + (params['z2'] - params['z1']) * 0.5
+
+    # Fetch treenodes with the help of two PostGIS filters: First, select all
+    # edges with a bounding box overlapping the XY-box of the query bounding
+    # box. This set is then constrained by a particular range in Z. Both filters
+    # are backed by indices that make these operations very fast. This is
+    # semantically equivalent with what the &&& does. This, however, leads to
+    # false positives, because edge bounding boxes can intersect without the
+    # edge actually intersecting. To limit the result set, ST_3DDWithin is used.
+    # It allows to limit the result set by a distance to another geometry. Here
+    # it only allows edges that are no farther away than half the height of the
+    # query bounding box from a plane that cuts the query bounding box in half
+    # in Z. There are still false positives, but much fewer. Even though
+    # ST_3DDWithin is used, it seems to be enough to have a n-d index available
+    # (the query plan says ST_3DDWithin wouldn't use a 2-d index in this query,
+    # even if present).
+    cursor.execute('''
+    SELECT
+        t1.id,
+        t1.parent_id,
+        t1.location_x,
+        t1.location_y,
+        t1.location_z,
+        t1.confidence,
+        t1.radius,
+        t1.skeleton_id,
+        t1.edition_time,
+        t1.user_id,
+        t2.id,
+        t2.parent_id,
+        t2.location_x,
+        t2.location_y,
+        t2.location_z,
+        t2.confidence,
+        t2.radius,
+        t2.skeleton_id,
+        t2.edition_time,
+        t2.user_id
+    FROM
+      (SELECT te.id
+         FROM treenode_edge te
+         WHERE te.edge && ST_MakeEnvelope(%(left)s, %(top)s, %(right)s, %(bottom)s)
+           AND floatrange(ST_ZMin(te.edge), ST_ZMax(te.edge), '[]') &&
+             '[%(z1)s,%(z2)s)'::floatrange
+           AND ST_3DDWithin(te.edge, ST_MakePolygon(ST_GeomFromText(
+            'LINESTRING(%(left)s %(top)s %(halfz)s, %(right)s %(top)s %(halfz)s,
+                        %(right)s %(bottom)s %(halfz)s, %(left)s %(bottom)s %(halfz)s,
+                        %(left)s %(top)s %(halfz)s)')), %(halfzdiff)s)
+           AND te.project_id = %(project_id)s
+      ) edges(edge_child_id)
+    JOIN treenode t1 ON edge_child_id = t1.id
+    LEFT JOIN treenode t2 ON t2.id = t1.parent_id
+    LIMIT %(limit)s
+    ''', params)
+
+    return cursor.fetchall()
+
+
 def get_connector_nodes_postgis(cursor, params, treenode_ids, missing_connector_ids):
     """Selects all connectors that are in or have links that intersect the
     bounding box, or that are in missing_connector_ids.
@@ -406,6 +469,78 @@ def get_connector_nodes_postgis(cursor, params, treenode_ids, missing_connector_
     return list(cursor.fetchall())
 
 
+def get_connector_nodes_postgis_separate_planes(cursor, params, treenode_ids, missing_connector_ids):
+    """Selects all connectors that are in or have links that intersect the
+    bounding box, or that are in missing_connector_ids.
+    """
+    params['sanitized_connector_ids'] = map(int, missing_connector_ids)
+    cursor.execute('''
+    SELECT
+        c.id,
+        c.location_x,
+        c.location_y,
+        c.location_z,
+        c.confidence,
+        c.edition_time,
+        c.user_id,
+        tc.treenode_id,
+        tc.relation_id,
+        tc.confidence,
+        tc.edition_time,
+        tc.id
+    FROM (SELECT tce.id AS tce_id
+         FROM treenode_connector_edge tce
+         WHERE tce.edge && ST_MakeEnvelope(%(left)s, %(top)s, %(right)s, %(bottom)s)
+           AND floatrange(ST_ZMin(tce.edge), ST_ZMax(tce.edge), '[]') &&
+             '[%(z1)s,%(z2)s)'::floatrange
+           AND ST_3DDWithin(tce.edge, ST_MakePolygon(ST_GeomFromText(
+            'LINESTRING(%(left)s %(top)s %(halfz)s, %(right)s %(top)s %(halfz)s,
+                        %(right)s %(bottom)s %(halfz)s, %(left)s %(bottom)s %(halfz)s,
+                        %(left)s %(top)s %(halfz)s)')), %(halfzdiff)s)
+           AND tce.project_id = %(project_id)s
+      ) edges(edge_tc_id)
+    JOIN treenode_connector tc
+      ON (tc.id = edge_tc_id)
+    JOIN connector c
+      ON (c.id = tc.connector_id)
+    WHERE c.project_id = %(project_id)s
+
+    UNION
+
+    SELECT
+        c.id,
+        c.location_x,
+        c.location_y,
+        c.location_z,
+        c.confidence,
+        c.edition_time,
+        c.user_id,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL
+    FROM (SELECT cg.id AS cg_id
+         FROM connector_geom cg
+         WHERE cg.geom && ST_MakeEnvelope(%(left)s, %(top)s, %(right)s, %(bottom)s)
+           AND floatrange(ST_ZMin(cg.geom), ST_ZMax(cg.geom), '[]') &&
+             '[%(z1)s,%(z2)s)'::floatrange
+           AND ST_3DDWithin(cg.geom, ST_MakePolygon(ST_GeomFromText(
+            'LINESTRING(%(left)s %(top)s %(halfz)s, %(right)s %(top)s %(halfz)s,
+                        %(right)s %(bottom)s %(halfz)s, %(left)s %(bottom)s %(halfz)s,
+                        %(left)s %(top)s %(halfz)s)')), %(halfzdiff)s)
+           AND cg.project_id = %(project_id)s
+        UNION SELECT UNNEST(%(sanitized_connector_ids)s::bigint[])
+      ) geoms(geom_connector_id)
+    JOIN connector c
+      ON (geom_connector_id = c.id)
+    WHERE c.project_id = %(project_id)s
+    LIMIT %(limit)s
+    ''', params)
+
+    return list(cursor.fetchall())
+
+
 def node_list_tuples_query(params, project_id, explicit_treenode_ids, explicit_connector_ids, include_labels, tn_provider):
     """The returned JSON data is sensitive to indices in the array, so care
     must be taken never to alter the order of the variables in the SQL
@@ -459,7 +594,11 @@ def node_list_tuples_query(params, project_id, explicit_treenode_ids, explicit_c
         # Find connectors related to treenodes in the field of view
         # Connectors found attached to treenodes
         response_on_error = 'Failed to query connector locations.'
-        cn_provider = get_connector_nodes_classic if tn_provider == get_treenodes_classic else get_connector_nodes_postgis
+        if tn_provider == get_treenodes_classic:
+            cn_provider = get_connector_nodes_classic
+        else:
+            cn_provider = get_connector_nodes_postgis_separate_planes
+
         crows = cn_provider(cursor, params, treenode_ids, missing_connector_ids)
 
         connectors = []

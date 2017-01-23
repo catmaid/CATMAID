@@ -22,12 +22,6 @@
       primaryStack,
       catmaidWindow
   ) {
-
-    if (CATMAID.MAX_WEBGL_CONTEXTS - CATMAID.countWebGlContexts() < 1) {
-      CATMAID.TooManyWebGlContextsDialog().show();
-      return;
-    }
-
     this._project = project;
     this.primaryStack = primaryStack;
     this._stacks = [primaryStack];

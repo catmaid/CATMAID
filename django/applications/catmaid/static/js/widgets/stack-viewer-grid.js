@@ -55,10 +55,6 @@
     this.firstTargetIdx = 0;
 
     var freeWebGlContexts = CATMAID.MAX_WEBGL_CONTEXTS - CATMAID.countWebGlContexts();
-    if (freeWebGlContexts <= 0) {
-      CATMAID.TooManyWebGlContextsDialog().show();
-      return;
-    }
     var allowedSides = Math.floor(Math.sqrt(freeWebGlContexts));
     this.dimensions = [Math.min(DEFAULT_HEIGHT, allowedSides), Math.min(DEFAULT_WIDTH, allowedSides)];
 
@@ -518,11 +514,6 @@
       gridContent.removeChild(gridContent.lastChild);
     }
 
-    if (this.dimensions[0] * this.dimensions[1] > CATMAID.MAX_WEBGL_CONTEXTS - CATMAID.countWebGlContexts()) {
-      CATMAID.TooManyWebGlContextsDialog().show();
-      return;
-    }
-
     var gridWindow = this.getGridWindow();
 
     var stack = this.sourceStackViewer.primaryStack;
@@ -534,8 +525,6 @@
 
     for (var iIdx = 0; iIdx < this.dimensions[0]; iIdx++) {
       for (var jIdx = 0; jIdx < this.dimensions[1]; jIdx++) {
-        console.log(`iIdx = ${iIdx}, jIdx = ${jIdx}`);
-
         // split the widget content into equal-sized panels
         var panelContainer = document.createElement('div');
         panelContainer.style.position = 'absolute';

@@ -232,6 +232,8 @@ window.onbeforeunload = function() {
         CATMAID.warn(error.message);
       } else if (error instanceof CATMAID.StateMatchingError) {
         CATMAID.suggestStateUpdate(error);
+      } else if (error instanceof CATMAID.TooManyWebGlContextsError) {
+        new CATMAID.TooManyWebGlContextsDialog(error.message, error.detail).show();
       } else {
         CATMAID.error(error.message, error.detail);
       }
@@ -258,6 +260,23 @@ window.onbeforeunload = function() {
   CATMAID.countWebGlContexts = function() {
     // count the number of pixi layer contexts (i.e. stack viewers) and 3D viewers
     return CATMAID.PixiLayer.contexts.size + CATMAID.WebGLApplication.prototype.getInstances().length;
+  };
+
+   /**
+    * Throw a TooManyWebGlContextsError if minRequired is greater than the number of spare contexts below the limit.
+    *
+    * @param minRequired
+    */
+  CATMAID.throwOnInsufficientWebGlContexts = function (minRequired) {
+    if (CATMAID.MAX_WEBGL_CONTEXTS - CATMAID.countWebGlContexts() < minRequired) {
+      var errorMessage = 'Widget requires the creation of webGL contexts (used by stack viewers and 3D viewers), but' +
+        ' the browser imposes a hard limit on how many can be used at once. Close other stack or 3D viewer widgets,' +
+        ' or other browser tabs, and ensure that webGL contexts are being unregistered correctly.';
+      var errorDetail = `Contexts in use by CATMAID: ${CATMAID.countWebGlContexts()}\n` +
+        `Contexts required: ${minRequired}\n` +
+        `Maximum total contexts: ${CATMAID.MAX_WEBGL_CONTEXTS}`;
+      throw new CATMAID.TooManyWebGlContextsError(errorMessage, errorDetail);
+    }
   };
 
   // Maintain a single command history, this adds execute, undo and redo

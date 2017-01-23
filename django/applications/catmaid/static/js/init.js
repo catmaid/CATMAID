@@ -1071,6 +1071,8 @@ var project;
           project.destroy();
         }
 
+        CATMAID.throwOnInsufficientWebGlContexts(json.stacks.length);
+
         // Open first stack
         return loadNextStack(json.project_id, json.stacks.shift(), json.stacks);
 
@@ -1160,6 +1162,9 @@ var project;
    */
   function handle_openProjectStack( e, stackViewer )
   {
+    if (!stackViewer) {
+      CATMAID.throwOnInsufficientWebGlContexts(1);
+    }
     // If the stack's project is not the opened project, replace it.
     if (!(project && project.id == e.pid)) {
       project = new CATMAID.Project(e.pid);

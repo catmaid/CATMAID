@@ -19,6 +19,7 @@
   {
     this.widgetID = this.registerInstance();
     this.idPrefix = `connector-viewer${this.widgetID}-`;
+    this.MIN_WEBGL_CONTEXTS = 1;
 
     // This skeleton source takes care of internal skeleton management. It is
     // not registered. It is the input skeleton sink, but the output is handled

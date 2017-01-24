@@ -1,9 +1,9 @@
 import re
-import cProfile
+import cProfile, pstats, StringIO
 from traceback import format_exc
 from datetime import datetime
 
-from django.http import HttpResponse, JsonResponse
+from django.http import JsonResponse
 from django.conf import settings
 
 from guardian.utils import get_anonymous_user
@@ -115,7 +115,9 @@ class DVIDMiddleware(BasicModelMapMiddleware):
 class ProfilingMiddleware(object):
     """This middleware will create a cProfile log file for a view request if
     'profile' is part of the request URL, which can be done by simply attaching
-    '?profile' to a regular view URL. The output is written to a file in /tmp,
+    '?profile' to a regular view URL. Returned is a JsonResponse object,
+    containing the original data and the profile. Optionally, if the request has
+    a field called 'profile-to-disk', the profile is saved to a file in /tmp,
     with a name following the pattern 'catmaid-hostaddress-timestamp.profile'.
     """
 
@@ -125,10 +127,21 @@ class ProfilingMiddleware(object):
             request.profiler.enable()
 
     def process_response(self, request, response):
-        if hasattr(request, 'profiler'):
-            request.profiler.disable()
-            labels = (request.META['REMOTE_ADDR'], datetime.now())
-            request.profiler.dump_stats('/tmp/catmaid-%s-%s.profile' % labels)
+	if hasattr(request, 'profiler'):
+	    request.profiler.disable()
+	    s = StringIO.StringIO()
+	    sortby = getattr(request, 'profile-sorting', 'cumulative')
+	    ps = pstats.Stats(request.profiler, stream=s).sort_stats(sortby)
+	    ps.print_stats()
+	    response = JsonResponse({
+                'content': response.content,
+                'profile': s.getvalue()
+            })
+
+	    if hasattr(request, 'profile-to-disk'):
+		labels = (request.META['REMOTE_ADDR'], datetime.now())
+		request.profiler.dump_stats('/tmp/catmaid-%s-%s.profile' % labels)
+
         return response
 
 

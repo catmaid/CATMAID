@@ -158,6 +158,10 @@ USE_TZ = True
 # content of multiple sites.
 SITE_ID = 1
 
+# By default, prepared statements are disabled. If connection pooling is used,
+# this can further improve performance.
+PREPARED_STATEMENTS = False
+
 # History tables are created and populated by default. They keep track of every
 # change in all CATMAID tables plus some additional ones. If this is not
 # wanted, history tables can be disabled by setting HISTORY_TRACKING to False.

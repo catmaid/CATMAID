@@ -110,6 +110,12 @@ def validate_environment(sender, **kwargs):
     sender.validate_projects()
     sender.init_classification()
 
+def prepare_db_statements(sender, connection, **kwargs):
+    """Prepare database statements for node queries.
+    """
+    from catmaid.control import node
+    node.prepare_db_statements(connection)
+
 class CATMAIDConfig(AppConfig):
     name = 'catmaid'
     verbose_name = "CATMAID"
@@ -130,6 +136,11 @@ class CATMAIDConfig(AppConfig):
 
         # Monkey patch django-rest-swagger so that it can handle our URLs
         custom_rest_swagger_apis.patch()
+
+        # If prepared statements are enabled, make sure they are created for
+        # every new connection.
+        if settings.PREPARED_STATEMENTS:
+            db_signals.connection_created.connect(prepare_db_statements)
 
     # A list of settings that are expected to be available.
     required_setting_fields = {

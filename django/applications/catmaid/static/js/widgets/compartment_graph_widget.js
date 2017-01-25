@@ -2401,6 +2401,9 @@
 
     // Add all edges, for now, draw from node centers
     this.cy.edges().each(function(i, edge) {
+      if (edge.hidden()) {
+        return;
+      }
       var data = edge.data();
       var startId = data.start;
       var style = edge.style();
@@ -2462,6 +2465,9 @@
 
     // Add all nodes to SVG
     this.cy.nodes().each(function(i, node) {
+      if (node.hidden()) {
+        return;
+      }
       var data = node.data();
       var pos = node.position();
       var style = node.style();

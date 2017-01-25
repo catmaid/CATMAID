@@ -17,8 +17,9 @@
 
   /**
    * Create new SVG documents with some basic line, text and circle primitives.
+   * Viewport position and dimensions are optional.
    */
-  var SVGFactory = function(width, height) {
+  var SVGFactory = function(width, height, viewX, viewY, viewWidth, viewHeight) {
     if (!width) {
       throw new CATMAID.ValueError("SVG needs valid width");
     }
@@ -34,6 +35,12 @@
         namespaces.xlink);
     this.svg.setAttribute('width', width);
     this.svg.setAttribute('height', height);
+
+    if (undefined !== viewX && undefined !== viewY &&
+        undefined !== viewWidth && undefined !== viewHeight) {
+      this.svg.setAttribute('viewBox', viewX + " " + viewY + " " +
+           viewWidth + " " + viewHeight);
+    }
 
     this.markers = {};
   };

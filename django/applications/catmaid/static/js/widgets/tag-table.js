@@ -209,16 +209,16 @@
 
           if (!(labelName in obj)) {
             obj[labelName] = {
-              'labelIDs': new Set([labelID]),
+              'labelIDs': new Set(),
               'skelIDs': new Set(),
               'nodeIDs': new Set(),
               'checked': false
             };
-          } else {
-            obj[labelName].labelIDs.add(labelID);
-            obj[labelName].skelIDs.add(skelID);
-            obj[labelName].nodeIDs.add(nodeID);
           }
+
+          obj[labelName].labelIDs.add(labelID);
+          obj[labelName].skelIDs.add(skelID);
+          obj[labelName].nodeIDs.add(nodeID);
 
           return obj;
         }, {});

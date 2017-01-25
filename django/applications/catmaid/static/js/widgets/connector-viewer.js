@@ -66,12 +66,11 @@
   };
 
   ConnectorViewer.prototype.getWidgetConfiguration = function() {
+    var self = this;
     return {
       helpText: "Connector Viewer widget: Quickly view and compare connectors associated with given skeletons",
       controlsID: this.idPrefix + 'controls',
       createControls: function(controls) {
-        var self = this;
-
         // CONNECTOR SELECTION CONTROLS
 
         // Create skeleton source drop-down without showing own result skeleton
@@ -161,17 +160,13 @@
           connTable.update();
         };
         controls.appendChild(openTable);
-
-        controls.appendChild(document.createElement('br'));
       },
       contentID: this.idPrefix + 'content',
       createContent: function(container) {
-        container.style.position = 'absolute';
+        // container.style.position = 'absolute';
       },
       init: function() {
-        var self = this;
-        var container = document.getElementById(self.idPrefix + 'content');
-        this.stackViewerGrid = new CATMAID.StackViewerGrid(container, self.idPrefix);
+        this.stackViewerGrid = new CATMAID.StackViewerGrid(self.idPrefix);
         this.update();
       }
     };

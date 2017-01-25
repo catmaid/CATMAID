@@ -20,15 +20,22 @@
   const COORD_ORDER = ['x', 'y', 'z'];
 
   /**
+   * A re-usable component for widgets designed to show multiple positions in a stack.
    *
+   * Usage: The parent widget should instantiate a StackViewerGrid in its init function, as the stack viewer grid
+   * modifies both the controls and the content of the parent.
    *
-   * @param container - the DOM object which will contain the stack viewer grid
    * @param parentID - an ID unique to the widget instance calling the stack viewer grid
+   * @param controlsContainer - the controls div of the parent. If undefined, gets `#${parentID}-controls`.
+   * @param contentContainer - the content div of the parent. If undefined, gets `#${parentID}-content`.
    * @constructor
    */
-  var StackViewerGrid = function (container, parentID) {
-    this.container = container;
-    this.idPrefix = parentID.replace(/-*$/, '-stackviewers-');
+  var StackViewerGrid = function (parentID, controlsContainer, contentContainer) {
+    var parentIdPrefix = parentID.replace(/-*$/, '-');
+    this.idPrefix = parentIdPrefix + 'stackviewers-';
+
+    this.controlsContainer = controlsContainer || document.getElementById(parentIdPrefix + 'controls');
+    this.contentContainer = contentContainer || document.getElementById(parentIdPrefix + 'content');
 
     /**
      *  [
@@ -220,30 +227,14 @@
   };
 
   StackViewerGrid.prototype.init = function() {
-    var controlsContainer;
-    controlsContainer = document.createElement("div");
-    controlsContainer.setAttribute("id", this.idPrefix + 'controls');
-    controlsContainer.setAttribute("class", "buttonpanel");
-    this.container.appendChild(controlsContainer);
-    this.createControls(controlsContainer);
-    // DOM.addButtonDisplayToggle(win);
-
-    var contentContainer =  document.createElement("div");
-    contentContainer.setAttribute("id", this.idPrefix + 'content');
-    contentContainer.setAttribute("class", "windowContent");
-    this.container.appendChild(contentContainer);
+    this.createControls(this.controlsContainer);
 
     this.initGridWindow();
     this.redrawPanels();
   };
 
-  StackViewerGrid.prototype.getGridContent = function () {
-    return document.getElementById(this.idPrefix + 'content');
-  };
-
   StackViewerGrid.prototype.getGridWindow = function () {
-    var gridContent = this.getGridContent();
-    var gridFrame = $(gridContent).closest('.' + CMWNode.FRAME_CLASS).get(0);
+    var gridFrame = $(this.contentContainer).closest('.' + CMWNode.FRAME_CLASS).get(0);
     return CATMAID.rootWindow.getWindows().find(function(w) {
       return w.getFrame() === gridFrame;
     });
@@ -268,6 +259,8 @@
   StackViewerGrid.prototype.createControls = function(controlsContainer) {
     var self = this;
 
+    this.controlsContainer.append(document.createElement('br'));
+
     // SETTINGS CONTROLS
 
     var sourceStackViewer = CATMAID.DOM.createSelect(
@@ -283,11 +276,11 @@
     var sourceStackViewerLabel = document.createElement('label');
     sourceStackViewerLabel.appendChild(document.createTextNode('Source stack viewer'));
     sourceStackViewerLabel.appendChild(sourceStackViewer);
-    controlsContainer.appendChild(sourceStackViewerLabel);
+    this.controlsContainer.appendChild(sourceStackViewerLabel);
 
     var tileCounts = document.createElement('div');
     tileCounts.style.display = 'inline-block';
-    controlsContainer.appendChild(tileCounts);
+    this.controlsContainer.appendChild(tileCounts);
 
     var makeTileCountOptions = function(max) {
       var arr = [];
@@ -374,9 +367,9 @@
     var scaleBarCbLabel = document.createElement('label');
     scaleBarCbLabel.appendChild(document.createTextNode('Scale bars'));
     scaleBarCbLabel.appendChild(scaleBarCb);
-    controlsContainer.appendChild(scaleBarCbLabel);
+    this.controlsContainer.appendChild(scaleBarCbLabel);
 
-    controlsContainer.appendChild(document.createElement('br'));
+    this.controlsContainer.appendChild(document.createElement('br'));
 
     // PAGINATION CONTROLS
 
@@ -390,11 +383,11 @@
         self.changePage(prevPageIdx);
       }
     };
-    controlsContainer.appendChild(prevButton);
+    this.controlsContainer.appendChild(prevButton);
 
     var pageCountContainer = document.createElement('div');
     pageCountContainer.style.display = 'inline-block';
-    controlsContainer.appendChild(pageCountContainer);
+    this.controlsContainer.appendChild(pageCountContainer);
 
     var currentPage = document.createElement('input');
     currentPage.setAttribute('type', 'text');
@@ -430,13 +423,13 @@
         self.changePage(nextPageIdx);
       }
     };
-    controlsContainer.appendChild(nextButton);
+    this.controlsContainer.appendChild(nextButton);
 
     var showing = document.createElement('p');
     showing.setAttribute('id', self.idPrefix + 'showing');
     showing.style.display = 'inline-block';
     showing.innerHTML = 'Showing <b class="start">0</b>-<b class="stop">0</b> of <b class="total">0</b>';
-    controlsContainer.appendChild(showing);
+    this.controlsContainer.appendChild(showing);
   };
 
   /**
@@ -504,14 +497,12 @@
   StackViewerGrid.prototype.redrawPanels = function() {
     this.dimensions = [$(`#${this.idPrefix}h-tile-count`).val(), $(`#${this.idPrefix}w-tile-count`).val()];
 
-    var gridContent = this.getGridContent();
-
     // destroy existing
     this.closeStackViewers();
     this.stackViewers.length = 0;
     this.panelWindows.length = 0;
-    while (gridContent.lastChild) {
-      gridContent.removeChild(gridContent.lastChild);
+    while (this.contentContainer.lastChild) {
+      this.contentContainer.removeChild(this.contentContainer.lastChild);
     }
 
     var gridWindow = this.getGridWindow();
@@ -533,7 +524,7 @@
         panelContainer.style.top = `${(100 / this.dimensions[0]) * iIdx}%`;
         panelContainer.style.left = `${(100 / this.dimensions[1]) * jIdx}%`;
 
-        gridContent.appendChild(panelContainer);
+        this.contentContainer.appendChild(panelContainer);
 
         // put a smaller div inside each of these panels, to allow for padding/ border
         var panelInnerContainer = document.createElement('div');
@@ -623,7 +614,7 @@
 
     // todo: do this in the stack viewers rather than here
     // hide window controls
-    var containerJq = $(gridContent);
+    var containerJq = $(this.contentContainer);
     containerJq.find('.neuronname').hide();
     containerJq.find('.stackClose').hide();
     containerJq.find('.smallMapView_hidden').hide();  // doesn't work anyway

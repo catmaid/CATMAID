@@ -131,7 +131,7 @@ var WindowMaker = new function()
    */
   var createWidget = function(instance) {
     try {
-      CATMAID.throwOnInsufficientWebGlContexts(instance.MIN_WEBGL_CONTEXTS);
+      CATMAID.throwOnInsufficientWebGlContexts(instance.MIN_WEBGL_CONTEXTS || 0);
     } catch (e) {
       if (CATMAID.tools.isFn(instance.destroy)) {
         instance.destroy();

@@ -184,7 +184,6 @@ def prepare_db_statements(connection):
         ) edges(edge_child_id)
         JOIN treenode t1 ON edge_child_id = t1.id
         LEFT JOIN treenode t2 ON t2.id = t1.parent_id
-        WHERE t1.project_id = $1
         LIMIT $10;
     """)
 
@@ -375,7 +374,6 @@ def get_treenodes_postgis(cursor, params):
       ) edges(edge_child_id)
     JOIN treenode t1 ON edge_child_id = t1.id
     LEFT JOIN treenode t2 ON t2.id = t1.parent_id
-    WHERE t1.project_id = %(project_id)s
     LIMIT %(limit)s
     ''', params)
 
@@ -486,7 +484,6 @@ def get_connector_nodes_postgis(cursor, params, treenode_ids, missing_connector_
       ON (tc.id = edge_tc_id)
     JOIN connector c
       ON (c.id = tc.connector_id)
-    WHERE c.project_id = %(project_id)s
 
     UNION
 
@@ -516,7 +513,6 @@ def get_connector_nodes_postgis(cursor, params, treenode_ids, missing_connector_
       ) geoms(geom_connector_id)
     JOIN connector c
       ON (geom_connector_id = c.id)
-    WHERE c.project_id = %(project_id)s
     LIMIT %(limit)s
     ''', params)
 
@@ -557,7 +553,6 @@ def get_connector_nodes_postgis_separate_planes(cursor, params, treenode_ids, mi
       ON (tc.id = edge_tc_id)
     JOIN connector c
       ON (c.id = tc.connector_id)
-    WHERE c.project_id = %(project_id)s
 
     UNION
 
@@ -588,7 +583,6 @@ def get_connector_nodes_postgis_separate_planes(cursor, params, treenode_ids, mi
       ) geoms(geom_connector_id)
     JOIN connector c
       ON (geom_connector_id = c.id)
-    WHERE c.project_id = %(project_id)s
     LIMIT %(limit)s
     ''', params)
 

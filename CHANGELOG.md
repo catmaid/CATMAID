@@ -8,6 +8,8 @@ Miscellaneous:
 
 - Bookmarks are now persistent for each project.
 
+- From the Graph Widget exported SVG files preserve now the view of the widget
+  (zoom and pan).
 
 ### Bug fixes
 

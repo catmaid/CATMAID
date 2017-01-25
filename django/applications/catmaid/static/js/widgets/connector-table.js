@@ -36,6 +36,8 @@
     if (skeletonModels) {
       this.skeletonSource.append(skeletonModels);
     }
+
+    CATMAID.skeletonListSources.updateGUI();
   };
 
   ConnectorTable.prototype = {};
@@ -47,6 +49,8 @@
 
   ConnectorTable.prototype.destroy = function() {
     this.unregisterInstance();
+    this.skeletonSource.destroy();
+    this.resultSkeletonSource.destroy();
   };
 
   ConnectorTable.prototype.getWidgetConfiguration = function() {

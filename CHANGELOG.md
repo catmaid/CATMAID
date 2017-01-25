@@ -13,6 +13,8 @@ Miscellaneous:
 
 ### Bug fixes
 
+- 3D Viewer: custom tag highlighting now also works for tags with upper case
+  letters.
 
 
 ## 2017.01.19

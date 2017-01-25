@@ -2385,7 +2385,7 @@
       'fill': null,
       'stroke-width': '0px',
       'font-family': 'Helvetica, sans-serif',
-      'fonr-size': '10'
+      'font-size': '10'
     };
 
     var templateLineStyle = {

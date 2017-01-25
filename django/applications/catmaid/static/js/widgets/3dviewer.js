@@ -23,6 +23,7 @@
    * compute with web workers (betweenness centrality shading). */
   var WebGLApplication = function() {
     this.widgetID = this.registerInstance();
+
     CATMAID.SkeletonSource.call(this, true);
     this.APPEND_WARNING_THRESHOLD = 1000;
     // Indicates whether init has been called

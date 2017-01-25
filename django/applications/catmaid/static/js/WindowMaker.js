@@ -130,6 +130,15 @@ var WindowMaker = new function()
    * configuration.
    */
   var createWidget = function(instance) {
+    try {
+      CATMAID.throwOnInsufficientWebGlContexts(instance.MIN_WEBGL_CONTEXTS || 0);
+    } catch (e) {
+      if (CATMAID.tools.isFn(instance.destroy)) {
+        instance.destroy();
+      }
+      throw e;
+    }
+
     var config = instance.getWidgetConfiguration();
     var win = new CMWWindow(instance.getName());
     var container = win.getFrame();
@@ -200,6 +209,8 @@ var WindowMaker = new function()
       alert('Your browser does not seem to support WebGL.');
       return;
     }
+
+    CATMAID.throwOnInsufficientWebGlContexts(1);
 
     // A selection table is opened alongside the 3D viewer. Initialize it first,
     // so that it will default to the last opened skeleton source to pull from
@@ -2082,14 +2093,22 @@ var WindowMaker = new function()
    * in extra parameters that will be passed on to the actual creator method. */
   this.create = function(name, init_params) {
     if (creators.hasOwnProperty(name)) {
-      var handles = creators[name](init_params);
-      if (windows.has(name)) {
-        windows.get(name).set(handles.window, handles.widget);
-      } else {
-        windows.set(name, new Map([[handles.window, handles.widget]]));
-      }
+      try {
+        var handles = creators[name](init_params);
+        if (windows.has(name)) {
+          windows.get(name).set(handles.window, handles.widget);
+        } else {
+          windows.set(name, new Map([[handles.window, handles.widget]]));
+        }
 
-      return handles;
+        return handles;
+      } catch (e) {
+        if (e instanceof CATMAID.TooManyWebGlContextsError) {
+          CATMAID.handleError(e);
+        } else {
+          throw e;
+        }
+      }
     } else {
       CATMAID.error("No known window with name " + name);
     }

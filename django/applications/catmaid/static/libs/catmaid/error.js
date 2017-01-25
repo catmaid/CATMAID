@@ -71,4 +71,11 @@
   CATMAID.LocationLookupError.prototype = Object.create(CATMAID.Error.prototype);
   CATMAID.LocationLookupError.prototype.constructor = CATMAID.LocationLookupError;
 
+  CATMAID.TooManyWebGlContextsError = function(message, detail) {
+    CATMAID.Error.call(this, message, detail);
+  };
+
+  CATMAID.TooManyWebGlContextsError.prototype = Object.create(CATMAID.Error.prototype);
+  CATMAID.TooManyWebGlContextsError.prototype.constructor = CATMAID.TooManyWebGlContextsError;
+
 })(CATMAID);

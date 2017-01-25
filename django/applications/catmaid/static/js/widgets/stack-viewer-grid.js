@@ -227,7 +227,7 @@
   };
 
   StackViewerGrid.prototype.init = function() {
-    this.createControls(this.controlsContainer);
+    this.createControls();
 
     this.initGridWindow();
     this.redrawPanels();
@@ -256,7 +256,7 @@
     };
   };
 
-  StackViewerGrid.prototype.createControls = function(controlsContainer) {
+  StackViewerGrid.prototype.createControls = function() {
     var self = this;
 
     this.controlsContainer.append(document.createElement('br'));
@@ -368,6 +368,54 @@
     scaleBarCbLabel.appendChild(document.createTextNode('Scale bars'));
     scaleBarCbLabel.appendChild(scaleBarCb);
     this.controlsContainer.appendChild(scaleBarCbLabel);
+
+    var zoomInput = document.createElement('input');
+    zoomInput.setAttribute('type', 'text');
+    zoomInput.setAttribute('pattern', '^\-?\d?\.?\d*$');
+    zoomInput.setAttribute('size', '5');
+    // zoomInput.setAttribute('type', 'number');
+    // zoomInput.setAttribute('step', '0.1');
+    // zoomInput.setAttribute('max', '5');
+    // zoomInput.setAttribute('min', '-2');
+    zoomInput.setAttribute('value', self.sourceStackViewer.s);
+    zoomInput.onchange = function() {
+      if (this.value === '') {
+        this.value = self.sourceStackViewer.s;
+      }
+
+      var val = Number(this.value);
+      if (val > 5) {
+        this.value = val = 5;
+      } else if (val < -2) {
+        this.value = val = -2;
+      }
+
+      for (var stackViewer of self.stackViewers) {
+        self.moveStackViewer(stackViewer, {s: self.sourceStackViewer.primaryStack.stackToProjectSX(val)});
+      }
+    };
+
+    var zoomLabel = document.createElement('label');
+    zoomLabel.appendChild(document.createTextNode('Zoom'));
+    zoomLabel.appendChild(zoomInput);
+    this.controlsContainer.append(zoomLabel);
+
+    var recentreButton = document.createElement('input');
+    recentreButton.setAttribute('type', 'button');
+    recentreButton.setAttribute('value', 'Recentre');
+    recentreButton.onclick = function () {
+      var zoomVal = Number(zoomInput.value);
+      self.getVisibleTargets().forEach(function(target, idx) {
+        self.moveStackViewer(self.stackViewers[idx], {
+          z: target.coords.z,
+          y: target.coords.y,
+          x: target.coords.x,
+          s: self.sourceStackViewer.primaryStack.stackToProjectSX(zoomVal)
+        });
+      });
+    };
+
+    this.controlsContainer.append(recentreButton);
 
     this.controlsContainer.appendChild(document.createElement('br'));
 
@@ -621,9 +669,13 @@
   };
 
   StackViewerGrid.prototype.moveStackViewer = function(stackViewer, coords, completionCallback) {
+    var currentCoords = stackViewer.projectCoordinates();
+
     stackViewer.moveToProject(
-      coords.z, coords.y, coords.x,
-      this.sourceStackViewer.primaryStack.stackToProjectSX(this.sourceStackViewer.s),
+      'z' in coords? coords.z : currentCoords.z,
+      'y' in coords? coords.y : currentCoords.y,
+      'x' in coords? coords.x : currentCoords.x,
+      's' in coords ? coords.s : this.sourceStackViewer.primaryStack.stackToProjectSX(this.sourceStackViewer.s),
       typeof completionCallback === "function" ? completionCallback : undefined
     );
   };

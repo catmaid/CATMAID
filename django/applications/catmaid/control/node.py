@@ -340,45 +340,57 @@ class Postgis2dNodeProvider(object):
             # (the query plan says ST_3DDWithin wouldn't use a 2-d index in this query,
             # even if present).
             cursor.execute('''
-            SELECT
-                t1.id,
-                t1.parent_id,
-                t1.location_x,
-                t1.location_y,
-                t1.location_z,
-                t1.confidence,
-                t1.radius,
-                t1.skeleton_id,
-                t1.edition_time,
-                t1.user_id,
-                t2.id,
-                t2.parent_id,
-                t2.location_x,
-                t2.location_y,
-                t2.location_z,
-                t2.confidence,
-                t2.radius,
-                t2.skeleton_id,
-                t2.edition_time,
-                t2.user_id
-            FROM
-              (SELECT te.id
-                 FROM treenode_edge te
-                 WHERE te.edge && ST_MakeEnvelope(%(left)s, %(top)s, %(right)s, %(bottom)s)
-                   AND floatrange(ST_ZMin(te.edge), ST_ZMax(te.edge), '[]') &&
-                     '[%(z1)s,%(z2)s)'::floatrange
-                   AND ST_3DDWithin(te.edge, ST_MakePolygon(ST_GeomFromText(
-                    'LINESTRING(%(left)s %(top)s %(halfz)s, %(right)s %(top)s %(halfz)s,
-                                %(right)s %(bottom)s %(halfz)s, %(left)s %(bottom)s %(halfz)s,
-                                %(left)s %(top)s %(halfz)s)')), %(halfzdiff)s)
-                   AND te.project_id = %(project_id)s
-              ) edges(edge_child_id)
-            JOIN treenode t1 ON edge_child_id = t1.id
-            LEFT JOIN treenode t2 ON t2.id = t1.parent_id
-            LIMIT %(limit)s
+                WITH nodes AS (
+                  SELECT
+                    t1.id AS t1_id,
+                    t1.parent_id AS t1_parent_id,
+                    t1.location_x AS t1_location_x,
+                    t1.location_y AS t1_location_y,
+                    t1.location_z AS t1_location_z,
+                    t1.confidence AS t1_confidence,
+                    t1.radius AS t1_radius,
+                    t1.skeleton_id AS t1_skeleton_id,
+                    t1.edition_time AS t1_edition_time,
+                    t1.user_id AS t1_user_id,
+                    t2.id AS t2_id,
+                    t2.parent_id AS t2_parent_id,
+                    t2.location_x AS t2_location_x,
+                    t2.location_y AS t2_location_y,
+                    t2.location_z AS t2_location_z,
+                    t2.confidence AS t2_confidence,
+                    t2.radius AS t2_radius,
+                    t2.skeleton_id AS t2_skeleton_id,
+                    t2.edition_time AS t2_edition_time,
+                    t2.user_id AS t2_user_id
+                  FROM
+                    (SELECT te.id
+                       FROM treenode_edge te
+                       WHERE te.edge && ST_MakeEnvelope(%(left)s, %(top)s, %(right)s, %(bottom)s)
+                         AND floatrange(ST_ZMin(te.edge), ST_ZMax(te.edge), '[]') &&
+                           '[%(z1)s,%(z2)s)'::floatrange
+                         AND ST_3DDWithin(te.edge, ST_MakePolygon(ST_GeomFromText(
+                          'LINESTRING(%(left)s %(top)s %(halfz)s, %(right)s %(top)s %(halfz)s,
+                                      %(right)s %(bottom)s %(halfz)s, %(left)s %(bottom)s %(halfz)s,
+                                      %(left)s %(top)s %(halfz)s)')), %(halfzdiff)s)
+                         AND te.project_id = %(project_id)s
+                    ) edges(edge_child_id)
+                  JOIN treenode t1 ON edge_child_id = t1.id
+                  LEFT JOIN treenode t2 ON t2.id = t1.parent_id
+                )
+                SELECT
+                  t1_id, t1_parent_id, t1_location_x, t1_location_y, t1_location_z,
+                  t1_confidence, t1_radius, t1_skeleton_id, t1_edition_time, t1_user_id
+                FROM nodes
+                UNION
+                SELECT
+                  t2_id, t2_parent_id, t2_location_x, t2_location_y, t2_location_z,
+                  t2_confidence, t2_radius, t2_skeleton_id, t2_edition_time, t2_user_id
+                FROM nodes
+                WHERE t2_id IS NOT NULL;
             ''', params)
 
-        treenode_ids, treenodes = split_and_filter_id_rows(cursor.fetchall(), 10, 20)
+            treenodes = cursor.fetchall()
+            treenode_ids = [t[0] for t in treenodes]
 
         return treenode_ids, treenodes
 

@@ -52,11 +52,11 @@ class PostGISTests(TestCase):
 
         non_postgis_nodes_r = node.node_list_tuples_query(params,
                 self.test_project_id, None, None, include_labels=False,
-                tn_provider=node.get_treenodes_classic)
+                node_provider=node.nodeProviders['classic'])
 
         postgis_nodes_r = node.node_list_tuples_query(params,
                 self.test_project_id, None, None, include_labels=False,
-                tn_provider=node.get_treenodes_postgis)
+                node_provider=node.nodeProviders['postgis-3d'])
 
         self.assertEqual(non_postgis_nodes_r.status_code, 200)
         self.assertEqual(postgis_nodes_r.status_code, 200)

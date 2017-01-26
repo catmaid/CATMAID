@@ -136,7 +136,7 @@ def node_list_tuples(request, project_id=None, provider=None):
     params['project_id'] = project_id
     include_labels = (request.POST.get('labels', None) == 'true')
 
-    provider = get_treenodes_postgis_separate_planes
+    provider = nodeProviders['postgis-2d']
 
     return node_list_tuples_query(params, project_id, treenode_ids, connector_ids,
                                   include_labels, provider)
@@ -589,7 +589,7 @@ def get_connector_nodes_postgis_separate_planes(cursor, params, treenode_ids, mi
     return list(cursor.fetchall())
 
 
-def node_list_tuples_query(params, project_id, explicit_treenode_ids, explicit_connector_ids, include_labels, tn_provider):
+def node_list_tuples_query(params, project_id, explicit_treenode_ids, explicit_connector_ids, include_labels, node_provider):
     """The returned JSON data is sensitive to indices in the array, so care
     must be taken never to alter the order of the variables in the SQL
     statements without modifying the accesses to said data both in this
@@ -613,6 +613,7 @@ def node_list_tuples_query(params, project_id, explicit_treenode_ids, explicit_c
         treenode_ids = set()
 
         n_retrieved_nodes = 0 # at one per row, only those within the section
+        tn_provider = node_provider['treenodes']
         for row in tn_provider(cursor, params):
             n_retrieved_nodes += 1
             t1id = row[0]
@@ -642,11 +643,7 @@ def node_list_tuples_query(params, project_id, explicit_treenode_ids, explicit_c
         # Find connectors related to treenodes in the field of view
         # Connectors found attached to treenodes
         response_on_error = 'Failed to query connector locations.'
-        if tn_provider == get_treenodes_classic:
-            cn_provider = get_connector_nodes_classic
-        else:
-            cn_provider = get_connector_nodes_postgis_separate_planes
-
+        cn_provider = node_provider['connectors']
         crows = cn_provider(cursor, params, treenode_ids, missing_connector_ids)
 
         connectors = []
@@ -1129,3 +1126,18 @@ def find_labels(request, project_id=None):
              [row[1], row[2], row[3]],
              row[4],
              row[5]] for row in cursor.fetchall()], safe=False)
+
+nodeProviders = {
+    'classic': {
+        'treenodes': get_treenodes_classic,
+        'connectors': get_connector_nodes_classic
+    },
+    'postgis-3d': {
+        'treenodes': get_treenodes_postgis,
+        'connectors': get_connector_nodes_postgis
+    },
+    'postgis-2d': {
+        'treenodes': get_treenodes_postgis_separate_planes,
+        'connectors': get_connector_nodes_postgis_separate_planes
+    }
+}

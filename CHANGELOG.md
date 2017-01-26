@@ -11,6 +11,8 @@ Miscellaneous:
 - From the Graph Widget exported SVG files preserve now the view of the widget
   (zoom and pan).
 
+- The tag table can now be constrained by a set of skeletons.
+
 ### Bug fixes
 
 - 3D Viewer: custom tag highlighting now also works for tags with upper case

@@ -7,7 +7,24 @@
 
   var TagTable = function() {
     this.widgetID = this.registerInstance();
-    this.selectedSkeletons = new CATMAID.BasicSkeletonSource(this.getName());
+    this.idPrefix = `tag-table${this.widgetID}-`;
+
+    /**
+     * Skeleton source which is registered and other widgets can use
+     */
+    this.resultSkeletons = new CATMAID.BasicSkeletonSource(this.getName());
+
+    var constrainSkelsAndRedraw = this.constrainSkelsAndRedraw.bind(this);
+
+    /**
+     * Internal skeleton source used for filtering
+     */
+    this.filterSkeletons = new CATMAID.BasicSkeletonSource(this.getName() + ' Input', {
+      register: false,
+      handleAddedModels: constrainSkelsAndRedraw,
+      handleChangedModels: constrainSkelsAndRedraw,
+      handleRemovedModels: constrainSkelsAndRedraw
+    });
     CATMAID.skeletonListSources.updateGUI();
   };
 
@@ -23,7 +40,7 @@
    *      'labelIDs': Set([labelID1, labelID2, ...]),
    *      'labelName': labelName1,
    *      'skelIDs': Set([skelID1, skelID2, ...]),
-   *      'nodeIDs': Set([nodeID1, nodeID2, ...]),
+   *      'nodeIDs': Map([[nodeID1, skelIDX], [nodeID2, skelIDY], ...]),
    *      'checked': isChecked
    *    },
    *    labelName2: ...
@@ -34,35 +51,95 @@
   var responseCache = {};
 
   /**
-   * Set the skeleton source to reflect data in the table
+   * Clear the table and repopulate it using only data relating to the selected skeletons. If no skeletons are
+   * selected, show the data for the whole project.
+   *
+   * Sorting and selection status should be conserved, but any labels not associated with the selected skeletons
+   * will be deselected.
    */
-  TagTable.prototype.syncSkeletonSource = function() {
-    var areInSource = new Set(this.selectedSkeletons.getSelectedSkeletons());
+  TagTable.prototype.constrainSkelsAndRedraw = function() {
+    // var table = $(`#${this.idPrefix}datatable`).DataTable();
+    this.oTable.clear();
 
-    var shouldBeInSource = new Set();
-    for (var skelName of Object.keys(responseCache)) {
-      if (responseCache[skelName].checked) {
-        shouldBeInSource.addAll(responseCache[skelName].skelIDs);
+    var order = [[0, 'desc']].concat(this.oTable.order());
+
+    var filterSkels = this.filterSkeletons.getSelectedSkeletons();
+    var rowObjs = [];
+    for (var key of Object.keys(responseCache)) {
+
+      var skelIntersection = filterSkels.length ?  // if there are no selected skeletons, show everything in the project
+        responseCache[key].skelIDs.intersection(filterSkels) : responseCache[key].skelIDs;
+
+      if (skelIntersection.size) {  // only labels applied to nodes in filtered skels
+        var nodeCount = 0;
+        for (var skelID of responseCache[key].nodeIDs.values()) {
+          nodeCount += skelIntersection.has(skelID);
+        }
+
+        rowObjs.push({
+          'labelName': key,
+          'skelCount': skelIntersection.size,
+          'nodeCount': nodeCount,
+          'checked': responseCache[key].checked
+        });
+      } else {
+        responseCache[key].checked = false;  // if the row isn't going to be displayed, uncheck it
       }
     }
 
-    this.addAndSubtractFromSkeletonSource({
+    this.oTable.rows.add(rowObjs);
+    this.oTable.order(order)
+      .draw();
+
+    this.syncResultSkeletonSource();
+  };
+
+  /**
+   * Set the skeleton source to reflect data in the table
+   */
+  TagTable.prototype.syncResultSkeletonSource = function() {
+    var areInSource = new Set(this.resultSkeletons.getSelectedSkeletons());
+
+    var shouldBeInSource = new Set();
+    for (var labelName of Object.keys(responseCache)) {
+      if (responseCache[labelName].checked) {
+        shouldBeInSource.addAll(responseCache[labelName].skelIDs);
+      }
+    }
+
+    this.addAndSubtractFromResultSkeletonSource({
       add: Array.from(shouldBeInSource.difference(areInSource)),
       subtract: Array.from(areInSource.difference(shouldBeInSource))
     });
 
-    $("#tag-table" + this.widgetID + '_processing').hide();
+    $(`#${this.idPrefix}datatable_processing`).hide();
   };
 
+  /**
+   * Escape any characters which would usually be treated specially as a regex
+   *
+   * @param text
+   * @returns String
+   */
   var escapeRegexStr = function(text) {
     return text.replace(/[-[\]{}()*+?.,\\^$|#]/g, "\\$&");
   };
 
+  /**
+   * Create a regex which will match any of the strings in an array.
+   *
+   * EDGE CASES: If any item of the array includes a comma followed by a space, substrings of it may be matched.
+   *
+   * @param arr
+   * @returns {string|*|A}
+   */
   var stringListToRegexStr = function(arr) {
     var escapedStrings = arr.map(function(item) {
+      // match only if the string is preceded by comma-space or the start of the string
+      // AND is followed by comma-space or the end of the string
       return '(((\\,\\s)|^)' + escapeRegexStr(item) + '((\\,\\s)|$))';
     });
-    return escapedStrings.join('|');
+    return escapedStrings.join('|');  // use alternation so any will be matched
   };
 
   TagTable.prototype.getSelectedLabelNames = function() {
@@ -72,21 +149,42 @@
   };
 
   TagTable.prototype.getWidgetConfiguration = function() {
-    var tableSelector = "#tag-table" + this.widgetID;
+    var self = this;
+    var tableID = this.idPrefix + 'datatable';
     return {
-      controlsID: 'tag-tableWidgetControls' + this.widgetID,
+      helpText: 'Tag Table widget: See an overview of the tag usage in the project or within a set of skeletons',
+      controlsID: this.idPrefix + 'controls',
       createControls: function(controls) {
-        var self = this;
+        var sourceSelect = CATMAID.skeletonListSources.createSelect(this.filterSkeletons,
+          [this.resultSkeletons.getName()]);
+        controls.appendChild(sourceSelect);
+
+        var add = document.createElement('input');
+        add.setAttribute("type", "button");
+        add.setAttribute("value", "Add");
+        add.onclick = function() {
+          self.filterSkeletons.loadSource.bind(self.filterSkeletons)();
+        };
+        controls.appendChild(add);
+
+        var clear = document.createElement('input');
+        clear.setAttribute("type", "button");
+        clear.setAttribute("value", "Clear");
+        clear.onclick = function() {
+          self.filterSkeletons.clear();
+        };
+        controls.appendChild(clear);
 
         var refresh = document.createElement('input');
         refresh.setAttribute("type", "button");
         refresh.setAttribute("value", "Refresh");
         refresh.onclick = function() {
-          $(tableSelector).DataTable().clear();
-          self.selectedSkeletons.clear();
+          $('#' + tableID).DataTable().clear();
           for (var key of Object.keys(responseCache)) {
             delete responseCache[key];
           }
+          self.filterSkeletons.clear();
+          self.resultSkeletons.clear();
           self.init();
         };
         controls.appendChild(refresh);
@@ -96,7 +194,7 @@
         openTable.setAttribute('value', 'Open Node Table');
         openTable.setAttribute('title', 'Open a Treenode Table focused on the selected nodes');
         openTable.onclick = function() {
-          var selectedModels = self.selectedSkeletons.getSelectedSkeletonModels();
+          var selectedModels = self.resultSkeletons.getSelectedSkeletonModels();
           var nodeTable = WindowMaker.create('node-table').widget;
 
           // add skeletons which have the nodes in question
@@ -114,29 +212,22 @@
         };
         controls.appendChild(openTable);
       },
-      contentID: 'tag-table-widget' + this.widgetID,
+      contentID: this.idPrefix + 'content',
       createContent: function(container) {
         var self = this;
 
         container.innerHTML =
-          '<table cellpadding="0" cellspacing="0" border="0" class="display" id="' + "tag-table" + self.widgetID + '">' +
+          `<table cellpadding="0" cellspacing="0" border="0" class="display" id="${tableID}">` +
           '<thead>' +
           '<tr>' +
+          '<th>select' +
+          `<input type="checkbox" name="selectAll" id="${self.idPrefix + 'select-all'}"/>` +
+          '</th>' +
           '<th>tag' +
-            '<input type="text" name="searchInputLabel" id="tag-table' +
-                self.widgetID +
-                'searchInputLabel' +
-              '" value="Search" class="search_init" ' +
-            '/>' +
+            `<input type="text" name="searchInputLabel" id="${self.idPrefix + 'search-input-label'}" ` +
+              'value="Search" class="search_init"/>' +
           '</th>' +
           '<th>skeletons</th>' +
-          '<th>select skeletons' +
-          '<input type="checkbox" name="selectAllSkels" id="tag-table' +
-            self.widgetID +
-            'selectAllSkels' +
-          '" value="selectAllSkels"' +
-          '/>' +
-          '</th>' +
           '<th>nodes</th>' +
           '</tr>' +
           '</thead>' +
@@ -172,18 +263,18 @@
    * @param {number[]} obj.add - array of skeleton IDs to add to skeleton source
    * @param {number[]} obj.subtract - array of skeleton IDs to subtract from skeleton source
    */
-  TagTable.prototype.addAndSubtractFromSkeletonSource = function(obj) {
+  TagTable.prototype.addAndSubtractFromResultSkeletonSource = function(obj) {
     // Update the skeleton source run by the widget
-    this.selectedSkeletons.append(skelIDsToModels(obj.add));
-    this.selectedSkeletons.removeSkeletons(obj.subtract);
+    this.resultSkeletons.append(skelIDsToModels(obj.add));
+    this.resultSkeletons.removeSkeletons(obj.subtract);
   };
 
-  var createCheckbox = function(checked, type, row) {
+  TagTable.prototype.createCheckbox = function(checked, type, row) {
     if (type ==='display') {
       var checkbox = $('<input />', {
         type:'checkbox',
         class:'skelSelector',
-        id: 'skelSelector' + row.id,
+        id: this.idPrefix + 'skelselector' + row.id,
         value: row.id,
         checked: checked
       });
@@ -196,70 +287,31 @@
 
   TagTable.prototype.init = function() {
     var self = this;
-    var widgetID = this.widgetID;
-    var tableSelector = "#tag-table" + widgetID;
+    var tableID = this.idPrefix + 'datatable';
 
-    CATMAID.fetch(project.id + '/labels/stats', 'GET')
-      .then(function(json) {
-        var responseObj = json.reduce(function(obj, arr) {
-          var labelID = arr[0];
-          var labelName = arr[1];
-          var skelID = arr[2];
-          var nodeID = arr[3];
+    var tableSelector = $('#' + tableID);
 
-          if (!(labelName in obj)) {
-            obj[labelName] = {
-              'labelIDs': new Set(),
-              'skelIDs': new Set(),
-              'nodeIDs': new Set(),
-              'checked': false
-            };
-          }
-
-          obj[labelName].labelIDs.add(labelID);
-          obj[labelName].skelIDs.add(skelID);
-          obj[labelName].nodeIDs.add(nodeID);
-
-          return obj;
-        }, {});
-
-        responseCache = responseObj;
-
-        var rowObjs = [];
-        for (var key of Object.keys(responseObj)) {
-          if (responseObj[key].nodeIDs.size) {  // only labels applied to nodes
-            rowObjs.push({
-              'labelName': key,
-              'skelCount': responseObj[key].skelIDs.size,
-              'nodeCount': responseObj[key].nodeIDs.size,
-              'checked': false
-            });
-          }
-        }
-
-        var table = $(tableSelector).DataTable();
-
-        table.rows.add(rowObjs);
-        table.draw();
-
-        $(tableSelector + '_processing').hide();
-      }
-    );
-
-    this.oTable = $(tableSelector).dataTable({  // use ajax data source directly?
+    this.oTable = tableSelector.DataTable({
       // http://www.datatables.net/usage/options
-      "bDestroy": true,
-      "sDom": '<"H"lrp>t<"F"ip>',
-      "bServerSide": false,
+      "destroy": true,
+      "dom": '<"H"lrp>t<"F"ip>',
+      "serverSide": false,
       "paging": true,
-      "bLengthChange": true,
-      "bAutoWidth": false,
-      "iDisplayLength": CATMAID.pageLengthOptions[0],
-      "aLengthMenu": [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
-      "bJQueryUI": true,
+      "lengthChange": true,
+      "autoWidth": false,
+      "pageLength": CATMAID.pageLengthOptions[0],
+      "lengthMenu": [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
+      "jQueryUI": true,
       "processing": true,
       "deferRender": true,
       "columns": [
+        {
+          "data": 'checked',
+          "render": self.createCheckbox.bind(self),  // binding may not be necessary
+          "orderable": true,
+          "className": "center",
+          "width": "5%"
+        },
         {
           "data": 'labelName',
           "orderable": true,
@@ -272,13 +324,6 @@
           "className": "center"
         },
         {
-          "data": 'checked',
-          "render": function(data, type, full) { return createCheckbox(data, type, full); },
-          "orderable": true,
-          "className": "center",
-          "width": "5%"
-        },
-        {
           "data": 'nodeCount',
           "orderable": true,
           "className": "center"
@@ -286,11 +331,40 @@
       ]
     });
 
-    $(tableSelector + '_processing').show();
+    CATMAID.fetch(project.id + '/labels/stats', 'GET')
+      .then(function(json) {
+        responseCache = json.reduce(function(obj, arr) {
+          var labelID = arr[0];
+          var labelName = arr[1];
+          var skelID = arr[2];
+          var nodeID = arr[3];
+
+          if (!(labelName in obj)) {
+            obj[labelName] = {
+              'labelIDs': new Set(),
+              'skelIDs': new Set(),
+              'nodeIDs': new Map(),
+              'checked': false
+            };
+          }
+
+          obj[labelName].labelIDs.add(labelID);
+          obj[labelName].skelIDs.add(skelID);
+          obj[labelName].nodeIDs.set(nodeID, skelID);
+
+          return obj;
+        }, {});
+
+        self.constrainSkelsAndRedraw();
+
+        $(`#${tableID}_processing`).hide();
+      }
+    );
+
+    $(`#${tableID}_processing`).show();
 
     $(this.oTable).on('change', '.skelSelector', function(event) {
-      var table = self.oTable.DataTable();
-      var row = table.row(event.currentTarget.closest('tr'));
+      var row = self.oTable.row(event.currentTarget.closest('tr'));
       var currentCheckedState = event.currentTarget.checked;
 
       row.data().checked = currentCheckedState;
@@ -299,21 +373,20 @@
       row.invalidate();
 
       if (currentCheckedState) {  // if checking box, just add
-        self.addAndSubtractFromSkeletonSource({
+        self.addAndSubtractFromResultSkeletonSource({
           add: Array.from(responseCache[row.data().labelName].skelIDs),
           subtract: []
         });
       } else {  // if unchecking box, run full sync
-        self.syncSkeletonSource();
+        self.syncResultSkeletonSource();
       }
     });
 
-    $(tableSelector + 'selectAllSkels').change(function(event){
+    $(`#${self.idPrefix}select-all`).change(function(event){
       // change all searched-for checkboxes to the same value as the header checkbox
-      var table = self.oTable.DataTable();
 
-      $(tableSelector + '_processing').show();  // doesn't show up immediately
-      table.rows({search: 'applied'}).every(function () {
+      $(`#${tableID}_processing`).show();  // doesn't show up immediately
+      self.oTable.rows({search: 'applied'}).every(function () {
         // rows().every() may be slow, but is the only way to use search: 'applied'
         // using rows().data() hits call stack limit with large data
         var row = this;
@@ -327,31 +400,33 @@
         }
       });
 
-      table.draw();
-      self.syncSkeletonSource();
+      self.oTable.draw();
+      self.syncResultSkeletonSource();
     });
 
-    $(tableSelector + "searchInputLabel").keydown(function (event) {
+    $(`#${self.idPrefix}search-input-label`).keydown(function (event) {
       // filter table by tag text on hit enter
       if (event.which == 13) {
         event.stopPropagation();
         event.preventDefault();
         // Filter with a regular expression
         var filter_searchtag = event.currentTarget.value;
-        self.oTable.DataTable()
+        self.oTable
           .column(event.currentTarget.closest('th'))
           .search(filter_searchtag, true, false)
           .draw();
       }
     });
 
+    var headerInputSelector = tableSelector.find('thead input');
+
     // prevent sorting the column when focusing on the search field
-    $(tableSelector + " thead input").click(function (event) {
+    headerInputSelector.click(function (event) {
       event.stopPropagation();
     });
 
     // remove the 'Search' string when first focusing the search box
-    $(tableSelector + " thead input").focus(function () {
+    headerInputSelector.focus(function () {
       if (this.className === "search_init") {
         this.className = "";
         this.value = "";
@@ -360,7 +435,7 @@
   };
 
   TagTable.prototype.destroy = function() {
-    this.selectedSkeletons.destroy();
+    this.resultSkeletons.destroy();
     this.unregisterInstance();
   };
 

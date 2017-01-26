@@ -2384,7 +2384,7 @@
     var templateTextStyle = {
       'fill': null,
       'stroke-width': '0px',
-      'font-family': 'Helvetica, sans-serif',
+      'font-family': 'Verdana',
       'font-size': '10'
     };
 

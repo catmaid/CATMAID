@@ -373,10 +373,6 @@
     zoomInput.setAttribute('type', 'text');
     zoomInput.setAttribute('pattern', '^\-?\d?\.?\d*$');
     zoomInput.setAttribute('size', '5');
-    // zoomInput.setAttribute('type', 'number');
-    // zoomInput.setAttribute('step', '0.1');
-    // zoomInput.setAttribute('max', '5');
-    // zoomInput.setAttribute('min', '-2');
     zoomInput.setAttribute('value', self.sourceStackViewer.s);
     zoomInput.onchange = function() {
       if (this.value === '') {
@@ -672,9 +668,9 @@
     var currentCoords = stackViewer.projectCoordinates();
 
     stackViewer.moveToProject(
-      'z' in coords? coords.z : currentCoords.z,
-      'y' in coords? coords.y : currentCoords.y,
-      'x' in coords? coords.x : currentCoords.x,
+      'z' in coords ? coords.z : currentCoords.z,
+      'y' in coords ? coords.y : currentCoords.y,
+      'x' in coords ? coords.x : currentCoords.x,
       's' in coords ? coords.s : this.sourceStackViewer.primaryStack.stackToProjectSX(this.sourceStackViewer.s),
       typeof completionCallback === "function" ? completionCallback : undefined
     );

@@ -43,9 +43,10 @@
     }
 
     this.markers = {};
+    this.markerIds = {};
   };
 
-  SVGFactory.prototype.addMarker = function(id, element, width, height, refX, refY) {
+  SVGFactory.prototype.addMarker = function(id, element, width, height, refX, refY, units) {
     var marker = document.createElementNS(namespaces.svg, 'marker');
     marker.setAttribute('id', id);
     marker.setAttribute('markerWidth', width);
@@ -61,11 +62,21 @@
     this.markers[id] = marker;
   };
 
-  SVGFactory.prototype.addArrowMarker = function(id, width, height, refX, refY, style) {
-    refX = refX || 9;
-    refY = refY || 3;
+  SVGFactory.prototype.getMarkerId = function(color, width, height, refX, refY) {
+    var hash = color + '-' + width + '-' + height + '-' + refX + '-' + refY;
+    var markerId = this.markerIds[hash];
+    return markerId === undefined ? ('marker-' + Object.keys(this.markers).length) : markerId;
+  };
+
+  SVGFactory.prototype.addArrowMarker = function(id, width, height, refX, refY, units, style) {
+    width = width === undefined ? 3.0 : width;
+    height = height === undefined ? width : height;
+    refX = refX === undefined ? width : refX;
+    refY = refY === undefined ? (0.5 * width) : refY;
+    units = units === undefined ? 'strokeWidth' : units;
     var arrow = document.createElementNS(namespaces.svg, 'path');
-    arrow.setAttribute('d', 'M0,0 L0,6 L9,3 Z');
+    arrow.setAttribute('d', 'M0,0 L0,' + height + ' L' +
+        width + ',' + (height / 2.0) + ' Z');
 
     if (style) {
       var svgStyle = this.createSvgStyle(style);
@@ -74,7 +85,7 @@
       }
     }
 
-    this.addMarker(id, arrow, width, height, refX, refY, style);
+    this.addMarker(id, arrow, width, height, refX, refY, units);
   };
 
   function flattenStyle(key) {
@@ -285,13 +296,14 @@
 
     if (options.arrow && options.arrow !== 'none') {
       var color = style.stroke || '#000';
-      var arrowId = 'arrow-' + color.replace(/#/, '');
+      var arrowId = this.getMarkerId(color, options.arrowWidth,
+            options.arrowHeight, options.refX, options.refY);
       if (!this.markers[arrowId]) {
         var arrowStyle = {
           fill: color,
         };
         this.addArrowMarker(arrowId, options.arrowWidth, options.arrowHeight,
-            options.refX, options.refY, arrowStyle);
+            options.refX, options.refY, options.arrowUnit, arrowStyle);
       }
       line.setAttribute('marker-end', 'url(#' + arrowId + ')');
     }

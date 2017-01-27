@@ -43,9 +43,10 @@
     }
 
     this.markers = {};
+    this.markerIds = {};
   };
 
-  SVGFactory.prototype.addMarker = function(id, element, width, height, refX, refY) {
+  SVGFactory.prototype.addMarker = function(id, element, width, height, refX, refY, units) {
     var marker = document.createElementNS(namespaces.svg, 'marker');
     marker.setAttribute('id', id);
     marker.setAttribute('markerWidth', width);
@@ -53,7 +54,7 @@
     marker.setAttribute('refX', refX);
     marker.setAttribute('refY', refY);
     marker.setAttribute('orient', 'auto');
-    marker.setAttribute('markerUnits', 'strokeWidth');
+    marker.setAttribute('markerUnits', units);
 
     marker.appendChild(element);
 
@@ -61,11 +62,21 @@
     this.markers[id] = marker;
   };
 
-  SVGFactory.prototype.addArrowMarker = function(id, width, height, refX, refY, style) {
-    refX = refX || 9;
-    refY = refY || 3;
+  SVGFactory.prototype.getMarkerId = function(color, width, height, refX, refY) {
+    var hash = color + '-' + width + '-' + height + '-' + refX + '-' + refY;
+    var markerId = this.markerIds[hash];
+    return markerId === undefined ? ('marker-' + Object.keys(this.markers).length) : markerId;
+  };
+
+  SVGFactory.prototype.addArrowMarker = function(id, width, height, refX, refY, units, style) {
+    width = width === undefined ? 3.0 : width;
+    height = height === undefined ? width : height;
+    refX = refX === undefined ? width : refX;
+    refY = refY === undefined ? (0.5 * width) : refY;
+    units = units === undefined ? 'strokeWidth' : units;
     var arrow = document.createElementNS(namespaces.svg, 'path');
-    arrow.setAttribute('d', 'M0,0 L0,6 L9,3 Z');
+    arrow.setAttribute('d', 'M0,0 L0,' + height + ' L' +
+        width + ',' + (height / 2.0) + ' Z');
 
     if (style) {
       var svgStyle = this.createSvgStyle(style);
@@ -74,7 +85,7 @@
       }
     }
 
-    this.addMarker(id, arrow, width, height, refX, refY, style);
+    this.addMarker(id, arrow, width, height, refX, refY, units);
   };
 
   function flattenStyle(key) {
@@ -283,17 +294,47 @@
       }
     }
 
+    var arrow = null;
     if (options.arrow && options.arrow !== 'none') {
       var color = style.stroke || '#000';
-      var arrowId = 'arrow-' + color.replace(/#/, '');
+      var arrowId = this.getMarkerId(color, options.arrowWidth,
+            options.arrowHeight, options.refX, options.refY);
       if (!this.markers[arrowId]) {
         var arrowStyle = {
           fill: color,
         };
         this.addArrowMarker(arrowId, options.arrowWidth, options.arrowHeight,
-            options.refX, options.refY, arrowStyle);
+            options.refX, options.refY, options.arrowUnit, arrowStyle);
       }
-      line.setAttribute('marker-end', 'url(#' + arrowId + ')');
+      // The only way to convince Adobe Illustrator to read line markings and a
+      // line seems to be by adding an invisible second line with the marker.
+      if (options.arrowOnSeperateLine) {
+        arrow = line.cloneNode();
+        arrow.style.stroke = 'none';
+        arrow.style.fill = 'none';
+        arrow.setAttribute('marker-end', 'url(#' + arrowId + ')');
+      }
+
+      // Additionally, shink the actual line a little bit, so that it doesn't
+      // overlap with the error head.
+      if (options.arrowLineShrinking) {
+        var vx = x2 - x1, vy = y2 - y1;
+        var l = Math.sqrt(vx*vx + vy * vy);
+        var vxUnit = vx / l, vyUnit = vy / l;
+        var arrowLength;
+        if (options.arrowUnit === 'userSpaceOnUse') {
+          arrowLength = options.arrowWidth;
+        } else {
+          if (!options.strokeWidth) {
+            throw new CATMAID.ValueError('Need strokeWidth option to calculate ' +
+              'arrow length for relative arrow size');
+          }
+          arrowLength = options.strokeWidth * (options.arrowWidth ? options.arrowWidth : 3.0);
+        }
+        var af = l - arrowLength * 0.9;
+        line.setAttribute('x2', x1 + af * vxUnit);
+        line.setAttribute('y2', y1 + af * vyUnit);
+      }
     }
 
     if (options.label) {
@@ -305,6 +346,9 @@
           options.label, options.labelStyle);
       var group = document.createElementNS(namespaces.svg, 'g');
       group.appendChild(line);
+      if (arrow) {
+        group.appendChild(arrow);
+      }
       group.appendChild(text);
       return group;
     } else {

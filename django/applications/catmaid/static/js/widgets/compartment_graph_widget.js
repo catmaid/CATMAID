@@ -2401,7 +2401,9 @@
     };
 
     var templateLineOptions = {
-      'edgeType': 'haystack'
+      'edgeType': 'haystack',
+      'arrowOnSeperateLine': true,
+      'arrowLineShrinking': true
     };
 
     var renderer = cy.renderer();
@@ -2418,10 +2420,13 @@
       var rscratch = edge._private.rscratch;
 
       templateTextStyle['fill'] = data.label_color;
-      templateTextStyle['font-family'] = style['font-family'];
       templateTextStyle['font-size'] = style['font-size'];
       templateLineStyle['stroke'] = style['line-color'];
-      templateLineStyle['stroke-width'] = 'width' in style ? style['width'] : '1px';
+
+      var strokeWidth = 'width' in data ? data.width : 1.0;
+      templateLineStyle['stroke-width'] = strokeWidth + 'px';
+
+      templateLineOptions['strokeWidth'] = strokeWidth;
 
       templateLineOptions['edgeType'] = rscratch.edgeType;
       switch (rscratch.edgeType) {
@@ -2444,22 +2449,22 @@
       }
 
       // Cytoscape.js luckily keeps render locations cached, so we don't need
-      // to do the math ourselves.
+      // to do the math ourselves. Arrow locations are available even without
+      // arrows in use.
       var x1 = rscratch.startX,
           y1 = rscratch.startY,
-          x2 = rscratch.endX,
-          y2 = rscratch.endY;
+          x2 = rscratch.arrowEndX,
+          y2 = rscratch.arrowEndY;
 
       if (data.arrow && data.arrow !== 'none') {
         templateLineOptions['arrow'] = data.arrow;
         templateLineOptions['arrowStyle'] = templateLineStyle;
-        x2 = rscratch.arrowEndX;
-        y2 = rscratch.arrowEndY;
         if (data.arrow === 'triangle') {
-          templateLineOptions['arrowWidth'] = 10;
-          templateLineOptions['arrowHeight'] = 10;
-          templateLineOptions['refX'] = 0;
-          templateLineOptions['refY'] = 0;
+          // Since our arrows width are in a reather narrow ranger, setting the
+          // arrow dimensions in absolute pixels is easier.
+          var d = 3 * (0.5 * strokeWidth + 1.5);
+          templateLineOptions['arrowUnit'] = 'userSpaceOnUse';
+          templateLineOptions['arrowWidth'] = d;
         } else {
           CATMAID.warn('Could not export graph element. Unknown arrow: ' + data.arrow);
         }
@@ -2480,8 +2485,6 @@
       var style = node.style();
 
       templateTextStyle['fill'] = style['color'];
-      templateTextStyle['font-family'] = style['font-family'];
-      templateTextStyle['font-size'] = style['font-size'];
       templateShapeStyle['fill'] = style['background-color'];
       templateShapeStyle['stroke'] = style['border-color'];
       templateShapeStyle['stroke-width'] = style['border-width'];

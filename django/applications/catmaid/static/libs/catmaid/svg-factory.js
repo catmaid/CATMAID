@@ -54,7 +54,7 @@
     marker.setAttribute('refX', refX);
     marker.setAttribute('refY', refY);
     marker.setAttribute('orient', 'auto');
-    marker.setAttribute('markerUnits', 'strokeWidth');
+    marker.setAttribute('markerUnits', units);
 
     marker.appendChild(element);
 

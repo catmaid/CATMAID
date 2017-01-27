@@ -386,7 +386,8 @@ class Postgis2dNodeProvider(object):
                   t2_id, t2_parent_id, t2_location_x, t2_location_y, t2_location_z,
                   t2_confidence, t2_radius, t2_skeleton_id, t2_edition_time, t2_user_id
                 FROM nodes
-                WHERE t2_id IS NOT NULL;
+                WHERE t2_id IS NOT NULL
+                LIMIT %(limit)s;
             ''', params)
 
             treenodes = cursor.fetchall()

@@ -313,6 +313,8 @@
         arrow.style.stroke = 'none';
         arrow.style.fill = 'none';
         arrow.setAttribute('marker-end', 'url(#' + arrowId + ')');
+      } else {
+        line.setAttribute('marker-end', 'url(#' + arrowId + ')');
       }
 
       // Additionally, shink the actual line a little bit, so that it doesn't

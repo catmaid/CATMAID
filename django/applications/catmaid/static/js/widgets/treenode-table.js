@@ -71,51 +71,69 @@
         controls.appendChild(openViewer);
       },
       createContent: function(content) {
-        content.innerHTML =
-          `<table cellpadding="0" cellspacing="0" border="0" class="display" id="${self.idPrefix + 'datatable'}">` +
-            '<thead>' +
-              '<tr>' +
-                '<th>id</th>' +
-                '<th>type' +
-                  '<select name="search_type" id="' + self.idPrefix + 'search-type" class="search_init">' +
-                    '<option value="">Any</option>' +
-                    '<option value="R">Root</option>' + '' +
-                    '<option value="L" selected="selected">Leaf</option>' +
-                    '<option value="B">Branch</option>' +
-                    '<option value="S">Slab</option>' + '' +
-                  '</select>' +
-                '</th>' +
-                '<th>tags<input type="text" name="search_labels" id="' + self.idPrefix + 'search-labels' + '" value="Search" class="search_init" /></th>' +
-                '<th>c</th>' +
-                '<th>x</th>' +
-                '<th>y</th>' +
-                '<th>z</th>' +
-                '<th>s</th>' +
-                '<th>r</th>' +
-                '<th>user</th>' +
-                '<th>last modified</th>' +
-                '<th>reviewer</th>' +
-              '</tr>' +
-            '</thead>' +
-            '<tfoot>' +
-              '<tr>' +
-                '<th>id</th>' +
-                '<th>type</th>' +
-                '<th>tags</th>' +
-                '<th>c</th>' +
-                '<th>x</th>' +
-                '<th>y</th>' +
-                '<th>z</th>' +
-                '<th>s</th>' +
-                '<th>r</th>' +
-                '<th>user</th>' +
-                '<th>last modified</th>' +
-                '<th>reviewer</th>' +
-              '</tr>' +
-            '</tfoot>' +
-            '<tbody>' +
-            '</tbody>' +
-          '</table>';
+        content.innerHTML = `
+          <table cellpadding="0" cellspacing="0" border="0" class="display" id="${self.idPrefix}datatable"> 
+            <thead> 
+              <tr> 
+                <th>id</th> 
+                <th>type 
+                  <select id="${self.idPrefix}search-type" class="search_init"> 
+                    <option value="">Any</option> 
+                    <option value="R">Root</option>   
+                    <option value="L" selected="selected">Leaf</option> 
+                    <option value="B">Branch</option> 
+                    <option value="S">Slab</option>   
+                  </select> 
+                </th> 
+                <th>tags<input type="text" id="${self.idPrefix}search-labels" value="Search" class="search_init" /></th> 
+                <th>c <br>
+                  <div style="white-space: nowrap">
+                    <select id="${self.idPrefix}conf-operator" class="search_init conf_filter">
+                      <option value="none" selected></option>
+                      <option value="eq">&equals;</option>
+                      <option value="lt">&lt;</option>
+                      <option value="gt">&gt;</option>
+                    </select>
+                    <select id="${self.idPrefix}conf-number" class="search_init conf_filter">
+                      <option value="1">1</option>
+                      <option value="2">2</option>
+                      <option value="3">3</option>
+                      <option value="4">4</option>
+                      <option value="5" selected>5</option>
+                    </select>
+                  </div>
+                </th> 
+                <th>x</th> 
+                <th>y</th> 
+                <th>z</th> 
+                <th>s</th> 
+                <th>r</th> 
+                <th>user<input type="text" id="${self.idPrefix}search-user" value="Search" class="search_init" /></th> 
+                <th>last modified</th> 
+                <th>reviewer
+                  <input type="text" id="${self.idPrefix}search-reviewer" value="Search" class="search_init"/>
+                </th> 
+              </tr> 
+            </thead> 
+            <tfoot> 
+              <tr> 
+                <th>id</th> 
+                <th>type</th> 
+                <th>tags</th> 
+                <th>c</th> 
+                <th>x</th> 
+                <th>y</th> 
+                <th>z</th> 
+                <th>s</th> 
+                <th>r</th> 
+                <th>user</th> 
+                <th>last modified</th> 
+                <th>reviewer</th> 
+              </tr> 
+            </tfoot> 
+            <tbody> 
+            </tbody> 
+          </table>`;
       },
       init: function() {
         this.init(project.getId());
@@ -277,7 +295,7 @@
 
     var stack = project.focusedStackViewer.primaryStack,
         users = CATMAID.User.all(),
-        n_rows = this.oTable.page.info().recordsTotal,  // todo: fix
+        n_rows = this.oTable.page.info().recordsTotal,
         all_rows = [];
 
     fetchSkeletons(
@@ -362,6 +380,7 @@
 
   TreenodeTable.prototype.init = function() {
     var tableSelector = $(`#${this.idPrefix}datatable`);
+    var self = this;
 
     this.oTable = tableSelector.DataTable({
       // http://www.datatables.net/usage/options
@@ -392,7 +411,7 @@
       }, // labels
       {
         "className": "center",
-        "searchable": false,
+        "searchable": true,
         "sWidth": "50px"
       }, // confidence
       {
@@ -431,17 +450,23 @@
 
     var tableHeadInputSelector = tableSelector.find("thead input");
 
-    tableHeadInputSelector.keydown((function (event) {
+    tableHeadInputSelector.keydown(function (event) {
       // filter table on hit enter
       if (event.which == 13) {
         event.stopPropagation();
         event.preventDefault();
-        // Filter with a regular expression
-        this.filter_searchtag = $('#' + this.idPrefix + 'search-labels').val();
-        var columnIdx = this.oTable.column(event.currentTarget.closest('th')).index();
-        this.oTable.column(columnIdx).search(this.filter_searchtag, true).draw();
+        var searchVal = event.target.value;
+
+        if (event.target.id.endsWith('user')) {
+          self.filter_searchtag = searchVal;
+        }
+
+        self.oTable
+          .column(event.target.closest('th'))
+          .search(searchVal, true)  // as regex
+          .draw();
       }
-    }).bind(this));
+    });
 
     // don't sort when clicking on the input
     tableHeadInputSelector.click(function (event) {
@@ -460,6 +485,29 @@
       this.filter_nodetype = $('select#' + this.idPrefix + 'search-type').val();
       this.oTable.column(1).search(this.filter_nodetype).draw();
     }).bind(this));
+
+    var confFilterSelector = $('.conf_filter');
+
+    confFilterSelector.change(function() {
+      var numbers = [1, 2, 3, 4, 5];
+      var number = document.getElementById(self.idPrefix + 'conf-number').value;
+      var operator = document.getElementById(self.idPrefix + 'conf-operator').value;
+
+      var regex;
+
+      switch (operator) {
+        case 'none': regex = '.*'; break;
+        case 'eq': regex = String(number); break;
+        case 'lt': regex = numbers.filter(function(item) {return item < number;}).join('|'); break;
+        case 'gt': regex = numbers.filter(function(item) {return item > number;}).join('|'); break;
+      }
+
+      self.oTable.column(3).search(regex, true).draw();
+    });
+
+    confFilterSelector.click(function(event) {
+      event.stopPropagation();
+    });
 
     // TODO: remove the need for closing over oTable
     var oTable = this.oTable;

@@ -1347,7 +1347,7 @@ var WindowMaker = new function()
 
     DOM.appendToTab(tabs['Export'],
         [['Export GML', GG.exportGML.bind(GG)],
-         ['Export SVG', GG.exportSVG.bind(GG)],
+         ['Export SVG', GG.showSVGOptions.bind(GG)],
          ['Export Adjacency Matrix', GG.exportAdjacencyMatrix.bind(GG)],
          ['Open Connectivity Matrix', GG.openConnectivityMatrix.bind(GG, false)],
          ['Open plot', GG.openPlot.bind(GG)],

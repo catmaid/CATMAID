@@ -8,6 +8,10 @@ Miscellaneous:
 
 - Bookmarks are now persistent for each project.
 
+- The Graph Widget now offers two options when exporting SVGs: regular ones and
+  Adobe Illustrator compatible ones (because Adobe isn't SVG standard conform).
+  An option dialog is shown after clicking "Export SVG".
+
 - From the Graph Widget exported SVG files preserve now the view of the widget
   (zoom and pan).
 

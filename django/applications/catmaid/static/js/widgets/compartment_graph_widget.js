@@ -2361,7 +2361,32 @@
     saveAs(blob, "adjacency_matrix.csv");
   };
 
-  GroupGraph.prototype.exportSVG = function() {
+  GroupGraph.prototype.showSVGOptions = function() {
+    var self = this;
+    var dialog = new CATMAID.OptionsDialog("SVG Export", {
+      'Illustrator SVG': function() {
+        self.exportSVG({
+          arrowOnSeperateLine: true
+        });
+      },
+      'Regular SVG': function() {
+        self.exportSVG({
+          arrowRefX: 0,
+        });
+      }
+    });
+
+    dialog.appendMessage("If you want to use the exported SVG file with Adobe " +
+        "Illustrator, please use the respective export button below. Unfortunately, " +
+        "Illustrator is not standard conform and will not work properly with regular " +
+        "SVG files. We recommend Inkscape, which works will with regular SVGs.");
+
+    dialog.show('400', 'auto', true);
+  };
+
+  GroupGraph.prototype.exportSVG = function(options) {
+    options = options || {};
+
     if (0 === this.cy.nodes().size()) {
       CATMAID.warn("Load a graph first!");
       return;
@@ -2402,8 +2427,9 @@
 
     var templateLineOptions = {
       'edgeType': 'haystack',
-      'arrowOnSeperateLine': true,
-      'arrowLineShrinking': true
+      'arrowOnSeperateLine': CATMAID.getOption(options, 'arrowOnSeperateLine', false),
+      'arrowLineShrinking': CATMAID.getOption(options, 'arrowLineShrinking', true),
+      'refX': CATMAID.getOption(options, 'arrowRefX', undefined)
     };
 
     var renderer = cy.renderer();

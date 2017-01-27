@@ -425,4 +425,12 @@ var requestQueue = new RequestQueue();
     return result;
   };
 
+  /**
+   * Test if <key> is available in <options> and return if this is the case,
+   * otherwise return <default>.
+   */
+  CATMAID.getOption = function(options, key, defaultValue) {
+    return options.hasOwnProperty(key) ? options[key] : defaultValue;
+  };
+
 })(CATMAID);

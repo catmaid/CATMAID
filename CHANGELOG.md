@@ -4,6 +4,20 @@
 
 ### Features and enhancements
 
+Treenode Viewer:
+
+- A new tool similar to the connector viewer, which allows users to
+  quickly view the nodes in a treenode table.
+
+- The viewer is opened from the treenode table.
+
+- Nodes are shown only if they are filtered in the table, and appear in
+  the order that they appear in the table.
+
+- When the sorting and filtering in the table is changed, users can
+  refresh the viewer from the table to reflect these changes.
+
+
 Miscellaneous:
 
 - Bookmarks are now persistent for each project.
@@ -12,6 +26,10 @@ Miscellaneous:
   (zoom and pan).
 
 - The tag table can now be constrained by a set of skeletons.
+
+- The treenode table can now be filtered by node confidence, creator and
+  reviewer.
+
 
 ### Bug fixes
 

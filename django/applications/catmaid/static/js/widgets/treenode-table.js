@@ -16,6 +16,8 @@
     this.oTable = null;
     this.filter_nodetype = 'L';
     this.filter_searchtag = '';
+
+    this.treenodeViewer = null;
   };
 
   TreenodeTable.prototype = Object.create(CATMAID.SkeletonSource.prototype);
@@ -53,10 +55,24 @@
         refresh.setAttribute("value", "Refresh");
         refresh.onclick = this.refresh.bind(this);
         controls.appendChild(refresh);
+
+        var openViewer = document.createElement('input');
+        openViewer.setAttribute('id', self.idPrefix + 'viewer-button');
+        openViewer.setAttribute('type', 'button');
+        openViewer.setAttribute('value', 'Open Viewer');
+        openViewer.onclick = function() {
+          if (!self.treenodeViewer) {
+            self.treenodeViewer = WindowMaker.create('treenode-viewer', self).widget;
+            this.value = 'Refresh ' + self.treenodeViewer.getName();
+          }
+
+          self.treenodeViewer.stackViewerGrid.setTargets(self.getFilteredTargets());
+        };
+        controls.appendChild(openViewer);
       },
       createContent: function(content) {
         content.innerHTML =
-          '<table cellpadding="0" cellspacing="0" border="0" class="display" id="treenodetable' + this.widgetID + '">' +
+          `<table cellpadding="0" cellspacing="0" border="0" class="display" id="${self.idPrefix + 'datatable'}">` +
             '<thead>' +
               '<tr>' +
                 '<th>id</th>' +
@@ -108,8 +124,39 @@
   };
 
   TreenodeTable.prototype.destroy = function() {
+    if (this.treenodeViewer) {
+      document.getElementById(this.treenodeViewer.idPrefix + 'node-source').innerText = 'Treenode source CLOSED';
+      this.treenodeViewer.treenodeTable = null;
+    }
+
     this.unregisterSource();
     this.unregisterInstance();
+  };
+
+  var nodeTypes = new Map([
+    ['', 'none'],
+    ['R', 'root'],
+    ['L', 'leaf'],
+    ['B', 'branch'],
+    ['S', 'slab']
+  ]);
+
+  TreenodeTable.prototype.getFilteredTargets = function() {
+    var targets = [];
+    var rowIdx = 1;
+    this.oTable.rows({search: 'applied'}).every(function() {
+      var [id, type, tags, c, x, y, z, s, r, user, lastModified, reviewer] = this.data();
+      targets.push({
+        'coords': {
+          'x': x, 'y': y, 'z': z
+        },
+        'title': 'treenode ' + id,
+        'sortVal': 'Row index: ' + rowIdx,
+        'note': 'Type: ' + nodeTypes.get(type)
+      });
+      rowIdx += 1;
+    });
+    return targets;
   };
 
   TreenodeTable.prototype.append = function(models) {
@@ -117,7 +164,7 @@
     var current = Object.keys(models);
     if (0 === current.length) {
       // Remove bogus first row needed for init
-      this.oTable.fnClearTable( 0 );
+      this.oTable.clear();
     }
     current.forEach(function(skid) {
       if (this.models[skid]) return;
@@ -131,15 +178,18 @@
   TreenodeTable.prototype.clear = function() {
     this.models = {};
     this.ranges = {};
-    this.oTable.fnClearTable( 0 );
-    this.oTable.fnDraw();
+    this.oTable.clear();
+    this.oTable.draw();
   };
 
   TreenodeTable.prototype._removeRangeOfRows = function(start, length) {
+    var deleteIdxs = [];
     for (var i=0; i<length; ++i) {
-      // Remove row without redrawing
-      this.oTable.fnDeleteRow(start, null, false);
+      deleteIdxs.push(start + i);
     }
+
+    // Remove rows without redrawing
+    this.oTable.rows(deleteIdxs).delete();
   };
 
   TreenodeTable.prototype.removeSkeletons = function(skeleton_ids) {
@@ -152,7 +202,7 @@
       delete this.models[skid];
     }, this);
     // Refresh table
-    this.oTable.fnDraw();
+    this.oTable.draw();
   };
 
   TreenodeTable.prototype.updateModels = function(models) {
@@ -165,7 +215,7 @@
       this._removeRangeOfRows(range.start, range.end);
     }, this);
     // Refresh table
-    this.oTable.fnDraw();
+    this.oTable.draw();
     // Append newly fetched data at the end
     this._appendSkeletons(skids);
   };
@@ -203,7 +253,7 @@
   TreenodeTable.prototype.refresh = function() {
     var skeleton_ids = Object.keys(this.models);
     if (skeleton_ids.length > 0) {
-      this.oTable.fnClearTable( 0 );
+      this.oTable.clear();
       this._appendSkeletons(skeleton_ids);
     } else {
       CATMAID.msg("Add a skeleton first!");
@@ -227,7 +277,7 @@
 
     var stack = project.focusedStackViewer.primaryStack,
         users = CATMAID.User.all(),
-        n_rows = this.oTable.fnSettings().fnRecordsTotal(),
+        n_rows = this.oTable.page.info().recordsTotal,  // todo: fix
         all_rows = [];
 
     fetchSkeletons(
@@ -304,101 +354,102 @@
           delete this.ranges[skid];
         }).bind(this),
         (function() {
-          this.oTable.fnAddData(all_rows);
+          this.oTable.rows.add(all_rows);
           this.filter_nodetype = $('select#' + this.idPrefix + 'search-type').val();
-          // fnFilter will call fnDraw
-          this.oTable.fnFilter(this.filter_nodetype, 1);
+          this.oTable.columns(1).search(this.filter_nodetype).draw();
         }).bind(this));
   };
 
   TreenodeTable.prototype.init = function() {
-    var tableSelector = "#treenodetable" + this.widgetID;
-    var widgetID = this.widgetID;
+    var tableSelector = $(`#${this.idPrefix}datatable`);
 
-    this.oTable = $(tableSelector).dataTable({
+    this.oTable = tableSelector.DataTable({
       // http://www.datatables.net/usage/options
-      "bDestroy": true,
-      "sDom": '<"H"lrp>t<"F"ip>',
-      "bProcessing": true,
-      "bServerSide": false,
-      "bPaginate": true,
-      "bLengthChange": true,
-      "bAutoWidth": false,
-      "iDisplayLength": 30,
-      "aLengthMenu": [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
-      "bJQueryUI": true,
-      "aoColumns": [{
-        "sClass": "center",
-        "bSearchable": true,
-        "bSortable": true,
+      "destroy": true,
+      "dom": '<"H"lrp>t<"F"ip>',
+      "processing": true,
+      "serverSide": false,
+      "paging": true,
+      "lengthChange": true,
+      "autoWidth": false,
+      "pageLength": 30,
+      "lengthMenu": [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
+      "jQueryUI": true,
+      "deferRender": true,
+      "columns": [{
+        "className": "center",
+        "searchable": true,
+        "orderable": true,
       }, // id
       {
-        "sClass": "center",
-        "bSearchable": true,
+        "className": "center",
+        "searchable": true,
       }, // type
       {
-        "bSearchable": true,
-        "bSortable": true,
+        "searchable": true,
+        "orderable": true,
         "sWidth": "150px"
       }, // labels
       {
-        "sClass": "center",
-        "bSearchable": false,
+        "className": "center",
+        "searchable": false,
         "sWidth": "50px"
       }, // confidence
       {
-        "sClass": "center",
-        "bSearchable": false
+        "className": "center",
+        "searchable": false
       }, // x
       {
-        "sClass": "center",
-        "bSearchable": false
+        "className": "center",
+        "searchable": false
       }, // y
       {
-        "sClass": "center",
-        "bSearchable": false
+        "className": "center",
+        "searchable": false
       }, // z
       {
-        "sClass": "center",
-        "bSearchable": false,
+        "className": "center",
+        "searchable": false,
       },
       {
-        "sClass": "center",
-        "bSearchable": false
+        "className": "center",
+        "searchable": false
       }, // radius
       {
-        "bSearchable": true
+        "searchable": true
       }, // username
       {
-        "bSearchable": false,
-        "bSortable": true
+        "searchable": false,
+        "orderable": true
       }, // last modified
       {
-          "bSearchable": true,
-          "bSortable": true
+          "searchable": true,
+          "orderable": true
       } // reviewer
       ]
     });
 
-    $(tableSelector + " thead input").keydown((function (event) {
+    var tableHeadInputSelector = tableSelector.find("thead input");
+
+    tableHeadInputSelector.keydown((function (event) {
       // filter table on hit enter
       if (event.which == 13) {
         event.stopPropagation();
         event.preventDefault();
         // Filter with a regular expression
         this.filter_searchtag = $('#' + this.idPrefix + 'search-labels').val();
-        var columnIdx = this.oTable.DataTable().column(event.currentTarget.closest('th')).index();
-        this.oTable.fnFilter(this.filter_searchtag, columnIdx, true);
+        var columnIdx = this.oTable.column(event.currentTarget.closest('th')).index();
+        this.oTable.column(columnIdx).search(this.filter_searchtag, true).draw();
       }
     }).bind(this));
 
     // don't sort when clicking on the input
-    $(tableSelector + " thead input").click(function (event) {
+    tableHeadInputSelector.click(function (event) {
       event.stopPropagation();
     });
 
     // remove the 'Search' string when first focusing the search box
-    $(tableSelector + " thead input").focus(function () {
+    tableHeadInputSelector.focus(function () {
       if (this.className === "search_init") {
         this.className = "";
         this.value = "";
@@ -407,14 +458,14 @@
 
     $('select#' + this.idPrefix + 'search-type').change((function() {
       this.filter_nodetype = $('select#' + this.idPrefix + 'search-type').val();
-      this.oTable.fnFilter(this.filter_nodetype, 1);
+      this.oTable.column(1).search(this.filter_nodetype).draw();
     }).bind(this));
 
     // TODO: remove the need for closing over oTable
     var oTable = this.oTable;
 
-    $(tableSelector).on("dblclick", "tbody tr", function() {
-      var aData = oTable.fnGetData(this);
+    tableSelector.on("dblclick", "tbody tr", function() {
+      var aData = oTable.row(this).data();
       // retrieve coordinates and moveTo
       var id = parseInt(aData[0], 10);
       var x = parseFloat(aData[4]);

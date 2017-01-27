@@ -32,8 +32,15 @@
 
   TreenodeViewer.prototype.destroy = function() {
     this.stackViewerGrid.closeStackViewers();
-    this.treenodeTable.treenodeViewer = null;
-    document.getElementById(this.treenodeTable.idPrefix + 'viewer-button').value = 'Open Viewer';
+
+    if (this.treenodeTable) {
+      var tableViewerButton = document.getElementById(this.treenodeTable.idPrefix + 'viewer-button');
+      if (tableViewerButton) {
+        tableViewerButton.value = 'Open Viewer';
+      }
+      this.treenodeTable.treenodeViewer = null;
+    }
+
     this.unregisterInstance();
   };
 
@@ -44,6 +51,7 @@
       controlsID: this.idPrefix + 'controls',
       createControls: function(controls) {
         var nodeSource = document.createElement('p');
+        nodeSource.setAttribute('id', self.idPrefix + 'node-source');
         nodeSource.innerText = 'Treenode source: ' + self.treenodeTable.getName();
         controls.append(nodeSource);
       },

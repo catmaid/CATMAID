@@ -294,6 +294,7 @@
       }
     }
 
+    var arrow = null;
     if (options.arrow && options.arrow !== 'none') {
       var color = style.stroke || '#000';
       var arrowId = this.getMarkerId(color, options.arrowWidth,
@@ -305,7 +306,35 @@
         this.addArrowMarker(arrowId, options.arrowWidth, options.arrowHeight,
             options.refX, options.refY, options.arrowUnit, arrowStyle);
       }
-      line.setAttribute('marker-end', 'url(#' + arrowId + ')');
+      // The only way to convince Adobe Illustrator to read line markings and a
+      // line seems to be by adding an invisible second line with the marker.
+      if (options.arrowOnSeperateLine) {
+        arrow = line.cloneNode();
+        arrow.style.stroke = 'none';
+        arrow.style.fill = 'none';
+        arrow.setAttribute('marker-end', 'url(#' + arrowId + ')');
+      }
+
+      // Additionally, shink the actual line a little bit, so that it doesn't
+      // overlap with the error head.
+      if (options.arrowLineShrinking) {
+        var vx = x2 - x1, vy = y2 - y1;
+        var l = Math.sqrt(vx*vx + vy * vy);
+        var vxUnit = vx / l, vyUnit = vy / l;
+        var arrowLength;
+        if (options.arrowUnit === 'userSpaceOnUse') {
+          arrowLength = options.arrowWidth;
+        } else {
+          if (!options.strokeWidth) {
+            throw new CATMAID.ValueError('Need strokeWidth option to calculate ' +
+              'arrow length for relative arrow size');
+          }
+          arrowLength = options.strokeWidth * (options.arrowWidth ? options.arrowWidth : 3.0);
+        }
+        var af = l - arrowLength * 0.9;
+        line.setAttribute('x2', x1 + af * vxUnit);
+        line.setAttribute('y2', y1 + af * vyUnit);
+      }
     }
 
     if (options.label) {
@@ -317,6 +346,9 @@
           options.label, options.labelStyle);
       var group = document.createElementNS(namespaces.svg, 'g');
       group.appendChild(line);
+      if (arrow) {
+        group.appendChild(arrow);
+      }
       group.appendChild(text);
       return group;
     } else {

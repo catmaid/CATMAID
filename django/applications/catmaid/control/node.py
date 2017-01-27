@@ -41,6 +41,9 @@ def split_and_filter_id_rows(rows, part_2_start, total_len):
 
 class ClassicNodeProvider(object):
 
+    def prepare_db_statements(self, connection):
+        pass
+
     def get_treenode_data(self, cursor, params):
         """Return a list of treenode IDs along with a JSON String
         representation.
@@ -179,6 +182,9 @@ class ClassicNodeProvider(object):
 
 class Postgis3dNodeProvider(object):
 
+    def prepare_db_statements(self, connection):
+        pass
+
     def get_treenode_data(self, cursor, params):
         """ Selects all treenodes of which links to other treenodes intersect
         with the request bounding box.
@@ -310,6 +316,64 @@ class Postgis3dNodeProvider(object):
 
 class Postgis2dNodeProvider(object):
 
+    def prepare_db_statements(self, connection):
+      """Create prepared statements on a given connection. This is mainly useful
+      for long lived connections.
+      """
+      cursor = connection.cursor()
+      cursor.execute("""
+          PREPARE get_treenodes_postgis_separate_planes (int, real, real, real,
+                  real, real, real, real, int) AS
+          WITH nodes AS (
+            SELECT
+              t1.id AS t1_id,
+              t1.parent_id AS t1_parent_id,
+              t1.location_x AS t1_location_x,
+              t1.location_y AS t1_location_y,
+              t1.location_z AS t1_location_z,
+              t1.confidence AS t1_confidence,
+              t1.radius AS t1_radius,
+              t1.skeleton_id AS t1_skeleton_id,
+              t1.edition_time AS t1_edition_time,
+              t1.user_id AS t1_user_id,
+              t2.id AS t2_id,
+              t2.parent_id AS t2_parent_id,
+              t2.location_x AS t2_location_x,
+              t2.location_y AS t2_location_y,
+              t2.location_z AS t2_location_z,
+              t2.confidence AS t2_confidence,
+              t2.radius AS t2_radius,
+              t2.skeleton_id AS t2_skeleton_id,
+              t2.edition_time AS t2_edition_time,
+              t2.user_id AS t2_user_id
+            FROM
+              (SELECT te.id
+               FROM treenode_edge te
+               WHERE te.edge && ST_MakeEnvelope( $2,  $3, $5, $6)
+               AND floatrange(ST_ZMin(te.edge), ST_ZMax(te.edge), '[]') &&
+                 floatrange($4, $7, '[)')
+               AND ST_3DDWithin(te.edge, ST_MakePolygon(ST_MakeLine(ARRAY[
+                            ST_MakePoint($2, $3, $8), ST_MakePoint($5, $3, $8),
+                            ST_MakePoint($5, $6, $8), ST_MakePoint($2, $6, $8),
+                            ST_MakePoint($2, $3, $8)] ::geometry[])), $9)
+               AND te.project_id = $1
+              ) edges(edge_child_id)
+            JOIN treenode t1 ON edge_child_id = t1.id
+            LEFT JOIN treenode t2 ON t2.id = t1.parent_id
+          )
+          SELECT
+            t1_id, t1_parent_id, t1_location_x, t1_location_y, t1_location_z,
+            t1_confidence, t1_radius, t1_skeleton_id, t1_edition_time, t1_user_id
+          FROM nodes
+          UNION
+          SELECT
+            t2_id, t2_parent_id, t2_location_x, t2_location_y, t2_location_z,
+            t2_confidence, t2_radius, t2_skeleton_id, t2_edition_time, t2_user_id
+          FROM nodes
+          WHERE t2_id IS NOT NULL
+          LIMIT $10;
+      """)
+
     def get_treenode_data(self, cursor, params):
         """ Selects all treenodes of which links to other treenodes intersect with
         the request bounding box.
@@ -390,8 +454,8 @@ class Postgis2dNodeProvider(object):
                 LIMIT %(limit)s;
             ''', params)
 
-            treenodes = cursor.fetchall()
-            treenode_ids = [t[0] for t in treenodes]
+        treenodes = cursor.fetchall()
+        treenode_ids = [t[0] for t in treenodes]
 
         return treenode_ids, treenodes
 
@@ -475,6 +539,9 @@ def get_provider():
         return Postgis2dNodeProvider()
     else:
         raise ValueError('Unknown node provider: ' + provider_key)
+
+def prepare_db_statements(connection):
+    get_provider().prepare_db_statements(connection)
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
@@ -596,52 +663,6 @@ def node_list_tuples(request, project_id=None, provider=None):
 
     return node_list_tuples_query(params, project_id, treenode_ids, connector_ids,
                                   include_labels, get_provider())
-
-def prepare_db_statements(connection):
-    """Create prepared statements on a given connection. This is mainly useful
-    for long lived connections.
-    """
-    cursor = connection.cursor()
-    cursor.execute("""
-        PREPARE get_treenodes_postgis_separate_planes (int, real, real, real,
-                real, real, real, real, int) AS
-        SELECT
-            t1.id,
-            t1.parent_id,
-            t1.location_x,
-            t1.location_y,
-            t1.location_z,
-            t1.confidence,
-            t1.radius,
-            t1.skeleton_id,
-            t1.edition_time,
-            t1.user_id,
-            t2.id,
-            t2.parent_id,
-            t2.location_x,
-            t2.location_y,
-            t2.location_z,
-            t2.confidence,
-            t2.radius,
-            t2.skeleton_id,
-            t2.edition_time,
-            t2.user_id
-        FROM (
-            SELECT te.id
-            FROM treenode_edge te
-            WHERE te.edge && ST_MakeEnvelope( $2,  $3, $5, $6)
-            AND floatrange(ST_ZMin(te.edge), ST_ZMax(te.edge), '[]') &&
-              floatrange($4, $7, '[)')
-            AND ST_3DDWithin(te.edge, ST_MakePolygon(ST_MakeLine(ARRAY[
-                         ST_MakePoint($2, $3, $8), ST_MakePoint($5, $3, $8),
-                         ST_MakePoint($5, $6, $8), ST_MakePoint($2, $6, $8),
-                         ST_MakePoint($2, $3, $8)] ::geometry[])), $9)
-            AND te.project_id = $1
-        ) edges(edge_child_id)
-        JOIN treenode t1 ON edge_child_id = t1.id
-        LEFT JOIN treenode t2 ON t2.id = t1.parent_id
-        LIMIT $10;
-    """)
 
 
 def node_list_tuples_query(params, project_id, explicit_treenode_ids, explicit_connector_ids, include_labels, node_provider):

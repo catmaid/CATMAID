@@ -465,6 +465,18 @@ class Postgis2dNodeProvider(object):
         return list(cursor.fetchall())
 
 
+def get_provider():
+    provider_key = settings.NODE_PROVIDER
+    if 'classic' == provider_key:
+        return ClassicNodeProvider()
+    elif 'postgis3d' == provider_key:
+        return Postgis3dNodeProvider()
+    elif 'postgis2d' == provider_key:
+        return Postgis2dNodeProvider()
+    else:
+        raise ValueError('Unknown node provider: ' + provider_key)
+
+
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def node_list_tuples(request, project_id=None, provider=None):
     '''Retrieve all nodes intersecting a bounding box
@@ -582,10 +594,8 @@ def node_list_tuples(request, project_id=None, provider=None):
     params['project_id'] = project_id
     include_labels = (request.POST.get('labels', None) == 'true')
 
-    provider = Postgis2dNodeProvider()
-
     return node_list_tuples_query(params, project_id, treenode_ids, connector_ids,
-                                  include_labels, provider)
+                                  include_labels, get_provider())
 
 def prepare_db_statements(connection):
     """Create prepared statements on a given connection. This is mainly useful

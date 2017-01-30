@@ -1070,10 +1070,10 @@
           for (var i=0; i<widget.ordered_skeleton_ids.length; ++i) {
             ts.partnerSet.thresholds[ts.type][widget.ordered_skeleton_ids[i]] = threshold;
           }
-          ts.partnerSet.allThresholds[t] = threshold;
+          ts.partnerSet.allThresholds[ts.type] = threshold;
           widget.redraw();
         });
-      });
+      }, this);
     }
 
     // Create list of selected neurons

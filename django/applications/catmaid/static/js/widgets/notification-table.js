@@ -10,8 +10,6 @@
     this.datatable = null;
   };
 
-  NotificationsTable.initValues = [];
-
   NotificationsTable.prototype = {};
   $.extend(NotificationsTable.prototype, new InstanceRegistry());
 
@@ -177,25 +175,6 @@
           ]
         });
 
-        // filter table
-        $.each(NotificationsTable.initValues, function(index, value) {
-          if(value==="Search")
-            return;
-          if(value) {
-            self.datatable.fnFilter(value, index);
-          }
-        });
-
-        $("thead select[name=search_type]", table).keyup(function () { /* Filter on the column (the index) of this element */
-          var i = $("thead select", table).index(this) + 2;
-          CATMAID.NotificationsTable.initValues[i] = this.value;
-          self.datatable.fnFilter(this.value, i);
-        });
-
-        $("thead select[name=search_type]", table).each(function (i) {
-          CATMAID.NotificationsTable.initValues[i+2] = this.value;
-        });
-
         $("thead select[name=search_type]", table).focus(function () {
           if (this.className === "search_init") {
             this.className = "";
@@ -203,16 +182,8 @@
           }
         });
 
-        $("thead select[name=search_type]", table).blur(function (event) {
-          if (this.value === "") {
-            this.className = "search_init";
-            this.value = CATMAID.NotificationsTable.initValues[$("thead select", table).index(this)+2];
-          }
-        });
-
         $('thead select[name=search_type]', table).change(function() {
           self.datatable.fnFilter(this.value, 3);
-          CATMAID.NotificationsTable.initValues[1] = $(this).val();
         });
 
         $(table).on('change', "tbody select[name=action]", function() {

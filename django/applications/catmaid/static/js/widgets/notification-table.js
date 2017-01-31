@@ -34,12 +34,12 @@
                 '<th>type</th>' +
                 '<th>description</th>' +
                 '<th>status' +
-                  '<select name="search_type" id="search_type" class="search_init">' +
+                  '<select name="search_type" class="search_init">' +
                     '<option value="">Any</option>' +
-                    '<option value="0">Open</option>' +
-                    '<option value="1">Approved</option>' +
-                    '<option value="2">Rejected</option>' +
-                    '<option value="3">Invalid</option>' +
+                    '<option value="open">Open</option>' +
+                    '<option value="approved">Approved</option>' +
+                    '<option value="rejected">Rejected</option>' +
+                    '<option value="invalid">Invalid</option>' +
                   '</select>' +
                 '</th>' +
                 '<th>x</th>' +
@@ -187,32 +187,32 @@
           }
         });
 
-        $("thead input", table).keyup(function () { /* Filter on the column (the index) of this element */
-          var i = $("thead input", table).index(this) + 2;
+        $("thead select[name=search_type]", table).keyup(function () { /* Filter on the column (the index) of this element */
+          var i = $("thead select", table).index(this) + 2;
           CATMAID.NotificationsTable.initValues[i] = this.value;
           self.datatable.fnFilter(this.value, i);
         });
 
-        $("thead input", table).each(function (i) {
+        $("thead select[name=search_type]", table).each(function (i) {
           CATMAID.NotificationsTable.initValues[i+2] = this.value;
         });
 
-        $("thead input", table).focus(function () {
+        $("thead select[name=search_type]", table).focus(function () {
           if (this.className === "search_init") {
             this.className = "";
             this.value = "";
           }
         });
 
-        $("thead input", table).blur(function (event) {
+        $("thead select[name=search_type]", table).blur(function (event) {
           if (this.value === "") {
             this.className = "search_init";
-            this.value = CATMAID.NotificationsTable.initValues[$("thead input", table).index(this)+2];
+            this.value = CATMAID.NotificationsTable.initValues[$("thead select", table).index(this)+2];
           }
         });
 
-        $('select#search_type').change( function() {
-          this.datatable.fnFilter( $(this).val(), 1 );
+        $('thead select[name=search_type]', table).change(function() {
+          self.datatable.fnFilter(this.value, 3);
           CATMAID.NotificationsTable.initValues[1] = $(this).val();
         });
 

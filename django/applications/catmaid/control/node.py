@@ -61,7 +61,7 @@ class ClassicNodeProvider(object):
             t1.confidence,
             t1.radius,
             t1.skeleton_id,
-            t1.edition_time,
+            EXTRACT(EPOCH FROM t1.edition_time),
             t1.user_id,
             t2.id,
             t2.parent_id,
@@ -71,7 +71,7 @@ class ClassicNodeProvider(object):
             t2.confidence,
             t2.radius,
             t2.skeleton_id,
-            t2.edition_time,
+            EXTRACT(EPOCH FROM t2.edition_time),
             t2.user_id
         FROM treenode t1
                 INNER JOIN treenode t2 ON
@@ -110,12 +110,12 @@ class ClassicNodeProvider(object):
                 c.location_y,
                 c.location_z,
                 c.confidence,
-                c.edition_time,
+                EXTRACT(EPOCH FROM c.edition_time),
                 c.user_id,
                 tc.treenode_id,
                 tc.relation_id,
                 tc.confidence,
-                tc.edition_time,
+                EXTRACT(EPOCH FROM tc.edition_time),
                 tc.id
             FROM treenode_connector tc
             INNER JOIN connector c ON (tc.connector_id = c.id)
@@ -134,12 +134,12 @@ class ClassicNodeProvider(object):
                 connector.location_y,
                 connector.location_z,
                 connector.confidence,
-                connector.edition_time,
+                EXTRACT(EPOCH FROM connector.edition_time),
                 connector.user_id,
                 treenode_connector.treenode_id,
                 treenode_connector.relation_id,
                 treenode_connector.confidence,
-                treenode_connector.edition_time,
+                EXTRACT(EPOCH FROM treenode_connector.edition_time),
                 treenode_connector.id
             FROM connector LEFT OUTER JOIN treenode_connector
                            ON connector.id = treenode_connector.connector_id
@@ -165,9 +165,9 @@ class ClassicNodeProvider(object):
                     treenode_connector.relation_id,
                     treenode_connector.treenode_id,
                     treenode_connector.confidence,
-                    treenode_connector.edition_time,
+                    EXTRACT(EPOCH FROM treenode_connector.edition_time),
                     treenode_connector.id,
-                    connector.edition_time,
+                    EXTRACT(EPOCH FROM connector.edition_time),
                     connector.user_id
                 FROM connector LEFT OUTER JOIN treenode_connector
                                ON connector.id = treenode_connector.connector_id
@@ -214,7 +214,7 @@ class Postgis3dNodeProvider(object):
             t1.confidence,
             t1.radius,
             t1.skeleton_id,
-            t1.edition_time,
+            EXTRACT(EPOCH FROM t1.edition_time),
             t1.user_id,
             t2.id,
             t2.parent_id,
@@ -224,7 +224,7 @@ class Postgis3dNodeProvider(object):
             t2.confidence,
             t2.radius,
             t2.skeleton_id,
-            t2.edition_time,
+            EXTRACT(EPOCH FROM t2.edition_time),
             t2.user_id
         FROM
           (SELECT te.id
@@ -258,12 +258,12 @@ class Postgis3dNodeProvider(object):
             c.location_y,
             c.location_z,
             c.confidence,
-            c.edition_time,
+            EXTRACT(EPOCH FROM c.edition_time),
             c.user_id,
             tc.treenode_id,
             tc.relation_id,
             tc.confidence,
-            tc.edition_time,
+            EXTRACT(EPOCH FROM tc.edition_time),
             tc.id
         FROM (SELECT tce.id AS tce_id
              FROM treenode_connector_edge tce
@@ -288,7 +288,7 @@ class Postgis3dNodeProvider(object):
             c.location_y,
             c.location_z,
             c.confidence,
-            c.edition_time,
+            EXTRACT(EPOCH FROM c.edition_time),
             c.user_id,
             NULL,
             NULL,
@@ -334,7 +334,7 @@ class Postgis2dNodeProvider(object):
               t1.confidence AS t1_confidence,
               t1.radius AS t1_radius,
               t1.skeleton_id AS t1_skeleton_id,
-              t1.edition_time AS t1_edition_time,
+              EXTRACT(EPOCH FROM t1.edition_time) AS t1_edition_time,
               t1.user_id AS t1_user_id,
               t2.id AS t2_id,
               t2.parent_id AS t2_parent_id,
@@ -344,7 +344,7 @@ class Postgis2dNodeProvider(object):
               t2.confidence AS t2_confidence,
               t2.radius AS t2_radius,
               t2.skeleton_id AS t2_skeleton_id,
-              t2.edition_time AS t2_edition_time,
+              EXTRACT(EPOCH FROM t2.edition_time) AS t2_edition_time,
               t2.user_id AS t2_user_id
             FROM
               (SELECT te.id
@@ -414,7 +414,7 @@ class Postgis2dNodeProvider(object):
                     t1.confidence AS t1_confidence,
                     t1.radius AS t1_radius,
                     t1.skeleton_id AS t1_skeleton_id,
-                    t1.edition_time AS t1_edition_time,
+                    EXTRACT(EPOCH FROM t1.edition_time) AS t1_edition_time,
                     t1.user_id AS t1_user_id,
                     t2.id AS t2_id,
                     t2.parent_id AS t2_parent_id,
@@ -424,7 +424,7 @@ class Postgis2dNodeProvider(object):
                     t2.confidence AS t2_confidence,
                     t2.radius AS t2_radius,
                     t2.skeleton_id AS t2_skeleton_id,
-                    t2.edition_time AS t2_edition_time,
+                    EXTRACT(EPOCH FROM t2.edition_time) AS t2_edition_time,
                     t2.user_id AS t2_user_id
                   FROM
                     (SELECT te.id
@@ -471,12 +471,12 @@ class Postgis2dNodeProvider(object):
             c.location_y,
             c.location_z,
             c.confidence,
-            c.edition_time,
+            EXTRACT(EPOCH FROM c.edition_time),
             c.user_id,
             tc.treenode_id,
             tc.relation_id,
             tc.confidence,
-            tc.edition_time,
+            EXTRACT(EPOCH FROM tc.edition_time),
             tc.id
         FROM (SELECT tce.id AS tce_id
              FROM treenode_connector_edge tce
@@ -502,7 +502,7 @@ class Postgis2dNodeProvider(object):
             c.location_y,
             c.location_z,
             c.confidence,
-            c.edition_time,
+            EXTRACT(EPOCH FROM c.edition_time),
             c.user_id,
             NULL,
             NULL,
@@ -762,7 +762,7 @@ def node_list_tuples_query(params, project_id, explicit_treenode_ids, explicit_c
                 confidence,
                 radius,
                 skeleton_id,
-                edition_time,
+                EXTRACT(EPOCH FROM edition_time),
                 user_id
             FROM treenode,
                  UNNEST(%s::bigint[]) missingnodes(mnid)
@@ -818,7 +818,6 @@ def node_list_tuples_query(params, project_id, explicit_treenode_ids, explicit_c
             treenodes, connectors, labels,
             n_retrieved_nodes == params['limit'],
             used_rel_map),
-            cls=DjangoJSONEncoder,
             separators=(',', ':')), # default separators have spaces in them like (', ', ': '). Must provide two: for list and for dictionary. The point of this: less space, more compact json
             content_type='application/json')
 

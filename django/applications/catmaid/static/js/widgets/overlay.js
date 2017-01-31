@@ -592,7 +592,7 @@ SkeletonAnnotations.activeSkeleton = new CATMAID.ActiveSkeleton();
  * state generation.
  */
 var nodeToStateList = function(n) {
-  return [n.id, n.edition_time];
+  return [n.id, n.edition_time_iso_str];
 };
 
 /**
@@ -679,12 +679,12 @@ SkeletonAnnotations.TracingOverlay = function(stackViewer, pixiLayer, options) {
         var clinks = node.getLinks();
         for (var i=0; i<clinks.length; ++i) {
           var l = clinks[i];
-          links.push([l.id, l.edition_time]);
+          links.push([l.id, l.edition_time_iso_str]);
         }
       } else if (node.connectors) {
         for (var cid in node.connectors) {
           var c = node.connectors[cid];
-          links.push([c.id, c.edition_time]);
+          links.push([c.id, c.edition_time_iso_str]);
         }
       }
       return links;
@@ -966,13 +966,13 @@ SkeletonAnnotations.TracingOverlay.prototype.promiseNode = function(node)
         // Update nodes
         var vnid = node.id;
         self.nodes[nid] = self.nodes[vnid];
-        self.nodes[nid].edition_time = result.edition_time;
+        self.nodes[nid].edition_time_iso_str = result.edition_time;
         delete self.nodes[vnid];
         // Update node reference, passed in (which *should* be the same as
         // self.nodes[nid] referenced and updated above, but we set it just to
         // be on the safe side).
         node.id = nid;
-        node.edition_time = result.edition_time;
+        node.edition_time_iso_str = result.edition_time;
         // If the virtual node was the active node before, update the active
         // node as well.
         if (SkeletonAnnotations.getActiveNodeId() == vnid) {
@@ -2021,12 +2021,13 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeWithLink = function (
       undefined, SkeletonAnnotations.defaultNewNeuronName);
   CATMAID.commands.execute(command)
     .then(function(jso) {
-      var editTime = jso.edition_time;
       var nid = parseInt(jso.treenode_id);
       // always create a new treenode which is the root of a new skeleton
       var nn = self.graphics.newNode(nid, null, null, radius, pos_x, pos_y,
-          pos_z, 0, 5 /* confidence */, parseInt(jso.skeleton_id), editTime,
+          pos_z, 0, 5 /* confidence */, parseInt(jso.skeleton_id), 0,
           CATMAID.session.userid);
+      // Update edition time
+      nn.edition_time_iso_str = jso.edition_time;
       // add node to nodes list
       self.nodes[nid] = nn;
       nn.createGraphics();
@@ -2075,7 +2076,6 @@ SkeletonAnnotations.TracingOverlay.prototype.createNode = function (parentID, ch
   return CATMAID.commands.execute(command)
     .then(function(result) {
       // add treenode to the display and update it
-      var editTime = result.edition_time;
       var nid = parseInt(result.treenode_id);
       var skid = parseInt(result.skeleton_id);
 
@@ -2083,8 +2083,9 @@ SkeletonAnnotations.TracingOverlay.prototype.createNode = function (parentID, ch
       // object is not within the set of retrieved nodes, but the parentID
       // will be defined.
       var nn = self.graphics.newNode(nid, self.nodes[parentID], parentID,
-          radius, pos_x, pos_y, pos_z, 0, 5 /* confidence */, skid, editTime,
+          radius, pos_x, pos_y, pos_z, 0, 5 /* confidence */, skid, 0,
           CATMAID.session.userid);
+      nn.edition_time_iso_str = result.edition_time;
 
       self.nodes[nid] = nn;
       nn.createGraphics();
@@ -2312,6 +2313,7 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
     // a[5]: edition time, a[6]: user_id
     // a[7]: treenode links
     var z = this.stackViewer.primaryStack.projectToUnclampedStackZ(a[3], a[2], a[1]);
+    // For performance reasons, the edition time is transmitted as epoch time
     this.nodes[a[0]] = this.graphics.newConnectorNode(
       a[0],
       this.stackViewer.primaryStack.projectToUnclampedStackX(a[3], a[2], a[1]),
@@ -4394,24 +4396,24 @@ SkeletonAnnotations.TracingOverlay.prototype.getState = function(nodeId) {
     if (!parentNode) {
       throw new CATMAID.ValueError("Can't create state: parent node not found");
     }
-    parentEditTime = parentNode.edition_time;
+    parentEditTime = parentNode.edition_time_iso_str;
   }
 
   var children = [];
   for (var cid in node.children) {
     cid = SkeletonAnnotations.isRealNode(cid) ? cid :
         SkeletonAnnotations.getChildOfVirtualNode(cid);
-    children.push([cid, node.children[cid].edition_time]);
+    children.push([cid, node.children[cid].edition_time_iso_str]);
   }
 
   var links = [];
   for (var cid in node.connectors) {
     var connector = this.nodes[cid];
     var link = node.connectors[cid];
-      links.push([cid, connector.edition_time, link.relation_id]);
+      links.push([cid, connector.edition_time_iso_str, link.relation_id]);
   }
 
-  return CATMAID.getNeighborhoodState(nodeId, node.edition_time, parentId,
+  return CATMAID.getNeighborhoodState(nodeId, node.edition_time_iso_str, parentId,
       parentEditTime, children, links);
 };
 
@@ -4425,7 +4427,7 @@ SkeletonAnnotations.TracingOverlay.prototype.getParentState = function(parentId)
     throw new CATMAID.ValueError("Can't create state: node not found");
   }
 
-  return CATMAID.getParentState(parentId, node.edition_time);
+  return CATMAID.getParentState(parentId, node.edition_time_iso_str);
 };
 
 SkeletonAnnotations.TracingOverlay.prototype.getEdgeState = function(childId, parentId) {
@@ -4439,7 +4441,7 @@ SkeletonAnnotations.TracingOverlay.prototype.getEdgeState = function(childId, pa
     if (cid == childId) {
       cid = SkeletonAnnotations.isRealNode(cid) ? cid :
           SkeletonAnnotations.getChildOfVirtualNode(cid);
-      child = [cid, node.children[cid].edition_time];
+      child = [cid, node.children[cid].edition_time_iso_str];
       break;
     }
   }
@@ -4447,7 +4449,7 @@ SkeletonAnnotations.TracingOverlay.prototype.getEdgeState = function(childId, pa
     throw new CATMAID.ValueError("Can't create state: child not found");
   }
 
-  return CATMAID.getEdgeState(node.id, node.edition_time, child[0], child[1]);
+  return CATMAID.getEdgeState(node.id, node.edition_time_iso_str, child[0], child[1]);
 };
 
 /**

@@ -166,11 +166,11 @@
             "mRender" : function(obj, type, full) {
                var id = full[0];
                var disabled = (full[3] == 'Open' ? '' : ' disabled');
-               return '<select id="action_select_' + id + '_' + self.widgetID + '" onchange="NotificationsTable.perform_action(' + id + ')">' +
-                      '  <option>Action:</option>' +
-                      '  <option>Show</option>' +
-                      '  <option' + disabled + '>Approve</option>' +
-                      '  <option' + disabled + '>Reject</option>' +
+               return '<select name="action">' +
+                      '  <option value="">Action:</option>' +
+                      '  <option value="show">Show</option>' +
+                      '  <option value="approve" ' + disabled + '>Approve</option>' +
+                      '  <option value="reject" ' + disabled + '>Reject</option>' +
                       '</select>';
             },
             "sWidth": "100px"
@@ -214,6 +214,26 @@
         $('select#search_type').change( function() {
           this.datatable.fnFilter( $(this).val(), 1 );
           CATMAID.NotificationsTable.initValues[1] = $(this).val();
+        });
+
+        $(table).on('change', "tbody select[name=action]", function() {
+          var tr = $(this).closest('tr');
+          var row_data = self.datatable.fnGetData(tr[0]);
+
+          var action = this.options[this.selectedIndex].value;
+          if (action === 'show') {
+            SkeletonAnnotations.staticMoveTo(row_data[6], row_data[5], row_data[4])
+                .then(function () {
+                  SkeletonAnnotations.staticSelectNode(row_data[7]);
+                });
+          }
+          else if (action === 'approve') {
+            self.approve(row_data[0]);
+          }
+          else if (action === 'reject') {
+            self.reject(row_data[0]);
+          }
+          this.selectedIndex = 0;
         });
       }
     };
@@ -266,36 +286,6 @@
       }
       return true;
     });
-  };
-
-  NotificationsTable.prototype.perform_action = function(row_id) {
-    var node = document.getElementById('action_select_' + row_id + '_' + this.widgetID);
-
-    if (node && node.tagName == "SELECT") {
-      var row = $(node).closest('tr');
-      if (1 !== row.length) {
-        CATMAID.error("Couldn't find table row for notification");
-        return;
-      }
-      var row_data = this.datatable.fnGetData(row[0]);
-
-      var action = node.options[node.selectedIndex].value;
-      if (action == 'Show') {
-        SkeletonAnnotations.staticMoveTo(row_data[6], row_data[5], row_data[4])
-            .then(function () {
-              SkeletonAnnotations.staticSelectNode(row_data[7]);
-            });
-      }
-      else if (action == 'Approve') {
-        NotificationsTable.approve(row_data[0]);
-        CATMAID.client.get_messages();  // Refresh the notifications icon badge
-      }
-      else if (action == 'Reject') {
-        NotificationsTable.reject(row_data[0]);
-        CATMAID.client.get_messages();  // Refresh the notifications icon badge
-      }
-      node.selectedIndex = 0;
-    }
   };
 
   /** Update the table to list the notifications. */

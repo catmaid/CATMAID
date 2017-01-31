@@ -26,6 +26,8 @@
       handleRemovedModels: constrainSkelsAndRedraw
     });
     CATMAID.skeletonListSources.updateGUI();
+
+    this.oTable = null;  // Initialise DataTables API instance
   };
 
   $.extend(TagTable.prototype, new InstanceRegistry());
@@ -179,7 +181,7 @@
         refresh.setAttribute("type", "button");
         refresh.setAttribute("value", "Refresh");
         refresh.onclick = function() {
-          $('#' + tableID).DataTable().clear();
+          self.oTable.clear();
           for (var key of Object.keys(responseCache)) {
             delete responseCache[key];
           }
@@ -206,7 +208,7 @@
           // add selected tags as a search string using alternation in regex, and trigger it
           var searchLabel = document.getElementById(nodeTable.idPrefix + 'search-labels');
           var regex = stringListToRegexStr(self.getSelectedLabelNames());
-          nodeTable.oTable.DataTable()
+          nodeTable.oTable
             .column(searchLabel.closest('th'))
             .search(regex, true, false, false);  // treat as regex, disable smart search, case sensitive
         };
@@ -363,7 +365,7 @@
 
     $(`#${tableID}_processing`).show();
 
-    $(this.oTable).on('change', '.skelSelector', function(event) {
+    tableSelector.on('change', '.skelSelector', function(event) {
       var row = self.oTable.row(event.currentTarget.closest('tr'));
       var currentCheckedState = event.currentTarget.checked;
 

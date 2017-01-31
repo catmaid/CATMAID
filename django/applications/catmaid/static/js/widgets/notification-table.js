@@ -7,107 +7,21 @@
 
   var NotificationsTable = function() {
     this.widgetID = this.registerInstance();
-
-    var ns = this; // reference to the namespace
-    ns.oTable = null;
-
-    /** Update the table to list the notifications. */
-    this.update = function() {
-        ns.oTable.fnClearTable( 0 );
-        ns.oTable.fnDraw();
-    };
-
-    /** Update the table to list the notifications. */
-    var refresh_notifications = function() {
-      if (ns.oTable) {
-        ns.oTable.fnClearTable( 0 );
-        ns.oTable.fnDraw();
-      }
-    };
-
-    this.approve = function(changeRequestID) {
-      requestQueue.register(django_url + project.id + '/changerequest/approve', "POST", {
-        "id": changeRequestID
-      }, function (status, text, xml) {
-        if (status == 200) {
-          if (text && text != " ") {
-            var jso = JSON.parse(text);
-            if (jso.error) {
-              alert(jso.error);
-            }
-            else {
-              refresh_notifications();
-            }
-          }
-        }
-        else if (status == 500) {
-          win = window.open('', '', 'width=1100,height=620');
-          win.document.write(text);
-          win.focus();
-        }
-        return true;
-      });
-    };
-
-    this.reject = function(changeRequestID) {
-      requestQueue.register(django_url + project.id + '/changerequest/reject', "POST", {
-        "id": changeRequestID
-      }, function (status, text, xml) {
-        if (status == 200) {
-          if (text && text != " ") {
-            var jso = JSON.parse(text);
-            if (jso.error) {
-              alert(jso.error);
-            }
-            else {
-              refresh_notifications();
-            }
-          }
-        }
-        else if (status == 500) {
-          win = window.open('', '', 'width=1100,height=620');
-          win.document.write(text);
-          win.focus();
-        }
-        return true;
-      });
-    };
-
-    this.perform_action = function(row_id) {
-      var node = document.getElementById('action_select_' + row_id + '_' + this.widgetID);
-
-      if (node && node.tagName == "SELECT") {
-        var row = $(node).closest('tr');
-        if (1 !== row.length) {
-          CATMAID.error("Couldn't find table row for notification");
-          return;
-        }
-        var row_data = ns.oTable.fnGetData(row[0]);
-
-        var action = node.options[node.selectedIndex].value;
-        if (action == 'Show') {
-          SkeletonAnnotations.staticMoveTo(row_data[6], row_data[5], row_data[4])
-              .then(function () {
-                SkeletonAnnotations.staticSelectNode(row_data[7]);
-              });
-        }
-        else if (action == 'Approve') {
-          NotificationsTable.approve(row_data[0]);
-          CATMAID.client.get_messages();  // Refresh the notifications icon badge
-        }
-        else if (action == 'Reject') {
-          NotificationsTable.reject(row_data[0]);
-          CATMAID.client.get_messages();  // Refresh the notifications icon badge
-        }
-        node.selectedIndex = 0;
-      }
-    };
+    this.datatable = null;
   };
 
   NotificationsTable.initValues = [];
 
   NotificationsTable.prototype = {};
   $.extend(NotificationsTable.prototype, new InstanceRegistry());
+
+  NotificationsTable.prototype.getName = function() {
+    return "Notificationo Table " + this.widgetID;
+  };
+
+  NotificationsTable.prototype.destroy = function() {
+    this.unregisterInstance();
+  };
 
   NotificationsTable.prototype.getWidgetConfiguration = function() {
     return {
@@ -161,7 +75,7 @@
 
         var table = $('table', content);
 
-        this.oTable = table.dataTable({
+        this.datatable = table.dataTable({
         // http://www.datatables.net/usage/options
         "bDestroy": true,
         "sDom": '<"H"lr>t<"F"ip>',
@@ -270,14 +184,14 @@
         if(value==="Search")
           return;
         if(value) {
-          ns.oTable.fnFilter(value, index);
+          self.datatable.fnFilter(value, index);
         }
       });
 
       $("thead input", table).keyup(function () { /* Filter on the column (the index) of this element */
         var i = $("thead input", table).index(this) + 2;
         NotificationsTable.initValues[i] = this.value;
-        ns.oTable.fnFilter(this.value, i);
+        self.datatable.fnFilter(this.value, i);
       });
 
       $("thead input", table).each(function (i) {
@@ -299,20 +213,106 @@
       });
 
       $('select#search_type').change( function() {
-        ns.oTable.fnFilter( $(this).val(), 1 );
+        this.datatable.fnFilter( $(this).val(), 1 );
         NotificationsTable.initValues[1] = $(this).val();
       });
       }
     };
   };
 
-  NotificationsTable.prototype.getName = function() {
-    return "Notificationo Table " + this.widgetID;
+  NotificationsTable.prototype.approve = function(changeRequestID) {
+    var self = this;
+    requestQueue.register(django_url + project.id + '/changerequest/approve', "POST", {
+      "id": changeRequestID
+    }, function (status, text, xml) {
+      if (status == 200) {
+        if (text && text != " ") {
+          var jso = JSON.parse(text);
+          if (jso.error) {
+            alert(jso.error);
+          }
+          else {
+            self.refresh_notifications();
+          }
+        }
+      }
+      else if (status == 500) {
+        win = window.open('', '', 'width=1100,height=620');
+        win.document.write(text);
+        win.focus();
+      }
+      return true;
+    });
   };
 
-  NotificationsTable.prototype.destroy = function() {
-    this.unregisterInstance();
+  NotificationsTable.prototype.reject = function(changeRequestID) {
+    requestQueue.register(django_url + project.id + '/changerequest/reject', "POST", {
+      "id": changeRequestID
+    }, function (status, text, xml) {
+      if (status == 200) {
+        if (text && text != " ") {
+          var jso = JSON.parse(text);
+          if (jso.error) {
+            alert(jso.error);
+          }
+          else {
+            self.refresh_notifications();
+          }
+        }
+      }
+      else if (status == 500) {
+        win = window.open('', '', 'width=1100,height=620');
+        win.document.write(text);
+        win.focus();
+      }
+      return true;
+    });
   };
+
+  NotificationsTable.prototype.perform_action = function(row_id) {
+    var node = document.getElementById('action_select_' + row_id + '_' + this.widgetID);
+
+    if (node && node.tagName == "SELECT") {
+      var row = $(node).closest('tr');
+      if (1 !== row.length) {
+        CATMAID.error("Couldn't find table row for notification");
+        return;
+      }
+      var row_data = this.datatable.fnGetData(row[0]);
+
+      var action = node.options[node.selectedIndex].value;
+      if (action == 'Show') {
+        SkeletonAnnotations.staticMoveTo(row_data[6], row_data[5], row_data[4])
+            .then(function () {
+              SkeletonAnnotations.staticSelectNode(row_data[7]);
+            });
+      }
+      else if (action == 'Approve') {
+        NotificationsTable.approve(row_data[0]);
+        CATMAID.client.get_messages();  // Refresh the notifications icon badge
+      }
+      else if (action == 'Reject') {
+        NotificationsTable.reject(row_data[0]);
+        CATMAID.client.get_messages();  // Refresh the notifications icon badge
+      }
+      node.selectedIndex = 0;
+    }
+  };
+
+  /** Update the table to list the notifications. */
+  NotificationsTable.prototype.update = function() {
+      this.datatable.fnClearTable( 0 );
+      this.datatable.fnDraw();
+  };
+
+  /** Update the table to list the notifications. */
+  NotificationsTable.prototype.refresh_notifications = function() {
+    if (this.datatable) {
+      this.datatable.fnClearTable( 0 );
+      this.datatable.fnDraw();
+    }
+  };
+
 
   // Export
   CATMAID.NotificationsTable = NotificationsTable;

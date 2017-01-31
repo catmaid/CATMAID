@@ -1893,70 +1893,6 @@ var WindowMaker = new function()
     return {window: win, widget: null};
   };
 
-  var createNotificationsWindow = function()
-  {
-    var win = new CMWWindow( "Notifications" );
-    var content = win.getFrame();
-    content.style.backgroundColor = "#ffffff";
-
-    var container = createContainer( "notifications_widget" );
-    content.appendChild( container );
-
-    container.innerHTML = '<table cellpadding="0" cellspacing="0" border="0" class="display" id="notificationstable">' +
-        '<thead>' +
-          '<tr>' +
-            '<th>id</th>' +
-            '<th>type</th>' +
-            '<th>description</th>' +
-            '<th>status' +
-              '<select name="search_type" id="search_type" class="search_init">' +
-                '<option value="">Any</option>' +
-                '<option value="0">Open</option>' +
-                '<option value="1">Approved</option>' +
-                '<option value="2">Rejected</option>' +
-                '<option value="3">Invalid</option>' +
-              '</select>' +
-            '</th>' +
-            '<th>x</th>' +
-            '<th>y</th>' +
-            '<th>z</th>' +
-            '<th>node id</th>' +
-            '<th>skeleton id</th>' +
-            '<th>from</th>' +
-            '<th>date</th>' +
-            '<th>actions</th>' +
-          '</tr>' +
-        '</thead>' +
-        '<tfoot>' +
-          '<tr>' +
-            '<th>id</th>' +
-            '<th>type</th>' +
-            '<th>description</th>' +
-            '<th>status</th>' +
-            '<th>x</th>' +
-            '<th>y</th>' +
-            '<th>z</th>' +
-            '<th>node id</th>' +
-            '<th>skeleton id</th>' +
-            '<th>from</th>' +
-            '<th>date</th>' +
-            '<th>actions</th>' +
-          '</tr>' +
-        '</tfoot>' +
-        '<tbody>' +
-          '<tr><td colspan="8"></td></tr>' +
-        '</tbody>' +
-      '</table>';
-
-    addListener(win, container);
-
-    addLogic(win);
-
-    CATMAID.NotificationsTable.init();
-
-    return {window: win, widget: null};
-  };
-
   var createNeuronNavigatorWindow = function(new_nn_instance)
   {
     // If available, a new instance passed as parameter will be used.
@@ -2029,7 +1965,6 @@ var WindowMaker = new function()
     "sliceinfo-widget": createSliceInfoWindow,
     "adjacencymatrix-widget": createAdjacencyMatrixWindow,
     "ontology-search": createOntologySearchWidget,
-    "notifications": createNotificationsWindow,
     "circuit-graph-plot": createCircuitGraphPlot,
     "venn-diagram": createVennDiagramWindow,
     "neuron-navigator": createNeuronNavigatorWindow,

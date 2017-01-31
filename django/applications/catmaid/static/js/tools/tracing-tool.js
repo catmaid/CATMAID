@@ -1479,7 +1479,7 @@
       buttonID: "data_button_notifications",
       buttonName: 'table_notifications',
       run: function (e) {
-        WindowMaker.show('notifications');
+        WindowMaker.create('notifications');
         return true;
       }
     }),

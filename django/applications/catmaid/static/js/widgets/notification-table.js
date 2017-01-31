@@ -5,11 +5,11 @@
 
   "use strict";
 
-  var NotificationsTable = new function()
-  {
+  var NotificationsTable = function() {
+    this.widgetID = this.registerInstance();
+
     var ns = this; // reference to the namespace
     ns.oTable = null;
-    var asInitVals = [];
 
     /** Update the table to list the notifications. */
     this.update = function() {
@@ -74,7 +74,7 @@
     };
 
     this.perform_action = function(row_id) {
-      var node = document.getElementById('action_select_' + row_id);
+      var node = document.getElementById('action_select_' + row_id + '_' + this.widgetID);
 
       if (node && node.tagName == "SELECT") {
         var row = $(node).closest('tr');
@@ -102,11 +102,66 @@
         node.selectedIndex = 0;
       }
     };
+  };
 
-    this.init = function (pid)
-    {
-      ns.pid = pid;
-      ns.oTable = $('#notificationstable').dataTable({
+  NotificationsTable.initValues = [];
+
+  NotificationsTable.prototype = {};
+  $.extend(NotificationsTable.prototype, new InstanceRegistry());
+
+  NotificationsTable.prototype.getWidgetConfiguration = function() {
+    return {
+      createContent: function(content) {
+        var self = this;
+        content.innerHTML = '<table cellpadding="0" cellspacing="0" border="0" class="display">' +
+            '<thead>' +
+              '<tr>' +
+                '<th>id</th>' +
+                '<th>type</th>' +
+                '<th>description</th>' +
+                '<th>status' +
+                  '<select name="search_type" id="search_type" class="search_init">' +
+                    '<option value="">Any</option>' +
+                    '<option value="0">Open</option>' +
+                    '<option value="1">Approved</option>' +
+                    '<option value="2">Rejected</option>' +
+                    '<option value="3">Invalid</option>' +
+                  '</select>' +
+                '</th>' +
+                '<th>x</th>' +
+                '<th>y</th>' +
+                '<th>z</th>' +
+                '<th>node id</th>' +
+                '<th>skeleton id</th>' +
+                '<th>from</th>' +
+                '<th>date</th>' +
+                '<th>actions</th>' +
+              '</tr>' +
+            '</thead>' +
+            '<tfoot>' +
+              '<tr>' +
+                '<th>id</th>' +
+                '<th>type</th>' +
+                '<th>description</th>' +
+                '<th>status</th>' +
+                '<th>x</th>' +
+                '<th>y</th>' +
+                '<th>z</th>' +
+                '<th>node id</th>' +
+                '<th>skeleton id</th>' +
+                '<th>from</th>' +
+                '<th>date</th>' +
+                '<th>actions</th>' +
+              '</tr>' +
+            '</tfoot>' +
+            '<tbody>' +
+              '<tr><td colspan="8"></td></tr>' +
+            '</tbody>' +
+          '</table>';
+
+        var table = $('table', content);
+
+        this.oTable = table.dataTable({
         // http://www.datatables.net/usage/options
         "bDestroy": true,
         "sDom": '<"H"lr>t<"F"ip>',
@@ -198,7 +253,7 @@
           "mRender" : function(obj, type, full) {
              var id = full[0];
              var disabled = (full[3] == 'Open' ? '' : ' disabled');
-             return '<select id="action_select_' + id + '" onchange="NotificationsTable.perform_action(' + id + ')">' +
+             return '<select id="action_select_' + id + '_' + self.widgetID + '" onchange="NotificationsTable.perform_action(' + id + ')">' +
                     '  <option>Action:</option>' +
                     '  <option>Show</option>' +
                     '  <option' + disabled + '>Approve</option>' +
@@ -211,7 +266,7 @@
       });
 
       // filter table
-      $.each(asInitVals, function(index, value) {
+      $.each(NotificationsTable.initValues, function(index, value) {
         if(value==="Search")
           return;
         if(value) {
@@ -219,38 +274,53 @@
         }
       });
 
-      $("#notificationstable thead input").keyup(function () { /* Filter on the column (the index) of this element */
-        var i = $("thead input").index(this) + 2;
-        asInitVals[i] = this.value;
+      $("thead input", table).keyup(function () { /* Filter on the column (the index) of this element */
+        var i = $("thead input", table).index(this) + 2;
+        NotificationsTable.initValues[i] = this.value;
         ns.oTable.fnFilter(this.value, i);
       });
 
-      $("#notificationstable thead input").each(function (i) {
-        asInitVals[i+2] = this.value;
+      $("thead input", table).each(function (i) {
+        NotificationsTable.initValues[i+2] = this.value;
       });
 
-      $("#notificationstable thead input").focus(function () {
+      $("thead input", table).focus(function () {
         if (this.className === "search_init") {
           this.className = "";
           this.value = "";
         }
       });
 
-      $("#notificationstable thead input").blur(function (event) {
+      $("thead input", table).blur(function (event) {
         if (this.value === "") {
           this.className = "search_init";
-          this.value = asInitVals[$("thead input").index(this)+2];
+          this.value = NotificationsTable.initValues[$("thead input", table).index(this)+2];
         }
       });
 
       $('select#search_type').change( function() {
         ns.oTable.fnFilter( $(this).val(), 1 );
-        asInitVals[1] = $(this).val();
+        NotificationsTable.initValues[1] = $(this).val();
       });
+      }
     };
-  }();
+  };
+
+  NotificationsTable.prototype.getName = function() {
+    return "Notificationo Table " + this.widgetID;
+  };
+
+  NotificationsTable.prototype.destroy = function() {
+    this.unregisterInstance();
+  };
 
   // Export
   CATMAID.NotificationsTable = NotificationsTable;
+
+  // Register widget with CATMAID
+  CATMAID.registerWidget({
+    key: 'notifications',
+    creator: NotificationsTable
+  });
 
 })(CATMAID);

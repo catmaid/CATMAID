@@ -1952,7 +1952,7 @@ var WindowMaker = new function()
 
     addLogic(win);
 
-    NotificationsTable.init();
+    CATMAID.NotificationsTable.init();
 
     return {window: win, widget: null};
   };

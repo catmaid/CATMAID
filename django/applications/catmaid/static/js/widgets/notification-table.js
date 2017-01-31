@@ -78,9 +78,8 @@
         this.datatable = table.dataTable({
           "bDestroy": true,
           "sDom": '<"H"lr>t<"F"ip>',
-          // default: <"H"lfr>t<"F"ip>
           "bProcessing": true,
-          "bServerSide": true,
+          "bServerSide": false,
           "bAutoWidth": false,
           "sAjaxSource": django_url + project.id + '/notifications/list',
           "fnServerData": function (sSource, aoData, fnCallback) {

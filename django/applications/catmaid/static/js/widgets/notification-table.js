@@ -76,146 +76,145 @@
         var table = $('table', content);
 
         this.datatable = table.dataTable({
-        // http://www.datatables.net/usage/options
-        "bDestroy": true,
-        "sDom": '<"H"lr>t<"F"ip>',
-        // default: <"H"lfr>t<"F"ip>
-        "bProcessing": true,
-        "bServerSide": true,
-        "bAutoWidth": false,
-        "sAjaxSource": django_url + project.id + '/notifications/list',
-        "fnServerData": function (sSource, aoData, fnCallback) {
-          $.ajax({
-            "dataType": 'json',
-            "type": "POST",
-            "cache": false,
-            "url": sSource,
-            "data": aoData,
-            "success": fnCallback
-          });
-        },
-        "fnRowCallback": function ( nRow, aaData, iDisplayIndex ) {
-          // Color each row based on its status.
-          if (aaData[3] === 'Open') {
-            nRow.style.backgroundColor = '#ffffdd';
-          } else if (aaData[3] === 'Approved') {
-            nRow.style.backgroundColor = '#ddffdd';
-          } else if (aaData[3] === 'Rejected') {
-            nRow.style.backgroundColor = '#ffdddd';
-          } else if (aaData[3] === 'Invalid') {
-            nRow.style.backgroundColor = '#dddddd';
-          }
-          return nRow;
-        },
-        "iDisplayLength": 50,
-        "aLengthMenu": [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
-        "bJQueryUI": true,
-        "aoColumns": [{
-          "bSearchable": false,
-          "bSortable": true,
-          "bVisible": false
-        }, // id
-        {
-          "sClass": "center",
-          "bSearchable": true,
-          "bSortable": false,
-        }, // type
-        {
-          "bSearchable": false,
-          "bSortable": false,
-        }, // description
-        {
-          "sClass": "center",
-          "bSearchable": true,
-          "bSortable": true,
-          "sWidth": "120px"
-        }, // status
-        {
-          "bSearchable": false,
-          "bVisible": false
-        }, // x
-        {
-          "bSearchable": false,
-          "bVisible": false
-        }, // y
-        {
-            "bSearchable": false,
-          "bVisible": false
-        }, // z
-        {
-          "bSearchable": false,
-          "bVisible": false
-        }, // node_id
-        {
-            "bSearchable": false,
-          "bVisible": false
-        }, // skeleton_id
-        {
-          "bSearchable": true,
-          "bSortable": true
-        }, // from
-        {
-          "bSearchable": false,
-          "bSortable": true,
-          "sWidth": "100px"
-        }, // date
-        {
-          "sClass": "center",
-          "bSearchable": false,
-          "bSortable": false,
-          "mData": null,
-          "mRender" : function(obj, type, full) {
-             var id = full[0];
-             var disabled = (full[3] == 'Open' ? '' : ' disabled');
-             return '<select id="action_select_' + id + '_' + self.widgetID + '" onchange="NotificationsTable.perform_action(' + id + ')">' +
-                    '  <option>Action:</option>' +
-                    '  <option>Show</option>' +
-                    '  <option' + disabled + '>Approve</option>' +
-                    '  <option' + disabled + '>Reject</option>' +
-                    '</select>';
+          "bDestroy": true,
+          "sDom": '<"H"lr>t<"F"ip>',
+          // default: <"H"lfr>t<"F"ip>
+          "bProcessing": true,
+          "bServerSide": true,
+          "bAutoWidth": false,
+          "sAjaxSource": django_url + project.id + '/notifications/list',
+          "fnServerData": function (sSource, aoData, fnCallback) {
+            $.ajax({
+              "dataType": 'json',
+              "type": "POST",
+              "cache": false,
+              "url": sSource,
+              "data": aoData,
+              "success": fnCallback
+            });
           },
-          "sWidth": "100px"
-        } // actions
-        ]
-      });
+          "fnRowCallback": function ( nRow, aaData, iDisplayIndex ) {
+            // Color each row based on its status.
+            if (aaData[3] === 'Open') {
+              nRow.style.backgroundColor = '#ffffdd';
+            } else if (aaData[3] === 'Approved') {
+              nRow.style.backgroundColor = '#ddffdd';
+            } else if (aaData[3] === 'Rejected') {
+              nRow.style.backgroundColor = '#ffdddd';
+            } else if (aaData[3] === 'Invalid') {
+              nRow.style.backgroundColor = '#dddddd';
+            }
+            return nRow;
+          },
+          "iDisplayLength": 50,
+          "aLengthMenu": [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
+          "bJQueryUI": true,
+          "aoColumns": [{
+            "bSearchable": false,
+            "bSortable": true,
+            "bVisible": false
+          }, // id
+          {
+            "sClass": "center",
+            "bSearchable": true,
+            "bSortable": false,
+          }, // type
+          {
+            "bSearchable": false,
+            "bSortable": false,
+          }, // description
+          {
+            "sClass": "center",
+            "bSearchable": true,
+            "bSortable": true,
+            "sWidth": "120px"
+          }, // status
+          {
+            "bSearchable": false,
+            "bVisible": false
+          }, // x
+          {
+            "bSearchable": false,
+            "bVisible": false
+          }, // y
+          {
+              "bSearchable": false,
+            "bVisible": false
+          }, // z
+          {
+            "bSearchable": false,
+            "bVisible": false
+          }, // node_id
+          {
+              "bSearchable": false,
+            "bVisible": false
+          }, // skeleton_id
+          {
+            "bSearchable": true,
+            "bSortable": true
+          }, // from
+          {
+            "bSearchable": false,
+            "bSortable": true,
+            "sWidth": "100px"
+          }, // date
+          {
+            "sClass": "center",
+            "bSearchable": false,
+            "bSortable": false,
+            "mData": null,
+            "mRender" : function(obj, type, full) {
+               var id = full[0];
+               var disabled = (full[3] == 'Open' ? '' : ' disabled');
+               return '<select id="action_select_' + id + '_' + self.widgetID + '" onchange="NotificationsTable.perform_action(' + id + ')">' +
+                      '  <option>Action:</option>' +
+                      '  <option>Show</option>' +
+                      '  <option' + disabled + '>Approve</option>' +
+                      '  <option' + disabled + '>Reject</option>' +
+                      '</select>';
+            },
+            "sWidth": "100px"
+          } // actions
+          ]
+        });
 
-      // filter table
-      $.each(NotificationsTable.initValues, function(index, value) {
-        if(value==="Search")
-          return;
-        if(value) {
-          self.datatable.fnFilter(value, index);
-        }
-      });
+        // filter table
+        $.each(NotificationsTable.initValues, function(index, value) {
+          if(value==="Search")
+            return;
+          if(value) {
+            self.datatable.fnFilter(value, index);
+          }
+        });
 
-      $("thead input", table).keyup(function () { /* Filter on the column (the index) of this element */
-        var i = $("thead input", table).index(this) + 2;
-        NotificationsTable.initValues[i] = this.value;
-        self.datatable.fnFilter(this.value, i);
-      });
+        $("thead input", table).keyup(function () { /* Filter on the column (the index) of this element */
+          var i = $("thead input", table).index(this) + 2;
+          CATMAID.NotificationsTable.initValues[i] = this.value;
+          self.datatable.fnFilter(this.value, i);
+        });
 
-      $("thead input", table).each(function (i) {
-        NotificationsTable.initValues[i+2] = this.value;
-      });
+        $("thead input", table).each(function (i) {
+          CATMAID.NotificationsTable.initValues[i+2] = this.value;
+        });
 
-      $("thead input", table).focus(function () {
-        if (this.className === "search_init") {
-          this.className = "";
-          this.value = "";
-        }
-      });
+        $("thead input", table).focus(function () {
+          if (this.className === "search_init") {
+            this.className = "";
+            this.value = "";
+          }
+        });
 
-      $("thead input", table).blur(function (event) {
-        if (this.value === "") {
-          this.className = "search_init";
-          this.value = NotificationsTable.initValues[$("thead input", table).index(this)+2];
-        }
-      });
+        $("thead input", table).blur(function (event) {
+          if (this.value === "") {
+            this.className = "search_init";
+            this.value = CATMAID.NotificationsTable.initValues[$("thead input", table).index(this)+2];
+          }
+        });
 
-      $('select#search_type').change( function() {
-        this.datatable.fnFilter( $(this).val(), 1 );
-        NotificationsTable.initValues[1] = $(this).val();
-      });
+        $('select#search_type').change( function() {
+          this.datatable.fnFilter( $(this).val(), 1 );
+          CATMAID.NotificationsTable.initValues[1] = $(this).val();
+        });
       }
     };
   };

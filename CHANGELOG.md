@@ -1,6 +1,19 @@
 ## Under development
 
 
+### Notes
+
+- A new TREENODE_PROVIDER option can be added to settings.py, which can be used
+  to configure the way node queries are executed. Options are 'classic',
+  'postgis3d' and 'postgis2d'.  Depending on your environment, 'postgis2d' might
+  be fastest, but 'postgis3d' is the current default (i.e. what has been used so
+  far).
+
+- The new PREPARED_STATEMENTS option can be added to settings.py and set to
+  True to improve node query performance when connection pooling is used.
+  Without connection pooling, this setting hurts performance, which is why it is
+  set to False by default.
+
 
 ### Features and enhancements
 

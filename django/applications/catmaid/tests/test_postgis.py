@@ -52,45 +52,57 @@ class PostGISTests(TestCase):
 
         non_postgis_nodes_r = node.node_list_tuples_query(params,
                 self.test_project_id, None, None, include_labels=False,
-                tn_provider=node.get_treenodes_classic)
+                node_provider=node.ClassicNodeProvider())
 
-        postgis_nodes_r = node.node_list_tuples_query(params,
+        postgis_3d_nodes_r = node.node_list_tuples_query(params,
                 self.test_project_id, None, None, include_labels=False,
-                tn_provider=node.get_treenodes_postgis)
+                node_provider=node.Postgis3dNodeProvider())
+
+        postgis_2d_nodes_r = node.node_list_tuples_query(params,
+                self.test_project_id, None, None, include_labels=False,
+                node_provider=node.Postgis2dNodeProvider())
 
         self.assertEqual(non_postgis_nodes_r.status_code, 200)
-        self.assertEqual(postgis_nodes_r.status_code, 200)
+        self.assertEqual(postgis_3d_nodes_r.status_code, 200)
+        self.assertEqual(postgis_2d_nodes_r.status_code, 200)
         non_postgis_nodes = json.loads(non_postgis_nodes_r.content)
-        postgis_nodes = json.loads(postgis_nodes_r.content)
+        postgis_3d_nodes = json.loads(postgis_3d_nodes_r.content)
+        postgis_2d_nodes = json.loads(postgis_2d_nodes_r.content)
 
         for n in non_postgis_nodes[1]:
             n[5] = frozenset([tuple(l) for l in n[5]])
-        for n in postgis_nodes[1]:
+        for n in postgis_3d_nodes[1]:
+            n[5] = frozenset([tuple(l) for l in n[5]])
+        for n in postgis_2d_nodes[1]:
             n[5] = frozenset([tuple(l) for l in n[5]])
 
-        self.assertEqual(len(non_postgis_nodes), len(postgis_nodes))
-        self.assertEqual(len(non_postgis_nodes[0]), len(postgis_nodes[0]))
-        self.assertEqual(len(non_postgis_nodes[1]), len(postgis_nodes[1]))
-        self.assertEqual(len(non_postgis_nodes[2]), len(postgis_nodes[2]))
-        self.assertEqual(non_postgis_nodes[3], postgis_nodes[3])
+        def test_returned_nodes(reference, to_test):
+            self.assertEqual(len(reference), len(to_test))
+            self.assertEqual(len(reference[0]), len(to_test[0]))
+            self.assertEqual(len(reference[1]), len(to_test[1]))
+            self.assertEqual(len(reference[2]), len(to_test[2]))
+            self.assertEqual(reference[3], to_test[3])
 
-        for tn in non_postgis_nodes[0]:
-            self.assertTrue(tn in postgis_nodes[0])
+            for tn in reference[0]:
+                self.assertTrue(tn in to_test[0])
 
-        for tn in postgis_nodes[0]:
-            self.assertTrue(tn in non_postgis_nodes[0])
+            for tn in to_test[0]:
+                self.assertTrue(tn in reference[0])
 
-        for c in non_postgis_nodes[1]:
-            c[7] = sorted(c[7])
+            for c in reference[1]:
+                c[7] = sorted(c[7])
 
-        for c in postgis_nodes[1]:
-            c[7] = sorted(c[7])
+            for c in to_test[1]:
+                c[7] = sorted(c[7])
 
-        for c in non_postgis_nodes[1]:
-            self.assertTrue(c in postgis_nodes[1])
+            for c in reference[1]:
+                self.assertTrue(c in to_test[1])
 
-        for c in postgis_nodes[1]:
-            self.assertTrue(c in non_postgis_nodes[1])
+            for c in to_test[1]:
+                self.assertTrue(c in reference[1])
+
+        test_returned_nodes(non_postgis_nodes, postgis_3d_nodes)
+        test_returned_nodes(non_postgis_nodes, postgis_2d_nodes)
 
     def get_edges(self, cursor, tnid):
         cursor.execute("""

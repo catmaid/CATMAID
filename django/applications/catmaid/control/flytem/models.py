@@ -1,15 +1,22 @@
 import json
-import urllib2
+
+try:
+    # Python 2
+    from urllib2 import urlopen, Request, HTTPError, URLError
+except ImportError:
+    # Python 3
+    from urllib.request import Request, urlopen
+    from urllib.error import HTTPError, URLError
 
 from django.conf import settings
 
 
 def load_json(url):
     try:
-        json_text = urllib2.urlopen(url).read()
-    except urllib2.HTTPError as e:
+        json_text = urlopen(url).read()
+    except HTTPError as e:
         raise ValueError("Couldn't retrieve render service data from %s. Error: %s" % (url, e))
-    except urllib2.URLError as e:
+    except URLError as e:
         raise ValueError("Couldn't retrieve render service data from %s. Error: %s" % (url, e))
 
     return json.loads(json_text)

@@ -1,7 +1,12 @@
 import json
-import urllib
-
 from .common import CatmaidApiTestCase
+
+try:
+    # For Python 3.0 and later
+    from urllib.parse import urlencode
+except ImportError:
+    # Fall back to Python 2's urllib2
+    from urllib import urlencode
 
 
 class DatastoresApiTests(CatmaidApiTestCase):
@@ -43,7 +48,7 @@ class DatastoresApiTests(CatmaidApiTestCase):
         url = url + name + '/'
         response = self.client.put(
                 url,
-                urllib.urlencode({
+                urlencode({
                     'key': 'test a',
                     'value': '{"json": false'}),
                 content_type='application/x-www-form-urlencoded')
@@ -51,7 +56,7 @@ class DatastoresApiTests(CatmaidApiTestCase):
         parsed_response = json.loads(response.content)
         response = self.client.put(
                 url,
-                urllib.urlencode({
+                urlencode({
                     'key': 'test a',
                     'value': '{"json": true, "scope": "user-instance"}'}),
                 content_type='application/x-www-form-urlencoded')
@@ -67,7 +72,7 @@ class DatastoresApiTests(CatmaidApiTestCase):
         # Test that PUTting the same key replaces the value.
         response = self.client.put(
                 url,
-                urllib.urlencode({
+                urlencode({
                     'key': 'test a',
                     'value': '{"json": true, "scope": "user-instance", "replaced": true}'}),
                 content_type='application/x-www-form-urlencoded')
@@ -81,7 +86,7 @@ class DatastoresApiTests(CatmaidApiTestCase):
 
         response = self.client.put(
                 url,
-                urllib.urlencode({
+                urlencode({
                     'key': 'test a',
                     'project_id': self.test_project_id,
                     'value': '{"json": true, "scope": "user-project"}'}),
@@ -104,7 +109,7 @@ class DatastoresApiTests(CatmaidApiTestCase):
         # Test that a non-admin user cannot change global data.
         response = self.client.put(
                 url,
-                urllib.urlencode({
+                urlencode({
                     'key': 'test a',
                     'ignore_user': 'true',
                     'value': '{"json": true, "scope": "global-instance"}'}),
@@ -113,7 +118,7 @@ class DatastoresApiTests(CatmaidApiTestCase):
 
         response = self.client.put(
                 url,
-                urllib.urlencode({
+                urlencode({
                     'key': 'test a',
                     'ignore_user': 'true',
                     'project_id': self.test_project_id,

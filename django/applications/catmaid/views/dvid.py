@@ -1,5 +1,4 @@
 import json
-import urllib2
 
 from django import forms
 from django.core.exceptions import ValidationError

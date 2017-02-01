@@ -9,7 +9,13 @@ from django.contrib.auth.decorators import login_required
 from catmaid.models import Stack, Project, ProjectStack, Message, User
 from catmaid.control.common import id_generator, json_error_response
 
-import urllib2 as urllib
+try:
+    from urllib.request import urlopen
+    from urllib.error import HTTPError, URLError
+except ImportError:
+    from urllib2 import urlopen, HTTPError, URLError
+
+import requests
 import os.path
 import glob
 from time import time
@@ -189,12 +195,12 @@ class ImagePart:
     def get_image( self ):
         # Open the image
         try:
-            img_file = urllib.urlopen( self.path )
+            img_file = urlopen( self.path )
             img_data = img_file.read()
             bytes_read = len(img_data)
-        except urllib.HTTPError as e:
+        except HTTPError as e:
             raise ImageRetrievalError(self.path, "Error code: %s" % e.code)
-        except urllib.URLError as e:
+        except URLError as e:
             raise ImageRetrievalError(self.path, e.reason)
 
         blob = Blob( img_data )

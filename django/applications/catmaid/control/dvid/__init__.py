@@ -1,5 +1,12 @@
 import json
-import urllib2
+
+try:
+    # Python 2
+    from urllib2 import build_opener, Request, HTTPError, URLError
+except ImportError:
+    # Python 3
+    from urllib.request import Request, build_opener
+    from urllib.error import HTTPError, URLError
 
 from django.http import JsonResponse
 
@@ -142,12 +149,12 @@ def get_server_info(url):
     """
     try:
         info_url = '%s/api/repos/info' % url
-        req = urllib2.Request(info_url, headers={'Content-Type': 'application/json'})
-        opener = urllib2.build_opener()
+        req = Request(info_url, headers={'Content-Type': 'application/json'})
+        opener = build_opener()
         info_json = opener.open(req).read()
-    except urllib2.HTTPError as e:
+    except HTTPError as e:
         raise ValueError("Couldn't retrieve DVID project information from %s" % url)
-    except urllib2.URLError as e:
+    except URLError as e:
         raise ValueError("Couldn't retrieve DVID project information from %s" % url)
 
     return json.loads(info_json)

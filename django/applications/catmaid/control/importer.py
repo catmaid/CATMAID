@@ -23,8 +23,8 @@ from guardian.models import Permission
 from guardian.shortcuts import get_perms_for_model, assign_perm
 
 from catmaid.models import (Class, Relation, ClassClass, ClassInstance, Project,
-        ClassInstanceClassInstance, Stack, ProjectStack,
-        StackClassInstance, TILE_SOURCE_TYPES)
+        ClassInstanceClassInstance, Stack, StackGroup, StackStackGroup, ProjectStack,
+        StackClassInstance, StackGroupRelation, TILE_SOURCE_TYPES)
 from catmaid.fields import Double3D
 from catmaid.control.common import urljoin
 from catmaid.control.classification import get_classification_links_qs, \
@@ -1075,10 +1075,10 @@ def ensure_class_instances(project, classification_paths, user, stack=None, stac
                             'user': user
                         })
             if stackgroup:
-                # Link stack to class instance at end of path
-                ClassInstanceClassInstance.objects.get_or_create(
-                        project=project, class_instance_a=last_node,
-                        class_instance_b=stackgroup, relation=linked_to, defaults={
+                # Link stackgroup to class instance at end of path
+                StackGroupClassInstance.objects.get_or_create(
+                        project=project, class_instance=last_node,
+                        stack_group=stackgroup, relation=linked_to, defaults={
                             'user': user
                         })
     else:
@@ -1332,26 +1332,23 @@ def import_projects( user, pre_projects, tags, permissions,
                     elif 'override' == known_stackgroup_action:
                         existing_stackgroups.delete()
 
-                stack_group = ClassInstance.objects.create(
-                    user=user, project=p, name=sg,
-                    class_column=Class.objects.get(project=p, class_name="stackgroup")
-                )
+                stack_group = StackGroup.objects.create(title=sg)
                 referenced_stackgroups[sg] = stack_group
-                for ls in linked_stacks:
-                    StackClassInstance.objects.create(
-                        user=user, project=p,
-                        relation=Relation.objects.get(project=p,
-                            relation_name=ls['relation']),
-                        class_instance=stack_group,
+                for n,ls in enumerate(linked_stacks):
+                    group_relation = StackGroupRelation.objects.get_or_create(
+                        name=ls['relation'])
+                    StackStackGroup.objects.create(
+                        group_relation=group_relation,
                         stack=ls['stack'],
-                    )
+                        stack_group=stack_group,
+                        position=n)
 
             # Link project level defined stack group classification
             for sg in pp.stackgroups:
-                ref_ci = referenced_stackgroups.get(sg.name)
+                ref_sg = referenced_stackgroups.get(sg.name)
                 if ref_ci and sg.classification:
-                    ensure_class_instances(p, sg.classification,  user,
-                    stackgroup=ref_ci)
+                    ensure_class_instances(p, sg.classification, user,
+                    stackgroup=ref_sg)
 
             # Link classification graphs
             for cg in cls_graph_ids_to_link:

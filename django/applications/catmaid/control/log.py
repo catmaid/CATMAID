@@ -1,6 +1,5 @@
 import json
 import logging
-from string import upper
 
 from django.http import HttpResponse
 from django.contrib.auth.decorators import user_passes_test
@@ -67,7 +66,7 @@ def list_logs(request, project_id=None):
     if should_sort:
         column_count = int(request.POST.get('iSortingCols', 0))
         sorting_directions = [request.POST.get('sSortDir_%d' % d, 'DESC') for d in range(column_count)]
-        sorting_directions = map(lambda d: '-' if upper(d) == 'DESC' else '', sorting_directions)
+        sorting_directions = map(lambda d: '-' if d.upper() == 'DESC' else '', sorting_directions)
 
         fields = ['user', 'operation_type', 'creation_time', 'x', 'y', 'z', 'freetext']
         sorting_index = [int(request.POST.get('iSortCol_%d' % d)) for d in range(column_count)]

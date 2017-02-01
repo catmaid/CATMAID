@@ -1,5 +1,4 @@
 import re
-from string import upper
 from itertools import izip
 
 from django.http import JsonResponse
@@ -1115,7 +1114,7 @@ def list_annotations_datatable(request, project_id=None):
         column_count = int(request.POST.get('iSortingCols', 0))
         sorting_directions = [request.POST.get('sSortDir_%d' % d, 'DESC')
                 for d in xrange(column_count)]
-        sorting_directions = map(lambda d: '-' if upper(d) == 'DESC' else '',
+        sorting_directions = map(lambda d: '-' if d.upper() == 'DESC' else '',
                 sorting_directions)
 
         fields = ['name', 'last_used', 'num_usage', 'last_user']

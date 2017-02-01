@@ -1,7 +1,6 @@
 import copy
 import json
 
-from string import upper
 from itertools import imap
 from datetime import datetime, timedelta
 from collections import defaultdict
@@ -286,7 +285,7 @@ def list_connector(request, project_id=None):
 
         # Sort labels by name
         for connector_id, labels in tags.iteritems():
-            labels.sort(key=upper)
+            labels.sort(key=lambda k: k.upper())
 
     return JsonResponse({
         "links": links,

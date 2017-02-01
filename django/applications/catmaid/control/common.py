@@ -317,11 +317,11 @@ def get_class_to_id_map(project_id, name_constraints=None, cursor=None):
 
 def urljoin(a, b):
     """ Joins to URL parts a and b while making sure this
-    exactly one slash inbetween.
+    exactly one slash inbetween. Empty strings are ignored.
     """
-    if a[-1] != '/':
+    if a and a[-1] != '/':
         a = a + '/'
-    if b[0] == '/':
+    if b and b[0] == '/':
         b = b[1:]
     return a + b
 

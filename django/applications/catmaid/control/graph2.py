@@ -6,7 +6,6 @@ from networkx.algorithms import weakly_connected_component_subgraphs
 from collections import defaultdict
 from itertools import count
 from functools import partial
-from synapseclustering import tree_max_density
 from numpy import subtract
 from numpy.linalg import norm
 
@@ -19,6 +18,7 @@ from catmaid.models import UserRole
 from catmaid.control.authentication import requires_user_role
 from catmaid.control.common import get_relation_to_id_map
 from catmaid.control.tree_util import simplify
+from catmaid.control.synapseclustering import tree_max_density
 
 from six.moves import zip as izip
 

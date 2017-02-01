@@ -2,7 +2,8 @@ import re
 from django import forms
 from django.core.exceptions import ValidationError
 from django.db import models
-from widgets import Double3DWidget, Integer3DWidget, RGBAWidget
+
+from catmaid.widgets import Double3DWidget, Integer3DWidget, RGBAWidget
 
 # ------------------------------------------------------------------------
 # Classes to support the integer3d compound type:

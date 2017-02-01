@@ -25,7 +25,7 @@ from catmaid.control.review import get_treenodes_to_reviews, \
 
 from psycopg2.extras import DateTimeTZRange
 
-from tree_util import edge_count_to_root, partition
+from catmaid.control.tree_util import edge_count_to_root, partition
 
 # Python 2 and 3 compatible map iterator
 from six.moves import map

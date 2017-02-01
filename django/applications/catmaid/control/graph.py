@@ -8,7 +8,6 @@ from networkx.algorithms import weakly_connected_component_subgraphs
 from collections import defaultdict
 from itertools import chain, ifilter
 from functools import partial
-from synapseclustering import  tree_max_density
 from numpy import subtract
 from numpy.linalg import norm
 from math import sqrt
@@ -22,6 +21,7 @@ from catmaid.control.common import get_relation_to_id_map
 from catmaid.control.review import get_treenodes_to_reviews
 from catmaid.control.tree_util import simplify, find_root, reroot, partition, \
         spanning_tree, cable_length
+from catmaid.control.synapseclustering import  tree_max_density
 
 def split_by_confidence_and_add_edges(confidence_threshold, digraphs, rows):
     """ dipgrahs is a dictionary of skeleton IDs as keys and DiGraph instances as values,

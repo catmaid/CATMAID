@@ -144,8 +144,8 @@ class CATMAIDConfig(AppConfig):
 
     # A list of settings that are expected to be available.
     required_setting_fields = {
-        "VERSION": str,
-        "CATMAID_URL": str,
+        "VERSION": six.string_types,
+        "CATMAID_URL": six.string_types,
         "ONTOLOGY_DUMMY_PROJECT_ID": int,
         "PROFILE_INDEPENDENT_ONTOLOGY_WORKSPACE_IS_DEFAULT": bool,
         "PROFILE_SHOW_TEXT_LABEL_TOOL": bool,
@@ -160,16 +160,16 @@ class CATMAIDConfig(AppConfig):
         "IMPORTER_DEFAULT_TILE_WIDTH": int,
         "IMPORTER_DEFAULT_TILE_HEIGHT": int,
         "IMPORTER_DEFAULT_TILE_SOURCE_TYPE": int,
-        "IMPORTER_DEFAULT_IMAGE_BASE": str,
-        "MEDIA_HDF5_SUBDIRECTORY": str,
-        "MEDIA_CROPPING_SUBDIRECTORY": str,
-        "MEDIA_ROI_SUBDIRECTORY": str,
-        "MEDIA_TREENODE_SUBDIRECTORY": str,
+        "IMPORTER_DEFAULT_IMAGE_BASE": six.string_types,
+        "MEDIA_HDF5_SUBDIRECTORY": six.string_types,
+        "MEDIA_CROPPING_SUBDIRECTORY": six.string_types,
+        "MEDIA_ROI_SUBDIRECTORY": six.string_types,
+        "MEDIA_TREENODE_SUBDIRECTORY": six.string_types,
         "GENERATED_FILES_MAXIMUM_SIZE": int,
         "USER_REGISTRATION_ALLOWED": bool,
         "NEW_USER_DEFAULT_GROUPS": list,
         "STATIC_EXTENSION_FILES": list,
-        "STATIC_EXTENSION_ROOT": str,
+        "STATIC_EXTENSION_ROOT": six.string_types,
     }
 
     def validate_configuration(self):
@@ -180,7 +180,7 @@ class CATMAIDConfig(AppConfig):
             if not hasattr(settings, field):
                 raise ImproperlyConfigured(
                         "Please add the %s settings field" % field)
-            if type(getattr(settings, field)) != data_type:
+            if not isinstance(getattr(settings, field), data_type):
                 raise ImproperlyConfigured("Please make sure settings field %s "
                         "is of type %s" % (field, data_type))
 

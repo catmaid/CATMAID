@@ -130,7 +130,7 @@ class PreOverlay(ImageBaseMixin):
 
 class PreStackGroup():
     def __init__(self, info_object):
-        self.name= info_object['name']
+        self.name = info_object['name']
         self.classification = info_object.get('classification', None)
         self.relation = info_object.get('relation', None)
         valid_relations = ("has_view", "has_channel")

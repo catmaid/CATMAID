@@ -211,7 +211,7 @@ class ArrangementExperimentProvider(object):
                                            "arrangement.txt")
             arrangement_file = open(arrangement_path, 'r')
             arrangement = arrangement_file.read()
-        except IOError, e:
+        except IOError as e:
             return None
         finally:
             if arrangement_file:
@@ -253,7 +253,7 @@ class ArrangementExperimentProvider(object):
         # Dimensions are read from an arrangement.txt file
         try:
             dimension = self.get_dimensions(plate, pos)
-        except ValueError, e:
+        except ValueError as e:
             log("Error: " + e.message)
             return []
         resolution = self.get_resolution(plate, pos)

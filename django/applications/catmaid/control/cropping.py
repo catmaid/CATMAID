@@ -607,7 +607,7 @@ def process_crop_job(job, create_message=True):
             no_error_occured = False
             error_message = "A region outside the stack has been selected. " \
                     "Therefore, no image was produced."
-    except (IOError, OSError, ValueError), e:
+    except (IOError, OSError, ValueError) as e:
         no_error_occured = False
         error_message = str(e)
         # Delete the file if parts of it have been written already

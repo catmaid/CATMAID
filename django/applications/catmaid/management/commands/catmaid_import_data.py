@@ -100,7 +100,7 @@ class Command(BaseCommand):
             selection = raw_input("Selection: ")
             try:
                 return projects[int(selection)]
-            except ValueError, IndexError:
+            except (ValueError, IndexError):
                 return None
 
         while True:
@@ -119,7 +119,7 @@ class Command(BaseCommand):
             selection = raw_input("Selection: ")
             try:
                 return users[int(selection)]
-            except ValueError, IndexError:
+            except (ValueError, IndexError):
                 return None
 
         while True:

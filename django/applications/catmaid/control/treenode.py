@@ -159,7 +159,7 @@ def insert_treenode(request, project_id=None):
     # of connector ID and relation ID.
     try:
         links = get_request_list(request.POST, 'links', [], int)
-    except Exception, e:
+    except Exception as e:
         raise ValueError("Couldn't parse list parameter: {}".format(e))
 
     # Make sure the back-end is in the expected state if the node should have a

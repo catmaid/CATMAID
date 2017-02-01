@@ -30,7 +30,7 @@ class ServerForm(forms.Form):
 
         try:
             dvid.get_server_info(url)
-        except Exception, e:
+        except Exception as e:
             raise forms.ValidationError("Couldn't connect to %s or read valid DVID info" % url)
 
         return url
@@ -45,7 +45,7 @@ class StackForm(forms.Form):
         repository = self.cleaned_data['repository']
         try:
             self.dvid.get_repository(repository)
-        except Exception, e:
+        except Exception as e:
             raise forms.ValidationError(e)
         return repository
 
@@ -54,7 +54,7 @@ class StackForm(forms.Form):
         instance = self.cleaned_data['instance']
         try:
             self.dvid.get_instance(repository, instance)
-        except Exception, e:
+        except Exception as e:
             raise ValidationError(e)
         return instance
 

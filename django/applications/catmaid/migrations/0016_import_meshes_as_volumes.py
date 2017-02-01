@@ -41,11 +41,11 @@ def get_mesh(project_id, stack_id):
     # function calls we expect.
     try:
         import h5py
-    except ImportError, e:
+    except ImportError as e:
         logger.warning("CATMAID was unable to import the h5py library. "
                 "This library is needed to migrate found HDF5 files to "
                 "volumes, please install it (e.g. using pip install h5py).")
-        raise 
+        raise
 
     with closing(h5py.File(filename, 'r')) as hfile:
         meshnames = hfile['meshes'].keys()

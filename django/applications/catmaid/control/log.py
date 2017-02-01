@@ -25,7 +25,7 @@ def log_frontent_event(request, level='info'):
         result = log(logger, level, entry)
         status = "success"
         status_msg = "Successfully created log entry"
-    except Exception, e:
+    except Exception as se:
         status = "error"
         status_msg = str(e)
 

@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 try:
     from scipy.sparse.csgraph import dijkstra
-except ImportError, e:
+except ImportError:
     logger.warning("CATMAID was unable to load the scipy module. "
         "Synapse clustering won't be available")
 

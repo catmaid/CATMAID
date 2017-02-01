@@ -572,7 +572,7 @@ class PermissionTests(TestCase):
                 missing_permissions = ('error' in parsed_response and
                         parsed_response.get('type', None) == 'PermissionError')
                 self.assertFalse(missing_permissions, msg)
-            except ValueError, e:
+            except ValueError as e:
                 # If a response is no JSON, everything is fine as well
                 if str(e) != "No JSON object could be decoded":
                     raise e
@@ -588,7 +588,7 @@ class PermissionTests(TestCase):
                 missing_permissions = ('error' in parsed_response and
                         parsed_response.get('type', None) == 'PermissionError')
                 self.assertFalse(missing_permissions, msg)
-            except ValueError, e:
+            except ValueError as e:
                 # If a response is no JSON, everything is fine as well
                 if str(e) != "No JSON object could be decoded":
                     raise e

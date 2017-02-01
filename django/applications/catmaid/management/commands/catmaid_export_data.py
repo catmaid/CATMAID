@@ -181,7 +181,7 @@ class Exporter():
             serializer = CurrentSerializer()
             with open(self.target_file, "w") as out:
                 serializer.serialize(data, indent=self.indent, stream=out)
-        except Exception, e:
+        except Exception as e:
             if self.show_traceback:
                 raise
             raise CommandError("Unable to serialize database: %s" % e)
@@ -227,7 +227,7 @@ class Command(BaseCommand):
             selection = raw_input("Selection: ")
             try:
                 return projects[int(selection)]
-            except ValueError, IndexError:
+            except (IndexError, ValueError) as e:
                 return None
 
         while True:

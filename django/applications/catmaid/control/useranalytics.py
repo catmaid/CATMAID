@@ -24,7 +24,7 @@ try:
     from matplotlib.dates import  DateFormatter, DayLocator
     from pylab import figure
     from matplotlib.backends.backend_agg import FigureCanvasAgg
-except ImportError, e:
+except ImportError:
     logger.warning("CATMAID was unable to laod the matplitlib module. "
         "User analytics will not be available")
 

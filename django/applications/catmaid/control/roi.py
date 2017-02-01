@@ -160,7 +160,7 @@ def remove_roi_link(request, project_id=None, roi_id=None):
             try:
                 os.remove(file_path)
                 file_info = " The same goes for its cropped image."
-            except OSError, e:
+            except OSError as e:
                 file_info = " However, its cropped image couldn't be removed."
         # Create status data
         status = {'status': "Removed ROI link with ID %s. The ROI " \

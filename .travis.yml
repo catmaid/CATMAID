@@ -37,6 +37,8 @@ install:
   - pip install -q -r django/requirements-test.txt
   - pip install coveralls flake8
   - npm install jshint qunit-phantomjs-runner csslint jsdoc
+  - npm bin
+  - export PATH=$(npm bin):$PATH
 before_script:
   - sudo cp /etc/postgresql/9.4/main/pg_hba.conf /etc/postgresql/9.5/main/pg_hba.conf
   - sudo /etc/init.d/postgresql restart

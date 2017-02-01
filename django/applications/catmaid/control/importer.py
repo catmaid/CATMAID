@@ -209,7 +209,7 @@ class PreProject:
         self.name = p['name']
         self.stacks = []
         self.has_been_imported = False
-        for s in p['stacks']:
+        for s in p.get('stacks', []):
             self.stacks.append(PreStack(s, project_url, data_folder))
 
         # Don't be considered known by default

@@ -72,7 +72,7 @@ CATMAID_URL = '/CATMAID_SUBDIR/'
 # Use different cookie names for each CATMAID instance. This increases the size
 # of the cookie. So if you run only one instance on this domain, you could also
 # remove the next three lines.
-COOKIE_SUFFIX = hashlib.md5(CATMAID_URL).hexdigest()
+COOKIE_SUFFIX = hashlib.md5(CATMAID_URL.encode('utf-8')).hexdigest()
 SESSION_COOKIE_NAME = 'sessionid_' + COOKIE_SUFFIX
 CSRF_COOKIE_NAME = 'csrftoken_' + COOKIE_SUFFIX
 

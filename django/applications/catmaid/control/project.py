@@ -287,7 +287,7 @@ def export_projects(request):
             'tile_width': row[9],
             'tile_height': row[10],
             'tile_source_type': row[11],
-            'comment': row[3]
+            'comment': row[12]
         }
         stacks.append(stack)
         visible_stacks[row[1]] = stack

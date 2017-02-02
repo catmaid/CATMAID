@@ -523,6 +523,18 @@
     }
   },
   {
+    "pk": 2324,
+    "model": "catmaid.class",
+    "fields": {
+      "description": null,
+      "class_name": "stackgroup",
+      "creation_time": "2011-10-29T04:33:34.263Z",
+      "edition_time": "2011-10-29T04:33:34.263Z",
+      "project": 5,
+      "user": 3
+    }
+  },
+  {
     "pk": 1,
     "model": "catmaid.classinstance",
     "fields": {
@@ -1135,6 +1147,18 @@
     }
   },
   {
+    "pk": 2475,
+    "model": "catmaid.classinstance",
+    "fields": {
+      "class_column": 2324,
+      "name": "Test group",
+      "creation_time": "2016-03-09T18:10:42.855Z",
+      "edition_time": "2016-03-09T18:10:42.844Z",
+      "project": 5,
+      "user": 3
+    }
+  },
+  {
     "pk": 108,
     "model": "catmaid.relation",
     "fields": {
@@ -1509,6 +1533,33 @@
       "edition_time": "2011-10-29T04:33:34.263Z",
       "project": 5,
       "relation_name": "abutting",
+      "user": 3
+    }
+  },
+  {
+    "pk": 2476,
+    "model": "catmaid.relation",
+    "fields": {
+      "description": null,
+      "isreciprocal": false,
+      "creation_time": "2011-10-29T04:33:34.263Z",
+      "uri": null,
+      "edition_time": "2011-10-29T04:33:34.263Z",
+      "project": 5,
+      "relation_name": "has_view",
+      "user": 3
+    }
+  },
+  {
+    "pk": 2477,
+    "model": "catmaid.stackclassinstance",
+    "fields": {
+      "class_instance_id": 2475,
+      "stack": 5,
+      "relation": 2476,
+      "creation_time": "2011-10-29T04:33:34.263Z",
+      "edition_time": "2011-10-29T04:33:34.263Z",
+      "project": 5,
       "user": 3
     }
   },

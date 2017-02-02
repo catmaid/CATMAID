@@ -226,7 +226,6 @@ def projects(request):
         groups.append({
             'id': row[1],
             'title': row[2],
-            'comment': '',
         })
 
     result = []
@@ -289,7 +288,7 @@ def export_projects(request):
             'tile_width': row[9],
             'tile_height': row[10],
             'tile_source_type': row[11],
-            'comment': row[3]
+            'comment': row[12]
         }
         stacks.append(stack)
         visible_stacks[row[1]] = stack
@@ -348,7 +347,6 @@ def export_projects(request):
         groups.append({
             'id': row[0],
             'name': row[2],
-            'comment': '',
         })
         # Add to stacks
         for stack_id, relation_name in zip(row[3], row[4]):
@@ -376,7 +374,7 @@ def export_projects(request):
             'project': {
                 'id': p.id,
                 'name': p.title,
-                'stacks': stacks,
+                'stacks': stacks
             }
         })
 

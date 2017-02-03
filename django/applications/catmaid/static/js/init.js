@@ -674,16 +674,15 @@ var project;
         if (e.userprofile) {
           CATMAID.userprofile = new CATMAID.Userprofile(e.userprofile);
         } else {
-          throw "The server returned no valid user profile.";
+          throw new CATMAID.Error("The server returned no valid user profile.");
         }
       } catch (error) {
         /* A valid user profile is needed to start CATMAID. This is a severe error
         * and a message box will tell the user to report this problem.
         */
-        new CATMAID.ErrorDialog("The user profile couldn't be loaded. This " +
+        throw new CATMAID.Error("The user profile couldn't be loaded. This " +
             "however, is required to start CATMAID. Please report this problem " +
-            "to your administrator and try again later.", error).show();
-        return;
+            "to your administrator and try again later.", error);
       }
 
       // Show loading data view

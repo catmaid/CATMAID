@@ -321,7 +321,7 @@ var project;
     document.getElementById( "user_menu" ).appendChild( user_menu.getView() );
 
     // login and thereafter load stacks if requested
-    this.login(undefined, undefined, function() {
+    this.login().then(function() {
       var tools = {
         navigator: CATMAID.Navigator,
         tracingtool: CATMAID.TracingTool,
@@ -381,7 +381,7 @@ var project;
         }
         return Promise.resolve();
       }
-    });
+    }).catch(CATMAID.handleError);
 
     // the text-label toolbar
 

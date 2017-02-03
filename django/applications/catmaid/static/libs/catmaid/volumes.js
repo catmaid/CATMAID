@@ -112,6 +112,8 @@
     this.set("neuronSourceName", options.neuronSourceName || undefined);
     this.set("rules", options.rules || []);
     this.set("preview", CATMAID.tools.getDefined(options.preview, true));
+    this.set("previewColor", CATMAID.tools.getDefined(options.previewColor, '#FFFFFF'));
+    this.set("previewOpacity", CATMAID.tools.getDefined(options.previewOpacity, 0.7));
     this.set("respectRadius", options.respectRadius || true);
     // Indicates if the mesh representation needs to be recomputed
     this.meshNeedsSync = true;
@@ -137,11 +139,19 @@
     if (!noSyncCheck) {
       if (field == 'mesh') {
         this.meshNeedsSync = false;
-      } else if (field !== "id" && field !== "title" && field !== 'comment') {
+      } else if (field !== "id" && field !== "title" && field !== 'comment' &&
+          field !== 'previewColor' && field !== 'previewOpacity') {
         this.meshNeedsSync = true;
       }
     }
+
     CATMAID.Volume.prototype.set.call(this, field, value, forceOverride);
+
+    if (this.preview && this._previewMeshManager) {
+      if (field === 'previewColor' || field === 'previewOpacity') {
+        this._previewMeshManager.setColor(this.previewColor, this.previewOpacity);
+      }
+    }
   };
 
   /**
@@ -180,7 +190,7 @@
     var createMesh = this.createMesh.bind(this);
     if (this.preview) {
       CATMAID.ConvexHullVolume.showCompartment(skeletons, rules, this.respectRadius,
-          createMesh, update);
+          this.previewColor, this.previewOpacity, createMesh, update);
     } else {
       CATMAID.ConvexHullVolume.createTriangleMesh(skeletons, rules, this.respectRadius,
           createMesh, update);
@@ -455,25 +465,26 @@
    * @returns an object with a setColor() and remove() function function that
    * operate on the addeded meshes.
    */
-  CATMAID.ConvexHullVolume.showMeshesIn3DViewer = function(meshes) {
+  CATMAID.ConvexHullVolume.showMeshesIn3DViewer = function(meshes, color, opacity) {
     var w = CATMAID.WebGLApplication.prototype.getFirstInstance();
     if (!w || !w.space) {
       // Silently fail if no 3D viewer is open
       return;
     }
 
-    return w.showTriangleMeshes(meshes);
+    return w.showTriangleMeshes(meshes, color, opacity);
   };
 
   /**
    * Create and display meshes in the first available 3D viewer.
    */
   CATMAID.ConvexHullVolume.showCompartments = function(skeletons, compartments,
-      respectRadius, createMesh, onSuccess) {
+      respectRadius, color, opacity, createMesh, onSuccess) {
     CATMAID.ConvexHullVolume.createTriangleMeshes(skeletons, compartments,
         createMesh, respectRadius,
         function(meshes) {
-          var meshManager = CATMAID.ConvexHullVolume.showMeshesIn3DViewer(meshes);
+          var meshManager = CATMAID.ConvexHullVolume.showMeshesIn3DViewer(
+              meshes, color, opacity);
           if (CATMAID.tools.isFn(onSuccess)) {
             onSuccess(meshes, meshManager);
           }
@@ -484,11 +495,12 @@
    * Create a convex hull and display it in the first available 3D viewer.
    */
   CATMAID.ConvexHullVolume.showCompartment = function(skeletons, rules, respectRadius,
-      createMesh, onSuccess) {
+      color, opacity, createMesh, onSuccess) {
     CATMAID.ConvexHullVolume.createTriangleMesh(skeletons, rules,
         respectRadius, createMesh, function(mesh) {
       var list = mesh ? [mesh] : [];
-      var meshManager = CATMAID.ConvexHullVolume.showMeshesIn3DViewer(list);
+      var meshManager = CATMAID.ConvexHullVolume.showMeshesIn3DViewer(
+          list, color, opacity);
       if (CATMAID.tools.isFn(onSuccess)) {
         onSuccess(mesh, meshManager);
       }
@@ -569,7 +581,8 @@
       if (this.preview) {
         this.clearPreviewData();
         var list = this.mesh ? [this.mesh] : [];
-        this._previewMeshManager = CATMAID.ConvexHullVolume.showMeshesIn3DViewer(list);
+        this._previewMeshManager = CATMAID.ConvexHullVolume.showMeshesIn3DViewer(
+            list, this.previewColor, this.previewOpacity);
       }
     }
   };

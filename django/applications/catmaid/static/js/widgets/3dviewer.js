@@ -1590,9 +1590,17 @@
 
     return {
       setColor: function(color, opacity) {
-        for (var i=0; i<addedObjects.length; ++i) {
-          addedObjects.material.color.set(color);
-          addedObjects.material.opacity = opacity;
+        // Only update the color of the mesh, ignore wireframe
+        if (addedObjects.length > 0) {
+          var o = addedObjects[0];
+          o.material.color.set(color);
+          if (o.material.opacity !== opacity) {
+            o.material.opacity = opacity;
+            o.material.transparent = opacity !== 1.0;
+            o.material.depthWrite = opacity === 1.0;
+            o.material.needsUpdate = true;
+          }
+          self.space.render();
         }
       },
       remove: function() {

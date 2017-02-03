@@ -47,6 +47,9 @@ Miscellaneous:
 - The treenode table can now be filtered by node confidence, creator and
   reviewer.
 
+- When creating new volumes with the help of the Volume Manager, the color and
+  opacity of the 3D preview can now be adjusted.
+
 
 ### Bug fixes
 

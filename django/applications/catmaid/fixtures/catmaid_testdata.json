@@ -1147,15 +1147,11 @@
     }
   },
   {
-    "pk": 2475,
-    "model": "catmaid.classinstance",
+    "pk": 1,
+    "model": "catmaid.stackgroup",
     "fields": {
-      "class_column": 2324,
-      "name": "Test group",
-      "creation_time": "2016-03-09T18:10:42.855Z",
-      "edition_time": "2016-03-09T18:10:42.844Z",
-      "project": 5,
-      "user": 3
+      "comment": null,
+      "title": "Test group"
     }
   },
   {
@@ -1551,16 +1547,20 @@
     }
   },
   {
-    "pk": 2477,
-    "model": "catmaid.stackclassinstance",
+    "pk": 1,
+    "model": "catmaid.stackstackgroup",
     "fields": {
-      "class_instance_id": 2475,
+      "group_relation": 1,
+      "position": 0,
       "stack": 5,
-      "relation": 2476,
-      "creation_time": "2011-10-29T04:33:34.263Z",
-      "edition_time": "2011-10-29T04:33:34.263Z",
-      "project": 5,
-      "user": 3
+      "stack_group": 1
+    }
+  },
+  {
+    "pk": 1,
+    "model": "catmaid.stackgrouprelation",
+    "fields": {
+      "name": "view"
     }
   },
   {

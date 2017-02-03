@@ -258,14 +258,47 @@ def export_projects(request):
     project_template = ",".join(("(%s)",) * len(projects)) or "()"
     user_project_ids = [p.id for p in projects]
 
+    # Get information on all relevant stack mirrors
     cursor.execute("""
-        SELECT ps.project_id, ps.stack_id, s.title, s.image_base, s.metadata,
-        s.dimension, s.resolution, s.num_zoom_levels, s.file_extension, s.tile_width,
-        s.tile_height, s.tile_source_type, s.comment FROM project_stack ps
+        SELECT sm.id, sm.stack_id, sm.title, sm.image_base, sm.file_extension,
+                sm.tile_width, sm.tile_height, sm.tile_source_type, sm.position
+        FROM stack_mirror sm
+        JOIN project_stack ps
+            ON sm.stack_id = ps.stack_id
+        JOIN (VALUES {}) user_project(id)
+            ON ps.project_id = user_project.id
+        ORDER BY sm.id ASC, sm.position ASC
+    """.format(project_template), user_project_ids)
+
+    # Build a stack mirror index that maps all stack mirrors to their respective
+    # stacks.
+    stack_mirror_index = {}
+    for row in cursor.fetchall():
+        stack_id = row[1]
+        mirrors = stack_mirror_index.get(stack_id)
+        if not mirrors:
+            mirrors = []
+            stack_mirror_index[stack_id] = mirrors
+        mirrors.append({
+            'title': row[2],
+            'url': row[3],
+            'fileextension': row[4],
+            'tile_height': row[5],
+            'tile_width': row[6],
+            'tile_source_type': row[7],
+            'position': row[8]
+        })
+
+    # Get all relevant stacks
+    cursor.execute("""
+        SELECT ps.project_id, ps.stack_id, s.title,
+            s.dimension, s.resolution, s.num_zoom_levels, s.metadata, s.comment,
+            s.attribution, s.description, s.canary_location, s.placeholder_color
+        FROM project_stack ps
         INNER JOIN (VALUES {}) user_project(id)
-        ON ps.project_id = user_project.id
+            ON ps.project_id = user_project.id
         INNER JOIN stack s
-        ON ps.stack_id = s.id
+            ON ps.stack_id = s.id
     """.format(project_template), user_project_ids)
     visible_stacks = dict()
     project_stack_mapping = dict()
@@ -277,18 +310,19 @@ def export_projects(request):
             project_stack_mapping[row[0]] = stacks
         stack = {
             'id': row[1],
-            'name': row[2],
-            'url': row[3],
-            'metadata': row[4],
-            'dimension': row[5],
-            'resolution': row[6],
-            'zoomlevels': row[7],
-            'fileextension': row[8],
-            'tile_width': row[9],
-            'tile_height': row[10],
-            'tile_source_type': row[11],
-            'comment': row[12]
+            'title': row[2],
+            'dimension': row[3],
+            'resolution': row[4],
+            'zoomlevels': row[5],
+            'metadata': row[6],
+            'comment': row[7],
+            'attribution': row[8],
+            'description': row[9],
+            'canary_location': row[10],
+            'placeholder_color': row[11],
+            'mirrors': stack_mirror_index.get(row[1], [])
         }
+
         stacks.append(stack)
         visible_stacks[row[1]] = stack
 
@@ -338,8 +372,6 @@ def export_projects(request):
     empty_tuple = tuple()
     for p in projects:
         stacks = project_stack_mapping.get(p.id, empty_tuple)
-        stackgroups = project_stack_groups.get(p.id, empty_tuple)
-
         result.append({
             'project': {
                 'id': p.id,

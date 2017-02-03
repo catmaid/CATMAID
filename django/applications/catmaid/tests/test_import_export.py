@@ -182,29 +182,36 @@ class ImportExportTests(TestCase):
 
         p1_config = {
             'project': {
-                'name': 'test-no-stacks',
+                'title': 'test-no-stacks',
                 'stacks': tuple(),
             }
         }
 
         p2_config = {
             'project': {
-                'name': 'test-two-stacks',
+                'title': 'test-two-stacks',
                 'stacks': [{
-                    'comment': None,
-                    'name': 'test-stack-1',
-                    'url': 'https://catmaid-test/',
-                    'tile_height': 512,
+                    'title': 'test-stack-1',
                     'dimension': '(7,17,23)',
-                    'zoomlevels': -1,
-                    'tile_width': 256,
-                    'fileextension': 'jpg',
-                    'tile_source_type': 5,
                     'resolution': '(2,3,5)',
-                    'metadata': ''
+                    'zoomlevels': -1,
+                    'metadata': '',
+                    'comment': None,
+                    'attribution': None,
+                    'description': None,
+                    'canary_location': None,
+                    'placeholder_color': None,
+                    'mirrors': [{
+                        'title': '',
+                        'url': 'https://catmaid-test/',
+                        'tile_height': 512,
+                        'tile_width': 256,
+                        'fileextension': 'jpg',
+                        'tile_source_type': 5,
+                    }]
                 }, {
                     'comment': None,
-                    'name': 'test-stack-2',
+                    'title': 'test-stack-2',
                     'url': 'https://this.is.my.stack/',
                     'tile_height': 512,
                     'dimension': '(7,17,23)',
@@ -216,7 +223,7 @@ class ImportExportTests(TestCase):
                     'metadata': ''
                 }, {
                     'comment': None,
-                    'name': 'test-stack-3',
+                    'title': 'test-stack-3',
                     'url': 'https://catmaid-test/abc/',
                     'tile_height': 456,
                     'resolution': '(1,2,3)',

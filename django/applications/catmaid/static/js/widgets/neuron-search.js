@@ -261,7 +261,7 @@
 
         // Focus search box
         setTimeout(function() {
-          $('input#neuron_query_by_name' + this.widgetID).focus();
+          $('input#neuron_query_by_name' + self.widgetID).focus();
         }, 10);
       },
       helpText: [

@@ -1537,9 +1537,10 @@
    * Display meshes in the passed-in object. Mesh IDs should be mapped to an
    * array following this format: [[points], [[faces]].
    *
-   * @returns a function that removes the added meshes when called
+   * @returns an object with a reference to the displayed meshes along with
+   * "remove" function, which removes the displayed mesh when called.
    */
-  WebGLApplication.prototype.showTriangleMeshes = function(meshes) {
+  WebGLApplication.prototype.showTriangleMeshes = function(meshes, color, opacity) {
     var addedObjects = [];
     var self = this;
 
@@ -1562,11 +1563,12 @@
 
       // Create mesh based on volume color and opacity selected in 3D viewer.
       // Ignore the face setting for now to always show faces.
-      var opacity = self.options.meshes_opacity;
+      opacity = opacity || self.options.meshes_opacity;
       var mesh = new THREE.Mesh(
           geom,
           new THREE.MeshLambertMaterial(
-             {color: self.options.meshes_color,
+             {
+              color: color || self.options.meshes_color,
               opacity: opacity,
               transparent: opacity !== 1.0,
               wireframe: false,
@@ -1586,15 +1588,23 @@
       this.space.render();
     }
 
-    return function() {
-      if (!self || !self.space) {
-        // No need to remove anything if 3D viewer or its space are gone
-        return;
+    return {
+      setColor: function(color, opacity) {
+        for (var i=0; i<addedObjects.length; ++i) {
+          addedObjects.material.color.set(color);
+          addedObjects.material.opacity = opacity;
+        }
+      },
+      remove: function() {
+        if (!self || !self.space) {
+          // No need to remove anything if 3D viewer or its space are gone
+          return;
+        }
+        addedObjects.forEach(function(o) {
+            this.remove(o);
+        }, self.space);
+        self.space.render();
       }
-      addedObjects.forEach(function(o) {
-          this.remove(o);
-      }, self.space);
-      self.space.render();
     };
   };
 

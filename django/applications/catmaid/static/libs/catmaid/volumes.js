@@ -163,11 +163,11 @@
     var skeletons = source.getSelectedSkeletonModels();
     var rules = this.rules;
     // On successful mesh generation, the mesh will be stored in the volume.
-    var update = (function(mesh, removeMesh) {
+    var update = (function(mesh, meshManager) {
       // Mesh is now up to date
       this.meshNeedsSync = false;
       this.set("mesh", mesh);
-      this._removePreviewMesh = removeMesh;
+      this._previewMeshManager = meshManager;
 
       if (CATMAID.tools.isFn(onSuccess)) {
         onSuccess(this, mesh);
@@ -193,7 +193,9 @@
    */
   CATMAID.ConvexHullVolume.prototype.clearPreviewData = function() {
     // If there is an existing removal function, call it.
-    CATMAID.tools.callIfFn(this._removePreviewMesh);
+    if (this._previewMeshManager) {
+      CATMAID.tools.callIfFn(this._previewMeshManager.remove());
+    }
   };
 
   /**
@@ -450,7 +452,8 @@
    * IDs should be mapped to an array following this format:
    * [[points], [[faces]].
    *
-   * @returns a function that removes the added meshes when called
+   * @returns an object with a setColor() and remove() function function that
+   * operate on the addeded meshes.
    */
   CATMAID.ConvexHullVolume.showMeshesIn3DViewer = function(meshes) {
     var w = CATMAID.WebGLApplication.prototype.getFirstInstance();
@@ -470,9 +473,9 @@
     CATMAID.ConvexHullVolume.createTriangleMeshes(skeletons, compartments,
         createMesh, respectRadius,
         function(meshes) {
-          var removeMeshes = CATMAID.ConvexHullVolume.showMeshesIn3DViewer(meshes);
+          var meshManager = CATMAID.ConvexHullVolume.showMeshesIn3DViewer(meshes);
           if (CATMAID.tools.isFn(onSuccess)) {
-            onSuccess(meshes, removeMeshes);
+            onSuccess(meshes, meshManager);
           }
         });
   };
@@ -485,9 +488,9 @@
     CATMAID.ConvexHullVolume.createTriangleMesh(skeletons, rules,
         respectRadius, createMesh, function(mesh) {
       var list = mesh ? [mesh] : [];
-      var removeMeshes = CATMAID.ConvexHullVolume.showMeshesIn3DViewer(list);
+      var meshManager = CATMAID.ConvexHullVolume.showMeshesIn3DViewer(list);
       if (CATMAID.tools.isFn(onSuccess)) {
-        onSuccess(mesh, removeMeshes);
+        onSuccess(mesh, meshManager);
       }
     });
   };
@@ -566,7 +569,7 @@
       if (this.preview) {
         this.clearPreviewData();
         var list = this.mesh ? [this.mesh] : [];
-        this._removePreviewMesh = CATMAID.ConvexHullVolume.showMeshesIn3DViewer(list);
+        this._previewMeshManager = CATMAID.ConvexHullVolume.showMeshesIn3DViewer(list);
       }
     }
   };

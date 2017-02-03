@@ -10,7 +10,9 @@ None.
 
 ### Modifications
 
-None.
+- `POST /{project_id}/node/list` and `POST /{project_id}/node/list`:
+  The returned timestamps are now second based UTC epoch numbers instead of UTC
+  strings.
 
 ### Deprecations
 

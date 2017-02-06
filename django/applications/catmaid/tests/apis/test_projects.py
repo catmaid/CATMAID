@@ -64,16 +64,19 @@ class ProjectsApiTests(CatmaidApiTestCase):
             return rl[0]
 
         # Check the first project:
-        stacks = get_project(result, 1)['stacks']
-        self.assertEqual(len(stacks), 1)
+        p1 = get_project(result, 1)
+        self.assertEqual(len(p1['stacks']), 1)
+        self.assertEqual(len(p1['stackgroups']), 0)
 
-        # Check the second project:
-        stacks = get_project(result, 3)['stacks']
-        self.assertEqual(len(stacks), 1)
+        # Check the second project
+        p3 = get_project(result, 3)
+        self.assertEqual(len(p3['stacks']), 1)
+        self.assertEqual(len(p3['stackgroups']), 0)
 
         # Check the third project:
-        stacks = get_project(result, 5)['stacks']
-        self.assertEqual(len(stacks), 2)
+        p5= get_project(result, 5)
+        self.assertEqual(len(p5['stacks']), 2)
+        self.assertEqual(len(p5['stackgroups']), 1)
 
     def test_project_export(self):
         """Test projects/export endpoint, which returns a YAML format which can

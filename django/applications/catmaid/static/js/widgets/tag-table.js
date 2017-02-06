@@ -60,10 +60,15 @@
    * will be deselected.
    */
   TagTable.prototype.constrainSkelsAndRedraw = function() {
-    // var table = $(`#${this.idPrefix}datatable`).DataTable();
     this.oTable.clear();
 
-    var order = [[0, 'desc']].concat(this.oTable.order());
+    var newOrder;
+    var currentOrder = this.oTable.order();
+    if (currentOrder.length >= 1 && currentOrder[0][0] !== 0 && currentOrder[0][1] !== 'desc') {
+      newOrder = [[0, 'desc']].concat(currentOrder);
+    } else {
+      newOrder = currentOrder;
+    }
 
     var filterSkels = this.filterSkeletons.getSelectedSkeletons();
     var rowObjs = [];
@@ -90,8 +95,7 @@
     }
 
     this.oTable.rows.add(rowObjs);
-    this.oTable.order(order)
-      .draw();
+    this.oTable.order(newOrder).draw();
 
     this.syncResultSkeletonSource();
   };
@@ -180,15 +184,7 @@
         var refresh = document.createElement('input');
         refresh.setAttribute("type", "button");
         refresh.setAttribute("value", "Refresh");
-        refresh.onclick = function() {
-          self.oTable.clear();
-          for (var key of Object.keys(responseCache)) {
-            delete responseCache[key];
-          }
-          self.filterSkeletons.clear();
-          self.resultSkeletons.clear();
-          self.init();
-        };
+        refresh.onclick = self.refreshDataAndRedraw.bind(self)
         controls.appendChild(refresh);
 
         var openTable = document.createElement('input');
@@ -333,37 +329,7 @@
       ]
     });
 
-    CATMAID.fetch(project.id + '/labels/stats', 'GET')
-      .then(function(json) {
-        responseCache = json.reduce(function(obj, arr) {
-          var labelID = arr[0];
-          var labelName = arr[1];
-          var skelID = arr[2];
-          var nodeID = arr[3];
-
-          if (!(labelName in obj)) {
-            obj[labelName] = {
-              'labelIDs': new Set(),
-              'skelIDs': new Set(),
-              'nodeIDs': new Map(),
-              'checked': false
-            };
-          }
-
-          obj[labelName].labelIDs.add(labelID);
-          obj[labelName].skelIDs.add(skelID);
-          obj[labelName].nodeIDs.set(nodeID, skelID);
-
-          return obj;
-        }, {});
-
-        self.constrainSkelsAndRedraw();
-
-        $(`#${tableID}_processing`).hide();
-      }
-    );
-
-    $(`#${tableID}_processing`).show();
+    this.refreshDataAndRedraw();
 
     tableSelector.on('change', '.skelSelector', function(event) {
       var row = self.oTable.row(event.currentTarget.closest('tr'));
@@ -434,6 +400,49 @@
         this.value = "";
       }
     });
+  };
+
+  TagTable.prototype.refreshDataAndRedraw = function() {
+    var procSelector = $(`#${this.idPrefix}datatable_processing`);
+
+    procSelector.show();
+
+    for (var key of Object.keys(responseCache)) {
+      delete responseCache[key];
+    }
+    this.resultSkeletons.clear();
+
+    var self = this;
+
+    CATMAID.fetch(project.id + '/labels/stats', 'GET')
+      .then(function(json) {
+        responseCache = json.reduce(function(obj, arr) {
+          var labelID = arr[0];
+          var labelName = arr[1];
+          var skelID = arr[2];
+          var nodeID = arr[3];
+
+          if (!(labelName in obj)) {
+            obj[labelName] = {
+              'labelIDs': new Set(),
+              'skelIDs': new Set(),
+              'nodeIDs': new Map(),
+              'checked': false
+            };
+          }
+
+          obj[labelName].labelIDs.add(labelID);
+          obj[labelName].skelIDs.add(skelID);
+          obj[labelName].nodeIDs.set(nodeID, skelID);
+
+          return obj;
+        }, {});
+
+        self.constrainSkelsAndRedraw();
+
+        procSelector.hide();
+      }
+    );
   };
 
   TagTable.prototype.destroy = function() {

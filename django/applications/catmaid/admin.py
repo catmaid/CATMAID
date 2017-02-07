@@ -7,7 +7,8 @@ from django.contrib.auth.models import User, Group
 from django.utils.safestring import mark_safe
 from guardian.admin import GuardedModelAdmin
 from catmaid.models import (Project, DataView, Stack, ProjectStack, UserProfile,
-    BrokenSlice, StackClassInstance, Relation, ClassInstance, Class, StackMirror)
+        BrokenSlice, StackClassInstance, Relation, ClassInstance, Class,
+        StackGroup, StackStackGroup, StackMirror)
 from catmaid.control.importer import importer_admin_view
 from catmaid.control.classificationadmin import classification_admin_view
 from catmaid.control.annotationadmin import ImportingWizard
@@ -113,6 +114,15 @@ class ProjectStackInline(admin.TabularInline):
     raw_id_fields = ("stack",)
 
 
+class StackStackGroupInline(admin.TabularInline):
+    model = StackStackGroup
+    extar = 1
+    max_num = 10
+    raw_id_fields = ('stack_group',)
+    verbose_name = 'Stack group member'
+    verbose_name_plural = 'Stack group members'
+
+
 class ProjectAdmin(GuardedModelAdmin):
     list_display = ('title',)
     search_fields = ['title','comment']
@@ -124,7 +134,15 @@ class ProjectAdmin(GuardedModelAdmin):
 class StackAdmin(GuardedModelAdmin):
     list_display = ('title', 'dimension', 'resolution', 'num_zoom_levels')
     search_fields = ['title', 'comment']
-    inlines = [ProjectStackInline]
+    inlines = [ProjectStackInline, StackStackGroupInline]
+    save_as = True
+    actions = (duplicate_action,)
+
+
+class StackGroupAdmin(GuardedModelAdmin):
+    list_display = ('title', 'comment')
+    search_fields = ['title', 'comment']
+    inlines = [StackStackGroupInline]
     save_as = True
     actions = (duplicate_action,)
 
@@ -240,6 +258,7 @@ admin.site.register(BrokenSlice, BrokenSliceAdmin)
 admin.site.register(Project, ProjectAdmin)
 admin.site.register(DataView, DataViewAdmin)
 admin.site.register(Stack, StackAdmin)
+admin.site.register(StackGroup, StackGroupAdmin)
 admin.site.register(ProjectStack)
 admin.site.register(StackMirror, StackMirrorAdmin)
 

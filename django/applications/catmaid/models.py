@@ -824,6 +824,9 @@ class StackGroupRelation(models.Model):
     class Meta:
         db_table = 'stack_group_relation'
 
+    def __unicode__(self):
+        return self.name
+
 
 class StackGroup(models.Model):
     title = models.TextField(default="", max_length=80)

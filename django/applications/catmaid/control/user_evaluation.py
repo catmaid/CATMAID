@@ -1,5 +1,6 @@
 import json
 import pytz
+import six
 
 from datetime import datetime, timedelta
 from collections import defaultdict, namedtuple
@@ -284,7 +285,7 @@ def _evaluate(project_id, user_id, start_date, end_date, max_gap, min_nodes):
     review_status = get_review_status(skeleton_ids)
 
     not_fully_reviewed = set()
-    for skid, status in review_status.iteritems():
+    for skid, status in six.iteritems(review_status):
         if status[0] != status[1]:
             not_fully_reviewed.add(skid)
 
@@ -299,8 +300,8 @@ def _evaluate(project_id, user_id, start_date, end_date, max_gap, min_nodes):
         reviews[r.skeleton_id][r.treenode_id].append(r)
 
     # Sort all reviews of all treenodes by review time, most recent first
-    for skid, tid_to_rs in reviews.iteritems():
-        for tid, rs in tid_to_rs.iteritems():
+    for skid, tid_to_rs in six.iteritems(reviews):
+        for tid, rs in six.iteritems(tid_to_rs):
             rs.sort(key=lambda r: r.review_time)
             rs.reverse()
 
@@ -335,7 +336,7 @@ def _evaluate(project_id, user_id, start_date, end_date, max_gap, min_nodes):
 
     d = []
 
-    for skid, arbor_epoch_ops in evaluations.iteritems():
+    for skid, arbor_epoch_ops in six.iteritems(evaluations):
         for epoch_ops in arbor_epoch_ops:
             if 0 == epoch_ops.user_node_counts[user_id]:
                 # user did not contribute at all to this chunk

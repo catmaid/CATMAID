@@ -1,4 +1,5 @@
 import json
+import six
 
 from django.contrib.auth.models import Permission
 from django.db import connection, transaction
@@ -375,7 +376,7 @@ class ViewPageTests(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         expected_result = [{'reviewer_id': int(r), 'accept_after': t}
-                for r,t in whitelist.iteritems()]
+                for r,t in six.iteritems(whitelist)]
         self.assertJSONEqual(response.content, expected_result)
 
     def test_export_compact_skeleton(self):
@@ -441,7 +442,7 @@ class ViewPageTests(TestCase):
         self.assertItemsEqual(parsed_response[0], expected_response[0])
         self.assertItemsEqual(parsed_response[1], expected_response[1])
         self.assertEqual(parsed_response[2], expected_response[2])
-        for k, v in expected_response[3].iteritems():
+        for k, v in six.iteritems(expected_response[3]):
             self.assertItemsEqual(parsed_response[3][k], v)
 
 

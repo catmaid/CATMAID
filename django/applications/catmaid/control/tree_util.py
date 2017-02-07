@@ -1,5 +1,7 @@
 # A 'tree' is a networkx.DiGraph with a single root node (a node without parents)
 
+import six
+
 from operator import itemgetter
 from networkx import Graph, DiGraph
 from collections import defaultdict
@@ -44,7 +46,7 @@ def find_common_ancestor(tree, nodes, ds=None, root_node=None):
         return nodes[0], 0
     distances = ds if ds else edge_count_to_root(tree, root_node=root_node)
     # Pick the pair with the shortest edge count to root
-    first, second = sorted({node: distances(node) for node in nodes}.iteritems(), key=itemgetter(1))[:2]
+    first, second = sorted(six.iteritems({node: distances(node) for node in nodes}), key=itemgetter(1))[:2]
     # Start from the second, and bring it to an edge count equal to the first
     while second[1] < first[1]:
         second = (tree.predecessors_iter(second[0]).next(), second[1] - 1)

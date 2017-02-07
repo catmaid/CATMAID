@@ -16,6 +16,7 @@ dictionary. JavaScript files go into the 'catmaid' entry of the ``JAVASCRIPT``
 dictonary at the end of this file.
 """
 
+import six
 from collections import OrderedDict
 
 
@@ -84,7 +85,7 @@ libraries_js = {
 
 JAVASCRIPT = OrderedDict()
 
-for k, v in libraries_js.iteritems():
+for k, v in six.iteritems(libraries_js):
     JAVASCRIPT[k + '-lib'] = {
         'source_filenames': ['libs/%s/%s' % (k, f) for f in v],
         'output_filename': 'js/libs/%s-lib.js' % k,
@@ -98,7 +99,7 @@ non_pipeline_js = {}
 
 # Even non-pipeline files have to be made known to pipeline, because it takes
 # care of collecting them into the STATIC_ROOT directory.
-for k, v in non_pipeline_js.iteritems():
+for k, v in six.iteritems(non_pipeline_js):
     JAVASCRIPT[k] = {
         'source_filenames': (v,),
         'output_filename': v

@@ -1,4 +1,5 @@
 import json
+import six
 
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
@@ -162,7 +163,7 @@ def give_neuron_to_other_user(request, project_id=None, neuron_id=None):
     if not skeletons:
         return HttpResponse(json.dumps({'error': 'The neuron does not contain any skeletons!'}))
 
-    sks = {k:v[:] for k,v in skeletons.iteritems()} # deep copy
+    sks = {k:v[:] for k,v in six.iteritems(skeletons)} # deep copy
     if request.user.id in sks:
         del sks[request.user.id]
     if not request.user.is_superuser and sks:

@@ -1,4 +1,5 @@
 import json
+import six
 import networkx as nx
 
 from itertools import combinations
@@ -63,7 +64,7 @@ def circles_of_hell(request, project_id=None):
     if n_circles < 1:
         raise Exception("Requires at least one circle.")
 
-    first_circle = set(int(v) for k,v in request.POST.iteritems() if k.startswith('skeleton_ids['))
+    first_circle = set(int(v) for k,v in six.iteritems(request.POST) if k.startswith('skeleton_ids['))
 
     if not first_circle:
         raise Exception("No skeletons were provided.")
@@ -78,8 +79,8 @@ def circles_of_hell(request, project_id=None):
         n_circles -= 1
         connections = _next_circle(current_circle, relations, cursor)
         next_circle = set(skID for c in connections.itervalues() \
-                          for relationID, cs in c.iteritems() \
-                          for skID, count in cs.iteritems() if count >= mins[relationID])
+                          for relationID, cs in six.iteritems(c) \
+                          for skID, count in six.iteritems(cs) if count >= mins[relationID])
         current_circle = next_circle - all_circles
         all_circles = all_circles.union(next_circle)
 
@@ -90,8 +91,8 @@ def circles_of_hell(request, project_id=None):
 def find_directed_paths(request, project_id=None):
     """ Given a set of two or more skeleton IDs, find directed paths of connected neurons between them, for a maximum inner path length as given (i.e. origin and destination not counted). A directed path means that all edges are of the same kind, e.g. presynaptic_to. """
 
-    sources = set(int(v) for k,v in request.POST.iteritems() if k.startswith('sources['))
-    targets = set(int(v) for k,v in request.POST.iteritems() if k.startswith('targets['))
+    sources = set(int(v) for k,v in six.iteritems(request.POST) if k.startswith('sources['))
+    targets = set(int(v) for k,v in six.iteritems(request.POST) if k.startswith('targets['))
     if len(sources) < 1 or len(targets) < 1:
         raise Exception('Need at least 1 skeleton IDs for both sources and targets to find directed paths!')
 

@@ -1,3 +1,4 @@
+import six
 import logging
 
 from catmaid import history
@@ -176,7 +177,7 @@ class CATMAIDConfig(AppConfig):
         """Make sure CATMAID is configured properly and raise an error if not.
         """
         # Make sure all expected settings are available.
-        for field, data_type in CATMAIDConfig.required_setting_fields.iteritems():
+        for field, data_type in six.iteritems(CATMAIDConfig.required_setting_fields):
             if not hasattr(settings, field):
                 raise ImproperlyConfigured(
                         "Please add the %s settings field" % field)

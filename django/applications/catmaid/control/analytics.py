@@ -1,4 +1,5 @@
 import json
+import six
 
 from collections import namedtuple, defaultdict
 from itertools import chain, islice
@@ -113,7 +114,7 @@ def check_broken_section(project_id, skeleton_ids=None, cursor=None):
 @requires_user_role(UserRole.Browse)
 def analyze_skeletons(request, project_id=None):
     project_id = int(project_id)
-    skids = [int(v) for k,v in request.POST.iteritems() if k.startswith('skeleton_ids[')]
+    skids = [int(v) for k,v in six.iteritems(request.POST) if k.startswith('skeleton_ids[')]
     s_skids = ",".join(map(str, skids))
     extra = int(request.POST.get('extra', 0))
     adjacents = int(request.POST.get('adjacents', 0))
@@ -255,7 +256,7 @@ def _analyze_skeleton(project_id, skeleton_id, adjacents):
     # Set of IDs of outgoing connectors
     pre_connector_ids = set()
 
-    for connector_id, connector in connectors.iteritems():
+    for connector_id, connector in six.iteritems(connectors):
         pre = connector[PRE]
         post = connector[POST]
         if pre and post:
@@ -315,7 +316,7 @@ def _analyze_skeleton(project_id, skeleton_id, adjacents):
     # considering the treenode and its parent as a group.
     if adjacents > 0:
         graph = Graph()
-        for node_id, props in nodes.iteritems():
+        for node_id, props in six.iteritems(nodes):
             if props[0]:
                 # Nodes are added automatically
                 graph.add_edge(props[0], node_id)
@@ -346,7 +347,7 @@ def _analyze_skeleton(project_id, skeleton_id, adjacents):
 
     # Check if there are any duplicated postsynaptic connectors
     post_connectors = []
-    for connector_id, c in connectors.iteritems():
+    for connector_id, c in six.iteritems(connectors):
         if connector_id in pre_connector_ids:
             continue
         treenode_id = (t.id for t in c[POST] if t.skeleton_id == skeleton_id).next()
@@ -363,7 +364,7 @@ def _analyze_skeleton(project_id, skeleton_id, adjacents):
     end_labels = set(['ends', 'not a branch', 'uncertain end', 'uncertain continuation', 'soma', 'nerve out'])
     if root in parents:
         parents.remove(root) # Consider the root as a leaf node
-    for node_id, props in nodes.iteritems():
+    for node_id, props in six.iteritems(nodes):
         labels = set(props[1])
         if node_id not in parents:
             if not (labels & end_labels):

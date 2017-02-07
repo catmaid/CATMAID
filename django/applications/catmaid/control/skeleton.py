@@ -2,6 +2,8 @@ import json
 import networkx as nx
 import pytz
 import re
+import six
+
 from operator import itemgetter
 from datetime import datetime, timedelta
 from collections import defaultdict
@@ -406,7 +408,7 @@ def contributor_statistics_multiple(request, project_id=None, skeleton_ids=None)
     epoch = datetime.utcfromtimestamp(0).replace(tzinfo=pytz.utc)
 
     if not skeleton_ids:
-        skeleton_ids = tuple(int(v) for k,v in request.POST.iteritems() if k.startswith('skids['))
+        skeleton_ids = tuple(int(v) for k,v in six.iteritems(request.POST) if k.startswith('skids['))
 
     # Count time bins separately for each skeleton
     time_bins = None
@@ -433,9 +435,9 @@ def contributor_statistics_multiple(request, project_id=None, skeleton_ids=None)
         seen = set()
         min_review_bins = set()
         multi_review_bins = 0
-        for reviewer, treenodes in sorted(rev.iteritems(), key=itemgetter(1), reverse=True):
+        for reviewer, treenodes in sorted(six.iteritems(rev), key=itemgetter(1), reverse=True):
             reviewer_bins = set()
-            for treenode, timestamp in treenodes.iteritems():
+            for treenode, timestamp in six.iteritems(treenodes):
                 time_bin = int((timestamp - epoch).total_seconds() / 20)
                 reviewer_bins.add(time_bin)
                 if not (treenode in seen):
@@ -532,7 +534,7 @@ def _neuronnames(skeleton_ids, project_id):
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def neuronnames(request, project_id=None):
     """ Returns a JSON object with skeleton IDs as keys and neuron names as values. """
-    skeleton_ids = tuple(int(v) for k,v in request.POST.iteritems() if k.startswith('skids['))
+    skeleton_ids = tuple(int(v) for k,v in six.iteritems(request.POST) if k.startswith('skids['))
     return JsonResponse(_neuronnames(skeleton_ids, project_id))
 
 def check_annotations_on_split(project_id, skeleton_id, over_annotation_set,
@@ -1026,7 +1028,7 @@ def skeleton_info_raw(request, project_id=None):
     """
     # sanitize arguments
     project_id = int(project_id)
-    skeletons = tuple(int(v) for k,v in request.POST.iteritems() if k.startswith('source_skeleton_ids['))
+    skeletons = tuple(int(v) for k,v in six.iteritems(request.POST) if k.startswith('source_skeleton_ids['))
     op = str(request.POST.get('boolean_op')) # values: AND, OR
     op = {'AND': 'AND', 'OR': 'OR'}[op] # sanitize
 
@@ -1045,8 +1047,8 @@ def skeleton_info_raw(request, project_id=None):
 def connectivity_matrix(request, project_id=None):
     # sanitize arguments
     project_id = int(project_id)
-    rows = tuple(int(v) for k, v in request.POST.iteritems() if k.startswith('rows['))
-    cols = tuple(int(v) for k, v in request.POST.iteritems() if k.startswith('columns['))
+    rows = tuple(int(v) for k, v in six.iteritems(request.POST) if k.startswith('rows['))
+    cols = tuple(int(v) for k, v in six.iteritems(request.POST) if k.startswith('columns['))
 
     matrix = get_connectivity_matrix(project_id, rows, cols)
     return JsonResponse(matrix)
@@ -1140,14 +1142,14 @@ def review_status(request, project_id=None):
         $ref: review_status_tuple
         required: true
     """
-    skeleton_ids = set(int(v) for k,v in request.POST.iteritems() if k.startswith('skeleton_ids['))
+    skeleton_ids = set(int(v) for k,v in six.iteritems(request.POST) if k.startswith('skeleton_ids['))
     whitelist = bool(json.loads(request.POST.get('whitelist', 'false')))
     whitelist_id = None
     user_ids = None
     if whitelist:
         whitelist_id = request.user.id
     else:
-        user_ids = set(int(v) for k,v in request.POST.iteritems() if k.startswith('user_ids['))
+        user_ids = set(int(v) for k,v in six.iteritems(request.POST) if k.startswith('user_ids['))
 
     status = get_review_status(skeleton_ids, project_id=project_id,
             whitelist_id=whitelist_id, user_ids=user_ids)
@@ -1643,7 +1645,7 @@ def annotation_list(request, project_id=None):
     """ Returns a JSON serialized object that contains information about the
     given skeletons.
     """
-    skeleton_ids = tuple(int(v) for k,v in request.POST.iteritems()
+    skeleton_ids = tuple(int(v) for k,v in six.iteritems(request.POST)
             if k.startswith('skeleton_ids['))
     annotations = bool(int(request.POST.get("annotations", 0)))
     metaannotations = bool(int(request.POST.get("metaannotations", 0)))

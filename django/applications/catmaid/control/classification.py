@@ -1,4 +1,5 @@
 import json
+import six
 import logging
 
 from collections import defaultdict
@@ -1378,7 +1379,7 @@ def graphs_instanciate_features(graphs, features, target=None, cursor=None):
                 raise ValueError("Part index too large")
             link = feature.links[part_index]
 
-            for link_id, children in nodes.iteritems():
+            for link_id, children in six.iteritems(nodes):
                 node = cici_map.get(link_id)
                 if not node:
                     raise ValueError("Couldn't find link node")

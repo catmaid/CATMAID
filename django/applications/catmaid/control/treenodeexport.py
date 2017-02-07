@@ -2,6 +2,7 @@ import os.path
 import shutil
 import tarfile
 import json
+import six
 
 from django.conf import settings
 from django.http import HttpResponse
@@ -450,7 +451,7 @@ def create_request_based_export_job(request, project_id):
 
     # Get stack ID and  skeleton IDs of which the nodes should be exported
     stack_id = request.POST.get('stackid', None)
-    skeleton_ids = set(int(v) for k,v in request.POST.iteritems() \
+    skeleton_ids = set(int(v) for k,v in six.iteritems(request.POST) \
             if k.startswith('skids['))
     # Width, height and depth of each node image stack needs to be known.
     x_radius = request.POST.get('x_radius', None)

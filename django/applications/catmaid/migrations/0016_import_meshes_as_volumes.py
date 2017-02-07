@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 
 import os
 import logging
+import six
 
 import django.contrib.postgres.fields.jsonb
 from django.conf import settings
@@ -80,7 +81,7 @@ def import_meshes(apps, schema_editor):
                 user = get_system_user()
 
             # The returned dictionary maps mesh names to a mesh representation
-            for mesh_name, mesh_data in meshes.iteritems():
+            for mesh_name, mesh_data in six.iteritems(meshes):
                 vertices = []
                 input_vertices = mesh_data['vertices']
                 i = 0

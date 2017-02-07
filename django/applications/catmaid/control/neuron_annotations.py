@@ -1,4 +1,5 @@
 import re
+import six
 
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
@@ -416,7 +417,7 @@ def _update_neuron_annotations(project_id, user, neuron_id, annotation_map, losi
     _annotate_entities(project_id, [neuron_id], missing_map)
 
     to_delete = existing - update
-    to_delete_ids = tuple(aid for name, aid in existing_annotations.iteritems() \
+    to_delete_ids = tuple(aid for name, aid in six.iteritems(existing_annotations) \
         if name in to_delete)
 
     ClassInstanceClassInstance.objects.filter(project=project_id,
@@ -495,7 +496,7 @@ def _annotate_entities(project_id, entity_ids, annotation_map):
             expanded_annotations = {annotation: entity_ids}
 
         # Make sure the annotation's class instance exists.
-        for a, a_entity_ids in expanded_annotations.iteritems():
+        for a, a_entity_ids in six.iteritems(expanded_annotations):
             ci, created = ClassInstance.objects.get_or_create(
                     project_id=project_id, name=a,
                     class_column=annotation_class,
@@ -699,7 +700,7 @@ def create_annotation_query(project_id, param_dict):
 
     # Meta annotations are annotations that are used to annotate other
     # annotations.
-    meta_annotations = [v for k,v in param_dict.iteritems()
+    meta_annotations = [v for k,v in six.iteritems(param_dict)
             if k.startswith('annotations[')]
     for meta_annotation in meta_annotations:
         annotation_query = annotation_query.filter(
@@ -708,7 +709,7 @@ def create_annotation_query(project_id, param_dict):
 
     # If information about annotated annotations is found, the current query
     # will include only annotations that are meta annotations for it.
-    annotated_annotations = [v for k,v in param_dict.iteritems()
+    annotated_annotations = [v for k,v in six.iteritems(param_dict)
             if k.startswith('annotates[')]
     for sub_annotation in annotated_annotations:
         annotation_query = annotation_query.filter(
@@ -717,7 +718,7 @@ def create_annotation_query(project_id, param_dict):
 
     # If parallel_annotations is given, only annotations are returned, that
     # are used alongside with these.
-    parallel_annotations = [v for k,v in param_dict.iteritems()
+    parallel_annotations = [v for k,v in six.iteritems(param_dict)
             if k.startswith('parallel_annotations[')]
     for p_annotation in parallel_annotations:
         annotation_query = annotation_query.filter(
@@ -752,7 +753,7 @@ def create_annotation_query(project_id, param_dict):
 
     # If annotations to ignore are passed in, they won't appear in the
     # result set.
-    ignored_annotations = [v for k,v in param_dict.iteritems()
+    ignored_annotations = [v for k,v in six.iteritems(param_dict)
             if k.startswith('ignored_annotations[')]
     if ignored_annotations:
         annotation_query = annotation_query.exclude(
@@ -984,7 +985,7 @@ def list_annotations(request, project_id=None):
         if uid is not None:
             ls.append({'id': uid, 'name': username})
     # Flatten dictionary to list
-    annotations = tuple({'name': ids[aid], 'id': aid, 'users': users} for aid, users in annotation_dict.iteritems())
+    annotations = tuple({'name': ids[aid], 'id': aid, 'users': users} for aid, users in six.iteritems(annotation_dict))
     return JsonResponse({'annotations': annotations})
 
 

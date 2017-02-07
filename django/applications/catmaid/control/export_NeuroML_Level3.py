@@ -10,6 +10,8 @@
 
 
 import time
+import six
+
 from collections import defaultdict
 
 def exportMutual(neuron_names, all_treenodes, connections, scale=0.001):
@@ -221,7 +223,7 @@ def make_connection_entries(pre_skID, post_skID, synapses, state):
 
 def make_connection(connection, state):
     pre_skID, m = connection
-    for post_skID, synapses in m.iteritems():
+    for post_skID, synapses in six.iteritems(m):
         for source in (('<projection name="NetworkConnection" source="sk_%s" target="sk_%s">\n' % (pre_skID, post_skID),
                         '<synapse_props synapse_type="DoubExpSynA" internal_delay="5" weight="1" threshold="-20"/>\n',
                         '<connections size="%s">\n' % len(synapses)),
@@ -232,7 +234,7 @@ def make_connection(connection, state):
 
 def make_connections(connections, state):
     """ Generate connections between neurons. """
-    for connection in connections.iteritems():
+    for connection in six.iteritems(connections):
         for line in make_connection(connection, state):
             yield line
 
@@ -283,7 +285,7 @@ def bodyMutual(neuron_names, all_treenodes, connections, scale):
 
 def make_inputs(cellIDs, neuron_names, inputs, state):
     cellID = cellIDs[0]
-    for inputSkeletonID, treenodeIDs in inputs.iteritems():
+    for inputSkeletonID, treenodeIDs in six.iteritems(inputs):
         for source in [('<input name="%s">\n' % inputSkeletonID,
                         '<random_stim frequency="20" synaptic_mechanism="DoubExpSynA"/>\n',
                         '<target population="%s">\n' % neuron_name(cellID, neuron_names),

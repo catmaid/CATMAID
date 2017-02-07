@@ -1,5 +1,6 @@
 import copy
 import json
+import six
 
 from itertools import imap
 from datetime import datetime, timedelta
@@ -284,7 +285,7 @@ def list_connector(request, project_id=None):
             tags[row[0]].append(row[1])
 
         # Sort labels by name
-        for connector_id, labels in tags.iteritems():
+        for connector_id, labels in six.iteritems(tags):
             labels.sort(key=lambda k: k.upper())
 
     return JsonResponse({
@@ -334,7 +335,7 @@ def _connector_skeletons(connector_ids, project_id):
 def connector_skeletons(request, project_id=None):
     """ See _connector_skeletons """
     connector_ids = get_request_list(request.POST, 'connector_ids', map_fn=int)
-    cs = tuple(_connector_skeletons(connector_ids, project_id).iteritems())
+    cs = tuple(six.iteritems(_connector_skeletons(connector_ids, project_id)))
     return HttpResponse(json.dumps(cs))
 
 

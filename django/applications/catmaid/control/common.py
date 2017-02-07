@@ -1,6 +1,7 @@
 import string
 import random
 import json
+import six
 
 from collections import defaultdict
 
@@ -83,7 +84,7 @@ def get_request_list(request_dict, name, default=None, map_fn=identity):
                 target[last_index] = map_fn(v)
         return flatten(d, max_index + 1)
 
-    items = add_items(request_dict.iteritems(), name)
+    items = add_items(six.iteritems(request_dict), name)
     if items:
         return items
 

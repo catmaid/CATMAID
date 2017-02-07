@@ -1,4 +1,5 @@
 import json
+import six
 
 from collections import defaultdict
 
@@ -174,7 +175,7 @@ def reviewer_whitelist(request, project_id=None):
                 project_id=project_id, user_id=request.user.id).delete()
         whitelist = [ReviewerWhitelist(
             project_id=project_id, user_id=request.user.id, reviewer_id=int(r),
-            accept_after=t) for r,t in request.POST.iteritems()]
+            accept_after=t) for r,t in six.iteritems(request.POST)]
         ReviewerWhitelist.objects.bulk_create(whitelist)
 
         return HttpResponse(

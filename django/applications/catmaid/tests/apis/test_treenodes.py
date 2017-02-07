@@ -1,4 +1,5 @@
 import json
+import six
 
 from django.shortcuts import get_object_or_404
 
@@ -856,15 +857,15 @@ class TreenodesApiTests(CatmaidApiTestCase):
 
         # The response has updated timetamps (since we updated nodes), we have
         # to compare fields manually to ignore them
-        for k,v in expected_response.iteritems():
+        for k,v in six.iteritems(expected_response):
             self.assertIn(k, parsed_response)
             if 'updated_nodes' == k:
                 continue
             self.assertEqual(v, parsed_response.get(k))
-        for k,v in expected_response['updated_nodes'].iteritems():
+        for k,v in six.iteritems(expected_response['updated_nodes']):
             self.assertIn(k, parsed_response['updated_nodes'])
             result_node = parsed_response['updated_nodes'][k]
-            for p,pv in v.iteritems():
+            for p,pv in six.iteritems(v):
                 self.assertIn(p, result_node)
                 result_value = result_node.get(p)
                 if 'edition_time' == p:

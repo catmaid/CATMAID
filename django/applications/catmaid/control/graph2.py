@@ -1,5 +1,7 @@
 import json
 import networkx as nx
+import six
+
 from networkx.algorithms import weakly_connected_component_subgraphs
 from collections import defaultdict
 from itertools import count
@@ -50,12 +52,12 @@ def basic_graph(project_id, skeleton_ids):
     for row in cursor.fetchall():
         edges[row[0]][row[1]][row[2] - 1] += 1
 
-    return {'edges': tuple((pre, post, count) for pre, edge in edges.iteritems() for post, count in edge.iteritems())}
+    return {'edges': tuple((pre, post, count) for pre, edge in six.iteritems(edges) for post, count in edge.iteritems())}
 
     '''
     return {'edges': [{'source': pre,
                        'target': post,
-                       'weight': count} for pre, edge in edges.iteritems() for post, count in edge.iteritems()]}
+                       'weight': count} for pre, edge in six.iteritems(edges) for post, count in edge.iteritems()]}
     '''
 
     """ Can't get the variable to be set with all the skeleton IDs
@@ -147,7 +149,7 @@ def confidence_split_graph(project_id, skeleton_ids, confidence_threshold):
                 edges[pre[0]][post[0]][min(pre[1], post[1]) - 1] += 1
 
     return {'nodes': nodeIDs,
-            'edges': [(pre, post, count) for pre, edge in edges.iteritems() for post, count in edge.iteritems()]}
+            'edges': [(pre, post, count) for pre, edge in six.iteritems(edges) for post, count in edge.iteritems()]}
 
 
 def dual_split_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, expand):
@@ -285,7 +287,7 @@ def dual_split_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, 
                 edges[pre[0]][post[0]][min(pre[1], post[1]) - 1] += 1
 
     return {'nodes': nodeIDs,
-            'edges': [(pre, post, count) for pre, edge in edges.iteritems() for post, count in edge.iteritems()],
+            'edges': [(pre, post, count) for pre, edge in six.iteritems(edges) for post, count in edge.iteritems()],
             'branch_nodes': branch_nodeIDs,
             'intraedges': intraedges}
 
@@ -354,7 +356,7 @@ def split_by_both(skeleton_id, digraph, locations, bandwidth, cs, connectors, in
 
         # Create edges between domains
         # Pick one treenode from each domain to act as anchor
-        anchors = {d.node_ids[0]: (i+k, d) for k, d in domains.iteritems()}
+        anchors = {d.node_ids[0]: (i+k, d) for k, d in six.iteritems(domains)}
 
         # Create new Graph where the edges are the edges among synapse domains
         mini = simplify(chunk, anchors.iterkeys())
@@ -505,12 +507,12 @@ def skeleton_graph(request, project_id=None):
         return slow_graph(request, project_id=project_id)
 
     project_id = int(project_id)
-    skeleton_ids = set(int(v) for k,v in request.POST.iteritems() if k.startswith('skeleton_ids['))
+    skeleton_ids = set(int(v) for k,v in six.iteritems(request.POST) if k.startswith('skeleton_ids['))
     confidence_threshold = min(int(request.POST.get('confidence_threshold', 0)), 5)
     bandwidth = float(request.POST.get('bandwidth', 0)) # in nanometers
     cable_spread = float(request.POST.get('cable_spread', 2500)) # in nanometers
     path_confluence = int(request.POST.get('path_confluence', 10)) # a count
-    expand = set(int(v) for k,v in request.POST.iteritems() if k.startswith('expand['))
+    expand = set(int(v) for k,v in six.iteritems(request.POST) if k.startswith('expand['))
 
     return HttpResponse(json.dumps(_skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, expand, compute_risk, cable_spread, path_confluence)))
 

@@ -49,7 +49,7 @@ def validate_project_setup(project_id, user_id, fix=False,
     rel_model = rel_model or Relation
     datastore_model = datastore_model or ClientDatastore
 
-    for nc, desc in needed_classes.iteritems():
+    for nc, desc in needed_classes.items():
         try:
             class_model.objects.get(project_id=project_id, class_name=nc)
         except class_model.DoesNotExist:
@@ -58,7 +58,7 @@ def validate_project_setup(project_id, user_id, fix=False,
                 class_model.objects.create(project_id=project_id,
                         class_name=nc, user_id=user_id)
 
-    for nr, desc in needed_relations.iteritems():
+    for nr, desc in needed_relations.items():
         try:
             rel_model.objects.get(project_id=project_id, relation_name=nr)
         except rel_model.DoesNotExist:
@@ -67,7 +67,7 @@ def validate_project_setup(project_id, user_id, fix=False,
                 rel_model.objects.get_or_create(project_id=project_id,
                         relation_name=nr, defaults={'user_id': user_id, 'description': desc})
 
-    for nd, desc in needed_datastores.iteritems():
+    for nd, desc in needed_datastores.items():
         exists = datastore_model.objects.filter(name=nd).exists()
         if not exists:
             missing_datastores.append(nd)

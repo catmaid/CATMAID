@@ -223,7 +223,7 @@ def projects(request):
             project_stack_groups[row[0]] = groups
         groups.append({
             'id': row[1],
-            'title': row[2],
+            'name': row[2],
             'comment': row[3],
         })
 
@@ -283,8 +283,8 @@ def export_projects(request):
             'title': row[2],
             'url': row[3],
             'fileextension': row[4],
-            'tile_height': row[5],
-            'tile_width': row[6],
+            'tile_width': row[5],
+            'tile_height': row[6],
             'tile_source_type': row[7],
             'position': row[8]
         })

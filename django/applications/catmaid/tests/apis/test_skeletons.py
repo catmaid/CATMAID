@@ -1,7 +1,6 @@
 import json
 import re
 import platform
-import StringIO
 
 from django.shortcuts import get_object_or_404
 
@@ -13,9 +12,12 @@ from .common import CatmaidApiTestCase
 
 from unittest import skipIf
 
+from six import StringIO
+
 # Some skeleton back-end functionality is not available if PyPy is used. This
 # variable is used to skip the respective tests (which otherwise would fail).
 run_with_pypy = platform.python_implementation() == 'PyPy'
+
 
 class SkeletonsApiTests(CatmaidApiTestCase):
     def compare_swc_data(self, s1, s2):
@@ -58,7 +60,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         self.assertEqual(response.status_code, 200)
         orig_swc_string = response.content
 
-        swc_file = StringIO.StringIO(orig_swc_string)
+        swc_file = StringIO(orig_swc_string)
         response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
                                     {'file.swc': swc_file})
         self.assertEqual(response.status_code, 200)

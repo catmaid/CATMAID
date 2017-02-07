@@ -834,7 +834,7 @@ class StackGroup(models.Model):
         db_table = 'stack_group'
 
     def __unicode__(self):
-        return self.name
+        return self.title
 
 
 class StackStackGroup(models.Model):

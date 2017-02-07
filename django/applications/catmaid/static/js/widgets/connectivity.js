@@ -1654,10 +1654,12 @@
     var text = header.join('\n');
 
     // Export table body
-    var greaterThanOne = function(c, i) { return i > 0; };
+    var notFirstColumn = function(c, i) { return i > 0; };
     var data = table.DataTable().rows({order: 'current'}).data();
     text += '\n' + data.map(function (r) {
-      return r.map(cellToText).filter(greaterThanOne).join(',');
+      // Add neuron name, which isn't stored as part of the model
+      r[1] = CATMAID.NeuronNameService.getInstance().getName(r[0]);
+      return r.map(cellToText).filter(notFirstColumn).join(',');
     }).join('\n');
     saveAs(new Blob([text], {type: 'text/plain'}), 'connectivity.csv');
   };

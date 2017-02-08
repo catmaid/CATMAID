@@ -20,8 +20,6 @@ class StateCheckingTest(CatmaidTestCase):
         cursor = connection.cursor()
 
         cursor.execute("SELECT txid_current()")
-        print "Transaction", cursor.fetchone()
-
         cursor.execute("BEGIN")
 
         lock_query = """
@@ -32,20 +30,16 @@ class StateCheckingTest(CatmaidTestCase):
         """
         cursor.execute(lock_query)
         locks1 = cursor.fetchall()
-        print locks1
 
         node_id = 285
         state.lock_node(node_id, cursor)
 
         cursor.execute(lock_query)
         locks2 = cursor.fetchall()
-        print locks2
 
         intersection = set(locks1) & set(locks2)
         only_before = set(locks1) - intersection
-        print "only in before", only_before
         only_after = set(locks2) - intersection
-        print "Only in after", only_after
         # Assert only after has the lock is only after the lock call there
         # TODO: Does it actually work !?!?!
 

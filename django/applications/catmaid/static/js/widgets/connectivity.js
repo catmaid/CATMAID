@@ -948,12 +948,10 @@
         // If the checkbox was checked, check all *visible* skeletons in this table.
         var table = $("#" + partnerSet.id + '_connectivity_table' + widget.widgetID);
         var datatable = table.DataTable();
-        if (selfChecked) {
-          datatable.rows({search: 'applied'}).data().each(function(row) {
-            var skeletonId = row[0];
-            widget.skeletonSelection[skeletonId] = selfChecked;
-          });
-        }
+        datatable.rows({search: 'applied'}).data().each(function(row) {
+          var skeletonId = row[0];
+          widget.skeletonSelection[skeletonId] = selfChecked;
+        });
 
         widget.redrawSelectionState();
         widget.triggerChange(widget.getSkeletonModels());

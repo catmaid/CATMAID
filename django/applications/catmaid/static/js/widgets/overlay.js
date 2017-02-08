@@ -1920,10 +1920,10 @@ SkeletonAnnotations.TracingOverlay.prototype.createSingleConnector = function (
       new CATMAID.CreateConnectorCommand(project.id,
         phys_x, phys_y, phys_z, confval));
   return createConnector.then(function(result) {
-    var editTime = result.newConnectorEditTime;
     // add treenode to the display and update it
     var nn = self.graphics.newConnectorNode(result.newConnectorId, pos_x, pos_y,
-        pos_z, 0, 5 /* confidence */, subtype, editTime, true);
+        pos_z, 0, 5 /* confidence */, subtype, 0, true);
+    nn.edition_time_iso_str = result.newConnectorEditTime;
     self.nodes[result.newConnectorId] = nn;
     nn.createGraphics();
     // Activate layer and emit new node event after we added to our local node

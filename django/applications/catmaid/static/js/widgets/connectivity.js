@@ -1488,6 +1488,8 @@
       .append(tableContainers);
     content.append(tables);
 
+    layoutTables(tableContainers, widget.tablesSideBySide);
+
     // Add handler to layout toggle
     $('#connectivity-layout-toggle-' + widgetID).off('change')
         .change((function(widget) {

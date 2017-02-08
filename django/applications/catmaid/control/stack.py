@@ -2,7 +2,6 @@ from __future__ import absolute_import
 
 import os.path
 import json
-import httplib
 import logging
 
 from django.conf import settings

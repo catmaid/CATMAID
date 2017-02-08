@@ -2685,19 +2685,41 @@
     this.controls = this.createControls();
   };
 
+  var renderContextLost = function(e) {
+    e.preventDefault();
+    // Notify user about reload
+    CATMAID.error("Due to limited system resources the 3D display can't be " +
+          "shown right now. Please try and restart the widget containing the " +
+          "3D viewer.");
+  };
+
   /**
    * Create a new renderer and add its DOM element to the 3D viewer's container
    * element. If there is already a renderer, remove its DOM element and
    * handlers on it.
+   *
+   * @params {Boolean} destroyOld If true, an existing renderer will be
+   *                              explicitly destroyed.
    */
-  WebGLApplication.prototype.Space.prototype.View.prototype.initRenderer = function() {
+  WebGLApplication.prototype.Space.prototype.View.prototype.initRenderer = function(destroyOld) {
     var clearColor = null;
     // Remove existing elements if there is a current renderer
     if (this.renderer) {
-      this.space.container.removeChild(this.renderer.domElement);
       this.mouseControls.detach(this.renderer.domElement);
+      this.space.container.removeChild(this.renderer.domElement);
       // Save clear color
       clearColor = this.renderer.getClearColor();
+
+      // Destroy renderer, if wanted
+      if (destroyOld) {
+        this.renderer.forceContextLoss();
+        this.renderer.context.canvas.removeEventListener('webglcontextlost',
+            renderContextLost);
+        this.renderer.context = null;
+        this.renderer.domElement = null;
+        this.renderer.dispose();
+        this.renderer = null;
+      }
     }
 
     this.renderer = this.createRenderer('webgl');
@@ -2710,13 +2732,7 @@
     this.mouseControls.attach(this, this.renderer.domElement);
 
     // Add handlers for WebGL context lost and restore events
-    this.renderer.context.canvas.addEventListener('webglcontextlost', function(e) {
-      e.preventDefault();
-      // Notify user about reload
-      CATMAID.error("Due to limited system resources the 3D display can't be " +
-            "shown right now. Please try and restart the widget containing the " +
-            "3D viewer.");
-    }, false);
+    this.renderer.context.canvas.addEventListener('webglcontextlost', renderContextLost, false);
     this.renderer.context.canvas.addEventListener('webglcontextrestored', (function(e) {
       this.initRenderer();
     }).bind(this), false);
@@ -3296,7 +3312,7 @@
       }
       // Since we use different depth buffer types for perspective and
       // orthographic mode, the rendeer has to be re-initialized.
-      this.initRenderer();
+      this.initRenderer(true);
     };
   })();
 

@@ -76,6 +76,18 @@
     this.allSelected = false;
   };
 
+  PartnerSet.prototype.getSynCountSortedPartners = function() {
+    return to_sorted_array(this.partners, this.thresholds.confidence);
+  };
+
+  PartnerSet.prototype.getLinkCount = function(skid, partners) {
+    partners = partners || this.getSynCountSortedPartners();
+    var thresholds = this.thresholds;
+    return partners.reduce(function(sum, partner) {
+      return sum + filter_synapses(partner.skids[skid], thresholds.confidence[skid]);
+    }, 0);
+  };
+
   /**
    * Initializes the connectivity widget by setting all fields to their default
    * value.
@@ -697,48 +709,13 @@
     };
 
     /**
-     * Helper to get the number of synapses with confidence greater than or
-     * equal to a threshold.
-     */
-    var filter_synapses = function (synapses, threshold) {
-      if (!synapses) return 0;
-      return synapses
-              .slice(threshold - 1)
-              .reduce(function (skidSum, c) {return skidSum + c;}, 0);
-    };
-
-    /**
-     * Helper to get the confidence-filtered synpatic count of a skeleton ID dictionary.
-     */
-    var synaptic_count = function(skids_dict, confidence) {
-      return Object.keys(skids_dict).reduce(function(sum, skid) {
-        return sum + filter_synapses(skids_dict[skid], confidence[skid]);
-      }, 0);
-    };
-
-    /**
-     * Helper to sort an array.
-     */
-    var to_sorted_array = function(partners, confidence) {
-      return Object.keys(partners).reduce(function(list, skid) {
-        var partner = partners[skid];
-        partner['id'] = parseInt(skid);
-        partner['synaptic_count'] = synaptic_count(partner.skids, confidence);
-        list.push(partner);
-        return list;
-      }, []).sort(function(a, b) {
-        return b.synaptic_count - a.synaptic_count;
-      });
-    };
-
-    /**
      * Support function for creating a partner table.
      */
     var create_table = function(skids, skeletons, partnerSet,
         hidePartnerThreshold, reviewFilter) {
 
       var thresholds = partnerSet.thresholds;
-      var partners = to_sorted_array(partnerSet.partners, partnerSet.thresholds.confidence);
+      var partners = partnerSet.getSynCountSortedPartners();
       var title = partnerSet.partnerTitle;
       var relation = partnerSet.relation;
       var collapsed = partnerSet.collapsed;
@@ -755,15 +732,6 @@
        * have sub columns for the sum and the respective individual columns. */
       var extraCols = skids.length > 1;
       var headerRows = extraCols ? 2 : 1;
-
-      /**
-       * Support function to sum up fields of elements of an array.
-       */
-      var getSum = function(elements, field) {
-        return elements.reduce(function(sum, e) {
-          return sum + e[field];
-        }, 0);
-      };
 
       // The total synapse count
       var total_synaptic_count = getSum(partners, 'synaptic_count');
@@ -802,9 +770,7 @@
       row.append($('<td />').addClass('syncount').text(total_synaptic_count));
       if (extraCols) {
         skids.forEach(function(skid) {
-          var count = partners.reduce(function(sum, partner) {
-            return sum + filter_synapses(partner.skids[skid], thresholds.confidence[skid]);
-          }, 0);
+          var count = partnerSet.getLinkCount(skid, partners);
           this.append($('<td />').addClass('syncount').text(count));
         }, row);
       }
@@ -1586,14 +1552,18 @@
     }
   };
 
+  function quote(text) {
+    return '"' + text + '"';
+  }
+
   /**
    * Return a quoted string representation of table cell content.
    */
-  function cellToText(c) {
+  function cellToText(c, i ) {
     try {
-      return '"' + ($(c).text() || c) + '"';
+      return quote($(c).text() || c);
     } catch (e) {
-      return '"' + c + '"';
+      return quote(c);
     }
   }
 
@@ -1609,53 +1579,45 @@
 
     var self = this;
 
-    // Add neuron names to synapse count cells. The header is different
-    // if multiple neurons have been added to this widget.
-    var addNames = (1 === this.ordered_skeleton_ids.length) ?
-        function(rowIndex, i, c) {
-          // Include neuron name in "syn count" field of first header row.
-          if (0 === rowIndex && 2 === i) {
-            var sk = self.ordered_skeleton_ids[0];
-            return '"#Synapses with ' + CATMAID.NeuronNameService.getInstance().getName(sk) + '"';
-          }
-          return c;
-        } :
-        function(rowIndex, i, c) {
-          // Include neuron name in "syn count" field of first header row.
-          var nSkeletons = self.ordered_skeleton_ids.length;
-          if (0 === rowIndex && -1 === c.indexOf("Sum") &&
-              1 < i && (3 + nSkeletons) > i) {
-            var index = parseInt(c.replace(/\"/g, ''), 10);
-            var sk = self.ordered_skeleton_ids[index - 1];
-            return '"#Synapses with ' + CATMAID.NeuronNameService.getInstance().getName(sk) + '"';
-          }
-          return c;
-        };
-
-    // Export CSV based on the HTML table content. To do this, first
-    // parse header and remove selection column as well duplicate
-    // content.
     var table = $('#' + partnerSet.id + '_connectivity_table' + this.widgetID);
-    var header = [];
-    table.DataTable().table().header().childNodes.forEach(function(tr, i) {
-      // If there is more than one top-list skeleton, skip second row of
-      // complex header, because it only
-      if (this.ordered_skeleton_ids.length === 1 || i !== 1) {
-        var headerCells = [];
-        // Skip first column ("selected")
-        for (var j=1; j<tr.childNodes.length; ++j) {
-          headerCells.push(addNames(i, j, cellToText(tr.childNodes[j])));
-        }
-        header.push(headerCells.join(','));
-      }
-    }, this);
+    var data = table.DataTable().rows({order: 'current'}).data();
+
+    // Create table header manually
+    var nns = CATMAID.NeuronNameService.getInstance();
+    var partners = partnerSet.getSynCountSortedPartners();
+    var totalSynapseCount = getSum(partners, 'synaptic_count');
+    var headerLines = [
+      [
+        quote(partnerSet.partnerTitle),
+        this.ordered_skeleton_ids.map(function(skid, i, orderedSkids) {
+          var synCountHeader = quote("#Synapses with " + nns.getName(skid));
+          if (0 === i && orderedSkids.length > 1) {
+            synCountHeader = quote("Sum") + "," + synCountHeader;
+          }
+          return synCountHeader;
+        }).join(','),
+        quote("reviewed"),
+        quote("node count")
+      ].join(','),
+      [
+        quote("ALL (" + data.length + " neurons)"),
+        this.ordered_skeleton_ids.map(function(skid, i, orderedSkids) {
+          var synCount = partnerSet.getLinkCount(skid, partners);
+          if (0 === i && orderedSkids.length > 1) {
+            synCount = totalSynapseCount + "," + synCount;
+          }
+          return synCount;
+        }).join(','),
+        quote(""),
+        quote("")
+      ].join(',')
+    ];
 
     // Start building the CVS file
-    var text = header.join('\n');
+    var text = headerLines.join('\n');
 
     // Export table body
     var notFirstColumn = function(c, i) { return i > 0; };
-    var data = table.DataTable().rows({order: 'current'}).data();
     text += '\n' + data.map(function (r) {
       // Add neuron name, which isn't stored as part of the model
       r[1] = CATMAID.NeuronNameService.getInstance().getName(r[0]);
@@ -1887,5 +1849,50 @@
     key: "connectivity-widget",
     creator: SkeletonConnectivity
   });
+
+
+  /**
+   * Helper to get the number of synapses with confidence greater than or
+   * equal to a threshold.
+   */
+  var filter_synapses = function (synapses, threshold) {
+    if (!synapses) return 0;
+    return synapses
+            .slice(threshold - 1)
+            .reduce(function (skidSum, c) {return skidSum + c;}, 0);
+  };
+
+  /**
+   * Helper to get the confidence-filtered synpatic count of a skeleton ID dictionary.
+   */
+  var synaptic_count = function(skids_dict, confidence) {
+    return Object.keys(skids_dict).reduce(function(sum, skid) {
+      return sum + filter_synapses(skids_dict[skid], confidence[skid]);
+    }, 0);
+  };
+
+  /**
+   * Helper to sort an array.
+   */
+  var to_sorted_array = function(partners, confidence) {
+    return Object.keys(partners).reduce(function(list, skid) {
+      var partner = partners[skid];
+      partner['id'] = parseInt(skid);
+      partner['synaptic_count'] = synaptic_count(partner.skids, confidence);
+      list.push(partner);
+      return list;
+    }, []).sort(function(a, b) {
+      return b.synaptic_count - a.synaptic_count;
+    });
+  };
+
+  /**
+   * Support function to sum up fields of elements of an array.
+   */
+  var getSum = function(elements, field) {
+    return elements.reduce(function(sum, e) {
+      return sum + e[field];
+    }, 0);
+  };
 
 })(CATMAID);

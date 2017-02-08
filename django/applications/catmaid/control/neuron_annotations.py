@@ -1,5 +1,4 @@
 import re
-from itertools import izip
 
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
@@ -1014,7 +1013,7 @@ def _fast_co_annotations(request, project_id, display_start, display_length):
         sorting_index = (int(request.POST.get('iSortCol_%d' % d)) for d in xrange(column_count))
         sorting_cols = (fields[i] for i in sorting_index)
 
-        sorter = '\nORDER BY ' + ','.join('%s %s' % u for u in izip(sorting_cols, sorting_directions))
+        sorter = '\nORDER BY ' + ','.join('%s %s' % u for u in zip(sorting_cols, sorting_directions))
 
 
     cursor = connection.cursor()

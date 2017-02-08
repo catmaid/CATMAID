@@ -2,7 +2,7 @@ import json
 import networkx as nx
 from networkx.algorithms import weakly_connected_component_subgraphs
 from collections import defaultdict
-from itertools import izip, count
+from itertools import count
 from functools import partial
 from synapseclustering import tree_max_density
 from numpy import subtract
@@ -17,6 +17,9 @@ from catmaid.models import UserRole
 from catmaid.control.authentication import requires_user_role
 from catmaid.control.common import get_relation_to_id_map
 from catmaid.control.tree_util import simplify
+
+from six.moves import zip as izip
+
 
 def basic_graph(project_id, skeleton_ids):
     def newSynapseCounts():

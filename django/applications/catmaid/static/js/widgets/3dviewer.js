@@ -1260,9 +1260,10 @@
       }, {});
 
       // Remember current set of filtered connectors
+      var filteredConnectorIds = Object.keys(common);
       this.filteredConnectors = {
-        'connectorIds': Object.keys(common),
-        'skeletonIds': visible_skeletons
+        'connectorIds': filteredConnectorIds,
+        'skeletonIds': filteredConnectorIds.length ? visible_skeletons : []
       };
 
       for (var skeleton_id in skeletons) {

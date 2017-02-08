@@ -245,8 +245,6 @@ var WindowMaker = new function()
           [document.createTextNode(' - ')],
           ['Spatial select', WA.spatialSelect.bind(WA)],
           [document.createTextNode(' - ')],
-          ['Count', WA.countObjects.bind(WA)],
-          [document.createTextNode(' - ')],
           ['List connectors', WA.listConnectors.bind(WA)],
         ]);
 
@@ -855,6 +853,7 @@ var WindowMaker = new function()
           ['Export skeletons as CSV', WA.exportSkeletonsAsCSV.bind(WA)],
           ['Export connectors as CSV', WA.exportConnectorsAsCSV.bind(WA)],
           ['Export synapses as CSV', WA.exportSynapsesAsCSV.bind(WA)],
+          ['Synapse count CSV', WA.countObjects.bind(WA)],
           ['Export animation', WA.exportAnimation.bind(WA)],
         ]);
 

@@ -82,3 +82,13 @@ Then run::
 
 ... to generate HTML output in ``htmlcov/index.html``.
 
+GUI tests
+---------
+
+To make sure some typical workflows work with development and release versions,
+we maintain a small set of Selenium GUI tests. Those are defined as Django unit
+tests and live under ``django/applications/catmaid/tests/gui/``. To run these
+tests locally the ``GUI_TESTS_ENABLED`` setting has to be set to True or
+otherwise all GUI tests are ignored. Our CI test setup activates GUI tests
+automatically and also sets ``GUI_TESTS_REMOTE`` to True, which allows it to run
+Selenium tests on the virtual machines of saucelabs.com automatically.

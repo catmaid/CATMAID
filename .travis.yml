@@ -16,6 +16,10 @@ addons:
     - postgresql-9.5
     - postgresql-contrib-9.5
   postgresql: 9.5
+  sauce_connect:
+    username: catmaid
+  jwt:
+    secure: "hj6rvwzab8ptfMKvRyqCZnWqun2uEv69nLCGxLXiDk9QZOUv/UG8PU060m6DTHtYE8iJw5E6qhTIhLKlpPadYptkxmiOXVGKlU6jam8SLKsSbHbdFsoziIPnU4mpqNgjvZ7Xb7xoTmYcd15G7Du3qgTHc28TeT5F9XnyfyDCH7M="
 before_install:
   - mkdir tmp
   - travis_retry sudo apt-get update -y -qq

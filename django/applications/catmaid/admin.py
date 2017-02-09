@@ -116,11 +116,19 @@ class ProjectStackInline(admin.TabularInline):
 
 class StackStackGroupInline(admin.TabularInline):
     model = StackStackGroup
-    extar = 1
+    extra = 1
     max_num = 10
     raw_id_fields = ('stack_group',)
     verbose_name = 'Stack group member'
     verbose_name_plural = 'Stack group members'
+
+
+class StackMirrorInline(admin.TabularInline):
+    model = StackMirror
+    extra = 1
+    max_num = 10
+    verbose_name = 'Stack mirror'
+    verbose_name_plural = 'Stack mirrors'
 
 
 class ProjectAdmin(GuardedModelAdmin):
@@ -134,7 +142,7 @@ class ProjectAdmin(GuardedModelAdmin):
 class StackAdmin(GuardedModelAdmin):
     list_display = ('title', 'dimension', 'resolution', 'num_zoom_levels')
     search_fields = ['title', 'comment']
-    inlines = [ProjectStackInline, StackStackGroupInline]
+    inlines = [ProjectStackInline, StackStackGroupInline, StackMirrorInline]
     save_as = True
     actions = (duplicate_action,)
 

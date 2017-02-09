@@ -53,11 +53,18 @@
             {% endif %}
             {% if show_stacks and stacks_of|get:p.id %}
                 {% for s in stacks_of|get:p.id|dictsort:"id" %}
-                    <dd><a href="?pid={{ p.id }}&tool=navigator&sid0={{ s.id }}&s0=1"
-                        onclick="CATMAID.openProjectStack({{p.id}}, {{s.id}});return false">{{ s.title }}</a></dd>
+                    <dd><dl><dt>{{ s.title }}</dt>
                     {% if s.comment %}
-                        <dd>{{ s.comment|safe }}</dd>
+                        <dd><em>{{ s.comment|safe }}</em></dd>
                     {% endif %}
+                    {% for m in s.stackmirror_set.all %}
+                      <dd>
+                        <a href="?pid={{ p.id }}&tool=navigator&sid0={{ s.id }}&s0=1"
+                            onclick="CATMAID.openProjectStack({{p.id}}, {{s.id}}, {{m.position}});return false">{{ m.title }}</a>
+                      </dd>
+                    {% endfor %}
+
+                    </dl></dd>
                 {% endfor %}
             {% endif %}
             {# Optionally, add the the neuron catalogue link #}

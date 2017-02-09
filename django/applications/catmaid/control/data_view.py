@@ -156,7 +156,7 @@ def get_data_view( request, data_view_id ):
 
     if show_stacks:
         for p in projects:
-            for s in p.stacks.all():
+            for s in p.stacks.all().prefetch_related('stackmirror_set'):
                 stack_index[s.id] = s
                 stacks_of[p.id].append(s)
 

@@ -1119,9 +1119,10 @@ var project;
    * @param  {number} stackID            ID of the stack to open.
    * @param  {boolean} useExistingViewer True to add the stack to the existing,
    *                                     focused stack viewer.
+   * @param  {number} mirrorIndex        An optional mirror index, defaults to 0
    * @return {Promise}                   A promise yielding the stack viewer.
    */
-  CATMAID.openProjectStack = function(projectID, stackID, useExistingViewer) {
+  CATMAID.openProjectStack = function(projectID, stackID, useExistingViewer, mirrorIndex) {
     if (project && project.id != projectID) {
       project.destroy();
     }
@@ -1130,7 +1131,8 @@ var project;
     var open = CATMAID.fetch(projectID + '/stack/' + stackID + '/info')
       .then(function(json) {
         return handle_openProjectStack(json,
-            useExistingViewer ? project.focusedStackViewer : undefined);
+            useExistingViewer ? project.focusedStackViewer : undefined,
+            mirrorIndex);
       });
 
     // Catch any error, but return original rejected promise
@@ -1157,11 +1159,15 @@ var project;
    *
    * @param  {Object} e                JSON response from the stack info API.
    * @param  {StackViewer} stackViewer Viewer to which to add the stack.
+   * @param  {number}      mirrorIndex Optional mirror index, defaults to 0.
    * @return {Promise}                 A promise yielding the stack viewer
    *                                   containing the new stack.
    */
-  function handle_openProjectStack( e, stackViewer )
+  function handle_openProjectStack( e, stackViewer, mirrorIndex )
   {
+    // By default, use first stack mirror.
+    mirrorIndex = mirrorIndex === undefined ? 0 : mirrorIndex;
+
     if (!stackViewer) {
       CATMAID.throwOnInsufficientWebGlContexts(1);
     }
@@ -1212,7 +1218,7 @@ var project;
           stackViewer,
           "Image data (" + stack.title + ")",
           stack,
-          0, // By default, use first stack mirror.
+          mirrorIndex,
           true,
           1,
           !useExistingViewer,

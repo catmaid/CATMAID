@@ -156,8 +156,9 @@ class StackGroupAdmin(GuardedModelAdmin):
 
 
 class StackMirrorAdmin(GuardedModelAdmin):
-    list_display = ('title', 'stack', 'image_base')
-    search_fields = ['title','image_base']
+    list_display = ('title', 'stack', 'position', 'image_base')
+    search_fields = ['title', 'image_base']
+    list_editable = ('position',)
     save_as = True
     actions = (duplicate_action,)
 

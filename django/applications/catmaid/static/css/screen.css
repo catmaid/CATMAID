@@ -280,6 +280,18 @@ div#data_view .comment {
 	font-style: italic;
 }
 
+div#data_view dl {
+	margin: 1.0em 16px 0.5em 20px;
+}
+
+div#data_view dl a {
+  font-weight: normal;
+}
+
+div#data_view dl  {
+  font-weight: normal;
+}
+
 div#ontology_editor_widget div#ontology_known_roots {
 	margin-top: 10px;
 }

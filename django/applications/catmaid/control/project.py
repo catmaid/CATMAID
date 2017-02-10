@@ -223,7 +223,7 @@ def projects(request):
             project_stack_groups[row[0]] = groups
         groups.append({
             'id': row[1],
-            'name': row[2],
+            'title': row[2],
             'comment': row[3],
         })
 

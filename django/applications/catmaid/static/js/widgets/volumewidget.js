@@ -396,6 +396,28 @@
             function(e) { volume.set("preview", this.checked); });
         $content.append(preview);
 
+        // Inject color picker into preview checkbox label
+        var $previewColor = CATMAID.DOM.createInputSetting(
+            "Preview color", volume.previewColor,
+            "Set the color of the volume 3D preview.");
+        $content.append($previewColor);
+        CATMAID.ColorPicker.enable($('input', $previewColor), {
+          initialColor: volume.previewColor,
+          initialAlpha: volume.previewOpacity,
+          onColorChange: function(color, alpha, colorChanged, alphaChanged) {
+            if (colorChanged) {
+              var hexColor = CATMAID.tools.rgbToHex(
+                Math.round(255 * color.r),
+                Math.round(255 * color.g),
+                Math.round(255 * color.b));
+              volume.set('previewColor', hexColor);
+            }
+            if (alphaChanged) {
+              volume.set('previewOpacity', alpha);
+            }
+          }
+        });
+
         // The skeleton source
         var availableSources = CATMAID.skeletonListSources.getSourceNames();
         var sourceOptions = availableSources.reduce(function(o, name) {

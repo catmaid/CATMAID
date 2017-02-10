@@ -321,7 +321,7 @@ var project;
     document.getElementById( "user_menu" ).appendChild( user_menu.getView() );
 
     // login and thereafter load stacks if requested
-    this.login(undefined, undefined, function() {
+    this.login().then(function() {
       var tools = {
         navigator: CATMAID.Navigator,
         tracingtool: CATMAID.TracingTool,
@@ -381,7 +381,7 @@ var project;
         }
         return Promise.resolve();
       }
-    });
+    }).catch(CATMAID.handleError);
 
     // the text-label toolbar
 
@@ -475,7 +475,6 @@ var project;
         });
 
         project_menu.update(projects);
-        CATMAID.ui.releaseEvents();
 
         return self.projects;
       })
@@ -555,31 +554,36 @@ var project;
    *
    * @param  {string}   account
    * @param  {string}   password
-   * @param  {function} completionCallback
+   * @returns {Promise}
    */
-  Client.prototype.login = function(account, password, completionCallback) {
-    var loginCompletion = function ( status, text, xml ) {
-      handle_login( status, text, xml, completionCallback );
-    };
+  Client.prototype.login = function(account, password) {
     if ( msg_timeout ) window.clearTimeout( msg_timeout );
 
     CATMAID.ui.catchEvents( "wait" );
+    var login;
     if ( account || password ) {
       // Attempt to login.
-      requestQueue.register(
-        django_url + 'accounts/login',
-        'POST',
-        { name : account, pwd : password },
-        loginCompletion );
+      login = CATMAID.fetch('accounts/login', 'POST', {
+          name: account,
+          pwd : password
+        });
     }
     else {
       // Check if the user is logged in.
-      requestQueue.register(
-        django_url + 'accounts/login',
-        'GET',
-        undefined,
-        loginCompletion );
+      login = CATMAID.fetch('accounts/login', 'GET');
     }
+
+    // Queue actual login handler
+    login = login.then(handleSessionChange);
+
+    // Handle error to reset cursor, but also return it to communicate it to
+    // caller.
+    login.catch(CATMAID.handleError)
+      .then(function() {
+        CATMAID.ui.releaseEvents();
+      });
+
+    return login;
   };
 
   /**
@@ -610,130 +614,111 @@ var project;
   CATMAID.session = null;
 
   /**
-   * Handle a login request answer.
-   * If the answer was session data, establish a session, update the projects menu.
-   * If the answer was an error, display an error alert.
-   * If the answer was a notice, do nothing.
+   * Handle an updated session, typically as a reaction to a login or logout
+   * action.
    *
-   * @param  {number}    status             XHR response status.
-   * @param  {string}    text               XHR response content.
-   * @param  {Object}    xml                XHR response XML (unused).
-   * @param  {function=} completionCallback Completion callback (no arguments).
+   * @param   {Object}  session The session object returned by the back-end.
+   * @returns {Promise} A promise resolving once all required updates for the
+   *                    new session have been performed.
    */
-  function handle_login(status, text, xml, completionCallback) {
-    if (status == 200 && text) {
-      var e = JSON.parse(text);
+  function handleSessionChange(e) {
+    CATMAID.session = e;
+    CATMAID.session.domain = new Set(e.domain);
 
-      if (e.error) {
-        alert(e.error);
-        return;
-      } else {
-        CATMAID.session = e;
-        CATMAID.session.domain = new Set(e.domain);
-      }
-
-      if (edit_domain_timeout) {
-        window.clearTimeout(edit_domain_timeout);
-      }
-
-      if (e.id) { // Logged in as a non-anonymous user.
-        document.getElementById("account").value = "";
-        document.getElementById("password").value = "";
-        document.getElementById("session_longname").replaceChild(
-        document.createTextNode(e.longname), document.getElementById("session_longname").firstChild);
-        document.getElementById("login_box").style.display = "none";
-        document.getElementById("logout_box").style.display = "block";
-        document.getElementById("session_box").style.display = "block";
-
-        document.getElementById("message_box").style.display = "block";
-
-        // Check for unread messages
-        CATMAID.client.check_messages();
-
-        // Update user menu
-        user_menu.update({
-          "user_menu_entry_1": {
-            action: django_url + "user/password_change/",
-            title: "Change password",
-            note: "",
-          },
-          "user_menu_entry_2": {
-            action: CATMAID.getAuthenticationToken,
-            title: "Get API token",
-            note: ""
-          }
-        });
-
-        edit_domain_timeout = window.setTimeout(CATMAID.client.refreshEditDomain,
-                                                EDIT_DOMAIN_TIMEOUT_INTERVAL);
-      } else {
-        document.getElementById( "login_box" ).style.display = "block";
-        document.getElementById( "logout_box" ).style.display = "none";
-        document.getElementById( "session_box" ).style.display = "none";
-
-        document.getElementById( "message_box" ).style.display = "none";
-      }
-
-      // Continuation for user list retrieval
-      var done = function () {
-        // Try to update user profile
-        try {
-          if (e.userprofile) {
-            CATMAID.userprofile = new CATMAID.Userprofile(e.userprofile);
-          } else {
-            throw "The server returned no valid user profile.";
-          }
-        } catch (error) {
-          /* A valid user profile is needed to start CATMAID. This is a severe error
-          * and a message box will tell the user to report this problem.
-          */
-          new CATMAID.ErrorDialog("The user profile couldn't be loaded. This " +
-              "however, is required to start CATMAID. Please report this problem " +
-              "to your administrator and try again later.", error).show();
-          return;
-        }
-
-        // Show loading data view
-        CATMAID.client.switch_dataview(new CATMAID.DataView({
-           id: null,
-           type: 'empty',
-           message: 'Loading list of available projects...'
-        }));
-
-        CATMAID.client.updateProjects()
-          .then(function() {
-            CATMAID.client.refresh();
-          })
-          .then(completionCallback)
-          .catch(CATMAID.handleError);
-
-        // Update all datastores to reflect the current user before triggering
-        // any events. This is necessary so that settings are correct when
-        // updating for user change.
-        CATMAID.DataStoreManager.reloadAll().then(function () {
-          CATMAID.Init.trigger(CATMAID.Init.EVENT_USER_CHANGED);
-        });
-      };
-
-      // Re-configure CSRF protection to update the CSRF cookie.
-      CATMAID.setupCsrfProtection();
-
-      var load = CATMAID.updatePermissions();
-      if (e.id || (e.permissions && -1 !== e.permissions.indexOf('catmaid.can_browse'))) {
-        // Asynchronously, try to get a full list of users if a user is logged in
-        // or the anonymous user has can_browse permissions.
-        load = load.then(CATMAID.User.getUsers.bind(CATMAID.User));
-      }
-
-      load.then(done);
-    } else if (status != 200) {
-      // Of course, lots of non-200 errors are fine - just report
-      // all for the moment, however:
-      alert("The server returned an unexpected status (" + status + ") " + "with error message:\n" + text);
-      if ( typeof completionCallback !== "undefined" ) {
-        completionCallback();
-      }
+    if (edit_domain_timeout) {
+      window.clearTimeout(edit_domain_timeout);
     }
+
+    if (e.id) { // Logged in as a non-anonymous user.
+      document.getElementById("account").value = "";
+      document.getElementById("password").value = "";
+      document.getElementById("session_longname").replaceChild(
+      document.createTextNode(e.longname), document.getElementById("session_longname").firstChild);
+      document.getElementById("login_box").style.display = "none";
+      document.getElementById("logout_box").style.display = "block";
+      document.getElementById("session_box").style.display = "block";
+
+      document.getElementById("message_box").style.display = "block";
+
+      // Check for unread messages
+      CATMAID.client.check_messages();
+
+      // Update user menu
+      user_menu.update({
+        "user_menu_entry_1": {
+          action: django_url + "user/password_change/",
+          title: "Change password",
+          note: "",
+        },
+        "user_menu_entry_2": {
+          action: CATMAID.getAuthenticationToken,
+          title: "Get API token",
+          note: ""
+        }
+      });
+
+      edit_domain_timeout = window.setTimeout(CATMAID.client.refreshEditDomain,
+                                              EDIT_DOMAIN_TIMEOUT_INTERVAL);
+    } else {
+      document.getElementById( "login_box" ).style.display = "block";
+      document.getElementById( "logout_box" ).style.display = "none";
+      document.getElementById( "session_box" ).style.display = "none";
+
+      document.getElementById( "message_box" ).style.display = "none";
+    }
+
+    // Continuation for user list retrieval
+    var done = function () {
+      // Try to update user profile
+      try {
+        if (e.userprofile) {
+          CATMAID.userprofile = new CATMAID.Userprofile(e.userprofile);
+        } else {
+          throw new CATMAID.Error("The server returned no valid user profile.");
+        }
+      } catch (error) {
+        /* A valid user profile is needed to start CATMAID. This is a severe error
+        * and a message box will tell the user to report this problem.
+        */
+        throw new CATMAID.Error("The user profile couldn't be loaded. This " +
+            "however, is required to start CATMAID. Please report this problem " +
+            "to your administrator and try again later.", error);
+      }
+
+      // Show loading data view
+      CATMAID.client.switch_dataview(new CATMAID.DataView({
+         id: null,
+         type: 'empty',
+         message: 'Loading list of available projects...'
+      }));
+
+      var projectUpdate = CATMAID.client.updateProjects()
+        .then(function() {
+          CATMAID.client.refresh();
+        })
+        .catch(CATMAID.handleError);
+
+      // Update all datastores to reflect the current user before triggering
+      // any events. This is necessary so that settings are correct when
+      // updating for user change.
+      var initDataStores = CATMAID.DataStoreManager.reloadAll().then(function () {
+        CATMAID.Init.trigger(CATMAID.Init.EVENT_USER_CHANGED);
+      });
+
+      return Promise.all([projectUpdate, initDataStores]);
+    };
+
+    // Re-configure CSRF protection to update the CSRF cookie.
+    CATMAID.setupCsrfProtection();
+
+    var load = CATMAID.updatePermissions();
+    if (e.id || (e.permissions && -1 !== e.permissions.indexOf('catmaid.can_browse'))) {
+      // Asynchronously, try to get a full list of users if a user is logged in
+      // or the anonymous user has can_browse permissions.
+      load = load.then(CATMAID.User.getUsers.bind(CATMAID.User));
+    }
+
+    return load.then(done);
   }
 
   /**
@@ -951,20 +936,19 @@ var project;
     if (msg_timeout) window.clearTimeout(msg_timeout);
 
     CATMAID.ui.catchEvents("wait");
-    requestQueue.register(django_url + 'accounts/logout', 'POST', undefined, handle_logout);
-  };
+    var logout = CATMAID.fetch('accounts/logout', 'POST');
 
-  /**
-   * Handle a logout request response.
-   * Update the project menu.
-   *
-   * @param  {number}    status             XHR response status.
-   * @param  {string}    text               XHR response content.
-   * @param  {Object}    xml                XHR response XML (unused).
-   */
-  function handle_logout(status, text, xml) {
-    handle_login(status, text, xml);
-  }
+    logout = logout.then(handleSessionChange);
+
+    // Handle error to reset cursor, but also return it to communicate it to
+    // caller.
+    logout.catch(CATMAID.handleError)
+      .then(function() {
+        CATMAID.ui.releaseEvents();
+      });
+
+    return logout;
+  };
 
   /**
    * An object to store profile properties of the current user.

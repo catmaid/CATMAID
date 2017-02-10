@@ -69,13 +69,6 @@ class PostGISTests(TestCase):
         postgis_3d_nodes = json.loads(postgis_3d_nodes_r.content)
         postgis_2d_nodes = json.loads(postgis_2d_nodes_r.content)
 
-        for n in non_postgis_nodes[1]:
-            n[5] = frozenset([tuple(l) for l in n[5]])
-        for n in postgis_3d_nodes[1]:
-            n[5] = frozenset([tuple(l) for l in n[5]])
-        for n in postgis_2d_nodes[1]:
-            n[5] = frozenset([tuple(l) for l in n[5]])
-
         def test_returned_nodes(reference, to_test):
             self.assertEqual(len(reference), len(to_test))
             self.assertEqual(len(reference[0]), len(to_test[0]))

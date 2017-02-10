@@ -100,6 +100,15 @@
       stackViewer.redraw();
     };
 
+    // Create a remove handler so that it has its own closure, i.e. not share a
+    // variable with other callbacks.
+    var makeRemoveHandler = function(stackViewer, key) {
+      return function() {
+        stackViewer.removeLayer(key);
+        stackViewer.redraw();
+      };
+    };
+
     // Add slider for each layer
     for (var i = 0; i < layerOrder.length; i++) {
       var key = layerOrder[i];
@@ -114,10 +123,8 @@
       var layer_name = layer.getLayerName ? layer.getLayerName() : key;
       if (stackViewer.isLayerRemovable(key)) {
         container.append($('<div class="layerClose">')
-            .append($('<input type="button" value="x" class="remove"/>').click(function () {
-              stackViewer.removeLayer(key);
-              stackViewer.redraw();
-            })));
+            .append($('<input type="button" value="x" class="remove"/>')
+                .click(makeRemoveHandler(stackViewer, key))));
       }
       container.append($('<h4/>').append(layer_name));
 

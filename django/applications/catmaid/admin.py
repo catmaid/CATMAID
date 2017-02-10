@@ -59,7 +59,7 @@ class BrokenSliceModelForm(forms.ModelForm):
 
 class BrokenSliceAdmin(GuardedModelAdmin):
     list_display = ('stack', 'index')
-    search_fields = ('stack', 'index')
+    search_fields = ('stack__title', 'index')
     list_editable = ('index',)
 
     form = BrokenSliceModelForm

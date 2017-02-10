@@ -100,7 +100,7 @@
    * for the result.
    */
   ConnectorSelection.prototype.showConnectors = function(connectorIds, skeletonIds) {
-    if ((!connectorIds || !connectorId.length) && (!skeletonIds || !skeletonIds.length)) {
+    if ((!connectorIds || !connectorIds.length) && (!skeletonIds || !skeletonIds.length)) {
       CATMAID.warn("No skeletons or connectors provided");
       return;
     }

@@ -52,6 +52,12 @@
    */
   var responseCache = {};
 
+  TagTable.prototype.setConstrainText = function() {
+    var count = this.filterSkeletons.getNumberOfSkeletons();
+    var element = document.getElementById(this.idPrefix + 'constrain-text');
+    element.innerText = `Constraining by ${count} skeleton${count === 1 ? '' : 's'}`;
+  };
+
   /**
    * Clear the table and repopulate it using only data relating to the selected skeletons. If no skeletons are
    * selected, show the data for the whole project.
@@ -60,14 +66,12 @@
    * will be deselected.
    */
   TagTable.prototype.constrainSkelsAndRedraw = function() {
-    // var table = $(`#${this.idPrefix}datatable`).DataTable();
     this.oTable.clear();
-
-    var order = [[0, 'desc']].concat(this.oTable.order());
 
     var filterSkels = this.filterSkeletons.getSelectedSkeletons();
     var rowObjs = [];
-    for (var key of Object.keys(responseCache)) {
+    for (var key of Object.keys(responseCache).sort(function(a, b) {return a.localeCompare(b);} )) {
+      // look at rows in lexicographic order
 
       var skelIntersection = filterSkels.length ?  // if there are no selected skeletons, show everything in the project
         responseCache[key].skelIDs.intersection(filterSkels) : responseCache[key].skelIDs;
@@ -90,8 +94,7 @@
     }
 
     this.oTable.rows.add(rowObjs);
-    this.oTable.order(order)
-      .draw();
+    this.oTable.draw();
 
     this.syncResultSkeletonSource();
   };
@@ -108,6 +111,8 @@
         shouldBeInSource.addAll(responseCache[labelName].skelIDs);
       }
     }
+
+    shouldBeInSource = shouldBeInSource.intersection(this.filterSkeletons.getSelectedSkeletons());
 
     this.addAndSubtractFromResultSkeletonSource({
       add: Array.from(shouldBeInSource.difference(areInSource)),
@@ -166,6 +171,7 @@
         add.setAttribute("value", "Add");
         add.onclick = function() {
           self.filterSkeletons.loadSource.bind(self.filterSkeletons)();
+          self.setConstrainText();
         };
         controls.appendChild(add);
 
@@ -174,21 +180,20 @@
         clear.setAttribute("value", "Clear");
         clear.onclick = function() {
           self.filterSkeletons.clear();
+          self.setConstrainText();
         };
         controls.appendChild(clear);
+
+        var constrainText = document.createElement('p');
+        constrainText.setAttribute('id', self.idPrefix + 'constrain-text');
+        constrainText.innerText = 'Constraining by 0 skeletons';
+
+        controls.appendChild(constrainText);
 
         var refresh = document.createElement('input');
         refresh.setAttribute("type", "button");
         refresh.setAttribute("value", "Refresh");
-        refresh.onclick = function() {
-          self.oTable.clear();
-          for (var key of Object.keys(responseCache)) {
-            delete responseCache[key];
-          }
-          self.filterSkeletons.clear();
-          self.resultSkeletons.clear();
-          self.init();
-        };
+        refresh.onclick = self.refreshDataAndRedraw.bind(self);
         controls.appendChild(refresh);
 
         var openTable = document.createElement('input');
@@ -213,6 +218,12 @@
             .search(regex, true, false, false);  // treat as regex, disable smart search, case sensitive
         };
         controls.appendChild(openTable);
+
+        controls.append(document.createElement('br'));
+        var showingText = document.createElement('p');
+        showingText.setAttribute('id', self.idPrefix + 'selected-text');
+
+        controls.append(showingText);
       },
       contentID: this.idPrefix + 'content',
       createContent: function(container) {
@@ -235,9 +246,9 @@
           '</thead>' +
           '<tfoot>' +
           '<tr>' +
+          '<th>select</th>' +
           '<th>tag</th>' +
           '<th>skeletons</th>' +
-          '<th>select skeletons</th>' +
           '<th>nodes</th>' +
           '</tr>' +
           '</tfoot>' +
@@ -249,6 +260,31 @@
         this.init(project.getId());
       }
     };
+  };
+
+  TagTable.prototype.setSelectedText = function() {
+    var selectedLabels = new Set();
+    var selectedSkels = new Set();
+    var selectedNodes = new Set();
+
+    var constrainSkels = new Set(this.filterSkeletons.getSelectedSkeletons());
+
+    for (var labelID of Object.keys(responseCache)) {
+      if (responseCache[labelID].checked) {
+        selectedLabels.add(labelID);
+        selectedSkels.addAll(responseCache[labelID].skelIDs.intersection(constrainSkels));
+        for (var [nodeID, skelID] of responseCache[labelID].nodeIDs.entries()) {
+          if (constrainSkels.has(skelID)) {
+            selectedNodes.add(nodeID);
+          }
+        }
+      }
+    }
+
+    document.getElementById(this.idPrefix + 'selected-text').innerText = '' +
+      `Selected ${selectedLabels.size} label${selectedLabels.size === 1 ? '' : 's'}, ` +
+      `${selectedSkels.size} skeleton${selectedSkels.size === 1 ? '' : 's'}, ` +
+      `${selectedNodes.size} node${selectedNodes.size === 1 ? '' : 's'}`;
   };
 
   var skelIDsToModels = function (skelIDs) {
@@ -269,11 +305,13 @@
     // Update the skeleton source run by the widget
     this.resultSkeletons.append(skelIDsToModels(obj.add));
     this.resultSkeletons.removeSkeletons(obj.subtract);
+
+    this.setSelectedText();
   };
 
   TagTable.prototype.createCheckbox = function(checked, type, row) {
     if (type ==='display') {
-      var checkbox = $('<input />', {
+      var $checkbox = $('<input />', {
         type:'checkbox',
         class:'skelSelector',
         id: this.idPrefix + 'skelselector' + row.id,
@@ -281,7 +319,7 @@
         checked: checked
       });
 
-      return checkbox.prop('outerHTML');
+      return $checkbox.prop('outerHTML');
     } else {
       return checked ? 1 : 0;
     }
@@ -291,9 +329,9 @@
     var self = this;
     var tableID = this.idPrefix + 'datatable';
 
-    var tableSelector = $('#' + tableID);
+    var $table = $('#' + tableID);
 
-    this.oTable = tableSelector.DataTable({
+    this.oTable = $table.DataTable({
       // http://www.datatables.net/usage/options
       "destroy": true,
       "dom": '<"H"lrp>t<"F"ip>',
@@ -333,39 +371,9 @@
       ]
     });
 
-    CATMAID.fetch(project.id + '/labels/stats', 'GET')
-      .then(function(json) {
-        responseCache = json.reduce(function(obj, arr) {
-          var labelID = arr[0];
-          var labelName = arr[1];
-          var skelID = arr[2];
-          var nodeID = arr[3];
+    this.refreshDataAndRedraw();
 
-          if (!(labelName in obj)) {
-            obj[labelName] = {
-              'labelIDs': new Set(),
-              'skelIDs': new Set(),
-              'nodeIDs': new Map(),
-              'checked': false
-            };
-          }
-
-          obj[labelName].labelIDs.add(labelID);
-          obj[labelName].skelIDs.add(skelID);
-          obj[labelName].nodeIDs.set(nodeID, skelID);
-
-          return obj;
-        }, {});
-
-        self.constrainSkelsAndRedraw();
-
-        $(`#${tableID}_processing`).hide();
-      }
-    );
-
-    $(`#${tableID}_processing`).show();
-
-    tableSelector.on('change', '.skelSelector', function(event) {
+    $table.on('change', '.skelSelector', function(event) {
       var row = self.oTable.row(event.currentTarget.closest('tr'));
       var currentCheckedState = event.currentTarget.checked;
 
@@ -374,14 +382,7 @@
 
       row.invalidate();
 
-      if (currentCheckedState) {  // if checking box, just add
-        self.addAndSubtractFromResultSkeletonSource({
-          add: Array.from(responseCache[row.data().labelName].skelIDs),
-          subtract: []
-        });
-      } else {  // if unchecking box, run full sync
-        self.syncResultSkeletonSource();
-      }
+      self.syncResultSkeletonSource();
     });
 
     $(`#${self.idPrefix}select-all`).change(function(event){
@@ -420,19 +421,66 @@
       }
     });
 
-    var headerInputSelector = tableSelector.find('thead input');
+    var $headerInput = $table.find('thead input');
 
     // prevent sorting the column when focusing on the search field
-    headerInputSelector.click(function (event) {
+    $headerInput.click(function (event) {
       event.stopPropagation();
     });
 
     // remove the 'Search' string when first focusing the search box
-    headerInputSelector.focus(function () {
+    $headerInput.focus(function () {
       if (this.className === "search_init") {
         this.className = "";
         this.value = "";
       }
+    });
+  };
+
+  TagTable.prototype.refreshDataAndRedraw = function() {
+    var $processing = $(`#${this.idPrefix}datatable_processing`);
+
+    $processing.show();
+
+    for (var key of Object.keys(responseCache)) {
+      delete responseCache[key];
+    }
+    this.resultSkeletons.clear();
+
+    var self = this;
+
+    CATMAID.fetch(project.id + '/labels/stats', 'GET')
+      .then(function(json) {
+        responseCache = json.reduce(function(obj, arr) {
+          var labelID = arr[0];
+          var labelName = arr[1];
+          var skelID = arr[2];
+          var nodeID = arr[3];
+
+          if (!(labelName in obj)) {
+            obj[labelName] = {
+              'labelIDs': new Set(),
+              'skelIDs': new Set(),
+              'nodeIDs': new Map(),
+              'checked': false
+            };
+          }
+
+          obj[labelName].labelIDs.add(labelID);
+          obj[labelName].skelIDs.add(skelID);
+          obj[labelName].nodeIDs.set(nodeID, skelID);
+
+          return obj;
+        }, {});
+
+        self.constrainSkelsAndRedraw();
+
+        $processing.hide();
+      }
+    )
+    .catch(function(error) {
+      $processing.hide();
+      CATMAID.handleError(error);
     });
   };
 

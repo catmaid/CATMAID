@@ -538,7 +538,7 @@
   };
 
   PixiLayer.FilterWrapper.prototype = {};
-  PixiLayer.FilterWrapper.constructor = PixiLayer.FilterWrapper;
+  PixiLayer.FilterWrapper.prototype.constructor = PixiLayer.FilterWrapper;
 
   /**
    * Set a filter parameter.

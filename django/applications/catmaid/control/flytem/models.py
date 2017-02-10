@@ -33,22 +33,27 @@ class FlyTEMStack:
         self.project = project_id
         self.id = stack_id
         self.title = stack_id
-        self.image_base = '%s/project/%s/stack/%s/' % (settings.FLYTEM_SERVICE_URL, project_id, stack_id)
         self.num_zoom_levels = -1
 
         # default resolution in case render stack does not have it defined in metadata
         r = settings.FLYTEM_STACK_RESOLUTION
         self.resolution = FlyTEMDimension(r[0], r[1], r[2])
 
-        self.file_extension = 'jpg'
-        self.tile_source_type = 7
-        self.tile_width = settings.FLYTEM_STACK_TILE_WIDTH
-        self.tile_height = settings.FLYTEM_STACK_TILE_HEIGHT
-        self.metadata = ''
-        self.trakem2_project = False
+        self.mirrors = [{
+            'title': 'Default',
+            'image_base': '%s/project/%s/stack/%s/' % (settings.FLYTEM_SERVICE_URL, project_id, stack_id),
+            'file_extension': 'jpg',
+            'tile_source_type': 7,
+            'tile_width': settings.FLYTEM_STACK_TILE_WIDTH,
+            'tile_height': settings.FLYTEM_STACK_TILE_HEIGHT,
+            'position': 0
+        }]
+
+        self.description = ''
 
         url = '%s/project/%s/stack/%s' % (settings.FLYTEM_SERVICE_URL, project_id, stack_id)
         stack_meta_json = load_json(url)
+        self.metadata = stack_meta_json
 
         bounds_json = None
         if 'stats' in stack_meta_json:

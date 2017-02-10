@@ -88,17 +88,35 @@ class Stack(models.Model):
             "stack.")
     resolution = Double3DField(help_text="The resolution of the stack in "
             "nanometers.")
-    image_base = models.TextField(help_text="Fully qualified URL where the "
-            "tile data can be found.")
     comment = models.TextField(blank=True, null=True,
             help_text="A comment that describes the image data.")
-    trakem2_project = models.BooleanField(default=False,
-            help_text="Is TrakEM2 the source of this stack?")
     num_zoom_levels = models.IntegerField(default=-1,
             help_text="The number of zoom levels a stack has data for. A "
             "value of -1 lets CATMAID dynamically determine the actual value "
             "so that at this value the largest extent (X or Y) won't be "
             "smaller than 1024 pixels. Values larger -1 will be used directly.")
+    description = models.TextField(default='', blank=True,
+            help_text="Arbitrary text that is displayed alongside the stack.")
+    metadata = JSONField(blank=True, null=True)
+    attribution = models.TextField(blank=True, null=True,
+            help_text="Attribution or citation information for this dataset.")
+    canary_location = Integer3DField(default=(0, 0, 0), help_text="Stack space "
+            "coordinates at zoom level 0 where image data is expected to exist.")
+    placeholder_color = RGBAField(default=(0, 0, 0, 1))
+    tags = TaggableManager(blank=True)
+
+    class Meta:
+        db_table = "stack"
+
+    def __unicode__(self):
+        return self.title
+
+
+class StackMirror(models.Model):
+    stack = models.ForeignKey(Stack, on_delete=models.CASCADE)
+    title = models.TextField(help_text="Descriptive title of this stack mirror.")
+    image_base = models.TextField(help_text="Fully qualified URL where the "
+            "tile data can be found.")
     file_extension = models.TextField(default='jpg', blank=True,
             help_text="The file extension of the data files.")
     tile_width = models.IntegerField(default=256,
@@ -110,15 +128,14 @@ class Stack(models.Model):
             help_text='This represents how the tile data is organized. '
             'See <a href="http://catmaid.org/page/tile_sources.html">tile source '
             'conventions documentation</a>.')
-    metadata = models.TextField(default='', blank=True,
-            help_text="Arbitrary text that is displayed alongside the stack.")
-    tags = TaggableManager(blank=True)
+    position = models.IntegerField(default=0)
 
     class Meta:
-        db_table = "stack"
+        db_table = "stack_mirror"
+        ordering = ('position',)
 
     def __unicode__(self):
-        return self.title
+        return self.stack.title + " (" + self.title + ")"
 
 
 class ProjectStack(models.Model):
@@ -132,23 +149,6 @@ class ProjectStack(models.Model):
 
     def __unicode__(self):
         return self.project.title + " -- " + self.stack.title
-
-
-class Overlay(models.Model):
-    title = models.TextField()
-    stack = models.ForeignKey(Stack, on_delete=models.CASCADE)
-    image_base = models.TextField()
-    default_opacity = models.IntegerField(default=0)
-    file_extension = models.TextField()
-    tile_width = models.IntegerField(default=512)
-    tile_height = models.IntegerField(default=512)
-    tile_source_type = models.IntegerField(default=1)
-
-    class Meta:
-        db_table = "overlay"
-
-    def __unicode__(self):
-        return str(self.id) + ": " + self.stack.title + " with " + self.title
 
 
 class Concept(models.Model):
@@ -818,39 +818,53 @@ class StackClassInstance(models.Model):
         db_table = "stack_class_instance"
 
 
-class StackStackGroupManager(models.Manager):
-    """A manager that will return only objects (expected to be class instances)
-    that have their class attribute set to 'stackgroup'"""
-
-    def get_queryset(self):
-        return super(StackStackGroupManager, self).get_queryset().filter(
-            class_instance__class_column__class_name='stackgroup')
-
-
-class StackStackGroup(StackClassInstance):
-    objects = StackStackGroupManager()
+class StackGroupRelation(models.Model):
+    name = models.TextField(max_length=80)
 
     class Meta:
-        proxy = True
-
-
-class StackGroupManager(models.Manager):
-    """A manager that will return only objects (expected to be class instances)
-    that have their class attribute set to 'stackgroup'"""
-
-    def get_queryset(self):
-        return super(StackGroupManager, self).get_queryset().filter(
-            class_column__class_name='stackgroup')
-
-
-class StackGroup(ClassInstance):
-    objects = StackGroupManager()
-
-    class Meta:
-        proxy = True
+        db_table = 'stack_group_relation'
 
     def __unicode__(self):
         return self.name
+
+
+class StackGroup(models.Model):
+    title = models.TextField(default="", max_length=80)
+    comment = models.TextField(blank=True, null=True,
+            help_text="A comment that describes the stack group.")
+
+    class Meta:
+        db_table = 'stack_group'
+
+    def __unicode__(self):
+        return self.title
+
+
+class StackStackGroup(models.Model):
+    group_relation = models.ForeignKey(StackGroupRelation)
+    stack = models.ForeignKey(Stack)
+    stack_group = models.ForeignKey(StackGroup)
+    position = models.IntegerField(default=0)
+
+    class Meta:
+        db_table = 'stack_stack_group'
+        ordering = ('position',)
+
+
+class StackGroupClassInstance(models.Model):
+    # Repeat the columns inherited from 'relation_instance'
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    creation_time = models.DateTimeField(default=timezone.now)
+    edition_time = models.DateTimeField(default=timezone.now)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    relation = models.ForeignKey(Relation, on_delete=models.CASCADE)
+    # Now new columns:
+    stack_group = models.ForeignKey(StackGroup, on_delete=models.CASCADE)
+    class_instance = models.ForeignKey(ClassInstance, on_delete=models.CASCADE)
+
+    class Meta:
+        db_table = "stack_group_class_instance"
+
 
 # ------------------------------------------------------------------------
 # Now the non-Django tables:

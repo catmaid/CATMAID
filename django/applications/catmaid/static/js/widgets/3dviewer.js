@@ -2315,7 +2315,7 @@
   };
 
   WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createPlaneGeometry =
-      function (stack, tileZoomLevel) {
+      function (stack, tileSource, tileZoomLevel) {
     var stackPlane = stack.createStackExtentsBox(),
         plane = stack.createStackToProjectBox(stackPlane),
         geometry, pDepth;
@@ -2332,8 +2332,8 @@
         seq = {x: majorDimSeq, y: minorDimSeq, z: planeDimSeq};
         pWidth = plane.max.x - plane.min.x;
         pHeight = plane.max.y - plane.min.y;
-        pTileWidth = stack.tileSource.tileWidth * stack.resolution.x;
-        pTileHeight = stack.tileSource.tileHeight * stack.resolution.y;
+        pTileWidth = tileSource.tileWidth * stack.resolution.x;
+        pTileHeight = tileSource.tileHeight * stack.resolution.y;
         break;
       case CATMAID.Stack.ORIENTATION_XZ:
         pDepth = plane.max.y - plane.min.y;
@@ -2341,8 +2341,8 @@
         seq = {x: majorDimSeq, y: planeDimSeq, z: minorDimSeq};
         pWidth = plane.max.x - plane.min.x;
         pHeight = plane.max.z - plane.min.z;
-        pTileWidth = stack.tileSource.tileWidth * stack.resolution.x;
-        pTileHeight = stack.tileSource.tileHeight * stack.resolution.z;
+        pTileWidth = tileSource.tileWidth * stack.resolution.x;
+        pTileHeight = tileSource.tileHeight * stack.resolution.z;
         break;
       case CATMAID.Stack.ORIENTATION_ZY:
         pDepth = plane.max.x - plane.min.x;
@@ -2350,8 +2350,8 @@
         seq = {x: planeDimSeq, y: minorDimSeq, z: majorDimSeq};
         pWidth = plane.max.z - plane.min.z;
         pHeight = plane.max.y - plane.min.y;
-        pTileWidth = stack.tileSource.tileWidth * stack.resolution.z;
-        pTileHeight = stack.tileSource.tileHeight * stack.resolution.y;
+        pTileWidth = tileSource.tileWidth * stack.resolution.z;
+        pTileHeight = tileSource.tileHeight * stack.resolution.y;
         break;
     }
 
@@ -2361,12 +2361,12 @@
       pTileWidth *= scale;
       pTileHeight *= scale;
       // Create two triangles for every tile
-      var tileWidth = stack.tileSource.tileWidth;
-      var tileHeight = stack.tileSource.tileHeight;
+      var tileWidth = tileSource.tileWidth;
+      var tileHeight = tileSource.tileHeight;
       var nHTiles = getNZoomedParts(stack.dimension.x, tileZoomLevel, tileWidth);
       var nVTiles = getNZoomedParts(stack.dimension.y, tileZoomLevel, tileHeight);
-      var transpose = stack.tileSource.transposeTiles &&
-          stack.tileSource.transposeTiles.has(stack.orientation);
+      var transpose = tileSource.transposeTiles &&
+          tileSource.transposeTiles.has(stack.orientation);
 
       // Use THREE's plane geometry so that UVs and normals are set up aleady.
       var tilePlaneWidth = nHTiles * pTileWidth;
@@ -2480,8 +2480,9 @@
     if ("max" === textureZoomLevel) {
       textureZoomLevel = stackViewer.primaryStack.MAX_S;
     }
+    this.zplaneTileSource = stackViewer.primaryStack.createTileSourceForMirror(0);
     // Create geometry for plane
-    var geometry = this.createPlaneGeometry(stackViewer.primaryStack, textureZoomLevel);
+    var geometry = this.createPlaneGeometry(stackViewer.primaryStack, this.zplaneTileSource, textureZoomLevel);
 
     if (textureZoomLevel || 0 === textureZoomLevel) {
       // Remember zoom level for updates
@@ -2532,7 +2533,7 @@
 
       // Also update tile texture
       if (this.zplaneMaterials) {
-        var tileSource = stack.tileSource;
+        var tileSource = this.zplaneTileSource;
         // To get arround potential CORS restrictions load tile into image and
         // then into texture.
         var loadTile = function(texture, material, notify) {

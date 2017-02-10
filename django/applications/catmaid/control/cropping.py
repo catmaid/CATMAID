@@ -94,64 +94,64 @@ class CropJob:
         # Initialization is done
         self.needs_initialization = False
 
-    def get_tile_path(self, stack, tile_coords):
+    def get_tile_path(self, mirror, tile_coords):
         """ This method returns the path of a tile from a specific stack on a
         particular coordinate. It needs initialization where it will be replaced
         by the actual getter that is aware of the available tile source types.
         """
         raise StandardError("The crop job in used hasn't been initialized.")
 
-    def get_tile_path_initialized(self, stack, tile_coords):
+    def get_tile_path_initialized(self, mirror, tile_coords):
         """ This method will be used when get_tile_path is called after the crop
         job has been initialized.
         """
-        return self.stack_specific_path_getters[stack.id](stack, tile_coords)
+        return self.stack_specific_path_getters[stack.id](mirror, tile_coords)
 
-    def get_tile_path_1(self, stack, tile_coords):
+    def get_tile_path_1(self, mirror, tile_coords):
         """ Creates the full path to the tile at the specified coordinate index
         for tile source type 1.
         """
-        path = stack.image_base
+        path = mirror.image_base
         n_coords = len(tile_coords)
         for c in range( 2, n_coords ):
             # the path is build beginning with the last component
             coord = tile_coords[n_coords - c + 1]
             path += str(coord) + "/"
         path += "%s_%s_%s.%s" % (tile_coords[1], tile_coords[0],
-                self.zoom_level, stack.file_extension)
+                self.zoom_level, mirror.file_extension)
         return path
 
-    def get_tile_path_4(self, stack, tile_coords):
+    def get_tile_path_4(self, mirror, tile_coords):
         """ Creates the full path to the tile at the specified coordinate index
         for tile source type 4.
         """
-        path = stack.image_base
+        path = mirror.image_base
         n_coords = len(tile_coords)
         for c in range( 2, n_coords ):
             # the path is build beginning with the last component
             coord = tile_coords[n_coords - c + 1]
             path += str(coord) + "/"
         path += "%s/%s_%s.%s" % (self.zoom_level, tile_coords[1],
-                tile_coords[0], stack.file_extension)
+                tile_coords[0], mirror.file_extension)
         return path
 
-    def get_tile_path_5(self, stack, tile_coords):
+    def get_tile_path_5(self, mirror, tile_coords):
         """ Creates the full path to the tile at the specified coordinate index
         for tile source type 5.
         """
-        path = "%s%s/" % (stack.image_base, self.zoom_level)
+        path = "%s%s/" % (mirror.image_base, self.zoom_level)
         n_coords = len(tile_coords)
         for c in range( 2, n_coords ):
             # the path is build beginning with the last component
             coord = tile_coords[n_coords - c + 1]
             path += str(coord) + "/"
         path += "%s/%s.%s" % (tile_coords[1], tile_coords[0],
-            stack.file_extension)
+            mirror.file_extension)
         return path
 
-    def get_tile_path_unavailable(self, stack, tile_coords):
+    def get_tile_path_unavailable(self, mirror, tile_coords):
         raise StandardError("Tile source %s is currently not supported " \
-                "by cropping module" % stack.tile_source_type)
+                "by cropping module" % mirror.tile_source_type)
 
 class ImageRetrievalError(IOError):
     def __init__(self, path, error):
@@ -470,10 +470,11 @@ def extract_substack_no_rotation( job ):
     # Iterate over all slices
     for nz in range(n_slices):
         for stack in job.stacks:
+            mirror = s.stackmirror_set.filter(position=0)[0]
             bb = s_to_bb[stack.id]
             # Shortcut for tile width and height
-            tile_width = stack.tile_width
-            tile_height = stack.tile_height
+            tile_width = mirror.tile_width
+            tile_height = mirror.tile_height
             # Get indices for bounding tiles (0 indexed)
             tile_x_min = int(bb.px_x_min / tile_width)
             tile_x_max = int(bb.px_x_max / tile_width)
@@ -505,7 +506,7 @@ def extract_substack_no_rotation( job ):
                         cur_px_y_max = bb.px_y_max - y * tile_height
                     # Create an image part definition
                     z = bb.px_z_min + nz
-                    path = job.get_tile_path(stack, (x, y, z))
+                    path = job.get_tile_path(mirror, (x, y, z))
                     try:
                         part = ImagePart(path, cur_px_x_min, cur_px_x_max,
                                 cur_px_y_min, cur_px_y_max, x_dst, y_dst)

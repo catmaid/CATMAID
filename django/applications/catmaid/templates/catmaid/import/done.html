@@ -21,14 +21,14 @@
         {% endif %}
         <ul>
         {% for p, e in not_imported_projects %}
-            <li>{{ p.name }}<br />Error: {{ e }}</li>
+            <li>{{ p.title }}<br />Error: {{ e }}</li>
         {% endfor %}
         </ul>
     {% else %}
         <p>All selected projects have been added to CATMAID:</p>
         <p><ul>
         {% for p in imported_projects %}
-            <li>{{ p.name }}</li>
+            <li>{{ p.title }}</li>
         {% endfor %}
         </ul></p>
         <p><a href="{% url "admin:index" %}">Return to the administration home page.</a></p>

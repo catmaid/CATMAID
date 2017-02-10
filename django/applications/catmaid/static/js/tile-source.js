@@ -27,6 +27,48 @@
   };
 
   /**
+   * Check whether the canary location for a stack is accessible via this tile
+   * source. Checks for normal and CORS requests, for DOM and WebGL tiles
+   * respectively
+   *
+   * @param  {Project} project
+   * @param  {Stack}   stack
+   * @param  {Object}  tileSource
+   * @return {Object}             Object with boolean keys normal and cors.
+   */
+  CATMAID.checkTileSourceCanary = function (project, stack, tileSource) {
+    var canaryLocation = stack.canaryLocation;
+    var col = Math.floor(canaryLocation.x / tileSource.tileWidth);
+    var row = Math.floor(canaryLocation.y / tileSource.tileHeight);
+    var url = tileSource.getTileURL(project, stack, [canaryLocation.z], col, row, 0);
+
+    var normalReq = new Promise(function (resolve, reject) {
+      var normalImg = new Image();
+      normalImg.onload = function () {
+        resolve(true);
+      };
+      normalImg.onerror = function () {
+        resolve(false);
+      };
+      normalImg.src = url;
+    });
+
+    var corsReq = fetch(new Request(url, {mode: 'cors'}))
+      .then(function (response) {
+        var contentHeader = response.headers.get('Content-Type');
+        return contentHeader && contentHeader.startsWith('image');
+      })
+      .catch(function () { return false; });
+
+    return Promise.all([normalReq, corsReq]).then(function (result) {
+      return {
+        normal: result[0],
+        cors:   result[1]
+      };
+    });
+  };
+
+  /**
    * Creates a new tile source, based on a source type.
    */
   CATMAID.getTileSource = function(tileSourceType, baseURL, fileExtension, tileWidth, tileHeight) {

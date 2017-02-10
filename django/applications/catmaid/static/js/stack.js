@@ -24,11 +24,13 @@
       skip_planes,        //!< {Array} planes to be excluded from the stack's view [[z,t,...], [z,t,...], ...]
       num_zoom_levels,      //!< {int} that defines the number of available non-artificial zoom levels
       max_zoom_level,       //!< {int} that defines the maximum available zoom level
-      metadata,         //!< {String} of arbitrary meta data
+      description,         //!< {String} of arbitrary meta data
+      metadata,
       orientation,         //!< {Integer} orientation (0: xy, 1: xz, 2: yz)
-      tileSource
+      canaryLocation,
+      placeholderColor,
+      mirrors
     ) {
-
     // initialize
     var self = this;
 
@@ -68,9 +70,15 @@
     }
     self.MIN_S = max_zoom_level;
 
-    this.metadata = metadata;
+    self.description = description;
+    self.metadata = metadata;
     self.orientation = orientation;
-    self.tileSource = tileSource;
+    self.canaryLocation = canaryLocation;
+    self.placeholderColor = placeholderColor;
+    self.mirrors = mirrors;
+    self.mirrors.sort(function (a, b) {
+      return a.position - b.position;
+    });
 
     /**
      * Project x-coordinate for stack coordinates
@@ -341,6 +349,21 @@
         if (adj > self.MAX_Z || adj < 0) return null;
         if (!self.isSliceBroken(adj)) return adj - section;
       }
+    };
+
+    self.createTileSourceForMirror = function (mirrorIdx) {
+      var mirror = self.mirrors[mirrorIdx];
+      if (!mirror) {
+        throw new CATMAID.ValueError("No mirror with index " + mirrorIdx + " available");
+      }
+      var selectedMirror = mirror;
+
+      return CATMAID.getTileSource(
+          selectedMirror.tile_source_type,
+          selectedMirror.image_base,
+          selectedMirror.file_extension,
+          selectedMirror.tile_width,
+          selectedMirror.tile_height);
     };
   }
 

@@ -176,10 +176,12 @@ Name               Options                                     Default
 ``filter_tags``    ``A list of tags, e.g. ["TagA", "TagB"]``   ``[]``
 ``catalogue_link`` ``true, false``                             ``true``
 ``sample_images``  ``true, false``                             ``false``
+``sample_mirror_index``  ``position of mirror to use`          ``0``
 ``sample_stack``   ``stack index, "first", "last"``            ``0``
 ``sample_slice``   ``slice index, "first", "center", "last"``  ``"center"``
 ``sample_width``   ``width in pixel, e.g. 50 or 75``           ``orig. width``
 ``sample_height``  ``height in pixel, e.g. 50 or 75``          ``orig. height``
+``show_mirrors``   ``true, false``                             ``true``
 ================== =========================================== ================
 
 Please refer to the introduction to this section for an explanation of the
@@ -195,7 +197,9 @@ within bounds. The option values ``"first"`` and ``"last"`` refer to the first
 and last slice of the stack, ``"center'`` refers to the middle slice is the stack.
 To make the sample images appear smaller or larger, the ``sample_width`` and
 ``sample_height`` option can be used. The assigned number is treated as pixel
-width and height, respectively.
+width and height, respectively. If a sample image is used, a particular mirror
+can be selected using the ``sample_mirror_index`` field. The mirror with the
+selected position will be used.
 
 So if you were to configure a *Project List* data view with a sample image
 which should be the middle slice of every last stack in a project, you would
@@ -227,9 +231,11 @@ Name               Options                                     Default
 ``filter_tags``    ``A list of tags, e.g. ["TagA", "TagB"]``   ``[]``
 ``catalogue_link`` ``true, false``                             ``true``
 ``sample_images``  ``true, false``                             ``false``
+``sample_mirror_index``  ``position of mirror to use`          ``0``
 ``sample_slice``   ``slice index, "first", "center", "last"``  ``"center"``
 ``sample_width``   ``width in pixel, e.g. 50 or 75``           ``orig. width``
 ``sample_height``  ``height in pixel, e.g. 50 or 75``          ``orig. height``
+``show_mirrors``   ``true, false``                             ``true``
 ================== =========================================== ================
 
 Have a look to this section's introduction for an explanation of the ``sort``,
@@ -243,7 +249,10 @@ range, no image will be displayed. Like in the *Project List* view type, the
 option values ``"first"``, ``"center"`` and ``"last"`` refer to the first,
 middle and last slice of each stack. To adjust the (pixel) size of sample
 image, the options ``sample_width`` and ``sample_height`` can be used. If
-only one of the two is used, the images are scaled proportionally.
+only one of the two is used, the images are scaled proportionally. If a sample
+image is used, a particular mirror can be selected using the
+``sample_mirror_index`` field. The mirror with the selected position will be
+used.
 
 If you wanted to display a text-only table, you would actually not need to
 define anything, but ``{}`` (because of the defaults) to get something like:
@@ -293,6 +302,7 @@ Name                 Options                                    Default
 ``force_stack_list`` ``true, false``                            ``false``
 ``highlight_tags``   ``A list of tags, e.g. ["TagA", "TagB"]``  ``[]``
 ``sample_images``    ``true, false``                            ``false``
+``sample_mirror_index``  ``position of mirror to use`           ``0``
 ``sample_slice``     ``slice index, "first", "center", "last"`` ``"center"``
 ``sample_width``     ``width in pixel, e.g. 50 or 75``          ``orig. width``
 ``sample_height``    ``height in pixel, e.g. 50 or 75``         ``orig. height``
@@ -324,7 +334,9 @@ keyword, the displayed slice can be selected. Again, one can choose the
 ``"first"``, ``"last"`` or ``"center"`` slice of the stack. In case the default
 size of these sample is too big or too small, the ``sample_width`` and
 ``sample_height`` options can be used. It takes a numerical pixel value and
-scales the result images accordingly.
+scales the result images accordingly. If a sample image is used, a particular
+mirror can be selected using the ``sample_mirror_index`` field. The mirror with
+the selected position will be used.
 
 As an example, consider the situation described above: We have image stacks
 of several tissues and with multiple protein markers. The imaged tissues are

@@ -62,6 +62,7 @@ class Double3DWidget(forms.MultiWidget):
         return  u'X: ' + rendered_widgets[0] + \
             u' Y: ' + rendered_widgets[1] + u' Z: ' + rendered_widgets[2]
 
+
 class RGBAWidget(forms.MultiWidget):
     """
     A widget that splits RGBA input into three <input type="text"> boxes.
@@ -73,9 +74,9 @@ class RGBAWidget(forms.MultiWidget):
             forms.TextInput(attrs),
             forms.TextInput(attrs),
             forms.TextInput(attrs),
+            self.Swatch(attrs),
         )
-        for widget in widgets:
-            widget.attrs['onchange'] = 'update_color_swatch();'
+
         super(RGBAWidget, self).__init__(widgets, attrs, **kwargs)
 
     def decompress(self, value):
@@ -95,20 +96,43 @@ class RGBAWidget(forms.MultiWidget):
         return [None, None, None, None]
 
     def format_output(self, rendered_widgets):
-        return  (u'R: %s G: %s B: %s A: %s' % tuple(rendered_widgets) + 
-            u'''<input id="id_userprofile-0-color-swatch"
-                    type="text" disabled="disabled"
-                    style="background-color:#000000; margin-left:1em;">
-                </input>
-                <script>update_color_swatch = function() {
-                    var r = parseInt(parseFloat(document.getElementById(
-                            "id_userprofile-0-color_0").value) * 255),
-                        g = parseInt(parseFloat(document.getElementById(
-                            "id_userprofile-0-color_1").value) * 255),
-                        b = parseInt(parseFloat(document.getElementById(
-                            "id_userprofile-0-color_2").value) * 255);
-                    document.getElementById("id_userprofile-0-color-swatch").
-                            style.backgroundColor = "rgb("+r+","+g+","+b+")";
+        return (u'R: %s G: %s B: %s A: %s %s' % tuple(rendered_widgets))
+
+    class Swatch(forms.TextInput):
+        def render(self, name, value, attrs=None):
+            return (u'''
+                <span style="background-image:
+                            linear-gradient(45deg, #808080 25%%, transparent 25%%),
+                            linear-gradient(-45deg, #808080 25%%, transparent 25%%),
+                            linear-gradient(45deg, transparent 75%%, #808080 75%%),
+                            linear-gradient(-45deg, transparent 75%%, #808080 75%%);
+                        background-size: 20px 20px;
+                        background-position: 0 0, 0 10px, 10px -10px, -10px 0px;">
+
+                    <input id="%s"
+                            style="background-color:rgba(0, 0, 0, 0);"
+                            type="text" disabled="disabled">
+                    </input>
+                </span>
+                <script>(function (id) {
+                    var baseId = id.match(/^(.+)_\d$/)[1];
+                    var inputIds = [0, 1, 2, 3].map(function (ind) { return baseId + "_" + ind; });
+
+                    updateColorSwatch = function () {
+                        rgba = inputIds.map(function (id) {
+                            return parseFloat(document.getElementById(id).value);
+                        });
+                        [0, 1, 2].forEach(function (ind) {
+                            rgba[ind] = Math.round(255 * rgba[ind]);
+                        });
+                        document.getElementById(id).style.backgroundColor = "rgba(" + rgba.join(', ') + ")";
                     };
-                    update_color_swatch();
-                </script>''')
+
+                    inputIds.forEach(function (id) {
+                        document.getElementById(id).onchange = updateColorSwatch;
+                    });
+
+                    updateColorSwatch();
+                })("%s")
+                </script>
+                ''' % (attrs['id'], attrs['id']))

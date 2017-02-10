@@ -10,7 +10,7 @@
    * @param {StackViewer} stackViewer Stack viewer to which this layer belongs.
    * @param {string}  displayname  Name displayed in window controls.
    * @param {Stack}   stack        Image stack from which to draw tiles.
-   * @param {Object}  tileSource   Tile source for generating image URLs.
+   * @param {number}  mirrorIndex  Stack mirror index to use as tile source.
    * @param {boolean} visibility   Whether the tile layer is initially visible.
    * @param {number}  opacity      Opacity to draw the layer.
    * @param {boolean} showOverview Whether to show a "minimap" overview of the
@@ -22,7 +22,7 @@
       stackViewer,
       displayname,
       stack,
-      tileSource,
+      mirrorIndex,
       visibility,
       opacity,
       showOverview,
@@ -30,7 +30,8 @@
     this.stackViewer = stackViewer;
     this.displayname = displayname;
     this.stack = stack;
-    this.tileSource = tileSource;
+    this.mirrorIndex = mirrorIndex;
+    this.tileSource = stack.createTileSourceForMirror(mirrorIndex);
     this.opacity = opacity; // in the range [0,1]
     this.visible = visibility;
     this.isOrderable = true;
@@ -90,7 +91,7 @@
     this._interpolationMode = linearInterpolation;
     this.tilesContainer.classList.add('interpolation-mode-' + (this._interpolationMode ? 'linear' : 'nearest'));
 
-    if (tileSource.transposeTiles && tileSource.transposeTiles.has(stack.orientation)) {
+    if (this.tileSource.transposeTiles && this.tileSource.transposeTiles.has(stack.orientation)) {
       // Some tile sources may provide transposed tiles versus CATMAID's
       // expectation, e.g., YZ tiles for a ZY oriented stack. In these cases
       // the tile layer is responsible for transposing them back to CATMAID's
@@ -106,9 +107,48 @@
       // This is only run for the TileLayer which usually holds the primary
       // raw data, and not for additional overlay layers. Overlay layers are
       // currently not shown with a small image.
-      this.overviewLayer = tileSource.getOverviewLayer(this);
+      this.overviewLayer = this.tileSource.getOverviewLayer(this);
     }
+
+    CATMAID.checkTileSourceCanary(project, this.stack, this.tileSource)
+        .then(this._handleCanaryCheck.bind(this));
   }
+
+  /**
+   * Handle a canary tile check for the tile source mirror.
+   *
+   * If the mirror is not accessible, switch to the first accessible mirror
+   * (ordered by mirror preference position). Otherwise, warn that no
+   * accessible mirror is available.
+   *
+   * @param  {Object} accessible Check result with normal and cors booleans.
+   */
+  TileLayer.prototype._handleCanaryCheck = function (accessible) {
+    if (!accessible.normal) {
+      Promise
+          .all(this.stack.mirrors.map(function (mirror, index) {
+            return CATMAID.checkTileSourceCanary(
+                project,
+                this.stack,
+                this.stack.createTileSourceForMirror(index));
+          }, this))
+          .then((function (mirrorAccessible) {
+            var mirrorIndex = mirrorAccessible.findIndex(function (accessible) {
+              return accessible.normal;
+            });
+
+            if (mirrorIndex !== -1) {
+              var oldMirrorTitle = this.stack.mirrors[this.mirrorIndex].title;
+              var newMirrorTitle = this.stack.mirrors[mirrorIndex].title;
+              CATMAID.warn('Stack mirror "' + oldMirrorTitle + '" is inaccessible. ' +
+                           'Switching to mirror "' + newMirrorTitle + '".');
+              this.switchToMirror(mirrorIndex);
+            } else {
+              CATMAID.warn('No mirrors for this stack are accessible. Image data may not load.');
+            }
+          }).bind(this));
+    }
+  };
 
   /**
    * Sets the interpolation mode for tile textures to linear pixel interpolation
@@ -605,7 +645,8 @@
         value: 'true',
         help: 'Hide this tile layer if the nearest section is marked as ' +
               'broken, rather than the default behavior of displaying the ' +
-              'nearest non-broken section.'},{
+              'nearest non-broken section.'
+    },{
         name: 'efficiencyThreshold',
         displayName: 'Tile area efficiency threshold',
         type: 'number',
@@ -613,7 +654,17 @@
         step: 0.1,
         value: 0.0,
         help: 'Omit tiles with less area visible than this threshold. This ' +
-              'is useful to reduce data use on bandwidth-limited connections.'}];
+              'is useful to reduce data use on bandwidth-limited connections.'
+    },{
+      name: 'mirrorSelection',
+      displayName: 'Stack mirror',
+      type: 'select',
+      value: this.mirrorIndex,
+      options: this.stack.mirrors.map(function (mirror, idx) {
+        return [idx, mirror.title];
+      }),
+      help: 'Select from which image host to request image data for this stack.'
+    }];
 
     if (this.tileSource && CATMAID.tools.isFn(this.tileSource.getSettings)) {
       settings = settings.concat(this.tileSource.getSettings());
@@ -633,6 +684,8 @@
     } else if ('efficiencyThreshold' === name) {
       this.efficiencyThreshold = value;
       this.redraw();
+    } else if ('mirrorSelection' === name) {
+      this.switchToMirror(value);
     } else if (this.tileSource && CATMAID.tools.isFn(this.tileSource.setSetting)) {
       return this.tileSource.setSetting(name, value);
     }
@@ -653,6 +706,50 @@
    * @return {Element} View for this layer.
    */
   TileLayer.prototype.getView = function () { return this.tilesContainer; };
+
+  /**
+   * Create a new tile layer with the same parameters as this tile layer.
+   *
+   * @param  {Object}    override    Constructor arguments to override.
+   * @param  {function=} constructor Optional PixiLayer subclass constructor.
+   * @return {PixiLayer}             Newly constructed PixiLayer subclass.
+   */
+  TileLayer.prototype.constructCopy = function (override, constructor) {
+    if (typeof constructor === 'undefined') constructor = this.constructor;
+    var args = {
+      stackViewer: this.stackViewer,
+      displayName: this.displayName,
+      stack: this.stack,
+      mirrorIndex: this.mirrorIndex,
+      visibility: this.visibility,
+      opacity: this.opacity,
+      showOverview: !!this.overviewLayer,
+      linearInterpolation: this._interpolationMode
+    };
+    $.extend(args, override);
+    return new constructor(
+        args.stackViewer,
+        args.diplayName,
+        args.stack,
+        args.mirrorIndex,
+        args.visibility,
+        args.opacity,
+        args.showOverview,
+        args.linearInterpolation);
+  };
+
+  /**
+   * Switch to a mirror by replacing this tile layer in the stack viewer
+   * with a new one for the specified mirror index.
+   *
+   * @param  {number} mirrorIdx Index of a mirror in the stack's mirror array.
+   */
+  TileLayer.prototype.switchToMirror = function (mirrorIndex) {
+    if (mirrorIndex === this.mirrorIndex) return;
+    var newTileLayer = this.constructCopy({mirrorIndex: mirrorIndex});
+    var layerKey = this.stackViewer.getLayerKey(this);
+    this.stackViewer.replaceStackLayer(layerKey, newTileLayer);
+  };
 
   /**
    * Set opacity in the range from 0 to 1.

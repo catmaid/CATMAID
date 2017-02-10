@@ -23,8 +23,8 @@ from guardian.models import Permission
 from guardian.shortcuts import get_perms_for_model, assign_perm
 
 from catmaid.models import (Class, Relation, ClassClass, ClassInstance, Project,
-        ClassInstanceClassInstance, Stack, ProjectStack, Overlay,
-        StackClassInstance, TILE_SOURCE_TYPES)
+        ClassInstanceClassInstance, Stack, StackGroup, StackStackGroup, ProjectStack,
+        StackClassInstance, StackGroupRelation, StackMirror, TILE_SOURCE_TYPES)
 from catmaid.fields import Double3D
 from catmaid.control.common import urljoin
 from catmaid.control.classification import get_classification_links_qs, \
@@ -59,55 +59,52 @@ class GroupProxy(Group):
     def get_name(self):
         return self.name
 
-class ImageBaseMixin:
-    def set_image_fields(self, info_object, project_url=None, data_folder=None, needs_zoom=True):
-        """ Sets the image_base, num_zoom_levels, file_extension fields
-        of the calling object. Favor a URL field, if there is one. A URL
-        field, however, also requires the existence of the
-        'fileextension' and 'zoomlevels' field.
-        """
-        zoom_available = 'zoomlevels' in info_object
-        ext_available = 'fileextension' in info_object
 
-        if needs_zoom:
-            # Init with -1 if not available and override later, if needed
-            self.num_zoom_levels = info_object.get('zoomlevels', -1)
+class PreStackGroup():
+    def __init__(self, info_object):
+        self.title = info_object.get('title')
+        if not self.title:
+            raise ValueError("Could not find needed title for stack group")
+        self.classification = info_object.get('classification', None)
+        self.relation = info_object.get('relation', None)
+        valid_relations = ("view", "channel")
+        if self.relation  and self.relation not in valid_relations:
+            raise ValueError("Unsupported stack group relation: {}. Plese use "
+                    "one of: {}.".format(self.relation, ", ".join(valid_relations)))
 
-        self.file_extension = info_object.get('fileextension', 'jpg')
 
-        if 'url' in info_object:
+class PreMirror(object):
+    def __init__(self, data, project_url=None):
+        # Use tile size information if available
+        if 'tile_width' in data:
+            self.tile_width = data['tile_width']
+        if 'tile_height' in data:
+            self.tile_height = data['tile_height']
+        if 'tile_source_type' in data:
+            self.tile_source_type = data['tile_source_type']
+
+        self.file_extension = data.get('fileextension', 'jpg')
+        self.position = data.get('position', 0)
+
+        self.title = data.get('title')
+        if not self.title:
+            raise ValueError("Could not find stack mirror title")
+
+        if 'url' in data:
             # Read out data
-            self.image_base = info_object['url']
+            self.image_base = data['url']
         elif project_url:
             # The image base of a stack is the combination of the
             # project URL and the stack's folder name.
-            path = info_object.get('path', '')
-            folder = info_object.get('folder', '')
+            path = data.get('path', '')
+            folder = data.get('folder', '')
             if folder:
                 path = urljoin(path, folder)
             self.image_base = urljoin(project_url, path)
 
-        if data_folder:
-            # Only retrieve file extension and zoom level if one of
-            # them is not available in the stack definition.
-            if (not zoom_available and needs_zoom) or not ext_available:
-                file_ext, zoom_levels = find_zoom_levels_and_file_ext(
-                    data_folder, folder, needs_zoom )
-                # If there is no zoom level provided, use the found one
-                if not zoom_available and needs_zoom:
-                    if not zoom_levels:
-                        raise RuntimeError("Missing required stack/overlay " \
-                                "field 'zoomlevels' and couldn't retrieve " \
-                                "this information from image data.")
-                    self.num_zoom_levels = zoom_levels
-                # If there is no file extension level provided, use the
-                # found one
-                if not ext_available:
-                    if not file_ext:
-                        raise RuntimeError("Missing required stack/overlay " \
-                                "field 'fileextension' and couldn't retrieve " \
-                                "this information from image data.")
-                    self.file_extension = file_ext
+        # Require some form of image base
+        if not self.image_base:
+            raise ValueError("Could not find valid image base for stack mirror")
 
         # Make sure the image base has a trailing slash, because this is expected
         if self.image_base[-1] != '/':
@@ -117,61 +114,39 @@ class ImageBaseMixin:
         self.accessible = check_http_accessibility(self.image_base,
                 self.file_extension, auth=None)
 
-class PreOverlay(ImageBaseMixin):
-    def __init__(self, info_object, project_url, data_folder):
-        self.name = info_object['name']
-        # Set default opacity, if available, defaulting to 0
-        if 'defaultopacity' in info_object:
-            self.default_opacity = info_object['defaultopacity']
-        else:
-            self.default_opacity = 0
-        # Set 'image_base', 'num_zoom_levels' and 'fileextension'
-        self.set_image_fields(info_object, project_url, data_folder, False)
-
-class PreStackGroup():
-    def __init__(self, info_object):
-        self.name = info_object['name']
-        self.classification = info_object.get('classification', None)
-        self.relation = info_object.get('relation', None)
-        valid_relations = ("has_view", "has_channel")
-        if self.relation  and self.relation not in valid_relations:
-            raise ValueError("Unsupported stack group relation: {}. Plese use "
-                    "one of: {}.".format(self.relation, ", ".join(valid_relations)))
-
-class PreStack(ImageBaseMixin):
+class PreStack(object):
     def __init__(self, info_object, project_url, data_folder, already_known=False):
         # Make sure everything is there
-        required_fields = ['name', 'dimension', 'resolution']
+        required_fields = ['title', 'dimension', 'resolution']
         for f in required_fields:
             if f not in info_object:
                 raise RuntimeError("Missing required stack field '%s'" % f)
         # Read out data
-        self.name = info_object['name']
-        # Set 'image_base', 'num_zoom_levels' and 'fileextension'
-        self.set_image_fields(info_object, project_url, data_folder, True)
+        self.title = info_object['title']
         # The 'dimension', 'resolution' and 'metadata' fields should
         # have every stack.
         self.dimension = info_object['dimension']
         self.resolution = info_object['resolution']
         self.metadata = info_object['metadata'] if 'metadata' in info_object else ""
-        # Use tile size information if available
-        if 'tile_width' in info_object:
-            self.tile_width = info_object['tile_width']
-        if 'tile_height' in info_object:
-            self.tile_height = info_object['tile_height']
-        if 'tile_source_type' in info_object:
-            self.tile_source_type = info_object['tile_source_type']
+
+        # Init with -1 if not available and override later, if needed
+        self.num_zoom_levels = info_object.get('zoomlevels', -1)
+
+        self.comment = info_object.get('comment')
+        self.attribution = info_object.get('attribution')
+        self.description = info_object.get('description', '')
+        self.canary_location = info_object.get('canary_location')
+        self.placeholder_color = info_object.get('placeholder_color')
+
+        # Mirrors are kept in a separate data structure
+        self.mirrors = [PreMirror(md, project_url) for md in info_object.get('mirrors', [])]
+
         # Stacks can optionally contain a "translation" field, which can be used
         # to add an offset when the stack is linked to a project
         self.project_translation = info_object.get('translation', "(0,0,0)")
         # Make sure this dimension can be matched
         if not Double3D.tuple_pattern.match(self.project_translation):
             raise ValueError("Couldn't read translation value")
-        # Add overlays to the stack, if those are declared
-        self.overlays = []
-        if 'overlays' in info_object:
-            for overlay in info_object['overlays']:
-                self.overlays.append(PreOverlay(overlay, project_url, data_folder))
         # Collect stack group information
         self.stackgroups = []
         if 'stackgroups' in info_object:
@@ -187,10 +162,16 @@ class PreStack(ImageBaseMixin):
         self.already_known = already_known
 
     def equals(self, stack):
-        return self.image_base == stack.image_base
-
-    def get_matching_objects(self, stack):
-        return Stack.objects.filter(image_base=self.image_base)
+        """Two PreStack objects are equal if their title matches and they have
+        equal sets of image bases of their PreMirror instances.
+        """
+        other_mirrors = stack.stackmirror_set.all()
+        if len(self.mirrors) == len(other_mirrors):
+            sm = set([m.image_base for m in self.mirrors])
+            om = set([m.image_base for m in other_mirrors])
+            if sm.difference(om):
+                return False
+        return self.title == stack.title
 
 class PreProject:
     def __init__(self, properties, project_url, data_folder, already_known_pid=None):
@@ -203,10 +184,11 @@ class PreProject:
         p = info['project']
 
         # Make sure everything is there
-        if 'name' not in p:
-            raise RuntimeError("Missing required project field '%s'" % f)
+        if 'title' not in p:
+            raise RuntimeError("Missing required project field 'title'")
         # Read out data
-        self.name = p['name']
+        self.title = p['title']
+
         self.stacks = []
         self.has_been_imported = False
         for s in p.get('stacks', []):
@@ -244,52 +226,13 @@ class PreProject:
         if self.already_known:
             raise ValueError("Can only merge into unknown pre projects")
 
-        if self.name != other.name:
-            self.name = "{}, {}".format(self.name, other.name)
+        if self.title != other.title:
+            self.title = "{}, {}".format(self.title, other.title)
 
         self.stacks.extend(other.stacks)
         self.ontology.extend(other.ontology)
         self.classification.extend(other.classification)
         self.stackgroups.extend(other.stackgroups)
-
-def find_zoom_levels_and_file_ext( base_folder, stack_folder, needs_zoom=True ):
-    """ Looks at the first file of the first zoom level and
-    finds out what the file extension as well as the maximum
-    zoom level is.
-    """
-    # Make sure the base path, doesn't start with a separator
-    if base_folder[0] == os.sep:
-        base_folder = base_folder[1:]
-    # Build paths
-    datafolder_path = getattr(settings, datafolder_setting)
-    project_path = os.path.join(datafolder_path, base_folder)
-    stack_path = os.path.join(project_path, stack_folder)
-    slice_zero_path = os.path.join(stack_path, "0")
-    filter_path = os.path.join(slice_zero_path, "0_0_0.*")
-    # Look for 0/0_0_0.* file
-    found_file = None
-    for current_file in glob.glob( filter_path ):
-        if os.path.isdir( current_file ):
-            continue
-        found_file = current_file
-        break
-    # Give up if we didn't find something
-    if found_file is None:
-        return (None, None)
-    # Find extension
-    file_ext = os.path.splitext(found_file)[1][1:]
-    # Look for zoom levels
-    zoom_level = 1
-    if needs_zoom:
-        while True:
-            file_name = "0_0_" + str(zoom_level) + "." + file_ext
-            path = os.path.join(slice_zero_path, file_name)
-            if os.path.exists(path):
-                zoom_level = zoom_level + 1
-            else:
-                zoom_level = zoom_level - 1
-                break
-    return (file_ext, zoom_level)
 
 def check_http_accessibility(image_base, file_extension, auth=None):
     """ Returns true if data below this image base can be accessed through HTTP.
@@ -368,7 +311,7 @@ def get_projects_from_url(url, filter_term, headers=None, auth=None,
         content = r.json()
         for p in content:
             project = PreProject(p, base_url, None)
-            short_name = project.name
+            short_name = project.title
             key = "{}-{}".format(url, short_name)
             projects[key] = project
             index.append((key, short_name))
@@ -376,7 +319,7 @@ def get_projects_from_url(url, filter_term, headers=None, auth=None,
         content = yaml.load_all(r.content)
         for p in content:
             project = PreProject(p, base_url, None)
-            short_name = project.name
+            short_name = project.title
             key = "{}-{}".format(url, short_name)
             if merge_same and key in projects:
                 # Merge newly found and existing projects
@@ -409,7 +352,15 @@ class ProjectSelector(object):
             # Mark known stacks, i.e. the ones having the same image base
             for key, p in projects.iteritems():
                 for s in p.stacks:
-                    s.already_known = Stack.objects.filter(image_base=s.image_base).exists()
+                    # Mark a project as known if an existing project shares the
+                    # same title and the same mirrors.
+                    known = False
+                    for same_title_stack in Stack.objects.filter(title=s.title):
+                        known = s.equals(same_title_stack)
+                        if known:
+                            break
+
+                    s.already_known = known
 
             cursor = cursor or connection.cursor()
             # Mark all projects as known that have the same name as an already
@@ -419,7 +370,7 @@ class ProjectSelector(object):
                 ip_data = []
                 for pi in project_index:
                     ip_data.append(pi[0])
-                    ip_data.append(projects[pi[0]].name)
+                    ip_data.append(projects[pi[0]].title)
                 cursor.execute("""
                     SELECT p.id, ip.key, ip.name
                     FROM project p
@@ -436,9 +387,10 @@ class ProjectSelector(object):
             if 'stacks' in known_project_filter:
                 # Get a mapping of stack ID sets to project IDs
                 cursor.execute("""
-                  SELECT project_id, array_agg(s.image_base)
+                  SELECT project_id, array_agg(sm.image_base ORDER BY sm.image_base)
                   FROM project_stack ps
                   JOIN stack s ON ps.stack_id = s.id
+                  JOIN stack_mirror sm ON s.id = sm.stack_id
                   GROUP BY project_id
                   ORDER BY project_id
                 """)
@@ -450,10 +402,14 @@ class ProjectSelector(object):
                     if p.already_known:
                         # Name matches have precedence
                         continue
-                    # Mark project known if all of its stacks are known
+                    # Mark project known if all of its stacks are known and the
+                    # title matches
                     all_stacks_known = all(s.already_known for s in p.stacks)
                     if all_stacks_known:
-                        known_stack_image_bases = tuple(sorted(s.image_base for s in p.stacks))
+                        known_stack_image_bases = []
+                        for s in p.stacks:
+                            known_stack_image_bases.extend(sm.image_base for sm in s.mirrors)
+                        known_stack_image_bases = tuple(sorted(known_stack_image_bases))
                         known_projects = stack_map[known_stack_image_bases]
                         if known_projects:
                           # First one wins
@@ -551,7 +507,7 @@ class ImportingWizard(SessionWizardView):
             form.replacing_projects = rp = project_selector.replacing_projects
             self.projects = projects
             # Update the folder list and select all by default
-            displayed_projects = [(t[0], t[1].name) for t in np + mp + rp]
+            displayed_projects = [(t[0], t[1].title) for t in np + mp + rp]
             displayed_projects = sorted(displayed_projects, key=lambda key: key[1])
             form.displayed_projects = displayed_projects
             form.fields['projects'].choices = displayed_projects
@@ -1075,10 +1031,10 @@ def ensure_class_instances(project, classification_paths, user, stack=None, stac
                             'user': user
                         })
             if stackgroup:
-                # Link stack to class instance at end of path
-                ClassInstanceClassInstance.objects.get_or_create(
-                        project=project, class_instance_a=last_node,
-                        class_instance_b=stackgroup, relation=linked_to, defaults={
+                # Link stackgroup to class instance at end of path
+                StackGroupClassInstance.objects.get_or_create(
+                        project=project, class_instance=last_node,
+                        stack_group=stackgroup, relation=linked_to, defaults={
                             'user': user
                         })
     else:
@@ -1178,17 +1134,16 @@ def import_projects( user, pre_projects, tags, permissions,
                 existing_stack = linked_objects[0] if valid_link else None
 
                 stack_properties = {
-                    'title': s.name,
+                    'title': s.title,
                     'dimension': s.dimension,
                     'resolution': s.resolution,
-                    'image_base': s.image_base,
                     'num_zoom_levels': s.num_zoom_levels,
-                    'file_extension': s.file_extension,
-                    'tile_width': getattr(s, "tile_width", default_tile_width),
-                    'tile_height': getattr(s, "tile_height", default_tile_height),
-                    'tile_source_type': getattr(s, "tile_source_type",
-                        default_tile_source_type),
-                    'metadata': s.metadata
+                    'metadata': s.metadata,
+                    'comment': s.comment,
+                    'attribution': s.attribution,
+                    'description': s.description,
+                    'canary_location': s.canary_location,
+                    'placeholder_color': s.placeholder_color
                 }
 
                 stack = None
@@ -1226,54 +1181,52 @@ def import_projects( user, pre_projects, tags, permissions,
                 if s.classification:
                     stack_classification[stack] = s.classification
 
-                # Add overlays of this stack
-                for o in s.overlays:
-
-                    overlay_properties = {
-                        'title': o.name,
+                for m in s.mirrors:
+                    mirror_properties = {
                         'stack': stack,
-                        'image_base': o.image_base,
-                        'default_opacity': o.default_opacity,
-                        'file_extension': o.file_extension,
-                        'tile_width': getattr(o, "tile_width", default_tile_width),
-                        'tile_height': getattr(o, "tile_height", default_tile_height),
-                        'tile_source_type': getattr(o, "tile_source_type",
-                            default_tile_source_type)
+                        'title': m.title,
+                        'image_base': m.image_base,
+                        'file_extension': m.file_extension,
+                        'tile_width': getattr(m, "tile_width", default_tile_width),
+                        'tile_height': getattr(m, "tile_height", default_tile_height),
+                        'tile_source_type': getattr(m, "tile_source_type",
+                            default_tile_source_type),
+                        'position': getattr(m, 'position')
                     }
 
-                    overlay = None
-                    known_overlay = None
+                    mirror = None
+                    known_mirror = None
                     if existing_stack:
-                        known_overlay = Overlay.objects.filter(
-                            image_base=o.image_base, stack=existing_stack)
-                    if known_overlay and len(known_overlay) > 0:
+                        known_mirror = StackMirror.objects.filter(
+                            image_base=m.image_base, stack=existing_stack)
+                    if known_mirror and len(known_mirror) > 0:
                       if 'ignore' == known_stack_action:
                           continue
                       elif 'import' == known_stack_action:
                           pass
                       elif 'override' == known_stack_action:
-                          # Find a linked (!) and matching overlay
-                          overlay = existing_overlay
-                          for k,v in overlay_properties.iteritems():
-                            if hasattr(overlay, k):
-                                setattr(ovrelay, k, v)
+                          # Find a linked (!) and matching mirror
+                          mirror = existing_mirror
+                          for k,v in mirror.iteritems():
+                            if hasattr(mirror, k):
+                                setattr(mirror, k, v)
                             else:
-                                raise ValueError("Unknown stack field: " + k)
-                          overlay.save()
+                                raise ValueError("Unknown mirror field: " + k)
+                          mirror.save()
                       else:
-                          raise ValueError("Invalid action for known stacks: " +
+                          raise ValueError("Invalid action for known mirror: " +
                               known_stack_action)
 
-                      # Default to overlay creation
-                      if not overlay:
-                         overlay = Overlay.objects.create(**overlay_properties)
+                    # Default to mirror creation
+                    if not mirror:
+                        mirror = StackMirror.objects.create(**mirror_properties)
 
                 # Collect stack group information
                 for sg in s.stackgroups:
-                    stack_group = stack_groups.get(sg.name)
+                    stack_group = stack_groups.get(sg.title)
                     if not stack_group:
                         stack_group = []
-                        stack_groups[sg.name] = stack_group
+                        stack_groups[sg.title] = stack_group
                     stack_group.append({
                         'stack': stack,
                         'relation': sg.relation
@@ -1282,7 +1235,7 @@ def import_projects( user, pre_projects, tags, permissions,
                 translations[stack] = s.project_translation
 
             # Create new project, if no existing one has been selected before
-            p = project or Project.objects.create(title=pp.name)
+            p = project or Project.objects.create(title=pp.title)
             # Assign permissions to project
             assigned_permissions = []
             for user_or_group, perm in permissions:
@@ -1316,12 +1269,11 @@ def import_projects( user, pre_projects, tags, permissions,
             # Save stack groups
             referenced_stackgroups = {}
             for sg, linked_stacks in stack_groups.iteritems():
-                existing_stackgroups = ClassInstance.objects.filter(project=p,
-                    name=sg, class_column__class_name="stackgroup")
+                existing_stackgroups = StackGroup.objects.filter(title=sg)
 
                 if len(existing_stackgroups) > 1:
                     raise ValueError("Found more than one existing stack group "
-                            "with the same name, expected zero or one.")
+                            "with the same title, expected zero or one.")
                 elif len(existing_stackgroups) > 0:
                     if 'ignore' == known_stackgroup_action:
                         continue
@@ -1332,26 +1284,23 @@ def import_projects( user, pre_projects, tags, permissions,
                     elif 'override' == known_stackgroup_action:
                         existing_stackgroups.delete()
 
-                stack_group = ClassInstance.objects.create(
-                    user=user, project=p, name=sg,
-                    class_column=Class.objects.get(project=p, class_name="stackgroup")
-                )
+                stack_group = StackGroup.objects.create(title=sg)
                 referenced_stackgroups[sg] = stack_group
-                for ls in linked_stacks:
-                    StackClassInstance.objects.create(
-                        user=user, project=p,
-                        relation=Relation.objects.get(project=p,
-                            relation_name=ls['relation']),
-                        class_instance=stack_group,
+                for n,ls in enumerate(linked_stacks):
+                    group_relation, _ = StackGroupRelation.objects.get_or_create(
+                        name=ls['relation'])
+                    StackStackGroup.objects.create(
+                        group_relation=group_relation,
                         stack=ls['stack'],
-                    )
+                        stack_group=stack_group,
+                        position=n)
 
             # Link project level defined stack group classification
             for sg in pp.stackgroups:
-                ref_ci = referenced_stackgroups.get(sg.name)
+                ref_sg = referenced_stackgroups.get(sg.title)
                 if ref_ci and sg.classification:
-                    ensure_class_instances(p, sg.classification,  user,
-                    stackgroup=ref_ci)
+                    ensure_class_instances(p, sg.classification, user,
+                    stackgroup=ref_sg)
 
             # Link classification graphs
             for cg in cls_graph_ids_to_link:
@@ -1377,14 +1326,11 @@ def import_projects( user, pre_projects, tags, permissions,
               Stack.objects.filter(id__in=unused_stack_ids).delete()
               # Delete all empty stack groups
               cursor.execute("""
-                  DELETE FROM class_instance
-                  USING class_instance ci
-                  LEFT OUTER JOIN stack_class_instance sci
-                    ON ci.id = sci.class_instance_id
-                  JOIN class c
-                    ON ci.class_id = c.id
-                  WHERE sci.class_instance_id IS NULL
-                    AND c.class_name = 'stackgroup'
+                  DELETE FROM stack_group
+                  USING stack_group sg
+                  LEFT OUTER JOIN stack_stack_group ssg
+                    ON sg.id = ssg.stack_id
+                  WHERE ssg.id IS NULL
               """)
 
         except Exception as e:

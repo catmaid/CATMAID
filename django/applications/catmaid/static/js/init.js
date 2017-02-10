@@ -1067,7 +1067,7 @@ var project;
               // If there is already a stack loaded and this stack is a channel of
               // the group, add it to the existing stack viewer. Otherwise, open
               // the stack in a new stack viewer.
-              if (firstStackViewer && 'has_channel' === stack.relation) {
+              if (firstStackViewer && 'channel' === stack.relation) {
                 stackViewer = firstStackViewer;
               }
               // Try to load stacks and continue trying if loading fails for one
@@ -1103,9 +1103,10 @@ var project;
    * @param  {number} stackID            ID of the stack to open.
    * @param  {boolean} useExistingViewer True to add the stack to the existing,
    *                                     focused stack viewer.
+   * @param  {number} mirrorIndex        An optional mirror index, defaults to 0
    * @return {Promise}                   A promise yielding the stack viewer.
    */
-  CATMAID.openProjectStack = function(projectID, stackID, useExistingViewer) {
+  CATMAID.openProjectStack = function(projectID, stackID, useExistingViewer, mirrorIndex) {
     if (project && project.id != projectID) {
       project.destroy();
     }
@@ -1114,7 +1115,8 @@ var project;
     var open = CATMAID.fetch(projectID + '/stack/' + stackID + '/info')
       .then(function(json) {
         return handle_openProjectStack(json,
-            useExistingViewer ? project.focusedStackViewer : undefined);
+            useExistingViewer ? project.focusedStackViewer : undefined,
+            mirrorIndex);
       });
 
     // Catch any error, but return original rejected promise
@@ -1141,11 +1143,15 @@ var project;
    *
    * @param  {Object} e                JSON response from the stack info API.
    * @param  {StackViewer} stackViewer Viewer to which to add the stack.
+   * @param  {number}      mirrorIndex Optional mirror index, defaults to 0.
    * @return {Promise}                 A promise yielding the stack viewer
    *                                   containing the new stack.
    */
-  function handle_openProjectStack( e, stackViewer )
+  function handle_openProjectStack( e, stackViewer, mirrorIndex )
   {
+    // By default, use first stack mirror.
+    mirrorIndex = mirrorIndex === undefined ? 0 : mirrorIndex;
+
     if (!stackViewer) {
       CATMAID.throwOnInsufficientWebGlContexts(1);
     }
@@ -1167,9 +1173,6 @@ var project;
     function loadStack(e, stackViewer) {
       var useExistingViewer = typeof stackViewer !== 'undefined';
 
-      var tilesource = CATMAID.getTileSource(e.tile_source_type,
-          e.image_base, e.file_extension, e.tile_width, e.tile_height);
-
       var stack = new CATMAID.Stack(
           e.sid,
           e.stitle,
@@ -1179,9 +1182,12 @@ var project;
           e.broken_slices,
           e.num_zoom_levels,
           -2,
+          e.description,
           e.metadata,
           e.orientation,
-          tilesource );
+          e.canary_location,
+          e.placeholder_color,
+          e.mirrors);
 
       if (!useExistingViewer) {
         stackViewer = new CATMAID.StackViewer(project, stack);
@@ -1196,7 +1202,7 @@ var project;
           stackViewer,
           "Image data (" + stack.title + ")",
           stack,
-          tilesource,
+          mirrorIndex,
           true,
           1,
           !useExistingViewer,
@@ -1204,21 +1210,6 @@ var project;
 
       if (!useExistingViewer) {
         stackViewer.addLayer( "TileLayer", tilelayer );
-
-        $.each(e.overlay, function(key, value) {
-          var tilesource = CATMAID.getTileSource( value.tile_source_type,
-              value.image_base, value.file_extension, value.tile_width, value.tile_height );
-          var layer_visibility = parseInt(value.default_opacity) > 0;
-          var tilelayer2 = new tilelayerConstructor(
-                  stackViewer,
-                  value.title,
-                  stack,
-                  tilesource,
-                  layer_visibility,
-                  value.default_opacity / 100,
-                  false);
-          stackViewer.addLayer( value.title, tilelayer2 );
-        });
 
         project.addStackViewer( stackViewer );
 

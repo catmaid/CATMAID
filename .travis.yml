@@ -8,7 +8,7 @@ env:
   global:
     - SLIMERJSLAUNCHER=$(which firefox) DISPLAY=:99.0 PATH=$TRAVIS_BUILD_DIR/slimerjs:$PATH TMPDIR=$TRAVIS_BUILD_DIR/tmp
 addons:
-  firefox: "38.0"
+  firefox: "39.0"
   apt:
     sources:
     - precise-pgdg-9.5

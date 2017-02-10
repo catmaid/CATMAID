@@ -19,18 +19,23 @@ class DVIDStack:
         self.id = stack_id
         self.title = stack_id
         dvid_url = settings.DVID_URL.rstrip('/')
-        self.image_base = 'api/%s/node/%s/%s/tile/' % (dvid_url, project_id, stack_id)
         levels = stack_data['Extended']['Levels']
         self.num_zoom_levels = len(levels.keys()) - 1
-        self.file_extension = settings.DVID_FORMAT
         r = levels['0']['Resolution']
         self.resolution = DVIDDimension(r[0], r[1], r[2])
-        self.tile_source_type = 8 # DVIDImagetileTileSource
         ts = levels['0']['TileSize']
-        self.tile_width = ts[0]
-        self.tile_height = ts[1]
-        self.metadata = ''
-        self.trakem2_project = False
+        self.description = ''
+        self.metadata = None
+
+        self.mirrors = [{
+            'title': 'Default',
+            'image_base': 'api/%s/node/%s/%s/tile/' % (dvid_url, project_id, stack_id),
+            'file_extension': settings.DVID_FORMAT,
+            'tile_source_type': 8, # DVIDImagetileTileSource
+            'tile_width': ts[0],
+            'tile_height': ts[1],
+            'position': 0
+        }]
 
         # Dimensions
         min_point = source_data['Extended']['MinPoint']

@@ -4,8 +4,10 @@
 
 {% with show_stackgroups=config|get_or_none:"show_stackgroups"|default_if_none:1 %}
 {% with show_stacks=config|get_or_none:"show_stacks"|default_if_none:1 %}
+{% with show_mirrors=config|get_or_none:"show_mirrors"|default_if_none:1 %}
 {% with catalogue_link=config|get_or_none:"catalogue_link"|default_if_none:1 %}
 {% with sample_images=config|get_or_none:"sample_images"|default_if_none:0 %}
+{% with sample_mirror_index=config|get_or_none:"sample_mirror_index"|default_if_none:0 %}
 {% with sample_stack=config|get_or_none:"sample_stack"|default_if_none:0 %}
 {% with sample_slice=config|get_or_none:"sample_slice"|default_if_none:"center" %}
 {% with sample_width=config|get_or_none:"sample_width"|default_if_none:-1 %}
@@ -30,12 +32,14 @@
                     {% with slice=stack|get_slice:sample_slice %}
                     {% if slice|is_none %}
                         Couldn't find requested slice: {{ sample_slice }}
-                    {% else %}
-                        <img class="lazy"
-                            data-src="{{ stack.image_base }}{{ slice }}/small.{{ stack.file_extension }}"
-                            alt="Sample image for {{ stack.title }} on slice {{ slice }}"
-                            {% if sample_width > -1 %} width="{{ sample_width }}" {% endif %}
-                            {% if sample_height > -1 %} height="{{ sample_height }}" {% endif %} />
+                    {% elif stack.stackmirror_set.all|length %}
+                        {% with stack.stackmirror_set.all|dictsort:'position'|get:sample_mirror_index as mirror %}
+                          <img class="lazy"
+                              data-src="{{ mirror.image_base }}{{ slice }}/small.{{ mirror.file_extension }}"
+                              alt="Sample image for {{ stack.title }} on slice {{ slice }}"
+                              {% if sample_width > -1 %} width="{{ sample_width }}" {% endif %}
+                              {% if sample_height > -1 %} height="{{ sample_height }}" {% endif %} />
+                        {% endwith %}
                     {% endif %}
                     {% endwith %}
                 {% endif %}
@@ -53,11 +57,23 @@
             {% endif %}
             {% if show_stacks and stacks_of|get:p.id %}
                 {% for s in stacks_of|get:p.id|dictsort:"id" %}
-                    <dd><a href="?pid={{ p.id }}&tool=navigator&sid0={{ s.id }}&s0=1"
-                        onclick="CATMAID.openProjectStack({{p.id}}, {{s.id}});return false">{{ s.title }}</a></dd>
+                    <dd><dl><dt>
+                      <a href="?pid={{ p.id }}&tool=navigator&sid0={{ s.id }}&s0=1"
+                          onclick="CATMAID.openProjectStack({{p.id}}, {{s.id}});return false">{{ s.title }}
+                          </a>
+                    </dt>
                     {% if s.comment %}
-                        <dd>{{ s.comment|safe }}</dd>
+                        <dd><em>{{ s.comment|safe }}</em></dd>
                     {% endif %}
+                    {% if show_mirrors %}
+                      {% for m in s.stackmirror_set.all %}
+                        <dd>
+                          <a href="?pid={{ p.id }}&tool=navigator&sid0={{ s.id }}&s0=1"
+                              onclick="CATMAID.openProjectStack({{p.id}}, {{s.id}}, undefined, {{m.position}});return false">{{ m.title }}</a>
+                        </dd>
+                      {% endfor %}
+                    {% endif %}
+                    </dl></dd>
                 {% endfor %}
             {% endif %}
             {# Optionally, add the the neuron catalogue link #}
@@ -71,6 +87,8 @@
     {% endif %}
 {% endfor %}
 {% if sample_images %}</table>{% endif %}
+{% endwith %}
+{% endwith %}
 {% endwith %}
 {% endwith %}
 {% endwith %}

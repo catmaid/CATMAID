@@ -2,7 +2,7 @@ import json
 
 from catmaid.control.authentication import requires_user_role
 from catmaid.models import StackGroup, StackStackGroup, UserRole
-from django.http import HttpResponse
+from django.http import JsonResponse
 
 
 @requires_user_role(UserRole.Browse)
@@ -12,7 +12,7 @@ def get_stackgroup_info(request, project_id, stackgroup_id):
     """
     stackgroup = StackGroup.objects.get(id=stackgroup_id)
     stackgroup_links = StackStackGroup.objects \
-        .filter(project_id=project_id, class_instance_id=stackgroup_id) \
+        .filter(project_id=project_id, stackgroup=stackgroup_id) \
         .order_by('id') \
         .select_related('relation')
     stacks = [l.stack_id for l in stackgroup_links]
@@ -20,10 +20,12 @@ def get_stackgroup_info(request, project_id, stackgroup_id):
     result = {
         'id': stackgroup.id,
         'project_id': stackgroup.project_id,
-        'name': stackgroup.name,
+        'title': stackgroup.title,
         'stacks': [{
             'id': l.stack_id,
-            'relation': l.relation.relation_name
+            'relation': l.relation.name,
+            'position': l.position
         } for l in stackgroup_links]
     }
-    return HttpResponse(json.dumps(result), content_type="application/json")
+
+    return JsonResponse(result)

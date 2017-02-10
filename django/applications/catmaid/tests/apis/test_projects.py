@@ -1,11 +1,14 @@
 import json
 import yaml
 
+from ast import literal_eval
+
 from guardian.shortcuts import assign_perm
 from guardian.utils import get_anonymous_user
 
+from catmaid.control import project
 from catmaid.models import (Class, ClassInstance, Project, Stack, User,
-        Relation, StackClassInstance)
+        Relation, StackClassInstance, StackGroup, StackStackGroup, StackMirror)
 
 from .common import CatmaidApiTestCase
 
@@ -61,16 +64,19 @@ class ProjectsApiTests(CatmaidApiTestCase):
             return rl[0]
 
         # Check the first project:
-        stacks = get_project(result, 1)['stacks']
-        self.assertEqual(len(stacks), 1)
+        p1 = get_project(result, 1)
+        self.assertEqual(len(p1['stacks']), 1)
+        self.assertEqual(len(p1['stackgroups']), 0)
 
-        # Check the second project:
-        stacks = get_project(result, 3)['stacks']
-        self.assertEqual(len(stacks), 1)
+        # Check the second project
+        p3 = get_project(result, 3)
+        self.assertEqual(len(p3['stacks']), 1)
+        self.assertEqual(len(p3['stackgroups']), 0)
 
         # Check the third project:
-        stacks = get_project(result, 5)['stacks']
-        self.assertEqual(len(stacks), 2)
+        p5= get_project(result, 5)
+        self.assertEqual(len(p5['stacks']), 2)
+        self.assertEqual(len(p5['stackgroups']), 1)
 
     def test_project_export(self):
         """Test projects/export endpoint, which returns a YAML format which can
@@ -86,12 +92,14 @@ class ProjectsApiTests(CatmaidApiTestCase):
         # Now log in and check that we see a different set of projects:
         self.fake_authentication()
 
-        # Add permission to the test  user to browse three projects
+        # Add permission to the test user to browse three projects
         test_user = User.objects.get(pk=self.test_user_id)
         valid_project_ids = (1,2,3,5)
         for pid in valid_project_ids:
             p = Project.objects.get(pk=pid)
             assign_perm('can_browse', test_user, p)
+
+        visible_projects = project.get_project_qs_for_user(test_user)
 
         response = self.client.get('/projects/export')
         self.assertEqual(response.status_code, 200)
@@ -109,14 +117,13 @@ class ProjectsApiTests(CatmaidApiTestCase):
             seen_projects.append(pid)
 
             p = Project.objects.get(id=pid)
-            self.assertEqual(p.title, data['name'])
+            self.assertEqual(p.title, data['title'])
 
             stacks = p.stacks.all()
             valid_stack_ids = [s.id for s in stacks]
 
-            stackgroups = ClassInstance.objects.filter(project=p,
-                    class_column__in=Class.objects.filter(project=p, class_name='stackgroup'))
-            valid_stackgroup_ids = [sg.id for sg in stackgroups]
+            stackgroup_links = StackStackGroup.objects.filter(stack__in=stacks)
+            valid_stackgroup_ids = [sgl.stack_group_id for sgl in stackgroup_links]
 
             seen_stacks = []
             seen_stackgroups = []
@@ -126,15 +133,35 @@ class ProjectsApiTests(CatmaidApiTestCase):
                 self.assertNotIn(stack_id, seen_stacks)
                 seen_stacks.append(stack_id)
 
+                # Compare stacks
                 stack = Stack.objects.get(id=stack_id)
-                self.assertEqual(stack.image_base, s['url'])
-                self.assertEqual(stack.metadata, s['metadata'])
+                self.assertEqual(stack.title, s['title'])
+                self.assertEqual(literal_eval(unicode(stack.dimension)),
+                        literal_eval(s['dimension']))
+                self.assertEqual(literal_eval(unicode(stack.resolution)),
+                        literal_eval(s['resolution']))
                 self.assertEqual(stack.num_zoom_levels, s['zoomlevels'])
-                self.assertEqual(stack.file_extension, s['fileextension'])
-                self.assertEqual(stack.tile_width, s['tile_width'])
-                self.assertEqual(stack.tile_height, s['tile_height'])
-                self.assertEqual(stack.tile_source_type, s['tile_source_type'])
+                self.assertEqual(stack.metadata, s['metadata'])
                 self.assertEqual(stack.comment, s['comment'])
+                self.assertEqual(stack.attribution, s['attribution'])
+                self.assertEqual(stack.description, s['description'])
+                self.assertEqual(literal_eval(unicode(stack.canary_location)),
+                        literal_eval(s['canary_location']))
+                self.assertEqual(literal_eval(unicode(stack.placeholder_color)),
+                        literal_eval(s['placeholder_color']))
+
+                # Get all stack mirrors for this stack
+                stack_mirrors = StackMirror.objects.filter(stack_id=stack_id).order_by('position')
+                self.assertEqual(len(stack_mirrors), len(s['mirrors']))
+
+                # Expect exported stack mirros to be ordered by position
+                for sm, sm_export in zip(stack_mirrors, s['mirrors']):
+                    # Compare stack mirrors
+                    self.assertEqual(sm.image_base, sm_export['url'])
+                    self.assertEqual(sm.tile_width, sm_export['tile_width'])
+                    self.assertEqual(sm.tile_height, sm_export['tile_height'])
+                    self.assertEqual(sm.tile_source_type, sm_export['tile_source_type'])
+                    self.assertEqual(sm.file_extension, sm_export['fileextension'])
 
                 for sge in s.get('stackgroups', []):
                     sg_id = sge['id']
@@ -142,11 +169,11 @@ class ProjectsApiTests(CatmaidApiTestCase):
                     self.assertNotIn(sg_id, seen_stackgroups)
                     seen_stackgroups.append(sg_id)
 
-                    sg = ClassInstance.objects.get(id=sg_id)
-                    sg_link = StackClassInstance.objects.get(project=p,
-                        stack=stack, class_instance=sg)
-                    self.assertEqual(sg.name, sge['name'])
-                    self.assertEqual(sg_link.relation.relation_name, sge['relation'])
+                    sg = StackGroup.objects.get(id=sg_id)
+                    sg_link = StackStackGroup.objects.get(
+                        stack=stack, stack_group=sg)
+                    self.assertEqual(sg.title, sge['title'])
+                    self.assertEqual(sg_link.group_relation.name, sge['relation'])
 
                 # Make sure we have seen all relevant stack groups
                 self.assertItemsEqual(valid_stackgroup_ids, seen_stackgroups)

@@ -71,34 +71,32 @@ import.
 Importing project and stack information
 ---------------------------------------
 
-Image data in CATMAID is referenced by stacks. Stacks in turn are
-organized in projects. The data used by a stack can have one of
-various types of data sources. A simple and often used source is a
-simple folder structure of tiled image data for each stack. To be
-accessible, a stack's image base has to give access to such a folder
-from the web. Of course, stacks and projects can be created by hand,
-but there is also an importing tool available in Django's admin
-interface. It can be found under *Custom Views* and is named
-*Importer*. For now, the importing tool only supports this standard
-data source.
+Image data in CATMAID is referenced by stack mirrors, which belong to a
+particular stack. Stacks in turn are organized in projects. The data used by a
+stack mirror can have one of various types of data sources. A simple and often used
+source is a simple folder structure of tiled image data for each stack. To be
+accessible, a stack mirror's image base has to give access to such a folder from
+the web. Of course, stacks, stack mirrors and projects can be created by hand,
+but there is also an importing tool available in Django's admin interface. It
+can be found under *Custom Views* and is named *Image data importer*. For now,
+the importing tool only supports this standard data source.
 
-Therefore, the importing tool expects a certain data folder layout to
-work on and also relies on so called *project files* (which are very
-simple) to identify potential projects. The next section will introduce
-the project file format and after that the data layout will be
-explained.
+Therefore, the importing tool expects a certain data folder layout to work on
+and also relies on so called *project files* (which are very simple) to identify
+potential projects. The next section will introduce the project file format and
+after that the data layout will be explained.
 
 How to use the importing tool will be shown in the last section.
 
 Project Files
 ^^^^^^^^^^^^^
 
-If the importing tool encounters a folder with a file called
-``project.yaml`` in it, it will look at it as a potential project. If
-this file is not available, the folder is ignored. However, if the file
-is there it gets parsed and if all information is found the tool is
-looking for, the project can be imported. So let's assume we have a
-project with two stacks stored in folder with the following layout::
+If the importing tool encounters a folder with a file called ``project.yaml`` in
+it, it will look at it as a potential project. If this file is not available,
+the folder is ignored. However, if the file is there it gets parsed and if all
+information is found the tool is looking for, the project can be imported. So
+let's assume we have a project with two stacks having one image data copy each
+in folder with the following layout::
 
    project1/
      project.yaml
@@ -110,100 +108,77 @@ associated stacks. It is a simple `YAML <http://en.wikipedia.org/wiki/YAML>`_
 file and could look like this for the example above::
 
    project:
-       name: "Wing Disc 1"
+       title: "Wing Disc 1"
        stacks:
-         - folder: "stack1"
-           name: "Channel 1"
-           metadata: "PMT Offset: 10, Laser Power: 0.5, PMT Voltage: 550"
+         - title: "Channel 1"
+           description: "PMT Offset: 10, Laser Power: 0.5, PMT Voltage: 550"
            dimension: "(3886,3893,55)"
            resolution: "(138.0,138.0,1.0)"
            zoomlevels: 2
-           fileextension: "jpg"
-           overlays:
-             - name: "Channel 2 overlay"
+           mirrors:
+             - title: "Channel 2 overlay"
+               folder: "stack1"
+               fileextension: "jpg"
+         - title: "Channel 2"
+           description: "PMT Offset: 10, Laser Power: 0.7, PMT Voltage: 500"
+           dimension: "(3886,3893,55)"
+           resolution: "(138.0,138.0,1.0)"
+           zoomlevels: 2
+           mirrors:
+             - title: Channel 2 image data
                folder: "stack2"
-               defaultopacity: 0.5
                fileextension: "jpg"
-             - name: "Remote overlay"
-               url: "http://my.other.server.net/overlaystack/"
-               fileextension: "jpg"
-         - folder: "stack2"
-           name: "Channel 2"
-           metadata: "PMT Offset: 10, Laser Power: 0.7, PMT Voltage: 500"
-           dimension: "(3886,3893,55)"
-           resolution: "(138.0,138.0,1.0)"
-           zoomlevels: 2
-           fileextension: "jpg"
            stackgroups:
-             - name: "Example group"
+             - title: "Example group"
                relation: "has_channel"
-         - url: "http://my.other.server.net/examplestack/"
-           name: "Remote stack"
+         - title: "Remote stack"
            dimension: "(3886,3893,55)"
            resolution: "(138.0,138.0,1.0)"
            zoomlevels: 3
-           fileextension: "png"
            translation: "(10.0, 20.0, 30.0)"
-           tile_width: 512
-           tile_height: 512
-           tile_source_type: 2
+           mirrors:
+             - tile_width: 512
+               tile_height: 512
+               tile_source_type: 2
+               fileextension: "png"
+               url: "http://my.other.server.net/examplestack/"
            stackgroups:
-             - name: "Example group"
+             - title: "Example group"
                relation: "has_channel"
 
-As can be seen, a project has only two properties: a name and a set of
-stacks. A stack, however, needs more information. In general, there are
-two ways to specify the data source for a folder: 1. a folder, than can
-be read relative to the project file and 2. a URL which is used as is
-as a stack's image base.
+As can be seen, a project has only two properties: a name and a set of stacks. A
+stack, however, needs more information. In general, there are two ways to
+specify the data source for a folder: 1. an optional ``path`` and a ``folder``,
+both together are expected to be relative to the ``IMPORTER_DEFAULT_IMAGE_BASE``
+settings or 2. a ``url``,  which is used as a stack mirror's image base.
 
 The first stack in the example above is based on a folder in the same
 directory as the project file. The ``folder`` property names this image
 data folder for this stack, relative to the project file. The name of
-stack is stored in the ``name`` field and metadata (which is shown when
+stack is stored in the ``title`` field and metadata (which is shown when
 a stack is displayed) can be added with the ``metadata`` property. A
 stack also needs ``dimensions`` and ``resolution`` information.
 Dimensions are the stacks X, Y and Z extent in *pixel*. The resolution
 should be in in *nanometers per pixel*, in X, Y and Z.
 
 Additionally to the folder information, the second stack above uses the
-``zoomlevels`` setting to declare the number of zoom levels. It also
-specifies the file extension of the image files with the
-``fileextension`` setting. If these settings are not used, the importer
-will look at the folder to find out the information on its own. Such a
-search is only started if one of those settings is missing and only a
-missing setting is set to the values found. These settings can therefore
-be used to have more explicit project files, avoid file system look-ups
-or to use custom values (e.g. to only use two of four zoom levels).
+``zoomlevels`` field to declare the number of available zoom levels. It also
+specifies the file extension of the image files with the ``fileextension``
+key. Both fields are required.
 
-The last stack in the example above *doesn't* use a local stack folder,
-but declares the stack's image base explicitly by using the ``url``
-setting. This setting *requires* to also use the ``zoomlevel`` and the
-``fileextension`` fields, because the importer won't try different URLs
-to get an idea about the file extension and the number of zoom levels.
-Like done for the folder based stacks, a url based stack needs the
-``resolution`` and ``dimension`` fields, too. It is also possible to declare
-``tile_width``, ``tile_height`` and ``tile_source_type`` information.
-
-A stack can also have *overlays*. To add one or more of them, please
-use the ``overlays`` field in a stack. Like visible in the example, an
-overlay needs at least a ``name`` and a data source, which can be
-either ``folder`` or ``url`` based. The implications of using one or
-the other are similar to the ones for stacks: When using a URL, a
-``fileextension`` field needs to be present, but zoom level information
-is not needed for overlays. For folder based overlays, you can, but
-don't need to, provide a ``fileextension``. If you don't, the import
-tries to find it on its own. Besides that, a default opacity for
-displaying an overlay can be provided, by using the ``defaultopacity``
-key word. It ranges from zero to one. If not provided, it defaults to zero.
+The last stack in the example above *doesn't* use a local stack folder, but
+declares the stack mirror's image base explicitly by using the ``url`` setting.
+Like done for the folder based stacks, a url based stack mirror needs the
+``tile_width``, ``tile_height`` and ``tile_source_type`` fields. The
+corresponding stack defines the ``resolution`` and ``dimension`` fields.
 
 CATMAID can link stacks to so called stack groups. These are general data
 structures that relate stacks to each other, for instance to denote that they
-represent channels of the same data set or are orthogonal views. There is no
-limit on how many stack groups a stack can be part of. Each stack in a project
-file can reference stack groups by ``name`` and the type of ``relation`` this
-stack has to this stack group. At the moment, valid relations are
-``has_channel`` and ``has_view``. All stacks referencing a stack group with the
+represent channels of the same data, orthogonal views or simple overlays. There
+is no limit on how many stack groups a stack can be part of. Each stack in a
+project file can reference stack groups by ``title`` and the type of ``relation``
+this stack has to this stack group. At the moment, valid relations are
+``channel`` and ``view``. All stacks referencing a stack group with the
 same name will be linked to the same new stack group in the new project. In the
 example above, a single stack group named "Example group" will be created,
 having stack 2 and 3 as members---each representing a layer/channel. Stack
@@ -220,15 +195,13 @@ example above will link the last stack ("Remote stack") to the project "Wing
 Disc 1" with an offset of ``(10.0, 20.0, 30.0)`` nanometers. Both other stacks
 will be mapped to the project space origin.
 
-Also, it wouldn't confuse the tool if there is more YAML data in the
-project file than needed. It only uses what is depicted in the sample
-above. But please keep in mind to *not use the tab character* in the
-whitespace indentation (but simple spaces) as this isn't allowed in
-YAML.
+Also, it wouldn't confuse the tool if there is more YAML data in the project
+file than needed. It only uses what is depicted in the sample above. But please
+keep in mind to *not use the tab character* in the whitespace indentation (but
+simple spaces) as this isn't allowed in YAML.
 
 Ontology and classification import
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
 
 The project files explained in the last section can also be used to import
 ontologies and classifications. While CATMAID supports arbitrary graphs to
@@ -243,7 +216,7 @@ can be used on ``project`` level, ``stack`` level and the ``stackgroup`` level.
 Consider this example::
 
     project:
-       name: "test"
+       title: "test"
        ontology:
          - class: 'Metazoa'
            children:
@@ -261,40 +234,46 @@ Consider this example::
                          - relation: 'has_a'
                            class: 'Lineus longissimus'
        stackgroups:
-         - name: 'Test group'
+         - title: 'Test group'
            classification:
               - ['Metazoa', 'Protostomia', 'Lophotrochozoa', 'Nematostella', 'Lineus longissimus']
        stacks:
-         - url: "https://example.org/data/imagestack/"
-           name: "Channel 1"
-           metadata: "PMT Offset: 10, Laser Power: 0.5, PMT Voltage: 550"
+         - title: "Channel 1"
+           description: "PMT Offset: 10, Laser Power: 0.5, PMT Voltage: 550"
            dimension: "(1024,1024,800)"
            resolution: "(2.0,2.0,1.0)"
            zoomlevels: 1
-           fileextension: "jpg"
            translation: "(10.0, 20.0, 30.0)"
            classification:
               - ['Metazoa', 'Deuterostomia']
-         - url: "https://example.org/data/imagestack-sample-108/"
-           name: "Channel 1"
-           metadata: "PMT Offset: 10, Laser Power: 0.5, PMT Voltage: 550"
+           mirrors:
+              - title:  Channel 1
+                url: "https://example.org/data/imagestack/"
+                fileextension: "jpg"
+         - title: "Channel 1"
+           description: "PMT Offset: 10, Laser Power: 0.5, PMT Voltage: 550"
            dimension: "(1024,1024,800)"
            resolution: "(2.0,2.0,1.0)"
            zoomlevels: 1
-           fileextension: "jpg"
            translation: "(10.0, 20.0, 30.0)"
+           mirrors:
+             - title: Channel 1
+               url: "https://example.org/data/imagestack-sample-108/"
+               fileextension: "jpg"
            stackgroups:
-            - name: "Test group"
+            - title: "Test group"
               relation: "has_channel"
-         - folder: "Sample108_FIB_catmaid copy"
-           name: "Channel 2"
-           metadata: "PMT Offset: 10, Laser Power: 0.5, PMT Voltage: 550"
+         - title: "Channel 2"
+           description: "PMT Offset: 10, Laser Power: 0.5, PMT Voltage: 550"
            dimension: "(1024,1024,800)"
            resolution: "(2.0,2.0,1.0)"
            zoomlevels: 1
-           fileextension: "jpg"
+           mirrors:
+            - title: Channel 2
+              folder: "Sample108_FIB_catmaid copy"
+              fileextension: "jpg"
            stackgroups:
-            - name: "Test group"
+            - title: "Test group"
               relation: "has_channel"
 
 The project level ontology definition represent an ontology with the root node
@@ -320,7 +299,7 @@ File and Folder Layout
 The importing tool expects a certain file any folder layout to work with.
 It assumes that there is one data folder per CATMAID instance that is
 accessible from the outside world and is somehow referred to within
-a stack's image base (if referring to folders in the project file). As
+a stack mirror's image base (if referring to folders in the project file). As
 an example, let's say a link named *data* has been placed in CATMAID's
 httpdocs directory. This link links to your actual data storage and has
 a layout like the following::
@@ -354,23 +333,27 @@ available.
 Using the Importer
 ^^^^^^^^^^^^^^^^^^
 
-To use the importer, you have to adjust your CATMAID settings file to make your
-data path known to CATMAID. This can be done with the ``CATMAID_IMPORT_PATH``
-settings. Sticking to the examples from before, this setting might be::
+The import offers to import from local project files, remote CATMAID instances
+or remote project files/exports.
+
+To use the importer with project files, you have to adjust your CATMAID settings
+file to make your data path known to CATMAID. This can be done with the
+``CATMAID_IMPORT_PATH`` settings. Sticking to the examples from before, this
+setting might be::
 
     CATMAID_IMPORT_PATH = <CATMAID-PATH>/httpdocs/data
 
-For imported stacks that don't provide an image URL by themselves, CATMAID can
-construct an image base from the the ``IMPORTER_DEFAULT_IMAGE_BASE`` setting
-plus the imported project and stack names. For the example above, this variable
-could be set to::
+For imported stack mirrors that don't provide an image URL by themselves,
+CATMAID can construct an image base from the the ``IMPORTER_DEFAULT_IMAGE_BASE``
+setting plus the imported project and stack names. For the example above, this
+variable could be set to::
 
     IMPORTER_DEFAULT_IMAGE_BASE = http://<CATMAID-URL>/data
 
-With this in place, the importer can be used through Django's admin
-interface. It is listed as *Importer* under *Custom Views*. The first
-step is to give the importer more detail about which folders to look
-in for potential projects:
+With this in place, the importer can be used through Django's admin interface.
+It is listed as *Image data importer* under *Custom Views*. The first step is to
+give the importer more detail about which folders to look in for potential
+projects:
 
 .. image:: _static/importer/path_setup.png
 
@@ -386,17 +369,16 @@ place.  A project is known can be declared to be known if the name of an
 imported project matches the name of an already existing one. Or, it can be
 considered known if if there is a project that is linked to the very same
 stacks like the project to be imported. A stack in turn is known if there is
-already a stack with the same image base. The last setting on this dialog is
-the *Base URL*. By default it is set to the value of
+already a stack with the same mirror image base. The last setting on this dialog
+is the *Base URL*. By default it is set to the value of
 ``IMPORTER_DEFAULT_IMAGE_BASE`` (if available). This setting plus the relative
 path stay the same for every project to be imported in this run. It is used if
 imported stacks don't provide a URL explicitly. To continue, click on the *next
 step* button.
 
-The importer will tell you if it doesn't find any projects based on
-the settings of the first step. However, if it does find potential
-projects, it allows you to unselect projects that shouldn't get
-imported and to add more details:
+The importer will tell you if it doesn't find any projects based on the settings
+of the first step. However, if it does find potential projects, it allows you to
+unselect projects that shouldn't get imported and to add more details:
 
 .. image:: _static/importer/project_setup.png
 

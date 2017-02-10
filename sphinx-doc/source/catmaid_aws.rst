@@ -47,10 +47,11 @@ Now, setup the Django-backend::
 
 .. add a function to make enable/disable phppgadmin visibility
 
-In the next steps, you have customize and configure users, projects and stacks in the database,
-and host your image data stacks. You do not need to host your dataset tile on the same instance,
-but can choose to store them at any web-accessible host. You may want to get in contact with the
-`OpenConnectome Project <http://openconnectomeproject.org/>`_ for large dataset storage.
+In the next steps, you have customize and configure users, projects and stacks
+in the database, and host your image data stack mirrors. You do not need to host
+your dataset tile on the same instance, but can choose to store them at any
+web-accessible host. You may want to get in contact with the `OpenConnectome
+Project <http://openconnectomeproject.org/>`_ for large dataset storage.
 
 If you want to update your instance to the latest development version, just call::
 
@@ -60,16 +61,20 @@ In order to modify and control your database, you can use phppgadmin::
 
     http://$ec2-hostname/phppgadmin/
 
-To obtain the relevant information for the stack (dimension, image_base), you need to tile your image dataset
-and upload it to publicly accessible host. We assume you have a set of aligned, consecutive image files (e.g. TIFF)
-of your dataset. You can then use the tiling scripts to generate a image pyramid. From the folder with your image
-files, call the *tile_stack* script::
+To obtain the relevant information for the stack (dimension, resolution, ...)
+and its mirrors (image_base, ...), you need to tile your image dataset and
+upload it to publicly accessible host. We assume you have a set of aligned,
+consecutive image files (e.g. TIFF) of your dataset. You can then use the tiling
+scripts to generate a image pyramid. From the folder with your image files, call
+the *tile_stack* script::
 
     ./path-to-your-CATMAID-clone/scripts/tiles/tile_stack "*.tif" 256 192
 
-This creates the image pyramid folders with 256x256 pixel sized tiles. You can increase this to a number which is
-a power of two. If you have successfully generated the image pyramid, upload them to your data host, and use
-the URL to the base folder for the *image_base* when creating the stack.
+This creates the image pyramid folders with 256x256 pixel sized tiles. You can
+increase this to a number which is a power of two. If you have successfully
+generated the image pyramid, upload them to your data host, and use the URL to
+the base folder for the *image_base* when creating the stack mirror for the new
+stack.
 
 .. note::
 

@@ -24,26 +24,30 @@ class Command(BaseCommand):
 
         # Define the details of a stack for two of these projects:
 
-        projects['Default Project']['stacks'].append(
-            {'title': 'Original data.',
-             'dimension': Integer3D(4096,4096,16),
-             'resolution': Double3D(3.2614000000000001,3.2614000000000001,60),
-             'image_base': 'http://fly.mpi-cbg.de/map/evaluation/original/',
-             'comment': '''<p>&copy;2007 by Stephan Saalfeld.</p>
+        projects['Default Project']['stacks'].append({
+            'title': 'Original data.',
+            'dimension': Integer3D(4096,4096,16),
+            'resolution': Double3D(3.2614000000000001,3.2614000000000001,60),
+            'comment': '''<p>&copy;2007 by Stephan Saalfeld.</p>
 <p>Rendered with <a href="http://www.povray.org/">POV-Ray&nbsp;v3.6</a>
 using this <a href="http://fly.mpi-cbg.de/~saalfeld/download/volume.tar.bz2">scene-file</a>.</p>''',
-             'trakem2_project': False})
+            'mirrors': [{
+                'title': 'Public copy',
+                'image_base': 'http://fly.mpi-cbg.de/map/evaluation/original/',
+            }]})
 
-        projects['Focussed Ion Beam (FIB)']['stacks'].append(
-            {'title': 'Focussed Ion Beam (FIB) stack of Rat Striatum',
-             'dimension': Integer3D(2048,1536,460),
-             'resolution': Double3D(5,5,9),
-             'image_base': 'http://incf.ini.uzh.ch/image-stack-fib/',
-             'comment': '''
+        projects['Focussed Ion Beam (FIB)']['stacks'].append({
+            'title': 'Focussed Ion Beam (FIB) stack of Rat Striatum',
+            'dimension': Integer3D(2048,1536,460),
+            'resolution': Double3D(5,5,9),
+            'comment': '''
 <p>&copy;2009 <a href="http://people.epfl.ch/graham.knott">Graham Knott</a>.</p>
 <p>Public INCF data set available at the
 <a href="http://www.incf.org/about/nodes/switzerland/data">Swiss INCF Node</a>.</p>''',
-             'trakem2_project': False})
+            'mirrors': [{
+                'title': 'FIB Public copy',
+                'image_base': 'http://incf.ini.uzh.ch/image-stack-fib/',
+             }]})
 
         # Make sure that each project and its stacks exist, and are
         # linked via ProjectStack:
@@ -52,13 +56,17 @@ using this <a href="http://fly.mpi-cbg.de/~saalfeld/download/volume.tar.bz2">sce
             project_object, _ = Project.objects.get_or_create(
                 title=project_title)
             for stack_dict in projects[project_title]['stacks']:
-                try:
-                    stack = Stack.objects.get(
-                        title=stack_dict['title'],
-                        image_base=stack_dict['image_base'])
-                except Stack.DoesNotExist:
-                    stack = Stack(**stack_dict)
-                    stack.save()
+                stack, _ = Stack.objects.get_or_create(
+                    title=stack_dict['title'],
+                    defaults={
+                       'dimension': stack_dict['dimension'],
+                       'resolution': stack_dict['resolution'],
+                    })
+                mirrors = list(StackMirror.objects.filter(stack=stack))
+                if not mirrors:
+                    for m in stack_dict['mirrors']:
+                        mirrors.append(StackMirror.create(stack=stack,
+                                title=m['title'], image_base=m['image_base']))
                 ProjectStack.objects.get_or_create(
                     project=project_object,
                     stack=stack)

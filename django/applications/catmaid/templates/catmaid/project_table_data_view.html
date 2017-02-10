@@ -4,8 +4,10 @@
 
 {% with show_stackgroups=config|get_or_none:"show_stackgroups"|default_if_none:1 %}
 {% with show_stacks=config|get_or_none:"show_stacks"|default_if_none:1 %}
+{% with show_mirrors=config|get_or_none:"show_mirrors"|default_if_none:0 %}
 {% with catalogue_link=config|get_or_none:"catalogue_link"|default_if_none:1 %}
 {% with sample_images=config|get_or_none:"sample_images"|default_if_none:0 %}
+{% with sample_mirror_index=config|get_or_none:"sample_mirror_index"|default_if_none:0 %}
 {% with sample_slice=config|get_or_none:"sample_slice"|default_if_none:"center" %}
 {% with sample_width=config|get_or_none:"sample_width"|default_if_none:-1 %}
 {% with sample_height=config|get_or_none:"sample_height"|default_if_none:-1 %}
@@ -16,7 +18,7 @@
 	<tr>
 		<td class="projectname">{{ p.title }}</td>
 		{% for sg in stackgroups_of|get:p.id|dictsort:'id' %}
-		    <td class="stackname">
+				<td class="stackname">
 				<a href="?pid={{ p.id }}&tool=navigator&sg={{ sg.id }}"
 					onclick="CATMAID.openStackGroup({{p.id}}, {{sg.id}}, false);return false"
 					title="Stack group #{{ sg.id }}">{{ sg.name }}</a>
@@ -33,25 +35,36 @@
 					<figure>
 					<a href="?pid={{ p.id }}&tool=navigator&sid0={{ s.id }}&s0=1"
 							onclick="CATMAID.openProjectStack({{p.id}}, {{s.id}});return false">
-						<img class="lazy"
-							data-src="{{ s.image_base }}{{ slice }}/small.{{ s.file_extension }}"
-							alt="Sample image for {{ s.title }} on slice {{ slice }}"
-							title="{{ s.comment|striptags|safe }}"
-							{% if sample_width > -1 %} width="{{ sample_width }}" {% endif %}
-							{% if sample_height > -1 %} height="{{ sample_height }}" {% endif %} />
+						{% with s.stackmirror_set.all|dictsort:'position'|get:sample_mirror_index as mirror %}
+							<img class="lazy"
+								data-src="{{ mirror.image_base }}{{ slice }}/small.{{ mirror.file_extension }}"
+								alt="Sample image for {{ s.title }} on slice {{ slice }}"
+								title="{{ s.comment|striptags|safe }}"
+								{% if sample_width > -1 %} width="{{ sample_width }}" {% endif %}
+								{% if sample_height > -1 %} height="{{ sample_height }}" {% endif %} />
+						{% endwith %}
 					</a>
 					<figcaption>{{s.comment|safe}}</figcaption>
 					</figure>
 				{% endif %}
 				{% endwith %}
-				</td>
 			{% else %}
 				<td class="stackname">
 					<a href="?pid={{ p.id }}&tool=navigator&sid0={{ s.id }}&s0=1"
 							onclick="CATMAID.openProjectStack({{p.id}}, {{s.id}});return false" title="{{s.comment}}">
 						{{ s.title }}</a>
-				</td>
 			{% endif %}
+			{% if show_mirrors %}
+				<dl>
+				{% for m in s.stackmirror_set.all %}
+					<dd>
+						<a href="?pid={{ p.id }}&tool=navigator&sid0={{ s.id }}&s0=1"
+								onclick="CATMAID.openProjectStack({{p.id}}, {{s.id}}, undefined, {{m.position}});return false">{{ m.title }}</a>
+					</dd>
+				{% endfor %}
+				</dl>
+			{% endif %}
+			</td>
 		{% endfor %}
 		{% if p.is_catalogueable and catalogue_link %}
 			<td class="stackname">
@@ -63,6 +76,8 @@
 {% endfor %}
 </table>
 
+{% endwith %}
+{% endwith %}
 {% endwith %}
 {% endwith %}
 {% endwith %}

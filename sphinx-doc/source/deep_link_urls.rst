@@ -4,7 +4,8 @@ Deep Link URL Format
 CATMAID supports deep link URLs that allow users to share persistent references
 to particular stack locations and views. These URLs also support opening tools,
 multiple stack viewers, and limited specialized behaviors such as activating
-nodes in the tracing tool.
+nodes in the tracing tool. Which stack mirror is used for a referenced stack is
+up to the client instance.
 
 CATMAID deep link URLs are standard HTTP URLs with query strings, for example:
 

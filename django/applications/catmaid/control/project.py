@@ -16,15 +16,12 @@ from rest_framework.decorators import api_view
 # All classes needed by the tracing system alongside their
 # descriptions.
 needed_classes = {
-    'stackgroup': "An identifier for a group of stacks",
     'annotation': "An arbitrary annotation",
 }
 
 # All relations needed by the tracing system alongside their
 # descriptions.
 needed_relations = {
-    'has_channel': "A stack group can have assosiated channels",
-    'has_view': "A stack group can have assosiated orthogonal views",
     'is_a': "A generic is-a relationship",
     'part_of': "One thing is part of something else.",
     'annotated_with': "Something is annotated by something else.",
@@ -66,7 +63,7 @@ def validate_project_setup(project_id, user_id, fix=False,
             missing_relations.append(nr)
             if fix:
                 rel_model.objects.get_or_create(project_id=project_id,
-                        relation_name=nr, user_id=user_id)
+                        relation_name=nr, defaults={'user_id': user_id, 'description': desc})
 
     for nd, desc in needed_datastores.iteritems():
         exists = datastore_model.objects.filter(name=nd).exists()
@@ -210,13 +207,14 @@ def projects(request):
     # Get all stack groups for this project
     project_stack_groups = {}
     cursor.execute("""
-        SELECT ci.project_id, ci.id, ci.name
-        FROM class_instance ci
+        SELECT DISTINCT ps.project_id, sg.id, sg.title, sg.comment
+        FROM stack_group sg
+        JOIN stack_stack_group ssg
+          ON ssg.stack_group_id = sg.id
+        JOIN project_stack ps
+          ON ps.stack_id = ssg.stack_id
         INNER JOIN (VALUES {}) user_project(id)
-        ON ci.project_id = user_project.id
-        INNER JOIN class c
-        ON ci.class_id = c.id
-        WHERE c.class_name = 'stackgroup'
+          ON ps.project_id = user_project.id
     """.format(project_template), user_project_ids)
     for row in cursor.fetchall():
         groups = project_stack_groups.get(row[0])
@@ -226,6 +224,7 @@ def projects(request):
         groups.append({
             'id': row[1],
             'title': row[2],
+            'comment': row[3],
         })
 
     result = []
@@ -259,14 +258,47 @@ def export_projects(request):
     project_template = ",".join(("(%s)",) * len(projects)) or "()"
     user_project_ids = [p.id for p in projects]
 
+    # Get information on all relevant stack mirrors
     cursor.execute("""
-        SELECT ps.project_id, ps.stack_id, s.title, s.image_base, s.metadata,
-        s.dimension, s.resolution, s.num_zoom_levels, s.file_extension, s.tile_width,
-        s.tile_height, s.tile_source_type, s.comment FROM project_stack ps
+        SELECT sm.id, sm.stack_id, sm.title, sm.image_base, sm.file_extension,
+                sm.tile_width, sm.tile_height, sm.tile_source_type, sm.position
+        FROM stack_mirror sm
+        JOIN project_stack ps
+            ON sm.stack_id = ps.stack_id
+        JOIN (VALUES {}) user_project(id)
+            ON ps.project_id = user_project.id
+        ORDER BY sm.id ASC, sm.position ASC
+    """.format(project_template), user_project_ids)
+
+    # Build a stack mirror index that maps all stack mirrors to their respective
+    # stacks.
+    stack_mirror_index = {}
+    for row in cursor.fetchall():
+        stack_id = row[1]
+        mirrors = stack_mirror_index.get(stack_id)
+        if not mirrors:
+            mirrors = []
+            stack_mirror_index[stack_id] = mirrors
+        mirrors.append({
+            'title': row[2],
+            'url': row[3],
+            'fileextension': row[4],
+            'tile_width': row[5],
+            'tile_height': row[6],
+            'tile_source_type': row[7],
+            'position': row[8]
+        })
+
+    # Get all relevant stacks
+    cursor.execute("""
+        SELECT ps.project_id, ps.stack_id, s.title,
+            s.dimension, s.resolution, s.num_zoom_levels, s.metadata, s.comment,
+            s.attribution, s.description, s.canary_location, s.placeholder_color
+        FROM project_stack ps
         INNER JOIN (VALUES {}) user_project(id)
-        ON ps.project_id = user_project.id
+            ON ps.project_id = user_project.id
         INNER JOIN stack s
-        ON ps.stack_id = s.id
+            ON ps.stack_id = s.id
     """.format(project_template), user_project_ids)
     visible_stacks = dict()
     project_stack_mapping = dict()
@@ -278,66 +310,37 @@ def export_projects(request):
             project_stack_mapping[row[0]] = stacks
         stack = {
             'id': row[1],
-            'name': row[2],
-            'url': row[3],
-            'metadata': row[4],
-            'dimension': row[5],
-            'resolution': row[6],
-            'zoomlevels': row[7],
-            'fileextension': row[8],
-            'tile_width': row[9],
-            'tile_height': row[10],
-            'tile_source_type': row[11],
-            'comment': row[12]
+            'title': row[2],
+            'dimension': row[3],
+            'resolution': row[4],
+            'zoomlevels': row[5],
+            'metadata': row[6],
+            'comment': row[7],
+            'attribution': row[8],
+            'description': row[9],
+            'canary_location': row[10],
+            'placeholder_color': row[11],
+            'mirrors': stack_mirror_index.get(row[1], [])
         }
+
         stacks.append(stack)
         visible_stacks[row[1]] = stack
-
-    # Add overlay information
-    stack_template = ",".join(("(%s)",) * len(visible_stacks)) or "()"
-    cursor.execute("""
-        SELECT stack_id, o.id, title, image_base, default_opacity, file_extension,
-        tile_width, tile_height, tile_source_type
-        FROM overlay o
-        INNER JOIN (VALUES {}) visible_stack(id)
-        ON o.stack_id = visible_stack.id
-    """.format(stack_template), visible_stacks.keys())
-    stack_overlay_mapping = dict()
-    for row in cursor.fetchall():
-        stack = visible_stacks.get(row[0])
-        if not stack:
-            raise ValueError("Couldn't find stack {} for overlay {}".format(row[0], row[1]))
-        overlays = stack.get('overlays')
-        if not overlays:
-            overlays = []
-            stack['overlays'] = overlays
-        overlays.append({
-            'id': row[1],
-            'name': row[2],
-            'url': row[3],
-            'defaultopacity': row[4],
-            'fileextension': row[5],
-            'tile_width': row[6],
-            'tile_height': row[7],
-            'tile_source_type': row[8]
-        })
 
     # Add stack group information to stacks
     project_stack_groups = {}
     cursor.execute("""
-        SELECT sci.class_instance_id, ci.project_id, ci.name,
-               array_agg(sci.stack_id), array_agg(r.relation_name)
-        FROM class_instance ci
+        SELECT sg.id, ps.project_id, sg.title, sg.comment,
+               array_agg(ssg.stack_id), array_agg(sgr.name)
+        FROM stack_group sg
+        JOIN stack_stack_group ssg
+          ON ssg.stack_group_id = sg.id
+        JOIN project_stack ps
+          ON ps.stack_id = ssg.stack_id
         INNER JOIN (VALUES {}) user_project(id)
-        ON ci.project_id = user_project.id
-        INNER JOIN class c
-        ON ci.class_id = c.id
-        INNER JOIN stack_class_instance sci
-        ON ci.id = sci.class_instance_id
-        INNER JOIN relation r
-        ON sci.relation_id = r.id
-        WHERE c.class_name = 'stackgroup'
-        GROUP BY sci.class_instance_id, ci.project_id, ci.name;
+          ON ps.project_id = user_project.id
+        INNER JOIN stack_group_relation sgr
+          ON ssg.group_relation_id = sgr.id
+        GROUP BY sg.id, ps.project_id, sg.title
     """.format(project_template), user_project_ids)
     for row in cursor.fetchall():
         groups = project_stack_groups.get(row[1])
@@ -346,10 +349,11 @@ def export_projects(request):
             project_stack_groups[row[1]] = groups
         groups.append({
             'id': row[0],
-            'name': row[2],
+            'title': row[2],
+            'comment': row[3],
         })
         # Add to stacks
-        for stack_id, relation_name in zip(row[3], row[4]):
+        for stack_id, relation_name in zip(row[4], row[5]):
             stack = visible_stacks.get(stack_id)
             if not stack:
                 # Only add visible stacks
@@ -360,7 +364,7 @@ def export_projects(request):
                 stack['stackgroups'] = stack_groups
             stack_groups.append({
                 'id': row[0],
-                'name': row[2],
+                'title': row[2],
                 'relation': relation_name
             })
 
@@ -368,13 +372,11 @@ def export_projects(request):
     empty_tuple = tuple()
     for p in projects:
         stacks = project_stack_mapping.get(p.id, empty_tuple)
-        stackgroups = project_stack_groups.get(p.id, empty_tuple)
-
         result.append({
             'project': {
                 'id': p.id,
-                'name': p.title,
-                'stacks': stacks
+                'title': p.title,
+                'stacks': stacks,
             }
         })
 

@@ -90,12 +90,20 @@ def get_available_data_views( request ):
     return HttpResponse(json.dumps(makeJSON_legacy_list(dataviews)), content_type="application/json")
 
 def get_default_properties( request ):
-    """ Return the properies of the default data view.
+    """ Return the properies of the default data view. If no data view is
+    configured as default, the one with the lowest ID will be returned.
     """
-    default = DataView.objects.filter(is_default=True)[0]
-    default = dataview_to_dict( default )
+    default_views = DataView.objects.filter(is_default=True)
+    if len(default_views) > 0:
+        result = dataview_to_dict(default_views[0])
+    else:
+        all_views = DataView.objects.all().order_by('id')
+        if all_views.count() > 0:
+            result = dataview_to_dict(all_views[0])
+        else:
+            result = {}
 
-    return HttpResponse(json.dumps(default), content_type="application/json")
+    return JsonResponse(result)
 
 def get_detail(request, data_view_id):
     """Get details on a particular data view.

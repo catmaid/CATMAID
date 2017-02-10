@@ -352,7 +352,11 @@
     };
 
     self.createTileSourceForMirror = function (mirrorIdx) {
-      var selectedMirror = self.mirrors[mirrorIdx];
+      var mirror = self.mirrors[mirrorIdx];
+      if (!mirror) {
+        throw new CATMAID.ValueError("No mirror with index " + mirrorIdx + " available");
+      }
+      var selectedMirror = mirror;
 
       return CATMAID.getTileSource(
           selectedMirror.tile_source_type,

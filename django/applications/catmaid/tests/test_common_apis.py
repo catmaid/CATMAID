@@ -94,16 +94,20 @@ class InsertionTest(TestCase):
     def insert_stack(self):
         s = Stack()
         s.title = "Example Stack"
-        s.image_base = "http://incf.ini.uzh.ch/image-stack-fib/"
-        s.trakem2_project = False
         s.dimension = Integer3D(x=2048, y=1536, z=460)
         s.resolution = Double3D(x=5.0001, y=5.0002, z=9.0003)
         s.num_zoom_levels = -1
-        s.file_extension = 'jpg'
-        s.tile_width = 256
-        s.tile_height = 256
-        s.tile_source_type = 1
         s.save()
+
+        sm = StackMirror()
+        sm.stack = s
+        sm.image_base = "http://incf.ini.uzh.ch/image-stack-fib/"
+        sm.file_extension = 'jpg'
+        sm.tile_width = 256
+        sm.tile_height = 256
+        sm.tile_source_type = 1
+        sm.save()
+
         return s
 
     def test_project_insertion(self):

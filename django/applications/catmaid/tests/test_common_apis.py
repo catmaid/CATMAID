@@ -10,7 +10,7 @@ from guardian.utils import get_anonymous_user
 from guardian.management import create_anonymous_user
 
 from catmaid.fields import Double3D, Integer3D
-from catmaid.models import Project, Stack, ProjectStack
+from catmaid.models import Project, Stack, ProjectStack, StackMirror
 from catmaid.models import ClassInstance, Log
 from catmaid.models import Treenode, Connector, User
 from catmaid.models import TreenodeClassInstance, ClassInstanceClassInstance

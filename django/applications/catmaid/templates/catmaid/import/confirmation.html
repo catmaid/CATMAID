@@ -30,9 +30,9 @@
     <p>The following projects have been selected to be imported together with
     the settings listed. Please confirm this selection to do the actual import.
     Alternatively, you can go back and change settings. If an image base of a
-    stack or an overlay is displayed in red, it means it can't be accessed
-    through HTTP. Of course, you can still import data in this situation, but
-    you are unlikely to see any images until your data can be accessed.</p>
+    stack mirror is displayed in red, it means it can't be accessed through
+    HTTP. Of course, you can still import data in this situation, but you are
+    unlikely to see any images until your data can be accessed.</p>
     <p><table>
         <tr>
             <th>Project</th>
@@ -43,14 +43,14 @@
             <th>Tile size (w x h)</th>
             <th>Stack Extension</th>
             <th>Stack Image Base</th>
-            <th>Stack Metadata</th>
+            <th>Stack Description</th>
         <tr>
         {% for p in projects %}
             {% if p.stacks %}
               {% for s in p.stacks %}
                 <tr>
                   {% if forloop.first %}
-                    <td>{{ p.name }}
+                    <td>{{ p.title }}
                     {% if p.already_known %}
                         <br /><span class="help">Known project</span>
                         <br /><span class="help">Action: {{ p.action }}</span>
@@ -63,30 +63,27 @@
                   {% endif %}
                   <td>{{ s.dimension }}</td>
                   <td>{{ s.resolution }}</td>
-                  <td>{{ s.name }}</td>
+                  <td>{{ s.title }}</td>
                   <td>{{ s.num_zoom_levels }}</td>
-                  <td>{{ s.tile_width }} x {{ s.tile_height }}</td>
-                  <td>{{ s.file_extension }}</td>
-                  {% if s.accessible %}
-                      <td class="accessible">{{ s.image_base }}</td>
-                  {% else %}
-                      <td class="not-accessible">{{ s.image_base }}</td>
-                  {% endif %}
-                  <td>{{ s.metadata }}</td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td>{{ s.description }}</td>
                 </tr>
-                {% for o in s.overlays %}
+                {% for m in s.mirrors %}
                   <tr>
                     <td></td>
                     <td></td>
                     <td></td>
-                    <td colspan="2"><em>Overlay:</em> {{ o.name }}</td>
-                    <td>{{ o.file_extension }}</td>
+                    <td colspan="2"><em>Mirror:</em> {{ m.title }}</td>
+                    <td>{{ m.tile_width }} x {{ m.tile_height }}</td>
+                    <td>{{ m.file_extension }}</td>
                     {% if o.accessible %}
-                        <td class="accessible">{{ o.image_base }}</td>
+                        <td class="accessible">{{ m.image_base }}</td>
                     {% else %}
-                        <td class="not-accessible">{{ o.image_base }}</td>
+                        <td class="not-accessible">{{ m.image_base }}</td>
                     {% endif %}
-                    <td>Default opacity: {{ o.default_opacity }}</td>
+                    <td></td>
                   </tr>
                 {% endfor %}
                 {% for sg in s.stackgroups %}
@@ -94,7 +91,7 @@
                     <td></td>
                     <td></td>
                     <td></td>
-                    <td colspan="2"><em>Stack group:</em> {{ sg.name }} </td>
+                    <td colspan="2"><em>Stack group:</em> {{ sg.title }} </td>
                     <td></td>
                     <td></td>
                     <td>{{ sg.relation }}</td>
@@ -103,7 +100,7 @@
               {% endfor %}
             {% else %}
               <tr>
-                <td>{{ p.name }}</td>
+                <td>{{ p.title }}</td>
                 <td>{{ p.dimension }}</td>
                 <td>{{ p.resolution }}</td>
                 <td></td>

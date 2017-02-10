@@ -32,7 +32,7 @@
                     {% with slice=stack|get_slice:sample_slice %}
                     {% if slice|is_none %}
                         Couldn't find requested slice: {{ sample_slice }}
-                    {% else %}
+                    {% elif stack.stackmirror_set.all|length %}
                         {% with stack.stackmirror_set.all|dictsort:'position'|get:sample_mirror_index as mirror %}
                           <img class="lazy"
                               data-src="{{ mirror.image_base }}{{ slice }}/small.{{ mirror.file_extension }}"
@@ -69,7 +69,7 @@
                       {% for m in s.stackmirror_set.all %}
                         <dd>
                           <a href="?pid={{ p.id }}&tool=navigator&sid0={{ s.id }}&s0=1"
-                              onclick="CATMAID.openProjectStack({{p.id}}, {{s.id}}, {{m.position}});return false">{{ m.title }}</a>
+                              onclick="CATMAID.openProjectStack({{p.id}}, {{s.id}}, undefined, {{m.position}});return false">{{ m.title }}</a>
                         </dd>
                       {% endfor %}
                     {% endif %}

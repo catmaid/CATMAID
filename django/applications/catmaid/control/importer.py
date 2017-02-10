@@ -162,10 +162,16 @@ class PreStack(object):
         self.already_known = already_known
 
     def equals(self, stack):
-        return self.image_base == stack.image_base
-
-    def get_matching_objects(self, stack):
-        return Stack.objects.filter(image_base=self.image_base)
+        """Two PreStack objects are equal if their title matches and they have
+        equal sets of image bases of their PreMirror instances.
+        """
+        other_mirrors = stack.stackmirror_set.all()
+        if len(self.mirrors) == len(other_mirrors):
+            sm = set([m.image_base for m in self.mirrors])
+            om = set([m.image_base for m in other_mirrors])
+            if sm.difference(om):
+                return False
+        return self.title == stack.title
 
 class PreProject:
     def __init__(self, properties, project_url, data_folder, already_known_pid=None):
@@ -346,7 +352,15 @@ class ProjectSelector(object):
             # Mark known stacks, i.e. the ones having the same image base
             for key, p in projects.iteritems():
                 for s in p.stacks:
-                    s.already_known = Stack.objects.filter(image_base=s.image_base).exists()
+                    # Mark a project as known if an existing project shares the
+                    # same title and the same mirrors.
+                    known = False
+                    for same_title_stack in Stack.objects.filter(title=s.title):
+                        known = s.equals(same_title_stack)
+                        if known:
+                            break
+
+                    s.already_known = known
 
             cursor = cursor or connection.cursor()
             # Mark all projects as known that have the same name as an already
@@ -356,7 +370,7 @@ class ProjectSelector(object):
                 ip_data = []
                 for pi in project_index:
                     ip_data.append(pi[0])
-                    ip_data.append(projects[pi[0]].name)
+                    ip_data.append(projects[pi[0]].title)
                 cursor.execute("""
                     SELECT p.id, ip.key, ip.name
                     FROM project p
@@ -373,9 +387,10 @@ class ProjectSelector(object):
             if 'stacks' in known_project_filter:
                 # Get a mapping of stack ID sets to project IDs
                 cursor.execute("""
-                  SELECT project_id, array_agg(s.image_base)
+                  SELECT project_id, array_agg(sm.image_base ORDER BY sm.image_base)
                   FROM project_stack ps
                   JOIN stack s ON ps.stack_id = s.id
+                  JOIN stack_mirror sm ON s.id = sm.stack_id
                   GROUP BY project_id
                   ORDER BY project_id
                 """)
@@ -387,10 +402,14 @@ class ProjectSelector(object):
                     if p.already_known:
                         # Name matches have precedence
                         continue
-                    # Mark project known if all of its stacks are known
+                    # Mark project known if all of its stacks are known and the
+                    # title matches
                     all_stacks_known = all(s.already_known for s in p.stacks)
                     if all_stacks_known:
-                        known_stack_image_bases = tuple(sorted(s.image_base for s in p.stacks))
+                        known_stack_image_bases = []
+                        for s in p.stacks:
+                            known_stack_image_bases.extend(sm.image_base for sm in s.mirrors)
+                        known_stack_image_bases = tuple(sorted(known_stack_image_bases))
                         known_projects = stack_map[known_stack_image_bases]
                         if known_projects:
                           # First one wins
@@ -488,7 +507,7 @@ class ImportingWizard(SessionWizardView):
             form.replacing_projects = rp = project_selector.replacing_projects
             self.projects = projects
             # Update the folder list and select all by default
-            displayed_projects = [(t[0], t[1].name) for t in np + mp + rp]
+            displayed_projects = [(t[0], t[1].title) for t in np + mp + rp]
             displayed_projects = sorted(displayed_projects, key=lambda key: key[1])
             form.displayed_projects = displayed_projects
             form.fields['projects'].choices = displayed_projects

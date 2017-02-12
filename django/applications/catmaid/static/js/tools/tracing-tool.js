@@ -1440,7 +1440,7 @@
                 // no nodes, option to remove the label
                 actionLink = $('<a/>');
                 actionLink.attr({'id': ''+data[i].id});
-                actionLink.attr({'href':''});
+                actionLink.attr({'href': '#'});
                 actionLink.click(removelabel(data[i].id));
                 actionLink.text("Remove label");
                 row.append($('<td/>').append(actionLink));

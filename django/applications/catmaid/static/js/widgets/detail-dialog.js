@@ -45,7 +45,9 @@
         detail_text.appendChild(document.createTextNode(detail));
         this.dialog.appendChild(detail_text);
         // Hide detail by default and toggle display by click on header
-        $(detail_text).hide();
+        if (!CATMAID.expandErrors) {
+          $(detail_text).hide();
+        }
         $(detail_head).click(function() {
           $(detail_text).toggle();
         });

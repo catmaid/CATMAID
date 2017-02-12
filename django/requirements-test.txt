@@ -1,0 +1,2 @@
+selenium==3.0.2
+git+git://github.com/cgoldberg/sauceclient.git@56fafccf7e941a4d0e98b76cb9082585e79149c7#egg=sauceclient

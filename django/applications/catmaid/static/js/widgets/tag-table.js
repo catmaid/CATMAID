@@ -19,7 +19,7 @@
     /**
      * Internal skeleton source used for filtering
      */
-    this.filterSkeletons = new CATMAID.BasicSkeletonSource(this.getName() + ' Input', {
+    this.constraintSkeletons = new CATMAID.BasicSkeletonSource(this.getName() + ' Input', {
       register: false,
       handleAddedModels: constrainSkelsAndRedraw,
       handleChangedModels: constrainSkelsAndRedraw,
@@ -53,7 +53,7 @@
   var responseCache = {};
 
   TagTable.prototype.setConstrainText = function() {
-    var count = this.filterSkeletons.getNumberOfSkeletons();
+    var count = this.constraintSkeletons.getNumberOfSkeletons();
     var element = document.getElementById(this.idPrefix + 'constrain-text');
     element.innerText = `Constraining by ${count} skeleton${count === 1 ? '' : 's'}`;
   };
@@ -68,7 +68,7 @@
   TagTable.prototype.constrainSkelsAndRedraw = function() {
     this.oTable.clear();
 
-    var filterSkels = this.filterSkeletons.getSelectedSkeletons();
+    var filterSkels = this.constraintSkeletons.getSelectedSkeletons();
     var rowObjs = [];
     for (var key of Object.keys(responseCache).sort(function(a, b) {return a.localeCompare(b);} )) {
       // look at rows in lexicographic order
@@ -112,7 +112,11 @@
       }
     }
 
-    shouldBeInSource = shouldBeInSource.intersection(this.filterSkeletons.getSelectedSkeletons());
+    var constraintSkeletons = this.constraintSkeletons.getSelectedSkeletons();
+
+    if (constraintSkeletons.length) {
+      shouldBeInSource = shouldBeInSource.intersection(constraintSkeletons);
+    }
 
     this.addAndSubtractFromResultSkeletonSource({
       add: Array.from(shouldBeInSource.difference(areInSource)),
@@ -162,7 +166,7 @@
       helpText: 'Tag Table widget: See an overview of the tag usage in the project or within a set of skeletons',
       controlsID: this.idPrefix + 'controls',
       createControls: function(controls) {
-        var sourceSelect = CATMAID.skeletonListSources.createSelect(this.filterSkeletons,
+        var sourceSelect = CATMAID.skeletonListSources.createSelect(this.constraintSkeletons,
           [this.resultSkeletons.getName()]);
         controls.appendChild(sourceSelect);
 
@@ -170,7 +174,7 @@
         add.setAttribute("type", "button");
         add.setAttribute("value", "Add");
         add.onclick = function() {
-          self.filterSkeletons.loadSource.bind(self.filterSkeletons)();
+          self.constraintSkeletons.loadSource.bind(self.constraintSkeletons)();
           self.setConstrainText();
         };
         controls.appendChild(add);
@@ -179,7 +183,7 @@
         clear.setAttribute("type", "button");
         clear.setAttribute("value", "Clear");
         clear.onclick = function() {
-          self.filterSkeletons.clear();
+          self.constraintSkeletons.clear();
           self.setConstrainText();
         };
         controls.appendChild(clear);
@@ -267,14 +271,21 @@
     var selectedSkels = new Set();
     var selectedNodes = new Set();
 
-    var constrainSkels = new Set(this.filterSkeletons.getSelectedSkeletons());
+    var constrainSkels = new Set(this.constraintSkeletons.getSelectedSkeletons());
+    var emptyConstrainSkels = !constrainSkels.size;
 
     for (var labelID of Object.keys(responseCache)) {
       if (responseCache[labelID].checked) {
         selectedLabels.add(labelID);
-        selectedSkels.addAll(responseCache[labelID].skelIDs.intersection(constrainSkels));
+
+        if (emptyConstrainSkels) {
+          selectedSkels.addAll(responseCache[labelID].skelIDs);
+        } else {
+          selectedSkels.addAll(responseCache[labelID].skelIDs.intersection(constrainSkels));
+        }
+
         for (var [nodeID, skelID] of responseCache[labelID].nodeIDs.entries()) {
-          if (constrainSkels.has(skelID)) {
+          if (emptyConstrainSkels || constrainSkels.has(skelID)) {
             selectedNodes.add(nodeID);
           }
         }

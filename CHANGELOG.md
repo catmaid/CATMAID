@@ -31,6 +31,39 @@ Treenode Viewer:
   refresh the viewer from the table to reflect these changes.
 
 
+Connector Viewer enhancements:
+
+- Connectors can now be constrained by their pre-synaptic and post-synaptic
+  skeletons.
+
+- If either is unpopulated, it is unconstrained on that side (i.e. all
+  outgoing connectors can be found by clearing the 'Post- skeletons' set).
+
+- Sorting algorithms based on treenodes associated with the connector
+  (e.g. depth) can be applied either to presynaptic or postsynaptic
+  skeletons.
+
+- The 'Reverse' button switches the contents of the two skeleton sets.
+
+- The 'Sync' checkbox sets the pre- and post- synaptic sets to have the
+  same contents (the union of their contents when the box is checked)
+  and keeps them that way: this is useful for inspecting all connectors
+  acting within a set of skeletons, such as reciprocal connections.
+
+- For undirected connectors (gap junctions, abutting etc.), you can use
+  either the 'pre' or the 'post' set. If both sets are populated, only
+  connectors touching a pre- skeleton and a post- skeleton (with 2
+  distinct edges) will be shown.
+
+- When using the connector viewer as a skeleton source, the output is the
+  union of the two skeleton sets.
+
+- N.B.: Because the Connector Viewer is now populated in a different way
+  to the Connector Table, you can now only open a Table from a Viewer if
+  one of the skeleton sets is empty, and a connector type other than 'All'
+  is selected.
+
+
 Miscellaneous:
 
 - Bookmarks are now persistent for each project.

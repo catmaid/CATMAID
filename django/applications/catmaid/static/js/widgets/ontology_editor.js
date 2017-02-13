@@ -1256,7 +1256,7 @@
                   self.create_new_class(self.workspace_pid, "classification_root", true),
                   self.create_new_relation(self.workspace_pid, "is_a", true)])
                 .then(function(results) {
-                  var classJson = resuls[0];
+                  var classJson = results[0];
                   var relJson = results[1];
                   self.refresh_trees();
                   if (classJson.already_present && relJson.already_present) {

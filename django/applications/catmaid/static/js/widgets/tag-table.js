@@ -54,8 +54,8 @@
 
   TagTable.prototype.setConstrainText = function() {
     var count = this.constraintSkeletons.getNumberOfSkeletons();
-    var element = document.getElementById(this.idPrefix + 'constrain-text');
-    element.innerText = `Constraining by ${count} skeleton${count === 1 ? '' : 's'}`;
+    var element = document.getElementById(this.idPrefix + 'source-controls');
+    element.title = `${count} skeleton${count === 1 ? '' : 's'} selected`;
   };
 
   /**
@@ -68,13 +68,13 @@
   TagTable.prototype.constrainSkelsAndRedraw = function() {
     this.oTable.clear();
 
-    var filterSkels = this.constraintSkeletons.getSelectedSkeletons();
+    var constraintSkels = this.constraintSkeletons.getSelectedSkeletons();
     var rowObjs = [];
     for (var key of Object.keys(responseCache).sort(function(a, b) {return a.localeCompare(b);} )) {
       // look at rows in lexicographic order
 
-      var skelIntersection = filterSkels.length ?  // if there are no selected skeletons, show everything in the project
-        responseCache[key].skelIDs.intersection(filterSkels) : responseCache[key].skelIDs;
+      var skelIntersection = constraintSkels.length ?  // if there are no selected skeletons, show everything in the project
+        responseCache[key].skelIDs.intersection(constraintSkels) : responseCache[key].skelIDs;
 
       if (skelIntersection.size) {  // only labels applied to nodes in filtered skels
         var nodeCount = 0;
@@ -166,9 +166,15 @@
       helpText: 'Tag Table widget: See an overview of the tag usage in the project or within a set of skeletons',
       controlsID: this.idPrefix + 'controls',
       createControls: function(controls) {
+        var sourceControls = document.createElement('label');
+        sourceControls.appendChild(document.createTextNode('Constrain by: '));
+        sourceControls.title = '0 skeletons selected';
+        sourceControls.id = self.idPrefix + 'source-controls';
+        controls.append(sourceControls);
+
         var sourceSelect = CATMAID.skeletonListSources.createSelect(this.constraintSkeletons,
           [this.resultSkeletons.getName()]);
-        controls.appendChild(sourceSelect);
+        sourceControls.appendChild(sourceSelect);
 
         var add = document.createElement('input');
         add.setAttribute("type", "button");
@@ -177,7 +183,7 @@
           self.constraintSkeletons.loadSource.bind(self.constraintSkeletons)();
           self.setConstrainText();
         };
-        controls.appendChild(add);
+        sourceControls.appendChild(add);
 
         var clear = document.createElement('input');
         clear.setAttribute("type", "button");
@@ -186,13 +192,13 @@
           self.constraintSkeletons.clear();
           self.setConstrainText();
         };
-        controls.appendChild(clear);
+        sourceControls.appendChild(clear);
 
-        var constrainText = document.createElement('p');
-        constrainText.setAttribute('id', self.idPrefix + 'constrain-text');
-        constrainText.innerText = 'Constraining by 0 skeletons';
-
-        controls.appendChild(constrainText);
+        // var constrainText = document.createElement('p');
+        // constrainText.setAttribute('id', self.idPrefix + 'constrain-text');
+        // constrainText.innerText = 'Constraining by 0 skeletons';
+        //
+        // controls.appendChild(constrainText);
 
         var refresh = document.createElement('input');
         refresh.setAttribute("type", "button");
@@ -293,7 +299,7 @@
     }
 
     document.getElementById(this.idPrefix + 'selected-text').innerText = '' +
-      `Selected ${selectedLabels.size} label${selectedLabels.size === 1 ? '' : 's'}, ` +
+      `Selected ${selectedLabels.size} tag${selectedLabels.size === 1 ? '' : 's'}, ` +
       `${selectedSkels.size} skeleton${selectedSkels.size === 1 ? '' : 's'}, ` +
       `${selectedNodes.size} node${selectedNodes.size === 1 ? '' : 's'}`;
   };

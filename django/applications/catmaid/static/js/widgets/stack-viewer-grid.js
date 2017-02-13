@@ -552,11 +552,6 @@
     var gridWindow = this.getGridWindow();
 
     var stack = this.sourceStackViewer.primaryStack;
-    var tileSource = this.sourceStackViewer.getLayer('TileLayer').tileSource;
-
-    var tileLayerConstructor = CATMAID.TileLayer.Settings.session.prefer_webgl ?
-      CATMAID.PixiTileLayer :
-      CATMAID.TileLayer;
 
     for (var iIdx = 0; iIdx < this.dimensions[0]; iIdx++) {
       for (var jIdx = 0; jIdx < this.dimensions[1]; jIdx++) {
@@ -593,16 +588,9 @@
 
         var panelStackViewer = new CATMAID.StackViewer(project, stack, panelWindow);
 
-        var tileLayer = new tileLayerConstructor(
-          panelStackViewer,
-          "Image data (" + stack.title + ")",
-          stack,
-          tileSource,
-          true,
-          1,
-          false,
-          CATMAID.TileLayer.Settings.session.linear_interpolation
-        );
+        var tileLayer =  this.sourceStackViewer.getLayer('TileLayer').constructCopy(
+          {stackViewer: panelStackViewer, displayName: `Image data (${stack.title})`}
+          );
 
         panelStackViewer.addLayer("TileLayer", tileLayer);
 

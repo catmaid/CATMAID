@@ -44,6 +44,13 @@ Miscellaneous:
 
 - The tag table can now be constrained by a set of skeletons.
 
+- The tag table now gives the user information on how many skeletons are
+  being used as constraints, and how many tags/skeletons/nodes are
+  selected.
+
+- When the tag table is refreshed, the filters and the last sort are
+  persisted.
+
 - The treenode table can now be filtered by node confidence, creator and
   reviewer.
 
@@ -57,6 +64,8 @@ Miscellaneous:
   letters.
 
 - Layer settings: checkboxes now have correct default value.
+
+- Tag table: any tags with identical names are now treated as identical.
 
 
 ## 2017.01.19

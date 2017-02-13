@@ -49,7 +49,11 @@
           var changedEntities = [];
           for (var da in json.deleted_annotations) {
             var entry = json.deleted_annotations[da];
-            deletedAnnotationIds.push(da);
+            if (0 === json.left_uses[da]) {
+              // Only consider an annotation as deleted if it is not used at all
+              // anymore.
+              deletedAnnotationIds.push(da);
+            }
             if (entry.targetIds) {
               changedEntities = changedEntities.concat(entry.targetIds);
             }

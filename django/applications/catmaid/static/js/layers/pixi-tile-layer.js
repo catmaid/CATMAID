@@ -124,6 +124,11 @@
         scaledStackPosition.s,
         this.efficiencyThreshold);
 
+    // By default all needed tiles are shown. This can be changed so that all
+    // tiles are hidden, e.g. if the current location is on a broken slice and
+    // CATMAID is configured to hide these sections.
+    var showTiles = true;
+
     if (this.hideIfNearestSliceBroken) {
       // Re-project the stack z without avoiding broken sections to determine
       // if the nearest section is broken.
@@ -131,6 +136,7 @@
           this.stackViewer.projectCoordinates().z);
       if (this.stack.isSliceBroken(linearStackZ)) {
         this.batchContainer.visible = false;
+        showTiles = false;
       } else {
         this.setOpacity(this.opacity);
       }
@@ -181,7 +187,7 @@
         tile.position.y = y;
 
         if (c >= 0 && c <= tileInfo.lastCol &&
-            r >= 0 && r <= tileInfo.lastRow) {
+            r >= 0 && r <= tileInfo.lastRow && showTiles) {
           var source = this.tileSource.getTileURL(project, this.stack, slicePixelPosition,
               c, r, tileInfo.zoom);
 

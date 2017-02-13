@@ -187,7 +187,11 @@
               }
               input.addClass('layerSetting');
               if (setting.hasOwnProperty('value')) {
-                input.attr('value', setting.value);
+                if ('checkbox' === setting.type) {
+                  input.prop('checked', !!setting.value);
+                } else {
+                  input.attr('value', setting.value);
+                }
               }
               label.append(input);
 

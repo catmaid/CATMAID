@@ -56,6 +56,8 @@ Miscellaneous:
 - 3D Viewer: custom tag highlighting now also works for tags with upper case
   letters.
 
+- Layer settings: checkboxes now have correct default value.
+
 
 ## 2017.01.19
 

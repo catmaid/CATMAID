@@ -264,10 +264,12 @@
 
   SkeletonMeasurementsTable.prototype.updateNeuronNames = function() {
     var nns = CATMAID.NeuronNameService.getInstance();
-    this.table.rows().each(function(i) {
+    var self = this;
+    this.table.rows().every(function(i) {
       var row = this.data();
-      row[0] = this._makeStringLink(nns.getName(row[1]), row[1]);
-    }, this);
+      row[0] = self._makeStringLink(nns.getName(row[1]), row[1]);
+      this.invalidate();
+    });
     this.table.draw();
   };
 

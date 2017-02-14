@@ -34,6 +34,7 @@ def forward_update_stack_groups(apps, schema_editor):
     """Create a stack group entry for each stack group class instance and link
     stacks linked to respective class instance to new stack group.
     """
+
     ClassInstance = apps.get_model('catmaid', 'ClassInstance')
     StackGroup = apps.get_model('catmaid', 'StackGroup')
     existing_stackgroups = ClassInstance.objects.filter(
@@ -251,12 +252,12 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('stack', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='catmaid.Stack')),
-                ('title', models.TextField(help_text=b'Descriptive title of this stack mirror.')),
-                ('image_base', models.TextField(help_text=b'Fully qualified URL where the tile data can be found.')),
-                ('file_extension', models.TextField(blank=True, default=b'jpg', help_text=b'The file extension of the data files.')),
-                ('tile_width', models.IntegerField(default=256, help_text=b'The width of one tile.')),
-                ('tile_height', models.IntegerField(default=256, help_text=b'The height of one tile.')),
-                ('tile_source_type', models.IntegerField(choices=[(1, b'1: File-based image stack'), (2, b'2: Request query-based image stack'), (3, b'3: HDF5 via CATMAID backend'), (4, b'4: File-based image stack with zoom level directories'), (5, b'5: Directory-based image stack'), (6, b'6: DVID imageblk voxels'), (7, b'7: Render service'), (8, b'8: DVID imagetile tiles'), (9, b'9: FlixServer tiles')], default=1, help_text=b'This represents how the tile data is organized. See <a href="http://catmaid.org/page/tile_sources.html">tile source conventions documentation</a>.')),
+                ('title', models.TextField(help_text='Descriptive title of this stack mirror.')),
+                ('image_base', models.TextField(help_text='Fully qualified URL where the tile data can be found.')),
+                ('file_extension', models.TextField(blank=True, default='jpg', help_text='The file extension of the data files.')),
+                ('tile_width', models.IntegerField(default=256, help_text='The width of one tile.')),
+                ('tile_height', models.IntegerField(default=256, help_text='The height of one tile.')),
+                ('tile_source_type', models.IntegerField(choices=[(1, '1: File-based image stack'), (2, '2: Request query-based image stack'), (3, '3: HDF5 via CATMAID backend'), (4, '4: File-based image stack with zoom level directories'), (5, '5: Directory-based image stack'), (6, '6: DVID imageblk voxels'), (7, '7: Render service'), (8, '8: DVID imagetile tiles'), (9, '9: FlixServer tiles')], default=1, help_text='This represents how the tile data is organized. See <a href="http://catmaid.org/page/tile_sources.html">tile source conventions documentation</a>.')),
                 ('position', models.IntegerField(default=0)),
             ],
             options={
@@ -274,8 +275,8 @@ class Migration(migrations.Migration):
             name='StackGroup',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('title', models.TextField(default=b'', max_length=80)),
-                ('comment', models.TextField(help_text=b'A comment that describes the stack group.', null=True, blank=True)),
+                ('title', models.TextField(default='', max_length=80)),
+                ('comment', models.TextField(help_text='A comment that describes the stack group.', null=True, blank=True)),
             ],
             options={
                 'db_table': 'stack_group',
@@ -328,12 +329,12 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='stack',
             name='attribution',
-            field=models.TextField(blank=True, help_text=b'Attribution or citation information for this dataset.', null=True),
+            field=models.TextField(blank=True, help_text='Attribution or citation information for this dataset.', null=True),
         ),
         migrations.AddField(
             model_name='stack',
             name='canary_location',
-            field=catmaid.fields.Integer3DField(default=(0, 0, 0), help_text=b'Stack space coordinates at zoom level 0 where image data is expected to exist.'),
+            field=catmaid.fields.Integer3DField(default=(0, 0, 0), help_text='Stack space coordinates at zoom level 0 where image data is expected to exist.'),
         ),
         migrations.AddField(
             model_name='stack',

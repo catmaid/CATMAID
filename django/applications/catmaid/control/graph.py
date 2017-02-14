@@ -6,7 +6,7 @@ import six
 import networkx as nx
 from networkx.algorithms import weakly_connected_component_subgraphs
 from collections import defaultdict
-from itertools import chain, ifilter
+from itertools import chain
 from functools import partial
 from numpy import subtract
 from numpy.linalg import norm
@@ -22,6 +22,9 @@ from catmaid.control.review import get_treenodes_to_reviews
 from catmaid.control.tree_util import simplify, find_root, reroot, partition, \
         spanning_tree, cable_length
 from catmaid.control.synapseclustering import  tree_max_density
+
+from six.moves import filter
+
 
 def split_by_confidence_and_add_edges(confidence_threshold, digraphs, rows):
     """ dipgrahs is a dictionary of skeleton IDs as keys and DiGraph instances as values,
@@ -67,7 +70,7 @@ def split_by_synapse_domain(bandwidth, locations, arbors, treenode_connector, mi
             treenode_ids = []
             connector_ids =[]
             relation_ids = []
-            for treenode_id in ifilter(treenode_connector.has_key, graph.nodes_iter()):
+            for treenode_id in filter(treenode_connector.has_key, graph.nodes_iter()):
                 for c in treenode_connector.get(treenode_id):
                     connector_id, relation = c
                     treenode_ids.append(treenode_id)

@@ -4,7 +4,6 @@ import six
 
 from datetime import datetime, timedelta
 from collections import defaultdict, namedtuple
-from itertools import imap
 from networkx import connected_components
 from functools import partial
 
@@ -16,6 +15,9 @@ from catmaid.models import Treenode, Log, Relation, TreenodeConnector, \
 from catmaid.control.review import get_review_status
 from catmaid.control.authentication import requires_user_role
 from catmaid.control.tree_util import lazy_load_trees
+
+# Python 2 and 3 compatible map iterator
+from six.moves import map
 
 
 def _find_nearest(tree, nodes, loc1):
@@ -362,7 +364,7 @@ def _evaluate(project_id, user_id, start_date, end_date, max_gap, min_nodes):
 
 def _parse_date(s):
     """ Accepts a date as e.g. '2012-10-07' """
-    return datetime(*(imap(int, s.split('-'))))
+    return datetime(*(map(int, s.split('-'))))
 
 # TODO a better fit would be an admin or staff user
 @requires_user_role([UserRole.Annotate, UserRole.Browse])

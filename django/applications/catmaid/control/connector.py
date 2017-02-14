@@ -2,7 +2,6 @@ import copy
 import json
 import six
 
-from itertools import imap
 from datetime import datetime, timedelta
 from collections import defaultdict
 
@@ -21,6 +20,10 @@ from catmaid.control.authentication import requires_user_role, can_edit_or_fail
 from catmaid.control.link import create_treenode_links
 from catmaid.control.common import cursor_fetch_dictionary, \
         get_relation_to_id_map, get_request_list
+
+# Python 2 and 3 compatible map iterator
+from six.moves import map
+
 
 
 LINK_TYPES = [

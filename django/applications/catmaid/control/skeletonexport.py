@@ -4,7 +4,6 @@ import networkx as nx
 import pytz
 import six
 
-from itertools import imap
 from functools import partial
 from collections import defaultdict
 from math import sqrt
@@ -27,6 +26,10 @@ from catmaid.control.review import get_treenodes_to_reviews, \
 from psycopg2.extras import DateTimeTZRange
 
 from tree_util import edge_count_to_root, partition
+
+# Python 2 and 3 compatible map iterator
+from six.moves import map
+
 try:
     from exportneuroml import neuroml_single_cell, neuroml_network
 except ImportError:
@@ -611,7 +614,7 @@ def _skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=True, lean=
             # List of (treenode_id, connector_id, relation_id, x, y, z)n with relation_id replaced by 0 (presynaptic) or 1 (postsynaptic)
             # 'presynaptic_to' has an 'r' at position 1:
             for row in cursor.fetchall():
-                x, y, z = imap(float, (row[3], row[4], row[5]))
+                x, y, z = map(float, (row[3], row[4], row[5]))
                 connectors.append((row[0],
                                    row[1],
                                    0 if 'r' == row[2][1] else 1,

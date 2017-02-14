@@ -31,7 +31,7 @@
 				{% with slice=s|get_slice:sample_slice %}
 				{% if slice|is_none %}
 					Couldn't find requested slice: {{ sample_slice }}
-				{% else %}
+				{% elif s.stackmirror_set.all|length %}
 					<figure>
 					<a href="?pid={{ p.id }}&tool=navigator&sid0={{ s.id }}&s0=1"
 							onclick="CATMAID.openProjectStack({{p.id}}, {{s.id}});return false">

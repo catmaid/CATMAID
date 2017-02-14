@@ -28,6 +28,9 @@ except ImportError:
     logger.warning("CATMAID was unable to laod the matplitlib module. "
         "User analytics will not be available")
 
+from six.moves import range
+
+
 class Bout(object):
     """ Represents one bout, based on a list of events. The first event ist the
     start date/time, the last event the end.
@@ -181,7 +184,7 @@ def eventsPerInterval(times, start_date, end_date, interval='day'):
     # Generate axis
     daycount = (end_date - start_date).days
     dt = timedelta(0, secondsPerInterval)
-    timeaxis = [start_date + n*dt for n in xrange(intervalsPerDay * daycount)]
+    timeaxis = [start_date + n*dt for n in range(intervalsPerDay * daycount)]
     # Calculate bins
     timebins = np.zeros(intervalsPerDay * daycount)
     intervalsPerSecond = 1.0 / secondsPerInterval

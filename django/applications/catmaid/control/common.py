@@ -13,6 +13,8 @@ from catmaid.models import Log, NeuronSearch, CELL_BODY_CHOICES, \
         SORT_ORDERS_DICT, Relation, Class, ClassInstance, \
         ClassInstanceClassInstance
 
+from six.moves import range
+
 
 class ConfigurationError(Exception):
     """Indicates some sort of configuration error"""
@@ -46,7 +48,7 @@ def get_request_list(request_dict, name, default=None, map_fn=identity):
         integers.
         """
         k = []
-        for i in xrange(max_index):
+        for i in range(max_index):
             v = d.get(i)
             if not v:
                 continue

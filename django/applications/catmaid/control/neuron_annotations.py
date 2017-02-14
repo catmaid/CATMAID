@@ -13,6 +13,8 @@ from catmaid.control.authentication import requires_user_role, can_edit_or_fail
 from catmaid.control.common import defaultdict, get_relation_to_id_map, \
         get_class_to_id_map, get_request_list
 
+from six.moves import range
+
 
 def create_basic_annotated_entity_query(project, params, relations, classes,
         allowed_classes=['neuron', 'annotation']):
@@ -795,7 +797,7 @@ def generate_annotation_intersection_query(project_id, annotations):
         """ % (',\n    '.join(tables),
                project_id,
                '\n'.join(where),
-               '\n        '.join('AND cc%s.class_instance_a = c.id' % i for i in xrange(len(annotations))))
+               '\n        '.join('AND cc%s.class_instance_a = c.id' % i for i in range(len(annotations))))
 
     return q
 
@@ -1008,10 +1010,10 @@ def _fast_co_annotations(request, project_id, display_start, display_length):
     sorter = ''
     if sorting:
         column_count = int(request.POST.get('iSortingCols', 0))
-        sorting_directions = (request.POST.get('sSortDir_%d' % d, 'DESC') for d in xrange(column_count))
+        sorting_directions = (request.POST.get('sSortDir_%d' % d, 'DESC') for d in range(column_count))
 
         fields = ('a.name', 'last_used', 'num_usage', 'last_user')
-        sorting_index = (int(request.POST.get('iSortCol_%d' % d)) for d in xrange(column_count))
+        sorting_index = (int(request.POST.get('iSortCol_%d' % d)) for d in range(column_count))
         sorting_cols = (fields[i] for i in sorting_index)
 
         sorter = '\nORDER BY ' + ','.join('%s %s' % u for u in zip(sorting_cols, sorting_directions))
@@ -1113,13 +1115,13 @@ def list_annotations_datatable(request, project_id=None):
     if should_sort:
         column_count = int(request.POST.get('iSortingCols', 0))
         sorting_directions = [request.POST.get('sSortDir_%d' % d, 'DESC')
-                for d in xrange(column_count)]
+                for d in range(column_count)]
         sorting_directions = map(lambda d: '-' if d.upper() == 'DESC' else '',
                 sorting_directions)
 
         fields = ['name', 'last_used', 'num_usage', 'last_user']
         sorting_index = [int(request.POST.get('iSortCol_%d' % d))
-                for d in xrange(column_count)]
+                for d in range(column_count)]
         sorting_cols = map(lambda i: fields[i], sorting_index)
 
         annotation_query = annotation_query.extra(order_by=[di + col for (di, col) in zip(

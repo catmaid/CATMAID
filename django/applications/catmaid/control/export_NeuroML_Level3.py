@@ -13,6 +13,8 @@ import time
 import six
 
 from collections import defaultdict
+from six.moves import range
+
 
 def exportMutual(neuron_names, all_treenodes, connections, scale=0.001):
     """ Export a group of neuronal arbors and their synapses as NeuroML Level 3 v1.8.1.
@@ -74,7 +76,7 @@ def make_segments(slab, cableID, scale, state):
         yield segment(nodes[0], nodes[0], points[0], points[0], segmentID, lastSegmentIDOfParent, cableID, True)
     else:
         previous_segmentID = slab.lastSegmentIDOfParent()
-        for i in xrange(1, len(nodes)):
+        for i in range(1, len(nodes)):
             segmentID = state.nextID()
             id2 = previous_segmentID
             previous_segmentID = segmentID
@@ -105,7 +107,7 @@ def smooth(treenodes, scale):
     t = treenodes[1][2]
     bx, by, bz = t
 
-    for i in xrange(1, len(treenodes) -1):
+    for i in range(1, len(treenodes) -1):
         tc = treenodes[i+1][2]
         cx, cy, cz = tc
         points.append((((ax + bx + cx) / 3.0) * scale,

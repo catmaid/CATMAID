@@ -20,7 +20,7 @@ from catmaid.control.common import get_relation_to_id_map
 from catmaid.control.tree_util import simplify
 from catmaid.control.synapseclustering import tree_max_density
 
-from six.moves import zip as izip
+from six.moves import range, zip as izip
 
 
 def basic_graph(project_id, skeleton_ids):
@@ -308,7 +308,7 @@ def subgraphs(digraph, skeleton_id):
     if 1 == len(chunks):
         chunkIDs = (str(skeleton_id),)
     else:
-        chunkIDs = tuple('%s_%s' % (skeleton_id, (i+1)) for i in xrange(len(chunks)))
+        chunkIDs = tuple('%s_%s' % (skeleton_id, (i+1)) for i in range(len(chunks)))
     return chunks, chunkIDs
 
 

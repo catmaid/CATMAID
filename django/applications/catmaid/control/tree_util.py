@@ -8,6 +8,7 @@ from collections import defaultdict
 from math import sqrt
 from itertools import islice
 from catmaid.models import Treenode
+from six.moves import range
 
 from six.moves import zip as izip
 
@@ -117,7 +118,7 @@ def simplify(tree, keepers):
         # The nodes in the middle of the path are branch nodes
         # that must be added to mini only if they have been visited more than once.
         origin = path[0]
-        for i in xrange(1, len(path) -1):
+        for i in range(1, len(path) -1):
             if children[path[i]] > 1:
                 mini.add_edge(origin, path[i])
                 origin = path[i]

@@ -165,7 +165,7 @@ class AnnotationsApiTests(CatmaidApiTestCase):
             {'annotated_with[0]': ','.join(map(str, [annotation_id_a, annotation_id_b]))})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content.decode('utf-8'))
-        expected_entities = sorted([
+        expected_entities = [
             {"skeleton_ids": [235],
              "type": "neuron",
              "id": 233,
@@ -173,7 +173,7 @@ class AnnotationsApiTests(CatmaidApiTestCase):
             {"skeleton_ids": [2388],
              "type": "neuron",
              "id": 2389,
-             "name": "neuron 2389"}])
+             "name": "neuron 2389"}]
         self.assertEqual(parsed_response['totalRecords'], 2)
         self.assertItemsEqual(parsed_response['entities'], expected_entities)
 

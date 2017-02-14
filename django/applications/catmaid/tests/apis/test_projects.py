@@ -19,7 +19,7 @@ class ProjectsApiTests(CatmaidApiTestCase):
         # projects:
         response = self.client.get('/projects/')
         self.assertEqual(response.status_code, 200)
-        result = json.loads(response.content)
+        result = json.loads(response.content.decode('utf-8'))
         self.assertEqual(len(result), 0)
 
         # Add permission to the anonymous user to browse two projects
@@ -31,7 +31,7 @@ class ProjectsApiTests(CatmaidApiTestCase):
         # projects:
         response = self.client.get('/projects/')
         self.assertEqual(response.status_code, 200)
-        result = json.loads(response.content)
+        result = json.loads(response.content.decode('utf-8'))
         self.assertEqual(len(result), 1)
 
         # Check stacks:
@@ -54,7 +54,7 @@ class ProjectsApiTests(CatmaidApiTestCase):
         # We expect four projects, one of them (project 2) is empty.
         response = self.client.get('/projects/')
         self.assertEqual(response.status_code, 200)
-        result = json.loads(response.content)
+        result = json.loads(response.content.decode('utf-8'))
         self.assertEqual(len(result), 4)
 
         def get_project(result, pid):
@@ -86,7 +86,7 @@ class ProjectsApiTests(CatmaidApiTestCase):
         # projects:
         response = self.client.get('/projects/export')
         self.assertEqual(response.status_code, 200)
-        result = json.loads(response.content)
+        result = json.loads(response.content.decode('utf-8'))
         self.assertEqual(len(result), 0)
 
         # Now log in and check that we see a different set of projects:
@@ -103,7 +103,7 @@ class ProjectsApiTests(CatmaidApiTestCase):
 
         response = self.client.get('/projects/export')
         self.assertEqual(response.status_code, 200)
-        result = yaml.load(response.content)
+        result = yaml.load(response.content.decode('utf-8'))
 
         # Expect a returned list with four projects
         self.assertEqual(len(result), 4)

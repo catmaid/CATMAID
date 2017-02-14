@@ -61,8 +61,8 @@ class PostGISTests(TestCase):
 
         self.assertEqual(postgis_3d_nodes_r.status_code, 200)
         self.assertEqual(postgis_2d_nodes_r.status_code, 200)
-        postgis_3d_nodes = json.loads(postgis_3d_nodes_r.content)
-        postgis_2d_nodes = json.loads(postgis_2d_nodes_r.content)
+        postgis_3d_nodes = json.loads(postgis_3d_nodes_r.content.decode('utf-8'))
+        postgis_2d_nodes = json.loads(postgis_2d_nodes_r.content.decode('utf-8'))
 
         def test_returned_nodes(reference, to_test):
             self.assertEqual(len(reference), len(to_test))

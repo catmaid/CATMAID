@@ -11,7 +11,7 @@ class ConnectorsApiTests(CatmaidApiTestCase):
         self.fake_authentication()
         response = self.client.get('/%d/connectors/types/' % self.test_project_id)
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [
             {
                 'name': 'Presynaptic',
@@ -49,7 +49,7 @@ class ConnectorsApiTests(CatmaidApiTestCase):
                     'relation_type': 'presynaptic_to',
                     'skeleton_ids': [0]})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
             'links': [],
             'tags': {}
@@ -64,7 +64,7 @@ class ConnectorsApiTests(CatmaidApiTestCase):
                     'relation_type': 'presynaptic_to',
                     'skeleton_ids': [235]})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
           'links': [
             [235, 356, 6730.0, 2700.0, 0.0, 5, 3, 285, u'2011-12-20T10:46:01.360000+00:00'],
@@ -85,7 +85,7 @@ class ConnectorsApiTests(CatmaidApiTestCase):
                     'relation_type': 'postsynaptic_to',
                     'skeleton_ids': [373]})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
                 u'tags': {},
                 u'links': [
@@ -103,7 +103,7 @@ class ConnectorsApiTests(CatmaidApiTestCase):
                     'relation': 'presynaptic_to'
                 })
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = []
 
         self.assertEqual(expected_result, parsed_response)
@@ -115,7 +115,7 @@ class ConnectorsApiTests(CatmaidApiTestCase):
                     'relation': 'postsynaptic_to'
                 })
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [[356, [6730.0, 2700.0, 0.0],
                             377, 373, 5, 3, [7620.0, 2890.0, 0.0],
                             285, 235, 5, 3, [6100.0, 2980.0, 0.0]],
@@ -134,7 +134,7 @@ class ConnectorsApiTests(CatmaidApiTestCase):
                     'relation': 'presynaptic_to'
                 })
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = []
 
         self.assertEqual(expected_result, parsed_response)
@@ -146,7 +146,7 @@ class ConnectorsApiTests(CatmaidApiTestCase):
                     'relation': 'postsynaptic_to'
                 })
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [[356, [6730.0, 2700.0, 0.0],
                             377, 373, 5, 3, [7620.0, 2890.0, 0.0],
                             285, 235, 5, 3, [6100.0, 2980.0, 0.0]],
@@ -165,7 +165,7 @@ class ConnectorsApiTests(CatmaidApiTestCase):
                     'connector_ids[1]': 2463
                 })
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [
             [356, {
                 'presynaptic_to': 235,
@@ -191,7 +191,7 @@ class ConnectorsApiTests(CatmaidApiTestCase):
                 '/%d/connector/create' % self.test_project_id,
                 {'x': 111, 'y': 222, 'z': 333, 'confidence': 3})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertTrue('connector_id' in parsed_response.keys())
         connector_id = parsed_response['connector_id']
 
@@ -213,7 +213,7 @@ class ConnectorsApiTests(CatmaidApiTestCase):
                 '/%d/connector/delete' % self.test_project_id,
                 {'connector_id': connector_id, 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
                 'message': u'Removed connector and class_instances',
                 'connector_id': 356,
@@ -260,7 +260,7 @@ class ConnectorsApiTests(CatmaidApiTestCase):
                 '/%d/connector/info' % self.test_project_id,
                 {'pre[0]': 235, 'post[0]': 373})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [
                 [356, [6730.0, 2700.0, 0.0],
                  285, 235, 5, 3, [6100.0, 2980.0, 0.0],
@@ -274,7 +274,7 @@ class ConnectorsApiTests(CatmaidApiTestCase):
                 '/%d/connector/info' % self.test_project_id,
                 {'pre[0]': 235, 'post[0]': 373, 'cids[0]': 421})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [
                 [421, [6260.0, 3990.0, 0.0],
                  415, 235, 5, 3, [5810.0, 3950.0, 0.0],
@@ -285,7 +285,7 @@ class ConnectorsApiTests(CatmaidApiTestCase):
                 '/%d/connector/info' % self.test_project_id,
                 {'pre[0]': 2462, 'post[0]': 2468})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [
                 [2466, [6420.0, 5565.0, 0.0],
                  2462, 2462, 5, 3, [6685.0, 5395.0, 0.0],
@@ -297,7 +297,7 @@ class ConnectorsApiTests(CatmaidApiTestCase):
                 '/%d/connector/info' % self.test_project_id,
                 {'pre[0]': 2462, 'post[0]': 2462})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [
                 [2463, [7135.0, 5065.0, 0.0],
                  2462, 2462, 5, 3, [6685.0, 5395.0, 0.0],
@@ -311,7 +311,7 @@ class ConnectorsApiTests(CatmaidApiTestCase):
         response = self.client.get(
                 '/%d/connectors/%d/' % (self.test_project_id, 421))
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
                 'partners': [
                     {
@@ -347,7 +347,7 @@ class ConnectorsApiTests(CatmaidApiTestCase):
                     'relation_name': 'presynaptic_to'
                 })
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [{
                 'creation_time': '2011-10-07T07:02:22.656000+00:00',
                 'user': 3,

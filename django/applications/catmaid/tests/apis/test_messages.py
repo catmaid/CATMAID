@@ -44,7 +44,7 @@ class MessagesApiTests(CatmaidApiTestCase):
         response = self.client.post(
                 '/messages/list', {})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
 
         def get_message(data, id):
             msgs = [d for d in data if d['id'] == id]

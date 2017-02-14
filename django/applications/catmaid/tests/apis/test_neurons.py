@@ -20,7 +20,7 @@ class NeuronsApiTests(CatmaidApiTestCase):
         url = '/%d/neurons/%s/rename' % (self.test_project_id, neuron_id)
         response = self.client.post(url, {'name': new_name})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
             'success': True,
             'renamed_neuron': neuron_id,
@@ -48,7 +48,7 @@ class NeuronsApiTests(CatmaidApiTestCase):
         url = '/%d/neurons/%s/rename' % (self.test_project_id, neuron_id)
         response = self.client.post(url, {'name': new_name})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertTrue('error' in parsed_response)
         self.assertTrue(parsed_response['error'])
 
@@ -61,7 +61,7 @@ class NeuronsApiTests(CatmaidApiTestCase):
         url = '/%d/neurons/from-models' % (self.test_project_id,)
         response = self.client.post(url, {'model_ids': [235, 373]})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
             '235': 233,
             '373': 374
@@ -76,6 +76,6 @@ class NeuronsApiTests(CatmaidApiTestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
-        parsed_data = json.loads(response.content)
+        parsed_data = json.loads(response.content.decode('utf-8'))
         self.assertEqual(len(parsed_data), 1)
         self.assertEqual(parsed_data[0], 235)

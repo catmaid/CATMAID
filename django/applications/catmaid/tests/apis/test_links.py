@@ -18,7 +18,7 @@ class LinksApiTests(CatmaidApiTestCase):
                 {'connector_id': connector_id, 'treenode_id': treenode_id,
                  'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {'error': 'Couldn\'t find link between connector {0} and node {0}'.format(connector_id)}
         self.assertIn('error', parsed_response)
         self.assertEqual(expected_result['error'], parsed_response['error'])
@@ -36,7 +36,7 @@ class LinksApiTests(CatmaidApiTestCase):
                 {'connector_id': connector_id, 'treenode_id': treenode_id,
                  'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
             'link_id': 382,
             'link_type': 'postsynaptic_to',
@@ -62,7 +62,7 @@ class LinksApiTests(CatmaidApiTestCase):
                     'state': make_nocheck_state()
                 })
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertIn('message', parsed_response)
         self.assertIn('link_id', parsed_response)
         self.assertEqual('success', parsed_response['message'])
@@ -82,7 +82,7 @@ class LinksApiTests(CatmaidApiTestCase):
                     'state': make_nocheck_state()
                 })
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {'error': 'Connector %s does not have zero presynaptic connections.' % to_id}
         self.assertEqual(expected_result, parsed_response)
 
@@ -101,7 +101,7 @@ class LinksApiTests(CatmaidApiTestCase):
                     'state': make_nocheck_state()
                 })
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertIn('message', parsed_response)
         self.assertIn('link_id', parsed_response)
         self.assertEqual('success', parsed_response['message'])

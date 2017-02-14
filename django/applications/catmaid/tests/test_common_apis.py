@@ -60,7 +60,7 @@ class TransactionTests(TransactionTestCase):
         response = self.client.post(
                 '/%d/neuron/%s/delete' % (self.test_project_id, neuron_id), {})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
             'skeleton_ids': [skeleton_id],
             'success': 'Deleted neuron #2 as well as its skeletons and annotations.'
@@ -245,7 +245,7 @@ class ViewPageTests(TestCase):
                 {'username': 'test2',
                  'password': 'test'})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         token = parsed_response['token']
 
         token_client = Client(enforce_csrf_checks=True)
@@ -280,7 +280,7 @@ class ViewPageTests(TestCase):
     def test_user_project_permissions_not_logged_in(self):
         response = self.client.get('/permissions')
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [{}, []]
         self.assertEqual(expected_result, parsed_response)
 
@@ -288,7 +288,7 @@ class ViewPageTests(TestCase):
         self.fake_authentication()
         response = self.client.get('/permissions')
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [
             {'can_administer': [],
              'add_project': [],
@@ -341,7 +341,7 @@ class ViewPageTests(TestCase):
         ]
 
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
 
         for u in expected_result:
             self.assertIn(u, parsed_response)
@@ -362,7 +362,7 @@ class ViewPageTests(TestCase):
         url = '/%d/user/reviewer-whitelist' % (self.test_project_id,)
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = []
         self.assertEqual(expected_result, parsed_response)
 
@@ -377,7 +377,7 @@ class ViewPageTests(TestCase):
         self.assertEqual(response.status_code, 200)
         expected_result = [{'reviewer_id': int(r), 'accept_after': t}
                 for r,t in six.iteritems(whitelist)]
-        self.assertJSONEqual(response.content, expected_result)
+        self.assertJSONEqual(response.content.decode('utf-8'), expected_result)
 
     def test_export_compact_skeleton(self):
         self.fake_authentication()
@@ -386,7 +386,7 @@ class ViewPageTests(TestCase):
         response = self.client.post(
                 '/%d/%d/1/1/compact-skeleton' % (self.test_project_id, skeleton_id))
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_response = [
                 [[377, None, 3, 7620.0, 2890.0, 0.0, -1.0, 5],
                  [403, 377, 3, 7840.0, 2380.0, 0.0, -1.0, 5],
@@ -407,7 +407,7 @@ class ViewPageTests(TestCase):
         response = self.client.post(
                 '/%d/%d/1/1/1/compact-arbor' % (self.test_project_id, skeleton_id))
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_response = [
                 [[377, None, 3, 7620.0, 2890.0, 0.0, -1.0, 5],
                  [403, 377, 3, 7840.0, 2380.0, 0.0, -1.0, 5],
@@ -428,7 +428,7 @@ class ViewPageTests(TestCase):
         response = self.client.post(
                 '/%d/%d/1/1/1/compact-arbor-with-minutes' % (self.test_project_id, skeleton_id))
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_response = [
                 [[377, None, 3, 7620.0, 2890.0, 0.0, -1.0, 5],
                  [403, 377, 3, 7840.0, 2380.0, 0.0, -1.0, 5],
@@ -550,7 +550,7 @@ class PermissionTests(TestCase):
             self.assertEqual(response.status_code, 200)
             # Expect [{}, []] as result, because the anonymous user is
             # currently not assigned any permissions
-            self.assertJSONEqual(response.content, [{},[]])
+            self.assertJSONEqual(response.content.decode('utf-8'), [{},[]])
 
     def test_can_browse_access(self):
         # Give anonymous user browse permissions for the test project
@@ -569,7 +569,7 @@ class PermissionTests(TestCase):
             response = self.client.get(api)
             self.assertEqual(response.status_code, 200, msg)
             try:
-                parsed_response = json.loads(response.content)
+                parsed_response = json.loads(response.content.decode('utf-8'))
                 missing_permissions = ('error' in parsed_response and
                         parsed_response.get('type', None) == 'PermissionError')
                 self.assertFalse(missing_permissions, msg)
@@ -585,7 +585,7 @@ class PermissionTests(TestCase):
             response = self.client.post(api)
             self.assertEqual(response.status_code, 200, msg)
             try:
-                parsed_response = json.loads(response.content)
+                parsed_response = json.loads(response.content.decode('utf-8'))
                 missing_permissions = ('error' in parsed_response and
                         parsed_response.get('type', None) == 'PermissionError')
                 self.assertFalse(missing_permissions, msg)

@@ -8,7 +8,7 @@ class StatsApiTests(CatmaidApiTestCase):
         self.fake_authentication()
         response = self.client.get('/%d/stats/nodecount' % (self.test_project_id,))
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         values = parsed_response['values']
         users = parsed_response['users']
         values_and_users = zip(values, users)
@@ -32,5 +32,5 @@ class StatsApiTests(CatmaidApiTestCase):
             u'skeletons_created': 0,
             u'treenodes_created': 0,
         }
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(expected_result, parsed_response)

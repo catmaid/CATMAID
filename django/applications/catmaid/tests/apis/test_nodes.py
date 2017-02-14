@@ -18,7 +18,7 @@ class NodesApiTests(CatmaidApiTestCase):
         response = self.client.post(
                 '/%d/nodes/most-recent' % self.test_project_id)
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
                 'id': most_recent_node_id,
                 'x': 6485,
@@ -35,7 +35,7 @@ class NodesApiTests(CatmaidApiTestCase):
                 '/%d/nodes/most-recent' % self.test_project_id,
                 {'skeleton_id': skeleton_id})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
                 'id': most_recent_node_id,
                 'x': 4140,
@@ -56,7 +56,7 @@ class NodesApiTests(CatmaidApiTestCase):
                     'skeleton_id': 2388,
                     })
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
                 "treenode_id": 2394,
                 "x": 3110,
@@ -77,7 +77,7 @@ class NodesApiTests(CatmaidApiTestCase):
                     'neuron_id': 362,
                     })
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
                 "treenode_id": 367,
                 "x": 7030,
@@ -95,7 +95,7 @@ class NodesApiTests(CatmaidApiTestCase):
                 '/%d/node/user-info' % (self.test_project_id),
                 {'node_id': treenode_id})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {"reviewers": [],
                            "creation_time": "2011-09-27T07:57:17.808000+00:00",
                            "edition_time": "2011-12-05T13:51:36.955000+00:00",
@@ -113,7 +113,7 @@ class NodesApiTests(CatmaidApiTestCase):
                 '/%d/node/get_location' % (self.test_project_id),
                 {'tnid': treenode_id})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [383, 7850.0, 1970.0, 0.0]
         self.assertEqual(expected_result, parsed_response)
 
@@ -140,7 +140,7 @@ class NodesApiTests(CatmaidApiTestCase):
                  'z': 0,
                  'label_regex': '[Tt]estlabel'})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [[387, [9030.0, 1480.0, 0.0], 380.131556174964, ["testlabel"]],
                            [403, [7840.0, 2380.0, 0.0], 1135.3413583588, ["Testlabel"]]]
         self.assertEqual(expected_result, parsed_response)
@@ -161,7 +161,7 @@ class NodesApiTests(CatmaidApiTestCase):
                     't[0][2]': y,
                     't[0][3]': z})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
             'updated': 1,
             'old_connectors': None,
@@ -203,7 +203,7 @@ class NodesApiTests(CatmaidApiTestCase):
                         't[0][2]': y,
                         't[0][3]': z})
             self.assertEqual(response.status_code, 200)
-            parsed_response = json.loads(response.content)
+            parsed_response = json.loads(response.content.decode('utf-8'))
             self.assertIn('error', parsed_response)
             cursor = connection.cursor()
             cursor.execute('''
@@ -242,7 +242,7 @@ class NodesApiTests(CatmaidApiTestCase):
         response = self.client.post(
                 '/%d/node/update' % self.test_project_id, param_dict)
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
             'updated': 4,
             'old_treenodes': [
@@ -308,7 +308,7 @@ class NodesApiTests(CatmaidApiTestCase):
         response = self.client.post(
                 '/%d/node/update' % self.test_project_id, param_dict)
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {'error': 'User test2 cannot edit all of the 4 '
                            'unique objects from table treenode'}
         self.assertEqual(expected_result['error'], parsed_response['error'])
@@ -374,7 +374,7 @@ class NodesApiTests(CatmaidApiTestCase):
             'labels': 'true',
         })
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(len(expected_t_result), len(parsed_response[0]))
         self.assertEqual(len(expected_c_result), len(parsed_response[1]))
         for row in expected_t_result:
@@ -453,7 +453,7 @@ class NodesApiTests(CatmaidApiTestCase):
                 'treenode_ids': 2423,
                 'labels': False,})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(5, len(parsed_response))
         self.assertEqual(len(expected_t_result), len(parsed_response[0]))
         self.assertEqual(len(expected_c_result), len(parsed_response[1]))

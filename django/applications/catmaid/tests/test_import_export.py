@@ -317,7 +317,7 @@ class ImportExportTests(TestCase):
         self.fake_authentication()
         response = self.client.get('/projects/export')
         self.assertEqual(response.status_code, 200)
-        result = yaml.load(response.content)
+        result = yaml.load(response.content.decode('utf-8'))
 
         def strip_ids(d):
             """ Recursively, strip all 'id' fields of dictionaries.

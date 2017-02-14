@@ -10,7 +10,7 @@ class StacksApiTests(CatmaidApiTestCase):
 
         response = self.client.get('/%d/stack/%d/info' % (self.test_project_id, test_stack_id))
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
             "attribution": None,
             "broken_slices": {},

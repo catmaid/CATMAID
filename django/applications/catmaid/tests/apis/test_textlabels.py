@@ -35,7 +35,7 @@ class TextlabelsApiTests(CatmaidApiTestCase):
                 params)
         expected_result = ' '
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(expected_result, response.content)
+        self.assertEqual(expected_result, response.content.decode('utf-8'))
 
         label = Textlabel.objects.filter(id=textlabel_id)[0]
         label_location = TextlabelLocation.objects.filter(textlabel=textlabel_id)[0]
@@ -73,7 +73,7 @@ class TextlabelsApiTests(CatmaidApiTestCase):
                 params)
         expected_result = ' '
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(expected_result, response.content)
+        self.assertEqual(expected_result, response.content.decode('utf-8'))
 
         label = Textlabel.objects.filter(id=textlabel_id)[0]
         label_location = TextlabelLocation.objects.filter(textlabel=textlabel_id)[0]
@@ -100,7 +100,7 @@ class TextlabelsApiTests(CatmaidApiTestCase):
                 '/%d/textlabel/update' % self.test_project_id,
                 params)
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = 'Failed to find Textlabel with id %s.' % textlabel_id
         self.assertIn('error', parsed_response)
         self.assertIn(expected_result, parsed_response['error'])
@@ -117,7 +117,7 @@ class TextlabelsApiTests(CatmaidApiTestCase):
                 '/%d/textlabel/delete' % self.test_project_id,
                 {'tid': textlabel_id})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {'message': 'Success.'}
         self.assertEqual(expected_result, parsed_response)
         self.assertEqual(0, Textlabel.objects.filter(id=textlabel_id).count())
@@ -154,7 +154,7 @@ class TextlabelsApiTests(CatmaidApiTestCase):
                     '/%d/textlabel/create' % self.test_project_id,
                     params)
 
-            parsed_response = json.loads(response.content)
+            parsed_response = json.loads(response.content.decode('utf-8'))
             self.assertEqual(response.status_code, 200)
             self.assertEqual(label_count + 1 + i, Textlabel.objects.all().count())
             self.assertTrue('tid' in parsed_response.keys())
@@ -196,7 +196,7 @@ class TextlabelsApiTests(CatmaidApiTestCase):
                 'scale': 0.5,
                 'resolution': 5})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(expected_result, parsed_response)
 
 
@@ -236,5 +236,5 @@ class TextlabelsApiTests(CatmaidApiTestCase):
                 'scale': 0.5,
                 'resolution': 5})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(expected_result, parsed_response)

@@ -8,7 +8,7 @@ class LabelsApiTests(CatmaidApiTestCase):
         self.fake_authentication()
         response = self.client.get('/%d/labels/' % (self.test_project_id,))
         self.assertEqual(response.status_code, 200)
-        returned_labels = json.loads(response.content)
+        returned_labels = json.loads(response.content.decode('utf-8'))
         self.assertEqual(set(returned_labels),
                          set(["t",
                               "synapse with more targets",
@@ -25,7 +25,7 @@ class LabelsApiTests(CatmaidApiTestCase):
                               {'treenode_ids': ",".join(nodes),
                                'connector_ids': ",".join(connector_ids)})
 
-        returned_node_map = json.loads(response.content)
+        returned_node_map = json.loads(response.content.decode('utf-8'))
         self.assertEqual(len(returned_node_map.keys()), 3)
         self.assertEqual(set(returned_node_map['403']),
                          set(["uncertain end"]))
@@ -36,13 +36,13 @@ class LabelsApiTests(CatmaidApiTestCase):
 
         response = self.client.get('/%d/labels/location/%d/' % (self.test_project_id,
                                                                     432))
-        returned_labels = json.loads(response.content)
+        returned_labels = json.loads(response.content.decode('utf-8'))
         self.assertEqual(set(returned_labels),
                          set(["synapse with more targets", "TODO"]))
 
         response = self.client.get('/%d/labels/treenode/%d/' % (self.test_project_id,
                                                                     403))
-        returned_labels = json.loads(response.content)
+        returned_labels = json.loads(response.content.decode('utf-8'))
         self.assertEqual(len(returned_labels), 1)
         self.assertEqual(returned_labels[0], "uncertain end")
 
@@ -50,13 +50,13 @@ class LabelsApiTests(CatmaidApiTestCase):
         response = self.client.post('/%d/label/treenode/%d/update' % (self.test_project_id,
                                                                       403),
                                     {'tags': ",".join(['foo', 'bar'])})
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertTrue('message' in parsed_response)
         self.assertTrue(parsed_response['message'] == 'success')
 
         response = self.client.get('/%d/labels/treenode/%d/' % (self.test_project_id,
                                                                     403))
-        returned_labels = json.loads(response.content)
+        returned_labels = json.loads(response.content.decode('utf-8'))
         self.assertEqual(len(returned_labels), 2)
         self.assertEqual(set(returned_labels), set(['foo', 'bar']))
 
@@ -65,13 +65,13 @@ class LabelsApiTests(CatmaidApiTestCase):
                                                                       403),
                                     {'tags': ",".join(['green', 'apple']),
                                      'delete_existing': 'false'})
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertTrue('message' in parsed_response)
         self.assertTrue(parsed_response['message'] == 'success')
 
         response = self.client.get('/%d/labels/treenode/%d/' % (self.test_project_id,
                                                                     403))
-        returned_labels = json.loads(response.content)
+        returned_labels = json.loads(response.content.decode('utf-8'))
         self.assertEqual(len(returned_labels), 4)
         self.assertEqual(set(returned_labels), set(['foo', 'bar', 'green', 'apple']))
 
@@ -79,13 +79,13 @@ class LabelsApiTests(CatmaidApiTestCase):
         response = self.client.post('/%d/label/treenode/%d/remove' % (self.test_project_id,
                                                                       403),
                                     {'tag': 'bar'})
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertTrue('message' in parsed_response)
         self.assertTrue(parsed_response['message'] == 'success')
 
         response = self.client.get('/%d/labels/treenode/%d/' % (self.test_project_id,
                                                                     403))
-        returned_labels = json.loads(response.content)
+        returned_labels = json.loads(response.content.decode('utf-8'))
         self.assertEqual(len(returned_labels), 3)
         self.assertEqual(set(returned_labels), set(['foo', 'green', 'apple']))
 
@@ -95,14 +95,14 @@ class LabelsApiTests(CatmaidApiTestCase):
         response = self.client.post('/%d/label/treenode/%d/update' % (self.test_project_id,
                                                                       393),
                                     {'tags': ",".join(['soma', 'fake'])})
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(response.status_code, 200)
         self.assertFalse('warning' in parsed_response)
 
         response = self.client.post('/%d/label/treenode/%d/update' % (self.test_project_id,
                                                                       395),
                                     {'tags': ",".join(['soma', 'fake'])})
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(response.status_code, 200)
         self.assertTrue('warning' in parsed_response)
         self.assertTrue('soma (2, max. 1)' in parsed_response['warning'])
@@ -136,7 +136,7 @@ class LabelsApiTests(CatmaidApiTestCase):
 
         response = self.get_successful_stats_response()
 
-        self.assertListOfListsEqualContent(json.loads(response.content), expected_response)
+        self.assertListOfListsEqualContent(json.loads(response.content.decode('utf-8')), expected_response)
 
 
     def test_stats_does_not_find_all_nodes_of_skeleton(self):

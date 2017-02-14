@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 from django import forms
 from django.db.models import fields as db_fields, ForeignKey
 from django.core.exceptions import ValidationError

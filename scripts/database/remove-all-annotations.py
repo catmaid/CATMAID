@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 # This is a small helper script to remove all annotations from a
 # project.
@@ -6,7 +7,7 @@
 # You may need to install psycopg2, e.g. with:
 #   sudo apt-get install python-psycopg2
 
-from __future__ import print_function
+from __future__ import print_function, unicode_literals
 
 import sys
 import psycopg2

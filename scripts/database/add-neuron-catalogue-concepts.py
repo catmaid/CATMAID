@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-
-from __future__ import print_function
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals, print_function
 
 from common import db_connection
 

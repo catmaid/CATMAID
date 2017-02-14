@@ -20,6 +20,9 @@
 #    UPDATE stack SET resolution.z = ((stack.resolution).z * 0.9) WHERE id IN (4, 9);
 #    UPDATE location SET location.z = ((location.location).z * 0.9) WHERE project_id = 4;
 
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 import glob, os, re, sys, subprocess
 
 layer_to_remove_z = 9450.0

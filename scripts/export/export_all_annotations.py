@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 # Albert Cardona 2015-02-03
 # This file is meant to be run from within ./manager.py shell in the environment, like:
 # [1] load 'export_all_annotations.py'

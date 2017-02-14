@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 import json
 
 from catmaid.control.neuron_annotations import _annotate_entities

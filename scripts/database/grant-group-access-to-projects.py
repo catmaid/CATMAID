@@ -14,8 +14,9 @@
 # database: catmaid
 # username: catmaid_user
 # password: password_of_your_catmaid_user
-
-from __future__ import print_function
+#
+# -*- coding: utf-8 -*-
+from __future__ import print_function, unicode_literals
 
 import sys
 import psycopg2

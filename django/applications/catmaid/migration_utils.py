@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 def get_public_indexes(db):
     """
     Return a list of (index_name, table_name) tuples for indices in the public schema

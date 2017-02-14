@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 from itertools import chain
 from optparse import make_option
 from django.core import serializers

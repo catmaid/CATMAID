@@ -3,6 +3,10 @@
 # Create a project and stack associated HDF5 file with additional
 # data such as labels, meshes etc.
 
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
+
 import os.path as op
 import h5py
 from contextlib import closing

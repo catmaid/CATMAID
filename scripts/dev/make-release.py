@@ -15,6 +15,9 @@
 #    API_CHANGELOG.md from template and commits to dev
 #
 # Its dependencies are part of the requirements-dev.txt file.
+#
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
 
 import os
 import re

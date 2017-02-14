@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 # A file to contain exclusively dependencies of the NeuroML package.
 # See:
 #    https://github.com/NeuralEnsemble/libNeuroML

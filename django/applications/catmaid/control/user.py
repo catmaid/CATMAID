@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 import json
 import colorsys
 import django.contrib.auth.views as django_auth_views

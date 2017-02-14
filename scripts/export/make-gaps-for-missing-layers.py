@@ -9,7 +9,8 @@
 #  * change the dimensions.z field of each stack in the stack
 #    table
 
-from __future__ import print_function
+# -*- coding: utf-8 -*-
+from __future__ import print_function, unicode_literals
 
 import glob, os, re, sys, subprocess
 

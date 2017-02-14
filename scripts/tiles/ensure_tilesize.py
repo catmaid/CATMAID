@@ -7,8 +7,9 @@
 #   find <data-folder> -name *.jpg -exec scripts/ensure_tilesize.py {} 256 \;
 #
 # [1] http://pypi.python.org/pypi/pgmagick/
-
-from __future__ import print_function
+#
+# -*- coding: utf-8 -*-
+from __future__ import print_function, unicode_literals
 
 import sys
 import os

@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 # This fabric file will launch a standalone instance running catmaid
 
 from __future__ import print_statement, with_statement

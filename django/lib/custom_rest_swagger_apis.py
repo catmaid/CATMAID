@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 """
 This is a monkey patch for django-rest-swagger 0.3.4 to improve grouping of
 API endpoints into Swagger resources. This patch removes a case where an

@@ -5,8 +5,9 @@
 # in a remote computer, and to retrieve information from the database
 # such as the skeleton of a neuronal arbor and its synapses
 # in the form of a NetworX graph.
-
-from __future__ import print_function
+#
+# -*- coding: utf-8 -*-
+from __future__ import print_function, unicode_literals
 
 import urllib
 import urllib2

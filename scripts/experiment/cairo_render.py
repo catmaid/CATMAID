@@ -1,9 +1,11 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 # This script fetches treenodes from the database and renders them to
 # stack-sized PNGs
 
-from __future__ import division, print_function
+from __future__ import division, print_function, unicode_literals
+
 from math import pi as M_PI  # used by many snippets
 
 import sys

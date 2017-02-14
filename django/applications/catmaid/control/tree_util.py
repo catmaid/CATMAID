@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 # A 'tree' is a networkx.DiGraph with a single root node (a node without parents)
 
 import six

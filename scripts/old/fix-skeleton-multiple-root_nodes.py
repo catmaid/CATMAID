@@ -14,6 +14,10 @@
 # username: catmaid_user
 # password: password_of_your_catmaid_user
 
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
+
 import sys, os
 from common import db_connection
 from subprocess import check_call

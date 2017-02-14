@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 from django.db import connection
 from django.shortcuts import get_object_or_404
 from django.test import TestCase

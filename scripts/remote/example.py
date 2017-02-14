@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 ### Example for using CATMAID Frontend to retrieve a neuron's skeleton
 ### including the synaptic connectors
 

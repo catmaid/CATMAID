@@ -1,7 +1,10 @@
 # An entirely untested script to delete all the concepts in the
 # CATMAID database for a particular project.
-
+#
 # Mark Longair 2010
+#
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
 
 import os, re, sys, ij
 

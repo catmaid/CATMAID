@@ -6,6 +6,9 @@
 # refer to a development version.
 #
 # Its dependencies are part of the requirements-dev.txt file.
+#
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
 
 import os
 import re

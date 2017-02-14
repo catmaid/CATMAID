@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 import json
 from django.http import HttpResponse
 from catmaid.control.flytem.models import FlyTEMProjectStacks

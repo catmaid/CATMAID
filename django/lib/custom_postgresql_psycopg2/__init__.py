@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 # This is a hack to disable GDAL support in GeoDjango. It seems there is no
 # easier way due to the GDAL_LIBRARY_PATH setting not behaving as documented
 # (i.e. setting it to a non-existent file will disable GDAL). Disabling GDAL is

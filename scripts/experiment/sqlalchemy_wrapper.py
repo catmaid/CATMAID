@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 from sqlalchemy import create_engine
 from sqlalchemy import Table, Colum, Integer, String, MetaData, ForeignKey
 from sqlalchemy.orm import mapper

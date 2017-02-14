@@ -1,7 +1,6 @@
 celery==3.1.9
 cssmin==0.2.0
 Cython==0.23.4
-distribute==0.7.3; platform_python_implementation != 'PyPy'
 Django==1.9.11
 django-adminplus==0.5
 django-celery==3.1.17
@@ -31,7 +30,7 @@ python-libuuid==0.9.0; platform_python_implementation != 'PyPy'
 pytz==2015.7
 PyYAML==3.10
 requests==2.10.0
-scipy==0.14.1; platform_python_implementation != 'PyPy'
+scipy==0.18.1; platform_python_implementation != 'PyPy'
 Sphinx==1.3.1
 sphinxcontrib-images==0.7.0
 sqlparse==0.1.19

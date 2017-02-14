@@ -364,7 +364,7 @@ var project;
             // Open stack and queue test/loading for next one
             var sid = sids.shift();
             var s = ss.shift();
-            return CATMAID.openProjectStack(pid, sid, useExistingStackViewer)
+            return CATMAID.openProjectStack(pid, sid, useExistingStackViewer, undefined)
               .then(function() {
                 // Moving every stack is not really necessary, but for now a
                 // convenient way to apply the requested scale to each stack.
@@ -442,7 +442,7 @@ var project;
               'title': s.title,
               'comment': s.comment,
               'note': '',
-              'action': CATMAID.openProjectStack.bind(window, p.id, s.id, false)
+              'action': CATMAID.openProjectStack.bind(window, p.id, s.id, false, undefined)
             };
             return o;
           }, {});
@@ -1235,11 +1235,11 @@ var project;
                   action: [{
                       title: 'Open in new viewer',
                       note: '',
-                      action: CATMAID.openProjectStack.bind(window, s.pid, s.id, false)
+                      action: CATMAID.openProjectStack.bind(window, s.pid, s.id, false, undefined)
                     },{
                       title: 'Add to focused viewer',
                       note: '',
-                      action: CATMAID.openProjectStack.bind(window, s.pid, s.id, true)
+                      action: CATMAID.openProjectStack.bind(window, s.pid, s.id, true, undefined)
                     }
                   ]
                 }

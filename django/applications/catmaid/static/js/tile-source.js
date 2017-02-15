@@ -28,13 +28,14 @@
 
   /**
    * Check whether the canary location for a stack is accessible via this tile
-   * source. Checks for normal and CORS requests, for DOM and WebGL tiles
-   * respectively
+   * source and what time it takes to load. Checks for normal and CORS requests,
+   * for DOM and WebGL tiles respectively.
    *
    * @param  {Project} project
    * @param  {Stack}   stack
    * @param  {Object}  tileSource
-   * @return {Object}             Object with boolean keys normal and cors.
+   * @return {Object}             Object with boolean keys normal and cors as
+   *                              well as float keys normalTime and corsTime.
    */
   CATMAID.checkTileSourceCanary = function (project, stack, tileSource) {
     var canaryLocation = stack.canaryLocation;
@@ -44,26 +45,33 @@
 
     var normalReq = new Promise(function (resolve, reject) {
       var normalImg = new Image();
+      var beforeNormalLoad = performance.now();
+
       normalImg.onload = function () {
-        resolve(true);
+        resolve([true, performance.now() - beforeNormalLoad]);
       };
       normalImg.onerror = function () {
-        resolve(false);
+        resolve([false, Infinity]);
       };
+
       normalImg.src = url;
     });
 
+    var beforeCorsLoad = performance.now();
     var corsReq = fetch(new Request(url, {mode: 'cors'}))
       .then(function (response) {
         var contentHeader = response.headers.get('Content-Type');
-        return contentHeader && contentHeader.startsWith('image');
+        return [contentHeader && contentHeader.startsWith('image'),
+            performance.now() - beforeCorsLoad];
       })
-      .catch(function () { return false; });
+      .catch(function () { return [false, Infinity]; });
 
     return Promise.all([normalReq, corsReq]).then(function (result) {
       return {
-        normal: result[0],
-        cors:   result[1]
+        normal:     result[0][0],
+        normalTime: result[0][1],
+        cors:       result[1][0],
+        corsTime:   result[1][1]
       };
     });
   };

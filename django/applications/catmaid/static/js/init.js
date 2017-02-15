@@ -1143,15 +1143,13 @@ var project;
    *
    * @param  {Object} e                JSON response from the stack info API.
    * @param  {StackViewer} stackViewer Viewer to which to add the stack.
-   * @param  {number}      mirrorIndex Optional mirror index, defaults to 0.
+   * @param  {number}      mirrorIndex Optional mirror index, defaults to
+   *                                   fastest mirror.
    * @return {Promise}                 A promise yielding the stack viewer
    *                                   containing the new stack.
    */
   function handle_openProjectStack( e, stackViewer, mirrorIndex )
   {
-    // By default, use first stack mirror.
-    mirrorIndex = mirrorIndex === undefined ? 0 : mirrorIndex;
-
     if (!stackViewer) {
       CATMAID.throwOnInsufficientWebGlContexts(1);
     }

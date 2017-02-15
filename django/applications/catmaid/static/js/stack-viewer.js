@@ -838,6 +838,7 @@
     oldLayer.unregister();
     this.resize();
     this.layercontrol.refresh();
+    this.updateTitle();
     this.redraw();
   };
 

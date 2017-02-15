@@ -2447,7 +2447,9 @@
 
       templateTextStyle['fill'] = data.label_color;
       templateTextStyle['font-size'] = style['font-size'];
+      templateTextStyle['opacity'] = CATMAID.tools.getDefined(style['text-opacity'], '1');
       templateLineStyle['stroke'] = style['line-color'];
+      templateLineStyle['opacity'] = CATMAID.tools.getDefined(style['opacity'], '1');
 
       var strokeWidth = 'width' in data ? data.width : 1.0;
       templateLineStyle['stroke-width'] = strokeWidth + 'px';
@@ -2511,9 +2513,11 @@
       var style = node.style();
 
       templateTextStyle['fill'] = style['color'];
+      templateTextStyle['opacity'] = CATMAID.tools.getDefined(style['text-opacity'], '1');
       templateShapeStyle['fill'] = style['background-color'];
       templateShapeStyle['stroke'] = style['border-color'];
       templateShapeStyle['stroke-width'] = style['border-width'];
+      templateShapeStyle['opacity'] = CATMAID.tools.getDefined(style['opacity'], '1');
 
 
       if (data.shape === 'ellipse') {

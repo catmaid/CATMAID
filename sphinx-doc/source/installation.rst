@@ -297,7 +297,7 @@ following options:
 2. Apache + mod_wsgi, in which case see :ref:`apache`
 
 We usually prefer to use Nginx because of a more straight-forward configuration,
-smaller memory footprint and better performance with Gunicorn.
+smaller memory footprint and better performance wirh available WSGI servers.
 
 Note if the domain you are serving your image data from is different from where
 CATMAID is running, `CORS <https://en.wikipedia.org/wiki/Cross-origin_resource_sharing>`_

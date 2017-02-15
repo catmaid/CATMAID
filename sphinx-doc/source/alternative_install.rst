@@ -3,15 +3,102 @@
 Setting Up Nginx for CATMAID
 ============================
 
-Of course, using Apache and its WSGI module (mod_wsgi) is not the only
-way to run CATMAID. There are many web and WSGI servers available.
-This section is intended to provide information on such
-alternatives, and in particular the use of Nginx and various
-WSGI servers.
+We made good experience using Nginx together with uWSGI and this setup will get
+be explained in more detail below. CATMAID will of course work with other
+web-servers and UWSGI servers as well. Further down some information on
+alternative setups using Gevent or Gunicorn are briefly discussed.
 
-The installation instructions provided here, assume that you have set up
-the database and Django as described in the standard installation
-instructions.
+The installation instructions provided here, assume that you have set up the
+database and Django as described in the
+:ref:`standard installation` <basic-installation> instructions.
+
+Setup based on Nginx and uWSGI
+------------------------------
+
+`uWSGI <http://projects.unbit.it/uwsgi/>`_ is a versatile WSGI server written in C,
+and can serve as the middle layer between Nginx and CATMAID. It works well with
+connection pooling and communicates efficiently with Nginx.
+
+1. Install nginx, on Ubunto this would be::
+
+   sudo apt-get install nginx
+
+2. Being in CATMAID's ``virtualenv``, install uwsgi::
+
+   pip install uwsgi
+
+3. Create a new configuration file for ``uwsgi`` called ``catmaid-uwsgi.ini`` in
+   CATMAID's ``django/projects/mysite/`` folder::
+
+   ; uWSGI instance configuration for CATMAID
+   [uwsgi]
+	 virtualenv = <path-to-virtual-env>
+	 chdir = <catmaid-path>/django
+	 socket = /run/uwsgi/app/catmaid/socket
+	 mount = /<catmaid-relative-url>=<catmaid-path>/django/projects/mysite/django.wsgi
+	 manage-script-name = true
+	 uid = www-data
+	 workers = 2
+	 threads = 2
+	 disable-logging = true
+
+   Note that each thread of each worker will typically have one database
+   connection open. This means Postgres will try to allocate a total of about
+   workers * threads * work_mem (see ``postgresql.conf``). Make sure you have
+   enough memory available here.
+
+4. Make sure that the ``socket`` directory in your INI file is writable by the
+	 www-data user (``/run/uwsgi/app/catmaid/`` above). You now be able to start
+   uWSGI manually with one of the following::
+
+   uwsgi --ini <catmaid-path>/catmaid-uwsgi.ini
+
+5.  Here is a sample nginx configuration file, where ``<catmaid-relative-url> = /catmaid``::
+
+    server {
+      listen 8080;
+      server_name <CATMAID-HOST>;
+
+      # Give access to Django's static files
+      location /catmaid/static/ {
+        alias <CATMAID-PATH>/django/static/;
+      }
+
+      # Route all CATMAID Django WSGI requests to uWSGI
+      location /catmaid/ {
+        include uwsgi_params;
+        uwsgi_pass unix:///run/uwsgi/app/catmaid/socket;
+      }
+    }
+
+.. _nginx-image-data:
+
+Image data
+----------
+
+Serving image data works the same way as serving CATMAID static data. However,
+you might want to add a so called
+`CORS <https://en.wikipedia.org/wiki/Cross-origin_resource_sharing>`_ header to
+your Nginx location block::
+
+ Access-Control-Allow-Origin *
+
+Without this header, only a CATMAID instance served from the *same* domain name
+as the image data will be able to access it. If the image data should be accessed
+by CATMAID instances served  on other domains, this header is required. A
+typical tile data location block could look like this::
+
+ location /tiles/ {
+   # Regular cached tile access
+   alias /path/to/tiles/;
+   expires max;
+   add_header Cache-Control public;
+   # CORS header to allow cross-site access to the tile data
+   add_header Access-Control-Allow-Origin *;
+ }
+
+Besides adding the CORS header, caching is also set to be explicitly allowed,
+which might be helpful for data that doesn't change often.
 
 Setup based on Nginx and Gevent
 -------------------------------
@@ -87,35 +174,6 @@ defines from where the static files should be served. The `<CATMAID-PATH>`
 placeholder needs to be replaced with the absolute path to your CATMAID
 folder. The second location block passes all requests to the WSGI server
 defined before and allows therefore the execution of Django.
-
-.. _nginx-image-data:
-
-Image data
-**********
-
-Serving image data works the same way as serving CATMAID static data. However,
-you might want to add a so called
-`CORS <https://en.wikipedia.org/wiki/Cross-origin_resource_sharing>`_ header to
-your Nginx location block::
-
- Access-Control-Allow-Origin *
-
-Without this header, only a CATMAID instance served from the *same* domain name
-as the image data will be able to access it. If the image data should be accessed
-by CATMAID instances served  on other domains, this header is required. A
-typical tile data location block could look like this::
-
- location /tiles/ {
-   # Regular cached tile access
-   alias /path/to/tiles/;
-   expires max;
-   add_header Cache-Control public;
-   # CORS header to allow cross-site access to the tile data
-   add_header Access-Control-Allow-Origin *;
- }
-
-Besides adding the CORS header, caching is also set to be explicitly allowed,
-which might be helpful for data that doesn't change often.
 
 A note on the ``proxy_redirect`` command
 ****************************************
@@ -210,53 +268,6 @@ Adjust those values to your liking.
 Having configured and started both servers, you should now be able to access
 CATMAID.
 
-Setup based on Nginx and uWSGI
-------------------------------
-
-`uWSGI <http://projects.unbit.it/uwsgi/>`_ is a versatile WSGI server written in C,
-and can serve as the middle layer between Nginx and CATMAID.
-
-On Ubuntu 12.04, install nginx and uwsgi::
-
-  sudo apt-get install nginx uwsgi uwsgi-plugin-python
-
-Here is a sample uWSGI configuration file.  On Ubuntu, this can be saved as
-*/etc/uwsgi/apps-available/catmaid.ini*, with a soft link to */etc/uwsgi/apps-enabled/catmaid.ini*::
-
-  ; uWSGI instance configuration for CATMAID
-  [uwsgi]
-  virtualenv = /home/alice/.virtualenvs/catmaid
-  chdir = <CATMAID-PATH>/django
-  socket = /run/uwsgi/app/catmaid/socket
-  mount = /=<CATMAID-path>/django/projects/mysite/django.wsgi
-  plugins = python
-  ; manage-script-name is required if CATMAID will be run in a subdirectory
-  manage-script-name = true
-
-You now be able to start uWSGI manually with one of the following::
-
-   uwsgi --ini /etc/uwsgi/apps-available/catmaid.ini
-   (or)
-   service uwsgi start catmaid.ini
-
-Here is a sample nginx configuration file::
-
-  server {
-      listen 8080;
-      server_name <CATMAID-HOST>;
-
-      # Give access to Django's static files
-      location /catmaid/static/ {
-         alias <CATMAID-PATH>/django/static/;
-      }
-
-      # Route all CATMAID Django WSGI requests to uWSGI
-      location /catmaid/ {
-          include uwsgi_params;
-          uwsgi_pass unix:///run/uwsgi/app/catmaid/socket;
-      }
-  }
-
 Setup based on Nginx and Gunicorn
 ---------------------------------
 
@@ -286,13 +297,13 @@ program or program group a new configuration file has to be created::
 
 Such a configuration file can contain information about individual programs and
 groups of them (to manage them together). Below you will find an example of
-a typical setup with a Gunicorn start script and a Celery start script, both
+a typical setup with a uWSGI start script and a Celery start script, both
 grouped under the name "catmaid"::
 
   [program:catmaid-app]
-  command = /opt/catmaid/django/projects/mysite/run-gunicorn.sh
+  command = /opt/catmaid/django/env/bin/uwsgi --ini /opt/catmaid/django/projects/mysite/catmaid-uwsgi.ini
   user = www-data
-  stdout_logfile = /opt/catmaid/django/projects/mysite/gunicorn.log
+  stdout_logfile = /opt/catmaid/django/projects/mysite/uwsgi.log
   redirect_stderr = true
 
   [program:catmaid-celery]

@@ -114,7 +114,7 @@ var requestQueue = new RequestQueue();
       // Use an empty set of permissions. Typically a login happens after
       // configuration, wher permissions change anyhow. This prevents an
       // additional permission request on start-up.
-      permissions = [{}, []];
+      permissions = {};
     }
     CATMAID.updatePermissions(permissions);
   };
@@ -233,11 +233,18 @@ var requestQueue = new RequestQueue();
    */
   CATMAID.updatePermissions = function(permissions) {
     if (permissions) {
-      projectPermissions = permissions;
+      projectPermissions = {};
+      for (var p in permissions) {
+        projectPermissions[p] = new Set(permissions[p]);
+      }
       return Promise.resolve();
     } else {
       return CATMAID.fetch('permissions', 'GET').then(function(json) {
-        projectPermissions = json[0];
+        var newPermissions = json[0];
+        projectPermissions = {};
+        for (var p in newPermissions) {
+          projectPermissions[p] = new Set(newPermissions[p]);
+        }
         groups = json[1];
       }).catch(alert);
     }
@@ -374,7 +381,7 @@ var requestQueue = new RequestQueue();
       return false;
     }
     return projectPermissions && projectPermissions[permission] &&
-      projectPermissions[permission][projectId];
+      projectPermissions[permission].has(projectId);
   };
 
   // A set of error messages for the lack of particular permissions

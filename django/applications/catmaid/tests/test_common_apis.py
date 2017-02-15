@@ -289,12 +289,12 @@ class ViewPageTests(TestCase):
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content)
         expected_result = [
-            {'can_administer': {'3': False},
-             'add_project': {'3': False},
-             'can_annotate': {'3': True},
-             'change_project': {'3': False},
-             'can_browse': {'3': True},
-             'delete_project': {'3': False}}, [u'test1']]
+            {'can_administer': [],
+             'add_project': []
+             'can_annotate': [3],
+             'change_project': [],
+             'can_browse': [3],
+             'delete_project': []}, [u'test1']]
         self.assertEqual(expected_result, parsed_response)
 
 

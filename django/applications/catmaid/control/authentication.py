@@ -266,9 +266,12 @@ def user_project_permissions(request):
             # Iterate the codenames of available permissions and store
             # whether the user has them for a specific project
             for permName in permNames:
-                if permName not in permissions:
-                    permissions[permName] = {}
-                permissions[permName][project_id] = permName in userPerms
+                perm_projects = permissions.get(permName)
+                if not perm_projects:
+                    perm_projects = []
+                    permissions[permName] = perm_projects
+                if permName in userPerms:
+                    perm_projects.append(project_id)
         # Obtain the list of groups of the user
         groups = list(Group.objects.filter(user=request.user).values_list('name', flat=True))
     else:

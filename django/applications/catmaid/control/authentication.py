@@ -253,7 +253,7 @@ def user_project_permissions(request):
     anonymous requests, because it reports as authenticated and a profile will
     be returned.
     """
-    result = {}
+    permissions = {}
     if request.user.is_authenticated():
         projectPerms = get_perms_for_model(Project)
         permNames = [perm.codename for perm in projectPerms]
@@ -266,15 +266,15 @@ def user_project_permissions(request):
             # Iterate the codenames of available permissions and store
             # whether the user has them for a specific project
             for permName in permNames:
-                if permName not in result:
-                    result[permName] = {}
-                result[permName][project_id] = permName in userPerms
+                if permName not in permissions:
+                    permissions[permName] = {}
+                permissions[permName][project_id] = permName in userPerms
         # Obtain the list of groups of the user
         groups = list(Group.objects.filter(user=request.user).values_list('name', flat=True))
     else:
         groups = []
 
-    return HttpResponse(json.dumps((result, groups)))
+    return JsonResponse((permissions, groups), safe=False)
 
 def get_object_permissions(request, ci_id):
     """ Tests editing permissions of a user on a class_instance and returns the

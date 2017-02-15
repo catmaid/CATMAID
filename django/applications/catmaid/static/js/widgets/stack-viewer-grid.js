@@ -26,16 +26,20 @@
    * modifies both the controls and the content of the parent.
    *
    * @param parentID - an ID unique to the widget instance calling the stack viewer grid
-   * @param controlsContainer - the controls div of the parent. If undefined, gets `#${parentID}-controls`.
-   * @param contentContainer - the content div of the parent. If undefined, gets `#${parentID}-content`.
+   * @param contentContainer - the content element of the parent. If undefined, gets `#${parentID}-content`.
+   * @param gridControlsContainer - the element to which grid controls other than paging should be added. If
+   * undefined, gets `#${parentID}-controls`
+   * @param pageControlsContainer - the element to which page controls should be added. If undefined, gets the grid
+   * controls' container.
    * @constructor
    */
-  var StackViewerGrid = function (parentID, controlsContainer, contentContainer) {
+  var StackViewerGrid = function (parentID, contentContainer, gridControlsContainer, pageControlsContainer) {
     var parentIdPrefix = parentID.replace(/-*$/, '-');
     this.idPrefix = parentIdPrefix + 'stackviewers-';
 
-    this.controlsContainer = controlsContainer || document.getElementById(parentIdPrefix + 'controls');
     this.contentContainer = contentContainer || document.getElementById(parentIdPrefix + 'content');
+    this.gridControlsContainer = gridControlsContainer || document.getElementById(parentIdPrefix + 'controls');
+    this.pageControlsContainer = pageControlsContainer || this.gridControlsContainer;
 
     /**
      *  [
@@ -259,9 +263,10 @@
   StackViewerGrid.prototype.createControls = function() {
     var self = this;
 
-    this.controlsContainer.append(document.createElement('br'));
-
     // SETTINGS CONTROLS
+    if (this.gridControlsContainer.hasChildNodes()) {
+      this.gridControlsContainer.append(document.createElement('br'));
+    }
 
     var sourceStackViewer = CATMAID.DOM.createSelect(
       self.idPrefix + 'source-stack-viewer',
@@ -276,11 +281,11 @@
     var sourceStackViewerLabel = document.createElement('label');
     sourceStackViewerLabel.appendChild(document.createTextNode('Source stack viewer'));
     sourceStackViewerLabel.appendChild(sourceStackViewer);
-    this.controlsContainer.appendChild(sourceStackViewerLabel);
+    this.gridControlsContainer.appendChild(sourceStackViewerLabel);
 
     var tileCounts = document.createElement('div');
     tileCounts.style.display = 'inline-block';
-    this.controlsContainer.appendChild(tileCounts);
+    this.gridControlsContainer.appendChild(tileCounts);
 
     var makeTileCountOptions = function(max) {
       var arr = [];
@@ -367,7 +372,7 @@
     var scaleBarCbLabel = document.createElement('label');
     scaleBarCbLabel.appendChild(document.createTextNode('Scale bars'));
     scaleBarCbLabel.appendChild(scaleBarCb);
-    this.controlsContainer.appendChild(scaleBarCbLabel);
+    this.gridControlsContainer.appendChild(scaleBarCbLabel);
 
     var zoomInput = document.createElement('input');
     zoomInput.setAttribute('type', 'text');
@@ -394,7 +399,7 @@
     var zoomLabel = document.createElement('label');
     zoomLabel.appendChild(document.createTextNode('Zoom'));
     zoomLabel.appendChild(zoomInput);
-    this.controlsContainer.append(zoomLabel);
+    this.gridControlsContainer.append(zoomLabel);
 
     var recentreButton = document.createElement('input');
     recentreButton.setAttribute('type', 'button');
@@ -411,11 +416,13 @@
       });
     };
 
-    this.controlsContainer.append(recentreButton);
-
-    this.controlsContainer.appendChild(document.createElement('br'));
+    this.gridControlsContainer.append(recentreButton);
 
     // PAGINATION CONTROLS
+
+    if (this.pageControlsContainer.hasChildNodes()) {
+      this.pageControlsContainer.appendChild(document.createElement('br'));
+    }
 
     var prevButton = document.createElement('input');
     prevButton.setAttribute('type', 'button');
@@ -427,11 +434,11 @@
         self.changePage(prevPageIdx);
       }
     };
-    this.controlsContainer.appendChild(prevButton);
+    this.pageControlsContainer.appendChild(prevButton);
 
     var pageCountContainer = document.createElement('div');
     pageCountContainer.style.display = 'inline-block';
-    this.controlsContainer.appendChild(pageCountContainer);
+    this.pageControlsContainer.appendChild(pageCountContainer);
 
     var currentPage = document.createElement('input');
     currentPage.setAttribute('type', 'text');
@@ -467,13 +474,13 @@
         self.changePage(nextPageIdx);
       }
     };
-    this.controlsContainer.appendChild(nextButton);
+    this.pageControlsContainer.appendChild(nextButton);
 
     var showing = document.createElement('p');
     showing.setAttribute('id', self.idPrefix + 'showing');
     showing.style.display = 'inline-block';
     showing.innerHTML = 'Showing <b class="start">0</b>-<b class="stop">0</b> of <b class="total">0</b>';
-    this.controlsContainer.appendChild(showing);
+    this.pageControlsContainer.appendChild(showing);
   };
 
   /**
@@ -646,10 +653,10 @@
 
     // todo: do this in the stack viewers rather than here
     // hide window controls
-    var containerJq = $(this.contentContainer);
-    containerJq.find('.neuronname').hide();
-    containerJq.find('.stackClose').hide();
-    containerJq.find('.smallMapView_hidden').hide();  // doesn't work anyway
+    var $content = $(this.contentContainer);
+    $content.find('.neuronname').hide();
+    $content.find('.stackClose').hide();
+    $content.find('.smallMapView_hidden').hide();  // doesn't work anyway
   };
 
   StackViewerGrid.prototype.moveStackViewer = function(stackViewer, coords, completionCallback) {

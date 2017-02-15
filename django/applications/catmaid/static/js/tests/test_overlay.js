@@ -41,7 +41,7 @@ QUnit.test('Tracing overlay test', function( assert ) {
     /*global django_url:true */
     django_url = '/';
     var permissions = {
-      'can_annotate': {'1': true}
+      'can_annotate': [1]
     };
     CATMAID.configure(django_url, django_url, undefined, undefined, permissions);
 

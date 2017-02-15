@@ -100,6 +100,8 @@ Miscellaneous:
 
 - Tag table: any tags with identical names are now treated as identical.
 
+- Tag table: fixed off-by-one error in node count.
+
 
 ## 2017.01.19
 

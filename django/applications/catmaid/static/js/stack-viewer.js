@@ -142,7 +142,7 @@
   /**
    * Update stack viewer window title combined with the currently used mirror.
    */
-  StackViewer.prototype.updateTile = function() {
+  StackViewer.prototype.updateTitle = function() {
     var title = this.primaryStack.title;
     var tileLayer = this._layers.get('TileLayer');
     if (tileLayer) {
@@ -436,7 +436,7 @@
    */
   StackViewer.prototype.setOffset = function (offset) {
     this._offset = offset;
-    this.updateTile();
+    this.updateTitle();
     this.moveToPixel(this.z, this.y, this.x, this.s);
   };
 
@@ -710,7 +710,7 @@
     this._layers.set(key, layer);
     if (this._layerOrder.indexOf(key) === -1) this._layerOrder.push(key);
     this.layercontrol.refresh();
-    this.updateTile();
+    this.updateTitle();
   };
 
   /**

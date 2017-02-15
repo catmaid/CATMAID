@@ -58,6 +58,8 @@ Connector Viewer enhancements:
 - When using the connector viewer as a skeleton source, the output is the
   union of the two skeleton sets.
 
+- The controls have been separated out into tabs.
+
 - N.B.: Because the Connector Viewer is now populated in a different way
   to the Connector Table, you can now only open a Table from a Viewer if
   one of the skeleton sets is empty, and a connector type other than 'All'

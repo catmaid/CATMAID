@@ -129,22 +129,34 @@
     return sourceControls;
   };
 
+  var tabs = {};
+  var contentContainer = null;
+
   ConnectorViewer.prototype.getWidgetConfiguration = function() {
     var self = this;
     return {
       helpText: "Connector Viewer widget: Quickly view and compare connectors associated with given skeletons",
       controlsID: this.idPrefix + 'controls',
       createControls: function(controls) {
-
+        var innerControls = document.createElement('div');
+        controls.appendChild(innerControls);
+        tabs = CATMAID.DOM.addTabGroup(
+          innerControls, 'connector-viewer' + self.widgetID,
+          ['Main', 'Connectors', 'Stack viewers']
+        );
 
         // CONNECTOR SELECTION CONTROLS
 
-        controls.appendChild(self.makeSourceControls(
+        tabs['Main'].appendChild(self.makeSourceControls(
           self.skelSources[0], 'Pre- skeletons: ', self.idPrefix + 'source0-controls'
         ));
-        controls.appendChild(self.makeSourceControls(
+        tabs['Main'].appendChild(self.makeSourceControls(
           self.skelSources[1], 'Post- skeletons: ', self.idPrefix + 'source1-controls'
         ));
+
+        var br = document.createElement('br');
+        br.classList.add('extended-source-controls');
+        tabs['Main'].appendChild(br);
 
         var syncSkelSourcesCb = document.createElement('input');
         syncSkelSourcesCb.type = 'checkbox';
@@ -164,10 +176,10 @@
         var syncSkelSourcesLabel = document.createElement('label');
         syncSkelSourcesLabel.classList.add('extended-source-controls');
         syncSkelSourcesLabel.title = 'Set each skeleton source to the union of both sources and keep in sync';
-        syncSkelSourcesLabel.appendChild(document.createTextNode('Sync: '));
+        syncSkelSourcesLabel.appendChild(document.createTextNode('Sync skeletons: '));
         syncSkelSourcesLabel.appendChild(syncSkelSourcesCb);
 
-        controls.appendChild(syncSkelSourcesLabel);
+        tabs['Main'].appendChild(syncSkelSourcesLabel);
 
         var switchSkelSources = document.createElement('input');
         switchSkelSources.type = 'button';
@@ -184,7 +196,19 @@
           self.update();
         };
 
-        controls.appendChild(switchSkelSources);
+        tabs['Main'].appendChild(switchSkelSources);
+
+        var refresh = document.createElement('input');
+        refresh.type = "button";
+        refresh.value = "Refresh";
+        refresh.title = 'Refresh cache and re-initialise stack viewers (may take a few seconds)';
+        refresh.onclick = function() {
+          self.cache.clear();
+          self.stackViewerGrid.clear();
+          self.stackViewerGrid.redrawPanels();
+          self.update();
+        };
+        tabs['Main'].appendChild(refresh);
 
         var connectorType = CATMAID.DOM.createSelect(
           self.idPrefix + "connector-type",
@@ -204,7 +228,7 @@
         var relationLabel = document.createElement('label');
         relationLabel.appendChild(document.createTextNode('Type'));
         relationLabel.appendChild(connectorType);
-        controls.appendChild(relationLabel);
+        tabs['Connectors'].appendChild(relationLabel);
 
         var sortingSelect = CATMAID.DOM.createSelect(
           self.idPrefix + "connector-sorting",
@@ -230,7 +254,7 @@
         var sortingSelectLabel = document.createElement('label');
         sortingSelectLabel.appendChild(document.createTextNode('Connector sorting'));
         sortingSelectLabel.appendChild(sortingSelect);
-        controls.appendChild(sortingSelectLabel);
+        tabs['Connectors'].appendChild(sortingSelectLabel);
 
         var openTable = document.createElement('input');
         openTable.type = 'button';
@@ -256,22 +280,17 @@
           document.getElementById(connTable.idPrefix + 'relation-type').value = relation;
         };
 
-        controls.appendChild(openTable);
+        tabs['Connectors'].appendChild(openTable);
 
-        var refresh = document.createElement('input');
-        refresh.type = "button";
-        refresh.value = "Refresh";
-        refresh.title = 'Refresh cache and re-initialise stack viewers (may take a few seconds)';
-        refresh.onclick = function() {
-          self.cache.clear();
-          self.stackViewerGrid.clear();
-          self.stackViewerGrid.redrawPanels();
-          self.update();
-        };
-        controls.appendChild(refresh);
+        var $innerControls = $(innerControls);
+        $innerControls.tabs();
+        $innerControls.on('tabsactivate', function() {
+          self.stackViewerGrid.getGridWindow().redraw();
+        });
       },
       contentID: this.idPrefix + 'content',
       createContent: function(container) {
+        contentContainer = container;
         // container.style.position = 'absolute';
       },
       init: function() {
@@ -283,7 +302,9 @@
             $('.extended-source-controls').toggle();
           }
         );
-        this.stackViewerGrid = new CATMAID.StackViewerGrid(self.idPrefix);
+        this.stackViewerGrid = new CATMAID.StackViewerGrid(
+          self.idPrefix, contentContainer, tabs['Stack viewers'], tabs['Main']
+        );
         this.update();
       }
     };

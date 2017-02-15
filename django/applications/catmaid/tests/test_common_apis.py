@@ -290,7 +290,7 @@ class ViewPageTests(TestCase):
         parsed_response = json.loads(response.content)
         expected_result = [
             {'can_administer': [],
-             'add_project': []
+             'add_project': [],
              'can_annotate': [3],
              'change_project': [],
              'can_browse': [3],

@@ -63,7 +63,8 @@ var requestQueue = new RequestQueue();
    * @param {string} csrfCookieName The name of the cookie containing the
    *                                CSRF token to be sent to the backend with XHRs.
    * @param {Object} permissions    (Optional) Instead of getting permission from
-   *                                the back-end, use these instead.
+   *                                the back-end (=undefined) or using no
+   *                                initial permissions (=null), use these instead.
    * @param {bool}   history        (Optional) Indicate if history tracking is
    *                                enabled in the back-end, default is true.
    */
@@ -108,6 +109,13 @@ var requestQueue = new RequestQueue();
     });
 
     CATMAID.setupCsrfProtection();
+
+    if (null === permissions) {
+      // Use an empty set of permissions. Typically a login happens after
+      // configuration, wher permissions change anyhow. This prevents an
+      // additional permission request on start-up.
+      permissions = [{}, []];
+    }
     CATMAID.updatePermissions(permissions);
   };
 

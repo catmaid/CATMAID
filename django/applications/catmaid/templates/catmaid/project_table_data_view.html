@@ -59,7 +59,7 @@
 				{% for m in s.stackmirror_set.all %}
 					<dd>
 						<a href="?pid={{ p.id }}&tool=navigator&sid0={{ s.id }}&s0=1"
-								onclick="CATMAID.openProjectStack({{p.id}}, {{s.id}}, undefined, {{m.position}});return false">{{ m.title }}</a>
+								onclick="CATMAID.openProjectStack({{p.id}}, {{s.id}}, undefined, {{forloop.counter0}});return false">{{ m.title }}</a>
 					</dd>
 				{% endfor %}
 				</dl>

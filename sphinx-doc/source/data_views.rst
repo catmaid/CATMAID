@@ -181,7 +181,7 @@ Name               Options                                     Default
 ``sample_slice``   ``slice index, "first", "center", "last"``  ``"center"``
 ``sample_width``   ``width in pixel, e.g. 50 or 75``           ``orig. width``
 ``sample_height``  ``height in pixel, e.g. 50 or 75``          ``orig. height``
-``show_mirrors``   ``true, false``                             ``true``
+``show_mirrors``   ``true, false``                             ``false``
 ================== =========================================== ================
 
 Please refer to the introduction to this section for an explanation of the
@@ -235,7 +235,7 @@ Name               Options                                     Default
 ``sample_slice``   ``slice index, "first", "center", "last"``  ``"center"``
 ``sample_width``   ``width in pixel, e.g. 50 or 75``           ``orig. width``
 ``sample_height``  ``height in pixel, e.g. 50 or 75``          ``orig. height``
-``show_mirrors``   ``true, false``                             ``true``
+``show_mirrors``   ``true, false``                             ``false``
 ================== =========================================== ================
 
 Have a look to this section's introduction for an explanation of the ``sort``,

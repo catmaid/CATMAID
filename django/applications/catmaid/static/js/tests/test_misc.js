@@ -6,7 +6,7 @@ QUnit.test('Miscellaneous tests', function( assert ) {
   var originalRequestQueue = window.requestQueue;
   var server = this.sandbox.useFakeServer();
 
-  var permissionResponse = JSON.stringify([{fake_permission: {"1": true}}]);
+  var permissionResponse = JSON.stringify([{fake_permission: [1]}]);
   server.respondWith("GET", "a/permissions",
     [200, {"Content-Type": "application/json"}, permissionResponse]);
   server.respondWith("GET", "c/permissions",

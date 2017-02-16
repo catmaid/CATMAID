@@ -171,31 +171,27 @@
               this.stack.createTileSourceForMirror(index));
         }, this))
         .then((function(mirrorAccessible) {
-          // Sort accessible mirrors by response time
+          if (mirrorAccessible.length === 0) {
+            CATMAID.warn('No mirrors for this stack are accessible. Image data may not load.');
+          }
+
+          // Return an object with the index and response time of the fastest mirror
           var fastestMirror = mirrorAccessible.reduce(function(fastest, accessible, i) {
             if (!accessible.normal) {
               return fastest;
             }
-            if (!fastest) {
-              fastest = {
-                normalTime: accessible.normalTime,
-                mirrorIndex: i
-              };
-            } else if (fastest.normalTime > accessible.normalTime) {
+            
+            if (fastest.normalTime > accessible.normalTime) {
               fastest.normalTime = accessible.normalTime;
               fastest.mirrorIndex = i;
             }
 
             return fastest;
-          });
+          }, {normalTime: Infinity});
 
-          if (fastestMirror) {
-            var newMirrorTitle = this.stack.mirrors[fastestMirror.mirrorIndex].title;
-            CATMAID.info('Switching to faster mirror "' + newMirrorTitle + '".');
-            this.switchToMirror(fastestMirror.mirrorIndex);
-          } else  {
-            CATMAID.warn('No mirrors for this stack are accessible. Image data may not load.');
-          }
+          var newMirrorTitle = this.stack.mirrors[fastestMirror.mirrorIndex].title;
+          CATMAID.info('Switching to faster mirror "' + newMirrorTitle + '".');
+          this.switchToMirror(fastestMirror.mirrorIndex);
         }).bind(this));
   };
 

@@ -34,14 +34,19 @@
    * @param  {Project} project
    * @param  {Stack}   stack
    * @param  {Object}  tileSource
+   * @param  {Boolean} noCache    Prevent caching by appending a dummy request parameter
    * @return {Object}             Object with boolean keys normal and cors as
    *                              well as float keys normalTime and corsTime.
    */
-  CATMAID.checkTileSourceCanary = function (project, stack, tileSource) {
+  CATMAID.checkTileSourceCanary = function (project, stack, tileSource, noCache) {
     var canaryLocation = stack.canaryLocation;
     var col = Math.floor(canaryLocation.x / tileSource.tileWidth);
     var row = Math.floor(canaryLocation.y / tileSource.tileHeight);
     var url = tileSource.getTileURL(project, stack, [canaryLocation.z], col, row, 0);
+
+    if (noCache) {
+      url += "?nocache=" + Date.now();
+    }
 
     var normalReq = new Promise(function (resolve, reject) {
       var normalImg = new Image();

@@ -168,7 +168,8 @@
           return CATMAID.checkTileSourceCanary(
               project,
               this.stack,
-              this.stack.createTileSourceForMirror(index));
+              this.stack.createTileSourceForMirror(index),
+              true);
         }, this))
         .then((function(mirrorAccessible) {
           // Sort accessible mirrors by response time

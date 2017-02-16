@@ -312,6 +312,11 @@ STATIC_EXTENSION_URL = "/staticext/"
 STATIC_EXTENSION_ROOT = "/tmp"
 STATIC_EXTENSION_FILES = []
 
+# Default cookie suffix, should be customized if multiple CATMAID instances run
+# on the same server, e.g. with:
+# hashlib.md5(CATMAID_URL.encode('utf-8')).hexdigest()
+COOKIE_SUFFIX = 'catmaid'
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.TokenAuthentication',

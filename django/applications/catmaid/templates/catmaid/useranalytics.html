@@ -42,6 +42,7 @@ End date: <input type="text" id="end_date" />
             "{{ STATIC_URL|escapejs }}",
             "{{ STATIC_EXTENSION_URL|escapejs }}",
             "{% csrf_cookie_name %}",
+            "{{ COOKIE_SUFFIX }}",
             undefined,
             {{ HISTORY_TRACKING|make_js_bool }});
   CATMAID.CLIENT_VERSION = "{% catmaid_version %}";

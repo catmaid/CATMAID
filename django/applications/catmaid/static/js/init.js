@@ -1103,7 +1103,8 @@ var project;
    * @param  {number} stackID            ID of the stack to open.
    * @param  {boolean} useExistingViewer True to add the stack to the existing,
    *                                     focused stack viewer.
-   * @param  {number} mirrorIndex        An optional mirror index, defaults to 0
+   * @param  {number} mirrorIndex        An optional mirror index, defaults to
+   *                                     the first available.
    * @return {Promise}                   A promise yielding the stack viewer.
    */
   CATMAID.openProjectStack = function(projectID, stackID, useExistingViewer, mirrorIndex) {
@@ -1144,7 +1145,7 @@ var project;
    * @param  {Object} e                JSON response from the stack info API.
    * @param  {StackViewer} stackViewer Viewer to which to add the stack.
    * @param  {number}      mirrorIndex Optional mirror index, defaults to
-   *                                   fastest mirror.
+   *                                   the first available.
    * @return {Promise}                 A promise yielding the stack viewer
    *                                   containing the new stack.
    */

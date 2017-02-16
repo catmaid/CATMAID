@@ -2359,13 +2359,7 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
       if (node) {
         var relation_name = jso[4][r[1]];
         var group = groupedRelations[relation_name] || 'undirgroup';
-        var link = {
-          'treenode': node,
-          'relation_id': r[1],
-          'confidence': r[2],
-          'edition_time': r[3],
-          'id': r[4]
-        };
+        var link = this.graphics.newLinkNode(r[4], node, r[1], r[2], r[3]);
         connector[group][tnid] = link;
         node.linkConnector(connector.id, link);
       }

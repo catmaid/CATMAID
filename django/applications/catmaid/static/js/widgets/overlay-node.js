@@ -208,6 +208,10 @@
       }
       return connector;
     };
+
+    this.newLinkNode = function(id, node, relation_id, confidence, edition_time) {
+      return new this.ConnectorLink(id, node, relation_id, confidence, edition_time);
+    };
   };
 
   ////// Definition of classes used in SkeletonElements
@@ -265,6 +269,25 @@
           this.nextIndex += 1;
         }
       });
+
+    /**
+     * Add a epoch based time field and a corresponding _iso_str version to a
+     * <target>.
+     */
+    var addIsoTimeAccessor = function(target, fieldName) {
+      // Create accessor for a string version of the edition time, which is
+      // internally stored as a second based epoch time number (which is how
+      // Postgres stores is). It has to be multiplied by 1000 to work with
+      // JavaScript's millisecond based Date.
+      Object.defineProperty(target, fieldName + '_iso_str', {
+        get: function() {
+          return (new Date(this[fieldName] * 1000)).toISOString();
+        },
+        set: function(value) {
+          this[fieldName] = (new Date(value)).getTime() / 1000.0;
+        }
+      });
+    };
 
 
     /** A prototype for both Treenode and Connector. */
@@ -430,18 +453,7 @@
         // this.NODE_TEXTURE.update();
       };
 
-      // Create accessor for a string version of the edition time, which is
-      // internally stored as a second based epoch time number (which is how
-      // Postgres stores is). It has to be multiplied by 1000 to work with
-      // JavaScript's millisecond based Date.
-      Object.defineProperty(this, 'edition_time_iso_str', {
-        get: function() {
-          return (new Date(this.edition_time * 1000)).toISOString();
-        },
-        set: function(value) {
-          this.edition_time = (new Date(value)).getTime() / 1000.0;
-        }
-      });
+      addIsoTimeAccessor(this, 'edition_time');
     })();
 
     ptype.AbstractTreenode = function() {
@@ -1338,6 +1350,17 @@
     };
 
     ptype.ConnectorNode.prototype = new ptype.AbstractConnectorNode();
+
+    ptype.ConnectorLink = function( id, node, relation_id, confidence,
+        edition_time) {
+      this.id = id;
+      this.treenode = node;
+      this.relation_id = relation_id;
+      this.confidence = confidence;
+      this.edition_time = edition_time;
+    };
+
+    addIsoTimeAccessor(ptype.ConnectorLink.prototype, 'edition_time');
 
     /**
      * Event handling functions.

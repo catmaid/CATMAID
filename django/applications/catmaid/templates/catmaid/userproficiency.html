@@ -82,7 +82,8 @@
   CATMAID.configure("{{ CATMAID_URL }}",
             "{{ STATIC_URL|escapejs }}",
             "{{ STATIC_EXTENSION_URL|escapejs }}",
-            "{% csrf_cookie_name %}");
+            "{% csrf_cookie_name %}",
+            "{{ COOKIE_SUFFIX }}");
   CATMAID.CLIENT_VERSION = "{% catmaid_version %}";
 
   var users = {};

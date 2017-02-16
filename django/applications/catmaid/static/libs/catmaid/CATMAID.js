@@ -36,22 +36,6 @@ var requestQueue = new RequestQueue();
     return str.indexOf(suffix, str.length - suffix.length) !== -1;
   };
 
-  var getCookie = function(name) {
-      var cookieValue = null;
-      if (document.cookie && document.cookie !== '') {
-          var cookies = document.cookie.split(';');
-          for (var i = 0; i < cookies.length; i++) {
-              var cookie = jQuery.trim(cookies[i]);
-              // Does this cookie string begin with the name we want?
-              if (cookie.substring(0, name.length + 1) == (name + '=')) {
-                  cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                  break;
-              }
-          }
-      }
-      return cookieValue;
-  };
-
   /**
    * Set up the front-end environment. Both URLs are stored so that they contain
    * a trailing slash.
@@ -62,13 +46,16 @@ var requestQueue = new RequestQueue();
    *                                CATMAID's static extension files.
    * @param {string} csrfCookieName The name of the cookie containing the
    *                                CSRF token to be sent to the backend with XHRs.
+   * @param {string} cookieSuffix   A suffix that is used to make cookie names
+   *                                unique.
    * @param {Object} permissions    (Optional) Instead of getting permission from
    *                                the back-end (=undefined) or using no
    *                                initial permissions (=null), use these instead.
    * @param {bool}   history        (Optional) Indicate if history tracking is
    *                                enabled in the back-end, default is true.
    */
-  CATMAID.configure = function(backendURL, staticURL, staticExtURL, csrfCookieName, permissions, history) {
+  CATMAID.configure = function(backendURL, staticURL, staticExtURL,
+      csrfCookieName, cookieSuffix, permissions, history) {
     validateString(backendURL, "back-end URL");
     validateString(staticURL, "static URL");
     if (typeof staticExtURL === 'undefined') staticExtURL = '';
@@ -99,6 +86,13 @@ var requestQueue = new RequestQueue();
       configurable: true,
       writable: false,
       value: csrfCookieName
+    });
+
+    Object.defineProperty(CATMAID, "cookieSuffix", {
+      enumerable: false,
+      configurable: true,
+      writable: false,
+      value: cookieSuffix
     });
 
     Object.defineProperty(CATMAID, "historyTracking", {
@@ -186,6 +180,61 @@ var requestQueue = new RequestQueue();
   };
 
   /**
+   * Return a named value from a cookie.
+   *
+   * @param {String}  name     The key for the value to retrieve.
+   * @param {Boolean} noSuffix Optional, disable automatic appending of
+   *                           CATMAID's cookie suffix to the cookie name.
+   * @returns                  The returned value or undefined if no value for
+   *                           the passed in name is available.
+   */
+  CATMAID.getCookie = function(name, noSuffix) {
+    var cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+
+        if (!noSuffix) {
+          name = name + '_' + CATMAID.cookieSuffix;
+        }
+
+        var cookies = document.cookie.split(';');
+        for (var i = 0; i < cookies.length; i++) {
+            var cookie = jQuery.trim(cookies[i]);
+            // Does this cookie string begin with the name we want?
+            if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+  };
+
+  /**
+   * Define a cookie value for a particular name.
+   *
+   * @param {String}  name     The key for the value to store.
+   * @param {String}  value    The value to store.
+   * @param {Number}  days     Optional, time how long cookie should be stored.
+   * @param {Boolean} noSufifx Optional, disable automatic appending of
+   *                           CATMAID's cookie suffix to the cookie name.
+   */
+  CATMAID.setCookie = function(name, value, days, noSuffix) {
+    if (document.cookie && document.cookie !== '') {
+      var maxAge = "";
+      if (days) {
+        var seconds = days * 24 * 60 * 60;
+        maxAge = "; max-age=" + seconds;
+      }
+
+      if (!noSuffix) {
+        name = name + '_' + CATMAID.cookieSuffix;
+      }
+
+      document.cookie = name + "=" + value + maxAge + "; path=/";
+    }
+  };
+
+  /**
    * Infer the CATMAID release from the client version.
    *
    * @return {string} The release version, or "stable" if none could be guessed.
@@ -203,7 +252,7 @@ var requestQueue = new RequestQueue();
    */
   CATMAID.setupCsrfProtection = function () {
     var csrfCookie = CATMAID.csrfCookieName ?
-        getCookie(CATMAID.csrfCookieName) :
+        CATMAID.getCookie(CATMAID.csrfCookieName, true) :
         undefined;
 
     window.requestQueue = new RequestQueue(CATMAID.backendURL, csrfCookie);

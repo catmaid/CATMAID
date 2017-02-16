@@ -1,6 +1,13 @@
 QUnit.test('Tile layer test', function (assert) {
   var tileWidth = 10;
   var tileHeight = 12;
+
+  // Set global project to custom mocking object
+  window.project = {
+    id: 1,
+    getId: function() { return 1; }
+  };
+
   /**
    * Helper to create a new test stack.
    */

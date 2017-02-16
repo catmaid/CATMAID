@@ -1,5 +1,6 @@
-## Under development
+## 2017.02.16
 
+Contributors: Chris Barnes, Albert Cardona, Andrew Champion, Tom Kazimiers
 
 ### Notes
 

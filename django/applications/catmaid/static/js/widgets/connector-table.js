@@ -98,10 +98,24 @@
 
         var openViewer = document.createElement('input');
         openViewer.setAttribute('type', 'button');
-        openViewer.setAttribute('value', 'View');
+        openViewer.title = 'N.B.: Filters and sorting are ignored';
+        openViewer.setAttribute('value', 'Open Viewer');
         openViewer.onclick = function() {
+          var connectorViewer = WindowMaker.create('connector-viewer').widget;
+          connectorViewer.cache.currentConnectorType = {
+            presynaptic_to: 'synaptic',
+            postsynaptic_to: 'synaptic',
+            gapjunction_with: 'gapjunction',
+            abutting: 'other'
+          }[relation.value];
+
           var selectedModels = self.resultSkeletonSource.getSelectedSkeletonModels();
-          WindowMaker.create('connector-viewer', selectedModels);
+
+          if (relation.value === 'postsynaptic_to') {
+            connectorViewer.skelSources[1].append(selectedModels);
+          } else {
+            connectorViewer.skelSources[0].append(selectedModels);
+          }
         };
         controls.appendChild(openViewer);
 

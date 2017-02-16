@@ -7,15 +7,19 @@
 
   const CACHE_TIMEOUT = 5*60*1000;
 
-  const DEFAULT_CONNECTOR_RELATION = 'presynaptic_to';
+  const DEFAULT_CONNECTOR_TYPE = 'synaptic';
 
-  const DEFAULT_SORT_FN_TITLE = 'Connector depth (proportion)';
+  const DEFAULT_SORT_FN_TITLE = 'Pre-connector node depth (proportion)';
 
   /**
-   * Create a new connector viewer, optional with a set of initial skeleton
-   * models.
+   * Create a new Connector Viewer. Internal skeleton sources can be populated with objects mapping skeleton IDs to
+   * SkeletonModel objects, which are themselves properties of initParams.
+   *
+   * initParams.connectionType should be either 'synaptic', 'gapjunction', 'other', or '' (all).
+   *
+   * @constructor
    */
-  var ConnectorViewer = function(skeletonModels)
+  var ConnectorViewer = function()
   {
     this.widgetID = this.registerInstance();
     this.idPrefix = `connector-viewer${this.widgetID}-`;
@@ -25,22 +29,31 @@
     // not registered. It is the input skeleton sink, but the output is handled
     // with a second source
     var update = this.update.bind(this);
-    this.skeletonSource = new CATMAID.BasicSkeletonSource(this.getName() + " Input", {
-      register: false,
-      handleAddedModels: update,
-      handleChangedModels: update,
-      handleRemovedModels: update
-    });
+    this.skelSources = [
+      new CATMAID.BasicSkeletonSource(this.getName() + " Input 1", {
+        register: false,
+        handleAddedModels: update,
+        handleChangedModels: update,
+        handleRemovedModels: update
+      }),
+      new CATMAID.BasicSkeletonSource(this.getName() + " Input 2", {
+        register: false,
+        handleAddedModels: update,
+        handleChangedModels: update,
+        handleRemovedModels: update
+      })
+      ];
+
+
     // A skeleton source to collect results in
     this.resultSkeletonSource = new CATMAID.BasicSkeletonSource(this.getName());
 
-    this.cache = new ConnectorViewerCache(this.skeletonSource);
-    this.stackViewerGrid = null;  // instantiated in createContent()
+    this.cache = new ConnectorViewerCache(this.skelSources);
+    this.stackViewerGrid = null;  // instantiated in init()
 
+    this.syncSources = false;
 
-    if (skeletonModels) {
-      this.skeletonSource.append(skeletonModels);
-    }
+    this.currentConnectorOrder = [];
   };
 
   ConnectorViewer.prototype = {};
@@ -58,12 +71,66 @@
   ConnectorViewer.prototype.updateConnectorOrder = function(){
     var self = this;
     return this.cache
-      .updateConnectorOrder(self.cache.currentConnectorRelation)
+      .updateConnectorOrder()
       .then(function(connectorOrder) {
           self.currentConnectorOrder = connectorOrder;
           return connectorOrder;
         });
   };
+
+  /**
+   * Make an element with a label, skeleton selection drop-down, Add and Clear button.
+   *
+   * @param skelSource
+   * @param label
+   * @param id
+   * @returns {Element}
+   */
+  ConnectorViewer.prototype.makeSourceControls = function(skelSource, label, id) {
+    var self = this;
+    var sourceControls = document.createElement('label');
+    if (id) {
+      sourceControls.id = id;
+    }
+    sourceControls.classList.add('source-controls', 'extended-source-controls');
+
+    sourceControls.appendChild(document.createTextNode(label));
+
+    sourceControls.title = '0 skeletons selected';
+
+    var sourceSelect = CATMAID.skeletonListSources.createSelect(skelSource, [self.resultSkeletonSource.getName()]);
+    sourceControls.appendChild(sourceSelect);
+
+    var add = document.createElement('input');
+    add.type = "button";
+    add.value = "Add";
+    add.onclick = function() {
+      // if syncSources is true, add to both skeleton sources
+      for (var thisSkelSource of self.syncSources ? self.skelSources : [skelSource]) {
+        thisSkelSource.loadSource.bind(thisSkelSource)();
+      }
+    };
+    sourceControls.appendChild(add);
+
+    var clear = document.createElement('input');
+    clear.type = "button";
+    clear.value = "Clear";
+    clear.onclick = function() {
+      self.cache.clear();
+      sourceControls.title = '0 skeletons selected';
+
+      // if syncSources is true, clear both skeleton sources
+      for (var thisSkelSource of self.syncSources ? self.skelSources : [skelSource]) {
+        thisSkelSource.clear();
+      }
+    };
+    sourceControls.appendChild(clear);
+
+    return sourceControls;
+  };
+
+  var tabs = {};
+  var contentContainer = null;
 
   ConnectorViewer.prototype.getWidgetConfiguration = function() {
     var self = this;
@@ -71,69 +138,108 @@
       helpText: "Connector Viewer widget: Quickly view and compare connectors associated with given skeletons",
       controlsID: this.idPrefix + 'controls',
       createControls: function(controls) {
+        var innerControls = document.createElement('div');
+        controls.appendChild(innerControls);
+        tabs = CATMAID.DOM.addTabGroup(
+          innerControls, 'connector-viewer' + self.widgetID,
+          ['Main', 'Connectors', 'Stack viewers']
+        );
+
         // CONNECTOR SELECTION CONTROLS
 
-        // Create skeleton source drop-down without showing own result skeleton
-        // source.
-        var sourceSelect = CATMAID.skeletonListSources.createSelect(this.skeletonSource,
-          [this.resultSkeletonSource.getName()]);
-        controls.appendChild(sourceSelect);
+        tabs['Main'].appendChild(self.makeSourceControls(
+          self.skelSources[0], 'Pre- skeletons: ', self.idPrefix + 'source0-controls'
+        ));
+        tabs['Main'].appendChild(self.makeSourceControls(
+          self.skelSources[1], 'Post- skeletons: ', self.idPrefix + 'source1-controls'
+        ));
 
-        var add = document.createElement('input');
-        add.setAttribute("type", "button");
-        add.setAttribute("value", "Add");
-        add.onclick = function() {
-          self.skeletonSource.loadSource.bind(self.skeletonSource)();
-        };
-        controls.appendChild(add);
+        var br = document.createElement('br');
+        br.classList.add('extended-source-controls');
+        tabs['Main'].appendChild(br);
 
-        var clear = document.createElement('input');
-        clear.setAttribute("type", "button");
-        clear.setAttribute("value", "Clear");
-        clear.onclick = function() {
-          self.cache.clear();
-          self.skeletonSource.clear();
+        var syncSkelSourcesCb = document.createElement('input');
+        syncSkelSourcesCb.type = 'checkbox';
+        syncSkelSourcesCb.onchange = function() {
+          self.syncSources = this.checked;
+
+          if (self.syncSources) {
+            var models0 = self.skelSources[0].getSkeletonModels();
+            var models1 = self.skelSources[1].getSkeletonModels();
+            self.skelSources[0].append(models1);
+            self.skelSources[1].append(models0);
+          }
+
+          $(`#${self.idPrefix}source1-controls`).children().prop('disabled', self.syncSources);
         };
-        controls.appendChild(clear);
+
+        var syncSkelSourcesLabel = document.createElement('label');
+        syncSkelSourcesLabel.classList.add('extended-source-controls');
+        syncSkelSourcesLabel.title = 'Set each skeleton source to the union of both sources and keep in sync';
+        syncSkelSourcesLabel.appendChild(document.createTextNode('Sync skeletons: '));
+        syncSkelSourcesLabel.appendChild(syncSkelSourcesCb);
+
+        tabs['Main'].appendChild(syncSkelSourcesLabel);
+
+        var switchSkelSources = document.createElement('input');
+        switchSkelSources.type = 'button';
+        switchSkelSources.classList.add('extended-source-controls');
+        switchSkelSources.value = 'Reverse';
+        switchSkelSources.title = 'Switch skeleton source contents';
+        switchSkelSources.onclick = function() {
+          var source0elem = document.getElementById(self.idPrefix + 'source0-controls');
+          var source1elem = document.getElementById(self.idPrefix + 'source1-controls');
+
+          [source0elem.title, source1elem.title] = [source1elem.title, source0elem.title];
+
+          self.skelSources.reverse();
+          self.update();
+        };
+
+        tabs['Main'].appendChild(switchSkelSources);
 
         var refresh = document.createElement('input');
-        refresh.setAttribute("type", "button");
-        refresh.setAttribute("value", "Refresh");
+        refresh.type = "button";
+        refresh.value = "Refresh";
+        refresh.title = 'Refresh cache and re-initialise stack viewers (may take a few seconds)';
         refresh.onclick = function() {
           self.cache.clear();
           self.stackViewerGrid.clear();
           self.stackViewerGrid.redrawPanels();
           self.update();
         };
-        controls.appendChild(refresh);
+        tabs['Main'].appendChild(refresh);
 
-        var relation = CATMAID.DOM.createSelect(
-          self.idPrefix + "relation-type",
+        var connectorType = CATMAID.DOM.createSelect(
+          self.idPrefix + "connector-type",
           [
-            {title: 'Incoming connectors', value: "postsynaptic_to"},
-            {title: 'Outgoing connectors', value: "presynaptic_to"},
-            {title: 'Gap junction connectors', value: "gapjunction_with"},
-            {title: 'Abutting connectors', value: "abutting"}
+            {title: 'Synapse', value: "synaptic"},
+            {title: 'Gap Junction', value: "gapjunction"},
+            {title: 'Other', value: "other"},
+            {title: 'All', value: ''}
           ],
-          this.cache.currentConnectorRelation
+          self.cache.currentConnectorType
         );
-        relation.onchange = function() {
-          self.cache.currentConnectorRelation = this.value;
+        connectorType.onchange = function() {
+          self.cache.currentConnectorType = this.value;
           self.update();
         };
 
         var relationLabel = document.createElement('label');
         relationLabel.appendChild(document.createTextNode('Type'));
-        relationLabel.appendChild(relation);
-        controls.appendChild(relationLabel);
+        relationLabel.appendChild(connectorType);
+        tabs['Connectors'].appendChild(relationLabel);
 
         var sortingSelect = CATMAID.DOM.createSelect(
           self.idPrefix + "connector-sorting",
           [
-            {title: 'Connector depth (proportion)', value: 'depthProportion'},
-            {title: 'Connector depth (absolute)', value: 'depth'},
+            {title: 'Pre-connector node depth (proportion)', value: 'depthPpnPre'},
+            {title: 'Post-connector node depth (proportion)', value: 'depthPpnPost'},
+            {title: 'Pre-connector node depth (absolute)', value: 'depthPre'},
+            {title: 'Post-connector node depth (absolute)', value: 'depthPost'},
             {title: 'Connector ID', value: 'connId'},
-            {title: 'Skeleton name', value: 'skelName'},
+            {title: 'Pre-connector skeleton name(s)', value: 'skelNamePre'},
+            {title: 'Post-connector skeleton name(s)', value: 'skelNamePost'},
             {title: 'None', value: 'null'}
           ],
           DEFAULT_SORT_FN_TITLE  // might need to be value, not title
@@ -148,35 +254,95 @@
         var sortingSelectLabel = document.createElement('label');
         sortingSelectLabel.appendChild(document.createTextNode('Connector sorting'));
         sortingSelectLabel.appendChild(sortingSelect);
-        controls.appendChild(sortingSelectLabel);
+        tabs['Connectors'].appendChild(sortingSelectLabel);
 
         var openTable = document.createElement('input');
-        openTable.setAttribute('type', 'button');
-        openTable.setAttribute('value', 'Table');
+        openTable.type = 'button';
+        openTable.id = self.idPrefix + 'open-table';
+        openTable.value = 'Open Table';
         openTable.onclick = function() {
-          var selectedModels = self.resultSkeletonSource.getSelectedSkeletonModels();
+          var selectedModels;
+          var relation;
+          if (self.cache.currentConnectorType === 'synaptic') {
+            // button disabled if >1 skeleton source is populated
+            var selectedIdx = self.skelSources[0].getNumberOfSkeletons() ? 0 : 1;
+            selectedModels = self.skelSources[selectedIdx].getSelectedSkeletonModels();
+            relation = ['presynaptic_to', 'postsynaptic_to'][selectedIdx];
+          } else {
+            selectedModels = self.resultSkeletonSource.getSelectedSkeletonModels();
+            relation = {  // button disabled if 'All'
+              gapjunction: 'gapjunction_with',
+              other: 'abutting'
+            }[self.cache.currentConnectorType];
+          }
+
           var connTable = WindowMaker.create('connector-table', selectedModels).widget;
-          document.getElementById(connTable.idPrefix + 'relation-type').value = self.cache.currentConnectorRelation;
-          connTable.update();
+          document.getElementById(connTable.idPrefix + 'relation-type').value = relation;
         };
-        controls.appendChild(openTable);
+
+        tabs['Connectors'].appendChild(openTable);
+
+        var $innerControls = $(innerControls);
+        $innerControls.tabs();
+        $innerControls.on('tabsactivate', function() {
+          self.stackViewerGrid.getGridWindow().redraw();
+        });
       },
       contentID: this.idPrefix + 'content',
       createContent: function(container) {
+        contentContainer = container;
         // container.style.position = 'absolute';
       },
       init: function() {
-        this.stackViewerGrid = new CATMAID.StackViewerGrid(self.idPrefix);
+        var window = CATMAID.rootWindow.getWindows().find(function(cmwWindow) {
+          return cmwWindow.title === self.getName();
+        });
+        CATMAID.DOM.addCaptionButton(
+          window, 'ui-icon ui-icon-link', 'Show and hide skeleton source controls', function() {
+            $('.extended-source-controls').toggle();
+          }
+        );
+        this.stackViewerGrid = new CATMAID.StackViewerGrid(
+          self.idPrefix, contentContainer, tabs['Stack viewers'], tabs['Main']
+        );
         this.update();
       }
     };
   };
 
-  var skelIDsToModels = function(skelIDs) {
-    return skelIDs.reduce(function(obj, skelID) {
-      obj[skelID]  = new CATMAID.SkeletonModel(skelID);
-      return obj;
-    }, {});
+  var disableSortOptionsIfValueEndsWith = function (select, suffix, defaultOption) {
+    defaultOption = defaultOption || 'null';
+
+    var enableAll = !suffix;
+
+    var options = select.getElementsByTagName('option');
+    var shouldDisable;
+
+    for (var option of options) {
+      shouldDisable = !enableAll && option.value.endsWith(suffix);
+      if (shouldDisable && option.selected) {
+        // set to last option if current selection should be disabled
+        select.value = defaultOption;
+      }
+      option.disabled = shouldDisable;
+    }
+
+    return select.value;
+  };
+
+  /**
+   * Disable sort functions which are not possible with the current skeleton selection and enable those which are
+   */
+  ConnectorViewer.prototype.disableSortOptions = function() {
+    var select = document.getElementById(this.idPrefix + "connector-sorting");
+
+    if (this.skelSources[0].getNumberOfSkeletons() === 0) {
+      return disableSortOptionsIfValueEndsWith(select, 'Pre');
+    } else if (this.skelSources[1].getNumberOfSkeletons() === 0) {
+      return disableSortOptionsIfValueEndsWith(select, 'Post');
+    } else {
+      return disableSortOptionsIfValueEndsWith(select);
+    }
   };
 
   /**
@@ -188,14 +354,38 @@
     var self = this;
     this._updateResultSkelSource();
 
+    this.cache.sortFnName = this.disableSortOptions();
+    this.cache.sorting.sorted = false;
+
+    var sourceControls = document.getElementById(self.idPrefix + 'controls').getElementsByClassName('source-controls');
+
+    var skelCounts = [];
+    this.skelSources.forEach(function(skelSource, idx) {
+      var skelCount = skelSource.getNumberOfSkeletons();
+      skelCounts.push(skelCount);
+      sourceControls[idx].title = `${skelCount} skeleton${skelCount === 1 ? '' : 's'} selected`;
+    });
+
+    var openTable = document.getElementById(self.idPrefix + 'open-table');
+    if (skelCounts[0] && skelCounts [1]) {
+        openTable.disabled = true;
+        openTable.title = "Cannot open a Connector Table with both pre- and post- constraints";
+    } else if (this.cache.currentConnectorType === '') {
+      openTable.disabled = true;
+      openTable.title = "Cannot open a Connector Table of connector type 'All'";
+    } else {
+      openTable.disabled = false;
+      openTable.title = 'Open Connector Table';
+    }
+
     this.updateConnectorOrder().then(self.stackViewerGrid.setTargets.bind(self.stackViewerGrid));
   };
 
   ConnectorViewer.prototype._updateResultSkelSource = function() {
     this.resultSkeletonSource.clear();
     // Populate result skeleton source
-    var models = skelIDsToModels(this.skeletonSource.getSelectedSkeletons());
-    this.resultSkeletonSource.append(models);
+    this.resultSkeletonSource.append(this.skelSources[0].getSkeletonModels());
+    this.resultSkeletonSource.append(this.skelSources[1].getSkeletonModels());
   };
 
   // Export widget
@@ -220,26 +410,34 @@
    *
    * @constructor
    */
-  var ConnectorViewerCache = function(skeletonSource) {
+  var ConnectorViewerCache = function(skeletonSources) {
     var self = this;
     this.relationTypes = {
       '0': 'presynaptic_to',
       '1': 'postsynaptic_to',
       '2': 'gapjunction_with',
-      '-1': 'abutting'
+      '-1': 'other'
+    };
+    this.connectorTypes = {
+      '0': 'synaptic',
+      '1': 'synaptic',
+      '2': 'gapjunction',
+      '-1': 'other'
     };
 
     /**
      *  {
      *    connID1: {
      *      'coords': {'x': _, 'y': _, 'z': _},
-     *      'relationType': {
-     *        'postsynaptic_to':   Set([treenodeID1, treenodeID2, ...]),
-     *        'presynaptic_to':    Set([treenodeID1, treenodeID2, ...]),
-     *        'gapjunction_with':  Set([treenodeID1, treenodeID2, ...]),
-     *        'abutting':          Set([treenodeID1, treenodeID2, ...])
-     *      },
-     *      sortVal: null
+     *      'connectorType': 'synaptic' || 'gapjunction' || 'other',
+     *      'treenodes': {
+     *        // null if non-synapse
+     *        'postsynaptic_to':    Set([treenodeID1, treenodeID2, ...]),
+     *        // null if non-synapse
+     *        'presynaptic_to':     Set([treenodeID1, treenodeID2, ...]),
+     *        // null if synapse
+     *        'all':                Set([treenodeID1, treenodeID2, ...]),
+     *      }
      *    },
      *    connID2...
      *  }
@@ -271,24 +469,32 @@
     this.treenodes = {};
 
     this.sortFnName = null;
-    this.currentConnectorRelation = DEFAULT_CONNECTOR_RELATION;
+    this.currentConnectorType = DEFAULT_CONNECTOR_TYPE;
 
+    /**
+     * Map where the values are functions which take one argument (connector ID) and return a value to be sorted on.
+     *
+     * @type {Map}
+     */
     this.sortFns = new Map([
-      ['depthProportion', this.getMinDepth.bind(this, true)],
-      ['depth', this.getMinDepth.bind(this, false)],
-      ['connId', function(_, connID) {return connID;}],
-      ['skelName', function(relationType, connID) {return self.getSkelNames(relationType, connID).join(', ');}],
+      ['depthPpnPre', this.getMinDepth.bind(this, true, 0)],
+      ['depthPpnPost', this.getMinDepth.bind(this, true, 1)],
+      ['depthPre', this.getMinDepth.bind(this, false, 0)],
+      ['depthPost', this.getMinDepth.bind(this, false, 1)],
+      ['connId', function(connID) {return connID;}],
+      ['skelNamePre', function(connID) {return self.getSkelNames(0, connID).join(', ');}],
+      ['skelNamePost', function(connID) {return self.getSkelNames(1, connID).join(', ');}],
       ['null', function(){return '';}]
     ]);
 
     this.sorting = {
-      'postsynaptic_to':   {sortFnName: '', order: new Set(), sorted: false, sortVals: {}},
-      'presynaptic_to':    {sortFnName: '', order: new Set(), sorted: false, sortVals: {}},
-      'gapjunction_with':  {sortFnName: '', order: new Set(), sorted: false, sortVals: {}},
-      'abutting':          {sortFnName: '', order: new Set(), sorted: false, sortVals: {}}
+      order: new Set(),
+      sortVals: {},
+      sorted: false,
+      sortFnName: ''
     };
 
-    this.skeletonSource = skeletonSource;
+    this.skelSources = skeletonSources;
   };
 
   ConnectorViewerCache.prototype = {};
@@ -297,10 +503,10 @@
     this.connectors = {};
     this.skeletons = {};
     this.sorting = {
-      'postsynaptic_to':   {sortFnName: '', order: new Set(), sorted: false, sortVals: {}},
-      'presynaptic_to':    {sortFnName: '', order: new Set(), sorted: false, sortVals: {}},
-      'gapjunction_with':  {sortFnName: '', order: new Set(), sorted: false, sortVals: {}},
-      'abutting':          {sortFnName: '', order: new Set(), sorted: false, sortVals: {}}
+      order: new Set(),
+      sortVals: {},
+      sorted: false,
+      sortFnName: ''
     };
     this.treenodes = {};
   };
@@ -318,66 +524,130 @@
    */
   ConnectorViewerCache.prototype.connectorIdToObj = function (connID) {
     var self = this;
-    var selectedSkeletons = this.skeletonSource.getSelectedSkeletons();
 
-    var sortVal = self.sorting[self.currentConnectorRelation].sortVals[connID];
+    var sortVal = self.sorting.sortVals[connID];
 
-    var sortValTxt;
-    switch (self.sorting[self.currentConnectorRelation].sortFnName) {
-      case 'depthProportion':
-        sortValTxt = 'Depth (ppn): ' + sortVal.toFixed(3);
-        break;
-      case 'depth':
-        sortValTxt = `Depth: ${sortVal.toFixed(0)}nm`;
-        break;
-      default:
-        sortValTxt = '';
-        break;
+    var sortValTxt = '';
+
+    if (self.sorting.sortFnName.startsWith('depthPpn')) {
+      sortValTxt = 'Depth (ppn): ' + sortVal.toFixed(3);
+    } else if (self.sorting.sortFnName.startsWith('depth')) {
+      sortValTxt = `Depth: ${sortVal.toFixed(0)}nm`;
     }
 
     return {
       coords: self.connectors[connID].coords,
       title: 'connector ' + connID,
       sortVal: sortValTxt,
-      note: Array.from(self.connectors[connID].relationType[self.currentConnectorRelation])
-            .reduce(function(arr, treenodeID) {
-              var skelID = self.treenodes[treenodeID].skelID;
-              var skelName = self.skeletons[skelID].name;
-
-              // only add distinct skeleton IDs, and only skeleton IDs which are in the selected skeletons
-              if (!arr.includes(skelName) && selectedSkeletons.includes(skelID)) {
-                arr.push(skelName);
-              }
-
-              return arr;
-            }, []).sort().join(' | '),
+      note: 'Connector type: ' + self.currentConnectorType
     };
+  };
+
+  ConnectorViewerCache.prototype.treenodeSetToSkelList = function(treenodes) {
+    var skels = [];
+    if (treenodes) {
+      for (var treenodeID of treenodes) {
+        skels.push(this.treenodes[treenodeID].skelID);
+      }
+    }
+
+    return skels;
+  };
+
+  /**
+   * Return a list of connector IDs relevant to the given selection of constraint skeletons.
+   *
+   * If both constraint skeleton sources are empty, return [].
+   *
+   * If either one of the constraint skeleton sources is empty, treat it as unconstrained on that side.
+   *
+   * If the connector is asymmetric (i.e. a chemical synapse), it must have at least one pre- skeleton in the first
+   * skeleton source (if populated), and at least one post- skeleton in the second skeleton source (if populated).
+   *
+   * If the connector is symmetric, it must interact with at least one treenode attached to a skeleton in the first
+   * skeleton source (if populated), and at least one OTHER treenode attached to a skeleton in the second skeleton
+   * source (if populated).
+   *
+   * @returns {*}
+   */
+  ConnectorViewerCache.prototype.getRelevantConnectors = function() {
+    var self = this;
+    var constraintSkelSets = self.skelSources.map(function(skelSource) {return new Set(skelSource.getSelectedSkeletons());});
+
+    // no skeletons are selected
+    if (constraintSkelSets[0].union(constraintSkelSets[1]).size === 0) {
+      return [];
+    }
+
+    return Object.keys(this.connectors).filter(function(connID) {
+      var connDetails = self.connectors[connID];
+      if (!connDetails.connectorType.includes(self.currentConnectorType)) {
+        return false;
+      }
+
+      if (connDetails.connectorType === 'synaptic') {
+        var preSkelIDs = self.treenodeSetToSkelList(connDetails.treenodes.presynaptic_to);
+        var postSkelIDs = self.treenodeSetToSkelList(connDetails.treenodes.postsynaptic_to);
+
+        // (there are no 'pre' constraints OR >1 of the 'pre' constraints are in the connector's 'pre' set) AND
+        // (there are no 'post' constraints OR >1 of the 'post' constraints are in the connector's 'post' set)
+        return (!constraintSkelSets[0].size || constraintSkelSets[0].intersection(preSkelIDs).size) &&
+          (!constraintSkelSets[1].size || constraintSkelSets[1].intersection(postSkelIDs).size);
+
+      } else {
+        var connectorSkelList = self.treenodeSetToSkelList(connDetails.treenodes.all);
+
+        if (constraintSkelSets[0].size && constraintSkelSets[1].size) {
+          // connectors must have >=1 edge to a treenode associated with the first skeleton selection, and >=1
+          // edge to a DIFFERENT treenode associated with the second skeleton selection
+
+          // make sure that there is a connection with the first skeleton selection
+          if (constraintSkelSets[0].intersection(connectorSkelList).size === 0) {
+            return false;
+          }
+
+          // remove up to one instance of each skeleton in the first constraint set from the connector's skeleton list
+          for (var constraintSkel of constraintSkelSets[0]) {
+            var idx = connectorSkelList.indexOf(constraintSkel);
+            if (idx !== -1) {
+              connectorSkelList.splice(idx, 1);
+            }
+          }
+
+          // check that there is still at least one skeleton left in the connector's skeleton list which is in the
+          // second constraint set
+          return constraintSkelSets[1].intersection(connectorSkelList).size >= 1;
+
+        } else if (constraintSkelSets[0].size) {
+          return constraintSkelSets[0].intersection(connectorSkelList).size >= 1;
+        } else if (constraintSkelSets[1].size) {
+          return constraintSkelSets[1].intersection(connectorSkelList).size >= 1;
+        }
+      }
+    });
   };
 
   /**
    * Return the order of connectors associated with the current selected skeletons by the given relation type, using
    * the ConnectorViewerCache's stored sorting function.
    *
-   * @param relationType
    * @returns Promise of connector order
    */
-  ConnectorViewerCache.prototype.updateConnectorOrder = function(relationType) {
+  ConnectorViewerCache.prototype.updateConnectorOrder = function() {
     var self = this;
     var order;
 
     return this.ensureValidCache().then(function() {
-      var sortInfo = self.sorting[relationType];
-
-      if (sortInfo.sorted && sortInfo.sortFnName === self.sortFnName) {
-        order = Array.from(sortInfo.order);
+      if (self.sorting.sorted) {
+        order = Array.from(self.sorting.order);
       } else {
         // re-sort using the stored sort function
-        sortInfo.sortFnName = self.sortFnName;
+        self.sorting.sortFnName = self.sortFnName;
 
-        var connIDs = Array.from(sortInfo.order);
+        var connIDs = Array.from(self.getRelevantConnectors());
         // make an object of connector IDs to the value on which they will be sorted
         var sortVals = connIDs.reduce(function (obj, connID) {
-          obj[connID] = self.sortFns.get(sortInfo.sortFnName)(relationType, connID);
+          obj[connID] = self.sortFns.get(self.sorting.sortFnName)(connID);
           return obj;
         }, {});
 
@@ -388,9 +658,9 @@
         });
 
         // update the sorting cache
-        sortInfo.order = new Set(order);
-        sortInfo.sorted = true;
-        sortInfo.sortVals = sortVals;
+        self.sorting.order = new Set(order);
+        self.sorting.sortVals = sortVals;
+        self.sorting.sorted = true;
       }
 
       // turn the array of connector IDs into informative objects
@@ -405,7 +675,10 @@
    */
   ConnectorViewerCache.prototype.ensureValidCache = function() {
     var self = this;
-    var promises = this.skeletonSource.getSelectedSkeletons().map(self.ensureValidCacheForSkel.bind(self));
+    var allSelectedSkels = this.skelSources[0].getSelectedSkeletons().concat(this.skelSources[1].getSelectedSkeletons());
+    var promises = allSelectedSkels.map(self.ensureValidCacheForSkel.bind(self));
+
+    // cache the upstream or downstream skeletons if one direction is unconstrained
     return Promise.all(promises);
   };
 
@@ -450,6 +723,7 @@
           var treenodeID = connectorResponse[0];
           var connID = connectorResponse[1];
           var relationType = self.relationTypes[connectorResponse[2]];
+          var connectorType = self.connectorTypes[connectorResponse[2]];
           var coords = {
             x: connectorResponse[3],
             y: connectorResponse[4],
@@ -460,22 +734,27 @@
           if (!(connID in self.connectors)) {
             self.connectors[connID] = {
               coords: null,
-              relationType: {
+              connectorType: connectorType,
+              treenodes: {
                 postsynaptic_to: new Set(),
                 presynaptic_to: new Set(),
-                gapjunction_with: new Set(),
-                abutting: new Set()
+                all: new Set()
               }
             };
           }
+
           self.connectors[connID].coords = coords;
-          self.connectors[connID].relationType[relationType].add(treenodeID);
+          if (connectorType === 'synaptic') {
+            self.connectors[connID].treenodes[relationType].add(treenodeID);
+          } else {
+            self.connectors[connID].treenodes.all.add(treenodeID);
+          }
 
           // insert information from this skeleton into the sorting cache if it's not there, and flag it for re-sorting
-          if (!self.sorting[relationType].order.has(connID)) {
-            self.sorting[relationType].order.add(connID);
-            self.sorting[relationType].sorted = false;
-            self.sorting[relationType].sortVals[connID] = undefined;
+          if (!self.sorting.order.has(connID)) {
+            self.sorting.order.add(connID);
+            self.sorting.sorted = false;
+            self.sorting.sortVals[connID] = null;
           }
 
           // insert information from this skeleton into the treenodes cache (only treenodes associated with connectors)
@@ -530,7 +809,8 @@
    * function(connector1ID, connector2ID, relationType, selectedSkeletons)
    */
   ConnectorViewerCache.prototype.setSortFn = function (sortFnName) {
-    this.sortFnName = sortFnName; // todo: may need to bind to this
+    this.sortFnName = sortFnName;
+    this.sorting.sorted = false;
   };
 
   /**
@@ -540,24 +820,29 @@
    * As connectors of some relation type can be associated with multiple skeletons, this only counts those which are
    * in the given selection, and if there are multiple such skeletons, returns the smallest depth.
    *
-   * @param relationType
    * @param proportional
+   * @param sourceIdx
    * @param connID
    * @returns {Number}
    */
-  ConnectorViewerCache.prototype.getMinDepth = function(proportional, relationType, connID) {
-    var minConnDepth = Infinity;
-    var selectedSkeletons = this.skeletonSource.getSelectedSkeletons();
+  ConnectorViewerCache.prototype.getMinDepth = function(proportional, sourceIdx, connID) {
+    var selectedSkeletons = this.skelSources[sourceIdx].getSelectedSkeletons();
 
-    for (var treenodeID of this.connectors[connID].relationType[relationType]) {
+    var skelSetKey = 'all';
+    if (this.currentConnectorType === 'synaptic') {
+      skelSetKey = ['presynaptic_to', 'postsynaptic_to'][sourceIdx];
+    }
+
+    var connDepths = [];
+    for (var treenodeID of this.connectors[connID].treenodes[skelSetKey]) {
       if (selectedSkeletons.includes(this.treenodes[treenodeID].skelID)) {
         var treenodeInfo = this.treenodes[treenodeID];
         var depth = proportional ? treenodeInfo.depth / this.skeletons[treenodeInfo.skelID].maxLength : treenodeInfo.depth;
-        minConnDepth = Math.min(minConnDepth, depth);
+        connDepths.push(depth);
       }
     }
 
-    return minConnDepth;
+    return Math.min(...connDepths);
   };
 
   /**
@@ -566,21 +851,26 @@
    * As connectors of some relation type can be associated with multiple skeletons, this only counts those which are
    * in the given selection, and if there are multiple such skeletons, returns them in alphanumeric sort order.
    *
-   * @param relationType
+   * @param sourceIdx
    * @param connID
    * @returns {Array}
    */
-  ConnectorViewerCache.prototype.getSkelNames = function(relationType, connID) {
+  ConnectorViewerCache.prototype.getSkelNames = function(sourceIdx, connID) {
     var skelNames = [];
-    var selectedSkeletons = this.skeletonSource.getSelectedSkeletons();
+    var selectedSkeletons = this.skelSources[sourceIdx].getSelectedSkeletons();
 
-    for (var treenodeID of this.connectors[connID].relationType[relationType]) {
+    var skelSetKey = 'all';
+    if (this.currentConnectorType === 'synaptic') {
+      skelSetKey = ['presynaptic_to', 'postsynaptic_to'][sourceIdx];
+    }
+
+    for (var treenodeID of this.connectors[connID].treenodes[skelSetKey]) {
       if (selectedSkeletons.includes(this.treenodes[treenodeID].skelID)) {
         skelNames.push(this.skeletons[this.treenodes[treenodeID].skelID].name);
       }
     }
 
-    return skelNames.sort();
+    return skelNames.sort(function(a, b) {return a.localeCompare(b);});
   };
 
 })(CATMAID);

@@ -784,7 +784,7 @@
     $.extend(args, override);
     return new constructor(
         args.stackViewer,
-        args.diplayName,
+        args.displayName,
         args.stack,
         args.mirrorIndex,
         args.visibility,

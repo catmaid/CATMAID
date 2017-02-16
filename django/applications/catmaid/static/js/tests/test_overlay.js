@@ -43,7 +43,7 @@ QUnit.test('Tracing overlay test', function( assert ) {
     var permissions = {
       'can_annotate': [1]
     };
-    CATMAID.configure(django_url, django_url, undefined, undefined, permissions);
+    CATMAID.configure(django_url, django_url, undefined, undefined, undefined, permissions);
 
     // Set global status bar mocking object
     CATMAID.statusBar = {

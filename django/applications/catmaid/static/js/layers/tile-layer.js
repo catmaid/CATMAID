@@ -11,7 +11,7 @@
    * @param {string}  displayname  Name displayed in window controls.
    * @param {Stack}   stack        Image stack from which to draw tiles.
    * @param {number}  mirrorIndex  Stack mirror index to use as tile source. If
-   *                               undefined, the fastest mirror will be selected.
+   *                               undefined, the fist available mirror is used.
    * @param {boolean} visibility   Whether the tile layer is initially visible.
    * @param {number}  opacity      Opacity to draw the layer.
    * @param {boolean} showOverview Whether to show a "minimap" overview of the
@@ -35,10 +35,18 @@
     this.visible = visibility;
     this.isOrderable = true;
     this.isHideable = false;
+    this.lastMirrorCookieName = 'catmaid-last-mirror-' +
+        project.id + '-' + stack.id;
 
-    // If no mirror index is given, zero is used as default and the fastest
-    // mirror will be selected after initialization.
-    var selectFastestMirror = mirrorIndex === undefined;
+    // If no mirror index is given, try to read the last used value from a
+    // cookie. If this is unavailable, use the first mirror as default.
+    if (undefined === mirrorIndex) {
+      var lastUsedMirror = CATMAID.getCookie(this.lastMirrorCookieName);
+      if (undefined !== lastUsedMirror) {
+        mirrorIndex = parseInt(lastUsedMirror, 10);
+      }
+    }
+
     this.mirrorIndex = mirrorIndex || 0;
     this.tileSource = stack.createTileSourceForMirror(this.mirrorIndex);
 
@@ -115,12 +123,8 @@
       this.overviewLayer = this.tileSource.getOverviewLayer(this);
     }
 
-    if (selectFastestMirror) {
-      this.switchToFastestMirror();
-    } else {
-      CATMAID.checkTileSourceCanary(project, this.stack, this.tileSource)
-          .then(this._handleCanaryCheck.bind(this));
-    }
+    CATMAID.checkTileSourceCanary(project, this.stack, this.tileSource)
+        .then(this._handleCanaryCheck.bind(this));
   }
 
   /**
@@ -157,47 +161,6 @@
             }
           }).bind(this));
     }
-  };
-
-  /**
-   * Select the mirror with the fastest response time.
-   */
-  TileLayer.prototype.switchToFastestMirror = function() {
-    return Promise
-        .all(this.stack.mirrors.map(function (mirror, index) {
-          return CATMAID.checkTileSourceCanary(
-              project,
-              this.stack,
-              this.stack.createTileSourceForMirror(index),
-              true);
-        }, this))
-        .then((function(mirrorAccessible) {
-          // Sort accessible mirrors by response time
-          var fastestMirror = mirrorAccessible.reduce(function(fastest, accessible, i) {
-            if (!accessible.normal) {
-              return fastest;
-            }
-            if (!fastest) {
-              fastest = {
-                normalTime: accessible.normalTime,
-                mirrorIndex: i
-              };
-            } else if (fastest.normalTime > accessible.normalTime) {
-              fastest.normalTime = accessible.normalTime;
-              fastest.mirrorIndex = i;
-            }
-
-            return fastest;
-          }, null);
-
-          if (fastestMirror) {
-            var newMirrorTitle = this.stack.mirrors[fastestMirror.mirrorIndex].title;
-            CATMAID.info('Switching to faster mirror "' + newMirrorTitle + '".');
-            this.switchToMirror(fastestMirror.mirrorIndex);
-          } else  {
-            CATMAID.warn('No mirrors for this stack are accessible. Image data may not load.');
-          }
-        }).bind(this));
   };
 
   /**
@@ -805,6 +768,9 @@
     var newTileLayer = this.constructCopy({mirrorIndex: mirrorIndex});
     var layerKey = this.stackViewer.getLayerKey(this);
     this.stackViewer.replaceStackLayer(layerKey, newTileLayer);
+
+    // Store last used mirror information in cookie
+    CATMAID.setCookie(this.lastMirrorCookieName, mirrorIndex, 365);
   };
 
   /**

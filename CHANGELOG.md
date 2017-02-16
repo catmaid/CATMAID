@@ -14,8 +14,35 @@
   Without connection pooling, this setting hurts performance, which is why it is
   set to False by default.
 
+- Stack mirrors (see below) are not displayed by default in CATMAID's standard
+  data views. To show them, '"show_mirrors": true' (including double quotes) has
+  to be added to the respective data view configuration in CATMAID's admin
+  interface.
 
 ### Features and enhancements
+
+Stack mirrors:
+
+- To reduce loading time of image data from different places around the world,
+  it is common to copy the image data set and make it available from a server
+  closer to its users. These "stack mirrors" are now handled differently by
+  CATMAID. Until now it was common to select the closest mirror manually by
+  clicking on an image on CATMAID's project list or by clicking on the
+  respective link. To select a particular "stack mirror" one now only links can
+  be used, individual images are not shown anymore. If no images were used
+  before and only links were shown on CATMAID's home page, only small visual
+  change was mode: an extra stack link on top of all mirrors is added. As an
+  alternative to selecting individual mirrors, both, images and stack links can
+  now be used to open a stack as well and CATMAID selects the fastest mirror
+  automatically.
+
+- When using links to a particular view in CATMAID ("URL to this view"), CATMAID
+  will automatically select the fastest available stack mirror.
+
+- Once a stack is displayed the stack mirror in use can be changed: After
+  clicking on the white-on-blue square in the lower left corner of the image
+  data display, the image display settings will show up. In there the active
+  mirror can be selected from a drop-down list.
 
 Treenode Viewer:
 

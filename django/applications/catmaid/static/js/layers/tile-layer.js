@@ -187,7 +187,7 @@
             }
 
             return fastest;
-          });
+          }, null);
 
           if (fastestMirror) {
             var newMirrorTitle = this.stack.mirrors[fastestMirror.mirrorIndex].title;

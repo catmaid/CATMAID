@@ -7,6 +7,10 @@
 - Performance of the default node query strategy (NODE_PROVIDER = 'postgis3d')
   improves now when connection pooling is used and PREPARED_STATEMENTS = True.
 
+- The 'classic' node provider has been removed, use 'postgis3d' or 'postgis2d'
+  instead.
+
+
 ### Features and enhancements
 
 

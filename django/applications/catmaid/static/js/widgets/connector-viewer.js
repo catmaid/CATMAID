@@ -171,6 +171,7 @@
           }
 
           $(`#${self.idPrefix}source1-controls`).children().prop('disabled', self.syncSources);
+          document.getElementById(self.idPrefix + 'reverse').disabled = self.syncSources;
         };
 
         var syncSkelSourcesLabel = document.createElement('label');
@@ -181,22 +182,18 @@
 
         tabs['Main'].appendChild(syncSkelSourcesLabel);
 
-        var switchSkelSources = document.createElement('input');
-        switchSkelSources.type = 'button';
-        switchSkelSources.classList.add('extended-source-controls');
-        switchSkelSources.value = 'Reverse';
-        switchSkelSources.title = 'Switch skeleton source contents';
-        switchSkelSources.onclick = function() {
-          var source0elem = document.getElementById(self.idPrefix + 'source0-controls');
-          var source1elem = document.getElementById(self.idPrefix + 'source1-controls');
-
-          [source0elem.title, source1elem.title] = [source1elem.title, source0elem.title];
-
+        var reverseSkelSources = document.createElement('input');
+        reverseSkelSources.type = 'button';
+        reverseSkelSources.id = self.idPrefix + 'reverse';
+        reverseSkelSources.classList.add('extended-source-controls');
+        reverseSkelSources.value = 'Reverse';
+        reverseSkelSources.title = 'Switch skeleton source contents';
+        reverseSkelSources.onclick = function() {
           self.skelSources.reverse();
           self.update();
         };
 
-        tabs['Main'].appendChild(switchSkelSources);
+        tabs['Main'].appendChild(reverseSkelSources);
 
         var refresh = document.createElement('input');
         refresh.type = "button";

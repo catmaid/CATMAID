@@ -47,6 +47,8 @@
 
     CATMAID.Nodes.on(CATMAID.Nodes.EVENT_NODE_RADIUS_CHANGED,
         this.handleRadiusChange, this);
+    CATMAID.Skeletons.on(CATMAID.Skeletons.EVENT_SKELETON_CHANGED,
+      this.handleSkeletonUpdate, this);
   };
 
   WebGLApplication.prototype = Object.create(CATMAID.SkeletonSource.prototype);
@@ -81,6 +83,8 @@
         this.staticUpdateActiveNodePosition, this);
     CATMAID.Nodes.off(CATMAID.Nodes.EVENT_NODE_RADIUS_CHANGED,
         this.handleRadiusChange, this);
+    CATMAID.Skeletons.off(CATMAID.Skeletons.EVENT_SKELETON_CHANGED,
+      this.handleSkeletonUpdate, this);
     project.off(CATMAID.Project.EVENT_STACKVIEW_FOCUS_CHANGED, this.adjustStaticContent, this);
     project.off(CATMAID.Project.EVENT_LOCATION_CHANGED, this.handlelLocationChange, this);
     this.stopAnimation();
@@ -796,6 +800,7 @@
     this.skeleton_node_scaling = 1.0;
     this.invert_shading = false;
     this.follow_active = false;
+    this.update_active = false;
     this.distance_to_active_node = 5000; // nm
     this.min_synapse_free_cable = 5000; // nm
     this.lock_view = false;
@@ -1359,6 +1364,16 @@
     }
   };
 
+  WebGLApplication.prototype.handleSkeletonUpdate = function(skeletonId) {
+    // Update active skeleton, if enabled
+    if (this.options.update_active) {
+      var activeSkeletonId = SkeletonAnnotations.getActiveSkeletonId();
+      if (activeSkeletonId === skeletonId) {
+        this.updateSkeletons(skeletonId, true);
+      }
+    }
+  };
+
   WebGLApplication.prototype.staticUpdateActiveNodePosition = function() {
     this.getInstances().map(function(instance) {
       instance.updateActiveNodePosition();
@@ -1453,11 +1468,38 @@
     this.append(models);
   };
 
-  WebGLApplication.prototype.updateActiveSkeleton = function() {
-    var skid = SkeletonAnnotations.getActiveSkeletonId();
-    if (undefined === skid) return CATMAID.info("No active skeleton");
+  /**
+   * Update active skeleton, if is part of this 3D viewer.
+   *
+   * @params {quiet} If falsy, a message will be shown if active skeleton not in
+   *                 3D viewer.
+   */
+  WebGLApplication.prototype.updateActiveSkeleton = function(quiet) {
+    var skeletonId = SkeletonAnnotations.getActiveSkeletonId();
+    if (!skeletonId) {
+      if (!quiet) {
+        CATMAID.info("No active skeleton");
+        return;
+      }
+    }
+    this.updateSkeletons(skeletonId, quiet);
+  };
+
+  /**
+   * Update a skeleton if it is part of this 3D viewer.
+   *
+   * @params {Number}  skeletonId The ID of the skeleton to update.
+   * @params {Boolean} quiet      If falsy, a message will be shown if active
+   *                              skeleton not in 3D viewer.
+   */
+  WebGLApplication.prototype.updateSkeleton = function(skeletonId, quiet) {
     var sk = this.space.content.skeletons[skid];
-    if (!sk) return CATMAID.info("Active skeleton is not present in the 3D viewer");
+    if (!sk) {
+      if (!quiet) {
+        CATMAID.info("Active skeleton is not present in the 3D viewer");
+      }
+      return;
+    }
     // Remove and re-add (without removing, only properties are updated upon append, not the geometry)
     this.space.removeSkeleton(sk.id);
     var models = {};
@@ -5978,6 +6020,14 @@
     // If active node following was enabled, center active node right away
     if (value) this.look_at_active_node();
     else this.space.render();
+  };
+
+  WebGLApplication.prototype.setUpdateActive = function(value) {
+    this.options.update_active = !!value;
+    // If active skeleton update was enabled, update active skeleton right away
+    if (value) {
+      this.updateActiveSkeleton(true);
+    }
   };
 
   WebGLApplication.prototype.adjustStaticContent = function() {

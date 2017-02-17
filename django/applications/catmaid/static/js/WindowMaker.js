@@ -266,6 +266,7 @@ var WindowMaker = new function()
         [
           ['Center active', WA.look_at_active_node.bind(WA)],
           ['Follow active', false, function() { WA.setFollowActive(this.checked); }, false],
+          ['Update active',  WA.OPTIONS.update_active, function() { WA.setUpdateActive(this.checked); }, false],
           ['XY', WA.XYView.bind(WA)],
           ['XZ', WA.XZView.bind(WA)],
           ['ZY', WA.ZYView.bind(WA)],

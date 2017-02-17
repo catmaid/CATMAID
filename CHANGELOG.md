@@ -4,6 +4,10 @@
 
 ### Features and enhancements
 
+3D Viewer:
+
+- With the help of the new "Update active" checkbox in the "View" tab it is now
+  possible to automatically udpate the active skeleton if it changes.
 
 
 ### Bug fixes

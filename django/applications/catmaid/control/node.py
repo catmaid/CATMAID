@@ -93,27 +93,104 @@ class Postgis3dNodeProvider(object):
         LIMIT {limit}
     '''
 
-    # To execute the query directly with PsycoPg (i.e. not prepared) a different
-    # parameter formatt is used: {left} -> %(left)s.
+    connector_query = '''
+      SELECT
+          c.id,
+          c.location_x,
+          c.location_y,
+          c.location_z,
+          c.confidence,
+          EXTRACT(EPOCH FROM c.edition_time),
+          c.user_id,
+          tc.treenode_id,
+          tc.relation_id,
+          tc.confidence,
+          EXTRACT(EPOCH FROM tc.edition_time),
+          tc.id
+      FROM (SELECT tce.id AS tce_id
+            FROM treenode_connector_edge tce
+            WHERE tce.edge &&& ST_MakeLine(ARRAY[
+                ST_MakePoint({left}, {bottom}, {z2}),
+                ST_MakePoint({right}, {top}, {z1})] ::geometry[])
+            AND ST_3DDWithin(tce.edge, ST_MakePolygon(ST_MakeLine(ARRAY[
+                ST_MakePoint({left},  {top},    {halfz}),
+                ST_MakePoint({right}, {top},    {halfz}),
+                ST_MakePoint({right}, {bottom}, {halfz}),
+                ST_MakePoint({left},  {bottom}, {halfz}),
+                ST_MakePoint({left},  {top},    {halfz})]::geometry[])),
+                {halfzdiff})
+            AND tce.project_id = {project_id}
+        ) edges(edge_tc_id)
+      JOIN treenode_connector tc
+        ON (tc.id = edge_tc_id)
+      JOIN connector c
+        ON (c.id = tc.connector_id)
+
+      UNION
+
+      SELECT
+          c.id,
+          c.location_x,
+          c.location_y,
+          c.location_z,
+          c.confidence,
+          EXTRACT(EPOCH FROM c.edition_time),
+          c.user_id,
+          NULL,
+          NULL,
+          NULL,
+          NULL,
+          NULL
+      FROM (SELECT cg.id AS cg_id
+           FROM connector_geom cg
+           WHERE cg.geom &&& ST_MakeLine(ARRAY[
+               ST_MakePoint({left}, {bottom}, {z2}),
+               ST_MakePoint({right}, {top}, {z1})] ::geometry[])
+           AND ST_3DDWithin(cg.geom, ST_MakePolygon(ST_MakeLine(ARRAY[
+               ST_MakePoint({left},  {top},    {halfz}),
+               ST_MakePoint({right}, {top},    {halfz}),
+               ST_MakePoint({right}, {bottom}, {halfz}),
+               ST_MakePoint({left},  {bottom}, {halfz}),
+               ST_MakePoint({left},  {top},    {halfz})]::geometry[])),
+               {halfzdiff})
+           AND cg.project_id = {project_id}
+          UNION SELECT UNNEST({sanitized_connector_ids}::bigint[])
+        ) geoms(geom_connector_id)
+      JOIN connector c
+        ON (geom_connector_id = c.id)
+      LIMIT {limit}
+    '''
+
+    # To execute the queries directly through PsycoPg (i.e. not prepared) a
+    # different parameter formatt is used: {left} -> %(left)s.
     treenode_query_params = ['project_id', 'left', 'top', 'z1', 'right',
         'bottom', 'z2', 'halfz', 'halfzdiff', 'limit']
     treenode_query_psycopg = treenode_query.format(
         **{k:'%({})s'.format(k) for k in treenode_query_params})
 
-    def prepare_db_statements(self, connection):
-        prepared_treenode_query = self.treenode_query.format(**{
-            'project_id': '$1',
-            'left': '$2',
-            'top': '$3',
-            'z1': '$4',
-            'right': '$5',
-            'bottom': '$6',
-            'z2': '$7',
-            'halfz': '$8',
-            'halfzdiff': '$9',
-            'limit': '$10'
-        })
+    connector_query_params = ['project_id', 'left', 'top', 'z1', 'right',
+        'bottom', 'z2', 'halfz', 'halfzdiff', 'limit', 'sanitized_connector_ids']
+    connector_query_psycopg = connector_query.format(
+        **{k:'%({})s'.format(k) for k in connector_query_params})
 
+    # Create prepared statement version
+    prepare_var_names = {
+        'project_id': '$1',
+        'left': '$2',
+        'top': '$3',
+        'z1': '$4',
+        'right': '$5',
+        'bottom': '$6',
+        'z2': '$7',
+        'halfz': '$8',
+        'halfzdiff': '$9',
+        'limit': '$10',
+        'sanitized_connector_ids': '$11'
+    }
+    treenode_query_prepare = treenode_query.format(**prepare_var_names)
+    connector_query_prepare = connector_query.format(**prepare_var_names)
+
+    def prepare_db_statements(self, connection):
         cursor = connection.cursor()
         cursor.execute("""
             -- 1 project id, 2 left, 3 top, 4 z1, 5 right, 6 bottom, 7 z2,
@@ -121,7 +198,14 @@ class Postgis3dNodeProvider(object):
             PREPARE get_treenodes_postgis_3d (int, real, real, real,
                     real, real, real, real, int) AS
             {}
-        """.format(prepared_treenode_query))
+        """.format(self.treenode_query_prepare))
+        cursor.execute("""
+            -- 1 project id, 2 left, 3 top, 4 z1, 5 right, 6 bottom, 7 z2,
+            -- 8 halfz, 9 halfzdiff, 10 limit, 11 sanitized connector ids
+            PREPARE get_connectors_postgis_3d (int, real, real, real,
+                    real, real, real, real, real, int, bigint[]) AS
+            {}
+        """.format(self.connector_query_prepare))
 
     def get_treenode_data(self, cursor, params):
         """ Selects all treenodes of which links to other treenodes intersect
@@ -150,65 +234,17 @@ class Postgis3dNodeProvider(object):
         bounding box, or that are in missing_connector_ids.
         """
         params['sanitized_connector_ids'] = map(int, missing_connector_ids)
-        cursor.execute('''
-        SELECT
-            c.id,
-            c.location_x,
-            c.location_y,
-            c.location_z,
-            c.confidence,
-            EXTRACT(EPOCH FROM c.edition_time),
-            c.user_id,
-            tc.treenode_id,
-            tc.relation_id,
-            tc.confidence,
-            EXTRACT(EPOCH FROM tc.edition_time),
-            tc.id
-        FROM (SELECT tce.id AS tce_id
-             FROM treenode_connector_edge tce
-             WHERE tce.edge &&& 'LINESTRINGZ(%(left)s %(bottom)s %(z2)s,
-                                           %(right)s %(top)s %(z1)s)'
-               AND ST_3DDWithin(tce.edge, ST_MakePolygon(ST_GeomFromText(
-                'LINESTRING(%(left)s %(top)s %(halfz)s, %(right)s %(top)s %(halfz)s,
-                            %(right)s %(bottom)s %(halfz)s, %(left)s %(bottom)s %(halfz)s,
-                            %(left)s %(top)s %(halfz)s)')), %(halfzdiff)s)
-               AND tce.project_id = %(project_id)s
-          ) edges(edge_tc_id)
-        JOIN treenode_connector tc
-          ON (tc.id = edge_tc_id)
-        JOIN connector c
-          ON (c.id = tc.connector_id)
 
-        UNION
-
-        SELECT
-            c.id,
-            c.location_x,
-            c.location_y,
-            c.location_z,
-            c.confidence,
-            EXTRACT(EPOCH FROM c.edition_time),
-            c.user_id,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL
-        FROM (SELECT cg.id AS cg_id
-             FROM connector_geom cg
-             WHERE cg.geom &&& 'LINESTRINGZ(%(left)s %(bottom)s %(z2)s,
-                                           %(right)s %(top)s %(z1)s)'
-               AND ST_3DDWithin(cg.geom, ST_MakePolygon(ST_GeomFromText(
-                'LINESTRING(%(left)s %(top)s %(halfz)s, %(right)s %(top)s %(halfz)s,
-                            %(right)s %(bottom)s %(halfz)s, %(left)s %(bottom)s %(halfz)s,
-                            %(left)s %(top)s %(halfz)s)')), %(halfzdiff)s)
-               AND cg.project_id = %(project_id)s
-            UNION SELECT UNNEST(%(sanitized_connector_ids)s::bigint[])
-          ) geoms(geom_connector_id)
-        JOIN connector c
-          ON (geom_connector_id = c.id)
-        LIMIT %(limit)s
-        ''', params)
+        if settings.PREPARED_STATEMENTS:
+            # Use a prepared statement to get connectors
+            cursor.execute('''
+                EXECUTE get_connectors_postgis_3d(%(project_id)s,
+                    %(left)s, %(top)s, %(z1)s, %(right)s, %(bottom)s, %(z2)s,
+                    %(halfz)s, %(halfzdiff)s, %(limit)s,
+                    %(sanitized_connector_ids)s)
+            ''', params)
+        else:
+            cursor.execute(self.connector_query_psycopg, params)
 
         return list(cursor.fetchall())
 
@@ -283,6 +319,74 @@ class Postgis2dNodeProvider(object):
         LIMIT {limit};
     """
 
+    connector_query = """
+        SELECT
+            c.id,
+            c.location_x,
+            c.location_y,
+            c.location_z,
+            c.confidence,
+            EXTRACT(EPOCH FROM c.edition_time),
+            c.user_id,
+            tc.treenode_id,
+            tc.relation_id,
+            tc.confidence,
+            EXTRACT(EPOCH FROM tc.edition_time),
+            tc.id
+        FROM (SELECT tce.id AS tce_id
+             FROM treenode_connector_edge tce
+             WHERE tce.edge && ST_MakeEnvelope({left}, {top}, {right}, {bottom})
+               AND floatrange(ST_ZMin(tce.edge), ST_ZMax(tce.edge), '[]') &&
+                 floatrange({z1}, {z2}, '[)')
+               AND ST_3DDWithin(tce.edge, ST_MakePolygon(ST_MakeLine(ARRAY[
+                   ST_MakePoint({left},  {top},    {halfz}),
+                   ST_MakePoint({right}, {top},    {halfz}),
+                   ST_MakePoint({right}, {bottom}, {halfz}),
+                   ST_MakePoint({left},  {bottom}, {halfz}),
+                   ST_MakePoint({left},  {top},    {halfz})]::geometry[])),
+                   {halfzdiff})
+               AND tce.project_id = {project_id}
+          ) edges(edge_tc_id)
+        JOIN treenode_connector tc
+          ON (tc.id = edge_tc_id)
+        JOIN connector c
+          ON (c.id = tc.connector_id)
+
+        UNION
+
+        SELECT
+            c.id,
+            c.location_x,
+            c.location_y,
+            c.location_z,
+            c.confidence,
+            EXTRACT(EPOCH FROM c.edition_time),
+            c.user_id,
+            NULL,
+            NULL,
+            NULL,
+            NULL,
+            NULL
+        FROM (SELECT cg.id AS cg_id
+             FROM connector_geom cg
+             WHERE cg.geom && ST_MakeEnvelope({left}, {top}, {right}, {bottom})
+               AND floatrange(ST_ZMin(cg.geom), ST_ZMax(cg.geom), '[]') &&
+                 floatrange({z1}, {z2}, '[)')
+               AND ST_3DDWithin(cg.geom, ST_MakePolygon(ST_MakeLine(ARRAY[
+                   ST_MakePoint({left},  {top},    {halfz}),
+                   ST_MakePoint({right}, {top},    {halfz}),
+                   ST_MakePoint({right}, {bottom}, {halfz}),
+                   ST_MakePoint({left},  {bottom}, {halfz}),
+                   ST_MakePoint({left},  {top},    {halfz})]::geometry[])),
+                   {halfzdiff})
+               AND cg.project_id = {project_id}
+            UNION SELECT UNNEST({sanitized_connector_ids}::bigint[])
+          ) geoms(geom_connector_id)
+        JOIN connector c
+          ON (geom_connector_id = c.id)
+        LIMIT {limit}
+    """
+
     # To execute the query directly with PsycoPg (i.e. not prepared) a different
     # parameter formatt is used: {left} -> %(left)s.
     treenode_query_params = ['project_id', 'left', 'top', 'z1', 'right',
@@ -290,23 +394,34 @@ class Postgis2dNodeProvider(object):
     treenode_query_psycopg = treenode_query.format(
         **{k:'%({})s'.format(k) for k in treenode_query_params})
 
+
+    connector_query_params = ['project_id', 'left', 'top', 'z1', 'right',
+        'bottom', 'z2', 'halfz', 'halfzdiff', 'limit', 'sanitized_connector_ids']
+    connector_query_psycopg = connector_query.format(
+        **{k:'%({})s'.format(k) for k in connector_query_params})
+
+    # Create prepared statement version
+    prepare_var_names = {
+        'project_id': '$1',
+        'left': '$2',
+        'top': '$3',
+        'z1': '$4',
+        'right': '$5',
+        'bottom': '$6',
+        'z2': '$7',
+        'halfz': '$8',
+        'halfzdiff': '$9',
+        'limit': '$10',
+        'sanitized_connector_ids': '$11'
+    }
+    treenode_query_prepare = treenode_query.format(**prepare_var_names)
+    connector_query_prepare = connector_query.format(**prepare_var_names)
+
+
     def prepare_db_statements(self, connection):
         """Create prepared statements on a given connection. This is mainly useful
         for long lived connections.
         """
-        prepared_treenode_query = self.treenode_query.format(**{
-            'project_id': '$1',
-            'left': '$2',
-            'top': '$3',
-            'z1': '$4',
-            'right': '$5',
-            'bottom': '$6',
-            'z2': '$7',
-            'halfz': '$8',
-            'halfzdiff': '$9',
-            'limit': '$10'
-        })
-
         cursor = connection.cursor()
         cursor.execute("""
             -- 1 project id, 2 left, 3 top, 4 z1, 5 right, 6 bottom, 7 z2,
@@ -314,7 +429,14 @@ class Postgis2dNodeProvider(object):
             PREPARE get_treenodes_postgis_2d (int, real, real, real,
                     real, real, real, real, int) AS
             {}
-        """.format(prepared_treenode_query))
+        """.format(self.treenode_query_prepare))
+        cursor.execute("""
+            -- 1 project id, 2 left, 3 top, 4 z1, 5 right, 6 bottom, 7 z2,
+            -- 8 halfz, 9 halfzdiff, 10 limit, 11 sanitized connector ids
+            PREPARE get_connectors_postgis_2d (int, real, real, real,
+                    real, real, real, real, real, int, bigint[]) AS
+            {}
+        """.format(self.connector_query_prepare))
 
     def get_treenode_data(self, cursor, params):
         """ Selects all treenodes of which links to other treenodes intersect with
@@ -343,67 +465,17 @@ class Postgis2dNodeProvider(object):
         bounding box, or that are in missing_connector_ids.
         """
         params['sanitized_connector_ids'] = map(int, missing_connector_ids)
-        cursor.execute('''
-        SELECT
-            c.id,
-            c.location_x,
-            c.location_y,
-            c.location_z,
-            c.confidence,
-            EXTRACT(EPOCH FROM c.edition_time),
-            c.user_id,
-            tc.treenode_id,
-            tc.relation_id,
-            tc.confidence,
-            EXTRACT(EPOCH FROM tc.edition_time),
-            tc.id
-        FROM (SELECT tce.id AS tce_id
-             FROM treenode_connector_edge tce
-             WHERE tce.edge && ST_MakeEnvelope(%(left)s, %(top)s, %(right)s, %(bottom)s)
-               AND floatrange(ST_ZMin(tce.edge), ST_ZMax(tce.edge), '[]') &&
-                 '[%(z1)s,%(z2)s)'::floatrange
-               AND ST_3DDWithin(tce.edge, ST_MakePolygon(ST_GeomFromText(
-                'LINESTRING(%(left)s %(top)s %(halfz)s, %(right)s %(top)s %(halfz)s,
-                            %(right)s %(bottom)s %(halfz)s, %(left)s %(bottom)s %(halfz)s,
-                            %(left)s %(top)s %(halfz)s)')), %(halfzdiff)s)
-               AND tce.project_id = %(project_id)s
-          ) edges(edge_tc_id)
-        JOIN treenode_connector tc
-          ON (tc.id = edge_tc_id)
-        JOIN connector c
-          ON (c.id = tc.connector_id)
 
-        UNION
-
-        SELECT
-            c.id,
-            c.location_x,
-            c.location_y,
-            c.location_z,
-            c.confidence,
-            EXTRACT(EPOCH FROM c.edition_time),
-            c.user_id,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL
-        FROM (SELECT cg.id AS cg_id
-             FROM connector_geom cg
-             WHERE cg.geom && ST_MakeEnvelope(%(left)s, %(top)s, %(right)s, %(bottom)s)
-               AND floatrange(ST_ZMin(cg.geom), ST_ZMax(cg.geom), '[]') &&
-                 '[%(z1)s,%(z2)s)'::floatrange
-               AND ST_3DDWithin(cg.geom, ST_MakePolygon(ST_GeomFromText(
-                'LINESTRING(%(left)s %(top)s %(halfz)s, %(right)s %(top)s %(halfz)s,
-                            %(right)s %(bottom)s %(halfz)s, %(left)s %(bottom)s %(halfz)s,
-                            %(left)s %(top)s %(halfz)s)')), %(halfzdiff)s)
-               AND cg.project_id = %(project_id)s
-            UNION SELECT UNNEST(%(sanitized_connector_ids)s::bigint[])
-          ) geoms(geom_connector_id)
-        JOIN connector c
-          ON (geom_connector_id = c.id)
-        LIMIT %(limit)s
-        ''', params)
+        if settings.PREPARED_STATEMENTS:
+            # Use a prepared statement to get connectors
+            cursor.execute('''
+                EXECUTE get_connectors_postgis_2d(%(project_id)s,
+                    %(left)s, %(top)s, %(z1)s, %(right)s, %(bottom)s, %(z2)s,
+                    %(halfz)s, %(halfzdiff)s, %(limit)s,
+                    %(sanitized_connector_ids)s)
+            ''', params)
+        else:
+            cursor.execute(self.connector_query_psycopg, params)
 
         return list(cursor.fetchall())
 

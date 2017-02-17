@@ -183,7 +183,49 @@ class ClassicNodeProvider(object):
 class Postgis3dNodeProvider(object):
 
     def prepare_db_statements(self, connection):
-        pass
+        cursor = connection.cursor()
+        cursor.execute("""
+            -- 1 project id, 2 left, 3 top, 4 z1, 5 right, 6 bottom, 7 z2,
+            -- 8 halfz, 9 halfzdiff, 10 limit
+            PREPARE get_treenodes_postgis_3d (int, real, real, real,
+                    real, real, real, real, int) AS
+            SELECT
+              t1.id AS t1_id,
+              t1.parent_id AS t1_parent_id,
+              t1.location_x AS t1_location_x,
+              t1.location_y AS t1_location_y,
+              t1.location_z AS t1_location_z,
+              t1.confidence AS t1_confidence,
+              t1.radius AS t1_radius,
+              t1.skeleton_id AS t1_skeleton_id,
+              EXTRACT(EPOCH FROM t1.edition_time) AS t1_edition_time,
+              t1.user_id AS t1_user_id,
+              t2.id AS t2_id,
+              t2.parent_id AS t2_parent_id,
+              t2.location_x AS t2_location_x,
+              t2.location_y AS t2_location_y,
+              t2.location_z AS t2_location_z,
+              t2.confidence AS t2_confidence,
+              t2.radius AS t2_radius,
+              t2.skeleton_id AS t2_skeleton_id,
+              EXTRACT(EPOCH FROM t2.edition_time) AS t2_edition_time,
+              t2.user_id AS t2_user_id
+            FROM
+              (SELECT te.id
+                FROM treenode_edge te
+                WHERE te.edge &&& ST_MakeLine(ARRAY[
+                    ST_MakePoint($2, $6, $7),
+                    ST_MakePoint($5, $3, $4)] ::geometry[])
+                AND ST_3DDWithin(te.edge, ST_MakePolygon(ST_MakeLine(ARRAY[
+                   ST_MakePoint($2, $3, $8), ST_MakePoint($5, $3, $8),
+                   ST_MakePoint($5, $6, $8), ST_MakePoint($2, $6, $8),
+                   ST_MakePoint($2, $3, $8)] ::geometry[])), $9)
+                AND te.project_id = $1
+              ) edges(edge_child_id)
+            JOIN treenode t1 ON edge_child_id = t1.id
+            LEFT JOIN treenode t2 ON t2.id = t1.parent_id
+            LIMIT $10
+        """)
 
     def get_treenode_data(self, cursor, params):
         """ Selects all treenodes of which links to other treenodes intersect
@@ -193,54 +235,62 @@ class Postgis3dNodeProvider(object):
         params['halfzdiff'] = abs(params['z2'] - params['z1']) * 0.5
         params['halfz'] = params['z1'] + (params['z2'] - params['z1']) * 0.5
 
-        # Fetch treenodes with the help of two PostGIS filters: The &&& operator
-        # to exclude all edges that don't have a bounding box that intersect with
-        # the query bounding box. This leads to false positives, because edge
-        # bounding boxes can intersect without the edge actually intersecting. To
-        # limit the result set, ST_3DDWithin is used. It allows to limit the result
-        # set by a distance to another geometry. Here it only allows edges that are
-        # no farther away than half the height of the query bounding box from a
-        # plane that cuts the query bounding box in half in Z. There are still false
-        # positives, but much fewer. Even though ST_3DDWithin is used, it seems to
-        # be enough to have a n-d index available (the query plan says ST_3DDWithin
-        # wouldn't use a 2-d index in this query, even if present).
-        cursor.execute('''
-        SELECT
-            t1.id,
-            t1.parent_id,
-            t1.location_x,
-            t1.location_y,
-            t1.location_z,
-            t1.confidence,
-            t1.radius,
-            t1.skeleton_id,
-            EXTRACT(EPOCH FROM t1.edition_time),
-            t1.user_id,
-            t2.id,
-            t2.parent_id,
-            t2.location_x,
-            t2.location_y,
-            t2.location_z,
-            t2.confidence,
-            t2.radius,
-            t2.skeleton_id,
-            EXTRACT(EPOCH FROM t2.edition_time),
-            t2.user_id
-        FROM
-          (SELECT te.id
-             FROM treenode_edge te
-             WHERE te.edge &&& 'LINESTRINGZ(%(left)s %(bottom)s %(z2)s,
-                                           %(right)s %(top)s %(z1)s)'
-               AND ST_3DDWithin(te.edge, ST_MakePolygon(ST_GeomFromText(
-                'LINESTRING(%(left)s %(top)s %(halfz)s, %(right)s %(top)s %(halfz)s,
-                            %(right)s %(bottom)s %(halfz)s, %(left)s %(bottom)s %(halfz)s,
-                            %(left)s %(top)s %(halfz)s)')), %(halfzdiff)s)
-               AND te.project_id = %(project_id)s
-          ) edges(edge_child_id)
-        JOIN treenode t1 ON edge_child_id = t1.id
-        LEFT JOIN treenode t2 ON t2.id = t1.parent_id
-        LIMIT %(limit)s
-        ''', params)
+        if settings.PREPARED_STATEMENTS:
+            # Use a prepared statement to get the treenodes
+            cursor.execute('''
+                EXECUTE get_treenodes_postgis_3d(%(project_id)s,
+                    %(left)s, %(top)s, %(z1)s, %(right)s, %(bottom)s, %(z2)s,
+                    %(halfz)s, %(halfzdiff)s, %(limit)s)
+            ''', params)
+        else:
+            # Fetch treenodes with the help of two PostGIS filters: The &&& operator
+            # to exclude all edges that don't have a bounding box that intersect with
+            # the query bounding box. This leads to false positives, because edge
+            # bounding boxes can intersect without the edge actually intersecting. To
+            # limit the result set, ST_3DDWithin is used. It allows to limit the result
+            # set by a distance to another geometry. Here it only allows edges that are
+            # no farther away than half the height of the query bounding box from a
+            # plane that cuts the query bounding box in half in Z. There are still false
+            # positives, but much fewer. Even though ST_3DDWithin is used, it seems to
+            # be enough to have a n-d index available (the query plan says ST_3DDWithin
+            # wouldn't use a 2-d index in this query, even if present).
+            cursor.execute('''
+            SELECT
+                t1.id,
+                t1.parent_id,
+                t1.location_x,
+                t1.location_y,
+                t1.location_z,
+                t1.confidence,
+                t1.radius,
+                t1.skeleton_id,
+                EXTRACT(EPOCH FROM t1.edition_time),
+                t1.user_id,
+                t2.id,
+                t2.parent_id,
+                t2.location_x,
+                t2.location_y,
+                t2.location_z,
+                t2.confidence,
+                t2.radius,
+                t2.skeleton_id,
+                EXTRACT(EPOCH FROM t2.edition_time),
+                t2.user_id
+            FROM
+              (SELECT te.id
+                 FROM treenode_edge te
+                 WHERE te.edge &&& 'LINESTRINGZ(%(left)s %(bottom)s %(z2)s,
+                                               %(right)s %(top)s %(z1)s)'
+                   AND ST_3DDWithin(te.edge, ST_MakePolygon(ST_GeomFromText(
+                    'LINESTRING(%(left)s %(top)s %(halfz)s, %(right)s %(top)s %(halfz)s,
+                                %(right)s %(bottom)s %(halfz)s, %(left)s %(bottom)s %(halfz)s,
+                                %(left)s %(top)s %(halfz)s)')), %(halfzdiff)s)
+                   AND te.project_id = %(project_id)s
+              ) edges(edge_child_id)
+            JOIN treenode t1 ON edge_child_id = t1.id
+            LEFT JOIN treenode t2 ON t2.id = t1.parent_id
+            LIMIT %(limit)s
+            ''', params)
 
         treenode_ids, treenodes = split_and_filter_id_rows(cursor.fetchall(), 10, 20)
 

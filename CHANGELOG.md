@@ -9,6 +9,11 @@
 - With the help of the new "Update active" checkbox in the "View" tab it is now
   possible to automatically udpate the active skeleton if it changes.
 
+Selection table:
+
+- To prevent accidental sorting the new "Lock order" checkbox can be enabled.
+  Clicks on the table headers will have no effect if the order is locked.
+
 
 ### Bug fixes
 

@@ -32,6 +32,7 @@
     this.annotationFilter = null;
     this.appendWithBatchColor = false;
     this.gui = new this.GUI(this);
+    this.orderLocked = false;
 
     // Listen to change events of the active node and skeletons
     SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
@@ -151,6 +152,18 @@
         hideVisibilitySettigs.appendChild(document.createTextNode(
               'Show visibility controls'));
         buttons.appendChild(hideVisibilitySettigs);
+
+        var lockOrderSettigsCb = document.createElement('input');
+        lockOrderSettigsCb.setAttribute('type', 'checkbox');
+        lockOrderSettigsCb.onchange = function() {
+          self.orderLocked = this.checked;
+        };
+        var lockOrderSettigs = document.createElement('label');
+        lockOrderSettigs.appendChild(lockOrderSettigsCb);
+        lockOrderSettigsCb.checked = this.orderLocked;
+        lockOrderSettigs.appendChild(document.createTextNode(
+              'Lock order'));
+        buttons.appendChild(lockOrderSettigs);
       },
       createContent: function(content) {
         var self = this;
@@ -221,6 +234,14 @@
         $('th input[type=button].filter', tab).on("click", filterNeuronList);
         $('th input[type=text].filter', tab).on("keyup", function(e) {
           if (13 === e.keyCode) filterNeuronList();
+        });
+        $('th', tab).on("click", this, function(e) {
+          // Prevent sorting if order is locked
+          var widget = e.data;
+          if (widget.orderLocked) {
+            e.stopImmediatePropagation();
+            CATMAID.warn("Table order is locked");
+          }
         });
 
         /**

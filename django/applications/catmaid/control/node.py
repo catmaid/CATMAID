@@ -196,7 +196,7 @@ class Postgis3dNodeProvider(object):
             -- 1 project id, 2 left, 3 top, 4 z1, 5 right, 6 bottom, 7 z2,
             -- 8 halfz, 9 halfzdiff, 10 limit
             PREPARE get_treenodes_postgis_3d (int, real, real, real,
-                    real, real, real, real, int) AS
+                    real, real, real, real, real, int) AS
             {}
         """.format(self.treenode_query_prepare))
         cursor.execute("""
@@ -427,7 +427,7 @@ class Postgis2dNodeProvider(object):
             -- 1 project id, 2 left, 3 top, 4 z1, 5 right, 6 bottom, 7 z2,
             -- 8 halfz, 9 halfzdiff, 10 limit
             PREPARE get_treenodes_postgis_2d (int, real, real, real,
-                    real, real, real, real, int) AS
+                    real, real, real, real, real, int) AS
             {}
         """.format(self.treenode_query_prepare))
         cursor.execute("""

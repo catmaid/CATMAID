@@ -21,8 +21,8 @@ Contributors: Chris Barnes, Albert Cardona, Andrew Champion, Tom Kazimiers
 
 ### Notes
 
-- A new TREENODE_PROVIDER option can be added to settings.py, which can be used
-  to configure the way node queries are executed. Options are 'classic',
+- A new NODE_PROVIDER option can be added to settings.py, which can be used to
+  configure the way node queries are executed. Options are 'classic',
   'postgis3d' and 'postgis2d'.  Depending on your environment, 'postgis2d' might
   be fastest, but 'postgis3d' is the current default (i.e. what has been used so
   far).

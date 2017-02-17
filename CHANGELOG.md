@@ -7,7 +7,7 @@
 3D Viewer:
 
 - With the help of the new "Update active" checkbox in the "View" tab it is now
-  possible to automatically udpate the active skeleton if it changes.
+  possible to automatically update the active skeleton if it changes.
 
 Selection table:
 

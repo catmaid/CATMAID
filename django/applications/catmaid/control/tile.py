@@ -6,7 +6,9 @@ import numpy as np
 import base64
 from django.conf import settings
 
+from catmaid.models import UserRole
 from catmaid.control.common import ConfigurationError
+from catmaid.control.authentication import requires_user_role
 
 try:
     from PIL import Image
@@ -26,6 +28,7 @@ except ImportError, e:
 
 from django.http import HttpResponse
 
+@requires_user_role([UserRole.Browse])
 def get_tile(request, project_id=None, stack_id=None):
 
     if not tile_loading_enabled:
@@ -62,7 +65,7 @@ def get_tile(request, project_id=None, stack_id=None):
             pilImage = Image.frombuffer('RGBA',(width,height),data,'raw','L',0,1)
             response = HttpResponse(content_type="image/png")
             pilImage.save(response, "PNG")
-            return response            
+            return response
             # return HttpResponse(json.dumps({'error': 'HDF5 file does not contain scale: {0}'.format(str(int(scale)))}))
         image_data=hfile[hdfpath]
         data=image_data[y:y+height,x:x+width]
@@ -73,6 +76,7 @@ def get_tile(request, project_id=None, stack_id=None):
 
     return response
 
+@requires_user_role([UserRole.Annotate])
 def put_tile(request, project_id=None, stack_id=None):
     """ Store labels to HDF5 """
 

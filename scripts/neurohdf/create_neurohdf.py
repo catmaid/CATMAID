@@ -1,16 +1,18 @@
 #!/usr/bin/python
 
 # Create a project and stack associated HDF5 file with additional
-# data such as labels, meshes etc. 
+# data such as labels, meshes etc.
 
 import os.path as op
 import h5py
 from contextlib import closing
 import numpy as np
 
+from django.conf import settings
+
 project_id = 3
 stack_id = 4
-filepath = '/home/ottj/CATMAID/django/hdf5'
+filepath = settings.HDF5_STORAGE_PATH
 
 with closing(h5py.File(op.join(filepath, '%s_%s.hdf' % (project_id, stack_id)), 'w')) as hfile:
     mesh=hfile.create_group('meshes')
@@ -28,7 +30,7 @@ with closing(h5py.File(op.join(filepath, '%s_%s.hdf' % (project_id, stack_id)), 
     # the interval defines for a spatial axis the resolution / dimension
     # for scale 0
     image.attrs['axis0__interval'] = 1.0
-    
+
     image.attrs['axis1__label'] = 'y'
     image.attrs['axis1__unit_label'] = 'micrometer'
     image.attrs['axis1__unit_xref'] = 'UO:0000017'
@@ -42,7 +44,7 @@ with closing(h5py.File(op.join(filepath, '%s_%s.hdf' % (project_id, stack_id)), 
     dataset=np.random.random_integers(0,255, (1024,1024,10))
     scale=image.create_group('scale')
     scale.attrs['number_of_scales'] = 3
-    
+
     scale0=scale.create_group('0')
     scale0.attrs['axes_scaling_factor'] = (1.0, 1.0, 1.0)
     scale0.create_dataset('data', data=dataset, dtype = np.uint8)

@@ -21,6 +21,10 @@
 - With the help of the new "Update active" checkbox in the "View" tab it is now
   possible to automatically update the active skeleton if it changes.
 
+- It is now possible to hide edges that represent a link between a node and a
+  connector. This is also respected with connector restrictions enabled and can
+  be set with new "Show connector links" checkbox in the "View settings" tab.
+
 Selection table:
 
 - To prevent accidental sorting the new "Lock order" checkbox can be enabled.

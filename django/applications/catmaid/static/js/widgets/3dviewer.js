@@ -785,6 +785,7 @@
     this.custom_tag_spheres_regex = '';
     this.neuron_material = 'lambert';
     this.connector_filter = false;
+    this.show_connector_links = true;
     this.shading_method = 'none';
     this.color_method = 'none';
     this.tag_regex = '';
@@ -1287,6 +1288,10 @@
       this.filteredConnectors = null;
     }
 
+    // Depending on the current settings, edges might not be visible.
+    this.space.updateConnectorEdgeVisibility(this.options,
+      skids.map(function(skid) { return this[skid]; }, skeletons));
+
     this.space.render();
   };
 
@@ -1415,6 +1420,8 @@
         // updated, too.
         if ('skeleton' === this.options.connector_color) {
           this.space.updateConnectorColors(this.options, [skeleton]);
+        } else {
+          this.space.updateConnectorEdgeVisibility(this.options, [skeleton]);
         }
         return false;
       }
@@ -4972,6 +4979,14 @@
     this.space.render();
   };
 
+  WebGLApplication.prototype.setConnectorLinkVisibility = function(visible) {
+    this.options.show_connector_links = visible;
+    var skeletons = Object.keys(this.space.content.skeletons).map(function(skid) {
+      return this.space.content.skeletons[skid];
+    }, this);
+    this.space.updateConnectorColors(this.options, skeletons, this.space.render.bind(this.space));
+  };
+
 
   WebGLApplication.prototype.updateConnectorColors = function(select) {
     this.options.connector_color = select.value;
@@ -5017,11 +5032,43 @@
     }
   };
 
+  /**
+   * Show or hide connector edges by adjusting their opacity.
+   */
+  WebGLApplication.prototype.Space.prototype.updateConnectorEdgeVisibility = function(options, skeletons) {
+    var linksVisible = options.show_connector_links;
+    var restrictions = options.connector_filter;
+    for (var i=0; i<skeletons.length; ++i) {
+      var skeleton = skeletons[i];
+      if (restrictions) {
+        if (skeleton.connectorSelection && skeleton.connectoractor) {
+          for (var j=0; j<skeleton.synapticTypes.length; ++j) {
+            var type = skeleton.synapticTypes[j];
+            var actor = skeleton.connectoractor[type];
+            if (actor) {
+              actor.visible = linksVisible;
+            }
+          }
+        }
+      } else {
+        // Ignore first actor type, because it is the neurite.
+        for (var j=0; j<skeleton.synapticTypes.length; ++j) {
+          var type = skeleton.synapticTypes[j];
+          var actor = skeleton.actor[type];
+          if (actor) {
+            actor.visible = linksVisible;
+          }
+        }
+      }
+    }
+  };
+
   WebGLApplication.prototype.Space.prototype.updateConnectorColors = function(options, skeletons, callback) {
     // Make all
     var self = this;
     var done = function() {
       self.updateRestrictedConnectorColors(skeletons);
+      self.updateConnectorEdgeVisibility(options, skeletons);
       if (CATMAID.tools.isFn(callback)) callback();
     };
 
@@ -5928,7 +5975,11 @@
     //this.updateSkeletonColor(options);
 
     // Will query the server
-    if ('cyan-red' !== options.connector_color) this.space.updateConnectorColors(options, [this]);
+    if ('cyan-red' === options.connector_color) {
+      this.space.updateConnectorEdgeVisibility(options, [this]);
+    } else {
+      this.space.updateConnectorColors(options, [this]);
+    }
   };
 
   /**

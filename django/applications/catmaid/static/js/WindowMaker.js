@@ -490,6 +490,15 @@ var WindowMaker = new function()
             },
             title: 'If checked, the native pixel resolution will be used. Improves quality on HiDPI displays.'
           },
+          {
+            type: 'checkbox',
+            label: 'Show connector links',
+            value: o.show_connector_links,
+            onclick: function() {
+              WA.setConnectorLinkVisibility(this.checked);
+            },
+            title: 'If checked, links between connectors and partner nodes will be visible.'
+          }
         ]);
 
     var nodeScalingInput = DOM.appendNumericField(tabs['View settings'],

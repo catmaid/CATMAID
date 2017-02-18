@@ -38,173 +38,20 @@ def split_and_filter_id_rows(rows, part_2_start, total_len):
 
     return node_ids, nodes
 
-
-class ClassicNodeProvider(object):
-
-    def prepare_db_statements(self, connection):
-        pass
-
-    def get_treenode_data(self, cursor, params):
-        """Return a list of treenode IDs along with a JSON String
-        representation.
-        """
-        # Fetch treenodes which are in the bounding box,
-        # which in z it includes the full thickess of the prior section
-        # and of the next section (therefore the '<' and not '<=' for zhigh)
-        cursor.execute('''
-        SELECT
-            t1.id,
-            t1.parent_id,
-            t1.location_x,
-            t1.location_y,
-            t1.location_z,
-            t1.confidence,
-            t1.radius,
-            t1.skeleton_id,
-            EXTRACT(EPOCH FROM t1.edition_time),
-            t1.user_id,
-            t2.id,
-            t2.parent_id,
-            t2.location_x,
-            t2.location_y,
-            t2.location_z,
-            t2.confidence,
-            t2.radius,
-            t2.skeleton_id,
-            EXTRACT(EPOCH FROM t2.edition_time),
-            t2.user_id
-        FROM treenode t1
-                INNER JOIN treenode t2 ON
-                (   (t1.id = t2.parent_id OR t1.parent_id = t2.id)
-                OR (t1.parent_id IS NULL AND t1.id = t2.id))
-        WHERE
-                t1.location_z >= %(z1)s
-            AND t1.location_z <  %(z2)s
-            AND t1.location_x >= %(left)s
-            AND t1.location_x <  %(right)s
-            AND t1.location_y >= %(top)s
-            AND t1.location_y <  %(bottom)s
-            AND t1.project_id = %(project_id)s
-        LIMIT %(limit)s
-        ''', params)
-
-        # Above, notice that the join is done for:
-        # 1. A parent-child or child-parent pair (where the first one is in section z)
-        # 2. A node with itself when the parent is null
-        # This is by far the fastest way to retrieve all parents and children nodes
-        # of the nodes in section z within the specified 2d bounds.
-        treenode_ids, treenodes = split_and_filter_id_rows(cursor.fetchall(), 10, 20)
-
-        return treenode_ids, treenodes
-
-    def get_connector_data(self, cursor, params, treenode_ids, missing_connector_ids):
-        """ Selects all connectors that have links to nodes in treenode_ids, are
-        in the bounding box, or are in missing_connector_ids.
-        """
-        crows = []
-
-        if treenode_ids:
-            cursor.execute('''
-            SELECT c.id,
-                c.location_x,
-                c.location_y,
-                c.location_z,
-                c.confidence,
-                EXTRACT(EPOCH FROM c.edition_time),
-                c.user_id,
-                tc.treenode_id,
-                tc.relation_id,
-                tc.confidence,
-                EXTRACT(EPOCH FROM tc.edition_time),
-                tc.id
-            FROM treenode_connector tc
-            INNER JOIN connector c ON (tc.connector_id = c.id)
-            INNER JOIN UNNEST(%s) vals(v) ON tc.treenode_id = v
-                           ''', (list(treenode_ids),))
-
-            crows = list(cursor.fetchall())
-
-        # Obtain connectors within the field of view that were not captured above.
-        # Uses a LEFT OUTER JOIN to include disconnected connectors,
-        # that is, connectors that aren't referenced from treenode_connector.
-
-        connector_query = '''
-            SELECT connector.id,
-                connector.location_x,
-                connector.location_y,
-                connector.location_z,
-                connector.confidence,
-                EXTRACT(EPOCH FROM connector.edition_time),
-                connector.user_id,
-                treenode_connector.treenode_id,
-                treenode_connector.relation_id,
-                treenode_connector.confidence,
-                EXTRACT(EPOCH FROM treenode_connector.edition_time),
-                treenode_connector.id
-            FROM connector LEFT OUTER JOIN treenode_connector
-                           ON connector.id = treenode_connector.connector_id
-            WHERE connector.project_id = %(project_id)s
-              AND connector.location_z >= %(z1)s
-              AND connector.location_z <  %(z2)s
-              AND connector.location_x >= %(left)s
-              AND connector.location_x <  %(right)s
-              AND connector.location_y >= %(top)s
-              AND connector.location_y <  %(bottom)s
-        '''
-
-        # Add additional connectors to the pool before links are collected
-        if missing_connector_ids:
-            sanetized_connector_ids = [int(cid) for cid in missing_connector_ids]
-            connector_query += '''
-                UNION
-                SELECT connector.id,
-                    connector.location_x,
-                    connector.location_y,
-                    connector.location_z,
-                    connector.confidence,
-                    treenode_connector.relation_id,
-                    treenode_connector.treenode_id,
-                    treenode_connector.confidence,
-                    EXTRACT(EPOCH FROM treenode_connector.edition_time),
-                    treenode_connector.id,
-                    EXTRACT(EPOCH FROM connector.edition_time),
-                    connector.user_id
-                FROM connector LEFT OUTER JOIN treenode_connector
-                               ON connector.id = treenode_connector.connector_id
-                WHERE connector.project_id = %(project_id)s
-                AND connector.id IN ({})
-            '''.format(','.join(str(cid) for cid in sanetized_connector_ids))
-
-        cursor.execute(connector_query, params)
-        crows.extend(cursor.fetchall())
-
-        return crows
-
 class Postgis3dNodeProvider(object):
 
-    def prepare_db_statements(self, connection):
-        pass
-
-    def get_treenode_data(self, cursor, params):
-        """ Selects all treenodes of which links to other treenodes intersect
-        with the request bounding box.
-        """
-
-        params['halfzdiff'] = abs(params['z2'] - params['z1']) * 0.5
-        params['halfz'] = params['z1'] + (params['z2'] - params['z1']) * 0.5
-
-        # Fetch treenodes with the help of two PostGIS filters: The &&& operator
-        # to exclude all edges that don't have a bounding box that intersect with
-        # the query bounding box. This leads to false positives, because edge
-        # bounding boxes can intersect without the edge actually intersecting. To
-        # limit the result set, ST_3DDWithin is used. It allows to limit the result
-        # set by a distance to another geometry. Here it only allows edges that are
-        # no farther away than half the height of the query bounding box from a
-        # plane that cuts the query bounding box in half in Z. There are still false
-        # positives, but much fewer. Even though ST_3DDWithin is used, it seems to
-        # be enough to have a n-d index available (the query plan says ST_3DDWithin
-        # wouldn't use a 2-d index in this query, even if present).
-        cursor.execute('''
+    # Fetch treenodes with the help of two PostGIS filters: The &&& operator
+    # to exclude all edges that don't have a bounding box that intersect with
+    # the query bounding box. This leads to false positives, because edge
+    # bounding boxes can intersect without the edge actually intersecting. To
+    # limit the result set, ST_3DDWithin is used. It allows to limit the result
+    # set by a distance to another geometry. Here it only allows edges that are
+    # no farther away than half the height of the query bounding box from a
+    # plane that cuts the query bounding box in half in Z. There are still false
+    # positives, but much fewer. Even though ST_3DDWithin is used, it seems to
+    # be enough to have a n-d index available (the query plan says ST_3DDWithin
+    # wouldn't use a 2-d index in this query, even if present).
+    treenode_query = '''
         SELECT
             t1.id,
             t1.parent_id,
@@ -229,18 +76,154 @@ class Postgis3dNodeProvider(object):
         FROM
           (SELECT te.id
              FROM treenode_edge te
-             WHERE te.edge &&& 'LINESTRINGZ(%(left)s %(bottom)s %(z2)s,
-                                           %(right)s %(top)s %(z1)s)'
-               AND ST_3DDWithin(te.edge, ST_MakePolygon(ST_GeomFromText(
-                'LINESTRING(%(left)s %(top)s %(halfz)s, %(right)s %(top)s %(halfz)s,
-                            %(right)s %(bottom)s %(halfz)s, %(left)s %(bottom)s %(halfz)s,
-                            %(left)s %(top)s %(halfz)s)')), %(halfzdiff)s)
-               AND te.project_id = %(project_id)s
+             WHERE te.edge &&& ST_MakeLine(ARRAY[
+                 ST_MakePoint({left}, {bottom}, {z2}),
+                 ST_MakePoint({right}, {top}, {z1})] ::geometry[])
+             AND ST_3DDWithin(te.edge, ST_MakePolygon(ST_MakeLine(ARRAY[
+                 ST_MakePoint({left},  {top},    {halfz}),
+                 ST_MakePoint({right}, {top},    {halfz}),
+                 ST_MakePoint({right}, {bottom}, {halfz}),
+                 ST_MakePoint({left},  {bottom}, {halfz}),
+                 ST_MakePoint({left},  {top},    {halfz})]::geometry[])),
+                 {halfzdiff})
+             AND te.project_id = {project_id}
           ) edges(edge_child_id)
         JOIN treenode t1 ON edge_child_id = t1.id
         LEFT JOIN treenode t2 ON t2.id = t1.parent_id
-        LIMIT %(limit)s
-        ''', params)
+        LIMIT {limit}
+    '''
+
+    connector_query = '''
+      SELECT
+          c.id,
+          c.location_x,
+          c.location_y,
+          c.location_z,
+          c.confidence,
+          EXTRACT(EPOCH FROM c.edition_time),
+          c.user_id,
+          tc.treenode_id,
+          tc.relation_id,
+          tc.confidence,
+          EXTRACT(EPOCH FROM tc.edition_time),
+          tc.id
+      FROM (SELECT tce.id AS tce_id
+            FROM treenode_connector_edge tce
+            WHERE tce.edge &&& ST_MakeLine(ARRAY[
+                ST_MakePoint({left}, {bottom}, {z2}),
+                ST_MakePoint({right}, {top}, {z1})] ::geometry[])
+            AND ST_3DDWithin(tce.edge, ST_MakePolygon(ST_MakeLine(ARRAY[
+                ST_MakePoint({left},  {top},    {halfz}),
+                ST_MakePoint({right}, {top},    {halfz}),
+                ST_MakePoint({right}, {bottom}, {halfz}),
+                ST_MakePoint({left},  {bottom}, {halfz}),
+                ST_MakePoint({left},  {top},    {halfz})]::geometry[])),
+                {halfzdiff})
+            AND tce.project_id = {project_id}
+        ) edges(edge_tc_id)
+      JOIN treenode_connector tc
+        ON (tc.id = edge_tc_id)
+      JOIN connector c
+        ON (c.id = tc.connector_id)
+
+      UNION
+
+      SELECT
+          c.id,
+          c.location_x,
+          c.location_y,
+          c.location_z,
+          c.confidence,
+          EXTRACT(EPOCH FROM c.edition_time),
+          c.user_id,
+          NULL,
+          NULL,
+          NULL,
+          NULL,
+          NULL
+      FROM (SELECT cg.id AS cg_id
+           FROM connector_geom cg
+           WHERE cg.geom &&& ST_MakeLine(ARRAY[
+               ST_MakePoint({left}, {bottom}, {z2}),
+               ST_MakePoint({right}, {top}, {z1})] ::geometry[])
+           AND ST_3DDWithin(cg.geom, ST_MakePolygon(ST_MakeLine(ARRAY[
+               ST_MakePoint({left},  {top},    {halfz}),
+               ST_MakePoint({right}, {top},    {halfz}),
+               ST_MakePoint({right}, {bottom}, {halfz}),
+               ST_MakePoint({left},  {bottom}, {halfz}),
+               ST_MakePoint({left},  {top},    {halfz})]::geometry[])),
+               {halfzdiff})
+           AND cg.project_id = {project_id}
+          UNION SELECT UNNEST({sanitized_connector_ids}::bigint[])
+        ) geoms(geom_connector_id)
+      JOIN connector c
+        ON (geom_connector_id = c.id)
+      LIMIT {limit}
+    '''
+
+    # To execute the queries directly through PsycoPg (i.e. not prepared) a
+    # different parameter formatt is used: {left} -> %(left)s.
+    treenode_query_params = ['project_id', 'left', 'top', 'z1', 'right',
+        'bottom', 'z2', 'halfz', 'halfzdiff', 'limit']
+    treenode_query_psycopg = treenode_query.format(
+        **{k:'%({})s'.format(k) for k in treenode_query_params})
+
+    connector_query_params = ['project_id', 'left', 'top', 'z1', 'right',
+        'bottom', 'z2', 'halfz', 'halfzdiff', 'limit', 'sanitized_connector_ids']
+    connector_query_psycopg = connector_query.format(
+        **{k:'%({})s'.format(k) for k in connector_query_params})
+
+    # Create prepared statement version
+    prepare_var_names = {
+        'project_id': '$1',
+        'left': '$2',
+        'top': '$3',
+        'z1': '$4',
+        'right': '$5',
+        'bottom': '$6',
+        'z2': '$7',
+        'halfz': '$8',
+        'halfzdiff': '$9',
+        'limit': '$10',
+        'sanitized_connector_ids': '$11'
+    }
+    treenode_query_prepare = treenode_query.format(**prepare_var_names)
+    connector_query_prepare = connector_query.format(**prepare_var_names)
+
+    def prepare_db_statements(self, connection):
+        cursor = connection.cursor()
+        cursor.execute("""
+            -- 1 project id, 2 left, 3 top, 4 z1, 5 right, 6 bottom, 7 z2,
+            -- 8 halfz, 9 halfzdiff, 10 limit
+            PREPARE get_treenodes_postgis_3d (int, real, real, real,
+                    real, real, real, real, real, int) AS
+            {}
+        """.format(self.treenode_query_prepare))
+        cursor.execute("""
+            -- 1 project id, 2 left, 3 top, 4 z1, 5 right, 6 bottom, 7 z2,
+            -- 8 halfz, 9 halfzdiff, 10 limit, 11 sanitized connector ids
+            PREPARE get_connectors_postgis_3d (int, real, real, real,
+                    real, real, real, real, real, int, bigint[]) AS
+            {}
+        """.format(self.connector_query_prepare))
+
+    def get_treenode_data(self, cursor, params):
+        """ Selects all treenodes of which links to other treenodes intersect
+        with the request bounding box.
+        """
+
+        params['halfzdiff'] = abs(params['z2'] - params['z1']) * 0.5
+        params['halfz'] = params['z1'] + (params['z2'] - params['z1']) * 0.5
+
+        if settings.PREPARED_STATEMENTS:
+            # Use a prepared statement to get the treenodes
+            cursor.execute('''
+                EXECUTE get_treenodes_postgis_3d(%(project_id)s,
+                    %(left)s, %(top)s, %(z1)s, %(right)s, %(bottom)s, %(z2)s,
+                    %(halfz)s, %(halfzdiff)s, %(limit)s)
+            ''', params)
+        else:
+            cursor.execute(self.treenode_query_psycopg, params)
 
         treenode_ids, treenodes = split_and_filter_id_rows(cursor.fetchall(), 10, 20)
 
@@ -251,7 +234,92 @@ class Postgis3dNodeProvider(object):
         bounding box, or that are in missing_connector_ids.
         """
         params['sanitized_connector_ids'] = map(int, missing_connector_ids)
-        cursor.execute('''
+
+        if settings.PREPARED_STATEMENTS:
+            # Use a prepared statement to get connectors
+            cursor.execute('''
+                EXECUTE get_connectors_postgis_3d(%(project_id)s,
+                    %(left)s, %(top)s, %(z1)s, %(right)s, %(bottom)s, %(z2)s,
+                    %(halfz)s, %(halfzdiff)s, %(limit)s,
+                    %(sanitized_connector_ids)s)
+            ''', params)
+        else:
+            cursor.execute(self.connector_query_psycopg, params)
+
+        return list(cursor.fetchall())
+
+
+class Postgis2dNodeProvider(object):
+
+    # Fetch treenodes with the help of two PostGIS filters: First, select all
+    # edges with a bounding box overlapping the XY-box of the query bounding
+    # box. This set is then constrained by a particular range in Z. Both filters
+    # are backed by indices that make these operations very fast. This is
+    # semantically equivalent with what the &&& does. This, however, leads to
+    # false positives, because edge bounding boxes can intersect without the
+    # edge actually intersecting. To limit the result set, ST_3DDWithin is used.
+    # It allows to limit the result set by a distance to another geometry. Here
+    # it only allows edges that are no farther away than half the height of the
+    # query bounding box from a plane that cuts the query bounding box in half
+    # in Z. There are still false positives, but much fewer. Even though
+    # ST_3DDWithin is used, it seems to be enough to have a n-d index available
+    # (the query plan says ST_3DDWithin wouldn't use a 2-d index in this query,
+    # even if present).
+    treenode_query = """
+        WITH nodes AS (
+          SELECT
+            t1.id AS t1_id,
+            t1.parent_id AS t1_parent_id,
+            t1.location_x AS t1_location_x,
+            t1.location_y AS t1_location_y,
+            t1.location_z AS t1_location_z,
+            t1.confidence AS t1_confidence,
+            t1.radius AS t1_radius,
+            t1.skeleton_id AS t1_skeleton_id,
+            EXTRACT(EPOCH FROM t1.edition_time) AS t1_edition_time,
+            t1.user_id AS t1_user_id,
+            t2.id AS t2_id,
+            t2.parent_id AS t2_parent_id,
+            t2.location_x AS t2_location_x,
+            t2.location_y AS t2_location_y,
+            t2.location_z AS t2_location_z,
+            t2.confidence AS t2_confidence,
+            t2.radius AS t2_radius,
+            t2.skeleton_id AS t2_skeleton_id,
+            EXTRACT(EPOCH FROM t2.edition_time) AS t2_edition_time,
+            t2.user_id AS t2_user_id
+          FROM
+            (SELECT te.id
+               FROM treenode_edge te
+               WHERE te.edge && ST_MakeEnvelope({left}, {top}, {right}, {bottom})
+                 AND floatrange(ST_ZMin(te.edge),
+                    ST_ZMax(te.edge), '[]') && floatrange({z1}, {z2}, '[)')
+                 AND ST_3DDWithin(te.edge, ST_MakePolygon(ST_MakeLine(ARRAY[
+                     ST_MakePoint({left},  {top},    {halfz}),
+                     ST_MakePoint({right}, {top},    {halfz}),
+                     ST_MakePoint({right}, {bottom}, {halfz}),
+                     ST_MakePoint({left},  {bottom}, {halfz}),
+                     ST_MakePoint({left},  {top},    {halfz})]::geometry[])),
+                     {halfzdiff})
+                 AND te.project_id = {project_id}
+            ) edges(edge_child_id)
+          JOIN treenode t1 ON edge_child_id = t1.id
+          LEFT JOIN treenode t2 ON t2.id = t1.parent_id
+        )
+        SELECT
+          t1_id, t1_parent_id, t1_location_x, t1_location_y, t1_location_z,
+          t1_confidence, t1_radius, t1_skeleton_id, t1_edition_time, t1_user_id
+        FROM nodes
+        UNION
+        SELECT
+          t2_id, t2_parent_id, t2_location_x, t2_location_y, t2_location_z,
+          t2_confidence, t2_radius, t2_skeleton_id, t2_edition_time, t2_user_id
+        FROM nodes
+        WHERE t2_id IS NOT NULL
+        LIMIT {limit};
+    """
+
+    connector_query = """
         SELECT
             c.id,
             c.location_x,
@@ -267,13 +335,17 @@ class Postgis3dNodeProvider(object):
             tc.id
         FROM (SELECT tce.id AS tce_id
              FROM treenode_connector_edge tce
-             WHERE tce.edge &&& 'LINESTRINGZ(%(left)s %(bottom)s %(z2)s,
-                                           %(right)s %(top)s %(z1)s)'
-               AND ST_3DDWithin(tce.edge, ST_MakePolygon(ST_GeomFromText(
-                'LINESTRING(%(left)s %(top)s %(halfz)s, %(right)s %(top)s %(halfz)s,
-                            %(right)s %(bottom)s %(halfz)s, %(left)s %(bottom)s %(halfz)s,
-                            %(left)s %(top)s %(halfz)s)')), %(halfzdiff)s)
-               AND tce.project_id = %(project_id)s
+             WHERE tce.edge && ST_MakeEnvelope({left}, {top}, {right}, {bottom})
+               AND floatrange(ST_ZMin(tce.edge), ST_ZMax(tce.edge), '[]') &&
+                 floatrange({z1}, {z2}, '[)')
+               AND ST_3DDWithin(tce.edge, ST_MakePolygon(ST_MakeLine(ARRAY[
+                   ST_MakePoint({left},  {top},    {halfz}),
+                   ST_MakePoint({right}, {top},    {halfz}),
+                   ST_MakePoint({right}, {bottom}, {halfz}),
+                   ST_MakePoint({left},  {bottom}, {halfz}),
+                   ST_MakePoint({left},  {top},    {halfz})]::geometry[])),
+                   {halfzdiff})
+               AND tce.project_id = {project_id}
           ) edges(edge_tc_id)
         JOIN treenode_connector tc
           ON (tc.id = edge_tc_id)
@@ -297,82 +369,74 @@ class Postgis3dNodeProvider(object):
             NULL
         FROM (SELECT cg.id AS cg_id
              FROM connector_geom cg
-             WHERE cg.geom &&& 'LINESTRINGZ(%(left)s %(bottom)s %(z2)s,
-                                           %(right)s %(top)s %(z1)s)'
-               AND ST_3DDWithin(cg.geom, ST_MakePolygon(ST_GeomFromText(
-                'LINESTRING(%(left)s %(top)s %(halfz)s, %(right)s %(top)s %(halfz)s,
-                            %(right)s %(bottom)s %(halfz)s, %(left)s %(bottom)s %(halfz)s,
-                            %(left)s %(top)s %(halfz)s)')), %(halfzdiff)s)
-               AND cg.project_id = %(project_id)s
-            UNION SELECT UNNEST(%(sanitized_connector_ids)s::bigint[])
+             WHERE cg.geom && ST_MakeEnvelope({left}, {top}, {right}, {bottom})
+               AND floatrange(ST_ZMin(cg.geom), ST_ZMax(cg.geom), '[]') &&
+                 floatrange({z1}, {z2}, '[)')
+               AND ST_3DDWithin(cg.geom, ST_MakePolygon(ST_MakeLine(ARRAY[
+                   ST_MakePoint({left},  {top},    {halfz}),
+                   ST_MakePoint({right}, {top},    {halfz}),
+                   ST_MakePoint({right}, {bottom}, {halfz}),
+                   ST_MakePoint({left},  {bottom}, {halfz}),
+                   ST_MakePoint({left},  {top},    {halfz})]::geometry[])),
+                   {halfzdiff})
+               AND cg.project_id = {project_id}
+            UNION SELECT UNNEST({sanitized_connector_ids}::bigint[])
           ) geoms(geom_connector_id)
         JOIN connector c
           ON (geom_connector_id = c.id)
-        LIMIT %(limit)s
-        ''', params)
+        LIMIT {limit}
+    """
 
-        return list(cursor.fetchall())
+    # To execute the query directly with PsycoPg (i.e. not prepared) a different
+    # parameter formatt is used: {left} -> %(left)s.
+    treenode_query_params = ['project_id', 'left', 'top', 'z1', 'right',
+        'bottom', 'z2', 'halfz', 'halfzdiff', 'limit']
+    treenode_query_psycopg = treenode_query.format(
+        **{k:'%({})s'.format(k) for k in treenode_query_params})
 
 
-class Postgis2dNodeProvider(object):
+    connector_query_params = ['project_id', 'left', 'top', 'z1', 'right',
+        'bottom', 'z2', 'halfz', 'halfzdiff', 'limit', 'sanitized_connector_ids']
+    connector_query_psycopg = connector_query.format(
+        **{k:'%({})s'.format(k) for k in connector_query_params})
+
+    # Create prepared statement version
+    prepare_var_names = {
+        'project_id': '$1',
+        'left': '$2',
+        'top': '$3',
+        'z1': '$4',
+        'right': '$5',
+        'bottom': '$6',
+        'z2': '$7',
+        'halfz': '$8',
+        'halfzdiff': '$9',
+        'limit': '$10',
+        'sanitized_connector_ids': '$11'
+    }
+    treenode_query_prepare = treenode_query.format(**prepare_var_names)
+    connector_query_prepare = connector_query.format(**prepare_var_names)
+
 
     def prepare_db_statements(self, connection):
-      """Create prepared statements on a given connection. This is mainly useful
-      for long lived connections.
-      """
-      cursor = connection.cursor()
-      cursor.execute("""
-          PREPARE get_treenodes_postgis_separate_planes (int, real, real, real,
-                  real, real, real, real, int) AS
-          WITH nodes AS (
-            SELECT
-              t1.id AS t1_id,
-              t1.parent_id AS t1_parent_id,
-              t1.location_x AS t1_location_x,
-              t1.location_y AS t1_location_y,
-              t1.location_z AS t1_location_z,
-              t1.confidence AS t1_confidence,
-              t1.radius AS t1_radius,
-              t1.skeleton_id AS t1_skeleton_id,
-              EXTRACT(EPOCH FROM t1.edition_time) AS t1_edition_time,
-              t1.user_id AS t1_user_id,
-              t2.id AS t2_id,
-              t2.parent_id AS t2_parent_id,
-              t2.location_x AS t2_location_x,
-              t2.location_y AS t2_location_y,
-              t2.location_z AS t2_location_z,
-              t2.confidence AS t2_confidence,
-              t2.radius AS t2_radius,
-              t2.skeleton_id AS t2_skeleton_id,
-              EXTRACT(EPOCH FROM t2.edition_time) AS t2_edition_time,
-              t2.user_id AS t2_user_id
-            FROM
-              (SELECT te.id
-               FROM treenode_edge te
-               WHERE te.edge && ST_MakeEnvelope( $2,  $3, $5, $6)
-               AND floatrange(ST_ZMin(te.edge), ST_ZMax(te.edge), '[]') &&
-                 floatrange($4, $7, '[)')
-               AND ST_3DDWithin(te.edge, ST_MakePolygon(ST_MakeLine(ARRAY[
-                            ST_MakePoint($2, $3, $8), ST_MakePoint($5, $3, $8),
-                            ST_MakePoint($5, $6, $8), ST_MakePoint($2, $6, $8),
-                            ST_MakePoint($2, $3, $8)] ::geometry[])), $9)
-               AND te.project_id = $1
-              ) edges(edge_child_id)
-            JOIN treenode t1 ON edge_child_id = t1.id
-            LEFT JOIN treenode t2 ON t2.id = t1.parent_id
-          )
-          SELECT
-            t1_id, t1_parent_id, t1_location_x, t1_location_y, t1_location_z,
-            t1_confidence, t1_radius, t1_skeleton_id, t1_edition_time, t1_user_id
-          FROM nodes
-          UNION
-          SELECT
-            t2_id, t2_parent_id, t2_location_x, t2_location_y, t2_location_z,
-            t2_confidence, t2_radius, t2_skeleton_id, t2_edition_time, t2_user_id
-          FROM nodes
-          WHERE t2_id IS NOT NULL
-          LIMIT $10;
-      """)
+        """Create prepared statements on a given connection. This is mainly useful
+        for long lived connections.
+        """
+        cursor = connection.cursor()
+        cursor.execute("""
+            -- 1 project id, 2 left, 3 top, 4 z1, 5 right, 6 bottom, 7 z2,
+            -- 8 halfz, 9 halfzdiff, 10 limit
+            PREPARE get_treenodes_postgis_2d (int, real, real, real,
+                    real, real, real, real, real, int) AS
+            {}
+        """.format(self.treenode_query_prepare))
+        cursor.execute("""
+            -- 1 project id, 2 left, 3 top, 4 z1, 5 right, 6 bottom, 7 z2,
+            -- 8 halfz, 9 halfzdiff, 10 limit, 11 sanitized connector ids
+            PREPARE get_connectors_postgis_2d (int, real, real, real,
+                    real, real, real, real, real, int, bigint[]) AS
+            {}
+        """.format(self.connector_query_prepare))
 
     def get_treenode_data(self, cursor, params):
         """ Selects all treenodes of which links to other treenodes intersect with
@@ -384,75 +448,12 @@ class Postgis2dNodeProvider(object):
         if settings.PREPARED_STATEMENTS:
             # Use a prepared statement to get the treenodes
             cursor.execute('''
-                EXECUTE get_treenodes_postgis_separate_planes(%(project_id)s,
+                EXECUTE get_treenodes_postgis_2d(%(project_id)s,
                     %(left)s, %(top)s, %(z1)s, %(right)s, %(bottom)s, %(z2)s,
                     %(halfz)s, %(halfzdiff)s, %(limit)s)
             ''', params)
         else:
-            # Fetch treenodes with the help of two PostGIS filters: First, select all
-            # edges with a bounding box overlapping the XY-box of the query bounding
-            # box. This set is then constrained by a particular range in Z. Both filters
-            # are backed by indices that make these operations very fast. This is
-            # semantically equivalent with what the &&& does. This, however, leads to
-            # false positives, because edge bounding boxes can intersect without the
-            # edge actually intersecting. To limit the result set, ST_3DDWithin is used.
-            # It allows to limit the result set by a distance to another geometry. Here
-            # it only allows edges that are no farther away than half the height of the
-            # query bounding box from a plane that cuts the query bounding box in half
-            # in Z. There are still false positives, but much fewer. Even though
-            # ST_3DDWithin is used, it seems to be enough to have a n-d index available
-            # (the query plan says ST_3DDWithin wouldn't use a 2-d index in this query,
-            # even if present).
-            cursor.execute('''
-                WITH nodes AS (
-                  SELECT
-                    t1.id AS t1_id,
-                    t1.parent_id AS t1_parent_id,
-                    t1.location_x AS t1_location_x,
-                    t1.location_y AS t1_location_y,
-                    t1.location_z AS t1_location_z,
-                    t1.confidence AS t1_confidence,
-                    t1.radius AS t1_radius,
-                    t1.skeleton_id AS t1_skeleton_id,
-                    EXTRACT(EPOCH FROM t1.edition_time) AS t1_edition_time,
-                    t1.user_id AS t1_user_id,
-                    t2.id AS t2_id,
-                    t2.parent_id AS t2_parent_id,
-                    t2.location_x AS t2_location_x,
-                    t2.location_y AS t2_location_y,
-                    t2.location_z AS t2_location_z,
-                    t2.confidence AS t2_confidence,
-                    t2.radius AS t2_radius,
-                    t2.skeleton_id AS t2_skeleton_id,
-                    EXTRACT(EPOCH FROM t2.edition_time) AS t2_edition_time,
-                    t2.user_id AS t2_user_id
-                  FROM
-                    (SELECT te.id
-                       FROM treenode_edge te
-                       WHERE te.edge && ST_MakeEnvelope(%(left)s, %(top)s, %(right)s, %(bottom)s)
-                         AND floatrange(ST_ZMin(te.edge), ST_ZMax(te.edge), '[]') &&
-                           '[%(z1)s,%(z2)s)'::floatrange
-                         AND ST_3DDWithin(te.edge, ST_MakePolygon(ST_GeomFromText(
-                          'LINESTRING(%(left)s %(top)s %(halfz)s, %(right)s %(top)s %(halfz)s,
-                                      %(right)s %(bottom)s %(halfz)s, %(left)s %(bottom)s %(halfz)s,
-                                      %(left)s %(top)s %(halfz)s)')), %(halfzdiff)s)
-                         AND te.project_id = %(project_id)s
-                    ) edges(edge_child_id)
-                  JOIN treenode t1 ON edge_child_id = t1.id
-                  LEFT JOIN treenode t2 ON t2.id = t1.parent_id
-                )
-                SELECT
-                  t1_id, t1_parent_id, t1_location_x, t1_location_y, t1_location_z,
-                  t1_confidence, t1_radius, t1_skeleton_id, t1_edition_time, t1_user_id
-                FROM nodes
-                UNION
-                SELECT
-                  t2_id, t2_parent_id, t2_location_x, t2_location_y, t2_location_z,
-                  t2_confidence, t2_radius, t2_skeleton_id, t2_edition_time, t2_user_id
-                FROM nodes
-                WHERE t2_id IS NOT NULL
-                LIMIT %(limit)s;
-            ''', params)
+            cursor.execute(self.treenode_query_psycopg, params)
 
         treenodes = cursor.fetchall()
         treenode_ids = [t[0] for t in treenodes]
@@ -464,76 +465,24 @@ class Postgis2dNodeProvider(object):
         bounding box, or that are in missing_connector_ids.
         """
         params['sanitized_connector_ids'] = map(int, missing_connector_ids)
-        cursor.execute('''
-        SELECT
-            c.id,
-            c.location_x,
-            c.location_y,
-            c.location_z,
-            c.confidence,
-            EXTRACT(EPOCH FROM c.edition_time),
-            c.user_id,
-            tc.treenode_id,
-            tc.relation_id,
-            tc.confidence,
-            EXTRACT(EPOCH FROM tc.edition_time),
-            tc.id
-        FROM (SELECT tce.id AS tce_id
-             FROM treenode_connector_edge tce
-             WHERE tce.edge && ST_MakeEnvelope(%(left)s, %(top)s, %(right)s, %(bottom)s)
-               AND floatrange(ST_ZMin(tce.edge), ST_ZMax(tce.edge), '[]') &&
-                 '[%(z1)s,%(z2)s)'::floatrange
-               AND ST_3DDWithin(tce.edge, ST_MakePolygon(ST_GeomFromText(
-                'LINESTRING(%(left)s %(top)s %(halfz)s, %(right)s %(top)s %(halfz)s,
-                            %(right)s %(bottom)s %(halfz)s, %(left)s %(bottom)s %(halfz)s,
-                            %(left)s %(top)s %(halfz)s)')), %(halfzdiff)s)
-               AND tce.project_id = %(project_id)s
-          ) edges(edge_tc_id)
-        JOIN treenode_connector tc
-          ON (tc.id = edge_tc_id)
-        JOIN connector c
-          ON (c.id = tc.connector_id)
 
-        UNION
-
-        SELECT
-            c.id,
-            c.location_x,
-            c.location_y,
-            c.location_z,
-            c.confidence,
-            EXTRACT(EPOCH FROM c.edition_time),
-            c.user_id,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL
-        FROM (SELECT cg.id AS cg_id
-             FROM connector_geom cg
-             WHERE cg.geom && ST_MakeEnvelope(%(left)s, %(top)s, %(right)s, %(bottom)s)
-               AND floatrange(ST_ZMin(cg.geom), ST_ZMax(cg.geom), '[]') &&
-                 '[%(z1)s,%(z2)s)'::floatrange
-               AND ST_3DDWithin(cg.geom, ST_MakePolygon(ST_GeomFromText(
-                'LINESTRING(%(left)s %(top)s %(halfz)s, %(right)s %(top)s %(halfz)s,
-                            %(right)s %(bottom)s %(halfz)s, %(left)s %(bottom)s %(halfz)s,
-                            %(left)s %(top)s %(halfz)s)')), %(halfzdiff)s)
-               AND cg.project_id = %(project_id)s
-            UNION SELECT UNNEST(%(sanitized_connector_ids)s::bigint[])
-          ) geoms(geom_connector_id)
-        JOIN connector c
-          ON (geom_connector_id = c.id)
-        LIMIT %(limit)s
-        ''', params)
+        if settings.PREPARED_STATEMENTS:
+            # Use a prepared statement to get connectors
+            cursor.execute('''
+                EXECUTE get_connectors_postgis_2d(%(project_id)s,
+                    %(left)s, %(top)s, %(z1)s, %(right)s, %(bottom)s, %(z2)s,
+                    %(halfz)s, %(halfzdiff)s, %(limit)s,
+                    %(sanitized_connector_ids)s)
+            ''', params)
+        else:
+            cursor.execute(self.connector_query_psycopg, params)
 
         return list(cursor.fetchall())
 
 
 def get_provider():
     provider_key = settings.NODE_PROVIDER
-    if 'classic' == provider_key:
-        return ClassicNodeProvider()
-    elif 'postgis3d' == provider_key:
+    if 'postgis3d' == provider_key:
         return Postgis3dNodeProvider()
     elif 'postgis2d' == provider_key:
         return Postgis2dNodeProvider()

@@ -50,10 +50,6 @@ class PostGISTests(TestCase):
             'labels': False,
         }
 
-        non_postgis_nodes_r = node.node_list_tuples_query(params,
-                self.test_project_id, None, None, include_labels=False,
-                node_provider=node.ClassicNodeProvider())
-
         postgis_3d_nodes_r = node.node_list_tuples_query(params,
                 self.test_project_id, None, None, include_labels=False,
                 node_provider=node.Postgis3dNodeProvider())
@@ -65,7 +61,6 @@ class PostGISTests(TestCase):
         self.assertEqual(non_postgis_nodes_r.status_code, 200)
         self.assertEqual(postgis_3d_nodes_r.status_code, 200)
         self.assertEqual(postgis_2d_nodes_r.status_code, 200)
-        non_postgis_nodes = json.loads(non_postgis_nodes_r.content)
         postgis_3d_nodes = json.loads(postgis_3d_nodes_r.content)
         postgis_2d_nodes = json.loads(postgis_2d_nodes_r.content)
 
@@ -94,8 +89,7 @@ class PostGISTests(TestCase):
             for c in to_test[1]:
                 self.assertTrue(c in reference[1])
 
-        test_returned_nodes(non_postgis_nodes, postgis_3d_nodes)
-        test_returned_nodes(non_postgis_nodes, postgis_2d_nodes)
+        test_returned_nodes(postgis_3d_nodes, postgis_2d_nodes)
 
     def get_edges(self, cursor, tnid):
         cursor.execute("""

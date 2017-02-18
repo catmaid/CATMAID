@@ -2,6 +2,18 @@
 
 
 
+### Notes
+
+- The 'classic' node provider has been removed, use 'postgis3d' or 'postgis2d'
+  instead.
+
+- Performance of the default node query strategy (NODE_PROVIDER = 'postgis3d')
+  improves now when connection pooling is used and PREPARED_STATEMENTS = True.
+
+- Both 'postgis2d' and 'postgis3d' node providers support now prepared
+  statements for connector queries.
+
+
 ### Features and enhancements
 
 3D Viewer:
@@ -28,8 +40,8 @@ Contributors: Chris Barnes, Albert Cardona, Andrew Champion, Tom Kazimiers
 
 ### Notes
 
-- A new TREENODE_PROVIDER option can be added to settings.py, which can be used
-  to configure the way node queries are executed. Options are 'classic',
+- A new NODE_PROVIDER option can be added to settings.py, which can be used to
+  configure the way node queries are executed. Options are 'classic',
   'postgis3d' and 'postgis2d'.  Depending on your environment, 'postgis2d' might
   be fastest, but 'postgis3d' is the current default (i.e. what has been used so
   far).

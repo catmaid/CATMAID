@@ -32,6 +32,8 @@ Selection table:
 
 ### Bug fixes
 
+- Fix occasional tracing overlay resizing problem where a portion of the screen
+  would not show tracing data, but also won't update.
 
 
 ## 2017.02.16

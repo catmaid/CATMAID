@@ -2,7 +2,6 @@
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
   CATMAID,
-  OverlayLabel,
   project,
   requestQueue,
   submitterFn,
@@ -2404,7 +2403,7 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
         var node = this.nodes[nid];
         // Only add labels for nodes in current section
         if (node.shouldDisplay()) {
-          this.labels[nid] = new OverlayLabel(nid, this.paper, node.x, node.y, fontSize, m[nid], node.isVisible());
+          this.labels[nid] = new CATMAID.OverlayLabel(nid, this.paper, node.x, node.y, fontSize, m[nid], node.isVisible());
         }
       }
     }

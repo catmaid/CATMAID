@@ -2427,13 +2427,6 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
  * completionCallback at the end of this method.
  */
 SkeletonAnnotations.TracingOverlay.prototype.redraw = function(force, completionCallback) {
-  // TODO: this should also check for the size of the containing
-  // div having changed.  You can see this problem if you have
-  // another window open beside one with the tracing overlay -
-  // when you close the window, the tracing overlay window is
-  // enlarged but will have extra nodes fetched for the exposed
-  // area.
-
   var stackViewer = this.stackViewer;
 
   // Don't udpate if the stack's current section or scale wasn't changed
@@ -2499,6 +2492,13 @@ SkeletonAnnotations.TracingOverlay.prototype.redraw = function(force, completion
           stackViewBox.max.y - stackViewBox.min.y].join(' '),
       width: stackViewer.viewWidth,     // Width and height only need to be updated on
       height: stackViewer.viewHeight}); // resize.
+
+  // Update WebGL renderer dimensions if resized
+  var width = stackViewer.viewWidth;
+  var height = stackViewer.viewHeight;
+  if (width !== this.pixiLayer.renderer.width || height !== this.pixiLayer.renderer.height) {
+    this.pixiLayer.renderer.resize(width, height);
+  }
 
   if (doNotUpdate) {
     this.pixiLayer._renderIfReady();

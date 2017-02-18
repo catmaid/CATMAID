@@ -14,6 +14,9 @@ Selection table:
 - To prevent accidental sorting the new "Lock order" checkbox can be enabled.
   Clicks on the table headers will have no effect if the order is locked.
 
+- Two new action icons are added on the right of each row: move a skeleton up or
+  down in the table.
+
 
 ### Bug fixes
 

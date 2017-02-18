@@ -277,6 +277,16 @@
             WindowMaker.create('neuron-navigator', navigator);
             navigator.set_neuron_node_from_skeleton(skeletonID);
           })
+          .on("click", "td .action-moveup", this, function(e) {
+            var widget = e.data;
+            var skeletonId = rowToSkeletonID(this);
+            widget.moveSkeletonUp(skeletonId);
+          })
+          .on("click", "td .action-movedown", this, function(e) {
+            var widget = e.data;
+            var skeletonId = rowToSkeletonID(this);
+            widget.moveSkeletonDown(skeletonId);
+          })
           .on("click", "td input.action-visibility", this, function(e) {
             var table = e.data;
             var skeletonID = rowToSkeletonID(this);
@@ -571,6 +581,54 @@
       $('#selection-table-show-all-' + suffix + this.widgetID).click(this.toggleAllKeyUI.bind(this, suffix));
     }, this);
 
+    this.gui.update();
+  };
+
+  /**
+   * Move passed in skeleton up in table. Displays a warning if skeleton is not
+   * in table.
+   *
+   * @params {Number} skeletonId Skeleton to move up.
+   */
+  SelectionTable.prototype.moveSkeletonUp = function(skeletonId) {
+    var skeletonIndex = this.skeleton_ids[skeletonId];
+    if (-1 === skeletonIndex) {
+      CATMAID.warn("Skeleton not in table");
+      return;
+    }
+    if (0 === skeletonIndex) {
+      CATMAID.warn("Skeleton is already first in list");
+      return;
+    }
+    var skeleton = this.skeletons[skeletonIndex];
+    var previous = this.skeletons[skeletonIndex - 1];
+    this.skeletons[skeletonIndex - 1] = skeleton;
+    this.skeletons[skeletonIndex] = previous;
+    this.refreshSkeletonIndex();
+    this.gui.update();
+  };
+
+  /**
+   * Move passed in skeleton down in table. Displays a warning if skeleton is
+   * not in table.
+   *
+   * @params {Number} skeletonId Skeleton to move up.
+   */
+  SelectionTable.prototype.moveSkeletonDown = function(skeletonId) {
+    var skeletonIndex = this.skeleton_ids[skeletonId];
+    if (-1 === skeletonIndex) {
+      CATMAID.warn("Skeleton not in table");
+      return;
+    }
+    if ((this.skeletons.length - 1) === skeletonIndex) {
+      CATMAID.warn("Skeleton is already last in table");
+      return;
+    }
+    var skeleton = this.skeletons[skeletonIndex];
+    var next = this.skeletons[skeletonIndex + 1];
+    this.skeletons[skeletonIndex + 1] = skeleton;
+    this.skeletons[skeletonIndex] = next;
+    this.refreshSkeletonIndex();
     this.gui.update();
   };
 
@@ -1204,7 +1262,11 @@
               '<span class="ui-icon ui-icon-info action-info" alt="Info" ' +
               'title="Open skeleton information"></span>' +
               '<span class="ui-icon ui-icon-folder-collapsed action-navigator" ' +
-              'alt="Navigator" title="Open neuron navigator for skeleton"></span>';
+              'alt="Navigator" title="Open neuron navigator for skeleton"></span>' +
+              '<span class="ui-icon ui-icon-triangle-1-n action-moveup" ' +
+              'alt="Move up" title="Move skeleton up in list"></span>' +
+              '<span class="ui-icon ui-icon-triangle-1-s action-movedown" ' +
+              'alt="Move down" title="Move skeleton down in list"></span>';
           }
         }
       ],
@@ -1373,15 +1435,23 @@
   SelectionTable.prototype.sort = function(sortingFn, update) {
     this.skeletons.sort(sortingFn);
 
+    this.refreshSkeletonIndex();
+
+    if (update) {
+      this.gui.update();
+    }
+  };
+
+
+  /**
+   * Refresh index of skeletons -> skeletons array index.
+   */
+  SelectionTable.prototype.refreshSkeletonIndex = function() {
     // Refresh indices
     this.skeleton_ids = this.skeletons.reduce(function(o, sk, i) {
       o[sk.id] = i;
       return o;
     }, {});
-
-    if (update) {
-      this.gui.update();
-    }
   };
 
   /**

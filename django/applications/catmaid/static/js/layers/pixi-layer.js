@@ -338,6 +338,17 @@
   };
 
   /**
+   * Handle a resize event by updating the renderer size if necessary.
+   *
+   * @param  {number} width  New visible width of the layer in pixels.
+   * @param  {number} height New visible height of the layer in pixels.
+   */
+  PixiLayer.prototype.resize = function (width, height) {
+    if (width !== this.renderer.width || height !== this.renderer.height)
+      this.renderer.resize(width, height);
+  };
+
+  /**
    * Set opacity in the range from 0 to 1.
    * @param {number} val New opacity.
    */

@@ -262,8 +262,7 @@
 
   /** @inheritdoc */
   PixiTileLayer.prototype.resize = function (width, height) {
-    if (width !== this.renderer.width || height !== this.renderer.height)
-      this.renderer.resize(width, height);
+    CATMAID.PixiLayer.prototype.resize.call(this, width, height);
     CATMAID.TileLayer.prototype.resize.call(this, width, height);
   };
 

@@ -165,7 +165,12 @@
 
   CircuitGraphPlot.prototype.getSkeletonModel = function(skeleton_id) {
     for (var i=0; i<this.models.length; ++i) {
-      if (skeleton_id === this.models[i].id) return this.models[i].clone();
+      var modelSet = this.models[i];
+      for (var j=0; j<modelSet.length; ++j) {
+        if (skeleton_id === modelSet[j].id) {
+          return modelSet[j].clone();
+        }
+      }
     }
     return null;
   };

@@ -19,7 +19,7 @@ Markdown==2.6.2
 matplotlib==1.4.0; platform_python_implementation != 'PyPy'
 mock==1.0.1
 networkx==1.7
-numpy==0.10.1; platform_python_implementation != 'PyPy'
+numpy==1.10.1; platform_python_implementation != 'PyPy'
 git+https://bitbucket.org/pypy/numpy.git#egg=numpy; platform_python_implementation == 'PyPy'
 pgmagick==0.6.2; platform_python_implementation != 'PyPy'
 pillow==3.0.0; platform_python_implementation != 'PyPy'

@@ -195,6 +195,29 @@
     this.pca = null;
   };
 
+  CircuitGraphPlot.prototype.removeSkeletons = function(skeletonIds) {
+    var removed = {};
+    skeletonIds.forEach(function(skid) {
+      var nSkid = parseInt(skid, 10);
+      var idx = this.ids.indexOf(nSkid);
+      // Remove model
+      if (-1 !== idx) {
+        var models = this.models[idx];
+        for (var i=0; i<models.length; ++i) {
+          removed[skid] = models[i];
+        }
+        this.ids.splice(idx, 1);
+        this.models.splice(idx, 1);
+        this.names.splice(idx, 1);
+      }
+    }, this);
+
+    if (!CATMAID.tools.isEmpty(removed)) {
+      this.trigger(this.EVENT_MODELS_REMOVED, removed);
+      this.update();
+    }
+  };
+
   CircuitGraphPlot.prototype.append = function(models) {
     // Update names and colors when already present, or remove when deselected
     var skeleton_ids = {};

@@ -58,7 +58,6 @@ class PostGISTests(TestCase):
                 self.test_project_id, None, None, include_labels=False,
                 node_provider=node.Postgis2dNodeProvider())
 
-        self.assertEqual(non_postgis_nodes_r.status_code, 200)
         self.assertEqual(postgis_3d_nodes_r.status_code, 200)
         self.assertEqual(postgis_2d_nodes_r.status_code, 200)
         postgis_3d_nodes = json.loads(postgis_3d_nodes_r.content)

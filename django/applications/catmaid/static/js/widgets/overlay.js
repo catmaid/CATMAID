@@ -2493,9 +2493,6 @@ SkeletonAnnotations.TracingOverlay.prototype.redraw = function(force, completion
       width: stackViewer.viewWidth,     // Width and height only need to be updated on
       height: stackViewer.viewHeight}); // resize.
 
-  // Update WebGL renderer dimensions if resized
-  this.pixiLayer.resize(stackViewer.viewWidth, stackViewer.viewHeight);
-
   if (doNotUpdate) {
     this.pixiLayer._renderIfReady();
     if (typeof completionCallback !== "undefined") {

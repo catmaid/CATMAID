@@ -45,6 +45,7 @@
   };
 
   TracingLayer.prototype.resize = function (width, height) {
+    CATMAID.PixiLayer.prototype.resize.call(this, width, height);
     this.tracingOverlay.redraw();
   };
 

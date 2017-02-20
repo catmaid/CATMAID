@@ -4,6 +4,7 @@ language: python
 cache: pip
 python:
   - "2.7"
+  - "pypy"
 env:
   global:
     - SLIMERJSLAUNCHER=$(which firefox) DISPLAY=:99.0 PATH=$TRAVIS_BUILD_DIR/slimerjs:$PATH TMPDIR=$TRAVIS_BUILD_DIR/tmp

@@ -218,13 +218,13 @@ class TransactionLogTests(TransactionTestCase):
         # Test locaton of original node with original transaction
         txid_locaton = self.get_location(txid, exec_time, label)
 
-        self.assertEqual(5.5, txid_locaton['x'])
-        self.assertEqual(10.5, txid_locaton['y'])
-        self.assertEqual(15.5, txid_locaton['z'])
+        self.assertAlmostEqual(5.5, txid_locaton['x'], 5)
+        self.assertAlmostEqual(10.5, txid_locaton['y'], 5)
+        self.assertAlmostEqual(15.5, txid_locaton['z'], 5)
 
         # Test locaton of updated node with new transaction
         txid_locaton_2 = self.get_location(txid_2, exec_time_2, label_2)
 
-        self.assertEqual(6.2, txid_locaton_2['x'])
-        self.assertEqual(11.2, txid_locaton_2['y'])
-        self.assertEqual(16.2, txid_locaton_2['z'])
+        self.assertAlmostEqual(6.2, txid_locaton_2['x'], 5)
+        self.assertAlmostEqual(11.2, txid_locaton_2['y'], 5)
+        self.assertAlmostEqual(16.2, txid_locaton_2['z'], 5)

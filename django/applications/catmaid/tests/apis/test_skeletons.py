@@ -1,5 +1,6 @@
 import json
 import re
+import platform
 import StringIO
 
 from django.shortcuts import get_object_or_404
@@ -10,6 +11,11 @@ from catmaid.models import ReviewerWhitelist
 
 from .common import CatmaidApiTestCase
 
+from unittest import skipIf
+
+# Some skeleton back-end functionality is not available if PyPy is used. This
+# variable is used to skip the respective tests (which otherwise would fail).
+run_with_pypy = platform.python_implementation() == 'PyPy'
 
 class SkeletonsApiTests(CatmaidApiTestCase):
     def compare_swc_data(self, s1, s2):
@@ -528,8 +534,12 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         # Also check response length to be sure there were no duplicates.
         self.assertEqual(len(expected_result), len(parsed_response))
 
-
+    @skipIf(run_with_pypy, "Synapse clustering test disabled in PyPy")
     def test_skeleton_graph(self):
+        """This tests compartment graph features, among them synapse clustering.
+        This is not supported with PyPy, which is why this test is skipped if
+        PyPy is in use.
+        """
         self.fake_authentication()
 
         skeleton_ids = [235, 361, 373]

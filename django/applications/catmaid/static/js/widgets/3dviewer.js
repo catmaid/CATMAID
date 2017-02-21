@@ -2372,7 +2372,7 @@
     var majorDimSeq = ['min', 'max', 'min', 'max'],
         minorDimSeq = ['min', 'min', 'max', 'max'],
         planeDimSeq = minorDimSeq,
-        seq, pWidth, pHeight, pTileWidth, pTileHeight;
+        seq, pWidth, pHeight;
 
     switch (stack.orientation) {
       case CATMAID.Stack.ORIENTATION_XY:
@@ -2381,8 +2381,6 @@
         seq = {x: majorDimSeq, y: minorDimSeq, z: planeDimSeq};
         pWidth = plane.max.x - plane.min.x;
         pHeight = plane.max.y - plane.min.y;
-        pTileWidth = tileSource.tileWidth * stack.resolution.x;
-        pTileHeight = tileSource.tileHeight * stack.resolution.y;
         break;
       case CATMAID.Stack.ORIENTATION_XZ:
         pDepth = plane.max.y - plane.min.y;
@@ -2390,8 +2388,6 @@
         seq = {x: majorDimSeq, y: planeDimSeq, z: minorDimSeq};
         pWidth = plane.max.x - plane.min.x;
         pHeight = plane.max.z - plane.min.z;
-        pTileWidth = tileSource.tileWidth * stack.resolution.x;
-        pTileHeight = tileSource.tileHeight * stack.resolution.z;
         break;
       case CATMAID.Stack.ORIENTATION_ZY:
         pDepth = plane.max.x - plane.min.x;
@@ -2399,12 +2395,26 @@
         seq = {x: planeDimSeq, y: minorDimSeq, z: majorDimSeq};
         pWidth = plane.max.z - plane.min.z;
         pHeight = plane.max.y - plane.min.y;
-        pTileWidth = tileSource.tileWidth * stack.resolution.z;
-        pTileHeight = tileSource.tileHeight * stack.resolution.y;
         break;
     }
 
-    if (tileZoomLevel) {
+    if (tileSource && undefined !== tileZoomLevel) {
+      var pTileWidth, pTileHeight;
+      switch (stack.orientation) {
+        case CATMAID.Stack.ORIENTATION_XY:
+          pTileWidth = tileSource.tileWidth * stack.resolution.x;
+          pTileHeight = tileSource.tileHeight * stack.resolution.y;
+          break;
+        case CATMAID.Stack.ORIENTATION_XZ:
+          pTileWidth = tileSource.tileWidth * stack.resolution.x;
+          pTileHeight = tileSource.tileHeight * stack.resolution.z;
+          break;
+        case CATMAID.Stack.ORIENTATION_ZY:
+          pTileWidth = tileSource.tileWidth * stack.resolution.z;
+          pTileHeight = tileSource.tileHeight * stack.resolution.y;
+          break;
+      }
+
       // Scale project tile width to the requested zoom level
       var scale = Math.pow(2, tileZoomLevel);
       pTileWidth *= scale;

@@ -44,6 +44,8 @@ Selection table:
 - Fix occasional tracing overlay resizing problem where a portion of the screen
   would not show tracing data, but also won't update.
 
+- 3D viewer: broken sections can now be displayed again.
+
 
 ## 2017.02.16
 

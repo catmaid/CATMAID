@@ -46,6 +46,9 @@ Selection table:
 
 - 3D viewer: broken sections can now be displayed again.
 
+- 3D viewer: the Z plane with stack images will now render correctly for the
+  default maximum zoom level.
+
 
 ## 2017.02.16
 

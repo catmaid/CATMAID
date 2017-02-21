@@ -2491,7 +2491,7 @@
           uvs1[2].set(hTileFrac, 1);
           uvs2[0].set(0, 1 - vTileFrac);
           uvs2[1].set(hTileFrac, 1 - vTileFrac);
-          uvs2[2].set(hTileFrac, vTileFrac);
+          uvs2[2].set(hTileFrac, 1);
         }
       }
       geometry.verticesNeedUpdate = true;

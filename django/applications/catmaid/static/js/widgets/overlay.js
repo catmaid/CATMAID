@@ -2975,15 +2975,8 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
         'POST',
         params,
         function(json) {
-          if (json.needs_setup) {
-            CATMAID.TracingTool.display_tracing_setup_dialog(project.id,
-                json.has_needed_permissions, json.missing_classes,
-                json.missing_relations, json.missing_classinstances,
-                json.initialize);
-          } else {
-            self.nodeListCache.set(paramsKey, json);
-            success(json);
-          }
+          self.nodeListCache.set(paramsKey, json);
+          success(json);
         },
         false,
         true,

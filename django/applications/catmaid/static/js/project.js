@@ -209,18 +209,29 @@
 
       self.hideToolboxes();
 
-      if ( !self.focusedStackViewer && stackViewers.length > 0 ) {
-        self.setFocusedStackViewer( stackViewers[ 0 ] );
+      var prepare;
+      if (CATMAID.tools.isFn(newTool.init)) {
+        prepare = newTool.init();
+      } else {
+        prepare = Promise.resolve();
       }
 
-      self.focusedStackViewer.setTool( tool );
+      prepare
+        .then(function() {
+          if ( !self.focusedStackViewer && stackViewers.length > 0 ) {
+            self.setFocusedStackViewer( stackViewers[ 0 ] );
+          }
 
-      if ( self.focusedStackViewer ) {
-        if (!self.focusedStackViewer.getWindow().hasFocus())
-          self.focusedStackViewer.getWindow().focus();
-      }
-      window.onresize();
-      WindowMaker.setKeyShortcuts();
+          self.focusedStackViewer.setTool( tool );
+
+          if ( self.focusedStackViewer ) {
+            if (!self.focusedStackViewer.getWindow().hasFocus())
+              self.focusedStackViewer.getWindow().focus();
+          }
+          window.onresize();
+          WindowMaker.setKeyShortcuts();
+        })
+        .catch(CATMAID.handleError);
     };
 
     this.getTool = function( ) {

@@ -3,11 +3,12 @@ from __future__ import unicode_literals
 
 import json
 
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 
-from catmaid.models import Class, ClassInstance, Relation, UserRole
+from catmaid.apps import get_system_user
 from catmaid.control.authentication import requires_user_role
 from catmaid.control.common import get_class_to_id_map, get_relation_to_id_map
+from catmaid.models import Class, ClassInstance, Relation, UserRole
 
 
 # All classes needed by the tracing system alongside their
@@ -101,10 +102,17 @@ def rebuild_tracing_setup_view(request, project_id=None):
     all_good = check_tracing_setup(project_id)
     return HttpResponse(json.dumps({'all_good': all_good}))
 
-def setup_tracing(project_id, user):
+@requires_user_role([UserRole.Browse])
+def validate_tracing_setup(request, project_id):
+    setup_tracing(project_id)
+    return JsonResponse({'success': True})
+
+def setup_tracing(project_id, user=None):
     """ Tests which of the needed classes and relations is missing
     from the project's semantic space and adds those.
     """
+    if not user:
+        user = get_system_user()
     # Remember available classes
     available_classes = {}
 

@@ -1314,13 +1314,19 @@
       self.prototype.redraw();
     };
 
-    // Initialize a tracing layer in all available stack viewers, but let
-    // register() take care of bindings.
-    project.getStackViewers().forEach(function(s) {
-      var layer = prepareStackViewer(s);
-      layer.tracingOverlay.updateNodes(layer.forceRedraw.bind(layer));
-      // s.getView().appendChild(layer.tracingOverlay.view);
-    }, this);
+    this.init = function() {
+      // Make sure all required initial data is available.
+      return  CATMAID.fetch(project.id + '/tracing/setup/validate')
+        .then(function() {
+          // Initialize a tracing layer in all available stack viewers, but let
+          // register() take care of bindings.
+          project.getStackViewers().forEach(function(s) {
+            var layer = prepareStackViewer(s);
+            layer.tracingOverlay.updateNodes(layer.forceRedraw.bind(layer));
+            // s.getView().appendChild(layer.tracingOverlay.view);
+          }, this);
+        });
+    };
 
     // Listen to creation and removal of new stack views in current project.
     project.on(CATMAID.Project.EVENT_STACKVIEW_ADDED, prepareStackViewer, this);
@@ -1537,109 +1543,6 @@
     }),
 
   ];
-
-  /**
-   * Show dialog regarding the set-up of the tracing tool. If a user
-   * has then needed permission, (s)he is offered to let CATMAID set
-   * tracing up for the current project. Regardless of the result, the
-   * navigator tool is loaded afterwards. It provides a safe fallback
-   * on failure and forces a tool reload on success.
-   */
-  TracingTool.display_tracing_setup_dialog = function(pid, has_needed_permissions,
-      missing_classes, missing_relations, missing_classinstances, initialize) {
-    var dialog = document.createElement('div');
-    dialog.setAttribute("id", "dialog-confirm");
-    dialog.setAttribute("title", "Update required");
-    var msg = document.createElement('p');
-    dialog.appendChild(msg);
-    var msg_text;
-    // If no expected entity is available, let the user know that the project
-    // isn't set up for tracing. Otherwise, be more clear that an update is
-    // required.
-    if (initialize) {
-      msg_text = "The tracing system isn't set up to work with this project" +
-        ", yet. It needs certain classes and relations which haven't been found. ";
-    } else {
-      msg_text = "An update of this project's tracing configuration is required. " +
-        "No change will be made to the tracing data itself. ";
-    }
-    if (missing_classes.length > 0) {
-      msg_text = msg_text + "The missing classes are: " +
-         missing_classes.join(", ") + ". ";
-    }
-    if (missing_relations.length > 0) {
-      msg_text = msg_text + "The missing relations are: " +
-         missing_relations.join(", ") + ". ";
-    }
-    if (missing_classinstances.length > 0) {
-      msg_text = msg_text + "The missing class instances are: " +
-         missing_classinstances.join(", ") + ". ";
-    }
-
-    var buttons;
-    if (has_needed_permissions) {
-      if (initialize) {
-        msg_text = msg_text + "Do you want CATMAID to create the missing bits " +
-          "and initialize tracing support for this project?";
-      } else {
-        msg_text = msg_text + "Do you want to continue and update this project?";
-      }
-      msg.innerHTML = msg_text;
-      buttons = {
-        "Yes": function() {
-            $(this).dialog("close");
-            // Call setup method for this project
-            requestQueue.register(django_url + pid + '/tracing/setup/rebuild',
-              'GET', {}, function(status, data, text) {
-                if (status !== 200) {
-                  alert("Setting up tracing failed with HTTP status code: "+status);
-                } else {
-                  var json = JSON.parse(data);
-                  project.setTool( new CATMAID.Navigator() );
-                  if (json.error) {
-                    alert("An error was returned when trying to set up tracing: " +
-                      json.error);
-                  } else if (json.all_good) {
-                    alert("Tracing has been set up successfully for the current " +
-                      "project. Please reload the tracing tool.");
-                  } else {
-                    alert("An unidentified error happened while trying to set " +
-                      "up tracing.");
-                  }
-                }
-              });
-        },
-        "No": function() {
-            project.setTool( new CATMAID.Navigator() );
-            $(this).dialog("close");
-          }
-        };
-    } else {
-        if (initialize) {
-          msg_text = msg_text + "Unfortunately, you don't have " +
-            "needed permissions to add the missing bits and intitialize " +
-            "tracing for this project. Please contact an administrator.";
-        } else {
-          msg_text = msg_text + "Unfortunately, you don't have the " +
-            "needed permissions to update this project. Please contact " +
-            "an administrator";
-        }
-        msg.innerHTML = msg_text;
-        buttons = {
-          "Ok": function() {
-              project.setTool( new CATMAID.Navigator() );
-              $(this).dialog("close");
-            }
-          };
-    }
-    // The dialog is inserted into the document and shown by the following call:
-    $(dialog).dialog({
-      width: 400,
-      height: 'auto',
-      modal: true,
-      buttons: buttons,
-    });
-  };
 
   // Make tracing tool in CATMAID namespace
   CATMAID.TracingTool = TracingTool;

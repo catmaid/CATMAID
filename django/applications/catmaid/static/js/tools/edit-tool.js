@@ -83,30 +83,7 @@
           buttonID: 'edit_button_trace',
           buttonName: 'trace',
           run: function (e) {
-            // Test if neuron tracing is set up properly for the current project.
-            // Only load the tracing tool if this is the case.
-            requestQueue.register(django_url + project.id + "/tracing/setup/test", "GET",
-                null, function (status, text) {
-                  var data;
-                  if (status !== 200) {
-                    alert("Testing the tracing setup failed with HTTP status code: "
-                      + status);
-                  } else {
-                    data = JSON.parse(text);
-                    if (data.error) {
-                      alert("An error was returned when trying to test the tracing setup: "
-                        + data.error);
-                    } else if (data.needs_setup) {
-                      CATMAID.TracingTool.display_tracing_setup_dialog(project.id,
-                        data.has_needed_permissions, data.missing_classes,
-                        data.missing_relations, data.missing_classinstances,
-                        data.initialize);
-                    } else {
-                      project.setTool( new CATMAID.TracingTool() );
-                    }
-                  }
-            });
-            return true;
+            project.setTool( new CATMAID.TracingTool() );
           }
         }));
     }

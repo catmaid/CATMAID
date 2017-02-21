@@ -969,22 +969,14 @@ class UserProfile(models.Model):
     See: http://digitaldreamer.net/blog/2010/12/8/custom-user-profile-and-extend-user-admin-django/
     """
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    independent_ontology_workspace_is_default = models.BooleanField(
-        default=settings.PROFILE_INDEPENDENT_ONTOLOGY_WORKSPACE_IS_DEFAULT)
-    show_text_label_tool = models.BooleanField(
-        default=settings.PROFILE_SHOW_TEXT_LABEL_TOOL)
-    show_tagging_tool = models.BooleanField(
-        default=settings.PROFILE_SHOW_TAGGING_TOOL)
-    show_cropping_tool = models.BooleanField(
-        default=settings.PROFILE_SHOW_CROPPING_TOOL)
-    show_segmentation_tool = models.BooleanField(
-        default=settings.PROFILE_SHOW_SEGMENTATION_TOOL)
-    show_tracing_tool = models.BooleanField(
-        default=settings.PROFILE_SHOW_TRACING_TOOL)
-    show_ontology_tool = models.BooleanField(
-        default=settings.PROFILE_SHOW_ONTOLOGY_TOOL)
-    show_roi_tool = models.BooleanField(
-        default=settings.PROFILE_SHOW_ROI_TOOL)
+    independent_ontology_workspace_is_default = models.BooleanField(default=False)
+    show_text_label_tool = models.BooleanField(default=False)
+    show_tagging_tool = models.BooleanField(default=False)
+    show_cropping_tool = models.BooleanField(default=False)
+    show_segmentation_tool = models.BooleanField(default=False)
+    show_tracing_tool = models.BooleanField(default=False)
+    show_ontology_tool = models.BooleanField(default=False)
+    show_roi_tool = models.BooleanField(default=False)
     color = RGBAField(default=distinct_user_color)
 
     def __unicode__(self):
@@ -1023,6 +1015,17 @@ def create_user_profile(sender, instance, created, **kwargs):
     if created:
         profile = UserProfile()
         profile.user = instance
+
+        profile.independent_ontology_workspace_is_default = \
+                settings.PROFILE_INDEPENDENT_ONTOLOGY_WORKSPACE_IS_DEFAULT
+        profile.show_text_label_tool = settings.PROFILE_SHOW_TEXT_LABEL_TOOL
+        profile.show_tagging_tool = settings.PROFILE_SHOW_TAGGING_TOOL
+        profile.show_cropping_tool = settings.PROFILE_SHOW_CROPPING_TOOL
+        profile.show_segmentation_tool = settings.PROFILE_SHOW_SEGMENTATION_TOOL
+        profile.show_tracing_tool = settings.PROFILE_SHOW_TRACING_TOOL
+        profile.show_ontology_tool = settings.PROFILE_SHOW_ONTOLOGY_TOOL
+        profile.show_roi_tool = settings.PROFILE_SHOW_ROI_TOOL
+
         profile.save()
 
 # Connect the User model's post save signal to profile creation

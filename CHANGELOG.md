@@ -42,6 +42,9 @@ Miscellaneous:
 
 - Tracing tool: the "Show labels" setting is now remembered across sessions.
 
+- Right clicking on a stack viewer won't bring up the browser context menu
+  anymore. Instead, the right mouse button can now be used for panning, too.
+
 
 ### Bug fixes
 

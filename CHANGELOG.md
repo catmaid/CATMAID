@@ -38,6 +38,10 @@ Selection table:
 - Two new action icons are added on the right of each row: move a skeleton up or
   down in the table.
 
+Miscellaneous:
+
+- Tracing tool: the "Show labels" setting is now remembered across sessions.
+
 
 ### Bug fixes
 

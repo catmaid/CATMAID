@@ -1652,7 +1652,6 @@ SkeletonAnnotations.TracingOverlay.prototype.insertNodeInActiveSkeleton = functi
  * Remove and hide all node labels.
  */
 SkeletonAnnotations.TracingOverlay.prototype.hideLabels = function() {
-  document.getElementById( "trace_button_togglelabels" ).className = "button";
   this.removeLabels();
   this.show_labels = false;
 };
@@ -1681,9 +1680,7 @@ SkeletonAnnotations.TracingOverlay.prototype.getLabelStatus = function() {
  */
 SkeletonAnnotations.TracingOverlay.prototype.showLabels = function() {
   this.show_labels = true;
-  this.updateNodes(function() {
-    document.getElementById( "trace_button_togglelabels" ).className = "button_active";
-  });
+  this.updateNodes();
 };
 
 /**

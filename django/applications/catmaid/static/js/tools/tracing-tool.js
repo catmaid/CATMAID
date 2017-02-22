@@ -17,8 +17,6 @@
     var activeStackViewer = null;
     // Map stacks to its mouse handlers
     var bindings = new Map();
-    // Whether node labels should be shown
-    var show_labels = false;
 
     /**
      * Set postAction option of a command to update of the active tracing layer,
@@ -189,7 +187,7 @@
 
       if (!layer) {
         layer = new CATMAID.TracingLayer(stackViewer, {
-          show_labels: show_labels
+          show_labels: CATMAID.TracingTool.Settings.session.show_node_labels
         });
         stackViewer.addLayer(layerName, layer);
       }
@@ -255,6 +253,9 @@
       // Register stack viewer with prototype, after the mouse catcher has been set.
       // This attaches mouse handlers to the view.
       self.prototype.register(parentStackViewer, "edit_button_trace");
+
+      document.getElementById( "trace_button_togglelabels" ).className =
+          CATMAID.TracingTool.Settings.session.show_node_labels ? "button_active" : "button";
 
       // Try to get existing mouse bindings for this layer
       if (!bindings.has(parentStackViewer)) createMouseBindings(parentStackViewer, layer, view);
@@ -809,11 +810,18 @@
       run: function (e) {
         if (!CATMAID.mayView())
           return false;
-        show_labels = !show_labels;
+
+        var settings = CATMAID.TracingTool.Settings;
+        var showLabels = !settings.session.show_node_labels;
+        settings.set('show_node_labels', showLabels, 'session');
         getTracingLayers().forEach(function(layer) {
-          if (show_labels) layer.tracingOverlay.showLabels();
+          if (showLabels) layer.tracingOverlay.showLabels();
           else layer.tracingOverlay.hideLabels();
         });
+
+        document.getElementById( "trace_button_togglelabels" ).className =
+            showLabels ? "button_active" : "button";
+
         return true;
       }
     }));
@@ -1747,6 +1755,9 @@
         version: 0,
         entries: {
           invert_virtual_node_ignore_modifier: {
+            default: false
+          },
+          show_node_labels: {
             default: false
           }
         },

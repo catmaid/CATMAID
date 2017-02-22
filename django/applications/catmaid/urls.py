@@ -19,7 +19,7 @@ from catmaid.control import (authentication, user, log, message, client, common,
         cropping, data_view, ontology, classification, notifications, roi,
         clustering, volume, flytem, dvid, useranalytics, user_evaluation,
         search, graphexport, transaction, graph2, circles, analytics, review,
-        wiringdiagram, object, treenodetable)
+        wiringdiagram, object, sampler, treenodetable)
 
 from catmaid.views import CatmaidView
 from catmaid.history import record_request_action as record_view
@@ -113,6 +113,17 @@ urlpatterns += [
 urlpatterns += [
     url(r'^(?P<project_id>\d+)/tracing/setup/rebuild$', tracing.rebuild_tracing_setup_view),
     url(r'^(?P<project_id>\d+)/tracing/setup/test$', tracing.check_tracing_setup_view),
+    url(r'^(?P<project_id>\d+)/tracing/setup/validate$', tracing.validate_tracing_setup),
+]
+
+# Reconstruction sampling
+UrlParser.explicit_root_paths |= set(['{project_id}/samplers'])
+urlpatterns += [
+    url(r'^(?P<project_id>\d+)/samplers/$', sampler.list_samplers),
+    url(r'^(?P<project_id>\d+)/samplers/add$', sampler.add_sampler),
+    url(r'^(?P<project_id>\d+)/samplers/(?P<sampler_id>\d+)/domains/$', sampler.list_sampler_domains),
+    url(r'^(?P<project_id>\d+)/samplers/domains/(?P<domain_id>\d+)/intervals$', sampler.list_domain_intervals),
+    url(r'^(?P<project_id>\d+)/samplers/states/$', sampler.list_sampler_states),
 ]
 
 # Statistics

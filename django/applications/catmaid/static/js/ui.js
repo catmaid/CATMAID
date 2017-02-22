@@ -20,6 +20,7 @@
     var shiftKeyDown = false;
     var ctrlKeyDown = false;
     var altKeyDown = false;
+    var contextMenuEnabled = false;
     var lastX = 0;
     var lastY = 0;
     var x = 0;
@@ -536,6 +537,23 @@
     {
       focusCatcher.focus();
     };
+
+
+    /**
+     * Enables or disables the browser contet menu.
+     */
+    this.setContetMenuEnabled = function(enabled) {
+      contextMenuEnabled = enabled;
+      if (enabled) {
+        eventCatcher.oncontextmenu = null;
+      } else {
+        eventCatcher.oncontextmenu = function(e) {
+          return false;
+        };
+      }
+    };
+
+    this.setContetMenuEnabled(contextMenuEnabled);
 
     window.onresize = this.onresize;
     window.onresize();

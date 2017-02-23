@@ -27,7 +27,8 @@
 
   ReconstructionSampler.prototype.init = function() {
     this.state = {
-      'intervalLength': 5000
+      'intervalLength': 5000,
+      'domainType': 'covering'
     };
     this.workflow = new CATMAID.Workflow({
       state: this.state,
@@ -400,6 +401,11 @@
    */
   var DomainWorkflowStep = function() {
     CATMAID.WorkflowStep.call(this, "Domain");
+
+    // Maps domain type IDs to domain type objects
+    this.possibleTypes = null;
+    // All available domains for the current sampler
+    this.availableDomains = [];
   };
 
   DomainWorkflowStep.prototype = Object.create(CATMAID.WorkflowStep);
@@ -410,14 +416,44 @@
   };
 
   DomainWorkflowStep.prototype.isComplete = function(state) {
-    return undefined !== state['domainId'];
+    return undefined !== state['domain'];
   };
 
-  DomainWorkflowStep.prototype.createControls = function(controls) {
-    return [];
+  DomainWorkflowStep.prototype.createControls = function(widget) {
+    var self = this;
+    return [
+      {
+        type: 'select',
+        label: 'Domain type',
+        title: 'Select type of node domains',
+        value: widget.state['domainType'],
+        entries: [{
+          title: 'Complete skeleton',
+          value: 'covering'
+        }],
+        onchange: function() {
+          widget.state['domainType'] = this.value;
+        }
+      },
+      {
+        type: 'button',
+        label: 'New domain',
+        onclick: function() {
+          self.createNewDomain(widget);
+        }
+      },
+      {
+        type: 'button',
+        label: 'Pick random domain',
+        onclick: function() {
+          self.pickRandomDomain(widget);
+        }
+      }
+    ];
   };
 
   DomainWorkflowStep.prototype.updateContent = function(content, widget) {
+    var self = this;
     var skeletonId = widget.state['skeletonId'];
     var samplerId = widget.state['samplerId'];
 
@@ -430,8 +466,255 @@
     a.onclick = function() {
       CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeletonId);
     };
-    p.appendChild(document.createTextNode(' and linked to sampler #' + samplerId));
-    p.appendChild(document.createTextNode('.'));
+    p.appendChild(document.createTextNode(' and linked to sampler #' + samplerId + '. '));
+    p.appendChild(document.createTextNode('Existing domains are listed below'));
+
+    // Create a data table with all available domains for the selected sampler
+    var table = document.createElement('table');
+    content.appendChild(table);
+
+    var datatable = $(table).DataTable({
+      dom: "lrphtip",
+      paging: true,
+      lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
+      ajax: function(data, callback, settings) {
+        CATMAID.fetch(project.id +  "/samplers/" + samplerId + "/domains/", "GET")
+          .then(function(result) {
+            self.availableDomains = result;
+            return self.ensureMetadata()
+              .then(callback.bind(window, {
+                draw: data.draw,
+                data: result
+              }));
+          })
+          .catch(CATMAID.handleError);
+      },
+      order: [],
+      columns: [
+        {
+          data: "id",
+          title: "Id",
+          orderable: false,
+          render: function(data, type, row, meta) {
+            return row.id;
+          }
+        },
+        {
+          data: "start_node_id",
+          title: "Start",
+          orderable: false,
+          render: function(data, type, row, meta) {
+            if ("display") {
+              return '<a href="#" data-action="select-node" data-node-id="' +
+                  row.start_node_id + '" >' + row.start_node_id + '</a>';
+            } else {
+              return row.start_node_id;
+            }
+          }
+        },
+        {
+          data: "user_id",
+          title: "User",
+          orderable: false,
+          render: function(data, type, row, meta) {
+            return CATMAID.User.safe_get(row.user_id).login;
+          }
+        },
+        {
+          data: "creation_time",
+          title: "Created on",
+          searchable: true,
+          orderable: false,
+          render: function(data, type, row, meta) {
+            return new Date(row.creation_time * 1000);
+          }
+        },
+        {
+          data: "edition_time",
+          title: "Last edited on",
+          orderable: false,
+          render: function(data, type, row, meta) {
+            return new Date(row.edition_time * 1000);
+          }
+        },
+        {
+          data: "type",
+          title: " Type",
+          orderable: true,
+          render: function(data, type, row, meta) {
+            var type = self.possibleTypes[row.type_id];
+            return type ? type.name : ("unknown (" + row.type_id + ")");
+          }
+        },
+        {
+          data: "parent_interval_id",
+          title: " Parent interval",
+          orderable: true,
+          render: function(data, type, row, meta) {
+            if (row.parent_interval_id) {
+              return row.parent_interval_id;
+            } else {
+              return "-";
+            }
+          }
+        },
+        {
+          title: "Action",
+          orderable: false,
+          render: function(data, type, row, meta) {
+            return '<a href="#" data-action="next">Open</a>';
+          }
+        }
+      ],
+    }).on('dblclick', 'tr', function(e) {
+      var data = datatable.row(this).data();
+      if (data) {
+        var table = $(this).closest('table');
+        var tr = $(this).closest('tr');
+        var data =  $(table).DataTable().row(tr).data();
+
+        widget.state['domain'] = data;
+        widget.workflow.advance();
+        widget.update();
+      }
+    }).on('click', 'a[data-action=select-node]', function() {
+      var nodeId = parseInt(this.dataset.nodeId, 10);
+      SkeletonAnnotations.staticMoveToAndSelectNode(nodeId);
+    }).on('click', 'a[data-action=next]', function() {
+      var table = $(this).closest('table');
+      var tr = $(this).closest('tr');
+      var data =  $(table).DataTable().row(tr).data();
+
+      widget.state['domain'] = data;
+      widget.workflow.advance();
+      widget.update();
+    });
+  };
+
+  DomainWorkflowStep.prototype.ensureMetadata = function() {
+    if (this.possibleTypes) {
+      return Promise.resolve();
+    } else {
+      var self = this;
+      return CATMAID.fetch(project.id + '/samplers/domains/types/')
+        .then(function(result) {
+          self.possibleTypes = result.reduce(function(o, dt) {
+            o[dt.id] = dt;
+            return o;
+          }, {});
+        });
+    }
+  };
+
+  DomainWorkflowStep.prototype.getTypeId = function(typeName) {
+    for (var tid in this.possibleTypes) {
+      var type = this.possibleTypes[tid];
+      if (type.name === typeName) {
+        return tid;
+      }
+    }
+
+    return null;
+  };
+
+  /**
+   * Get arbor information on a particular skeleton.
+   */
+  var getArbor = function(skeletonId) {
+    // Get nodes and tags for skeleton
+    return CATMAID.fetch(project.id + '/' + skeletonId + '/1/0/1/compact-arbor', 'POST')
+      .then(function(result) {
+        var ap = new CATMAID.ArborParser();
+        ap.tree(result[0]);
+
+        return {
+          arbor: ap.arbor,
+          positions: ap.positions,
+          tags: result[2]
+        };
+      });
+  };
+
+  DomainWorkflowStep.prototype.domainFactories = {
+    'covering': {
+      makeDomains: function(skeletonId) {
+        return getArbor(skeletonId)
+          .then(function(arbor) {
+            return [{
+              startNodeId: arbor.arbor.root,
+              endNodeIds: arbor.arbor.findEndNodes()
+            }];
+          });
+      }
+    }
+  };
+
+  DomainWorkflowStep.prototype.createNewDomain = function(widget) {
+    var skeletonId = widget.state['skeletonId'];
+    if (!skeletonId) {
+      CATMAID.warn("Can't create domain without skeleton ID");
+      return;
+    }
+    var samplerId = widget.state['samplerId'];
+    if (!samplerId) {
+      CATMAID.warn("Can't create domain without sampler");
+      return;
+    }
+    var domainType = widget.state['domainType'];
+    if (!domainType) {
+      CATMAID.warn("Can't create domain without type");
+      return;
+    }
+    var domainFactory = this.domainFactories[domainType];
+    if (!domainFactory) {
+      CATMAID.warn("Domain type unsupported: " + domainType);
+      return;
+    }
+
+    var self = this;
+    this.ensureMetadata()
+      .then(function() {
+        var domainTypeId = self.getTypeId(domainType);
+        if (!domainTypeId) {
+          throw new CATMAID.ValueError("Can't find domain type ID for name: " + domainType);
+        }
+        return Promise.all([domainTypeId, domainFactory.makeDomains(skeletonId)]);
+      })
+      .then(function(results) {
+        var domainTypeId = results[0];
+        var domains = results[1];
+
+        var createdDomains = [];
+        for (var i=0; i<domains.length; ++i) {
+          var domain = domains[i];
+          createdDomains.push(CATMAID.fetch(
+              project.id + '/samplers/' + samplerId + '/domains/add', 'POST', {
+                  domain_type_id: domainTypeId,
+                  start_node_id: domain.startNodeId,
+                  end_node_ids: domain.endNodeIds
+              }));
+        }
+
+        return Promise.all(createdDomains);
+      }).then(function(result) {
+        widget.update();
+    }).catch(CATMAID.handleError);
+  };
+
+  DomainWorkflowStep.prototype.pickRandomDomain = function(widget) {
+    var domains = this.availableDomains;
+    if (!domains) {
+      CATMAID.warn("No domain available");
+      return;
+    }
+
+    // For now, use uniform distribution
+    var domain = domains[Math.floor(Math.random()*domains.length)];
+
+    // Update state
+    widget.state['domain'] = domain;
+    widget.workflow.advance();
+    widget.update();
   };
 
 

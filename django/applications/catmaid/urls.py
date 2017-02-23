@@ -121,8 +121,11 @@ UrlParser.explicit_root_paths |= set(['{project_id}/samplers'])
 urlpatterns += [
     url(r'^(?P<project_id>\d+)/samplers/$', sampler.list_samplers),
     url(r'^(?P<project_id>\d+)/samplers/add$', sampler.add_sampler),
-    url(r'^(?P<project_id>\d+)/samplers/(?P<sampler_id>\d+)/domains/$', sampler.list_sampler_domains),
+    url(r'^(?P<project_id>\d+)/samplers/domains/types/$', sampler.list_domain_types),
     url(r'^(?P<project_id>\d+)/samplers/domains/(?P<domain_id>\d+)/intervals$', sampler.list_domain_intervals),
+    url(r'^(?P<project_id>\d+)/samplers/(?P<sampler_id>\d+)/domains/$', sampler.list_sampler_domains),
+    url(r'^(?P<project_id>\d+)/samplers/(?P<sampler_id>\d+)/domains/add$', sampler.add_sampler_domain),
+    url(r'^(?P<project_id>\d+)/samplers/(?P<sampler_id>\d+)/domains/add-all$', sampler.add_multiple_sampler_domains),
     url(r'^(?P<project_id>\d+)/samplers/states/$', sampler.list_sampler_states),
 ]
 

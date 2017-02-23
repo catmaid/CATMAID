@@ -2,8 +2,9 @@ from django.db import connection
 from django.http import JsonResponse
 
 from catmaid.control.authentication import requires_user_role, user_can_edit
-from catmaid.models import (Sampler, SamplerDomain, SamplerInterval,
-        SamplerState, UserRole)
+from catmaid.control.common import get_request_list
+from catmaid.models import (Sampler, SamplerDomain, SamplerDomainType,
+        SamplerDomainEnd, SamplerInterval, SamplerState, UserRole)
 
 from rest_framework.decorators import api_view
 
@@ -167,8 +168,246 @@ def list_sampler_states(request, project_id):
 
 @api_view(['GET'])
 @requires_user_role([UserRole.Browse])
+def list_domain_types(request, project_id):
+    """Get a list of all available domain types.
+    ---
+    models:
+      domain_type_entity:
+        id: domain_type_entity
+        description: A sampler domain type.
+        properties:
+          id:
+            type: integer
+            description: Id of domain type
+          name:
+            type: string
+            description: The name of this domain type
+            required: true
+          description:
+            type: string
+            description: Description of domain type
+            required: true
+    type:
+      domain_types:
+        type: array
+        items:
+          $ref: domain_type_entity
+        description: Available sampler domain types
+        required: true
+    """
+    domain_types = SamplerDomainType.objects.all()
+    return JsonResponse([{
+        'id': d.id,
+        'name': d.name,
+        'description': d.description
+    } for d in domain_types], safe=False)
+
+@api_view(['GET'])
+@requires_user_role([UserRole.Browse])
 def list_sampler_domains(request, project_id, sampler_id):
-    pass
+    """Get a collection of available sampler domains.
+    ---
+    parameters:
+     - name: sampler_id
+       description: Sampler to list domains for
+       type: integer
+       paramType: form
+       required: true
+    models:
+      domain_entity:
+        id: domain_entity
+        description: A result sampler domain.
+        properties:
+          id:
+            type: integer
+            description: Id of domain
+          creation_time:
+            type: string
+            description: The point in time a domain the created
+            required: true
+          edition_time:
+            type: string
+            description: The last point in time a domain edited.
+            required: true
+          parent_interval_id:
+            type: integer
+            description: Id of a parent interval or null if there is none.
+            required: true
+          start_node_id:
+            type: integer
+            description: Treenode at which this domain starts
+            required: true
+          type_id:
+            type: integer
+            description: ID of type of the domain
+            required: true
+          user_id:
+            type: integer
+            description: User ID of domain creator.
+            required: true
+    type:
+      domains:
+        type: array
+        items:
+          $ref: domain_entity
+        description: Matching domains
+        required: true
+    """
+    sampler_id = int(sampler_id)
+    domains = SamplerDomain.objects.filter(sampler_id=sampler_id)
+
+    return JsonResponse([{
+       'id': d.id,
+       'creation_time': float(d.creation_time.strftime('%s')),
+       'edition_time': float(d.edition_time.strftime('%s')),
+       'parent_interval_id': d.parent_interval_id,
+       'start_node_id': d.start_node_id,
+       'type_id': d.domain_type_id,
+       'user_id': d.user_id,
+    } for d in domains], safe=False)
+
+
+@api_view(['POST'])
+@requires_user_role([UserRole.Annotate])
+def add_sampler_domain(request, project_id, sampler_id):
+    """Create a new domain for a sampler.
+    ---
+    parameters:
+     - name: sampler_id
+       description: Sampeler the new domain is part of
+       type: integer
+       paramType: form
+       required: true
+     - name: domain_type_id
+       description: The type of the new domain
+       type: integer
+       paramType: form
+       required: true
+     - name: start_node_id
+       description: Start node of domain
+       type: integer
+       paramType: form
+       required: true
+     - name: end_node_ids
+       description: A list of all end nodes for the new domain
+       type: array
+       items:
+         type: integer
+       paramType: form
+       required: true
+     - name: parent_interval_id
+       description: Optional parent inerval ID.
+       type: integer
+       paramType: form
+    """
+    sampler_id = int(sampler_id)
+    domain_type_id = request.POST.get('domain_type_id')
+    if domain_type_id:
+        domain_type_id = int(domain_type_id)
+    else:
+        raise ValueError("Need domain_type_id parameter")
+
+    start_node_id = request.POST.get('start_node_id')
+    if start_node_id:
+        start_node_id = int(start_node_id)
+    else:
+        raise ValueError("Need start_node_id parameter")
+
+    end_node_ids = get_request_list(request.POST, 'end_node_ids', map_fn=int)
+    if not end_node_ids:
+        raise ValueError("Need at least one valid end point")
+
+    parent_interval_id = request.POST.get('parent_interval_id')
+    if parent_interval_id:
+        parent_interval_id = int(parent_interval_id)
+
+    domain = SamplerDomain.objects.create(
+        sampler_id=sampler_id,
+        start_node_id=start_node_id,
+        domain_type_id=domain_type_id,
+        parent_interval_id=parent_interval_id,
+        user=request.user,
+        project_id=project_id)
+
+    domain_ends = []
+    for end_node_id in end_node_ids:
+        domain_end = SamplerDomainEnd.objects.create(
+            domain=domain, end_node_id=end_node_id)
+        domain_ends.append(domain_end)
+
+    return JsonResponse({
+        "id": domain.id,
+        "sampler_id": domain.sampler_id,
+        "domain_type_id": domain.domain_type_id,
+        "parent_interval": domain.parent_interval_id,
+        "start_node_id": domain.start_node_id,
+        "user_id": domain.user_id,
+        "project_id": domain.project_id,
+        "ends": [{
+            "id": e.id,
+            "node_id": e.end_node_id
+        } for e in domain_ends]
+    })
+
+
+@api_view(['POST'])
+@requires_user_role([UserRole.Annotate])
+def add_multiple_sampler_domains(request, project_id, sampler_id):
+    """Create a new domain for a sampler.
+    ---
+    parameters:
+     - name: domains
+       description: List of domains to add
+       type: array:
+       items:
+         type: string
+       required: true
+    """
+    sampler_id = int(sampler_id)
+    domains = get_request_list(request.POST, 'domains', map_fn)
+
+    result_domains = []
+    for domain in domains:
+        domain_type_id = domain.get('domain_type_id')
+        if domain_type_id:
+            domain_type_id = int(domain_type_id)
+        else:
+            raise ValueError("Need domain_type_id parameter")
+
+        start_node_id = domain.get('start_node_id')
+        if start_node_id:
+            start_node_id = int(start_node_id)
+        else:
+            raise ValueError("Need start_node_id parameter")
+
+        end_node_ids = get_request_list(domain, 'end_node_ids', map_fn=int)
+        if not end_node_ids:
+            raise ValueError("Need at least one valid end point")
+
+        parent_interval_id = domain.get('parent_interval_id')
+        if parent_interval_id:
+            parent_interval_id = int(parent_interval_id)
+
+        d = SamplerDomain.objects.create(
+            sampler_id=sampler_id,
+            start_node=start_node,
+            domain_type=domain_type,
+            parent_interval_id=parent_interval_id,
+            user=request.user,
+            project_id=project_id)
+
+        result_domains.append({
+            "id": d.id,
+            "sampler_id": d.sampler_id,
+            "d_type_id": d.domain_type_id,
+            "parent_interval": d.parent_interval_id,
+            "start_node_id": d.start_node_id,
+            "user_id": d.user_id,
+            "project_id": d.project_id
+        })
+
+    return JsonResponse(result_domains, safe=False)
+
 
 @api_view(['GET'])
 @requires_user_role([UserRole.Browse])

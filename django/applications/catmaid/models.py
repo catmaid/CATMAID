@@ -1055,13 +1055,22 @@ class SamplerDomainType(models.Model):
 
 @python_2_unicode_compatible
 class SamplerDomain(UserFocusedModel):
-    sampler = models.ForeignKey(Sampler)
+    sampler = models.ForeignKey(Sampler, on_delete=models.CASCADE)
     start_node = models.ForeignKey(Treenode, on_delete=models.CASCADE)
     domain_type = models.ForeignKey(SamplerDomainType, db_index=True, on_delete=models.CASCADE)
     parent_interval = models.ForeignKey(SamplerInterval, null=True, db_index=True, on_delete=models.CASCADE)
 
     def __str__(self):
         return "Start: {}".format(self.start_node_id)
+
+
+@python_2_unicode_compatible
+class SamplerDomainEnd(models.Model):
+    domain = models.ForeignKey(SamplerDomain, on_delete=models.CASCADE, db_index=True)
+    end_node = models.ForeignKey(Treenode, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return "End: {}".format(self.end_node_id)
 
 
 @python_2_unicode_compatible

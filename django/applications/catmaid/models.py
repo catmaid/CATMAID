@@ -1014,7 +1014,7 @@ class SamplerIntervalState(models.Model):
 
 @python_2_unicode_compatible
 class SamplerInterval(UserFocusedModel):
-    domain_id = models.ForeignKey('SamplerDomain', db_index=True, on_delete=models.CASCADE)
+    domain = models.ForeignKey('SamplerDomain', db_index=True, on_delete=models.CASCADE)
     interval_state = models.ForeignKey(SamplerIntervalState, db_index=True, on_delete=models.CASCADE)
     start_node = models.ForeignKey(Treenode, on_delete=models.CASCADE,
             related_name="sampler_interval_start_node_set")

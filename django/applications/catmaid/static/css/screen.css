@@ -1238,7 +1238,7 @@ img.missing-image:before {
 }
 
 .table-widget p {
-  margin: 0;
+  margin: 1em 0em 1em 0em;
 }
 
 .synapse-fractions svg {

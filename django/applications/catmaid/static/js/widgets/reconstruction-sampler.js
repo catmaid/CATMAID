@@ -256,7 +256,7 @@
                       draw: data.draw,
                       data: result
                     }))
-                    .catch(CATMAID(handleError));
+                    .catch(CATMAID.handleError);
                 });
           })
           .catch(CATMAID.handleError);
@@ -412,7 +412,7 @@
   DomainWorkflowStep.prototype.constructor = CATMAID.WorkflowStep;
 
   DomainWorkflowStep.prototype.activate = function(state) {
-
+    state['arbor'] = undefined;
   };
 
   DomainWorkflowStep.prototype.isComplete = function(state) {
@@ -640,10 +640,15 @@
       makeDomains: function(skeletonId) {
         return getArbor(skeletonId)
           .then(function(arbor) {
-            return [{
-              startNodeId: arbor.arbor.root,
-              endNodeIds: arbor.arbor.findEndNodes()
-            }];
+            return {
+              domains: [{
+                startNodeId: arbor.arbor.root,
+                endNodeIds: arbor.arbor.findEndNodes()
+              }],
+              cache: {
+                arbor: arbor
+              }
+            };
           });
       }
     }
@@ -682,7 +687,16 @@
       })
       .then(function(results) {
         var domainTypeId = results[0];
-        var domains = results[1];
+        var domains = results[1].domains;
+        var cache = results[1].cache;
+
+        if (cache) {
+          // This allows to cache e.g. Arbor instances and other potentially
+          // expensive information.
+          for (var key in cache) {
+            widget.state[key] = cache[key];
+          }
+        }
 
         var createdDomains = [];
         for (var i=0; i<domains.length; ++i) {
@@ -725,6 +739,11 @@
    */
   var IntervalWorkflowStep = function() {
     CATMAID.WorkflowStep.call(this, "Interval");
+
+    // Maps interval state IDs to interval state objects
+    this.possibleStates = null;
+    // All available domains for the current domain
+    this.availableIntervals = [];
   };
 
   IntervalWorkflowStep.prototype = Object.create(CATMAID.WorkflowStep);
@@ -734,12 +753,353 @@
 
   };
 
-  IntervalWorkflowStep.prototype.createControls = function(controls) {
-    return [];
+  IntervalWorkflowStep.prototype.createControls = function(widget) {
+    var self = this;
+    return [{
+      type: 'button',
+      label: 'Create intervals for domain',
+      onclick: function() {
+        self.createNewIntervals(widget);
+      }
+    }, {
+      type: 'button',
+      label: 'Pick random untouched interval',
+      onclick: function() {
+        self.pickRandomInterval(widget);
+      }
+    }];
   };
 
   IntervalWorkflowStep.prototype.isComplete = function(state) {
-    return undefined !== state['intervalId'];
+    return undefined !== state['interval'];
+  };
+
+  IntervalWorkflowStep.prototype.updateContent = function(content, widget) {
+    var self = this;
+    var intervalLength = widget.state['intervalLength'];
+    var samplerId = widget.state['samplerId'];
+    var skeletonId = widget.state['skeletonId'];
+    var domain = widget.state['domain'];
+
+    var p = content.appendChild(document.createElement('p'));
+    p.appendChild(document.createTextNode('Each domain is sampled by intervals ' +
+        'of a certain length, which is defined by the sampler. Intervals are ' +
+        'built by walking downstream from the domain start to its end nodes, ' +
+        'cutting out intervals that are as close as possible in their length ' +
+        'to an ideal length. Except for the start and end node, all children ' +
+        'of a node are part of an interval.'));
+    var p2 = content.appendChild(document.createElement('p'));
+    p2.appendChild(document.createTextNode('To continue either select an ' +
+        'interval at random or cotinue a started one. Existing intervals are ' +
+        'listed below.'));
+
+    var name = CATMAID.NeuronNameService.getInstance().getName(skeletonId);
+    var p3 = content.appendChild(document.createElement('p'));
+    p3.appendChild(document.createTextNode('Target skeleton: '));
+    var a = p3.appendChild(document.createElement('a'));
+    a.appendChild(document.createTextNode(name));
+    a.href = '#';
+    a.onclick = function() {
+      CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeletonId);
+    };
+    p3.appendChild(document.createTextNode(' Sampler: #' + samplerId +
+        ' Domain: #' + domain.id + ' Interval length: ' + intervalLength + 'nm'));
+
+    // Create a data table with all available domains or a filtered set
+    var table = document.createElement('table');
+    content.appendChild(table);
+
+    var datatable = $(table).DataTable({
+      dom: "lrphtip",
+      paging: true,
+      lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
+      ajax: function(data, callback, settings) {
+        CATMAID.fetch(project.id +  "/samplers/domains/" + domain.id + "/intervals/", "GET")
+          .then(function(result) {
+            self.availableIntervals = result;
+            return self.ensureMetadata()
+              .then(callback.bind(window, {
+                draw: data.draw,
+                data: result
+              }));
+          })
+          .catch(CATMAID.handleError);
+      },
+      order: [],
+      columns: [
+        {
+          data: "id",
+          title: "Id",
+          orderable: false,
+          render: function(data, type, row, meta) {
+            return row.id;
+          }
+        },
+        {
+          data: "start_node_id",
+          title: "Start",
+          orderable: false,
+          render: function(data, type, row, meta) {
+            if ("display") {
+              return '<a href="#" data-action="select-node" data-node-id="' +
+                  row.start_node_id + '" >' + row.start_node_id + '</a>';
+            } else {
+              return row.start_node_id;
+            }
+          }
+        },
+        {
+          data: "end_node_id",
+          title: "End",
+          orderable: false,
+          render: function(data, type, row, meta) {
+            if ("display") {
+              return '<a href="#" data-action="select-node" data-node-id="' +
+                  row.end_node_id + '" >' + row.end_node_id + '</a>';
+            } else {
+              return row.end_node_id;
+            }
+          }
+        },
+        {
+          data: "user_id",
+          title: "User",
+          orderable: false,
+          render: function(data, type, row, meta) {
+            return CATMAID.User.safe_get(row.user_id).login;
+          }
+        },
+        {
+          data: "creation_time",
+          title: "Created on",
+          searchable: true,
+          orderable: false,
+          render: function(data, type, row, meta) {
+            return new Date(row.creation_time * 1000);
+          }
+        },
+        {
+          data: "edition_time",
+          title: "Last edited on",
+          orderable: false,
+          render: function(data, type, row, meta) {
+            return new Date(row.edition_time * 1000);
+          }
+        },
+        {
+          data: "state_id",
+          title: " State",
+          orderable: true,
+          render: function(data, type, row, meta) {
+            var state = self.possibleStates[row.state_id];
+            return state ? state.name : ("unknown (" + row.state_id + ")");
+          }
+        },
+        {
+          title: "Action",
+          orderable: false,
+          render: function(data, type, row, meta) {
+            return '<a href="#" data-action="next">Open</a>';
+          }
+        }
+      ],
+    }).on('dblclick', 'tr', function(e) {
+      var data = datatable.row(this).data();
+      if (data) {
+        var table = $(this).closest('table');
+        var tr = $(this).closest('tr');
+        var data =  $(table).DataTable().row(tr).data();
+
+        widget.state['interval'] = data;
+        widget.workflow.advance();
+        widget.update();
+      }
+    }).on('click', 'a[data-action=select-node]', function() {
+      var nodeId = parseInt(this.dataset.nodeId, 10);
+      SkeletonAnnotations.staticMoveToAndSelectNode(nodeId);
+    }).on('click', 'a[data-action=next]', function() {
+      var table = $(this).closest('table');
+      var tr = $(this).closest('tr');
+      var data =  $(table).DataTable().row(tr).data();
+
+      widget.state['interval'] = data;
+      widget.workflow.advance();
+      widget.update();
+    });
+  };
+
+  var getDomainDetails = function(projectId, domainId) {
+    return CATMAID.fetch(projectId + '/samplers/domains/' + domainId + '/details');
+  };
+
+  IntervalWorkflowStep.prototype.createNewIntervals = function(widget) {
+    var skeletonId = widget.state['skeletonId'];
+    if (!skeletonId) {
+      CATMAID.warn("Can't create intervals without skeleton ID");
+      return;
+    }
+    var domain = widget.state['domain'];
+    if (!domain) {
+      CATMAID.warn("Can't create intervals without domain");
+      return;
+    }
+    var intervalLength = widget.state['intervalLength'];
+    if (!intervalLength) {
+      CATMAID.warn("Can't create intervals without interval length");
+      return;
+    }
+    var arbor = widget.state['arbor'];
+    // Get arbor if not already cached
+    var prepare;
+    if (arbor) {
+      prepare = Promise.resolve();
+    } else {
+      prepare = getArbor(skeletonId)
+          .then(function(result) {
+            arbor = result;
+            widget.state['arbor'] = result;
+          });
+    }
+
+    // Allow shortening of intervals to minimize error
+    var preferSmallerError = true;
+    // Raise error if best matching interval is shorter or longer by a
+    // set percentage.
+    var maxDiffPercent = 0.1;
+    var maxDiff = intervalLength * maxDiffPercent;
+
+    var self = this;
+
+    var domainEnds = [];
+
+    // Build interval boundaries by walking downstream from domain start to end.
+    // Except for the start and end node, all children of all interval nodes are
+    // considered to be part of the interval.
+    prepare
+      .then(getDomainDetails.bind(this, project.id, domain.id))
+      .then(function(domainDetails) {
+        // Get sub-arbor that starts at domain root and is pruned at all domain
+        // ends. This is then split into slabs, which are then further split
+        // into intervals of respective length.
+        var domainArbor = arbor.arbor.subArbor(domain.start_node_id);
+        var allSuccessors = domainArbor.allSuccessors();
+        domainArbor.pruneAt(domainDetails.ends.reduce(function(o, end) {
+          // Pruning is inclusive, so we need to prune the potential successors
+          // of the end nodes.
+          var successors = allSuccessors[end.node_id];
+          for (var i=0; i<successors; ++I) {
+            o[successors[i]] = true;
+          }
+          return o;
+        }, {}));
+
+        // Create Intervals from partitions
+        var intervals = [], positions = arbor.positions;
+        var partitions = domainArbor.partitionSorted();
+        for (var i=0; i<partitions.length; ++i) {
+          var partition = partitions[i];
+          // Walk partition toward leafs
+          var sum = 0;
+          var intervalStartIdx = partition.length - 1;
+          var intervalStartPos = positions[partition[intervalStartIdx]];
+          // Traverse towards leafs, i.e. from the end of the partition entries
+          // to branch points or root.
+          for (var j=partition.length - 2; j>=0; --j) {
+            var oldSum = sum;
+            // Calculate new interval length
+            var pos = positions[partition[j]];
+            var dist = intervalStartPos.distanceTo(pos);
+            sum += dist;
+            //  If sum is greater than interval length, create new interval. If
+            //  <preferSmalError>, the end/start node is either the current one
+            //  or the last one, whichever is closer to the ideal length.
+            //  Otherwise this node is used.
+            if (sum > intervalLength) {
+              var steps = intervalStartIdx - j;
+              // Optionally, make the interval smaller if this means being
+              // closer to the ideal interval length. This can only be done if
+              // the current interval has at least a length of 2.
+              if (preferSmallerError && (intervalLength - oldSum) < dist && steps > 1 && j !== 0) {
+                intervals.push([partition[intervalStartIdx], partition[j+1]]);
+                intervalStartIdx = j + 1;
+              } else {
+                intervals.push([partition[intervalStartIdx], partition[j]]);
+                intervalStartIdx = j;
+              }
+              sum = 0;
+            }
+          }
+        }
+
+        return intervals;
+      })
+      .then(function(intervals) {
+        return CATMAID.fetch(project.id + '/samplers/domains/' +
+            domain.id + '/intervals/add-all', 'POST', {
+                intervals: intervals
+            });
+      })
+      .then(function(result) {
+        widget.update();
+      })
+      .catch(CATMAID.handleError);
+  };
+
+  IntervalWorkflowStep.prototype.pickRandomInterval = function(widget) {
+    // Filter untouched ones
+    var intervals = this.availableIntervals || [];
+    intervals = intervals.filter(function(interval) {
+      var state = this.possibleStates[interval.state_id];
+      return state.name === 'untouched';
+    }, this);
+    if (!intervals || 0 === intervals.length) {
+      CATMAID.warn("No (untouched) intervals available");
+      return;
+    }
+
+    // For now, use uniform distribution
+    var interval = intervals[Math.floor(Math.random()*intervals.length)];
+    this.openInterval(interval, widget)
+      .catch(CATMAID.handleError);
+  };
+
+  IntervalWorkflowStep.prototype.ensureMetadata = function() {
+    if (this.possibleStates) {
+      return Promise.resolve();
+    } else {
+      var self = this;
+      return CATMAID.fetch(project.id + '/samplers/domains/intervals/states/')
+        .then(function(result) {
+          self.possibleStates = result.reduce(function(o, is) {
+            o[is.id] = is;
+            return o;
+          }, {});
+        });
+    }
+  };
+
+  IntervalWorkflowStep.prototype.openInterval = function(interval, widget) {
+    // Update state
+    widget.state['interval'] = interval;
+
+    var startedStateId = null;
+    for (var stateId in this.possibleStates) {
+      if ('started' === this.possibleStates[stateId].name) {
+        startedStateId = stateId;
+        break;
+      }
+    }
+    if (!startedStateId) {
+      return Promise.reject("Missing interval state: started");
+    }
+
+    // Open interval, select first node and then advance workflow
+    return CATMAID.fetch(project.id + '/samplers/domains/intervals/' + interval.id + '/set-state',
+        'POST', {state_id: startedStateId})
+      .then(function(result) {
+        widget.workflow.advance();
+        widget.update();
+      });
   };
 
 

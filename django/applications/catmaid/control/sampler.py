@@ -4,7 +4,8 @@ from django.http import JsonResponse
 from catmaid.control.authentication import requires_user_role, user_can_edit
 from catmaid.control.common import get_request_list
 from catmaid.models import (Sampler, SamplerDomain, SamplerDomainType,
-        SamplerDomainEnd, SamplerInterval, SamplerState, UserRole)
+        SamplerDomainEnd, SamplerInterval, SamplerIntervalState, SamplerState,
+        UserRole)
 
 from rest_framework.decorators import api_view
 
@@ -338,7 +339,7 @@ def add_sampler_domain(request, project_id, sampler_id):
     return JsonResponse({
         "id": domain.id,
         "sampler_id": domain.sampler_id,
-        "domain_type_id": domain.domain_type_id,
+        "type_id": domain.domain_type_id,
         "parent_interval": domain.parent_interval_id,
         "start_node_id": domain.start_node_id,
         "user_id": domain.user_id,
@@ -399,11 +400,15 @@ def add_multiple_sampler_domains(request, project_id, sampler_id):
         result_domains.append({
             "id": d.id,
             "sampler_id": d.sampler_id,
-            "d_type_id": d.domain_type_id,
+            "type_id": d.domain_type_id,
             "parent_interval": d.parent_interval_id,
             "start_node_id": d.start_node_id,
             "user_id": d.user_id,
-            "project_id": d.project_id
+            "project_id": d.project_id,
+            "ends": [{
+                "id": e.id,
+                "node_id": e.end_node_id
+            } for e in domain_ends]
         })
 
     return JsonResponse(result_domains, safe=False)
@@ -412,4 +417,247 @@ def add_multiple_sampler_domains(request, project_id, sampler_id):
 @api_view(['GET'])
 @requires_user_role([UserRole.Browse])
 def list_domain_intervals(request, project_id, domain_id):
-    pass
+    """Get a collection of available sampler domains intervals.
+    ---
+    parameters:
+     - name: domain_id
+       description: Domain to list intervals for
+       type: integer
+       paramType: form
+       required: true
+    models:
+      interval_entity:
+        id: interval_entity
+        description: A result domain interval.
+        properties:
+          id:
+            type: integer
+            description: Id of interval
+          creation_time:
+            type: string
+            description: The point in time the interval was created
+            required: true
+          edition_time:
+            type: string
+            description: The last point in time the interval was edited.
+            required: true
+          state_id:
+            type: integer
+            description: ID of interval state
+            required: true
+          user_id:
+            type: integer
+            description: User ID of interval creator.
+            required: true
+    type:
+      intervals:
+        type: array
+        items:
+          $ref: interval_entity
+        description: Matching intervals
+        required: true
+    """
+    domain_id = int(domain_id)
+    intervals = SamplerInterval.objects.filter(domain_id=domain_id)
+
+    return JsonResponse([{
+       'id': i.id,
+       'creation_time': float(i.creation_time.strftime('%s')),
+       'edition_time': float(i.edition_time.strftime('%s')),
+       'state_id': i.interval_state_id,
+       'user_id': i.user_id,
+    } for i in intervals], safe=False)
+
+
+@api_view(['GET'])
+@requires_user_role([UserRole.Browse])
+def get_domain_details(request, project_id, domain_id):
+    """Get details on a particular domain.
+    """
+    domain_id=int(domain_id)
+    domain = SamplerDomain.objects.get(id=domain_id)
+    domain_ends = SamplerDomainEnd.objects.filter(domain=domain)
+    return JsonResponse({
+        "id": domain.id,
+        "sampler_id": domain.sampler_id,
+        "type_id": domain.domain_type_id,
+        "parent_interval": domain.parent_interval_id,
+        "start_node_id": domain.start_node_id,
+        "user_id": domain.user_id,
+        "project_id": domain.project_id,
+        "ends": [{
+            "id": e.id,
+            "node_id": e.end_node_id
+        } for e in domain_ends]
+    })
+
+
+@api_view(['GET'])
+@requires_user_role([UserRole.Browse])
+def list_interval_states(request, project_id):
+    """Get a list of all available interval states.
+    ---
+    models:
+      interval_state_entity:
+        id: interval_state_entity
+        description: A sampler domain interval state.
+        properties:
+          id:
+            type: integer
+            description: Id of interval state
+          name:
+            type: string
+            description: Name of interval state
+            required: true
+          description:
+            type: string
+            description: Description of interval state
+            required: true
+    type:
+      interval_states:
+        type: array
+        items:
+          $ref: interval_state_entity
+        description: Available sampler domain interval states
+        required: true
+    """
+    interval_states = SamplerIntervalState.objects.all()
+    return JsonResponse([{
+        'id': s.id,
+        'name': s.name,
+        'description': s.description
+    } for s in interval_states], safe=False)
+
+
+@api_view(['POST'])
+@requires_user_role([UserRole.Annotate])
+def add_all_intervals(request, project_id, domain_id):
+    """Create all intervals in a particular domain.
+    ---
+    parameters:
+     - name: domain_id
+       description: Domain to add intervals in
+       type: integer:
+       required: true
+     - name: intervals
+       description: A list of two-element lists, with start and end node each
+       type: array:
+       items:
+         type: string
+       required: true
+    """
+    domain_id = int(domain_id)
+    domain = SamplerDomain.objects.get(id=domain_id)
+
+    state = SamplerIntervalState.objects.get(name='untouched')
+
+    intervals = get_request_list(request.POST, 'intervals', [], map_fn=lambda x: x)
+
+    result_intervals = []
+    for i in intervals:
+        start_node = int(i[0])
+        end_node = int(i[1])
+
+        i = SamplerInterval.objects.create(
+            domain=domain,
+            interval_state=state,
+            start_node_id=start_node,
+            end_node_id=end_node,
+            user=request.user,
+            project_id=project_id)
+
+        result_intervals.append({
+            "id": i.id,
+            "interval_state_id": i.interval_state_id,
+            "start_node_id": i.start_node_id,
+            "end_node_id": i.end_node_id,
+            "user_id": i.user_id,
+            "project_id": i.project_id
+        })
+
+    return JsonResponse(result_intervals, safe=False)
+
+
+@api_view(['GET'])
+@requires_user_role([UserRole.Browse])
+def list_domain_intervals(request, project_id, domain_id):
+    """Get a collection of available sampler domains intervals.
+    ---
+    parameters:
+     - name: domain_id
+       description: Domain to list intervals for
+       type: integer
+       paramType: form
+       required: true
+    models:
+      interval_entity:
+        id: interval_entity
+        description: A result domain interval.
+        properties:
+          id:
+            type: integer
+            description: Id of interval
+          creation_time:
+            type: string
+            description: The point in time the interval was created
+            required: true
+          edition_time:
+            type: string
+            description: The last point in time the interval was edited.
+            required: true
+          state_id:
+            type: integer
+            description: ID of interval state
+            required: true
+          user_id:
+            type: integer
+            description: User ID of interval creator.
+            required: true
+    type:
+      intervals:
+        type: array
+        items:
+          $ref: interval_entity
+        description: Matching intervals
+        required: true
+    """
+    domain_id = int(domain_id)
+    intervals = SamplerInterval.objects.filter(domain_id=domain_id)
+
+    return JsonResponse([{
+       'id': i.id,
+       'creation_time': float(i.creation_time.strftime('%s')),
+       'edition_time': float(i.edition_time.strftime('%s')),
+       'state_id': i.interval_state_id,
+       'user_id': i.user_id,
+       'start_node_id': i.start_node_id,
+       'end_node_id': i.end_node_id
+    } for i in intervals], safe=False)
+
+
+@api_view(['POST'])
+@requires_user_role([UserRole.Annotate])
+def set_interval_state(request, project_id, interval_id):
+    """Set state of an interval.
+    ---
+    parameters:
+     - name: interval_id
+       description: Interval to update state of
+       type: integer
+       paramType: form
+       required: true
+    """
+    interval_id = int(interval_id)
+    interval = SamplerInterval.objects.get(id=interval_id)
+
+    interval_state_id = request.POST.get('state_id')
+    if interval_state_id is None:
+        raise ValueError("Need interval state ID")
+
+    interval.interval_state_id = interval_state_id
+    interval.save()
+
+    return JsonResponse({
+        'id': interval.id,
+        'interval_state_id': interval.interval_state_id
+    })

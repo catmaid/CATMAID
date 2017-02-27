@@ -17,6 +17,7 @@ from rest_framework.decorators import api_view
 # descriptions.
 needed_classes = {
     'annotation': "An arbitrary annotation",
+    'stack_property': 'A property which a stack has',
 }
 
 # All relations needed by the tracing system alongside their
@@ -25,6 +26,7 @@ needed_relations = {
     'is_a': "A generic is-a relationship",
     'part_of': "One thing is part of something else.",
     'annotated_with': "Something is annotated by something else.",
+    'has_property': 'A thing which has an arbitrary property',
 }
 
 # All client datastores needed by the tracing system along their descriptions.

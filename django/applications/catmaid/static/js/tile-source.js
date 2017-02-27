@@ -63,7 +63,7 @@
     });
 
     var beforeCorsLoad = performance.now();
-    var corsReq = fetch(new Request(url, {mode: 'cors'}))
+    var corsReq = fetch(new Request(url, {mode: 'cors', credentials: 'same-origin'}))
       .then(function (response) {
         var contentHeader = response.headers.get('Content-Type');
         return [contentHeader && contentHeader.startsWith('image'),

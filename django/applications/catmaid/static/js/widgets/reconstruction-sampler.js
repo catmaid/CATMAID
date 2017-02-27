@@ -909,10 +909,8 @@
         var table = $(this).closest('table');
         var tr = $(this).closest('tr');
         var data =  $(table).DataTable().row(tr).data();
-
-        widget.state['interval'] = data;
-        widget.workflow.advance();
-        widget.update();
+        self.openInterval(data, widget)
+          .catch(CATMAID.handleError);
       }
     }).on('click', 'a[data-action=select-node]', function() {
       var nodeId = parseInt(this.dataset.nodeId, 10);
@@ -1104,8 +1102,9 @@
 
 
   /**
-   * Pick a twig branch point from the interval at random. Trace it to
-   * completion, annotating synapses as above.
+   * Let user annotate all branch points and synapses. Then pick a twig branch
+   * point from the interval at random. Trace it to completion, annotating
+   * synapses as above.
    */
   var TwigWorkflowStep = function() {
     CATMAID.WorkflowStep.call(this, "Twig");
@@ -1118,12 +1117,235 @@
 
   };
 
-  TwigWorkflowStep.prototype.createControls = function(controls) {
-    return [];
+  TwigWorkflowStep.prototype.createControls = function(widget) {
+    var self = this;
+    return [{
+      type: 'button',
+      label: 'Update twigs',
+      onclick: function() {
+        widget.update();
+      }
+    }, {
+      type: 'button',
+      label: 'Pick random branch point',
+      onclick: function() {
+        self.pickRandomBranch(widget);
+      }
+    }];
   };
 
-  IntervalWorkflowStep.prototype.isComplete = function(state) {
-    return !!state['twigReconstructed'];
+  TwigWorkflowStep.prototype.isComplete = function(state) {
+    return !!state['twigNodeId'];
+  };
+
+  TwigWorkflowStep.prototype.updateContent = function(content, widget) {
+    var self = this;
+    var intervalLength = widget.state['intervalLength'];
+    var samplerId = widget.state['samplerId'];
+    var skeletonId = widget.state['skeletonId'];
+    var domain = widget.state['domain'];
+    var interval = widget.state['interval'];
+
+    var p = content.appendChild(document.createElement('p'));
+    p.appendChild(document.createTextNode('Reconstruct all synapses and twig ' +
+        'branch points on this interval. Create seed nodes for all input ' +
+        'synapses; only create one or a few seed nodes for each output synapse. ' +
+        'Once this is done, select a (random) branch to continue.'));
+    var name = CATMAID.NeuronNameService.getInstance().getName(skeletonId);
+    var p2 = content.appendChild(document.createElement('p'));
+    p2.appendChild(document.createTextNode('Target skeleton: '));
+    var a = p2.appendChild(document.createElement('a'));
+    a.appendChild(document.createTextNode(name));
+    a.href = '#';
+    a.onclick = function() {
+      CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeletonId);
+    };
+    p2.appendChild(document.createTextNode(' Sampler: #' + samplerId +
+        ' Domain: #' + domain.id + ' Interval length: ' + intervalLength +
+        'nm Interval: #' + interval.id + ' Interval start: '));
+    var aStart = p2.appendChild(document.createElement('a'));
+    aStart.appendChild(document.createTextNode(interval.start_node_id));
+    aStart.href = '#';
+    aStart.onclick = function() {
+      SkeletonAnnotations.staticMoveToAndSelectNode(interval.start_node_id);
+    };
+    p2.appendChild(document.createTextNode(' Interval end: '));
+    var aEnd = p2.appendChild(document.createElement('a'));
+    aEnd.appendChild(document.createTextNode(interval.end_node_id));
+    aEnd.href = '#';
+    aEnd.onclick = function() {
+      SkeletonAnnotations.staticMoveToAndSelectNode(interval.end_node_id);
+    };
+
+    // Create a data table with all available domains or a filtered set
+    var table = document.createElement('table');
+    content.appendChild(table);
+
+    var datatable = $(table).DataTable({
+      dom: "lrphtip",
+      paging: true,
+      lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
+      ajax: function(data, callback, settings) {
+        var twigEnds = widget.state['intervalTwigEnds'] || [];
+        callback({
+          draw: data.draw,
+          data: twigEnds
+        });
+      },
+      order: [],
+      columns: [
+        {
+          title: "First node in twig",
+          orderable: true,
+          render: function(data, type, row, meta) {
+            if ("display") {
+              return '<a href="#" data-action="select-node" data-node-id="' +
+                  row.nodeId + '" >' + row.nodeId + '</a>';
+            } else {
+              return row.nodeId;
+            }
+          }
+        },
+        {
+          data: "type",
+          title: "Type",
+          orderable: true,
+        }
+      ],
+    }).on('dblclick', 'tr', function(e) {
+      var data = datatable.row(this).data();
+      if (data) {
+        var table = $(this).closest('table');
+        var tr = $(this).closest('tr');
+        var data =  $(table).DataTable().row(tr).data();
+        SkeletonAnnotations.staticMoveToAndSelectNode(data.nodeId);
+      }
+    }).on('click', 'a[data-action=select-node]', function() {
+      var nodeId = parseInt(this.dataset.nodeId, 10);
+      SkeletonAnnotations.staticMoveToAndSelectNode(nodeId);
+    });
+
+    // Create table containing all branches, based on current arbor. Since this
+    // step asks the user to change the skeleton, the arbor is reloaded for a
+    // table update.
+    this.getIntervalArbors(skeletonId, interval)
+      .then(function(intervalArbors) {
+        widget.state['intervalArbors'] = intervalArbors;
+        self.intervalNodes = new Set(intervalArbors.all.nodesArray().map(function(n) { return parseInt(n, 10); }));
+        var intervalEndNodeId = interval.end_node_id;
+        var endNodes = intervalArbors.twigs.findEndNodes()
+            .filter(function(node) {
+              return node != intervalEndNodeId;
+            });
+        widget.state['intervalTwigEnds'] = endNodes.map(function(nodeId) {
+          return {
+            'nodeId': nodeId,
+            'type': 'branch'
+          };
+        });
+
+        datatable.ajax.reload();
+      })
+      .catch(CATMAID.handleError);
+  };
+
+  /**
+   * Return two new new Arbor instances that covers only the requested interval.
+   * The twig arbor will only contain the first twig node after a branch.
+   *
+   * @return {Promise} Resolved with two-field object, one for each arbor
+   */
+  TwigWorkflowStep.prototype.getIntervalArbors = function(skeletonId, interval) {
+    return getArbor(skeletonId)
+      .then(function(arbor) {
+        var startNodeId = interval.start_node_id;
+        var endNodeId = interval.end_node_id;
+        var edges = arbor.arbor.edges;
+        var allSuccessors = arbor.arbor.allSuccessors();
+
+        var intervalBackbone = [parseInt(endNodeId, 10)];
+        while (true) {
+          var lastNode = intervalBackbone[intervalBackbone.length - 1];
+          var parentId = edges[lastNode];
+          intervalBackbone.push(parseInt(parentId, 10));
+          if (parentId == startNodeId || !parentId) {
+            break;
+          }
+        }
+
+        // Create an interval arbor by walking the interval backbone from start
+        // to end, adding all branches that start in-between. Branches from
+        // neither start nor end will be added, other intervals have to be used
+        // to cover these.
+        var twigEdges = {};
+        var intervalEdges = {};
+        var backboneSet = new Set(intervalBackbone);
+        var workingSet = intervalBackbone;
+        while (workingSet.length > 0) {
+          var edgeChildId = workingSet.pop();
+          if (edgeChildId == startNodeId) {
+            // The relevant child edge will be added by the child
+            continue;
+          }
+
+          var parentId = edges[edgeChildId];
+          intervalEdges[edgeChildId] = parentId;
+
+          // For the twig abor, the parent has to be in the backbone.
+          if (backboneSet.has(parentId)) {
+            twigEdges[edgeChildId] = parentId;
+          }
+
+          if (edgeChildId == endNodeId) {
+            // No children of last node will be added
+            continue;
+          }
+
+          var children = allSuccessors[edgeChildId];
+          for (var i=0; i<children.length; ++i) {
+            var childId = children[i];
+            // Only consider unknown nodes
+            if (undefined === intervalEdges[childId]) {
+              workingSet.push(childId);
+            }
+          }
+        }
+
+        var twigArbor = new Arbor();
+        twigArbor.edges = twigEdges;
+        twigArbor.root = startNodeId;
+
+        var intervalArbor = new Arbor();
+        intervalArbor.edges = intervalEdges;
+        intervalArbor.root = startNodeId;
+
+        return {
+          twigs: twigArbor,
+          all: intervalArbor
+        };
+      });
+  };
+
+  TwigWorkflowStep.prototype.pickRandomBranch = function(widget) {
+    var interval = widget.state['interval'];
+    var twigArbor = widget.state['intervalArbors'].twigs;
+    if (!twigArbor) {
+      CATMAID.warn("No twig arbor available");
+      return;
+    }
+    var intervalEndNodeId = interval.end_node_id;
+    var endNodes = twigArbor.findEndNodes()
+        .filter(function(node) {
+          return node != intervalEndNodeId;
+        });
+
+    // For now, use uniform distribution
+    var twig = endNodes[Math.floor(Math.random()*endNodes.length)];
+
+    // Update state
+    widget.state['twigNodeId'] = twig;
+    widget.workflow.advance();
+    widget.update();
   };
 
 
@@ -1142,7 +1364,7 @@
 
   };
 
-  SynapseWorkflowStep.prototype.createControls = function(controls) {
+  SynapseWorkflowStep.prototype.createControls = function(widget) {
     return [];
   };
 

@@ -150,6 +150,15 @@
     };
   };
 
+  var formatDate = function(date) {
+    return date.getUTCFullYear() + '-' +
+        date.getUTCMonth() + '-' +
+        date.getUTCDay() + ' ' +
+        date.getUTCHours() + ':' +
+        date.getUTCMinutes() + ':' +
+        date.getUTCSeconds();
+  };
+
   /**
    * Select a backbone. Specify portion(s) of backbone you wish to sample
    * ("sample domains").
@@ -312,19 +321,19 @@
         },
         {
           data: "creation_time",
-          title: "Created on",
+          title: "Created on (UTC)",
           searchable: true,
           orderable: false,
           render: function(data, type, row, meta) {
-            return new Date(row.creation_time * 1000);
+            return formatDate(new Date(row.creation_time * 1000));
           }
         },
         {
           data: "edition_time",
-          title: "Last edited on",
+          title: "Last edited on (UTC)",
           orderable: false,
           render: function(data, type, row, meta) {
-            return new Date(row.edition_time * 1000);
+            return formatDate(new Date(row.edition_time * 1000));
           }
         },
         {data: "interval_length", title: "Interval length", orderable: true},
@@ -538,19 +547,19 @@
         },
         {
           data: "creation_time",
-          title: "Created on",
+          title: "Created on (UTC(",
           searchable: true,
           orderable: false,
           render: function(data, type, row, meta) {
-            return new Date(row.creation_time * 1000);
+            return formatDate(new Date(row.creation_time * 1000));
           }
         },
         {
           data: "edition_time",
-          title: "Last edited on",
+          title: "Last edited on (UTC)",
           orderable: false,
           render: function(data, type, row, meta) {
-            return new Date(row.edition_time * 1000);
+            return formatDate(new Date(row.edition_time * 1000));
           }
         },
         {
@@ -887,19 +896,19 @@
         },
         {
           data: "creation_time",
-          title: "Created on",
+          title: "Created on (UTC)",
           searchable: true,
           orderable: false,
           render: function(data, type, row, meta) {
-            return new Date(row.creation_time * 1000);
+            return formatDate(new Date(row.creation_time * 1000));
           }
         },
         {
           data: "edition_time",
-          title: "Last edited on",
+          title: "Last edited on (UTC)",
           orderable: false,
           render: function(data, type, row, meta) {
-            return new Date(row.edition_time * 1000);
+            return formatDate(new Date(row.edition_time * 1000));
           }
         },
         {

@@ -464,7 +464,15 @@
         {displayName: 'Intensity Threshold', name: 'intensityThreshold', type: 'slider', range: [0, 1]},
         {displayName: 'Luminance Coefficients', name: 'luminanceCoeff', type: 'matrix', size: [1, 3]}
       ], this),
-      'Label Color Map': PixiLayer.FilterWrapper.bind(null, 'Label Color Map', PixiLayer.Filters.LabelColorMap, [
+      'Randomised Label Color Map': PixiLayer.FilterWrapper.bind(null, 'Randomised Label Color Map', PixiLayer.Filters.RandomisedLabelColorMap, [
+        {displayName: 'Map Seed', name: 'seed', type: 'slider', range: [0, 1]},
+      ], this),
+      'Object Label Color Map': PixiLayer.FilterWrapper.bind(null, 'Object Label Color Map', PixiLayer.Filters.ObjectLabelColorMap, [
+        {displayName: "'Unknown' label", name: 'unknownLabel', type: 'integerLabel'},
+        {displayName: "'Unknown' color", name: 'unknownColor', type: 'color'},
+        {displayName: "'Background' label", name: 'backgroundLabel', type: 'integerLabel'},
+        {displayName: "'Background' color", name: 'backgroundColor', type: 'color'},
+        {displayName: "'Foreground' alpha", name: 'foregroundAlpha', type: 'slider', range: [0, 1]},
         {displayName: 'Map Seed', name: 'seed', type: 'slider', range: [0, 1]},
       ], this),
     };
@@ -567,6 +575,7 @@
    * @param  {Function} callback  Callback when parameters are changed.
    */
   PixiLayer.FilterWrapper.prototype.redrawControl = function (container, callback) {
+    var self = this;
     container.append('<h5>' + this.displayName + '</h5>');
     for (var paramIndex = 0; paramIndex < this.params.length; paramIndex++) {
       var param = this.params[paramIndex];
@@ -621,6 +630,55 @@
           paramSelect.append('<span>' + param.displayName + '</span>');
           paramSelect.append(matTable);
           container.append(paramSelect);
+          break;
+
+        case 'integerLabel':
+          var numberDiv = document.createElement('div');
+          numberDiv.classList.add('setting');
+          var label = document.createElement('span');
+          label.innerText = param.displayName;
+          numberDiv.appendChild(label);
+          var numberInput = document.createElement('input');
+          numberInput.type = 'number';
+          numberInput.min = '0';
+          numberInput.max = '16777215';
+          numberInput.step = '1';
+          (function(setParam, numberInput) {
+            numberInput.onchange = function() {
+              setParam(int2arr(Number(this.value)));
+            };
+          })(self.setParam.bind(self, param.name), numberInput);
+          numberDiv.appendChild(numberInput);
+          container.append(numberDiv);
+          break;
+
+        case 'color':
+          var colorDiv = document.createElement('div');
+          colorDiv.classList.add('setting');
+          var colorLabel = document.createElement('span');
+          colorLabel.innerText = param.displayName;
+          colorDiv.appendChild(colorLabel);
+          var colorButton = document.createElement('button');
+          colorButton.innerText = 'Select Color';
+          var initCol = this.pixiFilter[param.name].slice();
+          initCol[0] = initCol[0] / initCol[3];
+          initCol[1] = initCol[1] / initCol[3];
+          initCol[2] = initCol[2] / initCol[3];
+          (function(setParam, colorButton, initCol){
+            CATMAID.ColorPicker.enable(colorButton, {
+              initialColor: CATMAID.tools.rgbToHex(Math.round(initCol[0] * 255),
+                                                 Math.round(initCol[1] * 255),
+                                                 Math.round(initCol[2] * 255)),
+              onColorChange: (function(rgb, alpha, colorChanged, alphaChanged) {
+                if (colorChanged || alphaChanged) {
+                  setParam([rgb.r*alpha, rgb.g*alpha, rgb.b*alpha, alpha]);
+                }
+              }).bind(this)
+            });
+          })(self.setParam.bind(self, param.name), colorButton, initCol);
+          colorDiv.appendChild(colorButton);
+          container.append(colorDiv);
+
           break;
       }
     }
@@ -775,7 +833,7 @@
    * values.
    * @constructor
    */
-  PixiLayer.Filters.LabelColorMap = function () {
+  PixiLayer.Filters.RandomisedLabelColorMap = function () {
 
     var uniforms = {
       seed: {type: '1f', value: 1.0},
@@ -809,11 +867,124 @@
     PIXI.Filter.call(this, null, fragmentSrc, uniforms);
   };
 
-  PixiLayer.Filters.LabelColorMap.prototype = Object.create(PIXI.Filter.prototype);
-  PixiLayer.Filters.LabelColorMap.prototype.constructor = PixiLayer.Filters.LabelColorMap;
+  PixiLayer.Filters.RandomisedLabelColorMap.prototype = Object.create(PIXI.Filter.prototype);
+  PixiLayer.Filters.RandomisedLabelColorMap.prototype.constructor = PixiLayer.Filters.RandomisedLabelColorMap;
 
   ['seed', 'containerAlpha'].forEach(function (prop) {
-    Object.defineProperty(PixiLayer.Filters.LabelColorMap.prototype, prop, {
+    Object.defineProperty(PixiLayer.Filters.RandomisedLabelColorMap.prototype, prop, {
+      get: function () {
+        return this.uniforms[prop];
+      },
+      set: function (value) {
+        this.uniforms[prop] = value;
+      }
+    });
+  });
+
+  /**
+   * Treating `num` as if it were a 24-bit unsigned integer, pack it into a 3-length array of numbers between 0 and
+   * 1, each carrying 8 bits of information, with the least significant number first. 1 is appended to the end of
+   * the array, giving it a final length of 4.
+   *
+   * This allows us to pass a 24-bit integer label into webGL for comparison to that same label packed into a PNG by
+   * PIL. The alpha (4th) channel must be 1 because the other values are premultiplied by it; disabling
+   * sprite.texture.baseTexture.premultipliedAlpha messes with webGL's blend modes.
+   *
+   * e.g.
+   * 1 => [1/255, 0, 0, 1]
+   * 257 => [1/255, 1/255, 0, 1]
+   * 300 => [44/255, 1/255, 0, 1]
+   *
+   * @param num
+   * @returns {Array.<*>}
+   */
+  var int2arr = function(num) {
+    var arr = [];
+    var divisor;
+    var remainder = num;
+    for (var i = 2; i >= 0; i--) {
+      divisor = 1 << 8*i;
+      arr.push(Math.floor(remainder/divisor)/255);
+      remainder = remainder % divisor;
+    }
+
+    arr.reverse().push(1);
+    return arr;
+  };
+
+  var arr2int = function(arr) {
+    var out = 0;
+    for (var i = 0; i < arr.length-1; i++) {
+      out += Math.floor(arr[i]*255) * Math.pow(256, i);
+    }
+    return out;
+  };
+
+  /**
+   * This filter reserves two special labels, 'unknown' and 'background', with user-defined Colors, and then
+   * selects random Colors (seeded on the label) for all other pixel values.
+   *
+   * It expects labels to be 32-bit unsigned integers packed into 4x8bit unsigned integers, whose first byte is the
+   * least significant. See the int2arr function for packing numbers in this way.
+   *
+   * @constructor
+   */
+  PixiLayer.Filters.ObjectLabelColorMap = function () {
+    var uniforms = {
+      unknownLabel: {type: '4f', value: [-1, -1, -1, -1]},
+      backgroundLabel: {type: '4f', value: [-1, -1, -1, -1]},
+      unknownColor: {type: '4f', value: [0.2, 0.0, 0.0, 0.2]},
+      backgroundColor: {type: '4f', value: [0.0, 0.0, 0.0, 0.0]},
+      foregroundAlpha: {type: 'f', value: 0.5},
+      seed: {type: 'f', value: 0.5}
+    };
+
+    var fragmentSrc = `
+      uniform vec4 unknownLabel;
+      uniform vec4 unknownColor;
+      
+      uniform vec4 backgroundLabel;
+      uniform vec4 backgroundColor;
+      
+      uniform float foregroundAlpha;
+      uniform float seed;
+      
+      varying vec2 vTextureCoord;
+      uniform sampler2D uSampler;
+      
+      float whenEq(vec4 x, vec4 y) {
+          return 1.0 - sign(distance(x, y));
+      }
+      
+      vec4 hashToColor(vec4 label) {
+          const float SCALE = 33452.5859; // Some large constant to make the truncation interesting.
+          label = fract(label * SCALE); // Truncate some information.
+          label += dot(label, label.wzyx + 100.0 * seed); // Mix channels and add the salt.
+          return vec4(fract((label.xzy + label.ywz) * label.zyw), 1.0) * foregroundAlpha;
+      }
+      
+      void main(void){
+          vec4 current = texture2D(uSampler, vTextureCoord);
+      
+          float isUnknown = whenEq(current, unknownLabel);
+          float isBackground = whenEq(current, backgroundLabel);
+      
+          vec4 final = unknownColor * isUnknown;
+          final += backgroundColor * isBackground;
+          final += hashToColor(current) * (1.0 - min(isUnknown + isBackground, 1.0));
+      
+          gl_FragColor.rgba = final;
+      }
+    `;
+
+    PIXI.Filter.call(this, null, fragmentSrc, uniforms);
+  };
+
+  PixiLayer.Filters.ObjectLabelColorMap.prototype = Object.create(PIXI.Filter.prototype);
+  PixiLayer.Filters.ObjectLabelColorMap.prototype.constructor = PixiLayer.Filters.ObjectLabelColorMap;
+
+  ['unknownLabel', 'unknownColor', 'backgroundLabel', 'backgroundColor', 'foregroundAlpha', 'seed'].forEach(function (prop) {
+    Object.defineProperty(PixiLayer.Filters.ObjectLabelColorMap.prototype, prop, {
       get: function () {
         return this.uniforms[prop];
       },

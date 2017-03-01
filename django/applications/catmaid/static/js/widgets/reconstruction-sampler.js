@@ -1424,6 +1424,14 @@
     return !!state['synapseSelected'];
   };
 
+  SynapseWorkflowStep.prototype.updateContent = function(content, widget) {
+    var p = content.appendChild(document.createElement('p'));
+    p.appendChild(document.createTextNode('Reconstruct twig to completion. ' +
+        'Create seed nodes for all input synapses; only create one or a few ' +
+        'seed nodes for each output synapse. Once this is done, select a ' +
+        '(random) synapse to continue.'));
+  };
+
 
   // Export widget
   CATMAID.ReconstructionSampler = ReconstructionSampler;

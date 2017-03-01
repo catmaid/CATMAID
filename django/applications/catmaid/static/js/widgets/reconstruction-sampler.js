@@ -17,6 +17,10 @@
   var ReconstructionSampler = function() {
     this.widgetID = this.registerInstance();
     this.init();
+
+    // Listen to active node change events
+    SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
+        this.handleActiveNodeChange, this);
   };
 
   ReconstructionSampler.prototype = new InstanceRegistry();
@@ -46,6 +50,18 @@
   ReconstructionSampler.prototype.destroy = function() {
     CATMAID.NeuronNameService.getInstance().unregister(this);
     this.unregisterInstance();
+
+    SkeletonAnnotations.off(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
+        this.handleActiveNodeChange, this);
+  };
+
+  ReconstructionSampler.prototype.handleActiveNodeChange = function(node) {
+    if (this.workflow) {
+      var step = this.workflow.getCurrentStep();
+      if (CATMAID.tools.isFn(step.handleActiveNodeChange)) {
+        step.handleActiveNodeChange(this, node);
+      }
+    }
   };
 
   ReconstructionSampler.prototype.update = function() {
@@ -1346,6 +1362,42 @@
     widget.state['twigNodeId'] = twig;
     widget.workflow.advance();
     widget.update();
+  };
+
+  /**
+   * Warn users if they step out of looked at interval.
+   */
+  TwigWorkflowStep.prototype.handleActiveNodeChange = function(widget, node) {
+    if (this.intervalNodes) {
+      if (!this.intervalNodes.has(node.id)) {
+        var interval = widget.state['interval'];
+        var warn = true;
+        if (SkeletonAnnotations.isRealNode(node.id)) {
+          // Unknown real nodes are outside of interval if they have no parent
+          // or if the node's parent is either the start or end node of the
+          // interval.
+          warn = !node.parent_id || !(this.intervalNodes.has(node.parent_id) &&
+              node.parent_id != interval.start_node_id && node.parent_id != interval.end_node_id);
+          if (!warn) {
+            // Add new in-interval node to set of known nodes.
+            this.intervalNodes.add(testNodeId);
+          }
+        } else {
+          // Unknown virtual nodes are outside of interval if both their real
+          // child and parent are not part of the interval
+          var childId = parseInt(SkeletonAnnotations.getChildOfVirtualNode(node.id), 10);
+          var parentId = parseInt(SkeletonAnnotations.getParentOfVirtualNode(node.id), 10);
+          warn = !(this.intervalNodes.has(childId) && this.intervalNodes.has(parentId));
+        }
+
+        if (warn) {
+          CATMAID.warn("Active node is outside of interval");
+        }
+      }
+      // Test if new node has a parent in
+    } else {
+      CATMAID.warn("Could not find interval nodes");
+    }
   };
 
 

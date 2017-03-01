@@ -1677,7 +1677,8 @@ SkeletonAnnotations.TracingOverlay.prototype.rerootSkeleton = function(nodeID) {
   this.promiseNode(this.nodes[nodeID]).then(function(nodeID) {
     var command = new CATMAID.RerootSkeletonCommand(self.state, project.id, nodeID);
     CATMAID.commands.execute(command)
-      .then(function () { self.updateNodes(); });
+      .then(function () { self.updateNodes(); })
+      .catch(CATMAID.handleError);
   });
 };
 

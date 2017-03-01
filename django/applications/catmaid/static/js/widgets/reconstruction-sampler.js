@@ -299,7 +299,7 @@
         {
           data: "skeleton_id",
           title: "Skeleton",
-          orderable: false,
+          orderable: true,
           render: function(data, type, row, meta) {
             var skeletonId = row.skeleton_id;
             var name = CATMAID.NeuronNameService.getInstance().getName(skeletonId);
@@ -307,14 +307,14 @@
               return '<a href="#" data-action="select-skeleton" data-skeleton-id="' +
                   skeletonId + '" >' + name + '</a>';
             } else {
-              return username;
+              return name;
             }
           }
         },
         {
           data: "user_id",
           title: "User",
-          orderable: false,
+          orderable: true,
           render: function(data, type, row, meta) {
             return CATMAID.User.safe_get(row.user_id).login;
           }
@@ -323,7 +323,7 @@
           data: "creation_time",
           title: "Created on (UTC)",
           searchable: true,
-          orderable: false,
+          orderable: true,
           render: function(data, type, row, meta) {
             return formatDate(new Date(row.creation_time * 1000));
           }
@@ -331,7 +331,7 @@
         {
           data: "edition_time",
           title: "Last edited on (UTC)",
-          orderable: false,
+          orderable: true,
           render: function(data, type, row, meta) {
             return formatDate(new Date(row.edition_time * 1000));
           }
@@ -527,7 +527,7 @@
         {
           data: "start_node_id",
           title: "Start",
-          orderable: false,
+          orderable: true,
           render: function(data, type, row, meta) {
             if ("display") {
               return '<a href="#" data-action="select-node" data-node-id="' +
@@ -540,7 +540,7 @@
         {
           data: "user_id",
           title: "User",
-          orderable: false,
+          orderable: true,
           render: function(data, type, row, meta) {
             return CATMAID.User.safe_get(row.user_id).login;
           }
@@ -549,7 +549,7 @@
           data: "creation_time",
           title: "Created on (UTC(",
           searchable: true,
-          orderable: false,
+          orderable: true,
           render: function(data, type, row, meta) {
             return formatDate(new Date(row.creation_time * 1000));
           }
@@ -557,7 +557,7 @@
         {
           data: "edition_time",
           title: "Last edited on (UTC)",
-          orderable: false,
+          orderable: true,
           render: function(data, type, row, meta) {
             return formatDate(new Date(row.edition_time * 1000));
           }
@@ -863,7 +863,7 @@
         {
           data: "start_node_id",
           title: "Start",
-          orderable: false,
+          orderable: true,
           render: function(data, type, row, meta) {
             if ("display") {
               return '<a href="#" data-action="select-node" data-node-id="' +
@@ -876,7 +876,7 @@
         {
           data: "end_node_id",
           title: "End",
-          orderable: false,
+          orderable: true,
           render: function(data, type, row, meta) {
             if ("display") {
               return '<a href="#" data-action="select-node" data-node-id="' +
@@ -889,7 +889,7 @@
         {
           data: "user_id",
           title: "User",
-          orderable: false,
+          orderable: true,
           render: function(data, type, row, meta) {
             return CATMAID.User.safe_get(row.user_id).login;
           }
@@ -898,7 +898,7 @@
           data: "creation_time",
           title: "Created on (UTC)",
           searchable: true,
-          orderable: false,
+          orderable: true,
           render: function(data, type, row, meta) {
             return formatDate(new Date(row.creation_time * 1000));
           }
@@ -906,7 +906,7 @@
         {
           data: "edition_time",
           title: "Last edited on (UTC)",
-          orderable: false,
+          orderable: true,
           render: function(data, type, row, meta) {
             return formatDate(new Date(row.edition_time * 1000));
           }

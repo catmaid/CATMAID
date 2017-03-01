@@ -1,4 +1,4 @@
-/* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
+      /* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
   CATMAID,
@@ -4172,6 +4172,9 @@
     var CTYPES = this.CTYPES;
     this.line_material = new THREE.LineBasicMaterial({color: 0xffff00, opacity: 1.0, linewidth: options.skeleton_line_width});
 
+    // Optional override material for a particular skeleton
+    this.overrideMaterial = null;
+
     // Connector links
     this.geometry = {};
     this.geometry[CTYPES[0]] = new THREE.Geometry();
@@ -4558,6 +4561,15 @@
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColor = function(colorizer) {
     this.line_material = this.actor.neurite.material = colorizer.material(this);
     var node_weights = colorizer.weights(this);
+
+    if (this.overrideMaterial) {
+      // If there is an override material set, make sure it is used as line material
+      this.line_material = this.actor.neurite.material = this.overrideMaterial;
+      if (CATMAID.tools.isFn(this.line_material.refresh)) {
+        this.line_material.refresh();
+      }
+      return;
+    }
 
     if (node_weights || colorizer.vertexColors) {
       // The skeleton colors need to be set per-vertex.

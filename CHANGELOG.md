@@ -18,6 +18,9 @@
   clustering, Cropping, Synapse clustering, HDF 5 tiles and User analytics. To
   use PyPy, a new virtualenv using the PyPy executable has to be created.
 
+- There is now a catmaid_prewarm_db management command, which can be used to
+  populate OS and database buffers with heavily used tables.
+
 
 ### Features and enhancements
 

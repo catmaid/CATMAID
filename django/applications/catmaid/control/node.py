@@ -229,7 +229,7 @@ class Postgis3dNodeProvider(object):
 
         return treenode_ids, treenodes
 
-    def get_connector_data(self, cursor, params, treenode_ids, missing_connector_ids):
+    def get_connector_data(self, cursor, params, missing_connector_ids):
         """Selects all connectors that are in or have links that intersect the
         bounding box, or that are in missing_connector_ids.
         """
@@ -460,7 +460,7 @@ class Postgis2dNodeProvider(object):
 
         return treenode_ids, treenodes
 
-    def get_connector_data(self, cursor, params, treenode_ids, missing_connector_ids):
+    def get_connector_data(self, cursor, params, missing_connector_ids):
         """Selects all connectors that are in or have links that intersect the
         bounding box, or that are in missing_connector_ids.
         """
@@ -652,7 +652,7 @@ def node_list_tuples_query(params, project_id, explicit_treenode_ids, explicit_c
         # Find connectors related to treenodes in the field of view
         # Connectors found attached to treenodes
         response_on_error = 'Failed to query connector locations.'
-        crows = node_provider.get_connector_data(cursor, params, treenode_ids,
+        crows = node_provider.get_connector_data(cursor, params,
             missing_connector_ids)
 
         connectors = []

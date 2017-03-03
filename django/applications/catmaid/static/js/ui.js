@@ -540,9 +540,9 @@
 
 
     /**
-     * Enables or disables the browser contet menu.
+     * Enables or disables the browser context menu.
      */
-    this.setContetMenuEnabled = function(enabled) {
+    this.setContextMenuEnabled = function(enabled) {
       contextMenuEnabled = enabled;
       if (enabled) {
         eventCatcher.oncontextmenu = null;
@@ -553,7 +553,7 @@
       }
     };
 
-    this.setContetMenuEnabled(contextMenuEnabled);
+    this.setContextMenuEnabled(contextMenuEnabled);
 
     window.onresize = this.onresize;
     window.onresize();

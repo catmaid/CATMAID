@@ -1684,38 +1684,6 @@ var WindowMaker = new function()
     return {window: win, widget: GP};
   };
 
-    var createAdjacencyMatrixWindow = function()
-    {
-        var win = new CMWWindow("Adjacency Matrix");
-        var content = win.getFrame();
-        content.style.backgroundColor = "#ffffff";
-
-        var contentbutton = document.createElement('div');
-        contentbutton.setAttribute("id", 'skeleton_adjmatrix_buttons');
-        contentbutton.setAttribute('class', 'buttonpanel');
-        DOM.addButtonDisplayToggle(win);
-
-        var add = document.createElement('input');
-        add.setAttribute("type", "button");
-        add.setAttribute("id", "retrieve_adjmatrix");
-        add.setAttribute("value", "Get matrix");
-        add.onclick = AdjacencyMatrix.fetchMatrixForSkeletons;
-        contentbutton.appendChild(add);
-
-        content.appendChild( contentbutton );
-
-        var container = createContainer( "adjacencymatrix_widget" );
-        content.appendChild( container );
-
-        addListener(win, container, 'skeleton_adjmatrix_buttons');
-
-        addLogic(win);
-
-        AdjacencyMatrix.init();
-
-        return {window: win, widget: null};
-    };
-
   var createOntologySearchWidget = function(osInstance)
   {
     // If available, a new instance passed as parameter will be used.
@@ -1972,7 +1940,6 @@ var WindowMaker = new function()
     "connectivity-graph-plot": createConnectivityGraphPlot,
     "assemblygraph-widget": createAssemblyGraphWindow,
     "sliceinfo-widget": createSliceInfoWindow,
-    "adjacencymatrix-widget": createAdjacencyMatrixWindow,
     "ontology-search": createOntologySearchWidget,
     "circuit-graph-plot": createCircuitGraphPlot,
     "venn-diagram": createVennDiagramWindow,

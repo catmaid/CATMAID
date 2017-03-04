@@ -19,25 +19,6 @@ from catmaid.control.authentication import requires_user_role, \
 from catmaid.control.common import get_relation_to_id_map, get_request_list
 
 
-def split_and_filter_id_rows(rows, part_2_start, total_len):
-    # A list of tuples, each tuple containing the selected columns for each node
-    # The id is the first element of each tuple
-    nodes = []
-    # A set of unique node IDs
-    node_ids = set()
-
-    for row in rows:
-        t1id = row[0]
-        if t1id not in node_ids:
-            node_ids.add(t1id)
-            nodes.append(row[0:part_2_start])
-        t2id = row[part_2_start]
-        if t2id and t2id not in node_ids:
-            node_ids.add(t2id)
-            nodes.append(row[part_2_start:total_len])
-
-    return node_ids, nodes
-
 class Postgis3dNodeProvider(object):
 
     # Fetch treenodes with the help of two PostGIS filters: The &&& operator
@@ -62,20 +43,12 @@ class Postgis3dNodeProvider(object):
             t1.radius,
             t1.skeleton_id,
             EXTRACT(EPOCH FROM t1.edition_time),
-            t1.user_id,
-            t2.id,
-            t2.parent_id,
-            t2.location_x,
-            t2.location_y,
-            t2.location_z,
-            t2.confidence,
-            t2.radius,
-            t2.skeleton_id,
-            EXTRACT(EPOCH FROM t2.edition_time),
-            t2.user_id
+            t1.user_id
         FROM
-          (SELECT te.id
+          (SELECT UNNEST(ARRAY[te.id, t.parent_id])
              FROM treenode_edge te
+             JOIN treenode t
+               ON te.id = t.id
              WHERE te.edge &&& ST_MakeLine(ARRAY[
                  ST_MakePoint({left}, {bottom}, {z2}),
                  ST_MakePoint({right}, {top}, {z1})] ::geometry[])
@@ -87,9 +60,11 @@ class Postgis3dNodeProvider(object):
                  ST_MakePoint({left},  {top},    {halfz})]::geometry[])),
                  {halfzdiff})
              AND te.project_id = {project_id}
+           UNION
+           SELECT UNNEST({sanitized_treenode_ids}::bigint[])
           ) edges(edge_child_id)
-        JOIN treenode t1 ON edge_child_id = t1.id
-        LEFT JOIN treenode t2 ON t2.id = t1.parent_id
+        JOIN treenode t1
+          ON edge_child_id = t1.id
         LIMIT {limit}
     '''
 
@@ -164,7 +139,7 @@ class Postgis3dNodeProvider(object):
     # To execute the queries directly through PsycoPg (i.e. not prepared) a
     # different parameter formatt is used: {left} -> %(left)s.
     treenode_query_params = ['project_id', 'left', 'top', 'z1', 'right',
-        'bottom', 'z2', 'halfz', 'halfzdiff', 'limit']
+        'bottom', 'z2', 'halfz', 'halfzdiff', 'limit', 'sanitized_treenode_ids']
     treenode_query_psycopg = treenode_query.format(
         **{k:'%({})s'.format(k) for k in treenode_query_params})
 
@@ -185,7 +160,8 @@ class Postgis3dNodeProvider(object):
         'halfz': '$8',
         'halfzdiff': '$9',
         'limit': '$10',
-        'sanitized_connector_ids': '$11'
+        'sanitized_connector_ids': '$11',
+        'sanitized_treenode_ids': '$11'
     }
     treenode_query_prepare = treenode_query.format(**prepare_var_names)
     connector_query_prepare = connector_query.format(**prepare_var_names)
@@ -194,9 +170,9 @@ class Postgis3dNodeProvider(object):
         cursor = connection.cursor()
         cursor.execute("""
             -- 1 project id, 2 left, 3 top, 4 z1, 5 right, 6 bottom, 7 z2,
-            -- 8 halfz, 9 halfzdiff, 10 limit
+            -- 8 halfz, 9 halfzdiff, 10 limit 11 sanitized_treenode_ids
             PREPARE get_treenodes_postgis_3d (int, real, real, real,
-                    real, real, real, real, real, int) AS
+                    real, real, real, real, real, int, bigint[]) AS
             {}
         """.format(self.treenode_query_prepare))
         cursor.execute("""
@@ -207,25 +183,28 @@ class Postgis3dNodeProvider(object):
             {}
         """.format(self.connector_query_prepare))
 
-    def get_treenode_data(self, cursor, params):
+    def get_treenode_data(self, cursor, params, extra_treenode_ids):
         """ Selects all treenodes of which links to other treenodes intersect
-        with the request bounding box.
+        with the request bounding box. Will optionally fetch additional
+        treenodes.
         """
-
         params['halfzdiff'] = abs(params['z2'] - params['z1']) * 0.5
         params['halfz'] = params['z1'] + (params['z2'] - params['z1']) * 0.5
+        params['sanitized_treenode_ids'] = map(int, extra_treenode_ids)
 
         if settings.PREPARED_STATEMENTS:
             # Use a prepared statement to get the treenodes
             cursor.execute('''
                 EXECUTE get_treenodes_postgis_3d(%(project_id)s,
                     %(left)s, %(top)s, %(z1)s, %(right)s, %(bottom)s, %(z2)s,
-                    %(halfz)s, %(halfzdiff)s, %(limit)s)
+                    %(halfz)s, %(halfzdiff)s, %(limit)s,
+                    %(sanitized_treenode_ids))
             ''', params)
         else:
             cursor.execute(self.treenode_query_psycopg, params)
 
-        treenode_ids, treenodes = split_and_filter_id_rows(cursor.fetchall(), 10, 20)
+        treenodes = cursor.fetchall()
+        treenode_ids = [t[0] for t in treenodes]
 
         return treenode_ids, treenodes
 
@@ -233,6 +212,8 @@ class Postgis3dNodeProvider(object):
         """Selects all connectors that are in or have links that intersect the
         bounding box, or that are in missing_connector_ids.
         """
+        params['halfzdiff'] = abs(params['z2'] - params['z1']) * 0.5
+        params['halfz'] = params['z1'] + (params['z2'] - params['z1']) * 0.5
         params['sanitized_connector_ids'] = map(int, missing_connector_ids)
 
         if settings.PREPARED_STATEMENTS:
@@ -266,31 +247,22 @@ class Postgis2dNodeProvider(object):
     # (the query plan says ST_3DDWithin wouldn't use a 2-d index in this query,
     # even if present).
     treenode_query = """
-        WITH nodes AS (
           SELECT
-            t1.id AS t1_id,
-            t1.parent_id AS t1_parent_id,
-            t1.location_x AS t1_location_x,
-            t1.location_y AS t1_location_y,
-            t1.location_z AS t1_location_z,
-            t1.confidence AS t1_confidence,
-            t1.radius AS t1_radius,
-            t1.skeleton_id AS t1_skeleton_id,
-            EXTRACT(EPOCH FROM t1.edition_time) AS t1_edition_time,
-            t1.user_id AS t1_user_id,
-            t2.id AS t2_id,
-            t2.parent_id AS t2_parent_id,
-            t2.location_x AS t2_location_x,
-            t2.location_y AS t2_location_y,
-            t2.location_z AS t2_location_z,
-            t2.confidence AS t2_confidence,
-            t2.radius AS t2_radius,
-            t2.skeleton_id AS t2_skeleton_id,
-            EXTRACT(EPOCH FROM t2.edition_time) AS t2_edition_time,
-            t2.user_id AS t2_user_id
+            t1.id,
+            t1.parent_id,
+            t1.location_x,
+            t1.location_y,
+            t1.location_z,
+            t1.confidence,
+            t1.radius,
+            t1.skeleton_id,
+            EXTRACT(EPOCH FROM t1.edition_time),
+            t1.user_id
           FROM
-            (SELECT te.id
+            (SELECT UNNEST(ARRAY[te.id, t.parent_id])
                FROM treenode_edge te
+               JOIN treenode t
+                 ON t.id = te.id
                WHERE te.edge && ST_MakeEnvelope({left}, {top}, {right}, {bottom})
                  AND floatrange(ST_ZMin(te.edge),
                     ST_ZMax(te.edge), '[]') && floatrange({z1}, {z2}, '[)')
@@ -302,20 +274,11 @@ class Postgis2dNodeProvider(object):
                      ST_MakePoint({left},  {top},    {halfz})]::geometry[])),
                      {halfzdiff})
                  AND te.project_id = {project_id}
-            ) edges(edge_child_id)
-          JOIN treenode t1 ON edge_child_id = t1.id
-          LEFT JOIN treenode t2 ON t2.id = t1.parent_id
-        )
-        SELECT
-          t1_id, t1_parent_id, t1_location_x, t1_location_y, t1_location_z,
-          t1_confidence, t1_radius, t1_skeleton_id, t1_edition_time, t1_user_id
-        FROM nodes
-        UNION
-        SELECT
-          t2_id, t2_parent_id, t2_location_x, t2_location_y, t2_location_z,
-          t2_confidence, t2_radius, t2_skeleton_id, t2_edition_time, t2_user_id
-        FROM nodes
-        WHERE t2_id IS NOT NULL
+              UNION
+              SELECT UNNEST({sanitized_treenode_ids}::bigint[])
+        ) edges(edge_child_id)
+        JOIN treenode t1
+          ON edges.edge_child_id = t1.id
         LIMIT {limit};
     """
 
@@ -390,7 +353,7 @@ class Postgis2dNodeProvider(object):
     # To execute the query directly with PsycoPg (i.e. not prepared) a different
     # parameter formatt is used: {left} -> %(left)s.
     treenode_query_params = ['project_id', 'left', 'top', 'z1', 'right',
-        'bottom', 'z2', 'halfz', 'halfzdiff', 'limit']
+        'bottom', 'z2', 'halfz', 'halfzdiff', 'limit', 'sanitized_treenode_ids']
     treenode_query_psycopg = treenode_query.format(
         **{k:'%({})s'.format(k) for k in treenode_query_params})
 
@@ -412,7 +375,8 @@ class Postgis2dNodeProvider(object):
         'halfz': '$8',
         'halfzdiff': '$9',
         'limit': '$10',
-        'sanitized_connector_ids': '$11'
+        'sanitized_connector_ids': '$11',
+        'sanitized_treenode_ids': '$11'
     }
     treenode_query_prepare = treenode_query.format(**prepare_var_names)
     connector_query_prepare = connector_query.format(**prepare_var_names)
@@ -438,19 +402,20 @@ class Postgis2dNodeProvider(object):
             {}
         """.format(self.connector_query_prepare))
 
-    def get_treenode_data(self, cursor, params):
+    def get_treenode_data(self, cursor, params, extra_treenode_ids):
         """ Selects all treenodes of which links to other treenodes intersect with
         the request bounding box.
         """
         params['halfzdiff'] = abs(params['z2'] - params['z1']) * 0.5
         params['halfz'] = params['z1'] + (params['z2'] - params['z1']) * 0.5
+        params['sanitized_treenode_ids'] = map(int, extra_treenode_ids)
 
         if settings.PREPARED_STATEMENTS:
             # Use a prepared statement to get the treenodes
             cursor.execute('''
                 EXECUTE get_treenodes_postgis_2d(%(project_id)s,
                     %(left)s, %(top)s, %(z1)s, %(right)s, %(bottom)s, %(z2)s,
-                    %(halfz)s, %(halfzdiff)s, %(limit)s)
+                    %(halfz)s, %(halfzdiff)s, %(limit)s, %(missing_treenode_ids))
             ''', params)
         else:
             cursor.execute(self.treenode_query_psycopg, params)
@@ -464,6 +429,8 @@ class Postgis2dNodeProvider(object):
         """Selects all connectors that are in or have links that intersect the
         bounding box, or that are in missing_connector_ids.
         """
+        params['halfz'] = params['z1'] + (params['z2'] - params['z1']) * 0.5
+        params['halfzdiff'] = abs(params['z2'] - params['z1']) * 0.5
         params['sanitized_connector_ids'] = map(int, missing_connector_ids)
 
         if settings.PREPARED_STATEMENTS:
@@ -601,8 +568,8 @@ def node_list_tuples(request, project_id=None, provider=None):
     project_id = int(project_id) # sanitize
     params = {}
 
-    treenode_ids = get_request_list(request.POST, 'treenode_ids', map_fn=int)
-    connector_ids = get_request_list(request.POST, 'connector_ids', map_fn=int)
+    treenode_ids = get_request_list(request.POST, 'treenode_ids', tuple(), int)
+    connector_ids = get_request_list(request.POST, 'connector_ids', tuple(), int)
     for p in ('top', 'left', 'bottom', 'right', 'z1', 'z2'):
         params[p] = float(request.POST.get(p, 0))
     # Limit the number of retrieved treenodes within the section
@@ -610,11 +577,12 @@ def node_list_tuples(request, project_id=None, provider=None):
     params['project_id'] = project_id
     include_labels = (request.POST.get('labels', None) == 'true')
 
-    return node_list_tuples_query(params, project_id, treenode_ids, connector_ids,
-                                  include_labels, get_provider())
+    return node_list_tuples_query(params, project_id, get_provider(),
+            treenode_ids, connector_ids, include_labels)
 
 
-def node_list_tuples_query(params, project_id, explicit_treenode_ids, explicit_connector_ids, include_labels, node_provider):
+def node_list_tuples_query(params, project_id, node_provider, explicit_treenode_ids=tuple(),
+        explicit_connector_ids=tuple(), include_labels=False):
     """The returned JSON data is sensitive to indices in the array, so care
     must be taken never to alter the order of the variables in the SQL
     statements without modifying the accesses to said data both in this
@@ -629,28 +597,11 @@ def node_list_tuples_query(params, project_id, explicit_treenode_ids, explicit_c
         relation_map = dict(cursor.fetchall())
         id_to_relation = {v: k for k, v in relation_map.items()}
 
-        response_on_error = 'Failed to query treenodes'
+        # A set of extra treenode and connector IDs
+        missing_treenode_ids = set(n for n in explicit_treenode_ids if n != -1)
+        missing_connector_ids = set(c for c in explicit_connector_ids if c != -1)
 
-        treenode_ids, treenodes = node_provider.get_treenode_data(cursor, params)
-        n_retrieved_nodes = len(treenode_ids)
-
-        # A set of missing treenode and connector IDs
-        missing_treenode_ids = set()
-        missing_connector_ids = set()
-
-        # Add explicitly requested treenodes and connectors, if necessary.
-        if explicit_treenode_ids:
-            for treenode_id in explicit_treenode_ids:
-                if -1 != treenode_id and treenode_id not in treenode_ids:
-                    missing_treenode_ids.add(treenode_id)
-
-        if explicit_connector_ids:
-            for connector_id in explicit_connector_ids:
-                if -1 != connector_id:
-                    missing_connector_ids.add(connector_id)
-
-        # Find connectors related to treenodes in the field of view
-        # Connectors found attached to treenodes
+        # Find connectors in the field of view
         response_on_error = 'Failed to query connector locations.'
         crows = node_provider.get_connector_data(cursor, params,
             missing_connector_ids)
@@ -676,8 +627,7 @@ def node_list_tuples_query(params, project_id, explicit_treenode_ids, explicit_c
             if tnid is not None:
                 if tcid in seen_links:
                     continue
-                if tnid not in treenode_ids:
-                    missing_treenode_ids.add(tnid)
+                missing_treenode_ids.add(tnid)
                 seen_links.add(tcid)
                 # Collect relations between connectors and treenodes
                 # row[7]: treenode_id (tnid above)
@@ -693,31 +643,11 @@ def node_list_tuples_query(params, project_id, explicit_treenode_ids, explicit_c
                 connectors.append(row[0:7] + (links[cid],))
                 connector_ids.add(cid)
 
+        response_on_error = 'Failed to query treenodes'
 
-        # Fetch missing treenodes. These are related to connectors
-        # but not in the bounding box of the field of view.
-        # This is so that we can draw arrows from any displayed connector
-        # to all of its connected treenodes, even if one is several slices
-        # below.
-
-        if missing_treenode_ids:
-            response_on_error = 'Failed to query treenodes from connectors'
-            cursor.execute('''
-            SELECT id,
-                parent_id,
-                location_x,
-                location_y,
-                location_z,
-                confidence,
-                radius,
-                skeleton_id,
-                EXTRACT(EPOCH FROM edition_time),
-                user_id
-            FROM treenode,
-                 UNNEST(%s::bigint[]) missingnodes(mnid)
-            WHERE id = mnid''', (list(missing_treenode_ids),))
-
-            treenodes.extend(cursor.fetchall())
+        treenode_ids, treenodes = node_provider.get_treenode_data(cursor,
+                params, missing_treenode_ids)
+        n_retrieved_nodes = len(treenode_ids)
 
         labels = defaultdict(list)
         if include_labels:

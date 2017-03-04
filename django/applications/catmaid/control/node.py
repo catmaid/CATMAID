@@ -1,4 +1,5 @@
 import json
+import ujson
 
 from collections import defaultdict
 
@@ -693,11 +694,10 @@ def node_list_tuples_query(params, project_id, node_provider, explicit_treenode_
                     labels[row[0]].append(row[1])
 
         used_rel_map = {r:id_to_relation[r] for r in used_relations}
-        return HttpResponse(json.dumps((
+        return HttpResponse(ujson.dumps((
             treenodes, connectors, labels,
             n_retrieved_nodes == params['limit'],
-            used_rel_map),
-            separators=(',', ':')), # default separators have spaces in them like (', ', ': '). Must provide two: for list and for dictionary. The point of this: less space, more compact json
+            used_rel_map)),
             content_type='application/json')
 
     except Exception as e:

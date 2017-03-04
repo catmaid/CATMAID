@@ -4,6 +4,8 @@
 
 ### Notes
 
+- A virtualenv update required!
+
 - The 'classic' node provider has been removed, use 'postgis3d' or 'postgis2d'
   instead.
 

@@ -3251,6 +3251,39 @@
     });
   };
 
+  /** The @text param is optional. Will otherwise use the text field with id: gg_select_regex + widgetID
+   *  If the text starts with a slash, then it will be interpreted as a regular expression.
+   *  Otherwise a literal search for a substring match is done.
+   */
+  GroupGraph.prototype.selectByLabel = function(ev, text) {
+    text = text ? text.trim() : $("#gg_select_regex" + this.widgetID).val();
+    if (!text) {
+      CATMAID.msg("Select by regular expression", "No text.");
+      return;
+    }
+    var match;
+    if ('/' === text[0]) {
+      // Search by regular expression
+      match = (function(regexp, label) {
+        return regexp.test(label);
+      }).bind(null, new RegExp(text.substr(1), 'i'));
+    } else {
+      // Search by indexOf
+      match = function(label) {
+        return -1 !== label.indexOf(text);
+      }
+    }
+    var regex = new RegExp(text, 'i');
+    var count = 0;
+    this.cy.nodes().forEach(function(node) {
+      if (match(node.data('label'))) {
+        node.select();
+        ++count;
+      }
+    });
+    CATMAID.msg("Select by regular expression", "Selected " + count + " nodes.");
+  };
+
   /**
    * Helper to get the number of synapses with confidence greater than or
    * equal to a threshold.

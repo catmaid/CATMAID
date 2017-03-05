@@ -1312,6 +1312,8 @@ var WindowMaker = new function()
          [document.createTextNode(' - ')],
          [DOM.createNumericField('gg_select_regex' + GG.widgetID, null, null, '', '', GG.selectByLabel.bind(GG), null)], // NOTE: actually used as text rather than being limited to numbers, despite the name
          ['Select by regex', GG.selectByLabel.bind(GG)],
+         [document.createTextNode(' - ')],
+         ['Invert', GG.invertSelection.bind(GG)],
         ]);
 
     DOM.appendToTab(tabs['Align'],

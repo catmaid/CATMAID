@@ -3284,6 +3284,13 @@
     CATMAID.msg("Select by regular expression", "Selected " + count + " nodes.");
   };
 
+  GroupGraph.prototype.invertSelection = function() {
+    this.cy.nodes().forEach(function(node) {
+      if (node.selected()) node.unselect();
+      else node.select();
+    });
+  };
+
   /**
    * Helper to get the number of synapses with confidence greater than or
    * equal to a threshold.

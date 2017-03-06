@@ -47,6 +47,20 @@ Selection table:
 - Two new action icons are added on the right of each row: move a skeleton up or
   down in the table.
 
+Annotation graph:
+
+- A new 'Annotation Graph' widget provides a graph like visualization of
+  CATMAID's annotation space, which is mainly useful to visualize annotation
+  hierarchies. Meta-annotation are linked to annotations through edges. This
+  widget can be opened with Ctrl+Space together with the 'annotation-graph'
+  keyword.
+
+- Optionally, the minimum and maximum number of linked annotations in a single
+  hierarchy can be configured.
+
+- Selecting an annotation will query all (sub-)annotated skeletons, which can be
+  used as through a regular skeleton source selection in other widgets.
+
 Miscellaneous:
 
 - Tracing tool: the "Show labels" setting is now remembered across sessions.

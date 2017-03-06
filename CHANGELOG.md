@@ -24,6 +24,12 @@
 
 ### Features and enhancements
 
+Graph widget:
+
+  The "Selection" tab now has two new buttons that provide the ability to invert
+	the selection, and also to select graph nodes based on matching a text string
+	or by a regular expression (when the text starts with a '/').
+
 3D Viewer:
 
 - With the help of the new "Update active" checkbox in the "View" tab it is now

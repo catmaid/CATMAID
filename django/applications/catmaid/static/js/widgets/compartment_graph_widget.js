@@ -3271,7 +3271,7 @@
       // Search by indexOf
       match = function(label) {
         return -1 !== label.indexOf(text);
-      }
+      };
     }
     var regex = new RegExp(text, 'i');
     var count = 0;

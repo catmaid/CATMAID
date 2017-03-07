@@ -4148,6 +4148,17 @@
     this.radiusVolumes = {}; // contains spheres and cylinders
     this.textlabels = {};
 
+    // Visibility of connector types, read known model fields from model
+    var modelFieldMapping = {
+      'pre_visible': 'presynaptic_to',
+      'post_visible': 'postsynaptic_to'
+    };
+    this.connectorVisibility = CTYPES.reduce((function(o, t) {
+      var mapping = modelFieldMapping[t];
+      o[t] = mapping ? this.skeletonmodel[mapping] : true;
+      return o;
+    }).bind(this), {});
+
     // Used only with restricted connectors
     this.connectoractor = null;
     this.connectorgeometry = {};
@@ -4238,6 +4249,7 @@
 
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.setSynapticVisibilityFn = function(type) {
     return function(vis) {
+      this.connectorVisibility[type] = vis;
       this.visibilityCompositeActor(type, vis);
       for (var idx in this.synapticSpheres) {
         if (this.synapticSpheres.hasOwnProperty(idx)
@@ -5056,7 +5068,7 @@
             var type = skeleton.synapticTypes[j];
             var actor = skeleton.connectoractor[type];
             if (actor) {
-              actor.visible = linksVisible;
+              actor.visible = linksVisible && skeleton.connectorVisibility[type];
             }
           }
         }
@@ -5066,7 +5078,7 @@
           var type = skeleton.synapticTypes[j];
           var actor = skeleton.actor[type];
           if (actor) {
-            actor.visible = linksVisible;
+            actor.visible = linksVisible && skeleton.connectorVisibility[type];
           }
         }
       }

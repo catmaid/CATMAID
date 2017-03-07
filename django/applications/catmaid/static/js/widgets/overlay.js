@@ -4561,12 +4561,11 @@ SkeletonAnnotations.TracingOverlay.prototype.handleChangedSkeleton = function(sk
  */
 SkeletonAnnotations.TracingOverlay.prototype.handleDeletedSkeleton = function(skeletonID) {
   var activeSkeletonID = SkeletonAnnotations.getActiveSkeletonId();
-  this.updateIfKnown(skeletonID, (function() {
-    // Unselect active node, if it was part of the current display
-    if (activeSkeletonID == skeletonID) {
-      this.activateNode(null);
-    }
-  }).bind(this));
+  // Unselect active node, if it was part of the current display
+  if (activeSkeletonID == skeletonID) {
+    this.activateNode(null);
+  }
+  this.updateIfKnown(skeletonID);
 };
 
 /**

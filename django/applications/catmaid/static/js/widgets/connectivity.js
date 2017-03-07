@@ -823,6 +823,7 @@
           a.textContent = count;
           a.setAttribute('href', '#');
           a.setAttribute('partnerID', partner.id);
+          if (skid) a.setAttribute('data-skeleton-id', skid);
         } else { // Make a hidden span including the zero for semantic clarity and table exports.
           var s = document.createElement('span');
           td.appendChild(s);
@@ -1513,12 +1514,13 @@
     function createPartnerClickHandler(partners, relation) {
       return function() {
         var partnerID = $(this).attr('partnerID');
+        var skeletonId = this.dataset.skeletonId;
         var partner = partners[partnerID];
         if (!partner) {
           CATMAID.error("Could not find partner with ID " + partnerID +
               " and relation " + relation);
         } else {
-          var skids = Object.keys(partner.skids);
+          var skids = skeletonId ? [skeletonId] : Object.keys(partner.skids);
           CATMAID.ConnectorSelection.show_shared_connectors([partner.id], skids, relation);
         }
 

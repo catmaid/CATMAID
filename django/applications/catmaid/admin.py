@@ -107,6 +107,18 @@ class BrokenSliceAdmin(GuardedModelAdmin):
                 messages.add_message(request, messages.INFO, msg)
 
 
+class StackMirrorForm(forms.ModelForm):
+
+    class Meta:
+        model = StackMirror
+        fields = '__all__'
+        widgets = {
+            'title': forms.TextInput(attrs={'size': 20}),
+            'image_base': forms.TextInput(attrs={'size': 50}),
+            'file_extension': forms.TextInput(attrs={'size': 5}),
+        }
+
+
 class ProjectStackInline(admin.TabularInline):
     model = ProjectStack
     extra = 1
@@ -125,6 +137,7 @@ class StackStackGroupInline(admin.TabularInline):
 
 class StackMirrorInline(admin.TabularInline):
     model = StackMirror
+    form = StackMirrorForm
     extra = 1
     max_num = 10
     verbose_name = 'Stack mirror'
@@ -156,6 +169,7 @@ class StackGroupAdmin(GuardedModelAdmin):
 
 
 class StackMirrorAdmin(GuardedModelAdmin):
+    form = StackMirrorForm
     list_display = ('title', 'stack', 'position', 'image_base')
     search_fields = ['title', 'image_base']
     list_editable = ('position',)

@@ -1782,15 +1782,20 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeLink = function (from
       function(json) {
         var from_model = SkeletonAnnotations.activeSkeleton.createModel();
         var to_skid = json.skeleton_id;
+
+        var nodes = {};
+        nodes[from_model.id] = fromid;
+        nodes[to_skid] = toid;
+
         // Make sure the user has permissions to edit both the from and the to
         // skeleton.
         self.executeIfSkeletonEditable(from_model.id, function() {
           self.executeIfSkeletonEditable(to_skid, function() {
             // The function used to instruct the backend to do the merge
-            var merge = function(annotation_set) {
+            var merge = function(annotation_set, fromId, toId) {
               self.submit.then(function() {
                 var command = new CATMAID.JoinSkeletonsCommand(self.state, project.id,
-                    fromid, toid, annotation_set);
+                    nodes[fromId], nodes[toId], annotation_set);
                 CATMAID.commands.execute(command)
                   .then(function(result) {
                     // Wait for updates to finish before updating the active node
@@ -1804,13 +1809,6 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeLink = function (from
               var to_color = new THREE.Color().setRGB(1, 0, 1);
               var to_model = new CATMAID.SkeletonModel(
                   to_skid, json.neuron_name, to_color);
-              var dialog = new CATMAID.SplitMergeDialog({
-                model1: from_model,
-                model2: to_model
-              });
-              dialog.onOK = function() {
-                merge(dialog.get_combined_annotation_set());
-              };
               // Extend the display with the newly created line
               var extension = {};
               var p = self.nodes[SkeletonAnnotations.getActiveNodeId()],
@@ -1823,6 +1821,15 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeLink = function (from
                                     self.pix2physY(c.z, c.y, c.x),
                                     self.pix2physZ(c.z, c.y, c.x))
               ];
+              var dialog = new CATMAID.SplitMergeDialog({
+                model1: from_model,
+                model2: to_model,
+                extension: extension,
+                keepOrder: false
+              });
+              dialog.onOK = function(fromId, toId) {
+                merge(dialog.get_combined_annotation_set(), fromId, toId);
+              };
               dialog.show(extension);
             };
 

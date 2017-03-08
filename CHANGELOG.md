@@ -68,6 +68,9 @@ Miscellaneous:
 - Right clicking on a stack viewer won't bring up the browser context menu
   anymore. Instead, the right mouse button can now be used for panning, too.
 
+- The merge dialog has now a "Swap" button in the lower left corner. It can be
+  used to swap winning and losing skeleton in a merge.
+
 
 ### Bug fixes
 

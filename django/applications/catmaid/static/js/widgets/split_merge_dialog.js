@@ -9,6 +9,9 @@
     var model1 = options.model1;
     var model2 = options.model2;
 
+    this.extension = options.extension;
+    this.autoOrder = options.autoOrder === undefined ? true : !!options.autoOrder;
+
     // Models object
     this.models = {};
     this.models[model1.id] = model1;
@@ -40,7 +43,32 @@
 
   SplitMergeDialog.prototype = {};
 
-  SplitMergeDialog.prototype.populate = function(extension) {
+  SplitMergeDialog.prototype.swapSkeletons = function() {
+    $(this.dialog).dialog('close');
+    var extension = {};
+    extension[this.model1_id] = this.extension[this.model2_id];
+    extension[this.model2_id] = this.extension[this.model1_id];
+
+    var newModel1 = this.models[this.model2_id];
+    var newModel2 = this.models[this.model1_id];
+    var newColor1 = newModel2.color.clone();
+    var newColor2 = newModel1.color.clone();
+    newModel1.color.copy(newColor1);
+    newModel2.color.copy(newColor2);
+
+    var newDialog = new CATMAID.SplitMergeDialog({
+      model1: this.models[this.model2_id],
+      model2: this.models[this.model1_id],
+      extension: extension,
+      splitNodeId: this.splitNodeId,
+      autoOrder: false
+    });
+    newDialog.onOK = this.onOK;
+    newDialog.onCancel = this.onCancel;
+    newDialog.show();
+  };
+
+  SplitMergeDialog.prototype.populate = function() {
     var usable_height = this.height - 100;
     // Annotation list boxes
     var titleBig = document.createElement('div'),
@@ -184,9 +212,11 @@
         var title = 'Merge skeleton "' + this.models[this.model2_id].baseName +
           '" into "' + this.models[this.model1_id].baseName + '"';
 
+        var keepOrder = count1 < count2 || !this.autoOrder;
+
         $(this.dialog).dialog('option', 'title', title);
         // Find larger skeleton
-        if (count1 > count2) {
+        if (keepOrder) {
           this.over_model_id = this.model1_id;
           this.under_model_id = this.model2_id;
           over_count = count1;
@@ -222,7 +252,7 @@
         var checked = (null === name.match(/[Nn]euron \d+/));
         var cb = create_labeled_checkbox(name, CATMAID.session.userid, checked, false,
             name + " (reference to merged in neuron)");
-        if (count1 > count2) {
+        if (keepOrder) {
           big.appendChild(cb, checked);
         } else {
           small.appendChild(cb, checked);
@@ -237,7 +267,7 @@
             count2 = arbor.countNodes() - count1,
             over_count, under_count,
             model_name = this.models[this.model1_id].baseName;
-        this.upstream_is_small = count1 > count2;
+        this.upstream_is_small = keepOrder;
         if (this.upstream_is_small) {
           over_count = count1;
           under_count = count2;
@@ -271,8 +301,8 @@
 
       // Extend skeletons: Unfortunately, it is not possible right now to add new
       // points to existing meshes in THREE. Therefore, a new line is created.
-      if (extension) {
-        var pairs = extension[this.model1_id];
+      if (this.extension) {
+        var pairs = this.extension[this.model1_id];
         if (pairs) {
           // Create new line representing interpolated link
           var geometry = new THREE.Geometry();
@@ -294,6 +324,18 @@
     // Create controls and handlers for 3d viewer settings
     var customOptions = document.createElement('div');
     customOptions.setAttribute('class', 'ui-dialog-extra-buttonset');
+
+    if (this.in_merge_mode) {
+      var switchButton = document.createElement('button');
+      switchButton.setAttribute('class', 'ui-button');
+      switchButton.classList.add('ui-button', 'ui-corner-all',
+        'ui-state-default', 'ui-widget', 'ui-button-text-only');
+      var switchButtonLabel = switchButton.appendChild(document.createElement('span'));
+      switchButtonLabel.classList.add('ui-button-text');
+      switchButtonLabel.appendChild(document.createTextNode('Swap'));
+      switchButton.onclick = this.swapSkeletons.bind(this);
+      customOptions.appendChild(switchButton);
+    }
 
     var showInputsCb = document.createElement('input');
     showInputsCb.setAttribute('type', 'checkbox');
@@ -425,7 +467,7 @@
     return true;
   };
 
-  SplitMergeDialog.prototype.show = function(extension) {
+  SplitMergeDialog.prototype.show = function() {
     var self = this;
     $(this.dialog).dialog({
       width: self.width,
@@ -451,7 +493,7 @@
                 "One part has to keep all annotations.");
           } else {
             $(this).dialog("close");
-            if (self.onOK) self.onOK();
+            if (self.onOK) self.onOK(self.over_model_id, self.under_model_id);
           }
         }
       }
@@ -459,7 +501,7 @@
 
     // The dialog is populated after creation, since the 3D viewer expects
     // elements to be added to the DOM.
-    this.populate(extension);
+    this.populate();
   };
 
   // Make split/merge dialog available in CATMAID namespace

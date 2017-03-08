@@ -1323,6 +1323,7 @@
     if (lastFocused === this) {
       lastFocused = null;
     }
+    this.unregisterInstance();
   };
 
   /**

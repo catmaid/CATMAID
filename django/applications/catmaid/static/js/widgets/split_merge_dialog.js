@@ -177,7 +177,8 @@
             skeleton2 = this.webglapp.space.content.skeletons[this.model2_id],
             count1 = skeleton.createArbor().countNodes(),
             count2 = skeleton2.createArbor().countNodes(),
-            over_count, under_count, over_skeleton, under_skeleton;
+            over_count, under_count, over_skeleton, under_skeleton,
+            over_role, under_role;
 
         // Source and target don't change with size
         var title = 'Merge skeleton "' + this.models[this.model2_id].baseName +
@@ -192,6 +193,8 @@
           under_count = count2;
           over_skeleton = skeleton;
           under_skeleton = skeleton2;
+          over_role = 'winning';
+          under_role = 'losing';
         } else {
           this.over_model_id = this.model2_id;
           this.under_model_id = this.model1_id;
@@ -199,13 +202,15 @@
           under_count = count1;
           over_skeleton = skeleton2;
           under_skeleton = skeleton;
+          over_role = 'losing';
+          under_role = 'winning';
         }
         // Update titles and name over count model first
         var over_name = this.models[this.over_model_id].baseName;
         var under_name = this.models[this.under_model_id].baseName;
-        titleBig.appendChild(document.createTextNode(over_count + " nodes"));
+        titleBig.appendChild(document.createTextNode(over_count + " nodes in " + over_role + " skeleton"));
         titleBig.setAttribute('title', over_name);
-        titleSmall.appendChild(document.createTextNode(under_count + " nodes"));
+        titleSmall.appendChild(document.createTextNode(under_count + " nodes in " + under_role + " skeleton"));
         titleSmall.setAttribute('title', under_name);
         // Color the small and big node count boxes
         colorBig.style.backgroundColor = '#' + over_skeleton.getActorColorAsHTMLHex();
@@ -248,8 +253,8 @@
         var title = 'Split skeleton "' + model_name + '"';
         $(this.dialog).dialog('option', 'title', title);
         // Add titles
-        titleBig.appendChild(document.createTextNode(over_count + " nodes"));
-        titleSmall.appendChild(document.createTextNode(under_count + " nodes"));
+        titleBig.appendChild(document.createTextNode(over_count + " nodes in remaining skeleton"));
+        titleSmall.appendChild(document.createTextNode(under_count + " nodes in new skeleton"));
         // Color the small and big node count boxes
         colorBig.style.backgroundColor = '#' + skeleton.getActorColorAsHTMLHex();
         var bc = this.webglapp.getSkeletonColor(this.model1_id);

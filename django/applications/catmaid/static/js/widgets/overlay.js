@@ -95,7 +95,7 @@ SkeletonAnnotations.atn.validate = (function() {
   };
 })();
 
-SkeletonAnnotations.MODES = Object.freeze({SKELETON: 0, SYNAPSE: 1});
+SkeletonAnnotations.MODES = Object.freeze({SKELETON: 0, SYNAPSE: 1, SELECT: 2});
 SkeletonAnnotations.currentmode = SkeletonAnnotations.MODES.skeleton;
 SkeletonAnnotations.newConnectorType = CATMAID.Connectors.SUBTYPE_SYNAPTIC_CONNECTOR;
 SkeletonAnnotations.useNewConnectorTypeAsDefault = false;
@@ -423,21 +423,25 @@ SkeletonAnnotations.exportSWC = function() {
  * Set tracing mode to node or synapse mode. This determines what is created if
  * the user clicks on the canvas.
  */
-SkeletonAnnotations.setTracingMode = function (mode) {
+SkeletonAnnotations.setTracingMode = function (mode, toggle) {
   // toggles the button correctly
   // might update the mouse pointer
   document.getElementById("trace_button_skeleton").className = "button";
   document.getElementById("trace_button_synapse").className = "button";
 
-  switch (mode) {
-    case this.MODES.SKELETON:
-      this.currentmode = mode;
-      document.getElementById("trace_button_skeleton").className = "button_active";
-      break;
-    case this.MODES.SYNAPSE:
-      this.currentmode = mode;
-      document.getElementById("trace_button_synapse").className = "button_active";
-      break;
+  if (toggle && this.currentmode === mode) {
+    this.currentmode = this.MODES.SELECT;
+  } else {
+    switch (mode) {
+      case this.MODES.SKELETON:
+        this.currentmode = mode;
+        document.getElementById("trace_button_skeleton").className = "button_active";
+        break;
+      case this.MODES.SYNAPSE:
+        this.currentmode = mode;
+        document.getElementById("trace_button_synapse").className = "button_active";
+        break;
+    }
   }
 };
 

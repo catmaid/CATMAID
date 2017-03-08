@@ -71,6 +71,10 @@ Miscellaneous:
 - The merge dialog has now a "Swap" button in the lower left corner. It can be
   used to swap winning and losing skeleton in a merge.
 
+- Add a 'select' tracing modes to the tracing tool: Clicking an active skeleton or
+  synapse tracing mode button (first two buttons in toolbar) will switch to the
+  select mode where clicking doesn't create new nodes.
+
 
 ### Bug fixes
 

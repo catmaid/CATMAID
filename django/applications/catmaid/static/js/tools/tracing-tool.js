@@ -487,23 +487,23 @@
     };
 
     this.addAction(new CATMAID.Action({
-      helpText: "Switch to skeleton tracing mode",
+      helpText: "Switch to or toggle skeleton tracing mode",
       buttonName: "skeleton",
       buttonID: 'trace_button_skeleton',
       run: function (e) {
-        SkeletonAnnotations.setTracingMode(SkeletonAnnotations.MODES.SKELETON);
+        SkeletonAnnotations.setTracingMode(SkeletonAnnotations.MODES.SKELETON, true);
         return true;
       }
     }));
 
     this.addAction(new CATMAID.Action({
-      helpText: "Switch to synapse dropping mode",
+      helpText: "Switch to or toggle synapse dropping mode",
       buttonName: "synapse",
       buttonID: 'trace_button_synapse',
       run: function (e) {
         if (!CATMAID.mayEdit())
           return false;
-        SkeletonAnnotations.setTracingMode(SkeletonAnnotations.MODES.SYNAPSE);
+        SkeletonAnnotations.setTracingMode(SkeletonAnnotations.MODES.SYNAPSE, true);
         return true;
       }
     }));

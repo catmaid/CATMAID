@@ -1205,7 +1205,8 @@ var project;
           true,
           1,
           !useExistingViewer,
-          CATMAID.TileLayer.Settings.session.linear_interpolation);
+          CATMAID.TileLayer.Settings.session.linear_interpolation,
+          true);
 
       if (!useExistingViewer) {
         stackViewer.addLayer( "TileLayer", tilelayer );

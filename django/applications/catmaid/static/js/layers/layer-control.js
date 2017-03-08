@@ -208,6 +208,17 @@
               select.val(setting.value);
               select.addClass('layerSetting');
               label.append(select);
+            } else if ('buttons' === setting.type) {
+              var controls = $('<span />')
+                .addClass('layerSetting');
+              setting.buttons.forEach(function(b) {
+                var button = $('<button />')
+                  .addClass('layerSetting')
+                  .on('click', b.onclick)
+                  .append(b.name);
+                this.append(button);
+              }, controls);
+              label.append(controls);
             }
             layerSettings.append(settingElement);
           }

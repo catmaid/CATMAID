@@ -18,6 +18,8 @@
    *                               stack.
    * @param {boolean} linearInterpolation Whether to use linear or nearest
    *                               neighbor tile texture interpolation.
+   * @param {boolean} readCookie   Whether last used mirror and custom mirrors
+   *                               should be read from a browser cookie.
    */
   function TileLayer(
       stackViewer,
@@ -27,7 +29,8 @@
       visibility,
       opacity,
       showOverview,
-      linearInterpolation) {
+      linearInterpolation,
+      readCookie) {
     this.stackViewer = stackViewer;
     this.displayname = displayname;
     this.stack = stack;
@@ -37,13 +40,29 @@
     this.isHideable = false;
     this.lastMirrorCookieName = 'catmaid-last-mirror-' +
         project.id + '-' + stack.id;
+    this.customMirrorCookieName = 'catmaid-custom-mirror-' +
+        project.id + '-' + stack.id;
 
-    // If no mirror index is given, try to read the last used value from a
-    // cookie. If this is unavailable, use the first mirror as default.
-    if (undefined === mirrorIndex) {
-      var lastUsedMirror = CATMAID.getCookie(this.lastMirrorCookieName);
-      if (undefined !== lastUsedMirror) {
-        mirrorIndex = parseInt(lastUsedMirror, 10);
+    if (readCookie) {
+      // Try to load custom mirror from cookie
+      var serializedCustomMirrorData = CATMAID.getCookie(this.customMirrorCookieName);
+      if (serializedCustomMirrorData) {
+        var customMirrorData = JSON.parse(serializedCustomMirrorData);
+        stack.addMirror(customMirrorData);
+      }
+
+      // If no mirror index is given, try to read the last used value from a
+      // cookie. If this is unavailable, use the first mirror as default.
+      if (undefined === mirrorIndex) {
+        var lastUsedMirror = CATMAID.getCookie(this.lastMirrorCookieName);
+        if (lastUsedMirror) {
+          mirrorIndex = parseInt(lastUsedMirror, 10);
+
+          if (mirrorIndex >= this.stack.mirrors.length) {
+            CATMAID.setCookie(this.lastMirrorCookieName, '', -1);
+            mirrorIndex = undefined;
+          }
+        }
       }
     }
 
@@ -653,6 +672,70 @@
   };
 
   /**
+   * Show a dialog that give a user the option to configure a custom mirror.
+   */
+  TileLayer.prototype.addCustomMirror = function () {
+    // Get some default values from the current tile source
+    var mirror = this.stack.mirrors[this.mirrorIndex];
+    var dialog = new CATMAID.OptionsDialog('Add custom mirror');
+    dialog.appendMessage("Please specify at least a URL for the custom mirror");
+    var url = dialog.appendField("URL", "customMirrorURL", "", false);
+    var title = dialog.appendField("Title", "customMirrorTitle", "Custom mirror", false);
+    var ext = dialog.appendField("File extension", "customMirrorExt",
+        mirror.file_extension, false);
+    var tileWidth = dialog.appendField("Tile width", "customMirrorTileWidth",
+        mirror.tile_width, false);
+    var tileHeight = dialog.appendField("Tile height", "customMirrorTileHeight",
+        mirror.tile_height, false);
+    var tileSrcType = dialog.appendField("Tile source type",
+        "customMirrorTileSrcType", mirror.tile_source_type, false);
+
+    var self = this;
+    dialog.onOK = function() {
+      var imageBase = url.value;
+      if (!imageBase.endsWith('/')) {
+        imageBase = imageBase + '/';
+      }
+      var customMirrorData = {
+        id: "custom",
+        title: title.value,
+        position: -1,
+        image_base: imageBase,
+        file_extension: ext.value,
+        tile_width: parseInt(tileWidth.value, 10),
+        tile_height: parseInt(tileHeight.value, 10),
+        tile_source_type: parseInt(tileSrcType.value, 10)
+      };
+      var newMirrorIndex = self.stack.addMirror(customMirrorData);
+      self.switchToMirror(newMirrorIndex);
+      CATMAID.setCookie(self.customMirrorCookieName, JSON.stringify(customMirrorData), 365);
+    };
+
+    dialog.show(350, 'auto');
+  };
+
+  TileLayer.prototype.clearCustomMirrors = function () {
+    var customMirrorIndices = this.stack.mirrors.reduce(function(o, m, i, mirrors) {
+      if (mirrors[i].id === 'custom') {
+        o.push(i);
+      }
+      return o;
+    }, []);
+    var customMirrorUsed = customMirrorIndices.indexOf(this.mirrorIndex) != -1;
+    if (customMirrorUsed) {
+      CATMAID.warn("Please select another mirror first");
+      return;
+    }
+    customMirrorIndices.sort().reverse().forEach(function(ci) {
+      this.stack.removeMirror(ci);
+    }, this);
+    CATMAID.setCookie(this.customMirrorCookieName, '', -1);
+    this.switchToMirror(this.mirrorIndex, true);
+
+    CATMAID.msg("Done", "Custom mirrors cleared");
+  };
+
+  /**
    * Returns a set of set settings for this layer. This will only contain
    * anything if the tile layer's tile source provides additional settings.
    */
@@ -683,6 +766,19 @@
         return [idx, mirror.title];
       }),
       help: 'Select from which image host to request image data for this stack.'
+    }, {
+      name: 'customMirrors',
+      displayName: 'Custom mirrors',
+      type: 'buttons',
+      buttons: [
+        {
+          name: 'Add',
+          onclick: this.addCustomMirror.bind(this)
+        },
+        {
+          name: 'Clear',
+          onclick: this.clearCustomMirrors.bind(this)
+        }]
     }];
 
     if (this.tileSource && CATMAID.tools.isFn(this.tileSource.getSettings)) {
@@ -761,10 +857,12 @@
    * Switch to a mirror by replacing this tile layer in the stack viewer
    * with a new one for the specified mirror index.
    *
-   * @param  {number} mirrorIdx Index of a mirror in the stack's mirror array.
+   * @param  {number}  mirrorIdx Index of a mirror in the stack's mirror array.
+   * @param  {boolean} force     If true, the layer will also be refreshed if
+   *                             the mirror didn't change.
    */
-  TileLayer.prototype.switchToMirror = function (mirrorIndex) {
-    if (mirrorIndex === this.mirrorIndex) return;
+  TileLayer.prototype.switchToMirror = function (mirrorIndex, force) {
+    if (mirrorIndex === this.mirrorIndex && !force) return;
     var newTileLayer = this.constructCopy({mirrorIndex: mirrorIndex});
     var layerKey = this.stackViewer.getLayerKey(this);
     this.stackViewer.replaceStackLayer(layerKey, newTileLayer);

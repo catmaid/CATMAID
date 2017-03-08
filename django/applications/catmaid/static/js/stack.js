@@ -365,6 +365,23 @@
           selectedMirror.tile_width,
           selectedMirror.tile_height);
     };
+
+    self.addMirror = function(mirrorData) {
+      self.mirrors.push({
+          id: mirrorData.id,
+          image_base: mirrorData.image_base,
+          file_extension: mirrorData.file_extension,
+          tile_source_type: mirrorData.tile_source_type,
+          tile_width: mirrorData.tile_width,
+          tile_height: mirrorData.tile_height,
+          title: mirrorData.title
+      });
+      return self.mirrors.length - 1;
+    };
+
+    self.removeMirror = function(mirrorIndex) {
+      self.mirrors.splice(mirrorIndex, 1);
+    };
   }
 
   /**

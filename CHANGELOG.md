@@ -75,6 +75,11 @@ Miscellaneous:
   synapse tracing mode button (first two buttons in toolbar) will switch to the
   select mode where clicking doesn't create new nodes.
 
+- The layer settings of image data layers allow now to add custom mirrors,
+  which is useful to e.g. make a local copy of the image data availabl in
+  CATMAID. This can reduce latency due to remote image loading considerably. See
+  the user FAQ in the documentation for more details.
+
 
 ### Bug fixes
 

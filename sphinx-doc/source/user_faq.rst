@@ -50,3 +50,44 @@ becomes unselected in a source it is removed from the target widget. If the
 "Only selected" checkbox is unchecked, also unselected skeletons are added to a
 target widget. They are removed when skeletons are removed from the source and
 their selection state is synced.
+
+.. _faq-custom-mirrors:
+
+How to make a local copy of image data available?
+-------------------------------------------------
+
+CATMAID represents multiple copies of image data as so-called stack mirrors.
+Which mirror is used can be selected in the image layer settings dialog, which
+can be opened through the little blue-white square button in the lower left
+corner of a stack viewer. Besides mirrors configured by an administrator, it is
+also possible to add custom mirrors. Custom mirrors are persisted in a browser
+cookie and will be available after reloading CATMAID. The 'Add' button in the
+'Custom mirror' section of the layer settings will bring up a dialog where a new
+custom mirror can be added. Nearly all required fields are pre-populated from an
+existing mirror, only a URL has to be added.
+
+The image data available from this URL has to match the properties in the
+dialog, which should normally be the case if the image data is a copy of an
+existing image stack. Additionally, it is recommended that this data is made
+available through HTTPS. As an example, a common use case is to have a copy of
+the image data set on an external USB SSD drive. To make this data available to
+CATMAID, a local webserver has to be started. An easy way to do this is to grab
+a copy of a simple Python server script available from the
+`CATMAID source repository <https://github.com/catmaid/CATMAID/blob/master/scripts/data/serve-directory.py>`_.
+Save a copy of this script in the root folder of the USB SDD along with a copy
+of the
+`certificate <https://github.com/catmaid/CATMAID/blob/master/scripts/data/localhost.pem>`_,
+which is available from the same location and should be placed next to the
+``serve-directory.py`` script. Next navigate with a terminal to the root of the
+image data and execute the Python script::
+
+  python serve-directory.py 8090 ./localhost.pem
+
+The first argument is the port on which the server will be made available and
+the second argument is the downlaoded previously SSL certificate. If everything
+works as expected, the URL to put in CATMAID's custom mirror dialog should be::
+
+  https://localhost:8090/
+
+If the image data is not directly available in the USB SDD's root, the relative
+path has to be added to the URL.

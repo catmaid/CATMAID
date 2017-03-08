@@ -514,7 +514,7 @@
           $nodeFilterSettingsContainer.append($skeletonName);
 
           // Add filter specific settings
-          var createSettings = nodeFilterSettingFactories[strategy];
+          var createSettings = CATMAID.NodeFilterSettingFactories[strategy];
           if (!createSettings) {
             throw new CATMAID.ValueError("Couldn't find settings method " +
                 "for node filter \"" + strategy + "\"");
@@ -781,116 +781,6 @@
      * by point sources which are then restricted further.
      */
      "alphashape": makeVolume("Alpha shape", "AlphaShapeVolume", true)
-  };
-
-  /**
-   * A collection of UI creation methods for individual node filtering
-   * strategies from CATMAID.NodeFilterStrategy members.
-   */
-  var nodeFilterSettingFactories = {
-    'take-all': function(container, options) {
-      // Take all has no additional options
-    },
-    'endnodes': function(container, options) {
-      // Option to include root
-      var $includeRoot = CATMAID.DOM.createCheckboxSetting(
-          "Include root node", false, "If checked, the root node will be treated as an end node.",
-          function(e) { options.includeRoot = this.checked; });
-      $(container).append($includeRoot);
-    },
-    'branches': function(container, options) {
-      // There are no additional settings for branch node selection
-    },
-    'tags': function(container, options) {
-      var $tag = CATMAID.DOM.createInputSetting("Tag", "",
-          "A tag that every used node must have", function() {
-            options.tag = this.value;
-          });
-      $(container).append($tag);
-    },
-    'nuclei': function(container, options) {
-      // Nuclei has no additional options
-    },
-    'subarbor': function(container, options) {
-      var $tag = CATMAID.DOM.createInputSetting("Tag", "",
-          "A tag that every used node must have", function() {
-            options.tag = this.value;
-          });
-      var $expected = CATMAID.DOM.createInputSetting("Expected", "",
-          "Only take sub-arbor if tag is used the expected number of times",
-          function() {
-            options.expected = parseInt(this.value, 10);
-          });
-      $(container).append($tag);
-      $(container).append($expected);
-    },
-    'single-region': function(container, options) {
-      var $tagStart = CATMAID.DOM.createInputSetting("Start tag", "",
-          "A tag used to find a node in a skeleton. The skelen is cut right before (upstream) this node, the remaining part is taken.", function() {
-            options.tagStart = this.value;
-          });
-      var $tagEnd = CATMAID.DOM.createInputSetting("End tag", "",
-          "A tag used to find a node in a skeleton. The skeleton is cut right before (upstream), the remaining part passes through the filter.", function() {
-            options.tagEnd = this.value;
-          });
-      $(container).append($tagStart);
-      $(container).append($tagEnd);
-    },
-    'binary-split': function(container, options) {
-      // Default options
-      options.region = "downstream";
-
-      var $tag = CATMAID.DOM.createInputSetting("Tag", "",
-          "Cut skeleton at tagged node", function() {
-            options.tag = this.value;
-          });
-      var $region = CATMAID.DOM.createSelectSetting("Region",
-          { "Downstream": "downstream", "Upstream": "upstream" },
-          "Select which region relative to the cuts at tagged nodes should be allowed.",
-          function() {
-            options.region = this.value;
-          }, options.region);
-
-      $(container).append($tag);
-      $(container).append($region);
-    },
-    'synaptic': function(container, options) {
-      // Defaults
-      options.relation = options.relation || 'post';
-      // The skeleton source
-      var availableSources = CATMAID.skeletonListSources.getSourceNames();
-      var sourceOptions = availableSources.reduce(function(o, name) {
-        o[name] = name;
-        return o;
-      }, {
-        'None': 'None' // default to enforce active selection
-      });
-
-      var $otherNeurons = CATMAID.DOM.createSelectSetting("Source of synaptic neurons",
-          sourceOptions, "Neurons from this source will be checked against having synapses with the working set. If \"None\" is selected, all synaptic nodes will be considered.",
-          function(e) {
-            // Get models from source to store in option set
-            var source = this.value && this.value !== "None" ?
-              CATMAID.skeletonListSources.getSource(this.value) : undefined;
-
-            if (!source) {
-              options.otherNeurons = null;
-              return;
-            }
-
-            // Collect points based on current source list and current rule set
-            options.otherNeurons = source.getSelectedSkeletonModels();
-          }, 'None');
-
-      var $relation = CATMAID.DOM.createSelectSetting("Relation of base set to above partners",
-          { "Postsynaptic": "post", "Presynaptic": "pre" , "Pre- or postsynaptic": "pre-or-post"},
-          "Select how a valid node of the base set (nodes to generate mesh) is related to partner neurons from other source.",
-          function() {
-            options.relation = this.value;
-          }, options.relation);
-
-      $(container).append($otherNeurons, $relation);
-    }
   };
 
   // A key that references this widget in CATMAID

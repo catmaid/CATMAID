@@ -176,7 +176,7 @@ Name               Options                                     Default
 ``filter_tags``    ``A list of tags, e.g. ["TagA", "TagB"]``   ``[]``
 ``catalogue_link`` ``true, false``                             ``true``
 ``sample_images``  ``true, false``                             ``false``
-``sample_mirror_index``  ``position of mirror to use`          ``0``
+``sample_mirror_index``  ``position of mirror to use``         ``0``
 ``sample_stack``   ``stack index, "first", "last"``            ``0``
 ``sample_slice``   ``slice index, "first", "center", "last"``  ``"center"``
 ``sample_width``   ``width in pixel, e.g. 50 or 75``           ``orig. width``
@@ -231,7 +231,7 @@ Name               Options                                     Default
 ``filter_tags``    ``A list of tags, e.g. ["TagA", "TagB"]``   ``[]``
 ``catalogue_link`` ``true, false``                             ``true``
 ``sample_images``  ``true, false``                             ``false``
-``sample_mirror_index``  ``position of mirror to use`          ``0``
+``sample_mirror_index``  ``position of mirror to use``         ``0``
 ``sample_slice``   ``slice index, "first", "center", "last"``  ``"center"``
 ``sample_width``   ``width in pixel, e.g. 50 or 75``           ``orig. width``
 ``sample_height``  ``height in pixel, e.g. 50 or 75``          ``orig. height``
@@ -302,7 +302,7 @@ Name                 Options                                    Default
 ``force_stack_list`` ``true, false``                            ``false``
 ``highlight_tags``   ``A list of tags, e.g. ["TagA", "TagB"]``  ``[]``
 ``sample_images``    ``true, false``                            ``false``
-``sample_mirror_index``  ``position of mirror to use`           ``0``
+``sample_mirror_index``  ``position of mirror to use``          ``0``
 ``sample_slice``     ``slice index, "first", "center", "last"`` ``"center"``
 ``sample_width``     ``width in pixel, e.g. 50 or 75``          ``orig. width``
 ``sample_height``    ``height in pixel, e.g. 50 or 75``         ``orig. height``

@@ -169,20 +169,20 @@ The appearance of *Project List* is very similar to the one of
 though. When a project has no stacks, it won't be visible with this view type.
 It is processed server-side and offers some configuration options:
 
-================== =========================================== ================
-Name               Options                                     Default
-================== =========================================== ================
-``sort``           ``true, false``                             ``true``
-``filter_tags``    ``A list of tags, e.g. ["TagA", "TagB"]``   ``[]``
-``catalogue_link`` ``true, false``                             ``true``
-``sample_images``  ``true, false``                             ``false``
-``sample_mirror_index``  ``position of mirror to use``         ``0``
-``sample_stack``   ``stack index, "first", "last"``            ``0``
-``sample_slice``   ``slice index, "first", "center", "last"``  ``"center"``
-``sample_width``   ``width in pixel, e.g. 50 or 75``           ``orig. width``
-``sample_height``  ``height in pixel, e.g. 50 or 75``          ``orig. height``
-``show_mirrors``   ``true, false``                             ``false``
-================== =========================================== ================
+======================= =========================================== ================
+Name                    Options                                     Default
+======================= =========================================== ================
+``sort``                ``true, false``                             ``true``
+``filter_tags``         ``A list of tags, e.g. ["TagA", "TagB"]``   ``[]``
+``catalogue_link``      ``true, false``                             ``true``
+``sample_images``       ``true, false``                             ``false``
+``sample_mirror_index`` ``position of mirror to use``               ``0``
+``sample_stack``        ``stack index, "first", "last"``            ``0``
+``sample_slice``        ``slice index, "first", "center", "last"``  ``"center"``
+``sample_width``        ``width in pixel, e.g. 50 or 75``           ``orig. width``
+``sample_height``       ``height in pixel, e.g. 50 or 75``          ``orig. height``
+``show_mirrors``        ``true, false``                             ``false``
+======================= =========================================== ================
 
 Please refer to the introduction to this section for an explanation of the
 ``sort``, ``filter_tags`` and ``catalogue_link`` options. The ``sample_images``
@@ -224,19 +224,19 @@ stack -- replacing the stack name. Like the *Project List* type, it won't
 show a project, if it has no stacks associated. The following options are
 supported:
 
-================== =========================================== ================
-Name               Options                                     Default
-================== =========================================== ================
-``sort``           ``true, false``                             ``true``
-``filter_tags``    ``A list of tags, e.g. ["TagA", "TagB"]``   ``[]``
-``catalogue_link`` ``true, false``                             ``true``
-``sample_images``  ``true, false``                             ``false``
-``sample_mirror_index``  ``position of mirror to use``         ``0``
-``sample_slice``   ``slice index, "first", "center", "last"``  ``"center"``
-``sample_width``   ``width in pixel, e.g. 50 or 75``           ``orig. width``
-``sample_height``  ``height in pixel, e.g. 50 or 75``          ``orig. height``
-``show_mirrors``   ``true, false``                             ``false``
-================== =========================================== ================
+======================= =========================================== ================
+Name                    Options                                     Default
+======================= =========================================== ================
+``sort``                ``true, false``                             ``true``
+``filter_tags``         ``A list of tags, e.g. ["TagA", "TagB"]``   ``[]``
+``catalogue_link``      ``true, false``                             ``true``
+``sample_images``       ``true, false``                             ``false``
+``sample_mirror_index`` ``position of mirror to use``               ``0``
+``sample_slice``        ``slice index, "first", "center", "last"``  ``"center"``
+``sample_width``        ``width in pixel, e.g. 50 or 75``           ``orig. width``
+``sample_height``       ``height in pixel, e.g. 50 or 75``          ``orig. height``
+``show_mirrors``        ``true, false``                             ``false``
+======================= =========================================== ================
 
 Have a look to this section's introduction for an explanation of the ``sort``,
 ``filter_tags`` and ``catalogue_link``  options. If images should be
@@ -290,23 +290,23 @@ table cell that refers to tags the project itself is tagged with.
 
 However, there are more options than the tags themselves that can be configured:
 
-==================== ========================================== ================
-Name                 Options                                    Default
-==================== ========================================== ================
-``sort``             ``true, false``                            ``true``
-``filter_tags``      ``A list of tags, e.g. ["TagA", "TagB"]``  ``[]``
-``catalogue_link``   ``true, false``                            ``true``
-``row_tags``         ``A list of tags, e.g. ["TagA", "TagB"]``  ``[]``
-``col_tags``         ``A list of tags, e.g. ["TagA", "TagB"]``  ``[]``
-``linked_stacks``    ``stack index, "first", "last", "all"``    ``"all"``
-``force_stack_list`` ``true, false``                            ``false``
-``highlight_tags``   ``A list of tags, e.g. ["TagA", "TagB"]``  ``[]``
-``sample_images``    ``true, false``                            ``false``
-``sample_mirror_index``  ``position of mirror to use``          ``0``
-``sample_slice``     ``slice index, "first", "center", "last"`` ``"center"``
-``sample_width``     ``width in pixel, e.g. 50 or 75``          ``orig. width``
-``sample_height``    ``height in pixel, e.g. 50 or 75``         ``orig. height``
-==================== ========================================== ================
+======================= ========================================== ================
+Name                    Options                                    Default
+======================= ========================================== ================
+``sort``                ``true, false``                            ``true``
+``filter_tags``         ``A list of tags, e.g. ["TagA", "TagB"]``  ``[]``
+``catalogue_link``      ``true, false``                            ``true``
+``row_tags``            ``A list of tags, e.g. ["TagA", "TagB"]``  ``[]``
+``col_tags``            ``A list of tags, e.g. ["TagA", "TagB"]``  ``[]``
+``linked_stacks``       ``stack index, "first", "last", "all"``    ``"all"``
+``force_stack_list``    ``true, false``                            ``false``
+``highlight_tags``      ``A list of tags, e.g. ["TagA", "TagB"]``  ``[]``
+``sample_images``       ``true, false``                            ``false``
+``sample_mirror_index`` ``position of mirror to use``              ``0``
+``sample_slice``        ``slice index, "first", "center", "last"`` ``"center"``
+``sample_width``        ``width in pixel, e.g. 50 or 75``          ``orig. width``
+``sample_height``       ``height in pixel, e.g. 50 or 75``         ``orig. height``
+======================= ========================================== ================
 
 Have a look at this section's introduction for an explanation of the ``sort``,
 ``filter_tags`` and ``catalogue_link`` options. The tags to use for the rows

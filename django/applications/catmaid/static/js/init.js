@@ -180,6 +180,7 @@ var project;
     var init_active_node_id;
     var init_active_skeleton;
     var singleStackViewer = false;
+    var initialDataviewId = null;
 
     var account;
     var password;
@@ -255,9 +256,12 @@ var project;
       }
 
       // find data view setting
-      if ( options[ "dataview" ] )
-        this.current_dataview = parseInt( options["dataview"] );
-      if ( isNaN( this.current_dataview ) ) this.current_dataview = null;
+      if ( options[ "dataview" ] ) {
+        var dataViewId = parseInt( options["dataview"] );
+        if ( !isNaN(dataViewId) ) {
+          initialDataviewId = dataViewId;
+        }
+      }
 
       // Check if only one stack viewer should be used for all stacks
       if ( options[ "composite" ] ) {
@@ -320,68 +324,84 @@ var project;
     user_menu = new Menu();
     document.getElementById( "user_menu" ).appendChild( user_menu.getView() );
 
+    var self = this;
+    var loadView;
+    if (initialDataviewId) {
+      loadView = CATMAID.DataViews.getConfig(initialDataviewId)
+        .then(function(config) {
+          self.current_dataview = CATMAID.DataView.makeDataView(config);
+        })
+        .catch(CATMAID.handleError);
+    } else {
+      loadView = Promise.resolve();
+    }
+
     // login and thereafter load stacks if requested
-    this.login().then(function() {
-      var tools = {
-        navigator: CATMAID.Navigator,
-        tracingtool: CATMAID.TracingTool,
-        segmentationtool: CATMAID.SegmentationTool,
-        classification_editor: null
-      };
+    loadView
+      .then(function() {
+        return self.login();
+      })
+      .then(function() {
+        var tools = {
+          navigator: CATMAID.Navigator,
+          tracingtool: CATMAID.TracingTool,
+          segmentationtool: CATMAID.SegmentationTool,
+          classification_editor: null
+        };
 
-      var load = null;
-      if (sg) {
-        load = CATMAID.openStackGroup(pid, sg)
-          .then(function() {
-            if (typeof zp == "number" && typeof yp == "number" &&
-                typeof xp == "number") {
-              project.moveTo(zp, yp, xp, sgs);
-            }
-          });
-      } else  {
-        load = loadStacksFromURL(singleStackViewer);
-      }
-
-      // After stacks or stack groups have been loaded, init selected tool.
-      load.then(function() {
-        var tool = tools[inittool];
-        if (tool) {
-          project.setTool(new tool());
+        var load = null;
+        if (sg) {
+          load = CATMAID.openStackGroup(pid, sg)
+            .then(function() {
+              if (typeof zp == "number" && typeof yp == "number" &&
+                  typeof xp == "number") {
+                project.moveTo(zp, yp, xp, sgs);
+              }
+            });
+        } else  {
+          load = loadStacksFromURL(singleStackViewer);
         }
-        if (init_active_node_id) {
-          // initialization hack
-          SkeletonAnnotations.init_active_node_id = init_active_node_id;
-        }
-      });
 
-      // Open stacks one after another and move to the requested location. Load
-      // the requested tool after everything has been loaded.
-      function loadStacksFromURL(composite, loaded) {
-        loaded = loaded || 0;
-        var useExistingStackViewer = composite && (loaded > 0);
-        if (pid) {
-          if (sids.length > 0) {
-            // Open stack and queue test/loading for next one
-            var sid = sids.shift();
-            var s = ss.shift();
-            return CATMAID.openProjectStack(pid, sid, useExistingStackViewer, undefined)
-              .then(function() {
-                // Moving every stack is not really necessary, but for now a
-                // convenient way to apply the requested scale to each stack.
-                if (typeof zp == "number" && typeof yp == "number" &&
-                    typeof xp == "number" && typeof s == "number" ) {
-                  return project.moveTo(zp, yp, xp, s)
-                    .then(function() {
-                      // Queue loading of next stack
-                      return loadStacksFromURL(composite, loaded + 1);
-                    });
-                }
-              });
+        // After stacks or stack groups have been loaded, init selected tool.
+        load.then(function() {
+          var tool = tools[inittool];
+          if (tool) {
+            project.setTool(new tool());
           }
+          if (init_active_node_id) {
+            // initialization hack
+            SkeletonAnnotations.init_active_node_id = init_active_node_id;
+          }
+        });
+
+        // Open stacks one after another and move to the requested location. Load
+        // the requested tool after everything has been loaded.
+        function loadStacksFromURL(composite, loaded) {
+          loaded = loaded || 0;
+          var useExistingStackViewer = composite && (loaded > 0);
+          if (pid) {
+            if (sids.length > 0) {
+              // Open stack and queue test/loading for next one
+              var sid = sids.shift();
+              var s = ss.shift();
+              return CATMAID.openProjectStack(pid, sid, useExistingStackViewer, undefined)
+                .then(function() {
+                  // Moving every stack is not really necessary, but for now a
+                  // convenient way to apply the requested scale to each stack.
+                  if (typeof zp == "number" && typeof yp == "number" &&
+                      typeof xp == "number" && typeof s == "number" ) {
+                    return project.moveTo(zp, yp, xp, s)
+                      .then(function() {
+                        // Queue loading of next stack
+                        return loadStacksFromURL(composite, loaded + 1);
+                      });
+                  }
+                });
+            }
+          }
+          return Promise.resolve();
         }
-        return Promise.resolve();
-      }
-    }).catch(CATMAID.handleError);
+      }).catch(CATMAID.handleError);
 
     // the text-label toolbar
 

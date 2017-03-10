@@ -690,13 +690,20 @@
     var tileSrcType = dialog.appendField("Tile source type",
         "customMirrorTileSrcType", mirror.tile_source_type, false);
 
-    var self = this;
-    dialog.onOK = function() {
+    var messageContainer = dialog.appendHTML("Depending of the configuration " +
+      "this mirror, you maybe have to add a SSL certificate exception. To do this, " +
+      "click <a href=\"#\">here</a> after the information above is complete. " +
+      "A new page will open, displaying either an image or a SSL warning. In " +
+      "case of the warning, add a security exception for this (and only this) " +
+      "certificate. Only after having this done and the link shows an image, " +
+      "click OK below.");
+
+    var getMirrorData = function() {
       var imageBase = url.value;
       if (!imageBase.endsWith('/')) {
         imageBase = imageBase + '/';
       }
-      var customMirrorData = {
+      return {
         id: "custom",
         title: title.value,
         position: -1,
@@ -706,12 +713,32 @@
         tile_height: parseInt(tileHeight.value, 10),
         tile_source_type: parseInt(tileSrcType.value, 10)
       };
+    };
+
+    var openCanaryLink = messageContainer.querySelector('a');
+    var stack = this.stack;
+    openCanaryLink.onclick = function() {
+      var customMirrorData = getMirrorData();
+      var tileSource = CATMAID.getTileSource(
+          customMirrorData.tile_source_type,
+          customMirrorData.image_base,
+          customMirrorData.file_extension,
+          customMirrorData.tile_width,
+          customMirrorData.tile_height);
+      var url = CATMAID.getTileSourceCanaryUrl(project, stack, tileSource);
+      // Open a new browser window with a canary tile
+      var win = window.open(url);
+    };
+
+    var self = this;
+    dialog.onOK = function() {
+      var customMirrorData = getMirrorData();
       var newMirrorIndex = self.stack.addMirror(customMirrorData);
       self.switchToMirror(newMirrorIndex);
       CATMAID.setCookie(self.customMirrorCookieName, JSON.stringify(customMirrorData), 365);
     };
 
-    dialog.show(350, 'auto');
+    dialog.show(500, 'auto');
   };
 
   TileLayer.prototype.clearCustomMirrors = function () {

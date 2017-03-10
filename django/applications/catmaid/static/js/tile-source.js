@@ -27,6 +27,22 @@
   };
 
   /**
+   * Create a canary tile URL for a particular project/stack/tileSource
+   * combination.
+   *
+   * @param  {Project} project
+   * @param  {Stack}   stack
+   * @param  {Object}  tileSource
+   * @return {String}  A complete canary tile URL
+   */
+  CATMAID.getTileSourceCanaryUrl = function (project, stack, tileSource) {
+    var canaryLocation = stack.canaryLocation;
+    var col = Math.floor(canaryLocation.x / tileSource.tileWidth);
+    var row = Math.floor(canaryLocation.y / tileSource.tileHeight);
+    return tileSource.getTileURL(project, stack, [canaryLocation.z], col, row, 0);
+  };
+
+  /**
    * Check whether the canary location for a stack is accessible via this tile
    * source and what time it takes to load. Checks for normal and CORS requests,
    * for DOM and WebGL tiles respectively.
@@ -39,10 +55,7 @@
    *                              well as float keys normalTime and corsTime.
    */
   CATMAID.checkTileSourceCanary = function (project, stack, tileSource, noCache) {
-    var canaryLocation = stack.canaryLocation;
-    var col = Math.floor(canaryLocation.x / tileSource.tileWidth);
-    var row = Math.floor(canaryLocation.y / tileSource.tileHeight);
-    var url = tileSource.getTileURL(project, stack, [canaryLocation.z], col, row, 0);
+    var url = CATMAID.getTileSourceCanaryUrl(project, stack, tileSource);
 
     if (noCache) {
       url += "?nocache=" + Date.now();

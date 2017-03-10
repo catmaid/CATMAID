@@ -950,7 +950,7 @@
 
     var lineWidth = this.lineWidthFactor;
     if (this.showStrahler) {
-      upLink.style("stroke-width", function (d) { return lineWidth * target.strahler; });
+      upLink.style("stroke-width", function (d) { return lineWidth * d.target.strahler; });
     } else {
       upLink.style("stroke-width", function (d) { return lineWidth; });
     }

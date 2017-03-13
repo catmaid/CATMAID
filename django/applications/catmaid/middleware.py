@@ -1,5 +1,7 @@
 import re
 import cProfile, pstats, StringIO
+import logging
+
 from traceback import format_exc
 from datetime import datetime
 
@@ -10,6 +12,8 @@ from guardian.utils import get_anonymous_user
 
 from rest_framework.authentication import TokenAuthentication
 
+
+logger = logging.getLogger(__name__)
 
 class AuthenticationHeaderExtensionMiddleware(object):
     """
@@ -120,6 +124,16 @@ class ProfilingMiddleware(object):
     a field called 'profile-to-disk', the profile is saved to a file in /tmp,
     with a name following the pattern 'catmaid-hostaddress-timestamp.profile'.
     """
+
+    def __init__(self, *args, **kwargs):
+        super(ProfilingMiddleware, self).__init__(*args, **kwargs)
+
+        # This middleware conflicts with expected unit test results. Warn about
+        # this if this is executed in test mode.
+        if getattr(settings, 'TESTING_ENVIRONMENT', False):
+            logger.warning("The ProfilingMiddleware is used during testing. "
+                    "This will result in boken tests, because of unexpected "
+                    "response content.")
 
     def process_request(self, request):
         if 'profile' in request.GET or 'profile' in request.POST:

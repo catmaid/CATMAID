@@ -350,8 +350,8 @@ class TreenodesApiTests(CatmaidApiTestCase):
                 [[377, 356, 1, 6730.0, 2700.0, 0.0],
                  [409, 421, 1, 6260.0, 3990.0, 0.0]],
                 {"uncertain end": [403]}]
-        self.assertItemsEqual(parsed_response[0], expected_response[0])
-        self.assertItemsEqual(parsed_response[1], expected_response[1])
+        six.assertCountEqual(self, parsed_response[0], expected_response[0])
+        six.assertCountEqual(self, parsed_response[1], expected_response[1])
         self.assertEqual(parsed_response[2], expected_response[2])
 
 

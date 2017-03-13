@@ -1241,7 +1241,7 @@ class HistoryTableTests(TransactionTestCase):
         attr_result = [r[0] for r in cursor.fetchall()]
         expected_cols = ['id', 'name', 'sys_period', 'exec_transaction_id']
 
-        self.assertItemsEqual(attr_result, expected_cols)
+        six.assertCountEqual(self, attr_result, expected_cols)
 
         cursor.execute("""
             SELECT drop_history_table('_history_test_'::regclass);

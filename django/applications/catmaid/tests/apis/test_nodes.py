@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 
 import json
+import six
 
 from django.db import connection
 
@@ -390,7 +391,7 @@ class NodesApiTests(CatmaidApiTestCase):
                 # Treat links separately, because they come in a list of
                 # unspecified different order.
                 if 7 == n:
-                    self.assertItemsEqual(row[n], parsed_row[n])
+                    six.assertCountEqual(self, row[n], parsed_row[n])
                 else:
                     self.assertEqual(e, parsed_row[n])
 
@@ -470,7 +471,7 @@ class NodesApiTests(CatmaidApiTestCase):
                 # Treat links separately, because they come in a list of
                 # unspecified different order.
                 if 7 == n:
-                    self.assertItemsEqual(row[n], parsed_row[n])
+                    six.assertCountEqual(self, row[n], parsed_row[n])
                 else:
                     self.assertEqual(e, parsed_row[n])
         self.assertEqual({}, parsed_response[2])

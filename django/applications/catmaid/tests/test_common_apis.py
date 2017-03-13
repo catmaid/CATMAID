@@ -399,8 +399,8 @@ class ViewPageTests(TestCase):
                 [[377, 356, 1, 6730.0, 2700.0, 0.0],
                  [409, 421, 1, 6260.0, 3990.0, 0.0]],
                 {"uncertain end": [403]}]
-        self.assertItemsEqual(parsed_response[0], expected_response[0])
-        self.assertItemsEqual(parsed_response[1], expected_response[1])
+        six.assertCountEqual(self, parsed_response[0], expected_response[0])
+        six.assertCountEqual(self, parsed_response[1], expected_response[1])
         self.assertEqual(parsed_response[2], expected_response[2])
 
     def test_export_compact_arbor(self):
@@ -420,8 +420,8 @@ class ViewPageTests(TestCase):
                 [[377, 5, 356, 5, 285, 235, 1, 0],
                  [409, 5, 421, 5, 415, 235, 1, 0]],
                 {"uncertain end": [403]}]
-        self.assertItemsEqual(parsed_response[0], expected_response[0])
-        self.assertItemsEqual(parsed_response[1], expected_response[1])
+        six.assertCountEqual(self, parsed_response[0], expected_response[0])
+        six.assertCountEqual(self, parsed_response[1], expected_response[1])
         self.assertEqual(parsed_response[2], expected_response[2])
 
     def test_export_compact_arbor_with_minutes(self):
@@ -442,11 +442,11 @@ class ViewPageTests(TestCase):
                  [409, 5, 421, 5, 415, 235, 1, 0]],
                 {"uncertain end": [403]},
                 {"21951837": [377, 403, 405, 407, 409]}]
-        self.assertItemsEqual(parsed_response[0], expected_response[0])
-        self.assertItemsEqual(parsed_response[1], expected_response[1])
+        six.assertCountEqual(self, parsed_response[0], expected_response[0])
+        six.assertCountEqual(self, parsed_response[1], expected_response[1])
         self.assertEqual(parsed_response[2], expected_response[2])
         for k, v in six.iteritems(expected_response[3]):
-            self.assertItemsEqual(parsed_response[3][k], v)
+            six.assertCountEqual(self, parsed_response[3][k], v)
 
 
 class TreenodeTests(TestCase):

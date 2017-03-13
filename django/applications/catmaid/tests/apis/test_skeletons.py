@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 
 import json
 import re
+import six
 import platform
 
 from django.shortcuts import get_object_or_404
@@ -373,7 +374,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [2468, 2388, 235, 2411, 2364]
-        self.assertItemsEqual(expected_result, parsed_response['skeletons'])
+        six.assertCountEqual(self, expected_result, parsed_response['skeletons'])
 
         response = self.client.post(
                 '/%d/skeletons/within-spatial-distance' % (self.test_project_id,),
@@ -381,7 +382,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [2462, 2433, 373]
-        self.assertItemsEqual(expected_result, parsed_response['skeletons'])
+        six.assertCountEqual(self, expected_result, parsed_response['skeletons'])
 
 
     def test_skeleton_permissions(self):

@@ -222,14 +222,15 @@ class AnnotationsApiTests(CatmaidApiTestCase):
              'sub_annotated_with[0]': str(annotation_id_d)})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content.decode('utf-8'))
-        expected_entities = sorted([
+        expected_entities = [
             {"skeleton_ids": [235],
              "type": "neuron",
              "id": 233,
              "name": "branched neuron"},
             {"type": "annotation",
              "id": annotation_id_c,
-             "name": "C"}])
+             "name": "C"}
+        ]
         self.assertEqual(parsed_response['totalRecords'], 2)
         six.assertCountEqual(self, parsed_response['entities'], expected_entities)
 
@@ -247,10 +248,11 @@ class AnnotationsApiTests(CatmaidApiTestCase):
             {'name': 'downstream-A'})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content.decode('utf-8'))
-        expected_entities = sorted([
+        expected_entities = [
             {'skeleton_ids': [373],
             'type': 'neuron',
             'id': 374,
-            'name': 'downstream-A'}])
+            'name': 'downstream-A'}
+        ]
         self.assertEqual(parsed_response['totalRecords'], 1)
         six.assertCountEqual(self, parsed_response['entities'], expected_entities)

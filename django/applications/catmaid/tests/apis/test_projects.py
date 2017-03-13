@@ -140,18 +140,18 @@ class ProjectsApiTests(CatmaidApiTestCase):
                 # Compare stacks
                 stack = Stack.objects.get(id=stack_id)
                 self.assertEqual(stack.title, s['title'])
-                self.assertEqual(literal_eval(unicode(stack.dimension)),
+                self.assertEqual(literal_eval(str(stack.dimension)),
                         literal_eval(s['dimension']))
-                self.assertEqual(literal_eval(unicode(stack.resolution)),
+                self.assertEqual(literal_eval(str(stack.resolution)),
                         literal_eval(s['resolution']))
                 self.assertEqual(stack.num_zoom_levels, s['zoomlevels'])
                 self.assertEqual(stack.metadata, s['metadata'])
                 self.assertEqual(stack.comment, s['comment'])
                 self.assertEqual(stack.attribution, s['attribution'])
                 self.assertEqual(stack.description, s['description'])
-                self.assertEqual(literal_eval(unicode(stack.canary_location)),
+                self.assertEqual(literal_eval(str(stack.canary_location)),
                         literal_eval(s['canary_location']))
-                self.assertEqual(literal_eval(unicode(stack.placeholder_color)),
+                self.assertEqual(literal_eval(str(stack.placeholder_color)),
                         literal_eval(s['placeholder_color']))
 
                 # Get all stack mirrors for this stack

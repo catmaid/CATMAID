@@ -75,7 +75,7 @@ urlpatterns += [
 # Messages
 urlpatterns += [
     url(r'^messages/list$', message.list_messages),
-    url(r'^messages/mark_read$', message.read_message),
+    url(r'^messages/(?P<message_id>\d+)/mark_read$', message.read_message),
     url(r'^messages/latestunreaddate', message.get_latest_unread_date),
 ]
 

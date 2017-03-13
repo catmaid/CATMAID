@@ -3,12 +3,14 @@ from __future__ import unicode_literals
 
 import json
 
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, render
 
 from catmaid.models import Message, ChangeRequest
 from catmaid.control.common import makeJSON_legacy_list
+
+from six.moves import map as imap
 
 
 @login_required
@@ -43,7 +45,7 @@ def list_messages(request, project_id=None):
             'time': str(message.time)
         }
 
-    messages = map(message_to_dict, messages)
+    messages = list(imap(message_to_dict, messages))
 
     # Add a dummy message that includes the count of open notifications.
     # This is used to add the red badge to the notifications icon.
@@ -54,34 +56,14 @@ def list_messages(request, project_id=None):
 
 
 @login_required
-def read_message(request, project_id=None):
-    message_id = request.GET.get('id', 0)
-    message_on_error = ''
-    try:
-        message_on_error = 'Could not retrieve message with id %s.' % message_id
-        message = Message.objects.filter(user=request.user, id=message_id)[0]
-        message_on_error = 'Could not mark message with id %s as read.' % message_id
+def read_message(request, message_id):
+        message = get_object_or_404(Message, pk=message_id, user=request.user)
         message.read = True
         message.save()
 
-        if message.action is not None and message.action != '':
-            redirect = 'location.replace("%s")' % message.action
-            redir_link = message.action
+        if message.action:
+            return HttpResponseRedirect(message.action)
         else:
-            redirect = 'history.back()'
-            redir_link = 'history.back()'
-
-        return render(request, 'catmaid/read_message.html', {
-            'url': request.build_absolute_uri(),
-            'redirect': redirect,
-            'redir_link': redir_link})
-
-    except Exception as e:
-        if message_on_error != '':
-            error = message_on_error
-        elif e.message != '':
-            error = e.message
-        else:
-            error = 'Unknown error.'
-        return render(request, 'catmaid/error.html', {'error': error})
-
+            return JsonResponse({
+                'success': True
+            })

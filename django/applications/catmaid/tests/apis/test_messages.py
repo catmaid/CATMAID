@@ -13,32 +13,35 @@ class MessagesApiTests(CatmaidApiTestCase):
         self.fake_authentication()
         message_id = 5050
 
-        response = self.client.get('/messages/mark_read', {'id': message_id})
+        response = self.client.post('/messages/{}/mark_read'.format(message_id))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Could not retrieve message with id %s' % message_id)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        self.assertIn('error', parsed_response)
+        self.assertIn('type', parsed_response)
+        self.assertEquals('Http404', parsed_response['type'])
 
 
     def test_read_message_without_action(self):
         self.fake_authentication()
         message_id = 3
 
-        response = self.client.get('/messages/mark_read', {'id': message_id})
+        response = self.client.post('/messages/{}/mark_read'.format(message_id))
         self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+
         message = Message.objects.get(id=message_id)
         self.assertEqual(True, message.read)
-        self.assertContains(response, 'history.back()', count=2)
-
+        self.assertTrue(parsed_response.get('success'))
 
     def test_read_message_with_action(self):
         self.fake_authentication()
         message_id = 1
 
-        response = self.client.get('/messages/mark_read', {'id': message_id})
-        self.assertEqual(response.status_code, 200)
+        response = self.client.post('/messages/{}/mark_read'.format(message_id))
+        self.assertEqual(response.status_code, 302)
+
         message = Message.objects.filter(id=message_id)[0]
         self.assertEqual(True, message.read)
-        self.assertContains(response, 'location.replace')
-        self.assertContains(response, message.action, count=2)
 
 
     def test_list_messages(self):

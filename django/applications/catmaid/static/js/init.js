@@ -841,7 +841,7 @@ var project;
               delete e [ i ];
             } else {
               var timeFormatted = (new Date(e[i].time)).toLocaleString();
-              e[ i ].action = django_url + 'messages/mark_read?id=' + e[ i ].id;
+              e[ i ].action = CATMAID.makeURL('messages/' + e[i].id + '/mark_read');
               e[ i ].note = timeFormatted;
               ++n;
               var dt = document.createElement( "dt" );
@@ -881,9 +881,7 @@ var project;
    * @param  {number} id ID of the message to mark as read.
    */
   Client.prototype.read_message = function(id) {
-    requestQueue.register(django_url + 'messages/mark_read', 'POST', {
-      id: id
-    }, null);
+    return CATMAID.fetch('messages/' + id + '/mark_read', 'POST');
   };
 
   /**

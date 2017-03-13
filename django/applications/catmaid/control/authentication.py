@@ -34,11 +34,7 @@ from catmaid.models import Project, UserRole, ClassInstance, \
 
 class PermissionError(Exception):
     """Indicates the lack of permissions for a particular action."""
-    def __init__(self, message):
-        super(PermissionError, self).__init__(message)
-
-    def __str__(self):
-        return self.message
+    pass
 
 
 def login_user(request):

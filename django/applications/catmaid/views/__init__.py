@@ -23,8 +23,11 @@ class CatmaidView(TemplateView):
         context['STATIC_EXTENSION_FILES'] = settings.STATIC_EXTENSION_FILES
         context['HISTORY_TRACKING'] = settings.HISTORY_TRACKING
         context['EXPAND_FRONTEND_ERRORS'] = getattr(settings, 'EXPAND_FRONTEND_ERRORS', False)
+
         profile_context = self.request.user.userprofile.as_dict()
-        return dict(context.items() + profile_context.items())
+        context.update(profile_context)
+
+        return context
 
 class UseranalyticsView(TemplateView):
     template_name = "catmaid/useranalytics.html"

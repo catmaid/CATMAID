@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
+from six import string_types
 
 import re
 from django import forms
@@ -176,7 +177,7 @@ class RGBAField(models.Field):
         # here; return a new RGBA for any falsy value:
         elif not value:
             return RGBA()
-        elif isinstance(value, str) or isinstance(value, unicode):
+        elif isinstance(value, string_types):
             return RGBA.from_str(value)
         else:
             return RGBA()    #.from_str(value)

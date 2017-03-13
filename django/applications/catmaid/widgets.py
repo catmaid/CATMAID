@@ -2,6 +2,8 @@
 from __future__ import unicode_literals
 
 from django import forms
+from six import string_types
+
 
 class Integer3DWidget(forms.MultiWidget):
     """
@@ -19,7 +21,7 @@ class Integer3DWidget(forms.MultiWidget):
     def decompress(self, value):
         from catmaid.fields import Integer3D
         if value:
-            if isinstance(value, str) or isinstance(value, unicode):
+            if isinstance(value, string_types):
                 try:
                     # Expect value to be of the form '(0,0,0)'
                     str_list = value.replace('(', '').replace(')', '').split(',')
@@ -50,7 +52,7 @@ class Double3DWidget(forms.MultiWidget):
     def decompress(self, value):
         from catmaid.fields import Double3D
         if value:
-            if isinstance(value, str) or isinstance(value, unicode):
+            if isinstance(value, string_types):
                 try:
                     # Expect value to be of the form '(0,0,0)'
                     str_list = value.replace('(', '').replace(')', '').split(',')
@@ -87,7 +89,7 @@ class RGBAWidget(forms.MultiWidget):
         if value:
             if isinstance(value, tuple) or isinstance(value, list):
                 return value
-            elif isinstance(value, str) or isinstance(value, unicode):
+            elif isinstance(value, string_types):
                 try:
                     # Expect value to be of the form '(0,0,0,0)'
                     str_list = value.replace('(', '').replace(')', '').split(',')

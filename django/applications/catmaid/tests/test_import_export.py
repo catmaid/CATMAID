@@ -151,9 +151,9 @@ class ImportExportTests(TestCase):
             # Test required fields
             self.assertEqual(stack['title'], p2s.title)
             self.assertItemsEqual(literal_eval(stack['dimension']),
-                    literal_eval(unicode(p2s.dimension)))
+                    literal_eval(str(p2s.dimension)))
             self.assertItemsEqual(literal_eval(stack['resolution']),
-                    literal_eval(unicode(p2s.resolution)))
+                    literal_eval(str(p2s.resolution)))
             self.assertEqual(stack['zoomlevels'], p2s.num_zoom_levels)
 
             # Test mirrors
@@ -186,7 +186,7 @@ class ImportExportTests(TestCase):
             # Test project-stack link
             ps = ProjectStack.objects.get(project=p2.id, stack=p2s)
             self.assertItemsEqual(literal_eval(stack.get('translation', '(0,0,0)')),
-                    literal_eval(unicode(ps.translation)))
+                    literal_eval(str(ps.translation)))
 
             # Test stack groups
             ostack_group_links = StackStackGroup.objects.filter(stack=p2s).order_by('stack__title')

@@ -12,7 +12,7 @@
     {{ block.super }}
     {{ media.js }}
     <script type="text/javascript" src="{% url "admin:jsi18n" %}"></script>
-    <script type="text/javascript" src="{% static "admin/js/jquery.min.js" %}"></script>
+    <script type="text/javascript" src="{% static "admin/js/vendor/jquery/jquery.min.js" %}"></script>
     <script type="text/javascript" src="{% static "admin/js/jquery.init.js" %}"></script>
     <style type="text/css">
         ul { list-style: none; padding: 0px; }
@@ -27,6 +27,7 @@
     {% endcomment %}
     {% javascript 'jquery-lib' %}
     <script>
+    (function($) {
         $(document).ready(function() {
             // functionality for (un-)selecting all projects
             var master_cb = $("#id_select-all");
@@ -34,17 +35,18 @@
                 var slave_cbs = $("input[type=checkbox][class=autoselectable]");
 
                 master_cb.click( function() {
-                    var val = master_cb.attr("checked") == "checked";
-                    slave_cbs.attr("checked", val);
+                    var val = master_cb.prop("checked");
+                    slave_cbs.prop("checked", val);
                 });
 
                 slave_cbs.click( function() {
-                    master_cb.attr("checked", $.grep(slave_cbs, function(e) {
-                        return $(e).attr("checked");
+                    master_cb.prop("checked", $.grep(slave_cbs, function(e) {
+                        return $(e).prop("checked");
                     }).length == slave_cbs.length)
                 });
             }
         });
+    })(django.jQuery);
     </script>
 {% endblock %}
 

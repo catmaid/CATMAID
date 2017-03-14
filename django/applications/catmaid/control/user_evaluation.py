@@ -122,8 +122,8 @@ def _evaluate_epochs(epochs, skeleton_id, tree, reviews, relations):
             return start_date <= date <= end_date
 
         # Total number of synapses related to nodes reviewed within the epoch
-        epoch_n_pre = sum(len(r.get(relations['presynaptic_to'], [])) for r in nodes_synapses.itervalues())
-        epoch_n_post = sum(len(r.get(relations['postsynaptic_to'], [])) for r in nodes_synapses.itervalues())
+        epoch_n_pre = sum(len(r.get(relations['presynaptic_to'], [])) for r in six.itervalues(nodes_synapses))
+        epoch_n_post = sum(len(r.get(relations['postsynaptic_to'], [])) for r in six.itervalues(nodes_synapses))
 
         # Find out synapses added by the reviewer within the epoch, keyed by treenode user
         reviewer_n_pre = defaultdict(int)
@@ -184,7 +184,7 @@ def _evaluate_epochs(epochs, skeleton_id, tree, reviews, relations):
                 edges = tree[node]
                 if edges:
                     # Replace node with its parent
-                    node = edges.iterkeys().next()
+                    node = six.iterkeys(edges).next()
                 merges[tree.node[node]['user_id']] += 1
 
         # Count nodes created by the reviewer, as well as
@@ -207,7 +207,7 @@ def _evaluate_epochs(epochs, skeleton_id, tree, reviews, relations):
                 for node in addition:
                     edges = tree[node]
                     if edges:
-                        parent = edges.iterkeys().next()
+                        parent = six.iterkeys(edges).next()
                         creator_id = tree.node[parent]['user_id']
                         if creator_id != reviewer_id:
                             appended[creator_id].append(len(addition))

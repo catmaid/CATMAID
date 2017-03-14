@@ -6,6 +6,7 @@ import logging
 import sys
 import re
 import urllib
+import six
 
 from django import forms
 from django.conf import settings
@@ -281,7 +282,7 @@ class ClassInstance(models.Model):
 
         # sort by count
         from operator import itemgetter
-        connected_skeletons = connected_skeletons_dict.values()
+        connected_skeletons = six.itervalues(connected_skeletons_dict)
         result = reversed(sorted(connected_skeletons, key=itemgetter('id__count')))
         return result
 

@@ -90,11 +90,13 @@ def split_by_synapse_domain(bandwidth, locations, arbors, treenode_connector, mi
                 graph[parent_id][treenode_id]['weight'] = norm(subtract(loc0, loc1))
 
             # Invoke Casey's magic
-            synapse_group = tree_max_density(graph.to_undirected(), treenode_ids, connector_ids, relation_ids, [bandwidth]).values()[0]
+            max_density = tree_max_density(graph.to_undirected(), treenode_ids,
+                    connector_ids, relation_ids, [bandwidth])
+            synapse_group = next(six.itervalues(max_density))
             # The list of nodes of each synapse_group contains only nodes that have connectors
             # A local_max is the skeleton node most central to a synapse_group
             anchors = {}
-            for domain in synapse_group.itervalues():
+            for domain in six.itervalues(synapse_group):
                 g = nx.DiGraph()
                 g.add_nodes_from(domain.node_ids) # bogus graph, containing treenodes that point to connectors
                 subdomains.append(g)
@@ -205,12 +207,12 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, e
                                  'label': label,
                                  'skeleton_id': skid,
                                  'node_count': len(g),
-                                 'node_reviewed_count': sum(1 for v in g.node.itervalues() if 0 != len(v.get('reviewer_ids', []))), # TODO when bandwidth > 0, not all nodes are included. They will be included when the bandwidth is computed with an O(n) algorithm rather than the current O(n^2)
+                                 'node_reviewed_count': sum(1 for v in six.itervalues(g.node) if 0 != len(v.get('reviewer_ids', []))), # TODO when bandwidth > 0, not all nodes are included. They will be included when the bandwidth is computed with an O(n) algorithm rather than the current O(n^2)
                                  'branch': False})
             i += 1
 
     # Define edges between arbors, with number of synapses as an edge property
-    for c in connectors.itervalues():
+    for c in six.itervalues(connectors):
         for pre_treenode, pre_skeleton in c[relations['presynaptic_to']]:
             for pre_arbor in arbors.get(pre_skeleton, ()):
                 if pre_treenode in pre_arbor:
@@ -325,7 +327,7 @@ def skeleton_graph(request, project_id=None):
     expand = set(int(v) for k,v in six.iteritems(request.POST) if k.startswith('expand['))
 
     circuit = _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, expand, compute_risk, cable_spread, path_confluence)
-    package = {'nodes': [{'data': props} for props in circuit.node.itervalues()],
+    package = {'nodes': [{'data': props} for props in six.itervalues(circuit.node)],
                'edges': []}
     edges = package['edges']
     for g1, g2, props in circuit.edges_iter(data=True):
@@ -401,14 +403,14 @@ def _node_centrality_by_synapse(tree, nodes, totalOutputs, totalInputs):
 
     if 0 == totalOutputs:
         # Not computable
-        for counts in nodes.itervalues():
+        for counts in six.itervalues(nodes):
             counts.synapse_centrality = -1
         return
 
     if len(tree.successors(find_root(tree))) > 1:
         # Reroot at the first end node found
         tree = tree.copy()
-        endNode = (nodeID for nodeID in nodes.iterkeys() if not tree.successors(nodeID)).next()
+        endNode = (nodeID for nodeID in six.iterkeys(nodes) if not tree.successors(nodeID)).next()
         reroot(tree, endNode)
 
     # 2. Partition into sequences, sorted from small to large

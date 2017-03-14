@@ -700,7 +700,7 @@ def _measure_skeletons(skeleton_ids):
             skeletons[row[2]] = skeleton
         skeleton.nodes[row[0]] = Node(row[1], row[3], row[4], row[5])
 
-    for skeleton in skeletons.itervalues():
+    for skeleton in six.itervalues(skeletons):
         nodes = skeleton.nodes
         tree = nx.DiGraph()
         root = None
@@ -740,7 +740,7 @@ def _measure_skeletons(skeleton_ids):
             oids = node.children.copy()
             if node.parent_id:
                 oids[node.parent_id] = skeleton.nodes[node.parent_id].children[nodeID]
-            sum_distances = sum(oids.itervalues())
+            sum_distances = sum(six.itervalues(oids))
             wx, wy, wz = 0, 0, 0
             for oid, distance in six.iteritems(oids):
                 other = skeleton.nodes[oid]

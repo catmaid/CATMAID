@@ -390,8 +390,8 @@ def _update_neuron_annotations(project_id, user, neuron_id, annotation_map, losi
 
     existing_annotations = dict(qs)
 
-    update = set(annotation_map.iterkeys())
-    existing = set(existing_annotations.iterkeys())
+    update = set(six.iterkeys(annotation_map))
+    existing = set(six.iterkeys(existing_annotations))
     missing = update - existing
 
     if losing_neuron_id:
@@ -401,7 +401,7 @@ def _update_neuron_annotations(project_id, user, neuron_id, annotation_map, losi
                 'class_instance_b__name', 'id')
 
         losing_existing_annotations = dict(qs)
-        losing_missing = frozenset(losing_existing_annotations.iterkeys()) & missing
+        losing_missing = frozenset(six.iterkeys(losing_existing_annotations)) & missing
 
         if losing_missing:
             cici_ids = [losing_existing_annotations[k] for k in losing_missing]

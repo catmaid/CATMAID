@@ -258,8 +258,8 @@ def make_cells(cellIDs, neuron_names):
 def bodyMutual(neuron_names, all_treenodes, connections, scale):
     """ Create a cell for each arbor. """
     synaptic_treenodes = {}
-    for m in connections.itervalues():
-        for synapses in m.itervalues():
+    for m in six.itervalues(connections):
+        for synapses in six.itervalues(m):
             for pre_treenodeID, post_treenodeID in synapses:
                 synaptic_treenodes[pre_treenodeID] = None
                 synaptic_treenodes[post_treenodeID] = None
@@ -304,7 +304,7 @@ def make_inputs(cellIDs, neuron_names, inputs, state):
 
 
 def bodySingle(neuron_names, all_treenodes, inputs, scale):
-    synaptic_treenodes = {treenodeID: None for treenodeIDs in inputs.itervalues() for treenodeID in treenodeIDs}
+    synaptic_treenodes = {treenodeID: None for treenodeIDs in six.itervalues(inputs) for treenodeID in treenodeIDs}
 
     state = State(synaptic_treenodes)
 

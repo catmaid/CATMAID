@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 
 import logging
+import six
 import numpy as np
 from datetime import timedelta, datetime
 from dateutil import parser as dateparser
@@ -516,7 +517,7 @@ def eventsPerIntervalPerDayPlot(ax,times,start_date,end_date,interval=60):
     ind = 0
     cm = plt.get_cmap('jet',len(timebins))
     dats = []
-    for dat in timebins.values():
+    for dat in six.itervalues(timebins):
         if np.sum(dat)==0:
             ignoredDays += 1
         else:

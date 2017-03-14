@@ -493,8 +493,8 @@ def contributor_statistics_multiple(request, project_id=None, skeleton_ids=None)
         'multiuser_review_minutes': int(n_multi_review_bins / 3.0),
         'n_nodes': n_nodes,
         'node_contributors': contributors,
-        'n_pre': sum(synapses[relations['presynaptic_to']].itervalues()),
-        'n_post': sum(synapses[relations['postsynaptic_to']].itervalues()),
+        'n_pre': sum(six.itervalues(synapses[relations['presynaptic_to']])),
+        'n_post': sum(six.itervalues(synapses[relations['postsynaptic_to']])),
         'pre_contributors': synapses[relations['presynaptic_to']],
         'post_contributors': synapses[relations['postsynaptic_to']]})
 
@@ -859,7 +859,7 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2, model_o
 
     # If op is AND, discard entries where only one of the skids has synapses
     if len(skeleton_ids) > 1 and 'AND' == op:
-        for partnerID in partners.keys(): # keys() is a copy of the keys
+        for partnerID in list(six.iterkeys(partners)): # keys() is a copy of the keys
             if len(skeleton_ids) != len(partners[partnerID].skids):
                 del partners[partnerID]
 
@@ -868,7 +868,7 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2, model_o
         return partners, []
 
     # Obtain unique partner skeletons
-    partner_skids = list(partners.iterkeys())
+    partner_skids = list(six.iterkeys(partners))
 
     # Count nodes of each partner skeleton
     cursor.execute('''
@@ -1464,7 +1464,7 @@ def import_skeleton(request, project_id=None):
         neuron_id = int(neuron_id)
 
     if len(request.FILES) == 1:
-        for uploadedfile in request.FILES.itervalues():
+        for uploadedfile in six.itervalues(request.FILES):
             if uploadedfile.size > settings.IMPORTED_SKELETON_FILE_MAXIMUM_SIZE:
                 return HttpResponse('File too large. Maximum file size is {} bytes.'.format(settings.IMPORTED_SKELETON_FILE_MAXIMUM_SIZE), status=413)
 

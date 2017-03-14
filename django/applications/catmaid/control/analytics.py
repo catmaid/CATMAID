@@ -333,7 +333,8 @@ def _analyze_skeleton(project_id, skeleton_id, adjacents):
     for connector_id in pre_connector_ids:
         c = connectors[connector_id]
         treenode_id = iter(c[PRE]).next().id
-        pre_treenodes = set(chain.from_iterable(single_source_shortest_path(graph, treenode_id, adjacents).values()))
+        shortest_path = single_source_shortest_path(graph, treenode_id, adjacents)
+        pre_treenodes = set(chain.from_iterable(six.itervalues(shortest_path)))
         post_skeletons = set(t.skeleton_id for t in c[POST])
         pre_connectors.append(Connector(connector_id, treenode_id, pre_treenodes, post_skeletons))
 
@@ -355,7 +356,8 @@ def _analyze_skeleton(project_id, skeleton_id, adjacents):
             continue
         treenode_id = (t.id for t in c[POST] if t.skeleton_id == skeleton_id).next()
         pre_skeletons = set(t.skeleton_id for t in c[PRE])
-        post_treenodes = set(chain.from_iterable(single_source_shortest_path(graph, treenode_id, adjacents).values()))
+        shortest_path = single_source_shortest_path(graph, treenode_id, adjacents)
+        post_treenodes = set(chain.from_iterable(six.itervalues(shortest_path)))
         post_connectors.append(Connector(connector_id, treenode_id, post_treenodes, pre_skeletons))
 
     issue4s(post_connectors)

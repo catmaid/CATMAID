@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import six
+
 from itertools import chain
 from optparse import make_option
 from django.core import serializers
@@ -56,10 +58,11 @@ class Exporter():
             print("Found entities with the following annotations: %s" % \
                   ", ".join(a_to_id.keys()))
 
+            b_ids = list(six.itervalues(a_to_id))
             entities = ClassInstance.objects.filter(project=self.project,
                 class_column=classes['neuron'],
                 cici_via_a__relation_id=relations['annotated_with'],
-                cici_via_a__class_instance_b_id__in=a_to_id.values())
+                cici_via_a__class_instance_b_id__in=b_ids)
 
             # Get the corresponding skeleton IDs
             skeleton_links = ClassInstanceClassInstance.objects.filter(

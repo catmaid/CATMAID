@@ -81,7 +81,7 @@ def circles_of_hell(request, project_id=None):
     while n_circles > 0 and current_circle:
         n_circles -= 1
         connections = _next_circle(current_circle, relations, cursor)
-        next_circle = set(skID for c in connections.itervalues() \
+        next_circle = set(skID for c in six.itervalues(connections) \
                           for relationID, cs in six.iteritems(c) \
                           for skID, count in six.iteritems(cs) if count >= mins[relationID])
         current_circle = next_circle - all_circles

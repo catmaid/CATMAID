@@ -713,7 +713,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
                 {'skids[0]': 235, 'skids[1]': 373})
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content.decode('utf-8'))
-        [[[c.sort() for c in p.itervalues()] for p in t.itervalues()] for t in parsed_response.itervalues()]
+        [[[c.sort() for c in six.itervalues(p)] for p in six.itervalues(t)] for t in six.itervalues(parsed_response)]
         expected_result = {
             '235': {
                 'presynaptic_to': {

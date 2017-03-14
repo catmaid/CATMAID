@@ -55,12 +55,12 @@ def basic_graph(project_id, skeleton_ids):
     for row in cursor.fetchall():
         edges[row[0]][row[1]][row[2] - 1] += 1
 
-    return {'edges': tuple((pre, post, count) for pre, edge in six.iteritems(edges) for post, count in edge.iteritems())}
+    return {'edges': tuple((pre, post, count) for pre, edge in six.iteritems(edges) for post, count in six.iteritems(edge))}
 
     '''
     return {'edges': [{'source': pre,
                        'target': post,
-                       'weight': count} for pre, edge in six.iteritems(edges) for post, count in edge.iteritems()]}
+                       'weight': count} for pre, edge in six.iteritems(edges) for post, count in six.iteritems(edge)]}
     '''
 
     """ Can't get the variable to be set with all the skeleton IDs
@@ -146,13 +146,13 @@ def confidence_split_graph(project_id, skeleton_ids, confidence_threshold):
 
     # Create the edges of the graph from the connectors, which was populated as a side effect of 'split_by_confidence'
     edges = defaultdict(partial(defaultdict, newSynapseCounts)) # pre vs post vs count
-    for c in connectors.itervalues():
+    for c in six.itervalues(connectors):
         for pre in c[preID]:
             for post in c[postID]:
                 edges[pre[0]][post[0]][min(pre[1], post[1]) - 1] += 1
 
     return {'nodes': nodeIDs,
-            'edges': [(pre, post, count) for pre, edge in six.iteritems(edges) for post, count in edge.iteritems()]}
+            'edges': [(pre, post, count) for pre, edge in six.iteritems(edges) for post, count in six.iteritems(edge)]}
 
 
 def dual_split_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, expand):
@@ -284,13 +284,13 @@ def dual_split_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, 
 
     # Create the edges of the graph
     edges = defaultdict(partial(defaultdict, newSynapseCounts)) # pre vs post vs count
-    for c in connectors.itervalues():
+    for c in six.itervalues(connectors):
         for pre in c[preID]:
             for post in c[postID]:
                 edges[pre[0]][post[0]][min(pre[1], post[1]) - 1] += 1
 
     return {'nodes': nodeIDs,
-            'edges': [(pre, post, count) for pre, edge in six.iteritems(edges) for post, count in edge.iteritems()],
+            'edges': [(pre, post, count) for pre, edge in six.iteritems(edges) for post, count in six.iteritems(edge)],
             'branch_nodes': branch_nodeIDs,
             'intraedges': intraedges}
 
@@ -340,14 +340,17 @@ def split_by_both(skeleton_id, digraph, locations, bandwidth, cs, connectors, in
             nodes.append(chunkID)
             continue
 
-        treenode_ids, connector_ids, relation_ids, confidences = zip(*blob)
+        treenode_ids, connector_ids, relation_ids, confidences = list(izip(*blob))
 
         if 0 == len(connector_ids):
             nodes.append(chunkID)
             continue
 
         # Invoke Casey's magic: split by synapse domain
-        domains = tree_max_density(chunk.to_undirected(), treenode_ids, connector_ids, relation_ids, [bandwidth]).values()[0]
+        max_density = tree_max_density(chunk.to_undirected(), treenode_ids,
+                connector_ids, relation_ids, [bandwidth])
+        # Get first element of max_density
+        domains = next(six.itervalues(max_density))
 
         # domains is a dictionary of index vs SynapseGroup instance
 
@@ -362,7 +365,7 @@ def split_by_both(skeleton_id, digraph, locations, bandwidth, cs, connectors, in
         anchors = {d.node_ids[0]: (i+k, d) for k, d in six.iteritems(domains)}
 
         # Create new Graph where the edges are the edges among synapse domains
-        mini = simplify(chunk, anchors.iterkeys())
+        mini = simplify(chunk, six.iterkeys(anchors))
 
         # Many side effects:
         # * add internal edges to intraedges

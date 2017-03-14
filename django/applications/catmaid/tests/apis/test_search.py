@@ -120,7 +120,7 @@ class SearchApiTests(CatmaidApiTestCase):
                 '/%d/search' % self.test_project_id,
                 {'substring': 'uncertain end'})
         self.assertEqual(response2.status_code, 200)
-        parsed_response2 = json.loads(response2.content)
+        parsed_response2 = json.loads(response2.content.decode(('utf-8')))
 
         # Expect the nodes to be not linked to the duplicate record
         expected_result2 = [

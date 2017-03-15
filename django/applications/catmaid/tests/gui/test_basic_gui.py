@@ -119,7 +119,7 @@ class BasicUITest(StaticLiveServerTestCase):
             if settings.GUI_TESTS_REMOTE:
                 # Let saucelabs.com know about the outcome of this test
                 id = self.selenium.session_id
-                print 'Link to remote Selenium GUI test job: https://saucelabs.com/jobs/%s' % id
+                print('Link to remote Selenium GUI test job: https://saucelabs.com/jobs/{}'.format(id))
 
                 from sauceclient import SauceClient
                 username = os.environ["SAUCE_USERNAME"]

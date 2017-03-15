@@ -9,6 +9,7 @@ from guardian.shortcuts import assign_perm
 from guardian.management import create_anonymous_user
 
 from catmaid.models import Project, Treenode, User
+from catmaid.tests.common import init_consistent_data
 
 
 class CatmaidApiTestCase(TestCase):
@@ -16,22 +17,14 @@ class CatmaidApiTestCase(TestCase):
 
     maxDiff = None
 
-    def setUp(self):
-        """ Creates a new test client and test user. The user is assigned
-        permissions to modify an existing test project.
-        """
-        self.test_project_id = 3
-        self.test_user_id = 3
-        self.client = Client()
-
-        p = Project.objects.get(pk=self.test_project_id)
-
-        create_anonymous_user(object())
-
-        user = User.objects.get(pk=3)
-        # Assign the new user permissions to browse and annotate projects
-        assign_perm('can_browse', user, p)
-        assign_perm('can_annotate', user, p)
+    @classmethod
+    def setUpTestData(cls):
+        init_consistent_data()
+        # Set up data for the whole TestCase
+        cls.test_project_id = 3
+        cls.test_user_id = 3
+        cls.test_project = Project.objects.get(pk=cls.test_project_id)
+        cls.test_user = User.objects.get(pk=cls.test_user_id)
 
         cursor = connection.cursor()
         # Make sure all counters are set correctly
@@ -41,6 +34,19 @@ class CatmaidApiTestCase(TestCase):
         cursor.execute("""
             SELECT setval('location_id_seq', coalesce(max("id"), 1), max("id") IS NOT null) FROM location;
         """)
+
+        create_anonymous_user(object())
+
+        # Assign the new user permissions to browse and annotate projects
+        assign_perm('can_browse', cls.test_user, cls.test_project)
+        assign_perm('can_annotate', cls.test_user, cls.test_project)
+
+
+    def setUp(self):
+        """ Creates a new test client and test user. The user is assigned
+        permissions to modify an existing test project.
+        """
+        self.client = Client()
 
 
     def fake_authentication(self, username='test2', password='test', add_default_permissions=False):

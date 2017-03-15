@@ -13,11 +13,13 @@ from guardian.shortcuts import assign_perm
 from guardian.utils import get_anonymous_user
 from guardian.management import create_anonymous_user
 
+from catmaid.control.project import validate_project_setup
 from catmaid.fields import Double3D, Integer3D
 from catmaid.models import Project, Stack, ProjectStack, StackMirror
 from catmaid.models import ClassInstance, Log
 from catmaid.models import Treenode, Connector, User
 from catmaid.models import TreenodeClassInstance, ClassInstanceClassInstance
+from catmaid.tests.common import init_consistent_data
 
 
 class TransactionTests(TransactionTestCase):
@@ -26,7 +28,11 @@ class TransactionTests(TransactionTestCase):
     maxDiff = None
 
     def setUp(self):
+        init_consistent_data()
         self.test_project_id = 3
+        self.test_user_id = 3
+        self.test_project = Project.objects.get(pk=self.test_project_id)
+        self.test_user = User.objects.get(pk=self.test_user_id)
         self.client = Client()
 
     def fake_authentication(self, username='test2', password='test'):

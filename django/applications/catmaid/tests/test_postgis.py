@@ -7,10 +7,11 @@ from django.test.client import Client
 from guardian.shortcuts import assign_perm
 from catmaid.models import Project, User
 from catmaid.control import node, skeleton, treenode
+from catmaid.tests.common import CatmaidTestCase
 
 import json
 
-class PostGISTests(TestCase):
+class PostGISTests(CatmaidTestCase):
     """
     Test PostGIS related functionality. It expects the 'postgis' extension to
     be available in the test database. At the moment, it seems, the easiest way

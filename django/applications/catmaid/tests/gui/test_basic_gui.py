@@ -191,7 +191,7 @@ class BasicUITest(StaticLiveServerTestCase):
 
             # Fail on any severe errors
             self.assertIn('level', log_entry)
-            self.assertNotIn('SEVERE', log_entry['level'])
+            self.assertNotIn('SEVERE', log_entry['level'], log_entry['message'])
 
         # Check title
         self.assertTrue("CATMAID" in self.selenium.title)

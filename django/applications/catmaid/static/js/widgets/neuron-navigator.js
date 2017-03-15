@@ -720,7 +720,7 @@
       // Add action column with unlink link
       column_params.push(
         {
-          "sWidth": '5em',
+          "sWidth": '8em',
           "sClass": 'selector_column center',
           "bSearchable": false,
           "bSortable": false,

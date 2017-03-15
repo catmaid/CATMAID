@@ -86,7 +86,9 @@ class BasicUITest(StaticLiveServerTestCase):
                     "captureHtml": True,
                     "webdriverRemoteQuietExceptions": False,
                     "tunnel-identifier": os.environ["TRAVIS_JOB_NUMBER"],
-                    "name": "Commit {}".format(os.environ["TRAVIS_COMMIT"]),
+                    "name": "Job: {} Commit {}".format(
+                            os.environ["TRAVIS_JOB_NUMBER"],
+                            os.environ["TRAVIS_COMMIT"]),
                     "build": os.environ["TRAVIS_BUILD_NUMBER"],
                     "tags": [os.environ["TRAVIS_PYTHON_VERSION"], "CI"]
                 }

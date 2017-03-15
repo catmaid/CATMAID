@@ -6,6 +6,7 @@ import decimal
 
 from django.db import connection
 from six import string_types
+from six.moves import reduce
 
 
 class StateMatchingError(Exception):

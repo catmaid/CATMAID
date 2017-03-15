@@ -384,7 +384,7 @@ def skeleton_statistics(request, project_id=None, skeleton_id=None):
     p = get_object_or_404(Project, pk=project_id)
     skel = Skeleton( skeleton_id = skeleton_id, project_id = project_id )
     const_time = skel.measure_construction_time()
-    construction_time = '{0} minutes {1} seconds'.format( const_time / 60, const_time % 60)
+    construction_time = '{0} minutes {1} seconds'.format( int(const_time / 60), const_time % 60)
     return JsonResponse({
         'node_count': skel.node_count(),
         'input_count': skel.input_count(),
@@ -1471,7 +1471,7 @@ def import_skeleton(request, project_id=None):
             filename = uploadedfile.name
             extension = filename.split('.')[-1].strip().lower()
             if extension == 'swc':
-                swc_string = '\n'.join(uploadedfile)
+                swc_string = '\n'.join([line.decode('utf-8') for line in uploadedfile])
                 return import_skeleton_swc(request.user, project_id, swc_string, neuron_id)
             else:
                 return HttpResponse('File type "{}" not understood. Known file types: swc'.format(extension), status=415)

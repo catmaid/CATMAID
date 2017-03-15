@@ -297,7 +297,7 @@ def dual_split_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, 
 
 def populate_connectors(chunkIDs, chunks, cs, connectors):
     # Build up edges via the connectors
-    IDchunks = zip(chunkIDs, chunks)
+    IDchunks = list(izip(chunkIDs, chunks))
     for c in cs:
         # c is (treenode_id, connector_id, relation_id, confidence)
         for chunkID, chunk in IDchunks:

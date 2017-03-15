@@ -121,7 +121,7 @@ class InsertionTest(TestCase):
         the custom psycopg2 driver is needed for.)
         """
         p = self.insert_project()
-        self.assertIsInstance(p.id, (int, long))
+        self.assertIsInstance(p.id, six.integer_types)
 
     def test_stack_insertion(self):
         p = self.insert_project()
@@ -380,7 +380,11 @@ class ViewPageTests(TestCase):
         self.assertEqual(response.status_code, 200)
         expected_result = [{'reviewer_id': int(r), 'accept_after': t}
                 for r,t in six.iteritems(whitelist)]
-        self.assertJSONEqual(response.content.decode('utf-8'), expected_result)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        six.assertCountEqual(self, parsed_response, expected_result)
+        for pr in parsed_response:
+            rid = pr['reviewer_id']
+            self.assertEqual(whitelist[str(rid)], pr['accept_after'])
 
     def test_export_compact_skeleton(self):
         self.fake_authentication()

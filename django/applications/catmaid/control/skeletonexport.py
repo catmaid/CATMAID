@@ -407,8 +407,7 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True, with_tags=T
     return [nodes, connectors, tags]
 
 
-@requires_user_role(UserRole.Browse)
-def compact_arbor(request, project_id=None, skeleton_id=None, with_nodes=None, with_connectors=None, with_tags=None):
+def _compact_arbor(project_id=None, skeleton_id=None, with_nodes=None, with_connectors=None, with_tags=None):
     """
     Performance-critical function. Do not edit unless to improve performance.
     Returns, in JSON, [[nodes], [connections], {nodeID: [tags]}],
@@ -506,11 +505,17 @@ def compact_arbor(request, project_id=None, skeleton_id=None, with_nodes=None, w
         for row in cursor.fetchall():
             tags[row[0]].append(row[1])
 
+    return nodes, connectors, tags
+
+
+@requires_user_role(UserRole.Browse)
+def compact_arbor(request, project_id=None, skeleton_id=None, with_nodes=None, with_connectors=None, with_tags=None):
+    nodes, connectors, tags = _compact_arbor(project_id, skeleton_id,
+            with_nodes, with_connectors, with_tags)
     return HttpResponse(json.dumps((nodes, connectors, tags), separators=(',', ':')))
 
 
-@requires_user_role([UserRole.Browse])
-def treenode_time_bins(request, project_id=None, skeleton_id=None):
+def _treenode_time_bins(skeleton_id=None):
     """ Return a map of time bins (minutes) vs. list of nodes. """
     minutes = defaultdict(list)
     epoch = datetime.utcfromtimestamp(0).replace(tzinfo=pytz.utc)
@@ -518,14 +523,21 @@ def treenode_time_bins(request, project_id=None, skeleton_id=None):
     for row in Treenode.objects.filter(skeleton_id=int(skeleton_id)).values_list('id', 'creation_time'):
         minutes[int((row[1] - epoch).total_seconds() / 60)].append(row[0])
 
+    return minutes
+
+
+@requires_user_role([UserRole.Browse])
+def treenode_time_bins(request, project_id=None, skeleton_id=None):
+    minutes = _treenode_time_bins(skeleton_id)
     return HttpResponse(json.dumps(minutes, separators=(',', ':')))
 
 
 @requires_user_role([UserRole.Browse])
 def compact_arbor_with_minutes(request, project_id=None, skeleton_id=None, with_nodes=None, with_connectors=None, with_tags=None):
-    r = compact_arbor(request, project_id=project_id, skeleton_id=skeleton_id, with_nodes=with_nodes, with_connectors=with_connectors, with_tags=with_tags)
-    r.content = "%s, %s]" % (r.content[:-1], treenode_time_bins(request, project_id=project_id, skeleton_id=skeleton_id).content)
-    return r
+    nodes, connectors, tags = _compact_arbor(project_id, skeleton_id,
+            with_nodes, with_connectors, with_tags)
+    minutes = _treenode_time_bins(skeleton_id)
+    return HttpResponse(json.dumps((nodes, connectors, tags, minutes), separators=(',', ':')))
 
 
 # DEPRECATED. Will be removed.

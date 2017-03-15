@@ -26,7 +26,7 @@
 
 Graph widget:
 
-  The "Selection" tab now has two new buttons that provide the ability to invert
+- The "Selection" tab now has two new buttons that provide the ability to invert
 	the selection, and also to select graph nodes based on matching a text string
 	or by a regular expression (when the text starts with a '/').
 
@@ -79,6 +79,9 @@ Miscellaneous:
   which is useful to e.g. make a local copy of the image data availabl in
   CATMAID. This can reduce latency due to remote image loading considerably. See
   the user FAQ in the documentation for more details.
+
+- Annotation pages in the Neuron Navigator now also list meta annotations and
+  provide a way to de-annotate them.
 
 
 ### Bug fixes

@@ -45,21 +45,11 @@
 
   SplitMergeDialog.prototype.swapSkeletons = function() {
     $(this.dialog).dialog('close');
-    var extension = {};
-    extension[this.model1_id] = this.extension[this.model2_id];
-    extension[this.model2_id] = this.extension[this.model1_id];
-
-    var newModel1 = this.models[this.model2_id];
-    var newModel2 = this.models[this.model1_id];
-    var newColor1 = newModel2.color.clone();
-    var newColor2 = newModel1.color.clone();
-    newModel1.color.copy(newColor1);
-    newModel2.color.copy(newColor2);
 
     var newDialog = new CATMAID.SplitMergeDialog({
-      model1: this.models[this.model2_id],
-      model2: this.models[this.model1_id],
-      extension: extension,
+      model1: this.models[this.under_model_id],
+      model2: this.models[this.over_model_id],
+      extension: this.extension,
       splitNodeId: this.splitNodeId,
       autoOrder: false
     });
@@ -205,16 +195,10 @@
             skeleton2 = this.webglapp.space.content.skeletons[this.model2_id],
             count1 = skeleton.createArbor().countNodes(),
             count2 = skeleton2.createArbor().countNodes(),
-            over_count, under_count, over_skeleton, under_skeleton,
-            over_role, under_role;
+            over_count, under_count, over_skeleton, under_skeleton;
 
-        // Source and target don't change with size
-        var title = 'Merge skeleton "' + this.models[this.model2_id].baseName +
-          '" into "' + this.models[this.model1_id].baseName + '"';
+        var keepOrder = count1 >= count2 || !this.autoOrder;
 
-        var keepOrder = count1 < count2 || !this.autoOrder;
-
-        $(this.dialog).dialog('option', 'title', title);
         // Find larger skeleton
         if (keepOrder) {
           this.over_model_id = this.model1_id;
@@ -223,8 +207,6 @@
           under_count = count2;
           over_skeleton = skeleton;
           under_skeleton = skeleton2;
-          over_role = 'winning';
-          under_role = 'losing';
         } else {
           this.over_model_id = this.model2_id;
           this.under_model_id = this.model1_id;
@@ -232,31 +214,38 @@
           under_count = count1;
           over_skeleton = skeleton2;
           under_skeleton = skeleton;
-          over_role = 'losing';
-          under_role = 'winning';
         }
+
+        var winningModel = this.models[this.over_model_id];
+        var losingModel = this.models[this.under_model_id];
+
+        var winningColor = new THREE.Color(1, 1, 0);
+        var losingColor = new THREE.Color(1, 0, 1);
+
+        winningModel.color.copy(winningColor);
+        losingModel.color.copy(losingColor);
+        this.webglapp.addSkeletons(this.models);
+
+        var title = 'Merge skeleton "' + losingModel.baseName +
+          '" into "' + winningModel.baseName + '"';
+        $(this.dialog).dialog('option', 'title', title);
+
         // Update titles and name over count model first
-        var over_name = this.models[this.over_model_id].baseName;
-        var under_name = this.models[this.under_model_id].baseName;
-        titleBig.appendChild(document.createTextNode(over_count + " nodes in " + over_role + " skeleton"));
-        titleBig.setAttribute('title', over_name);
-        titleSmall.appendChild(document.createTextNode(under_count + " nodes in " + under_role + " skeleton"));
-        titleSmall.setAttribute('title', under_name);
+        titleBig.appendChild(document.createTextNode(over_count + " nodes in winning skeleton"));
+        titleBig.setAttribute('title', winningModel.baseName);
+        titleSmall.appendChild(document.createTextNode(under_count + " nodes in losing skeleton"));
+        titleSmall.setAttribute('title', losingModel.baseName);
         // Color the small and big node count boxes
-        colorBig.style.backgroundColor = '#' + over_skeleton.getActorColorAsHTMLHex();
-        colorSmall.style.backgroundColor = '#' + under_skeleton.getActorColorAsHTMLHex();
+        colorBig.style.backgroundColor = winningColor.getStyle();
+        colorSmall.style.backgroundColor = losingColor.getStyle();
         // Add annotation for name of neuron that gets joined into the other (i.e.
         // add name of model 2 to model 1). Don't check it, if it is named in the
         // default pattern "neuron 123456".
-        var name = this.models[this.model2_id].baseName;
-        var checked = (null === name.match(/[Nn]euron \d+/));
-        var cb = create_labeled_checkbox(name, CATMAID.session.userid, checked, false,
-            name + " (reference to merged in neuron)");
-        if (keepOrder) {
-          big.appendChild(cb, checked);
-        } else {
-          small.appendChild(cb, checked);
-        }
+        var checked = (null === losingModel.baseName.match(/[Nn]euron \d+/));
+        var cb = create_labeled_checkbox(losingModel.baseName,
+            CATMAID.session.userid, checked, false,
+            losingModel.baseName + " (reference to merged in neuron)");
+        big.appendChild(cb, checked);
         // Add annotations
         add_annotations_fn(this.over_model_id, [{obj: big, checked: true}], true);
         add_annotations_fn(this.under_model_id, [{obj: small, checked: true}], true);
@@ -267,7 +256,8 @@
             count2 = arbor.countNodes() - count1,
             over_count, under_count,
             model_name = this.models[this.model1_id].baseName;
-        this.upstream_is_small = keepOrder;
+        this.upstream_is_small = count1 > count2;
+
         if (this.upstream_is_small) {
           over_count = count1;
           under_count = count2;
@@ -302,20 +292,22 @@
       // Extend skeletons: Unfortunately, it is not possible right now to add new
       // points to existing meshes in THREE. Therefore, a new line is created.
       if (this.extension) {
-        var pairs = this.extension[this.model1_id];
-        if (pairs) {
-          // Create new line representing interpolated link
-          var geometry = new THREE.Geometry();
-          pairs.forEach(function(v) {
-            geometry.vertices.push(v.clone());
-          }, this);
-          var material = new THREE.LineBasicMaterial({
-            color: 0x00ff00,
-            linewidth: 3,
-          });
-          skeleton.space.add(new THREE.LineSegments(geometry, material));
-          // Update view
-          skeleton.space.render();
+        for (var modelId in this.extension) {
+          var pairs = this.extension[modelId];
+          if (pairs) {
+            // Create new line representing interpolated link
+            var geometry = new THREE.Geometry();
+            pairs.forEach(function(v) {
+              geometry.vertices.push(v.clone());
+            }, this);
+            var material = new THREE.LineBasicMaterial({
+              color: 0x00ff00,
+              linewidth: 3,
+            });
+            skeleton.space.add(new THREE.LineSegments(geometry, material));
+            // Update view
+            skeleton.space.render();
+          }
         }
       }
     }).bind(this));

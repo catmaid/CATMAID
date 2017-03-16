@@ -1785,15 +1785,16 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeLink = function (from
       undefined,
       function(json) {
         var from_model = SkeletonAnnotations.activeSkeleton.createModel();
+        var from_skid = from_model.id;
         var to_skid = json.skeleton_id;
 
         var nodes = {};
-        nodes[from_model.id] = fromid;
+        nodes[from_skid] = fromid;
         nodes[to_skid] = toid;
 
         // Make sure the user has permissions to edit both the from and the to
         // skeleton.
-        self.executeIfSkeletonEditable(from_model.id, function() {
+        self.executeIfSkeletonEditable(from_skid, function() {
           self.executeIfSkeletonEditable(to_skid, function() {
             // The function used to instruct the backend to do the merge
             var merge = function(annotation_set, fromId, toId) {
@@ -1817,7 +1818,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeLink = function (from
               var extension = {};
               var p = self.nodes[SkeletonAnnotations.getActiveNodeId()],
                   c = self.nodes[toid];
-              extension[from_model.id] = [
+              extension[from_skid] = [
                   new THREE.Vector3(self.pix2physX(p.z, p.y, p.x),
                                     self.pix2physY(p.z, p.y, p.x),
                                     self.pix2physZ(p.z, p.y, p.x)),
@@ -1848,20 +1849,20 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeLink = function (from
               if (noUI) {
                 // Not specifying an annotation map will cause the combined
                 // annotation set of both skeletons to be used.
-                merge();
+                merge(undefined, from_skid, to_skid);
               } else {
                 // Only show a dialog if the merged in neuron is annotated.
                 CATMAID.Annotations.forSkeleton(project.id, to_skid)
                   .then(function(to_annotations) {
                     if (to_annotations.length === 0) {
-                      return CATMAID.Annotations.forSkeleton(project.id, from_model.id)
+                      return CATMAID.Annotations.forSkeleton(project.id, from_skid)
                         .then(function(from_annotations) {
                           // Merge annotations from both neurons
                           function collectAnnotations(o, e) {
                             o[e.name] = e.users[0].id; return o;
                           }
                           var annotationMap = from_annotations.reduce(collectAnnotations, {});
-                          merge(annotationMap);
+                          merge(annotationMap, from_skid, to_skid);
                         });
                     } else {
                       merge_multiple_nodes();

@@ -51,11 +51,11 @@ class PostGISTests(TestCase):
         }
 
         postgis_3d_nodes_r = node.node_list_tuples_query(params,
-                self.test_project_id, node_provider=node.Postgis3dNodeProvider(),
+                self.test_project_id, node.Postgis3dNodeProvider(),
                 tuple(), tuple(), include_labels=False)
 
         postgis_2d_nodes_r = node.node_list_tuples_query(params,
-                self.test_project_id, node_provider=node.Postgis2dNodeProvider(),
+                self.test_project_id, node.Postgis2dNodeProvider(),
                 tuple(), tuple(), include_labels=False)
 
 

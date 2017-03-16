@@ -1849,7 +1849,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeLink = function (from
               if (noUI) {
                 // Not specifying an annotation map will cause the combined
                 // annotation set of both skeletons to be used.
-                merge();
+                merge(undefined, from_skid, to_skid);
               } else {
                 // Only show a dialog if the merged in neuron is annotated.
                 CATMAID.Annotations.forSkeleton(project.id, to_skid)
@@ -1862,7 +1862,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeLink = function (from
                             o[e.name] = e.users[0].id; return o;
                           }
                           var annotationMap = from_annotations.reduce(collectAnnotations, {});
-                          merge(annotationMap);
+                          merge(annotationMap, from_skid, to_skid);
                         });
                     } else {
                       merge_multiple_nodes();

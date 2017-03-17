@@ -83,6 +83,13 @@ dd {
 	margin-left: 1em;
 }
 
+table tr.highlight,
+table tr.highlight td,
+table tr.highlight.even td,
+table tr.highlight.odd td {
+  background-color: #d6ffb5
+}
+
 .cm-center {
   text-align: center;
 }

@@ -5,6 +5,10 @@
 ### Features and enhancements
 
 
+Miscellaneous:
+
+- The Measurement Table now highlights the active skeleton.
+
 
 ### Bug fixes
 

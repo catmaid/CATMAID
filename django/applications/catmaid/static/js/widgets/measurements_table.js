@@ -232,8 +232,25 @@
     }
   };
 
-  SkeletonMeasurementsTable.prototype.highlight = function(skid) {
-      // TODO
+  /**
+   * Will highlight the active node, if its skeleton is part of this table.
+   * Otherwise, all existing highlighting will be removed.
+   */
+  SkeletonMeasurementsTable.prototype.highlight = function(skeletonId) {
+    var table = $("table#skeleton_measurements_table" + this.widgetID);
+    // Reset highlighting
+    $('tbody tr', table).removeClass('highlight');
+    // Add new highlighting
+    if (skeletonId) {
+      $('tbody tr[data-skeleton-id=' + skeletonId + ']', table).addClass('highlight');
+    }
+  };
+
+  /**
+   * Highlight active skeleton (if it is displayed in this widget).
+   */
+  SkeletonMeasurementsTable.prototype.highlightActiveSkeleton = function() {
+    this.highlight(SkeletonAnnotations.getActiveSkeletonId());
   };
 
   SkeletonMeasurementsTable.prototype.init = function() {
@@ -258,8 +275,13 @@
         }).bind({
           searchable: true,
           sortable: true
-        }))
-    });
+        })),
+        createdRow: function(row, data, index) {
+          row.dataset.skeletonId = data[1];
+        }
+    }).on('draw.dt', (function() {
+      this.highlightActiveSkeleton();
+    }).bind(this));
   };
 
   SkeletonMeasurementsTable.prototype.updateNeuronNames = function() {

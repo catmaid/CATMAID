@@ -207,7 +207,7 @@
     }
 
     // Remove rows without redrawing
-    this.oTable.rows(deleteIdxs).delete();
+    this.oTable.rows(deleteIdxs).remove();
   };
 
   TreenodeTable.prototype.removeSkeletons = function(skeleton_ids) {

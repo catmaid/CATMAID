@@ -1374,7 +1374,7 @@
     if (this.options.update_active) {
       var activeSkeletonId = SkeletonAnnotations.getActiveSkeletonId();
       if (activeSkeletonId === skeletonId) {
-        this.updateSkeletons(skeletonId, true);
+        this.updateSkeleton(skeletonId, true);
       }
     }
   };
@@ -1500,7 +1500,7 @@
    *                              skeleton not in 3D viewer.
    */
   WebGLApplication.prototype.updateSkeleton = function(skeletonId, quiet) {
-    var sk = this.space.content.skeletons[skid];
+    var sk = this.space.content.skeletons[skeletonId];
     if (!sk) {
       if (!quiet) {
         CATMAID.info("Active skeleton is not present in the 3D viewer");

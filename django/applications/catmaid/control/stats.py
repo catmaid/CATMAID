@@ -256,8 +256,15 @@ def stats_user_history(request, project_id=None):
     # the end date is set to the beginning of the next day.
     end_date = end_date + timedelta(days=1)
 
-    # Calculate number of days between (including) start and end
-    daydelta = (end_date - start_date).days
+    # Calculate number of days between (including) start and end.
+    delta = end_date - start_date
+    daydelta = delta.days
+    # If the orginal delta is bigger than the days only, the day based delta has
+    # to be incremented. This can happen if start date and end date have
+    # different distances to UTC, e.g. if start date is in EST and end date in
+    # EDT.
+    if timedelta(daydelta) < delta:
+        daydelta += 1
 
     # To query data with raw SQL we need the UTC version of start and end time
     start_date_utc = start_date.astimezone(pytz.utc)

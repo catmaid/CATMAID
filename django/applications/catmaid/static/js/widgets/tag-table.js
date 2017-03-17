@@ -212,7 +212,7 @@
         openTable.setAttribute('title', 'Open a Treenode Table focused on the selected nodes');
         openTable.onclick = function() {
           var selectedModels = self.resultSkeletons.getSelectedSkeletonModels();
-          var nodeTable = WindowMaker.create('node-table').widget;
+          var nodeTable = WindowMaker.create('treenode-table').widget;
 
           // add skeletons which have the nodes in question
           nodeTable.append(selectedModels);

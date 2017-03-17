@@ -533,7 +533,7 @@
 
   // Register widget with CATMAID
   CATMAID.registerWidget({
-    key: "node-table",
+    key: "treenode-table",
     creator: TreenodeTable
   });
 

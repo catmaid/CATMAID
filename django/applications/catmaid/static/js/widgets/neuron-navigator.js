@@ -2108,7 +2108,7 @@
 
     treenodetable_button.onclick = (function() {
       if (this.skeleton_ids.length > 0) {
-        var handlers = WindowMaker.create('node-table');
+        var handlers = WindowMaker.create('treenode-table');
         handlers.widget.append(this.getSelectedSkeletonModels());
       }
     }).bind(this);

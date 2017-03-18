@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 # This script checks your database for some common
 # inconsistencies or errors that may have arisen from
@@ -15,7 +16,6 @@
 # username: catmaid_user
 # password: password_of_your_catmaid_user
 
-# -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
 

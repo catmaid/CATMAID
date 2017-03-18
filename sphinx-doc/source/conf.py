@@ -1,7 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
-
-# -*- coding: utf-8 -*-
 #
 # CATMAID documentation build configuration file, created by
 # sphinx-quickstart on Sat Dec 10 20:48:29 2011.
@@ -13,6 +10,8 @@ from __future__ import unicode_literals
 #
 # All configuration values have a default; values that are commented out
 # serve to show the default.
+
+from __future__ import unicode_literals
 
 import sys, os
 

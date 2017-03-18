@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 # One missing layer was really a duplicate - so:
 #
@@ -20,7 +21,6 @@
 #    UPDATE stack SET resolution.z = ((stack.resolution).z * 0.9) WHERE id IN (4, 9);
 #    UPDATE location SET location.z = ((location.location).z * 0.9) WHERE project_id = 4;
 
-# -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
 import glob, os, re, sys, subprocess

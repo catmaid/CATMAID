@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 # If you have a skeleton that has multiple root nodes,
 # this script will attempt to fix that.
@@ -14,7 +15,6 @@
 # username: catmaid_user
 # password: password_of_your_catmaid_user
 
-# -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
 

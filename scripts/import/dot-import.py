@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 #
 # Import ontology and classification from Pavel's database. The resulting
 # CATMAID onrology will be similar to what is expressed as a database scheme
@@ -6,7 +7,6 @@
 #
 # Experiments
 #
-# -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
 import copy

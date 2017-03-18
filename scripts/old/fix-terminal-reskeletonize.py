@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 # If you have a terminal that is not part_of any skeleton, this script
 # will try to find the right skeleton via its treenode and update with
@@ -15,7 +16,6 @@
 # username: catmaid_user
 # password: password_of_your_catmaid_user
 
-# -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
 

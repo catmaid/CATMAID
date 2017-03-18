@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 # This script renames the directories in a CATMAID stack's image root
 # to take into account missing layers corresponding to particular
@@ -8,8 +9,6 @@
 #  * add the new "missing" layers to the broken_slice table
 #  * change the dimensions.z field of each stack in the stack
 #    table
-
-# -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals
 
 import glob, os, re, sys, subprocess

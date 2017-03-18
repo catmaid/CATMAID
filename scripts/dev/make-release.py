@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 #
 # This script will create a new CATMAID release based on the current branch and
 # date. Specifically, it does the following:
@@ -16,7 +17,6 @@
 #
 # Its dependencies are part of the requirements-dev.txt file.
 #
-# -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
 import os

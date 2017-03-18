@@ -13,9 +13,11 @@ from catmaid.models import Stack, Project, ProjectStack, Message, User
 from catmaid.control.common import id_generator, json_error_response
 
 try:
+    # Python 3
     from urllib.request import urlopen
     from urllib.error import HTTPError, URLError
 except ImportError:
+    # Python 2
     from urllib2 import urlopen, HTTPError, URLError
 
 import requests

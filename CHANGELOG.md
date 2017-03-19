@@ -1,6 +1,10 @@
 ## Under development
 
 
+### Notes
+
+- Python 3.5 is now experimentally supported.
+
 
 ### Features and enhancements
 

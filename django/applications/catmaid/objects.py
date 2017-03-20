@@ -1,9 +1,12 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 import numpy as np
 import networkx as nx
 
 from collections import defaultdict
 
-from models import ( ClassInstance, ClassInstanceClassInstance, Relation,
+from catmaid.models import (ClassInstance, ClassInstanceClassInstance, Relation,
         Review, Treenode, TreenodeConnector, TreenodeClassInstance )
 
 

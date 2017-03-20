@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 from bulbs.neo4jserver import Graph
 from bulbs.model import Node, Relationship
 from bulbs.property import Property, String, Integer, Float, DateTime

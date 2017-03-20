@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
+import six
+
 from itertools import chain
 from optparse import make_option
 from django.core import serializers
@@ -53,10 +58,11 @@ class Exporter():
             print("Found entities with the following annotations: %s" % \
                   ", ".join(a_to_id.keys()))
 
+            b_ids = list(six.itervalues(a_to_id))
             entities = ClassInstance.objects.filter(project=self.project,
                 class_column=classes['neuron'],
                 cici_via_a__relation_id=relations['annotated_with'],
-                cici_via_a__class_instance_b_id__in=a_to_id.values())
+                cici_via_a__class_instance_b_id__in=b_ids)
 
             # Get the corresponding skeleton IDs
             skeleton_links = ClassInstanceClassInstance.objects.filter(
@@ -181,7 +187,7 @@ class Exporter():
             serializer = CurrentSerializer()
             with open(self.target_file, "w") as out:
                 serializer.serialize(data, indent=self.indent, stream=out)
-        except Exception, e:
+        except Exception as e:
             if self.show_traceback:
                 raise
             raise CommandError("Unable to serialize database: %s" % e)
@@ -227,7 +233,7 @@ class Command(BaseCommand):
             selection = raw_input("Selection: ")
             try:
                 return projects[int(selection)]
-            except ValueError, IndexError:
+            except (IndexError, ValueError) as e:
                 return None
 
         while True:

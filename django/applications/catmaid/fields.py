@@ -1,12 +1,20 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+from six import string_types
+
 import re
 from django import forms
 from django.core.exceptions import ValidationError
 from django.db import models
-from widgets import Double3DWidget, Integer3DWidget, RGBAWidget
+from django.utils.encoding import python_2_unicode_compatible
+
+
+from catmaid.widgets import Double3DWidget, Integer3DWidget, RGBAWidget
 
 # ------------------------------------------------------------------------
 # Classes to support the integer3d compound type:
 
+@python_2_unicode_compatible
 class Integer3D(object):
 
     def __init__(self, x=0, y=0, z=0):
@@ -25,8 +33,8 @@ class Integer3D(object):
         else:
             raise ValidationError("Couldn't parse value as an Integer3D: " + str(s))
 
-    def __unicode__(self):
-        return u"(%d, %d, %d)" % (self.x, self.y, self.z)
+    def __str__(self):
+        return "(%d, %d, %d)" % (self.x, self.y, self.z)
 
 class Integer3DField(models.Field):
 
@@ -64,6 +72,7 @@ class Integer3DField(models.Field):
 # ------------------------------------------------------------------------
 # Classes to support the double3d compound type:
 
+@python_2_unicode_compatible
 class Double3D(object):
 
     def __init__(self, x=0, y=0, z=0):
@@ -82,7 +91,7 @@ class Double3D(object):
         else:
             raise ValidationError("Couldn't parse value from the database as a Double3D: " + str(s))
 
-    def __unicode__(self):
+    def __str__(self):
         return u"(%.3f, %.3f, %.3f)" % (self.x, self.y, self.z)
 
 class Double3DField(models.Field):
@@ -120,6 +129,7 @@ class Double3DField(models.Field):
 # ------------------------------------------------------------------------
 # Classes to support the rgba compound type:
 
+@python_2_unicode_compatible
 class RGBA(object):
 
     def __init__(self, r=0, g=0, b=0, a=0):
@@ -142,7 +152,7 @@ class RGBA(object):
     def hex_color(self):
         return "#{0:06x}".format((int(self.r * 255) << 16) + (int(self.g * 255) << 8) + int(self.b * 255))
 
-    def __unicode__(self):
+    def __str__(self):
         return u"(%.3f, %.3f, %.3f, %.3f)" % (self.r, self.g, self.b, self.a)
 
 class RGBAField(models.Field):
@@ -172,7 +182,7 @@ class RGBAField(models.Field):
         # here; return a new RGBA for any falsy value:
         elif not value:
             return RGBA()
-        elif isinstance(value, str) or isinstance(value, unicode):
+        elif isinstance(value, string_types):
             return RGBA.from_str(value)
         else:
             return RGBA()    #.from_str(value)

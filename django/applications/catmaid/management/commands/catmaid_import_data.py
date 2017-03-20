@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 from optparse import make_option
 from django.core import serializers
 from django.core.management.base import BaseCommand, CommandError
@@ -100,7 +103,7 @@ class Command(BaseCommand):
             selection = raw_input("Selection: ")
             try:
                 return projects[int(selection)]
-            except ValueError, IndexError:
+            except (ValueError, IndexError):
                 return None
 
         while True:
@@ -119,7 +122,7 @@ class Command(BaseCommand):
             selection = raw_input("Selection: ")
             try:
                 return users[int(selection)]
-            except ValueError, IndexError:
+            except (ValueError, IndexError):
                 return None
 
         while True:

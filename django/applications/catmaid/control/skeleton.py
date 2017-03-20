@@ -1,7 +1,12 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 import json
 import networkx as nx
 import pytz
 import re
+import six
+
 from operator import itemgetter
 from datetime import datetime, timedelta
 from collections import defaultdict
@@ -379,7 +384,7 @@ def skeleton_statistics(request, project_id=None, skeleton_id=None):
     p = get_object_or_404(Project, pk=project_id)
     skel = Skeleton( skeleton_id = skeleton_id, project_id = project_id )
     const_time = skel.measure_construction_time()
-    construction_time = '{0} minutes {1} seconds'.format( const_time / 60, const_time % 60)
+    construction_time = '{0} minutes {1} seconds'.format( int(const_time / 60), const_time % 60)
     return JsonResponse({
         'node_count': skel.node_count(),
         'input_count': skel.input_count(),
@@ -406,7 +411,7 @@ def contributor_statistics_multiple(request, project_id=None, skeleton_ids=None)
     epoch = datetime.utcfromtimestamp(0).replace(tzinfo=pytz.utc)
 
     if not skeleton_ids:
-        skeleton_ids = tuple(int(v) for k,v in request.POST.iteritems() if k.startswith('skids['))
+        skeleton_ids = tuple(int(v) for k,v in six.iteritems(request.POST) if k.startswith('skids['))
 
     # Count time bins separately for each skeleton
     time_bins = None
@@ -433,9 +438,9 @@ def contributor_statistics_multiple(request, project_id=None, skeleton_ids=None)
         seen = set()
         min_review_bins = set()
         multi_review_bins = 0
-        for reviewer, treenodes in sorted(rev.iteritems(), key=itemgetter(1), reverse=True):
+        for reviewer, treenodes in sorted(six.iteritems(rev), key=itemgetter(1), reverse=True):
             reviewer_bins = set()
-            for treenode, timestamp in treenodes.iteritems():
+            for treenode, timestamp in six.iteritems(treenodes):
                 time_bin = int((timestamp - epoch).total_seconds() / 20)
                 reviewer_bins.add(time_bin)
                 if not (treenode in seen):
@@ -488,8 +493,8 @@ def contributor_statistics_multiple(request, project_id=None, skeleton_ids=None)
         'multiuser_review_minutes': int(n_multi_review_bins / 3.0),
         'n_nodes': n_nodes,
         'node_contributors': contributors,
-        'n_pre': sum(synapses[relations['presynaptic_to']].itervalues()),
-        'n_post': sum(synapses[relations['postsynaptic_to']].itervalues()),
+        'n_pre': sum(six.itervalues(synapses[relations['presynaptic_to']])),
+        'n_post': sum(six.itervalues(synapses[relations['postsynaptic_to']])),
         'pre_contributors': synapses[relations['presynaptic_to']],
         'post_contributors': synapses[relations['postsynaptic_to']]})
 
@@ -532,7 +537,7 @@ def _neuronnames(skeleton_ids, project_id):
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def neuronnames(request, project_id=None):
     """ Returns a JSON object with skeleton IDs as keys and neuron names as values. """
-    skeleton_ids = tuple(int(v) for k,v in request.POST.iteritems() if k.startswith('skids['))
+    skeleton_ids = tuple(int(v) for k,v in six.iteritems(request.POST) if k.startswith('skids['))
     return JsonResponse(_neuronnames(skeleton_ids, project_id))
 
 def check_annotations_on_split(project_id, skeleton_id, over_annotation_set,
@@ -854,7 +859,7 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2, model_o
 
     # If op is AND, discard entries where only one of the skids has synapses
     if len(skeleton_ids) > 1 and 'AND' == op:
-        for partnerID in partners.keys(): # keys() is a copy of the keys
+        for partnerID in list(six.iterkeys(partners)): # keys() is a copy of the keys
             if len(skeleton_ids) != len(partners[partnerID].skids):
                 del partners[partnerID]
 
@@ -863,7 +868,7 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2, model_o
         return partners, []
 
     # Obtain unique partner skeletons
-    partner_skids = list(partners.iterkeys())
+    partner_skids = list(six.iterkeys(partners))
 
     # Count nodes of each partner skeleton
     cursor.execute('''
@@ -1026,7 +1031,7 @@ def skeleton_info_raw(request, project_id=None):
     """
     # sanitize arguments
     project_id = int(project_id)
-    skeletons = tuple(int(v) for k,v in request.POST.iteritems() if k.startswith('source_skeleton_ids['))
+    skeletons = tuple(int(v) for k,v in six.iteritems(request.POST) if k.startswith('source_skeleton_ids['))
     op = str(request.POST.get('boolean_op')) # values: AND, OR
     op = {'AND': 'AND', 'OR': 'OR'}[op] # sanitize
 
@@ -1045,8 +1050,8 @@ def skeleton_info_raw(request, project_id=None):
 def connectivity_matrix(request, project_id=None):
     # sanitize arguments
     project_id = int(project_id)
-    rows = tuple(int(v) for k, v in request.POST.iteritems() if k.startswith('rows['))
-    cols = tuple(int(v) for k, v in request.POST.iteritems() if k.startswith('columns['))
+    rows = tuple(int(v) for k, v in six.iteritems(request.POST) if k.startswith('rows['))
+    cols = tuple(int(v) for k, v in six.iteritems(request.POST) if k.startswith('columns['))
 
     matrix = get_connectivity_matrix(project_id, rows, cols)
     return JsonResponse(matrix)
@@ -1140,14 +1145,14 @@ def review_status(request, project_id=None):
         $ref: review_status_tuple
         required: true
     """
-    skeleton_ids = set(int(v) for k,v in request.POST.iteritems() if k.startswith('skeleton_ids['))
+    skeleton_ids = set(int(v) for k,v in six.iteritems(request.POST) if k.startswith('skeleton_ids['))
     whitelist = bool(json.loads(request.POST.get('whitelist', 'false')))
     whitelist_id = None
     user_ids = None
     if whitelist:
         whitelist_id = request.user.id
     else:
-        user_ids = set(int(v) for k,v in request.POST.iteritems() if k.startswith('user_ids['))
+        user_ids = set(int(v) for k,v in six.iteritems(request.POST) if k.startswith('user_ids['))
 
     status = get_review_status(skeleton_ids, project_id=project_id,
             whitelist_id=whitelist_id, user_ids=user_ids)
@@ -1459,14 +1464,14 @@ def import_skeleton(request, project_id=None):
         neuron_id = int(neuron_id)
 
     if len(request.FILES) == 1:
-        for uploadedfile in request.FILES.itervalues():
+        for uploadedfile in six.itervalues(request.FILES):
             if uploadedfile.size > settings.IMPORTED_SKELETON_FILE_MAXIMUM_SIZE:
                 return HttpResponse('File too large. Maximum file size is {} bytes.'.format(settings.IMPORTED_SKELETON_FILE_MAXIMUM_SIZE), status=413)
 
             filename = uploadedfile.name
             extension = filename.split('.')[-1].strip().lower()
             if extension == 'swc':
-                swc_string = '\n'.join(uploadedfile)
+                swc_string = '\n'.join([line.decode('utf-8') for line in uploadedfile])
                 return import_skeleton_swc(request.user, project_id, swc_string, neuron_id)
             else:
                 return HttpResponse('File type "{}" not understood. Known file types: swc'.format(extension), status=415)
@@ -1643,7 +1648,7 @@ def annotation_list(request, project_id=None):
     """ Returns a JSON serialized object that contains information about the
     given skeletons.
     """
-    skeleton_ids = tuple(int(v) for k,v in request.POST.iteritems()
+    skeleton_ids = tuple(int(v) for k,v in six.iteritems(request.POST)
             if k.startswith('skeleton_ids['))
     annotations = bool(int(request.POST.get("annotations", 0)))
     metaannotations = bool(int(request.POST.get("metaannotations", 0)))

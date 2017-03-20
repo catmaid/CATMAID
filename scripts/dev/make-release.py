@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 #
 # This script will create a new CATMAID release based on the current branch and
 # date. Specifically, it does the following:
@@ -15,6 +16,8 @@
 #    API_CHANGELOG.md from template and commits to dev
 #
 # Its dependencies are part of the requirements-dev.txt file.
+#
+from __future__ import unicode_literals
 
 import os
 import re

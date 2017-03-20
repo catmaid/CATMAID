@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 from django.conf import settings
 from django.core.serializers import serialize
 from django.core.serializers.json import DjangoJSONEncoder

@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 # General Django settings for mysite project.
 
 import os
@@ -6,6 +9,7 @@ import django.conf.global_settings as DEFAULT_SETTINGS
 import utils
 import logging
 import pipelinefiles
+import six
 
 try:
     import psycopg2
@@ -271,10 +275,10 @@ PIPELINE = {
 
 # Make a list of files that should be included directly (bypassing pipeline)
 # and a list of pipeline identifiers for all others.
-NON_COMPRESSED_FILES = pipelinefiles.non_pipeline_js.values()
-NON_COMPRESSED_FILE_IDS = pipelinefiles.non_pipeline_js.keys()
-COMPRESSED_FILE_IDS = filter(lambda f: f not in NON_COMPRESSED_FILE_IDS,
-                             pipelinefiles.JAVASCRIPT.keys())
+NON_COMPRESSED_FILES = list(six.itervalues(pipelinefiles.non_pipeline_js))
+NON_COMPRESSED_FILE_IDS = list(six.iterkeys(pipelinefiles.non_pipeline_js))
+COMPRESSED_FILE_IDS = list(six.moves.filter(lambda f: f not in NON_COMPRESSED_FILE_IDS,
+        pipelinefiles.JAVASCRIPT.keys()))
 
 # Make Git based version of CATMAID available as a settings field
 VERSION = utils.get_version()

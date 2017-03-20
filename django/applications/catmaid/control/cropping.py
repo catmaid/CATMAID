@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 import json
 import logging
 
@@ -9,7 +12,15 @@ from django.contrib.auth.decorators import login_required
 from catmaid.models import Stack, Project, ProjectStack, Message, User
 from catmaid.control.common import id_generator, json_error_response
 
-import urllib2 as urllib
+try:
+    # Python 3
+    from urllib.request import urlopen
+    from urllib.error import HTTPError, URLError
+except ImportError:
+    # Python 2
+    from urllib2 import urlopen, HTTPError, URLError
+
+import requests
 import os.path
 import glob
 from time import time
@@ -189,12 +200,12 @@ class ImagePart:
     def get_image( self ):
         # Open the image
         try:
-            img_file = urllib.urlopen( self.path )
+            img_file = urlopen( self.path )
             img_data = img_file.read()
             bytes_read = len(img_data)
-        except urllib.HTTPError as e:
+        except HTTPError as e:
             raise ImageRetrievalError(self.path, "Error code: %s" % e.code)
-        except urllib.URLError as e:
+        except URLError as e:
             raise ImageRetrievalError(self.path, e.reason)
 
         blob = Blob( img_data )
@@ -607,7 +618,7 @@ def process_crop_job(job, create_message=True):
             no_error_occured = False
             error_message = "A region outside the stack has been selected. " \
                     "Therefore, no image was produced."
-    except (IOError, OSError, ValueError), e:
+    except (IOError, OSError, ValueError) as e:
         no_error_occured = False
         error_message = str(e)
         # Delete the file if parts of it have been written already

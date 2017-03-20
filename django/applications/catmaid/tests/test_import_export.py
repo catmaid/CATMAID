@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
+import six
 import yaml
 
 from ast import literal_eval
@@ -147,10 +151,10 @@ class ImportExportTests(TestCase):
 
             # Test required fields
             self.assertEqual(stack['title'], p2s.title)
-            self.assertItemsEqual(literal_eval(stack['dimension']),
-                    literal_eval(unicode(p2s.dimension)))
-            self.assertItemsEqual(literal_eval(stack['resolution']),
-                    literal_eval(unicode(p2s.resolution)))
+            six.assertCountEqual(self, literal_eval(stack['dimension']),
+                    literal_eval(str(p2s.dimension)))
+            six.assertCountEqual(self, literal_eval(stack['resolution']),
+                    literal_eval(str(p2s.resolution)))
             self.assertEqual(stack['zoomlevels'], p2s.num_zoom_levels)
 
             # Test mirrors
@@ -182,8 +186,8 @@ class ImportExportTests(TestCase):
 
             # Test project-stack link
             ps = ProjectStack.objects.get(project=p2.id, stack=p2s)
-            self.assertItemsEqual(literal_eval(stack.get('translation', '(0,0,0)')),
-                    literal_eval(unicode(ps.translation)))
+            six.assertCountEqual(self, literal_eval(stack.get('translation', '(0,0,0)')),
+                    literal_eval(str(ps.translation)))
 
             # Test stack groups
             ostack_group_links = StackStackGroup.objects.filter(stack=p2s).order_by('stack__title')
@@ -317,7 +321,7 @@ class ImportExportTests(TestCase):
         self.fake_authentication()
         response = self.client.get('/projects/export')
         self.assertEqual(response.status_code, 200)
-        result = yaml.load(response.content)
+        result = yaml.load(response.content.decode('utf-8'))
 
         def strip_ids(d):
             """ Recursively, strip all 'id' fields of dictionaries.

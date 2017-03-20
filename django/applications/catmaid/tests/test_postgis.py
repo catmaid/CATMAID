@@ -1,13 +1,17 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 from django.db import connection
 from django.test import TestCase
 from django.test.client import Client
 from guardian.shortcuts import assign_perm
 from catmaid.models import Project, User
 from catmaid.control import node, skeleton, treenode
+from catmaid.tests.common import CatmaidTestCase
 
 import json
 
-class PostGISTests(TestCase):
+class PostGISTests(CatmaidTestCase):
     """
     Test PostGIS related functionality. It expects the 'postgis' extension to
     be available in the test database. At the moment, it seems, the easiest way
@@ -61,8 +65,8 @@ class PostGISTests(TestCase):
 
         self.assertEqual(postgis_3d_nodes_r.status_code, 200)
         self.assertEqual(postgis_2d_nodes_r.status_code, 200)
-        postgis_3d_nodes = json.loads(postgis_3d_nodes_r.content)
-        postgis_2d_nodes = json.loads(postgis_2d_nodes_r.content)
+        postgis_3d_nodes = json.loads(postgis_3d_nodes_r.content.decode('utf-8'))
+        postgis_2d_nodes = json.loads(postgis_2d_nodes_r.content.decode('utf-8'))
 
         def test_returned_nodes(reference, to_test):
             self.assertEqual(len(reference), len(to_test))

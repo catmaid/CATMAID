@@ -1,10 +1,14 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 import json
 import networkx as nx
+import six
+
 from networkx.algorithms import weakly_connected_component_subgraphs
 from collections import defaultdict
-from itertools import izip, count
+from itertools import count
 from functools import partial
-from synapseclustering import tree_max_density
 from numpy import subtract
 from numpy.linalg import norm
 
@@ -17,6 +21,10 @@ from catmaid.models import UserRole
 from catmaid.control.authentication import requires_user_role
 from catmaid.control.common import get_relation_to_id_map
 from catmaid.control.tree_util import simplify
+from catmaid.control.synapseclustering import tree_max_density
+
+from six.moves import range, zip as izip
+
 
 def basic_graph(project_id, skeleton_ids):
     def newSynapseCounts():
@@ -47,12 +55,12 @@ def basic_graph(project_id, skeleton_ids):
     for row in cursor.fetchall():
         edges[row[0]][row[1]][row[2] - 1] += 1
 
-    return {'edges': tuple((pre, post, count) for pre, edge in edges.iteritems() for post, count in edge.iteritems())}
+    return {'edges': tuple((pre, post, count) for pre, edge in six.iteritems(edges) for post, count in six.iteritems(edge))}
 
     '''
     return {'edges': [{'source': pre,
                        'target': post,
-                       'weight': count} for pre, edge in edges.iteritems() for post, count in edge.iteritems()]}
+                       'weight': count} for pre, edge in six.iteritems(edges) for post, count in six.iteritems(edge)]}
     '''
 
     """ Can't get the variable to be set with all the skeleton IDs
@@ -138,13 +146,13 @@ def confidence_split_graph(project_id, skeleton_ids, confidence_threshold):
 
     # Create the edges of the graph from the connectors, which was populated as a side effect of 'split_by_confidence'
     edges = defaultdict(partial(defaultdict, newSynapseCounts)) # pre vs post vs count
-    for c in connectors.itervalues():
+    for c in six.itervalues(connectors):
         for pre in c[preID]:
             for post in c[postID]:
                 edges[pre[0]][post[0]][min(pre[1], post[1]) - 1] += 1
 
     return {'nodes': nodeIDs,
-            'edges': [(pre, post, count) for pre, edge in edges.iteritems() for post, count in edge.iteritems()]}
+            'edges': [(pre, post, count) for pre, edge in six.iteritems(edges) for post, count in six.iteritems(edge)]}
 
 
 def dual_split_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, expand):
@@ -276,23 +284,22 @@ def dual_split_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, 
 
     # Create the edges of the graph
     edges = defaultdict(partial(defaultdict, newSynapseCounts)) # pre vs post vs count
-    for c in connectors.itervalues():
+    for c in six.itervalues(connectors):
         for pre in c[preID]:
             for post in c[postID]:
                 edges[pre[0]][post[0]][min(pre[1], post[1]) - 1] += 1
 
     return {'nodes': nodeIDs,
-            'edges': [(pre, post, count) for pre, edge in edges.iteritems() for post, count in edge.iteritems()],
+            'edges': [(pre, post, count) for pre, edge in six.iteritems(edges) for post, count in six.iteritems(edge)],
             'branch_nodes': branch_nodeIDs,
             'intraedges': intraedges}
 
 
 def populate_connectors(chunkIDs, chunks, cs, connectors):
     # Build up edges via the connectors
-    IDchunks = zip(chunkIDs, chunks)
     for c in cs:
         # c is (treenode_id, connector_id, relation_id, confidence)
-        for chunkID, chunk in IDchunks:
+        for chunkID, chunk in izip(chunkIDs, chunks):
             if c[0] in chunk:
                 connectors[c[1]][c[2]].append((chunkID, c[3]))
                 break
@@ -303,7 +310,7 @@ def subgraphs(digraph, skeleton_id):
     if 1 == len(chunks):
         chunkIDs = (str(skeleton_id),)
     else:
-        chunkIDs = tuple('%s_%s' % (skeleton_id, (i+1)) for i in xrange(len(chunks)))
+        chunkIDs = tuple('%s_%s' % (skeleton_id, (i+1)) for i in range(len(chunks)))
     return chunks, chunkIDs
 
 
@@ -332,14 +339,17 @@ def split_by_both(skeleton_id, digraph, locations, bandwidth, cs, connectors, in
             nodes.append(chunkID)
             continue
 
-        treenode_ids, connector_ids, relation_ids, confidences = zip(*blob)
+        treenode_ids, connector_ids, relation_ids, confidences = list(izip(*blob))
 
         if 0 == len(connector_ids):
             nodes.append(chunkID)
             continue
 
         # Invoke Casey's magic: split by synapse domain
-        domains = tree_max_density(chunk.to_undirected(), treenode_ids, connector_ids, relation_ids, [bandwidth]).values()[0]
+        max_density = tree_max_density(chunk.to_undirected(), treenode_ids,
+                connector_ids, relation_ids, [bandwidth])
+        # Get first element of max_density
+        domains = next(six.itervalues(max_density))
 
         # domains is a dictionary of index vs SynapseGroup instance
 
@@ -351,10 +361,10 @@ def split_by_both(skeleton_id, digraph, locations, bandwidth, cs, connectors, in
 
         # Create edges between domains
         # Pick one treenode from each domain to act as anchor
-        anchors = {d.node_ids[0]: (i+k, d) for k, d in domains.iteritems()}
+        anchors = {d.node_ids[0]: (i+k, d) for k, d in six.iteritems(domains)}
 
         # Create new Graph where the edges are the edges among synapse domains
-        mini = simplify(chunk, anchors.iterkeys())
+        mini = simplify(chunk, six.iterkeys(anchors))
 
         # Many side effects:
         # * add internal edges to intraedges
@@ -502,12 +512,12 @@ def skeleton_graph(request, project_id=None):
         return slow_graph(request, project_id=project_id)
 
     project_id = int(project_id)
-    skeleton_ids = set(int(v) for k,v in request.POST.iteritems() if k.startswith('skeleton_ids['))
+    skeleton_ids = set(int(v) for k,v in six.iteritems(request.POST) if k.startswith('skeleton_ids['))
     confidence_threshold = min(int(request.POST.get('confidence_threshold', 0)), 5)
     bandwidth = float(request.POST.get('bandwidth', 0)) # in nanometers
     cable_spread = float(request.POST.get('cable_spread', 2500)) # in nanometers
     path_confluence = int(request.POST.get('path_confluence', 10)) # a count
-    expand = set(int(v) for k,v in request.POST.iteritems() if k.startswith('expand['))
+    expand = set(int(v) for k,v in six.iteritems(request.POST) if k.startswith('expand['))
 
     return HttpResponse(json.dumps(_skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth, expand, compute_risk, cable_spread, path_confluence)))
 

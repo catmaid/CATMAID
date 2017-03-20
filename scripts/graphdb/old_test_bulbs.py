@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 """ Mapping the CATMAID datamodel to a graph database
 
 Each project has its own annotation graph.

@@ -1,6 +1,8 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 import re
-from string import upper
-from itertools import izip
+import six
 
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
@@ -13,6 +15,8 @@ from catmaid.models import UserRole, Project, Class, ClassInstance, \
 from catmaid.control.authentication import requires_user_role, can_edit_or_fail
 from catmaid.control.common import defaultdict, get_relation_to_id_map, \
         get_class_to_id_map, get_request_list
+
+from six.moves import range
 
 
 def create_basic_annotated_entity_query(project, params, relations, classes,
@@ -386,8 +390,8 @@ def _update_neuron_annotations(project_id, user, neuron_id, annotation_map, losi
 
     existing_annotations = dict(qs)
 
-    update = set(annotation_map.iterkeys())
-    existing = set(existing_annotations.iterkeys())
+    update = set(six.iterkeys(annotation_map))
+    existing = set(six.iterkeys(existing_annotations))
     missing = update - existing
 
     if losing_neuron_id:
@@ -397,7 +401,7 @@ def _update_neuron_annotations(project_id, user, neuron_id, annotation_map, losi
                 'class_instance_b__name', 'id')
 
         losing_existing_annotations = dict(qs)
-        losing_missing = frozenset(losing_existing_annotations.iterkeys()) & missing
+        losing_missing = frozenset(six.iterkeys(losing_existing_annotations)) & missing
 
         if losing_missing:
             cici_ids = [losing_existing_annotations[k] for k in losing_missing]
@@ -418,7 +422,7 @@ def _update_neuron_annotations(project_id, user, neuron_id, annotation_map, losi
     _annotate_entities(project_id, [neuron_id], missing_map)
 
     to_delete = existing - update
-    to_delete_ids = tuple(aid for name, aid in existing_annotations.iteritems() \
+    to_delete_ids = tuple(aid for name, aid in six.iteritems(existing_annotations) \
         if name in to_delete)
 
     ClassInstanceClassInstance.objects.filter(project=project_id,
@@ -497,7 +501,7 @@ def _annotate_entities(project_id, entity_ids, annotation_map):
             expanded_annotations = {annotation: entity_ids}
 
         # Make sure the annotation's class instance exists.
-        for a, a_entity_ids in expanded_annotations.iteritems():
+        for a, a_entity_ids in six.iteritems(expanded_annotations):
             ci, created = ClassInstance.objects.get_or_create(
                     project_id=project_id, name=a,
                     class_column=annotation_class,
@@ -701,7 +705,7 @@ def create_annotation_query(project_id, param_dict):
 
     # Meta annotations are annotations that are used to annotate other
     # annotations.
-    meta_annotations = [v for k,v in param_dict.iteritems()
+    meta_annotations = [v for k,v in six.iteritems(param_dict)
             if k.startswith('annotations[')]
     for meta_annotation in meta_annotations:
         annotation_query = annotation_query.filter(
@@ -710,7 +714,7 @@ def create_annotation_query(project_id, param_dict):
 
     # If information about annotated annotations is found, the current query
     # will include only annotations that are meta annotations for it.
-    annotated_annotations = [v for k,v in param_dict.iteritems()
+    annotated_annotations = [v for k,v in six.iteritems(param_dict)
             if k.startswith('annotates[')]
     for sub_annotation in annotated_annotations:
         annotation_query = annotation_query.filter(
@@ -719,7 +723,7 @@ def create_annotation_query(project_id, param_dict):
 
     # If parallel_annotations is given, only annotations are returned, that
     # are used alongside with these.
-    parallel_annotations = [v for k,v in param_dict.iteritems()
+    parallel_annotations = [v for k,v in six.iteritems(param_dict)
             if k.startswith('parallel_annotations[')]
     for p_annotation in parallel_annotations:
         annotation_query = annotation_query.filter(
@@ -754,7 +758,7 @@ def create_annotation_query(project_id, param_dict):
 
     # If annotations to ignore are passed in, they won't appear in the
     # result set.
-    ignored_annotations = [v for k,v in param_dict.iteritems()
+    ignored_annotations = [v for k,v in six.iteritems(param_dict)
             if k.startswith('ignored_annotations[')]
     if ignored_annotations:
         annotation_query = annotation_query.exclude(
@@ -796,7 +800,7 @@ def generate_annotation_intersection_query(project_id, annotations):
         """ % (',\n    '.join(tables),
                project_id,
                '\n'.join(where),
-               '\n        '.join('AND cc%s.class_instance_a = c.id' % i for i in xrange(len(annotations))))
+               '\n        '.join('AND cc%s.class_instance_a = c.id' % i for i in range(len(annotations))))
 
     return q
 
@@ -986,7 +990,7 @@ def list_annotations(request, project_id=None):
         if uid is not None:
             ls.append({'id': uid, 'name': username})
     # Flatten dictionary to list
-    annotations = tuple({'name': ids[aid], 'id': aid, 'users': users} for aid, users in annotation_dict.iteritems())
+    annotations = tuple({'name': ids[aid], 'id': aid, 'users': users} for aid, users in six.iteritems(annotation_dict))
     return JsonResponse({'annotations': annotations})
 
 
@@ -1009,13 +1013,13 @@ def _fast_co_annotations(request, project_id, display_start, display_length):
     sorter = ''
     if sorting:
         column_count = int(request.POST.get('iSortingCols', 0))
-        sorting_directions = (request.POST.get('sSortDir_%d' % d, 'DESC') for d in xrange(column_count))
+        sorting_directions = (request.POST.get('sSortDir_%d' % d, 'DESC') for d in range(column_count))
 
         fields = ('a.name', 'last_used', 'num_usage', 'last_user')
-        sorting_index = (int(request.POST.get('iSortCol_%d' % d)) for d in xrange(column_count))
+        sorting_index = (int(request.POST.get('iSortCol_%d' % d)) for d in range(column_count))
         sorting_cols = (fields[i] for i in sorting_index)
 
-        sorter = '\nORDER BY ' + ','.join('%s %s' % u for u in izip(sorting_cols, sorting_directions))
+        sorter = '\nORDER BY ' + ','.join('%s %s' % u for u in zip(sorting_cols, sorting_directions))
 
 
     cursor = connection.cursor()
@@ -1114,13 +1118,13 @@ def list_annotations_datatable(request, project_id=None):
     if should_sort:
         column_count = int(request.POST.get('iSortingCols', 0))
         sorting_directions = [request.POST.get('sSortDir_%d' % d, 'DESC')
-                for d in xrange(column_count)]
-        sorting_directions = map(lambda d: '-' if upper(d) == 'DESC' else '',
+                for d in range(column_count)]
+        sorting_directions = map(lambda d: '-' if d.upper() == 'DESC' else '',
                 sorting_directions)
 
         fields = ['name', 'last_used', 'num_usage', 'last_user']
         sorting_index = [int(request.POST.get('iSortCol_%d' % d))
-                for d in xrange(column_count)]
+                for d in range(column_count)]
         sorting_cols = map(lambda i: fields[i], sorting_index)
 
         annotation_query = annotation_query.extra(order_by=[di + col for (di, col) in zip(

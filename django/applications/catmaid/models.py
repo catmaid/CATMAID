@@ -1,8 +1,12 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 from datetime import datetime
 import logging
 import sys
 import re
 import urllib
+import six
 
 from django import forms
 from django.conf import settings
@@ -55,12 +59,14 @@ class Project(models.Model):
     def __unicode__(self):
         return self.title
 
-def on_project_save(sender, instance, created, **kwargs):
+def on_project_save(sender, instance, created, raw, **kwargs):
     """ Make sure all required classes and relations are set up for all
-    projects but the ontology dummy projects.
+    projects but the ontology dummy projects. Don't do this when fixtures are in
+    use (i.e. during testing), because project validation is managed there
+    explicityly.
     """
     is_not_dummy = instance.id != settings.ONTOLOGY_DUMMY_PROJECT_ID
-    if created and sender == Project and is_not_dummy:
+    if created and sender == Project and is_not_dummy and not raw:
         from catmaid.control.project import validate_project_setup
         from .apps import get_system_user
         user = get_system_user()
@@ -278,7 +284,7 @@ class ClassInstance(models.Model):
 
         # sort by count
         from operator import itemgetter
-        connected_skeletons = connected_skeletons_dict.values()
+        connected_skeletons = six.itervalues(connected_skeletons_dict)
         result = reversed(sorted(connected_skeletons, key=itemgetter('id__count')))
         return result
 

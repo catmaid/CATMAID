@@ -1,7 +1,11 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 # Create a project and stack associated HDF5 file with additional
 # data such as labels, meshes etc.
+
+from __future__ import unicode_literals
+
 
 import os.path as op
 import h5py

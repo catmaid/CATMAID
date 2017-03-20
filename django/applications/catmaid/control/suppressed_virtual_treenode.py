@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 from django.http import Http404
 from django.utils.decorators import method_decorator
 from django.shortcuts import get_object_or_404

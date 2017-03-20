@@ -1,9 +1,12 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 import json
 import colorsys
 import django.contrib.auth.views as django_auth_views
+import six
 
 from random import random
-from string import upper
 
 from guardian.utils import get_anonymous_user
 
@@ -63,7 +66,7 @@ def user_list_datatable(request):
 
     # This field can be used to only return users that have used a certain
     # annotation.
-    annotations = [v for k,v in request.POST.iteritems()
+    annotations = [v for k,v in six.iteritems(request.POST)
             if k.startswith('annotations[')]
 
     for annotation in annotations:
@@ -94,7 +97,7 @@ def user_list_datatable(request):
         column_count = int(request.POST.get('iSortingCols', 0))
         sorting_directions = [request.POST.get('sSortDir_%d' % d, 'DESC')
                 for d in range(column_count)]
-        sorting_directions = map(lambda d: '-' if upper(d) == 'DESC' else '',
+        sorting_directions = map(lambda d: '-' if d.upper() == 'DESC' else '',
                 sorting_directions)
 
         fields = ['username', 'first_name', 'last_name']

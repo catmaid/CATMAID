@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 # An experimental script to export a TrakEM2 project's annotations
 # directly to the CATMAID database.  This is based on Albert Cardona's
 # TrakEM2 helper scripts here: https://github.com/acardona/Fiji-TrakEM2-scripts

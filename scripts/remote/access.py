@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Script initially by Tom Kazimiers 2013-01-12
 # Adapted by Albert Cardona 2013-01-25
 #
@@ -5,8 +6,7 @@
 # in a remote computer, and to retrieve information from the database
 # such as the skeleton of a neuronal arbor and its synapses
 # in the form of a NetworX graph.
-
-from __future__ import print_function
+from __future__ import print_function, unicode_literals
 
 import urllib
 import urllib2

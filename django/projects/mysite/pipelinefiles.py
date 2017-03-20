@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 """Specifies static assets (CSS, JS) required by the CATMAID front-end.
 
 This module specifies all the static files that are required by the
@@ -16,6 +19,7 @@ dictionary. JavaScript files go into the 'catmaid' entry of the ``JAVASCRIPT``
 dictonary at the end of this file.
 """
 
+import six
 from collections import OrderedDict
 
 
@@ -45,46 +49,46 @@ STYLESHEETS = {
     },
 }
 
-libraries_js = {
-    'modernizr': ['*.js'],
-    'jquery': ['jquery-2.1.3.min.js',
+libraries_js = OrderedDict([
+    ('modernizr', ['*.js']),
+    ('jquery', ['jquery-2.1.3.min.js',
                'jquery-ui.min.js', 'jquery-ui.*.js',
                'jquery.dataTables.min.js', 'jquery.*.js',
-               'dataTables.buttons.js', 'buttons.html5.min.js'],
-    'jszip': ['*.js'],
-    'jsTree': ['jstree.js'],
-    'colorpicker': ['colors.js', 'colorPicker.data.js', 'colorPicker.js',
-                    'jqColor.js'],
-    'fabric.js': ['all.modified.js'],
-    'raphael': ['raphael.js', 'g.raphael.js', 'g.pie-min.js', 'g.line.altered.js',
-                'raphael-custom.js', 'colorwheel.js', 'raphael.export.js'],
-    'd3': ['d3.v3.js', 'venn.js', 'mds.js', 'colorbrewer.js'],
-    'sylvester': ['sylvester.js'],
-    'numeric': ['numeric-1.2.6.js'],
-    'three.js': ['three.js', 'controls/TrackballControls.js',
+               'dataTables.buttons.js', 'buttons.html5.min.js']),
+    ('jszip', ['*.js']),
+    ('jsTree', ['jstree.js']),
+    ('colorpicker', ['colors.js', 'colorPicker.data.js', 'colorPicker.js',
+                    'jqColor.js']),
+    ('fabric.js', ['all.modified.js']),
+    ('raphael', ['raphael.js', 'g.raphael.js', 'g.pie-min.js', 'g.line.altered.js',
+                'raphael-custom.js', 'colorwheel.js', 'raphael.export.js']),
+    ('d3', ['d3.v3.js', 'venn.js', 'mds.js', 'colorbrewer.js']),
+    ('sylvester', ['sylvester.js']),
+    ('numeric', ['numeric-1.2.6.js']),
+    ('three.js', ['three.js', 'controls/TrackballControls.js',
                  'camera/CombinedCamera.js', 'Detector.js',
                  'loaders/VRMLLoader.js', 'renderer/Projector.js',
-                 'renderer/SVGRenderer.js'],
-    'threex': ['*.js'],
-    'pixi.js': ['*.js'],
-    'cytoscapejs': ['cytoscape.js', 'cytoscape-spread.js',
+                 'renderer/SVGRenderer.js']),
+    ('threex', ['*.js']),
+    ('pixi.js', ['*.js']),
+    ('cytoscapejs', ['cytoscape.js', 'cytoscape-spread.js',
                     'arbor.js', 'cytoscape-arbor.js',
                     'cola.js', 'cytoscape-cola.js',
                     'dagre.js', 'cytoscape-dagre.js',
-                    'springy.js', 'cytoscape-springy.js'],
-    'jsnetworkx': ['*.js'],
-    'filesaver': ['*.js'],
-    'whammy': ['whammy.js'],
-    'blazy': ['blazy.min.js'],
-    'geometry': ['geometry.js', 'intersects.js'], # order matters
-    'catmaid': ['request.js', 'CATMAID.js', 'error.js', 'events.js', 'state.js',
+                    'springy.js', 'cytoscape-springy.js']),
+    ('jsnetworkx', ['*.js']),
+    ('filesaver', ['*.js']),
+    ('whammy', ['whammy.js']),
+    ('blazy', ['blazy.min.js']),
+    ('geometry', ['geometry.js', 'intersects.js']), # order matters
+    ('catmaid', ['request.js', 'CATMAID.js', 'error.js', 'events.js', 'state.js',
                 'command.js', 'models/*.js', 'skeleton_source.js',
-                'datastores.js', 'settings-manager.js', '*.js'],
-}
+                'datastores.js', 'settings-manager.js', '*.js']),
+])
 
 JAVASCRIPT = OrderedDict()
 
-for k, v in libraries_js.iteritems():
+for k, v in six.iteritems(libraries_js):
     JAVASCRIPT[k + '-lib'] = {
         'source_filenames': ['libs/%s/%s' % (k, f) for f in v],
         'output_filename': 'js/libs/%s-lib.js' % k,
@@ -98,7 +102,7 @@ non_pipeline_js = {}
 
 # Even non-pipeline files have to be made known to pipeline, because it takes
 # care of collecting them into the STATIC_ROOT directory.
-for k, v in non_pipeline_js.iteritems():
+for k, v in six.iteritems(non_pipeline_js):
     JAVASCRIPT[k] = {
         'source_filenames': (v,),
         'output_filename': v

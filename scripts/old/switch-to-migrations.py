@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
 
 from common import db_connection
 
@@ -94,7 +96,7 @@ https://github.com/catmaid/CATMAID/wiki/Automatic-Database-Migrations'''
 try:
     c.execute("SAVEPOINT sp")
     c.execute("CREATE TABLE settings (key text PRIMARY KEY, value text)")
-except psycopg2.ProgrammingError, e:
+except psycopg2.ProgrammingError as e:
     # This probably means that the table already exists
     c.execute("ROLLBACK TO SAVEPOINT sp")
     pass
@@ -103,7 +105,7 @@ try:
     c.execute("SAVEPOINT sp")
     c.execute("INSERT INTO settings (key, value) VALUES ('schema_version',%s)",
               (first_migration,))
-except psycopg2.ProgrammingError, e:
+except psycopg2.ProgrammingError as e:
     # This probably means that the row already exists
     c.execute("ROLLBACK TO SAVEPOINT sp")
     pass

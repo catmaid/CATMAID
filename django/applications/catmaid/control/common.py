@@ -1,6 +1,10 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 import string
 import random
 import json
+import six
 
 from collections import defaultdict
 
@@ -11,6 +15,8 @@ from catmaid.fields import Double3D
 from catmaid.models import Log, NeuronSearch, CELL_BODY_CHOICES, \
         SORT_ORDERS_DICT, Relation, Class, ClassInstance, \
         ClassInstanceClassInstance
+
+from six.moves import range
 
 
 class ConfigurationError(Exception):
@@ -45,7 +51,7 @@ def get_request_list(request_dict, name, default=None, map_fn=identity):
         integers.
         """
         k = []
-        for i in xrange(max_index):
+        for i in range(max_index):
             v = d.get(i)
             if not v:
                 continue
@@ -83,7 +89,7 @@ def get_request_list(request_dict, name, default=None, map_fn=identity):
                 target[last_index] = map_fn(v)
         return flatten(d, max_index + 1)
 
-    items = add_items(request_dict.iteritems(), name)
+    items = add_items(six.iteritems(request_dict), name)
     if items:
         return items
 

@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 import json
 
 from .common import CatmaidApiTestCase
@@ -37,7 +40,7 @@ class LogsApiTests(CatmaidApiTestCase):
         response = self.client.post(
                 '/%d/logs/list' % self.test_project_id, {'user_id': 1})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
                 'iTotalDisplayRecords': 0,
                 'iTotalRecords': 0,
@@ -57,7 +60,7 @@ class LogsApiTests(CatmaidApiTestCase):
                     'iSortDir_1': 'DESC'
                     })
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
                 'iTotalDisplayRecords': 3,
                 'iTotalRecords': 3,
@@ -76,7 +79,7 @@ class LogsApiTests(CatmaidApiTestCase):
                     'iDisplayLength': 2
                     })
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(2, parsed_response['iTotalDisplayRecords'])
         self.assertEqual(2, parsed_response['iTotalRecords'])
 
@@ -86,7 +89,7 @@ class LogsApiTests(CatmaidApiTestCase):
         response = self.client.post(
                 '/%d/logs/list' % self.test_project_id, {})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(3, parsed_response['iTotalDisplayRecords'])
         self.assertEqual(3, parsed_response['iTotalRecords'])
         self.assertTrue(self.log_rows[0] in parsed_response['aaData'])

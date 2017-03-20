@@ -1,11 +1,20 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 # A 'tree' is a networkx.DiGraph with a single root node (a node without parents)
+
+import six
 
 from operator import itemgetter
 from networkx import Graph, DiGraph
 from collections import defaultdict
 from math import sqrt
-from itertools import izip, islice
+from itertools import islice
 from catmaid.models import Treenode
+from six.moves import range
+
+from six.moves import zip as izip
+
 
 def find_root(tree):
     """ Search and return the first node that has zero predecessors.
@@ -41,7 +50,7 @@ def find_common_ancestor(tree, nodes, ds=None, root_node=None):
         return nodes[0], 0
     distances = ds if ds else edge_count_to_root(tree, root_node=root_node)
     # Pick the pair with the shortest edge count to root
-    first, second = sorted({node: distances(node) for node in nodes}.iteritems(), key=itemgetter(1))[:2]
+    first, second = sorted(six.iteritems({node: distances(node) for node in nodes}), key=itemgetter(1))[:2]
     # Start from the second, and bring it to an edge count equal to the first
     while second[1] < first[1]:
         second = (tree.predecessors_iter(second[0]).next(), second[1] - 1)
@@ -112,7 +121,7 @@ def simplify(tree, keepers):
         # The nodes in the middle of the path are branch nodes
         # that must be added to mini only if they have been visited more than once.
         origin = path[0]
-        for i in xrange(1, len(path) -1):
+        for i in range(1, len(path) -1):
             if children[path[i]] > 1:
                 mini.add_edge(origin, path[i])
                 origin = path[i]

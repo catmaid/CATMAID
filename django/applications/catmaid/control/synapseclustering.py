@@ -1,4 +1,8 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 import logging
+import six
 import numpy as np
 from numpy import array, float32
 from numpy.linalg import norm
@@ -9,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 try:
     from scipy.sparse.csgraph import dijkstra
-except ImportError, e:
+except ImportError:
     logger.warning("CATMAID was unable to load the scipy module. "
         "Synapse clustering won't be available")
 
@@ -160,7 +164,7 @@ def segregationIndex( synapseGroups, skeleton_id, weightOutputs=True ):
 
     if weightOutputs:
         nTargets = countTargets( skeleton_id )
-        for group in synapseGroups.values():
+        for group in six.itervalues(synapseGroups):
             for i, synDirection in enumerate(group.relations):
                 if synDirection == PRE:
                     nout[group] += nTargets[ group.connector_ids[i] ]
@@ -168,7 +172,7 @@ def segregationIndex( synapseGroups, skeleton_id, weightOutputs=True ):
                 else:
                     ngrp[group] +=1
     else:
-        for group in synapseGroups.values():
+        for group in six.itervalues(synapseGroups):
             for synDirection in group.relations:
                 if synDirection == PRE:
                     nout[group] += 1

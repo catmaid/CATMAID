@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 
 import os
 import logging
+import six
 
 import django.contrib.postgres.fields.jsonb
 from django.conf import settings
@@ -41,11 +42,11 @@ def get_mesh(project_id, stack_id):
     # function calls we expect.
     try:
         import h5py
-    except ImportError, e:
+    except ImportError as e:
         logger.warning("CATMAID was unable to import the h5py library. "
                 "This library is needed to migrate found HDF5 files to "
                 "volumes, please install it (e.g. using pip install h5py).")
-        raise 
+        raise
 
     with closing(h5py.File(filename, 'r')) as hfile:
         meshnames = hfile['meshes'].keys()
@@ -80,7 +81,7 @@ def import_meshes(apps, schema_editor):
                 user = get_system_user()
 
             # The returned dictionary maps mesh names to a mesh representation
-            for mesh_name, mesh_data in meshes.iteritems():
+            for mesh_name, mesh_data in six.iteritems(meshes):
                 vertices = []
                 input_vertices = mesh_data['vertices']
                 i = 0

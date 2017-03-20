@@ -1,4 +1,8 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 import json
+import six
 
 from catmaid.models import ClassInstance
 
@@ -13,7 +17,7 @@ class SearchApiTests(CatmaidApiTestCase):
                 '/%d/search' % self.test_project_id,
                 {'substring': 'tr'})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [
                 {"id":374, "name":"downstream-A", "class_name":"neuron"},
                 {"id":362, "name":"downstream-B", "class_name":"neuron"}]
@@ -27,7 +31,7 @@ class SearchApiTests(CatmaidApiTestCase):
                 '/%d/search' % self.test_project_id,
                 {'substring': 'bobobobobobobo'})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = []
         self.assertEqual(expected_result, parsed_response)
 
@@ -39,7 +43,7 @@ class SearchApiTests(CatmaidApiTestCase):
                 '/%d/search' % self.test_project_id,
                 {'substring': 't'})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [
                 {"id":465, "name":"tubby bye bye", "class_name":"driver_line"},
                 {"id":4, "name":"Fragments", "class_name":"group"},
@@ -65,7 +69,7 @@ class SearchApiTests(CatmaidApiTestCase):
                 {"id":2468, "name":"skeleton 2468", "class_name":"skeleton"},
                 {"id":361, "name":"skeleton 361", "class_name":"skeleton"},
                 {"id":373, "name":"skeleton 373", "class_name":"skeleton"}]
-        self.assertItemsEqual(expected_result, parsed_response)
+        six.assertCountEqual(self, expected_result, parsed_response)
 
 
     def test_search_with_nodes_and_nonode_label(self):
@@ -75,7 +79,7 @@ class SearchApiTests(CatmaidApiTestCase):
                 '/%d/search' % self.test_project_id,
                 {'substring': 'a'})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [
                 {"id":485, "name":"Local", "class_name":"cell_body_location"},
                 {"id":487, "name":"Non-Local", "class_name":"cell_body_location"},
@@ -98,14 +102,14 @@ class SearchApiTests(CatmaidApiTestCase):
                 '/%d/search' % self.test_project_id,
                 {'substring': 'uncertain end'})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
 
         # Expect only one result that has a node linked
         expected_result = [
             {"id":2342, "name":"uncertain end", "class_name":"label", "nodes":[
                 {"id":403, "x":7840, "y":2380, "z":0, "skid":373}]},
         ]
-        self.assertItemsEqual(expected_result, parsed_response)
+        six.assertCountEqual(self, expected_result, parsed_response)
 
         # Add a duplicate record of the label, without any node links
         label = ClassInstance.objects.get(id=2342)
@@ -116,7 +120,7 @@ class SearchApiTests(CatmaidApiTestCase):
                 '/%d/search' % self.test_project_id,
                 {'substring': 'uncertain end'})
         self.assertEqual(response2.status_code, 200)
-        parsed_response2 = json.loads(response2.content)
+        parsed_response2 = json.loads(response2.content.decode(('utf-8')))
 
         # Expect the nodes to be not linked to the duplicate record
         expected_result2 = [
@@ -124,7 +128,7 @@ class SearchApiTests(CatmaidApiTestCase):
             {"id":2342, "name":"uncertain end", "class_name":"label", "nodes":[
                 {"id":403, "x":7840, "y":2380, "z":0, "skid":373}]}
         ]
-        self.assertItemsEqual(expected_result2, parsed_response2)
+        six.assertCountEqual(self, expected_result2, parsed_response2)
 
 
     def test_search_with_nodes(self):
@@ -134,7 +138,7 @@ class SearchApiTests(CatmaidApiTestCase):
                 '/%d/search' % self.test_project_id,
                 {'substring': 'c'})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [
                 {"id":485, "name":"Local", "class_name":"cell_body_location"},
                 {"id":487, "name":"Non-Local", "class_name":"cell_body_location"},

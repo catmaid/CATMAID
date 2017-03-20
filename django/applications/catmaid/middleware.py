@@ -1,5 +1,8 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 import re
-import cProfile, pstats, StringIO
+import cProfile, pstats
 import logging
 
 from traceback import format_exc
@@ -11,6 +14,8 @@ from django.conf import settings
 from guardian.utils import get_anonymous_user
 
 from rest_framework.authentication import TokenAuthentication
+
+from six import StringIO
 
 
 logger = logging.getLogger(__name__)
@@ -141,20 +146,20 @@ class ProfilingMiddleware(object):
             request.profiler.enable()
 
     def process_response(self, request, response):
-	if hasattr(request, 'profiler'):
-	    request.profiler.disable()
-	    s = StringIO.StringIO()
-	    sortby = getattr(request, 'profile-sorting', 'cumulative')
-	    ps = pstats.Stats(request.profiler, stream=s).sort_stats(sortby)
-	    ps.print_stats()
-	    response = JsonResponse({
+        if hasattr(request, 'profiler'):
+            request.profiler.disable()
+            s = StringIO()
+            sortby = getattr(request, 'profile-sorting', 'cumulative')
+            ps = pstats.Stats(request.profiler, stream=s).sort_stats(sortby)
+            ps.print_stats()
+            response = JsonResponse({
                 'content': response.content,
                 'profile': s.getvalue()
             })
 
-	    if hasattr(request, 'profile-to-disk'):
-		labels = (request.META['REMOTE_ADDR'], datetime.now())
-		request.profiler.dump_stats('/tmp/catmaid-%s-%s.profile' % labels)
+            if hasattr(request, 'profile-to-disk'):
+                labels = (request.META['REMOTE_ADDR'], datetime.now())
+                request.profiler.dump_stats('/tmp/catmaid-%s-%s.profile' % labels)
 
         return response
 

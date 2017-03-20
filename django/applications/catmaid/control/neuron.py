@@ -1,4 +1,8 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 import json
+import six
 
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
@@ -162,11 +166,12 @@ def give_neuron_to_other_user(request, project_id=None, neuron_id=None):
     if not skeletons:
         return HttpResponse(json.dumps({'error': 'The neuron does not contain any skeletons!'}))
 
-    sks = {k:v[:] for k,v in skeletons.iteritems()} # deep copy
+    sks = {k:v[:] for k,v in six.iteritems(skeletons)} # deep copy
     if request.user.id in sks:
         del sks[request.user.id]
     if not request.user.is_superuser and sks:
-        return HttpResponse(json.dumps({'error': 'You don\'t own: %s' % reduce(operator.add, sks.values())}))
+        skeleton_ids = reduce(operator.add, six.itervalues(sks))
+        return HttpResponse(json.dumps({'error': 'You don\'t own: %s' % skeleton_ids}))
 
     # 2. Change neuron's and skeleton's and class_instance_class_instance relationship owner to target_user
 
@@ -179,7 +184,8 @@ def give_neuron_to_other_user(request, project_id=None, neuron_id=None):
     ClassInstance.objects.filter(pk=neuron_id).update(user=target_user)
 
     # Update user_id of the skeleton(s)
-    ClassInstance.objects.filter(pk__in=reduce(operator.add, skeletons.values())).update(user=target_user)
+    skeleton_ids = reduce(operator.add, six.itervalues(skeletons))
+    ClassInstance.objects.filter(pk__in=skeleton_ids).update(user=target_user)
 
     return HttpResponse(json.dumps({'success':'Moved neuron #%s to %s staging area.'}))
 

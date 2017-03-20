@@ -1,8 +1,12 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 import json
 import logging
 import networkx as nx
 import pytz
-from itertools import imap
+import six
+
 from functools import partial
 from collections import defaultdict
 from math import sqrt
@@ -24,7 +28,11 @@ from catmaid.control.review import get_treenodes_to_reviews, \
 
 from psycopg2.extras import DateTimeTZRange
 
-from tree_util import edge_count_to_root, partition
+from catmaid.control.tree_util import edge_count_to_root, partition
+
+# Python 2 and 3 compatible map iterator
+from six.moves import map
+
 try:
     from exportneuroml import neuroml_single_cell, neuroml_network
 except ImportError:
@@ -399,8 +407,7 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True, with_tags=T
     return [nodes, connectors, tags]
 
 
-@requires_user_role(UserRole.Browse)
-def compact_arbor(request, project_id=None, skeleton_id=None, with_nodes=None, with_connectors=None, with_tags=None):
+def _compact_arbor(project_id=None, skeleton_id=None, with_nodes=None, with_connectors=None, with_tags=None):
     """
     Performance-critical function. Do not edit unless to improve performance.
     Returns, in JSON, [[nodes], [connections], {nodeID: [tags]}],
@@ -498,11 +505,17 @@ def compact_arbor(request, project_id=None, skeleton_id=None, with_nodes=None, w
         for row in cursor.fetchall():
             tags[row[0]].append(row[1])
 
+    return nodes, connectors, tags
+
+
+@requires_user_role(UserRole.Browse)
+def compact_arbor(request, project_id=None, skeleton_id=None, with_nodes=None, with_connectors=None, with_tags=None):
+    nodes, connectors, tags = _compact_arbor(project_id, skeleton_id,
+            with_nodes, with_connectors, with_tags)
     return HttpResponse(json.dumps((nodes, connectors, tags), separators=(',', ':')))
 
 
-@requires_user_role([UserRole.Browse])
-def treenode_time_bins(request, project_id=None, skeleton_id=None):
+def _treenode_time_bins(skeleton_id=None):
     """ Return a map of time bins (minutes) vs. list of nodes. """
     minutes = defaultdict(list)
     epoch = datetime.utcfromtimestamp(0).replace(tzinfo=pytz.utc)
@@ -510,14 +523,21 @@ def treenode_time_bins(request, project_id=None, skeleton_id=None):
     for row in Treenode.objects.filter(skeleton_id=int(skeleton_id)).values_list('id', 'creation_time'):
         minutes[int((row[1] - epoch).total_seconds() / 60)].append(row[0])
 
+    return minutes
+
+
+@requires_user_role([UserRole.Browse])
+def treenode_time_bins(request, project_id=None, skeleton_id=None):
+    minutes = _treenode_time_bins(skeleton_id)
     return HttpResponse(json.dumps(minutes, separators=(',', ':')))
 
 
 @requires_user_role([UserRole.Browse])
 def compact_arbor_with_minutes(request, project_id=None, skeleton_id=None, with_nodes=None, with_connectors=None, with_tags=None):
-    r = compact_arbor(request, project_id=project_id, skeleton_id=skeleton_id, with_nodes=with_nodes, with_connectors=with_connectors, with_tags=with_tags)
-    r.content = "%s, %s]" % (r.content[:-1], treenode_time_bins(request, project_id=project_id, skeleton_id=skeleton_id).content)
-    return r
+    nodes, connectors, tags = _compact_arbor(project_id, skeleton_id,
+            with_nodes, with_connectors, with_tags)
+    minutes = _treenode_time_bins(skeleton_id)
+    return HttpResponse(json.dumps((nodes, connectors, tags, minutes), separators=(',', ':')))
 
 
 # DEPRECATED. Will be removed.
@@ -609,7 +629,7 @@ def _skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=True, lean=
             # List of (treenode_id, connector_id, relation_id, x, y, z)n with relation_id replaced by 0 (presynaptic) or 1 (postsynaptic)
             # 'presynaptic_to' has an 'r' at position 1:
             for row in cursor.fetchall():
-                x, y, z = imap(float, (row[3], row[4], row[5]))
+                x, y, z = map(float, (row[3], row[4], row[5]))
                 connectors.append((row[0],
                                    row[1],
                                    0 if 'r' == row[2][1] else 1,
@@ -692,12 +712,12 @@ def _measure_skeletons(skeleton_ids):
             skeletons[row[2]] = skeleton
         skeleton.nodes[row[0]] = Node(row[1], row[3], row[4], row[5])
 
-    for skeleton in skeletons.itervalues():
+    for skeleton in six.itervalues(skeletons):
         nodes = skeleton.nodes
         tree = nx.DiGraph()
         root = None
         # Accumulate children
-        for nodeID, node in nodes.iteritems():
+        for nodeID, node in six.iteritems(nodes):
             if not node.parent_id:
                 root = nodeID
                 continue
@@ -710,7 +730,7 @@ def _measure_skeletons(skeleton_ids):
             # Measure raw cable, given that we have the parent already
             skeleton.raw_cable += distance
         # Utilize accumulated children and the distances to them
-        for nodeID, node in nodes.iteritems():
+        for nodeID, node in six.iteritems(nodes):
             # Count end nodes and branch nodes
             n_children = len(node.children)
             if not node.parent_id:
@@ -732,9 +752,9 @@ def _measure_skeletons(skeleton_ids):
             oids = node.children.copy()
             if node.parent_id:
                 oids[node.parent_id] = skeleton.nodes[node.parent_id].children[nodeID]
-            sum_distances = sum(oids.itervalues())
+            sum_distances = sum(six.itervalues(oids))
             wx, wy, wz = 0, 0, 0
-            for oid, distance in oids.iteritems():
+            for oid, distance in six.iteritems(oids):
                 other = skeleton.nodes[oid]
                 w = distance / sum_distances if sum_distances != 0 else 0
                 wx += other.x * w
@@ -746,7 +766,7 @@ def _measure_skeletons(skeleton_ids):
         # Find out nodes that belong to the principal branch
         principal_branch_nodes = set(sorted(partition(tree, root), key=len)[-1])
         # Compute smoothed cable length, also for principal branch
-        for nodeID, node in nodes.iteritems():
+        for nodeID, node in six.iteritems(nodes):
             if not node.parent_id:
                 # root node
                 continue
@@ -796,7 +816,7 @@ def _measure_skeletons(skeleton_ids):
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def measure_skeletons(request, project_id=None):
-    skeleton_ids = tuple(int(v) for k,v in request.POST.iteritems() if k.startswith('skeleton_ids['))
+    skeleton_ids = tuple(int(v) for k,v in six.iteritems(request.POST) if k.startswith('skeleton_ids['))
     def asRow(skid, sk):
         return (skid, int(sk.raw_cable), int(sk.smooth_cable), sk.n_pre, sk.n_post, len(sk.nodes), sk.n_branch, sk.n_ends, sk.principal_branch_cable)
     return HttpResponse(json.dumps([asRow(skid, sk) for skid, sk in _measure_skeletons(skeleton_ids).iteritems()]))
@@ -834,7 +854,7 @@ def _skeleton_neuroml_cell(skeleton_id, preID, postID):
 def skeletons_neuroml(request, project_id=None):
     """ Export a list of skeletons each as a Cell in NeuroML. """
     project_id = int(project_id) # sanitize
-    skeleton_ids = tuple(int(v) for k,v in request.POST.iteritems() if k.startswith('skids['))
+    skeleton_ids = tuple(int(v) for k,v in six.iteritems(request.POST) if k.startswith('skids['))
 
     cursor = connection.cursor()
 
@@ -904,7 +924,7 @@ def export_neuroml_level3_v181(request, project_id=None):
         # Dictionary of presynaptic skeleton ID vs map of postsynaptic skeleton ID vs list of tuples with presynaptic treenode ID and postsynaptic treenode ID.
         connections = defaultdict(partial(defaultdict, list))
 
-        for connectorID, m in connectors.iteritems():
+        for connectorID, m in six.iteritems(connectors):
             for pre_treenodeID, skID1 in m[presynaptic_to]:
                 for post_treenodeID, skID2 in m[postsynaptic_to]:
                     connections[skID1][skID2].append((pre_treenodeID, post_treenodeID))
@@ -1183,7 +1203,7 @@ def export_review_skeleton(request, project_id=None, skeleton_id=None):
 def skeleton_connectors_by_partner(request, project_id):
     """ Return a dict of requested skeleton vs relation vs partner skeleton vs list of connectors.
     Connectors lacking a skeleton partner will of course not be included. """
-    skeleton_ids = set(int(v) for k,v in request.POST.iteritems() if k.startswith('skids['))
+    skeleton_ids = set(int(v) for k,v in six.iteritems(request.POST) if k.startswith('skids['))
     cursor = connection.cursor()
 
     relations = get_relation_to_id_map(project_id, ('presynaptic_to', 'postsynaptic_to'), cursor)
@@ -1231,7 +1251,7 @@ def partners_by_connector(request, project_id=None):
     if not skid:
         raise Exception("Need a reference skeleton ID!")
     skid = int(skid)
-    connectors = tuple(int(v) for k,v in request.POST.iteritems() if k.startswith('connectors['))
+    connectors = tuple(int(v) for k,v in six.iteritems(request.POST) if k.startswith('connectors['))
     rel_type = int(request.POST.get("relation", 0))
     size_mode = int(request.POST.get("size_mode", 0))
 

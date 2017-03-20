@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 #
 # This is a helper script to ensure an image has the correct tile size.
 # It uses pgmagick[1] to read and (if needed) correct the image. To use
@@ -8,7 +9,7 @@
 #
 # [1] http://pypi.python.org/pypi/pgmagick/
 
-from __future__ import print_function
+from __future__ import print_function, unicode_literals
 
 import sys
 import os

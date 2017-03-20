@@ -1,7 +1,11 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 import itertools
 import math
 import networkx as nx
 import re
+import six
 
 from collections import defaultdict
 
@@ -159,7 +163,7 @@ def insert_treenode(request, project_id=None):
     # of connector ID and relation ID.
     try:
         links = get_request_list(request.POST, 'links', [], int)
-    except Exception, e:
+    except Exception as e:
         raise ValueError("Couldn't parse list parameter: {}".format(e))
 
     # Make sure the back-end is in the expected state if the node should have a
@@ -474,7 +478,7 @@ def update_node_radii(node_ids, radii, cursor=None):
     cursor = cursor or connection.cursor()
 
     # Create a list of the form [(node id, radius), ...]
-    node_radii = "(" + "),(".join(map(lambda (k,v): "{},{}".format(k,v),
+    node_radii = "(" + "),(".join(map(lambda pair: "{},{}".format(pair[0], pair[1]),
             zip(node_ids, radii))) + ")"
 
     cursor.execute('''
@@ -503,9 +507,9 @@ def update_node_radii(node_ids, radii, cursor=None):
 @requires_user_role(UserRole.Annotate)
 def update_radii(request, project_id=None):
     """Update the radius of one or more nodes"""
-    treenode_ids = [int(v) for k,v in request.POST.iteritems() \
+    treenode_ids = [int(v) for k,v in six.iteritems(request.POST) \
         if k.startswith('treenode_ids[')]
-    radii = [float(v) for k,v in request.POST.iteritems() \
+    radii = [float(v) for k,v in six.iteritems(request.POST) \
         if k.startswith('treenode_radii[')]
     # Make sure the back-end is in the expected state
     cursor = connection.cursor()

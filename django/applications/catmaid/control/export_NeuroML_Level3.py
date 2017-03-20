@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 # Export functions for NeuroML NetworkML 1.8.1
 
 # TODO Should have been implemented in the client side in javascript
@@ -10,7 +13,11 @@
 
 
 import time
+import six
+
 from collections import defaultdict
+from six.moves import range
+
 
 def exportMutual(neuron_names, all_treenodes, connections, scale=0.001):
     """ Export a group of neuronal arbors and their synapses as NeuroML Level 3 v1.8.1.
@@ -72,7 +79,7 @@ def make_segments(slab, cableID, scale, state):
         yield segment(nodes[0], nodes[0], points[0], points[0], segmentID, lastSegmentIDOfParent, cableID, True)
     else:
         previous_segmentID = slab.lastSegmentIDOfParent()
-        for i in xrange(1, len(nodes)):
+        for i in range(1, len(nodes)):
             segmentID = state.nextID()
             id2 = previous_segmentID
             previous_segmentID = segmentID
@@ -103,7 +110,7 @@ def smooth(treenodes, scale):
     t = treenodes[1][2]
     bx, by, bz = t
 
-    for i in xrange(1, len(treenodes) -1):
+    for i in range(1, len(treenodes) -1):
         tc = treenodes[i+1][2]
         cx, cy, cz = tc
         points.append((((ax + bx + cx) / 3.0) * scale,
@@ -221,7 +228,7 @@ def make_connection_entries(pre_skID, post_skID, synapses, state):
 
 def make_connection(connection, state):
     pre_skID, m = connection
-    for post_skID, synapses in m.iteritems():
+    for post_skID, synapses in six.iteritems(m):
         for source in (('<projection name="NetworkConnection" source="sk_%s" target="sk_%s">\n' % (pre_skID, post_skID),
                         '<synapse_props synapse_type="DoubExpSynA" internal_delay="5" weight="1" threshold="-20"/>\n',
                         '<connections size="%s">\n' % len(synapses)),
@@ -232,7 +239,7 @@ def make_connection(connection, state):
 
 def make_connections(connections, state):
     """ Generate connections between neurons. """
-    for connection in connections.iteritems():
+    for connection in six.iteritems(connections):
         for line in make_connection(connection, state):
             yield line
 
@@ -251,8 +258,8 @@ def make_cells(cellIDs, neuron_names):
 def bodyMutual(neuron_names, all_treenodes, connections, scale):
     """ Create a cell for each arbor. """
     synaptic_treenodes = {}
-    for m in connections.itervalues():
-        for synapses in m.itervalues():
+    for m in six.itervalues(connections):
+        for synapses in six.itervalues(m):
             for pre_treenodeID, post_treenodeID in synapses:
                 synaptic_treenodes[pre_treenodeID] = None
                 synaptic_treenodes[post_treenodeID] = None
@@ -283,7 +290,7 @@ def bodyMutual(neuron_names, all_treenodes, connections, scale):
 
 def make_inputs(cellIDs, neuron_names, inputs, state):
     cellID = cellIDs[0]
-    for inputSkeletonID, treenodeIDs in inputs.iteritems():
+    for inputSkeletonID, treenodeIDs in six.iteritems(inputs):
         for source in [('<input name="%s">\n' % inputSkeletonID,
                         '<random_stim frequency="20" synaptic_mechanism="DoubExpSynA"/>\n',
                         '<target population="%s">\n' % neuron_name(cellID, neuron_names),
@@ -297,7 +304,7 @@ def make_inputs(cellIDs, neuron_names, inputs, state):
 
 
 def bodySingle(neuron_names, all_treenodes, inputs, scale):
-    synaptic_treenodes = {treenodeID: None for treenodeIDs in inputs.itervalues() for treenodeID in treenodeIDs}
+    synaptic_treenodes = {treenodeID: None for treenodeIDs in six.itervalues(inputs) for treenodeID in treenodeIDs}
 
     state = State(synaptic_treenodes)
 

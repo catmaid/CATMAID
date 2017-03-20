@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 import json
 import time
 from unittest import skipUnless
@@ -99,7 +102,7 @@ class TransactionLogTests(TransactionTestCase):
                     'label': label
                 })
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         return parsed_response
 
     def test_transaction_log_entry(self):
@@ -117,7 +120,7 @@ class TransactionLogTests(TransactionTestCase):
             'parent_id': -1,
             'radius': 2})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         transaction.commit()
 
         self.assertTrue('treenode_id' in parsed_response)
@@ -170,7 +173,7 @@ class TransactionLogTests(TransactionTestCase):
             'radius': 2})
         transaction.commit()
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
 
         self.assertTrue('treenode_id' in parsed_response)
         self.assertTrue('skeleton_id' in parsed_response)
@@ -202,7 +205,7 @@ class TransactionLogTests(TransactionTestCase):
                     't[0][3]': 16.2})
         transaction.commit()
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
 
         after_update_tx_entries = self.get_tx_entries(cursor)
         n_after_update_tx_entries = len(after_update_tx_entries)

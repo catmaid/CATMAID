@@ -1,4 +1,8 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 import logging
+import six
 import numpy as np
 from datetime import timedelta, datetime
 from dateutil import parser as dateparser
@@ -24,9 +28,12 @@ try:
     from matplotlib.dates import  DateFormatter, DayLocator
     from pylab import figure
     from matplotlib.backends.backend_agg import FigureCanvasAgg
-except ImportError, e:
+except ImportError:
     logger.warning("CATMAID was unable to laod the matplitlib module. "
         "User analytics will not be available")
+
+from six.moves import range
+
 
 class Bout(object):
     """ Represents one bout, based on a list of events. The first event ist the
@@ -181,7 +188,7 @@ def eventsPerInterval(times, start_date, end_date, interval='day'):
     # Generate axis
     daycount = (end_date - start_date).days
     dt = timedelta(0, secondsPerInterval)
-    timeaxis = [start_date + n*dt for n in xrange(intervalsPerDay * daycount)]
+    timeaxis = [start_date + n*dt for n in range(intervalsPerDay * daycount)]
     # Calculate bins
     timebins = np.zeros(intervalsPerDay * daycount)
     intervalsPerSecond = 1.0 / secondsPerInterval
@@ -510,7 +517,7 @@ def eventsPerIntervalPerDayPlot(ax,times,start_date,end_date,interval=60):
     ind = 0
     cm = plt.get_cmap('jet',len(timebins))
     dats = []
-    for dat in timebins.values():
+    for dat in six.itervalues(timebins):
         if np.sum(dat)==0:
             ignoredDays += 1
         else:

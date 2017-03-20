@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 from django.test import TestCase
 from django.contrib.auth.models import User
 from django.http.request import QueryDict
@@ -5,6 +8,7 @@ from catmaid.control.common import get_request_list
 from catmaid.models import Project, Class, Relation, ClassInstance, \
     ClassInstanceClassInstance
 from catmaid.control.neuron_annotations import delete_annotation_if_unused
+from catmaid.tests.common import CatmaidTestCase
 
 
 class InternalApiTestsNoDB(TestCase):
@@ -31,7 +35,7 @@ class InternalApiTestsNoDB(TestCase):
         self.assertEqual(get_request_list(q4, 'a'), [['1', '2', '3']])
         self.assertEqual(get_request_list(q4, 'a', map_fn=int), [[1, 2, 3]])
 
-class InternalApiTests(TestCase):
+class InternalApiTests(CatmaidTestCase):
     fixtures = ['catmaid_testdata']
 
     def setUp(self):

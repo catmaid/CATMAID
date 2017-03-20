@@ -1,4 +1,8 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 import json
+import six
 import yaml
 
 from ast import literal_eval
@@ -19,7 +23,7 @@ class ProjectsApiTests(CatmaidApiTestCase):
         # projects:
         response = self.client.get('/projects/')
         self.assertEqual(response.status_code, 200)
-        result = json.loads(response.content)
+        result = json.loads(response.content.decode('utf-8'))
         self.assertEqual(len(result), 0)
 
         # Add permission to the anonymous user to browse two projects
@@ -31,7 +35,7 @@ class ProjectsApiTests(CatmaidApiTestCase):
         # projects:
         response = self.client.get('/projects/')
         self.assertEqual(response.status_code, 200)
-        result = json.loads(response.content)
+        result = json.loads(response.content.decode('utf-8'))
         self.assertEqual(len(result), 1)
 
         # Check stacks:
@@ -54,7 +58,7 @@ class ProjectsApiTests(CatmaidApiTestCase):
         # We expect four projects, one of them (project 2) is empty.
         response = self.client.get('/projects/')
         self.assertEqual(response.status_code, 200)
-        result = json.loads(response.content)
+        result = json.loads(response.content.decode('utf-8'))
         self.assertEqual(len(result), 4)
 
         def get_project(result, pid):
@@ -86,7 +90,7 @@ class ProjectsApiTests(CatmaidApiTestCase):
         # projects:
         response = self.client.get('/projects/export')
         self.assertEqual(response.status_code, 200)
-        result = json.loads(response.content)
+        result = json.loads(response.content.decode('utf-8'))
         self.assertEqual(len(result), 0)
 
         # Now log in and check that we see a different set of projects:
@@ -103,7 +107,7 @@ class ProjectsApiTests(CatmaidApiTestCase):
 
         response = self.client.get('/projects/export')
         self.assertEqual(response.status_code, 200)
-        result = yaml.load(response.content)
+        result = yaml.load(response.content.decode('utf-8'))
 
         # Expect a returned list with four projects
         self.assertEqual(len(result), 4)
@@ -136,18 +140,18 @@ class ProjectsApiTests(CatmaidApiTestCase):
                 # Compare stacks
                 stack = Stack.objects.get(id=stack_id)
                 self.assertEqual(stack.title, s['title'])
-                self.assertEqual(literal_eval(unicode(stack.dimension)),
+                self.assertEqual(literal_eval(str(stack.dimension)),
                         literal_eval(s['dimension']))
-                self.assertEqual(literal_eval(unicode(stack.resolution)),
+                self.assertEqual(literal_eval(str(stack.resolution)),
                         literal_eval(s['resolution']))
                 self.assertEqual(stack.num_zoom_levels, s['zoomlevels'])
                 self.assertEqual(stack.metadata, s['metadata'])
                 self.assertEqual(stack.comment, s['comment'])
                 self.assertEqual(stack.attribution, s['attribution'])
                 self.assertEqual(stack.description, s['description'])
-                self.assertEqual(literal_eval(unicode(stack.canary_location)),
+                self.assertEqual(literal_eval(str(stack.canary_location)),
                         literal_eval(s['canary_location']))
-                self.assertEqual(literal_eval(unicode(stack.placeholder_color)),
+                self.assertEqual(literal_eval(str(stack.placeholder_color)),
                         literal_eval(s['placeholder_color']))
 
                 # Get all stack mirrors for this stack
@@ -176,9 +180,9 @@ class ProjectsApiTests(CatmaidApiTestCase):
                     self.assertEqual(sg_link.group_relation.name, sge['relation'])
 
                 # Make sure we have seen all relevant stack groups
-                self.assertItemsEqual(valid_stackgroup_ids, seen_stackgroups)
+                six.assertCountEqual(self, valid_stackgroup_ids, seen_stackgroups)
 
             # Make sure we have seen all relevant stacks
-            self.assertItemsEqual(valid_stack_ids, seen_stacks)
+            six.assertCountEqual(self, valid_stack_ids, seen_stacks)
 
-        self.assertItemsEqual(valid_project_ids, seen_projects)
+        six.assertCountEqual(self, valid_project_ids, seen_projects)

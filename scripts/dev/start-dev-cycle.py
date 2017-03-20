@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 #
 # This script will prepare the CATMAID documentation and changelogs for a new
 # development cycle. It inserts headers in API_CHANGELOG.md and CHANGELOG.md so
@@ -6,6 +7,8 @@
 # refer to a development version.
 #
 # Its dependencies are part of the requirements-dev.txt file.
+#
+from __future__ import unicode_literals
 
 import os
 import re

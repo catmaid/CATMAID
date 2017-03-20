@@ -1,8 +1,12 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 import re
 import json
 
 from functools import wraps
 from itertools import groupby
+from six import string_types
 
 from guardian.core import ObjectPermissionChecker
 from guardian.models import UserObjectPermission, GroupObjectPermission
@@ -30,11 +34,7 @@ from catmaid.models import Project, UserRole, ClassInstance, \
 
 class PermissionError(Exception):
     """Indicates the lack of permissions for a particular action."""
-    def __init__(self, message):
-        super(PermissionError, self).__init__(message)
-
-    def __str__(self):
-        return self.message
+    pass
 
 
 def login_user(request):
@@ -109,7 +109,7 @@ def check_user_role(user, project, roles):
 
     if not has_role:
         # Check the indicated role(s)
-        if isinstance(roles, str):
+        if isinstance(roles, string_types):
             roles = [roles]
         for role in roles:
             if role == UserRole.Annotate:
@@ -163,7 +163,7 @@ def requires_user_role_for_any_project(roles):
             role_codesnames = set()
             role_codesnames.add('can_administer')
 
-            if isinstance(roles, str):
+            if isinstance(roles, string_types):
                 roles = [roles]
             for role in roles:
                 if role == UserRole.Annotate:

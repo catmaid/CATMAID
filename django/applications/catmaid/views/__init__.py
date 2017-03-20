@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 from django.core import urlresolvers
 from django.conf import settings
 from django.http import HttpResponseRedirect
@@ -20,8 +23,11 @@ class CatmaidView(TemplateView):
         context['STATIC_EXTENSION_FILES'] = settings.STATIC_EXTENSION_FILES
         context['HISTORY_TRACKING'] = settings.HISTORY_TRACKING
         context['EXPAND_FRONTEND_ERRORS'] = getattr(settings, 'EXPAND_FRONTEND_ERRORS', False)
+
         profile_context = self.request.user.userprofile.as_dict()
-        return dict(context.items() + profile_context.items())
+        context.update(profile_context)
+
+        return context
 
 class UseranalyticsView(TemplateView):
     template_name = "catmaid/useranalytics.html"

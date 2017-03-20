@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 import os, re
 
 from selenium import webdriver
@@ -83,7 +86,9 @@ class BasicUITest(StaticLiveServerTestCase):
                     "captureHtml": True,
                     "webdriverRemoteQuietExceptions": False,
                     "tunnel-identifier": os.environ["TRAVIS_JOB_NUMBER"],
-                    "name": "Commit {}".format(os.environ["TRAVIS_COMMIT"]),
+                    "name": "Job: {} Commit {}".format(
+                            os.environ["TRAVIS_JOB_NUMBER"],
+                            os.environ["TRAVIS_COMMIT"]),
                     "build": os.environ["TRAVIS_BUILD_NUMBER"],
                     "tags": [os.environ["TRAVIS_PYTHON_VERSION"], "CI"]
                 }
@@ -116,7 +121,7 @@ class BasicUITest(StaticLiveServerTestCase):
             if settings.GUI_TESTS_REMOTE:
                 # Let saucelabs.com know about the outcome of this test
                 id = self.selenium.session_id
-                print 'Link to remote Selenium GUI test job: https://saucelabs.com/jobs/%s' % id
+                print('Link to remote Selenium GUI test job: https://saucelabs.com/jobs/{}'.format(id))
 
                 from sauceclient import SauceClient
                 username = os.environ["SAUCE_USERNAME"]
@@ -188,7 +193,7 @@ class BasicUITest(StaticLiveServerTestCase):
 
             # Fail on any severe errors
             self.assertIn('level', log_entry)
-            self.assertNotIn('SEVERE', log_entry['level'])
+            self.assertNotIn('SEVERE', log_entry['level'], log_entry['message'])
 
         # Check title
         self.assertTrue("CATMAID" in self.selenium.title)

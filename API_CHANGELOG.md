@@ -10,7 +10,9 @@ None.
 
 ### Modifications
 
-None.
+- `GET /messages/mark_read`:
+  This API took a message ID as parameter before and is replaced by:
+  `POST /messages/{message_id}/mark_read`
 
 ### Deprecations
 

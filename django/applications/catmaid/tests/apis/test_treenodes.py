@@ -1,4 +1,8 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 import json
+import six
 
 from django.shortcuts import get_object_or_404
 
@@ -18,7 +22,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
                                     (self.test_project_id, 0))
         self.assertEqual(response.status_code, 200)
         expected_result = [[], [], []]
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(expected_result, parsed_response)
 
 
@@ -30,7 +34,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
                 {'new_confidence': '4'})
         self.assertEqual(response.status_code, 200)
         expected_result = 'No skeleton and neuron for treenode %s' % treenode_id
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(expected_result, parsed_response['error'])
 
 
@@ -42,7 +46,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
                 {'new_confidence': '4', 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
         treenode = Treenode.objects.filter(id=treenode_id).get()
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
             'message': 'success',
             'updated_partners': {
@@ -65,7 +69,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
                 {'new_confidence': '5', 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
         treenode = Treenode.objects.filter(id=treenode_id).get()
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
             'message': 'success',
             'updated_partners': {
@@ -94,7 +98,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
                  'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
         connector = TreenodeConnector.objects.filter(id=treenode_connector_id).get()
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
             'message': 'success',
             'updated_partners': {
@@ -117,7 +121,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
                 {'new_confidence': '5', 'to_connector': 'true', 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
         connector = TreenodeConnector.objects.filter(id=treenode_connector_id).get()
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
             'message': 'success',
             'updated_partners': {
@@ -159,7 +163,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
             'parent_id': -1,
             'radius': 2})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
 
         self.assertTrue('treenode_id' in parsed_response)
         self.assertTrue('skeleton_id' in parsed_response)
@@ -215,7 +219,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
             'parent_id': -1,
             'radius': 2})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
 
         self.assertTrue('treenode_id' in parsed_response)
         self.assertTrue('skeleton_id' in parsed_response)
@@ -275,7 +279,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
             'useneuron': neuron_id,
             'radius': 2})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
 
         self.assertTrue('treenode_id' in parsed_response)
         self.assertTrue('skeleton_id' in parsed_response)
@@ -314,7 +318,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
             'radius': 2,
             'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {'error': 'Parent treenode %d does not exist' % parent_id}
         self.assertIn(expected_result['error'], parsed_response['error'])
         self.assertEqual(treenode_count, Treenode.objects.all().count())
@@ -331,12 +335,12 @@ class TreenodesApiTests(CatmaidApiTestCase):
                 '/%d/treenodes/%d/parent' % (self.test_project_id, treenode_id),
                 {'parent_id': new_parent_id, 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
 
         response = self.client.post(
                 '/%d/%d/1/1/compact-skeleton' % (self.test_project_id, skeleton_id))
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_response = [
                 [[377, None, 3, 7620.0, 2890.0, 0.0, -1.0, 5],
                  [403, 377, 3, 7840.0, 2380.0, 0.0, -1.0, 5],
@@ -346,8 +350,8 @@ class TreenodesApiTests(CatmaidApiTestCase):
                 [[377, 356, 1, 6730.0, 2700.0, 0.0],
                  [409, 421, 1, 6260.0, 3990.0, 0.0]],
                 {"uncertain end": [403]}]
-        self.assertItemsEqual(parsed_response[0], expected_response[0])
-        self.assertItemsEqual(parsed_response[1], expected_response[1])
+        six.assertCountEqual(self, parsed_response[0], expected_response[0])
+        six.assertCountEqual(self, parsed_response[1], expected_response[1])
         self.assertEqual(parsed_response[2], expected_response[2])
 
 
@@ -361,7 +365,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
                 '/%d/treenode/delete' % self.test_project_id,
                 {'treenode_id': treenode_id, 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = "Could not delete root node: You can't delete the " \
                           "root node when it has children."
         self.assertEqual(expected_result, parsed_response['error'])
@@ -404,7 +408,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
             'state': make_nocheck_state()})
 
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
 
         self.assertTrue('treenode_id' in parsed_response)
         self.assertTrue('skeleton_id' in parsed_response)
@@ -462,7 +466,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
             'state': make_nocheck_state()})
 
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
 
         self.assertTrue('treenode_id' in parsed_response)
         self.assertTrue('skeleton_id' in parsed_response)
@@ -525,7 +529,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
             'parent_id': parent_id})
 
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertTrue('error' in parsed_response)
 
         self.assertEqual(treenode_count, count_treenodes())
@@ -567,7 +571,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
             'parent_id': parent_id})
 
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertTrue('error' in parsed_response)
 
         self.assertEqual(treenode_count, count_treenodes())
@@ -584,7 +588,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
                 '/%d/treenode/delete' % self.test_project_id,
                 {'treenode_id': treenode_id, 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = 'Removed treenode successfully.'
         self.assertEqual(expected_result, parsed_response['success'])
         self.assertEqual(0, Treenode.objects.filter(id=treenode_id).count())
@@ -605,7 +609,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
                 '/%d/treenode/delete' % self.test_project_id,
                 {'treenode_id': treenode_id, 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
             'success': 'Removed treenode successfully.',
             'parent_id': None,
@@ -644,7 +648,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
                 '/%d/treenode/delete' % self.test_project_id,
                 {'treenode_id': treenode_id, 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = 'Removed treenode successfully.'
         self.assertEqual(expected_result, parsed_response['success'])
         self.assertEqual(0, Treenode.objects.filter(id=treenode_id).count())
@@ -663,7 +667,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
         response = self.client.post(
                 '/%d/treenodes/%s/info' % (self.test_project_id, treenode_id))
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = 'No skeleton and neuron for treenode %s' % treenode_id
         self.assertIn('error', parsed_response)
         self.assertEqual(expected_result, parsed_response['error'])
@@ -676,7 +680,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
         response = self.client.post(
                 '/%d/treenodes/%s/info' % (self.test_project_id, treenode_id))
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {'skeleton_id': 235, 'neuron_id': 233, 'skeleton_name': 'skeleton 235', 'neuron_name': 'branched neuron'}
         self.assertEqual(expected_result, parsed_response)
 
@@ -831,7 +835,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
                 '/%d/treenode/%d/radius' % (self.test_project_id, treenode_id),
                 {'radius': new_r, 'option': 5, 'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_response = {
             'success': True,
             'new_radius': new_r,
@@ -856,15 +860,15 @@ class TreenodesApiTests(CatmaidApiTestCase):
 
         # The response has updated timetamps (since we updated nodes), we have
         # to compare fields manually to ignore them
-        for k,v in expected_response.iteritems():
+        for k,v in six.iteritems(expected_response):
             self.assertIn(k, parsed_response)
             if 'updated_nodes' == k:
                 continue
             self.assertEqual(v, parsed_response.get(k))
-        for k,v in expected_response['updated_nodes'].iteritems():
+        for k,v in six.iteritems(expected_response['updated_nodes']):
             self.assertIn(k, parsed_response['updated_nodes'])
             result_node = parsed_response['updated_nodes'][k]
-            for p,pv in v.iteritems():
+            for p,pv in six.iteritems(v):
                 self.assertIn(p, result_node)
                 result_value = result_node.get(p)
                 if 'edition_time' == p:
@@ -891,7 +895,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
                 '/%d/treenodes/%d/previous-branch-or-root' % (self.test_project_id, treenode_id),
                 {'alt': 0})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         # Response should contain one branch.
         expected_result = [253, 3685.0, 2160.0, 0.0]
         self.assertEqual(expected_result, parsed_response)
@@ -901,7 +905,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
                 '/%d/treenodes/%d/previous-branch-or-root' % (self.test_project_id, treenode_id),
                 {'alt': 0})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         # Response should contain one branch.
         expected_result = [237, 1065.0, 3035.0, 0.0]
         self.assertEqual(expected_result, parsed_response)
@@ -911,7 +915,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
                 '/%d/treenodes/%d/previous-branch-or-root' % (self.test_project_id, treenode_id),
                 {'alt': 0})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         # Response should contain one branch.
         expected_result = [237, 1065.0, 3035.0, 0.0]
         self.assertEqual(expected_result, parsed_response)
@@ -924,7 +928,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
         response = self.client.post(
                 '/%d/treenodes/%d/next-branch-or-end' % (self.test_project_id, treenode_id))
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         # Response should contain one branch.
         expected_result = [[[393, 6910.0, 990.0, 0.0],
                             [393, 6910.0, 990.0, 0.0],
@@ -935,7 +939,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
         response = self.client.post(
                 '/%d/treenodes/%d/next-branch-or-end' % (self.test_project_id, treenode_id))
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         # Response should contain two branches, and the larger branch headed by
         # node 263 should be first.
         expected_result = [[[263, 3915.0, 2105.0, 0.0],
@@ -954,7 +958,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
         response = self.client.post(
                 '/%d/treenodes/%d/children' % (self.test_project_id, treenode_id))
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = []
         self.assertEqual(expected_result, parsed_response)
 
@@ -962,7 +966,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
         response = self.client.post(
                 '/%d/treenodes/%d/children' % (self.test_project_id, treenode_id))
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [[[387, 9030.0, 1480.0, 0.0]]]
         self.assertEqual(expected_result, parsed_response)
 
@@ -970,7 +974,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
         response = self.client.post(
                 '/%d/treenodes/%d/children' % (self.test_project_id, treenode_id))
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [[383, 7850.0, 1970.0, 0.0], [391, 6740.0, 1530.0, 0.0]]
         parsed_response = [p[0] for p in parsed_response]
         for (expected, parsed) in zip(sorted(expected_result), sorted(parsed_response)):
@@ -986,7 +990,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
                  'y': -1,
                  'z': 0})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         parent_id = parsed_response['treenode_id']
         skeleton_id = parsed_response['skeleton_id']
 
@@ -998,14 +1002,14 @@ class TreenodesApiTests(CatmaidApiTestCase):
                  'parent_id': parent_id,
                  'state': make_nocheck_state()})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         child_id = parsed_response['treenode_id']
 
         # Initially no nodes should be supppressed
         response = self.client.get(
                 '/%d/treenodes/%d/suppressed-virtual/' % (self.test_project_id, child_id))
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = []
         self.assertEqual(expected_result, parsed_response)
 
@@ -1029,7 +1033,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
                 {'location_coordinate': 2,
                  'orientation': 0})
         self.assertEqual(response.status_code, 200)
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
         suppressed_id = parsed_response['id']
 
         # Delete virtual node
@@ -1073,7 +1077,7 @@ class TreenodesApiTests(CatmaidApiTestCase):
                 [239, 237, 5, 1135.0, 2800.0, 0.0, -1.0, 3, 1323093096.0],
                 [237, None, 5, 1065.0, 3035.0, 0.0, -1.0, 3, 1323093096.0]],
             [], [[261, 'TODO']]]
-        parsed_response = json.loads(response.content)
+        parsed_response = json.loads(response.content.decode('utf-8'))
 
         # Check each aaData row instead of everything at once for more granular
         # error reporting. Don't expext the same ordering.

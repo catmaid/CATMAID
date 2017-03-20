@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 import json
 import ujson
 
@@ -18,6 +21,8 @@ from catmaid.models import UserRole, Treenode, \
 from catmaid.control.authentication import requires_user_role, \
         can_edit_all_or_fail
 from catmaid.control.common import get_relation_to_id_map, get_request_list
+
+from six.moves import map as imap
 
 
 class Postgis3dNodeProvider(object):
@@ -191,7 +196,7 @@ class Postgis3dNodeProvider(object):
         """
         params['halfzdiff'] = abs(params['z2'] - params['z1']) * 0.5
         params['halfz'] = params['z1'] + (params['z2'] - params['z1']) * 0.5
-        params['sanitized_treenode_ids'] = map(int, extra_treenode_ids)
+        params['sanitized_treenode_ids'] = list(imap(int, extra_treenode_ids))
 
         if settings.PREPARED_STATEMENTS:
             # Use a prepared statement to get the treenodes
@@ -215,7 +220,7 @@ class Postgis3dNodeProvider(object):
         """
         params['halfzdiff'] = abs(params['z2'] - params['z1']) * 0.5
         params['halfz'] = params['z1'] + (params['z2'] - params['z1']) * 0.5
-        params['sanitized_connector_ids'] = map(int, missing_connector_ids)
+        params['sanitized_connector_ids'] = list(imap(int, missing_connector_ids))
 
         if settings.PREPARED_STATEMENTS:
             # Use a prepared statement to get connectors
@@ -409,7 +414,7 @@ class Postgis2dNodeProvider(object):
         """
         params['halfzdiff'] = abs(params['z2'] - params['z1']) * 0.5
         params['halfz'] = params['z1'] + (params['z2'] - params['z1']) * 0.5
-        params['sanitized_treenode_ids'] = map(int, extra_treenode_ids)
+        params['sanitized_treenode_ids'] = list(imap(int, extra_treenode_ids))
 
         if settings.PREPARED_STATEMENTS:
             # Use a prepared statement to get the treenodes
@@ -433,7 +438,7 @@ class Postgis2dNodeProvider(object):
         """
         params['halfz'] = params['z1'] + (params['z2'] - params['z1']) * 0.5
         params['halfzdiff'] = abs(params['z2'] - params['z1']) * 0.5
-        params['sanitized_connector_ids'] = map(int, missing_connector_ids)
+        params['sanitized_connector_ids'] = list(imap(int, missing_connector_ids))
 
         if settings.PREPARED_STATEMENTS:
             # Use a prepared statement to get connectors

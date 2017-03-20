@@ -1,9 +1,13 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 # A file to contain exclusively dependencies of the NeuroML package.
 # See:
 #    https://github.com/NeuralEnsemble/libNeuroML
 #    http://neuroml.org
 
 import logging
+import six
 
 from collections import defaultdict
 
@@ -28,7 +32,7 @@ def neuroml_single_cell(skeleton_id, nodes, pre, post):
     # Collect the children of every node
     successors = defaultdict(list) # parent node ID vs list of children node IDs
     rootID = None
-    for nodeID, props in nodes.iteritems():
+    for nodeID, props in six.iteritems(nodes):
         parentID = props[0]
         if not parentID:
             rootID = nodeID

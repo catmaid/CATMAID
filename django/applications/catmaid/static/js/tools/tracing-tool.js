@@ -859,8 +859,16 @@
           // Delete all tags
           SkeletonAnnotations.Tag.tagATNwithLabel('', activeTracingLayer.tracingOverlay, true);
           return true;
-        } else if (! (e.ctrlKey || e.metaKey)) {
-          SkeletonAnnotations.Tag.tagATN(activeTracingLayer.tracingOverlay);
+        } else if (!e.ctrlKey) {
+          if (e.metaKey) {
+            var tags = SkeletonAnnotations.Settings.session.personal_tag_set;
+            if (tags && tags.length > 0) {
+              SkeletonAnnotations.Tag.tagATNwithLabel(tags,
+                  activeTracingLayer.tracingOverlay, true);
+            }
+          } else {
+            SkeletonAnnotations.Tag.tagATN(activeTracingLayer.tracingOverlay);
+          }
           return true;
         } else {
           return false;

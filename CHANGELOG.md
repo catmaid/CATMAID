@@ -13,6 +13,10 @@ Miscellaneous:
 
 - The Measurement Table now highlights the active skeleton.
 
+- Alt+T can now be used to tag a node with a predefined set of tags. This set
+  can be configured through the Settings Widget, using the "Personal tag set"
+  field in the Tracing section.
+
 
 ### Bug fixes
 

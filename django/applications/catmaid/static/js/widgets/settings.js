@@ -1157,6 +1157,24 @@
           function () {
             SkeletonAnnotations.defaultNewNeuronName = $(this).val();
           }));
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createInputSetting(
+              "Personal tag set",
+              SkeletonAnnotations.Settings[SETTINGS_SCOPE].personal_tag_set.join(', '),
+              "This comma separated list of tags represents a common set of " +
+              "tags that can be applied in one go to a node.",
+              function() {
+                SkeletonAnnotations.Settings
+                    .set(
+                      'personal_tag_set',
+                      this.value.split(',').map(function(t) {
+                        return t.trim();
+                      }),
+                      SETTINGS_SCOPE);
+              }),
+          SkeletonAnnotations.Settings,
+          'personal_tag_set',
+          SETTINGS_SCOPE));
 
       ds.append(CATMAID.DOM.createCheckboxSetting("Merge annotations of " +
         "single-node skeletons without asking",

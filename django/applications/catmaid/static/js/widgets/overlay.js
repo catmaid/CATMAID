@@ -71,6 +71,9 @@ SkeletonAnnotations.Settings = new CATMAID.Settings(
         auto_annotations: {
           default: []
         },
+        personal_tag_set: {
+          default: []
+        }
       },
       migrations: {}
     });

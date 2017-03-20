@@ -850,7 +850,7 @@
     }));
 
     this.addAction(new CATMAID.Action({
-      helpText: "Tag the active node",
+      helpText: "Tag the active node (<kbd>Shift</kbd>: Remove all tags)",
       keyShortcuts: { "T": [ 84 ] },
       run: function (e) {
         if (!CATMAID.mayEdit())

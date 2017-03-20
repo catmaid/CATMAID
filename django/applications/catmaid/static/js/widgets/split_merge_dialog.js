@@ -193,25 +193,27 @@
       if (this.in_merge_mode) {
         var skeleton = this.webglapp.space.content.skeletons[this.model1_id],
             skeleton2 = this.webglapp.space.content.skeletons[this.model2_id],
-            count1 = skeleton.createArbor().countNodes(),
-            count2 = skeleton2.createArbor().countNodes(),
-            over_count, under_count, over_skeleton, under_skeleton;
+            arbor1 = skeleton.createArbor(),
+            arbor2 = skeleton2.createArbor(),
+            length1 = arbor1.cableLength(skeleton.getPositions()),
+            length2 = arbor2.cableLength(skeleton2.getPositions()),
+            over_length, under_length, over_skeleton, under_skeleton;
 
-        var keepOrder = count1 >= count2 || !this.autoOrder;
+        var keepOrder = length1 >= length2 || !this.autoOrder;
 
         // Find larger skeleton
         if (keepOrder) {
           this.over_model_id = this.model1_id;
           this.under_model_id = this.model2_id;
-          over_count = count1;
-          under_count = count2;
+          over_length = length1;
+          under_length = length2;
           over_skeleton = skeleton;
           under_skeleton = skeleton2;
         } else {
           this.over_model_id = this.model2_id;
           this.under_model_id = this.model1_id;
-          over_count = count2;
-          under_count = count1;
+          over_length = length2;
+          under_length = length1;
           over_skeleton = skeleton2;
           under_skeleton = skeleton;
         }
@@ -230,12 +232,14 @@
           '" into "' + winningModel.baseName + '"';
         $(this.dialog).dialog('option', 'title', title);
 
-        // Update titles and name over count model first
-        titleBig.appendChild(document.createTextNode(over_count + " nodes in winning skeleton"));
+        // Update titles and name winning model first
+        titleBig.appendChild(document.createTextNode(Math.round(over_length) +
+            "nm cable in winning skeleton"));
         titleBig.setAttribute('title', winningModel.baseName);
-        titleSmall.appendChild(document.createTextNode(under_count + " nodes in losing skeleton"));
+        titleSmall.appendChild(document.createTextNode(Math.round(under_length) +
+            "nm cable in losing skeleton"));
         titleSmall.setAttribute('title', losingModel.baseName);
-        // Color the small and big node count boxes
+        // Color the small and big title boxes
         colorBig.style.backgroundColor = winningColor.getStyle();
         colorSmall.style.backgroundColor = losingColor.getStyle();
         // Add annotation for name of neuron that gets joined into the other (i.e.
@@ -252,20 +256,21 @@
       } else {
         var skeleton = this.webglapp.space.content.skeletons[this.model1_id],
             arbor = skeleton.createArbor(),
-            count1 = arbor.subArbor(this.splitNodeId).countNodes(),
-            count2 = arbor.countNodes() - count1,
-            over_count, under_count,
+            positions = skeleton.getPositions(),
+            length1 = arbor.subArbor(this.splitNodeId).cableLength(positions),
+            length2 = arbor.cableLength(positions) - length1,
+            over_length, under_length,
             model_name = this.models[this.model1_id].baseName;
-        this.upstream_is_small = count1 > count2;
+        this.upstream_is_small = length1 > length2;
 
         if (this.upstream_is_small) {
-          over_count = count1;
-          under_count = count2;
+          over_length = length1;
+          under_length = length2;
           titleBig.setAttribute('title', "New");
           titleSmall.setAttribute('title', model_name);
         } else {
-          over_count = count2;
-          under_count = count1;
+          over_length = length2;
+          under_length = length1;
           titleBig.setAttribute('title', model_name);
           titleSmall.setAttribute('title', "New");
         }
@@ -273,9 +278,11 @@
         var title = 'Split skeleton "' + model_name + '"';
         $(this.dialog).dialog('option', 'title', title);
         // Add titles
-        titleBig.appendChild(document.createTextNode(over_count + " nodes in remaining skeleton"));
-        titleSmall.appendChild(document.createTextNode(under_count + " nodes in new skeleton"));
-        // Color the small and big node count boxes
+        titleBig.appendChild(document.createTextNode(Math.round(over_length) +
+              "nm cable in remaining skeleton"));
+        titleSmall.appendChild(document.createTextNode(Math.round(under_length) +
+              "nm cable in new skeleton"));
+        // Color the small and big title boxes
         colorBig.style.backgroundColor = '#' + skeleton.getActorColorAsHTMLHex();
         var bc = this.webglapp.getSkeletonColor(this.model1_id);
         // Convert the big arbor color to 8 bit and weight it by 0.5. Since the 3D

@@ -17,6 +17,10 @@ Miscellaneous:
   can be configured through the Settings Widget, using the "Personal tag set"
   field in the Tracing section.
 
+- Split and merge dialog: instead of selecting the skeleton/part with more nodes
+  as default "winning" skeleton, the skeleton with a greater cable length is now
+  chosen as default "winning" skeleton.
+
 
 ### Bug fixes
 

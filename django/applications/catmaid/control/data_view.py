@@ -1,5 +1,6 @@
 import json
 import re
+import six
 
 from collections import defaultdict
 
@@ -15,7 +16,7 @@ from taggit.models import TaggedItem
 from catmaid.control.common import makeJSON_legacy_list
 from catmaid.control.project import get_project_qs_for_user
 from catmaid.models import (Class, DataView, DataViewType, Project, Stack,
-        ProjectStack, StackGroup)
+        ProjectStack, StackGroup, StackStackGroup)
 
 class ExProject:
     """ A wrapper around the Project model to include additional
@@ -162,6 +163,8 @@ def get_data_view( request, data_view_id ):
     # Build a stack index
     stack_index = defaultdict(list)
     stacks_of = defaultdict(list)
+    stack_set_of = defaultdict(set)
+    projects_of_stack = defaultdict(set)
 
     if show_stacks:
         for p in projects:
@@ -171,16 +174,36 @@ def get_data_view( request, data_view_id ):
             for s in stacks:
                 stack_index[s.id] = s
                 stacks_of[p.id].append(s)
+                if show_stackgroups:
+                    stack_set_of[p.id].add(s.id)
+                    projects_of_stack[s.id].add(p.id)
 
     # Build a stack group index, if stack groups should be made available
-    stackgroup_index = defaultdict(list)
+    stackgroup_index = {}
     stackgroups_of = defaultdict(list)
-    if False and show_stackgroups:
-        # Get all
-        stackgroups = StackGroup.objects.filter(project__in=projects)
-        for sg in stackgroups:
-            stackgroup_index[sg.id] = sg
-            stackgroups_of[sg.project_id].append(sg)
+    if show_stackgroups:
+        stackgroup_links = StackStackGroup.objects.all().prefetch_related('stack', 'stack_group')
+        stackgroup_members = defaultdict(set)
+        for sgl in stackgroup_links:
+            stackgroup_index[sgl.stack_group_id] = sgl.stack_group
+            stackgroup_members[sgl.stack_group_id].add(sgl.stack.id)
+        for sg, members in six.iteritems(stackgroup_members):
+            # Only accept stack groups of which all member stacks are linked to
+            # the same project.
+            member_project_ids = set()
+            project_member_ids = defaultdict(set)
+            for m in members:
+                project_ids = projects_of_stack.get(m, [])
+                member_project_ids.update(project_ids)
+                for pid in project_ids:
+                    project_member_ids[pid].add(m)
+            # Find projects where all stacks are linked to
+            for p in member_project_ids:
+                project_members = project_member_ids[p]
+                # If the stack group members in this project are all stack group
+                # members, this stack group is available to the project
+                if not members.difference(project_members):
+                    stackgroups_of[p].append(stackgroup_index[sg])
 
     # Extend the project list with catalogue information
     if 'catalogue_link' in config:

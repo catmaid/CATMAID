@@ -6,9 +6,9 @@ from __future__ import unicode_literals
 import os
 import sys
 import django.conf.global_settings as DEFAULT_SETTINGS
-import utils
 import logging
-import pipelinefiles
+import mysite.pipelinefiles as pipelinefiles
+import mysite.utils as utils
 import six
 
 try:

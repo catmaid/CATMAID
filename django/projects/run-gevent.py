@@ -10,9 +10,9 @@ monkey.patch_all()
 from django.core.wsgi import get_wsgi_application
 from gevent.wsgi import WSGIServer
 import os, sys
-import settings
+import mysite.settings as settings
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "mysite.settings")
 
 # Configure host and port for the WSGI server
 host = getattr(settings, 'WSGI_HOST', '127.0.0.1')

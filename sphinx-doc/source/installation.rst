@@ -239,12 +239,11 @@ in ``/home/alice/catmaid/django/projects/mysite``.
 5. Create the database tables
 #############################
 
-The commands in the following sections are all based on the
-Django site's admin script ``manage.py``, which would be in
-``/home/alice/catmaid/django/projects/mysite``, so these
-instructions assume that you've changed into that directory::
+The commands in the following sections are all based on the Django site's admin
+script ``manage.py``, which would be in ``/home/alice/catmaid/django/projects``,
+so these instructions assume that you've changed into that directory::
 
-    cd /home/alice/catmaid/django/projects/mysite
+    cd /home/alice/catmaid/django/projects
 
 Now create all required tables and bring the database schema up to date
 for applications that mange changes to their tables with South::

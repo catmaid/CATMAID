@@ -13,7 +13,7 @@ Two management commands for Django's ``manage.py`` tool are available in CATMAID
 that allow exporting and importing neuron tracing data. They are called
 ``catmaid_export_data`` and ``catmaid_import_data``. To use them, you have to be
 in the ``virtualenv`` and it is probably easiest to work from the
-``django/projects/mysite/`` directory.
+``django/projects/`` directory.
 
 Exporting data
 ^^^^^^^^^^^^^^

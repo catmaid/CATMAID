@@ -1,7 +1,7 @@
 # If you don't have settings.py in this directory, you should copy
 # this file to settings.py and customize it.
 
-from settings_base import *
+from mysite.settings_base import *
 import hashlib
 import djcelery
 

@@ -343,7 +343,7 @@ these checks are easy to run locally.
 
 Django tests are run through Django's admin commands::
 
-        cd /<path_to_catmaid_install>/django/projects/mysite
+        cd /<path_to_catmaid_install>/django/projects
         ./manage.py test catmaid.tests
 
 JSHint can be `installed from NPM or your platform's package manager

@@ -219,7 +219,7 @@ script that can be used with the example provided there would look like this
   export PYTHONPATH=$DJANGODIR:$PYTHONPATH
 
   # Run Celery
-  exec ./mysite/manage.py celery worker -l info -E
+  exec ./manage.py celery worker -l info -E
 
 Init
 ^^^^
@@ -242,7 +242,7 @@ the Celery documentation)::
   #CELERYD_NODES="w1 w2 w3"
 
   # Where to chdir at start. (CATMAID Django project dir.)
-  CELERYD_CHDIR="/path/to/CATMAID/django/projects/mysite/"
+  CELERYD_CHDIR="/path/to/CATMAID/django/projects/"
 
   # Python interpreter from environment. (in CATMAID Django dir)
   ENV_PYTHON="/path/to/CATMAID/django/env/bin/python"

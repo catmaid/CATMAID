@@ -153,7 +153,7 @@ def get_data_view( request, data_view_id ):
 
     show_stacks = config.get('show_stacks', True)
     show_stackgroups = config.get('show_stackgroups', True)
-    show_mirrors = config.get('show_stackgroups', True)
+    show_mirrors = config.get('show_mirrors', True)
 
     # Make sure we get all needed stacks in the first query
     if show_stacks:

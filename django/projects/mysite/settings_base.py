@@ -6,10 +6,11 @@ from __future__ import unicode_literals
 import os
 import sys
 import django.conf.global_settings as DEFAULT_SETTINGS
-import utils
 import logging
-import pipelinefiles
 import six
+
+from .pipelinefiles import STYLESHEETS, JAVASCRIPT, non_pipeline_js
+from .utils import relative, get_version
 
 try:
     import psycopg2
@@ -24,7 +25,7 @@ except ImportError:
         raise ImportError("Need either psycopg2 or psycopg2cffi")
 
 # Make Django root folder available
-PROJECT_ROOT = utils.relative('..', '..')
+PROJECT_ROOT = relative('..', '..')
 # Add all subdirectories of project, applications and lib to sys.path
 for subdirectory in ('projects', 'applications', 'lib'):
     full_path = os.path.join(PROJECT_ROOT, subdirectory)
@@ -269,19 +270,19 @@ PIPELINE = {
     # this, yet.
     'DISABLE_WRAPPER': True,
     # All static files that are run through pipeline
-    'STYLESHEETS': pipelinefiles.STYLESHEETS,
-    'JAVASCRIPT': pipelinefiles.JAVASCRIPT
+    'STYLESHEETS': STYLESHEETS,
+    'JAVASCRIPT': JAVASCRIPT
 }
 
 # Make a list of files that should be included directly (bypassing pipeline)
 # and a list of pipeline identifiers for all others.
-NON_COMPRESSED_FILES = list(six.itervalues(pipelinefiles.non_pipeline_js))
-NON_COMPRESSED_FILE_IDS = list(six.iterkeys(pipelinefiles.non_pipeline_js))
+NON_COMPRESSED_FILES = list(six.itervalues(non_pipeline_js))
+NON_COMPRESSED_FILE_IDS = list(six.iterkeys(non_pipeline_js))
 COMPRESSED_FILE_IDS = list(six.moves.filter(lambda f: f not in NON_COMPRESSED_FILE_IDS,
-        pipelinefiles.JAVASCRIPT.keys()))
+        JAVASCRIPT.keys()))
 
 # Make Git based version of CATMAID available as a settings field
-VERSION = utils.get_version()
+VERSION = get_version()
 
 # FlyTEM rendering service. To activate add the following lines to your
 # settings.py file:

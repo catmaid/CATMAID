@@ -3,7 +3,11 @@
 
 ### Notes
 
-- Python 3.5 is now experimentally supported.
+- Python 3.5 is now experimentally supported. Most functionality should work
+  without problems. To test, make sure to update `settings.py` by 1. replacing
+  `from settings_base import *` with `from mysite.settings_base import *` and 2.
+  replace the fragment `hashlib.md5(CATMAID_URL)` with
+  'hashlib.md5(CATMAID_URL.encode('utf-8'))'.
 
 
 ### Features and enhancements

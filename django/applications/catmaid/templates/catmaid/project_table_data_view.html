@@ -18,10 +18,10 @@
 	<tr>
 		<td class="projectname">{{ p.title }}</td>
 		{% for sg in stackgroups_of|get:p.id|dictsort:'id' %}
-				<td class="stackname">
+				<td class="stackname, stackgroup">
 				<a href="?pid={{ p.id }}&tool=navigator&sg={{ sg.id }}"
 					onclick="CATMAID.openStackGroup({{p.id}}, {{sg.id}}, false);return false"
-					title="Stack group #{{ sg.id }}">{{ sg.name }}</a>
+					title="Stack group #{{ sg.id }}">{{ sg.title }}</a>
 			</td>
 		{% endfor %}
 		{% for s in stacks_of|get:p.id|dictsort:'id' %}
@@ -57,7 +57,7 @@
 			{% if show_mirrors %}
 				<dl>
 				{% for m in s.stackmirror_set.all %}
-					<dd>
+					<dd data-type="stack">
 						<a href="?pid={{ p.id }}&tool=navigator&sid0={{ s.id }}&s0=1"
 								onclick="CATMAID.openProjectStack({{p.id}}, {{s.id}}, undefined, {{forloop.counter0}});return false">{{ m.title }}</a>
 					</dd>

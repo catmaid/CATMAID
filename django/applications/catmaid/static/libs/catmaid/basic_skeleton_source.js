@@ -18,6 +18,10 @@
     var register = options.register === undefined ? true : options.register;
     CATMAID.SkeletonSource.call(this, register);
 
+    if (register) {
+      CATMAID.skeletonListSources.updateGUI();
+    }
+
     this.skeletonModels = {};
     // Elements can be groups or single skeletons. A group is represented with
     // its name in here. If it is present as a field in the groups object, it is

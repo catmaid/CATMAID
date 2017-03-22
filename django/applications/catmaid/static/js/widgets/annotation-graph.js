@@ -31,6 +31,11 @@
     return "Annotation graph " + this.widgetID;
   };
 
+  AnnotationGraph.prototype.destroy = function() {
+    this.unregisterInstance();
+    this.skeletonSource.destroy();
+  };
+
   AnnotationGraph.prototype.getWidgetConfiguration = function() {
     var self = this;
 

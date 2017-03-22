@@ -19,6 +19,7 @@ from django.db.models import Q
 from django.db.models.signals import pre_save, post_save
 from django.dispatch import receiver
 from django.utils import timezone
+from django.utils.encoding import python_2_unicode_compatible
 
 from guardian.shortcuts import get_objects_for_user
 from taggit.managers import TaggableManager
@@ -39,7 +40,7 @@ class UserRole(object):
     Annotate = 'Annotate'
     Browse = 'Browse'
 
-
+@python_2_unicode_compatible
 class Project(models.Model):
     title = models.TextField()
     comment = models.TextField(blank=True, null=True)
@@ -56,7 +57,7 @@ class Project(models.Model):
             ("can_browse", "Can browse projects")
         )
 
-    def __unicode__(self):
+    def __str__(self):
         return self.title
 
 def on_project_save(sender, instance, created, raw, **kwargs):
@@ -88,6 +89,7 @@ TILE_SOURCE_TYPES = (
     (9, '9: FlixServer tiles')
 )
 
+@python_2_unicode_compatible
 class Stack(models.Model):
     title = models.TextField(help_text="Descriptive title of this stack.")
     dimension = Integer3DField(help_text="The pixel dimensionality of the "
@@ -114,10 +116,11 @@ class Stack(models.Model):
     class Meta:
         db_table = "stack"
 
-    def __unicode__(self):
+    def __str__(self):
         return self.title
 
 
+@python_2_unicode_compatible
 class StackMirror(models.Model):
     stack = models.ForeignKey(Stack, on_delete=models.CASCADE)
     title = models.TextField(help_text="Descriptive title of this stack mirror.")
@@ -140,10 +143,11 @@ class StackMirror(models.Model):
         db_table = "stack_mirror"
         ordering = ('position',)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.stack.title + " (" + self.title + ")"
 
 
+@python_2_unicode_compatible
 class ProjectStack(models.Model):
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     stack = models.ForeignKey(Stack, on_delete=models.CASCADE)
@@ -153,7 +157,7 @@ class ProjectStack(models.Model):
     class Meta:
         db_table = "project_stack"
 
-    def __unicode__(self):
+    def __str__(self):
         return self.project.title + " -- " + self.stack.title
 
 
@@ -184,6 +188,7 @@ def create_concept_sub_table(table_name):
                     FOR EACH ROW EXECUTE PROCEDURE on_edit()''' % (table_name, table_name))
 
 
+@python_2_unicode_compatible
 class Class(models.Model):
     # Repeat the columns inherited from 'concept'
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -197,7 +202,7 @@ class Class(models.Model):
     class Meta:
         db_table = "class"
 
-    def __unicode__(self):
+    def __str__(self):
         return self.class_name
 
 
@@ -398,7 +403,7 @@ class ClassInstanceClassInstance(models.Model):
     class Meta:
         db_table = "class_instance_class_instance"
 
-
+@python_2_unicode_compatible
 class BrokenSlice(models.Model):
     stack = models.ForeignKey(Stack, on_delete=models.CASCADE)
     index = models.IntegerField()
@@ -406,7 +411,7 @@ class BrokenSlice(models.Model):
     class Meta:
         db_table = "broken_slice"
 
-    def __unicode__(self):
+    def __str__(self):
         return "Broken section {} in stack {}".format(self.index, self.stack)
 
 
@@ -827,16 +832,18 @@ class StackClassInstance(models.Model):
         db_table = "stack_class_instance"
 
 
+@python_2_unicode_compatible
 class StackGroupRelation(models.Model):
     name = models.TextField(max_length=80)
 
     class Meta:
         db_table = 'stack_group_relation'
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name
 
 
+@python_2_unicode_compatible
 class StackGroup(models.Model):
     title = models.TextField(default="", max_length=80)
     comment = models.TextField(blank=True, null=True,
@@ -845,7 +852,7 @@ class StackGroup(models.Model):
     class Meta:
         db_table = 'stack_group'
 
-    def __unicode__(self):
+    def __str__(self):
         return self.title
 
 
@@ -914,6 +921,7 @@ class Log(UserFocusedModel):
         db_table = "log"
 
 
+@python_2_unicode_compatible
 class DataViewType(models.Model):
     title = models.TextField()
     code_type = models.TextField()
@@ -922,7 +930,7 @@ class DataViewType(models.Model):
     class Meta:
         db_table = "data_view_type"
 
-    def __unicode__(self):
+    def __str__(self):
         return self.title
 
 
@@ -973,6 +981,7 @@ class DataView(models.Model):
                 dv.save()
 
 
+@python_2_unicode_compatible
 class UserProfile(models.Model):
     """ A class that stores a set of custom user preferences.
     See: http://digitaldreamer.net/blog/2010/12/8/custom-user-profile-and-extend-user-admin-django/
@@ -988,7 +997,7 @@ class UserProfile(models.Model):
     show_roi_tool = models.BooleanField(default=False)
     color = RGBAField(default=distinct_user_color)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.user.username
 
     # Fix a problem with duplicate keys when new users are added.

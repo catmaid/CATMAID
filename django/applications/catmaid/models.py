@@ -406,6 +406,9 @@ class BrokenSlice(models.Model):
     class Meta:
         db_table = "broken_slice"
 
+    def __unicode__(self):
+        return "Broken section {} in stack {}".format(self.index, self.stack)
+
 
 class ClassClass(models.Model):
     # Repeat the columns inherited from 'relation_instance'

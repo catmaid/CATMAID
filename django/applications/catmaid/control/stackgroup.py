@@ -13,7 +13,7 @@ def get_stackgroup_info(request, project_id, stackgroup_id):
     stackgroup = StackGroup.objects.get(id=stackgroup_id)
     stackgroup_links = StackStackGroup.objects \
         .filter(stack_group=stackgroup_id) \
-        .order_by('id') \
+        .order_by('position') \
         .select_related('group_relation')
     stacks = [l.stack_id for l in stackgroup_links]
 

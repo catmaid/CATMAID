@@ -1533,20 +1533,6 @@
     }
   },
   {
-    "pk": 2476,
-    "model": "catmaid.relation",
-    "fields": {
-      "description": null,
-      "isreciprocal": false,
-      "creation_time": "2011-10-29T04:33:34.263Z",
-      "uri": null,
-      "edition_time": "2011-10-29T04:33:34.263Z",
-      "project": 5,
-      "relation_name": "has_view",
-      "user": 3
-    }
-  },
-  {
     "pk": 1,
     "model": "catmaid.stackstackgroup",
     "fields": {

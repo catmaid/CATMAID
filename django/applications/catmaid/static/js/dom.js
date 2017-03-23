@@ -203,20 +203,18 @@
    * assigned style classes and a click handler.
    */
   DOM.addCaptionButton = function(win, iconClass, title, handler) {
-    var toggle = document.createElement('span');
+    var toggle = document.createElement('i');
     toggle.setAttribute('class', iconClass);
+    toggle.classList.add('windowButton');
     toggle.onmousedown = handler;
 
-    var wrapper = document.createElement('span');
-    wrapper.setAttribute('class', 'ui-state-focus windowButton');
-    wrapper.appendChild(toggle);
     if (title) {
-      wrapper.setAttribute('title', title);
+      toggle.setAttribute('title', title);
     }
 
-    $('.stackTitle', win.getFrame()).after(wrapper);
+    $('.stackTitle', win.getFrame()).after(toggle);
 
-    return wrapper;
+    return toggle;
   };
 
   /**
@@ -235,7 +233,7 @@
         CATMAID.makeDocURL('contributing.html#in-client-documentation') +
         '">letting us know or contributing a fix.</a></p>';
     DOM.addCaptionButton(win,
-        'ui-icon ui-icon-help',
+        'fa fa-question',
         'Show help documentation for this widget',
         function () {
           WindowMaker.create('html', {title: title,
@@ -250,7 +248,7 @@
    */
   DOM.addButtonDisplayToggle = function(win, title) {
     title = title || 'Show and hide widget controls';
-    DOM.addCaptionButton(win, 'ui-icon ui-icon-gear', title, function() {
+    DOM.addCaptionButton(win, 'fa fa-gear', title, function() {
       var frame = $(this).closest('.' + CMWNode.FRAME_CLASS);
       var panels = $('.buttonpanel', frame);
       if (panels.length > 0) {
@@ -299,7 +297,7 @@
     // Make a update function that can be referred to from handlers
     var update = toggle.bind(window, true);
 
-    return DOM.addCaptionButton(win, 'ui-icon ui-icon-link', title, function() {
+    return DOM.addCaptionButton(win, 'fa fa-link', title, function() {
       // Do a regular toggle update by default
       var opened = toggle();
 

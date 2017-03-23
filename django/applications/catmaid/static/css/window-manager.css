@@ -101,4 +101,13 @@ div.windowContent[data-msg]:before {
   cursor: pointer;
   border: none;
   background: none;
+  margin: 0.2em;
+  color: #a0a0a0;
+  background: none;
+  padding: 2px 3px 2px 2px;
+}
+
+.stackInfo_selected .windowButton {
+  color: #0000ff;
+  background: none;
 }

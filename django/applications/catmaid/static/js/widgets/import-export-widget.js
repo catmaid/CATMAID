@@ -51,20 +51,20 @@ the selected neurons.
     <a id='export-treenode-archive' href='#'>
             <strong>Treenode archive</strong></a><br />
     The generated <em>tar.gz</em> archive contains one folder for every
-    selected neuron, named after it's ID. Such a folder contains image files for
+    selected neuron, named after its ID. Such a folder contains image files for
     every treenode of the neuron's skeleton(s), named <em>treenode-id.tiff</em>.
     Along those files a meta data file, named <em>metadata.csv</em>, is created.
     It contains a table with meta data for every treenode ID (first column). The
     remaining columns are <em>parent-id</em>, <em># presynaptic sites</em>,
     <em># postsynaptic sites</em>, <em>x</em>, <em>y</em> and <em>z</em>. The
-    root node has no parent and it's entry will have <em>null</em> in the
+    root node has no parent and its entry will have <em>null</em> in the
     corresponding field in the meta data file.
   </li>
   <li>
     <a id='export-connector-archive' href='#'>
             <strong>Connector archive</strong></a><br />
     The generated <em>tar.gz</em> archive contains one folder for every
-    selected neuron, named after it's ID. Such a folder contains two folders:
+    selected neuron, named after its ID. Such a folder contains two folders:
     <em>presynaptic</em> and <em>postsynaptic</em> for the respective connector
     types. These in turn contain one folder for each connector, named after
     their ID. The actual images are stored in such a connector folder. They are

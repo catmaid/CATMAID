@@ -199,7 +199,7 @@ class Postgis3dNodeProvider(object):
                 EXECUTE get_treenodes_postgis_3d(%(project_id)s,
                     %(left)s, %(top)s, %(z1)s, %(right)s, %(bottom)s, %(z2)s,
                     %(halfz)s, %(halfzdiff)s, %(limit)s,
-                    %(sanitized_treenode_ids))
+                    %(sanitized_treenode_ids)s)
             ''', params)
         else:
             cursor.execute(self.treenode_query_psycopg, params)

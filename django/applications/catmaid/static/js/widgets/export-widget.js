@@ -20,6 +20,9 @@ summary statistics.
 
 <ul>
 
+  <li><a id='export-swc' href='#'><strong>SWC</strong></a><br />
+    Export active skeleton as SWC file.</li>
+
   <li><a id='export-networkx' href='#'><strong>NetworkX JSON graph</strong></a><br />
     Using Python and <a href target='_new' href='http://networkx.github.io/documentation/latest/reference/readwrite.json_graph.html'>NetworkX</a>, you can import the returned file in your Python shell for further analysis.<br />
     <pre>
@@ -87,12 +90,14 @@ the selected neurons.
 
         var $container = $(container);
 
+        $container.find('#export-swc').click(export_swc);
+
         // Bind NetworkX JSON link to handler
         $container.find('#export-networkx').click(function() {
           graphexport_nxjson();
         });
         // Bind NeuroML link to handler
-       $container.find('#export-neuroml181').click(function() {
+        $container.find('#export-neuroml181').click(function() {
           graphexport_NeuroML181();
         });
         // Bind treenode export link to handler
@@ -136,6 +141,10 @@ the selected neurons.
       });
     };
     dialog.show();
+  }
+
+  function export_swc() {
+    SkeletonAnnotations.exportSWC();
   }
 
   function graphexport_nxjson() {

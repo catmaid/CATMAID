@@ -827,18 +827,6 @@
     }));
 
     this.addAction(new CATMAID.Action({
-      helpText: "Export to SWC",
-      buttonName: "exportswc",
-      buttonID: 'trace_button_exportswc',
-      run: function (e) {
-        if (!CATMAID.mayView())
-          return false;
-        SkeletonAnnotations.exportSWC();
-        return true;
-      }
-    }));
-
-    this.addAction(new CATMAID.Action({
       helpText: "Switch between a terminal and its connector",
       keyShortcuts: { "S": [ 83 ] },
       run: function (e) {

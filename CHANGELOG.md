@@ -25,6 +25,9 @@ Miscellaneous:
   as default "winning" skeleton, the skeleton with a greater cable length is now
   chosen as default "winning" skeleton.
 
+- The SWC export button in the Tracing Tool toolbar has been replaced with an
+  Export Widget entry.
+
 
 ### Bug fixes
 

@@ -26,9 +26,10 @@ from formtools.wizard.views import SessionWizardView
 from guardian.models import Permission
 from guardian.shortcuts import get_perms_for_model, assign_perm
 
-from catmaid.models import (Class, Relation, ClassClass, ClassInstance, Project,
-        ClassInstanceClassInstance, Stack, StackGroup, StackStackGroup, ProjectStack,
-        StackClassInstance, StackGroupRelation, StackMirror, TILE_SOURCE_TYPES)
+from catmaid.models import (BrokenSlice, Class, Relation, ClassClass,
+        ClassInstance, Project, ClassInstanceClassInstance, Stack, StackGroup,
+        StackStackGroup, ProjectStack, StackClassInstance, StackGroupRelation,
+        StackMirror, TILE_SOURCE_TYPES)
 from catmaid.fields import Double3D
 from catmaid.control.common import urljoin
 from catmaid.control.classification import get_classification_links_qs, \
@@ -141,6 +142,7 @@ class PreStack(object):
         self.description = info_object.get('description', '')
         self.canary_location = info_object.get('canary_location')
         self.placeholder_color = info_object.get('placeholder_color')
+        self.broken_slices = info_object.get('broken_slices')
 
         # Mirrors are kept in a separate data structure
         self.mirrors = [PreMirror(md, project_url) for md in info_object.get('mirrors', [])]
@@ -1180,6 +1182,13 @@ def import_projects( user, pre_projects, tags, permissions,
                 if not stack:
                     stack = Stack.objects.create(**stack_properties)
                     stacks.append(stack)
+
+                # First, remove all broken slice information, if any. Then add
+                # broken slices if available.
+                BrokenSlice.objects.filter(stack=stack).delete()
+                if s.broken_slices:
+                    for bs in s.broken_slices:
+                        BrokenSlice.objects.create(stack=stack, index=bs)
 
                 # Link to ontology, if wanted
                 if s.classification:

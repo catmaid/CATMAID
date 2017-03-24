@@ -2917,7 +2917,7 @@
 
           // For each source
           edges[target].forEach(function(edge) {
-            var source = edge.data('source');
+            var source = parseInt(edge.data('source'), 10);
 
             // Find out how many total synapses are thrown away
             // when cutting the arbor at the synapses that make up

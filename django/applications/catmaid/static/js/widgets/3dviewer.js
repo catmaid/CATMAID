@@ -43,7 +43,7 @@
 
     // Listen to changes of the active node
     SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
-      this.staticUpdateActiveNodePosition, this);
+      this.updateActiveNode, this);
 
     CATMAID.Nodes.on(CATMAID.Nodes.EVENT_NODE_RADIUS_CHANGED,
         this.handleRadiusChange, this);
@@ -80,7 +80,7 @@
 
   WebGLApplication.prototype.destroy = function() {
     SkeletonAnnotations.off(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
-        this.staticUpdateActiveNodePosition, this);
+        this.updateActiveNode, this);
     CATMAID.Nodes.off(CATMAID.Nodes.EVENT_NODE_RADIUS_CHANGED,
         this.handleRadiusChange, this);
     CATMAID.Skeletons.off(CATMAID.Skeletons.EVENT_SKELETON_CHANGED,
@@ -1358,6 +1358,10 @@
     if (activeNode.mesh.visible || activeNode.mesh.visible !== activeNodeDisplayed) {
       this.space.render();
     }
+    // Center the active node, if wanted
+    if (this.options.follow_active) {
+      this.look_at_active_node();
+    }
   };
 
   WebGLApplication.prototype.handleRadiusChange = function(updatedNodes) {
@@ -1383,16 +1387,6 @@
         this.updateSkeleton(skeletonId, true);
       }
     }
-  };
-
-  WebGLApplication.prototype.staticUpdateActiveNodePosition = function() {
-    this.getInstances().map(function(instance) {
-      instance.updateActiveNode();
-      // Center the active node, if wanted
-      if (instance.options.follow_active) {
-        instance.look_at_active_node();
-      }
-    });
   };
 
   WebGLApplication.prototype.hasSkeleton = function(skeleton_id) {

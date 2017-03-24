@@ -182,6 +182,9 @@ var WindowMaker = new function()
     config.createContent.call(instance, content);
     container.appendChild(content);
 
+    // Add access to window settings
+    DOM.addWindowConfigButton(win);
+
     // Register to events
     var destroy = instance.destroy ? instance.destroy.bind(instance) : undefined;
     var resize = instance.resize ? instance.resize.bind(instance) : undefined;
@@ -228,6 +231,7 @@ var WindowMaker = new function()
     bar.setAttribute('class', 'buttonpanel');
     DOM.addSourceControlsToggle(win, WA);
     DOM.addButtonDisplayToggle(win);
+    DOM.addWindowConfigButton(win);
 
     var tabs = DOM.addTabGroup(bar, WA.widgetID, ['Main', 'View', 'Shading',
         'Skeleton filters', 'View settings', 'Stacks', 'Shading parameters',
@@ -982,6 +986,7 @@ var WindowMaker = new function()
     var win = new CMWWindow("Slice Info Widget");
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";
+    DOM.addWindowConfigButton(win);
 
     var container = createContainer("table-container");
     content.appendChild( container );
@@ -1013,6 +1018,7 @@ var WindowMaker = new function()
     var content = win.getFrame();
     content.classList.add('synapse-fractions');
     content.style.backgroundColor = '#ffffff';
+    DOM.addWindowConfigButton(win);
 
     var bar = document.createElement('div');
     bar.setAttribute("id", "synapse_fractions_buttons" + SF.widgetID);
@@ -1116,6 +1122,7 @@ var WindowMaker = new function()
     bar.setAttribute("id", "synapse_plot_buttons" + SP.widgetID);
     bar.setAttribute('class', 'buttonpanel');
     DOM.addButtonDisplayToggle(win);
+    DOM.addWindowConfigButton(win);
 
     var tabs = DOM.addTabGroup(bar, SP.widgetID, ['Main', 'Options']);
 
@@ -1236,6 +1243,7 @@ var WindowMaker = new function()
     DOM.addButtonDisplayToggle(win);
     DOM.addHelpButton(win, 'Help: ' + GG.getName(), "<h3>Visualize connecticity networks</h3>" +
         "<h4>How to...</h4><p><em>Hide edges/links:</em> Select an edge and use the <em>Hide</em> button in the <em>Selection</em> tab.</p>");
+    DOM.addWindowConfigButton(win);
 
     var tabs = DOM.addTabGroup(bar, GG.widgetID, ['Main', 'Grow', 'Graph',
         'Selection', 'Subgraphs', 'Align', 'Export']);
@@ -1421,6 +1429,7 @@ var WindowMaker = new function()
     buttons.setAttribute('class', 'buttonpanel');
     DOM.addSourceControlsToggle(win, GP);
     DOM.addButtonDisplayToggle(win);
+    DOM.addWindowConfigButton(win);
 
     buttons.appendChild(document.createTextNode('From'));
     buttons.appendChild(CATMAID.skeletonListSources.createSelect(GP));
@@ -1541,6 +1550,7 @@ var WindowMaker = new function()
     buttons.setAttribute('id', 'venn_diagram_buttons' + VD.widgetID);
     buttons.setAttribute('class', 'buttonpanel');
     DOM.addButtonDisplayToggle(win);
+    DOM.addWindowConfigButton(win);
 
     buttons.appendChild(document.createTextNode('From'));
     buttons.appendChild(CATMAID.skeletonListSources.createSelect(VD));
@@ -1588,6 +1598,7 @@ var WindowMaker = new function()
     var win = new CMWWindow("Assembly graph Widget");
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";
+    DOM.addWindowConfigButton(win);
 
     var contentbutton = document.createElement('div');
     contentbutton.setAttribute("id", 'assembly_graph_window_buttons');
@@ -1661,6 +1672,7 @@ var WindowMaker = new function()
     buttons.setAttribute('id', 'connectivity_graph_plot_buttons' + GP.widgetID);
     buttons.setAttribute('class', 'buttonpanel');
     DOM.addButtonDisplayToggle(win);
+    DOM.addWindowConfigButton(win);
 
     var xml = document.createElement('input');
     xml.setAttribute("type", "button");
@@ -1695,6 +1707,7 @@ var WindowMaker = new function()
     var win = new CMWWindow(OS.getName());
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";
+    DOM.addWindowConfigButton(win);
 
     var container = createContainer("ontology-search" + OS.widgetID);
     container.classList.add('ontology_search');
@@ -1865,6 +1878,7 @@ var WindowMaker = new function()
   var createSearchWindow = function()
   {
     var win = new CMWWindow( "Search" );
+    DOM.addWindowConfigButton(win);
     var container = self.setSearchWindow(win);
 
     addListener(win, container);
@@ -1881,6 +1895,7 @@ var WindowMaker = new function()
     var win = new CMWWindow(NN.getName());
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";
+    DOM.addWindowConfigButton(win);
 
     var container = createContainer("neuron-navigator" + NN.widgetID);
     container.classList.add('navigator_widget');

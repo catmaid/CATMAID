@@ -241,6 +241,63 @@
         });
   };
 
+
+  // A toggle function that also allows to recreate the UI.
+  function toggleWindowConfigurationPanel(win, recreate) {
+    // Create controls for the window settings if not present, otherwise remove
+    // them.
+    var frame = win.getFrame();
+    var panel = frame.querySelector('.window-settings');
+    var show = !panel;
+    var originalTitle = win.getTitle();
+
+    if (!show) {
+      panel.remove();
+    }
+
+    if (show || recreate) {
+      // Create new panel
+      panel = document.createElement('div');
+      panel.setAttribute('class', 'window-settings');
+
+      var aliasInput = document.createElement('input');
+      var aliasSetting = document.createElement('label');
+      aliasSetting.appendChild(document.createTextNode('Alias'));
+      aliasSetting.appendChild(aliasInput);
+
+      aliasInput.onkeyup = function() {
+        if (this.value.length) {
+          win.setTitle(originalTitle + " (" + this.value + ")");
+        } else {
+          win.setTitle(originalTitle);
+        }
+      };
+      panel.appendChild(aliasSetting);
+
+      // Add as first element after caption and event catcher
+      var eventCatcher = frame.querySelector('.eventCatcher');
+      if (eventCatcher) {
+        // insertBefore will handle the case where there is no next sibling,
+        // the element will be appended to the end.
+        frame.insertBefore(panel, eventCatcher.nextSibling);
+      }
+    }
+
+    return show;
+  }
+
+  /**
+   * Inject a caption button that toggles window related settings.
+   *
+   * @param {CMWWindow} win          Window to which the button with be added.
+   */
+  DOM.addWindowConfigButton = function(win) {
+    DOM.addCaptionButton(win, 'fa fa-window-maximize',
+        'Show window settings for this widget',
+        toggleWindowConfigurationPanel.bind(window, win, false));
+  };
+
+
   /**
    * Inject an extra button into the caption of a window. This button allows to
    * show and hide a windows button panel (a top level element of class

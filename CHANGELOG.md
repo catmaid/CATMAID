@@ -29,6 +29,10 @@ Miscellaneous:
   Export Widget entry. Additionally, SWC files for multiple skeletons can be
   created at the same time and exported together in a Zip archive.
 
+- Many widgets can now have aliases, which will be displayed in parentheses
+  after the name in the window title bar. A small window-like icon next to the
+  window name toggles controls to change the widget alias.
+
 
 ### Bug fixes
 

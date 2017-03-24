@@ -400,29 +400,6 @@ SkeletonAnnotations.getActiveStackViewerId = function() {
 };
 
 /**
- * Export the active skeleton as SWC. The data is generated on the server and
- * the client is asked to download it.
- */
-SkeletonAnnotations.exportSWC = function() {
-  if (!this.atn.id || !this.atn.skeleton_id) {
-    alert('Need to activate a treenode before exporting to SWC!');
-    return;
-  }
-  var skeleton_id = this.atn.skeleton_id;
-
-  requestQueue.register(
-    django_url + project.id + '/skeleton/' + skeleton_id + '/swc',
-    "POST",
-    {},
-    function (status, text, xml) {
-      if (status === 200) {
-        var blob = new Blob([text], {type: "text/plain"});
-        saveAs(blob, skeleton_id + ".swc");
-      }
-    });
-};
-
-/**
  * Set tracing mode to node or synapse mode. This determines what is created if
  * the user clicks on the canvas.
  */

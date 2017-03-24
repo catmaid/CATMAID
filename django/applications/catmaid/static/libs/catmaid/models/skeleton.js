@@ -117,6 +117,57 @@
       }).bind(this));
     },
 
+    /**
+     * Export skeletons as SWC files
+     *
+     * @param {number}   projectId   Project sapce to work in
+     * @param {number[]} skeletonIds Skeletons to export as SWC
+     *
+     * @return A new promise that is resolved with the skeleton's SWC
+     *         representation.
+     */
+    getSWC: function(projectId, skeletonIds) {
+      if (!skeletonIds || !skeletonIds.length) {
+        return Promise.reject("Need at least one skeleton ID");
+      }
+      var swcRequests = skeletonIds.map(function(skid) {
+        return CATMAID.fetch(projectId + '/skeleton/' + skid + '/swc', 'GET',
+            undefined, true);
+      });
+
+      return Promise.all(swcRequests);
+    },
+
+    /**
+     * Export skeletons as SWC and ask browser to download it.
+     *
+     * @param {number}   projectId   Project sapce to work in
+     * @param {number[]} skeletonIds Skeletons to export as SWC
+     * @param {boolean}  archive     Produce a ZIP archive containing all files
+     *
+     * @return A new promise that is resolved with the skeleton's SWC
+     *         representation.
+     */
+    exportSWC: function(projectId, skeletonIds, archive) {
+      return CATMAID.Skeletons.getSWC(projectId, skeletonIds)
+        .then(function(swcData) {
+          if (archive) {
+            var zip = new JSZip();
+            swcData.forEach(function(swc, i) {
+              var skeletonId = skeletonIds[i];
+              zip.file(skeletonId + ".swc", swc);
+            });
+            var content = zip.generate({type: "blob"});
+            saveAs(content, 'catmaid-swc-export.zip');
+          } else {
+            swcData.forEach(function(swc, i) {
+              var skeletonId = skeletonIds[i];
+              var blob = new Blob([swc], {type: "text/plain"});
+              saveAs(blob, skeletonId + ".swc");
+            });
+          }
+        });
+    }
   };
 
   // Provide some basic events

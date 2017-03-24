@@ -382,6 +382,7 @@ var requestQueue = new RequestQueue();
         // case, we have to call reject() explicitly.
         try {
           if (raw) {
+            var response = CATMAID.validateResponse(status, text, xml);
             resolve(text);
           } else {
             var json = CATMAID.validateJsonResponse(status, text, xml);

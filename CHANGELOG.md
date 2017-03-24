@@ -26,7 +26,8 @@ Miscellaneous:
   chosen as default "winning" skeleton.
 
 - The SWC export button in the Tracing Tool toolbar has been replaced with an
-  Export Widget entry.
+  Export Widget entry. Additionally, SWC files for multiple skeletons can be
+  created at the same time and exported together in a Zip archive.
 
 
 ### Bug fixes

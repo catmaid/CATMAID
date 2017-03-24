@@ -144,7 +144,45 @@ the selected neurons.
   }
 
   function export_swc() {
-    SkeletonAnnotations.exportSWC();
+    // Add skeleton source message and controls
+    var dialog = new CATMAID.OptionsDialog('Export SWC');
+
+    // Add user interface
+    dialog.appendMessage('Please select a source from where to get the ' +
+        'skeletons which should be exported.');
+    var select = document.createElement('select');
+    CATMAID.skeletonListSources.createOptions().forEach(function(option, i) {
+      select.options.add(option);
+      if (option.value === 'Active skeleton') select.selectedIndex = i;
+    });
+    var label_p = document.createElement('p');
+    var label = document.createElement('label');
+    label.appendChild(document.createTextNode('Source:'));
+    label.appendChild(select);
+    label_p.appendChild(label);
+    dialog.dialog.appendChild(label_p);
+
+    var createArchive = dialog.appendCheckbox('Create Zip archive',
+        'zip-archive', true);
+
+    // Add handler for initiating the export
+    dialog.onOK = function() {
+      // Collected objects for all skeletons
+      var result = {skeletons: {}};
+      // Get all selected skeletons from the selected source
+      var source = CATMAID.skeletonListSources.getSource($(select).val());
+      var skids = source.getSelectedSkeletons();
+      // Cancel if there are no skeletons
+      if (skids.length === 0) {
+        CATMAID.error('Please select a source with at least one skeleton.');
+        return;
+      }
+
+      CATMAID.Skeletons.exportSWC(project.id, skids, createArchive.checked)
+        .catch(CATMAID.handleError);
+    };
+
+    dialog.show(500, 'auto', true);
   }
 
   function graphexport_nxjson() {

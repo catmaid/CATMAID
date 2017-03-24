@@ -1354,13 +1354,13 @@
 
     activeNode.setVisible(activeNodeSelected);
     activeNode.updatePosition(this.space, this.options);
-    // Render if the active node is visible or if it was deselected
-    if (activeNode.mesh.visible || activeNode.mesh.visible !== activeNodeDisplayed) {
-      this.space.render();
-    }
-    // Center the active node, if wanted
-    if (this.options.follow_active) {
+
+    if (activeNode.mesh.visible && this.options.follow_active) {
+      // Center the active node, if wanted
       this.look_at_active_node();
+    } else if (activeNode.mesh.visible || activeNode.mesh.visible !== activeNodeDisplayed) {
+      // Render if the active node is visible or if it was deselected
+      this.space.render();
     }
   };
 
@@ -6090,9 +6090,7 @@
 
   WebGLApplication.prototype.setFollowActive = function(value) {
     this.options.follow_active = value ? true : false;
-    // If active node following was enabled, center active node right away
-    if (value) this.look_at_active_node();
-    else this.space.render();
+    this.updateActiveNode();
   };
 
   WebGLApplication.prototype.setUpdateActive = function(value) {

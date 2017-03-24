@@ -850,7 +850,7 @@
     }));
 
     this.addAction(new CATMAID.Action({
-      helpText: "Tag the active node (<kbd>Shift</kbd>: Remove all tags)",
+      helpText: "Tag the active node (<kbd>Shift</kbd>: Remove all tags; <kbd>Alt</kbd>: Tag with personal tag set)",
       keyShortcuts: { "T": [ 84 ] },
       run: function (e) {
         if (!CATMAID.mayEdit())
@@ -859,12 +859,14 @@
           // Delete all tags
           SkeletonAnnotations.Tag.tagATNwithLabel('', activeTracingLayer.tracingOverlay, true);
           return true;
-        } else if (!e.ctrlKey) {
-          if (e.metaKey) {
+        } else if (!e.ctrlKey && !e.metaKey) {
+          if (e.altKey) {
             var tags = SkeletonAnnotations.Settings.session.personal_tag_set;
             if (tags && tags.length > 0) {
               SkeletonAnnotations.Tag.tagATNwithLabel(tags,
                   activeTracingLayer.tracingOverlay, true);
+            } else {
+              CATMAID.msg("No tags", "No tags in personal tag set");
             }
           } else {
             SkeletonAnnotations.Tag.tagATN(activeTracingLayer.tracingOverlay);

@@ -218,6 +218,7 @@ class ImportExportTests(TestCase):
             'project': {
                 'title': 'test-two-stacks',
                 'stacks': [{
+                    'broken_sections': [],
                     'title': 'test-stack-1',
                     'dimension': '(7,17,23)',
                     'resolution': '(2,3,5)',
@@ -238,6 +239,7 @@ class ImportExportTests(TestCase):
                         'position': 2
                     }]
                 }, {
+                    'broken_sections': [],
                     'comment': None,
                     'title': 'test-stack-2',
                     'dimension': '(7,17,23)',
@@ -258,6 +260,7 @@ class ImportExportTests(TestCase):
                         'tile_source_type': 5,
                     }]
                 }, {
+                    'broken_sections': [],
                     'comment': None,
                     'title': 'test-stack-3',
                     'dimension': '(4,34,9)',

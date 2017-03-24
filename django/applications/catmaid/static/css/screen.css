@@ -90,6 +90,11 @@ table tr.highlight.odd td {
   background-color: #d6ffb5
 }
 
+label input {
+  margin-left: 0.25em;
+  margin-right: 0.25em;
+}
+
 .cm-center {
   text-align: center;
 }

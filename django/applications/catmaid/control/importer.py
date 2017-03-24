@@ -1198,32 +1198,31 @@ def import_projects( user, pre_projects, tags, permissions,
                         'position': getattr(m, 'position')
                     }
 
-                    mirror = None
-                    known_mirror = None
+                    known_mirrors = None
                     if existing_stack:
-                        known_mirror = StackMirror.objects.filter(
+                        known_mirrors = StackMirror.objects.filter(
                             image_base=m.image_base, stack=existing_stack)
-                    if known_mirror and len(known_mirror) > 0:
+                    if known_mirrors and len(known_mirrors) > 0:
                       if 'ignore' == known_stack_action:
                           continue
                       elif 'import' == known_stack_action:
                           pass
                       elif 'override' == known_stack_action:
                           # Find a linked (!) and matching mirror
-                          mirror = existing_mirror
-                          for k,v in six.iteritems(mirror):
-                            if hasattr(mirror, k):
-                                setattr(mirror, k, v)
-                            else:
-                                raise ValueError("Unknown mirror field: " + k)
-                          mirror.save()
+                          for mirror in known_mirrors:
+                              for k,v in six.iteritems(mirror_properties):
+                                if hasattr(mirror, k):
+                                    setattr(mirror, k, v)
+                                else:
+                                    raise ValueError("Unknown mirror field: " + k)
+                              mirror.save()
                       else:
                           raise ValueError("Invalid action for known mirror: " +
                               known_stack_action)
-
-                    # Default to mirror creation
-                    if not mirror:
-                        mirror = StackMirror.objects.create(**mirror_properties)
+                    else:
+                        # Default to mirror creation
+                        if not known_mirrors:
+                            mirror = StackMirror.objects.create(**mirror_properties)
 
                 # Collect stack group information
                 for sg in s.stackgroups:

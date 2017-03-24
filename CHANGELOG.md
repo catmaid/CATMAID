@@ -28,6 +28,7 @@ Miscellaneous:
 
 ### Bug fixes
 
+- 3D Viewer: active node sphere is now hidden if no node is selected.
 
 
 ## 2017.03.16

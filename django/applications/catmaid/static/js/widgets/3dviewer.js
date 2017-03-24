@@ -65,7 +65,7 @@
     this.submit = new submitterFn();
     this.options = new WebGLApplication.prototype.OPTIONS.clone();
     this.space = new this.Space(canvasWidth, canvasHeight, this.container, project.focusedStackViewer.primaryStack, this.options);
-    this.updateActiveNodePosition();
+    this.updateActiveNode();
     project.on(CATMAID.Project.EVENT_STACKVIEW_FOCUS_CHANGED, this.adjustStaticContent, this);
     project.on(CATMAID.Project.EVENT_LOCATION_CHANGED, this.handlelLocationChange, this);
     this.initialized = true;
@@ -1347,9 +1347,15 @@
     this.space.render();
   };
 
-  WebGLApplication.prototype.updateActiveNodePosition = function() {
-    this.space.content.active_node.updatePosition(this.space, this.options);
-    if (this.space.content.active_node.mesh.visible) {
+  WebGLApplication.prototype.updateActiveNode = function() {
+    var activeNode = this.space.content.active_node;
+    var activeNodeDisplayed = activeNode.mesh.visibile;
+    var activeNodeSelected = !!SkeletonAnnotations.getActiveNodeId();
+
+    activeNode.setVisible(activeNodeSelected);
+    activeNode.updatePosition(this.space, this.options);
+    // Render if the active node is visible or if it was deselected
+    if (activeNode.mesh.visible || activeNode.mesh.visible !== activeNodeDisplayed) {
       this.space.render();
     }
   };
@@ -1381,7 +1387,7 @@
 
   WebGLApplication.prototype.staticUpdateActiveNodePosition = function() {
     this.getInstances().map(function(instance) {
-      instance.updateActiveNodePosition();
+      instance.updateActiveNode();
       // Center the active node, if wanted
       if (instance.options.follow_active) {
         instance.look_at_active_node();

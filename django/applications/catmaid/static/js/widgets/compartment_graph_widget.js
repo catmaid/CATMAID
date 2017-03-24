@@ -2929,7 +2929,7 @@
               return o;
             }, {});
 
-            if (0 === Object.keys(edge_synapses)) {
+            if (0 === Object.keys(edge_synapses).length) {
               // Database changed
               CATMAID.info('Skeleton #' + target + ' no longer receives inputs from skeleton #' + source);
               return;

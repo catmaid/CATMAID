@@ -400,17 +400,11 @@ the selected neurons.
       var url = connector_export ?
           '/connectorarchive/export' :
           '/treenodearchive/export';
-      requestQueue.register(django_url + project.id + url,
-            'POST', query_data, function(status, text, xml) {
-              if (status === 200) {
-                var e = JSON.parse(text);
-                if (e.error) {
-                  new ErrorDialog(e.error, e.detail).show();
-                } else {
-                  alert(e.message);
-                }
-              }
-        });
+      CATMAID.fetch(project.id + url, 'POST', query_data)
+        .then(function(json) {
+          CATMAID.msg('Success', json.message);
+        })
+        .catch(CATMAID.handleError);
     };
 
     dialog.show(500, connector_export ? 370 : 330, true);
@@ -452,41 +446,41 @@ the selected neurons.
       for (var idx in skids) {
         var skid = skids[idx];
         // Call backend and notify user
-        requestQueue.register(django_url + project.id + '/' + skid + '/1/0/compact-skeleton',
-              'GET', undefined,
-              CATMAID.jsonResponseHandler((function (skid, skids, json) {
-                var skeleton = {
-                  treenodes: {},
-                  connectors: {}
-                };
-                // Parse treenode objects
-                json[0].forEach(function (tn) {
-                  var id = tn[0];
-                  skeleton.treenodes[id] = {};
-                  skeleton.treenodes[id].location = tn.slice(3,6);
-                  skeleton.treenodes[id].parent_id = tn[1];
-                });
-                // Parse connector objects
-                json[1].forEach(function (cn) {
-                  // Skip non-synaptic connectors
-                  if (cn[2] !== 0 && cn[2] !== 1) return;
-                  var id = cn[1];
-                  if (typeof skeleton.connectors[id] === 'undefined') {
-                    skeleton.connectors[id] = {};
-                    skeleton.connectors[id].presynaptic_to = [];
-                    skeleton.connectors[id].postsynaptic_to = [];
-                  }
-                  skeleton.connectors[id].location = cn.slice(3, 6);
-                  var relation = cn[2] === 1 ? 'postsynaptic_to' : 'presynaptic_to';
-                  skeleton.connectors[id][relation].push(cn[0]);
-                });
-                this.skeletons[skid] = skeleton;
-                // Detect if all skeletons have completed callbacks
-                if (skids.length === Object.keys(this.skeletons).length) {
-                  var blob = new Blob([JSON.stringify(this)], {type: "application/json"});
-                  saveAs(blob, 'tree_geometry.json');
-                }
-              }).bind(result, skid, skids)));
+        CATMAID.fetch(project.id + '/' + skid + '/1/0/compact-skeleton')
+          .then((function(skid, skids, json) {
+            var skeleton = {
+              treenodes: {},
+              connectors: {}
+            };
+            // Parse treenode objects
+            json[0].forEach(function (tn) {
+              var id = tn[0];
+              skeleton.treenodes[id] = {};
+              skeleton.treenodes[id].location = tn.slice(3,6);
+              skeleton.treenodes[id].parent_id = tn[1];
+            });
+            // Parse connector objects
+            json[1].forEach(function (cn) {
+              // Skip non-synaptic connectors
+              if (cn[2] !== 0 && cn[2] !== 1) return;
+              var id = cn[1];
+              if (typeof skeleton.connectors[id] === 'undefined') {
+                skeleton.connectors[id] = {};
+                skeleton.connectors[id].presynaptic_to = [];
+                skeleton.connectors[id].postsynaptic_to = [];
+              }
+              skeleton.connectors[id].location = cn.slice(3, 6);
+              var relation = cn[2] === 1 ? 'postsynaptic_to' : 'presynaptic_to';
+              skeleton.connectors[id][relation].push(cn[0]);
+            });
+            this.skeletons[skid] = skeleton;
+            // Detect if all skeletons have completed callbacks
+            if (skids.length === Object.keys(this.skeletons).length) {
+              var blob = new Blob([JSON.stringify(this)], {type: "application/json"});
+              saveAs(blob, 'tree_geometry.json');
+            }
+          }).bind(result, skid, skids))
+          .catch(CATMAID.handleError);
       }
     };
 

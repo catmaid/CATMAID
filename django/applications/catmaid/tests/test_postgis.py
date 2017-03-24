@@ -62,11 +62,29 @@ class PostGISTests(CatmaidTestCase):
                 self.test_project_id, node.Postgis2dNodeProvider(),
                 tuple(), tuple(), include_labels=False)
 
+        with self.settings(PREPARED_STATEMENTS=True):
+            node_3d_ps_provider = node.Postgis3dNodeProvider()
+            node_3d_ps_provider.prepare_db_statements(connection)
+            postgis_3d_ps_nodes_r = node.node_list_tuples_query(params,
+                    self.test_project_id, node_3d_ps_provider,
+                    tuple(), tuple(), include_labels=False)
+
+        with self.settings(PREPARED_STATEMENTS=True):
+            node_2d_ps_provider = node.Postgis2dNodeProvider()
+            node_2d_ps_provider.prepare_db_statements(connection)
+            postgis_2d_ps_nodes_r = node.node_list_tuples_query(params,
+                    self.test_project_id, node_2d_ps_provider,
+                    tuple(), tuple(), include_labels=False)
+
 
         self.assertEqual(postgis_3d_nodes_r.status_code, 200)
         self.assertEqual(postgis_2d_nodes_r.status_code, 200)
+        self.assertEqual(postgis_3d_ps_nodes_r.status_code, 200)
+        self.assertEqual(postgis_2d_ps_nodes_r.status_code, 200)
         postgis_3d_nodes = json.loads(postgis_3d_nodes_r.content.decode('utf-8'))
         postgis_2d_nodes = json.loads(postgis_2d_nodes_r.content.decode('utf-8'))
+        postgis_3d_ps_nodes = json.loads(postgis_3d_ps_nodes_r.content.decode('utf-8'))
+        postgis_2d_ps_nodes = json.loads(postgis_2d_ps_nodes_r.content.decode('utf-8'))
 
         def test_returned_nodes(reference, to_test):
             self.assertEqual(len(reference), len(to_test))
@@ -94,6 +112,8 @@ class PostGISTests(CatmaidTestCase):
                 self.assertTrue(c in reference[1])
 
         test_returned_nodes(postgis_3d_nodes, postgis_2d_nodes)
+        test_returned_nodes(postgis_3d_nodes, postgis_3d_ps_nodes)
+        test_returned_nodes(postgis_3d_nodes, postgis_2d_ps_nodes)
 
     def get_edges(self, cursor, tnid):
         cursor.execute("""

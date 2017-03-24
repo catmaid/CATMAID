@@ -23,7 +23,8 @@ class Command(BaseCommand):
             broken_sections = BrokenSlice.objects.filter(stack=s).order_by('index')
             if len(broken_sections) > 0 and broken_sections[0].index == 0:
                 first_valid_index = 0
-                while broken_sections[first_valid_index].index == first_valid_index:
+                while len(broken_sections) > first_valid_index and \
+                        broken_sections[first_valid_index].index == first_valid_index:
                     first_valid_index += 1
                 location = (0, 0, first_valid_index)
             else:

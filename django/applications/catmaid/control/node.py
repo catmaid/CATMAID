@@ -5,6 +5,7 @@ import json
 import ujson
 
 from collections import defaultdict
+from abc import ABCMeta
 
 from django.core.serializers.json import DjangoJSONEncoder
 from django.conf import settings
@@ -23,21 +24,152 @@ from catmaid.control.authentication import requires_user_role, \
 from catmaid.control.common import get_relation_to_id_map, get_request_list
 
 from six.moves import map as imap
+from six import add_metaclass
 
 
-class Postgis3dNodeProvider(object):
+@add_metaclass(ABCMeta)
+class PostgisNodeProvider(object):
+    CONNECTOR_STATEMENT_NAME = 'get_connectors_postgis'
+    connector_query = None
 
-    # Fetch treenodes with the help of two PostGIS filters: The &&& operator
-    # to exclude all edges that don't have a bounding box that intersect with
-    # the query bounding box. This leads to false positives, because edge
-    # bounding boxes can intersect without the edge actually intersecting. To
-    # limit the result set, ST_3DDWithin is used. It allows to limit the result
-    # set by a distance to another geometry. Here it only allows edges that are
-    # no farther away than half the height of the query bounding box from a
-    # plane that cuts the query bounding box in half in Z. There are still false
-    # positives, but much fewer. Even though ST_3DDWithin is used, it seems to
-    # be enough to have a n-d index available (the query plan says ST_3DDWithin
-    # wouldn't use a 2-d index in this query, even if present).
+    TREENODE_STATEMENT_NAME = 'get_treenodes_postgis'
+    treenode_query = None
+
+    def __init__(self, connection=None):
+        """
+        If PREPARED_STATEMENTS is false but you want to override that for a few queries at a time,
+        include a django.db.connection in the constructor.
+        """
+
+        # To execute the queries directly through PsycoPg (i.e. not prepared) a
+        # different parameter format is used: {left} -> %(left)s.
+        treenode_query_params = ['project_id', 'left', 'top', 'z1', 'right',
+                                 'bottom', 'z2', 'halfz', 'halfzdiff', 'limit', 'sanitized_treenode_ids']
+        self.treenode_query_psycopg = self.treenode_query.format(
+            **{k: '%({})s'.format(k) for k in treenode_query_params})
+
+        connector_query_params = ['project_id', 'left', 'top', 'z1', 'right',
+                                  'bottom', 'z2', 'halfz', 'halfzdiff', 'limit', 'sanitized_connector_ids']
+        self.connector_query_psycopg = self.connector_query.format(
+            **{k: '%({})s'.format(k) for k in connector_query_params})
+
+        # Create prepared statement version
+        prepare_var_names = {
+            'project_id': '$1',
+            'left': '$2',
+            'top': '$3',
+            'z1': '$4',
+            'right': '$5',
+            'bottom': '$6',
+            'z2': '$7',
+            'halfz': '$8',
+            'halfzdiff': '$9',
+            'limit': '$10',
+            'sanitized_connector_ids': '$11',
+            'sanitized_treenode_ids': '$11'
+        }
+        self.treenode_query_prepare = self.treenode_query.format(**prepare_var_names)
+        self.connector_query_prepare = self.connector_query.format(**prepare_var_names)
+
+        self.prepared_statements = bool(connection) or settings.PREPARED_STATEMENTS
+
+        # If PREPARED_STATEMENTS is true, the statements will have been prepared elsewhere
+        if connection and not settings.PREPARED_STATEMENTS:
+            self.prepare_db_statements(connection)
+
+    def prepare_db_statements(self, connection):
+        """Create prepared statements on a given connection. This is mainly useful
+        for long lived connections.
+        """
+        cursor = connection.cursor()
+        cursor.execute("""
+            -- 1 project id, 2 left, 3 top, 4 z1, 5 right, 6 bottom, 7 z2,
+            -- 8 halfz, 9 halfzdiff, 10 limit 11 sanitized_treenode_ids
+            PREPARE {} (int, real, real, real,
+                    real, real, real, real, real, int, bigint[]) AS
+            {}
+        """.format(self.TREENODE_STATEMENT_NAME, self.treenode_query_prepare))
+        cursor.execute("""
+            -- 1 project id, 2 left, 3 top, 4 z1, 5 right, 6 bottom, 7 z2,
+            -- 8 halfz, 9 halfzdiff, 10 limit, 11 sanitized connector ids
+            PREPARE {} (int, real, real, real,
+                    real, real, real, real, real, int, bigint[]) AS
+            {}
+        """.format(self.CONNECTOR_STATEMENT_NAME, self.connector_query_prepare))
+
+    def get_treenode_data(self, cursor, params, extra_treenode_ids=None):
+        """ Selects all treenodes of which links to other treenodes intersect
+        with the request bounding box. Will optionally fetch additional
+        treenodes.
+        """
+        params['halfzdiff'] = abs(params['z2'] - params['z1']) * 0.5
+        params['halfz'] = params['z1'] + (params['z2'] - params['z1']) * 0.5
+        params['sanitized_treenode_ids'] = list(imap(int, extra_treenode_ids or []))
+
+        if self.prepared_statements:
+            # Use a prepared statement to get the treenodes
+            cursor.execute('''
+                EXECUTE {}(%(project_id)s,
+                    %(left)s, %(top)s, %(z1)s, %(right)s, %(bottom)s, %(z2)s,
+                    %(halfz)s, %(halfzdiff)s, %(limit)s,
+                    %(sanitized_treenode_ids)s)
+            '''.format(self.TREENODE_STATEMENT_NAME), params)
+        else:
+            cursor.execute(self.treenode_query_psycopg, params)
+
+        treenodes = cursor.fetchall()
+        treenode_ids = [t[0] for t in treenodes]
+
+        return treenode_ids, treenodes
+
+    def get_connector_data(self, cursor, params, missing_connector_ids=None):
+        """Selects all connectors that are in or have links that intersect the
+        bounding box, or that are in missing_connector_ids.
+        """
+        params['halfz'] = params['z1'] + (params['z2'] - params['z1']) * 0.5
+        params['halfzdiff'] = abs(params['z2'] - params['z1']) * 0.5
+        params['sanitized_connector_ids'] = list(imap(int, missing_connector_ids or []))
+
+        if self.prepared_statements:
+            # Use a prepared statement to get connectors
+            cursor.execute('''
+                EXECUTE {}(%(project_id)s,
+                    %(left)s, %(top)s, %(z1)s, %(right)s, %(bottom)s, %(z2)s,
+                    %(halfz)s, %(halfzdiff)s, %(limit)s,
+                    %(sanitized_connector_ids)s)
+            '''.format(self.CONNECTOR_STATEMENT_NAME), params)
+        else:
+            cursor.execute(self.connector_query_psycopg, params)
+
+        return list(cursor.fetchall())
+
+    @staticmethod
+    def get_provider(connection=None):
+        provider_key = settings.NODE_PROVIDER
+        if 'postgis3d' == provider_key:
+            return Postgis3dNodeProvider(connection)
+        elif 'postgis2d' == provider_key:
+            return Postgis2dNodeProvider(connection)
+        else:
+            raise ValueError('Unknown node provider: ' + provider_key)
+
+
+class Postgis3dNodeProvider(PostgisNodeProvider):
+    """
+    Fetch treenodes with the help of two PostGIS filters: The &&& operator
+    to exclude all edges that don't have a bounding box that intersect with
+    the query bounding box. This leads to false positives, because edge
+    bounding boxes can intersect without the edge actually intersecting. To
+    limit the result set, ST_3DDWithin is used. It allows to limit the result
+    set by a distance to another geometry. Here it only allows edges that are
+    no farther away than half the height of the query bounding box from a
+    plane that cuts the query bounding box in half in Z. There are still false
+    positives, but much fewer. Even though ST_3DDWithin is used, it seems to
+    be enough to have a n-d index available (the query plan says ST_3DDWithin
+    wouldn't use a 2-d index in this query, even if present).
+    """
+
+    TREENODE_STATEMENT_NAME = PostgisNodeProvider.TREENODE_STATEMENT_NAME + '_3d'
     treenode_query = '''
         SELECT
             t1.id,
@@ -74,6 +206,7 @@ class Postgis3dNodeProvider(object):
         LIMIT {limit}
     '''
 
+    CONNECTOR_STATEMENT_NAME = PostgisNodeProvider.CONNECTOR_STATEMENT_NAME + '_3d'
     connector_query = '''
       SELECT
           c.id,
@@ -142,116 +275,26 @@ class Postgis3dNodeProvider(object):
       LIMIT {limit}
     '''
 
-    # To execute the queries directly through PsycoPg (i.e. not prepared) a
-    # different parameter formatt is used: {left} -> %(left)s.
-    treenode_query_params = ['project_id', 'left', 'top', 'z1', 'right',
-        'bottom', 'z2', 'halfz', 'halfzdiff', 'limit', 'sanitized_treenode_ids']
-    treenode_query_psycopg = treenode_query.format(
-        **{k:'%({})s'.format(k) for k in treenode_query_params})
 
-    connector_query_params = ['project_id', 'left', 'top', 'z1', 'right',
-        'bottom', 'z2', 'halfz', 'halfzdiff', 'limit', 'sanitized_connector_ids']
-    connector_query_psycopg = connector_query.format(
-        **{k:'%({})s'.format(k) for k in connector_query_params})
+class Postgis2dNodeProvider(PostgisNodeProvider):
+    """
+    Fetch treenodes with the help of two PostGIS filters: First, select all
+    edges with a bounding box overlapping the XY-box of the query bounding
+    box. This set is then constrained by a particular range in Z. Both filters
+    are backed by indices that make these operations very fast. This is
+    semantically equivalent with what the &&& does. This, however, leads to
+    false positives, because edge bounding boxes can intersect without the
+    edge actually intersecting. To limit the result set, ST_3DDWithin is used.
+    It allows to limit the result set by a distance to another geometry. Here
+    it only allows edges that are no farther away than half the height of the
+    query bounding box from a plane that cuts the query bounding box in half
+    in Z. There are still false positives, but much fewer. Even though
+    ST_3DDWithin is used, it seems to be enough to have a n-d index available
+    (the query plan says ST_3DDWithin wouldn't use a 2-d index in this query,
+    even if present).
+    """
 
-    # Create prepared statement version
-    prepare_var_names = {
-        'project_id': '$1',
-        'left': '$2',
-        'top': '$3',
-        'z1': '$4',
-        'right': '$5',
-        'bottom': '$6',
-        'z2': '$7',
-        'halfz': '$8',
-        'halfzdiff': '$9',
-        'limit': '$10',
-        'sanitized_connector_ids': '$11',
-        'sanitized_treenode_ids': '$11'
-    }
-    treenode_query_prepare = treenode_query.format(**prepare_var_names)
-    connector_query_prepare = connector_query.format(**prepare_var_names)
-
-    def prepare_db_statements(self, connection):
-        cursor = connection.cursor()
-        cursor.execute("""
-            -- 1 project id, 2 left, 3 top, 4 z1, 5 right, 6 bottom, 7 z2,
-            -- 8 halfz, 9 halfzdiff, 10 limit 11 sanitized_treenode_ids
-            PREPARE get_treenodes_postgis_3d (int, real, real, real,
-                    real, real, real, real, real, int, bigint[]) AS
-            {}
-        """.format(self.treenode_query_prepare))
-        cursor.execute("""
-            -- 1 project id, 2 left, 3 top, 4 z1, 5 right, 6 bottom, 7 z2,
-            -- 8 halfz, 9 halfzdiff, 10 limit, 11 sanitized connector ids
-            PREPARE get_connectors_postgis_3d (int, real, real, real,
-                    real, real, real, real, real, int, bigint[]) AS
-            {}
-        """.format(self.connector_query_prepare))
-
-    def get_treenode_data(self, cursor, params, extra_treenode_ids):
-        """ Selects all treenodes of which links to other treenodes intersect
-        with the request bounding box. Will optionally fetch additional
-        treenodes.
-        """
-        params['halfzdiff'] = abs(params['z2'] - params['z1']) * 0.5
-        params['halfz'] = params['z1'] + (params['z2'] - params['z1']) * 0.5
-        params['sanitized_treenode_ids'] = list(imap(int, extra_treenode_ids))
-
-        if settings.PREPARED_STATEMENTS:
-            # Use a prepared statement to get the treenodes
-            cursor.execute('''
-                EXECUTE get_treenodes_postgis_3d(%(project_id)s,
-                    %(left)s, %(top)s, %(z1)s, %(right)s, %(bottom)s, %(z2)s,
-                    %(halfz)s, %(halfzdiff)s, %(limit)s,
-                    %(sanitized_treenode_ids)s)
-            ''', params)
-        else:
-            cursor.execute(self.treenode_query_psycopg, params)
-
-        treenodes = cursor.fetchall()
-        treenode_ids = [t[0] for t in treenodes]
-
-        return treenode_ids, treenodes
-
-    def get_connector_data(self, cursor, params, missing_connector_ids):
-        """Selects all connectors that are in or have links that intersect the
-        bounding box, or that are in missing_connector_ids.
-        """
-        params['halfzdiff'] = abs(params['z2'] - params['z1']) * 0.5
-        params['halfz'] = params['z1'] + (params['z2'] - params['z1']) * 0.5
-        params['sanitized_connector_ids'] = list(imap(int, missing_connector_ids))
-
-        if settings.PREPARED_STATEMENTS:
-            # Use a prepared statement to get connectors
-            cursor.execute('''
-                EXECUTE get_connectors_postgis_3d(%(project_id)s,
-                    %(left)s, %(top)s, %(z1)s, %(right)s, %(bottom)s, %(z2)s,
-                    %(halfz)s, %(halfzdiff)s, %(limit)s,
-                    %(sanitized_connector_ids)s)
-            ''', params)
-        else:
-            cursor.execute(self.connector_query_psycopg, params)
-
-        return list(cursor.fetchall())
-
-
-class Postgis2dNodeProvider(object):
-
-    # Fetch treenodes with the help of two PostGIS filters: First, select all
-    # edges with a bounding box overlapping the XY-box of the query bounding
-    # box. This set is then constrained by a particular range in Z. Both filters
-    # are backed by indices that make these operations very fast. This is
-    # semantically equivalent with what the &&& does. This, however, leads to
-    # false positives, because edge bounding boxes can intersect without the
-    # edge actually intersecting. To limit the result set, ST_3DDWithin is used.
-    # It allows to limit the result set by a distance to another geometry. Here
-    # it only allows edges that are no farther away than half the height of the
-    # query bounding box from a plane that cuts the query bounding box in half
-    # in Z. There are still false positives, but much fewer. Even though
-    # ST_3DDWithin is used, it seems to be enough to have a n-d index available
-    # (the query plan says ST_3DDWithin wouldn't use a 2-d index in this query,
-    # even if present).
+    TREENODE_STATEMENT_NAME = PostgisNodeProvider.TREENODE_STATEMENT_NAME + '_2d'
     treenode_query = """
           SELECT
             t1.id,
@@ -288,6 +331,7 @@ class Postgis2dNodeProvider(object):
         LIMIT {limit};
     """
 
+    CONNECTOR_STATEMENT_NAME = PostgisNodeProvider.CONNECTOR_STATEMENT_NAME + '_2d'
     connector_query = """
         SELECT
             c.id,
@@ -356,115 +400,13 @@ class Postgis2dNodeProvider(object):
         LIMIT {limit}
     """
 
-    # To execute the query directly with PsycoPg (i.e. not prepared) a different
-    # parameter formatt is used: {left} -> %(left)s.
-    treenode_query_params = ['project_id', 'left', 'top', 'z1', 'right',
-        'bottom', 'z2', 'halfz', 'halfzdiff', 'limit', 'sanitized_treenode_ids']
-    treenode_query_psycopg = treenode_query.format(
-        **{k:'%({})s'.format(k) for k in treenode_query_params})
 
+def get_provider(connection):
+    return PostgisNodeProvider.get_provider(connection)
 
-    connector_query_params = ['project_id', 'left', 'top', 'z1', 'right',
-        'bottom', 'z2', 'halfz', 'halfzdiff', 'limit', 'sanitized_connector_ids']
-    connector_query_psycopg = connector_query.format(
-        **{k:'%({})s'.format(k) for k in connector_query_params})
-
-    # Create prepared statement version
-    prepare_var_names = {
-        'project_id': '$1',
-        'left': '$2',
-        'top': '$3',
-        'z1': '$4',
-        'right': '$5',
-        'bottom': '$6',
-        'z2': '$7',
-        'halfz': '$8',
-        'halfzdiff': '$9',
-        'limit': '$10',
-        'sanitized_connector_ids': '$11',
-        'sanitized_treenode_ids': '$11'
-    }
-    treenode_query_prepare = treenode_query.format(**prepare_var_names)
-    connector_query_prepare = connector_query.format(**prepare_var_names)
-
-
-    def prepare_db_statements(self, connection):
-        """Create prepared statements on a given connection. This is mainly useful
-        for long lived connections.
-        """
-        cursor = connection.cursor()
-        cursor.execute("""
-            -- 1 project id, 2 left, 3 top, 4 z1, 5 right, 6 bottom, 7 z2,
-            -- 8 halfz, 9 halfzdiff, 10 limit
-            PREPARE get_treenodes_postgis_2d (int, real, real, real,
-                    real, real, real, real, real, int) AS
-            {}
-        """.format(self.treenode_query_prepare))
-        cursor.execute("""
-            -- 1 project id, 2 left, 3 top, 4 z1, 5 right, 6 bottom, 7 z2,
-            -- 8 halfz, 9 halfzdiff, 10 limit, 11 sanitized connector ids
-            PREPARE get_connectors_postgis_2d (int, real, real, real,
-                    real, real, real, real, real, int, bigint[]) AS
-            {}
-        """.format(self.connector_query_prepare))
-
-    def get_treenode_data(self, cursor, params, extra_treenode_ids):
-        """ Selects all treenodes of which links to other treenodes intersect with
-        the request bounding box.
-        """
-        params['halfzdiff'] = abs(params['z2'] - params['z1']) * 0.5
-        params['halfz'] = params['z1'] + (params['z2'] - params['z1']) * 0.5
-        params['sanitized_treenode_ids'] = list(imap(int, extra_treenode_ids))
-
-        if settings.PREPARED_STATEMENTS:
-            # Use a prepared statement to get the treenodes
-            cursor.execute('''
-                EXECUTE get_treenodes_postgis_2d(%(project_id)s,
-                    %(left)s, %(top)s, %(z1)s, %(right)s, %(bottom)s, %(z2)s,
-                    %(halfz)s, %(halfzdiff)s, %(limit)s,
-                    %(sanitized_treenode_ids)s)
-            ''', params)
-        else:
-            cursor.execute(self.treenode_query_psycopg, params)
-
-        treenodes = cursor.fetchall()
-        treenode_ids = [t[0] for t in treenodes]
-
-        return treenode_ids, treenodes
-
-    def get_connector_data(self, cursor, params, missing_connector_ids):
-        """Selects all connectors that are in or have links that intersect the
-        bounding box, or that are in missing_connector_ids.
-        """
-        params['halfz'] = params['z1'] + (params['z2'] - params['z1']) * 0.5
-        params['halfzdiff'] = abs(params['z2'] - params['z1']) * 0.5
-        params['sanitized_connector_ids'] = list(imap(int, missing_connector_ids))
-
-        if settings.PREPARED_STATEMENTS:
-            # Use a prepared statement to get connectors
-            cursor.execute('''
-                EXECUTE get_connectors_postgis_2d(%(project_id)s,
-                    %(left)s, %(top)s, %(z1)s, %(right)s, %(bottom)s, %(z2)s,
-                    %(halfz)s, %(halfzdiff)s, %(limit)s,
-                    %(sanitized_connector_ids)s)
-            ''', params)
-        else:
-            cursor.execute(self.connector_query_psycopg, params)
-
-        return list(cursor.fetchall())
-
-
-def get_provider():
-    provider_key = settings.NODE_PROVIDER
-    if 'postgis3d' == provider_key:
-        return Postgis3dNodeProvider()
-    elif 'postgis2d' == provider_key:
-        return Postgis2dNodeProvider()
-    else:
-        raise ValueError('Unknown node provider: ' + provider_key)
 
 def prepare_db_statements(connection):
-    get_provider().prepare_db_statements(connection)
+    PostgisNodeProvider.get_provider(connection)
 
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])

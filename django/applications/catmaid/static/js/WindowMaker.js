@@ -1916,26 +1916,6 @@ var WindowMaker = new function()
     return {window: win, widget: NN};
   };
 
-  var createSettingsWindow = function()
-  {
-    var win = new CMWWindow("Settings");
-    var content = win.getFrame();
-    var container = createContainer("settings");
-    container.setAttribute('id', 'settings_widget');
-    content.appendChild( container );
-    content.style.backgroundColor = "#ffffff";
-
-    // Wire it up
-    addListener(win, container);
-    addLogic(win);
-
-    // Initialize settings window with container added to the DOM
-    var SW = new CATMAID.SettingsWidget();
-    SW.init(container);
-
-    return {window: win, widget: SW};
-  };
-
   var createHtmlWindow = function (params) {
     var win = new CMWWindow(params.title);
     var content = win.getFrame();
@@ -1963,7 +1943,6 @@ var WindowMaker = new function()
     "circuit-graph-plot": createCircuitGraphPlot,
     "venn-diagram": createVennDiagramWindow,
     "neuron-navigator": createNeuronNavigatorWindow,
-    "settings": createSettingsWindow,
     "connectivity-matrix": createConnectivityMatrixWindow,
     "synapse-plot": createSynapsePlotWindow,
     "synapse-fractions": createSynapseFractionsWindow,

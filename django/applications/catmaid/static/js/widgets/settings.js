@@ -12,9 +12,33 @@
 
   "use strict";
 
-  var SettingsWidget = function() {};
+  var SettingsWidget = function() {
+    InstanceRegistry.call(this);
+    this.widgetID = this.registerInstance();
+  };
 
-  SettingsWidget.prototype = {};
+  SettingsWidget.prototype = Object.create(InstanceRegistry.prototype);
+  SettingsWidget.prototype.constructor = SettingsWidget;
+
+  SettingsWidget.prototype.getName = function() {
+    return "Settings " + this.widgetID;
+  };
+
+  SettingsWidget.prototype.destroy = function() {
+    this.unregisterInstance();
+  };
+
+  SettingsWidget.prototype.getWidgetConfiguration = function() {
+    return {
+      contentID: "settings-widget",
+      createContent: function(content) {
+        this.content = content;
+      },
+      init: function() {
+        this.init(this.content);
+      }
+    };
+  };
 
   /**
    * Initializes the settings widget in the given container.
@@ -1296,5 +1320,11 @@
   };
 
   CATMAID.SettingsWidget = SettingsWidget;
+
+  // Register widget with CATMAID
+  CATMAID.registerWidget({
+    key: 'settings',
+    creator: SettingsWidget
+  });
 
 })(CATMAID);

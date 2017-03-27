@@ -466,13 +466,6 @@
         onclick: function() {
           self.createNewDomain(widget);
         }
-      },
-      {
-        type: 'button',
-        label: 'Pick random domain',
-        onclick: function() {
-          self.pickRandomDomain(widget);
-        }
       }
     ];
   };
@@ -738,22 +731,6 @@
       }).then(function(result) {
         widget.update();
     }).catch(CATMAID.handleError);
-  };
-
-  DomainWorkflowStep.prototype.pickRandomDomain = function(widget) {
-    var domains = this.availableDomains;
-    if (!domains) {
-      CATMAID.warn("No domain available");
-      return;
-    }
-
-    // For now, use uniform distribution
-    var domain = domains[Math.floor(Math.random()*domains.length)];
-
-    // Update state
-    widget.state['domain'] = domain;
-    widget.workflow.advance();
-    widget.update();
   };
 
 

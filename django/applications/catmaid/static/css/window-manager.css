@@ -111,3 +111,7 @@ div.windowContent[data-msg]:before {
   color: #0000ff;
   background: none;
 }
+
+.stackInfo_selected .windowButton:hover {
+  color: tomato;
+}

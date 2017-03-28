@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from django.db import connection
 from django.http import JsonResponse
 
@@ -22,6 +24,11 @@ def list_samplers(request, project_id):
      - name: skeleton_ids
        description: Optional skeleton IDs to constrain result set to.
        type: integer
+       paramType: form
+       required: false
+     - name: with_domains
+       description: Optional flag to include all domains of all result sampler results.
+       type: boolean
        paramType: form
        required: false
     models:
@@ -65,20 +72,49 @@ def list_samplers(request, project_id):
         required: true
     """
     skeleton_ids = get_request_list(request.GET, 'skeleton_ids', map_fn=int)
+    with_domains = bool(request.GET.get('with_domains', False))
 
     samplers = Sampler.objects.all()
     if skeleton_ids:
         samplers = samplers.filter(skeleton_id__in=skeleton_ids)
 
-    return JsonResponse([{
-       'id': s.id,
-       'creation_time': float(s.creation_time.strftime('%s')),
-       'edition_time': float(s.edition_time.strftime('%s')),
-       'interval_length': s.interval_length,
-       'state_id': s.sampler_state_id,
-       'skeleton_id': s.skeleton_id,
-       'user_id': s.user_id,
-    } for s in samplers], safe=False)
+    domains = defaultdict(list)
+    if with_domains:
+        domain_query = SamplerDomain.objects.filter(sampler__in=samplers) \
+                .prefetch_related('samplerdomainend_set')
+        for domain in domain_query:
+            domain_ends = domain.samplerdomainend_set.all()
+            domains[domain.sampler_id].append({
+                "id": domain.id,
+                "sampler_id": domain.sampler_id,
+                "type_id": domain.domain_type_id,
+                "parent_interval": domain.parent_interval_id,
+                "start_node_id": domain.start_node_id,
+                "user_id": domain.user_id,
+                "project_id": domain.project_id,
+                "ends": [{
+                    "id": e.id,
+                    "node_id": e.end_node_id
+                } for e in domain_ends]
+            })
+
+    def exportSampler(s):
+        s = {
+           'id': s.id,
+           'creation_time': float(s.creation_time.strftime('%s')),
+           'edition_time': float(s.edition_time.strftime('%s')),
+           'interval_length': s.interval_length,
+           'state_id': s.sampler_state_id,
+           'skeleton_id': s.skeleton_id,
+           'user_id': s.user_id,
+        }
+
+        if with_domains:
+            s['domains'] = domains.get(s['id'], [])
+
+        return s
+
+    return JsonResponse([exportSampler(s) for s in samplers], safe=False)
 
 
 @api_view(['POST'])

@@ -43,7 +43,7 @@ RUN cp /home/django/configuration.py.example /home/django/configuration.py \
 RUN service postgresql start \
     && /bin/bash -c "source /usr/share/virtualenvwrapper/virtualenvwrapper.sh \
     && workon catmaid \
-    && cd /home/django/projects/mysite \
+    && cd /home/django/projects \
     && python manage.py migrate --noinput \
     && python manage.py collectstatic --clear --link --noinput \
     && cat /home/scripts/docker/create_superuser.py | python manage.py shell \

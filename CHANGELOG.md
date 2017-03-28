@@ -3,10 +3,14 @@
 
 ### Notes
 
+- The location of the `manage.py` script changed: it moved a level up into
+  `django/projects`. All other configuration files remain where they are. Make
+  sure to update your `settings.py` file by replacing the line
+  `from settings_base import *` with `from mysite.settings_base import *`.
+
 - Python 3.5 is now experimentally supported. Most functionality should work
-  without problems. To test, make sure to update `settings.py` by 1. replacing
-  `from settings_base import *` with `from mysite.settings_base import *` and 2.
-  replace the fragment `hashlib.md5(CATMAID_URL)` with
+  without problems. To test, make sure to update `settings.py` by replacing
+  the fragment `hashlib.md5(CATMAID_URL)` with
   'hashlib.md5(CATMAID_URL.encode('utf-8'))'.
 
 

@@ -49,6 +49,27 @@ The **C**\ ollaborative **A**\ nnotation **T**\ oolkit for **M**\ assive **A**\ 
     :height: 100px
     :title: CATMAID user interface showing the neuron based creation of 3D  meshes
 
+.. thumbnail:: _static/screenshots/catmaid-onto.png
+    :class: lightimage
+    :group: index
+    :width: 150px
+    :height: 100px
+    :title: Four image channels along with an Ontology Editor, a Classification Editor and the Classification Clustering Widget
+
+.. thumbnail:: _static/screenshots/catmaid-graph-dendrogram.png
+    :class: lightimage
+    :group: index
+    :width: 150px
+    :height: 100px
+    :title: The Graph Widget is used to inspect and learn about network topology and the Dendgrogram to look at neuron topology
+
+.. thumbnail:: _static/screenshots/api.png
+    :class: lightimage
+    :group: index
+    :width: 150px
+    :height: 100px
+    :title: API documentation is available from every CATMAID instance directly.
+
 Documentation
 -------------
 

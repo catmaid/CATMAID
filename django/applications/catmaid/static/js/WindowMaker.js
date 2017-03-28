@@ -482,7 +482,8 @@ var WindowMaker = new function()
      ['distance_to_root', 'Distance to root'],
      ['partitions', 'Principal branch length'],
      ['strahler', 'Strahler analysis'],
-     ['downstream-of-tag', 'Downstream of tag']
+     ['downstream-of-tag', 'Downstream of tag'],
+     ['sampler-domains', 'Reconstrucion sampler domains']
     ].forEach(function(e) {
        var selected = o.shading_method === e[0];
        shadingMenu.options.add(new Option(e[1], e[0], selected, selected));

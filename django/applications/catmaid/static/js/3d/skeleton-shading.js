@@ -120,6 +120,43 @@
   };
 
   /**
+   * Return a promise that resolves once all sampler domains for sll input
+   * skeletons are loaded and stored in each skeleton's 'samplers' field.
+   */
+  var initSamplerDomains = function(skeletons) {
+    // Find the subset of skeletons that don't have their sampler domains loaded
+    var skeletonIds = Object.keys(skeletons).filter(function(skid) {
+      return !skeletons[skid].samplers;
+    });
+
+    if (skeletonIds.length === 0) {
+      return Promise.resolve();
+    }
+
+    var params = {
+      "skeleton_ids": skeletonIds,
+      "with_domains": true
+    };
+    return CATMAID.fetch(project.id +  "/samplers/", "GET", params)
+      .then(function(samplers) {
+        // Group by skeleton IDs
+        var skeletonSamplers = samplers.reduce(function(o, s) {
+          var domains = o[s.skeleton_id];
+          if (!domains) {
+            domains = [];
+            o[s.skeleton_id] = domains;
+          }
+          domains.push(s);
+          return o;
+        }, {});
+
+        for (var skeletonId in skeletonSamplers) {
+          skeletons[skeletonId].samplers = skeletonSamplers[skeletonId];
+        }
+      });
+  };
+
+  /**
    * Skeleton color method objects are expected to have a vertexColorizer
    * function that returns a per-vertex coloring function. This inner function
    * is expected to return a color for each input vertex. If a prepare method is
@@ -529,6 +566,35 @@
       weights: function(skeleton, options) {
         var arbor = skeleton.createArbor();
         return flowCentralityWeights(skeleton, "centripetal");
+      }
+    },
+    'sampler-domains': {
+      prepare: initSamplerDomains,
+      weights: function(skeleton, options) {
+        var arbor = skeleton.createArbor();
+        var samplers = skeleton.samplers;
+        if (!samplers) {
+          // Weight each node zero if there are no samplers
+          return arbor.nodesArray().reduce(function(o, d) {
+            o[d] = 0;
+            return o;
+          }, {});
+        }
+
+        // Index to test if a vertex is part of a domain
+        var samplerEdges = {};
+        for (var i=0; i<samplers.length; ++i) {
+          var sampler = samplers[i];
+          CATMAID.Sampling.samplerEdges(arbor, sampler, samplerEdges);
+        }
+
+        // Add all nodes in all domains
+        var nodeWeights = arbor.nodesArray().reduce(function(o, d) {
+          o[d] = samplerEdges[d] === undefined ? 0 : 1;
+          return o;
+        }, {});
+
+        return nodeWeights;
       }
     }
   };

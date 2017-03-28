@@ -259,7 +259,7 @@
       ajax: function(data, callback, settings) {
         var params = {};
         if (skeletonId) {
-          params['skeleton_id'] = skeletonId;
+          params['skeleton_ids'] = [skeletonId];
         }
         CATMAID.fetch(project.id +  "/samplers/", "GET", params)
           .then(function(result) {

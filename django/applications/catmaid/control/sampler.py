@@ -15,12 +15,12 @@ from rest_framework.decorators import api_view
 def list_samplers(request, project_id):
     """Get a collection of available samplers.
 
-    Optionally, the "skeleton_id" parameter can provide a skeleton ID. If this
-    is the case, only samplers for the respective skeleton are returned.
+    Optionally, the "skeleton_ids" parameter can provide a list of skeleton IDs.
+    If this is the case, only samplers for the respective skeletons are returned.
     ---
     parameters:
-     - name: skeleton_id
-       description: Optional skeleton ID to constrain result set to.
+     - name: skeleton_ids
+       description: Optional skeleton IDs to constrain result set to.
        type: integer
        paramType: form
        required: false
@@ -64,14 +64,11 @@ def list_samplers(request, project_id):
         description: Matching samplers
         required: true
     """
-    skeleton_id = request.GET.get('skeleton_id')
-    if skeleton_id:
-        skeleton_id = int(skeleton_id)
+    skeleton_ids = get_request_list(request.GET, 'skeleton_ids', map_fn=int)
 
     samplers = Sampler.objects.all()
-
-    if skeleton_id:
-        samplers = samplers.filter(skeleton_id=skeleton_id)
+    if skeleton_ids:
+        samplers = samplers.filter(skeleton_id__in=skeleton_ids)
 
     return JsonResponse([{
        'id': s.id,

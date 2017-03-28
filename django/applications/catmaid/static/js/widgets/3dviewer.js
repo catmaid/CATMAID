@@ -866,24 +866,74 @@
     this.updateSkeletonColors();
   };
 
-  WebGLApplication.prototype.updateSkeletonColors = function(callback) {
-    var fnRecolor = (function() {
-      Object.keys(this.space.content.skeletons).forEach(function(skeleton_id) {
-        this.space.content.skeletons[skeleton_id].updateSkeletonColor(this.options);
-      }, this);
-      if (typeof callback === "function") {
-        try { callback(); } catch (e) { alert(e); }
-      }
-      this.space.render();
-    }).bind(this);
+  /**
+   * Create a new shader based material to have active node focused shading.
+   */
+  var makeNearActiveNodeSplitMaterial = function(baseMaterial, cameraSpace, activeNodeDistance) {
+    var material = new CATMAID.ShaderLineBasicMaterial(baseMaterial);
 
-    if (-1 !== this.options.color_method.indexOf('reviewed')) {
-      var skeletons = this.space.content.skeletons;
-      // Find the subset of skeletons that don't have their reviews loaded
-      var skeleton_ids = Object.keys(skeletons).filter(function(skid) {
-        return !skeletons[skid].reviews;
-      });
-      // Will invoke fnRecolor even if the list of skeleton_ids is empty
+    // Determine active node distance in the vertex shader and pass to the
+    // fragment shader as a varying.
+    material.insertSnippet(
+        'vertexDeclarations',
+        'uniform vec3 u_activeNodePosition;\n' +
+        'uniform float u_horizon;\n' +
+        'varying float activeNodeDistanceDarkening;\n');
+    material.insertSnippet(
+        'vertexPosition',
+        (cameraSpace ?
+          'vec3 camVert = (vec4(position, 1.0) * modelMatrix).xyz - cameraPosition;\n' +
+          'vec3 camAtn = (vec4(u_activeNodePosition, 1.0) * modelMatrix).xyz - cameraPosition;\n' +
+          'float zDist = distance(dot(camVert, normalize(camAtn)), length(camAtn));\n'
+          :
+          'float zDist = distance(position.z, u_activeNodePosition.z);\n') +
+          'activeNodeDistanceDarkening = 1.0 - clamp(zDist/u_horizon, 0.0, 1.0);\n');
+
+    material.insertSnippet(
+        'fragmentDeclarations',
+        'varying float activeNodeDistanceDarkening;\n');
+    material.insertSnippet(
+        'fragmentColor',
+        'gl_FragColor = vec4(outgoingLight * activeNodeDistanceDarkening, diffuseColor.a);\n');
+
+    material.addUniforms({
+        u_activeNodePosition: { type: 'v3', value: SkeletonAnnotations.getActiveNodeProjectVector3() },
+        u_horizon: { type: 'f', value: activeNodeDistance }});
+
+    material.refresh();
+
+    return material;
+  };
+
+  /**
+   * Find maximum value in object, regardless of the key it is mapped to. Every
+   * value is then divided by this maximum to normalize all values.
+   */
+  var normalizeFields = function(obj) {
+    var fields = Object.keys(obj),
+        max = fields.reduce(function(a, field) {
+          return Math.max(a, obj[field]);
+        }, 0);
+
+    // Normalize c in place
+    fields.forEach(function(field) {
+      obj[field] = obj[field] / max;
+    });
+
+    return obj;
+  };
+
+  /**
+   * Return a Promise that resolves once all reviews for all input skeletons are
+   * retrieved and stored in each skeleton's 'reviews' field.
+   */
+  var initReviews = function(skeletons) {
+    // Find the subset of skeletons that don't have their reviews loaded
+    var skeleton_ids = Object.keys(skeletons).filter(function(skid) {
+      return !skeletons[skid].reviews;
+    });
+    // Will invoke fnRecolor even if the list of skeleton_ids is empty
+    return new Promise(function(resolve, reject) {
       fetchSkeletons(
           skeleton_ids,
           function(skeleton_id) {
@@ -898,32 +948,570 @@
             skeletons[skeleton_id].reviews = {}; // dummy
             console.log('ERROR: failed to load reviews for skeleton ' + skeleton_id);
           },
-          fnRecolor);
-    } else if ('axon-and-dendrite' === this.options.color_method
-            || 'dendritic-backbone' === this.options.shading_method) {
-      var skeletons = this.space.content.skeletons;
-      // Find the subset of skeletons that don't have their axon loaded
-      var skeleton_ids = Object.keys(skeletons).filter(function(skid) {
-        return !skeletons[skid].axon;
-      });
-      fetchSkeletons(
-          skeleton_ids,
-          function(skid) {
-            return django_url + project.id + '/' + skid + '/0/1/0/compact-arbor';
-          },
-          function(skid) { return {}; }, // post
-          function(skid, json) {
-            skeletons[skid].axon = skeletons[skid].splitByFlowCentrality(json);
-          },
-          function(skid) {
-            // Failed loading
-            skeletons[skid].axon = null;
-            console.log('ERROR: failed to load axon-and-dendrite for skeleton ' + skid);
-          },
-          fnRecolor);
-    } else {
-      fnRecolor();
+          resolve);
+    });
+  };
+
+  /**
+   * Return a promise that resolves if all axons of all input skeletons are
+   * loaded and stored in each skeleton's 'axon' field.
+   */
+  var initAxons = function(skeletons) {
+    // Find the subset of skeletons that don't have their axon loaded
+    var skeleton_ids = Object.keys(skeletons).filter(function(skid) {
+      return !skeletons[skid].axon;
+    });
+    return new Promise(function(resolve, reject) {
+    fetchSkeletons(
+        skeleton_ids,
+        function(skid) {
+          return django_url + project.id + '/' + skid + '/0/1/0/compact-arbor';
+        },
+        function(skid) { return {}; }, // post
+        function(skid, json) {
+          skeletons[skid].axon = skeletons[skid].splitByFlowCentrality(json);
+        },
+        function(skid) {
+          // Failed loading
+          skeletons[skid].axon = null;
+          console.log('ERROR: failed to load axon-and-dendrite for skeleton ' + skid);
+        },
+        resolve);
+    });
+  };
+
+  /**
+   * Skeleton color method objects are expected to have a vertexColorizer
+   * function that returns a per-vertex coloring function. This inner function
+   * is expected to return a color for each input vertex. If a prepare method is
+   * provided, it is expected to return a Promise that resolves once preparation
+   * is done.
+   */
+  var SkeletonColorMethods = {
+    'none': {
+      vertexColorizer: null
+    },
+    'actor-color': {
+      vertexColorizer: function(skeleton) {
+        var actorColor = skeleton.actorColor;
+        return function(vertex) {
+          return actorColor;
+        };
+      }
+    },
+    'axon-and-dendrite': {
+      prepare: initAxons,
+      vertexColorizer: function(skeleton, options) {
+        var axonColor = options.axonColor;
+        var dendriteColor = options.dendriteColor;
+        var notComputableColor = options.notComputableColor;
+
+        return skeleton.axon ?
+          (function(vertex) {
+            return this.contains(vertex.node_id) ? axonColor : dendriteColor;
+          }).bind(skeleton.axon)
+          : function() { return notComputableColor; };
+      }
+    },
+    'last-reviewed': {
+      prepare: initReviews,
+      vertexColorizer: function(skeleton, options) {
+          var findLastReview = function(lastReview, review) {
+            if (!lastReview) {
+              return review;
+            } else if (new Date(lastReview[1]) < new Date(review[1])) {
+              return review;
+            }
+            return lastReview;
+          };
+          var users = CATMAID.User.all();
+          var lastReviewerColor = options.lastReviewerColor;
+          var unreviewedColor = options.unreviewedColor;
+          var notComputableColor = options.notComputableColor;
+
+          return skeleton.reviews ?
+            (function(vertex) {
+              var reviewers = this.reviews[vertex.node_id];
+              if (reviewers) {
+                var lastReviewer = reviewers.reduce(findLastReview, null);
+                var lastReviewerId = lastReviewer[0];
+                var lastReviewerColor = users[lastReviewerId].color;
+
+                if (!skeleton.space.userColormap.hasOwnProperty(lastReviewerId)) {
+                  skeleton.space.userColormap[lastReviewerId] = lastReviewerColor;
+                }
+
+                return lastReviewerColor;
+              } else {
+                return unreviewedColor;
+              }
+            }).bind(skeleton)
+            : function() { return notComputableColor; };
+        }
+    },
+    'own-reviewed': {
+      prepare: initReviews,
+      vertexColorizer: function(skeleton, options) {
+        var userId = CATMAID.session.userid;
+        var reviewedColor = options.reviewedColor;
+        var unreviewedColor = options.unreviewedColor;
+        var notComputableColor = options.notComputableColor;
+
+        return skeleton.reviews ?
+          (function(vertex) {
+            var reviewers = this.reviews[vertex.node_id];
+          return reviewers && reviewers.some(function (r) { return r[0] == userId;}) ?
+            reviewedColor : unreviewedColor;
+        }).bind(skeleton)
+          : function() { return notComputableColor; };
+      }
+    },
+    'whitelist-reviewed': {
+      prepare: initReviews,
+      vertexColorizer: function(skeleton, options) {
+        var reviewedColor = options.reviewedColor;
+        var unreviewedColor = options.unreviewedColor;
+        var notComputableColor = options.notComputableColor;
+
+        return skeleton.reviews ?
+          (function(vertex) {
+            var wl = CATMAID.ReviewSystem.Whitelist.getWhitelist();
+            var reviewers = this.reviews[vertex.node_id];
+          return reviewers && reviewers.some(function (r) {
+              return r[0] in wl && (new Date(r[1])) > wl[r[0]];}) ?
+            reviewedColor : unreviewedColor;
+        }).bind(skeleton)
+          : function() { return notComputableColor; };
+      }
+    },
+    'all-reviewed': {
+      prepare: initReviews,
+      vertexColorizer: function(skeleton, options) {
+        var reviewedColor = options.reviewedColor;
+        var unreviewedColor = options.unreviewedColor;
+        var notComputableColor = options.notComputableColor;
+
+        return skeleton.reviews ?
+          (function(vertex) {
+            var reviewers = this.reviews[vertex.node_id];
+            return reviewers && reviewers.length > 0 ?
+              reviewedColor : unreviewedColor;
+          }).bind(skeleton)
+          : function() { return notComputableColor; };
+      }
+    },
+    'creator': {
+      vertexColorizer: function(skeleton, options) {
+        var userColor = function (userID) { return CATMAID.User(userID).color; };
+
+        return (function (vertex) {
+          var userID = vertex.user_id;
+          if (!this.space.userColormap.hasOwnProperty(userID)) {
+            this.space.userColormap[userID] = userColor(userID);
+          }
+
+          return this.space.userColormap[userID];
+        }).bind(skeleton);
+      }
+    },
+    'creator-relevant': {
+      vertexColorizer: function(skeleton, options) {
+        var space = skeleton.space;
+        if (!space.userColormap.colorizer) {
+          space.userColormap.colorizer = {};
+          CATMAID.asColorizer(space.userColormap.colorizer);
+        }
+        var colorizer = space.userColormap.colorizer;
+        var userColor = colorizer.pickColor.bind(colorizer);
+
+        return (function (vertex) {
+          var userID = vertex.user_id;
+          if (!this.space.userColormap.hasOwnProperty(userID)) {
+            this.space.userColormap[userID] = userColor(userID);
+          }
+
+          return this.space.userColormap[userID];
+        }).bind(skeleton);
+      }
     }
+  };
+
+  /**
+   * Skeleton shading methods are objects mapped to an identifier. These objects
+   * can have a prepare field, containing a function that can perform
+   * asynchronous preparation and is expected to return a Promise. The actual
+   * work is done in the weight() functions, which take a skeleton and option
+   * object and return a weight mapping of all skeleton nodes into [0,1] or
+   * null.
+   */
+  var SkeletonShadingMethods = {
+    'none': {
+      weights: function() { return null; }
+    },
+    'dendritic-backbone': {
+      prepare: initAxons,
+      weights: function(skeleton, options) {
+        var strahlerCut = options.strahler_cut;
+        var node_weights = null;
+
+        if (!skeleton.axon) {
+          // Not computable
+          CATMAID.warning("Shading 'dendritic-backbone' not computable for skeleton ID #" +
+          skeleton.id + ", neuron named: " + CATMAID.NeuronNameService.getInstance().getName(this.id) +
+          ". The axon is missing.");
+        } else {
+          var arbor = skeleton.createArbor();
+          // Prune artifactual branches
+          if (skeleton.tags['not a branch']) {
+            var ap = new CATMAID.ArborParser(); ap.inputs = {}; ap.outputs = {};
+            ap.arbor = arbor.clone();
+            ap.collapseArtifactualBranches(skeleton.tags);
+            arbor = ap.arbor;
+          }
+          // Create backbone arbor
+          var upstream;
+          if (skeleton.tags['microtubules end'] && skeleton.tags['microtubules end'].length > 0) {
+            upstream = skeleton.createUpstreamArbor('microtubules end', arbor);
+          } else {
+            var cuts = arbor.approximateTwigRoots(strahlerCut);
+            if (cuts && cuts.length > 0) {
+              upstream = arbor.upstreamArbor(cuts);
+              CATMAID.msg("Approximating dendritic backbone", "By strahler number " +
+                  strahlerCut + ", neuron: " + CATMAID.NeuronNameService.getInstance().getName(skeleton.id));
+            }
+          }
+          if (upstream) {
+            // Collect nodes that don't belong to the dendritic backbone
+            var outside = {},
+                add = (function(node) { this[node] = true; }).bind(outside);
+            // Nodes from the axon terminals
+            skeleton.axon.nodesArray().forEach(add);
+            // Nodes from the linker between dendritic tree and axon terminals
+            skeleton.axon.fc_max_plateau.forEach(add);
+            // Nodes primarily from the linker between arbor and soma
+            skeleton.axon.fc_zeros.forEach(add);
+            // Set weights
+            arbor.nodesArray().forEach(function(node) {
+              this[node] = (upstream.contains(node) && !outside[node]) ? 1 : 0;
+            }, node_weights);
+          }
+        }
+
+        return node_weights;
+      }
+    },
+    'downstream-of-tag': {
+      weights: function(skeleton, options) {
+        var arbor = skeleton.createArbor();
+        var node_weights = {};
+        var upstream = skeleton.createUpstreamArbor(options.tag_regex, arbor);
+        arbor.nodesArray().forEach(function(node) {
+          this[node] = upstream.contains(node) ? 0 : 1;
+        }, node_weights);
+        return node_weights;
+      }
+    },
+    'synapse-free': {
+      weights: function(skeleton, options) {
+        var arbor = skeleton.createArbor();
+        var locations = skeleton.getPositions(),
+            node_weights = {};
+        arbor.split(skeleton.createSynapseCounts()).forEach(function(fragment) {
+          var weight = 0;
+          if (fragment.cableLength(locations) >= options.min_synapse_free_cable) {
+            weight = 1;
+          }
+          fragment.nodesArray().forEach(function(node) {
+            this[node] = weight;
+          }, node_weights);
+        });
+
+        return node_weights;
+      }
+    },
+    'near_active_node_z_camera': {
+      material:function(skeleton, options) {
+        var material = makeNearActiveNodeSplitMaterial(skeleton.line_material, true,
+            options.distance_to_active_node);
+        return material;
+      }
+    },
+    'near_active_node_z_project': {
+      material: function(skeleton, options) {
+        var material = makeNearActiveNodeSplitMaterial(skeleton.line_material, false,
+            options.distance_to_active_node);
+        return material;
+      }
+    },
+    'near_active_node': {
+      weights: function(skeleton, options) {
+        var distanceToActiveNode = options.distance_to_active_node;
+        var arbor = skeleton.createArbor();
+        var active = SkeletonAnnotations.getActiveNodeId();
+        if (!active || !arbor.contains(active)) {
+          return null;
+        } else {
+          var within = arbor.findNodesWithin(active,
+              skeleton.createNodeDistanceFn(), distanceToActiveNode);
+          var node_weights = {};
+          arbor.nodesArray().forEach(function(node) {
+            node_weights[node] = undefined === within[node] ? 0 : 1;
+          });
+          return node_weights;
+        }
+      }
+    },
+    'strahler': {
+      weights: function(skeleton, options) {
+        var arbor = skeleton.createArbor();
+        var node_weights = arbor.strahlerAnalysis();
+        var max = node_weights[arbor.root];
+        Object.keys(node_weights).forEach(function(node) {
+          node_weights[node] /= max;
+        });
+        return node_weights;
+      }
+    },
+    'partitions': {
+      weights: function(skeleton, options) {
+        // Shade by euclidian length, relative to the longest branch
+        var arbor = skeleton.createArbor();
+        var locations = skeleton.getPositions();
+        var partitions = arbor.partitionSorted();
+        var node_weights = partitions.reduce(function(o, seq, i) {
+          var loc1 = locations[seq[0]],
+              loc2,
+              plen = 0;
+          for (var i=1, len=seq.length; i<len; ++i) {
+            loc2 = locations[seq[i]];
+            plen += loc1.distanceTo(loc2);
+            loc1 = loc2;
+          }
+          return seq.reduce(function(o, node) {
+            o[node] = plen;
+            return o;
+          }, o);
+        }, {});
+        // Normalize by the length of the longest partition, which ends at root
+        var max_length = node_weights[arbor.root];
+        Object.keys(node_weights).forEach(function(node) {
+          node_weights[node] /= max_length;
+        });
+
+        return node_weights;
+      }
+    },
+    'active_node_split': {
+      weights: function(skeleton, options) {
+        var arbor = skeleton.createArbor();
+        // The active node is not necessarily a real node and splitting the arbor
+        // will therefore not work in case of a virtual node. The split is
+        // therefore performed with the next real child node and the node weight
+        // of the child will be adjusted to get the same visual effect.
+        var atn = SkeletonAnnotations.getActiveNodeId();
+        var virtualAtn = !SkeletonAnnotations.isRealNode(atn);
+        if (virtualAtn) atn = SkeletonAnnotations.getChildOfVirtualNode(atn);
+        var node_weights = {};
+        if (arbor.contains(atn)) {
+          var sub = arbor.subArbor(atn),
+              up = 1,
+              down = 0.5;
+          if (options.invert_shading) {
+            up = 0.5;
+            down = 0;
+          }
+          arbor.nodesArray().forEach(function(node) {
+            node_weights[node] = sub.contains(node) ? down : up;
+          });
+          if (virtualAtn) {
+            // If the active node is virtual, the weight of its real child is
+            // adjusted so so that it matches the visual appearance of having an
+            // actual node at the ATNs location.
+            var vnPos = SkeletonAnnotations.getActiveNodePositionW();
+            vnPos = new THREE.Vector3(vnPos.x, vnPos.y, vnPos.z);
+            var locations = skeleton.getPositions();
+            var vn = SkeletonAnnotations.getActiveNodeId();
+            var parentPos = locations[SkeletonAnnotations.getParentOfVirtualNode(vn)];
+            var childPos = locations[SkeletonAnnotations.getChildOfVirtualNode(vn)];
+            var distRatio = parentPos.distanceToSquared(vnPos) / parentPos.distanceToSquared(childPos);
+            node_weights[atn] = up - distRatio * (up - down);
+          }
+        }
+
+        return node_weights;
+      }
+    },
+    'downstream_amount': {
+      weights: function(skeleton, options) {
+        var arbor = skeleton.createArbor();
+        return arbor.downstreamAmount(skeleton.createNodeDistanceFn(), true);
+      }
+    },
+    'distance_to_root': {
+      weights: function(skeleton, options) {
+        var arbor = skeleton.createArbor();
+        var dr = arbor.nodesDistanceTo(arbor.root, skeleton.createNodeDistanceFn()),
+            distances = dr.distances,
+            max = dr.max;
+
+        // Normalize by max in place
+        Object.keys(distances).forEach(function(node) {
+          distances[node] = 1 - (distances[node] / max);
+        });
+
+        return distances;
+      }
+    },
+    'betweenness_centrality': {
+      weights: function(skeleton, options) {
+        var arbor = skeleton.createArbor();
+        var c = arbor.betweennessCentrality(true);
+        return normalizeFields(c);
+      }
+    },
+    'slab_centrality': {
+      weights: function(skeleton, options) {
+        var arbor = skeleton.createArbor();
+        var c = arbor.slabCentrality(true);
+        return normalizeFields(c);
+      }
+    },
+    'flow_centrality': {
+      weights: function(skeleton, options) {
+        return flowCentralityWeights(skeleton, "sum");
+      }
+    },
+    'centrifugal flow_centrality': {
+      weights: function(skeleton, options) {
+        return flowCentralityWeights(skeleton, "centrifugal");
+      }
+    },
+    'centripetal flow_centrality': {
+      weights: function(skeleton, options) {
+        var arbor = skeleton.createArbor();
+        return flowCentralityWeights(skeleton, "centripetal");
+      }
+    }
+  };
+
+  /**
+   * Calculate either 'sum', 'centrifugal' or 'centripetal' centrality flow
+   * weights for a skeleton.
+   */
+  var flowCentralityWeights = function(skeleton, key) {
+    var arbor = skeleton.createArbor();
+    var io = skeleton.createPrePostCounts();
+    var c;
+    if (0 === io.postsynaptic_to_count || 0 === io.presynaptic_to_count) {
+      CATMAID.warn('Neuron "' + skeleton.skeletonmodel.baseName + '" lacks input or output synapses.');
+      c = arbor.nodesArray().reduce(function(o, node) {
+        // All the same
+        o[node] = 1;
+        return o;
+      }, {});
+    } else {
+      var fc = arbor.flowCentrality(io.presynaptic_to, io.postsynaptic_to,
+          io.presynaptic_to_count, io.postsynaptic_to_count);
+      var c = {};
+      var nodes = Object.keys(fc);
+      for (var i=0; i<nodes.length; ++i) {
+        var node = nodes[i];
+        c[node] = fc[node][key];
+      }
+    }
+
+    return normalizeFields(c);
+  };
+
+
+  var getSkeletonColorMethod = function(options, noDefault) {
+    var colorizer = SkeletonColorMethods[options.color_method];
+    return (colorizer || noDefault) ? colorizer : SkeletonColorMethods['actor-color'];
+  };
+
+  var getSkeletonShadingMethod = function(options, noDefault) {
+    var shading = SkeletonShadingMethods[options.shading_method];
+    return (shading || noDefault) ? shading : SkeletonShadingMethods['none'];
+  };
+
+  /**
+   * Create a new skeleton colorizer object that wraps the coloring and shading
+   * functionality defined through the passed in options.
+   */
+  CATMAID.makeSkeletonColorizer = function(options) {
+    var isFn = CATMAID.tools.isFn;
+    var shading = getSkeletonShadingMethod(options);
+    var coloring = getSkeletonColorMethod(options);
+    var weights = isFn(shading.weights) ? shading.weights : function() { return null; };
+
+    return {
+      prepare: function(skeletons) {
+        var prepare = Promise.resolve();
+        if (isFn(shading.prepare)) {
+          prepare = prepare.then(shading.prepare.bind(shading, skeletons));
+        }
+        if (isFn(coloring.prepare)) {
+          prepare = prepare.then(coloring.prepare.bind(coloring, skeletons));
+        }
+        return prepare;
+      },
+      material: function(skeleton) {
+        if (isFn(shading.material)) {
+          return shading.material(skeleton, options);
+        } else {
+          return new THREE.LineBasicMaterial({
+            color: skeleton.line_material.color,
+            opacity: skeleton.line_material.opacity,
+            linewidth: options.skeleton_line_width
+          });
+        }
+      },
+      weights: function(skeleton) {
+        var node_weights = weights(skeleton, options);
+
+        if (options.invert_shading && node_weights) {
+          // All weights are values between 0 and 1
+          Object.keys(node_weights).forEach(function(node) {
+            this[node] = 1 - this[node];
+          }, node_weights);
+        }
+
+        if (!node_weights && coloring.vertexColorizer) {
+          node_weights = {};
+        }
+
+        return node_weights;
+      },
+      vertexColors: !!coloring.vertexColorizer,
+      colorPicker: function(skeleton) {
+        if (isFn(coloring.vertexColorizer)) {
+          return coloring.vertexColorizer(skeleton, {
+            unreviewedColor: new THREE.Color().setRGB(0.2, 0.2, 0.2),
+            reviewedColor: new THREE.Color().setRGB(1.0, 0.0, 1.0),
+            axonColor: new THREE.Color().setRGB(0, 1, 0),
+            dendriteColor: new THREE.Color().setRGB(0, 0, 1),
+            notComputableColor: new THREE.Color().setRGB(0.4, 0.4, 0.4)
+          });
+        } else {
+          return function(vertex) {
+            return skeleton.actorColor;
+          };
+        }
+      },
+      SkeletonMaterial: getSkeletonMaterialType(options['neuron_material'])
+    };
+  };
+
+  WebGLApplication.prototype.updateSkeletonColors = function() {
+    var skeletons = this.space.content.skeletons;
+    var colorizer = CATMAID.makeSkeletonColorizer(this.options);
+    return colorizer.prepare(skeletons)
+      .then((function() {
+        Object.keys(skeletons).forEach(function(skeleton_id) {
+          skeletons[skeleton_id].updateSkeletonColor(colorizer);
+        });
+        this.space.render();
+      }).bind(this));
   };
 
   WebGLApplication.prototype.setSkeletonShadingType = function(shading) {
@@ -1415,7 +2003,7 @@
         skeleton.setMetaVisibility(model.meta_visible);
         skeleton.actorColor = model.color.clone();
         skeleton.opacity = model.opacity;
-        skeleton.updateSkeletonColor(this.options);
+        skeleton.updateSkeletonColor(CATMAID.makeSkeletonColorizer(this.options));
         // In case connectors are colored like skeletons, they have yo be
         // updated, too.
         if ('skeleton' === this.options.connector_color) {
@@ -1457,13 +2045,14 @@
             // Failed loading: will be handled elsewhere via fnMissing in fetchCompactSkeletons
           },
           (function() {
-            this.updateSkeletonColors(
-              (function() {
-                  if (this.options.connector_filter) this.refreshRestrictedConnectors();
-                  if (typeof callback === "function") {
-                    try { callback(); } catch (e) { alert(e); }
-                  }
-              }).bind(this));
+            this.updateSkeletonColors()
+              .then((function() {
+                if (this.options.connector_filter) this.refreshRestrictedConnectors();
+                if (typeof callback === "function") {
+                  try { callback(); } catch (e) { alert(e); }
+                }
+              }).bind(this))
+              .catch(CATMAID.handleError);
           }).bind(this),
           'GET'));
   };
@@ -1571,8 +2160,12 @@
       if (!skeletons.hasOwnProperty(skeleton_id)) {
         console.log("Skeleton "+skeleton_id+" does not exist.");
       }
-      if (undefined === colors) skeletons[skeleton_id].updateSkeletonColor(this.options);
-      else skeletons[skeleton_id].changeColor(colors[index], this.options);
+      if (undefined === colors) {
+        var colorizer = CATMAID.makeSkeletonColorizer(this.options);
+        skeletons[skeleton_id].updateSkeletonColor(colorizer);
+      } else {
+        skeletons[skeleton_id].changeColor(colors[index], this.options);
+      }
     }, this);
 
     this.space.render();
@@ -1932,9 +2525,15 @@
         'near_active_node_z_project' === options.shading_method ||
         'near_active_node_z_camera' === options.shading_method) {
       if (old_skeleton_id !== new_skeleton_id) {
-        if (old_skeleton_id && old_skeleton_id in this.content.skeletons) this.content.skeletons[old_skeleton_id].updateSkeletonColor(options);
+        if (old_skeleton_id && old_skeleton_id in this.content.skeletons) {
+          var colorizer = CATMAID.makeSkeletonColorizer(options);
+          this.content.skeletons[old_skeleton_id].updateSkeletonColor(colorizer);
+        }
       }
-      if (new_skeleton_id && new_skeleton_id in this.content.skeletons) this.content.skeletons[new_skeleton_id].updateSkeletonColor(options);
+      if (new_skeleton_id && new_skeleton_id in this.content.skeletons) {
+        var colorizer = CATMAID.makeSkeletonColorizer(options);
+        this.content.skeletons[new_skeleton_id].updateSkeletonColor(colorizer);
+      }
     }
   };
 
@@ -4517,365 +5116,16 @@
       return SynapseClustering.prototype.findAxon(ap, 0.9, this.getPositions());
   };
 
-  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColor = function(options) {
-    var node_weights,
-        arbor;
-    if ('near_active_node_z_camera' !== options.shading_method &&
-        'near_active_node_z_project' !== options.shading_method &&
-        this.line_material instanceof CATMAID.ShaderLineBasicMaterial) {
-      this.line_material = this.actor.neurite.material = new THREE.LineBasicMaterial({
-        color: this.line_material.color,
-        opacity: this.line_material.opacity,
-        linewidth: options.skeleton_line_width});
-    }
+  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateSkeletonColor = function(colorizer) {
+    this.line_material = this.actor.neurite.material = colorizer.material(this);
+    var node_weights = colorizer.weights(this);
 
-    if ('none' === options.shading_method) {
-      node_weights = null;
-    } else {
-      arbor = this.createArbor();
-
-      if (-1 !== options.shading_method.lastIndexOf('centrality')) {
-        // Darken the skeleton based on the betweenness calculation.
-        var c;
-        if (0 === options.shading_method.indexOf('betweenness')) {
-          c = arbor.betweennessCentrality(true);
-        } else if (0 === options.shading_method.indexOf('slab')) {
-          c = arbor.slabCentrality(true); // branch centrality
-        } else {
-          // Flow centrality
-          var io = this.createPrePostCounts();
-          if (0 === io.postsynaptic_to_count || 0 === io.presynaptic_to_count) {
-            CATMAID.warn('Neuron "' + this.skeletonmodel.baseName + '" lacks input or output synapses.');
-            c = arbor.nodesArray().reduce(function(o, node) {
-              // All the same
-              o[node] = 1;
-              return o;
-            }, {});
-          } else {
-            var key = 'sum';
-            if (0 === options.shading_method.indexOf('centrifugal')) {
-              key = 'centrifugal';
-            } else if (0 === options.shading_method.indexOf('centripetal')) {
-              key = 'centripetal';
-            }
-            var fc = arbor.flowCentrality(io.presynaptic_to, io.postsynaptic_to, io.presynaptic_to_count, io.postsynaptic_to_count),
-                c = {},
-                nodes = Object.keys(fc);
-            for (var i=0; i<nodes.length; ++i) {
-              var node = nodes[i];
-              c[node] = fc[node][key];
-            }
-          }
-        }
-
-        var node_ids = Object.keys(c),
-            max = node_ids.reduce(function(a, node_id) {
-              return Math.max(a, c[node_id]);
-            }, 0);
-
-        // Normalize c in place
-        node_ids.forEach(function(node_id) {
-          c[node_id] = c[node_id] / max;
-        });
-
-        node_weights = c;
-
-      } else if ('distance_to_root' === options.shading_method) {
-        var dr = arbor.nodesDistanceTo(arbor.root, this.createNodeDistanceFn()),
-            distances = dr.distances,
-            max = dr.max;
-
-        // Normalize by max in place
-        Object.keys(distances).forEach(function(node) {
-          distances[node] = 1 - (distances[node] / max);
-        });
-
-        node_weights = distances;
-
-      } else if ('downstream_amount' === options.shading_method) {
-        node_weights = arbor.downstreamAmount(this.createNodeDistanceFn(), true);
-
-      } else if ('active_node_split' === options.shading_method) {
-        // The active node is not necessarily a real node and splitting the arbor
-        // will therefore not work in case of a virtual node. The split is
-        // therefore performed with the next real child node and the node weight
-        // of the child will be adjusted to get the same visual effect.
-        var atn = SkeletonAnnotations.getActiveNodeId();
-        var virtualAtn = !SkeletonAnnotations.isRealNode(atn);
-        if (virtualAtn) atn = SkeletonAnnotations.getChildOfVirtualNode(atn);
-        if (arbor.contains(atn)) {
-          node_weights = {};
-          var sub = arbor.subArbor(atn),
-              up = 1,
-              down = 0.5;
-          if (options.invert_shading) {
-            up = 0.5;
-            down = 0;
-          }
-          arbor.nodesArray().forEach(function(node) {
-            node_weights[node] = sub.contains(node) ? down : up;
-          });
-          if (virtualAtn) {
-            // If the active node is virtual, the weight of its real child is
-            // adjusted so so that it matches the visual appearance of having an
-            // actual node at the ATNs location.
-            var vnPos = SkeletonAnnotations.getActiveNodePositionW();
-            vnPos = new THREE.Vector3(vnPos.x, vnPos.y, vnPos.z);
-            var locations = this.getPositions();
-            var vn = SkeletonAnnotations.getActiveNodeId();
-            var parentPos = locations[SkeletonAnnotations.getParentOfVirtualNode(vn)];
-            var childPos = locations[SkeletonAnnotations.getChildOfVirtualNode(vn)];
-            var distRatio = parentPos.distanceToSquared(vnPos) / parentPos.distanceToSquared(childPos);
-            node_weights[atn] = up - distRatio * (up - down);
-          }
-        } else {
-          // Don't shade any
-          node_weights = {};
-        }
-
-      } else if ('partitions' === options.shading_method) {
-        // Shade by euclidian length, relative to the longest branch
-        var locations = this.getPositions();
-        var partitions = arbor.partitionSorted();
-        node_weights = partitions.reduce(function(o, seq, i) {
-          var loc1 = locations[seq[0]],
-              loc2,
-              plen = 0;
-          for (var i=1, len=seq.length; i<len; ++i) {
-            loc2 = locations[seq[i]];
-            plen += loc1.distanceTo(loc2);
-            loc1 = loc2;
-          }
-          return seq.reduce(function(o, node) {
-            o[node] = plen;
-            return o;
-          }, o);
-        }, {});
-        // Normalize by the length of the longest partition, which ends at root
-        var max_length = node_weights[arbor.root];
-        Object.keys(node_weights).forEach(function(node) {
-          node_weights[node] /= max_length;
-        });
-
-      } else if (-1 !== options.shading_method.indexOf('strahler')) {
-        node_weights = arbor.strahlerAnalysis();
-        var max = node_weights[arbor.root];
-        Object.keys(node_weights).forEach(function(node) {
-          node_weights[node] /= max;
-        });
-      } else if ('near_active_node' === options.shading_method) {
-        var active = SkeletonAnnotations.getActiveNodeId();
-        if (!active || !arbor.contains(active)) node_weights = null;
-        else {
-          var within = arbor.findNodesWithin(active, this.createNodeDistanceFn(), options.distance_to_active_node);
-          node_weights = {};
-          arbor.nodesArray().forEach(function(node) {
-            node_weights[node] = undefined === within[node] ? 0 : 1;
-          });
-        }
-
-      } else if ('near_active_node_z_camera' === options.shading_method ||
-                 'near_active_node_z_project' === options.shading_method) {
-        this.line_material = this.actor.neurite.material =
-            new CATMAID.ShaderLineBasicMaterial(this.line_material);
-
-        // Determine active node distance in the vertex shader and pass to the
-        // fragment shader as a varying.
-        this.line_material.insertSnippet(
-            'vertexDeclarations',
-            'uniform vec3 u_activeNodePosition;\n' +
-            'uniform float u_horizon;\n' +
-            'varying float activeNodeDistanceDarkening;\n');
-        this.line_material.insertSnippet(
-            'vertexPosition',
-            ('near_active_node_z_camera' === options.shading_method ?
-              'vec3 camVert = (vec4(position, 1.0) * modelMatrix).xyz - cameraPosition;\n' +
-              'vec3 camAtn = (vec4(u_activeNodePosition, 1.0) * modelMatrix).xyz - cameraPosition;\n' +
-              'float zDist = distance(dot(camVert, normalize(camAtn)), length(camAtn));\n' :
-              'float zDist = distance(position.z, u_activeNodePosition.z);\n') +
-            'activeNodeDistanceDarkening = 1.0 - clamp(zDist/u_horizon, 0.0, 1.0);\n');
-
-        this.line_material.insertSnippet(
-            'fragmentDeclarations',
-            'varying float activeNodeDistanceDarkening;\n');
-        this.line_material.insertSnippet(
-            'fragmentColor',
-            'gl_FragColor = vec4(outgoingLight * activeNodeDistanceDarkening, diffuseColor.a);\n');
-
-        this.line_material.addUniforms({
-            u_activeNodePosition: { type: 'v3', value: SkeletonAnnotations.getActiveNodeProjectVector3() },
-            u_horizon: { type: 'f', value: options.distance_to_active_node }});
-        this.line_material.refresh();
-
-      } else if ('synapse-free' === options.shading_method) {
-        var locations = this.getPositions(),
-            node_weights = {};
-        arbor.split(this.createSynapseCounts()).forEach(function(fragment) {
-          var weight = 0;
-          if (fragment.cableLength(locations) >= options.min_synapse_free_cable) {
-            weight = 1;
-          }
-          fragment.nodesArray().forEach(function(node) {
-            this[node] = weight;
-          }, node_weights);
-        });
-      } else if ('dendritic-backbone' === options.shading_method) {
-        node_weights = {};
-        if (!this.axon) {
-          // Not computable
-          console.log("Shading '" + options.shading_method + "' not computable for skeleton ID #" + this.id + ", neuron named: " + CATMAID.NeuronNameService.getInstance().getName(this.id) + ". The axon is missing.");
-        } else {
-          // Prune artifactual branches
-          if (this.tags['not a branch']) {
-            var ap = new CATMAID.ArborParser(); ap.inputs = {}; ap.outputs = {};
-            ap.arbor = arbor.clone();
-            ap.collapseArtifactualBranches(this.tags);
-            arbor = ap.arbor;
-          }
-          // Create backbone arbor
-          var upstream;
-          if (this.tags['microtubules end'] && this.tags['microtubules end'].length > 0) {
-            upstream = this.createUpstreamArbor('microtubules end', arbor);
-          } else {
-            var cuts = arbor.approximateTwigRoots(options.strahler_cut);
-            if (cuts && cuts.length > 0) {
-              upstream = arbor.upstreamArbor(cuts);
-              CATMAID.msg("Approximating dendritic backbone", "By strahler number " + options.strahler_cut + ", neuron: " + CATMAID.NeuronNameService.getInstance().getName(this.id));
-            }
-          }
-          node_weights = {};
-          if (upstream) {
-            // Collect nodes that don't belong to the dendritic backbone
-            var outside = {},
-                add = (function(node) { this[node] = true; }).bind(outside);
-            // Nodes from the axon terminals
-            this.axon.nodesArray().forEach(add);
-            // Nodes from the linker between dendritic tree and axon terminals
-            this.axon.fc_max_plateau.forEach(add);
-            // Nodes primarily from the linker between arbor and soma
-            this.axon.fc_zeros.forEach(add);
-            // Set weights
-            arbor.nodesArray().forEach(function(node) {
-              this[node] = (upstream.contains(node) && !outside[node]) ? 1 : 0;
-            }, node_weights);
-          }
-        }
-      } else if ('downstream-of-tag' === options.shading_method) {
-        node_weights = {};
-        var upstream = this.createUpstreamArbor(options.tag_regex, arbor);
-        arbor.nodesArray().forEach(function(node) {
-          this[node] = upstream.contains(node) ? 0 : 1;
-        }, node_weights);
-      }
-    }
-
-    if (options.invert_shading && node_weights) {
-      // All weights are values between 0 and 1
-      Object.keys(node_weights).forEach(function(node) {
-        this[node] = 1 - this[node];
-      }, node_weights);
-    }
-
-    if (node_weights || 'none' !== options.color_method) {
+    if (node_weights || colorizer.vertexColors) {
       // The skeleton colors need to be set per-vertex.
       this.line_material.vertexColors = THREE.VertexColors;
       this.line_material.needsUpdate = true;
 
-      var pickColor;
-      var actorColor = this.actorColor;
-      var unreviewedColor = new THREE.Color().setRGB(0.2, 0.2, 0.2);
-      var reviewedColor = new THREE.Color().setRGB(1.0, 0.0, 1.0);
-      var axonColor = new THREE.Color().setRGB(0, 1, 0),
-          dendriteColor = new THREE.Color().setRGB(0, 0, 1),
-          notComputable = new THREE.Color().setRGB(0.4, 0.4, 0.4);
-      if (options.color_method.startsWith('creator')) {
-        var userColor;
-        if ('creator' === options.color_method) {
-          userColor = function (userID) { return CATMAID.User(userID).color; };
-        } else if ('creator-relevant' === options.color_method) {
-          if (!this.space.userColormap.colorizer) {
-            this.space.userColormap.colorizer = {};
-            CATMAID.asColorizer(this.space.userColormap.colorizer);
-          }
-          var colorizer = this.space.userColormap.colorizer;
-          userColor = colorizer.pickColor.bind(colorizer);
-        }
-
-        pickColor = (function (vertex) {
-          var userID = vertex.user_id;
-          if (!this.space.userColormap.hasOwnProperty(userID)) {
-            this.space.userColormap[userID] = userColor(userID);
-          }
-
-          return this.space.userColormap[userID];
-        }).bind(this);
-      } else if ('all-reviewed' === options.color_method) {
-        pickColor = this.reviews ?
-          (function(vertex) {
-            var reviewers = this.reviews[vertex.node_id];
-            return reviewers && reviewers.length > 0 ?
-              reviewedColor : unreviewedColor;
-          }).bind(this)
-          : function() { return notComputable; };
-      } else if ('whitelist-reviewed' === options.color_method) {
-        pickColor = this.reviews ?
-          (function(vertex) {
-            var wl = CATMAID.ReviewSystem.Whitelist.getWhitelist();
-            var reviewers = this.reviews[vertex.node_id];
-          return reviewers && reviewers.some(function (r) {
-              return r[0] in wl && (new Date(r[1])) > wl[r[0]];}) ?
-            reviewedColor : unreviewedColor;
-        }).bind(this)
-          : function() { return notComputable; };
-      } else if ('own-reviewed' === options.color_method) {
-        var userId = CATMAID.session.userid;
-        pickColor = this.reviews ?
-          (function(vertex) {
-            var reviewers = this.reviews[vertex.node_id];
-          return reviewers && reviewers.some(function (r) { return r[0] == userId;}) ?
-            reviewedColor : unreviewedColor;
-        }).bind(this)
-          : function() { return notComputable; };
-      } else if ('last-reviewed' === options.color_method) {
-        var findLastReview = function(lastReview, review) {
-          if (!lastReview) {
-            return review;
-          } else if (new Date(lastReview[1]) < new Date(review[1])) {
-            return review;
-          }
-          return lastReview;
-        };
-        var users = CATMAID.User.all();
-        pickColor = this.reviews ?
-          (function(vertex) {
-            var reviewers = this.reviews[vertex.node_id];
-            if (reviewers) {
-              var lastReviewer = reviewers.reduce(findLastReview, null);
-              var lastReviewerId = lastReviewer[0];
-              var lastReviewerColor = users[lastReviewerId].color;
-
-              if (!this.space.userColormap.hasOwnProperty(lastReviewerId)) {
-                this.space.userColormap[lastReviewerId] = lastReviewerColor;
-              }
-
-              return lastReviewerColor;
-            } else {
-              return unreviewedColor;
-            }
-          }).bind(this)
-          : function() { return notComputable; };
-      } else if ('axon-and-dendrite' === options.color_method) {
-        pickColor = this.axon ?
-          (function(vertex) {
-          return this.contains(vertex.node_id) ? axonColor : dendriteColor;
-        }).bind(this.axon)
-          : function() { return notComputable; };
-      } else {
-        pickColor = function() { return actorColor; };
-      }
-
-      // When not using shading, but using creator or reviewer:
-      if (!node_weights) node_weights = {};
+      var pickColor = colorizer.colorPicker(this);
 
       var seen = {};
       this.geometry['neurite'].colors = this.geometry['neurite'].vertices.map(function(vertex) {
@@ -4907,7 +5157,7 @@
       this.geometry['neurite'].colorsNeedUpdate = true;
       this.actor['neurite'].material.color = new THREE.Color().setHex(0xffffff);
 
-      if ('none' === options.color_method) {
+      if (!colorizer.vertexColors) {
         this.actor['neurite'].material.opacity = this.opacity;
         this.actor['neurite'].material.transparent = this.opacity !== 1;
       } else {
@@ -4928,9 +5178,11 @@
       this.actor['neurite'].material.transparent = this.opacity !== 1;
       this.actor['neurite'].material.needsUpdate = true; // TODO repeated it's the line_material
 
-
-      var Material = getSkeletonMaterialType(options['neuron_material']);
-      var material = new Material({color: this.actorColor, opacity: this.opacity, transparent: this.opacity !== 1});
+      var material = new colorizer.SkeletonMaterial({
+        color: this.actorColor,
+        opacity: this.opacity,
+        transparent: this.opacity !== 1
+      });
 
       for (var k in this.radiusVolumes) {
         if (this.radiusVolumes.hasOwnProperty(k)) {
@@ -6236,7 +6488,8 @@
       if (skid) {
         var skeleton = this.space.content.skeletons[skid];
         if (skeleton) {
-          skeleton.updateSkeletonColor(this.options);
+          var colorizer = CATMAID.makeSkeletonColorizer(this.options);
+          skeleton.updateSkeletonColor(colorizer);
           this.space.render();
         }
       }
@@ -6455,7 +6708,8 @@
 
           // Color skeletons
           if (widget.options.connector_filter) {
-            widget.updateSkeletonColors(widget.refreshRestrictedConnectors.bind(widget));
+            widget.updateSkeletonColors()
+              .then(widget.refreshRestrictedConnectors.bind(widget));
           } else {
             widget.updateSkeletonColors();
           }

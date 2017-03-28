@@ -54,6 +54,7 @@
       var newStep = this.steps[stepIndex];
       try {
         newStep.activate(this.state);
+        newStep.destroy(this.state);
         this.currentStepIndex = stepIndex;
         success = true;
       } catch (error) {
@@ -82,6 +83,8 @@
   };
 
   WorkflowStep.activate = function(state) {};
+
+  WorkflowStep.destroy = function(state) {};
 
   WorkflowStep.isComplete = function(state) {
     return true;

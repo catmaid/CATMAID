@@ -145,7 +145,6 @@
       self.focusedStackViewer = stackViewer;
       if ( tool )
         self.focusedStackViewer.setTool( tool );
-      window.onresize();
       this.trigger(Project.EVENT_STACKVIEW_FOCUS_CHANGED, stackViewer);
     };
 

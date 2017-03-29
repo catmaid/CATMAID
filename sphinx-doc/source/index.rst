@@ -26,7 +26,7 @@ The **C**\ ollaborative **A**\ nnotation **T**\ oolkit for **M**\ assive **A**\ 
     :group: index
     :width: 150px
     :height: 100px
-    :title: CATMAID user interface showing a typical tracing setup with graph, 3D viewer, plots and connectivity, by Schneider-Mizell and Stephan Gerhard et. al.
+    :title: CATMAID user interface showing a typical tracing setup with graph, 3D viewer, plots and connectivity, by Schneider-Mizell and Stephan Gerhard et al.
 
 .. thumbnail:: _static/screenshots/ui-ortho-views.jpg
     :class: lightimage
@@ -56,19 +56,19 @@ The **C**\ ollaborative **A**\ nnotation **T**\ oolkit for **M**\ assive **A**\ 
     :height: 100px
     :title: Tracing view, 3D Viewer with KC neurons and Neuron Search, by Bock et al., unpublished data
 
-.. thumbnail:: _static/screenshots/catmaid-onto.png
-    :class: lightimage
-    :group: index
-    :width: 150px
-    :height: 100px
-    :title: Four image channels along with an Ontology Editor, a Classification Editor and the Classification Clustering Widget
-
 .. thumbnail:: _static/screenshots/catmaid-graph-dendrogram.png
     :class: lightimage
     :group: index
     :width: 150px
     :height: 100px
     :title: The Graph Widget is used to inspect and learn about network topology and the Dendgrogram to look at neuron topology
+
+.. thumbnail:: _static/screenshots/catmaid-onto.png
+    :class: lightimage
+    :group: index
+    :width: 150px
+    :height: 100px
+    :title: Four image channels along with an Ontology Editor, a Classification Editor and the Classification Clustering Widget
 
 .. thumbnail:: _static/screenshots/api.png
     :class: lightimage

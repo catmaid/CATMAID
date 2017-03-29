@@ -794,11 +794,11 @@ div.review-block::after {
   border-bottom: 1px solid black;
 }
 
-#settings_widget .title {
+#settings-widget .title {
   font-weight: bold;
 }
 
-#settings_widget > .settings-container {
+#settings-widget > .settings-container {
   margin-left: 1em;
 }
 
@@ -915,11 +915,11 @@ div.review-block::after {
   width: 0;
 }
 
-#settings_widget select {
+#settings-widget select {
   min-width: 20em;
 }
 
-#settings_widget select.multiline {
+#settings-widget select.multiline {
   height: 8em;
 }
 

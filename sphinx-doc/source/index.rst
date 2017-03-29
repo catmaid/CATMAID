@@ -49,6 +49,13 @@ The **C**\ ollaborative **A**\ nnotation **T**\ oolkit for **M**\ assive **A**\ 
     :height: 100px
     :title: CATMAID user interface showing the neuron based creation of 3D  meshes
 
+.. thumbnail:: _static/screenshots/fafb-catmaid-tracing-screenshot.png
+    :class: lightimage
+    :group: index
+    :width: 150px
+    :height: 100px
+    :title: Tracing view, 3D Viewer with KC neurons and Neuron Search, by Bock et al., unpublished data
+
 .. thumbnail:: _static/screenshots/catmaid-onto.png
     :class: lightimage
     :group: index

@@ -32,7 +32,7 @@
 
     // take care, that all values are within a proper range
     // Declare the x,y,z,s as coordinates in pixels
-    this.z = 0;
+    this.z = primaryStack.isSliceBroken(0) ? primaryStack.validZDistanceAfter(0): 0;
     this.y = Math.floor( primaryStack.MAX_Y / 2 );
     this.x = Math.floor( primaryStack.MAX_X / 2 );
     this.s = primaryStack.MAX_S;

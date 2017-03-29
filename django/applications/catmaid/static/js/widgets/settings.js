@@ -1250,6 +1250,14 @@
               CATMAID.skeletonListSources.defaultSelectLastSource = this.checked;
             }));
 
+      // Review status coloring
+      ds.append(CATMAID.DOM.createCheckboxSetting('Use detailed review color status',
+            CATMAID.ReviewSystem.useDetailedStatusColors,
+            'If true, review status is displayed in nine different colors between ' +
+            'the regular 0% and 100% colors.', function() {
+              CATMAID.ReviewSystem.useDetailedStatusColors = this.checked;
+            }));
+
       var dsTracingWarnings = CATMAID.DOM.addSettingsContainer(ds,
           "Warnings", true);
 

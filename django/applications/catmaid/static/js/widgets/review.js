@@ -1336,6 +1336,12 @@
   CATMAID.ReviewSystem.STATUS_COLOR_FULL    = '#6fff5c';
   CATMAID.ReviewSystem.STATUS_COLOR_PARTIAL = '#ffc71d';
   CATMAID.ReviewSystem.STATUS_COLOR_NONE    = '#ff8c8c';
+  CATMAID.ReviewSystem.STATUS_COLOR_PARTIAL_8 = [
+    '#ff9789', '#ffa286', '#ffaf83', '#ffbc80', '#ffc97d',
+    '#ffd87a', '#ffe777', '#fff774', '#e6ff6e', '#d4ff6b'
+  ];
+
+  CATMAID.ReviewSystem.useDetailedStatusColors = false;
 
   /**
    * Support function for selecting a background color based on review state.
@@ -1346,7 +1352,13 @@
     } else if (0 === reviewed) {
     return CATMAID.ReviewSystem.STATUS_COLOR_NONE;
     } else {
-    return CATMAID.ReviewSystem.STATUS_COLOR_PARTIAL;
+      if (CATMAID.ReviewSystem.useDetailedStatusColors) {
+        // Get a color index in [0,9], mapping to review percentages 1 to 99
+        var colorIndex = Math.max(0, Math.min(9, Math.floor(reviewed / 10)));
+        return CATMAID.ReviewSystem.STATUS_COLOR_PARTIAL_8[colorIndex];
+      } else {
+        return CATMAID.ReviewSystem.STATUS_COLOR_PARTIAL;
+      }
     }
   };
 

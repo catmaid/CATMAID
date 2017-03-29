@@ -37,6 +37,11 @@ Miscellaneous:
   after the name in the window title bar. A small window-like icon next to the
   window name toggles controls to change the widget alias.
 
+- Review status colors can now be more fine-grained. The Settings Widget
+  contains now the option "Use detail review color status" as part of the
+  Tracing section. If enabled, ten different colors plus the regular 0% and 100%
+  color will be used instead of three.
+
 
 ### Bug fixes
 

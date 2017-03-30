@@ -305,6 +305,16 @@ class ConnectorsApiTests(CatmaidApiTestCase):
 
         self.assertEqual(expected_result, parsed_response)
 
+        response = self.client.post(
+                '/%d/connector/info' % self.test_project_id,
+                {'post[0]': 361})
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        expected_result = [
+                [356, [6730.0, 2700.0, 0.0],
+                 285, 235, 5, 3, [6100.0, 2980.0, 0.0],
+                 367, 361, 5, 3, [7030.0, 1980.0, 0.0]]]
+        self.assertEqual(expected_result, parsed_response)
 
     def test_connector_detail(self):
         self.fake_authentication()

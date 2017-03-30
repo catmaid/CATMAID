@@ -568,8 +568,6 @@ def connectors_info(request, project_id):
                     "pre and/or post.")
 
     relations = get_relation_to_id_map(project_id, ('presynaptic_to', 'postsynaptic_to'), cursor)
-    pre = relations['presynaptic_to']
-    post = relations['postsynaptic_to']
 
     # Construct base query
     query_parts = ['''
@@ -639,8 +637,8 @@ def connectors_info(request, project_id):
         AND tc1.relation_id = %s
         AND tc2.relation_id = %s
     ''')
-    query_params.append(pre)
-    query_params.append(post)
+    query_params.append(relations['presynaptic_to'])
+    query_params.append(relations['postsynaptic_to'])
 
     if skids:
         query_parts.append('''

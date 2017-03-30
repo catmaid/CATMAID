@@ -567,11 +567,9 @@ def connectors_info(request, project_id):
             raise ValueError("The skids parameter can't be used together with "
                     "pre and/or post.")
 
-        relations = get_relation_to_id_map(project_id, ('presynaptic_to', 'postsynaptic_to'), cursor)
-        pre = relations['presynaptic_to']
-        post = relations['postsynaptic_to']
-    else:
-        pre = post = None
+    relations = get_relation_to_id_map(project_id, ('presynaptic_to', 'postsynaptic_to'), cursor)
+    pre = relations['presynaptic_to']
+    post = relations['postsynaptic_to']
 
     # Construct base query
     query_parts = ['''
@@ -594,11 +592,13 @@ def connectors_info(request, project_id):
         '''.format(cid_template))
         query_params.extend(cids)
 
-    # Add pre-synaptic skeleton filter, if requested
+    # Get first partner of connection
     query_parts.append('''
         JOIN treenode_connector tc1 ON tc1.connector_id = c.id
         JOIN treenode t1 ON tc1.treenode_id = t1.id
     ''')
+
+    # Add pre-synaptic skeleton filter, if requested
     if skids_pre:
         pre_skid_template = ",".join(("(%s)",) * len(skids_pre))
         query_parts.append('''
@@ -606,11 +606,13 @@ def connectors_info(request, project_id):
         '''.format(pre_skid_template))
         query_params.extend(skids_pre)
 
-    # Add post-synaptic skeleton filter, if requested
+    # Get second partner of connection
     query_parts.append('''
         JOIN treenode_connector tc2 ON tc2.connector_id = c.id
         JOIN treenode t2 ON tc2.treenode_id = t2.id
     ''')
+
+    # Add post-synaptic skeleton filter, if requested
     if skids_post:
         post_skid_template = ",".join(("(%s)",) * len(skids_post))
         query_parts.append('''
@@ -631,19 +633,14 @@ def connectors_info(request, project_id):
         WHERE tc1.id != tc2.id
     ''')
 
-    # Pre-synaptic skeleton filters also constrain the relation
-    if skids_pre:
-        query_parts.append('''
-            AND tc1.relation_id = %s
-        ''')
-        query_params.append(pre)
-
-    # Post-synaptic skeleton filters also constrain the relation
-    if skids_post:
-        query_parts.append('''
-            AND tc2.relation_id = %s
-        ''')
-        query_params.append(post)
+    # The result is expected to be stictly pre-synaptic and post-synaptic at the
+    # moment.
+    query_parts.append('''
+        AND tc1.relation_id = %s
+        AND tc2.relation_id = %s
+    ''')
+    query_params.append(pre)
+    query_params.append(post)
 
     if skids:
         query_parts.append('''

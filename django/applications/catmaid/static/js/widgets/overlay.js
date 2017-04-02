@@ -1335,35 +1335,12 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodeRadiiVisibility = functio
  * handle virtual nodes.
  */
 SkeletonAnnotations.TracingOverlay.prototype.activateNode = function(node) {
+  CATMAID.status("");
   var atn = SkeletonAnnotations.atn,
       last_skeleton_id = atn.skeleton_id;
   if (node) {
-    // Check if the node is already selected/activated
-    if (node.id === atn.id && node.skeleton_id === atn.skeleton_id) {
-      // Update coordinates
-      atn.set(node, this.getStackViewer().getId());
-      return;
-    }
-    // Else, select the node
-    if (SkeletonAnnotations.TYPE_NODE === node.type) {
-      // Update CATMAID.statusBar
-      var prefix = SkeletonAnnotations.isRealNode(node.id) ?
-          "Node " + node.id + ", skeleton " + node.skeleton_id :
-          "Virtual node, skeleton " + node.skeleton_id;
-      CATMAID.status("");
-      atn.set(node, this.getStackViewer().getId());
-    } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === node.type) {
-      var prefix;
-      if (CATMAID.Connectors.SUBTYPE_ABUTTING_CONNECTOR === node.subtype) {
-        prefix = "Abutting connector node #" + node.id;
-      } else if (CATMAID.Connectors.SUBTYPE_GAPJUNCTION_CONNECTOR === node.subtype) {
-        prefix = "Gap junction connector node #" + node.id;
-      } else {
-        prefix = "Synaptic connector node #" + node.id;
-      }
-      CATMAID.status("");
-      atn.set(node, this.getStackViewer().getId());
-    }
+    // Select (doesn't matter if re-select same node)
+    atn.set(node, this.getStackViewer().getId());
   } else {
     // Deselect
     atn.set(null, null);
@@ -4048,18 +4025,35 @@ SkeletonAnnotations.TracingOverlay.prototype.cycleThroughNearestMatchingTags = f
 /**
  * Sets treenode information as status. Can handle virtual nodes.
  */
-SkeletonAnnotations.TracingOverlay.prototype.printTreenodeInfo = function(nodeID, prefixMessage) {
+SkeletonAnnotations.TracingOverlay.prototype.printTreenodeInfo = function(nodeID, prePrefix) {
   if (this.isIDNull(nodeID)) return;
-  var isReal = SkeletonAnnotations.isRealNode(nodeID);
-  if (typeof prefixMessage === "undefined") {
-    prefixMessage = isReal ? "Node " + nodeID : "Virtual node";
+  var prefix = "";
+  var node = this.nodes[nodeID];
+  if (node) {
+    if (SkeletonAnnotations.TYPE_NODE === node.type) {
+      if (SkeletonAnnotations.isRealNode(node.id)) {
+        prefix = "Node " + node.id + ", skeleton " + node.skeleton_id;
+      } else {
+        // Side effect: change nodeID to the real one
+        nodeID = SkeletonAnnotations.getChildOfVirtualNode(nodeID);
+        prefix = "Virtual node of " + nodeID + ", skeleton " + node.skeleton_id;
+      }
+    } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === node.type) {
+      if (CATMAID.Connectors.SUBTYPE_ABUTTING_CONNECTOR === node.subtype) {
+        prefix = "Abutting connector node #" + node.id;
+      } else if (CATMAID.Connectors.SUBTYPE_GAPJUNCTION_CONNECTOR === node.subtype) {
+        prefix = "Gap junction connector node #" + node.id;
+      } else {
+        prefix = "Synaptic connector node #" + node.id;
+      }
+    }
   }
-  CATMAID.status(prefixMessage + " (loading authorship information)");
 
-  // For a virtual node, the child information is displayed.
-  if (!isReal) {
-    nodeID = SkeletonAnnotations.getChildOfVirtualNode(nodeID);
+  if (typeof prePrefix !== "undefined") {
+    prefix = prePrefix + " " + prefix;
   }
+
+  CATMAID.status(prefix + " (loading authorship information)");
 
   var url = django_url + project.id + '/node/user-info';
 
@@ -4067,7 +4061,7 @@ SkeletonAnnotations.TracingOverlay.prototype.printTreenodeInfo = function(nodeID
       var creator = CATMAID.User.safeToString(jso.user);
       var editor = CATMAID.User.safeToString(jso.editor);
 
-      var msg = prefixMessage + " created by " + creator + ' ' +
+      var msg = prefix + " created by " + creator + ' ' +
           CATMAID.tools.contextualDateString(jso.creation_time) + ", last edited by " + editor + ' ' +
           CATMAID.tools.contextualDateString(jso.edition_time) + ", reviewed by ";
       // Add review information

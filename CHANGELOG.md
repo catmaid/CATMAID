@@ -19,6 +19,10 @@
 
 Miscellaneous:
 
+- Refreshing the nodes on the StackViewer will not print the info on the active
+  node in the status bar. This saves one additional request to the server,
+	speeding up tracing from high-latency locations such as overseas.
+
 - The Measurement Table now highlights the active skeleton.
 
 - Alt+T can now be used to tag a node with a predefined set of tags. This set

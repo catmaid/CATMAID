@@ -1350,7 +1350,7 @@ SkeletonAnnotations.TracingOverlay.prototype.activateNode = function(node) {
       var prefix = SkeletonAnnotations.isRealNode(node.id) ?
           "Node " + node.id + ", skeleton " + node.skeleton_id :
           "Virtual node, skeleton " + node.skeleton_id;
-      this.printTreenodeInfo(node.id, prefix);
+      CATMAID.status("");
       atn.set(node, this.getStackViewer().getId());
     } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === node.type) {
       var prefix;
@@ -1361,7 +1361,7 @@ SkeletonAnnotations.TracingOverlay.prototype.activateNode = function(node) {
       } else {
         prefix = "Synaptic connector node #" + node.id;
       }
-      this.printTreenodeInfo(node.id, prefix);
+      CATMAID.status("");
       atn.set(node, this.getStackViewer().getId());
     }
   } else {

@@ -2233,7 +2233,7 @@ function createVirtualNode(graphics, child, parent, stackViewer)
  *
  * @param jso is an array of JSON objects, where each object may specify a Node
  *            or a ConnectorNode
- * @param extraNodes is an array of nodes that should be added additonally
+ * @param extraNodes is an array of nodes that should be added additionally
  */
 SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (jso, extraNodes) {
   // Reset nodes and labels

@@ -14,6 +14,11 @@ None.
   This API took a message ID as parameter before and is replaced by:
   `POST /messages/{message_id}/mark_read`
 
+- `POST /{project_id}/node/user-info`:
+  The `node_id` parameter has been replaced with a `node_ids` parameter, which
+  is expected to be a list of node IDs. The response maps now individual info
+  objects to their respective node IDs.
+
 ### Deprecations
 
 None.

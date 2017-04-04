@@ -263,15 +263,15 @@ class ViewPageTests(TestCase):
 
         # Check that a Django view rejects an unauthed request...
         response = token_client.post('/%d/node/user-info' % (self.test_project_id,),
-                {'node_id': 383})
+                {'node_ids': [383]})
         self.assertEqual(response.status_code, 403)
         # ..and an authed session request without CSRF headers...
         response = sess_client.post('/%d/node/user-info' % (self.test_project_id,),
-                {'node_id': 383})
+                {'node_ids': [383]})
         self.assertEqual(response.status_code, 403)
         # ...but accepts a token auth request without CSRF
         response = token_client.post('/%d/node/user-info' % (self.test_project_id,),
-                {'node_id': 383},
+                {'node_ids': [383]},
                 HTTP_X_AUTHORIZATION='Token ' + token)
         self.assertEqual(response.status_code, 200)
 

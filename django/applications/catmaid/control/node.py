@@ -927,31 +927,37 @@ def user_info(request, project_id=None):
     pretty often (with every node activation) and should therefore be as fast
     as possible.
     """
-    node_id = int(request.POST['node_id'])
+    node_ids = get_request_list(request.POST, 'node_ids', map_fn=int)
+    if not node_ids:
+        raise ValueError('Need at least one node ID')
+
+    node_template = ','.join('(%s)' for n in node_ids)
+
     cursor = connection.cursor()
     cursor.execute('''
         SELECT n.id, n.user_id, n.editor_id, n.creation_time, n.edition_time,
                array_agg(r.reviewer_id), array_agg(r.review_time)
-        FROM location n LEFT OUTER JOIN review r ON r.treenode_id = n.id
-        WHERE n.id = %s
+        FROM location n
+        JOIN (VALUES {}) req_node(id)
+            ON n.id = req_node.id
+        LEFT OUTER JOIN review r
+            ON r.treenode_id = n.id
         GROUP BY n.id
-                   ''', (node_id,))
-
-    # We expect only one result node
-    info = cursor.fetchone()
-    if not info:
-        return JsonResponse({
-            'error': 'Object #%s is not a treenode or a connector' % node_id})
+    '''.format(node_template), node_ids)
 
     # Build result
-    return JsonResponse({
-        'user': info[1],
-        'editor': info[2],
-        'creation_time': str(info[3].isoformat()),
-        'edition_time': str(info[4].isoformat()),
-        'reviewers': [r for r in info[5] if r],
-        'review_times': [str(rt.isoformat()) for rt in info[6] if rt]
-    })
+    result = {}
+    for row in cursor.fetchall():
+        result[row[0]] = {
+            'user': row[1],
+            'editor': row[2],
+            'creation_time': str(row[3].isoformat()),
+            'edition_time': str(row[4].isoformat()),
+            'reviewers': [r for r in row[5] if r],
+            'review_times': [str(rt.isoformat()) for rt in row[6] if rt]
+        }
+
+    return JsonResponse(result)
 
 @api_view(['POST'])
 @requires_user_role([UserRole.Browse])

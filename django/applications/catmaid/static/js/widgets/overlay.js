@@ -4057,19 +4057,20 @@ SkeletonAnnotations.TracingOverlay.prototype.printTreenodeInfo = function(nodeID
 
   var url = django_url + project.id + '/node/user-info';
 
-  this.submit(url, 'POST', {node_id: nodeID}, function(jso) {
-      var creator = CATMAID.User.safeToString(jso.user);
-      var editor = CATMAID.User.safeToString(jso.editor);
+  this.submit(url, 'POST', {node_ids: [nodeID]}, function(json) {
+      var info = json[nodeID];
+      var creator = CATMAID.User.safeToString(info.user);
+      var editor = CATMAID.User.safeToString(info.editor);
 
       var msg = prefix + " created by " + creator + ' ' +
-          CATMAID.tools.contextualDateString(jso.creation_time) + ", last edited by " + editor + ' ' +
-          CATMAID.tools.contextualDateString(jso.edition_time) + ", reviewed by ";
+          CATMAID.tools.contextualDateString(info.creation_time) + ", last edited by " + editor + ' ' +
+          CATMAID.tools.contextualDateString(info.edition_time) + ", reviewed by ";
       // Add review information
-      if (jso.reviewers.length > 0) {
+      if (info.reviewers.length > 0) {
         var reviews = [];
-        for (var i=0; i<jso.reviewers.length; ++i) {
-          reviews.push(CATMAID.User.safeToString(jso.reviewers[i]) + ' ' +
-              CATMAID.tools.contextualDateString(jso.review_times[i]));
+        for (var i=0; i<info.reviewers.length; ++i) {
+          reviews.push(CATMAID.User.safeToString(info.reviewers[i]) + ' ' +
+              CATMAID.tools.contextualDateString(info.review_times[i]));
         }
         msg += reviews.join(', ');
       } else {

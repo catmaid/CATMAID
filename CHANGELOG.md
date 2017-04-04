@@ -3,6 +3,8 @@
 
 ### Notes
 
+- A virtualenv update is required.
+
 - The location of the `manage.py` script changed: it moved a level up into
   `django/projects`. All other configuration files remain where they are. Make
   sure to update your `settings.py` file by replacing the line

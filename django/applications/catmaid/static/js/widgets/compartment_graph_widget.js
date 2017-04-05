@@ -1478,7 +1478,7 @@
     this.appendGroup(models);
   };
 
-  GroupGraph.prototype.appendGroup = function(models, position) {
+  GroupGraph.prototype.appendGroup = function(models, position, color) {
     var f = (function (status, text) {
       if (200 !== status) return;
       var json = JSON.parse(text);
@@ -1524,11 +1524,11 @@
       options.appendChoice("Common annotations: ", "gg-common", common, common, common[0]);
       options.appendChoice("All annotations: ", "gg-all", all, all, all[0]);
       options.appendChoice("All neuron names: ", "gg-names", names, names, names[0]);
-      options.appendField("Or type a new name: ", "gg-typed", "", null);
+      var groupName = options.appendField("Or type a new name: ", "gg-typed", "", true);
       options.appendCheckbox("Hide intragroup edges", "gg-edges", true);
       options.appendCheckbox("Append number of neurons to name", "gg-number", true);
       options.appendMessage("Choose group color:");
-      var groupColor = '#aaaaff';
+      var groupColor = color ? '#' + color.getHexString() : '#aaaaff';
       var colorButton = document.createElement('button');
       colorButton.appendChild(document.createTextNode('Color'));
       options.dialog.appendChild(colorButton);
@@ -1560,6 +1560,7 @@
       };
 
       options.show(300, 500, true);
+      groupName.focus();
 
     }).bind(this);
 
@@ -2766,6 +2767,7 @@
   /** Group selected nodes into a single node. */
   GroupGraph.prototype.group = function() {
     var position;
+    var color;
     var models = this.cy.nodes().filter(function(i, node) {
       return node.selected();
     }).toArray().reduce((function(o, node) {
@@ -2773,10 +2775,14 @@
       if (undefined !== this.groups[node.id()]) delete this.groups[node.id()];
       // Side effect 2: add up position coordinates
       var p = node.position();
-      if (!position) position = {x: p.x, y: p.y};
+      if (!position) {
+        position = {x: p.x, y: p.y};
+        color = new THREE.Color(node.data("color"));
+      }
       else {
         position.x += p.x;
         position.y += p.y;
+        color.add(new THREE.Color(node.data("color")));
       }
       return node.data('skeletons').reduce(function(o, model) {
         o[model.id] = model;
@@ -2787,7 +2793,10 @@
     if (n_nodes > 1) {
       position.x /= n_nodes;
       position.y /= n_nodes;
-      this.appendGroup(models, position);
+      color.r /= n_nodes;
+      color.g /= n_nodes;
+      color.b /= n_nodes;
+      this.appendGroup(models, position, color);
     }
     else CATMAID.info("Select at least 2 nodes!");
   };

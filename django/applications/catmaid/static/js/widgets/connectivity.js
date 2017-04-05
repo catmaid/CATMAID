@@ -595,7 +595,7 @@
     var widgetID = this.widgetID;
     this.partnerSets.forEach(function(partnerSet) {
       var table = $("#" + partnerSet.id + '_connectivity_table' + widgetID);
-      table.DataTable().draw(false);
+      table.DataTable().rows().invalidate('data').draw(false);
     });
   };
 

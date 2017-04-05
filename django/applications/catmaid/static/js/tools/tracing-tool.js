@@ -886,7 +886,7 @@
       run: function (e) {
         if (!CATMAID.mayView())
           return false;
-        if (!(e.ctrlKey || e.metaKey)) {
+        if (!(e.ctrlKey || e.metaKey || e.shiftKey)) {
           // Give all layers a chance to activate a node
           var selectedNode = null;
           var layers = activeStackViewer.getLayers();

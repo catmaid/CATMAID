@@ -243,13 +243,15 @@
 
 
   // A toggle function that also allows to recreate the UI.
-  function toggleWindowConfigurationPanel(win, recreate) {
+  function toggleWindowConfigurationPanel(win, originalTitle, recreate) {
     // Create controls for the window settings if not present, otherwise remove
     // them.
     var frame = win.getFrame();
     var panel = frame.querySelector('.window-settings');
     var show = !panel;
-    var originalTitle = win.getTitle();
+    // Parse title to get current alias
+    var currentAlias = win.getTitle()
+        .replace(originalTitle, '').replace(/ \((.*)\)/, '$1');
 
     if (!show) {
       panel.remove();
@@ -261,6 +263,7 @@
       panel.setAttribute('class', 'window-settings');
 
       var aliasInput = document.createElement('input');
+      aliasInput.value = currentAlias;
       var aliasSetting = document.createElement('label');
       aliasSetting.appendChild(document.createTextNode('Alias'));
       aliasSetting.appendChild(aliasInput);
@@ -294,7 +297,7 @@
   DOM.addWindowConfigButton = function(win) {
     DOM.addCaptionButton(win, 'fa fa-window-maximize',
         'Show window settings for this widget',
-        toggleWindowConfigurationPanel.bind(window, win, false));
+        toggleWindowConfigurationPanel.bind(window, win, win.getTitle(), false));
   };
 
 

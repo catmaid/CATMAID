@@ -411,6 +411,9 @@
     // normal.
     if (event.keyCode === 16 && this.cy) {
       this.cy._private.renderer.wheelSensitivity = 1;
+    } else if (event.keyCode === 74) {
+      // Letter 'J' (would prefer shift+G)
+      this.group();
     }
   };
 

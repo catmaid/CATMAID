@@ -692,11 +692,11 @@
            "Arbor (force-directed)", "Springy (force-directed)"];
 
   /** Unlocks locked nodes, if any, when done. */
-  GroupGraph.prototype.updateLayout = function(layout) {
+  GroupGraph.prototype.updateLayout = function(layout, callback) {
     var index = layout ? layout.selectedIndex : 0;
     var name = ['spread', 'breadthfirst', 'grid', 'circle', 'concentric', 'concentric out', 'concentric in', 'random', 'cose', 'preset', 'dagre', 'cola', 'arbor', 'springy'][index];
     var options = this.createLayoutOptions(name);
-    options.stop = (function() { this.cy.nodes().unlock(); }).bind(this);
+    options.stop = function() { if (callback) callback(); };
     this.cy.layout( options );
   };
 
@@ -1188,7 +1188,7 @@
     }).bind(this));
 
     // Group neurons, if any groups exist, skipping splitted neurons
-    this._regroup(elements, this.subgraphs, models);
+    var to_lock = this._regroup(elements, this.subgraphs, models);
 
     // Compute edge width for rendering the edge width
     var edgeWidth = this.edgeWidthFn();
@@ -1214,12 +1214,14 @@
         node.position(positions[id]);
         node.lock();
       }
+      // Locl newly added groups made from old nodes, for which a position is set
+      if (id in to_lock) {
+        node.lock();
+      }
       // Restore selection state
       if (id in selected) node.select();
       // Restore visibility state
       if (id in hidden) node.addClass('hidden');
-      // Restore locked state
-      if (id in locked) node.lock();
       // Make branch nodes, if any, be smaller
       if (node.data('branch')) {
         node.css('height', 15);
@@ -1259,7 +1261,16 @@
 
     this.cy.endBatch();
 
-    this.updateLayout();
+    this.updateLayout(
+        null,
+        (function() {
+          this.cy.nodes().each(function(i, node) {
+            // All old nodes and newly formed groups (from old nodes) are locked
+            var id = node.id();
+            // Restore locked state
+            if (!(id in locked)) node.unlock();
+          });
+        }).bind(this));
   };
 
   GroupGraph.prototype.toggleTrimmedNodeLabels = function() {
@@ -1464,7 +1475,7 @@
     this.appendGroup(models);
   };
 
-  GroupGraph.prototype.appendGroup = function(models) {
+  GroupGraph.prototype.appendGroup = function(models, position) {
     var f = (function (status, text) {
       if (200 !== status) return;
       var json = JSON.parse(text);
@@ -1541,7 +1552,7 @@
 
         var gid = self.nextGroupID();
         self.groups[gid] = new GroupGraph.prototype.Group(gid, models, label,
-            new THREE.Color(groupColor), $('#gg-edges').prop('checked'));
+            new THREE.Color(groupColor), $('#gg-edges').prop('checked'), position);
         self.append(models); // will remove/add/group nodes as appropriate
       };
 
@@ -2627,12 +2638,13 @@
     this.groups = {};
   };
 
-  GroupGraph.prototype.Group = function(gid, models, label, color, hide_self_edges) {
+  GroupGraph.prototype.Group = function(gid, models, label, color, hide_self_edges, initial_position) {
     this.id = gid;
     this.label = label;
     this.models = models; // skeleton id vs model
     this.color = color;
     this.hide_self_edges = hide_self_edges;
+    this.initial_position = initial_position; // will be deleted after adding the group for the first time
   };
 
   /** Reformat in place the data object, to:
@@ -2678,21 +2690,29 @@
       return true;
     }, this);
 
-    if (0 === groupIDs.length) return;
+    if (0 === groupIDs.length) return {};
 
     // Remove nodes that have been assigned to groups
     data.nodes = data.nodes.filter(function(node) {
       return !member_of[node.data.id];
     });
 
+    var to_lock = {};
+
     // Create one node for each group
     var gnodes = groupIDs.map(function(gid) {
       var group = this.groups[gid];
-      return {data: {id: gid,
+      var gnode = {data: {id: gid,
                      skeletons: Object.keys(group.models).map(function(skid) { return group.models[skid];}),
                      label: group.label,
                      color: '#' + group.color.getHexString(),
                      shape: 'hexagon'}};
+      if (undefined !== group.initial_position) {
+        gnode.position = group.initial_position;
+        delete group.initial_position;
+        to_lock[gid] = true;
+      }
+      return gnode;
     }, this);
 
     // map of edge_id vs edge, involving groups
@@ -2736,20 +2756,36 @@
 
     data.nodes = data.nodes.concat(gnodes);
     data.edges = data.edges.concat(Object.keys(gedges).map(function(gid) { return gedges[gid]; }));
+
+    return to_lock;
   };
 
   /** Group selected nodes into a single node. */
   GroupGraph.prototype.group = function() {
+    var position;
     var models = this.cy.nodes().filter(function(i, node) {
       return node.selected();
     }).toArray().reduce((function(o, node) {
+      // Side effect 1: remove node from this.groups if it was one
       if (undefined !== this.groups[node.id()]) delete this.groups[node.id()];
+      // Side effect 2: add up position coordinates
+      var p = node.position();
+      if (!position) position = {x: p.x, y: p.y};
+      else {
+        position.x += p.x;
+        position.y += p.y;
+      }
       return node.data('skeletons').reduce(function(o, model) {
         o[model.id] = model;
         return o;
       }, o);
     }).bind(this), {});
-    if (Object.keys(models).length > 1) this.appendGroup(models);
+    var n_nodes = Object.keys(models).length;
+    if (n_nodes > 1) {
+      position.x /= n_nodes;
+      position.y /= n_nodes;
+      this.appendGroup(models, position);
+    }
     else CATMAID.info("Select at least 2 nodes!");
   };
 

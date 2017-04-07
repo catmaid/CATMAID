@@ -30,6 +30,8 @@
     self.virtualNodeStep = 1;
     // Keep track of last virtual node step, if any
     var skipStep = null;
+    // Review towards root by default
+    self.reviewUpstream = true;
 
 
     this.init = function() {
@@ -162,8 +164,9 @@
       this.movedBeyondSegment = false;
       // Select and move to start of segment
       self.current_segment = self.skeleton_segments[id];
-      self.current_segment_index = 0;
-      self.goToNodeIndexOfSegmentSequence(0, true);
+      self.current_segment_index = this.reviewUpstream ?
+          0 : (this.current_segment.sequence.length - 1);
+      self.goToNodeIndexOfSegmentSequence(this.current_segment_index, true);
       end_puffer_count = 0;
       // Highlight current segment in table
       var $rows = $('table#review_segment_table tr.review-segment');
@@ -199,20 +202,91 @@
       .catch(CATMAID.handleError);
     };
 
-    this.moveNodeInSegmentBackward = function() {
-      if (null === self.skeleton_segments) {
-        return;
+    this.moveNodeInSegmentBackward = function(advanceToNextUnfollowed) {
+      return this.moveToNextNode(advanceToNextUnfollowed, false);
+    };
+
+    /**
+     * Iterate over sequene and check if each node is reviewed, ignoring all
+     * nodes listed in in <ignoredIndices>.
+     */
+    this.isSegmentFullyReviewed = function(sequence, ignoredIndices) {
+      var whitelist = CATMAID.ReviewSystem.Whitelist.getWhitelist();
+      var reviewedByTeam = reviewedByUserOrTeam.bind(self, CATMAID.session.userid, whitelist);
+      var nUnreviewedNodes = 0;
+      for (var i=0; i<sequence.length; ++i) {
+        var reviewed = sequence[i].rids.some(reviewedByTeam);
+        var ignored = false;
+        if (ignoredIndices) {
+          ignored = ignoredIndices.indexOf(i) !== -1;
+        }
+        if (!reviewed && !ignored) {
+          ++nUnreviewedNodes;
+        }
       }
 
+      return nUnreviewedNodes === 0;
+    };
+
+    /**
+     * Move to the next node in the current segment and mark the current node as
+     * reviewed. Depending on <upstream>, this can either be in the upstream
+     * direction or the downstream direction.
+     */
+    this.moveToNextNode = function(advanceToNextUnfollowed, upstream) {
+      if (self.skeleton_segments===null)
+        return;
+
       var sequence = self.current_segment['sequence'];
+      var sequenceLength = sequence.length;
 
-      if (!skipStep) self.markAsReviewed(sequence, self.current_segment_index);
+      var isLastNode = upstream ?
+        self.current_segment_index === sequenceLength - 1 :
+        self.current_segment_index === 0;
 
-      // By default, the selected node is changed and centering not enforced.
+      // Mark current node as reviewed, if this is no intermediate step.
+      if (!skipStep) {
+        //  Don't wait for the server to respond
+        self.markAsReviewed(sequence, self.current_segment_index)
+          .then(updateReviewStatus.bind(window, self.current_segment, [CATMAID.session.userid, 'union']))
+          .catch(CATMAID.handleError);
+
+        var noSegmentMove = false;
+
+        if (this.isSegmentFullyReviewed(sequence, [self.current_segment_index])) {
+          CATMAID.msg('Done', 'Segment fully reviewed: ' +
+              self.current_segment['nr_nodes'] + ' nodes');
+          if (self.noRefreshBetwenSegments) {
+            end_puffer_count += 1;
+            // do not directly jump to the next segment to review
+            if( end_puffer_count < 3) {
+              return;
+            }
+            // Segment fully reviewed, go to next without refreshing table
+            // much faster for smaller fragments
+            self.selectNextSegment();
+          } else {
+            self.startSkeletonToReview(skeletonID, subarborNodeId);
+          }
+          noSegmentMove = true;
+        }
+
+        // If moving in downstream direction, it is possible to look beyond the
+        // last node. This is done to check if the segment 'end' is an eactual
+        // end.
+        if (!upstream && isLastNode) {
+          self.lookBeyondSegment(sequence, forceCentering);
+          noSegmentMove = true;
+        }
+
+        if (noSegmentMove) {
+          return;
+        }
+      }
+
       var changeSelectedNode = true;
       var forceCentering = false;
-
-      // Don't change the selected node, if moved out of the segment
+      // Don't change the selected node, if moved out of the segment before
       if (self.movedBeyondSegment) {
         self.movedBeyondSegment = false;
         changeSelectedNode = false;
@@ -225,43 +299,71 @@
         forceCentering = true;
       }
 
-      if(self.current_segment_index > 0 || skipStep) {
-        if (changeSelectedNode) {
-          var ln, refIndex;
-          var newIndex = Math.max(self.current_segment_index - 1, 0);
-          if (skipStep) {
-            ln = skipStep;
-            refIndex = skipStep.refIndex;
-            // If the existing skipping step was created with the current node
-            // as source, the current test node needs to be the virtual node.
-            if (skipStep.to !== sequence[newIndex]) {
-              newIndex = skipStep.refIndex - 1;
+      if (changeSelectedNode) {
+        var whitelist = CATMAID.ReviewSystem.Whitelist.getWhitelist();
+        var reviewedByTeam = reviewedByUserOrTeam.bind(self, CATMAID.session.userid, whitelist);
+
+        // Find index of next real node that should be reviewed
+        var newIndex = upstream ?
+            Math.min(self.current_segment_index + 1, sequenceLength - 1) :
+            Math.max(self.current_segment_index - 1, 0);
+
+        if (advanceToNextUnfollowed) {
+          // Advance index to the first node that is not reviewed by the current
+          // user or any review team member.
+          var i = newIndex;
+          if (upstream) {
+            while (i < sequenceLength) {
+              if (!sequence[i].rids.some(reviewedByTeam)) {
+                newIndex = i;
+                break;
+              }
+              i += 1;
             }
           } else {
-            refIndex = self.current_segment_index;
-            ln = sequence[self.current_segment_index];
+            while (i > 0) {
+              if (!sequence[i].rids.some(reviewedByTeam)) {
+                newIndex = i;
+                break;
+              }
+              i -= 1;
+            }
           }
+        }
 
-          var nn = sequence[newIndex];
-
-          // Check if an intermediate step is required. If a sample step has
-          // already been taken before, this step is the reference point for the
-          // distance test.
-          skipStep = self.limitMove(ln, nn, refIndex, true);
-          if (skipStep) {
-            // Move to skipping step
-            this.goToNodeOfSegmentSequence(skipStep, forceCentering);
-            return;
-          } else {
-            self.current_segment_index = newIndex;
+        var ln, refIndex;
+        if (skipStep) {
+          ln = skipStep;
+          refIndex = skipStep.refIndex;
+          // If the existing skipping step was created with the current node
+          // as source, the current test node needs to be the virtual node.
+          if (skipStep.to !== sequence[newIndex]) {
+            newIndex = upstream ? skipStep.refIndex : (skipStep.refIndex - 1);
           }
+        } else {
+          refIndex = newIndex;
+          ln = upstream ? sequence[newIndex - 1] : sequence[newIndex + 1];
+        }
 
+        var nn = sequence[newIndex];
+
+        // Check if an intermediate step is required. If a sample step has
+        // already been taken before, this step is the reference point for the
+        // distance test.
+        skipStep = self.limitMove(ln, nn, refIndex, !upstream);
+        if (!skipStep) {
+          // If a real node is next, update current segment index and check if
+          // we are close to the segment end.
+          self.current_segment_index = newIndex;
           self.warnIfNodeSkipsSections(ln);
         }
-        self.goToNodeIndexOfSegmentSequence(self.current_segment_index, forceCentering);
+      }
+
+      // Select the (potentially new) current node
+      if (skipStep) {
+        self.goToNodeOfSegmentSequence(skipStep, forceCentering);
       } else {
-        // Go to 'previous' section, to check whether an end really ends
-        self.lookBeyondSegment(sequence, forceCentering);
+        self.goToNodeIndexOfSegmentSequence(self.current_segment_index, forceCentering);
       }
     };
 
@@ -282,7 +384,8 @@
       var toSZ = stack.projectToUnclampedStackZ(to.z, to.y, to.x);
       var zDiff = toSZ - fromSZ;
       var zDiffAbs = Math.abs(zDiff);
-      var suppressedZs = self.current_segment.sequence[refIndex - 1].sup.reduce(function (zs, s) {
+      var prevIndex = backwards ? (refIndex + 1) : (refIndex - 1);
+      var suppressedZs = self.current_segment.sequence[prevIndex].sup.reduce(function (zs, s) {
         if (s[0] === stack.orientation) {
           var vncoord = [0, 0, 0];
           vncoord[2 - s[0]] = s[1];
@@ -362,7 +465,7 @@
       }
       if (i === segment.length) {
         // corner case
-        CATMAID.msg("Can't move", "Can't decide whether to move " +
+        CATMAID.msg("Can't looky beyond node", "Can't decide whether to move " +
             "forward or backward one section!");
         return;
       }
@@ -393,129 +496,7 @@
     };
 
     this.moveNodeInSegmentForward = function(advanceToNextUnfollowed) {
-      if (self.skeleton_segments===null)
-        return;
-
-      var sequence = self.current_segment['sequence'];
-      var sequenceLength = sequence.length;
-
-      // Mark current node as reviewed, if this is no intermediate step.
-      if (!skipStep) {
-        //  Don't wait for the server to respond
-        self.markAsReviewed(sequence, self.current_segment_index)
-          .then(updateReviewStatus.bind(window, self.current_segment, [CATMAID.session.userid, 'union']))
-          .catch(CATMAID.handleError);
-
-        if( self.current_segment_index === sequenceLength - 1  ) {
-          CATMAID.msg('Done', 'Segment fully reviewed: ' +
-              self.current_segment['nr_nodes'] + ' nodes');
-          if (self.noRefreshBetwenSegments) {
-            end_puffer_count += 1;
-            // do not directly jump to the next segment to review
-            if( end_puffer_count < 3) {
-              return;
-            }
-            // Segment fully reviewed, go to next without refreshing table
-            // much faster for smaller fragments
-            self.selectNextSegment();
-            return;
-          } else {
-            self.startSkeletonToReview(skeletonID, subarborNodeId);
-            return;
-          }
-        }
-      }
-
-      var changeSelectedNode = true;
-      var forceCentering = false;
-      // Don't change the selected node, if moved out of the segment before
-      if (self.movedBeyondSegment) {
-        self.movedBeyondSegment = false;
-        changeSelectedNode = false;
-      }
-      // Don't change the selected node, but force centering, if the current
-      // segment became unfocused.
-      if (self.segmentUnfocused) {
-        self.segmentUnfocused = false;
-        changeSelectedNode = false;
-        forceCentering = true;
-      }
-
-      if (changeSelectedNode) {
-
-        var whitelist = CATMAID.ReviewSystem.Whitelist.getWhitelist();
-        var reviewedByTeam = reviewedByUserOrTeam.bind(self, CATMAID.session.userid, whitelist);
-
-        // Find index of next real node that should be reviewed
-        var newIndex = Math.min(self.current_segment_index + 1, sequenceLength - 1);
-        if (advanceToNextUnfollowed) {
-          // Advance index to the first node that is not reviewed by the current
-          // user or any review team member.
-          var i = newIndex;
-          while (i < sequenceLength) {
-            if (!sequence[i].rids.some(reviewedByTeam)) {
-              newIndex = i;
-              break;
-            }
-            i += 1;
-          }
-        }
-
-        var ln, refIndex;
-        if (skipStep) {
-          ln = skipStep;
-          refIndex = skipStep.refIndex;
-          if (skipStep.to !== sequence[newIndex]) {
-            newIndex = skipStep.refIndex;
-          }
-        } else {
-          refIndex = newIndex;
-          ln = sequence[newIndex - 1];
-        }
-
-        var nn = sequence[newIndex];
-
-        // Check if an intermediate step is required. If a sample step has
-        // already been taken before, this step is the reference point for the
-        // distance test.
-        skipStep = self.limitMove(ln, nn, refIndex, false);
-        if (!skipStep) {
-          // If a real node is next, update current segment index and check if
-          // we are close to the segment end.
-          self.current_segment_index = newIndex;
-
-          if (self.current_segment_index < sequenceLength -1) {
-            // Check if the remainder of the segment was complete at an earlier time
-            // and perhaps now the whole segment is done:
-            var i_user = self.current_segment_index;
-            var i_union = self.current_segment_index;
-            while (i_user < sequenceLength && sequence[i_user].rids.some(reviewedByTeam)) {
-              i_user += 1;
-            }
-            while (i_union < sequenceLength && 0 !== sequence[i_union].rids.length) {
-              i_union += 1;
-            }
-            var cellIDs = [CATMAID.session.userid];
-            if (i_user === sequenceLength) {
-              CATMAID.msg('DONE', 'Segment fully reviewed: ' +
-                  self.current_segment['nr_nodes'] + ' nodes');
-            }
-            if (i_union === sequenceLength) cellIDs.push('union');
-            if (cellIDs.length > 0) updateReviewStatus(self.current_segment, cellIDs);
-            // Don't startSkeletonToReview, because self.current_segment_index
-            // would be lost, losing state for q/w navigation.
-          }
-
-          self.warnIfNodeSkipsSections(ln);
-        }
-      }
-
-      // Select the (potentially new) current node
-      if (skipStep) {
-        self.goToNodeOfSegmentSequence(skipStep, forceCentering);
-      } else {
-        self.goToNodeIndexOfSegmentSequence(self.current_segment_index, forceCentering);
-      }
+      return this.moveToNextNode(advanceToNextUnfollowed, true);
     };
 
     /**
@@ -1046,6 +1027,13 @@
             value: this.noRefreshBetwenSegments,
             onclick: function() {
               self.noRefreshBetwenSegments = this.checked;
+            }
+          }, {
+            type: 'checkbox',
+            label: 'Upstream review',
+            value: this.reviewUpstream,
+            onclick: function() {
+              self.reviewUpstream = this.checked;
             }
           }
         ]);

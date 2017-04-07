@@ -26,6 +26,12 @@
   The new location in the average X/Y location of the parent and child. If only
   parent or child is available (leaf or parent), its X/Y location is used.
 
+Review widget:
+
+- Segements can now be reviewed in downstream order by unchecking the "Upstream
+  review" checkbox. Q will still move downstream and W upstream. Already
+  reviewed nodes are skipped in both directions.
+
 Miscellaneous:
 
 - Refreshing the nodes on the StackViewer will not print the info on the active

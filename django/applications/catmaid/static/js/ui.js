@@ -143,24 +143,23 @@
           return false;
         }
 
+        // Try to handle key in this order: active widget, tool, project
+        var activeWidget = CATMAID.front();
+        if (activeWidget && handledBy(activeWidget, fakeEvent, released)) {
+          return false;
+        }
         if (project) {
           var tool = project.getTool();
           if (tool && handledBy(tool, fakeEvent, released)) {
             return false;
-          } else if (handledBy(project, fakeEvent, released)) {
+          }
+          if (handledBy(project, fakeEvent, released)) {
             return false;
-          } else {
-            var activeWidget = CATMAID.front();
-            if (activeWidget && handledBy(activeWidget, fakeEvent, released)) {
-              return false;
-            } else {
-              return true;
-            }
           }
         }
-      } else {
-        return true;
       }
+
+      return true;
     };
 
     var onkeydown = function( e ) {

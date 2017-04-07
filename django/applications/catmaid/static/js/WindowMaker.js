@@ -551,6 +551,53 @@ var WindowMaker = new function()
           ['Resample', o.resample_skeletons, function() { WA.options.resample_skeletons = this.checked; WA.updateSkeletons(); }, false],
           ['with delta', o.resampling_delta, ' nm', function() { WA.updateResampleDelta(this.value); }, 10],
           ['Lean mode (no synapses, no tags)', o.lean_mode, function() { WA.options.lean_mode = this.checked; WA.updateSkeletons();}, false],
+          {
+            type: 'checkbox',
+            label: 'Interpolate locations',
+            value: o.interpolate_sections,
+            onclick: function() {
+              WA.options.interpolate_sections = this.checked;
+              WA.updateLocationFiltering();
+            },
+            title: 'If checked, nodes at the respective sections in the displayed reference stack are placed at an interpolated location'
+          },
+          {
+            type: 'text',
+            label: 'on sections',
+            length: 5,
+            value: o.interpolated_sections.join(', '),
+            onchange: function() {
+              try {
+                this.classList.remove('ui-state-error');
+                WA.options.interpolated_sections = this.value.split(',').map(
+                    function(s) {
+                      s = s.trim();
+                      if (s.length === 0) {
+                        return s;
+                      }
+                      var val = parseInt(s, 10);
+                      if (isNaN(val)) {
+                        throw new CATMAID.ValueError("No number: " + s.trim());
+                      }
+                      return val;
+                    });
+                WA.updateLocationFiltering();
+              } catch(e) {
+                this.classList.add('ui-state-error');
+              }
+            },
+            title: 'Specify a list of sections that should be used for interpolation'
+          },
+          {
+            type: 'checkbox',
+            label: 'Interpolate broken sections',
+            value: o.interpolate_broken_sections,
+            onclick: function() {
+              WA.options.interpolate_broken_sections = this.checked;
+              WA.updateLocationFiltering();
+            },
+            title: 'If checked, nodes on broken sections of the reference stack are move to an interpolated location'
+          },
         ]);
 
     DOM.appendToTab(tabs['Shading parameters'],

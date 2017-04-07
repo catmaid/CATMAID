@@ -819,6 +819,9 @@
     this.animation_history_reset_after_stop = false;
     this.strahler_cut = 2; // to approximate twigs
     this.use_native_resolution = true;
+    this.interpolate_sections = false;
+    this.interpolated_sections = [];
+    this.interpolate_broken_sections = false;
   };
 
   WebGLApplication.prototype.Options.prototype = {};
@@ -5182,6 +5185,31 @@
     var tags = json[2];
     var history;
 
+    // For section interpolation, the JSON data is updated so that the
+    // respective locations are fixed.
+    if (options.interpolate_sections || options.interpolate_broken_sections) {
+      var wrongSections = options.interpolated_sections;
+
+      // Calculate world space Z for missing sections in primary stack of
+      // focused stack viewer.
+      var focusedStack = project.focusedStackViewer.primaryStack;
+      if (focusedStack.orientation !== CATMAID.Stack.ORIENTATION_XY) {
+        CATMAID.warn("No XY stack found");
+        wrongSections = [];
+      } else if (options.interpolate_broken_sections) {
+        wrongSections = wrongSections.concat(focusedStack.broken_slices);
+      }
+
+      var wrongProjectZs = wrongSections.map(function(s) {
+        var projectZ = focusedStack.stackToProjectZ(s, 0, 0);
+        return projectZ;
+      });
+
+      if (wrongProjectZs.length > 0) {
+        nodes = interpolateNodesAtZ(nodes, wrongProjectZs);
+      }
+    }
+
     if (withHistory) {
       var makeHistoryAppender = function(timestampIndex) {
        return function(o, n) {
@@ -5571,6 +5599,70 @@
   };
 
   /**
+   * Update the node location of all nodes in the passed in node list (as
+   * obtained from the compact-skeleton API) at the given project Z locations so
+   * that they are moved to the interpolated X/Y location of all neighboring
+   * nodes.
+   */
+  var interpolateNodesAtZ = function(nodes, zLocations) {
+    // Iterate over all nodes to find the ones matching the problematic sections.
+    // Each node is an array of treenode ID (0), parent ID (1), user ID (2), x
+    // (3), y (4), z (5), radius (6), confidence (7).
+    nodes.forEach(function(node, index, nodes) {
+      // If a node is positioned on a 'wrong' section, make a correction to it
+      var nodeMatches = false;
+      for (var i=0; i<zLocations.length; ++i) {
+        if (Math.abs(zLocations[i] - node[5]) < 0.0001) {
+          nodeMatches = true;
+          break;
+        }
+      }
+      if (!nodeMatches) {
+          return;
+      }
+
+      var nodeID = node[0];
+      var parentID = node[1];
+      var parentNode, childNode;
+
+      // Find parent and (first) child to interpolate.
+      for (var i=0, max=nodes.length; i<max && !(parentNode && childNode); ++i) {
+        var other = nodes[i];
+        if (parentID === other[0]) {
+          parentNode = other; 
+        } else if (nodeID === other[1]) {
+          childNode = other;
+        }
+      }
+
+      if (!parentNode) {
+        // If this node is a root, use its child's Z information
+        if (!parentID) {
+          parentNode = childNode;
+        } else {
+          throw new Error("Couldn't find parent of node " + nodeID);
+        }
+      }
+
+       if (!childNode) {
+        // If there is a parent node and no child, use a the parent for this
+        // leaf node.
+        if (parentNode) {
+          childNode = parentNode;
+        } else {
+          throw new Error("Couldn't find child of node " + nodeID);
+        }
+      }
+
+      // Simple linear interpolation of X and Y between child and parent
+      node[3] = (parentNode[3] + childNode[3]) * 0.5;
+      node[4] = (parentNode[4] + childNode[4]) * 0.5;
+    });
+
+    return nodes;
+  };
+
+  /**
    * Make a skeleton or parts of it visible. If the optional timestamp parameter
    * is passed in, only nodes/edges/connectors will be displayed that are
    * visible at this point in time.
@@ -5793,6 +5885,14 @@
     if (!value) return;
     this.options.resampling_delta = value;
     if (this.options.resample_skeletons) this.updateSkeletons();
+  };
+
+  WebGLApplication.prototype.updateLocationFiltering = function() {
+    // While updating interpolated nodes can be made faster by not reloading the
+    // whole set of skeletons, this is a pragmatic implementation to allow a
+    // basic version of this functionality.
+    var skeletons = this.space.content.skeletons;
+    this.reloadSkeletons(Object.keys(skeletons));
   };
 
   WebGLApplication.prototype.createMeshColorButton = function() {

@@ -18,6 +18,13 @@
 
 ### Features and enhancements
 
+3D viewer:
+
+- Nodes on specific section of the focused stack can now be automatically moved
+  to an interpolated location. The "Skeleton filters" tab provides now options
+  to either interpolate nodes on broken sections or a custom list of sections.
+  The new location in the average X/Y location of the parent and child. If only
+  parent or child is available (leaf or parent), its X/Y location is used.
 
 Miscellaneous:
 

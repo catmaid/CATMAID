@@ -60,6 +60,10 @@ Miscellaneous:
 
 - 3D Viewer: active node sphere is now hidden if no node is selected.
 
+- Image data layers that are added to a stack viewer will be added after the
+  last existing image data layer and before other layers. This makes sure
+  tracing data stays on top.
+
 
 ## 2017.03.16
 

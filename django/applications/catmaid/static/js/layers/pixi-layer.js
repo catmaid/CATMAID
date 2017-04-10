@@ -392,6 +392,13 @@
     // since instanceof does not work with MI/mixin inheritance.
     if (!(beforeLayer === null || beforeLayer.batchContainer)) return;
 
+    // Internal reordering requires an initialized batch container. To support
+    // reordering before tiles are initialized, make sure the batch container is
+    // available for reordering.
+    if (!this.batchContainer) {
+      this._initBatchContainer();
+    }
+
     var newIndex = beforeLayer === null ?
         this.stage.children.length - 1 :
         this.stage.getChildIndex(beforeLayer.batchContainer);

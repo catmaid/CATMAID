@@ -139,6 +139,34 @@
   $.extend(StackViewer.prototype, new InstanceRegistry());
   StackViewer.prototype.constructor = StackViewer;
 
+  StackViewer.LayerInsertionStrategy = {
+    "append": {
+      move: function(stackViewer, layer, key) {
+        // Nothing to do, appending is default
+      }
+    },
+    "image-data-first": {
+      move: function(stackViewer, layer, key) {
+        // Find last non image data layer and insert before
+        var beforeKey = null;
+        for (var i=0; i<stackViewer._layerOrder.length; ++i) {
+          var refLayerName = stackViewer._layerOrder[i];
+          if (refLayerName === key) {
+            continue;
+          }
+          var refLayer = stackViewer._layers.get(refLayerName);
+          if (!refLayer.isOrderable) {
+            beforeKey = refLayerName;
+            break;
+          }
+        }
+        if (beforeKey) {
+          stackViewer.moveLayer(key, beforeKey);
+        }
+      },
+    }
+  };
+
   /**
    * Update stack viewer window title combined with the currently used mirror.
    */
@@ -708,7 +736,17 @@
     if (this._layers.has(key))
       this._layers.get(key).unregister();
     this._layers.set(key, layer);
-    if (this._layerOrder.indexOf(key) === -1) this._layerOrder.push(key);
+    if (this._layerOrder.indexOf(key) === -1) {
+      this._layerOrder.push(key);
+
+      var strategyName = StackViewer.Settings.session.layer_insertion_strategy ;
+      var insertionStrategy = StackViewer.LayerInsertionStrategy[strategyName];
+      if (insertionStrategy) {
+        insertionStrategy.move(this, layer, key);
+      } else {
+       throw new CATMAID.ValueError("Unknown layer insertion strategt: " + strategyName);
+      }
+    }
     this.layercontrol.refresh();
     this.updateTitle();
   };
@@ -890,6 +928,9 @@
         entries: {
           display_stack_reference_lines: {
             default: false
+          },
+          layer_insertion_strategy: {
+            default: "image-data-first"
           }
         },
         migrations: {}

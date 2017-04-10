@@ -251,6 +251,24 @@
           'display_stack_reference_lines',
           SETTINGS_SCOPE));
 
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createSelectSetting(
+              "Layer insertion strategy",
+              {'Append': 'append',
+               'Image data first': 'image-data-first'},
+              "In what order new layers are added to a stack viewer.",
+              function() {
+                CATMAID.StackViewer.Settings
+                    .set(
+                      'layer_insertion_strategy',
+                      this.value,
+                      SETTINGS_SCOPE);
+              },
+              CATMAID.StackViewer.Settings[SETTINGS_SCOPE].layer_insertion_strategy),
+          CATMAID.StackViewer.Settings,
+          'layer_insertion_strategy',
+          SETTINGS_SCOPE));
+
       // Cursor following zoom
       ds.append(wrapSettingsControl(
           CATMAID.DOM.createCheckboxSetting(

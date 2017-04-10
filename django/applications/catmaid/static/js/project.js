@@ -404,9 +404,27 @@
             url += "&active_node_id=" + SkeletonAnnotations.getActiveNodeId();
           }
         }
+
+        var sgStacks;
+        if (this.lastLoadedStackGroup) {
+          url += "&sg=" + this.lastLoadedStackGroup.id;
+          sgStacks = new Set(this.lastLoadedStackGroup.stacks.map(function(s) {
+            return s.id;
+          }));
+        }
+
+
+        var sgsAdded = false;
+
         for ( var i = 0; i < stackViewers.length; ++i )
         {
-          url += "&sid" + i + "=" + stackViewers[ i ].primaryStack.id + "&s" + i + "=" + stackViewers[ i ].s;
+          var sv = stackViewers[i];
+          if (this.lastLoadedStackGroup && !sgsAdded && sgStacks && sgStacks.has(sv.primaryStack.id)) {
+            url += "&sgs=" + sv.s;
+            sgsAdded = true;
+          }
+
+          url += "&sid" + i + "=" + sv.primaryStack.id + "&s" + i + "=" + sv.s;
         }
       }
       return url;
@@ -450,6 +468,9 @@
 
     var stackViewers = [];  //!< a list of stacks related to the project
     this.focusedStackViewer = undefined;
+
+    // Remember the stack group loaded last to allow stack group URL creation.
+    this.lastLoadedStackGroup = null;
 
     var mode = "move";
     var show_textlabels = true;

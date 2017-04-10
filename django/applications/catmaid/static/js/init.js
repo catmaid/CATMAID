@@ -1076,9 +1076,10 @@ var project;
         CATMAID.throwOnInsufficientWebGlContexts(json.stacks.length);
 
         // Open first stack
-        return loadNextStack(json.project_id, json.stacks.shift(), json.stacks);
+        return loadNextStack(json.project_id, 0, json.id, json.stacks);
 
-        function loadNextStack(pid, stack, stacks, firstStackViewer) {
+        function loadNextStack(pid, stackIndex, sgId, stacks, firstStackViewer) {
+          var stack = stacks[stackIndex];
           return CATMAID.fetch(pid + '/stack/' + stack.id + '/info', 'GET')
             .then(function(json) {
               var stackViewer;
@@ -1092,10 +1093,15 @@ var project;
               return handle_openProjectStack(json, stackViewer)
                 .catch(CATMAID.handleError)
                 .then(function (newStackViewer) {
-                  if (0 < stacks.length) {
+                  var nextIndex = stackIndex + 1;
+                  if (nextIndex < stacks.length) {
                     var sv = firstStackViewer ? firstStackViewer : newStackViewer;
-                    return loadNextStack(pid, stacks.shift(), stacks, sv);
+                    return loadNextStack(pid, nextIndex, sgId, stacks, sv);
                   } else {
+                    project.lastLoadedStackGroup = {
+                      id: sgId,
+                      stacks: stacks
+                    };
                     CATMAID.layoutStackViewers();
                   }
                 });

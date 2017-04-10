@@ -55,6 +55,9 @@ Miscellaneous:
   Tracing section. If enabled, ten different colors plus the regular 0% and 100%
   color will be used instead of three.
 
+- Generating the URL to a view now respects loaded stack groups. If a stack
+  group was initially loaded, it is included in the URL.
+
 
 ### Bug fixes
 

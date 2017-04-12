@@ -83,14 +83,7 @@
 
       if ( e )
       {
-        if ( e.keyCode ) {
-          key = e.keyCode;
-        } else if ( e.charCode ) {
-          key = e.charCode;
-        } else {
-          key = e.which;
-        }
-        fakeEvent.keyCode = key;
+        fakeEvent.key = e.key;
         fakeEvent.shiftKey = e.shiftKey;
         fakeEvent.altKey = e.altKey;
         fakeEvent.ctrlKey = e.ctrlKey;
@@ -101,9 +94,9 @@
         ctrl = e.ctrlKey;
         meta = e.metaKey;
       }
-      else if ( event && event.keyCode )
+      else if ( event && event.key)
       {
-        fakeEvent.keyCode = event.keyCode;
+        fakeEvent.key = event.key;
         fakeEvent.shiftKey = event.shiftKey;
         fakeEvent.altKey = event.altKey;
         fakeEvent.ctrlKey = event.ctrlKey;
@@ -177,7 +170,7 @@
       new CATMAID.Action({
         helpText: "Undo last command on history stack",
         keyShortcuts: {
-          'Z': [ 90 ]
+          'Z': [ 'Ctrl + z' ]
         },
         run: function (e) {
           if (e.ctrlKey) {
@@ -195,7 +188,7 @@
       new CATMAID.Action({
         helpText: "Open widget",
         keyShortcuts: {
-          'SPACE': [ 32 ]
+          'SPACE': [ 'Ctrl +  ' ]
         },
         run: function (e) {
           // Only if Ctrl + Space is pressed, the dialog will be shown
@@ -213,9 +206,9 @@
      * This function should return true if there was any action linked to the
      * key code, or false otherwise.
      */
-    var keyCodeToAction = CATMAID.getKeyCodeToActionMap(actions);
+    var keyToAction = CATMAID.getKeyToActionMap(actions);
     var handleKeyPress = function( e ) {
-      var keyAction = keyCodeToAction[e.keyCode];
+      var keyAction = CATMAID.UI.getMappedKeyAction(keyToAction, e);
       if (keyAction) {
         return keyAction.run(e);
       } else {
@@ -401,24 +394,6 @@
       return m;
     };
 
-    /**
-     * get the key code
-     */
-    this.getKey = function( e )
-    {
-      var key;
-      if ( e )
-      {
-        if ( e.keyCode ) key = e.keyCode;
-        else if ( e.charCode ) key = e.charCode;
-        else key = e.which;
-      }
-      else if ( event && event.keyCode )
-        key = event.keyCode;
-      else key = false;
-      return key;
-    };
-
     this.onmousemove = function( e )
     {
       var m = self.getMouse( e );
@@ -564,6 +539,114 @@
     // Register global key listener
     document.onkeydown = onkeydown;
     document.onkeyup = onkeyup;
+  };
+  /**
+   * Map a key combination to a standard key value. This will for instance
+   * map 'shift + a' to A. For a list of key values
+   * see: https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key/Key_Values
+   */
+  CATMAID.UI.makeKeyValueMap = function(keyCombo) {
+    var map = new Map([
+      // Symbols:
+      ['Shift + `',  '~'],
+      ['Shift + 1',  '!'],
+      ['Shift + 2',  '@'],
+      ['Shift + 3',  '#'],
+      ['Shift + 4',  '$'],
+      ['Shift + 5',  '%'],
+      ['Shift + 6',  '^'],
+      ['Shift + 7',  '&'],
+      ['Shift + 8',  '*'],
+      ['Shift + 9',  '('],
+      ['Shift + 0',  ')'],
+      ['Shift + -',  '_'],
+      ['Shift + =',  '+'],
+      ['Shift + [',  '{'],
+      ['Shift + ]',  '}'],
+      ['Shift + \\', '|'],
+      ['Shift + ;',  ':'],
+      ['Shift + \'', '"'],
+      ['Shift + ,',  '<'],
+      ['Shift + .',  '>'],
+      ['Shift + /',  '?'],
+    ]);
+
+    // a-z -> A-Z
+    for (var keyCode = 65, max = 90; keyCode < max; keyCode += 1) {
+      var keyValue = String.fromCharCode(keyCode + 32);
+      var capitalKeyValue = String.fromCharCode(keyCode);
+      map.set('Shift + ' + keyValue, capitalKeyValue);
+    }
+
+    return map;
+  };
+
+  CATMAID.UI.keyValueMap = CATMAID.UI.makeKeyValueMap();
+
+  CATMAID.UI.getKeyValueComponents = function(keyCombo) {
+    // 'Alt' and 'Ctrl' have no effect on a key'
+    var noAltKeyCombo = keyCombo.replace(/[Aa]lt \+ ?/g, '');
+    var altKey = keyCombo.length !== noAltKeyCombo.length;
+    var noCtrlKeyCombo = noAltKeyCombo.replace(/[Cc]trl \+ ?/g, '');
+    var ctrlKey = noAltKeyCombo.length !== noCtrlKeyCombo.length;
+    var noMetaKeyCombo = noCtrlKeyCombo.replace(/[Mm]eta \+ ?/g, '');
+    var metaKey = noCtrlKeyCombo.length !== noMetaKeyCombo.length;
+    var noShiftKeyCombo = noMetaKeyCombo.replace(/Shift \+ ?/g, '');
+    var shiftKey = noMetaKeyCombo.length !== noShiftKeyCombo.length;
+
+    return {
+      key: noShiftKeyCombo,
+      altKey: altKey,
+      ctrlKey: ctrlKey,
+      metaKey: metaKey,
+      shiftKey: shiftKey,
+    };
+  };
+
+  /**
+   * Normalize a key combination string so that modifiers (Alt, Crtl,
+   * Shift) are first and sorted alphabetically and appear only once. Also,
+   * known key combinations like 'Shift a' or 'Shift 3' are mapped to 'A' and
+   * '#' respectively (matches US layout).
+   */
+  CATMAID.UI.normalizeKeyCombo = function(keyCombo) {
+    var components = CATMAID.UI.getKeyValueComponents(keyCombo);
+    var normalizedComponents = CATMAID.UI.normalizeKeyComponents(components);
+    return CATMAID.UI.toKeyCombo(normalizedComponents);
+  };
+
+  CATMAID.UI.normalizeKeyComponents = function(components) {
+    var keyValue;
+    if (components.shiftKey) {
+      var keyCombo = CATMAID.UI.toKeyCombo(components);
+      keyValue = CATMAID.UI.keyValueMap.get(keyCombo);
+    }
+    return {
+      key: keyValue ? keyValue : components.key,
+      altKey: components.altKey,
+      ctrlKey: components.ctrlKey,
+      metaKey: components.metaKey,
+      shiftKey: components.shiftKey
+    };
+  };
+
+  /**
+   * Return a key combination string based on a set of components.
+   */
+  CATMAID.UI.toKeyCombo = function(components) {
+    return (components.altKey ? "Alt + " : "") +
+           (components.ctrlKey ? "Ctrl + " : "") +
+           (components.metaKey ? "Meta + " : "") +
+           (components.shiftKey ? "Shift + " : "") +
+           components.key;
+  };
+
+  /**
+   * Return the mapped action for an unnormailized component object.
+   */
+  CATMAID.UI.getMappedKeyAction = function(map, components) {
+    var normalizedComponents = CATMAID.UI.normalizeKeyComponents(components);
+    return map[CATMAID.UI.toKeyCombo(normalizedComponents)];
   };
 
   CATMAID.UI.getFrameHeight = function()

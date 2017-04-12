@@ -233,7 +233,7 @@
             });
         $('th input[type=button].filter', tab).on("click", filterNeuronList);
         $('th input[type=text].filter', tab).on("keyup", function(e) {
-          if (13 === e.keyCode) filterNeuronList();
+          if ('Enter' === e.key) filterNeuronList();
         });
         $('th', tab).on("click", this, function(e) {
           // Prevent sorting if order is locked

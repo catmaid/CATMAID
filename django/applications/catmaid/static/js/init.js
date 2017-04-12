@@ -755,11 +755,12 @@ var project;
    * @return {boolean}   False if enter was pressed, true otherwise.
    */
   function login_oninputreturn(e) {
-    if (CATMAID.ui.getKey(e) == 13) {
+    if (e.key === 'Enter') {
       CATMAID.client.login(document.getElementById("account").value, document.getElementById("password").value);
       return false;
-    } else
-    return true;
+    } else {
+      return true;
+    }
   }
 
   /**

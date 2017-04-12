@@ -401,7 +401,7 @@
   GroupGraph.prototype.handleKeyPress = function(event) {
     // In case shift is pressed, the mousewheel sensitivity will be changed so
     // that zooming happens in smaller steps.
-    if (event.keyCode === 16 && this.cy) {
+    if (event.key === 'Shift' && this.cy) {
       this.cy._private.renderer.wheelSensitivity = 0.5;
     }
   };
@@ -409,9 +409,9 @@
   GroupGraph.prototype.handleKeyUp = function(event) {
     // In case shift is pressed, the mousewheel sensitivity will be set back to
     // normal.
-    if (event.keyCode === 16 && this.cy) {
+    if (event.key === 'Shift' && this.cy) {
       this.cy._private.renderer.wheelSensitivity = 1;
-    } else if (event.keyCode === 74) {
+    } else if (event.key === 'j') {
       // Letter 'J' (would prefer shift+G)
       this.group();
     }

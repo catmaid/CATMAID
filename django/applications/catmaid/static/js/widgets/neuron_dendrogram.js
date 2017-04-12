@@ -114,7 +114,7 @@
             self.update();
         };
         minStrahlerInput.oninput = function(e) {
-          if (13 === e.keyCode) {
+          if ('Enter' === e.key) {
             self.update();
           } else {
             self.setMinStrahler(parseInt(this.value, 10));
@@ -211,7 +211,7 @@
             self.update();
         };
         hSpacingFactorInput.oninput = function(e) {
-          if (13 === e.keyCode) {
+          if ('Enter' === e.key) {
             self.update();
           } else {
             self.setHSpaceFactor(parseFloat(this.value));
@@ -251,7 +251,7 @@
             self.update();
         };
         vSpacingFactorInput.oninput = function(e) {
-          if (13 === e.keyCode) {
+          if ('Enter' === e.key) {
             self.update();
           } else {
             self.setVSpaceFactor(parseFloat(this.value));
@@ -290,7 +290,7 @@
             self.update();
         };
         lineWidthFactorInput.oninput = function(e) {
-          if (13 === e.keyCode) {
+          if ('Enter' === e.key) {
             self.update();
           } else {
             self.lineWidthFactor = parseFloat(this.value);

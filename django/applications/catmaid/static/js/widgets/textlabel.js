@@ -203,20 +203,13 @@ function TextlabelTool()
     return actions;
   };
 
-  var arrowKeyCodes = {
-    left: 37,
-    up: 38,
-    right: 39,
-    down: 40
-  };
-
-  var keyCodeToAction = CATMAID.getKeyCodeToActionMap(actions);
+  var keyToAction = CATMAID.getKeyToActionMap(actions);
 
   /** This function should return true if there was any action
       linked to the key code, or false otherwise. */
 
   this.handleKeyPress = function( e ) {
-    var keyAction = keyCodeToAction[e.keyCode];
+    var keyAction = CATMAID.UI.getMappedKeyAction(keyToAction, e);
     if (keyAction) {
       return keyAction.run(e);
     } else {

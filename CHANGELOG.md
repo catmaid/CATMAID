@@ -77,6 +77,9 @@ Miscellaneous:
 - Review widget: it is possible again to use Q/W to move along already reviewed
   segments (re-review of nodes).
 
+- Fix some accidental key mapping collisions of some special keys and media
+  keys.
+
 
 ## 2017.04.20
 

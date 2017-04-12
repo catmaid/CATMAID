@@ -3313,7 +3313,7 @@ SkeletonAnnotations.TracingOverlay.prototype.selectRadius = function(treenode_id
           hideCircleAndCallback);
       // Attach a handler for the ESC key to cancel selection
       $('body').on('keydown.catmaidRadiusSelect', function(event) {
-        if (27 === event.keyCode) {
+        if ('Escape'  === event.key) {
           // Allow location changes again
           self.pixiLayer.blockLocationChange = false;
           // Unbind key handler and remove circle
@@ -3477,7 +3477,7 @@ SkeletonAnnotations.TracingOverlay.prototype.measureRadius = function () {
         hideCircleAndCallback);
     // Attach a handler for the ESC key to cancel selection
     $('body').on('keydown.catmaidRadiusSelect', function(event) {
-      if (27 === event.keyCode) {
+      if ('Escape' === event.key) {
         // Unbind key handler and remove circle
         $('body').off('keydown.catmaidRadiusSelect');
         fakeNode.removeSurroundingCircle();
@@ -4766,7 +4766,7 @@ SkeletonAnnotations.Tag = new (function() {
         })
 
         .keydown(function (event) {
-          if (13 === event.keyCode) { // ENTER
+          if ('Enter' === event.key) {
             event.stopPropagation();
             var val = input.val().trim();
             if ("" === val) {
@@ -4780,7 +4780,7 @@ SkeletonAnnotations.Tag = new (function() {
         })
 
         .keyup(function (event) {
-          if (27 === event.keyCode) { // ESC
+          if ('Escape' === event.key) {
             event.stopPropagation();
             SkeletonAnnotations.Tag.removeTagbox();
           }

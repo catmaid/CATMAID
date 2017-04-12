@@ -146,7 +146,7 @@
       if (e.ctrlKey || e.metaKey) { // Zoom.
         self.slider_s.move(w, !e.shiftKey);
       } else { // Move sections.
-        if (e.shiftKey) w *= 10;
+        if (e.shiftKey) w *= Navigator.Settings.session.major_section_step;
         self.slider_z.move(w);
       }
 
@@ -362,7 +362,7 @@
           ',': [ 44, 188 ]
         },
         run: function (e) {
-          var step = e.shiftKey ? -10 : -1;
+          var step = e.shiftKey ? (-1 * Navigator.Settings.session.major_section_step) : -1;
           if (e.ctrlKey) {
             smoothChangeSlice(e, step);
           } else {
@@ -378,7 +378,7 @@
           '.': [ 190 ]
         },
         run: function (e) {
-          var step = e.shiftKey ? 10 : 1;
+          var step = e.shiftKey ? Navigator.Settings.session.major_section_step : 1;
           if (e.ctrlKey) {
             smoothChangeSlice(e, step);
           } else {
@@ -623,7 +623,10 @@
           },
           use_cursor_following_zoom: {
             default: true
-          }
+          },
+          major_section_step: {
+            default: 10
+          },
         },
         migrations: {}
       });

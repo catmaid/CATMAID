@@ -58,6 +58,11 @@ Miscellaneous:
 - Generating the URL to a view now respects loaded stack groups. If a stack
   group was initially loaded, it is included in the URL.
 
+- It is now possible to control the number of sections moved when Shift is
+  pressed while using ",", "." or the mouse wheel. This step size is controlled
+  through the "Major section step" setting in the "Stack view" section of the
+  settings widget.
+
 
 ### Bug fixes
 

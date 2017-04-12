@@ -269,6 +269,25 @@
           'layer_insertion_strategy',
           SETTINGS_SCOPE));
 
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createNumericInputSetting(
+              "Major section step",
+              CATMAID.Navigator.Settings[SETTINGS_SCOPE].major_section_step,
+              1,
+              "The number of sections to move when Shift is pressed while using " +
+              "one of the movement keys or the mouse wheel.",
+              function() {
+                var newStep = parseInt(this.value, 10);
+                CATMAID.Navigator.Settings
+                    .set(
+                      'major_section_step',
+                      newStep,
+                      SETTINGS_SCOPE);
+              }),
+          CATMAID.Navigator.Settings,
+          'major_section_step',
+          SETTINGS_SCOPE));
+
       // Cursor following zoom
       ds.append(wrapSettingsControl(
           CATMAID.DOM.createCheckboxSetting(

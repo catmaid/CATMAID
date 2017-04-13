@@ -475,8 +475,7 @@
      *
      **/
 
-    // get basic Actions from Navigator
-    var actions = self.prototype.getActions();
+    var actions = [];
 
     this.getActions = function () {
       return actions;
@@ -1243,13 +1242,16 @@
      * code, or false otherwise.
      */
     this.handleKeyPress = function(e) {
+      var result = false;
       var keyAction = keyCodeToAction[e.keyCode];
       if (keyAction) {
         activeTracingLayer.tracingOverlay.ensureFocused();
-        return keyAction.run(e);
-      } else {
-        return false;
+        result = keyAction.run(e);
       }
+      if (!result) {
+        result = this.prototype.handleKeyPress(e);
+      }
+      return result;
     };
 
     this.getUndoHelp = function(e) {

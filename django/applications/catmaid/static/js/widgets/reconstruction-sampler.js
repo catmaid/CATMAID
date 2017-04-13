@@ -254,6 +254,7 @@
 
     var datatable = $(table).DataTable({
       dom: "lrphtip",
+      autoWidth: false,
       paging: true,
       lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
       ajax: function(data, callback, settings) {
@@ -493,6 +494,7 @@
 
     var datatable = $(table).DataTable({
       dom: "lrphtip",
+      autoWidth: false,
       paging: true,
       lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
       ajax: function(data, callback, settings) {
@@ -813,6 +815,7 @@
 
     var datatable = $(table).DataTable({
       dom: "lrphtip",
+      autoWidth: false,
       paging: true,
       lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
       ajax: function(data, callback, settings) {
@@ -1185,6 +1188,7 @@
 
     var datatable = $(table).DataTable({
       dom: "lrphtip",
+      autoWidth: false,
       paging: true,
       lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
       ajax: function(data, callback, settings) {

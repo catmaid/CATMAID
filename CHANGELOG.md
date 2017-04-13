@@ -32,6 +32,9 @@ Review widget:
   review" checkbox. Q will still move downstream and W upstream. Already
   reviewed nodes are skipped in both directions.
 
+- Only show "Done" message if 100% are reviewed in one of the selected columns,
+  including Team. Team is now checked by default.
+
 Miscellaneous:
 
 - Refreshing the nodes on the StackViewer will not print the info on the active

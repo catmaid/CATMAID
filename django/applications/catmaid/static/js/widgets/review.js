@@ -36,7 +36,7 @@
 
     this.init = function() {
       projectID = project.id;
-      followedUsers = [CATMAID.session.userid];
+      followedUsers = [CATMAID.session.userid, 'whitelist'];
       this.redraw();
     };
 
@@ -207,11 +207,26 @@
     };
 
     /**
+     * Get the current team whitelist and add all followed users.
+     */
+    this.getCurrentWhiteListAndFollowed = function() {
+      var whitelist = -1 !== followedUsers.indexOf('whitelist') ?
+          CATMAID.ReviewSystem.Whitelist.getWhitelist() : {};
+      for (var i=0; i<followedUsers.length; ++i) {
+        var reviewerId = followedUsers[i];
+        if (reviewerId !== 'whitelist') {
+          whitelist[reviewerId] = new Date(0);
+        }
+      }
+      return whitelist;
+    };
+
+    /**
      * Iterate over sequene and check if each node is reviewed, ignoring all
      * nodes listed in in <ignoredIndices>.
      */
     this.isSegmentFullyReviewed = function(sequence, ignoredIndices) {
-      var whitelist = CATMAID.ReviewSystem.Whitelist.getWhitelist();
+      var whitelist = this.getCurrentWhiteListAndFollowed();
       var reviewedByTeam = reviewedByUserOrTeam.bind(self, CATMAID.session.userid, whitelist);
       var nUnreviewedNodes = 0;
       for (var i=0; i<sequence.length; ++i) {
@@ -300,7 +315,7 @@
       }
 
       if (changeSelectedNode) {
-        var whitelist = CATMAID.ReviewSystem.Whitelist.getWhitelist();
+        var whitelist = this.getCurrentWhiteListAndFollowed();
         var reviewedByTeam = reviewedByUserOrTeam.bind(self, CATMAID.session.userid, whitelist);
 
         // Find index of next real node that should be reviewed
@@ -534,9 +549,11 @@
     function reviewedByUserOrTeam(userId, team, review)
     {
       if (reviewedByUser(userId, review)) return true;
-      if (review[0] in team) {
-        var rDate = new Date(review[1]);
-        return rDate >= team[review[0]];
+      if (team) {
+        if (review[0] in team) {
+          var rDate = new Date(review[1]);
+          return rDate >= team[review[0]];
+        }
       }
       return false;
     }
@@ -780,17 +797,18 @@
           .attr('data-rid', reviewers[i])
           .attr('title', "When checked, column will be respected when next segment is selected.")
           .click(function() {
-           var rid = parseInt($(this).attr('data-rid'));
-           var idx = followedUsers.indexOf(rid);
-           if (-1 !== idx && !this.checked) {
-            // Remove from follower list if in list and the name was
-            // unchecked.
-            followedUsers.splice(idx, 1);
-           } else if (-1 === idx && this.checked) {
-            // Add to follower list if not already there and the name
-            // was checked.
-            followedUsers.push(rid);
-           }
+            var rid = this.dataset.rid === 'whitelist' ?
+                this.dataset.rid : parseInt(this.dataset.rid);
+            var idx = followedUsers.indexOf(rid);
+            if (-1 !== idx && !this.checked) {
+              // Remove from follower list if in list and the name was
+              // unchecked.
+             followedUsers.splice(idx, 1);
+            } else if (-1 === idx && this.checked) {
+              // Add to follower list if not already there and the name
+              // was checked.
+              followedUsers.push(rid);
+            }
           });
         if (-1 !== followedUsers.indexOf(reviewers[i])) {
           cb.prop('checked', true);

@@ -482,7 +482,36 @@
           };
           return true;
         }
-      })];
+      }),
+
+      new CATMAID.Action({
+        helpText: "Change major section step size",
+        keyShortcuts: {
+          '#': [ 51 ]
+        },
+        run: function (e) {
+          // Don't handle "3" key presses without shift
+          if (!e.shiftKey) {
+            return false;
+          }
+          // Show dialog to update major section step size
+          var dialog = new CATMAID.OptionsDialog("Update major section step");
+          dialog.appendMessage("Please provide a new majtor section step size.");
+          var stepInput = dialog.appendField("New major section step",
+              "majorSectionStep", "", true);
+          dialog.onOK = function() {
+            // Only try to update step size if there was some input
+            if (stepInput.value.length !== 0) {
+              var newStep = parseInt(stepInput.value, 10);
+              CATMAID.Navigator.Settings.session.major_section_step = newStep;
+            }
+          };
+
+          dialog.show(400, "auto");
+          return true;
+        }
+      }),
+    ];
 
     var keyCodeToAction = CATMAID.getKeyCodeToActionMap(actions);
 

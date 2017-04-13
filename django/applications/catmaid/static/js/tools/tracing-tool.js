@@ -963,6 +963,9 @@
       run: function (e) {
         if (!CATMAID.mayEdit())
           return false;
+        if (e.shiftKey) {
+          return false;
+        }
         activeTracingLayer.tracingOverlay.setConfidence(1, e.altKey);
         return true;
       }
@@ -974,6 +977,9 @@
       run: function (e) {
         if (!CATMAID.mayEdit())
           return false;
+        if (e.shiftKey) {
+          return false;
+        }
         activeTracingLayer.tracingOverlay.setConfidence(2, e.altKey);
         return true;
       }
@@ -985,6 +991,9 @@
       run: function (e) {
         if (!CATMAID.mayEdit())
           return false;
+        if (e.shiftKey) {
+          return false;
+        }
         activeTracingLayer.tracingOverlay.setConfidence(3, e.altKey);
         return true;
       }
@@ -996,6 +1005,9 @@
       run: function (e) {
         if (!CATMAID.mayEdit())
           return false;
+        if (e.shiftKey) {
+          return false;
+        }
         activeTracingLayer.tracingOverlay.setConfidence(4, e.altKey);
         return true;
       }
@@ -1007,6 +1019,9 @@
       run: function (e) {
         if (!CATMAID.mayEdit())
           return false;
+        if (e.shiftKey) {
+          return false;
+        }
         activeTracingLayer.tracingOverlay.setConfidence(5, e.altKey);
         return true;
       }

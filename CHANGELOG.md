@@ -61,7 +61,8 @@ Miscellaneous:
 - It is now possible to control the number of sections moved when Shift is
   pressed while using ",", "." or the mouse wheel. This step size is controlled
   through the "Major section step" setting in the "Stack view" section of the
-  settings widget.
+  settings widget. Alternatively, for a dialog to set a new step size, the key
+  combination Shift + # can be used.
 
 
 ### Bug fixes

@@ -637,43 +637,6 @@
     return null;
   };
 
-  /**
-   * Get arbor information on a particular skeleton.
-   */
-  var getArbor = function(skeletonId) {
-    // Get nodes and tags for skeleton
-    return CATMAID.fetch(project.id + '/' + skeletonId + '/1/0/1/compact-arbor', 'POST')
-      .then(function(result) {
-        var ap = new CATMAID.ArborParser();
-        ap.tree(result[0]);
-
-        return {
-          arbor: ap.arbor,
-          positions: ap.positions,
-          tags: result[2]
-        };
-      });
-  };
-
-  DomainWorkflowStep.prototype.domainFactories = {
-    'covering': {
-      makeDomains: function(skeletonId) {
-        return getArbor(skeletonId)
-          .then(function(arbor) {
-            return {
-              domains: [{
-                startNodeId: arbor.arbor.root,
-                endNodeIds: arbor.arbor.findEndNodes()
-              }],
-              cache: {
-                arbor: arbor
-              }
-            };
-          });
-      }
-    }
-  };
-
   DomainWorkflowStep.prototype.createNewDomain = function(widget) {
     var skeletonId = widget.state['skeletonId'];
     if (!skeletonId) {
@@ -690,7 +653,8 @@
       CATMAID.warn("Can't create domain without type");
       return;
     }
-    var domainFactory = this.domainFactories[domainType];
+
+    var domainFactory = CATMAID.Sampling.DomainFactories[domainType];
     if (!domainFactory) {
       CATMAID.warn("Domain type unsupported: " + domainType);
       return;
@@ -957,7 +921,7 @@
     if (arbor) {
       prepare = Promise.resolve();
     } else {
-      prepare = getArbor(skeletonId)
+      prepare = CATMAID.Sampling.getArbor(skeletonId)
           .then(function(result) {
             arbor = result;
             widget.state['arbor'] = result;
@@ -1262,7 +1226,7 @@
    * @return {Promise} Resolved with two-field object, one for each arbor
    */
   TwigWorkflowStep.prototype.getIntervalArbors = function(skeletonId, interval) {
-    return getArbor(skeletonId)
+    return CATMAID.Sampling.getArbor(skeletonId)
       .then(function(arbor) {
         var startNodeId = interval.start_node_id;
         var endNodeId = interval.end_node_id;

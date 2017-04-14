@@ -26,8 +26,10 @@
       // Pruning is inclusive, so we need to prune the potential successors
       // of the end nodes.
       var successors = allSuccessors[endNodeId];
-      for (var i=0; i<successors.length; ++i) {
-        o[successors[i]] = true;
+      if (successors) {
+        for (var i=0; i<successors.length; ++i) {
+          o[successors[i]] = true;
+        }
       }
       return o;
     }, {}));
@@ -200,6 +202,7 @@
             // node IDs are upstream of end nodes. Let domains be greedy, i.e.
             // make them as big as possible.
             var domainStartNodeIds = startNodeProvider(arborParser, options);
+            options['referenceNodes'] = domainStartNodeIds;
             return Promise.all([arborParser, domainStartNodeIds]);
           })
           .then(function(results) {

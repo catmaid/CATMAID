@@ -32,7 +32,9 @@
   ReconstructionSampler.prototype.init = function() {
     this.state = {
       'intervalLength': 5000,
-      'domainType': 'covering'
+      'domainType': 'regular',
+      'domainStartNodeType': 'root',
+      'domainEndNodeType': 'downstream'
     };
     this.workflow = new CATMAID.Workflow({
       state: this.state,
@@ -423,7 +425,8 @@
 
 
   /**
-   *  Divide sampled portion into even intervals.
+   *  Select or create domains for a sampler. If domains are created, start
+   *  nodes have to be closer to an arbor's root than the end nodes.
    */
   var DomainWorkflowStep = function() {
     CATMAID.WorkflowStep.call(this, "Domain");
@@ -447,15 +450,60 @@
 
   DomainWorkflowStep.prototype.createControls = function(widget) {
     var self = this;
+
     return [
       {
         type: 'select',
+        label: 'Domain start',
+        title: 'Select start node type of new domain',
+        value: widget.state['domainStartNodeType'],
+        entries: [{
+          title: 'Root node',
+          value: 'root'
+        }, {
+          title: 'Taged node',
+          value: 'tag'
+        }, {
+          title: 'Active node',
+          value: 'active'
+        }, {
+          title: 'Select node',
+          value: 'select'
+        }],
+        onchange: function() {
+          widget.state['domainStartNodeType'] = this.value;
+        }
+      },
+      {
+        type: 'select',
+        label: 'Domain end',
+        title: 'Select end node type of new domain',
+        value: widget.state['domainEndNodeType'],
+        entries: [{
+          title: 'Taged node',
+          value: 'tag'
+        }, {
+          title: 'Active node',
+          value: 'active'
+        }, {
+          title: 'Select node',
+          value: 'select'
+        }, {
+          title: 'All downstream nodes',
+          value: 'downstream'
+        }],
+        onchange: function() {
+          widget.state['domainEndNodeType'] = this.value;
+        }
+      },
+      {
+        type: 'select',
         label: 'Domain type',
-        title: 'Select type of node domains',
+        title: 'Select a domain type',
         value: widget.state['domainType'],
         entries: [{
-          title: 'Complete skeleton',
-          value: 'covering'
+          title: 'Regular',
+          value: 'regular'
         }],
         onchange: function() {
           widget.state['domainType'] = this.value;
@@ -463,7 +511,7 @@
       },
       {
         type: 'button',
-        label: 'New domain',
+        label: 'Create domain(s)',
         onclick: function() {
           self.createNewDomain(widget);
         }
@@ -648,9 +696,19 @@
       CATMAID.warn("Can't create domain without sampler");
       return;
     }
+    var domainStartNodeType = widget.state['domainStartNodeType'];
+    if (!domainStartNodeType) {
+      CATMAID.warn("Can't create domain without start node type");
+      return;
+    }
+    var domainEndNodeType = widget.state['domainEndNodeType'];
+    if (!domainEndNodeType) {
+      CATMAID.warn("Can't create domain without end node type");
+      return;
+    }
     var domainType = widget.state['domainType'];
     if (!domainType) {
-      CATMAID.warn("Can't create domain without type");
+      CATMAID.warn("Can't create domain without domain type");
       return;
     }
 
@@ -660,6 +718,12 @@
       return;
     }
 
+    var options = {
+      domainType: domainType,
+      domainStartNodeType: domainStartNodeType,
+      domainEndNodeType: domainEndNodeType,
+    };
+
     var self = this;
     this.ensureMetadata()
       .then(function() {
@@ -667,7 +731,7 @@
         if (!domainTypeId) {
           throw new CATMAID.ValueError("Can't find domain type ID for name: " + domainType);
         }
-        return Promise.all([domainTypeId, domainFactory.makeDomains(skeletonId)]);
+        return Promise.all([domainTypeId, domainFactory.makeDomains(skeletonId, options)]);
       })
       .then(function(results) {
         var domainTypeId = results[0];
@@ -945,20 +1009,9 @@
     prepare
       .then(getDomainDetails.bind(this, project.id, domain.id))
       .then(function(domainDetails) {
-        // Get sub-arbor that starts at domain root and is pruned at all domain
-        // ends. This is then split into slabs, which are then further split
-        // into intervals of respective length.
-        var domainArbor = arbor.arbor.subArbor(domain.start_node_id);
-        var allSuccessors = domainArbor.allSuccessors();
-        domainArbor.pruneAt(domainDetails.ends.reduce(function(o, end) {
-          // Pruning is inclusive, so we need to prune the potential successors
-          // of the end nodes.
-          var successors = allSuccessors[end.node_id];
-          for (var i=0; i<successors; ++I) {
-            o[successors[i]] = true;
-          }
-          return o;
-        }, {}));
+        // Get domain arbor, which is then split into slabs, which are then
+        // further split into intervals of respective length.
+        var domainArbor = CATMAID.Sampling.domainArborFromModel(arbor.arbor, domainDetails);
 
         // Create Intervals from partitions
         var intervals = [], positions = arbor.positions;

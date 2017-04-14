@@ -745,22 +745,100 @@
           }
         }
 
-        var createdDomains = [];
-        for (var i=0; i<domains.length; ++i) {
-          var domain = domains[i];
-          createdDomains.push(CATMAID.fetch(
-              project.id + '/samplers/' + samplerId + '/domains/add', 'POST', {
-                  domain_type_id: domainTypeId,
-                  start_node_id: domain.startNodeId,
-                  end_node_ids: domain.endNodeIds
-              }));
-        }
+        return new Promise(function(resolve, reject) {
+          // Show 3D viewer confirmation dialog
+          var dialog = new CATMAID.Confirmation3dDialog({
+            title: "Please confirm " + domains.length + " sampler domain(s)",
+            showControlPanel: false
+          });
 
-        return Promise.all(createdDomains);
+          // Create domains if OK is pressed
+          dialog.onOK = function() {
+            createDomains(samplerId, domainTypeId, domains)
+              .then(function(result) {
+                CATMAID.msg("Success", domains.length + " domain(s) created");
+                resolve(result);
+              })
+              .catch(reject);
+          };
+          dialog.onCancel = function() {
+            CATMAID.msg("No domains created", "Canceled by user");
+          };
+
+          dialog.show();
+
+          // At the moment the 3D viewer is only accessible after display
+          var widget = dialog.webglapp;
+          var models = {};
+          models[skeletonId] = new CATMAID.SkeletonModel(skeletonId);
+          widget.addSkeletons(models, function() {
+
+            var makeEndNode = function(nodeId) {
+              return {
+                id: null,
+                node_id: parseInt(nodeId, 10)
+              };
+            };
+
+            // The defined domains are noy yet available from the back-end,
+            // prepopulate the skeleton's sampler property with fake data that
+            // showing the domains to be created.
+            var skeletons = widget.space.content.skeletons;
+            var fakeDomainId = 0;
+            var previewDomains = domains.map(function(d) {
+              return {
+                ends : d.endNodeIds.map(makeEndNode),
+                id: fakeDomainId++, // use fake ID, needed for different colors
+                start_node_id: d.startNodeId, // needed
+                // parent_interval: null,
+                // project_id: project.id,
+                // sampler_id: null,
+              };
+            });
+            for (var skeletonId in skeletons) {
+              var skeleton = skeletons[skeletonId];
+              skeleton.setSamplers([{
+                id: null,
+                domains: previewDomains,
+                // creation_time,
+                // edition_time,
+                // interval_length,
+                // skeleton_id,
+                // state_id,
+                // user_ud
+              }]);
+            }
+
+            // Set new shading and coloring methods
+            widget.options.color_method = 'sampler-domains';
+            widget.options.shading_method = 'sampler-domains';
+            widget.options.interpolate_vertex_colots = false;
+            widget.updateSkeletonColors();
+          });
+        });
       }).then(function(result) {
         widget.update();
     }).catch(CATMAID.handleError);
   };
+
+  /**
+   * Create all passed in domains for the passed in sampler. Return a promise
+   * that resolves once all domainsa are created.
+   */
+  function createDomains(samplerId, domainTypeId, domains) {
+    var createdDomains = [];
+    for (var i=0; i<domains.length; ++i) {
+      var domain = domains[i];
+      createdDomains.push(CATMAID.fetch(
+          project.id + '/samplers/' + samplerId + '/domains/add', 'POST', {
+              domain_type_id: domainTypeId,
+              start_node_id: domain.startNodeId,
+              end_node_ids: domain.endNodeIds
+          }));
+    }
+
+    return Promise.all(createdDomains);
+  }
 
 
   /**

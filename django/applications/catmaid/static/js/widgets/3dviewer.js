@@ -4530,6 +4530,10 @@
     return p;
   };
 
+  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.setSamplers = function(samplers) {
+    this.samplers = samplers;
+  };
+
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.createNodeDistanceFn = function() {
    return (function(child, paren) {
      return this[child].distanceTo(this[paren]);

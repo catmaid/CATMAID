@@ -151,7 +151,7 @@
         }, {});
 
         for (var skeletonId in skeletonSamplers) {
-          skeletons[skeletonId].samplers = skeletonSamplers[skeletonId];
+          skeletons[skeletonId].setSamplers(skeletonSamplers[skeletonId]);
         }
       });
   };

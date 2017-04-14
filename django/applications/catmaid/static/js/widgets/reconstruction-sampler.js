@@ -43,7 +43,6 @@
         new BackboneWorkflowStep(),
         new DomainWorkflowStep(),
         new IntervalWorkflowStep(),
-        new TwigWorkflowStep(),
         new SynapseWorkflowStep()
        ]
     });

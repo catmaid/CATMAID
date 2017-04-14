@@ -309,6 +309,66 @@
           return this.space.userColormap[userID];
         }).bind(skeleton);
       }
+    },
+    'sampler-domains': {
+      prepare: initSamplerDomains,
+      vertexColorizer: function(skeleton, options) {
+        var notComputableColor = options.notComputableColor;
+        var arbor = skeleton.createArbor();
+        var samplers = skeleton.samplers;
+        if (!samplers) {
+          // Without samplers, there is no color computable
+          return function(vertex) { return notComputableColor; };
+        }
+
+        var colorScheme = 'Spectral';
+        var colorizer = colorbrewer[colorScheme];
+        if (!colorizer) {
+          throw new CATMAID.ValueError('Couldn\'t find color scheme "' + colorScheme + '"');
+        }
+        var nColors = 11;
+        var colorSet = colorizer[11];
+        if (!colorSet) {
+          throw new CATMAID.ValueError('Couldn\'t find color set ' + nColors + ' for color scheme "' + colorScheme +'"');
+        }
+        colorSet = colorSet.map(function(rgb) {
+          return new THREE.Color(rgb);
+        });
+
+        var nAddedDomains = 0;
+        var nSamplers = samplers.length;
+        var domainColorIndex = new Map();
+        var nodeDomains = new Map();
+        for (var i=0; i<nSamplers; ++i) {
+          var sampler = samplers[i];
+          var domains = sampler.domains;
+          var nDomains = domains.length;
+          for (var j=0; j<nDomains; ++j) {
+            var domain = domains[j];
+            domainColorIndex.set(domain.id, nAddedDomains % nColors);
+            ++nAddedDomains;
+
+            // Build arbors for domains
+            var domainArbor = CATMAID.Sampling.domainArborFromModel(arbor, domain);
+            // Build index for each node of each domain to which domain they
+            // belong. If a node belongs to multiple domains, the last one wins.
+            var domainNodes = domainArbor.nodesArray();
+            for (var k=0, kMax=domainNodes.length; k<kMax; ++k) {
+              nodeDomains.set(parseInt(domainNodes[k], 10), domain.id);
+            }
+          }
+        }
+
+        return function(vertex) {
+          // Find domain this vertex is part of
+          var domainId = nodeDomains.get(vertex.node_id);
+          if (domainId === undefined) {
+            return notComputableColor;
+          } else {
+            return colorSet[domainColorIndex.get(domainId)];
+          }
+        };
+      }
     }
   };
 

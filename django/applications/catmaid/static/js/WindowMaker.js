@@ -1156,7 +1156,7 @@ var WindowMaker = new function()
     // the execution of the RESIZE handler before the canvas is
     // initialized.
     addLogic(win);
-    WA.init( 800, 600, canvas.getAttribute("id") );
+    WA.init( 800, 600, canvas );
 
     WA.adjustStaticContent();
 

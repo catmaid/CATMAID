@@ -179,7 +179,7 @@
     // Create a 3D View that is not a SkeletonSource
     this.webglapp = new CATMAID.WebGLApplication(true);
     this.webglapp.init(this.width - leftWidth - 50, usable_height,
-        'dialog-3d-view'); // add to the right
+        right); // add to the right
     // Activate downstream shading in split mode
     if (!this.in_merge_mode) {
       this.webglapp.options.shading_method = 'active_node_split';

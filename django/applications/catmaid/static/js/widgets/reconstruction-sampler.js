@@ -165,7 +165,7 @@
    * ("sample domains").
    */
   var BackboneWorkflowStep = function() {
-    CATMAID.WorkflowStep.call(this, "Backbone");
+    CATMAID.WorkflowStep.call(this, "Sampler");
 
     // Maps state IDs to state objects, populated on demand
     this.possibleStates = null;

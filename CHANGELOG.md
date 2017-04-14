@@ -13,6 +13,11 @@ Review widget:
   "Visible reviewers" setting in the widget. Available options are "All", "Team"
   and "Self".
 
+Miscellaneous:
+
+- Split/Merge dialog: the node count for both respecivly remaining/new and
+  remaining/old are now on top of the annotation lists.
+
 
 ### Bug fixes
 

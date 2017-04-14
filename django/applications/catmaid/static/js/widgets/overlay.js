@@ -1703,28 +1703,28 @@ SkeletonAnnotations.TracingOverlay.prototype.splitSkeleton = function(nodeID) {
       /* Create the dialog */
       var dialog = new CATMAID.SplitMergeDialog({
         model1: model,
-        splitNodeId: nodeId
-      });
-      dialog.onOK = function() {
-        // Get upstream and downstream annotation set
-        var upstream_set, downstream_set;
-        if (self.upstream_is_small) {
-          upstream_set = dialog.get_under_annotation_set();
-          downstream_set = dialog.get_over_annotation_set();
-        } else {
-          upstream_set = dialog.get_over_annotation_set();
-          downstream_set = dialog.get_under_annotation_set();
+        splitNodeId: nodeId,
+        split: function() {
+          // Get upstream and downstream annotation set
+          var upstream_set, downstream_set;
+          if (self.upstream_is_small) {
+            upstream_set = dialog.get_under_annotation_set();
+            downstream_set = dialog.get_over_annotation_set();
+          } else {
+            upstream_set = dialog.get_over_annotation_set();
+            downstream_set = dialog.get_under_annotation_set();
+          }
+          // Call backend
+          self.submit.then(function() {
+            var command = new CATMAID.SplitSkeletonCommand(self.state,
+                project.id, nodeId, upstream_set, downstream_set);
+            CATMAID.commands.execute(command)
+              .then(function(result) {
+                self.updateNodes(function () { self.selectNode(nodeId); });
+              }).catch(CATMAID.handleError);
+          }, CATMAID.handleError, true);
         }
-        // Call backend
-        self.submit.then(function() {
-          var command = new CATMAID.SplitSkeletonCommand(self.state,
-              project.id, nodeId, upstream_set, downstream_set);
-          CATMAID.commands.execute(command)
-            .then(function(result) {
-              self.updateNodes(function () { self.selectNode(nodeId); });
-            }).catch(CATMAID.handleError);
-        }, CATMAID.handleError, true);
-      };
+      });
       dialog.show();
     });
   });
@@ -1792,11 +1792,11 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeLink = function (from
                 model1: from_model,
                 model2: to_model,
                 extension: extension,
-                keepOrder: false
+                keepOrder: false,
+                merge: function(fromId, toId) {
+                  merge(dialog.get_combined_annotation_set(), fromId, toId);
+                }
               });
-              dialog.onOK = function(fromId, toId) {
-                merge(dialog.get_combined_annotation_set(), fromId, toId);
-              };
               dialog.show(extension);
             };
 

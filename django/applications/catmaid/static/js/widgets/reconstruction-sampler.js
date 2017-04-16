@@ -866,13 +866,14 @@
     var self = this;
     return [{
       type: 'button',
-      label: 'Create intervals for domain',
+      label: 'Create intervals',
+      title: 'Create a new set of intervals for the current domain',
       onclick: function() {
         self.createNewIntervals(widget);
       }
     }, {
       type: 'button',
-      label: 'Pick random untouched interval',
+      label: 'Pick random interval',
       onclick: function() {
         self.pickRandomInterval(widget);
       }
@@ -1145,12 +1146,8 @@
   IntervalWorkflowStep.prototype.pickRandomInterval = function(widget) {
     // Filter untouched ones
     var intervals = this.availableIntervals || [];
-    intervals = intervals.filter(function(interval) {
-      var state = this.possibleStates[interval.state_id];
-      return state.name === 'untouched';
-    }, this);
     if (!intervals || 0 === intervals.length) {
-      CATMAID.warn("No (untouched) intervals available");
+      CATMAID.warn("No intervals available");
       return;
     }
 

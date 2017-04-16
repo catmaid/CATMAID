@@ -104,6 +104,7 @@ def list_samplers(request, project_id):
            'creation_time': float(s.creation_time.strftime('%s')),
            'edition_time': float(s.edition_time.strftime('%s')),
            'interval_length': s.interval_length,
+           'review_required': s.review_required,
            'state_id': s.sampler_state_id,
            'skeleton_id': s.skeleton_id,
            'user_id': s.user_id,
@@ -133,6 +134,11 @@ def add_sampler(request, project_id):
        type: integer
        paramType: form
        required: true
+     - name: review_required
+       description: Whether reviews should be enforced in this sampler
+       type: boolean
+       paramType: form
+       required: true
     """
     skeleton_id = request.POST.get('skeleton_id')
     if skeleton_id:
@@ -146,11 +152,18 @@ def add_sampler(request, project_id):
     else:
         raise ValueError("Need interval_length parameter")
 
+    review_required = request.POST.get('review_required')
+    if review_required:
+        review_required = review_required == 'true'
+    else:
+        raise ValueError("Need review_required parameter")
+
     sampler_state = SamplerState.objects.get(name="open");
 
     sampler = Sampler.objects.create(
         skeleton_id=skeleton_id,
         interval_length=interval_length,
+        review_required=review_required,
         sampler_state=sampler_state,
         user=request.user,
         project_id=project_id)
@@ -159,6 +172,7 @@ def add_sampler(request, project_id):
         "id": sampler.id,
         "skeleton_id": sampler.skeleton_id,
         "interval_length": sampler.interval_length,
+        "review_required": sampler.review_required,
         "sampler_state": sampler.sampler_state_id,
         "user_id": sampler.user_id,
         "project_id": sampler.project_id

@@ -34,7 +34,8 @@
       'intervalLength': 5000,
       'domainType': 'regular',
       'domainStartNodeType': 'root',
-      'domainEndNodeType': 'downstream'
+      'domainEndNodeType': 'downstream',
+      'reviewRequired': true
     };
     this.workflow = new CATMAID.Workflow({
       state: this.state,
@@ -207,6 +208,15 @@
         }
       },
       {
+        type: 'checkbox',
+        label: 'Review required',
+        title: 'Whether domains and intervals can only be completed if they are reviewed completely',
+        value: widget.state['reviewRequired'],
+        onclick: function() {
+          widget.state['reviewRequired'] = this.checked;
+        }
+      },
+      {
         type: 'button',
         label: 'New sampler for active backbone',
         onclick: function() {
@@ -340,6 +350,18 @@
         },
         {data: "interval_length", title: "Interval length", orderable: true},
         {
+          data: "review_required",
+          title: "Review required",
+          orderable: true,
+          render: function(data, type, row, meta) {
+            if (type === 'display') {
+              return row.review_required ? "Yes" : "No";
+            } else {
+              return row.review_required;
+            }
+          }
+        },
+        {
           data: "state",
           title: " State",
           orderable: true,
@@ -398,9 +420,15 @@
       CATMAID.warn("Can't create sampler without interval length");
       return;
     }
+    var reviewRequired = widget.state['reviewRequired'];
+    if (undefined === reviewRequired) {
+      CATMAID.warn("Can't create sampler without review policy");
+      return;
+    }
     CATMAID.fetch(project.id + '/samplers/add', 'POST', {
       skeleton_id: skeletonId,
       interval_length: intervalLength,
+      review_required: reviewRequired
     }).then(function(result) {
       // TODO: Should probably go to next step immediately
       widget.update();

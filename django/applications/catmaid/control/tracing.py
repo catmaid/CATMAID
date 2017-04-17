@@ -43,7 +43,8 @@ needed_sampler_states = {
 needed_sampler_interval_states = {
     'untouched': 'A new interval, which has not been looked at',
     'started':   'The interval is being worked on',
-    'completed': 'The interval has been completed'
+    'completed': 'The interval has been completed',
+    'abandoned': 'The interval has been abandoned and won\'t be completed'
 }
 needed_sampler_domain_types = {
     'regular':  'A general explicitly defined domain',

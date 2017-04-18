@@ -6,13 +6,16 @@
   "use strict";
 
   /**
-   * Export data in various formats.
+   * Export and import data in various formats.
    */
-  var ExportWidget = function(options) {
+  var ImportExportWidget = function(options) {
     options = options || {};
+    this.containers = {};
+    this.mode = "export";
+    this.showImports = CATMAID.tools.getDefined(options.showImports, true);
   };
 
-  ExportWidget.contentTemplate = `
+  ImportExportWidget.exportContentTemplate = `
 <h3>Export Graph</h3>
 
 The selected skeletons from the <i>Selection Table</i> are used to extract the subnetwork (in different formats) or
@@ -77,18 +80,55 @@ the selected neurons.
 </ul>
 `;
 
-  ExportWidget.prototype.getName = function() {
+  ImportExportWidget.importContentTemplate = `
+ `;
+
+  ImportExportWidget.prototype.getName = function() {
     return "Export widget";
   };
 
-  ExportWidget.prototype.getWidgetConfiguration = function() {
+  ImportExportWidget.prototype.getWidgetConfiguration = function() {
     return {
-      contentID: 'export_widget_content',
+      createControls: function(controls) {
+        if (this.showImports) {
+          var tabs = CATMAID.DOM.addTabGroup(controls,
+              'import_export_controls', ['Export', 'Import']);
 
+          tabs['Export'].dataset.mode = 'export';
+          tabs['Import'].dataset.mode = 'import';
+
+          // Initialize tabs
+          var self = this;
+          $(controls).tabs({
+            activate: function(event, ui) {
+              var mode = ui.newPanel.attr('data-mode');
+              if (mode === 'export' || mode === 'import') {
+                self.mode = mode;
+                self.redraw();
+              } else {
+                CATMAID.warn('Unknown import export table mode: ' + mode);
+              }
+            }
+          });
+        }
+      },
       createContent: function(container) {
-        container.innerHTML = ExportWidget.contentTemplate;
+        // Create tabs or show export only
+        if (this.showImports) {
+          // Import
+          var importContainer = document.createElement('div');
+          importContainer.innerHTML = ImportExportWidget.importContentTemplate;
+          container.appendChild(importContainer);
+          this.containers['import'] = importContainer;
+        }
 
-        var $container = $(container);
+        // Export
+        var exportContainer = document.createElement('div');
+        exportContainer.innerHTML = ImportExportWidget.exportContentTemplate;
+        container.appendChild(exportContainer);
+        this.containers['export'] = exportContainer;
+
+        var $container = $(this.exportContainer);
 
         $container.find('#export-swc').click(export_swc);
 
@@ -112,8 +152,20 @@ the selected neurons.
         $container.find('#export-tree-geometry').click(function() {
           export_tree_geometry();
         });
+      },
+      init: function() {
+        this.redraw();
       }
     };
+  };
+
+  /**
+   * Redraw the complete import/export table and manage visibility.
+   */
+  ImportExportWidget.prototype.redraw = function() {
+    for (var containerName in this.containers) {
+      this.containers[containerName].style.display = containerName === this.mode ? 'block' : 'none';
+    }
   };
 
   function new_window_with_return( url ) {
@@ -531,7 +583,7 @@ the selected neurons.
   // Register widget with CATMAID
   CATMAID.registerWidget({
     key: widgetKey,
-    creator: ExportWidget
+    creator: ImportExportWidget
   });
 
   // Add an action to the tracing tool that will open this widget

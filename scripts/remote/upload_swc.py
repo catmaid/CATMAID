@@ -1,18 +1,23 @@
 #!/usr/bin/python
 
-
+import sys
 import argparse
 import requests
-from requests.auth import AuthBase
+from requests.auth import HTTPBasicAuth
 
 
-class CatmaidApiTokenAuth(AuthBase):
-    """Attaches HTTP X-Authorization Token headers to the given Request."""
-    def __init__(self, token):
+class CatmaidApiTokenAuth(HTTPBasicAuth):
+    """Attaches HTTP X-Authorization Token headers to the given Request.
+    Optionally, Basic HTTP Authentication can be used in parallel.
+    """
+    def __init__(self, token, username=None, password=None):
+        super(CatmaidApiTokenAuth, self).__init__(username, password)
         self.token = token
 
     def __call__(self, r):
         r.headers['X-Authorization'] = 'Token {}'.format(self.token)
+        if self.username and self.password:
+            super(CatmaidApiTokenAuth, self).__call__(r)
         return r
 
 
@@ -30,17 +35,30 @@ def main():
     parser.add_argument(
             'swc_file',
             help='Filename of the SWC skeleton to upload and import.')
+    parser.add_argument(
+            '--http_auth_user',
+            help='Optional HTTP Auth user')
+    parser.add_argument(
+            '--http_auth_pass',
+            help='Optional HTTP Auth password')
 
     args = parser.parse_args()
 
     session = requests.Session()
-    session.auth = CatmaidApiTokenAuth(args.token)
+    session.auth = CatmaidApiTokenAuth(args.token, args.http_auth_user,
+            args.http_auth_pass)
     response = session.post(
         '{}/{}/skeletons/import'.format(args.url, args.project_id),
         files={'file.swc': open(args.swc_file, 'rb')})
 
     print 'Upload completed in {}ms'.format(response.elapsed.total_seconds() * 1000)
-    skel = response.json()
+    try:
+        skel = response.json()
+    except:
+        e = sys.exc_info()[0]
+        print "Parse error: " + str(e)
+        print response.content
+        raise SystemExit, 1
 
     if 'error' in skel:
         print skel

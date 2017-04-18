@@ -12,7 +12,8 @@
     options = options || {};
     this.containers = {};
     this.mode = "export";
-    this.showImports = CATMAID.tools.getDefined(options.showImports, true);
+    this.showImports = CATMAID.tools.getDefined(options.showImports,
+        CATMAID.hasPermission(project.id, 'can_import'));
   };
 
   ImportExportWidget.exportContentTemplate = `

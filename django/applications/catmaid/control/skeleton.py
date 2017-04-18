@@ -1425,7 +1425,7 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
 
 
 @api_view(['POST'])
-@requires_user_role(UserRole.Annotate)
+@requires_user_role(UserRole.Import)
 def import_skeleton(request, project_id=None):
     """Import a neuron modeled by a skeleton from an uploaded file.
 

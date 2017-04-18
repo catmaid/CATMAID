@@ -39,6 +39,7 @@ class UserRole(object):
     Admin = 'Admin'
     Annotate = 'Annotate'
     Browse = 'Browse'
+    Import = 'Import'
 
 @python_2_unicode_compatible
 class Project(models.Model):
@@ -54,7 +55,8 @@ class Project(models.Model):
         permissions = (
             ("can_administer", "Can administer projects"),
             ("can_annotate", "Can annotate projects"),
-            ("can_browse", "Can browse projects")
+            ("can_browse", "Can browse projects"),
+            ("can_import", "Can import into projects")
         )
 
     def __str__(self):

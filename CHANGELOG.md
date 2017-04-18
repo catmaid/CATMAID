@@ -15,6 +15,9 @@
   the fragment `hashlib.md5(CATMAID_URL)` with
   'hashlib.md5(CATMAID_URL.encode('utf-8'))'.
 
+- To use the skeleton import API users or groups now need to have the can_import
+  permission.
+
 
 ### Features and enhancements
 
@@ -40,8 +43,10 @@ Import Export widget:
 - The Export Widget has been renamed to "Import Export Widget", along with it
   its shortname for Ctrl+Space.
 
-- The new import tab contains a simple SWC import, which allows to select an SWC
-  file and import it. If successful, the new skeleton is selected right away.
+- If a user has import permissions on a project, an "Import" and an "Export" tab
+  are displayed. The new import tab contains a simple SWC import, which allows
+  to select an SWC file and import it. If successful, the new skeleton is
+  selected right away.
 
 Neuron Navigator:
 

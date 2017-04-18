@@ -68,6 +68,11 @@
     return this.current_node.hasSkeleton(skeleton_id);
   };
 
+  NeuronNavigator.prototype.getSkeletonModel = function(skeletonId)
+  {
+    return this.current_node.getSkeletonModel(skeletonId);
+  };
+
   NeuronNavigator.prototype.getSkeletonModels = function()
   {
     return this.current_node.getSkeletonModels();
@@ -384,6 +389,17 @@
    */
   NeuronNavigator.Node.prototype.hasSkeleton = function(skeleton_id) {
     return false;
+  };
+
+  /**
+   * Default implementation for getting a SkeletonModel for the skeleton source
+   * interface. It can be overridden by sub-types if better performance is
+   * needed (this implementation gets all models first and then looks up the
+   * requested one).
+   */
+  NeuronNavigator.Node.prototype.getSkeletonModel = function(skeletonId)
+  {
+    return this.getSkeletonModels()[skeletonId];
   };
 
   /**

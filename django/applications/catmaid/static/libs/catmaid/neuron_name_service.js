@@ -1,6 +1,5 @@
 /* global
   project,
-  requestQueue,
   */
 
 (function (CATMAID) {
@@ -542,16 +541,15 @@
               });
 
               // Get all data that is needed for the component list
-              requestQueue.register(django_url + project.id + '/skeleton/annotationlist',
-                'POST',
-                {
+              return CATMAID.fetch(project.id + '/skeleton/annotationlist', 'POST', {
                   skeleton_ids: querySkids,
                   metaannotations: needsMetaAnnotations ? 1 : 0,
                   neuronnames: needsNeueonNames ? 1 : 0,
-                },
-                CATMAID.jsonResponseHandler(function(json) {
-                  update(json, resolve, reject);
-                }, reject));
+                })
+                .then(function(result) {
+                  update(result, resolve, reject);
+                })
+                .catch(CATMAID.handleError);
             }
           });
         },

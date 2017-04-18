@@ -330,8 +330,8 @@ project directory and tests if it contains a project file named
 project. A folder is ignored, though, when the project file is not
 available.
 
-Using the Importer
-^^^^^^^^^^^^^^^^^^
+Using the importer admin tool
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The import offers to import from local project files, remote CATMAID instances
 or remote project files/exports.

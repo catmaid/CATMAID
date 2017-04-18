@@ -13,7 +13,7 @@
         "server reported it has more recent data availale. Please update " +
         "your view, check if there were changes relevant for your original " +
         "action and try again. If you don't want to update your view manually, " +
-        "you can use the \"Refreseh view\" button below.";
+        "you can use the \"Refresh view\" button below.";
       CATMAID.ErrorDialog.call(this, message, originalError);
       this.dialog.setAttribute("title", "Current view needs update");
     };

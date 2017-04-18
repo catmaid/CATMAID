@@ -330,6 +330,19 @@ project directory and tests if it contains a project file named
 project. A folder is ignored, though, when the project file is not
 available.
 
+Importing skeletons through the API
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The CATMAID API supports raw skeleton data import using SWC files. As can be
+seen under ``/apis``, the ``{project_id}/skeletons/import`` URL can be used to
+import skeletons that are repesented as SWC. The script
+``scripts/remote/upload_swc.py`` can be of help here. It is also possible to
+just use ``cURL`` for this::
+
+    curl --basic -u fly -X POST --form file=@<file-name> \
+        <catmaid_url>/<project_id>/skeletons/import \
+        --header "X-Authorization: Token <api-token>"
+
 Using the importer admin tool
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

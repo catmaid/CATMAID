@@ -6387,7 +6387,16 @@
       /* jshint validthis: true */ // `this` is bound to this WebGLApplication
       $.blockUI({message: '<img src="' + CATMAID.staticURL +
           'images/busy.gif" /> <span>Rendering animation frame ' +
-          '<div id="counting-rendered-frames">0</div></span>'});
+          '<div id="counting-rendered-frames">0</div></span><div><p>' +
+          '<input type="button" value="Cancel" id="block-ui-dialog-btn"></p></div>'});
+
+      // Provide option to cancel
+      var cancelationRequested = false;
+      $(document).on('click', '#block-ui-dialog-btn', (function(){
+        cancelationRequested = true;
+      }).bind(this));
+
+      var originalCameraView = this.space.view.getView();
 
       // Get current visibility
       var visMap = this.space.getVisibilityMap();
@@ -6441,15 +6450,29 @@
             counter.text((i + 1) + " / " + nframes);
           };
 
+          // Cancel, if askes for
+          var shouldCancel = function() {
+            return cancelationRequested;
+          };
+
           // Save result to file
           var reload = historyField.checked;
-          var onDone = (function(frames) {
-            // Export movie
-            var output = Whammy.fromImageArray(frames, framerate);
-            saveAs(output, "catmaid_3d_view.webm");
+          var onDone = (function(frames, canceled) {
+            if (canceled) {
+              CATMAID.warn("Animation export canceled");
+              // Reset camera view
+              this.space.view.setView(originalCameraView.target,
+                  originalCameraView.position, originalCameraView.up,
+                  originalCameraView.zoom, originalCameraView.orthographic);
+              this.space.render();
+            } else {
+              // Export movie
+              var output = Whammy.fromImageArray(frames, framerate);
+              saveAs(output, "catmaid_3d_view.webm");
 
-            // Reset visibility and unblock UI
-            this.space.setSkeletonVisibility(visMap);
+              // Reset visibility and unblock UI
+              this.space.setSkeletonVisibility(visMap);
+            }
 
             if (reload) {
               this.reloadSkeletons(this.getSelectedSkeletons());
@@ -6467,7 +6490,7 @@
 
           prepare.then((function(animation) {
               this.getAnimationFrames(animation, nframes, undefined,
-                  width, height, onDone, onStep, options);
+                  width, height, onDone, onStep, shouldCancel, options);
             }).bind(this));
         } catch (e) {
           // Unblock UI and re-throw exception
@@ -6483,10 +6506,11 @@
    * Create a list of images for a given animation and the corresponding options.
    * By default, 100 frames are generated, starting from timepoint zero.
    * Optionally, a function can be passed in that is called after every exported
-   * frame.
+   * frame. Another optional function shouldCancel() can be passed in that is
+   * asked every frame if the operation should be canceled.
    */
   WebGLApplication.prototype.getAnimationFrames = function(animation, nframes,
-      startTime, width, height, onDone, onStep, options)
+      startTime, width, height, onDone, onStep, shouldCancel, options)
   {
     // Save current dimensions and set new ones, if available
     var originalWidth, originalHeight;
@@ -6507,9 +6531,14 @@
 
     // Render each frame in own timeout to be able to update UI between frames.
     setTimeout(renderFrame.bind(this, animation, startTime, 0, nframes, frames,
-          width, height, onDone, onStep), 5);
+          width, height, onDone, onStep, shouldCancel), 5);
 
-    function renderFrame(animation, startTime, i, nframes, frames, w, h, onDone, onStep) {
+    function renderFrame(animation, startTime, i, nframes, frames, w, h, onDone,
+        onStep, shouldCancel) {
+      if (shouldCancel && shouldCancel()) {
+        onDone(frames, true);
+        return;
+      }
       /* jshint validthis: true */ // `this` is bound to this WebGLApplication
       animation.update(startTime + i);
       // Make sure we still render with the correct size and redraw
@@ -6523,7 +6552,7 @@
       var nextFrame = i + 1;
       if (nextFrame < nframes) {
         setTimeout(renderFrame.bind(this, animation, startTime, nextFrame,
-              nframes, frames, w, h, onDone, onStep), 5);
+              nframes, frames, w, h, onDone, onStep, shouldCancel), 5);
       } else {
         // Restore original view, if not disabled
         if (options.restoreView) {

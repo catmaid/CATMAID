@@ -29,6 +29,8 @@
   The new location in the average X/Y location of the parent and child. If only
   parent or child is available (leaf or parent), its X/Y location is used.
 
+- An started animation export can now be canceled throuh a "Cancel" button.
+
 Review widget:
 
 - Segements can now be reviewed in downstream order by unchecking the "Upstream

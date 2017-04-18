@@ -35,6 +35,15 @@ Review widget:
 - Only show "Done" message if 100% are reviewed in one of the selected columns,
   including Team. Team is now checked by default.
 
+Import Export widget:
+
+- The Export Widget has been renamed to "Import Export Widget", along with it
+  its shortname for Ctrl+Space.
+
+- The new import tab contains a simple SWC import, which allows to select an SWC
+  file and import it. If successful, the new skeleton is selected right away.
+
+
 Miscellaneous:
 
 - Refreshing the nodes on the StackViewer will not print the info on the active

@@ -81,10 +81,26 @@ the selected neurons.
 `;
 
   ImportExportWidget.importContentTemplate = `
+<h3>Import skeleton from SWC</h3>
+<p>
+Select an SWC file to import a skeleton. This does <em>not</em> include
+annotations, neuron name, connectors or partner neurons.
+</p>
+
+<p>
+<label>SWC file: <input type="file" accept=".swc" data-role="swc-import-file" />
+</p>
+<p>
+<button data-role="import-swc">Import SWC</button>
+</p>
  `;
 
   ImportExportWidget.prototype.getName = function() {
-    return "Export widget";
+    if (this.showImports) {
+      return "Import export widget";
+    } else {
+      return "Export widget";
+    }
   };
 
   ImportExportWidget.prototype.getWidgetConfiguration = function() {
@@ -120,6 +136,22 @@ the selected neurons.
           importContainer.innerHTML = ImportExportWidget.importContentTemplate;
           container.appendChild(importContainer);
           this.containers['import'] = importContainer;
+
+          // Add some bindings
+          var $importContainer = $(importContainer);
+          $importContainer.find('button[data-role=import-swc]').click(function() {
+            var fileInput = $importContainer.find('input[data-role=swc-import-file]');
+            if (fileInput.length !== 1) {
+              CATMAID.warn("No SWC file input found");
+              return;
+            }
+            fileInput = fileInput[0];
+            if (fileInput.files.length !== 1) {
+              CATMAID.warn("Please select exactly one file");
+              return;
+            }
+            import_swc(fileInput.files[0]);
+          });
         }
 
         // Export
@@ -193,6 +225,31 @@ the selected neurons.
       });
     };
     dialog.show();
+  }
+
+  function import_swc(file) {
+    if (!file) {
+      CATMAID.warn("Need file");
+      return;
+    }
+
+    var data = new FormData();
+    data.append('file', file);
+    $.ajax({
+        url : CATMAID.makeURL(project.id + "/skeletons/import"),
+        processData : false,
+        contentType : false,
+        type : 'POST',
+        data : data,
+    }).done(function(data) {
+        if (data.skeleton_id) {
+          CATMAID.msg("SWC successfully imported", "Neuron ID:" + data.neuron_id
+            + " Skeleton ID: " + data.skeleton_id);
+          CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', data.skeleton_id);
+        } else {
+          CATMAID.error("Something went wrong during the import", data);
+        }
+    });
   }
 
   function export_swc() {
@@ -578,7 +635,7 @@ the selected neurons.
   }
 
   // A key that references this widget in CATMAID
-  var widgetKey = "export-widget";
+  var widgetKey = "import-export-widget";
 
   // Register widget with CATMAID
   CATMAID.registerWidget({

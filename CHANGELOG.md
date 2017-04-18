@@ -43,6 +43,12 @@ Import Export widget:
 - The new import tab contains a simple SWC import, which allows to select an SWC
   file and import it. If successful, the new skeleton is selected right away.
 
+Neuron Navigator:
+
+- Instead of a "Last used" column annotation tables now show an "Annotated on"
+  column. The last used date used before reflected the last change of an
+  annotation itself. Now the creation time of the link relation is displayed,
+  which doesn't change during a merge or split operation, unlike "edition time".
 
 Miscellaneous:
 

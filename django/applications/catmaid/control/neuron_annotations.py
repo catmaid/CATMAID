@@ -1092,9 +1092,9 @@ def list_annotations_datatable(request, project_id=None):
         conditions += "AND cici.user_id = %s " % \
                 request.POST.get('user_id')
 
-    # Add last used time
+    # Add (last) annotated on time
     annotation_query = annotation_query.extra(
-        select={'last_used': 'SELECT MAX(edition_time) FROM ' \
+        select={'annotated_on': 'SELECT MAX(cici.creation_time) FROM ' \
             'class_instance_class_instance cici WHERE ' \
             'cici.class_instance_b = class_instance.id %s' % conditions})
 
@@ -1122,7 +1122,7 @@ def list_annotations_datatable(request, project_id=None):
         sorting_directions = map(lambda d: '-' if d.upper() == 'DESC' else '',
                 sorting_directions)
 
-        fields = ['name', 'last_used', 'num_usage', 'last_user']
+        fields = ['name', 'annotated_on', 'num_usage', 'last_user']
         sorting_index = [int(request.POST.get('iSortCol_%d' % d))
                 for d in range(column_count)]
         sorting_cols = map(lambda i: fields[i], sorting_index)
@@ -1132,7 +1132,7 @@ def list_annotations_datatable(request, project_id=None):
 
     # We only require ID, name, last used and usage number
     annotation_query = annotation_query.values_list(
-            'id', 'name', 'last_used', 'num_usage', 'last_user')
+            'id', 'name', 'annotated_on', 'num_usage', 'last_user')
 
     # Make sure we get a distinct result (which otherwise might not be the case
     # due to the JOINS that are made).
@@ -1150,13 +1150,13 @@ def list_annotations_datatable(request, project_id=None):
     for annotation in annotation_query[display_start:display_start + display_length]:
         # Format last used time
         if annotation[2]:
-            last_used = annotation[2].isoformat()
+            annotated_on = annotation[2].isoformat()
         else:
-            last_used = 'never'
+            annotated_on = 'never'
         # Build datatable data structure
         response['aaData'].append([
             annotation[1], # Name
-            last_used, # Last used
+            annotated_on, # Annotated on
             annotation[3], # Usage
             annotation[4], # Annotator ID
             annotation[0]]) # ID

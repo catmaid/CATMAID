@@ -95,6 +95,9 @@ Miscellaneous:
   settings widget. Alternatively, for a dialog to set a new step size, the key
   combination Shift + # can be used.
 
+- The Connector Table now also displays the link creation time besides the
+  edition time.
+
 
 ### Bug fixes
 

@@ -220,6 +220,16 @@
             {data: 7, className: "cm-center", title: "Treenode ID"},
             {
               data: 8,
+              title: "Created on",
+              className: "cm-center",
+              render: function(data, type, row, meta) {
+                var d = new Date(data);
+                return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate()
+                    + ' ' + d.getHours() + ':' + d.getMinutes();
+              }
+            },
+            {
+              data: 9,
               title: "Last modified",
               className: "cm-center",
               render: function(data, type, row, meta) {

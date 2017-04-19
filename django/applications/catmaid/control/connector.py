@@ -256,7 +256,8 @@ def list_connector(request, project_id=None):
 
     cursor.execute('''
         SELECT tc.skeleton_id, c.id, c.location_x, c.location_y, c.location_z,
-              tc.confidence, tc.user_id, tc.treenode_id, tc.edition_time
+              tc.confidence, tc.user_id, tc.treenode_id, tc.creation_time,
+              tc.edition_time
         FROM treenode_connector tc
         JOIN (VALUES {}) q_skeleton(id)
             ON tc.skeleton_id = q_skeleton.id
@@ -270,6 +271,7 @@ def list_connector(request, project_id=None):
     for row in cursor.fetchall():
         l = list(row)
         l[8] = l[8].isoformat()
+        l[9] = l[9].isoformat()
         links.append(l)
 
     connector_ids = [l[1] for l in links]

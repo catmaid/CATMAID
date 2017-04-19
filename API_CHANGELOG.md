@@ -19,6 +19,11 @@ None.
   is expected to be a list of node IDs. The response maps now individual info
   objects to their respective node IDs.
 
+- `GET /{project_id}/connectors/`
+  Each result link now contains one additional column: the link's creation time.
+  It replaces the edition_time in column nine. The edition time is now available
+  in column ten.
+
 ### Deprecations
 
 None.

@@ -3155,7 +3155,8 @@ SkeletonAnnotations.TracingOverlay.prototype.goToParentNode = function(treenode_
 
 /**
  * Select either the node stored in nextBranches or, if this is not available,
- * the next branch or end node is fetched from the back end.
+ * the next branch or end node is fetched from the back end. Uses the tracing
+ * overlay children information, if available.
  *
  * @param {number} treenode_id - The node of which to select the child
  * @param {boolean} cycle - If true, subsequent calls cycle through children
@@ -3174,34 +3175,63 @@ SkeletonAnnotations.TracingOverlay.prototype.goToChildNode = function (treenode_
     // parent. All result nodes will be after the virtual node.
     var queryNode = startFromRealNode ? treenode_id :
         SkeletonAnnotations.getParentOfVirtualNode(treenode_id);
-    return new Promise(function(resolve, reject) {
-      self.submit(
-          django_url + project.id + "/treenodes/" + queryNode + "/children",
-          'POST',
-          undefined,
-          function(json) {
-            // See goToNextBranchOrEndNode for JSON schema description.
-            if (json.length === 0) {
-              // Already at a branch or end node
-              CATMAID.msg('Already there', 'You are at an end node');
-              resolve();
-            } else {
-              // In case of a virtual node, we need to filter the returned array
-              // to only include the branch that contains the virtual node.
-              if (!startFromRealNode) {
-                var childID = parseInt(SkeletonAnnotations.getChildOfVirtualNode(treenode_id), 10);
-                json = json.filter(function(b) { return b[0][0] === childID; });
+
+    // Don't fetch children from back-end if node is already known and is on
+    // current section (where it is expected that all children area available).
+    var knownNode = this.nodes[treenode_id];
+    if (knownNode && knownNode.zdiff === 0) {
+      return new Promise(function(resolve, reject) {
+        // Fill branch cache
+        var stack = self.stackViewer.primaryStack;
+        var branchData = Object.keys(knownNode.children).map(function(childId) {
+          var child = knownNode.children[childId];
+          return [[parseInt(childId),
+            stack.stackToProjectX(child.z, child.y, child.x),
+            stack.stackToProjectY(child.z, child.y, child.x),
+            stack.stackToProjectZ(child.z, child.y, child.x)
+          ]];
+        });
+        if (branchData.length === 0) {
+          // Already at a branch or end node
+          CATMAID.msg('Already there', 'You are at an end node');
+          resolve();
+        } else {
+          self.cacheBranches(treenode_id, branchData);
+          self.cycleThroughBranches(null, 0, ignoreVirtual)
+            .then(resolve)
+            .catch(reject);
+        }
+      });
+    } else {
+      return new Promise(function(resolve, reject) {
+        self.submit(
+            django_url + project.id + "/treenodes/" + queryNode + "/children",
+            'POST',
+            undefined,
+            function(json) {
+              // See goToNextBranchOrEndNode for JSON schema description.
+              if (json.length === 0) {
+                // Already at a branch or end node
+                CATMAID.msg('Already there', 'You are at an end node');
+                resolve();
+              } else {
+                // In case of a virtual node, we need to filter the returned array
+                // to only include the branch that contains the virtual node.
+                if (!startFromRealNode) {
+                  var childID = parseInt(SkeletonAnnotations.getChildOfVirtualNode(treenode_id), 10);
+                  json = json.filter(function(b) { return b[0][0] === childID; });
+                }
+                self.cacheBranches(treenode_id, json);
+                self.cycleThroughBranches(null, 0, ignoreVirtual)
+                  .then(resolve)
+                  .catch(reject);
               }
-              self.cacheBranches(treenode_id, json);
-              self.cycleThroughBranches(null, 0, ignoreVirtual)
-                .then(resolve)
-                .catch(reject);
-            }
-          },
-          undefined,
-          undefined,
-          reject);
-    });
+            },
+            undefined,
+            undefined,
+            reject);
+      });
+    }
   }
 };
 

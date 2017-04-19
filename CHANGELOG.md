@@ -98,6 +98,9 @@ Miscellaneous:
 - The Connector Table now also displays the link creation time besides the
   edition time.
 
+- Tracing layer: Moving to a child node using "]" doesn't query the server
+  anymore if child info is already available in client.
+
 
 ### Bug fixes
 

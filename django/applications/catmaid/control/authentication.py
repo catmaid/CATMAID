@@ -116,6 +116,8 @@ def check_user_role(user, project, roles):
                 has_role = checker.has_perm('can_annotate', project)
             elif role == UserRole.Browse:
                 has_role = checker.has_perm('can_browse', project)
+            elif role == UserRole.Import:
+                has_role = checker.has_perm('can_import', project)
             if has_role:
                 break
 

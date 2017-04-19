@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="23.180447"
+   height="23.072464"
+   id="svg2"
+   version="1.1"
+   inkscape:version="0.92.1 r"
+   sodipodi:docname="trace_goactive.svg">
+  <defs
+     id="defs4">
+    <inkscape:perspective
+       sodipodi:type="inkscape:persp3d"
+       inkscape:vp_x="0 : 526.18109 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_z="744.09448 : 526.18109 : 1"
+       inkscape:persp3d-origin="372.04724 : 350.78739 : 1"
+       id="perspective10" />
+    <inkscape:perspective
+       id="perspective2884"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+    <inkscape:perspective
+       id="perspective3733"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="22.4"
+     inkscape:cx="8.8245672"
+     inkscape:cy="22.665921"
+     inkscape:document-units="px"
+     inkscape:current-layer="text3720-9"
+     showgrid="false"
+     inkscape:window-width="2870"
+     inkscape:window-height="1742"
+     inkscape:window-x="0"
+     inkscape:window-y="53"
+     inkscape:window-maximized="0" />
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-264.18143,-378.16586)">
+    <g
+       id="g3766"
+       inkscape:export-filename="/home/albert/Programming/catmaid/labels.png"
+       inkscape:export-xdpi="93.18"
+       inkscape:export-ydpi="93.18"
+       transform="matrix(0.76889389,0,0,0.76889389,63.732513,91.262533)">
+      <rect
+         ry="0"
+         y="377.16861"
+         x="263.30801"
+         height="25.846416"
+         width="25.967381"
+         id="rect2890-8"
+         style="color:#000000;display:inline;overflow:visible;visibility:visible;fill:none;stroke:none;stroke-width:0.97669768;marker:none;enable-background:accumulate" />
+      <g
+         aria-label="✂"
+         transform="rotate(-90)"
+         style="color:#000000;font-style:italic;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:30.28252602px;line-height:0%;font-family:Arial;-inkscape-font-specification:'Andale Mono Bold';text-align:start;writing-mode:lr-tb;text-anchor:start;display:inline;overflow:visible;visibility:visible;fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:2.5235436;marker:none;enable-background:accumulate"
+         id="text3720-9">
+        <rect
+           style="fill:#000000;fill-opacity:1;stroke:#00000e;stroke-width:4.18272686;stroke-linecap:square;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+           id="rect4543"
+           width="2.8261626"
+           height="0.052766304"
+           x="267.22427"
+           y="389.22949"
+           transform="rotate(90)" />
+        <path
+           style="color:#000000;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:medium;line-height:0%;font-family:Arial;-inkscape-font-specification:'Andale Mono Bold';font-variant-ligatures:normal;font-variant-position:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-alternates:normal;font-feature-settings:normal;text-indent:0;text-align:start;text-decoration:none;text-decoration-line:none;text-decoration-style:solid;text-decoration-color:#000000;letter-spacing:normal;word-spacing:normal;text-transform:none;writing-mode:lr-tb;direction:ltr;text-orientation:mixed;dominant-baseline:auto;baseline-shift:baseline;text-anchor:start;white-space:normal;shape-padding:0;clip-rule:nonzero;display:inline;overflow:visible;visibility:visible;opacity:1;isolation:auto;mix-blend-mode:normal;color-interpolation:sRGB;color-interpolation-filters:linearRGB;solid-color:#000000;solid-opacity:1;vector-effect:none;fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:4.58955383;stroke-linecap:square;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker:none;color-rendering:auto;image-rendering:auto;shape-rendering:auto;text-rendering:auto;enable-background:accumulate"
+           d="m -384.01772,271.93523 -10.45386,-0.0103 5.01135,4.65334 z"
+           id="rect4545"
+           inkscape:connector-curvature="0"
+           sodipodi:nodetypes="cccc" />
+        <path
+           style="color:#000000;font-style:italic;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:30.28252602px;line-height:0%;font-family:Arial;-inkscape-font-specification:'Andale Mono Bold';text-align:start;writing-mode:lr-tb;text-anchor:start;display:inline;overflow:visible;visibility:visible;fill:#000000;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:49.46447754;stroke-linecap:square;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker:none;enable-background:accumulate"
+           id="path4549-6"
+           sodipodi:type="arc"
+           sodipodi:cx="282.00256"
+           sodipodi:cy="389.36353"
+           sodipodi:rx="5.0346675"
+           sodipodi:ry="5.0346675"
+           sodipodi:start="3.1420813"
+           sodipodi:end="3.1415927"
+           sodipodi:open="true"
+           d="m 276.9679,389.36107 a 5.0346675,5.0346675 0 0 1 5.03651,-5.03221 5.0346675,5.0346675 0 0 1 5.03282,5.0359 5.0346675,5.0346675 0 0 1 -5.03528,5.03343 5.0346675,5.0346675 0 0 1 -5.03405,-5.03466"
+           transform="rotate(90)" />
+        <path
+           style="color:#000000;font-style:italic;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:30.28252602px;line-height:0%;font-family:Arial;-inkscape-font-specification:'Andale Mono Bold';text-align:start;writing-mode:lr-tb;text-anchor:start;display:inline;overflow:visible;visibility:visible;fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:35.3529129;stroke-linecap:square;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker:none;enable-background:accumulate"
+           id="path4549-2"
+           sodipodi:type="arc"
+           sodipodi:cx="282.00256"
+           sodipodi:cy="389.36353"
+           sodipodi:rx="3.5983429"
+           sodipodi:ry="3.5983429"
+           sodipodi:start="3.1420813"
+           sodipodi:end="3.1415927"
+           sodipodi:open="true"
+           d="m 278.40422,389.36177 a 3.5983429,3.5983429 0 0 1 3.59966,-3.59659 3.5983429,3.5983429 0 0 1 3.59703,3.59922 3.5983429,3.5983429 0 0 1 -3.59879,3.59747 3.5983429,3.5983429 0 0 1 -3.5979,-3.59834"
+           transform="rotate(90)" />
+        <path
+           style="fill:#000000;fill-opacity:1;stroke:none;stroke-width:19.33306313;stroke-linecap:square;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+           id="path4549"
+           transform="rotate(90)"
+           sodipodi:type="arc"
+           sodipodi:cx="282.05524"
+           sodipodi:cy="389.28635"
+           sodipodi:rx="1.9677869"
+           sodipodi:ry="1.9677869"
+           sodipodi:start="3.1420813"
+           sodipodi:end="3.1415927"
+           sodipodi:open="true"
+           d="m 280.08745,389.28538 a 1.9677869,1.9677869 0 0 1 1.96851,-1.96682 1.9677869,1.9677869 0 0 1 1.96706,1.96827 1.9677869,1.9677869 0 0 1 -1.96802,1.9673 1.9677869,1.9677869 0 0 1 -1.96755,-1.96778" />
+      </g>
+    </g>
+  </g>
+</svg>

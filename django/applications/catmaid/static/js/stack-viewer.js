@@ -874,6 +874,15 @@
     }
 
     oldLayer.unregister();
+
+    var oldLayerOrderIdx = this._layerOrder.indexOf(oldLayerKey);
+    var nextLayerKey = this._layerOrder[oldLayerOrderIdx + 1];
+    if (nextLayerKey) {
+      if (CATMAID.tools.isFn(newLayer.notifyReorder)) {
+        newLayer.notifyReorder(this._layers.get(nextLayerKey));
+      }
+    }
+
     this.resize();
     this.layercontrol.refresh();
     this.updateTitle();

@@ -104,6 +104,8 @@ Miscellaneous:
   last existing image data layer and before other layers. This makes sure
   tracing data stays on top.
 
+- Selecting an unreachable mirror won't hide the tracing layer anymore.
+
 
 ## 2017.03.16
 

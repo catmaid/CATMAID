@@ -304,6 +304,7 @@ class ViewPageTests(TestCase):
              'can_annotate': [3],
              'change_project': [],
              'can_browse': [3],
+             'can_import': [],
              'delete_project': []}, [u'test1']]
         self.assertEqual(expected_result, parsed_response)
 

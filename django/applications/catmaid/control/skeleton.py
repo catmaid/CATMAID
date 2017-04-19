@@ -1382,7 +1382,9 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
                 if skeletons and skid in skeletons:
                     for a in skeletons[skid]['annotations']:
                         annotation = source['annotations'][a['id']]
-                        target[annotation] = a['uid']
+                        target[annotation] = {
+                            'user_id': a['uid']
+                        }
             # Merge from after to, so that it overrides entries from the merged
             # in skeleton.
             annotation_map = dict()
@@ -1394,6 +1396,8 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
                     frozenset(annotation_map.keys())):
                 raise Exception("Annotation distribution is not valid for joining. " \
                 "Annotations for which you don't have permissions have to be kept!")
+            # Create annotation info mapping from input ID mapping
+            annotation_map = { k: { 'user_id': v } for k,v in six.iteritems(annotation_map) }
 
         # Reroot to_skid at to_treenode if necessary
         response_on_error = 'Could not reroot at treenode %s' % to_treenode_id

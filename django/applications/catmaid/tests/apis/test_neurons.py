@@ -40,7 +40,8 @@ class NeuronsApiTests(CatmaidApiTestCase):
         neuron_id = 362
 
         # Lock this neuron for another user
-        _annotate_entities(self.test_project_id, [neuron_id], {'locked': 1})
+        _annotate_entities(self.test_project_id, [neuron_id],
+                {'locked': { 'user_id': 1 }})
 
         count_logs = lambda: Log.objects.all().count()
         log_count = count_logs()

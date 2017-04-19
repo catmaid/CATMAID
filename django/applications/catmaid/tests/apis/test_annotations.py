@@ -22,7 +22,7 @@ class AnnotationsApiTests(CatmaidApiTestCase):
 
         # Annotate both with the same annotation
         _annotate_entities(self.test_project_id, neuron_ids,
-                {'myannotation': self.test_user_id})
+                {'myannotation': {'user_id': self.test_user_id}})
 
         # Expect entity 2365 and 2381 to be annotated
         for nid in neuron_ids:
@@ -32,7 +32,7 @@ class AnnotationsApiTests(CatmaidApiTestCase):
 
         # Annotate both with the pattern annotation
         _annotate_entities(self.test_project_id, neuron_ids,
-                {'pattern {n9} test-{n}-annotation': self.test_user_id})
+                {'pattern {n9} test-{n}-annotation': { 'user_id': self.test_user_id}})
 
         # Expect entity 2365 and 2381 to be annotated
         aq = create_annotation_query(self.test_project_id, {'neuron_id': 2365}).order_by('name')

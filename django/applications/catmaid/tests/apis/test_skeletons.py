@@ -7,6 +7,7 @@ import six
 import platform
 
 from django.shortcuts import get_object_or_404
+from guardian.shortcuts import assign_perm
 
 from catmaid.models import ClassInstance, ClassInstanceClassInstance
 from catmaid.models import Log, Review, Treenode, TreenodeConnector
@@ -64,9 +65,17 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         self.assertEqual(response.status_code, 200)
         orig_swc_string = response.content.decode('utf-8')
 
+        # Try inserting without permission and expect fail
+        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
+                                    {'file.swc': ''})
+        self.assertTrue("PermissionError" in response.content.decode('utf-8'))
+
+        # Add permission and expect success
         swc_file = StringIO(orig_swc_string)
+        assign_perm('can_import', self.test_user, self.test_project)
         response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
                                     {'file.swc': swc_file})
+
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content.decode('utf-8'))
         new_skeleton_id = parsed_response['skeleton_id']

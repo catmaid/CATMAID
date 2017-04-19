@@ -57,6 +57,15 @@ Neuron Navigator:
   annotation itself. Now the creation time of the link relation is displayed,
   which doesn't change during a merge or split operation, unlike "edition time".
 
+Splitting and merging:
+
+- In the split and merge dialog, instead of selecting the skeleton/part with
+  more nodes as default "winning" skeleton, the skeleton with a greater cable
+  length is now chosen as default "winning" skeleton.
+
+- Keep original creation time and edition time of annotation links that are
+  copied to the newly created part on a split skeleton.
+
 Miscellaneous:
 
 - Refreshing the nodes on the StackViewer will not print the info on the active
@@ -68,10 +77,6 @@ Miscellaneous:
 - Alt+T can now be used to tag a node with a predefined set of tags. This set
   can be configured through the Settings Widget, using the "Personal tag set"
   field in the Tracing section.
-
-- Split and merge dialog: instead of selecting the skeleton/part with more nodes
-  as default "winning" skeleton, the skeleton with a greater cable length is now
-  chosen as default "winning" skeleton.
 
 - The SWC export button in the Tracing Tool toolbar has been replaced with an
   Export Widget entry. Additionally, SWC files for multiple skeletons can be

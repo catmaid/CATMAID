@@ -460,10 +460,12 @@ def delete_annotation_if_unused(project, annotation, relation):
 def _annotate_entities(project_id, entity_ids, annotation_map):
     """ Annotate the entities with the given <entity_ids> with the given
     annotations. These annotations are expected to come as dictornary of
-    annotation name versus annotator ID. A listof all annotation class
-    instances that have been used is returned. Annotation names can contain the
-    counting pattern {nX} with X being a number. This will add an incrementing
-    number starting from X for each entity.
+    annotation name versus an object with at least the field 'user_id'
+    annotator ID. If the 'creation_time' and/or 'edition_time' fields are
+    available, they will be used for the respective columns. A listof all
+    annotation class instances that have been used is returned. Annotation
+    names can contain the counting pattern {nX} with X being a number. This
+    will add an incrementing number starting from X for each entity.
     """
     new_annotations = set()
     r = Relation.objects.get(project_id = project_id,
@@ -475,7 +477,7 @@ def _annotate_entities(project_id, entity_ids, annotation_map):
     # Create a regular expression to find allowed patterns. The first group is
     # the whole {nX} part, while the second group is X only.
     counting_pattern = re.compile(r"(\{n(\d+)\})")
-    for annotation, annotator_id in annotation_map.items():
+    for annotation, meta in annotation_map.items():
         # Look for patterns, replace all {n} with {n1} to normalize
         annotation = annotation.replace("{n}", "{n1}")
         # Find all {nX} in the annotation name
@@ -505,7 +507,7 @@ def _annotate_entities(project_id, entity_ids, annotation_map):
             ci, created = ClassInstance.objects.get_or_create(
                     project_id=project_id, name=a,
                     class_column=annotation_class,
-                    defaults={'user_id': annotator_id})
+                    defaults={'user_id': meta['user_id']})
 
             if created:
                 new_annotations.add(ci.id)
@@ -513,11 +515,19 @@ def _annotate_entities(project_id, entity_ids, annotation_map):
             newly_annotated = set()
             # Annotate each of the entities. Don't allow duplicates.
             for entity_id in a_entity_ids:
+                new_cici_defaults = {
+                    'class_instance_a_id': entity_id,
+                    'user_id': meta['user_id']
+                }
+                for field in ('creation_time', 'edition_time'):
+                    value = meta.get(field)
+                    if value:
+                        new_cici_defaults[field] = value
+
                 cici, created = ClassInstanceClassInstance.objects.get_or_create(
                         project_id=project_id, relation=r,
                         class_instance_a__id=entity_id, class_instance_b=ci,
-                        defaults={'class_instance_a_id': entity_id,
-                                'user_id': annotator_id})
+                        defaults=new_cici_defaults)
                 if created:
                     newly_annotated.add(entity_id)
             # Remember which entities got newly annotated
@@ -546,13 +556,13 @@ def annotate_entities(request, project_id = None):
         entity_ids += [skid_to_eid[skid] for skid in skeleton_ids]
 
     # Annotate enties
-    annotation_map = {a: request.user.id for a in annotations}
+    annotation_map = {a: { 'user_id': request.user.id } for a in annotations}
     annotation_objs, new_annotations = _annotate_entities(project_id,
             entity_ids, annotation_map)
     # Annotate annotations
     if meta_annotations:
         annotation_ids = [a.id for a in annotation_objs.keys()]
-        meta_annotation_map = {ma: request.user.id for ma in meta_annotations}
+        meta_annotation_map = {ma: { 'user_id': request.user.id } for ma in meta_annotations}
         meta_annotation_objs, new_meta_annotations = _annotate_entities(
                 project_id, annotation_ids, meta_annotation_map)
         # Keep track of new annotations

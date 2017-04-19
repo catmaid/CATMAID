@@ -634,6 +634,30 @@ def split_skeleton(request, project_id=None):
     # Make sure the user has permissions to edit
     can_edit_class_instance_or_fail(request.user, neuron.id, 'neuron')
 
+    # Update annotation-info mapping
+    for annotation_map in (upstream_annotation_map, downstream_annotation_map):
+        for annotation_id, annotator_id in six.iteritems(annotation_map):
+            annotation_map[annotation_id] = {
+                'user_id': annotator_id
+            }
+
+    # Extend annotation maps with creation time and edition time of the link to
+    # neuron to make sure these dates won't change during the split.
+    cursor.execute('''
+        SELECT ci.name, MIN(cici.creation_time), MIN(cici.edition_time)
+        FROM class_instance ci
+        JOIN class_instance_class_instance cici
+            ON ci.id = cici.class_instance_b
+        WHERE cici.class_instance_a = %s
+        GROUP BY ci.id
+    ''', (neuron.id,))
+    for row in cursor.fetchall():
+        for entry in (upstream_annotation_map.get(row[0]),
+                      downstream_annotation_map.get(row[0])):
+            if entry:
+                entry['creation_time'] = row[1]
+                entry['edition_time'] = row[2]
+
     # Retrieve the id, parent_id of all nodes in the skeleton. Also
     # pre-emptively lock all treenodes and connectors in the skeleton to prevent
     # race conditions resulting in inconsistent skeleton IDs from, e.g., node

@@ -634,29 +634,10 @@ def split_skeleton(request, project_id=None):
     # Make sure the user has permissions to edit
     can_edit_class_instance_or_fail(request.user, neuron.id, 'neuron')
 
-    # Update annotation-info mapping
-    for annotation_map in (upstream_annotation_map, downstream_annotation_map):
-        for annotation_id, annotator_id in six.iteritems(annotation_map):
-            annotation_map[annotation_id] = {
-                'user_id': annotator_id
-            }
-
     # Extend annotation maps with creation time and edition time of the link to
     # neuron to make sure these dates won't change during the split.
-    cursor.execute('''
-        SELECT ci.name, MIN(cici.creation_time), MIN(cici.edition_time)
-        FROM class_instance ci
-        JOIN class_instance_class_instance cici
-            ON ci.id = cici.class_instance_b
-        WHERE cici.class_instance_a = %s
-        GROUP BY ci.id
-    ''', (neuron.id,))
-    for row in cursor.fetchall():
-        for entry in (upstream_annotation_map.get(row[0]),
-                      downstream_annotation_map.get(row[0])):
-            if entry:
-                entry['creation_time'] = row[1]
-                entry['edition_time'] = row[2]
+    upstream_annotation_map = make_annotation_map(upstream_annotation_map, neuron.id, cursor)
+    downstream_annotation_map = make_annotation_map(downstream_annotation_map, neuron.id, cursor)
 
     # Retrieve the id, parent_id of all nodes in the skeleton. Also
     # pre-emptively lock all treenodes and connectors in the skeleton to prevent
@@ -1322,6 +1303,38 @@ def join_skeleton(request, project_id=None):
         raise Exception(response_on_error + ':' + str(e))
 
 
+def make_annotation_map(annotation_vs_user_id, neuron_id, cursor=None):
+    """ Create a mapping of annotation IDs to dictionaries with 'user_id',
+    'edition_time' and 'creation_time' fields.
+    """
+    cursor = cursor or connection.cursor()
+    annotation_map = dict()
+
+    # Update annotation-info mapping
+    for annotation_id, annotator_id in six.iteritems(annotation_vs_user_id):
+        annotation_map[annotation_id] = {
+            'user_id': annotator_id
+        }
+
+    # Extend annotation maps with creation time and edition time of the link to
+    # neuron to make sure these dates won't change during the split.
+    cursor.execute('''
+        SELECT ci.name, MIN(cici.creation_time), MIN(cici.edition_time)
+        FROM class_instance ci
+        JOIN class_instance_class_instance cici
+            ON ci.id = cici.class_instance_b
+        WHERE cici.class_instance_a = %s
+        GROUP BY ci.id
+    ''', (neuron_id,))
+    for row in cursor.fetchall():
+        entry = annotation_map.get(row[0])
+        if entry:
+            entry['creation_time'] = row[1]
+            entry['edition_time'] = row[2]
+
+    return annotation_map
+
+
 def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
         annotation_map):
     """ Take the IDs of two nodes, each belonging to a different skeleton, and
@@ -1382,9 +1395,7 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
                 if skeletons and skid in skeletons:
                     for a in skeletons[skid]['annotations']:
                         annotation = source['annotations'][a['id']]
-                        target[annotation] = {
-                            'user_id': a['uid']
-                        }
+                        target[annotation] = a['uid']
             # Merge from after to, so that it overrides entries from the merged
             # in skeleton.
             annotation_map = dict()
@@ -1396,8 +1407,18 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
                     frozenset(annotation_map.keys())):
                 raise Exception("Annotation distribution is not valid for joining. " \
                 "Annotations for which you don't have permissions have to be kept!")
-            # Create annotation info mapping from input ID mapping
-            annotation_map = { k: { 'user_id': v } for k,v in six.iteritems(annotation_map) }
+
+        # Find oldest creation_time and edition_time
+        winning_map = make_annotation_map(annotation_map, from_neuron['neuronid'])
+        losing_map = make_annotation_map(annotation_map, to_neuron['neuronid'])
+        for k,v in six.iteritems(losing_map):
+            winning_entry = winning_map.get(k)
+            if winning_entry:
+                for field in ('creation_time', 'edition_time'):
+                    losing_time = v.get(field)
+                    winning_time = winning_entry.get(field)
+                    if losing_time and winning_time:
+                        winning_entry[field] = min(winning_time, losing_time)
 
         # Reroot to_skid at to_treenode if necessary
         response_on_error = 'Could not reroot at treenode %s' % to_treenode_id
@@ -1430,7 +1451,7 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
         response_on_error = 'Could not update annotations of neuron ' \
                 'with ID %s' % from_neuron['neuronid']
         _update_neuron_annotations(project_id, user, from_neuron['neuronid'],
-                annotation_map, to_neuron['neuronid'])
+                winning_map, to_neuron['neuronid'])
 
         # Remove the 'losing' neuron if it is empty
         _delete_if_empty(to_neuron['neuronid'])
@@ -1441,7 +1462,7 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
                 from_location, 'Joined skeleton with ID %s (neuron: ' \
                 '%s) into skeleton with ID %s (neuron: %s, annotations: %s)' % \
                 (to_skid, to_neuron['neuronname'], from_skid,
-                        from_neuron['neuronname'], ', '.join(annotation_map.keys())))
+                        from_neuron['neuronname'], ', '.join(winning_map.keys())))
 
         return {
             'from_skeleton_id': from_skid,

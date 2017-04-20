@@ -66,6 +66,10 @@ Splitting and merging:
 - Keep original creation time and edition time of annotation links that are
   copied to the newly created part on a split skeleton.
 
+- When skeletons are merged and share annotations that should be kept, the
+  older annotation link creation time will now be stored in the final neuron
+  annotation link.
+
 Miscellaneous:
 
 - Refreshing the nodes on the StackViewer will not print the info on the active

@@ -386,9 +386,12 @@ def _update_neuron_annotations(project_id, user, neuron_id, annotation_map, losi
     qs = ClassInstanceClassInstance.objects.filter(
             class_instance_a__id=neuron_id, relation=annotated_with)
     qs = qs.select_related('class_instance_b').values_list(
-            'class_instance_b__name', 'class_instance_b__id')
+            'class_instance_b__name', 'class_instance_b__id', 'id')
 
-    existing_annotations = dict(qs)
+    existing_annotations = {e[0]: {
+        'annotation_id': e[1],
+        'cici_id': e[2]
+    } for e in qs}
 
     update = set(six.iterkeys(annotation_map))
     existing = set(six.iterkeys(existing_annotations))
@@ -405,7 +408,7 @@ def _update_neuron_annotations(project_id, user, neuron_id, annotation_map, losi
 
         if losing_missing:
             cici_ids = [losing_existing_annotations[k] for k in losing_missing]
-            u_ids = [annotation_map[k] for k in losing_missing]
+            u_ids = [annotation_map[k]['user_id'] for k in losing_missing]
 
             cursor = connection.cursor()
 
@@ -422,7 +425,7 @@ def _update_neuron_annotations(project_id, user, neuron_id, annotation_map, losi
     _annotate_entities(project_id, [neuron_id], missing_map)
 
     to_delete = existing - update
-    to_delete_ids = tuple(aid for name, aid in six.iteritems(existing_annotations) \
+    to_delete_ids = tuple(link['annotation_id'] for name, link in six.iteritems(existing_annotations) \
         if name in to_delete)
 
     ClassInstanceClassInstance.objects.filter(project=project_id,
@@ -431,6 +434,27 @@ def _update_neuron_annotations(project_id, user, neuron_id, annotation_map, losi
 
     for aid in to_delete_ids:
         delete_annotation_if_unused(project_id, aid, annotated_with)
+
+    to_update = update.intersection(existing)
+    to_update_ids = map(lambda x: existing_annotations[x]['cici_id'], to_update)
+    to_update_et = map(lambda x: annotation_map[x]['edition_time'], to_update)
+    to_update_ct = map(lambda x: annotation_map[x]['creation_time'], to_update)
+    cursor = connection.cursor()
+    cursor.execute("""
+        UPDATE class_instance_class_instance
+        SET creation_time = to_update.creation_time
+        FROM UNNEST(%s::integer[], %s::timestamptz[])
+            AS to_update(cici_id, creation_time)
+        WHERE id = to_update.cici_id;
+        UPDATE class_instance_class_instance
+        SET edition_Time = to_update.edition_time
+        FROM UNNEST(%s::integer[], %s::timestamptz[])
+            AS to_update(cici_id, edition_time)
+        WHERE id = to_update.cici_id;
+    """, (to_update_ids,
+          to_update_ct,
+          to_update_ids,
+          to_update_et))
 
 
 def delete_annotation_if_unused(project, annotation, relation):
@@ -457,7 +481,8 @@ def delete_annotation_if_unused(project, annotation, relation):
 
         return True, 0
 
-def _annotate_entities(project_id, entity_ids, annotation_map):
+def _annotate_entities(project_id, entity_ids, annotation_map,
+        update_existing=False):
     """ Annotate the entities with the given <entity_ids> with the given
     annotations. These annotations are expected to come as dictornary of
     annotation name versus an object with at least the field 'user_id'
@@ -530,6 +555,10 @@ def _annotate_entities(project_id, entity_ids, annotation_map):
                         defaults=new_cici_defaults)
                 if created:
                     newly_annotated.add(entity_id)
+                elif update_existing:
+                    # Update creation time and edition_time, if requested
+                    cici.update(**new_cici_defaults)
+
             # Remember which entities got newly annotated
             annotation_objects[ci] = newly_annotated
 

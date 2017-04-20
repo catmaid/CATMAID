@@ -166,7 +166,7 @@ do the following in the topic branch (referring to the example above)::
 
 1. Roll back the migrations to the last non-conflicting state, here ``0007``::
 
-       manage.py migrate catmaid 0007
+      manage.py migrate catmaid 0007
 
 2. Delete all conflicting migrations in the topic branch. If custom migration
    code has been added (like raw SQL), make sure to keep it around.

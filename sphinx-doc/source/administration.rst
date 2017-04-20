@@ -78,7 +78,7 @@ clone the virtualenv by calling::
    on for the respective release.
 
 Backup and restore the database
-------------------------------
+-------------------------------
 
 Backing CATMAID's database up as well as restoring it, is currently a
 manual process. Also keep in mind that a certain database state is

@@ -1,5 +1,6 @@
-## Under development
+## 2017.04.20
 
+Contributors: Albert Cardona, Tom Kazimiers
 
 ### Notes
 

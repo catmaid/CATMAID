@@ -29,11 +29,11 @@
   The new location in the average X/Y location of the parent and child. If only
   parent or child is available (leaf or parent), its X/Y location is used.
 
-- An started animation export can now be canceled throuh a "Cancel" button.
+- An started animation export can now be canceled through a "Cancel" button.
 
 Review widget:
 
-- Segements can now be reviewed in downstream order by unchecking the "Upstream
+- Segments can now be reviewed in downstream order by unchecking the "Upstream
   review" checkbox. Q will still move downstream and W upstream. Already
   reviewed nodes are skipped in both directions.
 
@@ -43,7 +43,7 @@ Review widget:
 Import Export widget:
 
 - The Export Widget has been renamed to "Import Export Widget", along with it
-  its shortname for Ctrl+Space.
+  its short-name for Ctrl+Space.
 
 - If a user has import permissions on a project, an "Import" and an "Export" tab
   are displayed. The new import tab contains a simple SWC import, which allows

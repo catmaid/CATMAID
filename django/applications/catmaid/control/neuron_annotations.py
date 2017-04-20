@@ -16,7 +16,7 @@ from catmaid.control.authentication import requires_user_role, can_edit_or_fail
 from catmaid.control.common import defaultdict, get_relation_to_id_map, \
         get_class_to_id_map, get_request_list
 
-from six.moves import range
+from six.moves import range, map
 
 
 def create_basic_annotated_entity_query(project, params, relations, classes,
@@ -436,9 +436,9 @@ def _update_neuron_annotations(project_id, user, neuron_id, annotation_map, losi
         delete_annotation_if_unused(project_id, aid, annotated_with)
 
     to_update = update.intersection(existing)
-    to_update_ids = map(lambda x: existing_annotations[x]['cici_id'], to_update)
-    to_update_et = map(lambda x: annotation_map[x]['edition_time'], to_update)
-    to_update_ct = map(lambda x: annotation_map[x]['creation_time'], to_update)
+    to_update_ids = list(map(lambda x: existing_annotations[x]['cici_id'], to_update))
+    to_update_et = list(map(lambda x: annotation_map[x]['edition_time'], to_update))
+    to_update_ct = list(map(lambda x: annotation_map[x]['creation_time'], to_update))
     cursor = connection.cursor()
     cursor.execute("""
         UPDATE class_instance_class_instance
@@ -1158,13 +1158,13 @@ def list_annotations_datatable(request, project_id=None):
         column_count = int(request.POST.get('iSortingCols', 0))
         sorting_directions = [request.POST.get('sSortDir_%d' % d, 'DESC')
                 for d in range(column_count)]
-        sorting_directions = map(lambda d: '-' if d.upper() == 'DESC' else '',
-                sorting_directions)
+        sorting_directions = list(map(lambda d: '-' if d.upper() == 'DESC' else '',
+                sorting_directions))
 
         fields = ['name', 'annotated_on', 'num_usage', 'last_user']
         sorting_index = [int(request.POST.get('iSortCol_%d' % d))
                 for d in range(column_count)]
-        sorting_cols = map(lambda i: fields[i], sorting_index)
+        sorting_cols = list(map(lambda i: fields[i], sorting_index))
 
         annotation_query = annotation_query.extra(order_by=[di + col for (di, col) in zip(
                 sorting_directions, sorting_cols)])

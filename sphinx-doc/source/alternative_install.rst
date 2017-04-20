@@ -10,7 +10,7 @@ alternative setups using Gevent or Gunicorn are briefly discussed.
 
 The installation instructions provided here, assume that you have set up the
 database and Django as described in the
-:ref:`standard installation` <basic-installation> instructions.
+:ref:`standard installation <basic-installation>` instructions.
 
 Setup based on Nginx and uWSGI
 ------------------------------
@@ -21,26 +21,26 @@ connection pooling and communicates efficiently with Nginx.
 
 1. Install nginx, on Ubunto this would be::
 
-   sudo apt-get install nginx
+      sudo apt-get install nginx
 
 2. Being in CATMAID's ``virtualenv``, install uwsgi::
 
-   pip install uwsgi
+      pip install uwsgi
 
 3. Create a new configuration file for ``uwsgi`` called ``catmaid-uwsgi.ini`` in
    CATMAID's ``django/projects/mysite/`` folder::
 
-   ; uWSGI instance configuration for CATMAID
-   [uwsgi]
-	 virtualenv = <path-to-virtual-env>
-	 chdir = <catmaid-path>/django
-	 socket = /run/uwsgi/app/catmaid/socket
-	 mount = /<catmaid-relative-url>=<catmaid-path>/django/projects/mysite/django.wsgi
-	 manage-script-name = true
-	 uid = www-data
-	 workers = 2
-	 threads = 2
-	 disable-logging = true
+      ; uWSGI instance configuration for CATMAID
+      [uwsgi]
+      virtualenv = <path-to-virtual-env>
+      chdir = <catmaid-path>/django
+      socket = /run/uwsgi/app/catmaid/socket
+      mount = /<catmaid-relative-url>=<catmaid-path>/django/projects/mysite/django.wsgi
+      manage-script-name = true
+      uid = www-data
+      workers = 2
+      threads = 2
+      disable-logging = true
 
    Note that each thread of each worker will typically have one database
    connection open. This means Postgres will try to allocate a total of about
@@ -48,28 +48,28 @@ connection pooling and communicates efficiently with Nginx.
    enough memory available here.
 
 4. Make sure that the ``socket`` directory in your INI file is writable by the
-	 www-data user (``/run/uwsgi/app/catmaid/`` above). You now be able to start
+   www-data user (``/run/uwsgi/app/catmaid/`` above). You now be able to start
    uWSGI manually with one of the following::
 
-   uwsgi --ini <catmaid-path>/catmaid-uwsgi.ini
+      uwsgi --ini <catmaid-path>/catmaid-uwsgi.ini
 
 5.  Here is a sample nginx configuration file, where ``<catmaid-relative-url> = /catmaid``::
 
-    server {
-      listen 8080;
-      server_name <CATMAID-HOST>;
-
-      # Give access to Django's static files
-      location /catmaid/static/ {
-        alias <CATMAID-PATH>/django/static/;
-      }
-
-      # Route all CATMAID Django WSGI requests to uWSGI
-      location /catmaid/ {
-        include uwsgi_params;
-        uwsgi_pass unix:///run/uwsgi/app/catmaid/socket;
-      }
-    }
+       server {
+         listen 8080;
+         server_name <CATMAID-HOST>;
+       
+         # Give access to Django's static files
+         location /catmaid/static/ {
+           alias <CATMAID-PATH>/django/static/;
+         }
+       
+         # Route all CATMAID Django WSGI requests to uWSGI
+         location /catmaid/ {
+           include uwsgi_params;
+           uwsgi_pass unix:///run/uwsgi/app/catmaid/socket;
+         }
+       }
 
 .. _nginx-image-data:
 

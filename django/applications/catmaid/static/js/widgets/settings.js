@@ -1290,12 +1290,17 @@
             }));
 
       // Review status coloring
-      ds.append(CATMAID.DOM.createCheckboxSetting('Use detailed review color status',
-            CATMAID.ReviewSystem.useDetailedStatusColors,
-            'If true, review status is displayed in nine different colors between ' +
-            'the regular 0% and 100% colors.', function() {
-              CATMAID.ReviewSystem.useDetailedStatusColors = this.checked;
-            }));
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createCheckboxSetting('Use detailed review color status',
+              CATMAID.ReviewSystem.Settings[SETTINGS_SCOPE].detailed_review_colors,
+              'If true, review status is displayed in nine different colors between ' +
+              'the regular 0% and 100% colors.', function() {
+                  CATMAID.ReviewSystem.Settings
+                      .set('detailed_review_colors', this.checked, SETTINGS_SCOPE);
+              }),
+          CATMAID.ReviewSystem.Settings,
+          'detailed_review_colors',
+          SETTINGS_SCOPE));
 
       var dsTracingWarnings = CATMAID.DOM.addSettingsContainer(ds,
           "Warnings", true);

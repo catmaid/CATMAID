@@ -1347,8 +1347,6 @@
     '#ffd87a', '#ffe777', '#fff774', '#e6ff6e', '#d4ff6b'
   ];
 
-  CATMAID.ReviewSystem.useDetailedStatusColors = false;
-
   /**
    * Support function for selecting a background color based on review state.
    */
@@ -1358,7 +1356,7 @@
     } else if (0 === reviewed) {
     return CATMAID.ReviewSystem.STATUS_COLOR_NONE;
     } else {
-      if (CATMAID.ReviewSystem.useDetailedStatusColors) {
+      if (CATMAID.ReviewSystem.Settings.session.detailed_review_colors) {
         // Get a color index in [0,9], mapping to review percentages 1 to 99
         var colorIndex = Math.max(0, Math.min(9, Math.floor(reviewed / 10)));
         return CATMAID.ReviewSystem.STATUS_COLOR_PARTIAL_8[colorIndex];
@@ -1457,6 +1455,18 @@
       }
     };
   })();
+
+  CATMAID.ReviewSystem.Settings = new CATMAID.Settings(
+    'review',
+    {
+      version: 0,
+      entries: {
+        detailed_review_colors: {
+          default: false
+        }
+      },
+      migrations: {}
+    });
 
   CATMAID.Init.on(CATMAID.Init.EVENT_PROJECT_CHANGED, CATMAID.ReviewSystem.Whitelist.refresh);
   CATMAID.Init.on(CATMAID.Init.EVENT_USER_CHANGED, CATMAID.ReviewSystem.Whitelist.refresh);

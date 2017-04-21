@@ -16,6 +16,7 @@ Review widget:
 - Tracing tool: using the personal tag set doesn't remove existing tags anymore
   when added or removed.
 
+- Fix catmaid_insert_example_projects management command.
 
 ## 2017.04.20
 

@@ -663,6 +663,8 @@
             return tab.appendChild(e.element);
           case 'button':
             return CATMAID.DOM.appendButton(tab, e.label, e.title, e.onclick, e.attr);
+          case 'color-button':
+            return CATMAID.DOM.appendColorButton(tab, e.label, e.title, e.attr, e.onchange, e.color);
           case 'checkbox':
             return CATMAID.DOM.appendCheckbox(tab, e.label, e.title, e.value, e.onclick, e.left);
           case 'numeric':
@@ -692,6 +694,31 @@
       b.setAttribute('title', title);
     }
     b.onclick = onclickFn;
+    div.appendChild(b);
+    return b;
+  };
+
+  /**
+   * Append a new color button to another element.
+   */
+  DOM.appendColorButton = function(div, label, title, attr, onChange, colorOptions) {
+    colorOptions = colorOptions || {};
+
+    if (onChange) {
+      colorOptions['onColorChange'] = onChange;
+    }
+
+    var b = document.createElement('button');
+    if (attr) {
+      Object.keys(attr).forEach(function(key) { b.setAttribute(key, attr[key]); });
+    }
+    b.appendChild(document.createTextNode(label));
+    if (title) {
+      b.setAttribute('title', title);
+    }
+
+    CATMAID.ColorPicker.enable(b, colorOptions);
+
     div.appendChild(b);
     return b;
   };

@@ -33,7 +33,7 @@
 
     if (colorChanged || alphaChanged) {
       if (activeOptions && activeOptions.onColorChange) {
-        activeOptions.onColorChange(color.rgb, color.alpha, colorChanged, alphaChanged);
+        activeOptions.onColorChange(color.rgb, color.alpha, colorChanged, alphaChanged, color.HEX);
       }
     }
   }

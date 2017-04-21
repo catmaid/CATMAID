@@ -487,6 +487,21 @@ var WindowMaker = new function()
             length: 10
           },
           {
+            type: 'color-button',
+            label: 'color',
+            title: 'Adjust the color of matched custom tags',
+            value: o.custom_tag_spheres_color,
+            color: {
+              initialColor: o.custom_tag_spheres_color,
+              initialAlpha: o.custom_tag_spheres_opacity,
+              onColorChange: function(rgb, alpha, colorChanged, alphaChanged, colorHex) {
+                WA.updateCustomTagColor(colorChanged ? ('#' + colorHex) : null ,
+                    alphaChanged ? alpha : null);
+              },
+            },
+            length: 10
+          },
+          {
             type: 'checkbox',
             label: 'Native resolution',
             value: o.use_native_resolution,

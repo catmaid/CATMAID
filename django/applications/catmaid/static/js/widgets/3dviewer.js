@@ -783,6 +783,8 @@
     this.zplane_zoomlevel = "max";
     this.zplane_opacity = 0.8;
     this.custom_tag_spheres_regex = '';
+    this.custom_tag_spheres_color = '#aa70ff';
+    this.custom_tag_spheres_opacity = 0.6;
     this.neuron_material = 'lambert';
     this.connector_filter = false;
     this.show_connector_links = true;
@@ -2122,7 +2124,8 @@
 
     this.labelColors = {uncertain: makeMaterial({color: 0xff8000, opacity:0.6, transparent: true}, this.labelColors, 'uncertain'),
                         todo:      makeMaterial({color: 0xff0000, opacity:0.6, transparent: true}, this.labelColors, 'todo'),
-                        custom:    makeMaterial({color: 0xaa70ff, opacity:0.6, transparent: true}, this.labelColors, 'custom')};
+                        custom:    makeMaterial({color: options.custom_tag_spheres_color, opacity: options.custom_tag_spheres_opacity,
+                                                 transparent: true}, this.labelColors, 'custom')};
     this.synapticColors = [makeMaterial({color: 0xff0000, opacity:1.0, transparent:false}, this.synapticColors, 0),
                            makeMaterial({color: 0x00f6ff, opacity:1.0, transparent:false}, this.synapticColors, 1),
                            makeMaterial({color: 0x9f25c2, opacity:1.0, transparent:false}, this.synapticColors, 2)];
@@ -4603,6 +4606,33 @@
     this.space.render();
   };
 
+  WebGLApplication.prototype.updateCustomTagColor = function(colorHex, alpha) {
+    var update = false;
+    if (colorHex) {
+      this.options.custom_tag_spheres_color = colorHex;
+      update = true;
+    }
+    if (alpha) {
+      this.options.custom_tag_spheres_opacity = alpha;
+      update = true;
+    }
+    if (update) {
+      var skeletons = Object.keys(this.space.content.skeletons).map(function(skid) {
+        return this.space.content.skeletons[skid];
+      }, this);
+      this.space.updateCustomTagColor(this.options, skeletons);
+    }
+  };
+
+  WebGLApplication.prototype.Space.prototype.updateCustomTagColor = function(options, skeletons) {
+    var labelTypeColor = this.staticContent.labelColors['custom'].color;
+    labelTypeColor.setStyle(options.custom_tag_spheres_color);
+    skeletons.forEach(function(skeleton) {
+      skeleton.updateLabelTypeColor('custom', labelTypeColor, options.custom_tag_spheres_opacity);
+    });
+    this.render();
+  };
+
   WebGLApplication.prototype.setConnectorLinkVisibility = function(visible) {
     this.options.show_connector_links = visible;
     var skeletons = Object.keys(this.space.content.skeletons).map(function(skid) {
@@ -5044,6 +5074,32 @@
     }, this);
   };
 
+  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.updateLabelTypeColor = function(labelType, color, opacity) {
+    var labelTypeLabels = this.labelTypes.get(labelType);
+    if (!labelTypeLabels) {
+      return;
+    }
+    for (var i=0; i<labelTypeLabels.length; ++i) {
+      var label = labelTypeLabels[i];
+      var nodeIds = this.tags[label];
+      if (!nodeIds) {
+        continue;
+      }
+      for (var j=0; j<nodeIds.length; ++j) {
+        var nodeId = nodeIds[j];
+        var bufferObject = this.specialTagSpheres[nodeId];
+        if (bufferObject) {
+          if (color) {
+            bufferObject.color = color;
+          }
+          if (opacity) {
+              bufferObject.alpha = opacity;
+          }
+        }
+      }
+    }
+  };
+
   /**
    * Place a colored sphere at each node. Used for highlighting special tags like
    * 'uncertain end' and 'todo'. Implemented with buffer geometries to gain
@@ -5068,6 +5124,19 @@
 
     this.specialTagSphereCollection = new THREE.Mesh(geometry, material);
     this.space.add(this.specialTagSphereCollection);
+  };
+
+  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.getLabelType = function(label, customRegEx) {
+    label = label.toLowerCase();
+    if (-1 !== label.indexOf('todo')) {
+      return 'todo';
+    } else if (-1 !== label.indexOf('uncertain')) {
+      return 'uncertain';
+    } else if (customRegEx && customRegEx.test(label)) {
+      return 'custom';
+    } else {
+      return null;
+    }
   };
 
   /**
@@ -5528,30 +5597,29 @@
 
     // Place spheres on nodes with special labels, if they don't have a sphere there already
     var customTagRe = new RegExp(options.custom_tag_spheres_regex || 'a^', 'i');
+    var labelTypes = new Map();
     for (var tag in this.tags) {
       if (this.tags.hasOwnProperty(tag)) {
-        var tagLC = tag.toLowerCase();
-        if (-1 !== tagLC.indexOf('todo')) {
+        var labelType = this.getLabelType(tag, customTagRe);
+        if (labelType) {
+          // Store the mapping of label to label type.
+          var labelTypeLabels = labelTypes.get(labelType);
+          if (!labelTypeLabels) {
+            labelTypeLabels = [];
+            labelTypes.set(labelType, labelTypeLabels);
+          }
+          labelTypeLabels.push(tag);
+
+          // Find used label Type for each labeled node
           this.tags[tag].forEach(function(nodeID) {
             if (!this.specialTagSpheres[nodeID]) {
-              labels.push([vs[nodeID], this.space.staticContent.labelColors.todo]);
-            }
-          }, this);
-        } else if (-1 !== tagLC.indexOf('uncertain')) {
-          this.tags[tag].forEach(function(nodeID) {
-            if (!this.specialTagSpheres[nodeID]) {
-              labels.push([vs[nodeID], this.space.staticContent.labelColors.uncertain]);
-            }
-          }, this);
-        } else if (customTagRe.test(tagLC)) {
-          this.tags[tag].forEach(function(nodeID) {
-            if (!this.specialTagSpheres[nodeID]) {
-              labels.push([vs[nodeID], this.space.staticContent.labelColors.custom]);
+              labels.push([vs[nodeID], this.space.staticContent.labelColors[labelType]]);
             }
           }, this);
         }
       }
     }
+    this.labelTypes = labelTypes;
 
     // Create buffer geometry for connectors
     if (partner_nodes.length > 0) {

@@ -8,6 +8,11 @@ Review widget:
 
 - Whether detailed review colors should be used is now persisted.
 
+3D viewer:
+
+- The color of custom tag spheres can now be adjusted through a "color" button
+  right next to the custom tag pattern.
+
 
 ### Bug fixes
 

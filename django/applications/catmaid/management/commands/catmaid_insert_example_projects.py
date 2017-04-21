@@ -68,7 +68,7 @@ using this <a href="http://fly.mpi-cbg.de/~saalfeld/download/volume.tar.bz2">sce
                 mirrors = list(StackMirror.objects.filter(stack=stack))
                 if not mirrors:
                     for m in stack_dict['mirrors']:
-                        mirrors.append(StackMirror.create(stack=stack,
+                        mirrors.append(StackMirror.objects.create(stack=stack,
                                 title=m['title'], image_base=m['image_base']))
                 ProjectStack.objects.get_or_create(
                     project=project_object,

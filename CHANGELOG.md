@@ -4,10 +4,17 @@
 
 ### Features and enhancements
 
+Review widget:
+
+- Whether detailed review colors should be used is now persisted.
 
 
 ### Bug fixes
 
+- Export widget: The SWC export link works again.
+
+- Tracing tool: using the personal tag set doesn't remove existing tags anymore
+  when added or removed.
 
 
 ## 2017.04.20

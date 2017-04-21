@@ -130,12 +130,12 @@ annotations, neuron name, connectors or partner neurons.
         }
       },
       createContent: function(container) {
+        var $container = $(container);
         // Create tabs or show export only
         if (this.showImports) {
           // Import
-          var importContainer = document.createElement('div');
+          var importContainer = container.appendChild(document.createElement('div'));
           importContainer.innerHTML = ImportExportWidget.importContentTemplate;
-          container.appendChild(importContainer);
           this.containers['import'] = importContainer;
 
           // Add some bindings
@@ -156,13 +156,11 @@ annotations, neuron name, connectors or partner neurons.
         }
 
         // Export
-        var exportContainer = document.createElement('div');
+        var exportContainer = container.appendChild(document.createElement('div'));
         exportContainer.innerHTML = ImportExportWidget.exportContentTemplate;
-        container.appendChild(exportContainer);
         this.containers['export'] = exportContainer;
 
-        var $container = $(this.exportContainer);
-
+        // Bind SWC export handler
         $container.find('#export-swc').click(export_swc);
 
         // Bind NetworkX JSON link to handler
@@ -185,8 +183,8 @@ annotations, neuron name, connectors or partner neurons.
         $container.find('#export-tree-geometry').click(function() {
           export_tree_geometry();
         });
-      },
-      init: function() {
+
+        // Make default tab visible
         this.redraw();
       }
     };

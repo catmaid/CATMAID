@@ -842,19 +842,33 @@
       run: function (e) {
         if (!CATMAID.mayEdit())
           return false;
+        var usePersonalTagSet = e.altKey;
+        var personalTagSet;
+        if (usePersonalTagSet) {
+          personalTagSet = SkeletonAnnotations.Settings.session.personal_tag_set;
+          if (personalTagSet && personalTagSet.length === 0) {
+            CATMAID.msg("No tags", "No tags in personal tag set");
+            return true;
+          }
+        }
+
         if (e.shiftKey) {
-          // Delete all tags
-          SkeletonAnnotations.Tag.tagATNwithLabel('', activeTracingLayer.tracingOverlay, true);
+           if (usePersonalTagSet) {
+             // Delete personal tag set tags
+             var removeRequests = personalTagSet.map(function(t) {
+               return SkeletonAnnotations.Tag.removeATNLabel(t, activeTracingLayer.tracingOverlay);
+             });
+             Promise.all(removeRequests)
+               .catch(CATMAID.handleError);
+           } else {
+            // Delete all tags
+            SkeletonAnnotations.Tag.tagATNwithLabel('', activeTracingLayer.tracingOverlay, true);
+           }
           return true;
         } else if (!e.ctrlKey && !e.metaKey) {
-          if (e.altKey) {
-            var tags = SkeletonAnnotations.Settings.session.personal_tag_set;
-            if (tags && tags.length > 0) {
-              SkeletonAnnotations.Tag.tagATNwithLabel(tags,
-                  activeTracingLayer.tracingOverlay, true);
-            } else {
-              CATMAID.msg("No tags", "No tags in personal tag set");
-            }
+          if (usePersonalTagSet) {
+            SkeletonAnnotations.Tag.tagATNwithLabel(personalTagSet,
+                activeTracingLayer.tracingOverlay, false);
           } else {
             SkeletonAnnotations.Tag.tagATN(activeTracingLayer.tracingOverlay);
           }

@@ -21,7 +21,7 @@ Introduction
 The most fundamental dependencies of CATMAID are:
 
 1. PostgreSQL >= 9.5 and PostGIS >= 2.2
-2. Python 2.7
+2. Python 2.7 or 3.5, PyPy2
 3. Imagemagick (for generating image tiles)
 
 To get the required PostgreSQL version for Debian-based systems, such as
@@ -63,8 +63,10 @@ the source code is in ``/home/alice/catmaid``::
 2. Install required Python packages
 ###################################
 
-We recommend the use of Python 2.7. CATMAID is likely to run with Python 2.6 as
-well, but Python 2.7 is used for development and testing.
+We recommend the use of Python 2.7 for production use at the moment, but Python
+3.5 should work equally well. With a few more limitations PyPy2 can be used as
+ell (no cropping, no back-end plotting, no synapse clustering, no ontology
+clustering).
 
 We strongly recommend that you install all Python package dependencies into a
 virtualenv, so that they are isolated from the system-wide installed packages

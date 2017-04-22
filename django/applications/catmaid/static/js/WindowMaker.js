@@ -9,6 +9,12 @@ var WindowMaker = new function()
   var windows = new Map();
   var self = this;
   var DOM = CATMAID.DOM;
+  var windowManagerCookiePrefix = "catmaid-widgets-";
+
+  // Map types to state manager objects
+  var stateManagers = new Map();
+  // A serializer to stringify widget state.
+  var stateSerializer = new CATMAID.JsonSerializer();
 
   var createContainer = function(id) {
     var container = document.createElement("div");
@@ -17,6 +23,85 @@ var WindowMaker = new function()
     }
     container.setAttribute("class", "windowContent");
     return container;
+  };
+
+  /**
+   * Store the state of a widget in a cookie using the passed in state provider.
+   */
+  var storeWidgetState = function(widget, stateManager) {
+    key = windowManagerCookiePrefix + stateManager.key;
+    var serializedState = stateSerializer.serialize({
+      'state': stateManager.getState(widget)
+    });
+    CATMAID.setCookie(key, serializedState, 365);
+    return true;
+  };
+
+  /**
+   * Store the state of a widget if there is a state manager available for it.
+   */
+  CATMAID.saveWidgetState = function(widget) {
+    let widgetStateManager = stateManagers.get(widget.constructor);
+    if (widgetStateManager) {
+      try {
+        return storeWidgetState(widget, widgetStateManager);
+      } catch (e) {
+        CATMAID.warn("Coudldn't save widget state");
+        return false;
+      }
+    }
+  };
+
+  /**
+   *  Try to load a widget state from a cookie using the passed in state
+   *  manager.
+   */
+  var loadWidgetState = function(widget, stateManager) {
+    key = windowManagerCookiePrefix + stateManager.key;
+    var serializedWidgetData = CATMAID.getCookie(key);
+    if (serializedWidgetData) {
+      var widgetData = stateSerializer.deserialize(serializedWidgetData);
+      if (widgetData && widgetData.state) {
+        stateManager.setState(widget, widgetData.state);
+      }
+      return true;
+    } else {
+      return false;
+    }
+  };
+
+  /**
+   * If enabled by the client settings (or force is truthy), this loads the last
+   * saved state for a widget.
+   */
+  var checkAndLoadWidgetState = function(widget, force) {
+    if (!(CATMAID.Client.Settings.session.auto_widget_state_load || force)) {
+      return;
+    }
+    var stateManager = stateManagers.get(widget.constructor);
+    if (stateManager) {
+      try {
+        loadWidgetState(widget, stateManagers.get(widget.constructor));
+      } catch (e) {
+        CATMAID.warn("Couldn't load last widget state");
+      }
+    }
+  };
+
+  /**
+   * Return a function that first tries to save the widget state of <widget>
+   * before calling <fn>, if it is a function.
+   */
+  var wrapSaveState = function(widget, fn) {
+    return function() {
+      // Try to serialize the widget state before closing.
+      if (CATMAID.Client.Settings.session.auto_widget_state_save) {
+        CATMAID.saveWidgetState(widget);
+      }
+      if (CATMAID.tools.isFn(fn)) {
+        fn.call(widget);
+      }
+    };
   };
 
   /**
@@ -125,6 +210,11 @@ var WindowMaker = new function()
     }
   };
 
+  var addWindowConfigButton = function(win, instance) {
+    var supportsStateSaving = instance && stateManagers.has(instance.constructor);
+    DOM.addWindowConfigButton(win, instance, supportsStateSaving);
+  };
+
   /**
    * Create a general widget window for a widget instance that provides a widget
    * configuration.
@@ -140,6 +230,10 @@ var WindowMaker = new function()
     }
 
     var config = instance.getWidgetConfiguration();
+
+    // Try to load state, if not disabled
+    checkAndLoadWidgetState(instance);
+
     var win = new CMWWindow(instance.getName());
     var container = win.getFrame();
     container.style.backgroundColor = "#ffffff";
@@ -183,10 +277,10 @@ var WindowMaker = new function()
     container.appendChild(content);
 
     // Add access to window settings
-    DOM.addWindowConfigButton(win);
+    addWindowConfigButton(win, instance);
 
     // Register to events
-    var destroy = instance.destroy ? instance.destroy.bind(instance) : undefined;
+    var destroy = wrapSaveState(instance, instance.destroy);
     var resize = instance.resize ? instance.resize.bind(instance) : undefined;
     var focus = instance.focus ? instance.focus.bind(instance) : undefined;
     addListener(win, content, controls, destroy, resize, focus);
@@ -231,7 +325,7 @@ var WindowMaker = new function()
     bar.setAttribute('class', 'buttonpanel');
     DOM.addSourceControlsToggle(win, WA);
     DOM.addButtonDisplayToggle(win);
-    DOM.addWindowConfigButton(win);
+    addWindowConfigButton(win, WA);
 
     var tabs = DOM.addTabGroup(bar, WA.widgetID, ['Main', 'View', 'Shading',
         'Skeleton filters', 'View settings', 'Stacks', 'Shading parameters',
@@ -1049,7 +1143,7 @@ var WindowMaker = new function()
     var win = new CMWWindow("Slice Info Widget");
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";
-    DOM.addWindowConfigButton(win);
+    addWindowConfigButton(win);
 
     var container = createContainer("table-container");
     content.appendChild( container );
@@ -1081,7 +1175,7 @@ var WindowMaker = new function()
     var content = win.getFrame();
     content.classList.add('synapse-fractions');
     content.style.backgroundColor = '#ffffff';
-    DOM.addWindowConfigButton(win);
+    addWindowConfigButton(win, SF);
 
     var bar = document.createElement('div');
     bar.setAttribute("id", "synapse_fractions_buttons" + SF.widgetID);
@@ -1185,7 +1279,7 @@ var WindowMaker = new function()
     bar.setAttribute("id", "synapse_plot_buttons" + SP.widgetID);
     bar.setAttribute('class', 'buttonpanel');
     DOM.addButtonDisplayToggle(win);
-    DOM.addWindowConfigButton(win);
+    addWindowConfigButton(win, SP);
 
     var tabs = DOM.addTabGroup(bar, SP.widgetID, ['Main', 'Options']);
 
@@ -1306,7 +1400,7 @@ var WindowMaker = new function()
     DOM.addButtonDisplayToggle(win);
     DOM.addHelpButton(win, 'Help: ' + GG.getName(), "<h3>Visualize connecticity networks</h3>" +
         "<h4>How to...</h4><p><em>Hide edges/links:</em> Select an edge and use the <em>Hide</em> button in the <em>Selection</em> tab.</p>");
-    DOM.addWindowConfigButton(win);
+    addWindowConfigButton(win, GG);
 
     var tabs = DOM.addTabGroup(bar, GG.widgetID, ['Main', 'Grow', 'Graph',
         'Selection', 'Subgraphs', 'Align', 'Export']);
@@ -1492,7 +1586,7 @@ var WindowMaker = new function()
     buttons.setAttribute('class', 'buttonpanel');
     DOM.addSourceControlsToggle(win, GP);
     DOM.addButtonDisplayToggle(win);
-    DOM.addWindowConfigButton(win);
+    addWindowConfigButton(win, GP);
 
     buttons.appendChild(document.createTextNode('From'));
     buttons.appendChild(CATMAID.skeletonListSources.createSelect(GP));
@@ -1613,7 +1707,7 @@ var WindowMaker = new function()
     buttons.setAttribute('id', 'venn_diagram_buttons' + VD.widgetID);
     buttons.setAttribute('class', 'buttonpanel');
     DOM.addButtonDisplayToggle(win);
-    DOM.addWindowConfigButton(win);
+    addWindowConfigButton(win, VD);
 
     buttons.appendChild(document.createTextNode('From'));
     buttons.appendChild(CATMAID.skeletonListSources.createSelect(VD));
@@ -1661,7 +1755,7 @@ var WindowMaker = new function()
     var win = new CMWWindow("Assembly graph Widget");
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";
-    DOM.addWindowConfigButton(win);
+    addWindowConfigButton(win);
 
     var contentbutton = document.createElement('div');
     contentbutton.setAttribute("id", 'assembly_graph_window_buttons');
@@ -1735,7 +1829,7 @@ var WindowMaker = new function()
     buttons.setAttribute('id', 'connectivity_graph_plot_buttons' + GP.widgetID);
     buttons.setAttribute('class', 'buttonpanel');
     DOM.addButtonDisplayToggle(win);
-    DOM.addWindowConfigButton(win);
+    addWindowConfigButton(win, GP);
 
     var xml = document.createElement('input');
     xml.setAttribute("type", "button");
@@ -1770,7 +1864,7 @@ var WindowMaker = new function()
     var win = new CMWWindow(OS.getName());
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";
-    DOM.addWindowConfigButton(win);
+    addWindowConfigButton(win, OS);
 
     var container = createContainer("ontology-search" + OS.widgetID);
     container.classList.add('ontology_search');
@@ -1941,7 +2035,7 @@ var WindowMaker = new function()
   var createSearchWindow = function()
   {
     var win = new CMWWindow( "Search" );
-    DOM.addWindowConfigButton(win);
+    addWindowConfigButton(win);
     var container = self.setSearchWindow(win);
 
     addListener(win, container);
@@ -1958,7 +2052,7 @@ var WindowMaker = new function()
     var win = new CMWWindow(NN.getName());
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";
-    DOM.addWindowConfigButton(win);
+    addWindowConfigButton(win, NN);
 
     var container = createContainer("neuron-navigator" + NN.widgetID);
     container.classList.add('navigator_widget');
@@ -2104,10 +2198,22 @@ var WindowMaker = new function()
     return focusedWidget;
   };
 
+  var saveStateManager = function(type, key, options) {
+    if (stateManagers.has(type)) {
+      throw new CATMAID.ValueError("State manager for type " + options.type + " already present");
+    }
+    stateManagers.set(type, {
+      type: type,
+      key: options.key || key,
+      getState: options.getState,
+      setState: options.setState
+    });
+  };
+
   /**
    * Allow new widgets to register with a window maker.
    */
-  this.registerWidget = function(key, creator, replace) {
+  this.registerWidget = function(key, creator, replace, stateManager) {
     if (key in creators && !replace) {
       throw new CATMAID.ValueError("A widget with the following key is " +
           "already registered: " + key);
@@ -2116,10 +2222,31 @@ var WindowMaker = new function()
       throw new CATMAID.ValueError("No valid constructor function provided");
     }
 
+    if (stateManager) {
+      saveStateManager(creator, key, stateManager);
+    }
+
     creators[key] = function(options, isInstance) {
       instance = isInstance ? options : new creator(options);
       return createWidget(instance);
     };
+  };
+
+  this.registerState = function(type, options) {
+    if (!type) {
+      throw new CATMAID.ValueError("Need type for state management");
+    }
+    if (!options.key) {
+      throw new CATMAID.ValueError("Need key for state management");
+    }
+    if (!CATMAID.tools.isFn(options.getState)) {
+      throw new CATMAID.ValueError("Need getState() function for state management");
+    }
+    if (!CATMAID.tools.isFn(options.setState)) {
+      throw new CATMAID.ValueError("Need setState() function for state management");
+    }
+
+    saveStateManager(type, options.key, options);
   };
 
   /**
@@ -2143,7 +2270,15 @@ var WindowMaker = new function()
    * existing widgets.
    */
   CATMAID.registerWidget = function(options) {
-    WindowMaker.registerWidget(options.key, options.creator, options.replace);
+    WindowMaker.registerWidget(options.key, options.creator, options.replace, options.state);
+  };
+
+  /**
+   * Register a state provider and target for a particular widget type, can also
+   * used through registerWidget().
+   */
+  CATMAID.registerState = function(type, options) {
+    WindowMaker.registerState(type, options);
   };
 
 })(CATMAID);

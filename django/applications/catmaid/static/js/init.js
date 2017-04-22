@@ -128,7 +128,13 @@ var project;
       entries: {
         table_page_length_options: {
           default: [25, 50, 100, 500, 2000, -1]
-        }
+        },
+        auto_widget_state_save: {
+          default: true
+        },
+        auto_widget_state_load: {
+          default: true
+        },
       }
     });
 

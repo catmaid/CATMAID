@@ -208,6 +208,33 @@
           CATMAID.Client.Settings,
           'table_page_length_options',
           SETTINGS_SCOPE));
+
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createCheckboxSetting(
+              'Save widget state when widgets are closed',
+              CATMAID.Client.Settings[SETTINGS_SCOPE].auto_widget_state_save,
+              null,
+              function() {
+                CATMAID.Client.Settings[SETTINGS_SCOPE].auto_widget_state_save = this.checked;
+              }),
+          CATMAID.Client.Settings,
+          'auto_widget_state_save',
+          SETTINGS_SCOPE));
+
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createCheckboxSetting(
+              'Load widget state when widgets are opened',
+              CATMAID.Client.Settings[SETTINGS_SCOPE].auto_widget_state_load,
+              'Some widgets support saving and loading state information like ' +
+              'their settings. If saving and/or loading are enabled, those ' +
+              'widgets will automatically save their state when closed and ' +
+              'load it when they are started, respectively.',
+              function() {
+                CATMAID.Client.Settings[SETTINGS_SCOPE].auto_widget_state_load = this.checked;
+              }),
+          CATMAID.Client.Settings,
+          'auto_widget_state_load',
+          SETTINGS_SCOPE));
     };
 
     /**

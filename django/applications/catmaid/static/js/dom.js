@@ -243,7 +243,7 @@
 
 
   // A toggle function that also allows to recreate the UI.
-  function toggleWindowConfigurationPanel(win, originalTitle, recreate) {
+  function toggleWindowConfigurationPanel(win, originalTitle, recreate, widget, stateSaving) {
     // Create controls for the window settings if not present, otherwise remove
     // them.
     var frame = win.getFrame();
@@ -277,6 +277,18 @@
       };
       panel.appendChild(aliasSetting);
 
+      // Save settings button
+      if (widget && stateSaving) {
+        var saveStateButton = document.createElement('button');
+        saveStateButton.appendChild(document.createTextNode('Save settings'));
+        saveStateButton.onclick = function() {
+          if (CATMAID.saveWidgetState(widget)) {
+            CATMAID.msg('Success', 'Widget settings stored');
+          }
+        };
+        panel.appendChild(saveStateButton);
+      }
+
       // Add as first element after caption and event catcher
       var eventCatcher = frame.querySelector('.eventCatcher');
       if (eventCatcher) {
@@ -293,11 +305,13 @@
    * Inject a caption button that toggles window related settings.
    *
    * @param {CMWWindow} win          Window to which the button with be added.
+   * @param {Widget}    instance     The widget instance in this window.
+   * @param {boolean}   stateSaving  If state saving related UI should be shown
    */
-  DOM.addWindowConfigButton = function(win) {
+  DOM.addWindowConfigButton = function(win, widget, stateSaving) {
     DOM.addCaptionButton(win, 'fa fa-window-maximize',
         'Show window settings for this widget',
-        toggleWindowConfigurationPanel.bind(window, win, win.getTitle(), false));
+        toggleWindowConfigurationPanel.bind(window, win, win.getTitle(), false, widget, stateSaving));
   };
 
 

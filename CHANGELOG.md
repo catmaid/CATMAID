@@ -4,6 +4,16 @@
 
 ### Features and enhancements
 
+Widget state saving:
+
+- Infrastructure has been added to store widget configuration client side in a
+  browser cookie. This makes it easy to update widgets to support automatic
+  saving and loading of state information. The automatic saving and loading
+  behavior can be configured in the General Settings section of the Settings
+  Widget. Currently, only the 3D viewer supports state saving. To explicitly
+  save the state in a supported widget, the respective button available through
+  the "Window Configuration" title bar icon can be used as well.
+
 Review widget:
 
 - Whether detailed review colors should be used is now persisted.

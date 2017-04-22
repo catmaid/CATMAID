@@ -41,6 +41,8 @@
     // Current set of filtered connectors (if any)
     this.filteredConnectors = null;
 
+    this.options = new WebGLApplication.prototype.OPTIONS.clone();
+
     // Listen to changes of the active node
     SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
       this.updateActiveNode, this);
@@ -63,7 +65,6 @@
     this.divID = divID;
     this.container = document.getElementById(divID);
     this.submit = new submitterFn();
-    this.options = new WebGLApplication.prototype.OPTIONS.clone();
     this.space = new this.Space(canvasWidth, canvasHeight, this.container, project.focusedStackViewer.primaryStack, this.options);
     this.updateActiveNode();
     project.on(CATMAID.Project.EVENT_STACKVIEW_FOCUS_CHANGED, this.adjustStaticContent, this);
@@ -767,7 +768,7 @@
 
 
   WebGLApplication.prototype.Options = function() {
-    this.debug = true;
+    this.debug = false;
     this.meshes_color = "#ffffff";
     this.meshes_opacity = 0.2;
     this.meshes_faces = false;
@@ -830,9 +831,10 @@
 
   WebGLApplication.prototype.Options.prototype.clone = function() {
     var src = this;
-    return Object.keys(this).reduce(
-        function(copy, key) { copy[key] = src[key]; return copy; },
-        new WebGLApplication.prototype.Options());
+    return Object.keys(this).reduce(function(copy, key) {
+        copy[key] = CATMAID.tools.deepCopy(src[key]);
+        return copy;
+      }, new WebGLApplication.prototype.Options());
   };
 
   WebGLApplication.prototype.Options.prototype.createMeshMaterial = function(color, opacity) {
@@ -6794,6 +6796,23 @@
 
     dialog.show(400, 300, false);
   };
+
+  CATMAID.registerState(WebGLApplication, {
+    key: "3d-viewer",
+    getState: function(widget) {
+      // Remove font, because it is too big for cookie storage
+      var state = widget.options.clone();
+      delete state['font'];
+      return { options: state };
+    },
+    setState: function(widget, state) {
+      if (state.options) {
+        for (var field in widget.options) {
+          CATMAID.tools.copyIfDefined(state.options, widget.options, field);
+        }
+      }
+    }
+  });
 
   // Make 3D viewer available in CATMAID namespace
   CATMAID.WebGLApplication = WebGLApplication;

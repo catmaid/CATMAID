@@ -223,6 +223,18 @@ CATMAID.tools = CATMAID.tools || {};
   };
 
   /**
+   * Copy from source[sourceField] to target[targetField] if and only if both
+   * are defined.
+   */
+  tools.copyIfDefined = function(source, target, sourceField, targetField) {
+    targetField = targetField || sourceField;
+    if (source && source.hasOwnProperty(sourceField) &&
+        target && target.hasOwnProperty(targetField)) {
+      target[targetField] = source[sourceField];
+    }
+  };
+
+  /**
    * Set the x, y and z propery of the given object to the given value.
    *
    * @param obj The object to set the x, y and z property of.

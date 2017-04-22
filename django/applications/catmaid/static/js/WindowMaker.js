@@ -316,6 +316,8 @@ var WindowMaker = new function()
 
     var WA = new CATMAID.WebGLApplication();
 
+    checkAndLoadWidgetState(WA);
+
     var win = new CMWWindow(WA.getName());
     var content = win.getFrame();
     content.style.backgroundColor = "#ffffff";
@@ -330,6 +332,7 @@ var WindowMaker = new function()
     var tabs = DOM.addTabGroup(bar, WA.widgetID, ['Main', 'View', 'Shading',
         'Skeleton filters', 'View settings', 'Stacks', 'Shading parameters',
         'Animation', 'History', 'Export']);
+    var o = WA.options;
 
     var select_source = CATMAID.skeletonListSources.createSelect(WA);
 
@@ -363,8 +366,8 @@ var WindowMaker = new function()
     var viewControls = DOM.appendToTab(tabs['View'],
         [
           ['Center active', WA.look_at_active_node.bind(WA)],
-          ['Follow active', false, function() { WA.setFollowActive(this.checked); }, false],
-          ['Update active',  WA.OPTIONS.update_active, function() { WA.setUpdateActive(this.checked); }, false],
+          ['Follow active', o.follow_active, function() { WA.setFollowActive(this.checked); }, false],
+          ['Update active',  o.update_active, function() { WA.setUpdateActive(this.checked); }, false],
           ['XY', WA.XYView.bind(WA)],
           ['XZ', WA.XZView.bind(WA)],
           ['ZY', WA.ZYView.bind(WA)],
@@ -456,9 +459,12 @@ var WindowMaker = new function()
      ['strahler', 'Strahler analysis'],
      ['downstream-of-tag', 'Downstream of tag']
     ].forEach(function(e) {
-       shadingMenu.options.add(new Option(e[1], e[0]));
+       var selected = o.shading_method === e[0];
+       shadingMenu.options.add(new Option(e[1], e[0], selected, selected));
      });
-    shadingMenu.selectedIndex = 0;
+    if (shadingMenu.selectedIndex === -1) {
+        shadingMenu.selectedIndex = 0;
+    }
     shadingMenu.onchange = WA.set_shading_method.bind(WA);
 
     var colorMenu = document.createElement('select');
@@ -472,25 +478,35 @@ var WindowMaker = new function()
      ['last-reviewed', 'Last Reviewer'],
      ['axon-and-dendrite', 'Axon and dendrite'],
     ].forEach(function(e) {
-       colorMenu.options.add(new Option(e[1], e[0]));
+       var selected = o.color_method === e[0];
+       colorMenu.options.add(new Option(e[1], e[0], selected, selected));
     });
-    colorMenu.selectedIndex = 0;
+    if (colorMenu.selectedIndex === -1) {
+      colorMenu.selectedIndex = 0;
+    }
     colorMenu.onchange = WA.updateColorMethod.bind(WA, colorMenu);
 
     var synColors = document.createElement('select');
-    synColors.options.add(new Option('Type: pre/red, post/cyan', 'cyan-red'));
-    synColors.options.add(new Option('Type: pre/red, post/cyan (light background)', 'cyan-red-dark'));
-    synColors.options.add(new Option('N with partner: pre[red > blue], post[yellow > cyan]', 'by-amount'));
-    synColors.options.add(new Option('Synapse clusters', 'synapse-clustering'));
-    synColors.options.add(new Option('Max. flow cut: axon (green) and dendrite (blue)', 'axon-and-dendrite'));
-    synColors.options.add(new Option('Same as skeleton', 'skeleton'));
+    [['Type: pre/red, post/cyan', 'cyan-red'],
+     ['Type: pre/red, post/cyan (light background)', 'cyan-red-dark'],
+     ['N with partner: pre[red > blue], post[yellow > cyan]', 'by-amount'],
+     ['Synapse clusters', 'synapse-clustering'],
+     ['Max. flow cut: axon (green) and dendrite (blue)', 'axon-and-dendrite'],
+     ['Same as skeleton', 'skeleton']
+    ].forEach(function(e, i) {
+       var selected = o.connector_color === e[1];
+       synColors.options.add(new Option(e[1], e[1], selected, selected));
+    });
+    if (synColors.selectedIndex === -1) {
+      synColors.selectedIndex = 0;
+    }
     synColors.onchange = WA.updateConnectorColors.bind(WA, synColors);
 
     DOM.appendToTab(tabs['Shading'],
         [
           [document.createTextNode('Shading: ')],
           [shadingMenu],
-          [' Inv:', false, WA.toggleInvertShading.bind(WA), true],
+          [' Inv:', o.invert_shading, WA.toggleInvertShading.bind(WA), true],
           [document.createTextNode(' Color:')],
           [colorMenu],
           [document.createTextNode(' Synapse color:')],
@@ -509,7 +525,6 @@ var WindowMaker = new function()
         WA.adjustStaticContent();
       };
     };
-    var o = CATMAID.WebGLApplication.prototype.OPTIONS;
 
     // Update volume list
     var initVolumeList = function() {
@@ -554,13 +569,13 @@ var WindowMaker = new function()
     DOM.appendToTab(tabs['View settings'],
         [
           [volumeSelectionWrapper],
-          ['Faces ', false, function() { WA.options.meshes_faces = this.checked;}, false],
+          ['Faces ', o.meshes_faces, function() { WA.options.meshes_faces = this.checked;}, false],
           [WA.createMeshColorButton()],
-          ['Active node', true, function() { WA.options.show_active_node = this.checked; WA.adjustContent(); }, false],
-          ['Active node on top', false, function() { WA.options.active_node_on_top = this.checked; WA.adjustContent(); }, false],
-          ['Black background', true, adjustFn('show_background'), false],
-          ['Floor', true, adjustFn('show_floor'), false],
-          ['Debug', false, function() { WA.setDebug(this.checked); }, false],
+          ['Active node', o.show_active_node, function() { WA.options.show_active_node = this.checked; WA.adjustContent(); }, false],
+          ['Active node on top', o.active_node_on_top, function() { WA.options.active_node_on_top = this.checked; WA.adjustContent(); }, false],
+          ['Black background', o.show_background, adjustFn('show_background'), false],
+          ['Floor', o.show_floor, adjustFn('show_floor'), false],
+          ['Debug', o.debug, function() { WA.setDebug(this.checked); }, false],
           ['Line width', o.skeleton_line_width, null, function() { WA.updateSkeletonLineWidth(this.value); }, 4],
           {
             type: 'checkbox',
@@ -625,9 +640,9 @@ var WindowMaker = new function()
 
     DOM.appendToTab(tabs['Stacks'],
         [
-          ['Bounding box', true, adjustFn('show_box'), false],
-          ['Z plane', false, adjustFn('show_zplane'), false],
-          {type: 'checkbox', label: 'with stack images', value: true,
+          ['Bounding box', o.show_box, adjustFn('show_box'), false],
+          ['Z plane', o.show_zplane, adjustFn('show_zplane'), false],
+          {type: 'checkbox', label: 'with stack images', value: o.zplane_texture,
            onclick: adjustFn('zplane_texture'), title: 'If checked, images ' +
              'of the current section of the active stack will be displayed on a Z plane.'},
           {type: 'numeric', label: 'Z plane zoom level ', value: o.zplane_zoomlevel,
@@ -647,7 +662,7 @@ var WindowMaker = new function()
                 WA.adjustStaticContent();
               }
             }},
-          ['Missing sections', false, adjustFn('show_missing_sections'), false],
+          ['Missing sections', o.show_missing_sections, adjustFn('show_missing_sections'), false],
           ['with height:', o.missing_section_height, ' %', function() {
               WA.options.missing_section_height = Math.max(0, Math.min(this.value, 100));
               WA.adjustStaticContent();
@@ -1047,6 +1062,8 @@ var WindowMaker = new function()
     addLogic(win);
     WA.init( 800, 600, canvas.getAttribute("id") );
 
+    WA.adjustStaticContent();
+
     // Since the initialization can potentially change the node scaling, the is
     // updated here explicitly. At some point we might want to have some sort of
     // observer for this.
@@ -1083,6 +1100,7 @@ var WindowMaker = new function()
           refreshVolumeList, WA);
     };
 
+    var destroy = wrapSaveState(WA, WA.destroy);
     win.addListener(
       function(callingWindow, signal) {
         switch (signal) {
@@ -1100,7 +1118,7 @@ var WindowMaker = new function()
                 }
               });
               unregisterUIListeners();
-              WA.destroy();
+              destroy();
             }
             break;
           case CMWWindow.RESIZE:

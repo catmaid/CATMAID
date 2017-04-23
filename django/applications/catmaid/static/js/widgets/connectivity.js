@@ -1849,7 +1849,23 @@
   // Register widget with CATMAID
   CATMAID.registerWidget({
     key: "connectivity-widget",
-    creator: SkeletonConnectivity
+    creator: SkeletonConnectivity,
+    state: {
+      getState: function(widget) {
+        return {
+          tablesSideBySide: widget.tablesSideBySide,
+          autoUpdate: widget.autoUpdate,
+          showGapjunctionTable: widget.showGapjunctionTable,
+          useOriginalColor: widget.useOriginalColor
+        };
+      },
+      setState: function(widget, state) {
+        CATMAID.tools.copyIfDefined(state, widget, 'tablesSideBySide');
+        CATMAID.tools.copyIfDefined(state, widget, 'autoUpdate');
+        CATMAID.tools.copyIfDefined(state, widget, 'showGapjunctionTable');
+        CATMAID.tools.copyIfDefined(state, widget, 'useOriginalColor');
+      }
+    }
   });
 
 

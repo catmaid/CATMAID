@@ -24,13 +24,13 @@ class CORSRequestHandler (SimpleHTTPRequestHandler):
         SimpleHTTPRequestHandler.end_headers(self)
 
 
-class Server(HTTPServer):
+class Server(HTTPServer, object):
     """A simple HTTP server that serves the current working directory. It adds
     CORS headers and uses SSL if a certificate path is provided.
     """
 
     def __init__(self, server_address, handler, cert_path=None):
-        super(HTTPServer, self).__init__(server_address, handler)
+        super(Server, self).__init__(server_address, handler)
         if cert_path:
             self.socket = ssl.wrap_socket (self.socket,
                 certfile=cert_path, server_side=True)

@@ -41,7 +41,7 @@ var WindowMaker = new function()
    * Store the state of a widget if there is a state manager available for it.
    */
   CATMAID.saveWidgetState = function(widget) {
-    let widgetStateManager = stateManagers.get(widget.constructor);
+    var widgetStateManager = stateManagers.get(widget.constructor);
     if (widgetStateManager) {
       try {
         return storeWidgetState(widget, widgetStateManager);

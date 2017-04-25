@@ -147,7 +147,11 @@
     },
     "image-data-first": {
       move: function(stackViewer, layer, key) {
-        // Find last non image data layer and insert before
+        // If the new layer is orderable, find last non image data layer and
+        // insert before. Otherwise, don't do anything and append to end.
+        if (!layer.isOrderable) {
+          return;
+        }
         var beforeKey = null;
         for (var i=0; i<stackViewer._layerOrder.length; ++i) {
           var refLayerName = stackViewer._layerOrder[i];

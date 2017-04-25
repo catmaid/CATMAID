@@ -388,6 +388,263 @@
   };
 
   /**
+   * Inject an extra button into the caption of a window. This button allows to
+   * show and hide filter controls for a widget.
+   */
+  DOM.addFiltereControlsToggle = function(win, title, options) {
+    title = title || 'Toggle filter controls';
+
+    // A toggle function that also allows to recreate the UI.
+    var toggle = function(recreate) {
+      // Create controls for the skeleton source if not present, otherwise
+      // remove them.
+      var frame = win.getFrame();
+      var panel = frame.querySelector('.dropdown-panel');
+      var show = !panel;
+
+      if (!show) {
+        panel.remove();
+      }
+
+      if (show || recreate) {
+        var filterRules = options.rules;
+        if (!filterRules) {
+          throw new CATMAID.ValueError('Need "rules" field for filter panel');
+        }
+        // Create new panel
+        panel = document.createElement('div');
+        panel.setAttribute('class', 'dropdown-panel');
+
+        // Add tab panel, with first tab listing current rules and second allows
+        // to add new rules.
+        var tabPanel = panel.appendChild(document.createElement('div'));
+        var tabs = CATMAID.DOM.addTabGroup(tabPanel,
+            'filter-controls', ['Filters', 'Add filter']);
+         
+        var filterListContent = tabs['Filters'];
+        var newFilterContent = tabs['Add filter'];
+        filterListContent.style.overflow = "auto";
+        newFilterContent.style.overflow = "auto";
+
+        // Initialize tabs
+        $(tabPanel).tabs();
+
+        // Add a list of active filter rules
+        var table = document.createElement('table');
+        table.style.width = "100%";
+        var header = table.createTHead();
+        var hrow = header.insertRow(0);
+        var columns = ['On', 'Name', 'Merge mode', 'Options', 'Is skeleton', 'Has name', 'Action'];
+        columns.forEach(function(c) {
+          hrow.insertCell().appendChild(document.createTextNode(c));
+        });
+        filterListContent.appendChild(table);
+
+        var self = this;
+
+        var datatable = $(table).DataTable({
+          dom: "tp",
+          ajax: function(data, callback, settings) {
+            callback({
+              draw: data.draw,
+              recordsTotal: filterRules.length,
+              recordsFiltered: filterRules.length,
+              data: filterRules
+            });
+          },
+          order: [],
+          columns: [
+            {
+              orderable: false,
+              render: function(data, type, row, meta) {
+                var checked = !row.skip;
+                return '<input type="checkbox" ' + (checked ? 'checked /> ' : '/>');
+              }
+            },
+            {
+              orderable: false,
+              data: "strategy.name"
+            },
+            {
+              orderable: false,
+              render: function(data, type, row, meta) {
+                return row.mergeMode === CATMAID.UNION ? "Union" :
+                    (row.mergeMode === CATMAID.INTERSECTION ? "Intersection" : row.mergeMode);
+              }
+            },
+            {
+              orderable: false,
+              render: function(data, type, row, meta) {
+                return row.options ? JSON.stringify(row.options) : "-";
+              }
+            },
+            {
+              orderable: false,
+              render: function(data, type, row, meta) {
+                return row.validOnlyForSkid ? row.validOnlyForSkid : "-";
+              }
+            },
+            {
+              orderable: false,
+              render: function(data, type, row, meta) {
+                return row.validOnlyForName ? row.validOnlyForName : "-";
+              }
+            },
+            {
+              orderable: false,
+              data: null,
+              defaultContent: "",
+              render: function(data, type, row, meta) {
+                if (type === 'display') {
+                  return '<a href="#" data-index="' + meta.row + '">remove</a>';
+                }
+              }
+            }
+          ],
+          language: {
+            emptyTable: "No filters added yet (defaults to take all nodes)"
+          }
+        });
+
+        // Updated skipping of rules
+        $(table).on('change', 'td', function(e) {
+          var tr = $(this).closest("tr");
+          var rule = datatable.row(tr).data();
+          rule.skip = !e.target.checked;
+          CATMAID.tools.callIfFn(options.update);
+        });
+        $(table).on('click', 'a[data-index]', function(e) {
+          var ruleIndex = this.dataset.index;
+          if (!ruleIndex) {
+            CATMAID.warn("No rule index found");
+            return;
+          } else {
+            ruleIndex = parseInt(ruleIndex, 10);
+            filterRules.splice(ruleIndex, 1);
+            // Trigger table update
+            datatable.rows().invalidate();
+            datatable.ajax.reload();
+            // Trigger client update
+            CATMAID.tools.callIfFn(options.update);
+          }
+        });
+
+        // Get available filter strategeis
+        var nodeFilters = Object.keys(CATMAID.NodeFilterStrategy).reduce(function(o, p) {
+          o[CATMAID.NodeFilterStrategy[p].name] = p;
+          return o;
+        }, {});
+
+        CATMAID.DOM.appendNewNodeFilterControls(nodeFilters, newFilterContent,
+            function(rule, strategy) {
+              filterRules.push(rule);
+              CATMAID.msg("Success", "New filter rule added");
+              // Trigger table update
+              datatable.rows().invalidate();
+              datatable.ajax.reload();
+            });
+
+
+        // Add as first element after caption and event catcher
+        var eventCatcher = frame.querySelector('.eventCatcher');
+        if (eventCatcher) {
+          // insertBefore will handle the case where there is no next sibling,
+          // the element will be appended to the end.
+          frame.insertBefore(panel, eventCatcher.nextSibling);
+        }
+      }
+
+      return show;
+    };
+
+    // Make a update function that can be referred to from handlers
+    var update = toggle.bind(window, true);
+
+    return DOM.addCaptionButton(win, 'fa fa-filter', title,
+        function() {
+          // Do a regular toggle update by default
+          var opened = toggle();
+        });
+  };
+
+  DOM.appendNewNodeFilterControls = function(nodeFilters, target, onNewRule) {
+    var $target = $(target);
+    var nodeFilterSettingsContainer = document.createElement('span');
+    var nodeFilterSettings = CATMAID.DOM.createLabeledControl("",
+        nodeFilterSettingsContainer);
+    var newRuleOptions = null;
+    var newRuleStrategy = null;
+    var newRuleSkeletonID = null;
+    var newRuleSkeletonName = null;
+    var newRuleMergeMode = CATMAID.UNION;
+    var mergeRules = {};
+    mergeRules["Union"] = CATMAID.UNION;
+    mergeRules["Intersection"] = CATMAID.INTERSECTION;
+    var updateNodeFilterSettings = function(strategy) {
+      newRuleOptions = {};
+      newRuleStrategy = strategy;
+      newRuleSkeletonID = undefined;
+      newRuleSkeletonName = undefined;
+      // Show UI for selected filte
+      CATMAID.DOM.removeAllChildren(nodeFilterSettingsContainer);
+      // Add general settings
+      var $mergeMode = CATMAID.DOM.createSelectSetting("Merge operation", mergeRules,
+          "Rules are applied in a left-associative fashion. This selects which operation to use for this.",
+          function() {
+            newRuleMergeMode = this.value;
+          });
+      var $skeletonId = CATMAID.DOM.createInputSetting(
+          "Apply only to skeleton ID (Optional)", "",
+          "If a valid skeleton ID is provided, this rule will apply to this skeleton exclusively.",
+          function() {
+            newRuleSkeletonID = this.value;
+          });
+      var $skeletonName = CATMAID.DOM.createInputSetting(
+          "... having this name (Optional)", "",
+          "Along with a skeleton ID a name can also be used. If supplied, skeletons are also checked againsts it and only if skeleton ID and name match, the rule will be applied.",
+          function() {
+            newRuleSkeletonName = this.value;
+          });
+      var $nodeFilterSettingsContainer = $(nodeFilterSettingsContainer);
+      $nodeFilterSettingsContainer.append($mergeMode);
+      $nodeFilterSettingsContainer.append($skeletonId);
+      $nodeFilterSettingsContainer.append($skeletonName);
+
+      // Add filter specific settings
+      var createSettings = CATMAID.NodeFilterSettingFactories[strategy];
+      if (!createSettings) {
+        throw new CATMAID.ValueError("Couldn't find settings method " +
+            "for node filter \"" + strategy + "\"");
+      }
+      createSettings(nodeFilterSettingsContainer, newRuleOptions);
+    };
+
+    $target.append(CATMAID.DOM.createSelectSetting("Node filter",
+      nodeFilters, "Nodes inside the " + name, function(e) {
+        updateNodeFilterSettings(this.value);
+      }));
+    $target.append(nodeFilterSettings);
+
+    var addRuleButton = document.createElement('button');
+    addRuleButton.appendChild(document.createTextNode("Add new filter rule"));
+    addRuleButton.onclick = function() {
+      var strategy = CATMAID.NodeFilterStrategy[newRuleStrategy];
+      var rule = new CATMAID.SkeletonFilterRule( strategy,
+          newRuleOptions, newRuleMergeMode, newRuleSkeletonID, newRuleSkeletonName);
+
+      if (CATMAID.tools.isFn(onNewRule)) {
+        onNewRule(rule, strategy);
+      }
+    };
+    $target.append(CATMAID.DOM.createLabeledControl("", addRuleButton));
+
+    // Set default filter setting UI
+    updateNodeFilterSettings('take-all');
+
+    return target;
+  };
+
+  /**
    * Create a new select element that when clicked (or optionally hovered) shows
    * a custom list in a DIV container below it. This custom list provides
    * checkbox elements for each entry

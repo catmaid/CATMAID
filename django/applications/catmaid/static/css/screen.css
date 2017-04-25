@@ -810,6 +810,33 @@ div.review-block::after {
   margin-left: 1em;
 }
 
+.dropdown-panel {
+  padding-bottom: 1em;
+}
+
+.dropdown-panel .setting {
+  float: none;
+  clear: none;
+  padding: 0.1em 0 0.1em 0;
+  position: relative;
+  min-width: auto;
+  max-width: none;
+  display: inline;
+}
+
+.dropdown-panel .setting .description {
+  width: auto;
+  display: inline-block
+}
+
+.dropdown-panel .setting .help {
+  display: none;
+}
+
+.dropdown-panel .setting label{
+  padding: 0.2em;
+}
+
 .setting {
   float: left;
   clear: left;

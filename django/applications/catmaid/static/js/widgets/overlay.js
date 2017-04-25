@@ -870,6 +870,9 @@ SkeletonAnnotations.TracingOverlay.Settings = new CATMAID.Settings(
           visibility_groups: {
             default: [{universal: 'none'}, {universal: 'none'}, {universal: 'none'}]
           },
+          extended_status_update: {
+            default: false
+          }
         },
         migrations: {
           0: function (settings) {
@@ -1335,7 +1338,7 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodeRadiiVisibility = functio
  * handle virtual nodes.
  */
 SkeletonAnnotations.TracingOverlay.prototype.activateNode = function(node) {
-  CATMAID.status("");
+  this.printTreenodeInfo(node.id);
   var atn = SkeletonAnnotations.atn,
       last_skeleton_id = atn.skeleton_id;
   if (node) {
@@ -4083,33 +4086,41 @@ SkeletonAnnotations.TracingOverlay.prototype.printTreenodeInfo = function(nodeID
     prefix = prePrefix + " " + prefix;
   }
 
-  CATMAID.status(prefix + " (loading authorship information)");
+  if (!SkeletonAnnotations.TracingOverlay.Settings.session.extended_status_update) {
+    if (node) {
+      prefix += " created by " + CATMAID.User.safeToString(node.user_id) +
+        ", last edited on " + CATMAID.tools.contextualDateString((node.edition_time_iso_str));
+    }
+    CATMAID.status(prefix);
+  } else {
+    CATMAID.status(prefix + " (loading authorship information)");
 
-  var url = django_url + project.id + '/node/user-info';
+    var url = django_url + project.id + '/node/user-info';
 
-  this.submit(url, 'POST', {node_ids: [nodeID]}, function(json) {
-      var info = json[nodeID];
-      var creator = CATMAID.User.safeToString(info.user);
-      var editor = CATMAID.User.safeToString(info.editor);
+    this.submit(url, 'POST', {node_ids: [nodeID]}, function(json) {
+        var info = json[nodeID];
+        var creator = CATMAID.User.safeToString(info.user);
+        var editor = CATMAID.User.safeToString(info.editor);
 
-      var msg = prefix + " created by " + creator + ' ' +
-          CATMAID.tools.contextualDateString(info.creation_time) + ", last edited by " + editor + ' ' +
-          CATMAID.tools.contextualDateString(info.edition_time) + ", reviewed by ";
-      // Add review information
-      if (info.reviewers.length > 0) {
-        var reviews = [];
-        for (var i=0; i<info.reviewers.length; ++i) {
-          reviews.push(CATMAID.User.safeToString(info.reviewers[i]) + ' ' +
-              CATMAID.tools.contextualDateString(info.review_times[i]));
+        var msg = prefix + " created by " + creator + ' ' +
+            CATMAID.tools.contextualDateString(info.creation_time) + ", last edited by " + editor + ' ' +
+            CATMAID.tools.contextualDateString(info.edition_time) + ", reviewed by ";
+        // Add review information
+        if (info.reviewers.length > 0) {
+          var reviews = [];
+          for (var i=0; i<info.reviewers.length; ++i) {
+            reviews.push(CATMAID.User.safeToString(info.reviewers[i]) + ' ' +
+                CATMAID.tools.contextualDateString(info.review_times[i]));
+          }
+          msg += reviews.join(', ');
+        } else {
+          msg += "no one";
         }
-        msg += reviews.join(', ');
-      } else {
-        msg += "no one";
-      }
-      CATMAID.status(msg);
-    },
-    false,
-    true);
+        CATMAID.status(msg);
+      },
+      false,
+      true);
+  }
 };
 
 /**

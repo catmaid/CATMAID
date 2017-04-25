@@ -26,6 +26,13 @@ Review widget:
 - The color of custom tag spheres can now be adjusted through a "color" button
   right next to the custom tag pattern.
 
+Miscellaneous:
+
+- When a node is selected a minimal node status line is now shown again using
+  information already available in the client. If the "Show extended status bar
+  information" setting is the Settings Widget is checked, additional information
+  is fetched from the back-end.
+
 
 ### Bug fixes
 

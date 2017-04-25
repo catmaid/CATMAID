@@ -644,6 +644,20 @@
           'display_node_radii',
           SETTINGS_SCOPE));
 
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createCheckboxSetting(
+              'Show extended status bar information',
+              SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE].extended_status_update,
+              'If enabled, the status bar will not only show node type and ID ' +
+              'when a node is selected. It will also show reviewer and time ' +
+              'stamps, but needs to query the back-end to do this.',
+              function() {
+                SkeletonAnnotations.TracingOverlay.Settings[SETTINGS_SCOPE].extended_status_update = this.checked;
+              }),
+          SkeletonAnnotations.TracingOverlay.Settings,
+          'extended_status_update',
+          SETTINGS_SCOPE));
+
 
       // Add explanatory text
       ds.append($('<div/>').addClass('setting').append("Choose how nodes, " +

@@ -477,6 +477,23 @@ div.clustering-content .content {
   margin-bottom: 2px;
 }
 
+.catmaid ul.ui-tabs-nav li .ui-tabs-anchor {
+  padding: .2em 1em;
+}
+
+.catmaid ui-tabs {
+  font-size: 11px;
+  font-family: sans-serif;
+}
+
+.catmaid ul.ui-tabs-nav {
+  padding: 0;
+}
+
+.catmaid div.ui-tabs-panel {
+  padding: 0.2em 0.2em 0.1em 0.2em;
+}
+
 .buttonpanel {
   clear: both;
 }
@@ -509,23 +526,6 @@ div.clustering-content .content {
   display: inline-flex;
   position: relative;
   top: 0.5em;
-}
-
-.buttonpanel.ui-tabs {
-  font-size: 11px;
-  font-family: sans-serif;
-}
-
-.buttonpanel ul.ui-tabs-nav {
-  padding: 0;
-}
-
-.buttonpanel div.ui-tabs-panel {
-  padding: 0.2em 0.2em 0.1em 0.2em;
-}
-
-.buttonpanel ul.ui-tabs-nav li .ui-tabs-anchor {
-  padding: .2em 1em;
 }
 
 .sourcepanel {

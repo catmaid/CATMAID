@@ -3292,6 +3292,12 @@ SkeletonAnnotations.TracingOverlay.prototype.selectRadius = function(treenode_id
     // Keep a reference to the original node
     originalNode = self.nodes[treenode_id];
     originalZ = originalNode.z;
+    // Only allow radius edits of treenodes
+    if (!(originalNode && originalNode.type === 'treenode')) {
+      CATMAID.warn('Can only edit radius of treenodes');
+      return;
+    }
+
     // If there was a measurement tool based radius selection started
     // before, stop this.
     if (originalNode.surroundingCircleElements) {

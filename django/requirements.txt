@@ -26,7 +26,7 @@ psycopg2cffi==2.7.5;  platform_python_implementation == 'PyPy'
 Pygments==2.0.2
 python-dateutil==2.1
 python-libuuid==0.9.0; platform_python_implementation != 'PyPy'
-pytz==2015.7
+pytz==2017.2
 PyYAML==3.10
 requests==2.10.0
 scipy==0.18.1; platform_python_implementation != 'PyPy'

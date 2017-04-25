@@ -386,7 +386,7 @@
      */
     var addGridSettings = function(container)
     {
-      var ds = CATMAID.DOM.addSettingsContainer(container, "Grid overlay");
+      var ds = CATMAID.DOM.addSettingsContainer(container, "Grid overlay", true);
       // Grid cell dimensions and offset
       var gridCellWidth = CATMAID.DOM.createInputSetting("Grid width (nm)", 1000);
       var gridCellHeight = CATMAID.DOM.createInputSetting("Grid height (nm)", 1000);

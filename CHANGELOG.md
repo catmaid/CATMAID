@@ -1,6 +1,9 @@
 ## Under development
 
 
+### Notes
+
+- A virtualenv upgrade is required.
 
 ### Features and enhancements
 

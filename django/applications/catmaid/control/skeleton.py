@@ -828,7 +828,8 @@ def skeleton_ancestry(request, project_id=None):
     except Exception as e:
         raise Exception(response_on_error + ':' + str(e))
 
-def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2, model_of_id, cursor):
+def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2,
+        model_of_id, cursor, with_nodes=False):
     def newSynapseCounts():
         return [0, 0, 0, 0, 0]
 
@@ -836,15 +837,19 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2, model_o
         def __init__(self):
             self.num_nodes = 0
             self.skids = defaultdict(newSynapseCounts) # skid vs synapse count
+            if with_nodes:
+                self.links = []
 
     # Dictionary of partner skeleton ID vs Partner
     def newPartner():
         return Partner()
     partners = defaultdict(newPartner)
 
-    # Obtain the synapses made by all skeleton_ids considering the desired direction of the synapse, as specified by relation_id_1 and relation_id_2:
+    # Obtain the synapses made by all skeleton_ids considering the desired
+    # direction of the synapse, as specified by relation_id_1 and relation_id_2:
     cursor.execute('''
-    SELECT t1.skeleton_id, t2.skeleton_id, LEAST(t1.confidence, t2.confidence)
+    SELECT t1.skeleton_id, t2.skeleton_id, LEAST(t1.confidence, t2.confidence),
+        t1.treenode_id, t2.treenode_id
     FROM treenode_connector t1,
          treenode_connector t2
     WHERE t1.skeleton_id = ANY(%s::integer[])
@@ -855,8 +860,11 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2, model_o
     ''', (list(skeleton_ids), int(relation_id_1), int(relation_id_2)))
 
     # Sum the number of synapses
-    for srcID, partnerID, confidence in cursor.fetchall():
-        partners[partnerID].skids[srcID][confidence - 1] += 1
+    for srcID, partnerID, confidence, tn1, tn2 in cursor.fetchall():
+        partner = partners[partnerID]
+        partner.skids[srcID][confidence - 1] += 1
+        if with_nodes:
+            partner.links.append([tn1, tn2, srcID])
 
     # There may not be any synapses
     if not partners:
@@ -895,7 +903,7 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2, model_o
 
     return partners, reviewers
 
-def _skeleton_info_raw(project_id, skeletons, op):
+def _skeleton_info_raw(project_id, skeletons, op, with_nodes=False):
     cursor = connection.cursor()
 
     # Obtain the IDs of the 'presynaptic_to', 'postsynaptic_to' and 'model_of' relations
@@ -903,9 +911,15 @@ def _skeleton_info_raw(project_id, skeletons, op):
         ('presynaptic_to', 'postsynaptic_to', 'gapjunction_with', 'model_of'))
 
     # Obtain partner skeletons and their info
-    incoming, incoming_reviewers = _connected_skeletons(skeletons, op, relation_ids['postsynaptic_to'], relation_ids['presynaptic_to'], relation_ids['model_of'], cursor)
-    outgoing, outgoing_reviewers = _connected_skeletons(skeletons, op, relation_ids['presynaptic_to'], relation_ids['postsynaptic_to'], relation_ids['model_of'], cursor)
-    gapjunctions, gapjunctions_reviewers = _connected_skeletons(skeletons, op, relation_ids.get('gapjunction_with', -1), relation_ids.get('gapjunction_with', -1), relation_ids['model_of'], cursor)
+    incoming, incoming_reviewers = _connected_skeletons(skeletons, op,
+            relation_ids['postsynaptic_to'], relation_ids['presynaptic_to'],
+            relation_ids['model_of'], cursor, with_nodes)
+    outgoing, outgoing_reviewers = _connected_skeletons(skeletons, op,
+            relation_ids['presynaptic_to'], relation_ids['postsynaptic_to'],
+            relation_ids['model_of'], cursor, with_nodes)
+    gapjunctions, gapjunctions_reviewers = _connected_skeletons(skeletons, op,
+            relation_ids.get('gapjunction_with', -1), relation_ids.get('gapjunction_with', -1),
+            relation_ids['model_of'], cursor, with_nodes)
 
     def prepare(partners):
         for partnerID in partners.keys():
@@ -949,6 +963,14 @@ def skeleton_info_raw(request, project_id=None):
           required: true
           type: string
           paramType: form
+        - name: with_nodes
+          description: |
+            Whether to return detailed connectivity information that includes
+            partner sites.
+          required: false
+          type: voolean
+          paramType: form
+          default: false
     models:
       skeleton_info_raw_partners:
         id: skeleton_info_raw_partners
@@ -1031,8 +1053,9 @@ def skeleton_info_raw(request, project_id=None):
     skeletons = tuple(int(v) for k,v in six.iteritems(request.POST) if k.startswith('source_skeleton_ids['))
     op = str(request.POST.get('boolean_op')) # values: AND, OR
     op = {'AND': 'AND', 'OR': 'OR'}[op] # sanitize
+    with_nodes = request.POST.get('with_nodes', 'false') == 'true'
 
-    incoming, outgoing, gapjunctions, incoming_reviewers, outgoing_reviewers, gapjunctions_reviewers = _skeleton_info_raw(project_id, skeletons, op)
+    incoming, outgoing, gapjunctions, incoming_reviewers, outgoing_reviewers, gapjunctions_reviewers = _skeleton_info_raw(project_id, skeletons, op, with_nodes)
 
     return JsonResponse({
                 'incoming': incoming,

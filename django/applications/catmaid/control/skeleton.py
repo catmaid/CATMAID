@@ -899,16 +899,8 @@ def _skeleton_info_raw(project_id, skeletons, op):
     cursor = connection.cursor()
 
     # Obtain the IDs of the 'presynaptic_to', 'postsynaptic_to' and 'model_of' relations
-    cursor.execute('''
-    SELECT relation_name,
-           id
-    FROM relation
-    WHERE project_id=%s
-      AND (relation_name='presynaptic_to'
-        OR relation_name='postsynaptic_to'
-        OR relation_name='gapjunction_with'
-        OR relation_name='model_of')''' % project_id)
-    relation_ids = dict(cursor.fetchall())
+    relation_ids = get_relation_to_id_map(project_id,
+        ('presynaptic_to', 'postsynaptic_to', 'gapjunction_with', 'model_of'))
 
     # Obtain partner skeletons and their info
     incoming, incoming_reviewers = _connected_skeletons(skeletons, op, relation_ids['postsynaptic_to'], relation_ids['presynaptic_to'], relation_ids['model_of'], cursor)

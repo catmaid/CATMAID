@@ -92,13 +92,11 @@
   };
 
   /**
-   * Run filter set on arbors.
+   * Run filter set on arbors and return a collection of matched nodes.
    *
    * @param {Object} skeletonArbors  Maps skeleton IDs to arbor info objects
-   * @param {Bool}   addRadiusPoints Whether locations on a radius sphere around
-   *                                 a node should be added as artificial points.
    */
-  CATMAID.SkeletonFilter.prototype.execute = function(skeletonArbors, addRadiusPoints) {
+  CATMAID.SkeletonFilter.prototype.execute = function(skeletonArbors) {
     var rules = CATMAID.SkeletonFilter.getActiveRules(this.rules, this.skeletonIndex);
 
     // Collect nodes in an object to allow fast hash based key existence
@@ -169,6 +167,23 @@
       });
     });
 
+    return {
+      nodes: nodeCollection,
+      nNodes: nNodes
+    };
+  };
+
+  /**
+   * Map a node collection returned by execute() into a list of points.
+   *
+   * @param {Object} skeletonArbors  Maps skeleton IDs to arbor info objects
+   * @param {Bool}   addRadiusPoints Whether locations on a radius sphere around
+   *                                 a node should be added as artificial points.
+   * @param {Number} nNodes          Optional, to prevent Object.keys() call,
+   *                                 the number of nodes in <nodeCollection>
+   */
+  CATMAID.SkeletonFilter.prototype.getNodeLocations = function(nodeCollection, addRadiusPoints, nNodes) {
+    nNodes = nNodes === undefined ? Object.keys(nodeCollection).length : nNodes;
     // Get a list of node positions. They are used as input for the convex
     // hull creation.
     var points = new Array(nNodes);

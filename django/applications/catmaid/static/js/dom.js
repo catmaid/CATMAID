@@ -538,6 +538,7 @@
         CATMAID.DOM.appendNewNodeFilterControls(nodeFilters, newFilterContent,
             function(rule, strategy) {
               filterRules.push(rule);
+              CATMAID.tools.callIfFn(options.update);
               CATMAID.msg("Success", "New filter rule added");
               // Trigger table update
               datatable.rows().invalidate();

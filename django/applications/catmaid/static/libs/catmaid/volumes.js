@@ -219,7 +219,8 @@
       var rules = compartments[name];
       var filter = new CATMAID.SkeletonFilter(rules, skeletons);
 
-      var points = filter.execute(skeleton_arbors, rules);
+      var filteredNodes = filter.execute(skeleton_arbors);
+      var points = filter.getNodeLocations(filteredNodes.nodes, respectRadius, filteredNodes.nNodes);
       if (0 === points.length) {
         console.log("Found zero points for compartment " + name);
         return o;

@@ -875,6 +875,7 @@
       }
 
       // Create a table row for every partner and remember the ignored ones
+      var activeNodeFilters = this.applyFilterRules && this.filterRules.length > 0;
       var nFilteredLinksTotal = 0;
       var nFilteredLinksPerSkeleton = skids.reduce(function(o, skid) {
         o.set(skid, 0);
@@ -900,7 +901,7 @@
         // Ignore partner if all our partner sites connected to it are spatially
         // filtered.
         var nFilteredLinks = 0;
-        if (!ignore && this.applyFilterRules && this.filterRules.length > 0) {
+        if (!ignore && activeNodeFilters) {
           nFilteredLinks = this.getNFilteredPartnerLinks(partner, nFilteredLinksPerSkeletonBuffer);
           ignore = ignore || nFilteredLinks === partner.links.length;
         }
@@ -913,7 +914,7 @@
         // Update total counter and per skeleton counter only with non-ignored
         // partners, ignored ones are counted separately.
         nFilteredLinksTotal += nFilteredLinks;
-        if (this.applyFilterRules) {
+        if (activeNodeFilters) {
           // Update per table link filter counter
           for (var i=0; i<skids.length; ++i) {
             var skid = skids[i];
@@ -942,8 +943,10 @@
         if (extraCols) {
           skids.forEach(function(skid, i) {
             var count = filter_synapses(partner.skids[skid], thresholds.confidence[skid]);
-            // This count needs to be corrected, if there are filtered links
-            count = count - nFilteredLinksPerSkeletonBuffer.get(skid);
+            if (activeNodeFilters) {
+              // This count needs to be corrected, if there are filtered links
+              count = count - nFilteredLinksPerSkeletonBuffer.get(skid);
+            }
             this.appendChild(createSynapseCountCell(count, partner, skid));
           }, tr);
         }
@@ -990,8 +993,10 @@
             var count = filtered.reduce(function(sum, partner) {
               return sum + filter_synapses(partner.skids[skid], thresholds.confidence[skid]);
             }, 0);
-            // This count needs to be corrected, if there are filtered links
-            count = count + nFilteredLinksPerSkeleton.get(skid);
+            if (activeNodeFilters) {
+              // This count needs to be corrected, if there are filtered links
+              count = count + nFilteredLinksPerSkeleton.get(skid);
+            }
             $tr.append($('<td />').addClass('syncount').append(count));
           });
         }

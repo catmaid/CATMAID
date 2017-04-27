@@ -281,6 +281,27 @@
         gapjunctionLabel.appendChild(gapjunctionToggle);
         gapjunctionLabel.appendChild(document.createTextNode('Show gap junctions'));
         controls.appendChild(gapjunctionLabel);
+
+        var filterRulesToggle = document.createElement('input');
+        filterRulesToggle.setAttribute('id', 'connectivity-filterrules-toggle-' + this.widgetID);
+        filterRulesToggle.setAttribute('type', 'checkbox');
+        if (this.applyFilterRules) {
+          filterRulesToggle.setAttribute('checked', 'checked');
+        }
+        filterRulesToggle.onchange = function() {
+          self.applyFilterRules = this.checked;
+          if (self.filterRules.length > 0) {
+            if (this.checked) {
+              self.updateFilter();
+            } else {
+              self.update();
+            }
+          }
+        };
+        var filterRulesLabel = document.createElement('label');
+        filterRulesLabel.appendChild(filterRulesToggle);
+        filterRulesLabel.appendChild(document.createTextNode('Apply node filter rules'));
+        controls.appendChild(filterRulesLabel);
       },
 
       contentID: "connectivity_widget" + this.widgetID,

@@ -10,7 +10,9 @@ None.
 
 ### Modifications
 
-None.
+- `POST /{project_id}/skeletons/connectivity`:
+  If the new "with_nodes" parameter is true, the involved treenode links are
+  also returned for each partner.
 
 ### Deprecations
 

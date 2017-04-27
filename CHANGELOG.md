@@ -20,6 +20,34 @@ Widget state saving:
 - State saving support has been added for the 3D Viewer and the Connectivity
   Widget.
 
+Generic node filtering:
+
+- A generic user interface for filtering nodes is now available to widgets. If a
+  widget supports it, the filtering user interface is available through the
+  filter icon in the widget's title bar.
+
+- The user interface has a "Filters" tab which lists all active filters for a
+  widget and a "Add filter" tab, which can be used to create new filter rules.
+
+- Filter rules select nodes that are kept, i.e. the filter application results
+  in a list of nodes that match the filter expression.
+
+- Different filter types are available at the moment: Only end nodes, only
+  tagged nodes, only nuclei, only a sub-arbor starting from a tag, tag defined
+  region, binary split and synaptic connectivity. Some come with own user input
+  elements, but all can optionally be applied to only a subset of skeletons.
+
+- Multiple filters can be combined, e.g. all branch nodes with a particular tag
+  and end nodes. All filter rules are combined in a left-associative fashion and
+  union and intersection can be used as operators.
+
+Connectivity widget:
+
+- Support for node filtering has been added, it can be configured through the
+  filter icon in the title bar. All features listed under Generic Node Filters
+  are supported. If a node of a skeleton from the top list doesn't match the
+  filter expression, synaptic connections involving it will not be respected.
+
 Review widget:
 
 - Whether detailed review colors should be used is now persisted.

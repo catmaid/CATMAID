@@ -243,6 +243,12 @@ var WindowMaker = new function()
       DOM.addHelpButton(win, 'Help: ' + instance.getName(), config.helpText);
     }
 
+    // Widgets can announce they have filtering support
+    if (config.filter) {
+      DOM.addFiltereControlsToggle(win, 'Filter: ' +
+          instance.getName(), config.filter);
+    }
+
     // Add skeleton source subscription toggle if selected
     var source = config.subscriptionSource;
     if (source) {

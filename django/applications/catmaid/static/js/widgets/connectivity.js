@@ -26,6 +26,12 @@
     // If no original colors are used, new skeleton models will be colored
     // according to their conenctor link.
     this.useOriginalColor = false;
+    // A set of filter rules to apply to the handled skeletons
+    this.filterRules = [];
+    // Filter rules can optionally be disabled
+    this.applyFilterRules = true;
+    // A set of nodes allowed by node filters
+    this.allowedNodes = new Set();
 
     // Find default page length that is closest to 50
     this.pageLength = CATMAID.pageLengthOptions.reduce(function(bestMatch, l) {
@@ -147,7 +153,12 @@
 
     // Update names and trigger addition event
     CATMAID.NeuronNameService.getInstance().registerAll(this, added, (function() {
-      this.update();
+      if (this.applyFilterRules) {
+        this.updateFilter();
+      } else {
+        this.update();
+      }
+
       if (!CATMAID.tools.isEmpty(added)) {
         this.triggerAdd(added);
       }
@@ -274,7 +285,11 @@
 
       contentID: "connectivity_widget" + this.widgetID,
       class: 'connectivity_widget',
-      createContent: function() {}
+      createContent: function() {},
+      filter: {
+        rules: this.filterRules,
+        update: this.updateFilter.bind(this)
+      }
     };
   };
 
@@ -450,6 +465,14 @@
     this.partnerSetMap[partnerSet.id] = partnerSet;
   };
 
+  // Currently supported connector types plus their order
+  var partnerSetTypes = {
+    'incoming': {name: 'Upstream', rel: 'presynaptic_to'},
+    'outgoing': {name: 'Downstream', rel: 'postsynaptic_to'},
+    'gapjunctions': {name: 'Gap junction', rel: 'gapjunction_with',
+        pTitle: 'Gap junction with neuron', ctrShort: 'gj'}
+  };
+
   SkeletonConnectivity.prototype.update = function() {
     var skids = Object.keys(this.skeletons);
     if (0 === skids.length) {
@@ -463,13 +486,6 @@
       delete oldPartnerModels[skid];
     }
 
-    // Currently supported connector types plus their order
-    var partnerSetTypes = {
-      'incoming': {name: 'Upstream', rel: 'presynaptic_to'},
-      'outgoing': {name: 'Downstream', rel: 'postsynaptic_to'},
-      'gapjunctions': {name: 'Gap junction', rel: 'gapjunction_with',
-          pTitle: 'Gap junction with neuron', ctrShort: 'gj'}
-    };
     var partnerSetIds = ['incoming', 'outgoing'];
     if (this.showGapjunctionTable) {
       partnerSetIds.push('gapjunctions');
@@ -480,6 +496,7 @@
     CATMAID.fetch(project.id + '/skeletons/connectivity', 'POST', {
       'source_skeleton_ids': skids,
       'boolean_op': $('#connectivity_operation' + this.widgetID).val(),
+      'with_nodes': this.applyFilterRules && this.filterRules.length > 0,
     }, false, 'update_connectivity_table', true)
     .then(function(json) {
       // Remove present partner sets
@@ -837,7 +854,17 @@
       }
 
       // Create a table row for every partner and remember the ignored ones
+      var nFilteredLinksTotal = 0;
+      var nFilteredLinksPerSkeleton = skids.reduce(function(o, skid) {
+        o.set(skid, 0);
+        return o;
+      }, new Map());
+      var nFilteredLinksPerSkeletonBuffer = new Map();
       var filtered = partners.reduce((function(filtered, partner) {
+        // Reset per partner per skeleton link counter
+        for (var i=0; i<skids.length; ++i) {
+          nFilteredLinksPerSkeletonBuffer.set(skids[i], 0);
+        }
         // Ignore this line if all its synapse counts are below the threshold. If
         // the threshold is 'undefined', false is returned and to semantics of
         // this test.
@@ -849,9 +876,29 @@
         ignore = ignore || partner.synaptic_count < thresholds.count['sum'];
         // Ignore partner if it has only fewer nodes than a threshold
         ignore = ignore || partner.num_nodes < hidePartnerThreshold;
+        // Ignore partner if all our partner sites connected to it are spatially
+        // filtered.
+        var nFilteredLinks = 0;
+        if (!ignore && this.applyFilterRules && this.filterRules.length > 0) {
+          nFilteredLinks = this.getNFilteredPartnerLinks(partner, nFilteredLinksPerSkeletonBuffer);
+          ignore = ignore || nFilteredLinks === partner.links.length;
+        }
+
         if (ignore) {
           filtered.push(partner);
           return filtered;
+        }
+
+        // Update total counter and per skeleton counter only with non-ignored
+        // partners, ignored ones are counted separately.
+        nFilteredLinksTotal += nFilteredLinks;
+        if (this.applyFilterRules) {
+          // Update per table link filter counter
+          for (var i=0; i<skids.length; ++i) {
+            var skid = skids[i];
+            nFilteredLinksPerSkeleton.set(skid,
+              nFilteredLinksPerSkeleton.get(skid) + nFilteredLinksPerSkeletonBuffer.get(skid));
+          }
         }
 
         var tr = document.createElement('tr');
@@ -868,11 +915,14 @@
         tr.appendChild(td);
 
         // Cell with synapses with partner neuron
-        tr.appendChild(createSynapseCountCell(partner.synaptic_count, partner));
+        var finalLinkCount = partner.synaptic_count - nFilteredLinks;
+        tr.appendChild(createSynapseCountCell(finalLinkCount, partner));
         // Extra columns for individual neurons
         if (extraCols) {
           skids.forEach(function(skid, i) {
             var count = filter_synapses(partner.skids[skid], thresholds.confidence[skid]);
+            // This count needs to be corrected, if there are filtered links
+            count = count - nFilteredLinksPerSkeletonBuffer.get(skid);
             this.appendChild(createSynapseCountCell(count, partner, skid));
           }, tr);
         }
@@ -900,20 +950,27 @@
       if (filtered.length > 0) {
         // The filtered synapse count
         var filtered_synaptic_count = getSum(filtered, 'synaptic_count');
+        var finalFilteredSynapseCount = filtered_synaptic_count + nFilteredLinksTotal;
         // Build the row
+        var footerMessage = filtered.length + ' hidden partners';
+        if (nFilteredLinksTotal > 0) {
+          footerMessage += ' and ' + nFilteredLinksTotal + ' filtered links';
+        }
         var $tr = $('<tr />')
             // Select column
             .append($('<td />'))
-            .append($('<td />').append(filtered.length + ' hidden partners'))
+            .append($('<td />').append(footerMessage))
             // Synapse count sum column
             .append($('<td />').addClass('syncount')
-                .append(filtered_synaptic_count));
+                .append(finalFilteredSynapseCount));
         // Synapse count single neuron columns
         if (extraCols) {
           skids.forEach(function(skid, i) {
             var count = filtered.reduce(function(sum, partner) {
               return sum + filter_synapses(partner.skids[skid], thresholds.confidence[skid]);
             }, 0);
+            // This count needs to be corrected, if there are filtered links
+            count = count + nFilteredLinksPerSkeleton.get(skid);
             $tr.append($('<td />').addClass('syncount').append(count));
           });
         }
@@ -1841,6 +1898,59 @@
         containerID, "Upstream", this.widgetID, container.width(), colorizer);
     makeMultipleBarChart(this.skeletons, this.outgoing,
         containerID, "Downstream", this.widgetID, container.width(), colorizer);
+  };
+
+  /**
+   * Return the number of partner links that conflict with the current filter
+   * rule set.
+   */
+  SkeletonConnectivity.prototype.getNFilteredPartnerLinks = function(partner, perSkeletonCounter) {
+    var links = partner.links;
+    var nFilteredLinks = 0;
+
+    if (links) {
+      for (var i=0; i<links.length; ++i) {
+        var link = links[i];
+        if (!this.allowedNodes.has(link[0])) {
+          nFilteredLinks += 1;
+          var skeletonId = link[2];
+          perSkeletonCounter.set(skeletonId, perSkeletonCounter.get(skeletonId) + 1);
+        }
+      }
+    }
+
+    return nFilteredLinks;
+  };
+
+  /**
+   * Reevaluate the current set of node filter rules to update the set of
+   * excluded nodes.
+   */
+  SkeletonConnectivity.prototype.updateFilter = function(options) {
+    var skeletons = this.skeletons;
+    var skeletonIds = Object.keys(skeletons);
+    if (skeletonIds.length === 0) {
+      return Promise.resolve() ;
+    }
+
+    var self = this;
+    return CATMAID.SkeletonFilter.fetchArbors(skeletonIds)
+      .then(function(arbors) {
+        var filter = new CATMAID.SkeletonFilter(self.filterRules, skeletons);
+
+        if (!arbors) {
+          throw new CATMAID.ValueError("Couldn't fetch skeleton arbors");
+        }
+        var filteredNodes = filter.execute(arbors, self.filterRules);
+        self.allowedNodes = new Set(Object.keys(filteredNodes.nodes).map(function(n) {
+          return parseInt(n, 10);
+        }));
+        if (0 === self.allowedNodes.length) {
+          CATMAID.warn("No points left after filter application");
+        }
+        self.update();
+      })
+      .catch(CATMAID.handleError);
   };
 
   // Make skeleton connectivity widget available in CATMAID namespace

@@ -11,33 +11,29 @@
   var ConnectorSelection = function() {};
 
   ConnectorSelection.prototype.show_shared_connectors = function(skids1, skids2, relation) {
-    requestQueue.register(django_url + project.id + '/connector/list/many_to_many', 'POST',
-        {skids1: skids1,
+    return new CATMAID.fetch(project.id + '/connector/list/many_to_many', 'POST', {
+        skids1: skids1,
         skids2: skids2,
-        relation: relation},
-        function(status, text) {
-          if (200 !== status) return;
-          var json = JSON.parse(text);
-          if (json.error) {
-            alert(json.error);
-            return;
-          }
-          var text;
-          if ('presynaptic_to' === relation) {
-            text = 'Synapses postsynaptic to';
-          } else if ('postsynaptic_to' === relation) {
-            text = 'Synapses presynaptic to';
-          } else if ('gapjunction_with' === relation) {
-            text = 'Gap junctions with';
-          }
-          if (text !== undefined) {
-            text += ' neuron' + (skids1.length > 1 ? 's' : '') + ' '
-                 + skids1.map(CATMAID.NeuronNameService.getInstance().getName).join(', ');
-            show_table(text, json, relation);
-          } else {
-            alert('Unsupported relation: ' + relation);
-          }
-        });
+        relation: relation
+      })
+      .then(function(json) {
+        var text;
+        if ('presynaptic_to' === relation) {
+          text = 'Synapses postsynaptic to';
+        } else if ('postsynaptic_to' === relation) {
+          text = 'Synapses presynaptic to';
+        } else if ('gapjunction_with' === relation) {
+          text = 'Gap junctions with';
+        }
+        if (text !== undefined) {
+          text += ' neuron' + (skids1.length > 1 ? 's' : '') + ' '
+               + skids1.map(CATMAID.NeuronNameService.getInstance().getName).join(', ');
+          show_table(text, json, relation);
+        } else {
+          throw new CATMAID.ValueError('Unsupported relation: ' + relation);
+        }
+      })
+      .catch(CATMAID.handleError);
   };
 
   ConnectorSelection.prototype.getName = function() {

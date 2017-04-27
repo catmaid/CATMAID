@@ -1950,8 +1950,9 @@
   SkeletonConnectivity.prototype.updateFilter = function(options) {
     var skeletons = this.skeletons;
     var skeletonIds = Object.keys(skeletons);
-    if (skeletonIds.length === 0) {
-      return Promise.resolve() ;
+    if (skeletonIds.length === 0 || this.filterRules.length === 0) {
+      this.update();
+      return Promise.resolve();
     }
 
     var self = this;

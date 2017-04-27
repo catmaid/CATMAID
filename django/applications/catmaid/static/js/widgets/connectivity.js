@@ -236,8 +236,8 @@
           self.tablesSideBySide = this.checked;
         };
         var layoutLabel = document.createElement('label');
-        layoutLabel.appendChild(document.createTextNode('Tables side by side'));
         layoutLabel.appendChild(layoutToggle);
+        layoutLabel.appendChild(document.createTextNode('Tables side by side'));
         controls.appendChild(layoutLabel);
 
         var autoUpdate = document.createElement('input');
@@ -250,8 +250,8 @@
           self.autoUpdate = this.checked;
         };
         var autoUpdateLabel = document.createElement('label');
-        autoUpdateLabel.appendChild(document.createTextNode('Auto update'));
         autoUpdateLabel.appendChild(autoUpdate);
+        autoUpdateLabel.appendChild(document.createTextNode('Auto update'));
         controls.appendChild(autoUpdateLabel);
 
         var originalColor = document.createElement('input');
@@ -264,8 +264,8 @@
           self.useOriginalColor = this.checked;
         };
         var originalColorLabel = document.createElement('label');
-        originalColorLabel.appendChild(document.createTextNode('Original color'));
         originalColorLabel.appendChild(originalColor);
+        originalColorLabel.appendChild(document.createTextNode('Original color'));
         controls.appendChild(originalColorLabel);
 
         var gapjunctionToggle = document.createElement('input');
@@ -278,8 +278,8 @@
           self.showGapjunctionTable = this.checked;
         };
         var gapjunctionLabel = document.createElement('label');
-        gapjunctionLabel.appendChild(document.createTextNode('Show gap junctions'));
         gapjunctionLabel.appendChild(gapjunctionToggle);
+        gapjunctionLabel.appendChild(document.createTextNode('Show gap junctions'));
         controls.appendChild(gapjunctionLabel);
       },
 

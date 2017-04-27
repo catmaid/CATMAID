@@ -271,19 +271,24 @@
         if (this.isSegmentFullyReviewed(sequence, [self.current_segment_index])) {
           CATMAID.msg('Done', 'Segment fully reviewed: ' +
               self.current_segment['nr_nodes'] + ' nodes');
-          if (self.noRefreshBetwenSegments) {
-            end_puffer_count += 1;
-            // do not directly jump to the next segment to review
-            if( end_puffer_count < 3) {
-              return;
+
+          // If the last node of a segment is reached, move to next segment if
+          // not disabled.
+          if (isLastNode) {
+            if (self.noRefreshBetwenSegments) {
+              end_puffer_count += 1;
+              // do not directly jump to the next segment to review
+              if( end_puffer_count < 3) {
+                return;
+              }
+              // Segment fully reviewed, go to next without refreshing table
+              // much faster for smaller fragments
+              self.selectNextSegment();
+            } else {
+              self.startSkeletonToReview(skeletonID, subarborNodeId);
             }
-            // Segment fully reviewed, go to next without refreshing table
-            // much faster for smaller fragments
-            self.selectNextSegment();
-          } else {
-            self.startSkeletonToReview(skeletonID, subarborNodeId);
+            noSegmentMove = true;
           }
-          noSegmentMove = true;
         }
 
         // If moving in downstream direction, it is possible to look beyond the

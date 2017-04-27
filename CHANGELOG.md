@@ -74,6 +74,10 @@ Miscellaneous:
 
 - Fix catmaid_insert_example_projects management command.
 
+- Review widget: it is possible again to use Q/W to move along already reviewed
+  segments (re-review of nodes).
+
+
 ## 2017.04.20
 
 Contributors: Albert Cardona, Tom Kazimiers

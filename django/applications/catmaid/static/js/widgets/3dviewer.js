@@ -21,12 +21,13 @@
   /* Only methods of the WebGLApplication object elicit a render. All other methods
    * do not, except for those that use continuations to load data (meshes) or to
    * compute with web workers (betweenness centrality shading). */
-  var WebGLApplication = function(unregistered) {
-    this.widgetID = this.registerInstance();
+  var WebGLApplication = function(options) {
+    options = options || {};
 
-    if (!unregistered) {
-      CATMAID.SkeletonSource.call(this, true);
-    }
+    this.widgetID = this.registerInstance();
+    var registerSource = CATMAID.tools.getDefined(options.registerSource, true);
+    CATMAID.SkeletonSource.call(this, registerSource);
+
     this.APPEND_WARNING_THRESHOLD = 1000;
     // Indicates whether init has been called
     this.initialized = false;

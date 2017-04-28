@@ -4,6 +4,7 @@ imagemagick
 gcc
 gfortran
 python2.7-dev
+python-h5py
 postgresql-common
 libpq-dev
 libgraphicsmagick++1-dev

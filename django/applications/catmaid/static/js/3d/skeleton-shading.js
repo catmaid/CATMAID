@@ -120,7 +120,7 @@
   };
 
   /**
-   * Return a promise that resolves once all sampler domains for sll input
+   * Return a promise that resolves once all sampler domains for all input
    * skeletons are loaded and stored in each skeleton's 'samplers' field.
    */
   var initSamplerDomains = function(skeletons) {

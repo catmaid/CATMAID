@@ -363,7 +363,7 @@
         },
         {
           data: "state",
-          title: " State",
+          title: "State",
           orderable: true,
           render: function(data, type, row, meta) {
             var state = self.possibleStates[row.state_id];
@@ -1031,7 +1031,7 @@
         },
         {
           data: "state_id",
-          title: " State",
+          title: "State",
           orderable: true,
           render: function(data, type, row, meta) {
             var state = self.possibleStates[row.state_id];

@@ -143,7 +143,7 @@
     /**
      * Export skeletons as SWC and ask browser to download it.
      *
-     * @param {number}   projectId   Project sapce to work in
+     * @param {number}   projectId   Project space to work in
      * @param {number[]} skeletonIds Skeletons to export as SWC
      * @param {boolean}  linearizeIds Whether node IDs should be mapped to
      *                                incremental numbers starting with 1.

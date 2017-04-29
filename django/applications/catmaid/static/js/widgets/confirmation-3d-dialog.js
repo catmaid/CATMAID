@@ -76,16 +76,21 @@
     var left = document.createElement('div'),
         right = document.createElement('div');
 
-    target.style.display = 'grid';
-    target.style.gridGap = '1%';
-    left.style.gridColumn = '1';
-    right.style.gridColumn = '2';
+    target.style.display = 'flex';
+    target.style.flexDirection = 'row';
+
+    left.height = '100%';
+    right.height = '100%';
+
+    // Make the 3D viewer grow on resizes, control panel not
+    left.style.flexGrow = '0';
+    right.style.flexGrow = '1';
 
     // Position columns
     if (this.showControlPanel) {
-      target.style.gridTemplate = '100% / ' + this.controlPanelWidth + 'px 1fr';
+      left.style.width = this.controlPanelWidth + 'px';
+      left.style.marginRight = '1%';
     } else {
-      target.style.gridTemplate = '100% / 0 1fr';
       left.style.display = 'none';
     }
 

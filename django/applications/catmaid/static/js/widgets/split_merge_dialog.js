@@ -82,67 +82,78 @@
   SplitMergeDialog.prototype.populate = function() {
     CATMAID.Confirmation3dDialog.prototype.populate.call(this);
 
-    // Annotation list boxes
+    // Annotation list boxes using flex layout
     var titleBig = document.createElement('div'),
         titleSmall = document.createElement('div'),
         colorBig = document.createElement('div'),
         colorSmall = document.createElement('div'),
         big = document.createElement('div'),
-        small = document.createElement('div');
+        small = document.createElement('div'),
+        contentBig = document.createElement('div'),
+        contentSmall = document.createElement('div');
 
     big.setAttribute('id', 'split_merge_dialog_over_annotations');
     small.setAttribute('id', 'split_merge_dialog_under_annotations');
-
 
     // Style annotation list boxes
     big.setAttribute('multiple', 'multiple');
     small.setAttribute('multiple', 'multiple');
 
-    // Annotation lists
+    // Annotation lists, grow them on resize
     big.style.overflowY = 'scroll';
-    big.style.gridArea = '2 / 2';
+    big.style.flexGrow = '1';
 
     small.style.overflowY = 'scroll';
-    small.style.gridArea = '2 / 2';
+    small.style.flexGrow = '1';
 
     // Color boxes
-    colorBig.style.gridRow = '1 / 3';
-    colorBig.style.gridColumn = '1';
+    colorBig.style.width = '5%';
+    colorSmall.style.width = '5%';
+    colorBig.style.marginRight = '1%';
+    colorSmall.style.marginRight = '1%';
+    colorBig.style.flexGrow = '1';
+    colorSmall.style.flexGrow = '1';
 
-    colorSmall.style.gridRow = '1 / 3';
-    colorSmall.style.gridColumn = '1';
+    // Content boxes
+    contentBig.style.flexGrow = '1';
+    contentBig.style.display = 'flex';
+    contentBig.style.flexDirection = 'column';
+    contentBig.style.width = '94%';
+    contentSmall.style.display = 'flex';
+    contentSmall.style.flexGrow = '1';
+    contentSmall.style.flexDirection = 'column';
+    contentSmall.style.width = '94%';
 
-    // Ttitles
-    titleBig.style.gridRow = '1';
-    titleBig.style.gridColumn = '2';
+    // Titles, no need to grow them on resize
     titleBig.style.fontStyle = 'italic';
-    titleSmall.style.gridRow = '1';
-    titleSmall.style.gridColumn = '2';
     titleSmall.style.fontStyle = 'italic';
 
     // Layout left column
     var topContainer = document.createElement('div');
     var bottomContainer = document.createElement('div');
-    topContainer.appendChild(titleBig);
     topContainer.appendChild(colorBig);
-    topContainer.appendChild(big);
+    topContainer.appendChild(contentBig);
+    contentBig.appendChild(titleBig);
+    contentBig.appendChild(big);
     bottomContainer.appendChild(colorSmall);
-    bottomContainer.appendChild(small);
-    bottomContainer.appendChild(titleSmall);
+    bottomContainer.appendChild(contentSmall);
+    contentSmall.appendChild(titleSmall);
+    contentSmall.appendChild(small);
 
-    topContainer.style.gridTemplate = 'auto 1fr / 5% 1fr';
-    topContainer.style.display = 'grid';
-    topContainer.style.gridGap = '1%';
-    bottomContainer.style.gridTemplate = 'auto 1fr / 5% 1fr';
-    bottomContainer.style.display = 'grid';
-    bottomContainer.style.gridGap = '1%';
+    topContainer.style.display = 'flex';
+    topContainer.style.flexDirection = 'row';
+    topContainer.style.width = '100%';
+    bottomContainer.style.display = 'flex';
+    bottomContainer.style.flexDirection = 'row';
+    bottomContainer.style.width = '100%';
 
-    this.controlPanel.style.display = 'grid';
-    this.controlPanel.style.gridGap = '1%';
-    this.controlPanel.style.gridTemplate = '50% 50% / 100%';
-    topContainer.style.gridRow = '1';
-    bottomContainer.style.gridRow = '2';
+    // Let both containers grow equally, but keep a marin between them
+    topContainer.style.marginBottom = '1%';
+    topContainer.style.flexGrow = '1';
+    bottomContainer.style.flexGrow = '1';
 
+    this.controlPanel.style.display = 'flex';
+    this.controlPanel.style.flexDirection = 'column';
     this.controlPanel.appendChild(topContainer);
     this.controlPanel.appendChild(bottomContainer);
 

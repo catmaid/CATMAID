@@ -7,7 +7,7 @@ from catmaid.control.authentication import requires_user_role, user_can_edit
 from catmaid.control.common import get_request_list
 from catmaid.models import (Sampler, SamplerDomain, SamplerDomainType,
         SamplerDomainEnd, SamplerInterval, SamplerIntervalState, SamplerState,
-        UserRole)
+        SamplerConnectorState, UserRole)
 
 from rest_framework.decorators import api_view
 
@@ -213,6 +213,42 @@ def list_sampler_states(request, project_id):
         'name': s.name,
         'description': s.description
     } for s in sampler_states], safe=False)
+
+@api_view(['GET'])
+@requires_user_role([UserRole.Browse])
+def list_connector_states(request, project_id):
+    """Get a list of all available connectors states and their IDs.
+    ---
+    models:
+      connector_state_entity:
+        id: connector_state_entity
+        description: A sampler connector state.
+        properties:
+          id:
+            type: integer
+            description: Id of sampler connector state
+          name:
+            type: string
+            description: The name of this sampler connector state.
+            required: true
+          description:
+            type: string
+            description: Description of sampler connector state.
+            required: true
+    type:
+      connector_states:
+        type: array
+        items:
+          $ref: connector_state_entity
+        description: Available connector states
+        required: true
+    """
+    connector_states = SamplerConnectorState.objects.all()
+    return JsonResponse([{
+        'id': s.id,
+        'name': s.name,
+        'description': s.description
+    } for s in connector_states], safe=False)
 
 @api_view(['GET'])
 @requires_user_role([UserRole.Browse])

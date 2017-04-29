@@ -2740,7 +2740,7 @@
       for (var i=0; i<this.zplaneLayerMeshes.length; ++i) {
         this.zplaneLayerMeshes[i].geometry.dispose();
         // Dispose individual zplane tiles in texture mode.
-        this.zplaneLayerMeshes[i].material.materials.forEach(disposeMaterial);
+        this.zplaneLayerMeshes[i].material.forEach(disposeMaterial);
       }
 
       if (this.zplaneScene) {
@@ -2836,10 +2836,10 @@
       new THREE.Vector3(p.max.x, p.min.y, p.max.z)
     );
 
-    geometry.computeLineDistances();
-
     var material = new THREE.LineBasicMaterial( { color: 0xff0000 } );
     var mesh = new THREE.LineSegments( geometry, material );
+
+    mesh.computeLineDistances();
 
     mesh.position.set(0, 0, 0);
 
@@ -3211,7 +3211,7 @@
           });
         }
 
-        var mesh = new THREE.Mesh(geometry, new THREE.MultiMaterial(zplaneMaterials));
+        var mesh = new THREE.Mesh(geometry, zplaneMaterials);
         this.zplaneLayerMeshes.push(mesh);
         this.zplaneLayers.push({
           hasImages: true,
@@ -3767,7 +3767,6 @@
       var geometry = new THREE.Geometry();
       geometry.vertices.push(new THREE.Vector3(0, 0, 0));
       geometry.vertices.push(new THREE.Vector3(0, 0, 1));
-      geometry.computeLineDistances();
 
       var addedData = {
         m: {},
@@ -3814,6 +3813,7 @@
             this.m[key] = material;
           }
           var newMesh = new THREE.LineSegments( this.g, material );
+          newMesh.computeLineDistances();
           // Move new mesh to position of replaced mesh and adapt size
           newMesh.position.copy(mesh.position);
           scene.add(newMesh);
@@ -3853,6 +3853,7 @@
             this.m[key] = material;
           }
           var newMesh = new THREE.LineSegments( this.g, material );
+          newMesh.computeLineDistances();
           // Move new mesh to position of replaced mesh and adapt size
           newMesh.position.copy(buffer.position);
           scene.add(newMesh);

@@ -775,6 +775,7 @@
 
       // Looked up to prevent frequent namespace lookups.
       let intersectLineWithPlane = CATMAID.tools.intersectLineWithPlane;
+      let intersectionTarget = new THREE.Vector3();
 
       /**
        * Get the intersection X and Y coordinate between node and and two with the
@@ -793,7 +794,7 @@
           let intersection = intersectLineWithPlane(
               node1.x, node1.y, node1.z,
               node2.x, node2.y, node2.z,
-              plane);
+              plane, intersectionTarget);
           if (!intersection) {
             return null;
           } else {

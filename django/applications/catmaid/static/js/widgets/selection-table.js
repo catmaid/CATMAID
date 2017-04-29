@@ -1294,7 +1294,7 @@
           "className": "dt-center cm-center",
           "render": {
             "_": function(data, type, row, meta) {
-              return row.skeleton.color.getHSL();
+              return row.skeleton.color.getHSL({});
             },
             "display": function(data, type, row, meta) {
               var color = row.skeleton.color.getHexString();
@@ -1556,8 +1556,8 @@
   SelectionTable.prototype.sortByColor = function(desc) {
     var factor = desc ? -1 : 1;
     this.sort(function(sk1, sk2) {
-      var hsl1 = sk1.color.getHSL(),
-          hsl2 = sk2.color.getHSL();
+      var hsl1 = sk1.color.getHSL({}),
+          hsl2 = sk2.color.getHSL({});
       return factor * CATMAID.tools.compareHSLColors(hsl1, hsl2);
     });
   };

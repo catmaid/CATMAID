@@ -2352,7 +2352,7 @@ function createVirtualNode(graphics, child, parent, stackViewer)
   var pos = CATMAID.tools.intersectLineWithPlane(
       child.x, child.y, child.z,
       parent.x, parent.y, parent.z,
-      stackViewer.plane);
+      stackViewer.plane, new THREE.Vector3());
 
   // The ID should be different for the the same child and parent in different
   // Z sections to distinguish virtual nodes on different sections. Therefore,
@@ -4110,7 +4110,8 @@ SkeletonAnnotations.TracingOverlay.prototype.getNodeOnSectionAndEdge = function 
           var pos = CATMAID.tools.intersectLineWithPlane(
               realFrom.x, realFrom.y, realFrom.z,
               realTo.x, realTo.y, realTo.z,
-              new THREE.Plane(self.stackViewer.normal(), planeOffset));
+              new THREE.Plane(self.stackViewer.normal(), planeOffset),
+              new THREE.Vector3());
 
           var vnID = SkeletonAnnotations.getVirtualNodeID(childID, parentID, pos.x, pos.y, pos.z);
           return {

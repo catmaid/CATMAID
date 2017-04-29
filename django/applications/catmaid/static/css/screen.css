@@ -481,7 +481,7 @@ div.clustering-content .content {
   padding: .2em 1em;
 }
 
-.catmaid ui-tabs {
+.catmaid .ui-widget {
   font-size: 11px;
   font-family: sans-serif;
 }

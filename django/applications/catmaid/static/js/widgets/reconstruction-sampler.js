@@ -751,6 +751,8 @@
       domainEndNodeType: domainEndNodeType,
     };
 
+    var getRootNode = CATMAID.Skeletons.getRootNode(project.id, skeletonId);
+
     var self = this;
     this.ensureMetadata()
       .then(function() {
@@ -758,12 +760,13 @@
         if (!domainTypeId) {
           throw new CATMAID.ValueError("Can't find domain type ID for name: " + domainType);
         }
-        return Promise.all([domainTypeId, domainFactory.makeDomains(skeletonId, options)]);
+        return Promise.all([domainTypeId, domainFactory.makeDomains(skeletonId, options), getRootNode]);
       })
       .then(function(results) {
         var domainTypeId = results[0];
         var domains = results[1].domains;
         var cache = results[1].cache;
+        var rootNode = results[2];
 
         if (cache) {
           // This allows to cache e.g. Arbor instances and other potentially
@@ -777,7 +780,8 @@
           // Show 3D viewer confirmation dialog
           var dialog = new CATMAID.Confirmation3dDialog({
             title: "Please confirm " + domains.length + " sampler domain(s)",
-            showControlPanel: false
+            showControlPanel: false,
+            lookAt: [rootNode.x, rootNode.y, rootNode.z]
           });
 
           // Create domains if OK is pressed

@@ -321,6 +321,18 @@
           }
           return result;
         });
+    },
+
+    /**
+     * Get location of a node.
+     *
+     * @param {number} nodeId The node for which the location is retrieved.
+     *
+     * @return {Promise} A promise that resolves in the location of the node.
+     */
+    getLocation: function(nodeId) {
+      return CATMAID.fetch(project.id + "/node/get_location",
+          'POST', {tnid: nodeId});
     }
 
   };

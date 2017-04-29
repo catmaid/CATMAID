@@ -171,6 +171,19 @@
             });
           }
         });
+    },
+
+    /**
+     * Get the root node ID and location of a particular skeleton.
+     *
+     * @param {number} projectId  Project space to work in.
+     * @param {number} skeletonId Skeleton to get root nodeof.
+     *
+     * @return {Promise} A promise that resolves in the root node ID of the
+     *                   skeleton as well as its location.
+     */
+    getRootNode: function(projectId, skeletonId) {
+      return CATMAID.fetch(project.id + '/skeletons/' + skeletonId + '/root');
     }
   };
 

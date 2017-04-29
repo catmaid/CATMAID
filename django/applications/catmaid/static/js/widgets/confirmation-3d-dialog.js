@@ -7,7 +7,11 @@
 
   /**
    * Show a dialog window that includes a pre-configured 3D viewer next to an
-   * optional control pane.
+   * optional control pane. Possible option fields:
+   *
+   * lookAt: ['active'|<Number>|<Array>] With <Number> a node ID is expected,
+   *         for which a location will be requested. With <Array> an explicit
+   *         [X, Y, Z] location be specified.
    */
   var Confirmation3dDialog = function(options) {
     options = options || {};
@@ -41,7 +45,7 @@
     // 3D viewer options
     this.shadingMethod = options.shadingMethod;
     this.colorMethod = options.colorMethod;
-    this.lookAtActive = !!CATMAID.tools.getDefined(options.lookAtActive, true);
+    this.lookAt = CATMAID.tools.getDefined(options.lookAt, 'active');
 
     // Confirmation options
     if (CATMAID.tools.isFn(options.confirm)) {
@@ -121,8 +125,17 @@
       this.webglapp.options.color_method = this.colorMethod;
     }
 
-    if (this.lookAtActive) {
+    if (this.lookAt === 'active') {
       this.webglapp.look_at_active_node();
+    } else if (typeof(this.lookAt) === 'number') {
+      var self = this;
+      CATMAID.Nodes.getLocation(this.lookAt)
+        .then(function(position) {
+          self.webglapp.lookAt(position);
+        })
+        .catch(CATMAID.handleError);
+    } else if (this.lookAt instanceof Array) {
+        this.webglapp.lookAt(this.lookAt);
     }
 
     // Create controls and handlers for 3d viewer settings

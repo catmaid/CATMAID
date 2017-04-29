@@ -1366,7 +1366,18 @@
 
   WebGLApplication.prototype.look_at_active_node = function() {
     this.space.content.active_node.updatePosition(this.space, this.options);
-    this.space.view.controls.target.copy(this.space.content.active_node.mesh.position);
+    this.lookAt(this.space.content.active_node.mesh.position);
+  };
+
+  /**
+   * Look at a particular location.
+   */
+  WebGLApplication.prototype.lookAt = function(position) {
+    if (position instanceof Array) {
+      this.space.view.controls.target.set(position[0], position[1], position[2]);
+    } else {
+      this.space.view.controls.target.copy(position);
+    }
     this.space.render();
   };
 

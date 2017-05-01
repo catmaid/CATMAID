@@ -25,6 +25,38 @@
     return "Venn Diagram " + this.widgetID;
   };
 
+  VennDiagram.prototype.getWidgetConfiguration = function() {
+    return {
+      createControls: function(buttons) {
+        buttons.appendChild(document.createTextNode('From'));
+        buttons.appendChild(CATMAID.skeletonListSources.createSelect(this));
+
+        var add = document.createElement('input');
+        add.setAttribute("type", "button");
+        add.setAttribute("value", "Append as group");
+        add.onclick = this.loadSource.bind(this);
+        buttons.appendChild(add);
+
+        var clear = document.createElement('input');
+        clear.setAttribute("type", "button");
+        clear.setAttribute("value", "Clear");
+        clear.onclick = this.clear.bind(this);
+        buttons.appendChild(clear);
+
+        var svg = document.createElement('input');
+        svg.setAttribute("type", "button");
+        svg.setAttribute("value", "Export SVG");
+        svg.onclick = this.exportSVG.bind(this);
+        buttons.appendChild(svg);
+
+        var sel = document.createElement('span');
+        sel.innerHTML = ' Selected: <span id="venn_diagram_sel' + this.widgetID + '">none</span>';
+        buttons.appendChild(sel);
+      },
+      contentID: 'venn_diagram_div' + this.widgetID
+    };
+  };
+
   VennDiagram.prototype.destroy = function() {
     this.unregisterInstance();
     this.unregisterSource();
@@ -291,5 +323,11 @@
 
   // Export widget into CATMAID namespace
   CATMAID.VennDiagram = VennDiagram;
+
+  // Register widget with CATMAID
+  CATMAID.registerWidget({
+    key: 'venn-diagram',
+    creator: VennDiagram
+  });
 
 })(CATMAID);

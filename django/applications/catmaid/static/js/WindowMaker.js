@@ -1721,60 +1721,6 @@ var WindowMaker = new function()
     return {window: win, widget: GP};
   };
 
-  var createVennDiagramWindow = function() {
-
-    var VD = new CATMAID.VennDiagram();
-
-    var win = new CMWWindow(VD.getName());
-    var content = win.getFrame();
-    content.style.backgroundColor = "#ffffff";
-
-    var buttons = document.createElement('div');
-    buttons.setAttribute('id', 'venn_diagram_buttons' + VD.widgetID);
-    buttons.setAttribute('class', 'buttonpanel');
-    DOM.addButtonDisplayToggle(win);
-    addWindowConfigButton(win, VD);
-
-    buttons.appendChild(document.createTextNode('From'));
-    buttons.appendChild(CATMAID.skeletonListSources.createSelect(VD));
-
-    var add = document.createElement('input');
-    add.setAttribute("type", "button");
-    add.setAttribute("value", "Append as group");
-    add.onclick = VD.loadSource.bind(VD);
-    buttons.appendChild(add);
-
-    var clear = document.createElement('input');
-    clear.setAttribute("type", "button");
-    clear.setAttribute("value", "Clear");
-    clear.onclick = VD.clear.bind(VD);
-    buttons.appendChild(clear);
-
-    var svg = document.createElement('input');
-    svg.setAttribute("type", "button");
-    svg.setAttribute("value", "Export SVG");
-    svg.onclick = VD.exportSVG.bind(VD);
-    buttons.appendChild(svg);
-
-    var sel = document.createElement('span');
-    sel.innerHTML = ' Selected: <span id="venn_diagram_sel' + VD.widgetID + '">none</span>';
-    buttons.appendChild(sel);
-
-    content.appendChild(buttons);
-
-    var container = createContainer('venn_diagram_div' + VD.widgetID);
-    content.appendChild(container);
-
-    addListener(win, container, 'venn_diagram_buttons' + VD.widgetID, VD.destroy.bind(VD), VD.resize.bind(VD));
-
-    addLogic(win);
-
-    CATMAID.skeletonListSources.updateGUI();
-
-    return {window: win, widget: VD};
-  };
-
-
   var createAssemblyGraphWindow = function()
   {
 
@@ -2124,7 +2070,6 @@ var WindowMaker = new function()
     "sliceinfo-widget": createSliceInfoWindow,
     "ontology-search": createOntologySearchWidget,
     "circuit-graph-plot": createCircuitGraphPlot,
-    "venn-diagram": createVennDiagramWindow,
     "neuron-navigator": createNeuronNavigatorWindow,
     "connectivity-matrix": createConnectivityMatrixWindow,
     "synapse-plot": createSynapsePlotWindow,

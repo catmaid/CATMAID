@@ -1721,7 +1721,7 @@ var WindowMaker = new function()
 
   var createVennDiagramWindow = function() {
 
-    var VD = new VennDiagram();
+    var VD = new CATMAID.VennDiagram();
 
     var win = new CMWWindow(VD.getName());
     var content = win.getFrame();

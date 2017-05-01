@@ -274,12 +274,14 @@ var WindowMaker = new function()
       DOM.addButtonDisplayToggle(win);
     }
 
-    // Create content, the ID is optional
+    // Create content, ID and createContent() are optional
     var content = createContainer(config.contentID);
     if (config.class) {
       $(content).addClass(config.class);
     }
-    config.createContent.call(instance, content);
+    if (CATMAID.tools.isFn(config.createContent)) {
+      config.createContent.call(instance, content);
+    }
     container.appendChild(content);
 
     // Add access to window settings

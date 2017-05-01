@@ -34,8 +34,9 @@ Generic node filtering:
 
 - Different filter types are available at the moment: Only end nodes, only
   tagged nodes, only nuclei, only a sub-arbor starting from a tag, tag defined
-  region, binary split and synaptic connectivity. Some come with own user input
-  elements, but all can optionally be applied to only a subset of skeletons.
+  region, binary split, axon, dendrite  and synaptic connectivity. Some come
+  with own user input elements, but all can optionally be applied to only a
+  subset of skeletons.
 
 - Multiple filters can be combined, e.g. all branch nodes with a particular tag
   and end nodes. All filter rules are combined in a left-associative fashion and

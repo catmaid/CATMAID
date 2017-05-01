@@ -55,6 +55,7 @@
         var ap = new CATMAID.ArborParser();
         ap.tree(json[0]);
         arbors[skid] = {
+          arborParser: ap,
           arbor: ap.arbor,
           positions: ap.positions,
           radii: json[0].reduce(function(o, row) {
@@ -62,6 +63,7 @@
             return o;
           }, {}),
           tags: json[2],
+          partnersRaw: json[1],
           partners: json[1].reduce(function(o, row) {
             // 1: treenode
             // 5: other skeleton ID
@@ -89,6 +91,24 @@
         resolve(arbors);
       });
     });
+  };
+
+  var computeAxonArbor = function(arbor, positions, tags, partners) {
+    // If there is a soma tag on a node, reroot arbor wrt. it
+    if (tags && tags['soma'] && 1 === tags['soma'].length) {
+      var soma = tags['soma'][0];
+      if (arbor.root != soma) {
+        // Rerooting modifies the arbor, use a copy for that
+        arbor = arbor.clone();
+        arbor.reroot(soma);
+      }
+    }
+
+    var ap = new CATMAID.ArborParser();
+    ap.arbor = arbor;
+    ap.synapses(partners);
+
+    return SynapseClustering.prototype.findAxon(ap, 0.9, positions);
   };
 
   /**
@@ -157,7 +177,7 @@
         var morphology = skeletonArbors[skid];
         var nodeCollection = rule.strategy.filter(skid, neuron,
             morphology.arbor, morphology.tags, morphology.partners,
-            rule.options);
+            rule.options, morphology);
         // Merge all point sets for this rule. How this is done exactly (i.e.
         // OR or AND) is configured separately.
         if (nodeCollection) {
@@ -432,6 +452,30 @@
 
         return synapticNodes;
       }
+    },
+    "axon": {
+      name: "Axon",
+      filter: function(skeletonId, neuron, arbor, tags, partners, options, arborInfo) {
+        var axon = computeAxonArbor(arbor, arborInfo.positions, tags, arborInfo.partnersRaw);
+        return axon ? axon.nodes() : {};
+      }
+    },
+    "dendrites": {
+      name: "Dendrites",
+      filter: function(skeletonId, neuron, arbor, tags, partners, options, arborInfo) {
+        var axon = computeAxonArbor(arbor, arborInfo.positions, tags, arborInfo.partnersRaw);
+        if (axon) {
+          // Find all nodes not in axon
+          var dendriteNodes = arbor.nodes();
+          var axonNodeIds = axon.nodesArray();
+          for (var i=0, max=axonNodeIds.length; i<max; ++i) {
+            delete dendriteNodes[axonNodeIds[i]];
+          }
+          return dendriteNodes;
+        } else {
+          return {};
+        }
+      }
     }
   };
 
@@ -542,6 +586,12 @@
           }, options.relation);
 
       $(container).append($otherNeurons, $relation);
+    },
+    'axon': function(container, options) {
+      // No additional options for axon filter
+    },
+    'dendrites': function(container, options) {
+      // No additional options for dendrite filter
     }
   };
 

@@ -24,8 +24,9 @@ try:
     import h5py
 except ImportError:
     tile_loading_enabled = False
-    logger.warning("CATMAID was unable to load the h5py library. "
-          "HDF5 tiles are therefore disabled.")
+    logger.info("CATMAID was unable to load the h5py library, which is an "
+          "optional dependency. HDF5 tiles are therefore disabled. To enable, "
+          "install h5py.")
 try:
     from PIL import Image
 except ImportError:

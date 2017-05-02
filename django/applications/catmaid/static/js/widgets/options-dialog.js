@@ -108,7 +108,7 @@
     // Make this field press okay on Enter, if wanted
     if (submitOnEnter) {
       $(input).keypress((function(e) {
-        if (e.keyCode == $.ui.keyCode.ENTER) {
+        if (e.key == 'Enter') {
           $(this.dialog).parent().find(
               '.ui-dialog-buttonpane button:last').click();
           return false;

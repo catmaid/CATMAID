@@ -325,19 +325,12 @@
       return actions;
     };
 
-    var arrowKeyCodes = {
-      left: 37,
-      up: 38,
-      right: 39,
-      down: 40
-    };
-
     var actions = [
 
       new CATMAID.Action({
         helpText: "Zoom in (smaller increments with <kbd>Shift</kbd> held)",
         keyShortcuts: {
-          '+': [ 43, 107, 61, 187 ]
+          '+': [ '+', 'Shift + +' ]
         },
         run: function (e) {
           self.slider_s.move(1, !e.shiftKey);
@@ -348,7 +341,7 @@
       new CATMAID.Action({
         helpText: "Zoom out (smaller increments with <kbd>Shift</kbd> held)",
         keyShortcuts: {
-          '-': [ 45, 109, 173, 189 ]
+          '-': [ '-', 'Shift + -' ]
         },
         run: function (e) {
           self.slider_s.move(-1, !e.shiftKey);
@@ -359,7 +352,7 @@
       new CATMAID.Action({
         helpText: "Move up 1 slice in z (or 10 with <kbd>Shift</kbd> held; hold with <kbd>Ctrl</kbd> to animate)",
         keyShortcuts: {
-          ',': [ 44, 188 ]
+          ',': [ ',', 'Ctrl + ,', 'Ctrl + Shift + ,', 'Shift + ,' ]
         },
         run: function (e) {
           var step = e.shiftKey ? (-1 * Navigator.Settings.session.major_section_step) : -1;
@@ -375,7 +368,7 @@
       new CATMAID.Action({
         helpText: "Move down 1 slice in z (or 10 with <kbd>Shift</kbd> held; hold with <kbd>Ctrl</kbd> to animate)",
         keyShortcuts: {
-          '.': [ 190 ]
+          '.': [ '.', 'Ctrl + .', 'Ctrl + Shift + .', 'Shift + .' ]
         },
         run: function (e) {
           var step = e.shiftKey ? Navigator.Settings.session.major_section_step : 1;
@@ -391,7 +384,7 @@
       new CATMAID.Action({
         helpText: "Move left (towards negative x, faster with <kbd>Shift</kbd> held)",
         keyShortcuts: {
-          "\u2190": [ arrowKeyCodes.left ]
+          "\u2190": [ 'ArrowLeft', 'Alt + ArrowLeft', 'Alt + Shift + ArrowLeft', 'Shift + ArrowLeft' ]
         },
         run: function (e) {
           self.input_x.value = parseInt(self.input_x.value, 10) - (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
@@ -403,7 +396,7 @@
       new CATMAID.Action({
         helpText: "Move right (towards positive x, faster with <kbd>Shift</kbd> held)",
         keyShortcuts: {
-          "\u2192": [ arrowKeyCodes.right ]
+          "\u2192": [ 'ArrowRight', 'Alt + ArrowRight', 'Alt + Shift + ArrowRight', 'Shift + ArrowRight' ]
         },
         run: function (e) {
           self.input_x.value = parseInt(self.input_x.value, 10) + (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
@@ -415,7 +408,7 @@
       new CATMAID.Action({
         helpText: "Move up (towards negative y, faster with <kbd>Shift</kbd> held)",
         keyShortcuts: {
-          "\u2191": [ arrowKeyCodes.up ]
+          "\u2191": [ 'ArrowUp', 'Alt + ArrowUp', 'Alt + Shift + ArrowUp', 'Shift + ArrowUp' ]
         },
         run: function (e) {
           self.input_y.value = parseInt(self.input_y.value, 10) - (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
@@ -427,7 +420,7 @@
       new CATMAID.Action({
         helpText: "Move down (towards positive y, faster with <kbd>Shift</kbd> held)",
         keyShortcuts: {
-          "\u2193": [ arrowKeyCodes.down ]
+          "\u2193": [ 'ArrowDown', 'Alt + ArrowDown', 'Alt + Shift + ArrowDown', 'Shift + ArrowDown' ]
         },
         run: function (e) {
           self.input_y.value = parseInt(self.input_y.value, 10) + (e.shiftKey ? 100 : (e.altKey ? 1 : 10));
@@ -439,7 +432,7 @@
       new CATMAID.Action({
         helpText: "Hide all layers except image tile layers (while held)",
         keyShortcuts: {
-          "SPACE": [ 32 ]
+          "SPACE": [ ' ' ]
         },
         run: function (e) {
           // Avoid repeated onkeydown events in some browsers, but still
@@ -468,7 +461,7 @@
           var target = e.target;
           var oldListener = target.onkeyup;
           target.onkeyup = function (e) {
-            if (e.keyCode == 32) {
+            if (e.key === ' ') {
               stackLayers.forEach(function (layers, ind) {
                 Object.keys(layerOpacities[ind]).forEach(function (k) {
                   layers.get(k).setOpacity(layerOpacities[ind][k]);
@@ -487,13 +480,9 @@
       new CATMAID.Action({
         helpText: "Change major section step size",
         keyShortcuts: {
-          '#': [ 51 ]
+          '#': [ 'Shift + #' ]
         },
         run: function (e) {
-          // Don't handle "3" key presses without shift
-          if (!e.shiftKey) {
-            return false;
-          }
           // Show dialog to update major section step size
           var dialog = new CATMAID.OptionsDialog("Update major section step");
           dialog.appendMessage("Please provide a new majtor section step size.");
@@ -513,7 +502,7 @@
       }),
     ];
 
-    var keyCodeToAction = CATMAID.getKeyCodeToActionMap(actions);
+    var keyToAction = CATMAID.getKeyToActionMap(actions);
 
     /**
      * install this tool in a stackViewer.
@@ -621,7 +610,7 @@
       linked to the key code, or false otherwise. */
 
     this.handleKeyPress = function( e ) {
-      var keyAction = keyCodeToAction[e.keyCode];
+      var keyAction = CATMAID.UI.getMappedKeyAction(keyToAction, e);
       if (keyAction) {
         keyAction.run(e);
         return true;

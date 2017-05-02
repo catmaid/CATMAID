@@ -534,31 +534,31 @@
 
     this.addAction(new CATMAID.Action({
       helpText: "Add 'ends' tag (<kbd>Shift</kbd>: Remove) for the active node",
-      keyShortcuts: { "K": [ 75 ] },
+      keyShortcuts: { "K": [ "k", "Shift + k" ] },
       run: tagFn('ends')
     }));
 
     this.addAction(new CATMAID.Action({
       helpText: "Add 'uncertain end' tag (<kbd>Shift</kbd>: Remove) for the active node",
-      keyShortcuts: { "U": [ 85 ] },
+      keyShortcuts: { "U": [ "u", "Shift + u" ] },
       run: tagFn('uncertain end')
     }));
 
     this.addAction(new CATMAID.Action({
       helpText: "Add 'uncertain continuation' tag (<kbd>Shift</kbd>: Remove) for the active node",
-      keyShortcuts: { "C": [ 67 ] },
+      keyShortcuts: { "C": [ "c", "Shift + c" ] },
       run: tagFn('uncertain continuation')
     }));
 
     this.addAction(new CATMAID.Action({
       helpText: "Add 'not a branch' tag (<kbd>Shift</kbd>: Remove) for the active node",
-      keyShortcuts: { "N": [ 78 ] },
+      keyShortcuts: { "N": [ "n", "Shift + n" ] },
       run: tagFn('not a branch')
     }));
 
     this.addAction(new CATMAID.Action({
       helpText: "Add 'soma' tag (<kbd>Shift</kbd>: Remove) for the active node",
-      keyShortcuts: { "M": [ 77 ] },
+      keyShortcuts: { "M": [ "m", "Shift + m" ] },
       run: tagFn('soma')
     }));
 
@@ -566,7 +566,7 @@
       helpText: "Go to active node (<kbd>Shift</kbd>: refresh active skeleton in 3D viewer)",
       buttonName: "goactive",
       buttonID: 'trace_button_goactive',
-      keyShortcuts: { "A": [ 65 ] },
+      keyShortcuts: { "A": [ "a", "Shift + a" ] },
       run: function (e) {
         if (!CATMAID.mayView())
           return false;
@@ -582,7 +582,7 @@
 
     this.addAction(new CATMAID.Action({
       helpText: "Go to nearest open leaf node (subsequent <kbd>Shift</kbd>+<kbd>R</kbd>: cycle through other open leaves; with <kbd>Alt</kbd>: most recent rather than nearest)",
-      keyShortcuts: { "R": [ 82 ] },
+      keyShortcuts: { "R": [ "r", "Alt + r", "Alt + Shift + r", "Shift + r" ] },
       run: function (e) {
         if (!CATMAID.mayView())
           return false;
@@ -593,7 +593,7 @@
 
     this.addAction(new CATMAID.Action({
       helpText: "Go to next branch or end point (with <kbd>Alt</kbd>: stop earlier at node with tag, synapse or low confidence; subsequent <kbd>Shift</kbd>+<kbd>V</kbd>: cycle through other branches)",
-      keyShortcuts: { "V": [ 86 ] },
+      keyShortcuts: { "V": [ "v", "Alt + v", "Alt + Shift + v", "Shift + v" ] },
       run: function (e) {
         if (!CATMAID.mayView())
           return false;
@@ -604,7 +604,7 @@
 
     this.addAction(new CATMAID.Action({
       helpText: "Go to previous branch or end node (with <kbd>Alt</kbd>: stop earlier at node with tag, synapse or low confidence)",
-      keyShortcuts: { "B": [ 66 ] },
+      keyShortcuts: { "B": [ "b", "Alt + b" ] },
       run: function (e) {
         if (!CATMAID.mayView())
           return false;
@@ -616,7 +616,7 @@
 
     this.addAction(new CATMAID.Action({
       helpText: "Deselect the active node",
-      keyShortcuts: { "D": [ 68 ] },
+      keyShortcuts: { "D": [ "d" ] },
       run: function (e) {
         if (!CATMAID.mayView())
           return false;
@@ -627,7 +627,7 @@
 
     this.addAction(new CATMAID.Action({
       helpText: "Go to the parent of the active node (<kbd>Ctrl</kbd>: ignore virtual nodes)",
-      keyShortcuts: { "[": [ 219, 56 ] },
+      keyShortcuts: { "[": [ "[", "Ctrl + [", "Meta + [" ] },
       run: (function() {
         var updateInProgress = false;
         return function (e) {
@@ -660,7 +660,7 @@
 
     this.addAction(new CATMAID.Action({
       helpText: "Go to the child of the active node (<kbd>Ctrl</kbd>: ignore virtual nodes; Subsequent <kbd>Shift</kbd>+<kbd>]</kbd>: cycle through children)",
-      keyShortcuts: { "]": [ 221, 57 ] },
+      keyShortcuts: { "]": [ "]", "Ctrl + ]" , "Meta + ]", "Shift + ]", "Ctrl + Shift + ]", "Meta + Shift + ]" ] },
       run: (function() {
         var updateInProgress = false;
         return function (e) {
@@ -693,7 +693,7 @@
 
     this.addAction(new CATMAID.Action({
       helpText: "Edit the radius of the active node (<kbd>Shift</kbd>: without measurment tool; <kbd>Ctrl</kbd>: without confirmation dialog)",
-      keyShortcuts: { "O": [ 79 ] },
+      keyShortcuts: { "O": [ "o", "Ctrl + o", "Ctrl + Shift + o", "Shift + o" ] },
       run: function (e) {
         if (!CATMAID.mayView())
           return false;
@@ -705,7 +705,7 @@
 
     this.addAction(new CATMAID.Action({
       helpText: "Measure the distance between the cursor and a clicked point",
-      keyShortcuts: { "X": [ 88 ] },
+      keyShortcuts: { "X": [ "x" ] },
       run: function (e) {
         if (!CATMAID.mayView())
           return false;
@@ -716,7 +716,7 @@
 
     this.addAction(new CATMAID.Action({
       helpText: "Go to last node edited by you in this skeleton (<kbd>Shift</kbd>: in any skeleton)",
-      keyShortcuts: { "H": [ 72 ] },
+      keyShortcuts: { "H": [ "h", "Shift + h" ] },
       run: function (e) {
         if (!CATMAID.mayView())
           return false;
@@ -732,7 +732,7 @@
           "<kbd>Shift</kbd>: select by radius; " +
           "<kbd>Alt</kbd>: create a new selection widget)",
       keyShortcuts: {
-        "Y": [ 89 ]
+        "Y": [ "y", "Ctrl + y", "Meta + y", "Shift + y", "Ctrl + Shift + y", "Meta + Shift + y" ]
       },
       run: function (e) {
         if (e.shiftKey) { // Select skeletons by radius.
@@ -792,7 +792,7 @@
       helpText: "Re-root this skeleton at the active node",
       buttonName: "skelrerooting",
       buttonID: 'trace_button_skelrerooting',
-      keyShortcuts: { "6": [ 54 ] },
+      keyShortcuts: { "6": [ "6" ] },
       run: function (e) {
         if (!CATMAID.mayEdit())
           return false;
@@ -805,7 +805,7 @@
       helpText: "Toggle the display of labels",
       buttonName: "togglelabels",
       buttonID: 'trace_button_togglelabels',
-      keyShortcuts: { "7": [ 55 ] },
+      keyShortcuts: { "7": [ "7" ] },
       run: function (e) {
         if (!CATMAID.mayView())
           return false;
@@ -827,7 +827,7 @@
 
     this.addAction(new CATMAID.Action({
       helpText: "Switch between a terminal and its connector",
-      keyShortcuts: { "S": [ 83 ] },
+      keyShortcuts: { "S": [ "s" ] },
       run: function (e) {
         if (!CATMAID.mayView())
           return false;
@@ -838,7 +838,7 @@
 
     this.addAction(new CATMAID.Action({
       helpText: "Tag the active node (<kbd>Shift</kbd>: Remove all tags; <kbd>Alt</kbd>: Tag with personal tag set)",
-      keyShortcuts: { "T": [ 84 ] },
+      keyShortcuts: { "T": [ "t", "Alt + t", "Shift + t", "Alt + Shift + t" ] },
       run: function (e) {
         if (!CATMAID.mayEdit())
           return false;
@@ -881,21 +881,21 @@
 
     this.addAction(new CATMAID.Action({
       helpText: "Add TODO Tag (<kbd>Shift</kbd>: Remove) to the active node",
-      keyShortcuts: { "L": [ 76 ] },
+      keyShortcuts: { "L": [ "l", "Shift + l" ] },
       run: tagFn('TODO')
     }));
 
     this.addAction(new CATMAID.Action({
       helpText: "Add 'microtubules end' tag (<kbd>Shift</kbd>: Remove) to the active node",
       keyShortcuts: {
-        "F": [ 70 ]
+        "F": [ "f", "Shift + f" ]
       },
       run: tagFn('microtubules end')
     }));
 
     this.addAction(new CATMAID.Action({
       helpText: "Select the nearest node to the mouse cursor",
-      keyShortcuts: { "G": [ 71 ] },
+      keyShortcuts: { "G": [ "g" ] },
       run: function (e) {
         if (!CATMAID.mayView())
           return false;
@@ -937,7 +937,7 @@
 
     this.addAction(new CATMAID.Action({
       helpText: "Create treenode (<kbd>Shift</kbd> on another node: join), behavior like mouse click",
-      keyShortcuts: { 'Z': [ 90 ] },
+      keyShortcuts: { 'Z': [ "z", "Alt + z", "Shift + z", "Alt + Shift + z" ] },
       run: function (e) {
         if (!CATMAID.mayEdit())
           return false;
@@ -951,7 +951,7 @@
 
     this.addAction(new CATMAID.Action({
       helpText: "Delete the active node (or suppress it if it is virtual)",
-      keyShortcuts: { 'DEL': [ 46 ] },
+      keyShortcuts: { 'DEL': [ "Delete" ] },
       run: function (e) {
         if (!CATMAID.mayEdit())
           return false;
@@ -962,7 +962,7 @@
 
     this.addAction(new CATMAID.Action({
       helpText: "Retrieve information about the active node.",
-      keyShortcuts: { 'I': [ 73 ] },
+      keyShortcuts: { 'I': [ 'i' ] },
       run: function (e) {
         if (!CATMAID.mayView())
           return false;
@@ -973,7 +973,7 @@
 
     this.addAction(new CATMAID.Action({
       helpText: "Set confidence in node link to 1 (Alt: with a connector)",
-      keyShortcuts: { '1': [ 49 ] },
+      keyShortcuts: { '1': [ '1', 'Alt + 1' ] },
       run: function (e) {
         if (!CATMAID.mayEdit())
           return false;
@@ -987,7 +987,7 @@
 
     this.addAction(new CATMAID.Action({
       helpText: "Set confidence in node link to 2 (Alt: with a connector)",
-      keyShortcuts: { '2': [ 50 ] },
+      keyShortcuts: { '2': [ '2', 'Alt + 2' ] },
       run: function (e) {
         if (!CATMAID.mayEdit())
           return false;
@@ -1001,7 +1001,7 @@
 
     this.addAction(new CATMAID.Action({
       helpText: "Set confidence in node link to 3 (Alt: with a connector)",
-      keyShortcuts: { '3': [ 51 ] },
+      keyShortcuts: { '3': [ '3', 'Alt + 3' ] },
       run: function (e) {
         if (!CATMAID.mayEdit())
           return false;
@@ -1015,7 +1015,7 @@
 
     this.addAction(new CATMAID.Action({
       helpText: "Set confidence in node link to 4 (Alt: with a connector)",
-      keyShortcuts: { '4': [ 52 ] },
+      keyShortcuts: { '4': [ '4', 'Alt + 4' ] },
       run: function (e) {
         if (!CATMAID.mayEdit())
           return false;
@@ -1029,7 +1029,7 @@
 
     this.addAction(new CATMAID.Action({
       helpText: "Set confidence in node link to 5 (Alt: with a connector)",
-      keyShortcuts: { '5': [ 53 ] },
+      keyShortcuts: { '5': [ '5', 'Alt + 5' ] },
       run: function (e) {
         if (!CATMAID.mayEdit())
           return false;
@@ -1043,7 +1043,7 @@
 
     this.addAction(new CATMAID.Action({
       helpText: "Move to previous node in segment for review. At an end node, moves one section beyond for you to check that it really ends.",
-      keyShortcuts: { 'Q': [ 81 ] },
+      keyShortcuts: { 'Q': [ 'q' ] },
       run: function (e) {
         if (!CATMAID.mayEdit())
           return false;
@@ -1059,7 +1059,7 @@
 
     this.addAction(new CATMAID.Action({
       helpText: "Move to next node in segment for review (with <kbd>Shift</kbd>: move to next unreviewed node in the segment)",
-      keyShortcuts: { 'W': [ 87 ] },
+      keyShortcuts: { 'W': [ 'w', 'Shift + w' ] },
       run: function (e) {
         if (!CATMAID.mayEdit())
           return false;
@@ -1075,7 +1075,7 @@
 
     this.addAction(new CATMAID.Action({
       helpText: "Start reviewing the next skeleton segment.",
-      keyShortcuts: { 'E': [ 69 ] },
+      keyShortcuts: { 'E': [ 'e' ] },
       run: function (e) {
         if (!CATMAID.mayEdit())
           return false;
@@ -1091,7 +1091,7 @@
 
     this.addAction(new CATMAID.Action({
       helpText: "Rename active neuron",
-      keyShortcuts: { 'F2': [ 113 ] },
+      keyShortcuts: { 'F2': [ 'F2' ] },
       run: function (e) {
         if (!CATMAID.mayEdit()) {
           return false;
@@ -1103,7 +1103,7 @@
 
     this.addAction(new CATMAID.Action({
       helpText: "Annotate active neuron",
-      keyShortcuts: { 'F3': [ 114 ] },
+      keyShortcuts: { 'F3': [ 'F3' ] },
       run: function (e) {
         if (!CATMAID.mayEdit()) {
           return false;
@@ -1117,7 +1117,7 @@
     this.addAction(new CATMAID.Action({
       helpText: "Neuron dendrogram",
       keyShortcuts: {
-        'F4': [ 115 ]
+        'F4': [ 'F4' ]
       },
       run: function (e) {
         WindowMaker.create('neuron-dendrogram');
@@ -1128,7 +1128,7 @@
     this.addAction(new CATMAID.Action({
       helpText: "Command history",
       keyShortcuts: {
-        'F9': [ 120 ]
+        'F9': [ 'F9' ]
       },
       run: function (e) {
         var dialog = new CATMAID.HistoryDialog();
@@ -1140,7 +1140,7 @@
     this.addAction(new CATMAID.Action({
       helpText: "Toggle skeleton projection layer",
       keyShortcuts: {
-        'F10': [ 121 ]
+        'F10': [ 'F10' ]
       },
       run: function (e) {
         toggleSkeletonProjectionLayers();
@@ -1150,7 +1150,7 @@
 
     this.addAction(new CATMAID.Action({
       helpText: "Open the neuron/annotation search widget (with <kbd>Shift</kbd>: activate next selected neuron in search results after active skeleton)",
-      keyShortcuts: { '/': [ 191 ] },
+      keyShortcuts: { '/': [ '/', 'Shift + /' ] },
       run: function (e) {
         if (e.shiftKey) {
           var nextSkid = CATMAID.NeuronSearch.prototype.getFirstInstance()
@@ -1167,7 +1167,7 @@
 
     this.addAction(new CATMAID.Action({
       helpText: "Find the nearest matching tagged node (<kbd>Ctrl</kbd>: repeat last tag query; Subsequent <kbd>Shift</kbd>+<kbd>\\</kbd>: cycle to next nearest)",
-      keyShortcuts: { '\\': [ 220 ] },
+      keyShortcuts: { '\\': [ '\\', 'Ctrl + \\', 'Shift + \\', 'Ctrl + Shift + \\' ] },
       run: function (e) {
         activeTracingLayer.tracingOverlay.goToNearestMatchingTag(e.shiftKey, e.ctrlKey);
         return true;
@@ -1176,7 +1176,7 @@
 
     this.addAction(new CATMAID.Action({
       helpText: "Bookmark the active node or current location",
-      keyShortcuts: { ';': [ 186 ] },
+      keyShortcuts: { ';': [ ';' ] },
       run: function (e) {
           var dialog = new CATMAID.Bookmarks.Dialog(CATMAID.Bookmarks.MODES.MARK);
           dialog.show();
@@ -1186,7 +1186,7 @@
 
     this.addAction(new CATMAID.Action({
       helpText: "Go to a bookmarked skeleton",
-      keyShortcuts: { '\'': [ 222 ] },
+      keyShortcuts: { '\'': [ '\'' ] },
       run: function (e) {
           var dialog = new CATMAID.Bookmarks.Dialog(CATMAID.Bookmarks.MODES.SKELETON);
           dialog.show();
@@ -1196,7 +1196,7 @@
 
     this.addAction(new CATMAID.Action({
       helpText: "Go to a bookmarked node",
-      keyShortcuts: { '`': [ 192 ] },
+      keyShortcuts: { '`': [ '`' ] },
       run: function (e) {
           var dialog = new CATMAID.Bookmarks.Dialog(CATMAID.Bookmarks.MODES.NODE);
           dialog.show();
@@ -1206,7 +1206,7 @@
 
     this.addAction(new CATMAID.Action({
       helpText: "Toggle display of skeletons in visibility group 1 (<kbd>Shift</kbd>: visibility group 2)",
-      keyShortcuts: { 'HOME': [ 36 ] },
+      keyShortcuts: { 'HOME': [ 'Home', 'Shift + Home' ] },
       run: function (e) {
         if (e.shiftKey) {
           SkeletonAnnotations.VisibilityGroups.toggle(SkeletonAnnotations.VisibilityGroups.GROUP_IDS.GROUP_2);
@@ -1219,7 +1219,7 @@
 
     this.addAction(new CATMAID.Action({
       helpText: "Peek: show the active skeleton in all open 3D viewers (while held)",
-      keyShortcuts: { 'P': [ 80 ] },
+      keyShortcuts: { 'P': [ 'p' ] },
       run: function (e) {
         if (self.peekingSkeleton) return;
         var skid = SkeletonAnnotations.getActiveSkeletonId();
@@ -1253,7 +1253,7 @@
         var target = e.target;
         var oldListener = target.onkeyup;
         target.onkeyup = function (e) {
-          if (e.keyCode == 80) {
+          if (e.key === 'p') {
             target.onkeyup = oldListener;
             removePeekingSkeleton();
           } else if (oldListener) oldListener(e);
@@ -1264,7 +1264,7 @@
     }));
 
 
-    var keyCodeToAction = CATMAID.getKeyCodeToActionMap(actions);
+    var keyToAction = CATMAID.getKeyToActionMap(actions);
 
     /**
      * This function should return true if there was any action linked to the key
@@ -1272,7 +1272,7 @@
      */
     this.handleKeyPress = function(e) {
       var result = false;
-      var keyAction = keyCodeToAction[e.keyCode];
+      var keyAction = CATMAID.UI.getMappedKeyAction(keyToAction, e);
       if (keyAction) {
         activeTracingLayer.tracingOverlay.ensureFocused();
         result = keyAction.run(e);

@@ -130,7 +130,7 @@
       // Attach a handler for the ESC key to cancel context menu
       var self = this;
       $('body').on('keydown.catmaidContextMenu', function(event) {
-        if (27 === event.keyCode) {
+        if ('Escape' === event.key) {
           self.hide();
           return true;
         }

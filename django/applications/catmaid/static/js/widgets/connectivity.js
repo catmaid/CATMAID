@@ -1338,7 +1338,7 @@
         changeThresholdDelayedTimer = window.setTimeout(changePartnerThreshold.bind(undefined, value), 400);
       };
       hidePartnerThresholdInput.oninput = function (e) {
-        if (13 === e.keyCode) {
+        if ('Enter' === e.key) {
           widget.createConnectivityTable();
         } else {
           widget.hidePartnerThreshold = parseInt(this.value, 10);

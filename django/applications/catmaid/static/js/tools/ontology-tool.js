@@ -138,7 +138,7 @@
           // nothing to do here currently
     };
 
-      var keyCodeToAction = CATMAID.getKeyCodeToActionMap(actions);
+      var keyToAction = CATMAID.getKeyToActionMap(actions);
 
       /**
        * This function should return true if there was any action
@@ -146,7 +146,7 @@
        */
       this.handleKeyPress = function( e )
       {
-          var keyAction = keyCodeToAction[e.keyCode];
+          var keyAction = CATMAID.UI.getMappedKeyAction(keyToAction, e);
           if (keyAction) {
             return keyAction.run(e);
           } else {

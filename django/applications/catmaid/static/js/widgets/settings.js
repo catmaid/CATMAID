@@ -796,7 +796,7 @@
 
       // Allow color confirmation with enter
       dsNodeColors.find('input').on('keyup', function(e) {
-        if (13 === e.keyCode) {
+        if ('Enter' === e.key) {
           setColorOfTracingFields();
         }
       });
@@ -906,7 +906,7 @@
       // Allow color confirmation with enter
       skpDownstreamColor.find('input').add(skpUpstreamColor.find('input'))
         .on('keyup', function(e) {
-          if (13 === e.keyCode) updateSkeletonProjectionDisplay();
+          if ('Enter' === e.key) updateSkeletonProjectionDisplay();
         });
 
       // Get all relevant skeleton projection options

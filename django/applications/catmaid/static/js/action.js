@@ -53,16 +53,16 @@
 
   /**
    * Add a new key shortcut for this action. For example, you might call:
-   *    action.addKey( "+", [107, 61, 187] );
+   *    action.addKey( "+", ['+'] );
    *
-   * @param {string}   name     Display string of the bound key.
-   * @param {number[]} keyCodes Array of key codes that will trigger this action.
+   * @param {string}   name   Display string of the bound key.
+   * @param {number[]} keys   Array of key names that will trigger this action.
    */
-  Action.prototype.addKey = function (name, keyCodes) {
+  Action.prototype.addKey = function (name, keys) {
     if (this.keyShortcuts.hasOwnProperty(name)) {
-      alert("BUG: replacing the keyCodes for " + name + " with Action.addKey");
+      CATMAID.warn("Replacing the key for " + name + " with Action.addKey");
     }
-    this.keyShortcuts[name] = keyCodes;
+    this.keyShortcuts[name] = keys;
   };
 
   Action.prototype.hasButton = function () {
@@ -120,26 +120,25 @@
   };
 
 
-  var getKeyCodeToActionMap = function( actionArray ) {
-    var i, j, keyCodeToKeyAction = {}, action;
-    var keyShortcuts, keyCodes, keyCode;
-    for (i = 0; i < actionArray.length; ++i) {
-      action = actionArray[i];
-      keyShortcuts = action.getKeys();
+  var getKeyToActionMap = function( actionArray ) {
+    var keyToKeyAction = {};
+    for (var i = 0; i < actionArray.length; ++i) {
+      var action = actionArray[i];
+      var keyShortcuts = action.getKeys();
       for (var name in keyShortcuts) {
         if (keyShortcuts.hasOwnProperty(name)) {
-          keyCodes = keyShortcuts[name];
-          for( j = 0; j < keyCodes.length; ++j ) {
-            keyCode = keyCodes[j];
-            if (keyCodeToKeyAction[keyCode]) {
-              alert("BUG: overwriting action for keyCode " + keyCode + " (via '" + name + "')");
+          var keys = keyShortcuts[name];
+          for(var j = 0; j < keys.length; ++j) {
+            var key = CATMAID.UI.normalizeKeyCombo(keys[j]);
+            if (keyToKeyAction[key]) {
+              CATMAID.warn("Overriding action for key " + key + " (via '" + name + "')");
             }
-            keyCodeToKeyAction[keyCode] = action;
+            keyToKeyAction[key] = action;
           }
         }
       }
     }
-    return keyCodeToKeyAction;
+    return keyToKeyAction;
   };
 
   /** Updates the 'alt' and 'title' attributes on the toolbar
@@ -230,7 +229,7 @@
       buttonID: 'key_help_button',
       buttonName: "help",
       keyShortcuts: {
-        'F1': [ 112 ]
+        'F1': [ 'F1' ]
       },
       run: function (e) {
         WindowMaker.show('keyboard-shortcuts');
@@ -241,7 +240,7 @@
 
   // Make Action available in CATMAID namespace
   CATMAID.Action = Action;
-  CATMAID.getKeyCodeToActionMap = getKeyCodeToActionMap;
+  CATMAID.getKeyToActionMap = getKeyToActionMap;
   CATMAID.createButtonsFromActions = createButtonsFromActions;
 
 })(CATMAID);

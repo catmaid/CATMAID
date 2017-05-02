@@ -184,7 +184,7 @@
       this.addAction( new CATMAID.Action({
           helpText: "Move up 1 slice in z (or 10 with Shift held)",
           keyShortcuts: {
-              ',': [ 44, 188 ]
+              ',': [ ',' ]
           },
           run: function (e) {
               self.move_up( e );
@@ -195,7 +195,7 @@
       this.addAction( new CATMAID.Action({
           helpText: "Move down 1 slice in z (or 10 with Shift held)",
           keyShortcuts: {
-              '.': [ 46, 190 ]
+              '.': [ '.' ]
           },
           run: function (e) {
               self.move_down( e );
@@ -203,13 +203,13 @@
           }
       }) );
 
-      var keyCodeToAction = CATMAID.getKeyCodeToActionMap(actions);
+      var keyToAction = CATMAID.getKeyToActionMap(actions);
 
       /** This function should return true if there was any action
           linked to the key code, or false otherwise. */
       this.handleKeyPress = function( e )
       {
-          var keyAction = keyCodeToAction[e.keyCode];
+          var keyAction = CATMAID.UI.getMappedKeyAction(keyToAction, e);
           if (keyAction) {
             return keyAction.run(e);
           } else {

@@ -70,8 +70,6 @@
            helpText: "Segmentation Tool",
            buttonID: 'edit_button_segmentation',
            buttonName: 'canvas',
-           keyShortcuts: {
-           },
            run: function (e) {
               project.setTool( new CATMAID.SegmentationTool() );
            }

@@ -136,7 +136,7 @@ def get_skeleton_as_dataarray(project_id=None, skeleton_id=None):
             project=project_id,
             skeleton=skeleton_id,
             relation__relation_name__endswith = 'synaptic_to',
-        ).select_related('connector', 'relation__relation_name')
+        ).select_related('connector', 'relation')
 
     treenode_connector_connectivity=[]; treenode_connector_connectivity_type=[]
     cn_type=[]; cn_xyz=[]; cn_id=[]; cn_confidence=[]; cn_userid=[]; cn_radius=[]; cn_skeletonid=[]

@@ -7,8 +7,6 @@ from django.core.management.base import BaseCommand, CommandError
 
 from guardian.utils import get_anonymous_user
 
-from optparse import make_option
-
 
 class Command(BaseCommand):
     help = "Set the user profile settings of every user to the defaults"

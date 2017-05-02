@@ -78,7 +78,7 @@ def graphedge_list(request, project_id=None):
 
     qs_tc = TreenodeConnector.objects.filter(
         project=p,
-        skeleton__in=skeletonlist ).select_related('relation__relation_name', 'connector__user', 'connector')
+        skeleton__in=skeletonlist ).select_related('relation', 'connector')
 
     for q in qs_tc:
         # Only look at synapse connectors

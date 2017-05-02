@@ -28,10 +28,16 @@ class AuthenticationHeaderExtensionMiddleware(object):
     Have Django overwrite the `Authorization` header with the `X-Authorization`
     header, if present, so that other middlewares can work normally.
     """
-    def process_request(self, request):
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
         auth = request.META.get('HTTP_X_AUTHORIZATION', b'')
         if auth:
             request.META['HTTP_AUTHORIZATION'] = auth
+        return self.get_response(request)
+
 
 class CsrfBypassTokenAuthenticationMiddleware(object):
     """
@@ -43,7 +49,11 @@ class CsrfBypassTokenAuthenticationMiddleware(object):
     This is necessary to have DRF's token authentication work both with its
     API views and normal Django views.
     """
-    def process_request(self, request):
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
         try:
             token_auth = TokenAuthentication().authenticate(request)
             if token_auth:
@@ -53,6 +63,8 @@ class CsrfBypassTokenAuthenticationMiddleware(object):
         except:
             pass
 
+        return self.get_response(request)
+
 
 class AnonymousAuthenticationMiddleware(object):
     """ This middleware class tests whether the current user is the
@@ -60,15 +72,25 @@ class AnonymousAuthenticationMiddleware(object):
     Guardian's anonymous user and monkey patchs it to behave like
     Django's anonymou user.
     """
-    def process_request(self, request):
-        if request.user.is_anonymous():
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        if request.user.is_anonymous:
             request.user = get_anonymous_user()
-        return None
+        return self.get_response(request)
 
 
 class AjaxExceptionMiddleware(object):
     """Catch exceptions and wrap it in a JSON response.
     """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        return self.get_response(request)
 
     def process_exception(self, request, exception):
         response = {
@@ -96,7 +118,10 @@ class BasicModelMapMiddleware(object):
     datastores_pattern = re.compile(r'/client/datastores/.*/')
     annotations_patterns = re.compile(r'/.+/annotations/')
 
-    def process_request(self, request):
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
         new_path = (request.path == '/projects/') or \
                     self.stack_info_pattern.search(request.path) or \
                     self.stacks_pattern.search(request.path) or \
@@ -108,6 +133,8 @@ class BasicModelMapMiddleware(object):
             request.path_info = self.url_prefix + request.path_info
             request.path = self.url_prefix + request.path
 
+        return self.get_response(request)
+
 
 class FlyTEMMiddleware(BasicModelMapMiddleware):
     """Let this middleware redirect requests for stacks and projects to FlyTEM
@@ -118,6 +145,10 @@ class FlyTEMMiddleware(BasicModelMapMiddleware):
 
 
 class DVIDMiddleware(BasicModelMapMiddleware):
+    """Let this middleware redirect requests for stacks and projects to a DVID
+    instance.
+    """
+
     url_prefix = '/dvid'
 
 
@@ -130,8 +161,8 @@ class ProfilingMiddleware(object):
     with a name following the pattern 'catmaid-hostaddress-timestamp.profile'.
     """
 
-    def __init__(self, *args, **kwargs):
-        super(ProfilingMiddleware, self).__init__(*args, **kwargs)
+    def __init__(self, get_response):
+        self.get_response = get_response
 
         # This middleware conflicts with expected unit test results. Warn about
         # this if this is executed in test mode.
@@ -140,13 +171,16 @@ class ProfilingMiddleware(object):
                     "This will result in boken tests, because of unexpected "
                     "response content.")
 
-    def process_request(self, request):
-        if 'profile' in request.GET or 'profile' in request.POST:
+    def __call__(self, request):
+        profile = 'profile' in request.GET or 'profile' in request.POST
+
+        if profile:
             request.profiler = cProfile.Profile()
             request.profiler.enable()
 
-    def process_response(self, request, response):
-        if hasattr(request, 'profiler'):
+        response = self.get_response(request)
+
+        if profile:
             request.profiler.disable()
             s = StringIO()
             sortby = getattr(request, 'profile-sorting', 'cumulative')
@@ -169,14 +203,16 @@ class NewRelicMiddleware(object):
     the newrelic python module to be installed.
     """
 
-    def __init__(self, *args, **kwargs):
-        super(NewRelicMiddleware, self).__init__(*args, **kwargs)
+    def __init__(self, get_response):
+        self.get_response = get_response
         # Import this locally, so that we don't clutter general imports and require
         # it only when it is used.
         self.newrelic = __import__('newrelic.agent')
 
-    def process_request(self, request):
+    def __call__(self, request):
         exec_ctx = request.META.get('HTTP_X_CATMAID_EXECUTION_CONTEXT', b'')
         if not exec_ctx:
             exec_ctx = 'unknown'
         self.newrelic.agent.add_custom_parameter('execution_context', exec_ctx)
+
+        return self.get_response(request)

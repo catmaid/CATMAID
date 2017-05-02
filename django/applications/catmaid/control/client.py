@@ -55,7 +55,7 @@ class ClientDatastoreList(APIView):
           paramType: form
         serializer: ClientDatastoreSerializer
         """
-        if request.user == get_anonymous_user() or not request.user.is_authenticated():
+        if request.user == get_anonymous_user() or not request.user.is_authenticated:
             raise PermissionDenied('Unauthenticated or anonymous users ' \
                                    'can not create datastores.')
         name = request.POST['name']
@@ -190,7 +190,7 @@ class ClientDataList(APIView):
           paramType: form
         response_serializer: ClientDataSerializer
         """
-        if request.user == get_anonymous_user() or not request.user.is_authenticated():
+        if request.user == get_anonymous_user() or not request.user.is_authenticated:
             raise PermissionDenied('Unauthenticated or anonymous users ' \
                                    'can not create data.')
         datastore = get_object_or_404(ClientDatastore, name=name)

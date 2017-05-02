@@ -27,7 +27,7 @@ def access_check(user):
     This is used to also allow the not logged in anonymous user to retrieve
     data if it is granted the 'can_browse' permission.
     """
-    if user.is_authenticated():
+    if user.is_authenticated:
         if user == get_anonymous_user():
             return user.has_perm('catmaid.can_browse')
         else:
@@ -165,7 +165,7 @@ def update_user_profile(request):
     no error is raised.
     """
     # Ignore anonymous user
-    if request.user == get_anonymous_user() or not request.user.is_authenticated():
+    if request.user == get_anonymous_user() or not request.user.is_authenticated:
         return HttpResponse(json.dumps({'success': "The user profile of the " +
                 "anonymous user won't be updated"}), content_type='application/json')
 

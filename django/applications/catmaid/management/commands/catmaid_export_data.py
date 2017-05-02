@@ -4,7 +4,6 @@ from __future__ import unicode_literals
 import six
 
 from itertools import chain
-from optparse import make_option
 from django.core import serializers
 from django.core.management.base import BaseCommand, CommandError
 from catmaid.control.tracing import check_tracing_setup

@@ -157,7 +157,7 @@ def reviewer_whitelist(request, project_id=None):
     reviews they trust for a given project.
     """
     # Ignore anonymous user
-    if request.user == get_anonymous_user() or not request.user.is_authenticated():
+    if request.user == get_anonymous_user() or not request.user.is_authenticated:
         return HttpResponse(json.dumps({'success': "The reviewer whitelist " +
                 "of  the anonymous user won't be updated"}),
                 content_type='application/json')

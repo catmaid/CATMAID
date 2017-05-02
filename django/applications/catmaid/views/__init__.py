@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from django.core import urlresolvers
+from django.urls import reverse
 from django.conf import settings
 from django.http import HttpResponseRedirect
 from django.views.generic import TemplateView
@@ -57,7 +57,7 @@ class GroupMembershipHelper(TemplateView):
         return context
 
     def post(self, request, *args, **kwargs):
-        redirect_url = urlresolvers.reverse('admin:groupmembershiphelper')
+        redirect_url = reverse('admin:groupmembershiphelper')
         # Make sure only superusers can update permissions
         if not request.user.is_superuser:
             messages.error(request, 'Only superusers can update permissions')

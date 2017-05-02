@@ -23,7 +23,7 @@ class Neuron(object):
         qs = ClassInstanceClassInstance.objects.filter(
             relation__relation_name='model_of',
             project=self.project_id,
-            class_instance_b=self.neuron_id).select_related("class_instance_a__id")
+            class_instance_b=self.neuron_id).select_related("class_instance_a")
 
         return [ele.class_instance_a.id for ele in qs]
 
@@ -171,7 +171,7 @@ class Skeleton(object):
             relation__relation_name='labeled_as',
             class_instance__class_column__class_name='label',
             treenode__in=graph.nodes(),
-            project=self.project_id).select_related('class_instance__name')
+            project=self.project_id).select_related('class_instance')
 
         for t in tci:
             graph.node[t.treenode_id]['tags'].append( t.class_instance.name )

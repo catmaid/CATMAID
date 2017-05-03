@@ -28,20 +28,20 @@ var project;
      * does not, disruptively prompt the user to refresh.
      */
     checkVersion: function () {
-      requestQueue.register(django_url + 'version', 'GET', undefined,
-          CATMAID.jsonResponseHandler(function(data) {
-            if (CATMAID.CLIENT_VERSION !== data.SERVER_VERSION) {
-              var dialog = new CATMAID.VersionMismatchDialog(
-                  CATMAID.CLIENT_VERSION, data.SERVER_VERSION);
-              dialog.show();
-            }
-
-            window.setTimeout(CATMAID.Init.checkVersion, CATMAID.Init.CHECK_VERSION_TIMEOUT_INTERVAL);
-          }, function () {
-            window.setTimeout(CATMAID.Init.checkVersion, CATMAID.Init.CHECK_VERSION_TIMEOUT_INTERVAL);
-            CATMAID.statusBar.replaceLast('Unable to check version (network may be disconnected).');
-            return true;
-          }));
+      CATMAID.fetch('version')
+        .then(function(data) {
+          if (CATMAID.CLIENT_VERSION !== data.SERVER_VERSION) {
+            var dialog = new CATMAID.VersionMismatchDialog(
+                CATMAID.CLIENT_VERSION, data.SERVER_VERSION);
+            dialog.show();
+          }
+        })
+        .catch(function(error) {
+          CATMAID.statusBar.replaceLast('Unable to check version (network may be disconnected).');
+        })
+        .then(function() {
+          window.setTimeout(CATMAID.Init.checkVersion, CATMAID.Init.CHECK_VERSION_TIMEOUT_INTERVAL);
+        });
     }
   };
 
@@ -772,28 +772,28 @@ var project;
     var latest_message_date = null;
 
     return function() {
-      requestQueue.register(django_url + 'messages/latestunreaddate', 'GET',
-          undefined, CATMAID.jsonResponseHandler(function(data) {
-            // If there is a newer latest message than we know of, get all
-            // messages to display them in the message menu and widget.
-            if (data.latest_unread_date) {
-              if (!latest_message_date || latest_message_date < data.latest_unread_date) {
-                // Save the date and get all messages
-                latest_message_date = data.latest_unread_date;
-                CATMAID.client.get_messages();
-                return;
-              }
+      CATMAID.fetch('messages/latestunreaddate')
+        .then(function(data) {
+          // If there is a newer latest message than we know of, get all
+          // messages to display them in the message menu and widget.
+          if (data.latest_unread_date) {
+            if (!latest_message_date || latest_message_date < data.latest_unread_date) {
+              // Save the date and get all messages
+              latest_message_date = data.latest_unread_date;
+              CATMAID.client.get_messages()
+                .then(handle_message);
+              return;
             }
-
-            // Check again later
-            msg_timeout = window.setTimeout(CATMAID.client.check_messages,
-                MSG_TIMEOUT_INTERVAL);
-          }, function () {
-            msg_timeout = window.setTimeout(CATMAID.client.check_messages,
-                MSG_TIMEOUT_INTERVAL);
-            CATMAID.statusBar.replaceLast('Unable to check for messages (network may be disconnected).');
-            return true;
-          }));
+          }
+        })
+        .catch(function(error) {
+          CATMAID.statusBar.replaceLast('Unable to check for messages (network may be disconnected).');
+        })
+        .then(function() {
+          // Check again later
+          msg_timeout = window.setTimeout(CATMAID.client.check_messages,
+              MSG_TIMEOUT_INTERVAL);
+        });
     };
   })();
 
@@ -801,82 +801,68 @@ var project;
    * Retrieve user messages.
    */
   Client.prototype.get_messages = function() {
-    requestQueue.register(django_url + 'messages/list', 'GET', undefined, handle_message);
+    return CATMAID.fetch('messages/list');
   };
 
   /**
    * Handle use message request response.
    *
-   * @param  {number}    status             XHR response status.
-   * @param  {string}    text               XHR response content.
-   * @param  {Object}    xml                XHR response XML (unused).
+   * @param  {Object}  e  A map of message objects.
    */
-  function handle_message( status, text, xml )
+  function handle_message(e)
   {
     if ( !CATMAID.session || !CATMAID.session.id )
       return;
 
-    if ( status == 200 && text )
+    var message_container = document.getElementById( "message_container" );
+    if ( !( typeof message_container === "undefined" || message_container === null ) )
     {
-      var e = JSON.parse(text);
-      if ( e.error )
-      {
-        alert( e.error );
-      }
-      else
-      {
-        var message_container = document.getElementById( "message_container" );
-        if ( !( typeof message_container === "undefined" || message_container === null ) )
-        {
-          //! remove old messages
-          while ( message_container.firstChild ) message_container.removeChild( message_container.firstChild );
+      //! remove old messages
+      while ( message_container.firstChild ) message_container.removeChild( message_container.firstChild );
 
-          //! add new messages
-          var n = 0;
-          for ( var i in e )
-          {
-            if (e [ i ].id == -1) {
-              var notifications_count = e [ i ].notification_count;
-              var notifications_button_img = $('#data_button_notifications_img');
-              if (notifications_button_img !== undefined) {
-                if (notifications_count > 0)
-                  notifications_button_img.attr('src', STATIC_URL_JS + 'images/table_notifications_open.svg');
-                else
-                  notifications_button_img.attr('src', STATIC_URL_JS + 'images/table_notifications.svg');
-              }
+      //! add new messages
+      var n = 0;
+      for ( var i in e )
+      {
+        if (e [ i ].id == -1) {
+          var notifications_count = e [ i ].notification_count;
+          var notifications_button_img = $('#data_button_notifications_img');
+          if (notifications_button_img !== undefined) {
+            if (notifications_count > 0)
+              notifications_button_img.attr('src', STATIC_URL_JS + 'images/table_notifications_open.svg');
+            else
+              notifications_button_img.attr('src', STATIC_URL_JS + 'images/table_notifications.svg');
+          }
 
-              delete e [ i ];
-            } else {
-              var timeFormatted = (new Date(e[i].time)).toLocaleString();
-              e[ i ].action = CATMAID.makeURL('messages/' + e[i].id + '/mark_read');
-              e[ i ].note = timeFormatted;
-              ++n;
-              var dt = document.createElement( "dt" );
-              dt.appendChild( document.createTextNode( timeFormatted ) );
-              var dd1 = document.createElement( "dd" );
-              var dd1a = document.createElement( "a" );
-              dd1a.href = e[ i ].action;
-              dd1a.target = '_blank';
-              dd1a.appendChild( document.createTextNode( e[ i ].title ) );
-              dd1.appendChild( dd1a );
-              var dd2 = document.createElement( "dd" );
-              dd2.innerHTML = e[ i ].text;
-              message_container.appendChild( dt );
-              message_container.appendChild( dd1 );
-              message_container.appendChild( dd2 );
-            }
-          }
-          message_menu.update( e );
-          // Make all message links open in a new page
-          var links = message_menu.getView().querySelectorAll('a');
-          for (var j=0; j<links.length; ++j) {
-            links[j].target = '_blank';
-          }
-          if ( n > 0 ) document.getElementById( "message_menu_text" ).className = "alert";
-          else document.getElementById( "message_menu_text" ).className = "";
+          delete e [ i ];
+        } else {
+          var timeFormatted = (new Date(e[i].time)).toLocaleString();
+          e[ i ].action = CATMAID.makeURL('messages/' + e[i].id + '/mark_read');
+          e[ i ].note = timeFormatted;
+          ++n;
+          var dt = document.createElement( "dt" );
+          dt.appendChild( document.createTextNode( timeFormatted ) );
+          var dd1 = document.createElement( "dd" );
+          var dd1a = document.createElement( "a" );
+          dd1a.href = e[ i ].action;
+          dd1a.target = '_blank';
+          dd1a.appendChild( document.createTextNode( e[ i ].title ) );
+          dd1.appendChild( dd1a );
+          var dd2 = document.createElement( "dd" );
+          dd2.innerHTML = e[ i ].text;
+          message_container.appendChild( dt );
+          message_container.appendChild( dd1 );
+          message_container.appendChild( dd2 );
         }
-
       }
+      message_menu.update( e );
+      // Make all message links open in a new page
+      var links = message_menu.getView().querySelectorAll('a');
+      for (var j=0; j<links.length; ++j) {
+        links[j].target = '_blank';
+      }
+      if ( n > 0 ) document.getElementById( "message_menu_text" ).className = "alert";
+      else document.getElementById( "message_menu_text" ).className = "";
     }
 
     msg_timeout = window.setTimeout( CATMAID.client.check_messages, MSG_TIMEOUT_INTERVAL );

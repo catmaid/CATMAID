@@ -16,24 +16,10 @@ RequestQueue = function(originUrl, csrfToken)
 {
   var self = this;
   var queue = [];		//!< queue of waiting requests
-  var xmlHttp;
+  var xmlHttp = new XMLHttpRequest();
   var spinner = null;
   // Extra headers are stored as key value pairs in an object
   var extraHeaders = {};
-
-  if ( typeof XMLHttpRequest != 'undefined' )
-  {
-    xmlHttp = new XMLHttpRequest();
-  }
-  else
-  {
-    try { xmlHttp = new ActiveXObject( "Msxml2.XMLHTTP" ); }
-    catch( error )
-    {
-      try { xmlHttp = new ActiveXObject( "Microsoft.XMLHTTP" ); }
-      catch( error2 ){ xmlHttp = null; }
-    }
-  }
 
   var encodeArray = function( a, p )
   {

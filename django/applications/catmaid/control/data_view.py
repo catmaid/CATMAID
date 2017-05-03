@@ -11,7 +11,7 @@ from django.conf import settings
 from django.db.models import Count
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
-from django.template import Context, loader
+from django.template import loader
 from django.contrib.contenttypes.models import ContentType
 
 from taggit.models import TaggedItem

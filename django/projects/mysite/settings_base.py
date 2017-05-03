@@ -48,7 +48,7 @@ MANAGERS = ADMINS
 # to load the internationalization machinery.
 USE_I18N = True
 
-MIDDLEWARE_CLASSES = (
+MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -59,7 +59,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.messages.middleware.MessageMiddleware',
     'catmaid.middleware.AnonymousAuthenticationMiddleware',
     'catmaid.middleware.AjaxExceptionMiddleware',
-)
+]
 
 ROOT_URLCONF = 'mysite.urls'
 
@@ -285,7 +285,7 @@ VERSION = utils.get_version()
 
 # FlyTEM rendering service. To activate add the following lines to your
 # settings.py file:
-# MIDDLEWARE_CLASSES += ('catmaid.middleware.FlyTEMMiddleware',)
+# MIDDLEWARE += ('catmaid.middleware.FlyTEMMiddleware',)
 # FLYTEM_SERVICE_URL = 'http://renderer-2.int.janelia.org:8080/render-ws/v1/owner/flyTEM'
 # FLYTEM_STACK_RESOLUTION = (4,4,40)
 # FLYTEM_STACK_TILE_WIDTH = 512
@@ -293,7 +293,7 @@ VERSION = utils.get_version()
 
 # DVID auto-discovery. To activate add the following lines to your settings.py
 # file:
-# MIDDLEWARE_CLASSES += ('catmaid.middleware.DVIDMiddleware',)
+# MIDDLEWARE += ('catmaid.middleware.DVIDMiddleware',)
 # DVID_URL = 'http://emdata2.int.janelia.org:7000'
 # DVID_FORMAT = 'jpg:80'
 # DVID_SHOW_NONDISPLAYABLE_REPOS = True

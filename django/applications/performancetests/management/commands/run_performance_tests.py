@@ -8,8 +8,6 @@ from django.db import connection
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
-from optparse import make_option
-
 from performancetests import PerformanceTest
 from performancetests.models import TestView
 

@@ -7,7 +7,7 @@ import catmaid
 from django.core.management.base import BaseCommand, CommandError
 from django.db import connection, transaction
 from catmaid.models import Project
-from optparse import make_option
+
 
 class DryRunRollback(Exception):
     pass

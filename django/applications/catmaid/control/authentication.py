@@ -15,7 +15,7 @@ from guardian.utils import get_anonymous_user
 
 from django import forms
 from django.conf import settings
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth import authenticate, logout, login
 from django.contrib.auth.models import User, Group
@@ -63,7 +63,7 @@ def login_user(request):
             return user_context_response(request.user, profile_context)
     else:   # request.method == 'GET'
         # Check if the user is logged in.
-        if request.user.is_authenticated():
+        if request.user.is_authenticated:
             profile_context['id'] = request.session.session_key
             return user_context_response(request.user, profile_context)
         else:
@@ -256,7 +256,7 @@ def user_project_permissions(request):
     be returned.
     """
     permissions = {}
-    if request.user.is_authenticated():
+    if request.user.is_authenticated:
         projectPerms = get_perms_for_model(Project)
         permNames = [perm.codename for perm in projectPerms]
         # Find out what permissions a user actually has for any of those projects.

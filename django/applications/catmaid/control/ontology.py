@@ -383,7 +383,13 @@ def get_number_of_inverse_links( obj ):
     http://mail.python.org/pipermail//centraloh/2012-December/001492.html
     """
     count = 0
-    for r in obj._meta.get_all_related_objects():
+    related_objects = [
+        f for f in obj._meta.get_fields()
+        if (f.one_to_many or f.one_to_one)
+        and f.auto_created and not f.concrete
+    ]
+
+    for r in related_objects:
         count += r.related_model.objects.filter(
             **{r.field.name + '__exact': obj.id}).count()
     return count

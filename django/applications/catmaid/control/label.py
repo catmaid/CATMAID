@@ -147,13 +147,13 @@ def labels_for_node(request, project_id=None, node_type=None, node_id=None):
             relation__relation_name='labeled_as',
             class_instance__class_column__class_name='label',
             treenode=node_id,
-            project=project_id).select_related('class_instance__name')
+            project=project_id).select_related('class_instance')
     elif node_type == 'location' or node_type == 'connector':
         qs = ConnectorClassInstance.objects.filter(
             relation__relation_name='labeled_as',
             class_instance__class_column__class_name='label',
             connector=node_id,
-            project=project_id).select_related('class_instance__name')
+            project=project_id).select_related('class_instance')
     else:
         raise Http404('Unknown node type: "%s"' % (node_type,))
 
@@ -225,9 +225,9 @@ def label_update(request, project_id=None, location_id=None, ntype=None):
 
     # Get the existing list of tags for the tree node/connector and delete any
     # that are not in the new list.
-    existing_labels = table.objects.filter(**kwargs).select_related('class_instance__name')
+    existing_labels = table.objects.filter(**kwargs).select_related('class_instance')
     existing_names = set(ele.class_instance.name for ele in existing_labels)
-    duplicate_labels = table.objects.filter(**kwargs).exclude(class_instance__name__in=new_tags).select_related('class_instance__name')
+    duplicate_labels = table.objects.filter(**kwargs).exclude(class_instance__name__in=new_tags).select_related('class_instance')
 
     other_labels = []
     deleted_labels = []

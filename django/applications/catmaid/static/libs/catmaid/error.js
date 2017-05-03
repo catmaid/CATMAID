@@ -78,4 +78,14 @@
   CATMAID.TooManyWebGlContextsError.prototype = Object.create(CATMAID.Error.prototype);
   CATMAID.TooManyWebGlContextsError.prototype.constructor = CATMAID.TooManyWebGlContextsError;
 
+  /**
+   * An error type to indicate network access problems.
+   */
+  CATMAID.NetworkAccessError = function(message, detail) {
+    CATMAID.Error.call(this, message, detail);
+  };
+
+  CATMAID.NetworkAccessError.prototype = Object.create(CATMAID.Error.prototype);
+  CATMAID.NetworkAccessError.prototype.constructor = CATMAID.NetworkAccessError;
+
 })(CATMAID);

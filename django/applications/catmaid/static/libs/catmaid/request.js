@@ -152,6 +152,11 @@ RequestQueue = function(originUrl, csrfToken)
       var advance = true;
       hideSpinner();
       try {
+        // Throw exception in case of a network error
+        if (xmlHttp.status === 0) {
+          throw new CATMAID.NetworkAccessError("Network unreachable",
+              "Please check your network connection");
+        }
         queue[ 0 ].callback( xmlHttp.status, xmlHttp.responseText, xmlHttp.responseXML );
       } catch(error) {
         // In case of error, reset complete queue

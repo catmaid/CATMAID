@@ -1164,34 +1164,6 @@ var WindowMaker = new function()
     return {window: win, widget: WA};
   };
 
-  var createSliceInfoWindow = function()
-  {
-    var win = new CMWWindow("Slice Info Widget");
-    var content = win.getFrame();
-    content.style.backgroundColor = "#ffffff";
-    addWindowConfigButton(win);
-
-    var container = createContainer("table-container");
-    content.appendChild( container );
-
-    var slicetable = document.createElement('div');
-    slicetable.innerHTML =
-      '<table cellpadding="0" cellspacing="2" border="0" class="display" id="slicetable"></table>';
-
-    var segmentstable = document.createElement('div');
-    segmentstable.innerHTML =
-      '<table cellpadding="0" cellspacing="2" border="0" class="display" id="segmentstable"></table>';
-
-    container.appendChild( slicetable );
-    container.appendChild( segmentstable );
-
-    addListener(win, container);
-
-    addLogic(win);
-
-    return {window: win, widget: null};
-  };
-
   var createSynapseFractionsWindow = function()
   {
     var SF = new CATMAID.SynapseFractions();
@@ -1721,75 +1693,6 @@ var WindowMaker = new function()
     return {window: win, widget: GP};
   };
 
-  var createAssemblyGraphWindow = function()
-  {
-
-    var win = new CMWWindow("Assembly graph Widget");
-    var content = win.getFrame();
-    content.style.backgroundColor = "#ffffff";
-    addWindowConfigButton(win);
-
-    var contentbutton = document.createElement('div');
-    contentbutton.setAttribute("id", 'assembly_graph_window_buttons');
-
-    var add = document.createElement('input');
-    add.setAttribute("type", "button");
-    add.setAttribute("id", "testbutton");
-    add.setAttribute("value", "Show graph");
-    contentbutton.appendChild(add);
-
-    content.appendChild( contentbutton );
-
-    var container = createContainer("assembly_graph_widget");
-    content.appendChild(container);
-
-    var graph = document.createElement('div');
-    graph.setAttribute("id", "cytograph");
-    graph.style.width = "100%";
-    graph.style.height = "100%";
-    graph.style.backgroundColor = "#FFFFF0";
-    container.appendChild(graph);
-
-    addListener(win, container);
-
-    addLogic(win);
-
-    return {window: win, widget: null};
-  };
-
-
-  var createSegmentsTablesWindow = function()
-  {
-
-    var win = new CMWWindow("Segments Table Widget");
-    var content = win.getFrame();
-    content.style.backgroundColor = "#ffffff";
-
-    /*
-    var container = createContainer("segments_table_widget");
-    content.appendChild(container);
-
-
-    var graph = document.createElement('div');
-    graph.setAttribute("id", "segmentstable-div");
-    graph.style.height = "100%";
-    graph.style.width = "100%";
-    container.appendChild(graph);
-    */
-
-    var container = createContainer("segmentstable-container");
-    content.appendChild( container );
-
-    container.innerHTML =
-      '<table cellpadding="0" cellspacing="2" border="0" class="display" id="segmentstable"></table>';
-
-    addListener(win, container);
-
-    addLogic(win);
-
-    return {window: win, widget: null};
-  };
-
   var createConnectivityGraphPlot = function(instance) {
     var GP = instance ? instance : new ConnectivityGraphPlot();
 
@@ -2066,8 +1969,6 @@ var WindowMaker = new function()
     "3d-webgl-view": create3dWebGLWindow,
     "graph-widget": createGraphWindow,
     "connectivity-graph-plot": createConnectivityGraphPlot,
-    "assemblygraph-widget": createAssemblyGraphWindow,
-    "sliceinfo-widget": createSliceInfoWindow,
     "ontology-search": createOntologySearchWidget,
     "circuit-graph-plot": createCircuitGraphPlot,
     "neuron-navigator": createNeuronNavigatorWindow,

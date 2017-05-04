@@ -1338,13 +1338,14 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodeRadiiVisibility = functio
  * handle virtual nodes.
  */
 SkeletonAnnotations.TracingOverlay.prototype.activateNode = function(node) {
-  this.printTreenodeInfo(node.id);
   var atn = SkeletonAnnotations.atn,
       last_skeleton_id = atn.skeleton_id;
   if (node) {
+    this.printTreenodeInfo(node.id);
     // Select (doesn't matter if re-select same node)
     atn.set(node, this.getStackViewer().getId());
   } else {
+    CATMAID.status('');
     // Deselect
     atn.set(null, null);
     project.setSelectObject( null, null );

@@ -1833,49 +1833,6 @@ var WindowMaker = new function()
     return container;
   };
 
-  this.setSearchWindow = function(win)
-  {
-    var actions, action, i, tool, content, container;
-
-    // If a window hasn't been passed in, look it up.
-    if (typeof win == 'undefined') {
-      win = windows['search'];
-      if (!win) {
-        return;
-      }
-    }
-
-    content = win.getFrame();
-    content.style.backgroundColor = "#ffffff";
-
-    container = document.getElementById("search-window");
-    if (!container) {
-      container = createContainer("search-window");
-      content.appendChild( container );
-    }
-
-    $(container).empty()
-      .append($('<form />')
-          .attr('id', 'search-form')
-          .attr('autocomplete', 'on')
-          .on('submit', function(e) {
-            // Submit form in iframe to store autocomplete information
-            DOM.submitFormInIFrame(document.getElementById('search-form'));
-            // Do actual search
-            CATMAID.TracingTool.search();
-            // Cancel submit in this context to not reload the page
-            return false;
-          })
-          .append($('<input type="text" id="search-box" name="search-box" />'))
-          .append($('<input type="submit" />')))
-      .append('<div id="search-results" />');
-
-    // Focus search box
-    setTimeout(function() { $('input#search-box', container).focus(); }, 10);
-
-    return container;
-  };
-
   var createKeyboardShortcutsWindow = function()
   {
     var win = new CMWWindow( "Keyboard Shortcuts" );
@@ -1899,19 +1856,6 @@ var WindowMaker = new function()
           'source code on <a href="https://github.com/catmaid/CATMAID">' +
           'GitHub</a>, where you can also <a href="https://github.com/catmaid/CATMAID/issues">' +
           'report</a> bugs and problems.');
-
-    addListener(win, container);
-
-    addLogic(win);
-
-    return {window: win, widget: null};
-  };
-
-  var createSearchWindow = function()
-  {
-    var win = new CMWWindow( "Search" );
-    addWindowConfigButton(win);
-    var container = self.setSearchWindow(win);
 
     addListener(win, container);
 
@@ -1965,7 +1909,6 @@ var WindowMaker = new function()
 
   var creators = {
     "keyboard-shortcuts": createKeyboardShortcutsWindow,
-    "search": createSearchWindow,
     "3d-webgl-view": create3dWebGLWindow,
     "graph-widget": createGraphWindow,
     "connectivity-graph-plot": createConnectivityGraphPlot,

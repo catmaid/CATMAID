@@ -3083,7 +3083,7 @@ SkeletonAnnotations.TracingOverlay.prototype.goToNextBranchOrEndNode = function(
  */
 SkeletonAnnotations.TracingOverlay.prototype.cycleThroughBranches = function (
     treenode_id, node_index, ignoreVirtual) {
-  if (typeof this.nextBranches === 'undefined') return;
+  if (typeof this.nextBranches === 'undefined') return Promise.reject("No branch information found");
 
   // Find branch of which treenode_id is part
   var referenceNodeID;

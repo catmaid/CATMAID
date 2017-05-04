@@ -37,7 +37,6 @@ connection pooling and communicates efficiently with Nginx.
       socket = /run/uwsgi/app/catmaid/socket
       mount = /<catmaid-relative-url>=<catmaid-path>/django/projects/mysite/django.wsgi
       manage-script-name = true
-      uid = www-data
       workers = 2
       threads = 2
       disable-logging = true
@@ -47,13 +46,22 @@ connection pooling and communicates efficiently with Nginx.
    workers * threads * work_mem (see ``postgresql.conf``). Make sure you have
    enough memory available here.
 
-4. Make sure that the ``socket`` directory in your INI file is writable by the
-   www-data user (``/run/uwsgi/app/catmaid/`` above). You now be able to start
-   uWSGI manually with one of the following::
+4. Make sure that the ``socket`` directory from your ``.ini`` file
+   (``/run/uwsgi/app/catmaid/`` above) exists and is readable and writable by
+   the user that will run ``uwsgi``. You now should able to start
+   uWSGI manually, running it as the current user::
 
-      uwsgi --ini <catmaid-path>/catmaid-uwsgi.ini
+      uwsgi --ini <catmaid-path>/django/projects/mysite/catmaid-uwsgi.ini
 
-5.  Here is a sample nginx configuration file, where ``<catmaid-relative-url> = /catmaid``::
+   Also note that Nginx needs to be able to access the created ``socket`` file
+   to communicate with uWSGI. Either you run ``uwsgi`` as the user running Nginx
+   (typically ``www-data``) or you give the Nginx user access on the file, e.g.
+   by using a ``SetGID`` sticky bit on the ``socket`` folder so that all files
+   created in it have automatically the default group of the Nginx running user
+   assigned (typically ``www-data``).
+
+5.  Here is a sample nginx configuration file, where ``<catmaid-relative-url> = /catmaid``
+    (replace this with ``/`` if you don't run in a subdirectory)::
 
        server {
          listen 8080;

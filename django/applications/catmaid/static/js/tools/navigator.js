@@ -259,8 +259,8 @@
       var x = m.x - offset.left,
         y = m.y - offset.top;
       if (Navigator.Settings.session.use_cursor_following_zoom &&
-        x >= 0 && x <= self.stackViewer.viewWidth &&
-        y >= 0 && y <= self.stackViewer.viewHeight) {
+          x >= 0 && x <= self.stackViewer.viewWidth &&
+          y >= 0 && y <= self.stackViewer.viewHeight) {
         x /= self.stackViewer.scale;
         y /= self.stackViewer.scale;
         x += (self.stackViewer.x - self.stackViewer.viewWidth / self.stackViewer.scale / 2);

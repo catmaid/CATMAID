@@ -514,7 +514,7 @@ var WindowMaker = new function()
         [
           [document.createTextNode('Shading: ')],
           [shadingMenu],
-          [' Inv:', o.invert_shading, WA.toggleInvertShading.bind(WA), true],
+          [' Inv:', o.invert_shading, WA.toggleInvertShading.bind(WA), false],
           [document.createTextNode(' Color:')],
           [colorMenu],
           [document.createTextNode(' Synapse color:')],

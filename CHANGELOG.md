@@ -58,6 +58,9 @@ Review widget:
 - The color of custom tag spheres can now be adjusted through a "color" button
   right next to the custom tag pattern.
 
+- Skeleton coloring can now be set to not interpolate between different vertex
+  colors and instead use always child colors for an edge.
+
 Miscellaneous:
 
 - When a node is selected a minimal node status line is now shown again using

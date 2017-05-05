@@ -654,7 +654,8 @@
           };
         }
       },
-      SkeletonMaterial: CATMAID.getSkeletonMaterialType(options['neuron_material'])
+      SkeletonMaterial: CATMAID.getSkeletonMaterialType(options['neuron_material']),
+      interpolateVertexColors: options.interpolate_vertex_colots
     };
   };
 

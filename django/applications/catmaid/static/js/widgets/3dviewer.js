@@ -803,6 +803,7 @@
     this.skeleton_line_width = 3;
     this.skeleton_node_scaling = 1.0;
     this.invert_shading = false;
+    this.interpolate_vertex_colots = true;
     this.follow_active = false;
     this.update_active = false;
     this.distance_to_active_node = 5000; // nm
@@ -4481,12 +4482,27 @@
       this.line_material.needsUpdate = true;
 
       var pickColor = colorizer.colorPicker(this);
+      var interpolate = colorizer.interpolateVertexColors;
 
       var seen = {};
-      this.geometry['neurite'].colors = this.geometry['neurite'].vertices.map(function(vertex) {
-        var node_id = vertex.node_id,
-            color = seen[node_id];
+      var last = null;
+      this.geometry['neurite'].colors = this.geometry['neurite'].vertices.map(function(vertex, i) {
+        var node_id;
+        if (interpolate) {
+          node_id = vertex.node_id;
+        } else {
+          // Vertices are organized as pairs of child and parent for each
+          // segment. If colors should not be interpolated, each parent gets
+          // the color of its child (last). Otherwise, pairs of parents and
+          // children will share a color.
+          var isChild = (i % 2) === 0;
+          node_id = isChild ? vertex.node_id : last;
+        }
+
+        var color = seen[node_id];
         if (color) return color;
+
+        last = node_id;
 
         var weight = node_weights[node_id];
         weight = undefined === weight? 1.0 : weight * 0.9 + 0.1;
@@ -5847,6 +5863,11 @@
     this.options.invert_shading = !this.options.invert_shading;
     if (this.options.shading_method === 'none') return;
     this.set_shading_method();
+  };
+
+  WebGLApplication.prototype.setInterpolateVertexColors = function(enabled) {
+    this.options.interpolate_vertex_colots = enabled;
+    this.updateSkeletonColors();
   };
 
   WebGLApplication.prototype.setFollowActive = function(value) {

@@ -517,6 +517,9 @@ var WindowMaker = new function()
           [' Inv:', o.invert_shading, WA.toggleInvertShading.bind(WA), false],
           [document.createTextNode(' Color:')],
           [colorMenu],
+          [' Interpolate:', o.interpolate_vertex_colots, function() {
+            WA.setInterpolateVertexColors(this.checked);
+          }, false],
           [document.createTextNode(' Synapse color:')],
           [synColors],
           {

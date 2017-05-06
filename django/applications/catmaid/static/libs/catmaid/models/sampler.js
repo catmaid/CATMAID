@@ -259,14 +259,14 @@
        */
       makeDomains: function(skeletonId, options) {
         return Sampling.getArbor(skeletonId)
-          .then(function(arbor) {
+          .then(function(arborParser) {
             return {
               domains: [{
-                startNodeId: arbor.arbor.root,
-                endNodeIds: arbor.arbor.findEndNodes()
+                startNodeId: arborParser.arbor.root,
+                endNodeIds: arborParser.arbor.findEndNodes()
               }],
               cache: {
-                arbor: arbor
+                arbor: arborParser
               }
             };
           });
@@ -333,7 +333,7 @@
             return {
               domains: domains,
               cache: {
-                arbor: arbor
+                arbor: arborParser
               }
             };
           });

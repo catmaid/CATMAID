@@ -6,9 +6,9 @@ from django.http import JsonResponse
 from catmaid.control.authentication import (requires_user_role, user_can_edit,
         can_edit_or_fail)
 from catmaid.control.common import get_request_list
-from catmaid.models import (Sampler, SamplerDomain, SamplerDomainType,
+from catmaid.models import (Connector, Sampler, SamplerDomain, SamplerDomainType,
         SamplerDomainEnd, SamplerInterval, SamplerIntervalState, SamplerState,
-        SamplerConnectorState, UserRole)
+        SamplerConnector, SamplerConnectorState, UserRole)
 
 from rest_framework.decorators import api_view
 
@@ -263,6 +263,81 @@ def list_connector_states(request, project_id):
         'name': s.name,
         'description': s.description
     } for s in connector_states], safe=False)
+
+@api_view(['GET'])
+@requires_user_role([UserRole.Browse])
+def list_connectors(request, project_id):
+    """Get a list of connectors that already have a state associated with them.
+
+    If a connector is not part of this list it is implicetely assumed to be in
+    an "untouched" state.
+    ---
+    parameters:
+     - name: interval_id
+       description: The interval all results should be part of
+       type: integer
+       paramType: form
+       required: false
+     - name: connector_id
+       description: The connector to get sampler information for
+       type: integer
+       paramType: form
+       required: false
+     - name: state_id
+       description: The state all result sets have to have.
+       type: integer
+       paramType: form
+       required: false
+    models:
+      sampler_connector_entity:
+        id: sampler_connector_entity
+        description: A sampler connector.
+        properties:
+          id:
+            type: integer
+            description: Id of sampler connector
+          interval_id:
+            type: integer
+            description: The interval this sampler connector is part of
+            required: true
+          connector_id:
+            type: integer
+            description: The referenced connector
+            required: true
+          state_id:
+            type: integer
+            description: The state of this sampler connector
+            required: true
+    type:
+      connector_states:
+        type: array
+        items:
+          $ref: sampler_connector_entity
+        description: Available sampler connectors
+        required: true
+    """
+    interval_id = request.GET.get('interval_id')
+    connector_id = request.GET.get('connector_id')
+    state_id = request.GET.get('state_id')
+
+    filters = {}
+    if interval_id:
+        filters['interval'] = interval_id
+    if connector_id:
+        filters['connector_id'] = connector_id
+    if state_id:
+        filters['state_id'] = state_id
+
+    sampler_connectors = SamplerConnector.objects.all()
+    if filters:
+        sampler_connectors = sampler_connectors.filter(**filters)
+
+    return JsonResponse([{
+        'id': c.id,
+        'interval_id': c.interval_id,
+        'connector_id': c.connector_id,
+        'state_id': c.connector_state_id
+    } for c in sampler_connectors], safe=False)
 
 @api_view(['GET'])
 @requires_user_role([UserRole.Browse])
@@ -624,6 +699,51 @@ def list_interval_states(request, project_id):
         'name': s.name,
         'description': s.description
     } for s in interval_states], safe=False)
+
+@api_view(['POST'])
+@requires_user_role([UserRole.Annotate])
+def set_connector_state(request, project_id, interval_id, connector_id):
+    """Set state of sampler connector
+    ---
+    parameters:
+     - name: interval_id
+       description: Interval the connector is part of
+       type: integer
+       paramType: form
+       required: true
+     - name: connector_id
+       description: Connector to set state of
+       type: integer
+       paramType: form
+       required: true
+     - name: state_id
+       description: The new state
+       type: integer
+       paramType: form
+       required: true
+    """
+    interval = SamplerInterval.objects.get(id=interval_id)
+    connector = Connector.objects.get(id=connector_id)
+
+    state_id = request.POST.get('state_id')
+    if state_id is None:
+        raise ValueError("Need sampler connector state ID")
+
+    state = SamplerConnectorState.objects.get(id=state_id)
+    sampler_connector, created = SamplerConnector.objects.get_or_create(project_id=project_id,
+            interval=interval, connector=connector, defaults={
+                'connector_state': state,
+                'user': request.user
+            })
+
+    if not created:
+        sampler_connector.connector_state = state
+        sampler_connector.save()
+
+    return JsonResponse({
+        'id': sampler_connector.id,
+        'connector_state_id': state.id
+    })
 
 
 @api_view(['POST'])

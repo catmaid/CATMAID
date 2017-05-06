@@ -1280,277 +1280,485 @@
 
 
   /**
-   * Let user annotate all branch points and synapses. Then pick a twig branch
-   * point from the interval at random. Trace it to completion, annotating
-   * synapses as above.
+   * Return all nodes on the straight path in then interval [startNodeId,
+   * endNodeId], assuming both nodes are connected through a monotone
+   * parent-child relationship. The direction doesn't matter as long as <strict>
+   * isn't set to true. If this is the case, the start node has to be closer to
+   * root than end node. The result can optionally be sorted by setting <sort>
+   * to true.
    */
-  var TwigWorkflowStep = function() {
-    CATMAID.WorkflowStep.call(this, "Twig");
-  };
-
-  TwigWorkflowStep.prototype = Object.create(CATMAID.WorkflowStep);
-  TwigWorkflowStep.prototype.constructor = CATMAID.WorkflowStep;
-
-  TwigWorkflowStep.prototype.activate = function(state) {
-
-  };
-
-  TwigWorkflowStep.prototype.createControls = function(widget) {
-    var self = this;
-    return [{
-      type: 'button',
-      label: 'Update twigs',
-      onclick: function() {
-        widget.update();
+  var getIntervalBackboneNodes = function(arbor, startNodeId, endNodeId, sort, strict) {
+    var intervalNodes = [];
+    // Assume end node is downstream of start node
+    var nodes = arbor.edges;
+    var lastNode = endNodeId;
+    while (true) {
+      lastNode = parseInt(lastNode, 10);
+      intervalNodes.push(lastNode);
+      if (lastNode == startNodeId) {
+        break;
       }
-    }, {
-      type: 'button',
-      label: 'Pick random branch point',
-      onclick: function() {
-        self.pickRandomBranch(widget);
+
+      lastNode = nodes[lastNode];
+      if (!lastNode) {
+        break;
       }
-    }];
+    }
+
+    if (intervalNodes.length === 0) {
+      return null;
+    }
+
+    // If the last node is not the interval start node, try reversing start/end
+    // node if not in strict mode.
+    if (intervalNodes[intervalNodes.length - 1] == startNodeId) {
+      return sort ? intervalNodes.reverse() : intervalNodes;
+    } else {
+      return strict ? null : getIntervalBackboneNodes(arbor, endNodeId, startNodeId, sort, true);
+    }
   };
 
-  TwigWorkflowStep.prototype.isComplete = function(state) {
-    return !!state['twigNodeId'];
+  /**
+   * Return all nodes that are part of the requested interval. This set will not
+   * contain any branches starting off the start or end node, as these will be
+   * part of other intervals.
+   */
+  var getIntervalNodes = function(arbor, startNodeId, endNodeId) {
+    startNodeId = parseInt(startNodeId, 10);
+    endNodeId = parseInt(endNodeId, 10);
+    var intervalBackbone = getIntervalBackboneNodes(arbor, startNodeId,
+        endNodeId, true);
+
+    if (!intervalBackbone || intervalBackbone.length === 0) {
+      throw new CATMAID.ValueError("Could not find interval backbone for between nodes " +
+          startNodeId + " and " + endNodeId);
+    }
+
+    var edges = arbor.edges;
+    var allSuccessors = arbor.allSuccessors();
+
+    // Collect nodes between start and end of the interval back-bone, all
+    // branches inbetween will be added. Branches originating from the start or
+    // end node will *not* be added, other intervals have to be used for those.
+    var workingSet = intervalBackbone.map(function(n) {
+      // Make sure we deal with numbers
+      return parseInt(n, 10);
+    });
+    var intervalNodes = new Set(workingSet);
+    while (workingSet.length > 0) {
+      var currentNodeId = workingSet.pop();
+      if (currentNodeId === startNodeId || currentNodeId === endNodeId) {
+        continue;
+      }
+
+      var children = allSuccessors[currentNodeId];
+      for (var i=0; i<children.length; ++i) {
+        var childId = parseInt(children[i], 10);
+        intervalNodes.add(childId);
+        workingSet.push(childId);
+      }
+    }
+
+    return intervalNodes;
   };
 
-  TwigWorkflowStep.prototype.updateContent = function(content, widget) {
+  /**
+   * Pick a synapse at random from the traced interval (input, output, or
+   * either, depending on the goals).
+   */
+  var SynapseWorkflowStep = function() {
+    CATMAID.WorkflowStep.call(this, "Synapse");
+    this.sampleInputConnectors = true;
+    this.sampleOutputConnectors = true;
+    this.connectorData = {};
+    this.intervalTreenodes = new Set();
+  };
+
+  SynapseWorkflowStep.prototype = Object.create(CATMAID.WorkflowStep);
+  SynapseWorkflowStep.prototype.constructor = CATMAID.WorkflowStep;
+
+  SynapseWorkflowStep.prototype.activate = function(state) {
+  };
+
+  SynapseWorkflowStep.prototype.createControls = function(widget) {
     var self = this;
-    var intervalLength = widget.state['intervalLength'];
-    var samplerId = widget.state['samplerId'];
-    var skeletonId = widget.state['skeletonId'];
-    var domain = widget.state['domain'];
+    return [
+      {
+        type: 'checkbox',
+        label: 'Input syanpses',
+        title: 'Consider synapses that are pre-synaptic to this interval for sampling',
+        value: this.sampleInputConnectors,
+        onclick: function() {
+          self.sampleInputConnectors = this.checked;
+        }
+      },
+      {
+        type: 'checkbox',
+        label: 'Ouput syanpses',
+        title: 'Consider synapses that are post-synaptic to this interval for sampling',
+        value: this.sampleOutputConnectors,
+        onclick: function() {
+          self.sampleOutputConnectors = this.checked;
+        }
+      },
+      {
+        type: 'button',
+        label: 'Pick random synapse',
+        title: "Select a random non-abandoned, non-excluded synapse to continue with",
+        onclick: function() {
+          self.pickRandomSynapse(widget);
+        }
+      }
+    ];
+  };
+
+  SynapseWorkflowStep.prototype.isComplete = function(state) {
+    return !!state['synapseSelected'];
+  };
+
+  SynapseWorkflowStep.prototype.updateContent = function(content, widget) {
     var interval = widget.state['interval'];
+    if (!interval) {
+      throw new CATMAID.ValueError("Need interval for synapse workflow step");
+    }
+    var domain = widget.state['domain'];
+    if (domain === undefined) {
+      CATMAID.warn("Need domain for synapse workflow step");
+      return;
+    }
 
     var p = content.appendChild(document.createElement('p'));
-    p.appendChild(document.createTextNode('Reconstruct all synapses and twig ' +
-        'branch points on this interval. Create seed nodes for all input ' +
-        'synapses; only create one or a few seed nodes for each output synapse. ' +
-        'Once this is done, select a (random) branch to continue.'));
-    var name = CATMAID.NeuronNameService.getInstance().getName(skeletonId);
+    var msg = (widget.state['reviewRequired'] ?
+          'Reconstruct interval to completion and have it reviewed. ' :
+          'Reconstruct interval to completion. ') +
+        'A warning is shown if you select a node outside the interval. ' +
+        'Create seed nodes for all input synapses; only create one or a few ' +
+        'seed nodes for each output synapse. Once this is done, select a ' +
+        '(random) synapse to continue. Below is a list of connectors in this interval.';
+    p.appendChild(document.createTextNode(msg));
+
+    var intervalStartNodeId = interval.start_node_id;
+    var intervalEndNodeId = interval.end_node_id;
     var p2 = content.appendChild(document.createElement('p'));
-    p2.appendChild(document.createTextNode('Target skeleton: '));
-    var a = p2.appendChild(document.createElement('a'));
-    a.appendChild(document.createTextNode(name));
-    a.href = '#';
-    a.onclick = function() {
-      CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeletonId);
-    };
-    p2.appendChild(document.createTextNode(' Sampler: #' + samplerId +
-        ' Domain: #' + domain.id + ' Interval length: ' + intervalLength +
-        'nm Interval: #' + interval.id + ' Interval start: '));
-    var aStart = p2.appendChild(document.createElement('a'));
-    aStart.appendChild(document.createTextNode(interval.start_node_id));
-    aStart.href = '#';
-    aStart.onclick = function() {
-      SkeletonAnnotations.staticMoveToAndSelectNode(interval.start_node_id);
-    };
-    p2.appendChild(document.createTextNode(' Interval end: '));
-    var aEnd = p2.appendChild(document.createElement('a'));
-    aEnd.appendChild(document.createTextNode(interval.end_node_id));
-    aEnd.href = '#';
-    aEnd.onclick = function() {
-      SkeletonAnnotations.staticMoveToAndSelectNode(interval.end_node_id);
-    };
+    p2.innerHTML = 'Interval start: <a href="#" data-action="select-node" data-node-id="' + intervalStartNodeId +
+        '">' + intervalStartNodeId + '</a> Interval end: <a href="#" data-action="select-node" data-node-id="' +
+        intervalEndNodeId + '">' + intervalEndNodeId + '</a>';
+
+    $('a', p2).on('click', function() {
+      var nodeId = this.dataset.nodeId;
+      SkeletonAnnotations.staticMoveToAndSelectNode(nodeId);
+    });
+
+    // Get review information for interval
+
+    var skeletonId = widget.state['skeletonId'];
 
     // Create a data table with all available domains or a filtered set
-    var table = document.createElement('table');
-    content.appendChild(table);
+    var inputHeader = content.appendChild(document.createElement('h3'));
+    inputHeader.appendChild(document.createTextNode('Input connectors'));
+    inputHeader.style.clear = 'both';
+    var inputTable = document.createElement('table');
+    content.appendChild(inputTable);
 
+    var outputHeader = content.appendChild(document.createElement('h3'));
+    outputHeader.appendChild(document.createTextNode('Output connectors'));
+    outputHeader.style.clear = 'both';
+    var outputTable = document.createElement('table');
+    content.appendChild(outputTable);
+
+    // Get arbor if not already cached
+    var arborParser = widget.state['arbor'];
+    var prepare = Promise.resolve();
+    if (!arborParser) {
+      prepare = CATMAID.Sampling.getArbor(skeletonId)
+          .then(function(result) {
+            arborParser = result;
+            widget.state['arbor'] = result;
+          });
+    }
+    // Create up-to-date version of interval nodes
+    var self = this;
+    Promise.all([prepare, this.ensureMetadata()])
+      .then(getDomainDetails.bind(this, project.id, domain.id))
+      .then(function(domainDetails) {
+        // Regenerate interval information
+        self.intervalTreenodes.clear();
+        var intervalNodes = getIntervalNodes(arborParser.arbor,
+            interval.start_node_id, interval.end_node_id);
+        self.intervalTreenodes.addAll(intervalNodes);
+      })
+      .then(function() {
+        self.datatables = [
+          self.makeConnectorTable(inputTable, interval, skeletonId, "presynaptic_to"),
+          self.makeConnectorTable(outputTable, interval, skeletonId, "postsynaptic_to")
+        ];
+      })
+      .catch(CATMAID.handleError);
+  };
+
+  SynapseWorkflowStep.prototype.makeConnectorTable = function(table, interval, skeletonId, relation) {
+    var self = this;
+    var intervalId = interval.id;
     var datatable = $(table).DataTable({
       dom: "lrphtip",
       autoWidth: false,
       paging: true,
       lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
       ajax: function(data, callback, settings) {
-        var twigEnds = widget.state['intervalTwigEnds'] || [];
-        callback({
-          draw: data.draw,
-          data: twigEnds
-        });
+        Promise.all([
+          CATMAID.fetch(project.id + '/connectors/', 'GET', {
+            'skeleton_ids': [skeletonId],
+            'with_tags': 'false',
+            'relation_type': relation
+          }),
+          CATMAID.fetch(project.id + '/samplers/connectors/')
+        ])
+        .then(function(results) {
+          var skeletonConnectors = results[0];
+          var samplerConnectors = results[1];
+
+          var connectorData = skeletonConnectors.links.filter(function(l) {
+            return self.intervalTreenodes.has(l[7]);
+          }).map(function(l) {
+            return {
+              skeleton_id: l[0],
+              id: l[1],
+              x: l[2],
+              y: l[3],
+              z: l[4],
+              confidence: l[5],
+              user_id: l[6],
+              treenode_id: l[7],
+              edition_time: l[8],
+              type: relation
+            };
+          });
+
+          // Parse data so that it maches the table
+          // Store data in worfklow step
+          self.connectorData[relation] = connectorData;
+          self.samplerConnectors = samplerConnectors.reduce(function(o, c) {
+            o[c.connector_id] = c;
+            return o;
+          }, {});
+
+          callback({
+            draw: data.draw,
+            data: connectorData
+          });
+        })
+        .catch(CATMAID.handleError);
       },
       order: [],
       columns: [
         {
-          title: "First node in twig",
-          orderable: true,
+          data: "id",
+          title: "Connector",
+          orderable: false,
           render: function(data, type, row, meta) {
-            if ("display") {
+            if (type === "display") {
               return '<a href="#" data-action="select-node" data-node-id="' +
-                  row.nodeId + '" >' + row.nodeId + '</a>';
+                  row.id + '">' + row.id + '</a>';
             } else {
-              return row.nodeId;
+              return row.id;
             }
           }
         },
         {
-          data: "type",
-          title: "Type",
+          data: "user_id",
+          title: "User",
           orderable: true,
+          render: function(data, type, row, meta) {
+            return CATMAID.User.safe_get(row.user_id).login;
+          }
+        },
+        {
+          data: "edition_time",
+          title: "Last edited on (UTC)",
+          orderable: true,
+          render: function(data, type, row, meta) {
+            return formatDate(new Date(row.edition_time));
+          }
+        },
+        {
+          data: "treenode_id",
+          title: "Treenode",
+          orderable: true,
+          render: function(data, type, row, meta) {
+            if (type === "display") {
+              return '<a href="#" data-action="select-node" data-node-id="' +
+                  row.treenode_id + '">' + row.treenode_id + '</a>';
+            } else {
+              return row.treenode_id;
+            }
+          }
+        },
+        {
+          title: "State",
+          orderable: true,
+          render: function(data, type, row, meta) {
+            var samplerConnector = self.samplerConnectors[row.id];
+            if (samplerConnector) {
+              var state = self.possibleStates[samplerConnector.state_id];
+              return state ? state.name : ("unknown (" + samplerConnector.state_id + ")");
+            } else {
+              return "untouched";
+            }
+          }
+        },
+        {
+          title: "Action",
+          orderable: true,
+          render: function(data, type, row, meta) {
+            return '<a href="#" data-action="exclude" data-node-id="' + row.id + '">exclude</a> ' +
+            '<a href="#" data-action="reset" data-node-id="' + row.id + '">reset</a>';
+          }
         }
       ],
-    }).on('dblclick', 'tr', function(e) {
-      var data = datatable.row(this).data();
-      if (data) {
-        var table = $(this).closest('table');
-        var tr = $(this).closest('tr');
-        var data =  $(table).DataTable().row(tr).data();
-        SkeletonAnnotations.staticMoveToAndSelectNode(data.nodeId);
+    });
+
+    var setState = function(connectorId, stateName) {
+      var stateId;
+      for (var sid in self.possibleStates) {
+        var state = self.possibleStates[sid];
+        if (state && state.name === stateName) {
+          stateId = sid;
+          break;
+        }
       }
-    }).on('click', 'a[data-action=select-node]', function() {
-      var nodeId = parseInt(this.dataset.nodeId, 10);
+      if (stateId === undefined) {
+        throw new CATMAID.ValueError("Couldn't find ID of state '" + stateName + "'");
+      }
+
+      CATMAID.fetch(project.id + '/samplers/domains/intervals/' + intervalId +
+          '/connectors/' + connectorId + '/set-state', 'POST', {
+            'state_id':  stateId
+          })
+        .then(function(response) {
+          CATMAID.msg("Connector excluded", "Connector " + connectorId + " is now " + stateName);
+          datatable.ajax.reload();
+        })
+        .catch(CATMAID.handleError);
+    };
+
+    datatable.on('click', 'a[data-action=exclude]', function() {
+      var connectorId = this.dataset.nodeId;
+      setState(connectorId, 'excluded');
+    }).on('click', 'a[data-action=reset]', function() {
+      var connectorId = this.dataset.nodeId;
+      setState(connectorId, 'untouched');
+    });
+
+    datatable.on('click', 'a[data-action=select-node]', function() {
+      var nodeId = this.dataset.nodeId;
       SkeletonAnnotations.staticMoveToAndSelectNode(nodeId);
     });
 
-    // Create table containing all branches, based on current arbor. Since this
-    // step asks the user to change the skeleton, the arbor is reloaded for a
-    // table update.
-    this.getIntervalArbors(skeletonId, interval)
-      .then(function(intervalArbors) {
-        widget.state['intervalArbors'] = intervalArbors;
-        self.intervalNodes = new Set(intervalArbors.all.nodesArray().map(function(n) { return parseInt(n, 10); }));
-        var intervalEndNodeId = interval.end_node_id;
-        var endNodes = intervalArbors.twigs.findEndNodes()
-            .filter(function(node) {
-              return node != intervalEndNodeId;
-            });
-        widget.state['intervalTwigEnds'] = endNodes.map(function(nodeId) {
-          return {
-            'nodeId': nodeId,
-            'type': 'branch'
-          };
+    return datatable;
+  };
+
+  SynapseWorkflowStep.prototype.refreshTables = function() {
+    if (this.datatables && this.datatables.length > 0) {
+      for (var i=0; i<this.datatables.length; ++i) {
+        this.datatables[i].ajax.reload();
+      }
+    }
+  };
+
+  SynapseWorkflowStep.prototype.ensureMetadata = function() {
+    if (this.possibleStates) {
+      return Promise.resolve();
+    } else {
+      var self = this;
+      return CATMAID.fetch(project.id + '/samplers/connectors/states/')
+        .then(function(result) {
+          self.possibleStates = result.reduce(function(o, is) {
+            o[is.id] = is;
+            return o;
+          }, {});
         });
-
-        datatable.ajax.reload();
-      })
-      .catch(CATMAID.handleError);
+    }
   };
 
-  /**
-   * Return two new new Arbor instances that covers only the requested interval.
-   * The twig arbor will only contain the first twig node after a branch.
-   *
-   * @return {Promise} Resolved with two-field object, one for each arbor
-   */
-  TwigWorkflowStep.prototype.getIntervalArbors = function(skeletonId, interval) {
-    return CATMAID.Sampling.getArbor(skeletonId)
-      .then(function(arbor) {
-        var startNodeId = interval.start_node_id;
-        var endNodeId = interval.end_node_id;
-        var edges = arbor.arbor.edges;
-        var allSuccessors = arbor.arbor.allSuccessors();
-
-        var intervalBackbone = [parseInt(endNodeId, 10)];
-        while (true) {
-          var lastNode = intervalBackbone[intervalBackbone.length - 1];
-          var parentId = edges[lastNode];
-          intervalBackbone.push(parseInt(parentId, 10));
-          if (parentId == startNodeId || !parentId) {
-            break;
-          }
-        }
-
-        // Create an interval arbor by walking the interval backbone from start
-        // to end, adding all branches that start in-between. Branches from
-        // neither start nor end will be added, other intervals have to be used
-        // to cover these.
-        var twigEdges = {};
-        var intervalEdges = {};
-        var backboneSet = new Set(intervalBackbone);
-        var workingSet = intervalBackbone;
-        while (workingSet.length > 0) {
-          var edgeChildId = workingSet.pop();
-          if (edgeChildId == startNodeId) {
-            // The relevant child edge will be added by the child
-            continue;
-          }
-
-          var parentId = edges[edgeChildId];
-          intervalEdges[edgeChildId] = parentId;
-
-          // For the twig abor, the parent has to be in the backbone.
-          if (backboneSet.has(parentId)) {
-            twigEdges[edgeChildId] = parentId;
-          }
-
-          if (edgeChildId == endNodeId) {
-            // No children of last node will be added
-            continue;
-          }
-
-          var children = allSuccessors[edgeChildId];
-          for (var i=0; i<children.length; ++i) {
-            var childId = children[i];
-            // Only consider unknown nodes
-            if (undefined === intervalEdges[childId]) {
-              workingSet.push(childId);
-            }
-          }
-        }
-
-        var twigArbor = new Arbor();
-        twigArbor.edges = twigEdges;
-        twigArbor.root = startNodeId;
-
-        var intervalArbor = new Arbor();
-        intervalArbor.edges = intervalEdges;
-        intervalArbor.root = startNodeId;
-
-        return {
-          twigs: twigArbor,
-          all: intervalArbor
-        };
-      });
-  };
-
-  TwigWorkflowStep.prototype.pickRandomBranch = function(widget) {
-    var interval = widget.state['interval'];
-    var twigArbor = widget.state['intervalArbors'].twigs;
-    if (!twigArbor) {
-      CATMAID.warn("No twig arbor available");
+  SynapseWorkflowStep.prototype.pickRandomSynapse = function(widget) {
+    if (!this.connectorData) {
+      CATMAID.warn('Couldn\'t find any connectors');
       return;
     }
-    var intervalEndNodeId = interval.end_node_id;
-    var endNodes = twigArbor.findEndNodes()
-        .filter(function(node) {
-          return node != intervalEndNodeId;
-        });
 
-    // For now, use uniform distribution
-    var twig = endNodes[Math.floor(Math.random()*endNodes.length)];
+    // TODO: If review is required, check review first
 
-    // Update state
-    widget.state['twigNodeId'] = twig;
-    widget.workflow.advance();
-    widget.update();
+
+    // Ignore non-excluded, non-abandoned
+    var connectors = [];
+    var incomingConnectors = this.connectorData['presynaptic_to'];
+    if (this.sampleInputConnectors && incomingConnectors) {
+      for (var i=0; i<incomingConnectors.length; ++i) {
+        var connector = incomingConnectors[i];
+        var sc = this.samplerConnectors[connector.id];
+        if (!(sc && this.possibleStates[sc.state_id].name === "excluded")) {
+          connectors.push(connector);
+        }
+      }
+    }
+    var outgoingConnectors = this.connectorData['postsynaptic_to'];
+    if (this.sampleOutputConnectors && outgoingConnectors) {
+      for (var i=0; i<outgoingConnectors.length; ++i) {
+        var connector = outgoingConnectors[i];
+        var sc = this.samplerConnectors[connector.id];
+        if (!(sc && this.possibleStates[sc.state_id].name === "excluded")) {
+          connectors.push(connector);
+        }
+      }
+    }
+
+    if (connectors.length === 0) {
+      CATMAID.warn("No valid connectors found");
+      return;
+    }
+
+    // Select random synapse. For now, use uniform distribution
+    var connector = connectors[Math.floor(Math.random()*connectors.length)];
+    SkeletonAnnotations.staticMoveToAndSelectNode(connector.id);
   };
 
   /**
    * Warn users if they step out of looked at interval.
    */
-  TwigWorkflowStep.prototype.handleActiveNodeChange = function(widget, node) {
-    if (this.intervalNodes) {
-      if (!this.intervalNodes.has(node.id)) {
+  SynapseWorkflowStep.prototype.handleActiveNodeChange = function(widget, node) {
+    if (this.intervalTreenodes) {
+      var numericNodeId = parseInt(node.id, 10);
+      if (!this.intervalTreenodes.has(numericNodeId)) {
         var interval = widget.state['interval'];
         var warn = true;
-        if (SkeletonAnnotations.isRealNode(node.id)) {
-          // Unknown real nodes are outside of interval if they have no parent
-          // or if the node's parent is either the start or end node of the
-          // interval.
-          warn = !node.parent_id || !(this.intervalNodes.has(node.parent_id) &&
-              node.parent_id != interval.start_node_id && node.parent_id != interval.end_node_id);
-          if (!warn) {
-            // Add new in-interval node to set of known nodes.
-            this.intervalNodes.add(testNodeId);
-          }
+        if (node.type === SkeletonAnnotations.TYPE_CONNECTORNODE) {
+          // Refresh on new connectors
+          this.refreshTables();
+          return;
         } else {
-          // Unknown virtual nodes are outside of interval if both their real
-          // child and parent are not part of the interval
-          var childId = parseInt(SkeletonAnnotations.getChildOfVirtualNode(node.id), 10);
-          var parentId = parseInt(SkeletonAnnotations.getParentOfVirtualNode(node.id), 10);
-          warn = !(this.intervalNodes.has(childId) && this.intervalNodes.has(parentId));
+          if (SkeletonAnnotations.isRealNode(node.id)) {
+            var numericParentNodeId = parseInt(node.parent_id, 10);
+            // Unknown real nodes are outside of interval if they have no parent
+            // or if the node's parent is either the start or end node of the
+            // interval.
+            var isIntervalNode = this.intervalTreenodes.has(numericNodeId);
+            var parentIsInnerInervalNode = this.intervalTreenodes.has(numericParentNodeId) &&
+                numericParentNodeId != interval.start_node_id && numericParentNodeId != interval.end_node_id;
+            var isNewInnerIntervalNode = !isIntervalNode && parentIsInnerInervalNode;
+            warn = !node.parent_id || !isNewInnerIntervalNode;
+            if (!warn) {
+              // Add new in-interval node to set of known nodes.
+              if (isNewInnerIntervalNode) {
+                this.intervalTreenodes.add(numericNodeId);
+              }
+            }
+          } else {
+            // Unknown virtual nodes are outside of interval if both their real
+            // child and parent are not part of the interval
+            var childId = parseInt(SkeletonAnnotations.getChildOfVirtualNode(node.id), 10);
+            var parentId = parseInt(SkeletonAnnotations.getParentOfVirtualNode(node.id), 10);
+            warn = !(this.intervalTreenodes.has(childId) && this.intervalTreenodes.has(parentId));
+          }
         }
 
         if (warn) {
@@ -1561,38 +1769,6 @@
     } else {
       CATMAID.warn("Could not find interval nodes");
     }
-  };
-
-
-  /**
-   * Pick a synapse at random from the traced interval (input, output, or
-   * either, depending on the goals).
-   */
-  var SynapseWorkflowStep = function() {
-    CATMAID.WorkflowStep.call(this, "Synapse");
-  };
-
-  SynapseWorkflowStep.prototype = Object.create(CATMAID.WorkflowStep);
-  SynapseWorkflowStep.prototype.constructor = CATMAID.WorkflowStep;
-
-  SynapseWorkflowStep.prototype.activate = function(state) {
-
-  };
-
-  SynapseWorkflowStep.prototype.createControls = function(widget) {
-    return [];
-  };
-
-  SynapseWorkflowStep.prototype.isComplete = function(state) {
-    return !!state['synapseSelected'];
-  };
-
-  SynapseWorkflowStep.prototype.updateContent = function(content, widget) {
-    var p = content.appendChild(document.createElement('p'));
-    p.appendChild(document.createTextNode('Reconstruct twig to completion. ' +
-        'Create seed nodes for all input synapses; only create one or a few ' +
-        'seed nodes for each output synapse. Once this is done, select a ' +
-        '(random) synapse to continue.'));
   };
 
 

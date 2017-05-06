@@ -131,7 +131,10 @@ urlpatterns += [
     url(r'^(?P<project_id>\d+)/samplers/(?P<sampler_id>\d+)/domains/$', sampler.list_sampler_domains),
     url(r'^(?P<project_id>\d+)/samplers/(?P<sampler_id>\d+)/domains/add$', sampler.add_sampler_domain),
     url(r'^(?P<project_id>\d+)/samplers/(?P<sampler_id>\d+)/domains/add-all$', sampler.add_multiple_sampler_domains),
+    url(r'^(?P<project_id>\d+)/samplers/connectors/$', sampler.list_connectors),
     url(r'^(?P<project_id>\d+)/samplers/connectors/states/$', sampler.list_connector_states),
+    url(r'^(?P<project_id>\d+)/samplers/domains/intervals/(?P<interval_id>\d+)/connectors/(?P<connector_id>\d+)/set-state$',
+            sampler.set_connector_state),
     url(r'^(?P<project_id>\d+)/samplers/states/$', sampler.list_sampler_states),
 ]
 

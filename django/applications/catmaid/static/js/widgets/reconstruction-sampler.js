@@ -1135,55 +1135,89 @@
     prepare
       .then(getDomainDetails.bind(this, project.id, domain.id))
       .then(function(domainDetails) {
-        // Get domain arbor, which is then split into slabs, which are then
-        // further split into intervals of respective length.
-        var domainArbor = CATMAID.Sampling.domainArborFromModel(arbor.arbor, domainDetails);
-
-        // Create Intervals from partitions
-        var intervals = [], positions = arbor.positions;
-        var partitions = domainArbor.partitionSorted();
-        for (var i=0; i<partitions.length; ++i) {
-          var partition = partitions[i];
-          // Walk partition toward leafs
-          var sum = 0;
-          var intervalStartIdx = partition.length - 1;
-          var intervalStartPos = positions[partition[intervalStartIdx]];
-          // Traverse towards leafs, i.e. from the end of the partition entries
-          // to branch points or root.
-          for (var j=partition.length - 2; j>=0; --j) {
-            var oldSum = sum;
-            // Calculate new interval length
-            var pos = positions[partition[j]];
-            var dist = intervalStartPos.distanceTo(pos);
-            sum += dist;
-            //  If sum is greater than interval length, create new interval. If
-            //  <preferSmalError>, the end/start node is either the current one
-            //  or the last one, whichever is closer to the ideal length.
-            //  Otherwise this node is used.
-            if (sum > intervalLength) {
-              var steps = intervalStartIdx - j;
-              // Optionally, make the interval smaller if this means being
-              // closer to the ideal interval length. This can only be done if
-              // the current interval has at least a length of 2.
-              if (preferSmallerError && (intervalLength - oldSum) < dist && steps > 1 && j !== 0) {
-                intervals.push([partition[intervalStartIdx], partition[j+1]]);
-                intervalStartIdx = j + 1;
-              } else {
-                intervals.push([partition[intervalStartIdx], partition[j]]);
-                intervalStartIdx = j;
-              }
-              sum = 0;
-            }
-          }
-        }
-
-        return intervals;
+        return CATMAID.Sampling.intervalsFromModels(arbor.arbor,
+            arbor.positions, domainDetails, intervalLength,
+            preferSmallerError);
       })
       .then(function(intervals) {
-        return CATMAID.fetch(project.id + '/samplers/domains/' +
-            domain.id + '/intervals/add-all', 'POST', {
-                intervals: intervals
+        return new Promise(function(resolve, reject) {
+          // Show 3D viewer confirmation dialog
+          var dialog = new CATMAID.Confirmation3dDialog({
+            title: "Please confirm " + intervals.length + " domain interval(s)",
+            showControlPanel: false
+          });
+
+          // Create intervals if OK is pressed
+          dialog.onOK = function() {
+            CATMAID.fetch(project.id + '/samplers/domains/' +
+                domain.id + '/intervals/add-all', 'POST', {
+                    intervals: intervals
+                })
+              .then(function(result) {
+                CATMAID.msg("Success", intervals.length + " interval(s) created");
+                resolve(result);
+              })
+              .catch(reject);
+          };
+          dialog.onCancel = function() {
+            CATMAID.msg("No intervals created", "Canceled by user");
+          };
+
+          dialog.show();
+
+          // At the moment the 3D viewer is only accessible after display
+          var widget = dialog.webglapp;
+          var models = {};
+          models[skeletonId] = new CATMAID.SkeletonModel(skeletonId);
+          widget.addSkeletons(models, function() {
+
+            var makeEndNode = function(nodeId) {
+              return {
+                id: null,
+                node_id: parseInt(nodeId, 10)
+              };
+            };
+
+            /*
+
+            // The defined domains are noy yet available from the back-end,
+            // prepopulate the skeleton's sampler property with fake data that
+            // showing the domains to be created.
+            var skeletons = widget.space.content.skeletons;
+            var fakeDomainId = 0;
+            var previewDomains = domains.map(function(d) {
+              return {
+                ends : d.endNodeIds.map(makeEndNode),
+                id: fakeDomainId++, // use fake ID, needed for different colors
+                start_node_id: d.startNodeId, // needed
+                // parent_interval: null,
+                // project_id: project.id,
+                // sampler_id: null,
+              };
             });
+            for (var skeletonId in skeletons) {
+              var skeleton = skeletons[skeletonId];
+              skeleton.setSamplers([{
+                id: null,
+                domains: previewDomains,
+                // creation_time,
+                // edition_time,
+                // interval_length,
+                // skeleton_id,
+                // state_id,
+                // user_ud
+              }]);
+            }
+
+            */
+
+            // Set new shading and coloring methods
+            widget.options.color_method = 'sampler-intervals';
+            widget.options.shading_method = 'sampler-intervals';
+            widget.options.interpolate_vertex_colots = false;
+            widget.updateSkeletonColors();
+          });
+        });
       })
       .then(function(result) {
         widget.update();

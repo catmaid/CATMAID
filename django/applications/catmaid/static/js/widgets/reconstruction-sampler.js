@@ -235,6 +235,17 @@
     ];
   };
 
+  var deleteSampler = function(samplerId) {
+    if (confirm("Do you really want to delete this sampler and all associated data")) {
+      return CATMAID.fetch(project.id + "/samplers/" + samplerId + "/delete", "POST")
+        .then(function(response) {
+          CATMAID.msg("Success", "Deleted sampler " + response.deleted_sampler_id);
+        })
+        .catch(CATMAID.handleError);
+    }
+    return Promise.reject("Canceled by user");
+  };
+
   BackboneWorkflowStep.prototype.updateContent = function(content, widget) {
     var self = this;
 
@@ -374,7 +385,8 @@
           title: "Action",
           orderable: false,
           render: function(data, type, row, meta) {
-            return '<a href="#" data-action="next">Open</a>';
+            return '<a href="#" data-action="next">Open</a> <a href="#" data-sampler-id="' +
+                row.id + '" data-action="delete">Delete</a>';
           }
         }
       ],
@@ -395,12 +407,16 @@
     }).on('click', 'a[data-action=select-skeleton]', function() {
       var skeletonId = parseInt(this.dataset.skeletonId, 10);
       CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeletonId);
+    }).on('click', 'a[data-action=delete]', function() {
+      var samplerId = parseInt(this.dataset.samplerId, 10);
+      deleteSampler(samplerId)
+          .then(function() {
+            datatable.ajax.reload();
+          });
     }).on('click', 'a[data-action=next]', function() {
       var table = $(this).closest('table');
       var tr = $(this).closest('tr');
       var data =  $(table).DataTable().row(tr).data();
-
-      var samplerId = parseInt(this.dataset.samplerId, 10);
 
       widget.state['skeletonId'] = data.skeleton_id;
       widget.state['samplerId'] = data.id;

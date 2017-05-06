@@ -3,7 +3,8 @@ from collections import defaultdict
 from django.db import connection
 from django.http import JsonResponse
 
-from catmaid.control.authentication import requires_user_role, user_can_edit
+from catmaid.control.authentication import (requires_user_role, user_can_edit,
+        can_edit_or_fail)
 from catmaid.control.common import get_request_list
 from catmaid.models import (Sampler, SamplerDomain, SamplerDomainType,
         SamplerDomainEnd, SamplerInterval, SamplerIntervalState, SamplerState,
@@ -176,6 +177,19 @@ def add_sampler(request, project_id):
         "sampler_state": sampler.sampler_state_id,
         "user_id": sampler.user_id,
         "project_id": sampler.project_id
+    })
+
+@api_view(['POST'])
+@requires_user_role([UserRole.Annotate])
+def delete_sampler(request, project_id, sampler_id):
+    """Delete a sampler if permissions allow it.
+    """
+    can_edit_or_fail(request.user, sampler_id, "catmaid_sampler")
+    sampler = Sampler.objects.get(id=sampler_id)
+    sampler.delete()
+
+    return JsonResponse({
+        'deleted_sampler_id': sampler_id
     })
 
 @api_view(['GET'])

@@ -3,7 +3,13 @@
 
 ### Notes
 
-- A virtualenv upgrade is required.
+- A virtualenv upgrade is required. To correctly install one updated dependency,
+  the django-rest-swagger Python package has to be removed first from from the
+  virtualenv, before the virtualenv is updated:
+
+  pip uninstall django-rest-swagger
+  pip install -r requirements.txt
+
 
 ### Features and enhancements
 

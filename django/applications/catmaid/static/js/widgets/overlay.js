@@ -4535,7 +4535,7 @@ SkeletonAnnotations.TracingOverlay.prototype.importActiveNode = function(node) {
         node.skeleton_id, node.edition_time, node.user_id);
   } else if (SkeletonAnnotations.TYPE_CONNECTORNODE === node.type) {
     this.nodes[node.id] = this.graphics.newConnectorNode(
-        node.id, xs, ys, zs, zs = this.stackViewer.z, node.confidence,
+        node.id, xs, ys, zs, zs - this.stackViewer.z, node.confidence,
         node.subtype, node.edition_time, node.user_id);
   }
 };

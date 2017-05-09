@@ -90,6 +90,8 @@ Miscellaneous:
 - Fix some accidental key mapping collisions of some special keys and media
   keys.
 
+- Connector nodes can be deleted again right after they were created.
+
 
 ## 2017.04.20
 

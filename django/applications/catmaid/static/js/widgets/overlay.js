@@ -1891,7 +1891,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createSingleConnector = function (
   return createConnector.then(function(result) {
     // add treenode to the display and update it
     var nn = self.graphics.newConnectorNode(result.newConnectorId, pos_x, pos_y,
-        pos_z, 0, 5 /* confidence */, subtype, 0, true);
+        pos_z, 0, 5 /* confidence */, subtype, 0, CATMAID.session.userid);
     nn.edition_time_iso_str = result.newConnectorEditTime;
     self.nodes[result.newConnectorId] = nn;
     nn.createGraphics();

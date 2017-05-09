@@ -1042,8 +1042,9 @@
         // Only allow connectors that connect to both source groups, find links to
         // each group from the current connector.
         var inSource1 = [], inSource2 = [];
-        for (var i=0; i<counts[connector_id].length; ++i) {
-          var link = counts[connector_id][i];
+        var connectorCounts = counts[connector_id];
+        for (var i=0, max=connectorCounts.length; i<max; ++i) {
+          var link = connectorCounts[i];
           if (group1.hasOwnProperty(link[0])) inSource1.push(link);
           if (group2.hasOwnProperty(link[0])) inSource2.push(link);
         }

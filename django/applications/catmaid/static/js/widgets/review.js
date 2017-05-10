@@ -10,7 +10,9 @@
 
   CATMAID.ReviewSystem = function() {
     this.widgetID = this.registerInstance();
-    var projectID, skeletonID, subarborNodeId;
+    this.projectId = null;
+    this.currentSkeletonId = null;
+    this.currentSubarborNodeId = null;
     var self = this;
     self.mode = 'node-review';
     self.skeleton_segments = null;
@@ -35,7 +37,7 @@
 
 
     this.init = function() {
-      projectID = project.id;
+      this.projectId = project.id;
       followedUsers = [CATMAID.session.userid, 'whitelist'];
       this.redraw();
     };
@@ -139,6 +141,8 @@
      */
     this.endReview = function() {
       skipStep = null;
+      self.currentSkeletonId = null;
+      self.currentSubarborNodeId = null;
       self.skeleton_segments = null;
       self.current_segment = null;
       self.current_segment_index = 0;
@@ -197,7 +201,7 @@
           (self.isYView() || center) ? node.y : project.coordinates.y,
           (self.isXView() || center) ? node.x : project.coordinates.x)
       .then(function () {
-        SkeletonAnnotations.staticSelectNode( node.id, skeletonID );
+        SkeletonAnnotations.staticSelectNode( node.id, self.currentSkeletonId );
       })
       .catch(CATMAID.handleError);
     };
@@ -285,7 +289,7 @@
               // much faster for smaller fragments
               self.selectNextSegment();
             } else {
-              self.startSkeletonToReview(skeletonID, subarborNodeId);
+              self.startSkeletonToReview(self.currentSkeletonId, self.currentSubarborNodeId);
             }
             noSegmentMove = true;
           }
@@ -598,7 +602,7 @@
           throw new CATMAID.ValueError("Couldn't find node in segment");
         }
 
-        submit(django_url + projectID + "/node/" + node['id'] + "/reviewed",
+        submit(django_url + self.projectId + "/node/" + node['id'] + "/reviewed",
             'POST',
             {},
             function(json) {
@@ -705,7 +709,7 @@
      * reviewed, but only the sub-arbor starting at the given node ID. If
      * omitted or null it will default to the root node.
      * */
-    this.createReviewSkeletonTable = function( skeleton_data, users, subarborNodeId ) {
+    this.createReviewSkeletonTable = function(skeleton_data, users) {
       self.skeleton_segments = skeleton_data;
       var butt, table, tbody, row;
       if( $('#review_segment_table').length > 0 ) {
@@ -786,7 +790,7 @@
       var reviewInfo = document.createElement('span');
       reviewInfo.classList.add('right');
 
-      var neuronName = CATMAID.NeuronNameService.getInstance().getName(skeletonID);
+      var neuronName = CATMAID.NeuronNameService.getInstance().getName(self.currentSkeletonId);
       neuronInfo.appendChild(document.createTextNode('Neuron under review: ' + neuronName));
       reviewInfo.appendChild(document.createTextNode('Revisions: ' + user_revisions));
       header.appendChild(neuronInfo);
@@ -877,7 +881,7 @@
     };
 
     var checkSkeletonID = function() {
-      if (!skeletonID) {
+      if (!self.currentSkeletonId) {
         CATMAID.msg('BEWARE', 'You need to activate a skeleton to review.');
         return false;
       }
@@ -898,23 +902,21 @@
         CATMAID.error('No skeleton ID provided for review.');
         return;
       } else {
-        skeletonID = skid;
-        subarborNodeId = nodeId;
+        self.currentSkeletonId = skid;
+        self.currentSubarborNodeId = nodeId;
       }
       if (!checkSkeletonID()) {
         return;
       }
 
-      submit(django_url + "accounts/" + projectID + "/all-usernames", "POST", {},
+      submit(django_url + "accounts/" + self.projectId + "/all-usernames", "POST", {},
         function(usernames) {
-          submit(django_url + projectID + "/skeletons/" + skeletonID + "/review",
+          submit(django_url + self.projectId + "/skeletons/" + self.currentSkeletonId + "/review",
             "POST",
-            {'subarbor_node_id': subarborNodeId},
+            {'subarbor_node_id': self.currentSubarborNodeId},
             function(skeleton_data) {
                 self.createReviewSkeletonTable( skeleton_data, usernames );
-                if (self.nodeReviewContainer) {
-                  self.nodeReviewContainer.style.display = 'block';
-                }
+                self.redraw();
             });
         });
     };
@@ -935,7 +937,7 @@
                 $(this).dialog('destroy');
               },
               "Remove all of my reviews": function () {
-                submit(django_url + projectID + "/skeleton/" + skeletonID + "/review/" + fnName, "POST", {},
+                submit(django_url + self.projectId + "/skeleton/" + self.currentSkeletonId + "/review/" + fnName, "POST", {},
                   function (json) {
                     self.startReviewActiveSkeleton();
                   });
@@ -1229,7 +1231,7 @@
    */
   CATMAID.ReviewSystem.prototype.redraw = function() {
     if (this.mode === 'node-review') {
-      this.nodeReviewContainer.style.display = self.current_segment ? 'block' : 'none';
+      this.nodeReviewContainer.style.display = this.currentSkeletonId ? 'block' : 'none';
       this.analyticsContainer.style.display = 'none';
     } else if (this.mode === 'analytics') {
       this.nodeReviewContainer.style.display = 'none';

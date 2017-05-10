@@ -18,7 +18,7 @@
    *                               stack.
    * @param {boolean} linearInterpolation Whether to use linear or nearest
    *                               neighbor tile texture interpolation.
-   * @param {boolean} readCookie   Whether last used mirror and custom mirrors
+   * @param {boolean} readState    Whether last used mirror and custom mirrors
    *                               should be read from a browser cookie.
    */
   function TileLayer(
@@ -30,7 +30,7 @@
       opacity,
       showOverview,
       linearInterpolation,
-      readCookie) {
+      readState) {
     this.stackViewer = stackViewer;
     this.displayname = displayname;
     this.stack = stack;
@@ -38,14 +38,13 @@
     this.visible = visibility;
     this.isOrderable = true;
     this.isHideable = false;
-    this.lastMirrorCookieName = 'catmaid-last-mirror-' +
+    this.lastMirrorStorageName = 'catmaid-last-mirror-' +
         project.id + '-' + stack.id;
-    this.customMirrorCookieName = 'catmaid-custom-mirror-' +
+    this.customMirrorStorageName = 'catmaid-custom-mirror-' +
         project.id + '-' + stack.id;
 
-    if (readCookie) {
-      // Try to load custom mirror from cookie
-      var serializedCustomMirrorData = CATMAID.getCookie(this.customMirrorCookieName);
+    if (readState) {
+      var serializedCustomMirrorData = readStateItem(this.customMirrorStorageName);
       if (serializedCustomMirrorData) {
         var customMirrorData = JSON.parse(serializedCustomMirrorData);
         stack.addMirror(customMirrorData);
@@ -54,12 +53,12 @@
       // If no mirror index is given, try to read the last used value from a
       // cookie. If this is unavailable, use the first mirror as default.
       if (undefined === mirrorIndex) {
-        var lastUsedMirror = CATMAID.getCookie(this.lastMirrorCookieName);
+        var lastUsedMirror = readStateItem(this.lastMirrorStorageName);
         if (lastUsedMirror) {
           mirrorIndex = parseInt(lastUsedMirror, 10);
 
           if (mirrorIndex >= this.stack.mirrors.length) {
-            CATMAID.setCookie(this.lastMirrorCookieName, '', -1);
+            localStorage.removeItem(this.lastMirrorStorageName);
             mirrorIndex = undefined;
           }
         }
@@ -145,6 +144,22 @@
     CATMAID.checkTileSourceCanary(project, this.stack, this.tileSource)
         .then(this._handleCanaryCheck.bind(this));
   }
+
+  var readStateItem = function(key) {
+    var item = localStorage.getItem(key);
+    if (!item) {
+    // Try to load custom mirror from cookie if no local storage information
+    // is found. This is removed in a future release and is only meant to not
+    // cause surprising defaults after an update.
+      item = CATMAID.getCookie(key);
+      if (item) {
+        localStorage.setItem(key, item);
+        // Remove old cookie entry
+        CATMAID.setCookie(key, '', -1);
+      }
+    }
+    return item;
+  };
 
   /**
    * Handle a canary tile check for the tile source mirror.
@@ -735,7 +750,8 @@
       var customMirrorData = getMirrorData();
       var newMirrorIndex = self.stack.addMirror(customMirrorData);
       self.switchToMirror(newMirrorIndex);
-      CATMAID.setCookie(self.customMirrorCookieName, JSON.stringify(customMirrorData), 365);
+      localStorage.setItem(self.customMirrorStorageName,
+          JSON.stringify(customMirrorData));
     };
 
     dialog.show(500, 'auto');
@@ -756,7 +772,7 @@
     customMirrorIndices.sort().reverse().forEach(function(ci) {
       this.stack.removeMirror(ci);
     }, this);
-    CATMAID.setCookie(this.customMirrorCookieName, '', -1);
+    localStorage.removeItem(this.customMirrorStorageName);
     this.switchToMirror(this.mirrorIndex, true);
 
     CATMAID.msg("Done", "Custom mirrors cleared");
@@ -895,7 +911,7 @@
     this.stackViewer.replaceStackLayer(layerKey, newTileLayer);
 
     // Store last used mirror information in cookie
-    CATMAID.setCookie(this.lastMirrorCookieName, mirrorIndex, 365);
+    localStorage.setItem(this.lastMirrorStorageName, mirrorIndex);
   };
 
   /**

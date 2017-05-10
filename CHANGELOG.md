@@ -59,6 +59,11 @@ Review widget:
 
 - Whether detailed review colors should be used is now persisted.
 
+- The checkbox "Save review updates" allows to disable sending review updates to
+  the server. Ending review or closing the widget will cause all review updates
+  to be lost. If disabled, a warning is displayed. This is useful to only use
+  the "navigational" features of the review widget.
+
 3D viewer:
 
 - The color of custom tag spheres can now be adjusted through a "color" button

@@ -34,6 +34,8 @@
     var skipStep = null;
     // Review towards root by default
     self.reviewUpstream = true;
+    // Review updates are made persistent, by default
+    self.persistReview = true;
 
 
     this.init = function() {
@@ -279,7 +281,7 @@
           // If the last node of a segment is reached, move to next segment if
           // not disabled.
           if (isLastNode) {
-            if (self.noRefreshBetwenSegments) {
+            if (self.noRefreshBetwenSegments || !self.persistReview) {
               end_puffer_count += 1;
               // do not directly jump to the next segment to review
               if( end_puffer_count < 3) {
@@ -592,8 +594,27 @@
 
     var submit = typeof submitterFn!= "undefined" ? submitterFn() : undefined;
 
+    var updateClientNodeReview = function(node, reviewerId, reviewTime) {
+      // Append the new review to the list of reviewers of
+      // this node, if not already present.
+      var lastIndex;
+      var known = node['rids'].some(function(r, i) {
+        lastIndex = i;
+        return r[0] === reviewerId;
+      });
+
+      // Either update an existing entry or create a new one
+      var reviewInfo = [reviewerId, reviewTime];
+      if (known) {
+        node['rids'][lastIndex] = reviewInfo;
+      } else {
+        node['rids'].push(reviewInfo);
+      }
+    };
+
     /**
-     * Mark the given node as reviewed in the back-end.
+     * Mark the given node as reviewed. If review updates should be persisted,
+     * this is communicated to the back-end.
      */
     this.markAsReviewed = function(segment, index) {
       return new Promise(function(resolve, reject) {
@@ -602,30 +623,20 @@
           throw new CATMAID.ValueError("Couldn't find node in segment");
         }
 
-        submit(django_url + self.projectId + "/node/" + node['id'] + "/reviewed",
-            'POST',
-            {},
-            function(json) {
-              if (json.reviewer_id) {
-                // Append the new review to the list of reviewers of
-                // this node, if not already present.
-                var lastIndex;
-                var known = node['rids'].some(function(r, i) {
-                  lastIndex = i;
-                  return r[0] === json.reviewer_id;
-                });
-
-                // Either update an existing entry or create a new one
-                var reviewInfo = [json.reviewer_id, json.review_time];
-                if (known) {
-                  node['rids'][lastIndex] = reviewInfo;
-                } else {
-                  node['rids'].push(reviewInfo);
+        if (self.persistReview) {
+          submit(django_url + self.projectId + "/node/" + node['id'] + "/reviewed",
+              'POST',
+              {},
+              function(json) {
+                if (json.reviewer_id) {
+                  updateClientNodeReview(node, json.reviewer_id, json.review_time);
+                  resolve(node);
                 }
-
-                resolve(node);
-              }
-            });
+              });
+        } else {
+          updateClientNodeReview(node, CATMAID.session.userid, new Date().toISOString());
+          resolve(node);
+        }
       });
     };
 
@@ -925,6 +936,10 @@
       if (!checkSkeletonID()) {
         return;
       }
+      if (!self.persistReview) {
+        CATMAID.warn("Reviews are currently immutable ('Save review updates' disabled)");
+        return;
+      }
       $('<div id="dialog-confirm" />')
           .text('This will remove all of your reviews from this skeleton. ' +
                 'This cannot be undone. Are you sure you want to continue?')
@@ -1038,6 +1053,12 @@
             }
           }, {
             type: 'checkbox',
+            label: 'Save review updates',
+            title: 'If checked, all review updates are saved to the server. Otherwise all new review information is lost when the widget is closed or the review ended!',
+            value: this.persistReview,
+            onclick: function() { self.persistReview = this.checked; self.redraw(); }
+          }, {
+            type: 'checkbox',
             label: 'Auto centering',
             value: this.getAutoCentering(),
             onclick: function() { self.setAutoCentering(this.checked); }
@@ -1118,6 +1139,14 @@
         var cacheCounter = document.createElement('div');
         cacheCounter.setAttribute("id", "counting-cache");
         this.nodeReviewContainer.appendChild(cacheCounter);
+
+        var persistenceWarning = document.createElement('div');
+        persistenceWarning.setAttribute("class", "warning");
+        persistenceWarning.style.color = "rgb(255, 93, 0)";
+        persistenceWarning.style.textAlign = "center";
+        persistenceWarning.appendChild(document.createTextNode(
+            'Warning: review changes are not saved to server!'));
+        this.nodeReviewContainer.appendChild(persistenceWarning);
 
         var cacheInfoCounter = document.createElement('div');
         cacheInfoCounter.setAttribute("id", "counting-cache-info");
@@ -1233,6 +1262,8 @@
     if (this.mode === 'node-review') {
       this.nodeReviewContainer.style.display = this.currentSkeletonId ? 'block' : 'none';
       this.analyticsContainer.style.display = 'none';
+      $('.warning', this.nodeReviewContainer).css('display',
+          this.persistReview ? 'none' : 'block');
     } else if (this.mode === 'analytics') {
       this.nodeReviewContainer.style.display = 'none';
       this.analyticsContainer.style.display = 'block';

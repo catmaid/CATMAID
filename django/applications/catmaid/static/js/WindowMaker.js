@@ -9,7 +9,7 @@ var WindowMaker = new function()
   var windows = new Map();
   var self = this;
   var DOM = CATMAID.DOM;
-  var windowManagerCookiePrefix = "catmaid-widgets-";
+  var windowManagerStoragePrefix = "catmaid-widgets-";
 
   // Map types to state manager objects
   var stateManagers = new Map();
@@ -29,11 +29,11 @@ var WindowMaker = new function()
    * Store the state of a widget in a cookie using the passed in state provider.
    */
   var storeWidgetState = function(widget, stateManager) {
-    key = windowManagerCookiePrefix + stateManager.key;
+    key = windowManagerStoragePrefix + stateManager.key;
     var serializedState = stateSerializer.serialize({
       'state': stateManager.getState(widget)
     });
-    CATMAID.setCookie(key, serializedState, 365);
+    localStorage.setItem(key, serializedState);
     return true;
   };
 
@@ -57,8 +57,8 @@ var WindowMaker = new function()
    *  manager.
    */
   var loadWidgetState = function(widget, stateManager) {
-    key = windowManagerCookiePrefix + stateManager.key;
-    var serializedWidgetData = CATMAID.getCookie(key);
+    key = windowManagerStoragePrefix + stateManager.key;
+    var serializedWidgetData = localStorage.getItem(key);
     if (serializedWidgetData) {
       var widgetData = stateSerializer.deserialize(serializedWidgetData);
       if (widgetData && widgetData.state) {

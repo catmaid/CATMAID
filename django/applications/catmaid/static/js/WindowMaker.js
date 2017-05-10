@@ -59,6 +59,18 @@ var WindowMaker = new function()
   var loadWidgetState = function(widget, stateManager) {
     key = windowManagerStoragePrefix + stateManager.key;
     var serializedWidgetData = localStorage.getItem(key);
+    if (!serializedWidgetData) {
+      // Try to find information in cookie. If the item is found, it is copied
+      // to the local storage and removed from the cookie. This test can be
+      // removed in future versions and is only meant to not surprise users with
+      // lost defaults and stale cookie information.
+      serializedWidgetData = CATMAID.getCookie(key);
+      if (serializedWidgetData) {
+        localStorage.setItem(key, serializedWidgetData);
+        // Remove old cookie entry
+        CATMAID.setCookie(key, '', -1);
+      }
+    }
     if (serializedWidgetData) {
       var widgetData = stateSerializer.deserialize(serializedWidgetData);
       if (widgetData && widgetData.state) {

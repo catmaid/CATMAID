@@ -120,19 +120,21 @@
     /**
      * Export skeletons as SWC files
      *
-     * @param {number}   projectId   Project sapce to work in
-     * @param {number[]} skeletonIds Skeletons to export as SWC
+     * @param {number}   projectId    Project sapce to work in
+     * @param {number[]} skeletonIds  Skeletons to export as SWC
+     * @param {boolean}  linearizeIds Whether node IDs should be mapped to
+     *                                incremental numbers starting with 1.
      *
      * @return A new promise that is resolved with the skeleton's SWC
      *         representation.
      */
-    getSWC: function(projectId, skeletonIds) {
+    getSWC: function(projectId, skeletonIds, linearizeIds) {
       if (!skeletonIds || !skeletonIds.length) {
         return Promise.reject("Need at least one skeleton ID");
       }
       var swcRequests = skeletonIds.map(function(skid) {
         return CATMAID.fetch(projectId + '/skeleton/' + skid + '/swc', 'GET',
-            undefined, true);
+          {'linearize_ids': !!linearizeIds}, true);
       });
 
       return Promise.all(swcRequests);
@@ -143,13 +145,15 @@
      *
      * @param {number}   projectId   Project sapce to work in
      * @param {number[]} skeletonIds Skeletons to export as SWC
+     * @param {boolean}  linearizeIds Whether node IDs should be mapped to
+     *                                incremental numbers starting with 1.
      * @param {boolean}  archive     Produce a ZIP archive containing all files
      *
      * @return A new promise that is resolved with the skeleton's SWC
      *         representation.
      */
-    exportSWC: function(projectId, skeletonIds, archive) {
-      return CATMAID.Skeletons.getSWC(projectId, skeletonIds)
+    exportSWC: function(projectId, skeletonIds, linearizeIds, archive) {
+      return CATMAID.Skeletons.getSWC(projectId, skeletonIds, linearizeIds)
         .then(function(swcData) {
           if (archive) {
             var zip = new JSZip();

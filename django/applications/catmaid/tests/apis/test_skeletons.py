@@ -931,6 +931,46 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         self.compare_swc_data(response.content.decode('utf-8'), swc_output_for_skeleton_235)
 
 
+    def test_swc_file_linearized(self):
+        self.fake_authentication()
+        url = '/%d/skeleton/235/swc' % (self.test_project_id,)
+        response = self.client.get(url, {'linearize_ids': 'true'})
+        self.assertEqual(response.status_code, 200)
+
+        swc_output_for_skeleton_235 = '''
+1 0 1065 3035 0 0 -1
+2 0 1135 2800 0 0 1
+3 0 1340 2660 0 0 2
+4 0 1780 2570 0 0 3
+5 0 1970 2595 0 0 4
+6 0 2610 2700 0 0 5
+7 0 2815 2590 0 0 6
+8 0 3380 2330 0 0 7
+9 0 3685 2160 0 0 8
+10 0 3850 1790 0 0 9
+11 0 3915 2105 0 0 9
+12 0 3825 1480 0 0 10
+13 0 4570 2125 0 0 11
+14 0 3445 1385 0 0 12
+15 0 5400 2200 0 0 13
+16 0 4820 1900 0 0 13
+17 0 2820 1345 0 0 14
+18 0 5530 2465 0 0 15
+19 0 5090 1675 0 0 16
+20 0 5675 2635 0 0 18
+21 0 5265 1610 0 0 19
+22 0 5985 2745 0 0 20
+23 0 5800 1560 0 0 21
+24 0 6100 2980 0 0 22
+25 0 6090 1550 0 0 23
+26 0 6210 3480 0 0 24
+27 0 5810 3950 0 0 26
+28 0 4990 4200 0 0 27
+'''
+
+        self.compare_swc_data(response.content.decode('utf-8'), swc_output_for_skeleton_235)
+
+
     def assert_skeletons_by_node_labels(self, label_ids, expected_response):
         self.fake_authentication()
         url = '/{}/skeletons/node-labels'.format(self.test_project_id)

@@ -272,6 +272,9 @@ annotations, neuron name, connectors or partner neurons.
 
     var createArchive = dialog.appendCheckbox('Create Zip archive',
         'zip-archive', true);
+    var linearizeIds = dialog.appendCheckbox('Linearize IDs',
+        'linearize-ids', true,
+        "Replace original node IDs with incremental IDs starting from one.");
 
     // Add handler for initiating the export
     dialog.onOK = function() {
@@ -286,7 +289,8 @@ annotations, neuron name, connectors or partner neurons.
         return;
       }
 
-      CATMAID.Skeletons.exportSWC(project.id, skids, createArchive.checked)
+      CATMAID.Skeletons.exportSWC(project.id, skids,linearizeIds.checked,
+          createArchive.checked)
         .catch(CATMAID.handleError);
     };
 

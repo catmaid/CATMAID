@@ -8,7 +8,7 @@ import pytz
 import six
 
 from functools import partial
-from collections import defaultdict
+from collections import defaultdict, deque
 from math import sqrt
 from datetime import datetime
 
@@ -67,7 +67,7 @@ def get_treenodes_qs(project_id=None, skeleton_id=None, with_labels=True):
     return treenode_qs, labels_qs, labelconnector_qs
 
 
-def get_swc_string(treenodes_qs):
+def get_swc_string(treenodes_qs, linearize_ids=False):
     all_rows = []
     for tn in treenodes_qs:
         swc_row = [tn.id]
@@ -78,6 +78,33 @@ def get_swc_string(treenodes_qs):
         swc_row.append(max(tn.radius, 0))
         swc_row.append(-1 if tn.parent_id is None else tn.parent_id)
         all_rows.append(swc_row)
+
+    if linearize_ids:
+        # Find successors for each node
+        successors = defaultdict(list)
+        root = None
+        for tn in all_rows:
+            node, parent = tn[0], tn[6]
+            if parent == -1:
+                root = node
+            else:
+                successors[parent].append(node)
+        # Map each node to a new incremental ID
+        id_map = dict()
+        working_set = deque([root])
+        count = 1
+        while working_set:
+            node = working_set.popleft()
+            id_map[node] = count
+            count += 1
+            working_set.extend(successors[node])
+        # Replace each original ID with the mapped ID
+        for tn in all_rows:
+            tn[0] = id_map[tn[0]]
+            tn[6] = id_map[tn[6]] if tn[6] != -1 else -1
+        # Sort based on node ID
+        all_rows.sort(key=lambda tn: tn[0])
+
     result = ""
     for row in all_rows:
         result += " ".join(map(str, row)) + "\n"
@@ -87,7 +114,8 @@ def export_skeleton_response(request, project_id=None, skeleton_id=None, format=
     treenode_qs, labels_qs, labelconnector_qs = get_treenodes_qs(project_id, skeleton_id)
 
     if format == 'swc':
-        return HttpResponse(get_swc_string(treenode_qs), content_type='text/plain')
+        linearize_ids = request.GET.get('linearize_ids', 'false') == 'true'
+        return HttpResponse(get_swc_string(treenode_qs, linearize_ids), content_type='text/plain')
     elif format == 'json':
         return JsonResponse(treenode_qs)
     else:

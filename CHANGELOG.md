@@ -79,6 +79,10 @@ Miscellaneous:
   information" setting is the Settings Widget is checked, additional information
   is fetched from the back-end.
 
+- The SWC export by default now maps real node IDs to incremental IDs starting
+  with 1 from the root node, which is something some SWC tools expect. To
+  disable this uncheck "Linearize IDs" in the SWC export dialog.
+
 
 ### Bug fixes
 

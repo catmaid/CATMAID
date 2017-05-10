@@ -118,7 +118,7 @@
     return input;
   };
 
-  OptionsDialog.prototype.appendCheckbox = function(title, checkboxID, selected) {
+  OptionsDialog.prototype.appendCheckbox = function(title, checkboxID, selected, helptext) {
     var p = document.createElement('p');
     var checkbox = document.createElement('input');
     checkbox.setAttribute('type', 'checkbox');
@@ -126,6 +126,9 @@
     if (selected) checkbox.setAttribute('checked', 'true');
     p.appendChild(checkbox);
     p.appendChild(document.createTextNode(title));
+    if (helptext) {
+      p.setAttribute('title', helptext);
+    }
     this.dialog.appendChild(p);
     return checkbox;
   };

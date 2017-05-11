@@ -61,6 +61,101 @@
 
   $.extend(SynapsePlot.prototype, new InstanceRegistry());
 
+  SynapsePlot.prototype.getWidgetConfiguration = function() {
+    return {
+      contentID: "synapse_plot_widget" + this.widgetID,
+      createControls: function(controls) {
+        var tabs = CATMAID.DOM.addTabGroup(controls, this.widgetID, ['Main', 'Options']);
+
+        var compartment = CATMAID.DOM.createSelect("synapse_plot_compartment" + this.widgetID, this.COMPARTMENTS);
+        compartment.onchange = this.onchangeCompartment.bind(this, compartment);
+
+        CATMAID.DOM.appendToTab(tabs['Main'],
+            [[document.createTextNode('From')],
+             [CATMAID.skeletonListSources.createSelect(this)],
+             ['Append', this.loadSource.bind(this)],
+             ['Clear', this.clear.bind(this)],
+             ['Refresh', this.update.bind(this)],
+             [document.createTextNode(" - Compartment: ")],
+             [compartment],
+             [document.createTextNode(" - ")],
+             ['Export SVG', this.exportSVG.bind(this)],
+             ['Export CSV', this.exportCSV.bind(this)]]);
+
+        var nf = CATMAID.DOM.createNumericField("synapse_count_threshold" + this.widgetID, // id
+                                    "Synapse count threshold: ",             // label
+                                    "Synapse count threshold",               // title
+                                    this.threshold,                            // initial value
+                                    undefined,                               // postlabel
+                                    this.onchangeSynapseThreshold.bind(this),    // onchange
+                                    5);                                      // textfield length in number of chars
+
+        var filter = CATMAID.skeletonListSources.createPushSelect(this, "filter");
+        filter.onchange = this.onchangeFilterPresynapticSkeletons.bind(this);
+
+        var ais_choice = CATMAID.DOM.createSelect("synapse_plot_AIS_" + this.widgetID, ["Computed", "Node tagged with..."], "Computed");
+
+        var tag = CATMAID.DOM.createNumericField("synapse_count_tag" + this.widgetID,
+                                     undefined,
+                                     "Tag",
+                                     "",
+                                     undefined,
+                                     undefined,
+                                     10);
+        tag.onchange = this.onchangeAxonInitialSegmentTag.bind(this, tag);
+
+        ais_choice.onchange = this.onchangeChoiceAxonInitialSegment.bind(this, ais_choice, tag);
+
+        var jitter = CATMAID.DOM.createNumericField("synapse_plot_jitter" + this.widgetID,
+                                       undefined,
+                                       "Jitter",
+                                       this.jitter,
+                                       undefined,
+                                       undefined,
+                                       5);
+
+        jitter.onchange = this.onchangeJitter.bind(this, jitter);
+
+        var choice_coloring = CATMAID.skeletonListSources.createPushSelect(this, "coloring");
+        choice_coloring.onchange = this.onchangeColoring.bind(this);
+
+        var sigma = CATMAID.DOM.createNumericField("synapse_plot_smooth" + this.widgetID,
+                                       "Arbor smoothing: ",
+                                       "Gaussian smoothing sigma",
+                                       this.sigma,
+                                       " nm",
+                                       this.onchangeSigma.bind(this),
+                                       5);
+
+        CATMAID.DOM.appendToTab(tabs['Options'],
+            [[nf],
+             [document.createTextNode(' Only in: ')],
+             [filter],
+             [document.createTextNode(' Axon initial segment: ')],
+             [ais_choice],
+             [document.createTextNode(' Tag: ')],
+             [tag],
+             [document.createTextNode(' Jitter: ')],
+             [jitter],
+             [document.createTextNode(' Color by: ')],
+             [choice_coloring],
+             [sigma]]);
+
+        $(controls).tabs();
+      },
+      createContent: function(content) {
+        content.style.overflow = 'hidden';
+
+        var graph = document.createElement('div');
+        graph.setAttribute("id", "synapse_plot" + this.widgetID);
+        graph.style.width = "100%";
+        graph.style.height = "100%";
+        graph.style.backgroundColor = "#ffffff";
+        content.appendChild(graph);
+      }
+    };
+  };
+
   SynapsePlot.prototype.getName = function() {
     return "Synapse Distribution Plot " + this.widgetID;
   };
@@ -629,5 +724,11 @@
 
   // Export synapse plot into CATMAID namespace
   CATMAID.SynapsePlot = SynapsePlot;
+
+  // Register widget with CATMAID
+  CATMAID.registerWidget({
+    key: "synapse-plot",
+    creator: CATMAID.SynapsePlot
+  });
 
 })(CATMAID);

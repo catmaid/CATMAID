@@ -1194,124 +1194,6 @@ var WindowMaker = new function()
     return {window: win, widget: WA};
   };
 
-  var createSynapsePlotWindow = function()
-  {
-    var SP = new CATMAID.SynapsePlot();
-
-    var win = new CMWWindow(SP.getName());
-    var content = win.getFrame();
-    content.style.backgroundColor = "#ffffff";
-
-    var bar = document.createElement('div');
-    bar.setAttribute("id", "synapse_plot_buttons" + SP.widgetID);
-    bar.setAttribute('class', 'buttonpanel');
-    DOM.addButtonDisplayToggle(win);
-    addWindowConfigButton(win, SP);
-
-    var tabs = DOM.addTabGroup(bar, SP.widgetID, ['Main', 'Options']);
-
-    var compartment = DOM.createSelect("synapse_plot_compartment" + SP.widgetID, SP.COMPARTMENTS);
-    compartment.onchange = SP.onchangeCompartment.bind(SP, compartment);
-
-    DOM.appendToTab(tabs['Main'],
-        [[document.createTextNode('From')],
-         [CATMAID.skeletonListSources.createSelect(SP)],
-         ['Append', SP.loadSource.bind(SP)],
-         ['Clear', SP.clear.bind(SP)],
-         ['Refresh', SP.update.bind(SP)],
-         [document.createTextNode(" - Compartment: ")],
-         [compartment],
-         [document.createTextNode(" - ")],
-         ['Export SVG', SP.exportSVG.bind(SP)],
-         ['Export CSV', SP.exportCSV.bind(SP)]]);
-
-    var nf = DOM.createNumericField("synapse_count_threshold" + SP.widgetID, // id
-                                "Synapse count threshold: ",             // label
-                                "Synapse count threshold",               // title
-                                SP.threshold,                            // initial value
-                                undefined,                               // postlabel
-                                SP.onchangeSynapseThreshold.bind(SP),    // onchange
-                                5);                                      // textfield length in number of chars
-
-    var filter = CATMAID.skeletonListSources.createPushSelect(SP, "filter");
-    filter.onchange = SP.onchangeFilterPresynapticSkeletons.bind(SP);
-
-    var ais_choice = DOM.createSelect("synapse_plot_AIS_" + SP.widgetID, ["Computed", "Node tagged with..."], "Computed");
-
-    var tag = DOM.createNumericField("synapse_count_tag" + SP.widgetID,
-                                 undefined,
-                                 "Tag",
-                                 "",
-                                 undefined,
-                                 undefined,
-                                 10);
-    tag.onchange = SP.onchangeAxonInitialSegmentTag.bind(SP, tag);
-
-    ais_choice.onchange = SP.onchangeChoiceAxonInitialSegment.bind(SP, ais_choice, tag);
-
-    var jitter = DOM.createNumericField("synapse_plot_jitter" + SP.widgetID,
-                                   undefined,
-                                   "Jitter",
-                                   SP.jitter,
-                                   undefined,
-                                   undefined,
-                                   5);
-
-    jitter.onchange = SP.onchangeJitter.bind(SP, jitter);
-
-    var choice_coloring = CATMAID.skeletonListSources.createPushSelect(SP, "coloring");
-    choice_coloring.onchange = SP.onchangeColoring.bind(SP);
-
-    var sigma = DOM.createNumericField("synapse_plot_smooth" + SP.widgetID,
-                                   "Arbor smoothing: ",
-                                   "Gaussian smoothing sigma",
-                                   SP.sigma,
-                                   " nm",
-                                   SP.onchangeSigma.bind(SP),
-                                   5);
-
-    DOM.appendToTab(tabs['Options'],
-        [[nf],
-         [document.createTextNode(' Only in: ')],
-         [filter],
-         [document.createTextNode(' Axon initial segment: ')],
-         [ais_choice],
-         [document.createTextNode(' Tag: ')],
-         [tag],
-         [document.createTextNode(' Jitter: ')],
-         [jitter],
-         [document.createTextNode(' Color by: ')],
-         [choice_coloring],
-         [sigma]]);
-
-
-
-    content.appendChild( bar );
-
-    $(bar).tabs();
-
-    var container = createContainer("synapse_plot_widget" + SP.widgetID);
-    container.style.overflow = 'hidden';
-    content.appendChild(container);
-
-    var graph = document.createElement('div');
-    graph.setAttribute("id", "synapse_plot" + SP.widgetID);
-    graph.style.width = "100%";
-    graph.style.height = "100%";
-    graph.style.backgroundColor = "#ffffff";
-    container.appendChild(graph);
-
-    addListener(win, container, 'synapse_plot_buttons' + SP.widgetID,
-        SP.destroy.bind(SP), SP.resize.bind(SP));
-
-    addLogic(win);
-
-    CATMAID.skeletonListSources.updateGUI();
-
-    return {window: win, widget: SP};
-  };
-
-
   var createGraphWindow = function()
   {
     var GG = new CATMAID.GroupGraph();
@@ -1845,7 +1727,6 @@ var WindowMaker = new function()
     "circuit-graph-plot": createCircuitGraphPlot,
     "neuron-navigator": createNeuronNavigatorWindow,
     "connectivity-matrix": createConnectivityMatrixWindow,
-    "synapse-plot": createSynapsePlotWindow,
     "html": createHtmlWindow,
   };
 

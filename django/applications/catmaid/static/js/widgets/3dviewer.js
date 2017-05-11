@@ -1634,57 +1634,6 @@
   };
 
   /**
-   * Converts simple X3D IndexedFaceSet and IndexedTriangleSet nodes to a VRML
-   * representation.
-   */
-  function x3dToVrml(x3d) {
-    var vrml = x3d;
-    var shapePrefix = "Shape {\n  geometry IndexedFaceSet {\n     ";
-
-    // Indexed triangle set
-    vrml = vrml.replace(/<IndexedTriangleSet[^>]*index='([-\d\s]*)'\s*>/gi,
-        function(match, indexGroup) {
-          var triIndices = indexGroup.split(" ");
-          var nVertices = triIndices.length;
-          // Mark end of face after each three points. This wouldn't be
-          // required if the Three.js loader would support triangle sets.
-          var indices = new Array(nVertices + Math.floor(nVertices / 3));
-          var offset = 0;
-          for (var i=0; i<triIndices.length; ++i) {
-            indices[i + offset] = triIndices[i];
-            if (0 === (i + 1) % 3) {
-              ++offset;
-              indices[i + offset] = "-1";
-            }
-          }
-
-          return shapePrefix + "    coordIndex [" + indices.join(", ") + "]\n";
-        }).replace(/<\/IndexedTriangleSet>/gi, "  }\n}");
-
-    // Indexed face set
-    vrml = vrml.replace(/<IndexedFaceSet[^>]*coordIndex='([-\d\s]*)'\s*>/gi,
-        function(match, indexGroup) {
-          var indices = indexGroup.split(" ");
-          return shapePrefix + "    coordIndex [" + indices.join(", ") + "]\n";
-        }).replace(/<\/IndexedFaceSet>/gi, "  }\n}");
-
-    // Coordinates
-    vrml = vrml.replace(/<Coordinate\s*point='([-.\d\s]*)'\s*\/>/gi,
-        function(match, pointGroup) {
-          var points = pointGroup.split(" ");
-          var groupedPoints = new Array(Math.floor(points.length / 3));
-          // Store points in component groups
-          for (var i=0; i<groupedPoints.length; ++i) {
-            var j = 3 * i;
-            groupedPoints[i] = points[j] + " " + points[j+1] + " " + points[j+2];
-          }
-          return "  coord Coordinate {\n    point [" + groupedPoints.join(", ") + "]\n  }";
-        });
-
-    return "#VRML V2.0 utf8\n\n" + vrml;
-  }
-
-  /**
    * Show or hide a stored volume with a given Id.
    */
   WebGLApplication.prototype.showVolume = function(volumeId, visible) {
@@ -1699,7 +1648,7 @@
       CATMAID.Volumes.get(project.id, volumeId)
         .then((function(volume) {
           // Convert X3D mesh to simple VRML and have Three.js load it
-          var vrml = x3dToVrml(volume.mesh);
+          var vrml = CATMAID.Volumes.x3dToVrml(volume.mesh);
           var loader = new THREE.VRMLLoader();
           var scene = loader.parse(vrml);
           if (scene.children) {

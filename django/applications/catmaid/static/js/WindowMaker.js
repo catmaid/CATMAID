@@ -269,7 +269,7 @@ var WindowMaker = new function()
           addWidgetSourceToggle(win, s);
         });
       } else {
-        addWidgetSourceToggle(win, s);
+        addWidgetSourceToggle(win, source);
       }
     }
 

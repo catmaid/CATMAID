@@ -113,6 +113,9 @@ def get_swc_string(treenodes_qs, linearize_ids=False):
 def export_skeleton_response(request, project_id=None, skeleton_id=None, format=None):
     treenode_qs, labels_qs, labelconnector_qs = get_treenodes_qs(project_id, skeleton_id)
 
+    # Make sure we export in consistent order
+    treenode_qs = treenode_qs.order_by('id')
+
     if format == 'swc':
         linearize_ids = request.GET.get('linearize_ids', 'false') == 'true'
         return HttpResponse(get_swc_string(treenode_qs, linearize_ids), content_type='text/plain')

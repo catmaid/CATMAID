@@ -68,6 +68,88 @@
   SynapseFractions.prototype.DOWNSTREAM = 1;
   SynapseFractions.prototype.UPSTREAM = 2;
 
+  SynapseFractions.prototype.getWidgetConfiguration = function() {
+    return {
+      class: "synapse-fractions",
+      contentID: "synapse_fractions_widget" + this.widgetID,
+      createControls: function(controls) {
+        var tabs = CATMAID.DOM.addTabGroup(controls, this.widgetID,
+            ['Main', 'Filter', 'Color', 'Partner groups']);
+
+        var partners_source = CATMAID.skeletonListSources.createPushSelect(this, "filter");
+        partners_source.onchange = this.onchangeFilterPartnerSkeletons.bind(this);
+
+        var modes = CATMAID.DOM.createSelect("synapse_fraction_mode" + this.widgetID, this.MODES);
+        modes.onchange = this.onchangeMode.bind(this, modes);
+
+        CATMAID.DOM.appendToTab(tabs['Main'],
+            [[document.createTextNode('From')],
+             [CATMAID.skeletonListSources.createSelect(this)],
+             ['Append', this.loadSource.bind(this)],
+             ['Clear', this.clear.bind(this)],
+             ['Refresh', this.update.bind(this)],
+             [document.createTextNode(' - ')],
+             [modes],
+             [document.createTextNode(' - ')],
+             ['Export SVG', this.exportSVG.bind(this)]]);
+
+        var nf = CATMAID.DOM.createNumericField("synapse_threshold" + this.widgetID, // id
+                                    "By synapse threshold: ",             // label
+                                    "Below this number, neuron gets added to the 'others' heap", // title
+                                    this.threshold,                            // initial value
+                                    undefined,                               // postlabel
+                                    this.onchangeSynapseThreshold.bind(this),    // onchange
+                                    5);                                      // textfield length in number of chars
+
+        var cb = CATMAID.DOM.createCheckbox('show others', this.show_others, this.toggleOthers.bind(this));
+
+        CATMAID.DOM.appendToTab(tabs['Filter'],
+            [[nf],
+             [document.createTextNode(' - Only in: ')],
+             [partners_source],
+             [cb[0]],
+             [cb[1]]
+            ]);
+
+        var partners_color = CATMAID.skeletonListSources.createPushSelect(this, "color");
+        partners_color.onchange = this.onchangeColorPartnerSkeletons.bind(this);
+
+        var c = CATMAID.DOM.createSelect('color-scheme-synapse-fractions' + this.widgetID,
+            ['category10',
+             'category20',
+             'category20b',
+             'category20c'].concat(Object.keys(colorbrewer)));
+
+        c.selectedIndex = 1;
+        c.onchange = this.onchangeColorScheme.bind(this, c);
+
+        CATMAID.DOM.appendToTab(tabs['Color'],
+            [[document.createTextNode("Color scheme: ")],
+             [c],
+             [document.createTextNode("Color by: ")],
+             [partners_color]]);
+
+        var partner_group = CATMAID.skeletonListSources.createPushSelect(this, "group");
+
+        CATMAID.DOM.appendToTab(tabs['Partner groups'],
+            [[partner_group],
+             ['Create group', this.createPartnerGroup.bind(this)]]);
+
+        $(controls).tabs();
+      },
+      createContent: function(content) {
+        content.style.overflow = 'hidden';
+
+        var graph = document.createElement('div');
+        graph.setAttribute("id", "synapse_fractions" + this.widgetID);
+        graph.style.width = "100%";
+        graph.style.height = "100%";
+        graph.style.backgroundColor = "#ffffff";
+        content.appendChild(graph);
+      },
+    };
+  };
+
   SynapseFractions.prototype.getName = function() {
     return "Synapse Fractions " + this.widgetID;
   };
@@ -645,5 +727,10 @@
 
   // Export synapse plot into CATMAID namespace
   CATMAID.SynapseFractions = SynapseFractions;
+
+  CATMAID.registerWidget({
+    key: "synapse-fractions",
+    creator: CATMAID.SynapseFractions
+  });
 
 })(CATMAID);

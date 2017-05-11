@@ -1194,107 +1194,6 @@ var WindowMaker = new function()
     return {window: win, widget: WA};
   };
 
-  var createSynapseFractionsWindow = function()
-  {
-    var SF = new CATMAID.SynapseFractions();
-
-    var win = new CMWWindow(SF.getName());
-    DOM.addButtonDisplayToggle(win);
-    var content = win.getFrame();
-    content.classList.add('synapse-fractions');
-    content.style.backgroundColor = '#ffffff';
-    addWindowConfigButton(win, SF);
-
-    var bar = document.createElement('div');
-    bar.setAttribute("id", "synapse_fractions_buttons" + SF.widgetID);
-    bar.setAttribute('class', 'buttonpanel');
-
-    var tabs = DOM.addTabGroup(bar, SF.widgetID, ['Main', 'Filter', 'Color', 'Partner groups']);
-
-    var partners_source = CATMAID.skeletonListSources.createPushSelect(SF, "filter");
-    partners_source.onchange = SF.onchangeFilterPartnerSkeletons.bind(SF);
-
-    var modes = DOM.createSelect("synapse_fraction_mode" + SF.widgetID, SF.MODES);
-    modes.onchange = SF.onchangeMode.bind(SF, modes);
-
-    DOM.appendToTab(tabs['Main'],
-        [[document.createTextNode('From')],
-         [CATMAID.skeletonListSources.createSelect(SF)],
-         ['Append', SF.loadSource.bind(SF)],
-         ['Clear', SF.clear.bind(SF)],
-         ['Refresh', SF.update.bind(SF)],
-         [document.createTextNode(' - ')],
-         [modes],
-         [document.createTextNode(' - ')],
-         ['Export SVG', SF.exportSVG.bind(SF)]]);
-
-    var nf = DOM.createNumericField("synapse_threshold" + SF.widgetID, // id
-                                "By synapse threshold: ",             // label
-                                "Below this number, neuron gets added to the 'others' heap", // title
-                                SF.threshold,                            // initial value
-                                undefined,                               // postlabel
-                                SF.onchangeSynapseThreshold.bind(SF),    // onchange
-                                5);                                      // textfield length in number of chars
-
-    var cb = DOM.createCheckbox('show others', SF.show_others, SF.toggleOthers.bind(SF));
-
-    DOM.appendToTab(tabs['Filter'],
-        [[nf],
-         [document.createTextNode(' - Only in: ')],
-         [partners_source],
-         [cb[0]],
-         [cb[1]]
-        ]);
-
-    var partners_color = CATMAID.skeletonListSources.createPushSelect(SF, "color");
-    partners_color.onchange = SF.onchangeColorPartnerSkeletons.bind(SF);
-
-    var c = DOM.createSelect('color-scheme-synapse-fractions' + SF.widgetID,
-        ['category10',
-         'category20',
-         'category20b',
-         'category20c'].concat(Object.keys(colorbrewer)));
-
-    c.selectedIndex = 1;
-    c.onchange = SF.onchangeColorScheme.bind(SF, c);
-
-    DOM.appendToTab(tabs['Color'],
-        [[document.createTextNode("Color scheme: ")],
-         [c],
-         [document.createTextNode("Color by: ")],
-         [partners_color]]);
-
-    var partner_group = CATMAID.skeletonListSources.createPushSelect(SF, "group");
-
-    DOM.appendToTab(tabs['Partner groups'],
-        [[partner_group],
-         ['Create group', SF.createPartnerGroup.bind(SF)]]);
-
-    content.appendChild(bar);
-
-    $(bar).tabs();
-
-    var container = createContainer("synapse_fractions_widget" + SF.widgetID);
-    container.style.overflow = 'hidden';
-    content.appendChild(container);
-
-    var graph = document.createElement('div');
-    graph.setAttribute("id", "synapse_fractions" + SF.widgetID);
-    graph.style.width = "100%";
-    graph.style.height = "100%";
-    graph.style.backgroundColor = "#ffffff";
-    container.appendChild(graph);
-
-    addListener(win, container, 'synapse_fractions_buttons' + SF.widgetID,
-        SF.destroy.bind(SF), SF.resize.bind(SF));
-
-    addLogic(win);
-
-    CATMAID.skeletonListSources.updateGUI();
-
-    return {window: win, widget: SF};
-  };
-
   var createSynapsePlotWindow = function()
   {
     var SP = new CATMAID.SynapsePlot();
@@ -1947,7 +1846,6 @@ var WindowMaker = new function()
     "neuron-navigator": createNeuronNavigatorWindow,
     "connectivity-matrix": createConnectivityMatrixWindow,
     "synapse-plot": createSynapsePlotWindow,
-    "synapse-fractions": createSynapseFractionsWindow,
     "html": createHtmlWindow,
   };
 

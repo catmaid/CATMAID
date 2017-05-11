@@ -105,6 +105,108 @@
     return "Circuit Graph Plot " + this.widgetID;
   };
 
+  CircuitGraphPlot.prototype.getWidgetConfiguration = function() {
+    return {
+      contentID: "circuit_graph_plot_div" + this.widgetID,
+      createControls: function(controls) {
+        controls.appendChild(document.createTextNode('From'));
+        controls.appendChild(CATMAID.skeletonListSources.createSelect(this));
+
+        var add = document.createElement('input');
+        add.setAttribute("type", "button");
+        add.setAttribute("value", "Append");
+        add.onclick = this.loadSource.bind(this);
+        controls.appendChild(add);
+
+        var clear = document.createElement('input');
+        clear.setAttribute("type", "button");
+        clear.setAttribute("value", "Clear");
+        clear.onclick = this.clear.bind(this);
+        controls.appendChild(clear);
+
+        var update = document.createElement('input');
+        update.setAttribute("type", "button");
+        update.setAttribute("value", "Refresh");
+        update.onclick = this.update.bind(this);
+        controls.appendChild(update);
+
+        var annotate = document.createElement('input');
+        annotate.setAttribute("type", "button");
+        annotate.setAttribute("value", "Annotate");
+        annotate.onclick = this.annotate_skeleton_list.bind(this);
+        controls.appendChild(annotate);
+
+        var options = document.createElement('input');
+        options.setAttribute("type", "button");
+        options.setAttribute("value", "Options");
+        options.onclick = this.adjustOptions.bind(this);
+        controls.appendChild(options);
+
+
+        controls.appendChild(document.createTextNode(' - X:'));
+
+        var axisX = document.createElement('select');
+        axisX.setAttribute('id', 'circuit_graph_plot_X_' + this.widgetID);
+        controls.appendChild(axisX);
+
+        controls.appendChild(document.createTextNode(' Y:'));
+
+        var axisY = document.createElement('select');
+        axisY.setAttribute('id', 'circuit_graph_plot_Y_' + this.widgetID);
+        controls.appendChild(axisY);
+
+        var redraw = document.createElement('input');
+        redraw.setAttribute("type", "button");
+        redraw.setAttribute("value", "Draw");
+        redraw.onclick = this.redraw.bind(this);
+        controls.appendChild(redraw);
+
+        controls.appendChild(document.createTextNode(" Names:"));
+        var toggle = document.createElement('input');
+        toggle.setAttribute("type", "checkbox");
+        toggle.checked = true;
+        toggle.onclick = this.toggleNamesVisible.bind(this, toggle);
+        controls.appendChild(toggle);
+
+        var xml = document.createElement('input');
+        xml.setAttribute("type", "button");
+        xml.setAttribute("value", "Export SVG");
+        xml.onclick = this.exportSVG.bind(this);
+        controls.appendChild(xml);
+
+        var csv = document.createElement('input');
+        csv.setAttribute("type", "button");
+        csv.setAttribute("value", "Export CSV");
+        csv.onclick = this.exportCSV.bind(this);
+        controls.appendChild(csv);
+
+        var csva = document.createElement('input');
+        csva.setAttribute("type", "button");
+        csva.setAttribute("value", "Export CSV (all)");
+        csva.onclick = this.exportCSVAll.bind(this);
+        controls.appendChild(csva);
+
+        controls.appendChild(document.createTextNode(' - '));
+
+        var deselect = document.createElement('input');
+        deselect.setAttribute("type", "button");
+        deselect.setAttribute("value", "Deselect all");
+        deselect.onclick = this.clearSelection.bind(this);
+        controls.appendChild(deselect);
+      },
+      createContent: function(content) {
+        content.style.overflow = 'hidden';
+
+        var plot = document.createElement('div');
+        plot.setAttribute('id', 'circuit_graph_plot' + this.widgetID);
+        plot.style.width = "100%";
+        plot.style.height = "100%";
+        plot.style.backgroundColor = "#FFFFF0";
+      },
+      subscriptionSource: this
+    };
+  };
+
   CircuitGraphPlot.prototype.destroy = function() {
     this.unregisterInstance();
     this.unregisterSource();
@@ -1344,5 +1446,11 @@
 
   // Export circuit graph plot
   CATMAID.CircuitGraphPlot = CircuitGraphPlot;
+
+  // Register widget with CATMAID
+  CATMAID.registerWidget({
+    key: "circuit-graph-plot",
+    creator: CATMAID.CircuitGraphPlot
+  });
 
 })(CATMAID);

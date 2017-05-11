@@ -1382,128 +1382,6 @@ var WindowMaker = new function()
     return {window: win, widget: GG};
   };
 
-  var createCircuitGraphPlot = function() {
-
-    var GP = new CATMAID.CircuitGraphPlot();
-
-    var win = new CMWWindow(GP.getName());
-    var content = win.getFrame();
-    content.style.backgroundColor = "#ffffff";
-
-    var buttons = document.createElement('div');
-    buttons.setAttribute('id', 'circuit_graph_plot_buttons' + GP.widgetID);
-    buttons.setAttribute('class', 'buttonpanel');
-    DOM.addSourceControlsToggle(win, GP);
-    DOM.addButtonDisplayToggle(win);
-    addWindowConfigButton(win, GP);
-
-    buttons.appendChild(document.createTextNode('From'));
-    buttons.appendChild(CATMAID.skeletonListSources.createSelect(GP));
-
-    var add = document.createElement('input');
-    add.setAttribute("type", "button");
-    add.setAttribute("value", "Append");
-    add.onclick = GP.loadSource.bind(GP);
-    buttons.appendChild(add);
-
-    var clear = document.createElement('input');
-    clear.setAttribute("type", "button");
-    clear.setAttribute("value", "Clear");
-    clear.onclick = GP.clear.bind(GP);
-    buttons.appendChild(clear);
-
-    var update = document.createElement('input');
-    update.setAttribute("type", "button");
-    update.setAttribute("value", "Refresh");
-    update.onclick = GP.update.bind(GP);
-    buttons.appendChild(update);
-
-    var annotate = document.createElement('input');
-    annotate.setAttribute("type", "button");
-    annotate.setAttribute("value", "Annotate");
-    annotate.onclick = GP.annotate_skeleton_list.bind(GP);
-    buttons.appendChild(annotate);
-
-    var options = document.createElement('input');
-    options.setAttribute("type", "button");
-    options.setAttribute("value", "Options");
-    options.onclick = GP.adjustOptions.bind(GP);
-    buttons.appendChild(options);
-
-
-    buttons.appendChild(document.createTextNode(' - X:'));
-
-    var axisX = document.createElement('select');
-    axisX.setAttribute('id', 'circuit_graph_plot_X_' + GP.widgetID);
-    buttons.appendChild(axisX);
-
-    buttons.appendChild(document.createTextNode(' Y:'));
-
-    var axisY = document.createElement('select');
-    axisY.setAttribute('id', 'circuit_graph_plot_Y_' + GP.widgetID);
-    buttons.appendChild(axisY);
-
-    var redraw = document.createElement('input');
-    redraw.setAttribute("type", "button");
-    redraw.setAttribute("value", "Draw");
-    redraw.onclick = GP.redraw.bind(GP);
-    buttons.appendChild(redraw);
-
-    buttons.appendChild(document.createTextNode(" Names:"));
-    var toggle = document.createElement('input');
-    toggle.setAttribute("type", "checkbox");
-    toggle.checked = true;
-    toggle.onclick = GP.toggleNamesVisible.bind(GP, toggle);
-    buttons.appendChild(toggle);
-
-    var xml = document.createElement('input');
-    xml.setAttribute("type", "button");
-    xml.setAttribute("value", "Export SVG");
-    xml.onclick = GP.exportSVG.bind(GP);
-    buttons.appendChild(xml);
-
-    var csv = document.createElement('input');
-    csv.setAttribute("type", "button");
-    csv.setAttribute("value", "Export CSV");
-    csv.onclick = GP.exportCSV.bind(GP);
-    buttons.appendChild(csv);
-
-    var csva = document.createElement('input');
-    csva.setAttribute("type", "button");
-    csva.setAttribute("value", "Export CSV (all)");
-    csva.onclick = GP.exportCSVAll.bind(GP);
-    buttons.appendChild(csva);
-
-    buttons.appendChild(document.createTextNode(' - '));
-
-    var deselect = document.createElement('input');
-    deselect.setAttribute("type", "button");
-    deselect.setAttribute("value", "Deselect all");
-    deselect.onclick = GP.clearSelection.bind(GP);
-    buttons.appendChild(deselect);
-
-    content.appendChild(buttons);
-
-    var container = createContainer('circuit_graph_plot_div' + GP.widgetID);
-    container.style.overflow = 'hidden';
-    content.appendChild(container);
-
-    var plot = document.createElement('div');
-    plot.setAttribute('id', 'circuit_graph_plot' + GP.widgetID);
-    plot.style.width = "100%";
-    plot.style.height = "100%";
-    plot.style.backgroundColor = "#FFFFF0";
-    container.appendChild(plot);
-
-    addListener(win, container, 'circuit_graph_plot_buttons' + GP.widgetID, GP.destroy.bind(GP), GP.resize.bind(GP));
-
-    addLogic(win);
-
-    CATMAID.skeletonListSources.updateGUI();
-
-    return {window: win, widget: GP};
-  };
-
   var createConnectivityGraphPlot = function(instance) {
     var GP = instance ? instance : new ConnectivityGraphPlot();
 
@@ -1724,7 +1602,6 @@ var WindowMaker = new function()
     "graph-widget": createGraphWindow,
     "connectivity-graph-plot": createConnectivityGraphPlot,
     "ontology-search": createOntologySearchWidget,
-    "circuit-graph-plot": createCircuitGraphPlot,
     "neuron-navigator": createNeuronNavigatorWindow,
     "connectivity-matrix": createConnectivityMatrixWindow,
     "html": createHtmlWindow,

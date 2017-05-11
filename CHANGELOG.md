@@ -64,6 +64,11 @@ Review widget:
   to be lost. If disabled, a warning is displayed. This is useful to only use
   the "navigational" features of the review widget.
 
+- Support for node filtering has been added, it can be configured through the
+  filter icon in the title bar. All features listed under Generic Node Filters
+  are supported. If nodes are filtered, all percentages are relative to the
+  filtered set of nodes.
+
 3D viewer:
 
 - The color of custom tag spheres can now be adjusted through a "color" button

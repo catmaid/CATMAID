@@ -123,6 +123,112 @@
           });
 
       return "#VRML V2.0 utf8\n\n" + vrml;
+    },
+
+    /**
+     * Convert an X3D volume representation to a list of THREE.js meshes.
+     */
+    x3dToMeshes: function(x3d) {
+      var vrml = CATMAID.Volumes.x3dToVrml(x3d);
+      var loader = new THREE.VRMLLoader();
+      var scene = loader.parse(vrml);
+      return scene.children;
+    },
+
+    /**
+     * Convert a THREE.js mesh into a triangle list.
+     */
+    meshToTriangleList: function(mesh) {
+
+    },
+
+    /**
+     * Create an inersector object which can be used to quickly test
+     * intersection of a point with a THREE.js mesh.
+     */
+    makeIntersector: function(mesh, cellsPerDimension) {
+      // Build 2D index of all triangle bounding boxes of the input mesh
+      cellsPerDimension = cellsPerDimension === undefined ? 10 : cellsPerDimension;
+      var triangleIndex = new Array(cellsPerDimension);
+      for (var i=0; i<cellsPerDimension; ++i) {
+        var col = triangleIndex[i] = new Array(cellsPerDimension);
+        // Add an empty list to each grid cell
+        for (var j=0; j<cellsPerDimension; ++j) {
+          col[j] = [];
+        }
+      }
+      // Make sure we hava a bounding box available.
+      if (!mesh.geometry.boundingBox) {
+        mesh.geometry.computeBoundingBox();
+      }
+      var min = mesh.geometry.boundingBox.min;
+      var max = mesh.geometry.boundingBox.max;
+      var cellXEdgeLength = (max.x - min.x) / cellsPerDimension;
+      var cellYEdgeLength = (max.y - min.y) / cellsPerDimension;
+      var invCellXEdgeLength = 1 / cellXEdgeLength;
+      var invCellYEdgeLength = 1 / cellYEdgeLength;
+      // Add each face bounding box into index by splitting the extent of the
+      // mesh in each dimension by <cellsPerDimension> and adding triangles into
+      // their intersecting
+      var faces = mesh.geometry.faces;
+      var vertexFields = ['a', 'b', 'c'];
+      var allVertices = mesh.geometry.vertices;
+      var bb = new THREE.Box3();
+      for (var i=0, max=faces.length; i<max; ++i) {
+        // Get face bounding box
+        var face = faces[i];
+        var vertices = new Array(3);
+        for (var j=0; j<3; ++j) {
+          var vertex = allVertices[face[vertexFields[j]]];
+          vertices[j] = vertex;
+        }
+        bb.setFromPoints(vertices);
+
+        var cellMinX = Math.max(0, parseInt((bb.min.x - min.x) * invCellXEdgeLength, 10));
+        var cellMinY = Math.max(0, parseInt((bb.min.y - min.y) * invCellYEdgeLength, 10));
+        var cellMaxX = Math.min(cellsPerDimension - 1, parseInt((bb.max.x - min.x) * invCellXEdgeLength, 10));
+        var cellMaxY = Math.min(cellsPerDimension - 1, parseInt((bb.max.y - min.y) * invCellYEdgeLength, 10));
+        for (var x=cellMinX; x<=cellMaxX; ++x) {
+          for (var y=cellMinY; y<=cellMaxY; ++y) {
+            triangleIndex[x][y].push(vertices);
+          }
+        }
+      }
+
+      var direction = new THREE.Vector3(0, 0, 1);
+      var ray = new THREE.Ray(undefined, direction);
+      var seenDepths = new Set();
+      var intersection = new THREE.Vector3();
+
+      return {
+        contains: function(point) {
+          // Get array of triangles in the index cell of the XY projected point
+          var x = parseInt((point.x - min.x) * invCellXEdgeLength);
+          var y = parseInt((point.y - min.x) * invCellYEdgeLength);
+          if (x < 0 || x >= cellsPerDimension || y < 0 || y >= cellsPerDimension) {
+            return false;
+          }
+          // Shoot ray in Z direction (projected dimension in index) through all
+          // found triangles.
+          var triangles = triangleIndex[x][y];
+          ray.origin.copy(point);
+          var intersections = 0;
+          seenDepths.clear();
+          for (var i=0, max=triangles.length; i<max; ++i) {
+            var t = triangles[i];
+            var intersectionResult = ray.intersectTriangle(t[0], t[1], t[2], false, intersection);
+            // Only count intersections at different distances, otherwise
+            // adjacent triangles are hit individually, which skews the
+            // counting. We actually want to count surfaces, not triangles.
+            if (intersectionResult && !seenDepths.has(intersection.z)) {
+              seenDepths.add(intersection.z);
+              ++intersections;
+            }
+          }
+          return (intersections % 2) !== 0;
+        }
+      };
+
     }
   };
 

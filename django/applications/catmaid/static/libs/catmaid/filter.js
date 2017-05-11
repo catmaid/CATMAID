@@ -105,6 +105,25 @@
     });
   };
 
+  CATMAID.SkeletonFilter.loadVolumes = function(volumeIds, target) {
+    var volumePromises = volumeIds.map(function(v) {
+      return CATMAID.Volumes.get(project.id, v)
+        .then(function(volume) {
+          var meshes = CATMAID.Volumes.x3dToMeshes(volume.mesh);
+          if (meshes.length < 1) {
+            throw new CATMAID.ValueError("Can't create mesh for volume " + volume.id);
+          }
+          if (meshes.length > 1) {
+            throw new CATMAID.ValueError("Too many meshes for volume " + volume.id);
+          }
+          target[volume.id] = {
+            intersector: CATMAID.Volumes.makeIntersector(meshes[0])
+          };
+        });
+    });
+    return Promise.all(volumePromises);
+  };
+
   var computeAxonArbor = function(arbor, positions, tags, partners) {
     // If there is a soma tag on a node, reroot arbor wrt. it
     if (tags && tags['soma'] && 1 === tags['soma'].length) {
@@ -151,6 +170,19 @@
       var fetchSkeletons = CATMAID.SkeletonFilter.fetchArbors(skeletonIds,
           needsArbor, needsPartners, needsTags, input.skeletons);
       prepareActions.push(fetchSkeletons);
+    }
+
+    if (neededInput.has("volume")) {
+      if (input.volumes === undefined) { input.volumes = {}; }
+      var volumeIds = new Set();
+      for (var i=0; i<rules.length; ++i) {
+        var volumeId = rules[i].options['volumeId'];
+        if (volumeId !== undefined) {
+          volumeIds.add(volumeId);
+        }
+        volumeIds = Array.from(volumeIds);
+      }
+      prepareActions.push(CATMAID.SkeletonFilter.loadVolumes(volumeIds, input.volumes));
     }
 
     return Promise.all(prepareActions)
@@ -574,6 +606,26 @@
           return {};
         }
       }
+    },
+    "volume": {
+      name: "Volume",
+      prepare: ["arbor", "volume"],
+      filter: function(skeletonId, neuron, input, options) {
+        var skeleton = input.skeletons[skeletonId];
+        var volume = input.volumes[options.volumeId];
+        var intersector = volume.intersector;
+        var positions = skeleton.positions;
+        var nodes = skeleton.arbor.nodesArray();
+        var includedNodes = {};
+        for (var i=0, max=nodes.length; i<max; ++i) {
+          var nodeId = nodes[i];
+          var vertex = positions[nodeId];
+          if (intersector.contains(vertex)) {
+            includedNodes[nodeId] = nodes[nodeId];
+          }
+        }
+        return includedNodes;
+      }
     }
   };
 
@@ -690,6 +742,35 @@
     },
     'dendrites': function(container, options) {
       // No additional options for dendrite filter
+    },
+    'volume': function(container, options) {
+      // Update volume list
+      var initVolumeList = function() {
+        return CATMAID.Volumes.listAll(project.id).then(function(json) {
+            var volumes = json.sort(function(a, b) {
+              return CATMAID.tools.compareStrings(a.name, b.name);
+            }).map(function(volume) {
+              return {
+                title: volume.name,
+                value: volume.id
+              };
+            });
+            var selectedVolume = options.volumeId;
+            // Create actual element based on the returned data
+            var node = CATMAID.DOM.createRadioSelect('Volumes', volumes, selectedVolume);
+            // Add a selection handler
+            node.onchange = function(e) {
+              options.volumeId = e.target.value;
+            };
+            return node;
+          });
+    };
+
+    // Create async selection and wrap it in container to have handle on initial
+    // DOM location
+    var volumeSelection = CATMAID.DOM.createAsyncPlaceholder(initVolumeList());
+    var volumeSelectionWrapper = document.createElement('span');
+    $(container).append(volumeSelection);
     }
   };
 

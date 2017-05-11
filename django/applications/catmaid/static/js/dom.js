@@ -424,7 +424,7 @@
         var filterListContent = tabs['Filters'];
         var newFilterContent = tabs['Add filter'];
         filterListContent.style.overflow = "auto";
-        newFilterContent.style.overflow = "auto";
+        newFilterContent.style.overflow = "visible";
 
         // Initialize tabs
         $(tabPanel).tabs();
@@ -682,6 +682,42 @@
     };
 
     return CATMAID.DOM.createCustomContentSelect(title, checkboxes);
+  };
+
+  /**
+   * Create a new select element that when clicked (or optionally hovered) shows
+   * a custom list in a DIV container below it. This custom list provides a
+   * radio element for each entry.
+   *
+   * @param title        {String}   A title showing as the first element of the select
+   * @param options      {Object[]} A list of {title: <>, value: <>} objects.
+   * @param selectedKey  {String}   (Optional) the key that should be selected initially
+   *
+   * @returns a wrapper around the select element
+   */
+  DOM.createRadioSelect = function(title, options, selectedKey) {
+    var radiobuttons = document.createElement('ul');
+    for (var i=0; i<options.length; ++i) {
+      var o = options[i];
+      var entry = document.createElement('label');
+      var radiobutton = document.createElement('input');
+      radiobutton.setAttribute('type', 'radio');
+      radiobutton.setAttribute('value', o.value);
+      radiobutton.setAttribute('name', title);
+      entry.appendChild(radiobutton);
+      entry.appendChild(document.createTextNode(o.title));
+      if (selectedKey == o.value) {
+        radiobutton.checked = true;
+      }
+      radiobuttons.appendChild(entry);
+    }
+    radiobuttons.onclick = function(e) {
+      // Cancel bubbling
+      e.cancelBubble = true;
+      if (e.stopPropagation) e.stopPropagation();
+    };
+
+    return CATMAID.DOM.createCustomContentSelect(title, radiobuttons);
   };
 
   /**

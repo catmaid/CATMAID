@@ -624,7 +624,7 @@
         }
 
         if (self.persistReview) {
-          submit(django_url + self.projectId + "/node/" + node['id'] + "/reviewed",
+          submit(CATMAID.makeURL(self.projectId + "/node/" + node['id'] + "/reviewed"),
               'POST',
               {},
               function(json) {
@@ -922,7 +922,7 @@
         return;
       }
 
-      submit(django_url + self.projectId + "/skeletons/" + self.currentSkeletonId + "/review",
+      submit(CATMAID.makeURL(self.projectId + "/skeletons/" + self.currentSkeletonId + "/review"),
         "POST",
         {'subarbor_node_id': self.currentSubarborNodeId},
         function(skeleton_data) {
@@ -951,7 +951,7 @@
                 $(this).dialog('destroy');
               },
               "Remove all of my reviews": function () {
-                submit(django_url + self.projectId + "/skeleton/" + self.currentSkeletonId + "/review/" + fnName, "POST", {},
+                submit(CATMAID.makeURL(self.projectId + "/skeleton/" + self.currentSkeletonId + "/review/" + fnName), "POST", {},
                   function (json) {
                     self.startReviewActiveSkeleton();
                   });

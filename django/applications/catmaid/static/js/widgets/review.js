@@ -720,7 +720,7 @@
      * reviewed, but only the sub-arbor starting at the given node ID. If
      * omitted or null it will default to the root node.
      * */
-    this.createReviewSkeletonTable = function(skeleton_data, users) {
+    this.createReviewSkeletonTable = function(skeleton_data) {
       self.skeleton_segments = skeleton_data;
       var butt, table, tbody, row;
       if( $('#review_segment_table').length > 0 ) {
@@ -731,14 +731,16 @@
       // containing name and count.
       // FIXME: count is wrong because branch points are repeated. Would have
       // to create sets and then count the number of keys.
-      var users = users.reduce(function(map, u) {
+      var userIdMap = CATMAID.User.all();
+      var users = Object.keys(userIdMap).reduce(function(map, u) {
+        var user = userIdMap[u];
         // Create an empty segment count object
         var seg_count = skeleton_data.reduce(function(o, s) {
           o[s.id] = 0;
           return o;
         }, {});
         // Create a new count object for this user
-        map[u[0]] = {name: u[1], count: 0, segment_count: seg_count};
+        map[user.id] = {name: user.login, count: 0, segment_count: seg_count};
         return map;
       }, {});
 
@@ -920,15 +922,12 @@
         return;
       }
 
-      submit(django_url + "accounts/" + self.projectId + "/all-usernames", "POST", {},
-        function(usernames) {
-          submit(django_url + self.projectId + "/skeletons/" + self.currentSkeletonId + "/review",
-            "POST",
-            {'subarbor_node_id': self.currentSubarborNodeId},
-            function(skeleton_data) {
-                self.createReviewSkeletonTable( skeleton_data, usernames );
-                self.redraw();
-            });
+      submit(django_url + self.projectId + "/skeletons/" + self.currentSkeletonId + "/review",
+        "POST",
+        {'subarbor_node_id': self.currentSubarborNodeId},
+        function(skeleton_data) {
+            self.createReviewSkeletonTable(skeleton_data);
+            self.redraw();
         });
     };
 

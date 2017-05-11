@@ -69,6 +69,9 @@ Review widget:
 - The color of custom tag spheres can now be adjusted through a "color" button
   right next to the custom tag pattern.
 
+- The color of the floor can now be adjusted though a "color" button next after
+  the "Floor" checkbox.
+
 - Skeleton coloring can now be set to not interpolate between different vertex
   colors and instead use always child colors for an edge.
 

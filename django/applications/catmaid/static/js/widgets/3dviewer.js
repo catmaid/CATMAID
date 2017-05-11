@@ -777,6 +777,7 @@
     this.show_active_node = true;
     this.active_node_on_top = false;
     this.show_floor = true;
+    this.floor_color = '#535353';
     this.show_background = true;
     this.show_box = true;
     this.show_zplane = false;
@@ -2040,7 +2041,9 @@
   WebGLApplication.prototype.Space.prototype.StaticContent = function(dimensions, stack, center, options) {
     // Space elements
     this.box = this.createBoundingBox(project.focusedStackViewer.primaryStack);
-    this.floor = this.createFloor(center, dimensions);
+    this.floor = this.createFloor(center, dimensions, {
+      color: options.floor_color
+    });
 
     this.zplane = null;
 
@@ -2296,6 +2299,8 @@
     }
 
     this.floor.visible = options.show_floor;
+    this.floor.material.color.set(options.floor_color);
+    this.floor.material.needsUpdate = true;
 
     if (this.box) {
       space.scene.remove(this.box);

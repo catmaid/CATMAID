@@ -598,6 +598,21 @@ var WindowMaker = new function()
           ['Active node on top', o.active_node_on_top, function() { WA.options.active_node_on_top = this.checked; WA.adjustContent(); }, false],
           ['Black background', o.show_background, adjustFn('show_background'), false],
           ['Floor', o.show_floor, adjustFn('show_floor'), false],
+          {
+            type: 'color-button',
+            label: 'color',
+            title: 'Adjust the floor color',
+            value: o.floor_color,
+            color: {
+              initialColor: o.floor_color,
+              initialAlpha: 1.0,
+              onColorChange: function(rgb, alpha, colorChanged, alphaChanged, colorHex) {
+                WA.options.floor_color = '#' + colorHex;
+                WA.adjustStaticContent();
+              },
+            },
+            length: 10
+          },
           ['Debug', o.debug, function() { WA.setDebug(this.checked); }, false],
           ['Line width', o.skeleton_line_width, null, function() { WA.updateSkeletonLineWidth(this.value); }, 4],
           {

@@ -4074,6 +4074,15 @@
   // Find better way to define connector types
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.CTYPES = ['neurite', 'presynaptic_to', 'postsynaptic_to', 'gapjunction_with'];
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.synapticTypes = ['presynaptic_to', 'postsynaptic_to', 'gapjunction_with'];
+  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.synapticTypesToModelVisibility = {
+    'presynaptic_to': 'pre_visible',
+    'postsynaptic_to': 'post_visible'
+  };
+  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.modelVisibilityToSynapticType = {
+    'presynaptic_to': 'pre_visible',
+    'postsynaptic_to': 'post_visible'
+  };
+
 
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.initialize_objects =
       function(options) {
@@ -4105,12 +4114,8 @@
     this.textlabels = {};
 
     // Visibility of connector types, read known model fields from model
-    var modelFieldMapping = {
-      'pre_visible': 'presynaptic_to',
-      'post_visible': 'postsynaptic_to'
-    };
     this.connectorVisibility = CTYPES.reduce((function(o, t) {
-      var mapping = modelFieldMapping[t];
+      var mapping = this.synapticTypesToModelVisibility[t];
       o[t] = mapping ? this.skeletonmodel[mapping] : true;
       return o;
     }).bind(this), {});
@@ -4719,7 +4724,8 @@
             var type = skeleton.synapticTypes[j];
             var actor = skeleton.connectoractor[type];
             if (actor) {
-              actor.visible = linksVisible && skeleton.connectorVisibility[type];
+              var modelVisibilityField = skeleton.synapticTypesToModelVisibility[type];
+              actor.visible = linksVisible && skeleton.skeletonmodel[modelVisibilityField];
             }
           }
         }

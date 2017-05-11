@@ -101,6 +101,9 @@ Miscellaneous:
 
 - Connector nodes can be deleted again right after they were created.
 
+- 3D viewer: connector links are displayed again if connector restrictions are
+  in use.
+
 
 ## 2017.04.20
 

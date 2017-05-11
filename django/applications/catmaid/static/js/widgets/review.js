@@ -1322,26 +1322,23 @@
    */
   CATMAID.ReviewSystem.prototype.updateFilter = function(options) {
     if (!this.currentSkeletonId) {
-      self.allowedNodes.clear();
-      self.update();
+      if (this.allowedNodes) {
+        this.allowedNodes.clear();
+      }
+      this.update();
       return Promise.resolve();
     }
 
-    var self = this;
     var skeletonIds = [this.currentSkeletonId];
     var skeletons = skeletonIds.reduce(function(o, s) {
       o[s] = new CATMAID.SkeletonModel(s);
       return o;
     }, {});
 
-    return CATMAID.SkeletonFilter.fetchArbors(skeletonIds)
-      .then(function(arbors) {
-        var filter = new CATMAID.SkeletonFilter(self.filterRules, skeletons);
-
-        if (!arbors) {
-          throw new CATMAID.ValueError("Couldn't fetch skeleton arbor");
-        }
-        var filteredNodes = filter.execute(arbors, self.filterRules);
+    var self = this;
+    var filter = new CATMAID.SkeletonFilter(this.filterRules, skeletons);
+    filter.execute()
+      .then(function(filteredNodes) {
         self.allowedNodes = new Set(Object.keys(filteredNodes.nodes).map(function(n) {
           return parseInt(n, 10);
         }));

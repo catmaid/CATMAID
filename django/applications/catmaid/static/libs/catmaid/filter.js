@@ -28,6 +28,7 @@
   CATMAID.SkeletonFilter= function(rules, skeletonIndex) {
     this.rules = rules;
     this.skeletonIndex = skeletonIndex;
+    this.input = {};
   };
 
 
@@ -41,55 +42,66 @@
    * @params  {Array}   skeletonIds Skeletons to fetch
    * @returns {Promise}             Resolves with fetched arbors
    */
-  CATMAID.SkeletonFilter.fetchArbors = function(skeletonIds) {
+  CATMAID.SkeletonFilter.fetchArbors = function(skeletonIds, needsArbor,
+      needsPartners, needsTags, target) {
     return new Promise(function(resolve, reject) {
-    var nns = CATMAID.NeuronNameService.getInstance();
-    var arbors = {};
-    fetchSkeletons(
-      skeletonIds,
-      function(skid) {
-        return django_url + project.id + '/' + skid + '/1/1/1/compact-arbor';
-      },
-      function(skid) { return {}; }, // POST
-      function(skid, json) {
-        var ap = new CATMAID.ArborParser();
-        ap.tree(json[0]);
-        arbors[skid] = {
-          arborParser: ap,
-          arbor: ap.arbor,
-          positions: ap.positions,
-          radii: json[0].reduce(function(o, row) {
-            o[row[0]] = row[6];
-            return o;
-          }, {}),
-          tags: json[2],
-          partnersRaw: json[1],
-          partners: json[1].reduce(function(o, row) {
-            // 1: treenode
-            // 5: other skeleton ID
-            // 6: 0 for pre and 1 for post
-            var type = o[row[6]];
-            var node = row[0];
-            var other_skid = row[5];
-            var nodes = type[other_skid];
-            if (nodes) {
-              var count = nodes[node];
-              nodes[node] = count ? count + 1 : 1;
-            } else {
-              nodes = {};
-              nodes[node] = 1;
-              type[other_skid] = nodes;
-            }
-            return o;
-          }, {0: {}, 1: {}}) // 0 is pre and 1 is post
-        };
-      },
-      function(skid) {
-        console.log("Could not load arbor" + nns.getName(skid) + "  #" + skid);
-      },
-      function() {
-        resolve(arbors);
-      });
+      var nns = CATMAID.NeuronNameService.getInstance();
+      var arbors = target || {};
+      fetchSkeletons(
+        skeletonIds,
+        function(skid) {
+          var a = needsArbor ? "1" : "0";
+          var p = needsPartners ? "1" : "0";
+          var t = needsTags ? "1" : "0";
+          return CATMAID.makeURL(project.id + '/' + skid + '/' + a + '/' + p + '/' + t + '/compact-arbor');
+        },
+        function(skid) { return {}; }, // POST
+        function(skid, json) {
+          var arborInfo = arbors[skid] = {};
+          if (needsArbor) {
+            var ap = new CATMAID.ArborParser();
+            ap.tree(json[0]);
+            arborInfo.arborParser = ap;
+            arborInfo.arbor = ap.arbor;
+            arborInfo.positions = ap.positions;
+            arborInfo.radii = json[0].reduce(function(o, row) {
+              o[row[0]] = row[6];
+              return o;
+            }, {});
+          }
+
+          if (needsTags) {
+            arborInfo.tags = json[2];
+          }
+
+          if (needsPartners) {
+            arborInfo.partnersRaw = json[1];
+            arborInfo.partners = json[1].reduce(function(o, row) {
+              // 1: treenode
+              // 5: other skeleton ID
+              // 6: 0 for pre and 1 for post
+              var type = o[row[6]];
+              var node = row[0];
+              var other_skid = row[5];
+              var nodes = type[other_skid];
+              if (nodes) {
+                var count = nodes[node];
+                nodes[node] = count ? count + 1 : 1;
+              } else {
+                nodes = {};
+                nodes[node] = 1;
+                type[other_skid] = nodes;
+              }
+              return o;
+            }, {0: {}, 1: {}}); // 0 is pre and 1 is post
+          }
+        },
+        function(skid) {
+          console.log("Could not load arbor" + nns.getName(skid) + "  #" + skid);
+        },
+        function() {
+          resolve(arbors);
+        });
     });
   };
 
@@ -111,14 +123,43 @@
     return SynapseClustering.prototype.findAxon(ap, 0.9, positions);
   };
 
-  /**
-   * Run filter set on arbors and return a collection of matched nodes.
-   *
-   * @param {Object} skeletonArbors  Maps skeleton IDs to arbor info objects
-   */
-  CATMAID.SkeletonFilter.prototype.execute = function(skeletonArbors) {
-    var rules = CATMAID.SkeletonFilter.getActiveRules(this.rules, this.skeletonIndex);
 
+  /**
+   * Return a promise that will resolve when all data dependencies for the
+   * passed in sets of skeletons and filter rules. This ignores per-skeleton
+   * consraints at the moment.
+   */
+  function prepareFilterInput(skeletonIds, rules, input) {
+    var neededInput = new Set();
+    for (var i=0; i<rules.length; ++i) {
+      var rule = rules[i];
+      if (!rule.strategy.prepare) {
+        continue;
+      }
+
+      neededInput.addAll(rule.strategy.prepare);
+    }
+
+    var prepareActions = [];
+
+    // If arbor, partners or tags are needed, we can use the fetchSkeletons API
+    var needsArbor = neededInput.has("arbor"),
+        needsPartners = neededInput.has("partners"),
+        needsTags = neededInput.has("tags");
+    if (needsArbor || needsTags || needsPartners) {
+      if (input.skeletons === undefined) { input.skeletons = {}; }
+      var fetchSkeletons = CATMAID.SkeletonFilter.fetchArbors(skeletonIds,
+          needsArbor, needsPartners, needsTags, input.skeletons);
+      prepareActions.push(fetchSkeletons);
+    }
+
+    return Promise.all(prepareActions)
+      .then(function() {
+        return input;
+      });
+  }
+
+  function executeFilterRules(rules, skeletonIndex, inputMap, mapResultNode) {
     // Collect nodes in an object to allow fast hash based key existence
     // checks. Also collect the location of the node. Whether OR or AND is
     // used for merging is specified as option. For the sake of simplicity, a
@@ -126,15 +167,18 @@
     var nodeCollection = {};
     var radiiCollection = {};
     var nNodes = 0;
-    var mergeNodeCollection = (function(other, positions, payload, mergeMode) {
+    if (mapResultNode === undefined) {
+      mapResultNode = function() {
+        return true;
+      };
+    }
+    var mergeNodeCollection = (function(skeletonId, other, mergeMode, mapNode) {
       var count = 0;
       if (CATMAID.UNION === mergeMode) {
         for (var node in other) {
           var existingNode = this[node];
           if (!existingNode) {
-            var v = positions[node];
-            var r = payload[node];
-            this[node] = [[v.x, v.y, v.z], r];
+            this[node] = mapNode(skeletonId, node);
             ++count;
           }
         }
@@ -157,7 +201,6 @@
     // Get final set of points by going through all rules and apply them
     // either to all skeletons or a selected sub-set. Results of individual
     // rules are OR-combined.
-    var skeletonIndex = this.skeletonIndex;
     rules.forEach(function(rule) {
       // Pick source skeleton(s). If a rule requests to be only applied for
       // a particular skeleton, this working set will be limited to this
@@ -174,23 +217,42 @@
       Object.keys(sourceSkeletons).forEach(function(skid) {
         // Get valid point list from this skeleton with the current filter
         var neuron = skeletonIndex[skid];
-        var morphology = skeletonArbors[skid];
         var nodeCollection = rule.strategy.filter(skid, neuron,
-            morphology.arbor, morphology.tags, morphology.partners,
-            rule.options, morphology);
+            inputMap, rule.options);
         // Merge all point sets for this rule. How this is done exactly (i.e.
         // OR or AND) is configured separately.
         if (nodeCollection) {
-          mergeNodeCollection(nodeCollection, morphology.positions,
-              morphology.radii, rule.mergeMode);
+          mergeNodeCollection(skid, nodeCollection, rule.mergeMode,  mapResultNode);
         }
       });
     });
 
     return {
       nodes: nodeCollection,
-      nNodes: nNodes
+      nNodes: nNodes,
+      input: inputMap
     };
+  }
+
+  /**
+   * Run filter set on arbors and return a collection of matched nodes.
+   *
+   * @param {Object} skeletonArbors  Maps skeleton IDs to arbor info objects
+   */
+  CATMAID.SkeletonFilter.prototype.execute = function(mapResultNode, keepInputCache) {
+    var rules = CATMAID.SkeletonFilter.getActiveRules(this.rules, this.skeletonIndex);
+
+    var skeletonIndex = this.skeletonIndex;
+    var skeletonIds = Object.keys(skeletonIndex);
+
+    // Don't cache between executions by default
+    if (!keepInputCache) {
+      this.input = {};
+    }
+    return prepareFilterInput(skeletonIds, rules, this.input)
+      .then(function(input) {
+        return executeFilterRules(rules, skeletonIndex, input, mapResultNode);
+      });
   };
 
   /**
@@ -272,13 +334,18 @@
   CATMAID.NodeFilterStrategy = {
     "take-all": {
       name: "Take all nodes of each skeleton",
-      filter: function(skeletonId, neuron, arbor, tags, partners) {
-        return arbor.nodes();
+      prepare: ["arbor"],
+      filter: function(skeletonId, neuron, input, options) {
+        var skeleton = input.skeletons[skeletonId];
+        return skeleton.arbor.nodes();
       }
     },
     "endnodes": {
       name: "Only end nodes",
-      filter: function(skeletonId, neuron, arbor, tags, partners, options) {
+      prepare: ["arbor"],
+      filter: function(skeletonId, neuron, input, options) {
+        var skeleton = input.skeletons[skeletonId];
+        var arbor = skeleton.arbor;
         var endIds = arbor.findBranchAndEndNodes().ends;
         var endNodes = {};
         var nodes = arbor.nodes();
@@ -299,7 +366,10 @@
     },
     "branches": {
       name: "Only branch nodes",
-      filter: function(skeletonId, neuron, arbor, tags, partners) {
+      prepare: ["arbor"],
+      filter: function(skeletonId, neuron, input, options) {
+        var skeleton = input.skeletons[skeletonId];
+        var arbor = skeleton.arbor;
         var branchIds = Object.keys(arbor.findBranchAndEndNodes().branches);
         var branchNodes = {};
         var nodes = arbor.nodes();
@@ -315,7 +385,10 @@
     // Options: tag
     'tags': {
       name: "Only tagged nodes",
-      filter: function(skeletonId, neuron, arbor, tags, partners, options) {
+      prepare: ["arbor", "tags"],
+      filter: function(skeletonId, neuron, input, options) {
+        var skeleton = input.skeletons[skeletonId];
+        var tags = skeleton.tags;
         return tags[options.tag].reduce(addToObject, {}) || null;
       }
     },
@@ -323,7 +396,11 @@
     // and only one soma tag in use on a neuron.
     "nuclei": {
       name: "Only nuclei",
-      filter: function(skeletonId, neuron, arbor, tags, partnes, options) {
+      prepare: ["arbor", "tags"],
+      filter: function(skeletonId, neuron, input, options) {
+        var skeleton = input.skeletons[skeletonId];
+        var arbor = skeleton.arbor;
+        var tags = skeleton.tags;
         // Expect only one use of the soma tag
         var somaTaggedNodes = tags["soma"];
         if (!somaTaggedNodes || 1 !== somaTaggedNodes.length) {
@@ -349,7 +426,11 @@
     // Options: tag, expected
     "subarbor": {
       name: "Use a sub-arbor starting from a tag",
-      filter: function(skeletonId, neuron, arbor, tags, partners, options) {
+      prepare: ["arbor", "tags"],
+      filter: function(skeletonId, neuron, input, options) {
+        var skeleton = input.skeletons[skeletonId];
+        var arbor = skeleton.arbor;
+        var tags = skeleton.tags;
         var cuts = tags[options.tag];
         if (!cuts || (options.expected && cuts.length !== options.expected)) {
           console.log("CANNOT extract dendrite for " + neuron.name + ", cuts: " + cuts);
@@ -363,7 +444,11 @@
     // Options: tagStart, tagEnd
     "single-region": {
       name: "Use a region",
-      filter: function(skeletonId, neuron, arbor, tags, partners, options) {
+      prepare: ["arbor", "tags"],
+      filter: function(skeletonId, neuron, input, options) {
+        var skeleton = input.skeletons[skeletonId];
+        var arbor = skeleton.arbor;
+        var tags = skeleton.tags;
         var start_cuts = tags[options.tagStart];
         var end_cuts = tags[options.tagEnd];
         if (!start_cuts || start_cuts.length !== 1 || !end_cuts || end_cuts.length !== 1) {
@@ -387,7 +472,11 @@
     // Options: tag, region
     "binary-split": {
       name: "Binary split",
-      filter: function(skeletonId, neuron, arbor, tags, partners, options) {
+      prepare: ["arbor", "tags"],
+      filter: function(skeletonId, neuron, input, options) {
+        var skeleton = input.skeletons[skeletonId];
+        var arbor = skeleton.arbor;
+        var tags = skeleton.tags;
         var cuts = tags[options.tag];
         if (!cuts || cuts.length !== 1) {
           console.log("CANNOT extract dendrite for " + neuron.name + ", cuts: " + cuts);
@@ -411,7 +500,10 @@
     // another set of skeletons.
     "synaptic": {
       name: "Synaptic connections to other neurons",
-      filter: function(skeletonId, neuron, arbor, tags, partners, options) {
+      prepare: ["partners"],
+      filter: function(skeletonId, neuron, input, options) {
+        var skeleton = input.skeletons[skeletonId];
+        var partners = skeleton.partners;
         var selectedPartners;
         if ('pre' === options.relation) {
           selectedPartners = partners[0];
@@ -455,18 +547,24 @@
     },
     "axon": {
       name: "Axon",
-      filter: function(skeletonId, neuron, arbor, tags, partners, options, arborInfo) {
-        var axon = computeAxonArbor(arbor, arborInfo.positions, tags, arborInfo.partnersRaw);
+      prepare: ["arbor", "tags"],
+      filter: function(skeletonId, neuron, input, options) {
+        var skeleton = input.skeletons[skeletonId];
+        var axon = computeAxonArbor(skeleton.arbor, skeleton.positions,
+            skeleton.tags, skeleton.partnersRaw);
         return axon ? axon.nodes() : {};
       }
     },
     "dendrites": {
       name: "Dendrites",
-      filter: function(skeletonId, neuron, arbor, tags, partners, options, arborInfo) {
-        var axon = computeAxonArbor(arbor, arborInfo.positions, tags, arborInfo.partnersRaw);
+      prepare: ["arbor", "tags"],
+      filter: function(skeletonId, neuron, input, options) {
+        var skeleton = input.skeletons[skeletonId];
+        var axon = computeAxonArbor(skeleton.arbor, skeleton.positions,
+            skeleton.tags, skeleton.partnersRaw);
         if (axon) {
           // Find all nodes not in axon
-          var dendriteNodes = arbor.nodes();
+          var dendriteNodes = skeleton.arbor.nodes();
           var axonNodeIds = axon.nodesArray();
           for (var i=0, max=axonNodeIds.length; i<max; ++i) {
             delete dendriteNodes[axonNodeIds[i]];

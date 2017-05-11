@@ -1961,14 +1961,9 @@
     }
 
     var self = this;
-    return CATMAID.SkeletonFilter.fetchArbors(skeletonIds)
-      .then(function(arbors) {
-        var filter = new CATMAID.SkeletonFilter(self.filterRules, skeletons);
-
-        if (!arbors) {
-          throw new CATMAID.ValueError("Couldn't fetch skeleton arbors");
-        }
-        var filteredNodes = filter.execute(arbors, self.filterRules);
+    var filter = new CATMAID.SkeletonFilter(this.filterRules, skeletons);
+    filter.execute()
+      .then(function(filteredNodes) {
         self.allowedNodes = new Set(Object.keys(filteredNodes.nodes).map(function(n) {
           return parseInt(n, 10);
         }));

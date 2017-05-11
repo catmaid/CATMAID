@@ -215,23 +215,34 @@
    */
   var createCompartments = function(skeletons, compartments, skeleton_arbors,
       respectRadius, createMesh) {
-    return Object.keys(compartments).reduce(function(o, name) {
-      var rules = compartments[name];
-      var filter = new CATMAID.SkeletonFilter(rules, skeletons);
+    // Map location and radius to result node IDs
+    var mapResultNode = function(skeletonId, nodeId) {
+      var arborInfo = skeleton_arbors[skeletonId];
+      var v = arborInfo.positions[nodeId];
+      var r = arborInfo.radii[nodeId];
+      return [[v.x, v.y, v.z], r];
+    };
+    var result = {};
+    return Promise.all(Object.keys(compartments).map(function(name) {
+        var rules = compartments[name];
+        var filter = new CATMAID.SkeletonFilter(rules, skeletons);
+        return filter.execute(mapResultNode)
+          .then(function(filteredNodes) {
+            var points = filter.getNodeLocations(filteredNodes.nodes, respectRadius, filteredNodes.nNodes);
+            if (0 === points.length) {
+              console.log("Found zero points for compartment " + name);
+              return o;
+            }
 
-      var filteredNodes = filter.execute(skeleton_arbors);
-      var points = filter.getNodeLocations(filteredNodes.nodes, respectRadius, filteredNodes.nNodes);
-      if (0 === points.length) {
-        console.log("Found zero points for compartment " + name);
-        return o;
-      }
+            // Compute mesh
+            var mesh = createMesh(points);
 
-      // Compute mesh
-      var mesh = createMesh(points);
-
-      o[name] = [points, mesh];
-      return o;
-    }, {});
+            result[name] = [points, mesh];
+          });
+      }))
+      .then(function() {
+        return result;
+      });
   };
 
   /**
@@ -258,10 +269,12 @@
 
     // Create mesh by creating the convex hull around a set of points. These
     // points are collected through a set of rules for an input set of neurons.
-    CATMAID.SkeletonFilter.fetchArbors(Object.keys(skeletons))
+    CATMAID.SkeletonFilter.fetchArbors(Object.keys(skeletons), true, true, true)
         .then(function(arbors) {
-          var meshes = createCompartments(skeletons, compartments, arbors,
+          return createCompartments(skeletons, compartments, arbors,
               respectRadius, createMesh);
+        })
+        .then(function(meshes) {
           onSuccess(meshes);
         })
         .catch(CATMAID.handleError);

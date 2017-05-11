@@ -13,6 +13,7 @@
     this.projectId = null;
     this.currentSkeletonId = null;
     this.currentSubarborNodeId = null;
+    this.submit = submitterFn();
     var self = this;
     self.mode = 'node-review';
     self.skeleton_segments = null;
@@ -37,6 +38,12 @@
     // Review updates are made persistent, by default
     self.persistReview = true;
 
+    // A set of filter rules to apply to the handled skeletons
+    this.filterRules = [];
+    // Filter rules can optionally be disabled
+    this.applyFilterRules = true;
+    // A set of nodes allowed by node filters
+    this.allowedNodes = new Set();
 
     this.init = function() {
       this.projectId = project.id;
@@ -592,8 +599,6 @@
       }
     };
 
-    var submit = typeof submitterFn!= "undefined" ? submitterFn() : undefined;
-
     var updateClientNodeReview = function(node, reviewerId, reviewTime) {
       // Append the new review to the list of reviewers of
       // this node, if not already present.
@@ -624,7 +629,7 @@
         }
 
         if (self.persistReview) {
-          submit(django_url + self.projectId + "/node/" + node['id'] + "/reviewed",
+          self.submit(CATMAID.makeURL(self.projectId + "/node/" + node['id'] + "/reviewed"),
               'POST',
               {},
               function(json) {
@@ -710,8 +715,12 @@
 
         // Queue the selection so that pending requests can finish before.
         // Display an error message if something fails before.
-        submit(null, null, null, fn, false, false, errFn);
+        self.submit(null, null, null, fn, false, false, errFn);
       }
+    };
+
+    var filterNodeSequence = function(allowedNodes, node) {
+      return allowedNodes.has(node.id);
     };
 
     /**
@@ -719,26 +728,42 @@
      * it. If a subarborNodeId is given, not the whole skeleton will be
      * reviewed, but only the sub-arbor starting at the given node ID. If
      * omitted or null it will default to the root node.
-     * */
-    this.createReviewSkeletonTable = function(skeleton_data, users) {
+     */
+    this.createReviewSkeletonTable = function(skeleton_data) {
       self.skeleton_segments = skeleton_data;
       var butt, table, tbody, row;
       if( $('#review_segment_table').length > 0 ) {
         $('#review_segment_table').remove();
       }
 
+      // Filter nodes, if enabled
+      var activeNodeFilters = this.applyFilterRules && this.filterRules.length > 0;
+      var nFilteredNodes = 0;
+      if (activeNodeFilters) {
+        var filterSegmentNodes = filterNodeSequence.bind(window, this.allowedNodes);
+        skeleton_data = skeleton_data.filter(function(segment) {
+          var newSequence = segment.sequence.filter(filterSegmentNodes);
+          nFilteredNodes += segment.sequence.length - newSequence.length;
+          segment.sequence = newSequence;
+          segment.nr_nodes = newSequence.length;
+          return segment.nr_nodes > 0;
+        });
+      }
+
       // Count which user reviewed how many nodes and map user ID vs object
       // containing name and count.
       // FIXME: count is wrong because branch points are repeated. Would have
       // to create sets and then count the number of keys.
-      var users = users.reduce(function(map, u) {
+      var userIdMap = CATMAID.User.all();
+      var users = Object.keys(userIdMap).reduce(function(map, u) {
+        var user = userIdMap[u];
         // Create an empty segment count object
         var seg_count = skeleton_data.reduce(function(o, s) {
           o[s.id] = 0;
           return o;
         }, {});
         // Create a new count object for this user
-        map[u[0]] = {name: u[1], count: 0, segment_count: seg_count};
+        map[user.id] = {name: user.login, count: 0, segment_count: seg_count};
         return map;
       }, {});
 
@@ -802,7 +827,8 @@
       reviewInfo.classList.add('right');
 
       var neuronName = CATMAID.NeuronNameService.getInstance().getName(self.currentSkeletonId);
-      neuronInfo.appendChild(document.createTextNode('Neuron under review: ' + neuronName));
+      var neuronInfoMsg = activeNodeFilters ? (neuronName + " (" + nFilteredNodes + " excluded nodes)") : neuronName;
+      neuronInfo.appendChild(document.createTextNode('Neuron under review: ' + neuronInfoMsg));
       reviewInfo.appendChild(document.createTextNode('Revisions: ' + user_revisions));
       header.appendChild(neuronInfo);
       header.appendChild(reviewInfo);
@@ -920,16 +946,7 @@
         return;
       }
 
-      submit(django_url + "accounts/" + self.projectId + "/all-usernames", "POST", {},
-        function(usernames) {
-          submit(django_url + self.projectId + "/skeletons/" + self.currentSkeletonId + "/review",
-            "POST",
-            {'subarbor_node_id': self.currentSubarborNodeId},
-            function(skeleton_data) {
-                self.createReviewSkeletonTable( skeleton_data, usernames );
-                self.redraw();
-            });
-        });
+      this.update();
     };
 
     var resetFn = function(fnName) {
@@ -952,7 +969,7 @@
                 $(this).dialog('destroy');
               },
               "Remove all of my reviews": function () {
-                submit(django_url + self.projectId + "/skeleton/" + self.currentSkeletonId + "/review/" + fnName, "POST", {},
+                self.submit(CATMAID.makeURL(self.projectId + "/skeleton/" + self.currentSkeletonId + "/review/" + fnName), "POST", {},
                   function (json) {
                     self.startReviewActiveSkeleton();
                   });
@@ -1080,6 +1097,20 @@
             value: this.reviewUpstream,
             onclick: function() {
               self.reviewUpstream = this.checked;
+            }
+          }, {
+            type: 'checkbox',
+            label: 'Apply node filters',
+            value: this.applyFilterRules,
+            onclick: function() {
+              self.applyFilterRules = this.checked;
+              if (self.filterRules.length > 0) {
+                if (this.checked) {
+                  self.updateFilter();
+                } else {
+                  self.update();
+                }
+              }
             }
           }
         ]);
@@ -1251,6 +1282,10 @@
       },
       init: function() {
         this.init();
+      },
+      filter: {
+        rules: this.filterRules,
+        update: this.updateFilter.bind(this)
       }
     };
   };
@@ -1268,6 +1303,54 @@
       this.nodeReviewContainer.style.display = 'none';
       this.analyticsContainer.style.display = 'block';
     }
+  };
+
+  CATMAID.ReviewSystem.prototype.update = function() {
+    var url = CATMAID.makeURL(this.projectId + "/skeletons/" +
+        this.currentSkeletonId + "/review");
+    var self = this;
+    this.submit(url, "POST", {'subarbor_node_id': this.currentSubarborNodeId},
+      function(skeleton_data) {
+        self.createReviewSkeletonTable(skeleton_data);
+        self.redraw();
+      });
+  };
+
+  /**
+   * Reevaluate the current set of node filter rules to update the set of
+   * excluded nodes.
+   */
+  CATMAID.ReviewSystem.prototype.updateFilter = function(options) {
+    if (!this.currentSkeletonId) {
+      self.allowedNodes.clear();
+      self.update();
+      return Promise.resolve();
+    }
+
+    var self = this;
+    var skeletonIds = [this.currentSkeletonId];
+    var skeletons = skeletonIds.reduce(function(o, s) {
+      o[s] = new CATMAID.SkeletonModel(s);
+      return o;
+    }, {});
+
+    return CATMAID.SkeletonFilter.fetchArbors(skeletonIds)
+      .then(function(arbors) {
+        var filter = new CATMAID.SkeletonFilter(self.filterRules, skeletons);
+
+        if (!arbors) {
+          throw new CATMAID.ValueError("Couldn't fetch skeleton arbor");
+        }
+        var filteredNodes = filter.execute(arbors, self.filterRules);
+        self.allowedNodes = new Set(Object.keys(filteredNodes.nodes).map(function(n) {
+          return parseInt(n, 10);
+        }));
+        if (0 === self.allowedNodes.length) {
+          CATMAID.warn("No points left after filter application");
+        }
+        self.update();
+      })
+      .catch(CATMAID.handleError);
   };
 
   // Available stack orientations

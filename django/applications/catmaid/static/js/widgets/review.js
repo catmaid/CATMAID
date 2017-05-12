@@ -946,7 +946,11 @@
         return;
       }
 
-      this.update();
+      if (this.filterRules.length > 0 && this.applyFilterRules) {
+        this.updateFilter();
+      } else {
+        this.update();
+      }
     };
 
     var resetFn = function(fnName) {

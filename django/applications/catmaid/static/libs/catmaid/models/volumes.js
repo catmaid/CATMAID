@@ -197,7 +197,7 @@
         contains: function(point) {
           // Get array of triangles in the index cell of the XY projected point
           var x = parseInt((point.x - min.x) * invCellXEdgeLength);
-          var y = parseInt((point.y - min.x) * invCellYEdgeLength);
+          var y = parseInt((point.y - min.y) * invCellYEdgeLength);
           if (x < 0 || x >= cellsPerDimension || y < 0 || y >= cellsPerDimension) {
             return false;
           }

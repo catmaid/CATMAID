@@ -136,13 +136,6 @@
     },
 
     /**
-     * Convert a THREE.js mesh into a triangle list.
-     */
-    meshToTriangleList: function(mesh) {
-
-    },
-
-    /**
      * Create an inersector object which can be used to quickly test
      * intersection of a point with a THREE.js mesh.
      */

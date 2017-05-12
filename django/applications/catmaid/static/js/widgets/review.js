@@ -935,10 +935,13 @@
     };
 
     this.startSkeletonToReview = function( skid, nodeId ) {
+      var dataChanged = false;
       if (!skid) {
         CATMAID.error('No skeleton ID provided for review.');
         return;
       } else {
+        dataChanged = (this.currentSkeletonId != skid) ||
+            (this.currentSubarborNodeId != nodeId);
         self.currentSkeletonId = skid;
         self.currentSubarborNodeId = nodeId;
       }
@@ -946,7 +949,7 @@
         return;
       }
 
-      if (this.filterRules.length > 0 && this.applyFilterRules) {
+      if (dataChanged && this.filterRules.length > 0 && this.applyFilterRules) {
         this.updateFilter();
       } else {
         this.update();

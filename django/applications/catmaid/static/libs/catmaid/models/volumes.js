@@ -48,7 +48,7 @@
      *                   the update request returned successfully.
      */
     update: function(projectId, volumeId, serializedVolume) {
-      var url = project.id + "/volumes/" + this.id + "/";
+      var url = project.id + "/volumes/" + volumeId + "/";
 
       return CATMAID.fetch(url, "POST", serializedVolume).then(function(json) {
         return json;

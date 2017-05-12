@@ -80,6 +80,11 @@ Review widget:
 - Skeleton coloring can now be set to not interpolate between different vertex
   colors and instead use always child colors for an edge.
 
+- Support for node filtering has been added, which can be configured through the
+  filter icon in the title bar. All features listed under Generic Node Filters
+  are supported.
+
+
 Miscellaneous:
 
 - When a node is selected a minimal node status line is now shown again using

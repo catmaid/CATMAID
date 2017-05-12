@@ -345,6 +345,11 @@ var WindowMaker = new function()
     var bar = document.createElement( "div" );
     bar.id = "3d_viewer_buttons";
     bar.setAttribute('class', 'buttonpanel');
+    DOM.addFiltereControlsToggle(win, 'Filter: ' +
+        WA.getName(), {
+          rules: WA.filterRules,
+          update: WA.updateFilter.bind(WA)
+        });
     DOM.addSourceControlsToggle(win, WA);
     DOM.addButtonDisplayToggle(win);
     addWindowConfigButton(win, WA);
@@ -760,6 +765,20 @@ var WindowMaker = new function()
               WA.updateLocationFiltering();
             },
             title: 'If checked, nodes on broken sections of the reference stack are move to an interpolated location'
+          },
+          {
+            type: 'checkbox',
+            label: 'Apply node filters',
+            value: o.apply_filter_rules,
+            onclick: function() {
+              var activeFiltersBefore = WA.getActivesNodeWhitelist() || [];
+              WA.options.apply_filter_rules = this.checked;
+              var activeFiltersAfer = WA.getActivesNodeWhitelist() || [];
+              if (activeFiltersBefore.length !== activeFiltersAfer.length) {
+                WA.updateSkeletons();
+              }
+            },
+            title: 'If checked, nodes are filtered according to the filter rules (filter icon in top bar)'
           },
         ]);
 

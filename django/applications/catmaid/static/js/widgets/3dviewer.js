@@ -41,6 +41,11 @@
     // Current set of filtered connectors (if any)
     this.filteredConnectors = null;
 
+    // A set of filter rules to apply to the handled skeletons
+    this.filterRules = [];
+    // A set of nodes allowed by node filters
+    this.allowedNodes = new Set();
+
     this.options = new WebGLApplication.prototype.OPTIONS.clone();
 
     // Listen to changes of the active node
@@ -175,6 +180,60 @@
     }
   };
 
+  /**
+   * Reevaluate the current set of node filter rules to update the set of
+   * allowed nodes.
+   */
+  WebGLApplication.prototype.updateNodeWhitelist = function(options) {
+    var skeletons = this.space.content.skeletons;
+    var skeletonIds = Object.keys(skeletons);
+    if (skeletonIds.length === 0) {
+      if (this.allowedNodes) {
+        this.allowedNodes.clear();
+      }
+      return Promise.resolve();
+    }
+
+    var self = this;
+    var filter = new CATMAID.SkeletonFilter(this.filterRules, skeletons);
+    return filter.execute()
+      .then(function(filteredNodes) {
+        self.allowedNodes = new Set(Object.keys(filteredNodes.nodes).map(function(n) {
+          return parseInt(n, 10);
+        }));
+        if (0 === self.allowedNodes.length) {
+          CATMAID.warn("No points left after filter application");
+        }
+      });
+  };
+
+  WebGLApplication.prototype.insertIntoNodeWhitelist = function(models) {
+    var self = this;
+    var filter = new CATMAID.SkeletonFilter(this.filterRules, models);
+    return filter.execute()
+      .then(function(filteredNodes) {
+        if (self.allowedNodes) {
+          var allowedSkeletonNodes = Object.keys(filteredNodes.nodes).map(function(n) {
+            return parseInt(n, 10);
+          });
+          if (0 === allowedSkeletonNodes.length) {
+            CATMAID.warn("No points left after filter application");
+          } else if (self.allowedNodes) {
+              self.allowedNodes.addAll(allowedSkeletonNodes);
+          }
+        }
+      });
+  };
+
+  WebGLApplication.prototype.updateFilter = function(options) {
+    var self = this;
+    this.updateNodeWhitelist(options)
+      .then(function() {
+        self.updateSkeletons();
+      })
+      .catch(CATMAID.handleError);
+  };
+
   WebGLApplication.prototype.fullscreenWebGL = function() {
     if (THREEx.FullScreen.activated()){
       THREEx.FullScreen.cancel();
@@ -185,7 +244,6 @@
     }
     this.space.render();
   };
-
 
   /**
    * Show a dialog to ask the user for image dimensions, resize the view to the
@@ -827,6 +885,7 @@
     this.interpolate_sections = false;
     this.interpolated_sections = [];
     this.interpolate_broken_sections = false;
+    this.apply_filter_rules = true;
   };
 
   WebGLApplication.prototype.Options.prototype = {};
@@ -1362,6 +1421,11 @@
     });
   };
 
+  WebGLApplication.prototype.getActivesNodeWhitelist = function() {
+    var activeNodeFilters = this.options.apply_filter_rules && this.filterRules.length > 0;
+    return activeNodeFilters ? this.allowedNodes : null;
+  };
+
   /** Fetch skeletons one by one, and render just once at the end. */
   WebGLApplication.prototype.addSkeletons = function(models, callback) {
     // Update skeleton properties for existing skeletons, and remove them from models
@@ -1397,9 +1461,15 @@
         lean = options.lean_mode,
         url2 = '/compact-detail';
 
+
+
     // Register with the neuron name service and fetch the skeleton data
-    CATMAID.NeuronNameService.getInstance().registerAll(this, models,
-      fetchSkeletons.bind(this,
+    var self = this;
+    CATMAID.NeuronNameService.getInstance().registerAll(this, models)
+      .then(function() {
+        return self.insertIntoNodeWhitelist(models);
+      })
+      .then(fetchSkeletons.bind(this,
           skeleton_ids,
           function(skeleton_id) {
             return url1 + skeleton_id + url2;
@@ -1412,7 +1482,8 @@
             };
           },
           (function(skeleton_id, json) {
-            var sk = this.space.updateSkeleton(models[skeleton_id], json, options);
+            var sk = this.space.updateSkeleton(models[skeleton_id], json,
+                options, undefined, this.getActivesNodeWhitelist());
             if (sk) sk.show(this.options);
           }).bind(this),
           function(skeleton_id) {
@@ -1428,7 +1499,8 @@
               }).bind(this))
               .catch(CATMAID.handleError);
           }).bind(this),
-          'GET'));
+          'GET'))
+      .catch(CATMAID.handleError);
   };
 
   /** Reload skeletons from database. */
@@ -3974,14 +4046,14 @@
   };
 
   WebGLApplication.prototype.Space.prototype.updateSkeleton =
-      function(skeletonModel, json, options, with_history) {
+      function(skeletonModel, json, options, with_history, nodeWhitelist) {
 
     var skeleton = this.content.skeletons[skeletonModel.id];
     if (!skeleton) {
       skeleton = new this.Skeleton(this, skeletonModel);
       this.content.skeletons[skeletonModel.id] = skeleton;
     }
-    skeleton.loadJson(skeletonModel, json, options, with_history);
+    skeleton.loadJson(skeletonModel, json, options, with_history, nodeWhitelist);
 
     return skeleton;
   };
@@ -5226,12 +5298,13 @@
    * associated when it became valid.
    */
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.loadJson =
-      function(skeletonModel, json, options, withHistory) {
+      function(skeletonModel, json, options, withHistory, nodeWhitelist) {
 
     var nodes = json[0];
     var connectors = json[1];
     var tags = json[2];
     var history;
+    var silent = false;
 
     // For section interpolation, the JSON data is updated so that the
     // respective locations are fixed.
@@ -5255,6 +5328,22 @@
 
       if (wrongProjectZs.length > 0) {
         nodes = interpolateNodesAtZ(nodes, wrongProjectZs);
+      }
+    }
+
+    if (nodeWhitelist) {
+      // Remove all nodes that are not allowed.
+      var nNodes = nodes.length;
+      var n = nNodes;
+      while (n--) {
+        if (!nodeWhitelist.has(nodes[n][0])) {
+          nodes.splice(n, 1);
+        }
+      }
+      // Ignore missing parents during import, filtering could have cut some
+      // away if nodes got removed.
+      if (nodes.length !== nNodes) {
+        silent = true;
       }
     }
 
@@ -5308,7 +5397,8 @@
       // Update to most recent skeleton
       this.resetToPointInTime(skeletonModel, options, null, true);
     } else {
-      this.reinit_actor(skeletonModel, nodes, connectors, tags, null, options);
+      this.reinit_actor(skeletonModel, nodes, connectors, tags, null, options,
+          silent);
     }
   };
 
@@ -5591,7 +5681,7 @@
 
           // Find used label Type for each labeled node
           this.tags[tag].forEach(function(nodeID) {
-            if (!this.specialTagSpheres[nodeID]) {
+            if (!this.specialTagSpheres[nodeID] && (!(silent && !vs[nodeID]))) {
               labels.push([vs[nodeID], this.space.staticContent.labelColors[labelType]]);
             }
           }, this);
@@ -6156,6 +6246,8 @@
     // Default to rotation type
     type = type || 'rotation';
 
+    var activeNodeWhilelist = this.getActivesNodeWhitelist();
+
     if ('rotation' === type) {
       // For now it is always the Y axis rotation
       var options = {
@@ -6256,7 +6348,8 @@
             },
             (function(skeleton_id, json) {
               // Update existing skeletons with history information
-              this.space.updateSkeleton(models[skeleton_id], json, this.options, true);
+              this.space.updateSkeleton(models[skeleton_id], json, this.options,
+                  true, activeNodeWhilelist);
             }).bind(this),
             function(skeleton_id) {
               // Failed loading: will be handled elsewhere via fnMissing in

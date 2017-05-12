@@ -86,4 +86,4 @@ script:
   - mv slimerjs-0.10.0 ./slimerjs
   - ./.travis-run-slimerjs.sh http://localhost:8000/tests
 after_success:
-  - cd django/projects/mysite && coveralls
+  - cd django/projects && coveralls

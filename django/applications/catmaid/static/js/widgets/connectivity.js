@@ -1950,7 +1950,7 @@
 
   /**
    * Reevaluate the current set of node filter rules to update the set of
-   * excluded nodes.
+   * allowed nodes.
    */
   SkeletonConnectivity.prototype.updateFilter = function(options) {
     var skeletons = this.skeletons;

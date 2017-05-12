@@ -1325,7 +1325,7 @@
 
   /**
    * Reevaluate the current set of node filter rules to update the set of
-   * excluded nodes.
+   * allowed nodes.
    */
   CATMAID.ReviewSystem.prototype.updateFilter = function(options) {
     if (!this.currentSkeletonId) {

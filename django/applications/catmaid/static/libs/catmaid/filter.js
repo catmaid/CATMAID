@@ -579,7 +579,7 @@
     },
     "axon": {
       name: "Axon",
-      prepare: ["arbor", "tags"],
+      prepare: ["arbor", "partners", "tags"],
       filter: function(skeletonId, neuron, input, options) {
         var skeleton = input.skeletons[skeletonId];
         var axon = computeAxonArbor(skeleton.arbor, skeleton.positions,
@@ -589,7 +589,7 @@
     },
     "dendrites": {
       name: "Dendrites",
-      prepare: ["arbor", "tags"],
+      prepare: ["arbor", "partners", "tags"],
       filter: function(skeletonId, neuron, input, options) {
         var skeleton = input.skeletons[skeletonId];
         var axon = computeAxonArbor(skeleton.arbor, skeleton.positions,

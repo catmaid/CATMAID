@@ -68,6 +68,7 @@
               o[row[0]] = row[6];
               return o;
             }, {});
+            arborInfo.nodesRaw = json[0];
           }
 
           if (needsTags) {
@@ -626,7 +627,23 @@
         }
         return includedNodes;
       }
-    }
+    },
+    'users': {
+      name: "Created by user(s)",
+      prepare: ["arbor"],
+      filter: function(skeletonId, neuron, input, options) {
+        var skeleton = input.skeletons[skeletonId];
+        var nodes = skeleton.nodesRaw;
+        var includedNodes = {};
+        for (var i=0, max=nodes.length; i<max; ++i) {
+          var node = nodes[i];
+          if (options.userWhitelist.has(node[2])) {
+            includedNodes[node[0]] = true;
+          }
+        }
+        return includedNodes;
+      }
+    },
   };
 
   /**
@@ -764,13 +781,51 @@
             };
             return node;
           });
-    };
+      };
 
-    // Create async selection and wrap it in container to have handle on initial
-    // DOM location
-    var volumeSelection = CATMAID.DOM.createAsyncPlaceholder(initVolumeList());
-    var volumeSelectionWrapper = document.createElement('span');
-    $(container).append(volumeSelection);
+      // Create async selection and wrap it in container to have handle on initial
+      // DOM location
+      var volumeSelection = CATMAID.DOM.createAsyncPlaceholder(initVolumeList());
+      var volumeSelectionWrapper = document.createElement('span');
+      $(container).append(volumeSelection);
+    },
+    'users': function(container, options) {
+      var allUsers = CATMAID.User.all();
+      var userToId = Object.keys(allUsers).reduce(function(o, u) {
+        o.set(allUsers[u].login, parseInt(u, 10));
+        return o;
+      }, new Map());
+      var updateOptions = function() {
+        if (!options.userWhitelist) {
+          options.userWhitelist = new Set();
+        }
+        var userIds = $userFieldInput.val().split(',')
+            .map(function(u) { return userToId.get(u.trim()); });
+        options.userWhitelist.clear();
+        options.userWhitelist.addAll(userIds);
+      };
+
+      var $userField = CATMAID.DOM.createInputSetting("Node creator", "",
+          "Only nodes are allowed that were createad by one of the (comma separated) users",
+          updateOptions);
+      $(container).append($userField);
+
+      var $userFieldInput = $('input', $userField);
+      var updateUserField = function(event, ui) {
+        var selectedUser = ui.item.label;
+        var alreadySelected = this.value.split(',').map(function(u) { return u.trim(); });
+        if (alreadySelected.indexOf(selectedUser) === -1) {
+          alreadySelected.push(selectedUser);
+        }
+        $userFieldInput.val(alreadySelected.join(' ,'));
+        updateOptions();
+        return false;
+      };
+
+      $userFieldInput.autocomplete({
+        source: Object.keys(allUsers).map(function(u) { return allUsers[u].login; }),
+        select: updateUserField
+      });
     }
   };
 

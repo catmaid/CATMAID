@@ -465,7 +465,7 @@
               orderable: false,
               render: function(data, type, row, meta) {
                 var checked = !row.skip;
-                return '<input type="checkbox" ' + (checked ? 'checked /> ' : '/>');
+                return '<input data-action="skip" type="checkbox" ' + (checked ? 'checked /> ' : '/>');
               }
             },
             {
@@ -475,8 +475,18 @@
             {
               orderable: false,
               render: function(data, type, row, meta) {
-                return row.mergeMode === CATMAID.UNION ? "Union" :
-                    (row.mergeMode === CATMAID.INTERSECTION ? "Intersection" : row.mergeMode);
+                if (type === "display") {
+                  if (meta.row === 0) {
+                    return "-";
+                  } else {
+                    return '<select data-action="merge-mode" title="Rules are applied in a ' +
+                      'left-associative fashion. This selects which operation to use for this.">' +
+                      '<option value="' + CATMAID.UNION + '">Union</option><option value="' +
+                      CATMAID.INTERSECTION + '">Intersection</option></select>';
+                  }
+                } else {
+                  return row.mergeMode;
+                }
               }
             },
             {
@@ -488,13 +498,25 @@
             {
               orderable: false,
               render: function(data, type, row, meta) {
-                return row.validOnlyForSkid ? row.validOnlyForSkid : "-";
+                var value = row.validOnlyForSkid ? row.validOnlyForSkid : '';
+                if (type === "display") {
+                  return '<input size="10" data-action="skeleton" placeholder="Skeleton ID" value="' +
+                      value + '" />';
+                } else {
+                  return value;
+                }
               }
             },
             {
               orderable: false,
               render: function(data, type, row, meta) {
-                return row.validOnlyForName ? row.validOnlyForName : "-";
+                var value = row.validOnlyForName ? row.validOnlyForName : '';
+                if (type === "display") {
+                  return '<input size="10" data-action="name" placeholder="Neuron name" value="' +
+                      value + '" />';
+                } else {
+                  return value;
+                }
               }
             },
             {
@@ -514,7 +536,7 @@
         });
 
         // Updated skipping of rules
-        $(table).on('change', 'td', function(e) {
+        $(table).on('change', 'input[data-action=skip]', function(e) {
           var tr = $(this).closest("tr");
           var rule = datatable.row(tr).data();
           rule.skip = !e.target.checked;
@@ -534,6 +556,24 @@
             // Trigger client update
             CATMAID.tools.callIfFn(options.update);
           }
+        }).on('change', 'select[data-action=merge-mode]', function(e) {
+          var tr = $(this).closest("tr");
+          var rule = datatable.row(tr).data();
+          rule.mergeMode = this.value;
+          CATMAID.tools.callIfFn(options.update);
+          return false;
+        }).on('change', 'input[data-action=skeleton]', function(e) {
+          var tr = $(this).closest("tr");
+          var rule = datatable.row(tr).data();
+          rule.validOnlyForSkid = this.value;
+          CATMAID.tools.callIfFn(options.update);
+          return false;
+        }).on('change', 'input[data-action=name]', function(e) {
+          var tr = $(this).closest("tr");
+          var rule = datatable.row(tr).data();
+          rule.validOnlyForName = this.value;
+          CATMAID.tools.callIfFn(options.update);
+          return false;
         });
 
         // Get available filter strategeis
@@ -575,7 +615,8 @@
         });
   };
 
-  DOM.appendNewNodeFilterControls = function(nodeFilters, target, onNewRule) {
+  DOM.appendNewNodeFilterControls = function(nodeFilters, target, onNewRule,
+        showMergeModeField, showSkeletonIdField, showNameField) {
     var $target = $(target);
     var nodeFilterSettingsContainer = document.createElement('span');
     var nodeFilterSettings = CATMAID.DOM.createLabeledControl("",
@@ -596,27 +637,33 @@
       // Show UI for selected filte
       CATMAID.DOM.removeAllChildren(nodeFilterSettingsContainer);
       // Add general settings
-      var $mergeMode = CATMAID.DOM.createSelectSetting("Merge operation", mergeRules,
-          "Rules are applied in a left-associative fashion. This selects which operation to use for this.",
-          function() {
-            newRuleMergeMode = this.value;
-          });
-      var $skeletonId = CATMAID.DOM.createInputSetting(
-          "Apply only to skeleton ID (Optional)", "",
-          "If a valid skeleton ID is provided, this rule will apply to this skeleton exclusively.",
-          function() {
-            newRuleSkeletonID = this.value;
-          });
-      var $skeletonName = CATMAID.DOM.createInputSetting(
-          "... having this name (Optional)", "",
-          "Along with a skeleton ID a name can also be used. If supplied, skeletons are also checked againsts it and only if skeleton ID and name match, the rule will be applied.",
-          function() {
-            newRuleSkeletonName = this.value;
-          });
       var $nodeFilterSettingsContainer = $(nodeFilterSettingsContainer);
-      $nodeFilterSettingsContainer.append($mergeMode);
-      $nodeFilterSettingsContainer.append($skeletonId);
-      $nodeFilterSettingsContainer.append($skeletonName);
+      if (showMergeModeField) {
+        var $mergeMode = CATMAID.DOM.createSelectSetting("Merge operation", mergeRules,
+            "Rules are applied in a left-associative fashion. This selects which operation to use for this.",
+            function() {
+              newRuleMergeMode = this.value;
+            });
+        $nodeFilterSettingsContainer.append($mergeMode);
+      }
+      if (showSkeletonIdField) {
+        var $skeletonId = CATMAID.DOM.createInputSetting(
+            "Apply only to skeleton ID (Optional)", "",
+            "If a valid skeleton ID is provided, this rule will apply to this skeleton exclusively.",
+            function() {
+              newRuleSkeletonID = this.value;
+            });
+        $nodeFilterSettingsContainer.append($skeletonId);
+      }
+      if (showNameField) {
+        var $skeletonName = CATMAID.DOM.createInputSetting(
+            "... having this name (Optional)", "",
+            "Along with a skeleton ID a name can also be used. If supplied, skeletons are also checked againsts it and only if skeleton ID and name match, the rule will be applied.",
+            function() {
+              newRuleSkeletonName = this.value;
+            });
+        $nodeFilterSettingsContainer.append($skeletonName);
+      }
 
       // Add filter specific settings
       var createSettings = CATMAID.NodeFilterSettingFactories[strategy];

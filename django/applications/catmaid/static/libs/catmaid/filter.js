@@ -43,7 +43,7 @@
    * @returns {Promise}             Resolves with fetched arbors
    */
   CATMAID.SkeletonFilter.fetchArbors = function(skeletonIds, needsArbor,
-      needsPartners, needsTags, target) {
+      needsPartners, needsTags, needsTime, target) {
     return new Promise(function(resolve, reject) {
       var nns = CATMAID.NeuronNameService.getInstance();
       var arbors = target || {};
@@ -55,7 +55,11 @@
           var t = needsTags ? "1" : "0";
           return CATMAID.makeURL(project.id + '/' + skid + '/' + a + '/' + p + '/' + t + '/compact-arbor');
         },
-        function(skid) { return {}; }, // POST
+        function(skid) {
+          return {
+            with_time: needsTime
+          };
+        },
         function(skid, json) {
           var arborInfo = arbors[skid] = {};
           if (needsArbor) {
@@ -102,7 +106,8 @@
         },
         function() {
           resolve(arbors);
-        });
+        },
+        "GET");
     });
   };
 
@@ -165,11 +170,12 @@
     // If arbor, partners or tags are needed, we can use the fetchSkeletons API
     var needsArbor = neededInput.has("arbor"),
         needsPartners = neededInput.has("partners"),
-        needsTags = neededInput.has("tags");
+        needsTags = neededInput.has("tags"),
+        needsTime = neededInput.has("time");
     if (needsArbor || needsTags || needsPartners) {
       if (input.skeletons === undefined) { input.skeletons = {}; }
       var fetchSkeletons = CATMAID.SkeletonFilter.fetchArbors(skeletonIds,
-          needsArbor, needsPartners, needsTags, input.skeletons);
+          needsArbor, needsPartners, needsTags, needsTime, input.skeletons);
       prepareActions.push(fetchSkeletons);
     }
 
@@ -644,6 +650,33 @@
         return includedNodes;
       }
     },
+    'date': {
+      name: "Date range",
+      prepare: ["arbor", "time"],
+      filter: function(skeletonId, neuron, input, options) {
+        var skeleton = input.skeletons[skeletonId];
+        var nodes = skeleton.nodesRaw;
+        var includedNodes = {};
+        var index = options.editionTime ? 9 : 8;
+        var time = options.time;
+        if (options.before) {
+          for (var i=0, max=nodes.length; i<max; ++i) {
+            var node = nodes[i];
+            if (node[index] < time) {
+              includedNodes[node[0]] = true;
+            }
+          }
+        } else {
+          for (var i=0, max=nodes.length; i<max; ++i) {
+            var node = nodes[i];
+            if (node[index] > time) {
+              includedNodes[node[0]] = true;
+            }
+          }
+        }
+        return includedNodes;
+      }
+    },
   };
 
   /**
@@ -826,7 +859,70 @@
         source: Object.keys(allUsers).map(function(u) { return allUsers[u].login; }),
         select: updateUserField
       });
-    }
+    },
+    'date': function(container, options) {
+      var dateLabel = document.createElement('label');
+      dateLabel.appendChild(document.createTextNode('Date'));
+      var date = document.createElement('input');
+      date.setAttribute('name', 'date');
+      date.setAttribute('size', '10');
+      date.appendChild(document.createTextNode('date'));
+      date.onchange = function() {
+        options.time = new Date(this.value) / 1000;
+      };
+      dateLabel.appendChild(date);
+      container.appendChild(dateLabel);
+
+      $(date).datepicker({
+        dateFormat: "yy-mm-dd"
+      });
+
+      var before = document.createElement('input');
+      before.setAttribute('type', 'radio');
+      before.setAttribute('name', 'date-relation');
+      before.onchange = function() {
+        options.before = true;
+      };
+      var beforeLabel = document.createElement('label');
+      beforeLabel.appendChild(before);
+      beforeLabel.appendChild(document.createTextNode('Before'));
+      container.appendChild(beforeLabel);
+
+      var after = document.createElement('input');
+      after.setAttribute('type', 'radio');
+      after.setAttribute('name', 'date-relation');
+      after.setAttribute('checked', 'checked');
+      after.onchange = function() {
+        options.before = false;
+      };
+      var afterLabel = document.createElement('label');
+      afterLabel.appendChild(after);
+      afterLabel.appendChild(document.createTextNode('After'));
+      container.appendChild(afterLabel);
+
+      var creationTime = document.createElement('input');
+      creationTime.setAttribute('type', 'radio');
+      creationTime.setAttribute('name', 'date-type');
+      creationTime.setAttribute('checked', 'checked');
+      creationTime.onchange = function() {
+        options.editionTime = false;
+      };
+      var creationTimeLabel = document.createElement('label');
+      creationTimeLabel.appendChild(creationTime);
+      creationTimeLabel.appendChild(document.createTextNode('Creation time'));
+      container.appendChild(creationTimeLabel);
+
+      var editionTime = document.createElement('input');
+      editionTime.setAttribute('type', 'radio');
+      editionTime.setAttribute('name', 'date-type');
+      editionTime.onchange = function() {
+        options.editionTime = true;
+      };
+      var editionTimeLabel = document.createElement('label');
+      editionTimeLabel.appendChild(editionTime);
+      editionTimeLabel.appendChild(document.createTextNode('Edition time'));
+      container.appendChild(editionTimeLabel);
+    },
   };
 
   // A default no-op filter rule that takes all nodes.

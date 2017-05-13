@@ -438,7 +438,8 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True, with_tags=T
     return [nodes, connectors, tags]
 
 
-def _compact_arbor(project_id=None, skeleton_id=None, with_nodes=None, with_connectors=None, with_tags=None):
+def _compact_arbor(project_id=None, skeleton_id=None, with_nodes=None,
+        with_connectors=None, with_tags=None, with_time=None):
     """
     Performance-critical function. Do not edit unless to improve performance.
     Returns, in JSON, [[nodes], [connections], {nodeID: [tags]}],
@@ -456,7 +457,9 @@ def _compact_arbor(project_id=None, skeleton_id=None, with_nodes=None, with_conn
     then the connector_id,
     then the next 3 values are from the partner skeleton,
     and finally the two relations: first for the given skeleton_id and then for the other skeleton.
-    The relation_id is 0 for pre and 1 for post.
+    The relation_id is 0 for pre and 1 for post. If <with_time> is truthy, each
+    row will also contain both the creation time and edition time as last
+    elements.
     """
 
     # Sanitize
@@ -473,13 +476,18 @@ def _compact_arbor(project_id=None, skeleton_id=None, with_nodes=None, with_conn
     tags = defaultdict(list)
 
     if 0 != with_nodes:
+        if with_time:
+            extra_fields = ', EXTRACT(EPOCH FROM creation_time), EXTRACT(EPOCH FROM edition_time)'
+        else:
+            extra_fields = ''
+
         cursor.execute('''
             SELECT id, parent_id, user_id,
                 location_x, location_y, location_z,
-                radius, confidence
+                radius, confidence{}
             FROM treenode
             WHERE skeleton_id = %s
-        ''' % skeleton_id)
+        '''.format(extra_fields), (skeleton_id,))
 
         nodes = tuple(cursor.fetchall())
 
@@ -541,8 +549,9 @@ def _compact_arbor(project_id=None, skeleton_id=None, with_nodes=None, with_conn
 
 @requires_user_role(UserRole.Browse)
 def compact_arbor(request, project_id=None, skeleton_id=None, with_nodes=None, with_connectors=None, with_tags=None):
+    with_time = request.GET.get("with_time", "false") == "true"
     nodes, connectors, tags = _compact_arbor(project_id, skeleton_id,
-            with_nodes, with_connectors, with_tags)
+            with_nodes, with_connectors, with_tags, with_time)
     return HttpResponse(json.dumps((nodes, connectors, tags), separators=(',', ':')))
 
 

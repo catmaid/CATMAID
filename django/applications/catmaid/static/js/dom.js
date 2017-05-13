@@ -387,6 +387,13 @@
     });
   };
 
+  var stringifyConerCases = function(key, value) {
+    if (value instanceof Set) {
+      return JSON.stringify(Array.from(value.values()));
+    }
+    return value;
+  };
+
   /**
    * Inject an extra button into the caption of a window. This button allows to
    * show and hide filter controls for a widget.
@@ -475,7 +482,7 @@
             {
               orderable: false,
               render: function(data, type, row, meta) {
-                return row.options ? JSON.stringify(row.options) : "-";
+                return row.options ? JSON.stringify(row.options, stringifyConerCases) : "-";
               }
             },
             {

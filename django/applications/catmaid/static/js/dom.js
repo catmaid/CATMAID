@@ -640,6 +640,8 @@
       var rule = new CATMAID.SkeletonFilterRule( strategy,
           newRuleOptions, newRuleMergeMode, newRuleSkeletonID, newRuleSkeletonName);
 
+      updateNodeFilterSettings(newRuleStrategy);
+
       if (CATMAID.tools.isFn(onNewRule)) {
         onNewRule(rule, strategy);
       }

@@ -114,13 +114,13 @@
         // Use three.js for color conversion
         var tc = new THREE.Color(options.initialColor);
         var hex = '#' + tc.getHexString();
-        $element.css('backgroundColor', hex);
         $element.css('color', CATMAID.tools.getContrastColor(hex));
         color = tc.getStyle();
         if (options.initialAlpha) {
           // Add alpha to style
           color = color.replace(/\)/, ',' + options.initialAlpha + ')');
         }
+        $element.css('backgroundColor', color);
       } else {
         // Set to yellow as default
         color = 'rgb(255, 255, 0)';

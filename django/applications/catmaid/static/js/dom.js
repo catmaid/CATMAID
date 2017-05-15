@@ -1100,7 +1100,7 @@
     if (left) elems.reverse();
     elems.forEach(function(elem) { labelEl.appendChild(elem); });
     div.appendChild(labelEl);
-    return left ? elems[elems.length - 1] : elems[0];
+    return labelEl;
   };
 
   /**

@@ -561,6 +561,13 @@ var WindowMaker = new function()
           alphaChanged ? alpha : null);
     };
 
+    var updateVolumeFaces = function(volumeId, e) {
+      var facesVisible = e.target.checked;
+      WA.setVolumeStyle(volumeId, facesVisible);
+      // Stop propagation or the general volume list change handler is called.
+      e.stopPropagation();
+    };
+
     // Update volume list
     var initVolumeList = function() {
       return CATMAID.Volumes.listAll(project.id).then(function(json) {
@@ -594,6 +601,10 @@ var WindowMaker = new function()
                   initialAlpha: o.meshes_opacity,
                   onColorChange: updateVolumeColor.bind(null, volumeId)
                 });
+              var facesCb = CATMAID.DOM.appendCheckbox(volumeControls, "Faces",
+                  "Whether faces should be displayed for this volume",
+                  o.meshes_faces, updateVolumeFaces.bind(null, volumeId));
+              facesCb.style.display = 'inline';
             } else {
               var volumeControls = li.querySelector('span[data-role=volume-controls]');
               if (volumeControls) {

@@ -1770,15 +1770,36 @@
       return;
     }
     for (var i=0; i<existingMeshes.length; ++i) {
-      var mesh = existingMeshes[i];
+      var material = existingMeshes[i].material;
       if (color !== null) {
-        mesh.material.color.set(color);
-        mesh.material.needsUpdate = true;
+        material.color.set(color);
+        material.needsUpdate = true;
       }
       if (alpha !== null) {
-        mesh.material.opacity = alpha;
-        mesh.material.needsUpdate = true;
+        material.opacity = alpha;
+        material.transparent = alpha !== 1;
+        material.depthWrite = alpha === 1;
+        material.needsUpdate = true;
       }
+    }
+    this.space.render();
+  };
+
+  /**
+   * Set volume render style properties.
+   *
+   * @param {Boolean} faces    Whether mesh faces should be rendered.
+   */
+  WebGLApplication.prototype.setVolumeStyle = function(volumeId, faces) {
+    var existingMeshes = this.loadedVolumes[volumeId];
+    if (!existingMeshes) {
+      CATMAID.warn("Volume not loaded");
+      return;
+    }
+    for (var i=0; i<existingMeshes.length; ++i) {
+      var material = existingMeshes[i].material;
+      material.wireframe = !faces;
+      material.needsUpdate = true;
     }
     this.space.render();
   };

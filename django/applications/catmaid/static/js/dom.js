@@ -887,7 +887,7 @@
 		var cb = document.createElement('input');
 		cb.setAttribute('type', 'checkbox');
 		cb.checked = value ? true : false;
-		cb.onclick = onclickFn;
+		cb.onchange = onclickFn;
 		return [cb, document.createTextNode(label)];
 	};
 

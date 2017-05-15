@@ -817,10 +817,10 @@
     // The function responsible for hiding and showing all controls has a
     // private state variable and an IIFE is used to encapsulate it (to reduce
     // closure size).
-    var toggleExpansion = (function() {
+    var toggleExpansion = (function(context) {
       var expanded = false;
       return function(e) {
-        var customContent = this.querySelector('div.customselect-content');
+        var customContent = context.querySelector('div.customselect-content');
         if (expanded) {
           customContent.style.display = 'none';
         } else {
@@ -828,7 +828,7 @@
         }
         expanded = !expanded;
       };
-    })();
+    })(container);
 
     // Expand whe the container is clicked
     container.onclick = toggleExpansion;

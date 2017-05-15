@@ -729,7 +729,10 @@
       if (selectedSet.has(o.value)) {
         checkbox.checked = true;
       }
-      checkboxes.appendChild(entry);
+      var listElement = document.createElement('li');
+      listElement.style.display = 'flex';
+      listElement.appendChild(entry);
+      checkboxes.appendChild(listElement);
     }
     checkboxes.onclick = function(e) {
       // Cancel bubbling

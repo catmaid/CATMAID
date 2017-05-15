@@ -554,6 +554,13 @@ var WindowMaker = new function()
       };
     };
 
+    var updateVolumeColor = function(volumeId, rgb, alpha, colorChanged,
+        alphaChanged, colorHex) {
+      WA.setVolumeColor(volumeId,
+          colorChanged ? ('#' + colorHex) : null,
+          alphaChanged ? alpha : null);
+    };
+
     // Update volume list
     var initVolumeList = function() {
       return CATMAID.Volumes.listAll(project.id).then(function(json) {
@@ -574,6 +581,25 @@ var WindowMaker = new function()
             var visible = e.target.checked;
             var volumeId = e.target.value;
             WA.showVolume(volumeId, visible);
+
+            // Add extra display controls for enabled volumes
+            var li = e.target.closest('li');
+            if (visible) {
+              var volumeControls = li.appendChild(document.createElement('span'));
+              volumeControls.setAttribute('data-role', 'volume-controls');
+              CATMAID.DOM.appendColorButton(volumeControls, 'c',
+                'Change the color of this volume',
+                undefined, undefined, {
+                  initialColor: o.meshes_color,
+                  initialAlpha: o.meshes_opacity,
+                  onColorChange: updateVolumeColor.bind(null, volumeId)
+                });
+            } else {
+              var volumeControls = li.querySelector('span[data-role=volume-controls]');
+              if (volumeControls) {
+                li.removeChild(volumeControls);
+              }
+            }
           };
           return node;
         });

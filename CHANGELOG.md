@@ -80,6 +80,10 @@ Review widget:
 - Skeleton coloring can now be set to not interpolate between different vertex
   colors and instead use always child colors for an edge.
 
+- The color of individual volumes can now be adjusted more easily. A color
+  selector is available right night to the checkbox of each visible volume in
+  the volume drop-down menu. The globl color controls are used as default.
+
 - Support for node filtering has been added, which can be configured through the
   filter icon in the title bar. All features listed under Generic Node Filters
   are supported.

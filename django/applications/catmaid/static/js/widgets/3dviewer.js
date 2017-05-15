@@ -1755,6 +1755,34 @@
     return Object.keys(this.loadedVolumes);
   };
 
+  /**
+   * Set color and alpha of a loaded volume. Color and alpha will only be
+   * adjusted if the respective value is not null. Otherwise it is ignored.
+   *
+   * @param {Number} volumeId The ID of the volume to adjust.
+   * @param {String} color    The new color as hex string of the volume or null.
+   * @param {Number} alpha    The new alpha of the volume or null.
+   */
+  WebGLApplication.prototype.setVolumeColor = function(volumeId, color, alpha) {
+    var existingMeshes = this.loadedVolumes[volumeId];
+    if (!existingMeshes) {
+      CATMAID.warn("Volume not loaded");
+      return;
+    }
+    for (var i=0; i<existingMeshes.length; ++i) {
+      var mesh = existingMeshes[i];
+      if (color !== null) {
+        mesh.material.color.set(color);
+        mesh.material.needsUpdate = true;
+      }
+      if (alpha !== null) {
+        mesh.material.opacity = alpha;
+        mesh.material.needsUpdate = true;
+      }
+    }
+    this.space.render();
+  };
+
   /** Defines the properties of the 3d space and also its static members like the bounding box and the missing sections. */
   WebGLApplication.prototype.Space = function( w, h, container, stack, options ) {
     this.stack = stack;

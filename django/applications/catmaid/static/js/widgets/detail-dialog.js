@@ -42,7 +42,18 @@
         detail_head.appendChild(detail_head_em);
         this.dialog.appendChild(detail_head);
         var detail_text = document.createElement('p');
-        detail_text.appendChild(document.createTextNode(detail));
+        // Split detail text by line breaks
+        if (typeof(detail) === "string") {
+          var detail_lines = detail.split("\n");
+          for (var i=0; i<detail_lines.length; ++i) {
+            if (i > 0) {
+              detail_text.appendChild(document.createElement('br'));
+            }
+            detail_text.appendChild(document.createTextNode(detail));
+          }
+        } else {
+          detail_text.appendChild(document.createTextNode(detail));
+        }
         this.dialog.appendChild(detail_text);
         // Hide detail by default and toggle display by click on header
         if (!CATMAID.expandErrors) {

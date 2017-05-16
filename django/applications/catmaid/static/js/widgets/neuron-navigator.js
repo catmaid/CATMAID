@@ -1132,6 +1132,13 @@
     NeuronNavigator.disable_on_missing_permissions(annotate_button);
     $container.append(annotate_button);
 
+    // Create delete button
+    var delete_button = document.createElement('input');
+    delete_button.setAttribute('type', 'button');
+    delete_button.setAttribute('value', 'Delete');
+    NeuronNavigator.disable_on_missing_permissions(delete_button);
+    $container.append(delete_button);
+
     // Create button to remove annotations, based on the filters
     var deannotate_buttons = [];
     if (filters.annotations) {
@@ -1310,6 +1317,50 @@
         CATMAID.annotate_entities(selected_neurons);
       } else {
         alert("Please select at least one neuron to annotate first!");
+      }
+    });
+
+    $(delete_button).click(function() {
+      var selected_neurons = getSelectedNeurons();
+      if (selected_neurons.length > 0) {
+        if (confirm("Do you really want to delete " + selected_neurons.length +
+            " neurons and their skeletons?")) {
+          var unsuccessful_deletions = [];
+          var deletionPromises = selected_neurons.map(function(n) {
+            return CATMAID.Neurons.delete(project.id, n)
+              .catch(function(error) {
+                unsuccessful_deletions.push({
+                  id: n,
+                  error: error
+                });
+              });
+          });
+          Promise.all(deletionPromises)
+            .then(function() {
+              if (unsuccessful_deletions.length === 0) {
+                CATMAID.msg("Delete successful", "All " + selected_neurons.length + " neurons have been deleted");
+                // Expect a parent node
+                self.navigator.select_node(self.parent_node);
+              } else {
+                var msg;
+                var succesful_deletions = selected_neurons.length -
+                    unsuccessful_deletions.length;
+                if (succesful_deletions === 0) {
+                  msg = "Could not delete any neuron from the selection";
+                } else {
+                  msg = "Could only delete " + succesful_deletions +
+                      " out of " + selected_neurons.length + " neurons";
+                }
+                var detail = unsuccessful_deletions.map(function(e) {
+                  return "Neuron ID: " + e.id + " Error: " + e.error;
+                }).join("\n");
+                CATMAID.error(msg, detail);
+              }
+            })
+            .catch(CATMAID.handleError);
+          }
+      } else {
+        alert("Please select at least one neuron to delete!");
       }
     });
 

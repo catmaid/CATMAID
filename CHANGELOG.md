@@ -101,6 +101,9 @@ Miscellaneous:
   with 1 from the root node, which is something some SWC tools expect. To
   disable this uncheck "Linearize IDs" in the SWC export dialog.
 
+- Neuron Navigator: It is now possible to delete multiple neurons from a neuron
+  listing.
+
 
 ### Bug fixes
 

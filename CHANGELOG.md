@@ -104,6 +104,8 @@ Miscellaneous:
 - Neuron Navigator: It is now possible to delete multiple neurons from a neuron
   listing.
 
+- The importer widget now allows to allow multiple SWC files at the same time.
+
 
 ### Bug fixes
 

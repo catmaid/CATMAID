@@ -104,14 +104,14 @@
             var tdd = $('<td/>');
             var actionLink = $('<a/>');
             actionLink.attr({'id': ''+data[i].id});
-            actionLink.attr({'href':''});
+            actionLink.attr({'href': '#'});
             actionLink.click(action(data[i].class_name));
             actionLink.text("Go to nearest node");
             tdd.append(actionLink);
             if( data[i].class_name === 'skeleton' ) {
               actionLink = $('<a/>');
               actionLink.attr({'id': ''+data[i].id});
-              actionLink.attr({'href':''});
+              actionLink.attr({'href': '#'});
               actionLink.click(actionaddstage(data[i].class_name));
               actionLink.text(" Add to selection table");
               tdd.append(actionLink);
@@ -133,7 +133,7 @@
                 var skid = parseInt(node.skid);
                 td.append(
                   $('<a/>').attr({'id': '' + id})
-                           .attr({'href':''})
+                           .attr({'href': '#'})
                            .click(function(event) {
                              SkeletonAnnotations.staticMoveTo(z, y, x)
                                 .then(function() {

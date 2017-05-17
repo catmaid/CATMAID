@@ -89,6 +89,15 @@ Review widget:
   filter icon in the title bar. All features listed under Generic Node Filters
   are supported.
 
+Tracing layer:
+
+- When inserting a new node between two existing nodes, the new node's user
+  will now be the logged in user as long as the skeleton is not locked. This
+  makes it easier for reviewers to make corrections, because the new node can
+  now be moved (instead of only initially placed). If the neuron is locked, it
+  is only possible to create a collinear node between parent and child with the
+  child's user (e.g. through tagging a virtual node).
+
 
 Miscellaneous:
 

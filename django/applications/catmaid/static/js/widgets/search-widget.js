@@ -71,7 +71,7 @@
         table.append(tbody);
         var action = function(type) {
           return function() {
-              TracingTool.goToNearestInNeuronOrSkeleton(type, parseInt($(this).attr('id')));
+              CATMAID.TracingTool.goToNearestInNeuronOrSkeleton(type, parseInt($(this).attr('id')));
               return false;
           };
         };

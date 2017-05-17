@@ -141,6 +141,8 @@ annotations, neuron name, connectors or partner neurons.
           // Add some bindings
           var $importContainer = $(importContainer);
           $importContainer.find('button[data-role=import-swc]').click(function() {
+            var button = $(this);
+            button.prop('disabled', true);
             var fileInput = $importContainer.find('input[data-role=swc-import-file]');
             if (fileInput.length === 0) {
               CATMAID.warn("No SWC file input found");
@@ -189,7 +191,10 @@ annotations, neuron name, connectors or partner neurons.
                   CATMAID.error(msg, details.join("\n"));
                 }
               })
-              .catch(CATMAID.handleError);
+              .catch(CATMAID.handleError)
+              .then(function() {
+                button.prop('disabled', false);
+              });
           });
         }
 

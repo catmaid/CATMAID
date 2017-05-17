@@ -136,6 +136,8 @@ Miscellaneous:
 - 3D viewer: connector links are displayed again if connector restrictions are
   in use.
 
+- Radius creation works now in orthogonal views as expected.
+
 
 ## 2017.04.20
 

@@ -924,7 +924,7 @@
         // Update radius on mouse move
         c.on('mousemove', function (event) {
           var e = event.data.originalEvent;
-          var rS = toStack({x: e.layerX, y: e.layerY});
+          var rS = toStack({x: e.offsetX, y: e.offsetY});
           var r = {
             x: rS.x - nodeX,
             y: rS.y - nodeY,

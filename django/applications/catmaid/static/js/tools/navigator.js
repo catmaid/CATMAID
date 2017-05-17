@@ -330,7 +330,7 @@
       new CATMAID.Action({
         helpText: "Zoom in (smaller increments with <kbd>Shift</kbd> held)",
         keyShortcuts: {
-          '+': [ '+', 'Shift + +' ]
+          '+': [ '+', '=', 'Shift + +' ]
         },
         run: function (e) {
           self.slider_s.move(1, !e.shiftKey);

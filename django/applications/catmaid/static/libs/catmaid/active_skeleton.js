@@ -69,7 +69,7 @@
   ActiveSkeleton.prototype.getSkeletonModels = ActiveSkeleton.prototype.getSelectedSkeletonModels;
 
   ActiveSkeleton.prototype.highlight = function(skeleton_id) {
-    TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeleton_id);
+    CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeleton_id);
   };
 
   ActiveSkeleton.prototype._handleActiveNodeChange = function(node, skeletonChange) {

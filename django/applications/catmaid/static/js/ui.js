@@ -572,7 +572,7 @@
     ]);
 
     // a-z -> A-Z
-    for (var keyCode = 65, max = 90; keyCode < max; keyCode += 1) {
+    for (var keyCode = 65, max = 90; keyCode <= max; keyCode += 1) {
       var keyValue = String.fromCharCode(keyCode + 32);
       var capitalKeyValue = String.fromCharCode(keyCode);
       map.set('Shift + ' + keyValue, capitalKeyValue);

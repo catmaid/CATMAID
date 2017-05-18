@@ -4096,7 +4096,7 @@ SkeletonAnnotations.TracingOverlay.prototype.printTreenodeInfo = function(nodeID
   if (!SkeletonAnnotations.TracingOverlay.Settings.session.extended_status_update) {
     if (node) {
       prefix += " created by " + CATMAID.User.safeToString(node.user_id) +
-        ", last edited on " + CATMAID.tools.contextualDateString((node.edition_time_iso_str));
+        ", last edited " + CATMAID.tools.contextualDateString((node.edition_time_iso_str));
     }
     CATMAID.status(prefix);
   } else {

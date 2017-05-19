@@ -333,6 +333,11 @@ STATIC_EXTENSION_FILES = []
 # hashlib.md5(CATMAID_URL.encode('utf-8')).hexdigest()
 COOKIE_SUFFIX = 'catmaid'
 
+# The CATMAID web client sends list by sending each list element in its own
+# field. Django allows by default 1000 fields. To allow large neuron lists, we
+# need to disable this check for now.
+DATA_UPLOAD_MAX_NUMBER_FIELDS = None
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.TokenAuthentication',

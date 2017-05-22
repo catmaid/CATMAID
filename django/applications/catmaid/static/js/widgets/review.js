@@ -873,39 +873,39 @@
       row.append($('<th />'));
       table.append( row );
       // create a row
-      for(var e in skeleton_data ) {
-        var sd = skeleton_data[e];
+      for (var i=0, max=skeleton_data.length; i<max; ++i) {
+        var segment = skeleton_data[i];
         row = $('<tr />')
           .attr('class', 'review-segment')
-          .attr('data-sgid', sd.id);
-        if (self.current_segment && sd.id === self.current_segment.id) row.addClass('highlight');
+          .attr('data-sgid', segment.id);
+        if (self.current_segment && segment.id === self.current_segment.id) row.addClass('highlight');
         // Index
-        row.append( $('<td />').text(skeleton_data[e]['id'] ) );
+        row.append($('<td />').text(segment.id));
         // Single user status
         if (nReviewers > 2) {
           // The reviewers array contains oneself as first element
           for (var j=0; j<nReviewers; ++j) {
             var r = reviewers[j];
-            var seg_status = (100 * users[r].segment_count[sd.id] /
-                sd.nr_nodes).toFixed(2);
+            var seg_status = (100 * users[r].segment_count[segment.id] /
+                segment.nr_nodes).toFixed(2);
             row.append($('<td />').text(seg_status + '%')
-                .attr('id', 'rev-status-cell-' + sd.id + '-' + r)
+                .attr('id', 'rev-status-cell-' + segment.id + '-' + r)
                 .css('background-color',
                     CATMAID.ReviewSystem.getBackgroundColor(Math.round(seg_status))));
           }
         }
         // Union status
         var status = $('<td />')
-            .attr('id', 'rev-status-cell-' + sd.id + '-union')
-            .text( skeleton_data[e]['status']+'%' )
+            .attr('id', 'rev-status-cell-' + segment.id + '-union')
+            .text( segment.status + '%' )
             .css('background-color',
-                CATMAID.ReviewSystem.getBackgroundColor(parseInt(sd.status)));
+                CATMAID.ReviewSystem.getBackgroundColor(parseInt(segment.status)));
         row.append( status );
         // Number of nodes
-        row.append( $('<td align="right" />').text( skeleton_data[e]['nr_nodes'] ) );
+        row.append($('<td align="right" />').text(segment.nr_nodes));
         // Review button
         butt = $('<button />').text( "Review" );
-        butt.attr( 'id', 'reviewbutton_'+skeleton_data[e]['id'] );
+        butt.attr('id', 'reviewbutton_' + segment.id);
         butt.click( function() {
           self.initReviewSegment( this.id.replace("reviewbutton_", "") );
         });

@@ -905,10 +905,6 @@
         row.append($('<td align="right" />').text(segment.nr_nodes));
         // Review button
         butt = $('<button />').text( "Review" );
-        butt.attr('id', 'reviewbutton_' + segment.id);
-        butt.click( function() {
-          self.initReviewSegment( this.id.replace("reviewbutton_", "") );
-        });
         row.append( $('<td />').append(butt) );
         table.append( row );
       }
@@ -916,6 +912,14 @@
       row = $('<tr />');
       table.append( row );
       table.append( $('<br /><br /><br /><br />') );
+
+      // Add button click handler
+      table.on('click', 'button', function() {
+        var row = this.closest('tr');
+        var segmentId = parseInt(row.dataset.sgid, 10);
+        self.initReviewSegment(segmentId);
+      });
+
       $("#project_review_widget").append( table );
 
     };

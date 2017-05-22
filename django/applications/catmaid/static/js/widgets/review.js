@@ -843,21 +843,7 @@
       for (var i=0; i<nReviewers; ++i) {
         var cb = $('<input />').attr('type', 'checkbox')
           .attr('data-rid', reviewers[i])
-          .attr('title', "When checked, column will be respected when next segment is selected.")
-          .click(function() {
-            var rid = this.dataset.rid === 'whitelist' ?
-                this.dataset.rid : parseInt(this.dataset.rid);
-            var idx = followedUsers.indexOf(rid);
-            if (-1 !== idx && !this.checked) {
-              // Remove from follower list if in list and the name was
-              // unchecked.
-             followedUsers.splice(idx, 1);
-            } else if (-1 === idx && this.checked) {
-              // Add to follower list if not already there and the name
-              // was checked.
-              followedUsers.push(rid);
-            }
-          });
+          .attr('title', "When checked, column will be respected when next segment is selected.");
         if (-1 !== followedUsers.indexOf(reviewers[i])) {
           cb.prop('checked', true);
         }
@@ -918,6 +904,21 @@
         var row = this.closest('tr');
         var segmentId = parseInt(row.dataset.sgid, 10);
         self.initReviewSegment(segmentId);
+      });
+
+      table.on('change', 'input[type=checkbox]', function() {
+        var rid = this.dataset.rid === 'whitelist' ?
+            this.dataset.rid : parseInt(this.dataset.rid);
+        var idx = followedUsers.indexOf(rid);
+        if (-1 !== idx && !this.checked) {
+          // Remove from follower list if in list and the name was
+          // unchecked.
+          followedUsers.splice(idx, 1);
+        } else if (-1 === idx && this.checked) {
+          // Add to follower list if not already there and the name
+          // was checked.
+          followedUsers.push(rid);
+        }
       });
 
       $("#project_review_widget").append( table );

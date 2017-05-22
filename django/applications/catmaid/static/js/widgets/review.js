@@ -835,7 +835,7 @@
       header.appendChild(neuronInfo);
       header.appendChild(reviewInfo);
 
-      table = $('<table />').attr('cellpadding', '3').attr('cellspacing', '0').attr('id', 'review_segment_table').attr('border', '0');
+      table = $('<table />').attr('id', 'review_segment_table');
       // create header
       row = $('<tr />');
       row.append($('<th />'));

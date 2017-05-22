@@ -772,7 +772,13 @@ div.review-block::after {
 }
 
 #review_segment_table {
+  border-spacing: 0;
   border-collapse: collapse;
+  border: 0;
+}
+
+#review_segment_table td {
+  padding: 3px;
 }
 
 #review_segment_table tr:nth-child(even) {
@@ -792,6 +798,7 @@ div.review-block::after {
   white-space: nowrap;
   vertical-align: baseline;
   border-bottom: 1px solid black;
+  padding: 3px;
 }
 
 #settings-widget .title {

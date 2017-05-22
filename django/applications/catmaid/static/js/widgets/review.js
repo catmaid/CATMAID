@@ -810,6 +810,8 @@
         reviewers.push('whitelist');
       }
 
+      var nReviewers = reviewers.length;
+
       // Create string with user's reviewed counts:
       var user_revisions = reviewers.map(function(u) {
         u = users[u];
@@ -838,7 +840,7 @@
       row = $('<tr />');
       row.append($('<th />'));
       // Start with user columns, current user first
-      for (var i=0; i<reviewers.length; ++i) {
+      for (var i=0; i<nReviewers; ++i) {
         var cb = $('<input />').attr('type', 'checkbox')
           .attr('data-rid', reviewers[i])
           .attr('title', "When checked, column will be respected when next segment is selected.")
@@ -863,7 +865,7 @@
           .append(cb).append(users[reviewers[i]].name)));
       }
       // Union column last
-      if (reviewers.length > 2) {
+      if (nReviewers > 2) {
         row.append( $('<th />').text('Union') );
       }
       table.append( row );
@@ -880,16 +882,17 @@
         // Index
         row.append( $('<td />').text(skeleton_data[e]['id'] ) );
         // Single user status
-        if (reviewers.length > 2) {
+        if (nReviewers > 2) {
           // The reviewers array contains oneself as first element
-          reviewers.forEach(function(r) {
+          for (var j=0; j<nReviewers; ++j) {
+            var r = reviewers[j];
             var seg_status = (100 * users[r].segment_count[sd.id] /
                 sd.nr_nodes).toFixed(2);
-            this.append($('<td />').text(seg_status + '%')
+            row.append($('<td />').text(seg_status + '%')
                 .attr('id', 'rev-status-cell-' + sd.id + '-' + r)
                 .css('background-color',
                     CATMAID.ReviewSystem.getBackgroundColor(Math.round(seg_status))));
-          }, row);
+          }
         }
         // Union status
         var status = $('<td />')

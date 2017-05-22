@@ -731,7 +731,6 @@
      */
     this.createReviewSkeletonTable = function(skeleton_data) {
       self.skeleton_segments = skeleton_data;
-      var butt, table, tbody, row;
       if( $('#review_segment_table').length > 0 ) {
         $('#review_segment_table').remove();
       }
@@ -835,38 +834,42 @@
       header.appendChild(neuronInfo);
       header.appendChild(reviewInfo);
 
-      table = $('<table />').attr('id', 'review_segment_table');
-      // create header
-      row = $('<tr />');
-      row.append($('<th />'));
+      // Construct the review table as a string, to avoid slow DOM operations
+      var table = document.createElement('table');
+      table.setAttribute('id', 'review_segment_table');
+      var elements = [];
+
+      // Create table header
+      var tableHeader = [];
+      tableHeader.push('<th></th>');
       // Start with user columns, current user first
       for (var i=0; i<nReviewers; ++i) {
-        var cb = $('<input />').attr('type', 'checkbox')
-          .attr('data-rid', reviewers[i])
-          .attr('title', "When checked, column will be respected when next segment is selected.");
+        tableHeader.push(
+            '<th><label><input type="checkbox" data-rid="', reviewers[i],
+            '" title="When checked, column will be respected when next segment is selected." ');
         if (-1 !== followedUsers.indexOf(reviewers[i])) {
-          cb.prop('checked', true);
+          tableHeader.push('checked');
         }
-        row.append( $('<th />').append($('<label />')
-          .append(cb).append(users[reviewers[i]].name)));
+        tableHeader.push('/>', users[reviewers[i]].name, '</label></th>');
       }
       // Union column last
       if (nReviewers > 2) {
-        row.append( $('<th />').text('Union') );
+        tableHeader.push('<th>Union</th>');
       }
-      table.append( row );
-      row.append( $('<th />').text("# nodes"));
-      row.append($('<th />'));
-      table.append( row );
-      // create a row
+      tableHeader.push('<th># nodes</th><th></th>');
+      elements.push('<tr>' + tableHeader.join('') + '</tr>');
+
+      // Create rows
       for (var i=0, max=skeleton_data.length; i<max; ++i) {
         var segment = skeleton_data[i];
-        row = $('<tr />')
-          .attr('class', 'review-segment')
-          .attr('data-sgid', segment.id);
-        if (self.current_segment && segment.id === self.current_segment.id) row.addClass('highlight');
+        elements.push('<tr data-sgid="', segment.id, '"');
+        if (self.current_segment && segment.id === self.current_segment.id) {
+          elements.push('class="review-segment highlight" >');
+        } else {
+          elements.push('class="review-segment" >');
+        }
         // Index
-        row.append($('<td />').text(segment.id));
+        elements.push('<td>', segment.id, '</td>');
         // Single user status
         if (nReviewers > 2) {
           // The reviewers array contains oneself as first element
@@ -874,52 +877,46 @@
             var r = reviewers[j];
             var seg_status = (100 * users[r].segment_count[segment.id] /
                 segment.nr_nodes).toFixed(2);
-            row.append($('<td />').text(seg_status + '%')
-                .attr('id', 'rev-status-cell-' + segment.id + '-' + r)
-                .css('background-color',
-                    CATMAID.ReviewSystem.getBackgroundColor(Math.round(seg_status))));
+            var color = CATMAID.ReviewSystem.getBackgroundColor(Math.round(seg_status));
+            elements.push('<td id="rev-status-cell-', segment.id, '-', r,
+                '" style="background-color: ', color, '">', seg_status, '%</td>');
           }
         }
         // Union status
-        var status = $('<td />')
-            .attr('id', 'rev-status-cell-' + segment.id + '-union')
-            .text( segment.status + '%' )
-            .css('background-color',
-                CATMAID.ReviewSystem.getBackgroundColor(parseInt(segment.status)));
-        row.append( status );
+        var color = CATMAID.ReviewSystem.getBackgroundColor(parseInt(segment.status));
+        elements.push('<td id="rev-status-cell-', segment.id, '-union',
+              '" style="background-color: ', color, '">', segment.status, '%</td>');
+
         // Number of nodes
-        row.append($('<td align="right" />').text(segment.nr_nodes));
+        elements.push('<td align="right">', segment.nr_nodes, '</td>');
         // Review button
-        butt = $('<button />').text( "Review" );
-        row.append( $('<td />').append(butt) );
-        table.append( row );
+        elements.push('<td><button>Review</button></td>');
+        elements.push('</tr>');
       }
-      // empty row
-      row = $('<tr />');
-      table.append( row );
-      table.append( $('<br /><br /><br /><br />') );
+
+      table.innerHTML = elements.join('');
 
       // Add button click handler
-      table.on('click', 'button', function() {
-        var row = this.closest('tr');
-        var segmentId = parseInt(row.dataset.sgid, 10);
-        self.initReviewSegment(segmentId);
-      });
-
-      table.on('change', 'input[type=checkbox]', function() {
-        var rid = this.dataset.rid === 'whitelist' ?
-            this.dataset.rid : parseInt(this.dataset.rid);
-        var idx = followedUsers.indexOf(rid);
-        if (-1 !== idx && !this.checked) {
-          // Remove from follower list if in list and the name was
-          // unchecked.
-          followedUsers.splice(idx, 1);
-        } else if (-1 === idx && this.checked) {
-          // Add to follower list if not already there and the name
-          // was checked.
-          followedUsers.push(rid);
-        }
-      });
+      $(table)
+        .on('click', 'button', function() {
+          var row = this.closest('tr');
+          var segmentId = parseInt(row.dataset.sgid, 10);
+          self.initReviewSegment(segmentId);
+        })
+        .on('change', 'input[type=checkbox]', function() {
+          var rid = this.dataset.rid === 'whitelist' ?
+              this.dataset.rid : parseInt(this.dataset.rid);
+          var idx = followedUsers.indexOf(rid);
+          if (-1 !== idx && !this.checked) {
+            // Remove from follower list if in list and the name was
+            // unchecked.
+            followedUsers.splice(idx, 1);
+          } else if (-1 === idx && this.checked) {
+            // Add to follower list if not already there and the name
+            // was checked.
+            followedUsers.push(rid);
+          }
+        });
 
       $("#project_review_widget").append( table );
 

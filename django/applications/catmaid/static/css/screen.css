@@ -775,6 +775,7 @@ div.review-block::after {
   border-spacing: 0;
   border-collapse: collapse;
   border: 0;
+  table-layout: fixed;
 }
 
 #review_segment_table td {

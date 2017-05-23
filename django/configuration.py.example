@@ -9,10 +9,14 @@ abs_catmaid_path = ''
 
 abs_virtualenv_python_library_path = ''
 
-# CATMAID database configuration
+# CATMAID database configuration - required
 catmaid_database_name = ''
 catmaid_database_username = ''
 catmaid_database_password = ''
+
+# CATMAID database configuration - optional
+catmaid_database_host = ''
+catmaid_database_port = ''
 
 # Writable folder to store automatically generated files that are publicly
 # visible, e.g. used by by the NeuroHDF export script and the cropping tool.

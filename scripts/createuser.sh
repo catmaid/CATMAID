@@ -11,7 +11,18 @@ CATMAID_USER="$2"
 CATMAID_PASSWORD="$(echo $3 | sed -e "s/\\\\/\\\\\\\/g" -e "s/'/\\\'/g")"
 
 cat <<EOSQL
-CREATE ROLE "$CATMAID_USER" LOGIN PASSWORD '$CATMAID_PASSWORD';
+DO
+\$body\$
+BEGIN
+  IF NOT EXISTS (
+     SELECT *
+     FROM   pg_catalog.pg_user
+     WHERE  usename = '$CATMAID_USER')
+  THEN
+     CREATE ROLE "$CATMAID_USER" LOGIN PASSWORD '$CATMAID_PASSWORD';
+  END IF;
+END
+\$body\$;
 
 CREATE DATABASE "$CATMAID_DATABASE" OWNER "$CATMAID_USER" ENCODING 'UTF8';
 

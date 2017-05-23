@@ -3,6 +3,7 @@ MAINTAINER Andrew Champion "andrew.champion@gmail.com"
 
 # Install dependencies
 RUN apt-get update -y \
+    && apt-get install -y netcat \
     && apt-get install -y software-properties-common \
     && add-apt-repository -y ppa:nginx/stable \
     && apt-get install -y wget ca-certificates \
@@ -54,7 +55,8 @@ RUN pip install uwsgi \
     && echo "daemon off;" >> /etc/nginx/nginx.conf \
     && rm /etc/nginx/sites-enabled/default \
     && ln -s /home/scripts/docker/nginx-catmaid.conf /etc/nginx/sites-enabled/ \
-    && ln -s /home/scripts/docker/supervisor-catmaid.conf /etc/supervisor/conf.d/
+    && ln -s /home/scripts/docker/supervisor-catmaid.conf /etc/supervisor/conf.d/ \
+    && chmod +x /home/scripts/docker/start-catmaid.sh
 # Fix AUFS bug that breaks PostgreSQL
 # See: https://github.com/docker/docker/issues/783
 RUN mkdir /etc/ssl/private-copy; \

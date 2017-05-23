@@ -723,6 +723,28 @@
       return allowedNodes.has(node.id);
     };
 
+    var addWhitelist = function(rid) {
+      var userId = rid[0], reviewTime = new Date(rid[1]);
+      this.users[userId].count += 1;
+      this.users[userId].segment_count[this.segment.id] += 1;
+
+      if (!this.whitelisted && userId in this.whitelist && reviewTime > this.whitelist[userId]) {
+        this.whitelistUser.count += 1;
+        this.whitelistUser.segment_count[segment.id] += 1;
+        this.whitelisted = true; // Whitelist each node only once.
+      }
+    };
+
+    var addSegmentWhitelist = function(node) {
+      node['rids'].forEach(addWhitelist, {
+        segment: this.segment,
+        whitelist: this.whitelist,
+        whitelisted: false,
+        whitelistUser: this.whitelistUser,
+        users: this.users
+      });
+    };
+
     /**
      * Clears the table with ID 'review_segment_table' prior to adding rows to
      * it. If a subarborNodeId is given, not the whole skeleton will be
@@ -754,13 +776,14 @@
       // FIXME: count is wrong because branch points are repeated. Would have
       // to create sets and then count the number of keys.
       var userIdMap = CATMAID.User.all();
+      var initCount = function(o, s) {
+        o[s.id] = 0;
+        return o;
+      };
       var users = Object.keys(userIdMap).reduce(function(map, u) {
         var user = userIdMap[u];
         // Create an empty segment count object
-        var seg_count = skeleton_data.reduce(function(o, s) {
-          o[s.id] = 0;
-          return o;
-        }, {});
+        var seg_count = skeleton_data.reduce(initCount, {});
         // Create a new count object for this user
         map[user.id] = {name: user.login, count: 0, segment_count: seg_count};
         return map;
@@ -776,20 +799,11 @@
 
       // Fill in the users count:
       skeleton_data.forEach(function(segment) {
-        segment['sequence'].forEach(function(node) {
-          var whitelisted = false;
-
-          node['rids'].forEach(function(rid) {
-            var userId = rid[0], reviewTime = new Date(rid[1]);
-            users[userId].count += 1;
-            users[userId].segment_count[segment.id] += 1;
-
-            if (!whitelisted && userId in whitelist && reviewTime > whitelist[userId]) {
-              whitelistUser.count += 1;
-              whitelistUser.segment_count[segment.id] += 1;
-              whitelisted = true; // Whitelist each node only once.
-            }
-          });
+        segment['sequence'].forEach(addSegmentWhitelist, {
+          segment: segment,
+          whitelist: whitelist,
+          whitelistUser: whitelistUser,
+          users: users
         });
       });
       // Create a list of all users who have reviewed this neuron. Add the

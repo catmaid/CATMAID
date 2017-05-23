@@ -802,6 +802,10 @@ div.review-block::after {
   padding: 3px;
 }
 
+#review_segment_table th input {
+  width: auto;
+}
+
 #settings-widget .title {
   font-weight: bold;
 }

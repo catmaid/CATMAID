@@ -106,7 +106,7 @@
      * review is continued.
      */
     this.handleActiveNodeChange = function(node) {
-      var $rows = $('table#review_segment_table tr.review-segment');
+      var $rows = $('table#review_segment_table tbody tr');
       $rows.removeClass('active');
 
       // Ignore this node change if no segment is under review at the moment
@@ -182,7 +182,7 @@
       self.goToNodeIndexOfSegmentSequence(this.current_segment_index, true);
       end_puffer_count = 0;
       // Highlight current segment in table
-      var $rows = $('table#review_segment_table tr.review-segment');
+      var $rows = $('table#review_segment_table tbody tr');
       $rows.removeClass('highlight');
       var $cur_row = $rows.filter('tr[data-sgid=' + id + ']');
       $cur_row.addClass('highlight');
@@ -871,19 +871,18 @@
         tableHeader.push('<th>Union</th>');
       }
       tableHeader.push('<th># nodes</th><th></th>');
-      elements.push('<tr>' + tableHeader.join('') + '</tr>');
+      elements.push('<thead><tr>' + tableHeader.join('') + '</tr></thead>');
+      elements.push('<tbody>');
 
       // Create rows
       for (var i=0, max=skeleton_data.length; i<max; ++i) {
         var segment = skeleton_data[i];
         elements.push('<tr data-sgid="', segment.id, '"');
         if (self.current_segment && segment.id === self.current_segment.id) {
-          elements.push('class="review-segment highlight" >');
-        } else {
-          elements.push('class="review-segment" >');
+          elements.push('class="highlight"');
         }
         // Index
-        elements.push('<td>', segment.id, '</td>');
+        elements.push('><td>', segment.id, '</td>');
         // Single user status
         if (nReviewers > 2) {
           // The reviewers array contains oneself as first element
@@ -907,6 +906,7 @@
         elements.push('<td><button>Review</button></td>');
         elements.push('</tr>');
       }
+      elements.push('</tbody>');
 
       table.innerHTML = elements.join('');
 

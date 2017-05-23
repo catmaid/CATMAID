@@ -776,16 +776,21 @@
       // FIXME: count is wrong because branch points are repeated. Would have
       // to create sets and then count the number of keys.
       var userIdMap = CATMAID.User.all();
-      var initCount = function(o, s) {
-        o[s.id] = 0;
-        return o;
-      };
+      var nSegments = skeleton_data.length;
+
       var users = Object.keys(userIdMap).reduce(function(map, u) {
         var user = userIdMap[u];
         // Create an empty segment count object
-        var seg_count = skeleton_data.reduce(initCount, {});
+        var segCount = {};
+        for (var i=0; i<nSegments; ++i) {
+          segCount[skeleton_data[i].id] = 0;
+        }
         // Create a new count object for this user
-        map[user.id] = {name: user.login, count: 0, segment_count: seg_count};
+        map[user.id] = {
+          name: user.login,
+          count: 0,
+          segment_count: segCount
+        };
         return map;
       }, {});
 

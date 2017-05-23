@@ -782,8 +782,12 @@ div.review-block::after {
   padding: 3px;
 }
 
-#review_segment_table tr:nth-child(even) {
+#review_segment_table tr:nth-child(even) td.nobg {
   background-color: #EEE;
+}
+
+#review_segment_table tr:nth-child(odd) td.nobg {
+  background-color: #FFF;
 }
 
 #review_segment_table tr.highlight {

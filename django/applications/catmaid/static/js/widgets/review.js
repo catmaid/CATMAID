@@ -848,6 +848,11 @@
       header.appendChild(neuronInfo);
       header.appendChild(reviewInfo);
 
+      // Prevent extensive coloring method look-ups.
+      var getColor = CATMAID.ReviewSystem.getBackgroundColor;
+      var currentSegment = self.current_segment;
+      var zeroColor = getColor(0);
+
       // Construct the review table as a string, to avoid slow DOM operations
       var table = document.createElement('table');
       table.setAttribute('id', 'review_segment_table');
@@ -872,17 +877,17 @@
       }
       tableHeader.push('<th># nodes</th><th></th>');
       elements.push('<thead><tr>' + tableHeader.join('') + '</tr></thead>');
-      elements.push('<tbody>');
+      elements.push('<tbody style="background-color: ', zeroColor, '">');
 
       // Create rows
       for (var i=0, max=skeleton_data.length; i<max; ++i) {
         var segment = skeleton_data[i];
         elements.push('<tr data-sgid="', segment.id, '"');
-        if (self.current_segment && segment.id === self.current_segment.id) {
+        if (currentSegment && segment.id === currentSegment.id) {
           elements.push('class="highlight"');
         }
         // Index
-        elements.push('><td>', segment.id, '</td>');
+        elements.push('><td class="nobg">', segment.id, '</td>');
         // Single user status
         if (nReviewers > 2) {
           // The reviewers array contains oneself as first element
@@ -890,20 +895,26 @@
             var r = reviewers[j];
             var seg_status = (100 * users[r].segment_count[segment.id] /
                 segment.nr_nodes).toFixed(2);
-            var color = CATMAID.ReviewSystem.getBackgroundColor(Math.round(seg_status));
-            elements.push('<td id="rev-status-cell-', segment.id, '-', r,
-                '" style="background-color: ', color, '">', seg_status, '%</td>');
+            var color = getColor(Math.round(seg_status));
+            elements.push('<td id="rev-status-cell-', segment.id, '-', r);
+            if (color !== zeroColor) {
+              elements.push('" style="background-color: ', color);
+            }
+            elements.push('">', seg_status, '%</td>');
           }
         }
         // Union status
-        var color = CATMAID.ReviewSystem.getBackgroundColor(parseInt(segment.status));
-        elements.push('<td id="rev-status-cell-', segment.id, '-union',
-              '" style="background-color: ', color, '">', segment.status, '%</td>');
+        var color = getColor(parseInt(segment.status));
+        elements.push('<td id="rev-status-cell-', segment.id, '-union');
+        if (color !== zeroColor) {
+          elements.push('" style="background-color: ', color);
+        }
+        elements.push('">', segment.status, '%</td>');
 
         // Number of nodes
-        elements.push('<td align="right">', segment.nr_nodes, '</td>');
+        elements.push('<td class="nobg" align="right">', segment.nr_nodes, '</td>');
         // Review button
-        elements.push('<td><button>Review</button></td>');
+        elements.push('<td class="nobg"><button>Review</button></td>');
         elements.push('</tr>');
       }
       elements.push('</tbody>');

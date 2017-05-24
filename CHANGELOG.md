@@ -4,10 +4,26 @@
 
 ### Features and enhancements
 
+Review widget:
+
+- Large neurons are handled better, rendering tables with many segments is
+  now faster.
 
 
 ### Bug fixes
 
+- Graph widget: re-layout works again.
+
+- The Docker image can be used again without requiring a manual restart of the
+  uWSGI server.
+
+- Zooming in using the "=" key and using Shift + Z to join and create nodes both
+  work again.
+
+- Links inside the simple Search Widget can be clicked again.
+
+- Back-end calls with large parameter lists can be used again (e.g. review
+  status in the Connectivity Widget).
 
 
 ## 2017.05.17

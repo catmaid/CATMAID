@@ -761,8 +761,8 @@ div.clustering-content .content {
 }
 
 div.review-block {
-  margin: 0.2em 0.2em 0.4em 0.2em;
-	box-sizing: border-box;
+  padding: 0.2em 0.2em 0.4em 0.2em;
+  box-sizing: border-box;
 }
 
 div.review-block::after {
@@ -772,11 +772,23 @@ div.review-block::after {
 }
 
 #review_segment_table {
+  border-spacing: 0;
   border-collapse: collapse;
+  border: 0;
+  table-layout: fixed;
+  margin-bottom: 2em;
 }
 
-#review_segment_table tr:nth-child(even) {
+#review_segment_table td {
+  padding: 3px;
+}
+
+#review_segment_table tr:nth-child(even) td.nobg {
   background-color: #EEE;
+}
+
+#review_segment_table tr:nth-child(odd) td.nobg {
+  background-color: #FFF;
 }
 
 #review_segment_table tr.highlight {
@@ -792,6 +804,11 @@ div.review-block::after {
   white-space: nowrap;
   vertical-align: baseline;
   border-bottom: 1px solid black;
+  padding: 3px;
+}
+
+#review_segment_table th input {
+  width: auto;
 }
 
 #settings-widget .title {

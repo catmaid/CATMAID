@@ -106,7 +106,7 @@
      * review is continued.
      */
     this.handleActiveNodeChange = function(node) {
-      var $rows = $('table#review_segment_table tr.review-segment');
+      var $rows = $('table#review_segment_table tbody tr');
       $rows.removeClass('active');
 
       // Ignore this node change if no segment is under review at the moment
@@ -182,7 +182,7 @@
       self.goToNodeIndexOfSegmentSequence(this.current_segment_index, true);
       end_puffer_count = 0;
       // Highlight current segment in table
-      var $rows = $('table#review_segment_table tr.review-segment');
+      var $rows = $('table#review_segment_table tbody tr');
       $rows.removeClass('highlight');
       var $cur_row = $rows.filter('tr[data-sgid=' + id + ']');
       $cur_row.addClass('highlight');
@@ -723,6 +723,28 @@
       return allowedNodes.has(node.id);
     };
 
+    var addWhitelist = function(rid) {
+      var userId = rid[0], reviewTime = new Date(rid[1]);
+      this.users[userId].count += 1;
+      this.users[userId].segment_count[this.segment.id] += 1;
+
+      if (!this.whitelisted && userId in this.whitelist && reviewTime > this.whitelist[userId]) {
+        this.whitelistUser.count += 1;
+        this.whitelistUser.segment_count[segment.id] += 1;
+        this.whitelisted = true; // Whitelist each node only once.
+      }
+    };
+
+    var addSegmentWhitelist = function(node) {
+      node['rids'].forEach(addWhitelist, {
+        segment: this.segment,
+        whitelist: this.whitelist,
+        whitelisted: false,
+        whitelistUser: this.whitelistUser,
+        users: this.users
+      });
+    };
+
     /**
      * Clears the table with ID 'review_segment_table' prior to adding rows to
      * it. If a subarborNodeId is given, not the whole skeleton will be
@@ -731,7 +753,6 @@
      */
     this.createReviewSkeletonTable = function(skeleton_data) {
       self.skeleton_segments = skeleton_data;
-      var butt, table, tbody, row;
       if( $('#review_segment_table').length > 0 ) {
         $('#review_segment_table').remove();
       }
@@ -755,15 +776,21 @@
       // FIXME: count is wrong because branch points are repeated. Would have
       // to create sets and then count the number of keys.
       var userIdMap = CATMAID.User.all();
+      var nSegments = skeleton_data.length;
+
       var users = Object.keys(userIdMap).reduce(function(map, u) {
         var user = userIdMap[u];
         // Create an empty segment count object
-        var seg_count = skeleton_data.reduce(function(o, s) {
-          o[s.id] = 0;
-          return o;
-        }, {});
+        var segCount = {};
+        for (var i=0; i<nSegments; ++i) {
+          segCount[skeleton_data[i].id] = 0;
+        }
         // Create a new count object for this user
-        map[user.id] = {name: user.login, count: 0, segment_count: seg_count};
+        map[user.id] = {
+          name: user.login,
+          count: 0,
+          segment_count: segCount
+        };
         return map;
       }, {});
 
@@ -777,20 +804,11 @@
 
       // Fill in the users count:
       skeleton_data.forEach(function(segment) {
-        segment['sequence'].forEach(function(node) {
-          var whitelisted = false;
-
-          node['rids'].forEach(function(rid) {
-            var userId = rid[0], reviewTime = new Date(rid[1]);
-            users[userId].count += 1;
-            users[userId].segment_count[segment.id] += 1;
-
-            if (!whitelisted && userId in whitelist && reviewTime > whitelist[userId]) {
-              whitelistUser.count += 1;
-              whitelistUser.segment_count[segment.id] += 1;
-              whitelisted = true; // Whitelist each node only once.
-            }
-          });
+        segment['sequence'].forEach(addSegmentWhitelist, {
+          segment: segment,
+          whitelist: whitelist,
+          whitelistUser: whitelistUser,
+          users: users
         });
       });
       // Create a list of all users who have reviewed this neuron. Add the
@@ -809,6 +827,8 @@
         users.whitelist = whitelistUser;
         reviewers.push('whitelist');
       }
+
+      var nReviewers = reviewers.length;
 
       // Create string with user's reviewed counts:
       var user_revisions = reviewers.map(function(u) {
@@ -833,86 +853,101 @@
       header.appendChild(neuronInfo);
       header.appendChild(reviewInfo);
 
-      table = $('<table />').attr('cellpadding', '3').attr('cellspacing', '0').attr('id', 'review_segment_table').attr('border', '0');
-      // create header
-      row = $('<tr />');
-      row.append($('<th />'));
+      // Prevent extensive coloring method look-ups.
+      var getColor = CATMAID.ReviewSystem.getBackgroundColor;
+      var currentSegment = self.current_segment;
+      var zeroColor = getColor(0);
+
+      // Construct the review table as a string, to avoid slow DOM operations
+      var table = document.createElement('table');
+      table.setAttribute('id', 'review_segment_table');
+      var elements = [];
+
+      // Create table header
+      var tableHeader = [];
+      tableHeader.push('<th></th>');
       // Start with user columns, current user first
-      for (var i=0; i<reviewers.length; ++i) {
-        var cb = $('<input />').attr('type', 'checkbox')
-          .attr('data-rid', reviewers[i])
-          .attr('title', "When checked, column will be respected when next segment is selected.")
-          .click(function() {
-            var rid = this.dataset.rid === 'whitelist' ?
-                this.dataset.rid : parseInt(this.dataset.rid);
-            var idx = followedUsers.indexOf(rid);
-            if (-1 !== idx && !this.checked) {
-              // Remove from follower list if in list and the name was
-              // unchecked.
-             followedUsers.splice(idx, 1);
-            } else if (-1 === idx && this.checked) {
-              // Add to follower list if not already there and the name
-              // was checked.
-              followedUsers.push(rid);
-            }
-          });
+      for (var i=0; i<nReviewers; ++i) {
+        tableHeader.push(
+            '<th><label><input type="checkbox" data-rid="', reviewers[i],
+            '" title="When checked, column will be respected when next segment is selected." ');
         if (-1 !== followedUsers.indexOf(reviewers[i])) {
-          cb.prop('checked', true);
+          tableHeader.push('checked');
         }
-        row.append( $('<th />').append($('<label />')
-          .append(cb).append(users[reviewers[i]].name)));
+        tableHeader.push('/>', users[reviewers[i]].name, '</label></th>');
       }
       // Union column last
-      if (reviewers.length > 2) {
-        row.append( $('<th />').text('Union') );
+      if (nReviewers > 2) {
+        tableHeader.push('<th>Union</th>');
       }
-      table.append( row );
-      row.append( $('<th />').text("# nodes"));
-      row.append($('<th />'));
-      table.append( row );
-      // create a row
-      for(var e in skeleton_data ) {
-        var sd = skeleton_data[e];
-        row = $('<tr />')
-          .attr('class', 'review-segment')
-          .attr('data-sgid', sd.id);
-        if (self.current_segment && sd.id === self.current_segment.id) row.addClass('highlight');
+      tableHeader.push('<th># nodes</th><th></th>');
+      elements.push('<thead><tr>' + tableHeader.join('') + '</tr></thead>');
+      elements.push('<tbody style="background-color: ', zeroColor, '">');
+
+      // Create rows
+      for (var i=0, max=skeleton_data.length; i<max; ++i) {
+        var segment = skeleton_data[i];
+        elements.push('<tr data-sgid="', segment.id, '"');
+        if (currentSegment && segment.id === currentSegment.id) {
+          elements.push('class="highlight"');
+        }
         // Index
-        row.append( $('<td />').text(skeleton_data[e]['id'] ) );
+        elements.push('><td class="nobg">', segment.id, '</td>');
         // Single user status
-        if (reviewers.length > 2) {
+        if (nReviewers > 2) {
           // The reviewers array contains oneself as first element
-          reviewers.forEach(function(r) {
-            var seg_status = (100 * users[r].segment_count[sd.id] /
-                sd.nr_nodes).toFixed(2);
-            this.append($('<td />').text(seg_status + '%')
-                .attr('id', 'rev-status-cell-' + sd.id + '-' + r)
-                .css('background-color',
-                    CATMAID.ReviewSystem.getBackgroundColor(Math.round(seg_status))));
-          }, row);
+          for (var j=0; j<nReviewers; ++j) {
+            var r = reviewers[j];
+            var seg_status = (100 * users[r].segment_count[segment.id] /
+                segment.nr_nodes).toFixed(2);
+            var color = getColor(Math.round(seg_status));
+            elements.push('<td id="rev-status-cell-', segment.id, '-', r);
+            if (color !== zeroColor) {
+              elements.push('" style="background-color: ', color);
+            }
+            elements.push('">', seg_status, '%</td>');
+          }
         }
         // Union status
-        var status = $('<td />')
-            .attr('id', 'rev-status-cell-' + sd.id + '-union')
-            .text( skeleton_data[e]['status']+'%' )
-            .css('background-color',
-                CATMAID.ReviewSystem.getBackgroundColor(parseInt(sd.status)));
-        row.append( status );
+        var color = getColor(parseInt(segment.status));
+        elements.push('<td id="rev-status-cell-', segment.id, '-union');
+        if (color !== zeroColor) {
+          elements.push('" style="background-color: ', color);
+        }
+        elements.push('">', segment.status, '%</td>');
+
         // Number of nodes
-        row.append( $('<td align="right" />').text( skeleton_data[e]['nr_nodes'] ) );
+        elements.push('<td class="nobg" align="right">', segment.nr_nodes, '</td>');
         // Review button
-        butt = $('<button />').text( "Review" );
-        butt.attr( 'id', 'reviewbutton_'+skeleton_data[e]['id'] );
-        butt.click( function() {
-          self.initReviewSegment( this.id.replace("reviewbutton_", "") );
-        });
-        row.append( $('<td />').append(butt) );
-        table.append( row );
+        elements.push('<td class="nobg"><button>Review</button></td>');
+        elements.push('</tr>');
       }
-      // empty row
-      row = $('<tr />');
-      table.append( row );
-      table.append( $('<br /><br /><br /><br />') );
+      elements.push('</tbody>');
+
+      table.innerHTML = elements.join('');
+
+      // Add button click handler
+      $(table)
+        .on('click', 'button', function() {
+          var row = this.closest('tr');
+          var segmentId = parseInt(row.dataset.sgid, 10);
+          self.initReviewSegment(segmentId);
+        })
+        .on('change', 'input[type=checkbox]', function() {
+          var rid = this.dataset.rid === 'whitelist' ?
+              this.dataset.rid : parseInt(this.dataset.rid);
+          var idx = followedUsers.indexOf(rid);
+          if (-1 !== idx && !this.checked) {
+            // Remove from follower list if in list and the name was
+            // unchecked.
+            followedUsers.splice(idx, 1);
+          } else if (-1 === idx && this.checked) {
+            // Add to follower list if not already there and the name
+            // was checked.
+            followedUsers.push(rid);
+          }
+        });
+
       $("#project_review_widget").append( table );
 
     };

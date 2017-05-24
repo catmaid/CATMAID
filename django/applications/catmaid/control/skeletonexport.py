@@ -30,8 +30,8 @@ from psycopg2.extras import DateTimeTZRange
 
 from catmaid.control.tree_util import edge_count_to_root, partition
 
-# Python 2 and 3 compatible map iterator
-from six.moves import map
+# Python 2 and 3 compatible map and zip iterator
+from six.moves import map, zip
 
 try:
     from exportneuroml import neuroml_single_cell, neuroml_network

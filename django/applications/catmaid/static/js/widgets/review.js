@@ -730,7 +730,7 @@
 
       if (!this.whitelisted && userId in this.whitelist && reviewTime > this.whitelist[userId]) {
         this.whitelistUser.count += 1;
-        this.whitelistUser.segment_count[segment.id] += 1;
+        this.whitelistUser.segment_count[this.segment.id] += 1;
         this.whitelisted = true; // Whitelist each node only once.
       }
     };

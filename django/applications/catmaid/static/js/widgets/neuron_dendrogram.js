@@ -977,14 +977,16 @@
       }(this.currentSkeletonId);
 
     var nodeName = function(showTags, showIds, showStrahler) {
+      function isTaggedWith(t) {
+        /* jshint validthis: true */ // `this` is the node id set by filter()
+        if (tags.hasOwnProperty(t)) {
+          return -1 !== tags[t].indexOf(this);
+        }
+        return false;
+      }
       function addTag(d, wrapped) {
         if (d.tagged) {
-          var nodeTags = referenceTags.filter(function(t) {
-            if (tags.hasOwnProperty(t)) {
-              return -1 !== tags[t].indexOf(d.id);
-            }
-            return false;
-          });
+          var nodeTags = referenceTags.filter(isTaggedWith, d.id);
           return nodeTags.join(",") + (wrapped.length > 0 ? " (" + wrapped + ")" : "");
         } else {
           return wrapped;

@@ -749,7 +749,7 @@
 
     if (this.currentSkeletonTree && this.currentSkeletonTags) {
       this.renderDendogram(this.renderTree, this.currentSkeletonTags,
-         this.highlightTags.join(","));
+         this.highlightTags);
     }
 
     // Select the active node after every change
@@ -979,7 +979,10 @@
     var nodeName = function(showTags, showIds, showStrahler) {
       function addTag(d, wrapped) {
         if (d.tagged) {
-          return referenceTags + (wrapped.length > 0 ? " (" + wrapped + ")" : "");
+          var nodeTags = referenceTags.filter(function(t) {
+            return -1 !== tags[t].indexOf(d.id);
+          });
+          return nodeTags.join(",") + (wrapped.length > 0 ? " (" + wrapped + ")" : "");
         } else {
           return wrapped;
         }

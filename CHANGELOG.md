@@ -9,6 +9,10 @@ Review widget:
 - Large neurons are handled better, rendering tables with many segments is
   now faster.
 
+- The set of displayed columns can now be constrained with the help of the new
+  "Visible reviewers" setting in the widget. Available options are "All", "Team"
+  and "Self".
+
 
 ### Bug fixes
 

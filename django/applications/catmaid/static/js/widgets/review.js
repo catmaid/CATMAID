@@ -37,6 +37,8 @@
     self.reviewUpstream = true;
     // Review updates are made persistent, by default
     self.persistReview = true;
+    // Visible columns are determined by this
+    this.visibleReviewers = 'all';
 
     // A set of filter rules to apply to the handled skeletons
     this.filterRules = [];
@@ -813,17 +815,28 @@
       });
       // Create a list of all users who have reviewed this neuron. Add the
       // current user as first element, regardless of his/her review status.
-      var reviewers = Object.keys(users).filter(function(u) {
-        // u is a string, so rely on != for comparing to (integer) user ID.
-        return this[u].count > 0 && u != CATMAID.session.userid;
-      }, users);
+      var reviewers = this.visibleReviewers === 'self' ? [] :
+        Object.keys(users).filter(function(u) {
+          // u is a string, so rely on != for comparing to (integer) user ID.
+          return this[u].count > 0 && u != CATMAID.session.userid;
+        }, users);
+      // If only team members should be displayed, remove all other users
+      if (this.visibleReviewers === 'team') {
+        reviewers = reviewers.filter(function(u) {
+          return whitelist.hasOwnProperty(u);
+        }, users);
+      }
+
       // Prepend user ID
       reviewers = [CATMAID.session.userid].concat(reviewers);
       // Make sure all IDs are actual numbers
       reviewers = reviewers.map(function(u){ return parseInt(u); });
 
+      var showUnionColumn = reviewers.length > 1 && this.visibleReviewers == 'all';
+      var showTeamColumn = reviewers.length > 1 && this.visibleReviewers != 'self';
+
       // Append whitelist to users and reviewers
-      if (reviewers.length > 1) {
+      if (showTeamColumn) {
         users.whitelist = whitelistUser;
         reviewers.push('whitelist');
       }
@@ -877,7 +890,7 @@
         tableHeader.push('/>', users[reviewers[i]].name, '</label></th>');
       }
       // Union column last
-      if (nReviewers > 2) {
+      if (showUnionColumn) {
         tableHeader.push('<th>Union</th>');
       }
       tableHeader.push('<th># nodes</th><th></th>');
@@ -893,28 +906,27 @@
         }
         // Index
         elements.push('><td class="nobg">', segment.id, '</td>');
-        // Single user status
-        if (nReviewers > 2) {
-          // The reviewers array contains oneself as first element
-          for (var j=0; j<nReviewers; ++j) {
-            var r = reviewers[j];
-            var seg_status = (100 * users[r].segment_count[segment.id] /
-                segment.nr_nodes).toFixed(2);
-            var color = getColor(Math.round(seg_status));
-            elements.push('<td id="rev-status-cell-', segment.id, '-', r);
-            if (color !== zeroColor) {
-              elements.push('" style="background-color: ', color);
-            }
-            elements.push('">', seg_status, '%</td>');
+        // The reviewers array contains oneself as first element
+        for (var j=0; j<nReviewers; ++j) {
+          var r = reviewers[j];
+          var seg_status = (100 * users[r].segment_count[segment.id] /
+              segment.nr_nodes).toFixed(2);
+          var color = getColor(Math.round(seg_status));
+          elements.push('<td id="rev-status-cell-', segment.id, '-', r);
+          if (color !== zeroColor) {
+            elements.push('" style="background-color: ', color);
           }
+          elements.push('">', seg_status, '%</td>');
         }
         // Union status
-        var color = getColor(parseInt(segment.status));
-        elements.push('<td id="rev-status-cell-', segment.id, '-union');
-        if (color !== zeroColor) {
-          elements.push('" style="background-color: ', color);
+        if (showUnionColumn) {
+          var color = getColor(parseInt(segment.status));
+          elements.push('<td id="rev-status-cell-', segment.id, '-union');
+          if (color !== zeroColor) {
+            elements.push('" style="background-color: ', color);
+          }
+          elements.push('">', segment.status, '%</td>');
         }
-        elements.push('">', segment.status, '%</td>');
 
         // Number of nodes
         elements.push('<td class="nobg" align="right">', segment.nr_nodes, '</td>');
@@ -1109,6 +1121,20 @@
             length: 3,
             onchange: function() {
               self.virtualNodeStep = parseInt(this.value, 10);
+            }
+          }, {
+            type: 'select',
+            label: 'Visible reviewers',
+            value: this.visibleReviewers,
+            entries: [
+              {title: 'All', value: 'all'},
+              {title: 'Team', value: 'team'},
+              {title: 'Self', value: 'self'},
+            ],
+            title: "Select which review columns are visible",
+            onchange: function() {
+              self.visibleReviewers = this.value;
+              self.update();
             }
           }, {
             type: 'checkbox',

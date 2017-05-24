@@ -1348,14 +1348,18 @@
   };
 
   CATMAID.ReviewSystem.prototype.update = function() {
-    var url = CATMAID.makeURL(this.projectId + "/skeletons/" +
-        this.currentSkeletonId + "/review");
-    var self = this;
-    this.submit(url, "POST", {'subarbor_node_id': this.currentSubarborNodeId},
-      function(skeleton_data) {
-        self.createReviewSkeletonTable(skeleton_data);
-        self.redraw();
-      });
+    if (this.currentSkeletonId) {
+      var url = CATMAID.makeURL(this.projectId + "/skeletons/" +
+          this.currentSkeletonId + "/review");
+      var self = this;
+      this.submit(url, "POST", {'subarbor_node_id': this.currentSubarborNodeId},
+        function(skeleton_data) {
+          self.createReviewSkeletonTable(skeleton_data);
+          self.redraw();
+        });
+    } else {
+      this.redraw();
+    }
   };
 
   /**

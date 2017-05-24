@@ -966,7 +966,8 @@
       run: function (e) {
         if (!CATMAID.mayView())
           return false;
-        activeTracingLayer.tracingOverlay.printTreenodeInfo(SkeletonAnnotations.getActiveNodeId());
+        activeTracingLayer.tracingOverlay.printTreenodeInfo(
+              SkeletonAnnotations.getActiveNodeId(), undefined, true);
         return true;
       }
     }));

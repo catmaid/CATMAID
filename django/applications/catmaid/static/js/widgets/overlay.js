@@ -4065,7 +4065,7 @@ SkeletonAnnotations.TracingOverlay.prototype.cycleThroughNearestMatchingTags = f
 /**
  * Sets treenode information as status. Can handle virtual nodes.
  */
-SkeletonAnnotations.TracingOverlay.prototype.printTreenodeInfo = function(nodeID, prePrefix) {
+SkeletonAnnotations.TracingOverlay.prototype.printTreenodeInfo = function(nodeID, prePrefix, forceExtendedStatus) {
   if (this.isIDNull(nodeID)) return;
   var prefix = "";
   var node = this.nodes[nodeID];
@@ -4093,7 +4093,7 @@ SkeletonAnnotations.TracingOverlay.prototype.printTreenodeInfo = function(nodeID
     prefix = prePrefix + " " + prefix;
   }
 
-  if (!SkeletonAnnotations.TracingOverlay.Settings.session.extended_status_update) {
+  if (!(SkeletonAnnotations.TracingOverlay.Settings.session.extended_status_update || forceExtendedStatus)) {
     if (node) {
       prefix += " created by " + CATMAID.User.safeToString(node.user_id) +
         ", last edited " + CATMAID.tools.contextualDateString((node.edition_time_iso_str));

@@ -749,7 +749,7 @@
 
     if (this.currentSkeletonTree && this.currentSkeletonTags) {
       this.renderDendogram(this.renderTree, this.currentSkeletonTags,
-         this.highlightTags.join(","));
+         this.highlightTags);
     }
 
     // Select the active node after every change
@@ -977,9 +977,17 @@
       }(this.currentSkeletonId);
 
     var nodeName = function(showTags, showIds, showStrahler) {
+      function isTaggedWith(t) {
+        /* jshint validthis: true */ // `this` is the node id set by filter()
+        if (tags.hasOwnProperty(t)) {
+          return -1 !== tags[t].indexOf(this);
+        }
+        return false;
+      }
       function addTag(d, wrapped) {
         if (d.tagged) {
-          return referenceTags + (wrapped.length > 0 ? " (" + wrapped + ")" : "");
+          var nodeTags = referenceTags.filter(isTaggedWith, d.id);
+          return nodeTags.join(",") + (wrapped.length > 0 ? " (" + wrapped + ")" : "");
         } else {
           return wrapped;
         }

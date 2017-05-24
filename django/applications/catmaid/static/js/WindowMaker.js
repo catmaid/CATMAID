@@ -1314,7 +1314,7 @@ var WindowMaker = new function()
                        $('#graph_edge_confidence_threshold' + GG.widgetID).val()); };
 
     DOM.appendToTab(tabs['Graph'],
-        [['Re-layout', GG.updateLayout.bind(GG, layout)],
+        [['Re-layout', GG.updateLayout.bind(GG, layout, null)],
          [' fit', true, GG.toggleLayoutFit.bind(GG), true],
          [document.createTextNode(' - Color: ')],
          [color],

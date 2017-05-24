@@ -980,7 +980,10 @@
       function addTag(d, wrapped) {
         if (d.tagged) {
           var nodeTags = referenceTags.filter(function(t) {
-            return -1 !== tags[t].indexOf(d.id);
+            if (tags.hasOwnProperty(t)) {
+              return -1 !== tags[t].indexOf(d.id);
+            }
+            return false;
           });
           return nodeTags.join(",") + (wrapped.length > 0 ? " (" + wrapped + ")" : "");
         } else {

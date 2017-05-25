@@ -100,6 +100,7 @@ def create_link(request, project_id=None):
     result['message'] = 'success'
     result['link_id'] = link.id
     result['link_edition_time'] = link.edition_time
+    result['relation_id'] = link.relation_id
     return JsonResponse(result)
 
 

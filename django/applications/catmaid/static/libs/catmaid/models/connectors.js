@@ -145,7 +145,8 @@
               result.link_id, linkType, nodeId);
           return {
             linkId: result.link_id,
-            linkEditTime: result.link_edition_time
+            linkEditTime: result.link_edition_time,
+            relationId: result.relation_id
           };
         });
     },

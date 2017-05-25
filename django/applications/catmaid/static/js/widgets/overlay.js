@@ -1860,10 +1860,12 @@ SkeletonAnnotations.TracingOverlay.prototype.createLink = function (fromid, toid
     return self.submit.then(function() {
       var command = new CATMAID.LinkConnectorCommand(self.state, project.id,
           toid, nodeId, link_type);
-      return CATMAID.commands.execute(command).then(function(result) {
-        if (result.warning) CATMAID.warn(result.warning);
-        self.updateNodes(afterCreate);
-      }).catch(CATMAID.handleError);
+      return CATMAID.commands.execute(command)
+        .then(function(result) {
+          if (result.warning) CATMAID.warn(result.warning);
+          self.updateNodes(afterCreate);
+        })
+        .catch(CATMAID.handleError);
     }, CATMAID.handleError);
   });
 };

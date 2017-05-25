@@ -4,6 +4,14 @@
 (function(CATMAID) {
 
   /**
+   * A general warning with description.
+   */
+  CATMAID.Warning = function(message) {
+    this.name = 'CATMAID warning';
+    this.message = message || '(no message)';
+  };
+
+  /**
    * A general error containing a message of what went wrong.
    */
   CATMAID.Error = function(message, detail, type) {

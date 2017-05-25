@@ -73,7 +73,7 @@ var submitterFn = function() {
     } finally {
       // If the result of the invocation is a promise (i.e. has a then()
       // method), wait with completion for its fulfillment.
-      if (lastResult && typeof(lastResult.then) === "function") {
+      if (lastResult && CATMAID.tools.isFn(lastResult.then)) {
         lastResult.then(function(result) {
           // Make the result of the promise the new result
           lastResult = result;
@@ -208,6 +208,26 @@ var submitterFn = function() {
     submit(null, null, null, onResolve, blockUI, false, onReject, false);
     return submit;
   };
+
+  /**
+   * Get a promise that resolves (or rejects) after the current queue is
+   * submitted. Optionally, resolve and rejection functions can be passed in for
+   * convenience.
+   */
+  submit.promise = function(onResolve, onReject, blockUI) {
+    var promise = new Promise(function(resolve, reject) {
+      submit(null, null, null, resolve, blockUI, false, reject, false);
+      return submit;
+    });
+    if (onResolve) {
+      promise = promise.then(onResolve);
+    }
+    if (onReject) {
+      promise = promise.catch(onReject);
+    }
+    return promise;
+  };
+
 
   return submit;
 };

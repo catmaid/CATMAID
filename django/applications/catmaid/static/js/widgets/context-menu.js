@@ -33,7 +33,7 @@
       var selection = {
         item: item
       };
-      this.hide();
+      this.hide(true);
 
       if (options.provideLocation) {
         // Get focused stack viewer to get click coordinates
@@ -141,14 +141,14 @@
     /**
      * Hide the currently displayed context menu.
      */
-    this.hide = function() {
+    this.hide = function(selected) {
       wrapper.style.display = "none";
       menuVisible = false;
       document.body.removeChild(wrapper);
       // Unbind key handler and hide context menu
       $('body').off('keydown.catmaidContextMenu');
       // Execute hide callback, if any
-      CATMAID.tools.callIfFn(this.options.hide);
+      CATMAID.tools.callIfFn(this.options.hide, selected || false);
     };
 
     /**
@@ -161,7 +161,7 @@
      */
     this.toggleContextMenu = function(useCorrentLocation) {
       if (menuVisible) {
-        this.hide();
+        this.hide(false);
       } else {
         this.show(useCorrentLocation);
       }

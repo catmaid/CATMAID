@@ -1863,7 +1863,23 @@ SkeletonAnnotations.TracingOverlay.prototype.createLink = function (fromid, toid
       return CATMAID.commands.execute(command)
         .then(function(result) {
           if (result.warning) CATMAID.warn(result.warning);
-          self.updateNodes(afterCreate);
+          var node = self.nodes[nodeId];
+          if (!node) {
+            return true;
+          }
+          var connector = self.nodes[toid];
+          if (!connector) {
+            return true;
+          }
+          // Add result link to set of display (to not required update)
+          var group = SkeletonAnnotations.groupedRelations[link_type] || 'undirgroup';
+          var link = self.graphics.newLinkNode(result.linkId, node,
+              result.relationId, 5, 0);
+          link.edition_time_iso_str = result.linkEditTime;
+          connector[group][node.id] = link;
+          node.linkConnector(connector.id, link);
+          connector.createGraphics();
+          self.redraw();
         })
         .catch(CATMAID.handleError);
     }, CATMAID.handleError);
@@ -2210,6 +2226,13 @@ function createVirtualNode(graphics, child, parent, stackViewer)
   return vn;
 }
 
+// All relations not in this map, will be part of the 'undirgroup'
+SkeletonAnnotations.groupedRelations = {
+  'presynaptic_to': 'pregroup',
+  'postsynaptic_to': 'postgroup',
+  'gapjunction_with': 'gjgroup'
+};
+
 
 /**
  * Recreate all nodes (or reuse existing ones if possible).
@@ -2309,20 +2332,14 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
     }
   }, this);
 
-  // All relations not in this map, will be part of the 'undirgroup'
-  var groupedRelations = {
-    'presynaptic_to': 'pregroup',
-    'postsynaptic_to': 'postgroup',
-    'gapjunction_with': 'gjgroup'
-  };
-
   // Now that ConnectorNode and Node instances are in place,
   // set all relations
+  var groupedRelations = SkeletonAnnotations.groupedRelations;
   jso[1].forEach(function(a) {
     // a[0] is the ID of the ConnectorNode
     var connector = this.nodes[a[0]];
     // a[7]: all relations, an array of arrays, containing treenode_id,
-    // relation_id, tc_confidence
+    // relation_id, tc_confidence, tc_edition_time, tc_id
     a[7].forEach(function(r, i, ar) {
       // r[0]: tnid, r[1]: relation ID r[2]: tc_confidence
       var tnid = r[0];
@@ -2596,9 +2613,23 @@ SkeletonAnnotations.TracingOverlay.prototype.createNodeOrLink = function(insert,
           if (msg) {
             CATMAID.statusBar.replaceLast(msg);
           }
-          self.createSingleConnector(phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, 5, connectorType)
+          // Suspend layer from updates before connctor is created, because
+          // connector creation and linking is two-step process, with both
+          // triggering a node update otherwise.
+          var originalSuspended = self.suspended;
+          self.suspended = true;
+
+          var linkNewConnctor = self.createSingleConnector(
+              phys_x, phys_y, phys_z, pos_x, pos_y, pos_z, 5, connectorType)
             .then(function (connectorId) {
               return self.createLink(targetTreenode.id, connectorId, linkType);
+            });
+
+          // Reset suspended property, ignoring any errors
+          linkNewConnctor
+            .catch(CATMAID.noop)
+            .then(function() {
+              self.suspended = originalSuspended;
             });
         };
 

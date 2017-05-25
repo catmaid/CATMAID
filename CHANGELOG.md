@@ -29,6 +29,10 @@ Review widget:
 - Back-end calls with large parameter lists can be used again (e.g. review
   status in the Connectivity Widget).
 
+- Highlighted tags in the Neuron Dendrogram widget are now correctly displayed
+  next to the nodes they belong to. Before, each tagged node had all selected
+  tags shown next to it, regardless of whether it would be tagged with them.
+
 
 ## 2017.05.17
 

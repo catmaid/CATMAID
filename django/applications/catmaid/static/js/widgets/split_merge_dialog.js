@@ -12,6 +12,10 @@
     this.extension = options.extension;
     this.autoOrder = options.autoOrder === undefined ? true : !!options.autoOrder;
 
+    // Split and merge handlers
+    this.split = options.split;
+    this.merge = options.merge;
+
     // Models object
     this.models = {};
     this.models[model1.id] = model1;
@@ -29,44 +33,64 @@
       }
     }
     // Basic dialog setup
-    this.dialog = document.createElement('div');
-    this.dialog.setAttribute("id", "skeleton-split-merge-dialog");
-    if (this.in_merge_mode) {
-      this.dialog.setAttribute("title", "Merge skeletons");
-    } else {
-      this.dialog.setAttribute("title", "Split skeleton");
-    }
-    // Dialog dimensions
-    this.width = parseInt(CATMAID.UI.getFrameWidth() * 0.8);
-    this.height = parseInt(CATMAID.UI.getFrameHeight() * 0.8);
+    CATMAID.Confirmation3dDialog.call(this, {
+      id: "skeleton-split-merge-dialog",
+      title: this.in_merge_mode ? "Merge skeletons" : "Split skeletons"
+    });
   };
 
-  SplitMergeDialog.prototype = {};
+  SplitMergeDialog.prototype = Object.create(CATMAID.Confirmation3dDialog.prototype);
+  SplitMergeDialog.prototype.constructor = SplitMergeDialog;
 
   SplitMergeDialog.prototype.swapSkeletons = function() {
-    $(this.dialog).dialog('close');
+    this.close();
 
     var newDialog = new CATMAID.SplitMergeDialog({
       model1: this.models[this.under_model_id],
       model2: this.models[this.over_model_id],
       extension: this.extension,
       splitNodeId: this.splitNodeId,
-      autoOrder: false
+      autoOrder: false,
+      merge: this.merge,
+      split: this.split
     });
     newDialog.onOK = this.onOK;
     newDialog.onCancel = this.onCancel;
     newDialog.show();
   };
 
+  SplitMergeDialog.prototype.onSettingChanged = function(name, value) {
+    if (name === 'show-inputs') {
+      for (var m in this.models) {
+        this.models[m].post_visible = value;
+      }
+    } else if (name === 'show-outputs') {
+      for (var m in this.models) {
+        this.models[m].pre_visible = value;
+      }
+    }
+  };
+
+  SplitMergeDialog.prototype.onOK = function() {
+    if (this.in_merge_mode) {
+      this.merge(this.over_model_id, this.under_model_id);
+    } else {
+      this.split();
+    }
+  };
+
   SplitMergeDialog.prototype.populate = function() {
-    var usable_height = this.height - 100;
-    // Annotation list boxes
+    CATMAID.Confirmation3dDialog.prototype.populate.call(this);
+
+    // Annotation list boxes using flex layout
     var titleBig = document.createElement('div'),
         titleSmall = document.createElement('div'),
         colorBig = document.createElement('div'),
         colorSmall = document.createElement('div'),
         big = document.createElement('div'),
-        small = document.createElement('div');
+        small = document.createElement('div'),
+        contentBig = document.createElement('div'),
+        contentSmall = document.createElement('div');
 
     big.setAttribute('id', 'split_merge_dialog_over_annotations');
     small.setAttribute('id', 'split_merge_dialog_under_annotations');
@@ -75,49 +99,63 @@
     big.setAttribute('multiple', 'multiple');
     small.setAttribute('multiple', 'multiple');
 
-    big.style.width = '95%';
-    big.style.height = usable_height * 0.45 + 'px';
+    // Annotation lists, grow them on resize
     big.style.overflowY = 'scroll';
-    big.style.marginBottom = usable_height * 0.05 + 'px';
-    small.style.width = '95%';
-    small.style.height = usable_height * 0.45 + 'px';
+    big.style.flexGrow = '1';
+
     small.style.overflowY = 'scroll';
+    small.style.flexGrow = '1';
 
     // Color boxes
-    colorBig.style.width = '3%';
-    colorBig.style.height = big.style.height;
-    colorBig.style.cssFloat = 'left';
-    colorBig.style.marginRight = '0.3em';
-    colorSmall.style.width = '3%';
-    colorSmall.style.height = small.style.height;
-    colorSmall.style.cssFloat = 'left';
-    colorSmall.style.marginRight = '0.3em';
+    colorBig.style.width = '5%';
+    colorSmall.style.width = '5%';
+    colorBig.style.marginRight = '1%';
+    colorSmall.style.marginRight = '1%';
+    colorBig.style.flexGrow = '1';
+    colorSmall.style.flexGrow = '1';
 
-    titleBig.style.padding = '0.1em';
-    titleSmall.style.padding = '0.1em';
+    // Content boxes
+    contentBig.style.flexGrow = '1';
+    contentBig.style.display = 'flex';
+    contentBig.style.flexDirection = 'column';
+    contentBig.style.width = '94%';
+    contentSmall.style.display = 'flex';
+    contentSmall.style.flexGrow = '1';
+    contentSmall.style.flexDirection = 'column';
+    contentSmall.style.width = '94%';
 
-    var left = document.createElement('div'),
-        right = document.createElement('div'),
-        leftWidth = 250;
-
-    // Position columns
-    left.style.cssFloat = 'left';
-    left.style.width = leftWidth + 'px';
-    right.style.cssFloat = 'right';
-
-    right.setAttribute('id', 'dialog-3d-view');
-    right.style.backgroundColor = "#000000";
+    // Titles, no need to grow them on resize
+    titleBig.style.fontStyle = 'italic';
+    titleSmall.style.fontStyle = 'italic';
 
     // Layout left column
-    left.appendChild(titleBig);
-    left.appendChild(colorBig);
-    left.appendChild(big);
-    left.appendChild(colorSmall);
-    left.appendChild(small);
-    left.appendChild(titleSmall);
+    var topContainer = document.createElement('div');
+    var bottomContainer = document.createElement('div');
+    topContainer.appendChild(colorBig);
+    topContainer.appendChild(contentBig);
+    contentBig.appendChild(titleBig);
+    contentBig.appendChild(big);
+    bottomContainer.appendChild(colorSmall);
+    bottomContainer.appendChild(contentSmall);
+    contentSmall.appendChild(titleSmall);
+    contentSmall.appendChild(small);
 
-    this.dialog.appendChild(left);
-    this.dialog.appendChild(right);
+    topContainer.style.display = 'flex';
+    topContainer.style.flexDirection = 'row';
+    topContainer.style.width = '100%';
+    bottomContainer.style.display = 'flex';
+    bottomContainer.style.flexDirection = 'row';
+    bottomContainer.style.width = '100%';
+
+    // Let both containers grow equally, but keep a marin between them
+    topContainer.style.marginBottom = '1%';
+    topContainer.style.flexGrow = '1';
+    bottomContainer.style.flexGrow = '1';
+
+    this.controlPanel.style.display = 'flex';
+    this.controlPanel.style.flexDirection = 'column';
+    this.controlPanel.appendChild(topContainer);
+    this.controlPanel.appendChild(bottomContainer);
 
     var create_labeled_checkbox = function(annotation, annotator, checked, disabled, label) {
       var cb_label = document.createElement('label');
@@ -176,15 +214,11 @@
           }).catch(CATMAID.handleError);
       };
 
-    // Create a 3D View that is not a SkeletonSource
-    this.webglapp = new CATMAID.WebGLApplication(true);
-    this.webglapp.init(this.width - leftWidth - 50, usable_height,
-        'dialog-3d-view'); // add to the right
     // Activate downstream shading in split mode
     if (!this.in_merge_mode) {
       this.webglapp.options.shading_method = 'active_node_split';
     }
-    this.webglapp.look_at_active_node();
+
     // Add skeletons and do things depending on the success of this in a
     // callback function.
     this.webglapp.addSkeletons(this.models, (function() {
@@ -318,9 +352,7 @@
     }).bind(this));
 
     var self = this;
-    // Create controls and handlers for 3d viewer settings
-    var customOptions = document.createElement('div');
-    customOptions.setAttribute('class', 'ui-dialog-extra-buttonset');
+    var firstButton = this.customOptions.firstChild;
 
     if (this.in_merge_mode) {
       var switchButton = document.createElement('button');
@@ -331,62 +363,14 @@
       switchButtonLabel.classList.add('ui-button-text');
       switchButtonLabel.appendChild(document.createTextNode('Swap'));
       switchButton.onclick = this.swapSkeletons.bind(this);
-      customOptions.appendChild(switchButton);
+
+      // Add as first button
+      if (firstButton) {
+        this.customOptions.insertBefore(switchButton, firstButton);
+      } else {
+        this.customOptions.appendChild(switchButton);
+      }
     }
-
-    var showInputsCb = document.createElement('input');
-    showInputsCb.setAttribute('type', 'checkbox');
-    showInputsCb.setAttribute('class', 'ui-button');
-    showInputsCb.checked = true;
-    showInputsCb.onchange = function() {
-      for (var m in self.models) {
-        self.models[m].post_visible = this.checked;
-      }
-      self.webglapp.updateModels(self.models);
-    };
-    var showInputs = document.createElement('label');
-    showInputs.appendChild(showInputsCb);
-    showInputs.appendChild(document.createTextNode('Show inputs'));
-    customOptions.appendChild(showInputs);
-
-    var showOutputsCb = document.createElement('input');
-    showOutputsCb.setAttribute('type', 'checkbox');
-    showOutputsCb.setAttribute('class', 'ui-button');
-    showOutputsCb.checked = true;
-    showOutputsCb.onchange = function() {
-      for (var m in self.models) {
-        self.models[m].pre_visible = this.checked;
-      }
-      self.webglapp.updateModels(self.models);
-    };
-    var showOutputs = document.createElement('label');
-    showOutputs.appendChild(showOutputsCb);
-    showOutputs.appendChild(document.createTextNode('Show outputs'));
-    customOptions.appendChild(showOutputs);
-
-    var strahlerShadingCb = document.createElement('input');
-    strahlerShadingCb.setAttribute('type', 'checkbox');
-    strahlerShadingCb.setAttribute('class', 'ui-button');
-    strahlerShadingCb.checked = false;
-    strahlerShadingCb.onchange = function() {
-      var shading = this.checked ? 'strahler' :'active_node_split';
-      self.webglapp.options.shading_method = shading;
-      self.webglapp.updateSkeletonColors();
-    };
-    var strahlerShading = document.createElement('label');
-    strahlerShading.appendChild(strahlerShadingCb);
-    strahlerShading.appendChild(document.createTextNode('Strahler index shading'));
-    customOptions.appendChild(strahlerShading);
-
-    // Add extra options to the button pane
-    $(".ui-dialog-buttonpane", this.dialog.parent).prepend(customOptions);
-
-    // Resize 3D viewer if window size changes
-    $(this.dialog).on('dialogresize', function(event, ui) {
-      var newWidth = Math.floor(ui.size.width) - leftWidth - 50;
-      var newHeight = Math.floor(ui.size.height) - 100;
-      self.webglapp.resizeView(newWidth, newHeight);
-    });
 
     return this;
   };
@@ -464,41 +448,18 @@
     return true;
   };
 
-  SplitMergeDialog.prototype.show = function() {
-    var self = this;
-    $(this.dialog).dialog({
-      width: self.width,
-      height: self.height,
-      modal: true,
-      close: function(ev, ui) {
-        if (self.webglapp) {
-          self.webglapp.destroy();
-        }
-        $(this).dialog("destroy");
-      },
-      buttons: {
-        "Cancel": function() {
-          $(this).dialog("close");
-          if (self.onCancel) self.onCancel();
-        },
-        "OK": function() {
-          if (self.in_merge_mode && !self.check_merge_annotations()) {
-            alert("The selected annotation configuration isn't valid. " +
-                "No annotation can be lost.");
-          } else if (!self.in_merge_mode && !self.check_split_annotations()) {
-            alert("The selected annotation configuration isn't valid. " +
-                "One part has to keep all annotations.");
-          } else {
-            $(this).dialog("close");
-            if (self.onOK) self.onOK(self.over_model_id, self.under_model_id);
-          }
-        }
-      }
-    });
-
-    // The dialog is populated after creation, since the 3D viewer expects
-    // elements to be added to the DOM.
-    this.populate();
+  SplitMergeDialog.prototype.confirm = function() {
+    var confirmed = true;
+    if (self.in_merge_mode && !self.check_merge_annotations()) {
+      CATMAID.warn("The selected annotation configuration isn't valid. " +
+          "No annotation can be lost.");
+      confirmed = confirmed && false;
+    } else if (!this.in_merge_mode && !this.check_split_annotations()) {
+      CATMAID.warn("The selected annotation configuration isn't valid. " +
+          "One part has to keep all annotations.");
+      confirmed = confirmed && false;
+    }
+    return confirmed;
   };
 
   // Make split/merge dialog available in CATMAID namespace

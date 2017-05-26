@@ -2,12 +2,15 @@
 from __future__ import unicode_literals
 
 import json
+import six
 
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 
-from catmaid.models import Class, ClassInstance, Relation, UserRole
+from catmaid.apps import get_system_user
 from catmaid.control.authentication import requires_user_role
 from catmaid.control.common import get_class_to_id_map, get_relation_to_id_map
+from catmaid.models import (Class, ClassInstance, Relation, SamplerDomainType,
+        SamplerIntervalState, SamplerState, SamplerConnectorState, UserRole)
 
 
 # All classes needed by the tracing system alongside their
@@ -31,6 +34,32 @@ needed_relations = {
     'abutting': "Two things abut against each other",
     'gapjunction_with': "Something has a gap junction with something else",
 }
+
+# Expected sampler states, sampler interval sates and sampler domain types
+needed_sampler_states = {
+    'open':    'A sampler that hasn\'t been completed yet',
+    'closed':  'A completed sampler'
+}
+needed_sampler_interval_states = {
+    'untouched': 'A new interval, which has not been looked at',
+    'started':   'The interval is being worked on',
+    'completed': 'The interval has been completed',
+    'abandoned': 'The interval has been abandoned and won\'t be completed'
+}
+needed_sampler_domain_types = {
+    'regular':  'A general explicitly defined domain',
+    'backbone': 'The backbone of a neuron',
+    'bouton':   'A particular type of morphology',
+    'covering': 'Complete neuron',
+    'twig':     'A small distal fragment'
+}
+needed_sampler_connector_states = {
+    'untouched': 'A new connector, which has not been sampled so far',
+    'started':   'The connector can be sampled',
+    'completed': 'The connector has been completed and shouldn\'t be used for sampling',
+    'excluded':  'The connector is excluded from sampling'
+}
+
 
 def check_tracing_setup_view(request, project_id=None):
     all_good, mc, mr, mci = check_tracing_setup_detailed(project_id)
@@ -101,10 +130,17 @@ def rebuild_tracing_setup_view(request, project_id=None):
     all_good = check_tracing_setup(project_id)
     return HttpResponse(json.dumps({'all_good': all_good}))
 
-def setup_tracing(project_id, user):
+@requires_user_role([UserRole.Browse])
+def validate_tracing_setup(request, project_id):
+    setup_tracing(project_id)
+    return JsonResponse({'success': True})
+
+def setup_tracing(project_id, user=None):
     """ Tests which of the needed classes and relations is missing
     from the project's semantic space and adds those.
     """
+    if not user:
+        user = get_system_user()
     # Remember available classes
     available_classes = {}
 
@@ -123,7 +159,24 @@ def setup_tracing(project_id, user):
             project_id=project_id,
             defaults={'user': user,
                       'description': needed_relations[r]})
-    # Add root node
+    # Add missing sampler states
+    for sn, sd in six.iteritems(needed_sampler_states):
+        SamplerState.objects.get_or_create(
+            name=sn, defaults={'description': sd})
+    # Add missing sampler interval states
+    for sn, sd in six.iteritems(needed_sampler_interval_states):
+        SamplerIntervalState.objects.get_or_create(
+            name=sn, defaults={'description': sd})
+    # Add missing sampler domain types
+    for sn, sd in six.iteritems(needed_sampler_domain_types):
+        SamplerDomainType.objects.get_or_create(
+            name=sn, defaults={'description': sd})
+    # Add missing sampler connector states
+    for sn, sd in six.iteritems(needed_sampler_connector_states):
+        SamplerConnectorState.objects.get_or_create(
+            name=sn, defaults={'description': sd})
+
+    # Add root class instance
     ClassInstance.objects.get_or_create(
         class_column=available_classes['root'],
         project_id=project_id,

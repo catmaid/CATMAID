@@ -120,6 +120,43 @@
   };
 
   /**
+   * Return a promise that resolves once all sampler domains for all input
+   * skeletons are loaded and stored in each skeleton's 'samplers' field.
+   */
+  var initSamplerDomains = function(skeletons) {
+    // Find the subset of skeletons that don't have their sampler domains loaded
+    var skeletonIds = Object.keys(skeletons).filter(function(skid) {
+      return !skeletons[skid].samplers;
+    });
+
+    if (skeletonIds.length === 0) {
+      return Promise.resolve();
+    }
+
+    var params = {
+      "skeleton_ids": skeletonIds,
+      "with_domains": true
+    };
+    return CATMAID.fetch(project.id +  "/samplers/", "GET", params)
+      .then(function(samplers) {
+        // Group by skeleton IDs
+        var skeletonSamplers = samplers.reduce(function(o, s) {
+          var domains = o[s.skeleton_id];
+          if (!domains) {
+            domains = [];
+            o[s.skeleton_id] = domains;
+          }
+          domains.push(s);
+          return o;
+        }, {});
+
+        for (var skeletonId in skeletonSamplers) {
+          skeletons[skeletonId].setSamplers(skeletonSamplers[skeletonId]);
+        }
+      });
+  };
+
+  /**
    * Skeleton color method objects are expected to have a vertexColorizer
    * function that returns a per-vertex coloring function. This inner function
    * is expected to return a color for each input vertex. If a prepare method is
@@ -272,7 +309,122 @@
           return this.space.userColormap[userID];
         }).bind(skeleton);
       }
-    }
+    },
+    'sampler-domains': {
+      prepare: initSamplerDomains,
+      vertexColorizer: function(skeleton, options) {
+        var notComputableColor = options.notComputableColor;
+        var arbor = skeleton.createArbor();
+        var samplers = skeleton.samplers;
+        if (!samplers) {
+          // Without samplers, there is no color computable
+          return function(vertex) { return notComputableColor; };
+        }
+
+        var colorScheme = 'Spectral';
+        var colorizer = colorbrewer[colorScheme];
+        if (!colorizer) {
+          throw new CATMAID.ValueError('Couldn\'t find color scheme "' + colorScheme + '"');
+        }
+        var nColors = 11;
+        var colorSet = colorizer[11];
+        if (!colorSet) {
+          throw new CATMAID.ValueError('Couldn\'t find color set ' + nColors + ' for color scheme "' + colorScheme +'"');
+        }
+        colorSet = colorSet.map(function(rgb) {
+          return new THREE.Color(rgb);
+        });
+
+        var nAddedDomains = 0;
+        var nSamplers = samplers.length;
+        var domainColorIndex = new Map();
+        var nodeDomains = new Map();
+        for (var i=0; i<nSamplers; ++i) {
+          var sampler = samplers[i];
+          var domains = sampler.domains;
+          var nDomains = domains.length;
+          for (var j=0; j<nDomains; ++j) {
+            var domain = domains[j];
+            domainColorIndex.set(domain.id, nAddedDomains % nColors);
+            ++nAddedDomains;
+
+            // Build arbors for domains
+            var domainArbor = CATMAID.Sampling.domainArborFromModel(arbor, domain);
+            // Build index for each node of each domain to which domain they
+            // belong. If a node belongs to multiple domains, the last one wins.
+            var domainNodes = domainArbor.nodesArray();
+            for (var k=0, kMax=domainNodes.length; k<kMax; ++k) {
+              nodeDomains.set(parseInt(domainNodes[k], 10), domain.id);
+            }
+          }
+        }
+
+        return function(vertex) {
+          // Find domain this vertex is part of
+          var domainId = nodeDomains.get(vertex.node_id);
+          if (domainId === undefined) {
+            return notComputableColor;
+          } else {
+            return colorSet[domainColorIndex.get(domainId)];
+          }
+        };
+      }
+    },
+    'sampler-intervals': {
+      prepare: initSamplerDomains,
+      vertexColorizer: function(skeleton, options) {
+        var notComputableColor = options.notComputableColor;
+        var arbor = skeleton.createArbor();
+        var positions = skeleton.getPositions();
+        var samplers = skeleton.samplers;
+        if (!samplers) {
+          // Without samplers, there is no color computable
+          return function(vertex) { return notComputableColor; };
+        }
+
+        var successors = arbor.allSuccessors();
+
+        var colorScheme = 'Spectral';
+        var colorizer = colorbrewer[colorScheme];
+        if (!colorizer) {
+          throw new CATMAID.ValueError('Couldn\'t find color scheme "' + colorScheme + '"');
+        }
+        var nColors = 11;
+        var colorSet = colorizer[11];
+        if (!colorSet) {
+          throw new CATMAID.ValueError('Couldn\'t find color set ' + nColors + ' for color scheme "' + colorScheme +'"');
+        }
+        colorSet = colorSet.map(function(rgb) {
+          return new THREE.Color(rgb);
+        });
+
+        var nAddedDomains = 0;
+        var nSamplers = samplers.length;
+        var intervalMap = {};
+        for (var i=0; i<nSamplers; ++i) {
+          var sampler = samplers[i];
+          var domains = sampler.domains;
+          var nDomains = domains.length;
+          for (var j=0; j<nDomains; ++j) {
+            // Get intervals for domain
+            var domain = domains[j];
+            CATMAID.Sampling.intervalsFromModels(arbor, positions,
+                domain, sampler.interval_length, true, intervalMap);
+          }
+        }
+
+        return function(vertex) {
+          // Find domain this vertex is part of
+          var intervalId = intervalMap[vertex.node_id];
+          if (intervalId === undefined) {
+            return notComputableColor;
+          } else {
+            var intervalColorIndex = parseInt(intervalId, 10) % nColors;
+            return colorSet[intervalColorIndex];
+          }
+        };
+      }
+    },
   };
 
   /**
@@ -529,6 +681,66 @@
       weights: function(skeleton, options) {
         var arbor = skeleton.createArbor();
         return flowCentralityWeights(skeleton, "centripetal");
+      }
+    },
+    'sampler-domains': {
+      prepare: initSamplerDomains,
+      weights: function(skeleton, options) {
+        var arbor = skeleton.createArbor();
+        var samplers = skeleton.samplers;
+        if (!samplers) {
+          // Weight each node zero if there are no samplers
+          return arbor.nodesArray().reduce(function(o, d) {
+            o[d] = 0;
+            return o;
+          }, {});
+        }
+
+        // Index to test if a vertex is part of a domain
+        var samplerEdges = {};
+        for (var i=0; i<samplers.length; ++i) {
+          var sampler = samplers[i];
+          CATMAID.Sampling.samplerEdges(arbor, sampler, samplerEdges);
+        }
+
+        // Add all nodes in all domains
+        var nodeWeights = arbor.nodesArray().reduce(function(o, d) {
+          o[d] = samplerEdges[d] === undefined ? 0 : 1;
+          return o;
+        }, {});
+
+        return nodeWeights;
+      }
+    },
+    'sampler-intervals': {
+      prepare: initSamplerDomains,
+      weights: function(skeleton, options) {
+        var arbor = skeleton.createArbor();
+        var samplers = skeleton.samplers;
+        if (!samplers) {
+          // Weight each node zero if there are no samplers
+          return arbor.nodesArray().reduce(function(o, d) {
+            o[d] = 0;
+            return o;
+          }, {});
+        }
+
+        // Index to test if a vertex is part of an interval
+        var intervalMap = {};
+        for (var i=0; i<samplers.length; ++i) {
+          var sampler = samplers[i];
+          CATMAID.Sampling.intervalEdges(arbor, skeleton.getPositions(),
+              sampler, true, intervalMap);
+        }
+
+        // Look at all nodes of all domains. Give them a weight of 1 if they are
+        // part of an interval and 0.2 if hey are only part of a domain.
+        var nodeWeights = arbor.nodesArray().reduce(function(o, d) {
+          o[d] = intervalMap[d] === undefined ? 0 : 1;
+          return o;
+        }, {});
+
+        return nodeWeights;
       }
     }
   };

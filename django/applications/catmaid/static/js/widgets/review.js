@@ -39,6 +39,9 @@
     self.persistReview = true;
     // Visible columns are determined by this
     this.visibleReviewers = 'all';
+    // Whether node selection should automatically scroll to the respective
+    // segment.
+    this.scrollToActiveSegment = true;
 
     // A set of filter rules to apply to the handled skeletons
     this.filterRules = [];
@@ -116,7 +119,7 @@
       var segment = this.current_segment ? this.current_segment['sequence'] : null;
       var rNode = !!segment ? segment[this.current_segment_index] : null;
 
-      if (node) {
+      if (node && node.id) {
         var nodeId = node.id;
         if (!SkeletonAnnotations.isRealNode(node.id)) {
           // Force re-focus on next step if the newly active virtual node is not
@@ -140,7 +143,13 @@
                 return n.id === nodeId;
               });})
             .map(function (seg) { return seg.id; });
-        $rows.filter('[data-sgid="' + activeSegmentIds.join('"],[data-sgid="') + '"]').addClass('active');
+        var activeSegments = $rows.filter('[data-sgid="' + activeSegmentIds.join('"],[data-sgid="') + '"]');
+        activeSegments.addClass('active');
+        if (this.scrollToActiveSegment) {
+          $(this._content).animate({
+            scrollTop: activeSegments.position().top + 'px'
+          }, 'fast');
+        }
       } else if (rNode) {
         // Force re-focus on next step if there is no active node anymore.
         this.segmentUnfocused = true;
@@ -1165,6 +1174,14 @@
             value: this.reviewUpstream,
             onclick: function() {
               self.reviewUpstream = this.checked;
+            }
+          }, {
+            type: 'checkbox',
+            label: 'Scroll to active segment',
+            value: this.scrollToActiveSegment,
+            onclick: function() {
+              self.scrollToActiveSegment = this.checked;
+
             }
           }, {
             type: 'checkbox',

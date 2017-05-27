@@ -13,6 +13,14 @@ Review widget:
   "Visible reviewers" setting in the widget. Available options are "All", "Team"
   and "Self".
 
+- A new option to automatically scroll the active segment into view has been
+  added ("Scroll to active segment"). With this enabled (default), when a node
+  of a segment of the reviewed skeleton is selected in the tracing layer, the
+  review widget will scroll the segment into view.
+
+- State saving is now supported.
+
+
 Miscellaneous:
 
 - Split/Merge dialog: the node count for both respecivly remaining/new and

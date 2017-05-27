@@ -1095,6 +1095,7 @@
   };
 
   CATMAID.ReviewSystem.prototype = new InstanceRegistry();
+  CATMAID.ReviewSystem.prototype.constructor = CATMAID.ReviewSystem;
 
   CATMAID.ReviewSystem.prototype.getName = function() {
     return "Review System " + this.widgetID;
@@ -1680,7 +1681,29 @@
 
   CATMAID.registerWidget({
     key: "review-system",
-    creator: CATMAID.ReviewSystem
+    creator: CATMAID.ReviewSystem,
+    state: {
+      getState: function(widget) {
+        return {
+          noRefreshBetwenSegments: widget.noRefreshBetwenSegments,
+          virtualNodeStep: widget.virtualNodeStep,
+          reviewUpstream: widget.reviewUpstream,
+          persistReview: widget.persistReview,
+          visibleReviewers: widget.visibleReviewers,
+          scrollToActiveSegment: widget.scrollToActiveSegment,
+          applyFilterRules: widget.applyFilterRules
+        };
+      },
+      setState: function(widget, state) {
+        CATMAID.tools.copyIfDefined(state, widget, 'noRefreshBetwenSegments');
+        CATMAID.tools.copyIfDefined(state, widget, 'virtualNodeStep');
+        CATMAID.tools.copyIfDefined(state, widget, 'reviewUpstream');
+        CATMAID.tools.copyIfDefined(state, widget, 'persistReview');
+        CATMAID.tools.copyIfDefined(state, widget, 'visibleReviewers');
+        CATMAID.tools.copyIfDefined(state, widget, 'scrollToActiveSegment');
+        CATMAID.tools.copyIfDefined(state, widget, 'applyFilterRules');
+      }
+    }
   });
 
 })(CATMAID);

@@ -796,7 +796,7 @@ div.review-block::after {
   border: 1px solid #000;
 }
 
-#review_segment_table tr.active {
+#review_segment_table tr.active td.nobg {
   background-color: #0F0;
 }
 

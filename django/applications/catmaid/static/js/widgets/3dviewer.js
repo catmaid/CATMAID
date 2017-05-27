@@ -1423,9 +1423,12 @@
     });
   };
 
+  WebGLApplication.prototype.hasActiveFilters = function() {
+    return this.options.apply_filter_rules && this.filterRules.length > 0;
+  };
+
   WebGLApplication.prototype.getActivesNodeWhitelist = function() {
-    var activeNodeFilters = this.options.apply_filter_rules && this.filterRules.length > 0;
-    return activeNodeFilters ? this.allowedNodes : null;
+    return this.hasActiveFilters() ? this.allowedNodes : null;
   };
 
   /** Fetch skeletons one by one, and render just once at the end. */
@@ -1463,13 +1466,13 @@
         lean = options.lean_mode,
         url2 = '/compact-detail';
 
-
-
     // Register with the neuron name service and fetch the skeleton data
     var self = this;
     CATMAID.NeuronNameService.getInstance().registerAll(this, models)
       .then(function() {
-        return self.insertIntoNodeWhitelist(models);
+        if (self.hasActiveFilters()) {
+          return self.insertIntoNodeWhitelist(models);
+        }
       })
       .then(fetchSkeletons.bind(this,
           skeleton_ids,

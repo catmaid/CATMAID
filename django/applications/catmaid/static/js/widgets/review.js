@@ -1534,6 +1534,8 @@
    * focused instance.
    */
   CATMAID.ReviewSystem.prototype.destroy = function() {
+    SkeletonAnnotations.off(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
+      this.handleActiveNodeChange, this);
     if (lastFocused === this) {
       lastFocused = null;
     }

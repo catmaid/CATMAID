@@ -38,6 +38,7 @@
     if ( typeof forceSnap === 'undefined' ) forceSnap = true;
     this._forceSnap = forceSnap;
     this._minMove = minMove;
+    this.blurOnChange = true;
 
     this._view = document.createElement( "div" );
     this._barTop = document.createElement( "div" );
@@ -262,7 +263,7 @@
   /**
    * set a value, priorly check if it is in the value array
    */
-  Slider.prototype._setByInputHandler = function () {
+  Slider.prototype._setByInputHandler = function (e) {
     var self = this;
     return function (e) {
       var inputVal = Number(this.value);
@@ -270,6 +271,9 @@
       // previous value is also NaN, such as through bad initialization).
       if (isNaN(inputVal)) this.value = isNaN(self.val) ? self.values[0] : self.val;
       else self.setByValue(inputVal);
+      if (e && e.target && self.blurOnChange) {
+        e.target.blur();
+      }
     };
   };
 

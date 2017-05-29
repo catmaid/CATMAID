@@ -301,6 +301,7 @@
       var val = parseInt( this.value );
       if ( isNaN( val ) ) this.value = self.stackViewer.x;
       else self.stackViewer.moveToPixel( self.stackViewer.z, self.stackViewer.y, val, self.stackViewer.s );
+      e.target.blur();
     };
 
     var changeYByInput = function( e )
@@ -308,6 +309,7 @@
       var val = parseInt( this.value );
       if ( isNaN( val ) ) this.value = self.stackViewer.y;
       else self.stackViewer.moveToPixel( self.stackViewer.z, val, self.stackViewer.x, self.stackViewer.s );
+      e.target.blur();
     };
 
     var YXMouseWheel = function( e )

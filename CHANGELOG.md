@@ -26,6 +26,8 @@ Miscellaneous:
 - Split/Merge dialog: the node count for both respecivly remaining/new and
   remaining/old are now on top of the annotation lists.
 
+- The General Settings section of the Settings Widget now provides an option to
+  disable asking for confirmation when the active project is closed.
 
 ### Bug fixes
 

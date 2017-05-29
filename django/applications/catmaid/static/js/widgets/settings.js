@@ -235,6 +235,19 @@
           CATMAID.Client.Settings,
           'auto_widget_state_load',
           SETTINGS_SCOPE));
+
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createCheckboxSetting(
+              'Ask for confirmation before closing project',
+              CATMAID.Client.Settings[SETTINGS_SCOPE].confirm_project_closing,
+              'To prevent accidental loss of the current window configuration, ' +
+              'CATMAID can ask for confirmation before closing a project.',
+              function() {
+                CATMAID.Client.Settings[SETTINGS_SCOPE].confirm_project_closing = this.checked;
+              }),
+          CATMAID.Client.Settings,
+          'confirm_project_closing',
+          SETTINGS_SCOPE));
     };
 
     /**

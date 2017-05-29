@@ -135,6 +135,9 @@ var project;
         auto_widget_state_load: {
           default: true
         },
+        confirm_project_closing: {
+          default: true
+        }
       }
     });
 

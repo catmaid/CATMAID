@@ -85,9 +85,14 @@
 
     // Ask for confirmation before closing the stack via the close button
     $(this._stackWindow.getFrame()).find('.stackClose').get(0).onmousedown = (function (e) {
-      if (this._project.getStackViewers().length > 1 || confirm('Closing this window will exit the project. Proceed?'))
+      var notLastStackViewer = this._project.getStackViewers().length > 1;
+      var noConfirm = !CATMAID.Client.Settings.session.confirm_project_closing;
+      if (notLastStackViewer || noConfirm ||
+            confirm('Closing this window will exit the project. Proceed?')) {
         this._stackWindow.close(e);
-      else e.stopPropagation();
+      } else {
+        e.stopPropagation();
+      }
     }).bind(this);
 
     this._scaleBar = document.createElement( "div" );

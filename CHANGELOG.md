@@ -23,7 +23,7 @@ Review widget:
 
 Miscellaneous:
 
-- Split/Merge dialog: the node count for both respecivly remaining/new and
+- Split/Merge dialog: the node count for both respectively remaining/new and
   remaining/old are now on top of the annotation lists.
 
 - The General Settings section of the Settings Widget now provides an option to

@@ -29,6 +29,12 @@ Miscellaneous:
 - The General Settings section of the Settings Widget now provides an option to
   disable asking for confirmation when the active project is closed.
 
+- Tile layers can now be configured to not automatically switch to the next
+  accessible mirror if the present one is inaccessible. This is useful for some
+  custom mirror use cases and can be set through the "Change mirror on
+  inaccessible data" checkbox in the layer settings.
+
+
 ### Bug fixes
 
 - Graph widget: re-layout works again.

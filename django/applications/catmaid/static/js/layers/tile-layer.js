@@ -864,6 +864,11 @@
       this.switchToMirror(value);
     } else if ('changeMirrorIfNoData' === name) {
       this.changeMirrorIfNoData = value;
+      // If this was set to true, perform a canary test
+      if (this.changeMirrorIfNoData) {
+        CATMAID.checkTileSourceCanary(project, this.stack, this.tileSource)
+            .then(this._handleCanaryCheck.bind(this));
+      }
     } else if (this.tileSource && CATMAID.tools.isFn(this.tileSource.setSetting)) {
       return this.tileSource.setSetting(name, value);
     }

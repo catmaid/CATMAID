@@ -64,6 +64,7 @@
         }
       }
     }
+    this._readState = readState;
 
     this.mirrorIndex = mirrorIndex || 0;
     this.tileSource = stack.createTileSourceForMirror(this.mirrorIndex);
@@ -882,7 +883,8 @@
       visibility: this.visibility,
       opacity: this.opacity,
       showOverview: !!this.overviewLayer,
-      linearInterpolation: this._interpolationMode
+      linearInterpolation: this._interpolationMode,
+      readState: this._readState
     };
     $.extend(args, override);
     return new constructor(
@@ -893,7 +895,8 @@
         args.visibility,
         args.opacity,
         args.showOverview,
-        args.linearInterpolation);
+        args.linearInterpolation,
+        args.readState
   };
 
   /**

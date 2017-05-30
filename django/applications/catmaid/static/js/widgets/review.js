@@ -145,7 +145,7 @@
             .map(function (seg) { return seg.id; });
         var activeSegments = $rows.filter('[data-sgid="' + activeSegmentIds.join('"],[data-sgid="') + '"]');
         activeSegments.addClass('active');
-        if (this.scrollToActiveSegment) {
+        if (this.scrollToActiveSegment && activeSegments.length > 0) {
           $(this._content).animate({
             scrollTop: activeSegments.position().top + 'px'
           }, 'fast');

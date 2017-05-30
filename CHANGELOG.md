@@ -21,6 +21,12 @@ Review widget:
 - State saving is now supported.
 
 
+Node filters:
+
+- A Strahler number filter has been added to only show nodes with a Strahler
+  value below/same as/above a user defined number.
+
+
 Miscellaneous:
 
 - Split/Merge dialog: the node count for both respectively remaining/new and

@@ -677,6 +677,47 @@
         return includedNodes;
       }
     },
+    'strahler': {
+      name: 'Strahler number',
+      prepare: ['arbor'],
+      filter: function(skeletonId, neuron, input, options) {
+        var skeleton = input.skeletons[skeletonId];
+        var arbor = skeleton.arbor;
+        var nodes = arbor.nodesArray();
+        var strahler = arbor.strahlerAnalysis();
+        var value = CATMAID.tools.getDefined(options.strahlerValue, 2);
+        var op = CATMAID.tools.getDefined(options.op, "greater");
+        var includedNodes = {};
+        if (op === "smaller") {
+          for (var i=0; i<nodes.length; ++i) {
+            var nodeId = nodes[i];
+            var strahlerValue = strahler[nodeId];
+            if (strahlerValue < value) {
+              includedNodes[nodeId] = true;
+            }
+          }
+        } else if (op === "same") {
+          for (var i=0; i<nodes.length; ++i) {
+            var nodeId = nodes[i];
+            var strahlerValue = strahler[nodeId];
+            if (strahlerValue == value) {
+              includedNodes[nodeId] = true;
+            }
+          }
+        } else if (op === "greater") {
+          for (var i=0; i<nodes.length; ++i) {
+            var nodeId = nodes[i];
+            var strahlerValue = strahler[nodeId];
+            if (strahlerValue > value) {
+              includedNodes[nodeId] = true;
+            }
+          }
+        } else {
+          throw new CATMAID.ValueError("Unknown strahler filter operation: " + op);
+        }
+        return includedNodes;
+      }
+    }
   };
 
   /**
@@ -922,6 +963,47 @@
       editionTimeLabel.appendChild(editionTime);
       editionTimeLabel.appendChild(document.createTextNode('Edition time'));
       container.appendChild(editionTimeLabel);
+    },
+    'strahler': function(container, options) {
+      var smaller = document.createElement('input');
+      smaller.setAttribute('type', 'radio');
+      smaller.setAttribute('name', 'date-op');
+      smaller.onchange = function() {
+        options.op = 'smaller';
+      };
+      var smallerLabel = document.createElement('label');
+      smallerLabel.appendChild(smaller);
+      smallerLabel.appendChild(document.createTextNode('Smaller'));
+      container.appendChild(smallerLabel);
+
+      var same = document.createElement('input');
+      same.setAttribute('type', 'radio');
+      same.setAttribute('name', 'date-op');
+      same.onchange = function() {
+        options.op = 'same';
+      };
+      var sameLabel = document.createElement('label');
+      sameLabel.appendChild(same);
+      sameLabel.appendChild(document.createTextNode('Same as'));
+      container.appendChild(sameLabel);
+
+      var greater = document.createElement('input');
+      greater.setAttribute('type', 'radio');
+      greater.setAttribute('name', 'date-op');
+      greater.setAttribute('checked', 'checked');
+      greater.onchange = function() {
+        options.op = 'greater';
+      };
+      var greaterLabel = document.createElement('label');
+      greaterLabel.appendChild(greater);
+      greaterLabel.appendChild(document.createTextNode('Greater'));
+      container.appendChild(greaterLabel);
+
+      var $tag = CATMAID.DOM.createNumericInputSetting("Strahler", "2", 1,
+          "The reference strahler number", function() {
+            options.strahlerValue = parseInt(this.value, 10);
+          });
+      $(container).append($tag);
     },
   };
 

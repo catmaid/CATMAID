@@ -788,7 +788,7 @@
         name: 'hideIfBroken',
         displayName: 'Hide if nearest slice is broken',
         type: 'checkbox',
-        value: 'true',
+        value: this.hideIfNearestSliceBroken,
         help: 'Hide this tile layer if the nearest section is marked as ' +
               'broken, rather than the default behavior of displaying the ' +
               'nearest non-broken section.'
@@ -798,7 +798,7 @@
         type: 'number',
         range: [0, 1],
         step: 0.1,
-        value: 0.0,
+        value: this.efficiencyThreshold,
         help: 'Omit tiles with less area visible than this threshold. This ' +
               'is useful to reduce data use on bandwidth-limited connections.'
     },{

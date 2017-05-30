@@ -193,7 +193,11 @@
                   input.attr('value', setting.value);
                 }
               }
-              label.append(input);
+              if ('checkbox' === setting.type) {
+                label.prepend(input);
+              } else {
+                label.append(input);
+              }
 
             } else if ('select' === setting.type) {
               var select = $('<select />').attr({

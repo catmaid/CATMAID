@@ -1310,7 +1310,7 @@ def import_projects( user, pre_projects, tags, permissions,
             # Link project level defined stack group classification
             for sg in pp.stackgroups:
                 ref_sg = referenced_stackgroups.get(sg.title)
-                if ref_ci and sg.classification:
+                if ref_sg and sg.classification:
                     ensure_class_instances(p, sg.classification, user,
                     stackgroup=ref_sg)
 

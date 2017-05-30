@@ -5,7 +5,7 @@
   "use strict";
 
   // Suppress display of the PIXI banner message in the console.
-  PIXI.utils._saidHello = true;
+  PIXI.utils.skipHello();
 
   PixiLayer.contexts = new Map();
 
@@ -23,14 +23,6 @@
         {transparent: true, backgroundColor: 0x000000, antialias: true});
     this.stage = new PIXI.Container();
     this.layersRegistered = new Set();
-
-    // Disable the renderer's accessibility plugin (if available), because it
-    // requires the renderer view to be part of the DOM at all times (which we
-    // cannot guarantee).
-    if (this.renderer.plugins['accessibility']) {
-      this.renderer.plugins['accessibility'].destroy();
-      delete this.renderer.plugins['accessibility'];
-    }
   }
 
   /**

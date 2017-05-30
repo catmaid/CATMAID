@@ -684,8 +684,8 @@
         this.line.currentPath.shape.points[1] = childLocation[1];
         this.line.currentPath.shape.points[2] = parentLocation[0];
         this.line.currentPath.shape.points[3] = parentLocation[1];
-        this.line.dirty += 2;
-        this.line.clearDirty = 1;
+        this.line.dirty++;
+        this.line.clearDirty++;
         this.line._spriteRect = null;
         var lineColor = this.colorFromZDiff();
         this.line.tint = lineColor;
@@ -932,8 +932,8 @@
           };
           var newR = Math.sqrt(Math.pow(r.x, 2) + Math.pow(r.y, 2) + Math.pow(r.z, 2));
           c.graphicsData[0].shape.radius = newR;
-          c.dirty = true;
-          c.clearDirty = true; // Force re-rendering.
+          c.dirty++;
+          c.clearDirty++; // Force re-rendering.
           // Strore also x and y components
           c.datum = r;
           // Update radius measurement label.

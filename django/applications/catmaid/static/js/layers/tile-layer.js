@@ -20,6 +20,9 @@
    *                               neighbor tile texture interpolation.
    * @param {boolean} readState    Whether last used mirror and custom mirrors
    *                               should be read from a browser cookie.
+   * @param {boolean} changeMirrorIfNoData Whether to automatically switch to
+   *                               the next accessible mirror if the present one
+   *                               in inaccessible. (Default: true)
    */
   function TileLayer(
       stackViewer,
@@ -30,7 +33,8 @@
       opacity,
       showOverview,
       linearInterpolation,
-      readState) {
+      readState,
+      changeMirrorIfNoData) {
     this.stackViewer = stackViewer;
     this.displayname = displayname;
     this.stack = stack;
@@ -68,6 +72,11 @@
 
     this.mirrorIndex = mirrorIndex || 0;
     this.tileSource = stack.createTileSourceForMirror(this.mirrorIndex);
+
+    /* Whether mirros should be changed automatically if image data is
+     * unavailable.
+     */
+    this.changeMirrorIfNoData = CATMAID.tools.getDefined(changeMirrorIfNoData, true);
 
     /**
      * Whether to hide this tile layer if the nearest section is marked as
@@ -172,7 +181,7 @@
    * @param  {Object} accessible Check result with normal and cors booleans.
    */
   TileLayer.prototype._handleCanaryCheck = function (accessible) {
-    if (!accessible.normal) {
+    if (!accessible.normal && this.changeMirrorIfNoData) {
       Promise
           .all(this.stack.mirrors.map(function (mirror, index) {
             return CATMAID.checkTileSourceCanary(
@@ -793,6 +802,14 @@
               'broken, rather than the default behavior of displaying the ' +
               'nearest non-broken section.'
     },{
+        name: 'changeMirrorIfNoData',
+        displayName: 'Change mirror on inaccessible data',
+        type: 'checkbox',
+        value: this.changeMirrorIfNoData,
+        help: 'Automatically switch to the next accessible mirror if ' +
+              'the current mirror is inaccessible. This is usually recomended ' +
+              'except for some use cases involving custom mirrors.'
+    },{
         name: 'efficiencyThreshold',
         displayName: 'Tile area efficiency threshold',
         type: 'number',
@@ -845,6 +862,8 @@
       this.redraw();
     } else if ('mirrorSelection' === name) {
       this.switchToMirror(value);
+    } else if ('changeMirrorIfNoData' === name) {
+      this.changeMirrorIfNoData = value;
     } else if (this.tileSource && CATMAID.tools.isFn(this.tileSource.setSetting)) {
       return this.tileSource.setSetting(name, value);
     }
@@ -884,7 +903,8 @@
       opacity: this.opacity,
       showOverview: !!this.overviewLayer,
       linearInterpolation: this._interpolationMode,
-      readState: this._readState
+      readState: this._readState,
+      changeMirrorIfNoData: this.changeMirrorIfNoData
     };
     $.extend(args, override);
     return new constructor(
@@ -896,7 +916,8 @@
         args.opacity,
         args.showOverview,
         args.linearInterpolation,
-        args.readState
+        args.readState,
+        args.changeMirrorIfNoData);
   };
 
   /**

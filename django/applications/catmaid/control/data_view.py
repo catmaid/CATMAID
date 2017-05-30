@@ -160,7 +160,7 @@ def get_data_view( request, data_view_id ):
     show_mirrors = config.get('show_mirrors', True)
 
     # Make sure we get all needed stacks in the first query
-    if show_stacks:
+    if show_stacks or show_stackgroups:
         projects = projects.prefetch_related('stacks')
 
     # Build a stack index
@@ -169,7 +169,7 @@ def get_data_view( request, data_view_id ):
     stack_set_of = defaultdict(set)
     projects_of_stack = defaultdict(set)
 
-    if show_stacks:
+    if show_stacks or show_stackgroups:
         for p in projects:
             stacks = p.stacks.all()
             if show_mirrors:

@@ -1623,6 +1623,12 @@
           }
         }
       ],
+      createdRow: function( row, data, dataIndex ) {
+        row.setAttribute('data-node-id', data.id);
+      },
+      drawCallback: function(settings) {
+        highlightActiveNode.call(this);
+      }
     });
 
     var setState = function(connectorId, stateName) {
@@ -1663,6 +1669,20 @@
     });
 
     return datatable;
+  };
+
+  var highlightActiveNode = function() {
+    $('tr', this.table).removeClass('highlight');
+    var activeNodeId = SkeletonAnnotations.getActiveNodeId();
+    $('tr[data-node-id=' + activeNodeId + ']', this.table).addClass('highlight');
+  };
+
+  SynapseWorkflowStep.prototype.highlightActiveNode = function() {
+    if (this.datatables && this.datatables.length > 0) {
+      for (var i=0; i<this.datatables.length; ++i) {
+        highlightActiveNode.call(this.datatables[i]);
+      }
+    }
   };
 
   SynapseWorkflowStep.prototype.refreshTables = function() {
@@ -1801,6 +1821,7 @@
     } else {
       CATMAID.warn("Could not find interval nodes");
     }
+    this.highlightActiveNode();
   };
 
 

@@ -622,6 +622,28 @@
                 }));
           });
 
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createCheckboxSetting(
+              'Auto-trim empty components',
+              nameServiceInstance.getAutoTrimEmpty(),
+              'If enabled, all spaces around undefined name components will be removed.',
+              function() {
+                CATMAID.NeuronNameService.Settings
+                  .set(
+                    'auto_trim_empty',
+                    this.checked,
+                    SETTINGS_SCOPE)
+                  .then(function () {
+                    CATMAID.NeuronNameService.getInstance().loadConfigurationFromSettings();
+                  });
+              }),
+          CATMAID.NeuronNameService.Settings,
+          'auto_trim_empty',
+          SETTINGS_SCOPE),
+          function() {
+            return CATMAID.NeuronNameService.getInstance().loadConfigurationFromSettings();
+          });
+
 
       // Overlay settings
       ds = CATMAID.DOM.addSettingsContainer(container, "Tracing Overlay");

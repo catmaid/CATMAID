@@ -51,6 +51,9 @@
       // The delimiter used for listing annotations in a neuron name.
       var listDelimiter = ", ";
 
+      // Whether empty components should be trimmed
+      var autoTrimEmptyValues = true;
+
       // An object mapping skeleton IDs to objects that contain the current name and
       // a list of clients, interested in the particular skeleton.
       var managedSkeletons = {};
@@ -84,6 +87,9 @@
                     format_string: {
                       default: DEFAULT_FORMAT_STRING
                     },
+                    auto_trim_empty: {
+                      default: true
+                    }
                   },
                   migrations: {}
                 });
@@ -92,6 +98,7 @@
           var loadValues = (function () {
             componentList = $.extend(true, [], CATMAID.NeuronNameService.Settings[scope].component_list);
             formatString = CATMAID.NeuronNameService.Settings[scope].format_string;
+            autoTrimEmptyValues = CATMAID.NeuronNameService.Settings[scope].auto_trim_empty;
             this.refresh();
           }).bind(this);
 
@@ -122,6 +129,25 @@
         getFormatString: function()
         {
           return formatString;
+        },
+
+        /**
+         * Mutator for the auto trim setting for the format string replacement.
+         */
+        setAutoTrimEmpty: function(trim)
+        {
+          autoTrimEmptyValues = trim;
+
+          // Update the name representation of all neurons
+          this.refresh();
+        },
+
+        /**
+         * Accessor for the auto trim setting.
+         */
+        getAutoTrimEmpty: function()
+        {
+          return autoTrimEmptyValues;
         },
 
         /**
@@ -475,7 +501,8 @@
                   fallbackValue = componentValues[i];
               }
 
-              var name = formatString.replace(/%(f|\d+)(?:\{(.*)\})?/g, function (match, component, delimiter) {
+              var componentsRegEx = /%(f|\d+)(?:\{(.*)\})?/g;
+              var replace = function (match, component, delimiter) {
                 delimiter = delimiter === undefined ? ", " : delimiter;
 
                 if (component === 'f') {
@@ -485,11 +512,64 @@
                 var index = parseInt(component, 10);
                 if (index >= 0 && index < componentValues.length) {
                   var cv = componentValues[index];
-                  return cv ? cv.join(delimiter) : "";
+                  return cv ? cv.join(delimiter) : '';
                 } else return match;
-              });
+              };
 
-              return name;
+              // If auto-trim is enabled, remove all null values and spaces
+              // around it.
+              if (CATMAID.NeuronNameService.Settings.session.auto_trim_empty) {
+                // Split format string in format components and regular
+                // components.
+                var components = formatString.split(/((?:%f|%\d+)(?:\{.*\})?)/g);
+                var lastComponentIndex = components.length - 1;
+                var leftTrimmed = false;
+                var rightTrimmed = false;
+                components = components.map(function(c) {
+                  return c.replace(componentsRegEx, replace);
+                }).map(function(c, i, mappedComponents) {
+                  // Empty elements don't need any trimming.
+                  if (c.length === 0) {
+                    return c;
+                  }
+
+                  // Left trim current component if last component is empty. If
+                  // a right-trim operation happend for the last non-empty
+                  // element, retain one space.
+                  if (i > 0) {
+                    var l = c.length;
+                    var lastComponent = mappedComponents[i - 1];
+                    if (lastComponent.length === 0) {
+                      c = c.trimLeft();
+                      leftTrimmed = c.length !== l;
+                    } else {
+                      leftTrimmed = false;
+                    }
+                    if (rightTrimmed) {
+                      c = " " + c;
+                    } else if (leftTrimmed) {
+                      c = " " + c;
+                    }
+                  }
+
+                  // Right-trim current component, if next components is empty
+                  if (i < lastComponentIndex) {
+                    var l = c.length;
+                    var nextComponent = mappedComponents[i + 1];
+                    if (nextComponent.length === 0) {
+                      c = c.trimRight();
+                      rightTrimmed = c.length !== l;
+                    } else {
+                      rightTrimmed = false;
+                    }
+                  }
+
+                  return c;
+                });
+                return components.join('');
+              } else {
+                return formatString.replace(componentsRegEx, replace);
+              }
             };
 
             if (skids) {
@@ -596,7 +676,12 @@
               this.handleNeuronNameChange, instance);
           CATMAID.Init.off(CATMAID.Init.EVENT_PROJECT_CHANGED,
               this.loadConfigurationFromSettings, instance);
-        }
+        },
+
+        /*
+         * Whether missing name components should be trimmed automatically.
+         */
+        autoTrimEmptyValues: true
       };
     }
 

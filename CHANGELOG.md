@@ -40,6 +40,11 @@ Miscellaneous:
   custom mirror use cases and can be set through the "Change mirror on
   inaccessible data" checkbox in the layer settings.
 
+- Empty neuron name pattern components are now by default trimmed automatically.
+  Empty components at the pattern endings won't leave any white space behind.
+  Empty components between other components are allowed one space maximum (if
+  there were spaces before). The difference is visible e.g. in the Graph Widget.
+
 
 ### Bug fixes
 

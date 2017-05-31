@@ -207,8 +207,8 @@
       var edgeWidth = this.graphics.Node.prototype.EDGE_WIDTH || 2;
       this.graphics.containers.lines.children.forEach(function (line) {
         line.graphicsData[0].lineWidth = edgeWidth;
-        line.dirty++;
-        line.clearDirty++;
+        line.dirty = true;
+        line.clearDirty = true;
       });
       this.graphics.containers.nodes.children.forEach(function (c) {
         c.scale.set(this.graphics.Node.prototype.stackScaling);

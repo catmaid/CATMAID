@@ -1408,6 +1408,14 @@
         onclick: function() {
           self.pickRandomSynapse(widget);
         }
+      },
+      {
+        type: 'button',
+        label: 'Refresh',
+        title: "Reload the synapse listing",
+        onclick: function() {
+          widget.update();
+        }
       }
     ];
   };

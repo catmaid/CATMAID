@@ -1727,7 +1727,31 @@
 
     // Select random synapse. For now, use uniform distribution
     var connector = connectors[Math.floor(Math.random()*connectors.length)];
-    SkeletonAnnotations.staticMoveToAndSelectNode(connector.id);
+
+    var startedStateId = null;
+    for (var stateId in this.possibleStates) {
+      if ('started' === this.possibleStates[stateId].name) {
+        startedStateId = stateId;
+        break;
+      }
+    }
+    if (!startedStateId) {
+      return Promise.reject("Missing connector state: started");
+    }
+
+    var interval = widget.state['interval'];
+    if (!interval) {
+      throw new CATMAID.ValueError("Need interval for synapse workflow step");
+    }
+
+    // Open interval, select first node and then advance workflow
+    return CATMAID.fetch(project.id + '/samplers/domains/intervals/' +
+        interval.id + '/connectors/' + connector.id + '/set-state',
+        'POST', {state_id: startedStateId})
+      .then(function(result) {
+        widget.update();
+        SkeletonAnnotations.staticMoveToAndSelectNode(connector.id);
+      });
   };
 
   /**

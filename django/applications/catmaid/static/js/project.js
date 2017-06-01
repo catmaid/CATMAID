@@ -412,7 +412,10 @@
           var active_skeleton_id = SkeletonAnnotations.getActiveSkeletonId();
           if( active_skeleton_id ) {
             url += "&active_skeleton_id=" + active_skeleton_id;
-            url += "&active_node_id=" + SkeletonAnnotations.getActiveNodeId();
+          }
+          var active_node_id = SkeletonAnnotations.getActiveNodeId();
+          if (active_node_id) {
+            url += "&active_node_id=" + active_node_id;
           }
         }
 

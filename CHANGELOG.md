@@ -48,6 +48,8 @@ Miscellaneous:
   Empty components between other components are allowed one space maximum (if
   there were spaces before). The difference is visible e.g. in the Graph Widget.
 
+- URL-to-view links now allow selected connector nodes.
+
 
 ### Bug fixes
 

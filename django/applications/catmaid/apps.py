@@ -127,6 +127,14 @@ class CATMAIDConfig(AppConfig):
     def ready(self):
         """Perform initialization for back-end"""
         self.validate_configuration()
+
+        # If prepared statements are enabled, make sure they are created for
+        # every new connection. Binding this signal handler has to happen before
+        # the first database connection is created or connection pooling can not
+        # be used with prepared statements safely.
+        if settings.PREPARED_STATEMENTS:
+            db_signals.connection_created.connect(prepare_db_statements)
+
         self.check_superuser()
 
         # Make sure the existing version is what we expect
@@ -140,11 +148,6 @@ class CATMAIDConfig(AppConfig):
 
         # Monkey patch django-rest-swagger so that it can handle our URLs
         custom_rest_swagger_apis.patch()
-
-        # If prepared statements are enabled, make sure they are created for
-        # every new connection.
-        if settings.PREPARED_STATEMENTS:
-            db_signals.connection_created.connect(prepare_db_statements)
 
     # A list of settings that are expected to be available.
     required_setting_fields = {

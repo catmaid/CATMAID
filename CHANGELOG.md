@@ -1,5 +1,8 @@
 ## Under development
 
+### Notes
+
+- Prepared statements can now also be used together with connection pooling.
 
 
 ### Features and enhancements

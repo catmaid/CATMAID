@@ -111,14 +111,14 @@
       createContent: function(content) {},
       helpText: [
         '<h1>Morphology Plot</h1>',
-        '<p> This widget is a historgram based analysis tool which provides',
+        '<p> This widget is a histogram based analysis tool which provides',
         'information on nodes with a similar distance to a reference location,',
         'which can be a specified in the user interface.',
         'Example choices are the root node or the average node position. Around',
         'this center, spheres are formed with an increasing radius that can be',
         'defined by the user and defaults to 1000nm per step. All nodes within',
         'the part of a sphere that doesn\'t overlap with the last smaller sphere',
-        'is treated as one bin of a historgram. This is shown for three bins in',
+        'is treated as one bin of a histogram. This is shown for three bins in',
         '2D below:</p>',
         '<p><svg height="100" with="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">',
         '<circle cx="50" cy="50" r="49" style="stroke: #000; fill: #fff"/>',
@@ -149,6 +149,9 @@
         'synapses a particular bin.</li>',
         '</ul>',
         '</p>',
+        '<p>The plot itself shows the distance from the selected center on',
+        'the X axis and the bin value (e.g. the number of end nodes) is shown on',
+        'the Y axis.<p>',
       ].join('\n')
     };
   };

@@ -1673,8 +1673,10 @@
 
   var highlightActiveNode = function() {
     $('tr', this.table).removeClass('highlight');
-    var activeNodeId = SkeletonAnnotations.getActiveNodeId();
-    $('tr[data-node-id=' + activeNodeId + ']', this.table).addClass('highlight');
+    if (SkeletonAnnotations.getActiveNodeType() === SkeletonAnnotations.TYPE_CONNECTORNODE) {
+      var activeNodeId = SkeletonAnnotations.getActiveNodeId();
+      $('tr[data-node-id=' + activeNodeId + ']', this.table).addClass('highlight');
+    }
   };
 
   SynapseWorkflowStep.prototype.highlightActiveNode = function() {

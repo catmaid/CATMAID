@@ -279,6 +279,23 @@ CATMAID
   connections are apparently not closed anymore (which can happen with greenlet
   based threading).
 
+* If database connection pooling is used (see ``CONN_MAX_AGE`` above), it can
+  help spatial query  performance to use prepared statements. These are created
+  for each database connection and pose an overhead without connection pooling.
+  To enable prepared statement add ``PREPARED_STATEMENTS = True`` to the
+  ``settings.py`` file.
+
+* Depending on the number of nodes per section, using a different spatial query
+  type can help performance. By default CATMAID uses the so called ``postgis3d``
+  node provider as query strategy. This can be changed to the alternative
+  ``postgis2d`` node provider by adding ``NODE_PROVIDER = 'postgis2d'`` to the
+  ``settings.py`` file.
+
+* If there are too many nodes to be displayed with usable performance, the
+  number of returned nodes can be limited. This can be done by setting
+  ``NODE_LIST_MAXIMUM_COUNT = <number>`` in the ``settings.py`` file to a
+  maximum number of nodes to be queried (e.g. 20000).
+
 Making CATMAID available through SSL
 ------------------------------------
 

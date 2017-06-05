@@ -160,9 +160,16 @@
     var requests = this._loading[url];
     delete this._loading[url];
 
-    if (!this._counts.hasOwnProperty(url) && PIXI.utils.TextureCache.hasOwnProperty(url)) {
-      this._counts[url] = 0;
-      this._markUnused(url);
+    if (PIXI.utils.TextureCache.hasOwnProperty(url)) {
+      if (!resource.valid) {
+        // If there was an error, remove texture from Pixi's cache.
+        if (resource.texture) {
+          resource.texture.destroy(true);
+        }
+      } else if (!this._counts.hasOwnProperty(url)) {
+        this._counts[url] = 0;
+        this._markUnused(url);
+      }
     }
 
     // Notify any requests for this resource of its completion.

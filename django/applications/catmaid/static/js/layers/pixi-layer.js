@@ -161,11 +161,9 @@
     delete this._loading[url];
 
     if (PIXI.utils.TextureCache.hasOwnProperty(url)) {
-      if (!resource.valid) {
+      if (resource.texture && !resource.texture.valid) {
         // If there was an error, remove texture from Pixi's cache.
-        if (resource.texture) {
-          resource.texture.destroy(true);
-        }
+        resource.texture.destroy(true);
       } else if (!this._counts.hasOwnProperty(url)) {
         this._counts[url] = 0;
         this._markUnused(url);

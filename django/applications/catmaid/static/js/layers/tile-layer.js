@@ -714,6 +714,9 @@
         mirror.tile_height, false);
     var tileSrcType = dialog.appendField("Tile source type",
         "customMirrorTileSrcType", mirror.tile_source_type, false);
+    var changeMirrorIfNoDataCb = dialog.appendCheckbox("Change mirror on inaccessible data",
+        "change-mirror-if-no-data", false, "If this is selected, a different mirror is " +
+        "selected automatically, if the custom mirror is unreachable");
 
     var messageContainer = dialog.appendHTML("Depending of the configuration " +
       "this mirror, you maybe have to add a SSL certificate exception. To do this, " +
@@ -757,11 +760,17 @@
 
     var self = this;
     dialog.onOK = function() {
+      self.changeMirrorIfNoData = changeMirrorIfNoDataCb.checked;
       var customMirrorData = getMirrorData();
       var newMirrorIndex = self.stack.addMirror(customMirrorData);
       self.switchToMirror(newMirrorIndex);
       localStorage.setItem(self.customMirrorStorageName,
           JSON.stringify(customMirrorData));
+
+      // Update layer control UI to reflect settings changes.
+      if (self.stackViewer && self.stackViewer.layerControl) {
+        self.layerControl.refresh();
+      }
     };
 
     dialog.show(500, 'auto');

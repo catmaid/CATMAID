@@ -50,6 +50,11 @@ Miscellaneous:
 
 - URL-to-view links now allow selected connector nodes.
 
+- Adding a custom mirror will now by default disable automatic mirror switching
+  of the respective tile layer. Custom mirrors often come only with a subset of
+  the data, which currently triggers a mirror switch by default if some tile is
+  not accessible.
+
 
 ### Bug fixes
 

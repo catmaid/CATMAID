@@ -28,7 +28,7 @@
         maxHeight: 600,
         modal: true,
         buttons: {
-          "Refreseh view": function() {
+          "Refresh view": function() {
             $(this).dialog("destroy");
             CATMAID.tools.callIfFn(self.refresh);
           },

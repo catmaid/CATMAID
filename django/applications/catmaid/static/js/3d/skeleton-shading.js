@@ -515,6 +515,31 @@
         return node_weights;
       }
     },
+    'axon-and-dendrite': {
+      prepare: initAxons,
+      weights: function(skeleton, options) {
+        var node_weights = {};
+        if (!skeleton.axon) {
+          // Not computable
+          return node_weights;
+        }
+        var up = 1,
+            down = 0.5;
+        if (options.invert_shading) {
+          up = 0.5;
+          down = 0;
+        }
+        var vs = skeleton.geometry['neurite'].vertices;
+        var axon_nodes = skeleton.axon.edges;
+        for (var i=0; i<vs.length; i+=2) {
+          var node_id = vs[i].node_id;
+          node_weights[node_id] = axon_nodes[node_id] ? down : up;
+        }
+        // Handle root
+        node_weights[skeleton.axon.root] = axon_nodes[node_id] ? down : up;
+        return node_weights;
+      }
+    },
     'downstream-of-tag': {
       weights: function(skeleton, options) {
         var arbor = skeleton.createArbor();

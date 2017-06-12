@@ -471,6 +471,7 @@ var WindowMaker = new function()
      ['near_active_node', 'Near active node'],
      ['near_active_node_z_project', 'Near active node (Z only)'],
      ['near_active_node_z_camera', 'Near active node (camera plane)'],
+     ['axon-and-dendrite', 'Axon and dendrite'],
      ['synapse-free', 'Synapse-free chunks'],
      ['downstream_amount', 'Downstream cable'],
      ['betweenness_centrality', 'Betweenness centrality'],

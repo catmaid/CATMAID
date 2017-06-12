@@ -7,6 +7,20 @@
 
 ### Features and enhancements
 
+3D Viewer:
+
+- New skeleton shading modes:
+  * "Axon and dendrite": like the coloring mode "Axon and dendrite", but using
+	  shading like in the "Split at active node" mode.
+  * "Single Strahler number": color branches of a specific Strahler number
+	  in full color, and darken everything else. The Strahler number is specified
+		in the tab named "Shading parameters".
+  * "Strahler threshold": color branches of a Strahler number equal or higher
+    than the number specifed in the Stahler number field ("Shading paramters"
+		tab) in full color, darken all others. When inverted, show in full color
+		branches with a Strahler number strictly lower than the specified one.
+
+
 Review widget:
 
 - Large neurons are handled better, rendering tables with many segments is

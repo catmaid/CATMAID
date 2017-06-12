@@ -447,7 +447,7 @@
 
         if (!skeleton.axon) {
           // Not computable
-          CATMAID.warning("Shading 'dendritic-backbone' not computable for skeleton ID #" +
+          CATMAID.warn("Shading 'dendritic-backbone' not computable for skeleton ID #" +
           skeleton.id + ", neuron named: " + CATMAID.NeuronNameService.getInstance().getName(skeleton.id) +
           ". The axon is missing.");
         } else {

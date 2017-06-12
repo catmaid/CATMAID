@@ -882,7 +882,7 @@
     this.animation_history_include_merges = true;
     this.animation_history_empy_bout_length = 10;
     this.animation_history_reset_after_stop = false;
-    this.strahler_cut = 2; // to approximate twigs
+    this.strahler_cut = 2;
     this.use_native_resolution = true;
     this.interpolate_sections = false;
     this.interpolated_sections = [];
@@ -6166,17 +6166,27 @@
     }
   };
 
+  /** @param shading_method A string with the name of the shading method (e.g. "dendritic-backbone") or an array of such strings.
+   */
   WebGLApplication.prototype.updateShadingParameter = function(param, value, shading_method) {
     if (!this.options.hasOwnProperty(param)) {
       console.log("Invalid options parameter: ", param);
       return;
     }
+
+    if (shading_method.constructor === Array) {
+      for (var i=0; i<shading_method.length; ++i) {
+        this.updateShadingParameter(param, value, shading_method[i]);
+      }
+      return;
+    }
+
     if (shading_method === 'downstream-of-tag') {
       this.options[param] = value;
     } else {
       // Numerical only
       value = this._validate(value, "Invalid value");
-      if (!value || value === this.options[param]) return;
+      if (!value) return;
       this.options[param] = value;
     }
     if (shading_method === this.options.shading_method) {

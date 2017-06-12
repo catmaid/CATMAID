@@ -491,6 +491,18 @@
         return node_weights;
       }
     },
+    'single-strahler-number': {
+      weights: function(skeleton, options) {
+        var arbor = skeleton.createArbor();
+        var strahler = arbor.strahlerAnalysis();
+        var node_weights = {};
+        var single = Number(options.strahler_cut);
+        arbor.nodesArray().forEach(function(node) {
+          this[node] = strahler[node] === single ? 1 : 0;
+        }, node_weights);
+        return node_weights;
+      }
+    },
     'downstream-of-tag': {
       weights: function(skeleton, options) {
         var arbor = skeleton.createArbor();

@@ -14,7 +14,7 @@
   $.extend(NotificationsTable.prototype, new InstanceRegistry());
 
   NotificationsTable.prototype.getName = function() {
-    return "Notificationo Table " + this.widgetID;
+    return "Notification Table " + this.widgetID;
   };
 
   NotificationsTable.prototype.destroy = function() {

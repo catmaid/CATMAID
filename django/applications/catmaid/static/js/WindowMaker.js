@@ -483,6 +483,7 @@ var WindowMaker = new function()
      ['partitions', 'Principal branch length'],
      ['strahler', 'Strahler analysis'],
      ['single-strahler-number', 'Single Strahler number'],
+     ['strahler-threshold', 'Strahler threshold'],
      ['downstream-of-tag', 'Downstream of tag'],
      ['sampler-domains', 'Reconstrucion sampler domains'],
      ['sampler-intervals', 'Reconstrucion sampler intervals']
@@ -831,7 +832,7 @@ var WindowMaker = new function()
             WA.updateActiveNodeNeighborhoodRadius(this.value); }, 6],
           ['Min. synapse-free cable', o.min_synapse_free_cable, ' nm', function() {
             WA.updateShadingParameter('min_synapse_free_cable', this.value, 'synapse-free'); }, 6],
-          ['Strahler number', o.strahler_cut, '', function() { WA.updateShadingParameter('strahler_cut', this.value, ['dendritic-backbone', 'single-strahler-number']); }, 4],
+          ['Strahler number', o.strahler_cut, '', function() { WA.updateShadingParameter('strahler_cut', this.value, ['dendritic-backbone', 'single-strahler-number', 'strahler-threshold']); }, 4],
           ['Tag (regex):', o.tag_regex, '', function() { WA.updateShadingParameter('tag_regex', this.value, 'downstream-of-tag'); }, 4]
         ]);
 

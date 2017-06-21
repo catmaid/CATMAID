@@ -2401,9 +2401,15 @@
     }
 
     if (options.show_zplane) {
+      // Try to get active mirror from active tile layer
+      var mirrorIndex = 0;
+      var tileLayer = project.focusedStackViewer.getLayers().get('TileLayer');
+      if (tileLayer) {
+        mirrorIndex = parseInt(tileLayer.mirrorIndex, 10);
+      }
       this.createZPlane(space, project.focusedStackViewer,
           options.zplane_texture ? options.zplane_zoomlevel : null,
-          options.zplane_opacity);
+          mirrorIndex, options.zplane_opacity);
     } else {
       if (this.zplane) space.scene.remove(this.zplane);
       this.zplane = null;
@@ -2576,17 +2582,19 @@
    *                                   image tile texture. If set to "max", the
    *                                   stack's maximum zoom level is used. If
    *                                   null/undefined, no texture will be used.
+   * @param {Number}  textureMirrorIdx Mirror index to use for textures.
    * @param {Number}  opacity          A value in the range 0-1 representing the
    *                                   opacity of the z plane.
    */
   WebGLApplication.prototype.Space.prototype.StaticContent.prototype.createZPlane =
-      function(space, stackViewer, textureZoomLevel, opacity) {
+      function(space, stackViewer, textureZoomLevel, textureMirrorIdx, opacity) {
     if (this.zplane) space.scene.remove(this.zplane);
 
     if ("max" === textureZoomLevel) {
       textureZoomLevel = stackViewer.primaryStack.MAX_S;
     }
-    this.zplaneTileSource = stackViewer.primaryStack.createTileSourceForMirror(0);
+    var mirrorIndex = CATMAID.tools.getDefined(textureMirrorIdx, 0);
+    this.zplaneTileSource = stackViewer.primaryStack.createTileSourceForMirror(mirrorIndex);
     // Create geometry for plane
     var geometry = this.createPlaneGeometry(stackViewer.primaryStack, this.zplaneTileSource, textureZoomLevel);
 

@@ -89,6 +89,8 @@ Miscellaneous:
   next to the nodes they belong to. Before, each tagged node had all selected
   tags shown next to it, regardless of whether it would be tagged with them.
 
+- The textured Z section rendering in the 3D Viewer now respects the mirror
+  setting from the tile layer.
 
 ## 2017.05.17
 

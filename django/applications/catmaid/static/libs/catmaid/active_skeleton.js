@@ -38,7 +38,7 @@
   };
 
   ActiveSkeleton.prototype.getSkeletonColor = function() {
-    return new THREE.Color().setRGB(1, 0, 1);
+    return new THREE.Color(1, 0, 1);
   };
 
   ActiveSkeleton.prototype.hasSkeleton = function(skeleton_id) {
@@ -49,14 +49,14 @@
     var active = SkeletonAnnotations.getActiveSkeletonId();
     if (!active) return null;
     var name = CATMAID.NeuronNameService.getInstance().getName(active);
-    return new CATMAID.SkeletonModel(active, name, new THREE.Color().setRGB(1, 1, 0));
+    return new CATMAID.SkeletonModel(active, name, new THREE.Color(1, 1, 0));
   };
 
   ActiveSkeleton.prototype.getSkeletonModel = function(skeletonId) {
     var active = SkeletonAnnotations.getActiveSkeletonId();
     if (!active || active != skeletonId) return null;
     var name = CATMAID.NeuronNameService.getInstance().getName(active);
-    return new CATMAID.SkeletonModel(active, name, new THREE.Color().setRGB(1, 1, 0));
+    return new CATMAID.SkeletonModel(active, name, new THREE.Color(1, 1, 0));
   };
 
   ActiveSkeleton.prototype.getSelectedSkeletonModels = function() {

@@ -397,7 +397,7 @@
     var models = {};
     if (this.currentSkeletonId) {
       models[this.currentSkeletonId] = new CATMAID.SkeletonModel(
-          this.currentSkeletonId, "", new THREE.Color().setRGB(1, 1, 0));
+          this.currentSkeletonId, "", new THREE.Color(1, 1, 0));
     }
     return models;
   };

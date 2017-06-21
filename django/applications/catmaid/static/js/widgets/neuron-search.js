@@ -344,7 +344,7 @@
   NeuronSearch.prototype.getSkeletonModel = function(skeleton_id, nocheck) {
     if (nocheck || this.hasSkeleton(skeleton_id)) {
       return new CATMAID.SkeletonModel(skeleton_id, "",
-          new THREE.Color().setRGB(1, 1, 0));
+          new THREE.Color(1, 1, 0));
     } else {
       return null;
     }
@@ -356,7 +356,7 @@
       if (e.type === 'neuron') {
         e.skeleton_ids.forEach(function(s) {
           var m = new CATMAID.SkeletonModel(s, e.name,
-              new THREE.Color().setRGB(1, 1, 0));
+              new THREE.Color(1, 1, 0));
           // Set correct selection state for model
           m.selected = self.entity_selection_map[e.id];
           o[s] = m;
@@ -372,7 +372,7 @@
       if (e.type === 'neuron') {
         e.skeleton_ids.forEach(function(s) {
           var m = new CATMAID.SkeletonModel(s, e.name,
-              new THREE.Color().setRGB(1, 1, 0));
+              new THREE.Color(1, 1, 0));
           m.selected = true;
           o[s] = m;
         });

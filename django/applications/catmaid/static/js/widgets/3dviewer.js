@@ -716,7 +716,7 @@
         if (0 === skids.length) return CATMAID.info("No skeletons found");
         var models = {};
         skids.forEach(function(skid) {
-          models[skid] = new CATMAID.SkeletonModel(skid, "", new THREE.Color().setRGB(0.5, 0.5, 0.5));
+          models[skid] = new CATMAID.SkeletonModel(skid, "", new THREE.Color(0.5, 0.5, 0.5));
         });
         WindowMaker.create('selection-table');
         var sel = CATMAID.SelectionTable.prototype.getLastInstance();
@@ -1587,7 +1587,7 @@
     if (skeleton_id in this.space.content.skeletons) {
       return this.space.content.skeletons[skeleton_id].actorColor.clone();
     }
-    return new THREE.Color().setRGB(1, 0, 1);
+    return new THREE.Color(1, 0, 1);
   };
 
   WebGLApplication.prototype.hasSkeleton = function(skeleton_id) {
@@ -4621,9 +4621,9 @@
         weight = undefined === weight? 1.0 : weight * 0.9 + 0.1;
 
         var baseColor = pickColor(vertex);
-        color = new THREE.Color().setRGB(baseColor.r * weight,
-                                             baseColor.g * weight,
-                                             baseColor.b * weight);
+        color = new THREE.Color(baseColor.r * weight,
+                                baseColor.g * weight,
+                                baseColor.b * weight);
 
         seen[node_id] = color;
 
@@ -5030,13 +5030,13 @@
           fnConnectorValue;
 
       if (axon) {
-        var colors = [new THREE.Color().setRGB(0, 1, 0),  // axon: green
-                      new THREE.Color().setRGB(0, 0, 1)]; // dendrite: blue
+        var colors = [new THREE.Color(0, 1, 0),  // axon: green
+                      new THREE.Color(0, 0, 1)]; // dendrite: blue
         fnConnectorValue = function(node_id, connector_id) { return axon.contains(node_id) ? 0 : 1; };
         fnMakeColor = function(value) { return colors[value]; };
       } else {
         // Not computable
-        fnMakeColor = function() { return new THREE.Color().setRGB(0.4, 0.4, 0.4); };
+        fnMakeColor = function() { return new THREE.Color(0.4, 0.4, 0.4); };
         fnConnectorValue = function() { return 0; };
       }
 
@@ -6124,7 +6124,7 @@
 
     var onchange = (function(rgb, alpha, colorChanged, alphaChanged) {
       $('#' + labelId).text(alpha.toFixed(2));
-      var color = new THREE.Color().setRGB(rgb.r, rgb.g, rgb.b);
+      var color = new THREE.Color(rgb.r, rgb.g, rgb.b);
       this.options.meshes_color = '#' + color.getHexString();
       this.options.meshes_opacity = alpha;
     }).bind(this);

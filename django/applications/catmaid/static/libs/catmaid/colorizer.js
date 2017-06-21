@@ -38,7 +38,7 @@
     if (undefined === this.next_color_index) this.next_color_index = 0;
 
     var c = this.COLORS[this.next_color_index % this.COLORS.length];
-    var color = new THREE.Color().setRGB(c[0], c[1], c[2]);
+    var color = new THREE.Color(c[0], c[1], c[2]);
     if (this.next_color_index < this.COLORS.length) {
       this.next_color_index += 1;
       return color;

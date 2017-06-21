@@ -335,7 +335,7 @@
     if (nodes.length > 0) {
       return new THREE.Color(nodes[0].data("color"));
     }
-    return new THREE.Color().setRGB(1, 0, 1);
+    return new THREE.Color(1, 0, 1);
   };
 
   GroupGraph.prototype.updateModels = function(models) {

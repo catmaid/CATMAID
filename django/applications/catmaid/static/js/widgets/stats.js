@@ -202,7 +202,7 @@
                   }
                   var models = skeleton_ids.reduce(function(o, skid) {
                     o[skid] = new CATMAID.SkeletonModel(skid, "",
-                        new THREE.Color().setRGB(1, 1, 0));
+                        new THREE.Color(1, 1, 0));
                     return o;
                   }, {});
                   var widget = WindowMaker.create('selection-table').widget;

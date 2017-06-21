@@ -903,11 +903,11 @@
       colorPicker: function(skeleton) {
         if (isFn(coloring.vertexColorizer)) {
           return coloring.vertexColorizer(skeleton, {
-            unreviewedColor: new THREE.Color().setRGB(0.2, 0.2, 0.2),
-            reviewedColor: new THREE.Color().setRGB(1.0, 0.0, 1.0),
-            axonColor: new THREE.Color().setRGB(0, 1, 0),
-            dendriteColor: new THREE.Color().setRGB(0, 0, 1),
-            notComputableColor: new THREE.Color().setRGB(0.4, 0.4, 0.4)
+            unreviewedColor: new THREE.Color(0.2, 0.2, 0.2),
+            reviewedColor: new THREE.Color(1.0, 0.0, 1.0),
+            axonColor: new THREE.Color(0, 1, 0),
+            dendriteColor: new THREE.Color(0, 0, 1),
+            notComputableColor: new THREE.Color(0.4, 0.4, 0.4)
           });
         } else {
           return function(vertex) {

@@ -1542,7 +1542,7 @@
     } else {
       var models = skeletonIDs.reduce(function(o, skid) {
         o[skid] = new CATMAID.SkeletonModel(skid, "",
-            new THREE.Color().setRGB(1, 1, 0));
+            new THREE.Color(1, 1, 0));
         return o;
       }, {});
       WindowMaker.create('selection-table').widget.append(models);

@@ -83,7 +83,7 @@
         fullName: 'unknown',
         firstName: 'unknown',
         lastName: 'unknown',
-        color: new THREE.Color().setRGB(255, 0, 0),
+        color: new THREE.Color(1, 0, 0),
       };
     }
   };
@@ -123,7 +123,7 @@
         {
           var userData = json[i];
           new User(userData.id, userData.login, userData.full_name,
-              userData.first_name, userData.last_name, new THREE.Color().setRGB(
+              userData.first_name, userData.last_name, new THREE.Color(
                   userData.color[0], userData.color[1], userData.color[2]));
         }
       })

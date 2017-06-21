@@ -1699,7 +1699,7 @@ SkeletonAnnotations.TracingOverlay.prototype.splitSkeleton = function(nodeID) {
       // Make sure we reference the correct node and create a model
       node = self.nodes[nodeId];
       var name = CATMAID.NeuronNameService.getInstance().getName(node.skeleton_id);
-      var model = new CATMAID.SkeletonModel(node.skeleton_id, name, new THREE.Color().setRGB(1, 1, 0));
+      var model = new CATMAID.SkeletonModel(node.skeleton_id, name, new THREE.Color(1, 1, 0));
       /* Create the dialog */
       var dialog = new CATMAID.SplitMergeDialog({
         model1: model,
@@ -1773,7 +1773,7 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeLink = function (from
 
             // A method to use when the to-skeleton has multiple nodes
             var merge_multiple_nodes = function() {
-              var to_color = new THREE.Color().setRGB(1, 0, 1);
+              var to_color = new THREE.Color(1, 0, 1);
               var to_model = new CATMAID.SkeletonModel(
                   to_skid, json.neuron_name, to_color);
               // Extend the display with the newly created line

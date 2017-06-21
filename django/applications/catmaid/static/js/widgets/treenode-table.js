@@ -250,7 +250,7 @@
 
   TreenodeTable.prototype.getSkeletonColor = function(skeleton_id) {
     var model = this.models[skeleton_id];
-    return model ? model.color.clone() : new THREE.Color().setRGB(1, 1, 0);
+    return model ? model.color.clone() : new THREE.Color(1, 1, 0);
   };
 
   TreenodeTable.prototype.getSelectedSkeletonModels = function() {

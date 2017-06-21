@@ -1503,7 +1503,7 @@
     var models = this.get_entities().reduce((function(o, n) {
       n.skeleton_ids.forEach(function(skid) {
         var model = new CATMAID.SkeletonModel(skid, n.name,
-            new THREE.Color().setRGB(1, 1, 0));
+            new THREE.Color(1, 1, 0));
         model.selected = false;
         this[skid] = model;
       }, o);
@@ -1527,7 +1527,7 @@
     return this.get_entities(true).reduce((function(o, n) {
       n.skeleton_ids.forEach(function(skid) {
         var model = new CATMAID.SkeletonModel(skid, n.name,
-            new THREE.Color().setRGB(1, 1, 0));
+            new THREE.Color(1, 1, 0));
         model.selected = true;
         o[skid] = model;
       });
@@ -2362,7 +2362,7 @@
   NeuronNavigator.NeuronNode.prototype.getSkeletonModels = function() {
     return this.skeleton_ids.reduce((function(o, skid) {
       o[skid] = new CATMAID.SkeletonModel(skid, this.neuron_name,
-          new THREE.Color().setRGB(1, 1, 0));
+          new THREE.Color(1, 1, 0));
       return o;
     }).bind(this), {});
   };

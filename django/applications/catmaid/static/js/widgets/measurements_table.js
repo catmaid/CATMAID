@@ -210,7 +210,7 @@
   SkeletonMeasurementsTable.prototype.getSkeletonColor = function(skid) {
       var model = this.models[skid];
       if (model) return model.color;
-      return new THREE.Color().setRGB(1, 0, 1);
+      return new THREE.Color(1, 0, 1);
   };
 
   SkeletonMeasurementsTable.prototype.hasSkeleton = function(skid) {

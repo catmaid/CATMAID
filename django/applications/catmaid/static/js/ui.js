@@ -618,7 +618,10 @@
   CATMAID.UI.normalizeKeyComponents = function(components) {
     var keyValue;
     if (components.shiftKey) {
-      var keyCombo = CATMAID.UI.toKeyCombo(components);
+      var keyCombo = CATMAID.UI.toKeyCombo({
+        key: components.key,
+        shiftKey: components.shiftKey
+      });
       keyValue = CATMAID.UI.keyValueMap.get(keyCombo);
     }
     return {

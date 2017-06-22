@@ -2628,6 +2628,14 @@
     return Math.floor((width * Math.pow(2, -zoom) - 1) / part) + 1;
   };
 
+  // To get arround potential CORS restrictions load tile into image and
+  // then into texture.
+  var loadTile = function() {
+    this.__material.map.needsUpdate = true;
+    this.__material.needsUpdate = true;
+    this.__notify();
+  };
+
   WebGLApplication.prototype.Space.prototype.StaticContent.prototype.updateZPlanePosition = function(space, stackViewer) {
     if (this.zplane) {
       var stack = stackViewer.primaryStack;
@@ -2648,14 +2656,6 @@
       // Also update tile texture
       if (this.zplaneMaterials) {
         var tileSource = this.zplaneTileSource;
-        // To get arround potential CORS restrictions load tile into image and
-        // then into texture.
-        var loadTile = function(texture, material, notify) {
-          material.map = texture;
-          texture.needsUpdate = true;
-          material.needsUpdate = true;
-          notify();
-        };
 
         var counter = this.zplaneMaterials.length;
         var notify = function() {
@@ -2669,10 +2669,25 @@
         var nCols = getNZoomedParts(stack.dimension.x, zoomLevel, tileSource.tileWidth);
         for (var i=0; i<this.zplaneMaterials.length; ++i) {
           var material = this.zplaneMaterials[i];
-          var image = new Image();
-          image.crossOrigin = true;
-          var texture = new THREE.Texture(image);
-          image.onload = loadTile.bind(this, texture, material, notify);
+          var texture = material.map;
+          var image;
+          if (texture) {
+            image = texture.image;
+            // Make sure texture and material are not marked for updated before
+            // images are loaded.
+            texture.needsUpdate = false;
+            material.needsUpdate = false;
+          } else {
+            image = new Image();
+            image.crossOrigin = true;
+            texture = new THREE.Texture(image);
+            image.onload = loadTile;
+            material.map = texture;
+          }
+          // Add some state information to image element to avoid creating a
+          // closure for a new function.
+          image.__material = material;
+          image.__notify = notify;
 
           var slicePixelPosition = [stackViewer.z];
           var col = i % nCols;

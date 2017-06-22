@@ -89,8 +89,11 @@ Miscellaneous:
   next to the nodes they belong to. Before, each tagged node had all selected
   tags shown next to it, regardless of whether it would be tagged with them.
 
-- The textured Z section rendering in the 3D Viewer now respects the mirror
-  setting from the tile layer.
+- 3D viewer: the textured Z section rendering in the 3D Viewer now respects the
+  mirror setting from the tile layer.
+
+- 3D viewer: a memory leak in displaying Z sections with images has been fixed.
+  This allows long continued Z section browsing without crashing.
 
 ## 2017.05.17
 
@@ -232,7 +235,6 @@ Miscellaneous:
   in use.
 
 - Radius creation works now in orthogonal views as expected.
-
 
 ## 2017.04.20
 

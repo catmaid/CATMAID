@@ -1880,6 +1880,11 @@ SkeletonAnnotations.TracingOverlay.prototype.createLink = function (fromid, toid
           connector[group][node.id] = link;
           node.linkConnector(connector.id, link);
           connector.createGraphics();
+
+          // Visibility groups have to be reset to force re-calculation of link
+          // based visibility.
+          connector.updateVisibility(true);
+
           self.redraw();
         })
         .catch(CATMAID.handleError);

@@ -389,7 +389,7 @@
             SkeletonAnnotations.VisibilityGroups.areGroupsVisible(this.getVisibilityGroups());
       };
 
-      this.updateVisibility = function () {
+      this.updateVisibility = function (noCache) {
         if (this.c) {
           var visible = this.isVisible();
           this.c.visible = visible;
@@ -401,7 +401,7 @@
           this.line.visible = this.parent &&
             this.mustDrawLineWith(this.parent) &&
             !this.line.tooShort &&
-            SkeletonAnnotations.VisibilityGroups.areGroupsVisible(this.getVisibilityGroups());
+            SkeletonAnnotations.VisibilityGroups.areGroupsVisible(this.getVisibilityGroups(noCache));
         }
       };
 
@@ -487,8 +487,8 @@
              this.overlayGlobals.skeletonDisplayModels.hasOwnProperty(this.skeleton_id));
       };
 
-      this.getVisibilityGroups = function () {
-        if (this.visibilityGroups) return this.visibilityGroups;
+      this.getVisibilityGroups = function (noCache) {
+        if (this.visibilityGroups && !noCache) return this.visibilityGroups;
 
         this.visibilityGroups = [];
 
@@ -1059,8 +1059,8 @@
       this.linkGroups = ['pregroup', 'postgroup', 'gjgroup', 'undirgroup'];
       this.lineGroups = ['preLines', 'postLines', 'gjLines', 'undirLines'];
 
-      this.getVisibilityGroups = function () {
-        if (this.visibilityGroups) return this.visibilityGroups;
+      this.getVisibilityGroups = function (noCache) {
+        if (this.visibilityGroups && !noCache) return this.visibilityGroups;
 
         this.visibilityGroups = [];
 
@@ -1077,7 +1077,7 @@
         // if *any* linked treenode is in the override group.
         var links = this.getLinks();
         links.forEach(function (link) {
-          link.treenode.getVisibilityGroups().forEach(function (groupID) {
+          link.treenode.getVisibilityGroups(noCache).forEach(function (groupID) {
             groupCounts[groupID]++;
           });
         });
@@ -1222,9 +1222,9 @@
         }
       };
 
-      this.updateVisibility = function () {
+      this.updateVisibility = function (noCache) {
         if (this.shouldDisplay() && this.c) {
-          this.c.visible = SkeletonAnnotations.VisibilityGroups.areGroupsVisible(this.getVisibilityGroups());
+          this.c.visible = SkeletonAnnotations.VisibilityGroups.areGroupsVisible(this.getVisibilityGroups(noCache));
         }
 
         if (this.preLines)
@@ -1838,8 +1838,8 @@
         this.line.visible = this.visibility;
       };
 
-      this.updateVisibility = function (connector) {
-        this.visibility = SkeletonAnnotations.VisibilityGroups.areGroupsVisible(connector.getVisibilityGroups());
+      this.updateVisibility = function (connector, noCache) {
+        this.visibility = SkeletonAnnotations.VisibilityGroups.areGroupsVisible(connector.getVisibilityGroups(noCache));
         this.show();
       };
 

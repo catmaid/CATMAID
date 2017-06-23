@@ -72,6 +72,8 @@ Miscellaneous:
   the data, which currently triggers a mirror switch by default if some tile is
   not accessible.
 
+- The tracing layer is now faster with creating skeleton nodes, connectors and
+  partner nodes by avoiding unneeded node updates.
 
 ### Bug fixes
 

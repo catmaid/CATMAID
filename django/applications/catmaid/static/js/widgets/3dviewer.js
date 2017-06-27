@@ -3905,7 +3905,10 @@
         obj.alpha = 1.0;
       } else {
         originalMaterials.set(obj, obj.material);
-        obj.material = new THREE.MeshBasicMaterial({color: color});
+        obj.material = new THREE.MeshBasicMaterial({
+          color: color,
+          side: THREE.DoubleSide
+        });
       }
     });
 

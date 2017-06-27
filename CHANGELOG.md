@@ -98,6 +98,9 @@ Miscellaneous:
 - 3D viewer: a memory leak in displaying Z sections with images has been fixed.
   This allows long continued Z section browsing without crashing.
 
+- 3D viewer: the accurateness of object picking on neurons and location picking
+  on z panes has been improved.
+
 ## 2017.05.17
 
 Contributors: Andrew Champion, Tom Kazimiers

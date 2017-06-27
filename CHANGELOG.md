@@ -20,6 +20,9 @@
 		tab) in full color, darken all others. When inverted, show in full color
 		branches with a Strahler number strictly lower than the specified one.
 
+- The Z plane display now supports stack viewer layers. If multiple layers are
+  shown in a stack viewer, its Z plane will render all visible layers on top of
+  each other.
 
 Review widget:
 
@@ -94,6 +97,9 @@ Miscellaneous:
 
 - 3D viewer: a memory leak in displaying Z sections with images has been fixed.
   This allows long continued Z section browsing without crashing.
+
+- 3D viewer: the accurateness of object picking on neurons and location picking
+  on z panes has been improved.
 
 ## 2017.05.17
 

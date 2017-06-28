@@ -1761,13 +1761,26 @@ SkeletonAnnotations.TracingOverlay.prototype.createTreenodeLink = function (from
             // The function used to instruct the backend to do the merge
             var merge = function(annotation_set, fromId, toId) {
               self.submit.then(function() {
+                // Suspend tracing layer during join to avoid unnecessary
+                // reloads.
+                var originalSuspended = self.suspended;
+                self.suspended = true;
+                // Join skeletons
                 var command = new CATMAID.JoinSkeletonsCommand(self.state, project.id,
                     nodes[fromId], nodes[toId], annotation_set);
                 CATMAID.commands.execute(command)
+                  .catch(CATMAID.handleError)
                   .then(function(result) {
-                    // Wait for updates to finish before updating the active node
-                    self.submit.then(self.selectNode.bind(self, result.toid));
-                  }).catch(CATMAID.handleError);
+                    // Activate tracing layer again and update the view
+                    // manually.
+                    self.suspended = originalSuspended;
+                    if (result) {
+                      self.updateNodes(function() {
+                        // Wait for updates to finish before updating the active node
+                        self.submit.then(self.selectNode.bind(self, result.toid));
+                      });
+                    }
+                  });
               }, CATMAID.handleError, true);
             };
 

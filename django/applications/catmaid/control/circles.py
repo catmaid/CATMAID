@@ -5,7 +5,7 @@ import json
 import six
 import networkx as nx
 
-from itertools import combinations
+from itertools import combinations, chain
 from collections import defaultdict
 from functools import partial
 import math
@@ -207,7 +207,7 @@ def find_directed_path_skeletons(request, project_id=None):
               int(relation1),
               int(relation2),
               float(min_synapses)))
-        return cursor.fetchall()
+        return chain.from_iterable(cursor.fetchall())
 
     def fetch_neighborhood(cursor, skids, n_hops, relation1, relation2, min_synapses):
         """ Return the set of skids up to n_hops away from the given skids, inclusive. """

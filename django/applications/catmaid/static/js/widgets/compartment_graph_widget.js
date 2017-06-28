@@ -1919,7 +1919,7 @@
       requestQueue.register(django_url + project.id + "/graph/directedpaths", "POST",
           {sources: source_skids,
            targets: target_skids,
-           path_length: n_hops + 1,
+           n_hops: n_hops,
            min_synapses: min_synapses},
            function(status, text) {
              if (200 !== status) return;
@@ -1932,10 +1932,7 @@
 
     var addSkids = function(json) {
       for (var i=0; i<json.length; ++i) {
-        var path = json[i];
-        for (var j=0; j<path.length; ++j) {
-          new_skids[path[j]] = true;
-        }
+        new_skids[json[i]] = true;
       }
     };
 

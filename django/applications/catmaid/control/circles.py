@@ -8,6 +8,7 @@ import networkx as nx
 from itertools import combinations
 from collections import defaultdict
 from functools import partial
+import math
 
 from django.db import connection
 from django.http import HttpResponse
@@ -90,6 +91,7 @@ def circles_of_hell(request, project_id=None):
     skeleton_ids = tuple(all_circles - first_circle)
     return HttpResponse(json.dumps([skeleton_ids, _neuronnames(skeleton_ids, project_id)]))
 
+
 @requires_user_role(UserRole.Browse)
 def find_directed_paths(request, project_id=None):
     """ Given a set of two or more skeleton IDs, find directed paths of connected neurons between them, for a maximum inner path length as given (i.e. origin and destination not counted). A directed path means that all edges are of the same kind, e.g. presynaptic_to. """
@@ -165,4 +167,88 @@ def find_directed_paths(request, project_id=None):
                         all_paths.append(path)
 
     return HttpResponse(json.dumps(all_paths))
+
+
+@requires_user_role(UserRole.Browse)
+def find_directed_path_skeletons(request, project_id=None):
+    """ Given a set of two or more skeleton Ids, find directed paths of connected neurons between them, for a maximum inner path length as given (i.e. origin and destination not counted), and return the nodes of those paths, including the provided source and target nodes.
+        Conceptually identical to find_directed_paths but far more performant. """
+
+    origin_skids = set(int(v) for k,v in six.iteritems(request.POST) if k.startswith('sources['))
+    target_skids = set(int(v) for k,v in six.iteritems(request.POST) if k.startswith('targets['))
+
+    if len(origin_skids) < 1 or len(target_skids) < 1:
+        raise Exception('Need at least 1 skeleton IDs for both sources and targets to find directed paths!')
+
+    number_of_hops = int(request.POST.get('n_hops', 2))
+    min_synapses = int(request.POST.get('min_synapses', -1))
+    if -1 == min_synapses:
+        min_synapses = float('inf')
+
+    cursor = connection.cursor()
+    relations = _relations(cursor, project_id)
+
+    def fetch_adjacent(cursor, skids, relation1, relation2, min_synapses):
+        """ Return the list of skids one hop away from the given skids. """
+        cursor.execute("""
+        SELECT tc2.skeleton_id
+        FROM treenode_connector tc1,
+             treenode_connector tc2
+        WHERE tc1.project_id = %s
+          AND tc1.skeleton_id in (%s)
+          AND tc1.connector_id = tc2.connector_id
+          AND tc1.skeleton_id != tc2.skeleton_id
+          AND tc1.relation_id = %s
+          AND tc2.relation_id = %s
+        GROUP BY tc2.skeleton_id
+        HAVING count(*) >= %s
+        """ % (int(project_id),
+              ','.join(str(int(skid)) for skid in skids),
+              int(relation1),
+              int(relation2),
+              float(min_synapses)))
+        return cursor.fetchall()
+
+    def fetch_neighborhood(cursor, skids, n_hops, relation1, relation2, min_synapses):
+        """ Return the set of skids up to n_hops away from the given skids, inclusive. """
+        front = set(skids)
+        neighborhood = front
+
+        while n_hops > 0 and front:
+            n_hops -= 1
+            next_front = set(fetch_adjacent(cursor, front, relation1, relation2, min_synapses))
+            front = next_front - neighborhood # remove those already in the neighborhood
+            neighborhood = neighborhood.union(next_front)
+
+        return neighborhood
+
+    # From here on, code contributed by Casey Schneider-Mizell
+
+    # Heuristic to try to grow less the larger group
+    if len( origin_skids ) < len( target_skids ):
+        origin_hops = int( math.ceil(number_of_hops/2.0) )
+        target_hops = int( math.floor(number_of_hops/2.0) )
+    else:
+        origin_hops = int( math.floor(number_of_hops/2.0) )
+        target_hops = int( math.ceil(number_of_hops/2.0) )
+
+
+    # From origin ids, only expand postsynaptically.
+    origin_neighborhood = fetch_neighborhood(cursor,
+                                             origin_skids,
+                                             origin_hops,
+                                             relations['presynaptic_to'],
+                                             relations['postsynaptic_to'],
+                                             min_synapses)
+
+    # From target ids, only expand presynaptically.
+    target_neighborhood = fetch_neighborhood(cursor,
+                                             target_skids,
+                                             target_hops,
+                                             relations['postsynaptic_to'],
+                                             relations['presynaptic_to'],
+                                             min_synapses)
+
+    skeleton_ids = tuple( origin_neighborhood.intersection( target_neighborhood ) )
+    return HttpResponse(json.dumps(skeleton_ids))
 

@@ -461,8 +461,8 @@ urlpatterns += [
 
     # Circles
     url(r'^(?P<project_id>\d+)/graph/circlesofhell', circles.circles_of_hell),
-    url(r'^(?P<project_id>\d+)/graph/directedpaths', circles.find_directed_path_skeletons),
-    url(r'^(?P<project_id>\d+)/graph/directedpathskeletons', circles.find_directed_path_skeletons), # Always returns empty?
+    url(r'^(?P<project_id>\d+)/graph/directedpaths', circles.find_directed_paths),
+    url(r'^(?P<project_id>\d+)/graph/dps', circles.find_directed_path_skeletons),
 
     # Review
     url(r'^(?P<project_id>\d+)/user/reviewer-whitelist$', review.reviewer_whitelist),

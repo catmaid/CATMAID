@@ -1916,7 +1916,7 @@
     var new_skids = {};
 
     var findPaths = function(source_skids, target_skids, n_hops, process, continuation) {
-      requestQueue.register(django_url + project.id + "/graph/directedpaths", "POST",
+      requestQueue.register(django_url + project.id + "/graph/dps", "POST",
           {sources: source_skids,
            targets: target_skids,
            n_hops: n_hops,

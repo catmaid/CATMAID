@@ -180,7 +180,7 @@ def find_directed_path_skeletons(request, project_id=None):
     if len(origin_skids) < 1 or len(target_skids) < 1:
         raise Exception('Need at least 1 skeleton IDs for both sources and targets to find directed paths!')
 
-    number_of_hops = int(request.POST.get('n_hops', 2))
+    max_n_hops = int(request.POST.get('n_hops', 2))
     min_synapses = int(request.POST.get('min_synapses', -1))
     if -1 == min_synapses:
         min_synapses = float('inf')
@@ -190,6 +190,7 @@ def find_directed_path_skeletons(request, project_id=None):
 
     def fetch_adjacent(cursor, skids, relation1, relation2, min_synapses):
         """ Return the list of skids one hop away from the given skids. """
+        print "min_synapses:", min_synapses
         cursor.execute("""
         SELECT tc2.skeleton_id
         FROM treenode_connector tc1,
@@ -200,7 +201,7 @@ def find_directed_path_skeletons(request, project_id=None):
           AND tc1.skeleton_id != tc2.skeleton_id
           AND tc1.relation_id = %s
           AND tc2.relation_id = %s
-        GROUP BY tc2.skeleton_id
+        GROUP BY tc1.skeleton_id, tc2.skeleton_id
         HAVING count(*) >= %s
         """ % (int(project_id),
               ','.join(str(int(skid)) for skid in skids),
@@ -209,46 +210,31 @@ def find_directed_path_skeletons(request, project_id=None):
               float(min_synapses)))
         return chain.from_iterable(cursor.fetchall())
 
-    def fetch_neighborhood(cursor, skids, n_hops, relation1, relation2, min_synapses):
-        """ Return the set of skids up to n_hops away from the given skids, inclusive. """
-        front = set(skids)
-        neighborhood = front
+    pre = relations['presynaptic_to']
+    post = relations['postsynaptic_to']
 
-        while n_hops > 0 and front:
-            n_hops -= 1
-            next_front = set(fetch_adjacent(cursor, front, relation1, relation2, min_synapses))
-            front = next_front - neighborhood # remove those already in the neighborhood
-            neighborhood = neighborhood.union(next_front)
+    def fetch_fronts(cursor, skids, max_n_hops, relation1, relation2, min_synapses):
+        fronts = [set(skids)]
+        for n_hops in range(1, max_n_hops):
+            adjacent = set(fetch_adjacent(cursor, fronts[-1], relation1, relation2, min_synapses))
+            for front in fronts:
+                adjacent -= front
+            if len(adjacent) > 0:
+                fronts.append(adjacent)
+            else:
+                break
+        # Fill in the rest
+        while len(fronts) < max_n_hops:
+            fronts.append(set())
+        return fronts
 
-        return neighborhood
+    origin_fronts = fetch_fronts(cursor, origin_skids, max_n_hops, pre, post, min_synapses)
+    target_fronts = fetch_fronts(cursor, target_skids, max_n_hops, post, pre, min_synapses)
 
-    # From here on, code contributed by Casey Schneider-Mizell
+    skeleton_ids = origin_fronts[0].union(target_fronts[0])
 
-    # Heuristic to try to grow less the larger group
-    if len( origin_skids ) < len( target_skids ):
-        origin_hops = int( math.ceil(number_of_hops/2.0) )
-        target_hops = int( math.floor(number_of_hops/2.0) )
-    else:
-        origin_hops = int( math.floor(number_of_hops/2.0) )
-        target_hops = int( math.ceil(number_of_hops/2.0) )
+    for i in range(1, max_n_hops):
+        skeleton_ids = skeleton_ids.union(origin_fronts[i].intersection(target_fronts[max_n_hops -i]))
 
-
-    # From origin ids, only expand postsynaptically.
-    origin_neighborhood = fetch_neighborhood(cursor,
-                                             origin_skids,
-                                             origin_hops,
-                                             relations['presynaptic_to'],
-                                             relations['postsynaptic_to'],
-                                             min_synapses)
-
-    # From target ids, only expand presynaptically.
-    target_neighborhood = fetch_neighborhood(cursor,
-                                             target_skids,
-                                             target_hops,
-                                             relations['postsynaptic_to'],
-                                             relations['presynaptic_to'],
-                                             min_synapses)
-
-    skeleton_ids = tuple( origin_neighborhood.intersection( target_neighborhood ) )
-    return HttpResponse(json.dumps(skeleton_ids))
+    return HttpResponse(json.dumps(tuple(skeleton_ids)))
 

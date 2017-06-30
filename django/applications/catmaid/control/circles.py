@@ -190,7 +190,6 @@ def find_directed_path_skeletons(request, project_id=None):
 
     def fetch_adjacent(cursor, skids, relation1, relation2, min_synapses):
         """ Return the list of skids one hop away from the given skids. """
-        print "min_synapses:", min_synapses
         cursor.execute("""
         SELECT tc2.skeleton_id
         FROM treenode_connector tc1,

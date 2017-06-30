@@ -1,4 +1,4 @@
-Installation of the CELERY Task Queue
+Installation of the Celery task queue
 =====================================
 
 Some tasks of CATMAID (e.g. cropping) are done in the background.

@@ -337,6 +337,13 @@
       // Forget the current stack viewer
       self.activeStackViewer = null;
 
+      // Neurons from the closed project shouldn't need a front-end name
+      // anymore.
+      CATMAID.NeuronNameService.getInstance().clear();
+
+      // Forget the active node
+      SkeletonAnnotations.atn.set(null);
+
       return;
     };
 

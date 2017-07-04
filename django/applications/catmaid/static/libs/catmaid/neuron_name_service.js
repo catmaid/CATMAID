@@ -358,6 +358,16 @@
         },
 
         /**
+         * Unregister all clients and remove all managed skeletons.
+         */
+        clear: function() {
+          var skeletonIds = Object.keys(managedSkeletons);
+          clients.forEach(function(c) {
+            this.unregister(c, skeletonIds);
+          }, this);
+        },
+
+        /**
          * Tries to let every registered client know that there was an update in the
          * name representation.
          */

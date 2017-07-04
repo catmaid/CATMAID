@@ -9,8 +9,11 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.decorators import login_required
 
-from catmaid.models import Stack, Project, ProjectStack, Message, User
-from catmaid.control.common import id_generator, json_error_response
+from catmaid.models import (Stack, Project, ProjectStack, Message, User,
+        StackMirror)
+from catmaid.control.common import (id_generator, json_error_response,
+        get_request_list)
+from catmaid.control.tile import get_tile_source
 
 try:
     # Python 3
@@ -33,7 +36,7 @@ try:
     # which expects the library to be loaded already. Therefore, it
     # has to be loaded before pgmagick.
     from pgmagick import Blob, Image, ImageList, Geometry, ChannelType, \
-            CompositeOperator as co
+            CompositeOperator as co, ColorRGB
 except ImportError:
     logger.warning("CATMAID was unable to load the pgmagick module. "
         "Cropping will not be available")
@@ -48,28 +51,32 @@ file_extension = "tiff"
 crop_output_path = os.path.join(settings.MEDIA_ROOT,
     settings.MEDIA_CROPPING_SUBDIRECTORY)
 
-class CropJob:
+class CropJob(object):
     """ A small container class to keep information about the cropping
     job to be done. Stack ids can be passed as single integer, a list of
     integers. If no output_path is given, a random one (based on the
     settings) is generated.
     """
-    def __init__(self, user, project_id, stack_ids, x_min, x_max, y_min, y_max,
-                 z_min, z_max, rotation_cw, zoom_level, single_channel=False,
-                 output_path=None):
+    def __init__(self, user, project_id, stack_mirror_ids, x_min,
+            x_max, y_min, y_max, z_min, z_max, rotation_cw, zoom_level,
+            single_channel=False, output_path=None):
         self.user = user
         self.project_id = int(project_id)
         self.project = get_object_or_404(Project, pk=project_id)
         # Allow a single ID and a list
-        if isinstance(stack_ids, int):
-            self.stack_ids = [stack_ids]
+        if isinstance(stack_mirror_ids, int):
+            self.stack_mirror_ids= [stack_mirror_ids]
         else:
-            self.stack_ids = stack_ids
-        self.stacks = []
-        for sid in self.stack_ids:
-            self.stacks.append( get_object_or_404(Stack, pk=sid) )
+            self.stack_mirror_ids = stack_mirror_ids
+        self.stack_mirrors = []
+        self.stack_tile_sources = {}
+        for sid in self.stack_mirror_ids:
+            stack_mirror = get_object_or_404(StackMirror, pk=sid)
+            self.stack_mirrors.append(stack_mirror)
+            tile_source = get_tile_source(stack_mirror.tile_source_type)
+            self.stack_tile_sources[stack_mirror.stack.id] = tile_source
         # The reference stack is used to obtain e.g. resolution information
-        self.ref_stack = self.stacks[0]
+        self.ref_stack = self.stack_mirrors[0].stack
         self.x_min = float(x_min)
         self.x_max = float(x_max)
         self.y_min = float(y_min)
@@ -85,91 +92,14 @@ class CropJob:
             output_path = os.path.join(crop_output_path, file_name)
         self.single_channel = single_channel
         self.output_path = output_path
-        # State that extra initialization is needed
-        self.needs_initialization = True
 
-    def initialize(self):
-        """ This separate initialization method sets up methods to get the path
-        to the tiles of the stacks used. It needs to be called from the
-        process that actually does the cropping (e.g. a celery task), because
-        serializing function pointers isn't allowed. This would be needed if
-        this was done in the constructor of the job.
-        """
-        # Setup tile source specific path creation functions for each stack
-        self.stack_specific_path_getters = {}
-        for s in self.stacks:
-            if s.tile_source_type == 1:
-                getter = self.get_tile_path_1
-            elif s.tile_source_type == 4:
-                getter = self.get_tile_path_4
-            elif s.tile_source_type == 5:
-                getter = self.get_tile_path_5
-            else:
-                getter = self.get_tile_path_unavailable
-            self.stack_specific_path_getters[s.id] = getter
-        # Attach actual path getter
-        self.get_tile_path = self.get_tile_path_initialized
-        # Initialization is done
-        self.needs_initialization = False
-
-    def get_tile_path(self, mirror, tile_coords):
-        """ This method returns the path of a tile from a specific stack on a
-        particular coordinate. It needs initialization where it will be replaced
-        by the actual getter that is aware of the available tile source types.
-        """
-        raise StandardError("The crop job in used hasn't been initialized.")
-
-    def get_tile_path_initialized(self, mirror, tile_coords):
-        """ This method will be used when get_tile_path is called after the crop
+    def get_tile_path(self, stack, mirror, tile_coords):
+        """ This method will be used when get_tile_path is called after the
         job has been initialized.
         """
-        return self.stack_specific_path_getters[stack.id](mirror, tile_coords)
+        tile_source = self.stack_tile_sources[stack.id]
+        return tile_source.get_tile_url(mirror, tile_coords, self.zoom_level)
 
-    def get_tile_path_1(self, mirror, tile_coords):
-        """ Creates the full path to the tile at the specified coordinate index
-        for tile source type 1.
-        """
-        path = mirror.image_base
-        n_coords = len(tile_coords)
-        for c in range( 2, n_coords ):
-            # the path is build beginning with the last component
-            coord = tile_coords[n_coords - c + 1]
-            path += str(coord) + "/"
-        path += "%s_%s_%s.%s" % (tile_coords[1], tile_coords[0],
-                self.zoom_level, mirror.file_extension)
-        return path
-
-    def get_tile_path_4(self, mirror, tile_coords):
-        """ Creates the full path to the tile at the specified coordinate index
-        for tile source type 4.
-        """
-        path = mirror.image_base
-        n_coords = len(tile_coords)
-        for c in range( 2, n_coords ):
-            # the path is build beginning with the last component
-            coord = tile_coords[n_coords - c + 1]
-            path += str(coord) + "/"
-        path += "%s/%s_%s.%s" % (self.zoom_level, tile_coords[1],
-                tile_coords[0], mirror.file_extension)
-        return path
-
-    def get_tile_path_5(self, mirror, tile_coords):
-        """ Creates the full path to the tile at the specified coordinate index
-        for tile source type 5.
-        """
-        path = "%s%s/" % (mirror.image_base, self.zoom_level)
-        n_coords = len(tile_coords)
-        for c in range( 2, n_coords ):
-            # the path is build beginning with the last component
-            coord = tile_coords[n_coords - c + 1]
-            path += str(coord) + "/"
-        path += "%s/%s.%s" % (tile_coords[1], tile_coords[0],
-            mirror.file_extension)
-        return path
-
-    def get_tile_path_unavailable(self, mirror, tile_coords):
-        raise StandardError("Tile source %s is currently not supported " \
-                "by cropping module" % mirror.tile_source_type)
 
 class ImageRetrievalError(IOError):
     def __init__(self, path, error):
@@ -224,31 +154,31 @@ class ImagePart:
                                                float(src_width * src_height))
         return image
 
-def to_x_index( x, job, enforce_bounds=True ):
+def to_x_index( x, stack, zoom_level, enforce_bounds=True ):
     """ Converts a real world position to a x pixel position.
     Also, makes sure the value is in bounds.
     """
-    zero_zoom = x / job.ref_stack.resolution.x
+    zero_zoom = x / stack.resolution.x
     if enforce_bounds:
-        zero_zoom = min(max(zero_zoom, 0.0), job.ref_stack.dimension.x - 1.0)
-    return int( zero_zoom / (2**job.zoom_level) + 0.5 )
+        zero_zoom = min(max(zero_zoom, 0.0), stack.dimension.x - 1.0)
+    return int( zero_zoom / (2**zoom_level) + 0.5 )
 
-def to_y_index( y, job, enforce_bounds=True ):
+def to_y_index( y, stack, zoom_level, enforce_bounds=True ):
     """ Converts a real world position to a y pixel position.
     Also, makes sure the value is in bounds.
     """
-    zero_zoom = y / job.ref_stack.resolution.y
+    zero_zoom = y / stack.resolution.y
     if enforce_bounds:
-        zero_zoom = min(max(zero_zoom, 0.0), job.ref_stack.dimension.y - 1.0)
-    return int( zero_zoom / (2**job.zoom_level) + 0.5 )
+        zero_zoom = min(max(zero_zoom, 0.0), stack.dimension.y - 1.0)
+    return int( zero_zoom / (2**zoom_level) + 0.5 )
 
-def to_z_index( z, job, enforce_bounds=True ):
+def to_z_index( z, stack, zoom_level, enforce_bounds=True ):
     """ Converts a real world position to a slice/section number.
     Also, makes sure the value is in bounds.
     """
-    section = z / job.ref_stack.resolution.z + 0.5
+    section = z / stack.resolution.z + 0.5
     if enforce_bounds:
-        section = min(max(section, 0.0), job.ref_stack.dimension.z - 1.0)
+        section = min(max(section, 0.0), stack.dimension.z - 1.0)
     return int( section )
 
 def addMetaData( path, job, result ):
@@ -279,7 +209,7 @@ def addMetaData( path, job, result ):
     # ImageJ=1.45p.images={0}.channels=1.slices=2.hyperstack=true.mode=color.unit=micron.finterval=1.spacing=1.5.loop=false.min=0.0.max=4095.0.
     ij_data = "ImageJ={1}{0}unit={2}{0}".format( newline, ij_version, unit)
     if n_images > 1:
-        n_channels = len(job.stacks)
+        n_channels = len(job.stack_mirrors)
         if n_images % n_channels != 0:
             raise ValueError( "Meta data creation: the number of images " \
                     "modulo the channel count is not zero" )
@@ -305,19 +235,14 @@ def addMetaData( path, job, result ):
     # Re-save the image with GraphicsMagick, otherwise ImageJ won't read the
     # images directly.
     images = ImageList()
-    images.readImages( path )
-    images.writeImages( path )
+    images.readImages( path.encode('ascii', 'ignore') )
+    images.writeImages( path.encode('ascii', 'ignore') )
 
-def extract_substack( job ):
+def extract_substack(job ):
     """ Extracts a sub-stack as specified in the passed job while respecting
     rotation requests. A list of pgmagick images is returned -- one for each
     slice, starting on top.
     """
-
-    # Make sure tile source getters have been initialized on the job
-    if job.needs_initialization:
-        job.initialize()
-
     # Treat rotation requests special
     if abs(job.rotation_cw) < 0.00001:
         # No rotation, create the sub-stack
@@ -395,10 +320,10 @@ def extract_substack( job ):
         crop_y_min = min([crop_p1[1], crop_p2[1], crop_p3[1], crop_p4[1]])
         crop_x_max = max([crop_p1[0], crop_p2[0], crop_p3[0], crop_p4[0]])
         crop_y_max = max([crop_p1[1], crop_p2[1], crop_p3[1], crop_p4[1]])
-        crop_x_min_px = to_x_index(crop_x_min, job, False)
-        crop_y_min_px = to_y_index(crop_y_min, job, False)
-        crop_x_max_px = to_x_index(crop_x_max, job, False)
-        crop_y_max_px = to_y_index(crop_y_max, job, False)
+        crop_x_min_px = to_x_index(crop_x_min, job.ref_stack, job.zoom_level, False)
+        crop_y_min_px = to_y_index(crop_y_min, job.ref_stack, job.zoom_level, False)
+        crop_x_max_px = to_x_index(crop_x_max, job.ref_stack, job.zoom_level, False)
+        crop_y_max_px = to_y_index(crop_y_max, job.ref_stack, job.zoom_level, False)
         crop_width_px = crop_x_max_px - crop_x_min_px
         crop_height_px = crop_y_max_px - crop_y_min_px
         # Crop all images (Geometry: width, height, xOffset, yOffset)
@@ -426,7 +351,8 @@ def extract_substack_no_rotation( job ):
     # wrt. the project. Therefore, a dictionary with bounding box information for
     # each stack is created.
     s_to_bb = {}
-    for stack in job.stacks:
+    for stack_mirror in job.stack_mirrors:
+        stack = stack_mirror.stack
         # Retrieve translation relative to current project
         translation = ProjectStack.objects.get(
                 project_id=job.project_id, stack_id=stack.id).translation
@@ -438,19 +364,19 @@ def extract_substack_no_rotation( job ):
         z_max_t = job.z_max - translation.z
         # Calculate the slice numbers and pixel positions
         # bound to the stack data.
-        px_x_min = to_x_index(x_min_t, job)
-        px_x_max = to_x_index(x_max_t, job)
-        px_y_min = to_y_index(y_min_t, job)
-        px_y_max = to_y_index(y_max_t, job)
-        px_z_min = to_z_index(z_min_t, job)
-        px_z_max = to_z_index(z_max_t, job)
+        px_x_min = to_x_index(x_min_t, stack, job.zoom_level)
+        px_x_max = to_x_index(x_max_t, stack, job.zoom_level)
+        px_y_min = to_y_index(y_min_t, stack, job.zoom_level)
+        px_y_max = to_y_index(y_max_t, stack, job.zoom_level)
+        px_z_min = to_z_index(z_min_t, stack, job.zoom_level)
+        px_z_max = to_z_index(z_max_t, stack, job.zoom_level)
         # Because it might be that the cropping goes over the
         # stack bounds, we need to calculate the unbounded height,
         # with and an offset.
-        px_x_min_nobound = to_x_index(x_min_t, job, False)
-        px_x_max_nobound = to_x_index(x_max_t, job, False)
-        px_y_min_nobound = to_y_index(y_min_t, job, False)
-        px_y_max_nobound = to_y_index(y_max_t, job, False)
+        px_x_min_nobound = to_x_index(x_min_t, stack, job.zoom_level, False)
+        px_x_max_nobound = to_x_index(x_max_t, stack, job.zoom_level, False)
+        px_y_min_nobound = to_y_index(y_min_t, stack, job.zoom_level, False)
+        px_y_max_nobound = to_y_index(y_max_t, stack, job.zoom_level, False)
         width = px_x_max_nobound - px_x_min_nobound
         height = px_y_max_nobound - px_y_min_nobound
         px_x_offset = abs(px_x_min_nobound) if px_x_min_nobound < 0 else 0
@@ -472,8 +398,8 @@ def extract_substack_no_rotation( job ):
         s_to_bb[stack.id] = bb
 
     # Get number of wanted slices
-    px_z_min = to_z_index(job.z_min, job)
-    px_z_max = to_z_index(job.z_max, job)
+    px_z_min = to_z_index(job.z_min, job.ref_stack, job.zoom_level)
+    px_z_max = to_z_index(job.z_max, job.ref_stack, job.zoom_level)
     n_slices = px_z_max + 1 - px_z_min
 
     # The images are generated per slice, so most of the following
@@ -487,8 +413,8 @@ def extract_substack_no_rotation( job ):
     estimated_total_size = 0
     # Iterate over all slices
     for nz in range(n_slices):
-        for stack in job.stacks:
-            mirror = s.stackmirror_set.filter(position=0)[0]
+        for mirror in job.stack_mirrors:
+            stack = mirror.stack
             bb = s_to_bb[stack.id]
             # Shortcut for tile width and height
             tile_width = mirror.tile_width
@@ -524,7 +450,7 @@ def extract_substack_no_rotation( job ):
                         cur_px_y_max = bb.px_y_max - y * tile_height
                     # Create an image part definition
                     z = bb.px_z_min + nz
-                    path = job.get_tile_path(mirror, (x, y, z))
+                    path = job.get_tile_path(stack, mirror, (x, y, z))
                     try:
                         part = ImagePart(path, cur_px_x_min, cur_px_x_max,
                                 cur_px_y_min, cur_px_y_max, x_dst, y_dst)
@@ -560,10 +486,10 @@ def extract_substack_no_rotation( job ):
                 # Therefore, this workaround is used.
                 if not cropped_slice:
                     cropped_slice = Image(image)
-                    cropped_slice.backgroundColor("black")
+                    cropped_slice.backgroundColor(ColorRGB(0,0,0))
                     cropped_slice.erase()
                     # The '!' makes sure the aspect ration is ignored
-                    cropped_slice.scale('%sx%s!' % (bb.width, bb.height))
+                    cropped_slice.scale(Geometry(bb.width, bb.height))
                 # Draw the image onto result image
                 cropped_slice.composite( image, ip.x_dst, ip.y_dst, co.OverCompositeOp )
                 # Delete tile image - it's not needed anymore
@@ -599,7 +525,7 @@ def process_crop_job(job, create_message=True):
     """
     try:
         # Create the sub-stack
-        cropped_stack = extract_substack( job )
+        cropped_stack = extract_substack(job)
 
         # Create tho output image
         outputImage = ImageList()
@@ -611,7 +537,7 @@ def process_crop_job(job, create_message=True):
         error_message = ""
         # Only produce an image if parts of stacks are within the output
         if len( cropped_stack ) > 0:
-            outputImage.writeImages( job.output_path )
+            outputImage.writeImages( job.output_path.encode('ascii', 'ignore') )
             # Add some meta data to the image
             addMetaData( job.output_path, job, cropped_stack )
         else:
@@ -649,14 +575,14 @@ def process_crop_job(job, create_message=True):
             msg.action = ""
         msg.save()
 
-    return None if no_error_occured else error_message
+    return job.output_path if no_error_occured else error_message
 
 def start_asynch_process( job ):
     """ It launches the data extraction and sub-stack building as a seperate process.
     This process uses the addmessage command with manage.py to write a message for the
     user into the data base once the process is done.
     """
-    result = process_crop_job.delay( job )
+    result = process_crop_job.delay(job)
 
     # Create closing response
     closingResponse = HttpResponse(json.dumps(""), content_type="application/json")
@@ -689,12 +615,21 @@ def sanity_check( job ):
     return errors
 
 @login_required
-def crop(request, project_id=None, stack_ids=None, x_min=None, x_max=None,
-        y_min=None, y_max=None, z_min=None, z_max=None, zoom_level=None,
-        single_channel=None):
+def crop(request, project_id=None):
     """ Crops out the specified region of the stack. The region is expected to
     be given in terms of real world units (e.g. nm).
     """
+    stack_ids = get_request_list(request.POST, "stack_ids", [], int)
+    x_min = float(request.POST['min_x'])
+    y_min = float(request.POST['min_y'])
+    z_min = float(request.POST['min_z'])
+    x_max = float(request.POST['max_x'])
+    y_max = float(request.POST['max_y'])
+    z_max = float(request.POST['max_z'])
+    zoom_level = float(request.POST['zoom_level'])
+    single_channel = request.POST['single_channel'] == 'true'
+    rotation_cw = float(request.GET.get('rotationcw', 0.0))
+
     # Make sure tmp dir exists and is writable
     if not os.path.exists( crop_output_path ) or not os.access( crop_output_path, os.W_OK ):
         if request.user.is_superuser:
@@ -705,20 +640,27 @@ def crop(request, project_id=None, stack_ids=None, x_min=None, x_max=None,
                     "isn't set up correctly. Please contact an administrator."
         return json_error_response(err_message)
 
-    # Make a list out of the stack ids
-    string_list = stack_ids.split(",")
-    stack_ids = [int( x ) for x in string_list]
-
-    # Get basic cropping parameters
-    rotation_cw = float(request.GET.get('rotationcw', 0.0))
-
-    # Should an output slice contain all channels of the source tiles
-    # or only a single (the red) one?
-    single_channel = bool(int(single_channel))
+    # Use first reachable stack mirrors
+    stack_mirror_ids = []
+    for sid in stack_ids:
+        stack_mirrors = StackMirror.objects.select_related('stack').filter(stack_id=sid);
+        for sm in stack_mirrors:
+            # If mirror is reachable use it right away
+            tile_source = get_tile_source(sm.tile_source_type)
+            try:
+                req = requests.head(tile_source.get_canaray_url(sm))
+                reachable = req.status_code == 200
+            except :
+                reachable = False
+            if reachable:
+                stack_mirror_ids.append(sm.id)
+                break
+        if not reachable:
+            raise ValueError("Can't find reachable stack mirror for stack {}".format(sid))
 
     # Crate a new cropping job
-    job = CropJob(request.user, project_id, stack_ids, x_min, x_max,
-        y_min, y_max, z_min, z_max, rotation_cw, zoom_level, single_channel)
+    job = CropJob(request.user, project_id, stack_mirror_ids, x_min, x_max,
+            y_min, y_max, z_min, z_max, rotation_cw, zoom_level, single_channel)
 
     # Parameter check
     errors = sanity_check( job )

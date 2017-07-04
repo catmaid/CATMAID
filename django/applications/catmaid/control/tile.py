@@ -9,7 +9,7 @@ import base64
 from django.conf import settings
 from django.http import HttpResponse
 
-from catmaid.models import UserRole
+from catmaid.models import UserRole, TILE_SOURCE_TYPES
 from catmaid.control.common import ConfigurationError
 from catmaid.control.authentication import requires_user_role
 
@@ -108,3 +108,85 @@ def put_tile(request, project_id=None, stack_id=None):
         hfile[hdfpath][y:y+height,x:x+width,z] = image_from_canvas[:,:,0]
 
     return HttpResponse("Image pushed to HDF5.", content_type="plain/text")
+
+
+class TileSource(object):
+
+    def get_canaray_url(self, mirror):
+        """Get the canarary URL for this mirror.
+        """
+        loc = mirror.stack.canary_location
+        col = int(loc.x / mirror.tile_width)
+        row = int(loc.y / mirror.tile_height)
+        return self.get_tile_url(mirror, (col, row, loc.z))
+
+
+class DefaultTileSource(TileSource):
+    """ Creates the full path to the tile at the specified coordinate index for
+    tile source type 1.
+    """
+
+    description = "File-based image stack"
+
+    def get_tile_url(self, mirror, tile_coords, zoom_level=0):
+        path = mirror.image_base
+        n_coords = len(tile_coords)
+        for c in range( 2, n_coords ):
+            # the path is build beginning with the last component
+            coord = tile_coords[n_coords - c + 1]
+            path += str(coord) + "/"
+        path += "%s_%s_%s.%s" % (tile_coords[1], tile_coords[0],
+                zoom_level, mirror.file_extension)
+        return path
+
+
+class BackslashTileSource(TileSource):
+    """ Creates the full path to the tile at the specified coordinate index for
+    tile source type 4.
+    """
+
+    description = "File-based image stack with zoom level directories"
+
+    def get_tile_url(self, mirror, tile_coords, zoom_level=0):
+        path = mirror.image_base
+        n_coords = len(tile_coords)
+        for c in range( 2, n_coords ):
+            # the path is build beginning with the last component
+            coord = tile_coords[n_coords - c + 1]
+            path += str(coord) + "/"
+        path += "%s/%s_%s.%s" % (zoom_level, tile_coords[1],
+                tile_coords[0], mirror.file_extension)
+        return path
+
+
+class LargeDataTileSource(TileSource):
+    """ Creates the full path to the tile at the specified coordinate index
+    for tile source type 5.
+    """
+
+    description = "Directory-based image stack"
+
+    def get_tile_url(self, mirror, tile_coords, zoom_level=0):
+        path = "%s%s/" % (mirror.image_base, zoom_level)
+        n_coords = len(tile_coords)
+        for c in range( 2, n_coords ):
+            # the path is build beginning with the last component
+            coord = tile_coords[n_coords - c + 1]
+            path += str(coord) + "/"
+        path += "%s/%s.%s" % (tile_coords[1], tile_coords[0],
+            mirror.file_extension)
+        return path
+
+
+tile_source_map = {
+    1: DefaultTileSource,
+    4: BackslashTileSource,
+    5: LargeDataTileSource
+}
+
+def get_tile_source(type_id):
+    """Get a tile source instance for a type ID.
+    """
+    if type_id not in tile_source_map:
+        raise ValueError("Tile source type {} is unknown".format(type_id))
+    return tile_source_map[type_id]()

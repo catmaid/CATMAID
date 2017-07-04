@@ -24,19 +24,17 @@
    */
   CATMAID.crop = function(projectId, stackIds, minX, minY, minZ, maxX, maxY,
       maxZ, zoomLevel, rotationZ, rgbStacks) {
-
-    var stacks = stackIds.join(',');
-    var singleChannel = rgbStacks ? 0 : 1;
-
-    var url = django_url + projectId + '/stack/' + stacks + '/crop/' +
-        minX + "," + maxX + "/" + minY + "," + maxY + "/" +
-        minZ + "," + maxZ + '/' + zoomLevel + '/' + singleChannel + '/';
-
-    var data = {'rotationcw': rotationZ ? rotationZ : 0};
-
-    return new Promise(function(resolve, reject) {
-      requestQueue.register(url, 'GET', data,
-          CATMAID.jsonResponseHandler(resolve, reject));
+    return CATMAID.fetch(projectId + '/crop', 'POST', {
+      stack_ids: stackIds,
+      min_x: minX,
+      min_y: minY,
+      min_z: minZ,
+      max_x: maxX,
+      max_y: maxY,
+      max_z: maxZ,
+      zoom_level: zoomLevel,
+      single_channel: !rgbStacks,
+      rotationcw: rotationZ ? rotationZ : 0
     });
   };
 

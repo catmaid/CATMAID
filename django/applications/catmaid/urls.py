@@ -311,7 +311,7 @@ urlpatterns += [
 
 # Cropping
 urlpatterns += [
-    url(r'^(?P<project_id>\d+)/stack/(?P<stack_ids>%s)/crop/(?P<x_min>%s),(?P<x_max>%s)/(?P<y_min>%s),(?P<y_max>%s)/(?P<z_min>%s),(?P<z_max>%s)/(?P<zoom_level>\d+)/(?P<single_channel>[0|1])/$' % (intlist, num, num, num, num, num, num), cropping.crop),
+    url(r'^(?P<project_id>\d+)/crop', cropping.crop),
     url(r'^crop/download/(?P<file_path>.*)/$', cropping.download_crop)
 ]
 

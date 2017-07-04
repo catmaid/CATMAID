@@ -336,22 +336,24 @@
       // call register of super class (updates also stack member)
       CroppingTool.superproto.register.call( self, parentStackViewer );
 
-      // initialize the stacks we offer to crop
-      CATMAID.Stack.list(project.id, true)
-        .then(function(stacks) {
-          self.stacks_to_crop = [];
-          $.each(stacks, function(index, value) {
-            // By default, mark only the current stack to be cropped
-            self.stacks_to_crop.push(
-              {
-                data : value,
-                marked : ( value.id == self.stackViewer.primaryStack.id )
-              });
-           });
+      // For now, present available stacks in order that individual stack
+      // viewers are set to.
+      var tileLayers = project.focusedStackViewer.getOrderedLayersOfType(CATMAID.TileLayer);
+      var stacks = tileLayers.map(function(l) {
+        return l.stack;
+      });
 
-          // initialize the stacks menu
-          self.updateStacksMenu();
-        }).catch(CATMAID.handleError);
+      // initialize the stacks we offer to crop
+      self.stacks_to_crop = stacks.map(function(stack) {
+        // By default, mark only the current stack to be cropped
+        return {
+          data : stack,
+          marked : ( stack.id == this.primaryStack.id )
+        };
+       }, self.stackViewer);
+
+      // initialize the stacks menu
+      self.updateStacksMenu();
 
       document.getElementById( "edit_button_crop" ).className = "button_active";
 

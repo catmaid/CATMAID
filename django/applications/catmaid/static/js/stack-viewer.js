@@ -709,6 +709,19 @@
   };
 
   /**
+   * Return an ordered array of layers which are instances of the given type.
+   *
+   * @param type
+   */
+  StackViewer.prototype.getOrderedLayersOfType = function(type) {
+    return this._layerOrder.map(function(key) {
+      return this.get(key);
+    }, this.getLayers()).filter(function(layer) {
+      return layer instanceof type;
+    });
+  };
+
+  /**
    * Look up a layer's key using the layer itself.
    *
    * @param  {Object}  needle The layer object.

@@ -4,6 +4,7 @@
 
 - Prepared statements can now also be used together with connection pooling.
 
+- A virtualenv update is required.
 
 ### Features and enhancements
 
@@ -102,6 +103,9 @@ Miscellaneous:
 
 - 3D viewer: the accurateness of object picking on neurons and location picking
   on z panes has been improved.
+
+- Cropping image data works again.
+
 
 ## 2017.05.17
 

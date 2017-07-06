@@ -313,9 +313,10 @@ var requestQueue = new RequestQueue();
   /**
    * Check if the passed in response information seems valid and without errors.
    */
-  CATMAID.validateResponse = function(status, text, xml) {
+  CATMAID.validateResponse = function(status, text, xml, responseType) {
+    var isTextResponse = !responseType || responseType === '' || responseType === 'text';
     if (status >= 200 && status <= 204 &&
-        (typeof text === 'string' || text instanceof String)) {
+        (!isTextResponse || typeof text === 'string' || text instanceof String)) {
       return text;
     } else {
       throw new CATMAID.Error("The server returned an unexpected status: " + status);
@@ -369,8 +370,10 @@ var requestQueue = new RequestQueue();
    *                          refer to with replace.
    * @param {Boolean} replace (Optional) If truthy, a request with the same ID
    *                          is replaced by this one.
+   * @param {String}  responseType (Optional) An expected response type for the
+   *                               request (e.g. text or blob).
    */
-  CATMAID.fetch = function(relativeURL, method, data, raw, id, replace) {
+  CATMAID.fetch = function(relativeURL, method, data, raw, id, replace, responseType) {
     method = method || 'GET';
     return new Promise(function(resolve, reject) {
       var url = CATMAID.makeURL(relativeURL);
@@ -382,7 +385,7 @@ var requestQueue = new RequestQueue();
         // case, we have to call reject() explicitly.
         try {
           if (raw) {
-            var response = CATMAID.validateResponse(status, text, xml);
+            var response = CATMAID.validateResponse(status, text, xml, responseType);
             resolve(text);
           } else {
             var json = CATMAID.validateJsonResponse(status, text, xml);
@@ -391,7 +394,7 @@ var requestQueue = new RequestQueue();
         } catch (e) {
           reject(e);
         }
-      }, id);
+      }, id, responseType);
     });
   };
 

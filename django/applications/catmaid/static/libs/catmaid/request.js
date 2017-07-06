@@ -137,6 +137,9 @@ RequestQueue = function(originUrl, csrfToken)
       xmlHttp.setRequestHeader('X-CSRFToken', csrfToken);
     }
 
+    // Allow custom response types
+    xmlHttp.responseType = item.responseType ? item.responseType : "";
+
     // Add extra headers
     for (var headerName in extraHeaders) {
       xmlHttp.setRequestHeader(headerName, extraHeaders[headerName]);
@@ -157,7 +160,10 @@ RequestQueue = function(originUrl, csrfToken)
           throw new CATMAID.NetworkAccessError("Network unreachable",
               "Please check your network connection");
         }
-        queue[ 0 ].callback( xmlHttp.status, xmlHttp.responseText, xmlHttp.responseXML );
+        var isTextResponse = (xmlHttp.responseType === '' || xmlHttp.responseType === 'text');
+        var responseData = isTextResponse ? xmlHttp.responseText : xmlHttp.response;
+        var responseXML = isTextResponse ? xmlHttp.responseXML : null;
+        queue[ 0 ].callback(xmlHttp.status, responseData, responseXML);
       } catch(error) {
         // In case of error, reset complete queue
         queue.length = 0;
@@ -190,7 +196,8 @@ RequestQueue = function(originUrl, csrfToken)
         m,		//!< string  method	"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD" or "OPTIONS"
         d,		//!< object  data		object with key=>value
         c,		//!< function callback
-        id		//!< string  id
+        id,		//!< string  id
+        responseType
     )
     {
       switch( m )
@@ -203,7 +210,8 @@ RequestQueue = function(originUrl, csrfToken)
             method : m,
             data : encodeObject( d ),
             callback : c,
-            id : id
+            id : id,
+            responseType: responseType
           }
         );
         break;
@@ -219,7 +227,8 @@ RequestQueue = function(originUrl, csrfToken)
             method : m,
             data : null,
             callback : c,
-            id : id
+            id : id,
+            responseType: responseType
           }
         );
       }

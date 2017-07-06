@@ -83,6 +83,9 @@ Miscellaneous:
 - The tracing layer is now faster with creating skeleton nodes, connectors and
   partner nodes by avoiding unneeded node updates.
 
+- Export widget: exporting neurons as NRRD files is now supported. The NAT R
+  package is used for this. Check documentation for setup.
+
 ### Bug fixes
 
 - Graph widget: re-layout works again.

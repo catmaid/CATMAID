@@ -27,6 +27,9 @@ summary statistics.
   <li><a id='export-swc' href='#'><strong>SWC</strong></a><br />
     Export active skeleton as SWC file.</li>
 
+  <li><a id='export-nrrd' href='#'><strong>NRRD</strong></a><br />
+    Export active skeleton as NRRD file using the NAT R package.</li>
+
   <li><a id='export-networkx' href='#'><strong>NetworkX JSON graph</strong></a><br />
     Using Python and <a href target='_new' href='http://networkx.github.io/documentation/latest/reference/readwrite.json_graph.html'>NetworkX</a>, you can import the returned file in your Python shell for further analysis.<br />
     <pre>
@@ -206,6 +209,9 @@ annotations, neuron name, connectors or partner neurons.
         // Bind SWC export handler
         $container.find('#export-swc').click(export_swc);
 
+        // Bind NRRD export handler
+        $container.find('#export-nrrd').click(export_nrrd);
+
         // Bind NetworkX JSON link to handler
         $container.find('#export-networkx').click(function() {
           graphexport_nxjson();
@@ -333,6 +339,92 @@ annotations, neuron name, connectors or partner neurons.
 
       CATMAID.Skeletons.exportSWC(project.id, skids,linearizeIds.checked,
           createArchive.checked)
+        .catch(CATMAID.handleError);
+    };
+
+    dialog.show(500, 'auto', true);
+  }
+
+  function export_nrrd() {
+    // Add skeleton source message and controls
+    var dialog = new CATMAID.OptionsDialog('Export SWC');
+
+    dialog.appendMessage('Please select a source from where to get the ' +
+        'skeletons which should be exported and whether the exported ' +
+        'skeleton should be transformed into a template space.');
+    var select = document.createElement('select');
+    CATMAID.skeletonListSources.createOptions().forEach(function(option, i) {
+      // Currently, only the active skeleton is allowed, because the back-end
+      // doesn't support multi skeleton export, yet.
+      if (option.value === 'Active skeleton') {
+        select.options.add(option);
+        select.selectedIndex = i;
+      }
+    });
+    var label_p = document.createElement('p');
+    var label = document.createElement('label');
+    label.appendChild(document.createTextNode('Source:'));
+    label.appendChild(select);
+    label_p.appendChild(label);
+    dialog.dialog.appendChild(label_p);
+
+    var sourceSelect = document.createElement('select');
+    ['FAFB13'].forEach(function(key, i) {
+      this.options.add(new Option(key, key));
+      if (i === 0) {
+        this.selectedIndex = i;
+      }
+    }, sourceSelect);
+    var sourceSelectLabelP = document.createElement('p');
+    var sourceSelectLabel = document.createElement('label');
+    sourceSelectLabel.appendChild(document.createTextNode('Source space:'));
+    sourceSelectLabel.appendChild(sourceSelect);
+    sourceSelectLabelP.appendChild(sourceSelectLabel);
+    dialog.dialog.appendChild(sourceSelectLabelP);
+
+    var targetSelect = document.createElement('select');
+    ['JFRC2'].forEach(function(key, i) {
+      this.options.add(new Option(key, key));
+      if (i === 0) {
+        this.selectedIndex = i;
+      }
+    }, targetSelect);
+    var targetSelectLabelP = document.createElement('p');
+    var targetSelectLabel = document.createElement('label');
+    targetSelectLabel.appendChild(document.createTextNode('Target space:'));
+    targetSelectLabel.appendChild(targetSelect);
+    targetSelectLabelP.appendChild(targetSelectLabel);
+    dialog.dialog.appendChild(targetSelectLabelP);
+
+    var mirrorSkeleton = dialog.appendCheckbox('Mirror',
+        'mirror', true, 'Depending on the dataset, it is required to flip the exported skeleton.');
+
+    var asyncRequest = dialog.appendCheckbox('Asyncronous NRRD generation',
+        'async', false, 'Depending on the size of the neuron, asyncronous processing might be needed.');
+
+    // Add handler for initiating the export
+    dialog.onOK = function() {
+      // Collected objects for all skeletons
+      var result = {skeletons: {}};
+      // Get all selected skeletons from the selected source
+      var source = CATMAID.skeletonListSources.getSource($(select).val());
+      var skids = source.getSelectedSkeletons();
+      // Cancel if there are no skeletons
+      if (skids.length === 0) {
+        CATMAID.error('Please select a source with at least one skeleton.');
+        return;
+      }
+
+      CATMAID.Skeletons.exportNRRD(project.id, skids[0], mirrorSkeleton.checked,
+          sourceSelect.value, targetSelect.value, asyncRequest.checked)
+        .then(function(sync_nrrd_blob) {
+          if (asyncRequest.checked) {
+            CATMAID.msg('Success', 'A new message is will notify you once the export is done');
+          } else {
+            saveAs(sync_nrrd_blob, "catmaid-" + skids[0] + ".nrrd");
+            CATMAID.msg('Success', 'The NRRD file was created successfully');
+          }
+        })
         .catch(CATMAID.handleError);
     };
 

@@ -224,6 +224,7 @@ MEDIA_HDF5_SUBDIRECTORY = 'hdf5'
 MEDIA_CROPPING_SUBDIRECTORY = 'cropping'
 MEDIA_ROI_SUBDIRECTORY = 'roi'
 MEDIA_TREENODE_SUBDIRECTORY = 'treenode_archives'
+MEDIA_EXPORT_SUBDIRECTORY = 'export'
 
 # The maximum allowed size in Bytes for generated files. The cropping tool, for
 # instance, uses this to cancel a request if the generated file grows larger
@@ -246,6 +247,7 @@ CELERY_IMPORTS = (
     'catmaid.control.cropping',
     'catmaid.control.roi',
     'catmaid.control.treenodeexport',
+    'catmaid.control.nat'
 )
 
 # While pickle can cause security problems [1], we allow it for now and trust
@@ -369,3 +371,8 @@ SWAGGER_SETTINGS = {
     },
     'doc_expansion': 'list'
 }
+
+# Needed for NRRD export
+CATMAID_FULL_URL = ""
+CATMAID_HTTP_AUTH_USER = None
+CATMAID_HTTP_AUTH_PASS = None

@@ -174,6 +174,33 @@
     },
 
     /**
+     * Let the back-end create a NRRD representation of a neuron. It will use
+     * the NAT R package for this and can use asynchronous processing if Celery
+     * is set up.
+     *
+     * @param {number}   projectId    Project space to work in
+     * @param {number[]} skeletonId   Skeleton to export as NRRD
+     * @param {boolean}  mirror       Whether the exported skeleton should be
+     *                                flipped horizontally.
+     * @param {string}   sourceSpace  The space identifier for the space the
+     *                                skeletons are defined in, e.g. FAFB13.
+     * @param {string}   targetSpace  The space identifier for the target space
+     *                                that the NRRD file will use, e.g. JFRC2.
+     * @param {boolean}  asyncProc    Whether to create the NRRD file
+     *                                asynchronously.
+     *
+     * @return A new promise that is resolved once the NRRD export is queued.
+     */
+    exportNRRD: function(projectId, skeletonId, mirror, sourceSpace, targetSpace, asyncProc) {
+      return CATMAID.fetch(projectId + '/skeleton/' + skeletonId + '/nrrd', 'POST', {
+        mirror: mirror,
+        source_ref: sourceSpace,
+        target_ref: targetSpace,
+        async_export: !!asyncProc
+      }, !asyncProc, undefined, undefined, asyncProc ? undefined : 'blob');
+    },
+
+    /**
      * Get the root node ID and location of a particular skeleton.
      *
      * @param {number} projectId  Project space to work in.

@@ -59,13 +59,13 @@ def export_nrrd(request, project_id, skeleton_id):
     source_ref = request.POST['source_ref']
     target_ref = request.POST['target_ref']
     mirror = request.POST.get('mirror', 'false') == 'true'
-    async = request.POST.get('async_export', 'false') =='true'
+    async_export = request.POST.get('async_export', 'false') =='true'
 
     # Make sure the output path can be written to
     if not os.path.exists(output_path) or not os.access(output_path, os.W_OK):
         raise ValueError("The output path is not accessible")
 
-    if async:
+    if async_export:
         export_skeleton_as_nrrd_async.delay(skeleton_id, source_ref, target_ref,
                 request.user.id, mirror)
 

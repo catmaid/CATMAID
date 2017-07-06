@@ -451,6 +451,8 @@ SkeletonAnnotations.isRealNode = function(node_id)
   return !isNaN(parseInt(node_id));
 };
 
+SkeletonAnnotations.vnComponentRegEx = /vn:(\d+):(\d+):(-?\d+\.?\d*):(-?\d+\.?\d*):(-?\d+\.?\d*)/;
+
 /**
  * Return RegEx match object for a node ID tested against the virtual node
  * naming scheme.
@@ -458,7 +460,7 @@ SkeletonAnnotations.isRealNode = function(node_id)
 SkeletonAnnotations.getVirtualNodeComponents = function(nodeID)
 {
   // Add an empty string to also be able to work with numbers.
-  return (nodeID + '').match(/vn:(\d+):(\d+):(-?\d+\.?\d*):(-?\d+\.?\d*):(-?\d+\.?\d*)/);
+  return (nodeID + '').match(SkeletonAnnotations.vnComponentRegEx);
 };
 
 /**
@@ -2288,27 +2290,35 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
 
   // Add extra nodes
   if (extraNodes) {
-    extraNodes.forEach(function(n) {
+    for (var i=0, max=extraNodes.length; i<max; ++i) {
+      var n = extraNodes[i];
       this.nodes[n.id] = this.graphics.newNode(n.id, null, n.parent_id, n.radius,
           n.x, n.y, n.z, n.z - this.stackViewer.z, n.confidence, n.skeleton_id,
           n.edition_time, n.user_id);
-    }, this);
+    }
   }
 
+  // Look-up some frequently used objects
+  var primaryStack = this.stackViewer.primaryStack;
+
   // Populate Nodes
-  jso[0].forEach(function(a) {
+  var jsonNodes = jso[0];
+  for (var i=0, max=jsonNodes.length; i<max; ++i) {
+    var a = jsonNodes[i];
     // a[0]: ID, a[1]: parent ID, a[2]: x, a[3]: y, a[4]: z, a[5]: confidence
     // a[8]: user_id, a[6]: radius, a[7]: skeleton_id, a[9]: user_id
-    var z = this.stackViewer.primaryStack.projectToUnclampedStackZ(a[4], a[3], a[2]);
+    var z = primaryStack.projectToUnclampedStackZ(a[4], a[3], a[2]);
     this.nodes[a[0]] = this.graphics.newNode(
       a[0], null, a[1], a[6],
-      this.stackViewer.primaryStack.projectToUnclampedStackX(a[4], a[3], a[2]),
-      this.stackViewer.primaryStack.projectToUnclampedStackY(a[4], a[3], a[2]),
+      primaryStack.projectToUnclampedStackX(a[4], a[3], a[2]),
+      primaryStack.projectToUnclampedStackY(a[4], a[3], a[2]),
       z, z - this.stackViewer.z, a[5], a[7], a[8], a[9]);
-  }, this);
+  }
 
   // Populate ConnectorNodes
-  jso[1].forEach(function(a) {
+  var jsonConnectors = jso[1];
+  for (var i=0, max=jsonConnectors.length; i<max; ++i) {
+    var a = jsonConnectors[i];
     var links = a[7];
     // Determine the connector node type. For now eveything with no or only
     // pre or post treenodes is treated as a synapse. If there are only
@@ -2335,14 +2345,14 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
     // a[0]: ID, a[1]: x, a[2]: y, a[3]: z, a[4]: confidence,
     // a[5]: edition time, a[6]: user_id
     // a[7]: treenode links
-    var z = this.stackViewer.primaryStack.projectToUnclampedStackZ(a[3], a[2], a[1]);
+    var z = primaryStack.projectToUnclampedStackZ(a[3], a[2], a[1]);
     // For performance reasons, the edition time is transmitted as epoch time
     this.nodes[a[0]] = this.graphics.newConnectorNode(
       a[0],
-      this.stackViewer.primaryStack.projectToUnclampedStackX(a[3], a[2], a[1]),
-      this.stackViewer.primaryStack.projectToUnclampedStackY(a[3], a[2], a[1]),
+      primaryStack.projectToUnclampedStackX(a[3], a[2], a[1]),
+      primaryStack.projectToUnclampedStackY(a[3], a[2], a[1]),
       z, z - this.stackViewer.z, a[4], subtype, a[5], a[6]);
-  }, this);
+  }
 
   // Disable any unused instances
   var nTreeNodes = jso[0].length + (extraNodes ? extraNodes.length : 0);
@@ -2350,7 +2360,8 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
 
   // Now that all Node instances are in place, loop nodes again
   // and set correct parent objects and parent's children update
-  jso[0].forEach(function(a) {
+  for (var i=0, max=jsonNodes.length; i<max; ++i) {
+    var a = jsonNodes[i];
     var pn = this.nodes[a[1]]; // parent Node
     if (pn) {
       var nn = this.nodes[a[0]];
@@ -2359,17 +2370,20 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
       // update the parent's children
       pn.addChildNode(nn);
     }
-  }, this);
+  }
 
   // Now that ConnectorNode and Node instances are in place,
   // set all relations
   var groupedRelations = SkeletonAnnotations.groupedRelations;
-  jso[1].forEach(function(a) {
+  for (var i=0, max=jsonConnectors.length; i<max; ++i) {
+    var a = jsonConnectors[i];
     // a[0] is the ID of the ConnectorNode
     var connector = this.nodes[a[0]];
     // a[7]: all relations, an array of arrays, containing treenode_id,
     // relation_id, tc_confidence, tc_edition_time, tc_id
-    a[7].forEach(function(r, i, ar) {
+    var relations = a[7];
+    for (var j=0, jmax=relations.length; j<jmax; ++j) {
+      var r = relations[j];
       // r[0]: tnid, r[1]: relation ID r[2]: tc_confidence
       var tnid = r[0];
       var node = this.nodes[tnid];
@@ -2380,26 +2394,28 @@ SkeletonAnnotations.TracingOverlay.prototype.refreshNodesFromTuples = function (
         connector[group][tnid] = link;
         node.linkConnector(connector.id, link);
       }
-    }, this);
-  }, this);
+    }
+  }
 
   // Create virtual nodes, if needed. These are nodes that are not actually on
   // the current section, but are created to represent the connection between a
   // child and a parent node that are not part of this section either.
-  jso[0].forEach(function(a) {
+  var sameSign = CATMAID.tools.sameSign;
+  for (var i=0, max=jsonNodes.length; i<max; ++i) {
+    var a = jsonNodes[i];
     var n = this.nodes[a[0]];
     // Check if the node is above or below this section
     if (n.zdiff !== 0) {
       // Check if parent is also not in this section
       var p = n.parent;
-      if (p && p.zdiff !== 0 && !CATMAID.tools.sameSign(n.zdiff, p.zdiff)) {
+      if (p && p.zdiff !== 0 && !sameSign(n.zdiff, p.zdiff)) {
         var vn = createVirtualNode(this.graphics, n, p, this.stackViewer);
         if (vn) {
           this.nodes[vn.id] = vn;
         }
       }
     }
-  }, this);
+  }
 
   // Draw node edges and circles, including the ones for virtual nodes.
   for (var i in this.nodes) {

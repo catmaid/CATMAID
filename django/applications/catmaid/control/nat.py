@@ -45,7 +45,16 @@ class CleanUpHTTPResponse(HttpResponse):
 
 @requires_user_role(UserRole.Browse)
 def export_nrrd(request, project_id, skeleton_id):
-    """Export a skeleton as NRRD file using the NAT R package.
+    """Export a skeleton as NRRD file using the NAT R package. To make this
+    work, R has to be intalled on the server. Within R the NAT package has to be
+    installed and the easiest way to do this is by running the following R code:
+
+    if(!require("devtools")) install.packages("devtools")
+    devtools::source_gist("fdd1e5b6e009ff49e66be466a104fd92", filename = "install_flyconnectome_all.R")
+
+    Also, CMTK has to be installed, which can be done either by installing their
+    published packages or compiling it from source and making it available from
+    /usr/local/lib/cmtk/bin for NAT to pick it up.
     """
     source_ref = request.POST['source_ref']
     target_ref = request.POST['target_ref']

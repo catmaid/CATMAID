@@ -6,6 +6,13 @@
 
 - A virtualenv update is required.
 
+- The following lines have to be removed from `settings.py`,
+
+  import djcelery
+  djcelery.setup_loader()
+  INSTALLED_APPs += ("kombu.transport.django")
+  BROKER_URL = 'django://'
+
 ### Features and enhancements
 
 3D Viewer:

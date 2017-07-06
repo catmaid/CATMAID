@@ -3,7 +3,6 @@
 
 from mysite.settings_base import *
 import hashlib
-import djcelery
 
 DATABASES = {
     'default': {
@@ -88,8 +87,6 @@ HDF5_STORAGE_PATH = 'CATMAIDPATH/django/hdf5/'
 # imported stacks don't provide their URL explicitly.
 CATMAID_IMPORT_PATH = 'CATMAIDPATH/httpdocs/data'
 IMPORTER_DEFAULT_IMAGE_BASE = 'http://CATMAID_SERVERNAME/CATMAID_SUBDIR/data'
-
-CELERYD_CONCURRENCY = 1
 
 # The URL under which custom front-end code can be made available
 STATIC_EXTENSION_URL = '/CATMAID_SUBDIR/staticext/'

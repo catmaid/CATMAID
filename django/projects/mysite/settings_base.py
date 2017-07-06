@@ -73,7 +73,6 @@ INSTALLED_APPS = (
     'django.contrib.admin.apps.SimpleAdminConfig',
     'django.contrib.staticfiles',
     'django.contrib.gis',
-    'djcelery',
     'taggit',
     'adminplus',
     'guardian',
@@ -248,6 +247,14 @@ CELERY_IMPORTS = (
     'catmaid.control.roi',
     'catmaid.control.treenodeexport',
 )
+
+# While pickle can cause security problems [1], we allow it for now and trust
+# that the Celery server will only accept connections from CATMAID. To improve
+# security, this should be changed though, see also [2].
+# [1] http://docs.celeryproject.org/en/latest/userguide/security.html#serializers
+# [2] https://github.com/catmaid/CATMAID/issues/630
+CELERY_ACCEPT_CONTENT = ['pickle']
+CELERY_TASK_SERIALIZER = 'pickle'
 
 # We use django-pipeline to compress and reference JavaScript and CSS files. To
 # make Pipeline integrate with staticfiles (and therefore collecstatic calls)

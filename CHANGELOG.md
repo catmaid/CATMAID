@@ -4,6 +4,7 @@
 
 - Prepared statements can now also be used together with connection pooling.
 
+- A virtualenv update is required.
 
 ### Features and enhancements
 

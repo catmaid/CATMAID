@@ -1,4 +1,4 @@
-celery==3.1.23
+celery==4.0.2
 cssmin==0.2.0
 Cython==0.23.4
 Django==1.10.7

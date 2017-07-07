@@ -78,7 +78,7 @@ def export_nrrd(request, project_id, skeleton_id):
 
         if result['errors']:
             raise RuntimeError("There were errors creating the NRRD file: {}".format(
-                    result['errors'].join('\n')))
+                    '\n'.join(result['errors'])))
 
         return CleanUpHTTPResponse(result['nrrd_path'], result['nrrd_name'],
                 content_type='application/octet-stream')
@@ -95,7 +95,7 @@ def export_skeleton_as_nrrd_async(skeleton_id, source_ref, target_ref, user_id,
         msg.read = False
         if result['errors']:
             msg.title = "No NRRD file could be creaed for skeleton {}".format(skeleton_id)
-            msg.text = "There was at least one error during the NRRD export: {}".format(result['errors'].join("\n"))
+            msg.text = "There was at least one error during the NRRD export: {}".format('\n'.join(result['errors']))
             msg.action = ""
         else:
             url = urljoin(urljoin(settings.MEDIA_URL, settings.MEDIA_EXPORT_SUBDIRECTORY), result['nrrd_name'])
@@ -105,7 +105,7 @@ def export_skeleton_as_nrrd_async(skeleton_id, source_ref, target_ref, user_id,
             msg.action = url
         msg.save()
 
-    return "Errors: {}".format(result['errors'].join('\n')) if result['errors'] else result['nrrd_path']
+    return "Errors: {}".format('\n'.join(result['errors'])) if result['errors'] else result['nrrd_path']
 
 def export_skeleton_as_nrrd(skeleton_id, source_ref, target_ref, user_id, mirror=True):
     """ Export the skeleton with the passed in ID as NRRD file using R. For

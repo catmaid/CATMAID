@@ -347,7 +347,7 @@ annotations, neuron name, connectors or partner neurons.
 
   function export_nrrd() {
     // Add skeleton source message and controls
-    var dialog = new CATMAID.OptionsDialog('Export SWC');
+    var dialog = new CATMAID.OptionsDialog('Export NRRD files');
 
     dialog.appendMessage('Please select a source from where to get the ' +
         'skeletons which should be exported and whether the exported ' +

@@ -129,8 +129,6 @@
       contentID: this.idPrefix + 'content',
       createContent: function(content) {
         var self = this;
-        var possibleLengths = CATMAID.pageLengthOptions;
-        var possibleLengthsLabels = CATMAID.pageLengthLabels;
 
         var container = document.createElement('div');
         content.appendChild(container);

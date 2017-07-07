@@ -163,8 +163,8 @@ def export_skeleton_as_nrrd(skeleton_id, source_ref, target_ref, user_id, mirror
             'mirror': "TRUE" if mirror else "FALSE",
         })
 
-        # Call R
-        cmd = "R --vanilla"
+        # Call R, allow Rprofile.site file
+        cmd = "R --no-save --no-restore --no-init-file --no-environ"
         pipe = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE)
         stdout, stderr = pipe.communicate(input=r_script)
 

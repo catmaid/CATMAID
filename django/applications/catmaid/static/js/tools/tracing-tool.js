@@ -17,6 +17,10 @@
     var activeStackViewer = null;
     // Map stacks to its mouse handlers
     var bindings = new Map();
+    // Update caches every 60min
+    this.autoCacheUpdateIntervalLength = 60*60*1000;
+    this.autoCacheUpdateInterval = null;
+    this.refreshAutoCacheUpdate();
 
     /**
      * Set postAction option of a command to update of the active tracing layer,
@@ -344,7 +348,9 @@
       // Forget the active node
       SkeletonAnnotations.atn.set(null);
 
-      return;
+      if (this.autoCacheUpdateTimeout) {
+        window.clearInterval(this.autoCacheUpdateInterval);
+      }
     };
 
     /**
@@ -1372,6 +1378,21 @@
       CATMAID.NeuronNameService.getInstance().refresh(),
       SkeletonAnnotations.VisibilityGroups.refresh()
     ]);
+  };
+
+  /**
+   * Clear a potentially running auto cache update timeout and create a new one
+   * if an update interval is set.
+   */
+  TracingTool.prototype.refreshAutoCacheUpdate = function() {
+    if (this.autoCacheUpdateTimeout) {
+      window.clearInterval(this.autoCacheUpdateInterval);
+    }
+
+    if (this.autoCacheUpdateIntervalLength) {
+      this.autoCacheUpdateInterval= window.setInterval(
+          this.refreshCaches.bind(this), this.autoCacheUpdateIntervalLength);
+    }
   };
 
   /**

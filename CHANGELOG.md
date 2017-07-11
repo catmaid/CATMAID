@@ -88,7 +88,8 @@ Miscellaneous:
 
 - The tracing tool has now a button to refresh CATMAID's caches for neuron names
   and annotations. This can be used to update neuron names with components that
-  were changed by other users.
+  were changed by other users. Additionally, such a cache update is performed
+  automatically once every hour.
 
 ### Bug fixes
 

@@ -86,6 +86,10 @@ Miscellaneous:
 - Export widget: exporting neurons as NRRD files is now supported. The NAT R
   package is used for this. Check documentation for setup.
 
+- The tracing tool has now a button to refresh CATMAID's caches for neuron names
+  and annotations. This can be used to update neuron names with components that
+  were changed by other users.
+
 ### Bug fixes
 
 - Graph widget: re-layout works again.

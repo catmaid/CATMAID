@@ -833,6 +833,25 @@
     }));
 
     this.addAction(new CATMAID.Action({
+      helpText: "Refresh cached data like neuron names and annotations",
+      buttonName: "refresh",
+      buttonID: "trace_button_refresh",
+      keyShortcuts: { "F6": ["F6"] },
+      run: function(e) {
+        if (!CATMAID.mayView()) {
+          return false;
+        }
+        self.refreshCaches()
+          .then(function() {
+            CATMAID.msg("Success", "Caches updated");
+          })
+          .catch(CATMAID.handleError);
+
+        return true;
+      }
+    }));
+
+    this.addAction(new CATMAID.Action({
       helpText: "Switch between a terminal and its connector",
       keyShortcuts: { "S": [ "s" ] },
       run: function (e) {
@@ -1343,6 +1362,17 @@
     SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
         handleActiveNodeChange, this);
   }
+
+  /**
+   * Refresh various caches, like the annotation cache.
+   */
+  TracingTool.prototype.refreshCaches = function() {
+    return Promise.all([
+      CATMAID.annotations.update(),
+      CATMAID.NeuronNameService.getInstance().refresh(),
+      SkeletonAnnotations.VisibilityGroups.refresh()
+    ]);
+  };
 
   /**
    * Move to and select a node in the specified neuron or skeleton nearest

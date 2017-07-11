@@ -45,19 +45,19 @@
   };
 
   AnnotationCache.prototype.update = function(callback) {
-    requestQueue.register(django_url + project.id + '/annotations/',
-        'POST', {}, CATMAID.jsonResponseHandler((function (json) {
-            // Empty cache
-            this.annotation_ids = {};
-            this.annotation_names = {};
-            // Populate cache
-            json.annotations.forEach(function (a) {
-             this.annotation_ids[a.name] = a.id;
-             this.annotation_names[a.id] = a.name;
-            }, this);
-            // Call back, if requested
-            CATMAID.tools.callIfFn(callback);
-          }).bind(this)));
+    return CATMAID.fetch(project.id + '/annotations/', 'POST', {})
+      .then((function(json) {
+        // Empty cache
+        this.annotation_ids = {};
+        this.annotation_names = {};
+        // Populate cache
+        json.annotations.forEach(function (a) {
+         this.annotation_ids[a.name] = a.id;
+         this.annotation_names[a.id] = a.name;
+        }, this);
+        // Call back, if requested
+        CATMAID.tools.callIfFn(callback);
+      }).bind(this));
   };
 
   /**

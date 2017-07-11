@@ -78,7 +78,7 @@
 
       var params = {annotated_with: tracked.id, types: 'neuron'};
       if (includeMeta) params.sub_annotated_with = tracked.id;
-      CATMAID
+      return CATMAID
           .fetch(project.id + '/annotations/query-targets',
                  'POST', params)
           .then(function (json) {
@@ -94,13 +94,17 @@
           });
     };
 
+    var jobs = [];
+
     if (meta[0]) {
-      refreshWithMeta(false);
+      jobs.push(refreshWithMeta(false));
     }
 
     if (meta[1]) {
-      refreshWithMeta(true);
+      jobs.push(refreshWithMeta(true));
     }
+
+    return Promise.all(jobs);
   };
 
   /**

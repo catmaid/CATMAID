@@ -4986,11 +4986,13 @@ SkeletonAnnotations.VisibilityGroups = new (function () {
    * Refresh any meta-annotation-based filters from the backed.
    */
   this.refresh = function () {
+    var jobs = [];
     this.groups.forEach(function (group) {
       if (group.metaAnnotationName) {
-        CATMAID.annotatedSkeletons.refresh(group.metaAnnotationName, true);
+        jobs.push(CATMAID.annotatedSkeletons.refresh(group.metaAnnotationName, true));
       }
     });
+    return Promise.all(jobs);
   };
 
   /**

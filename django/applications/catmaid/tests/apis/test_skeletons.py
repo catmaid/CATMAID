@@ -74,12 +74,19 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         swc_file = StringIO(orig_swc_string)
         assign_perm('can_import', self.test_user, self.test_project)
         response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
-                                    {'file.swc': swc_file})
+                {'file.swc': swc_file, 'name': 'test'})
 
         self.assertEqual(response.status_code, 200)
         parsed_response = json.loads(response.content.decode('utf-8'))
         new_skeleton_id = parsed_response['skeleton_id']
         id_map = parsed_response['node_id_map']
+
+        skeleton = ClassInstance.objects.get(id=new_skeleton_id)
+        model_rel = ClassInstanceClassInstance.objects.get(class_instance_a=skeleton,
+                relation__relation_name='model_of')
+        neuron = model_rel.class_instance_b
+        self.assertEqual(neuron.id, parsed_response['neuron_id'])
+        self.assertEqual('test', neuron.name)
 
         for tn in Treenode.objects.filter(skeleton_id=orig_skeleton_id):
             new_tn = Treenode.objects.get(id=id_map[str(tn.id)])

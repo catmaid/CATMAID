@@ -10,7 +10,8 @@ None.
 
 ### Modifications
 
-None.
+- `POST /{project_id}/skeletons/import`:
+  The new 'name' parameter can be used to set the name of a new neuron.
 
 ### Deprecations
 

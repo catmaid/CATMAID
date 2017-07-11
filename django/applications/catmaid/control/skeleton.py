@@ -1525,6 +1525,11 @@ def import_skeleton(request, project_id=None):
             If specified, the imported skeleton will model this existing neuron.
         paramType: form
         type: integer
+      - name: name
+        description: >
+            If specified, the name of a new neuron will be set to this.
+        paramType: form
+        type: string
       - name: file
         required: true
         description: A skeleton representation file to import.
@@ -1549,6 +1554,7 @@ def import_skeleton(request, project_id=None):
     neuron_id = request.POST.get('neuron_id', None)
     if neuron_id is not None:
         neuron_id = int(neuron_id)
+    name = request.POST.get('name', None)
 
     if len(request.FILES) == 1:
         for uploadedfile in six.itervalues(request.FILES):
@@ -1559,14 +1565,14 @@ def import_skeleton(request, project_id=None):
             extension = filename.split('.')[-1].strip().lower()
             if extension == 'swc':
                 swc_string = '\n'.join([line.decode('utf-8') for line in uploadedfile])
-                return import_skeleton_swc(request.user, project_id, swc_string, neuron_id)
+                return import_skeleton_swc(request.user, project_id, swc_string, neuron_id, name)
             else:
                 return HttpResponse('File type "{}" not understood. Known file types: swc'.format(extension), status=415)
 
     return HttpResponseBadRequest('No file received.')
 
 
-def import_skeleton_swc(user, project_id, swc_string, neuron_id=None):
+def import_skeleton_swc(user, project_id, swc_string, neuron_id=None, name=None):
     """Import a neuron modeled by a skeleton in SWC format.
     """
 
@@ -1591,7 +1597,7 @@ def import_skeleton_swc(user, project_id, swc_string, neuron_id=None):
     if not nx.is_directed_acyclic_graph(g):
         raise ValueError('SWC skeleton is malformed: it contains a cycle.')
 
-    import_info = _import_skeleton(user, project_id, g, neuron_id)
+    import_info = _import_skeleton(user, project_id, g, neuron_id, name)
     node_id_map = {n: d['id'] for n, d in import_info['graph'].nodes_iter(data=True)}
 
     return JsonResponse({

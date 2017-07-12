@@ -1444,79 +1444,112 @@
 
   /** Fetch skeletons one by one, and render just once at the end. */
   WebGLApplication.prototype.addSkeletons = function(models, callback) {
-    // Update skeleton properties for existing skeletons, and remove them from models
-    var skeleton_ids = Object.keys(models).filter(function(skid) {
-      if (skid in this.space.content.skeletons) {
-        var model = models[skid],
-            skeleton = this.space.content.skeletons[skid];
-        skeleton.skeletonmodel = model;
-        skeleton.setActorVisibility(model.selected);
-        skeleton.setPreVisibility(model.pre_visible);
-        skeleton.setPostVisibility(model.post_visible);
-        skeleton.setTextVisibility(model.text_visible);
-        skeleton.setMetaVisibility(model.meta_visible);
-        skeleton.actorColor = model.color.clone();
-        skeleton.opacity = model.opacity;
-        skeleton.updateSkeletonColor(CATMAID.makeSkeletonColorizer(this.options));
-        // In case connectors are colored like skeletons, they have yo be
-        // updated, too.
-        if ('skeleton' === this.options.connector_color) {
-          this.space.updateConnectorColors(this.options, [skeleton]);
-        } else {
-          this.space.updateConnectorEdgeVisibility(this.options, [skeleton]);
-        }
-        return false;
+    // Handle multiple skeleton additions sequentially
+    var prepare;
+    if (this._activeLoading) {
+      prepare = this._activeLoading;
+    } else {
+      prepare = Promise.resolve();
+    }
+
+    // Find missing skeletons
+    prepare = prepare.then((function() {
+      var missingSkeletonIds = Object.keys(models).filter(function(skid) {
+        return !this.space.content.skeletons[skid];
+      }, this);
+
+      if (missingSkeletonIds.length > 0) {
+        var options = this.options;
+        var lean = options.lean_mode;
+        var self = this;
+
+        // Register with the neuron name service and fetch the skeleton data
+        return CATMAID.NeuronNameService.getInstance().registerAll(this, models)
+          .then(function() {
+            if (self.hasActiveFilters()) {
+              return self.insertIntoNodeWhitelist(models);
+            }
+          })
+          .then(function() {
+            return new Promise(function(resolve, reject) {
+              var url1 = CATMAID.makeURL(project.id + '/skeletons/');
+              var url2 = '/compact-detail';
+
+              fetchSkeletons(missingSkeletonIds,
+                function(skeletonId) {
+                  return url1 + skeletonId + url2;
+                },
+                function(skeletonId) {
+                  return {
+                      with_tags: !lean,
+                      with_connectors: !lean,
+                      with_history: false,
+                  };
+                },
+                function(skeletonId, json) {
+                  var sk = self.space.updateSkeleton(models[skeletonId], json,
+                      options, undefined, self.getActivesNodeWhitelist());
+                  if (sk) sk.show(options);
+                },
+                function(skeletonId) {
+                  // Failed loading: will be handled elsewhere via fnMissing in fetchCompactSkeletons
+                },
+                function() {
+                  resolve();
+                },
+                'GET');
+            });
+          })
+          .catch(CATMAID.handleError);
       }
-      return true;
-    }, this);
+    }).bind(this));
 
-    if (0 === skeleton_ids.length) return;
+    // Get colorizer for all skeletons
+    var colorizer = CATMAID.makeSkeletonColorizer(this.options);
+    prepare = prepare.then((function() {
+      return colorizer.prepare(this.space.content.skeletons);
+    }).bind(this));
 
-    var options = this.options;
-    var url1 = CATMAID.makeURL(project.id + '/skeletons/'),
-        lean = options.lean_mode,
-        url2 = '/compact-detail';
-
-    // Register with the neuron name service and fetch the skeleton data
-    var self = this;
-    CATMAID.NeuronNameService.getInstance().registerAll(this, models)
-      .then(function() {
-        if (self.hasActiveFilters()) {
-          return self.insertIntoNodeWhitelist(models);
+    // Update skeleton properties
+    var add = prepare.then((function() {
+      var availableSkletons = this.space.content.skeletons;
+      var inputSkeletonIds = Object.keys(models);
+      for (var i=0, max=inputSkeletonIds.length; i<max; ++i) {
+        var skeletonId = inputSkeletonIds[i];
+        var model = models[skeletonId];
+        var skeleton = availableSkletons[skeletonId];
+        if (skeleton) {
+          skeleton.skeletonmodel = model;
+          skeleton.setActorVisibility(model.selected);
+          skeleton.setPreVisibility(model.pre_visible);
+          skeleton.setPostVisibility(model.post_visible);
+          skeleton.setTextVisibility(model.text_visible);
+          skeleton.setMetaVisibility(model.meta_visible);
+          skeleton.actorColor = model.color.clone();
+          skeleton.opacity = model.opacity;
+          skeleton.updateSkeletonColor(colorizer);
+          // In case connectors are colored like skeletons, they have to be
+          // updated, too.
+          if ('skeleton' === this.options.connector_color) {
+            return this.space.updateConnectorColors(this.options, [skeleton]);
+          } else {
+            this.space.updateConnectorEdgeVisibility(this.options, [skeleton]);
+          }
         }
-      })
-      .then(fetchSkeletons.bind(this,
-          skeleton_ids,
-          function(skeleton_id) {
-            return url1 + skeleton_id + url2;
-          },
-          function(skeleton_id) {
-            return {
-                with_tags: !lean,
-                with_connectors: !lean,
-                with_history: false,
-            };
-          },
-          (function(skeleton_id, json) {
-            var sk = this.space.updateSkeleton(models[skeleton_id], json,
-                options, undefined, this.getActivesNodeWhitelist());
-            if (sk) sk.show(this.options);
-          }).bind(this),
-          function(skeleton_id) {
-            // Failed loading: will be handled elsewhere via fnMissing in fetchCompactSkeletons
-          },
-          (function() {
-            this.updateSkeletonColors()
-              .then((function() {
-                if (this.options.connector_filter) this.refreshRestrictedConnectors();
-                if (typeof callback === "function") {
-                  try { callback(); } catch (e) { alert(e); }
-                }
-              }).bind(this))
-              .catch(CATMAID.handleError);
-          }).bind(this),
-          'GET'))
-      .catch(CATMAID.handleError);
+      }
+    }).bind(this))
+    .then((function() {
+      if (this.options.connector_filter) {
+        self.refreshRestrictedConnectors();
+      }
+      CATMAID.tools.callIfFn(callback);
+    }).bind(this))
+    .catch(CATMAID.handleError);
+
+    // Remember this addition as active loading
+    this._activeLoading = add;
+
+    return add;
   };
 
   /** Reload skeletons from database. */
@@ -1570,12 +1603,14 @@
       CATMAID.info("No skeletons selected!");
       return;
     }
-    this.addSkeletons(models, false);
-    if (this.options.connector_filter) {
-      this.refreshRestrictedConnectors();
-    } else {
-      this.space.render();
-    }
+    return this.addSkeletons(models, false)
+      .then((function() {
+        if (this.options.connector_filter) {
+          this.refreshRestrictedConnectors();
+        } else {
+          this.space.render();
+        }
+      }).bind(this));
   };
 
   WebGLApplication.prototype.clear = function() {
@@ -5089,79 +5124,82 @@
   WebGLApplication.prototype.Space.prototype.updateConnectorColors = function(options, skeletons, callback) {
     // Make all
     var self = this;
-    var done = function() {
-      self.updateRestrictedConnectorColors(skeletons);
-      self.updateConnectorEdgeVisibility(options, skeletons);
-      if (CATMAID.tools.isFn(callback)) callback();
-    };
+    return new Promise(function(resolve, reject) {
+      var done = function() {
+        self.updateRestrictedConnectorColors(skeletons);
+        self.updateConnectorEdgeVisibility(options, skeletons);
+        resolve();
+        if (CATMAID.tools.isFn(callback)) callback();
+      };
 
-     if ('cyan-red' === options.connector_color ||
-        'cyan-red-dark' === options.connector_color) {
-      var pre = this.staticContent.synapticColors[0],
-          post = this.staticContent.synapticColors[1];
+      if ('cyan-red' === options.connector_color ||
+          'cyan-red-dark' === options.connector_color) {
+        var pre = this.staticContent.synapticColors[0],
+            post = this.staticContent.synapticColors[1];
 
-      pre.color.setRGB(1, 0, 0); // red
-      pre.vertexColors = THREE.NoColors;
-      pre.needsUpdate = true;
+        pre.color.setRGB(1, 0, 0); // red
+        pre.vertexColors = THREE.NoColors;
+        pre.needsUpdate = true;
 
-      if ('cyan-red' === options.connector_color) post.color.setRGB(0, 1, 1); // cyan
-      else post.color.setHex(0x00b7eb); // dark cyan
-      post.vertexColors = THREE.NoColors;
-      post.needsUpdate = true;
+        if ('cyan-red' === options.connector_color) post.color.setRGB(0, 1, 1); // cyan
+        else post.color.setHex(0x00b7eb); // dark cyan
+        post.vertexColors = THREE.NoColors;
+        post.needsUpdate = true;
 
-      skeletons.forEach(function(skeleton) {
-        skeleton.completeUpdateConnectorColor(options);
-      });
-
-      done();
-
-    } else if ('by-amount' === options.connector_color) {
-
-      var skids = skeletons.map(function(skeleton) { return skeleton.id; });
-
-      if (skids.length > 1) $.blockUI();
-
-      requestQueue.register(django_url + project.id + "/skeleton/connectors-by-partner",
-          "POST",
-          {skids: skids},
-          (function(status, text) {
-            try {
-              if (200 !== status) return;
-              var json = JSON.parse(text);
-              if (json.error) return alert(json.error);
-
-              skeletons.forEach(function(skeleton) {
-                skeleton.completeUpdateConnectorColor(options, json[skeleton.id]);
-              });
-
-              done();
-            } catch (e) {
-              console.log(e, e.stack);
-              alert(e);
-            }
-            $.unblockUI();
-          }).bind(this));
-    } else if ('axon-and-dendrite' === options.connector_color || 'synapse-clustering' === options.connector_color) {
-      fetchSkeletons(
-          skeletons.map(function(skeleton) { return skeleton.id; }),
-          function(skid) { return django_url + project.id + '/' + skid + '/0/1/0/compact-arbor'; },
-          function(skid) { return {}; },
-          (function(skid, json) { this.content.skeletons[skid].completeUpdateConnectorColor(options, json); }).bind(this),
-          function(skid) { CATMAID.msg("Error", "Failed to load synapses for: " + skid); },
-          (function() {
-            done();
-            this.render();
-          }).bind(this));
-    } else if ('skeleton' === options.connector_color) {
-      skeletons.forEach(function(skeleton) {
-        var fnConnectorValue = function() { return 0; },
-            fnMakeColor = function() { return skeleton.skeletonmodel.color.clone(); };
-        skeleton.synapticTypes.forEach(function(type) {
-          skeleton._colorConnectorsBy(type, fnConnectorValue, fnMakeColor);
+        skeletons.forEach(function(skeleton) {
+          skeleton.completeUpdateConnectorColor(options);
         });
-      });
-      done();
-    }
+
+        done();
+
+      } else if ('by-amount' === options.connector_color) {
+
+        var skids = skeletons.map(function(skeleton) { return skeleton.id; });
+
+        if (skids.length > 1) $.blockUI();
+
+        requestQueue.register(django_url + project.id + "/skeleton/connectors-by-partner",
+            "POST",
+            {skids: skids},
+            (function(status, text) {
+              try {
+                if (200 !== status) return;
+                var json = JSON.parse(text);
+                if (json.error) return alert(json.error);
+
+                skeletons.forEach(function(skeleton) {
+                  skeleton.completeUpdateConnectorColor(options, json[skeleton.id]);
+                });
+
+                done();
+              } catch (e) {
+                console.log(e, e.stack);
+                alert(e);
+              }
+              $.unblockUI();
+            }).bind(this));
+      } else if ('axon-and-dendrite' === options.connector_color || 'synapse-clustering' === options.connector_color) {
+        fetchSkeletons(
+            skeletons.map(function(skeleton) { return skeleton.id; }),
+            function(skid) { return django_url + project.id + '/' + skid + '/0/1/0/compact-arbor'; },
+            function(skid) { return {}; },
+            (function(skid, json) { this.content.skeletons[skid].completeUpdateConnectorColor(options, json); }).bind(this),
+            function(skid) { CATMAID.msg("Error", "Failed to load synapses for: " + skid); },
+            (function() {
+              done();
+              this.render();
+            }).bind(this));
+      } else if ('skeleton' === options.connector_color) {
+        skeletons.forEach(function(skeleton) {
+          var fnConnectorValue = function() { return 0; },
+              fnMakeColor = function() { return skeleton.skeletonmodel.color.clone(); };
+          skeleton.synapticTypes.forEach(function(type) {
+            skeleton._colorConnectorsBy(type, fnConnectorValue, fnMakeColor);
+          });
+        });
+        done();
+      }
+    });
   };
 
   /** Operates in conjunction with updateConnectorColors above. */

@@ -97,19 +97,20 @@
           },
           columns: [
             {className: "cm-center", title: "Skeleton ID", data: "skeletonId"},
-            {title: "Tracing time", data: "tracingTime"},
-            {title: "Review time", data: "reviewTime"},
-            {title: "Cable before review", data: "cableBeforeReview"},
-            {title: "Cable after review", data: "cableAfterReview"},
-            {title: "Connectors before review", data: "connBeforeReview"},
-            {title: "Connectors after review", data: "connAfterReview"},
-            {title: "Splits during review", data: "splitsDuringReview"},
-            {title: "Merges during review", data: "mergesDuringReview"},
+            {className: "cm-center", title: "Tracing time", data: "tracingTime"},
           ]
         });
       }
     };
   };
+
+  function compareCompactTreenodes(a, b) {
+    return a[8] < a[9];
+  }
+
+  function compareCompactConnectors(a, b) {
+    return a[6] < a[6];
+  }
 
   /**
    * Return a promise that resolves with a list of objects, where each
@@ -128,7 +129,76 @@
    *          in this widget's skeleton source.
    */
   NeuronHistoryWidget.prototype.getNeuronStatistics = function() {
-    return Promise.resolve([]);
+    // For each neuron, get each node along with its history
+    var models = this.skeletonSource.getSkeletonModels();
+    var skeletonIds = Object.keys(models);
+
+    if (skeletonIds.length === 0) {
+      return Promise.resolve([]);
+    }
+
+    var maxInactivityTime = this.maxInactivityTime;
+    return CATMAID.fetch(project.id + "/skeletons/compact-detail", "POST", {
+      skeleton_ids: skeletonIds,
+      with_connectors: true,
+      with_tags: true,
+      with_history: true,
+      with_merge_history: true,
+      with_review: true
+    }).then(function(detail) {
+      var skeletonStats = [];
+      for (var i=0, max=skeletonIds.length; i<max; ++i) {
+        var skeletonId = skeletonIds[i];
+        var skeletonDetail = detail.skeletons[skeletonId];
+
+        if (!skeletonDetail) {
+          CATMAID.warn("No skeleton details on " + skeletonId);
+          continue;
+        }
+
+        var TS = CATMAID.TimeSeries;
+        // TODO: Review info
+        var availableEvents = {
+          nodes: new TS.EventSource(skeletonDetail[0], 8),
+          connectors: new TS.EventSource(skeletonDetail[1], 6)
+        };
+
+        // Get the sorted history of each node
+        var history = TS.makeHistoryIndex(availableEvents);
+
+        // Get sorted total events
+        var tracingEvents = TS.mergeEventSources(availableEvents, ["nodes", "connectors"], 'asc');
+
+        // Calculate tracing time by finding active bouts. Each bout is
+        // represented by a lists of events that contribute to the
+        // reconstruction of a neuron. These events are currently node edits and
+        // connector edits.
+        var activeTracingBouts = TS.getActiveBouts(tracingEvents, maxInactivityTime);
+        //var activeReviewBouts = TS.getActiveBouts(reviewEvents, maxInactivityTime);
+
+        //var firstReviewTime = TS.getMinTime(activeTracingBouts);
+        //var lastReviewTime = TS.getMaxTime(activeTracingBouts);
+
+        //var arborBeforeReview = getArborBeforePointInTime(tracingEvents, firstReviewTime);
+        //var arborAfterReview = getArborAfterPointInTime(tracingEvents, lastReviewTime);
+
+        var totalTime = TS.getTotalTime(activeTracingBouts);
+
+        skeletonStats.push({
+          skeletonId: skeletonId,
+          tracingTime: CATMAID.tools.humanReadableTimeInterval(totalTime),
+          reviewTime: "?", //TS.getTotalTime(activeReviewBouts),
+          cableBeforeReview: "?", //arborBeforeReview.cableLength(positions),
+          cableAfterReview: "?", //arborAfterReview.cableLength(positions),
+          connBeforeReview: "?",
+          connAfterReview: "?",
+          splitsDuringReview: "?",
+          mergesDuringReview: "?"
+        });
+      }
+
+      return skeletonStats;
+    });
   };
 
   NeuronHistoryWidget.prototype.clear = function() {

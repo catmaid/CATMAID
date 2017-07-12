@@ -10,8 +10,9 @@
   */
   var TimeSeries = {};
 
-  function addBoutLength(target, bout) {
-    return target + bout.length;
+  function sumBoutLengths(sum, bout) {
+    // Count at least one millisecond per bout
+    return sum + Math.max(1, bout.maxDate - bout.minDate);
   }
 
   function returnMinTime(currentMin, newMin) {
@@ -25,9 +26,36 @@
   /**
    * A single time series event.
    */
-  TimeSeries.Event = function(date, data) {
+  TimeSeries.Event = function(date, timeIndex, data) {
     this.date = date;
+    this.timeIndex = timeIndex;
     this.data = data;
+  };
+
+  // Sort functions for sorting history data newest first. Since JavaScript
+  // Date objects only support Microsecond precision, we need to compare
+  // Postgres strings if two timestamps are equal up to the microsecond.
+  var compareEvents = function(a, b) {
+    // The time stamp is added as first element
+    var ta = a.date;
+    var tb = b.date;
+    if (ta > tb) {
+      return -1;
+    }
+    if (ta < tb) {
+      return 1;
+    }
+    if (ta.getTime() === tb.getTime()) {
+      // Compare microseconds in string representation, which is a hack,
+      // but works
+      var taS = a.data[a.timeIndex];
+      var tbS = b.date[b.timeIndex];
+      return -1 * CATMAID.tools.compareStrings(taS, tbS);
+    }
+  };
+
+  var compareEventsAsc = function(a, b) {
+   return -1 * compareEvents(a, b);
   };
 
   /**
@@ -44,44 +72,100 @@
    */
   TimeSeries.Bout.prototype.addEvent = function(e) {
     if (this.events.length === 0) {
-      this.minData = e.date;
+      this.minDate = e.date;
       this.maxDate = e.date;
     } else {
-      if (this.minData > e.date) {
-        this.minData = e.data;
+      if (this.minDate > e.date) {
+        this.minDate = e.date;
       }
-      if (this.maxData > e.date) {
-        this.maxData = e.data;
+      if (this.maxDate < e.date) {
+        this.maxDate = e.date;
       }
     }
     this.events.push(e);
   };
 
+  TimeSeries.EventSource = function(data, timeIndex) {
+    this.data = data;
+    this.timeIndex = timeIndex;
+  };
+
+  function sumEventSourceLengths(sum, sourceId) {
+    /*jshint validthis:true */
+    var source = this[sourceId];
+    if (!(source && source.data)) {
+      throw new CATMAID.ValueError("Event source '" + sourceId  + "' unavailable");
+    }
+    sum += source.data.length;
+    return sum;
+  }
+
+  /**
+   * Combine multiple event sources from a passed in pool into a list of events,
+   * which can optionally be sorted.
+   */
+  TimeSeries.mergeEventSources = function(eventSources, selectedSources, sort) {
+    var nEvents = selectedSources.reduce(sumEventSourceLengths.bind(eventSources), 0);
+    var mergedEvents = new Array(nEvents);
+    var addedEvents = 0;
+    var Event = TimeSeries.Event;
+    for (var i=0; i<selectedSources.length; ++i) {
+      var sourceId = selectedSources[i];
+      var source = eventSources[sourceId];
+      var events = source.data;
+      var timeIndex = source.timeIndex;
+      for (var j=0, jmax=events.length; j<jmax; ++j) {
+        var e = events[j];
+        // Store each event source with normalized data:
+        // [lowerBount, upperBound, [lowerBoundStr, upperBoundStr, data]]
+        mergedEvents[addedEvents] = new Event(new Date(e[timeIndex]), timeIndex, e);
+        ++addedEvents;
+      }
+    }
+
+    if (sort) {
+      if (sort === "asc") {
+        mergedEvents.sort(compareEventsAsc);
+      } else if (sort === "desc") {
+        mergedEvents.sort(compareEvents);
+      } else {
+        throw new CATMAID.ValueError("The sort parameter can only be 'asc' or 'desc'");
+      }
+    }
+
+    return mergedEvents;
+  };
+
   TimeSeries.getActiveBouts = function(events, maxInactivity) {
+    // Convert minutes to milliseconds
+    maxInactivity = maxInactivity * 60 * 1000;
     return events.reduce(function(activeBouts, e) {
       var bout;
-
       if (activeBouts.length === 0) {
-        bout = new Bout();
+        bout = new TimeSeries.Bout();
+        activeBouts.push(bout);
       } else {
         // Add this event to the last bout, if it doesn't exceed the max
         // inactivity interval.
         var lastBout = activeBouts[activeBouts.length - 1];
-        if (e.date - lastBout.maxData > maxInactivity) {
-          bout = new Bout();
+        if (e.date - lastBout.maxDate > maxInactivity) {
+          bout = new TimeSeries.Bout();
+          activeBouts.push(bout);
         } else {
           bout = lastBout;
         }
       }
+      bout.addEvent(e);
       return activeBouts;
     }, []);
   };
 
   /**
-   * Sum up the length of all bouts.
+   * Sum up the length of all bouts in milliseconds. If a bout consists of only
+   * one event it counts as 1ms.
    */
   TimeSeries.getTotalTime = function(bouts) {
-    return bouts.reduce(addBoutLength, 0);
+    return bouts.reduce(sumBoutLengths, 0);
   };
 
   /**

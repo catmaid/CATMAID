@@ -188,7 +188,7 @@
     }
 
     if (this._offset && this._offset.some(Math.abs)) {
-      title = title + ' (Offset ' + offset.join(', ') + ')';
+      title = title + ' (Offset ' + this._offset.join(', ') + ')';
     }
 
     this._stackWindow.setTitle(title);

@@ -121,6 +121,8 @@ Miscellaneous:
 
 - Cropping image data works again.
 
+- Setting a stack viewer offset won't cause an error anymore.
+
 
 ## 2017.05.17
 

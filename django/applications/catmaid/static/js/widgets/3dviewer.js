@@ -5625,32 +5625,6 @@
     this.space.add(mesh);
   };
 
-  // Sort functions for sorting history data newest first. Since JavaScript
-  // Date objects only support Microsecond precision, we need to compare
-  // Postgres strings if two timestamps are equal up to the microsecond.
-  var compareTimestampEntry = function(timeIndexA, timeIndexB, a, b) {
-    // The time stamp is added as first element
-    var ta = a[0];
-    var tb = b[0];
-    if (ta > tb) {
-      return -1;
-    }
-    if (ta < tb) {
-      return 1;
-    }
-    if (ta.getTime() === tb.getTime()) {
-      // Compare microseconds in string representation, which is a hack,
-      // but works
-      var taS = a[2][timeIndexA];
-      var tbS = b[2][timeIndexB];
-      return -1 * CATMAID.tools.compareStrings(taS, tbS);
-    }
-  };
-  var sortElements = function(timeIndex, n) {
-    var elements = this[n];
-    elements.sort(compareTimestampEntry.bind(window, timeIndex, timeIndex));
-  };
-
   /**
    * Recreate the skeleton represention based on the passed in JSON data. If
    * historic data is part of this, the skeleton will contain multiple
@@ -5708,51 +5682,16 @@
     }
 
     if (withHistory) {
-      var makeHistoryAppender = function(timestampIndex) {
-       return function(o, n) {
-          var entries = o[n[0]];
-          if (!entries) {
-            entries = [];
-            o[n[0]] = entries;
-          }
-          var lowerBound = new Date(n[timestampIndex]);
-          var upperBound = new Date(n[timestampIndex + 1]);
-
-          // Make sure the entry which encodes the creation time (live entry),
-          // has its upper bound set to null (to represent infinity). All
-          // entries are sorted already, we therefore only need to check the
-          // first (youngest) entry.
-          if (upperBound <= lowerBound ||
-              upperBound.getTime() === lowerBound.getTime()) {
-            lowerBound = upperBound;
-            upperBound = null;
-            n[timestampIndex] = n[timestampIndex + 1];
-            n[timestampIndex + 1] = null;
-          }
-
-          entries.push([lowerBound, upperBound, n]);
-          return o;
-        };
-      };
-      // Create history data structure to make timestamp based look-up easier.
-      // Each data type has its own map of IDs to historic and present data,
-      // with each datum represented by an actual date, which in turn maps to
-      // element data.
-      this.history = {
-        nodes: !nodes ? {} : nodes.reduce(
-            makeHistoryAppender(8), {}),
-        connectors: !connectors ? {} : connectors.reduce(
-            makeHistoryAppender(6), {})//,
-      };
-
-      var nodeIds = Object.keys(this.history.nodes);
-      var connectorIds = Object.keys(this.history.connectors);
-
-      // Sort all history lists for each element
-      nodeIds.forEach(
-          sortElements.bind(this.history.nodes, 8));
-      connectorIds.forEach(
-          sortElements.bind(this.history.connectors, 6));
+      this.history = CATMAID.TimeSeries.makeHistoryIndex({
+        nodes: {
+          data: nodes,
+          timeIndex: 8
+        },
+        connectors: {
+          data: connectors,
+          timeIndex: 6
+        }
+      });
 
       // Update to most recent skeleton
       this.resetToPointInTime(skeletonModel, options, null, true);
@@ -5761,42 +5700,6 @@
           silent);
     }
   };
-
-  /**
-   * Get all nodes valid to a passed in time stamp (inclusive) as well as the
-   * next time stamp a change happens. Returned is a list of the following form:
-   * [nodes, nextChangeDate].
-   */
-  function getDataUntil(elements, timestamp) {
-    return Object.keys(elements).reduce(function(o, n) {
-      var versions = elements[n];
-      var match = null;
-      // Individual versions are sorted newest first
-      for (var i=0; i<versions.length; ++i) {
-        var validFrom = versions[i][0];
-        var validTo = versions[i][1];
-        if (validTo === null || validTo > timestamp) {
-          if (validFrom <= timestamp) {
-            match = i;
-            break;
-          } else {
-            // Record time of next version of this node, if larger than
-            // previous recording.
-            if (null === o[1]) {
-              o[1] = new Date(validFrom.getTime());
-            } else if (validFrom < o[1]) {
-              o[1].setTime(validFrom.getTime());
-            }
-          }
-        }
-      }
-      if (null !== match) {
-        var version = versions[match];
-        o[0].push(version[2]);
-      }
-      return o;
-    }, [[], null]);
-  }
 
   /**
    * Reset a skeleton to particular point in time. Expects skeleton history to
@@ -5832,8 +5735,8 @@
     // duplicate IDs and timestamps for each element. The first step is
     // therefore to find all nodes, connectors and tags that were valid at the
     // passed in timestamp.
-    var nodesInfo = getDataUntil(this.history.nodes, timestamp);
-    var connectorsInfo = getDataUntil(this.history.connectors, timestamp);
+    var nodesInfo = CATMAID.TimeSeries.getDataUntil(this.history.nodes, timestamp);
+    var connectorsInfo = CATMAID.TimeSeries.getDataUntil(this.history.connectors, timestamp);
     var nodes = nodesInfo[0];
     var connectors = connectorsInfo[0];
 

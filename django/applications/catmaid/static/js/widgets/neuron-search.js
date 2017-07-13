@@ -3,7 +3,6 @@
 /* global
   InstanceRegistry,
   project,
-  requestQueue,
   WindowMaker
 */
 
@@ -724,50 +723,43 @@
     // Augment form data with offset and limit information
     params.with_annotations = this.displayAnnotations;
 
-    // Here, $.proxy is used to bind 'this' to the anonymous function
-    requestQueue.register(django_url + this.pid + '/annotations/query-targets',
-        'POST', params, $.proxy( function(status, text, xml) {
-          if (status === 200) {
-            var e = JSON.parse(text);
-            if (e.error) {
-              new CATMAID.ErrorDialog(e.error, e.detail).show();
-            } else {
-              // Keep a copy of all models that are removed
-              var removedModels = this.getSkeletonModels();
-              // Unregister last result set from neuron name service
-              CATMAID.NeuronNameService.getInstance().unregister(this);
+    CATMAID.fetch(this.pid + '/annotations/query-targets', 'POST', params)
+      .then((function(e) {
+        // Keep a copy of all models that are removed
+        var removedModels = this.getSkeletonModels();
+        // Unregister last result set from neuron name service
+        CATMAID.NeuronNameService.getInstance().unregister(this);
 
-              // Mark entities as unselected if initialized, reuse current
-              // selection state otherwise.
-              var selectionMap = this.entity_selection_map;
-              var selected = initialize ? function() { return false; } :
-                  function(id) { return !!this[id]; }.bind(selectionMap);
+        // Mark entities as unselected if initialized, reuse current
+        // selection state otherwise.
+        var selectionMap = this.entity_selection_map;
+        var selected = initialize ? function() { return false; } :
+            function(id) { return !!this[id]; }.bind(selectionMap);
 
-              // Empty selection map and store results
-              this.entity_selection_map = {};
-              this.entityMap = {};
-              this.expansions.clear();
-              this.queryResults = [];
-              this.queryResults[0] = e.entities;
-              this.total_n_results = e.entities.length;
-              // Get new models for notification
-              var addedModels = this.getSkeletonModels();
-              this.queryResults[0].forEach((function(entity) {
-                this.entity_selection_map[entity.id] = selected(entity.id);
-                this.entityMap[entity.id] = entity;
-              }).bind(this));
+        // Empty selection map and store results
+        this.entity_selection_map = {};
+        this.entityMap = {};
+        this.expansions.clear();
+        this.queryResults = [];
+        this.queryResults[0] = e.entities;
+        this.total_n_results = e.entities.length;
+        // Get new models for notification
+        var addedModels = this.getSkeletonModels();
+        this.queryResults[0].forEach((function(entity) {
+          this.entity_selection_map[entity.id] = selected(entity.id);
+          this.entityMap[entity.id] = entity;
+        }).bind(this));
 
-              // Register search results with neuron name service and rebuild
-              // result table.
-              var skeletonObject = getSkeletonIDsInResult(e.entities);
-              CATMAID.NeuronNameService.getInstance().registerAll(this, skeletonObject,
-                  this.refresh.bind(this));
+        // Register search results with neuron name service and rebuild
+        // result table.
+        var skeletonObject = getSkeletonIDsInResult(e.entities);
+        CATMAID.NeuronNameService.getInstance().registerAll(this, skeletonObject,
+            this.refresh.bind(this));
 
-              this.triggerRemove(removedModels);
-              this.triggerAdd(addedModels);
-            }
-          }
-        }, this));
+        this.triggerRemove(removedModels);
+        this.triggerAdd(addedModels);
+      }).bind(this))
+      .catch(CATMAID.handleError);
   };
 
   /**
@@ -964,64 +956,57 @@
           'annotated_with': aID,
           'with_annotations': self.displayAnnotations
         };
-        requestQueue.register(django_url + project.id + '/annotations/query-targets',
-            'POST', query_data, function(status, text, xml) {
-              if (status === 200) {
-                var e = JSON.parse(text);
-                if (e.error) {
-                  new CATMAID.ErrorDialog(e.error, e.detail).show();
-                } else {
-                  // Register search results with neuron name service and rebuild
-                  // result table.
-                  var skeletonObject = getSkeletonIDsInResult(e.entities);
-                  CATMAID.NeuronNameService.getInstance().registerAll(this, skeletonObject,
-                      function () {
-                        // Append new content right after the current node and save a
-                        // reference for potential removal.
-                        var appender = function(new_tr) {
-                          new_tr.setAttribute('expansion', sub_id);
-                          $(tr).after(new_tr);
-                        };
+        CATMAID.fetch(project.id + '/annotations/query-targets', 'POST', query_data)
+          .then(function(e) {
+            // Register search results with neuron name service and rebuild
+            // result table.
+            var skeletonObject = getSkeletonIDsInResult(e.entities);
+            CATMAID.NeuronNameService.getInstance().registerAll(self, skeletonObject, function() {
+              // Append new content right after the current node and save a
+              // reference for potential removal.
+              var appender = function(new_tr) {
+                new_tr.setAttribute('expansion', sub_id);
+                $(tr).after(new_tr);
+              };
 
-                        // Figure out which entities are new
-                        var newSkeletons = e.entities.reduce(function(o, s) {
-                          var isNeuron = entity.type === 'neuron';
-                          var unknown = !(entity.id in knownEntities);
-                          if (isNeuron && unknown) {
-                            for (var i=0, max=entity.skeleton_ids.length; i<max; ++i) {
-                              o.push(entity.skeleton_ids[i]);
-                            }
-                          }
-                          return o;
-                        }, []);
-
-                        // Mark entities as unselected, create result table rows
-                        e.entities.filter(function(entity, i, a) {
-                          self.entity_selection_map[entity.id] = false;
-                          if(!(entity.id in self.entityMap)) {
-                            self.entityMap[entity.id] = entity;
-                          }
-                          self.add_result_table_row(entity, appender, indent + 1);
-                        });
-
-                        // The order of the query result array doesn't matter.
-                        // It is therefore possible to just append the new results.
-                        self.queryResults[sub_id] = e.entities;
-                        self.expansions.set(entity, sub_id);
-                        // Update current result table classes
-                        self.update_result_row_classes();
-                        // Announce new models, if any
-                        if (newSkeletons.length > 0) {
-                          var newModels = newSkeletons.reduce(function(o, skid) {
-                            o[skid] = self.getSkeletonModel(skid);
-                            return o;
-                          });
-                          self.triggerAdd(newModels);
-                        }
-                      });
+              // Figure out which entities are new
+              var newSkeletons = e.entities.reduce(function(o, s) {
+                var isNeuron = entity.type === 'neuron';
+                var unknown = !(entity.id in knownEntities);
+                if (isNeuron && unknown) {
+                  for (var i=0, max=entity.skeleton_ids.length; i<max; ++i) {
+                    o.push(entity.skeleton_ids[i]);
+                  }
                 }
+                return o;
+              }, []);
+
+              // Mark entities as unselected, create result table rows
+              e.entities.filter(function(entity, i, a) {
+                self.entity_selection_map[entity.id] = false;
+                if(!(entity.id in self.entityMap)) {
+                  self.entityMap[entity.id] = entity;
+                }
+                self.add_result_table_row(entity, appender, indent + 1);
+              });
+
+              // The order of the query result array doesn't matter.
+              // It is therefore possible to just append the new results.
+              self.queryResults[sub_id] = e.entities;
+              self.expansions.set(entity, sub_id);
+              // Update current result table classes
+              self.update_result_row_classes();
+              // Announce new models, if any
+              if (newSkeletons.length > 0) {
+                var newModels = newSkeletons.reduce(function(o, skid) {
+                  o[skid] = self.getSkeletonModel(skid);
+                  return o;
+                });
+                self.triggerAdd(newModels);
               }
-        });
+            });
+          })
+          .catch(CATMAID.handleError);
       }
     });
 
@@ -1250,35 +1235,33 @@
     if (entitiesToQuery.length > 0) {
       var url = CATMAID.makeURL(project.id + '/annotations/query');
       var self = this;
-      requestQueue.register(url, 'POST',
-          {
-            object_ids: entityIdsToQuery
-          },
-          CATMAID.jsonResponseHandler(function(json) {
-            // Create mapping from skeleton ID to result object
-            var results = entitiesToQuery.reduce(function(o, r, i) {
-              o[r.id] = r;
-              return o;
-            }, {});
-            // Add annotation id, name and annotator to result set
-            Object.keys(json.entities).forEach(function(eid) {
-              var result = results[eid];
-              if (!(result.annotations)) {
-                result.annotations = [];
-              }
-              var links = json.entities[eid];
-              var annotations = json.annotations;
-              links.forEach(function(a) {
-                result.annotations.push({
-                  id: a.id,
-                  name: annotations[a.id],
-                  uid: a.uid
-                });
+      CATMAID.fetch(url, 'POST', {object_ids: entityIdsToQuery})
+        .then(function(json) {
+          // Create mapping from skeleton ID to result object
+          var results = entitiesToQuery.reduce(function(o, r, i) {
+            o[r.id] = r;
+            return o;
+          }, {});
+          // Add annotation id, name and annotator to result set
+          Object.keys(json.entities).forEach(function(eid) {
+            var result = results[eid];
+            if (!(result.annotations)) {
+              result.annotations = [];
+            }
+            var links = json.entities[eid];
+            var annotations = json.annotations;
+            links.forEach(function(a) {
+              result.annotations.push({
+                id: a.id,
+                name: annotations[a.id],
+                uid: a.uid
               });
             });
+          });
 
-            self.refresh();
-          }));
+          self.refresh();
+        })
+        .catch(CATMAID.handleError);
     } else {
       this.refresh();
     }

@@ -5134,8 +5134,8 @@
 
       if ('cyan-red' === options.connector_color ||
           'cyan-red-dark' === options.connector_color) {
-        var pre = this.staticContent.synapticColors[0],
-            post = this.staticContent.synapticColors[1];
+        var pre = self.staticContent.synapticColors[0],
+            post = self.staticContent.synapticColors[1];
 
         pre.color.setRGB(1, 0, 0); // red
         pre.vertexColors = THREE.NoColors;
@@ -5177,18 +5177,18 @@
                 alert(e);
               }
               $.unblockUI();
-            }).bind(this));
+            }).bind(self));
       } else if ('axon-and-dendrite' === options.connector_color || 'synapse-clustering' === options.connector_color) {
         fetchSkeletons(
             skeletons.map(function(skeleton) { return skeleton.id; }),
             function(skid) { return django_url + project.id + '/' + skid + '/0/1/0/compact-arbor'; },
             function(skid) { return {}; },
-            (function(skid, json) { this.content.skeletons[skid].completeUpdateConnectorColor(options, json); }).bind(this),
+            (function(skid, json) { self.content.skeletons[skid].completeUpdateConnectorColor(options, json); }).bind(self),
             function(skid) { CATMAID.msg("Error", "Failed to load synapses for: " + skid); },
             (function() {
               done();
-              this.render();
-            }).bind(this));
+              self.render();
+            }).bind(self));
       } else if ('skeleton' === options.connector_color) {
         skeletons.forEach(function(skeleton) {
           var fnConnectorValue = function() { return 0; },

@@ -921,7 +921,8 @@
       dialog.onOK = (function() {
         this.options.tag_regex = input.value;
         this.options.color_method = colorMenu.value;
-        this.updateSkeletonColors();
+        this.updateSkeletonColors()
+          .then(this.render.bind(this));
       }).bind(this);
       dialog.onCancel = function() {
         // Reset to default (can't know easily what was selected before).
@@ -933,7 +934,8 @@
 
     this.options.color_method = colorMenu.value;
     this.space.userColormap = {};
-    this.updateSkeletonColors();
+    this.updateSkeletonColors()
+      .then(this.render.bind(this));
   };
 
   WebGLApplication.prototype.updateSkeletonColors = function() {
@@ -944,8 +946,11 @@
         Object.keys(skeletons).forEach(function(skeleton_id) {
           skeletons[skeleton_id].updateSkeletonColor(colorizer);
         });
-        this.space.render();
       }).bind(this));
+  };
+
+  WebGLApplication.prototype.render = function() {
+    this.space.render();
   };
 
   WebGLApplication.prototype.setSkeletonShadingType = function(shading) {
@@ -1220,6 +1225,7 @@
         if (filter) {
           self.options.connector_filter = filter;
           self.refreshRestrictedConnectors();
+          self.render();
         }
       });
       // Prevent application of filter. This is done in function above, once user
@@ -1230,6 +1236,7 @@
     }
 
     this.refreshRestrictedConnectors();
+    this.render();
   };
 
   WebGLApplication.prototype.refreshRestrictedConnectors = function() {
@@ -1314,8 +1321,6 @@
     // Depending on the current settings, edges might not be visible.
     this.space.updateConnectorEdgeVisibility(this.options,
       skids.map(function(skid) { return this[skid]; }, skeletons));
-
-    this.space.render();
   };
 
   /**
@@ -1361,7 +1366,8 @@
     // Set the shading of all skeletons based on the state of the "Shading" pop-up menu.
     this.options.shading_method = $('#skeletons_shading' + this.widgetID + ' :selected').attr("value");
 
-    this.updateSkeletonColors();
+    this.updateSkeletonColors()
+      .then(this.render.bind(this));
   };
 
   WebGLApplication.prototype.look_at_active_node = function() {
@@ -1605,11 +1611,7 @@
     }
     return this.addSkeletons(models, false)
       .then((function() {
-        if (this.options.connector_filter) {
-          this.refreshRestrictedConnectors();
-        } else {
-          this.space.render();
-        }
+        this.space.render();
       }).bind(this));
   };
 
@@ -1646,8 +1648,10 @@
   WebGLApplication.prototype.removeSkeletons = function(skeleton_ids) {
     if (!this.space) return;
     this.space.removeSkeletons(skeleton_ids);
-    if (this.options.connector_filter) this.refreshRestrictedConnectors();
-    else this.space.render();
+    if (this.options.connector_filter) {
+      this.refreshRestrictedConnectors();
+    }
+    this.space.render();
   };
 
   WebGLApplication.prototype.changeSkeletonColors = function(skeleton_ids, colors) {
@@ -6274,7 +6278,8 @@
 
   WebGLApplication.prototype.setInterpolateVertexColors = function(enabled) {
     this.options.interpolate_vertex_colots = enabled;
-    this.updateSkeletonColors();
+    this.updateSkeletonColors()
+      .then(this.render.bind(this));
   };
 
   WebGLApplication.prototype.setFollowActive = function(value) {
@@ -6465,7 +6470,8 @@
       this.options[param] = value;
     }
     if (shading_method === this.options.shading_method) {
-      this.updateSkeletonColors();
+      this.updateSkeletonColors()
+        .then(this.render.bind(this));
     }
   };
 
@@ -6664,12 +6670,11 @@
           CATMAID.tools.callIfFn(params.notify, currentDate, startDate, endDate);
 
           // Color skeletons
+          var update = widget.updateSkeletonColors();
           if (widget.options.connector_filter) {
-            widget.updateSkeletonColors()
-              .then(widget.refreshRestrictedConnectors.bind(widget));
-          } else {
-            widget.updateSkeletonColors();
+            update = update.then(widget.refreshRestrictedConnectors.bind(widget));
           }
+          update.then(widget.render.bind(widget));
         };
         // Create a stop handler that resets visibility to the state we found before
         // the animation.

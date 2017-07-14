@@ -346,12 +346,25 @@ def query_annotated_classinstances(request, project_id = None):
         type: string
         paramType: query
       - name: annotated_with
-        description: A comma separated list of annotation IDs of which at least one annotated the result elements.
+        description: |
+            A comma separated list of annotation IDs which all annotate the
+            result elements.
+        type: integer
+        paramType: form
+        allowMultiple: true
+      - name: not_annotated_with
+        description: |
+            A comma separated list of annotation IDs which don't annotate the
+            result elements.
         type: integer
         paramType: form
         allowMultiple: true
       - name: sub_annotated_with
-        description: A comma separated list of annotation IDs of which at least one or its sub-annotations annotated the result elements.
+        description: |
+            A comma separated list of annotation IDs that are contained
+            in either 'annotated_with' or 'not_annotated_with' that get expanded to
+            also include their sub-annotations in the query (of which then at
+            least one has to match inclusion or exclusion respectively).
         type: integer
         paramType: form
         allowMultiple: true
@@ -360,7 +373,9 @@ def query_annotated_classinstances(request, project_id = None):
         type: boolean
         paramType: form
       - name: types
-        description: Allowed result types. Multple types can be passed with multiple parameters. Defaults to 'neuron' and 'annotation'.
+        description: |
+            Allowed result types. Multple types can be passed with multiple
+            parameters. Defaults to 'neuron' and 'annotation'.
         type: string
         paramType: form
         allowMultiple: true

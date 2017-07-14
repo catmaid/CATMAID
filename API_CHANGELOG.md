@@ -13,6 +13,13 @@ None.
 - `POST /{project_id}/skeletons/import`:
   The new 'name' parameter can be used to set the name of a new neuron.
 
+- `POST /{project_id}/annotations/query-target`:
+  A boolean 'name_not' parameter is now accepted to get results not matching the
+  name passed in with the regular 'name' parameter. Also, an integer list
+  parameter named 'not_annotated_with' is now supported. Like the
+  'annotated_with' list, it contains annotation IDs. Results will not have the
+  annotations passed in with the `not_annotated_with` list.
+
 ### Deprecations
 
 None.

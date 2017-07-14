@@ -69,22 +69,26 @@
             '<tr id="neuron_query_by_name{{NA-ID}}">' +
               '<td class="neuron_annotations_query_field_label">named as:</td> ' +
               '<td class="neuron_annotations_query_field">' +
+                '<label><input type="checkbox" name="neuron_query_by_name_not" ' +
+                    'id="neuron_query_by_name_not{{NA-ID}}" />not</label>' +
                 '<input type="text" name="neuron_query_by_name" ' +
                     'id="neuron_query_by_name{{NA-ID}}" value="" class="" />' +
-                '<em>(optional)</em>' +
               '</td> ' +
+              '<td><div class="help">Optional</div></td>' +
             '</tr>' +
             '<tr id="neuron_query_by_annotation{{NA-ID}}">' +
               '<td class="neuron_annotations_query_field_label">annotated:</td> ' +
               '<td class="neuron_annotations_query_field">' +
+                '<label><input type="checkbox" name="neuron_query_by_annotation_not" ' +
+                    'id="neuron_query_not{{NA-ID}}" />not</label>' +
                 '<input type="text" name="neuron_query_by_annotation" autocomplete="off" ' +
                     'class="neuron_query_by_annotation_name{{NA-ID}}" value="" placeholder="Use / for RegEx" />' +
+              '</td><td>' +
                 '<label><input type="checkbox" name="neuron_query_include_subannotation" ' +
                     'class="neuron_query_include_subannotation{{NA-ID}}" value="" />' +
                 'Include sub-annotations</label> ' +
                 '<input type="button" name="neuron_annotations_add_annotation" ' +
-                    'id="neuron_annotations_add_annotation{{NA-ID}}" value="+" ' +
-                    'class="" />' +
+                    'id="neuron_annotations_add_annotation{{NA-ID}}" value="+" />' +
               '</td> ' +
             '</tr>' +
             '<tr id="neuron_query_by_annotator{{NA-ID}}">' +
@@ -96,6 +100,7 @@
                   '<option value="Team">Team</option>' +
                 '</select>' +
               '</td>' +
+              '<td><div class="help">Respected for included annotations</div></td>' +
             '</tr>' +
             '<tr id="neuron_query_by_date_range{{NA-ID}}">' +
               '<td class="neuron_annotations_query_field_label">between:</td>' +
@@ -108,6 +113,7 @@
                     'id="neuron_query_by_end_date{{NA-ID}}" size="10" ' +
                     'value="" class=""/> ' +
               '</td>' +
+              '<td><div class="help">Respected for included annotations</div></td>' +
             '</tr>' +
           '</table>' +
           '<input type="submit" />' +
@@ -645,30 +651,41 @@
 
     // Get user input
     var $widget = $('#neuron_query_by_annotations' + this.widgetID);
+    var namedAsNot = $('input[name=neuron_query_by_name_not]', $widget).prop('checked');
     var namedAs = $('input[name=neuron_query_by_name]', $widget).val().trim();
     var annotatedBy = $('select[name=neuron_query_by_annotator]', $widget).val().trim();
     var annotatedFrom = $('input[name=neuron_query_by_start_date]', $widget).val().trim();
     var annotatedTo = $('input[name=neuron_query_by_end_date]', $widget).val().trim();
     var annotations = [];
+    var nSelector = 'name=neuron_query_by_annotation_not';
     var aSelector = 'name=neuron_query_by_annotation';
     var sSelector = 'name=neuron_query_include_subannotation';
     for (var i=0; i<this.nextFieldID; ++i) {
       var a = aSelector;
       var s = sSelector;
+      var n = nSelector;
       if (i > 0) {
         a = a + this.widgetID + '_' + i;
         s = s + this.widgetID + '_' + i;
+        n = n + this.widgetID + '_' + i;
       }
       // Don't use empty names
       var name = $('input[' + a + ']', $widget).val();
       if (name && name.trim()) {
-        annotations.push([name, $('input[' + s + ']', $widget).is(':checked')]);
+        annotations.push([
+          name,
+          $('input[' + s + ']', $widget).is(':checked'),
+          $('input[' + n + ']', $widget).is(':checked')
+        ]);
       }
     }
 
     // Build query parameter set
     var params = {};
-    if (namedAs) { params['name'] = namedAs; }
+    if (namedAs) {
+      params['name'] = namedAs;
+      params['name_not'] = namedAsNot;
+    }
     if (annotatedBy && -2 != annotatedBy) {
       params['annotated_by'] = 'Team' !== annotatedBy ? annotatedBy :
             Object.keys(CATMAID.ReviewSystem.Whitelist.getWhitelist());
@@ -679,6 +696,8 @@
     for (var i=0; i<annotations.length; ++i) {
       var a = annotations[i][0];
       var s = annotations[i][1];
+      var not = annotations[i][2];
+
       var annotationID = CATMAID.annotations.getID(a);
       var value;
       if (annotationID) {
@@ -704,7 +723,11 @@
         CATMAID.warn("Couldn't find annotation \"" + a + "\"");
         return;
       }
-      params['annotated_with[' + n + ']'] = value;
+      if (not) {
+        params['not_annotated_with[' + n + ']'] = value;
+      } else {
+        params['annotated_with[' + n + ']'] = value;
+      }
       if (s) params['sub_annotated_with[' + n + ']'] = value;
       ++n;
     }
@@ -1082,6 +1105,16 @@
 
     $newRow.children()[0].innerHTML = 'and:';
 
+    // Update 'not' field
+    $newRow.find('input[name=neuron_query_by_annotation_not]')
+        .prop('checked', false)
+        .attr({
+          id: 'neuron_query_by_annotation_not' + this.widgetID + '_' +
+              this.nextFieldID,
+          name: 'neuron_query_by_annotation_not' + this.widgetID + '_' +
+              this.nextFieldID,
+        });
+
     // Update the text field attributes.
     var $text = $newRow.find("input[type='text']");
     $text.attr({
@@ -1101,14 +1134,14 @@
     $("#neuron_query_by_annotator" + this.widgetID).before($newRow);
 
     // By default, sub-annotations should not be included
-    $newRow.find('input[type=checkbox]')
+    $newRow.find('input[name=neuron_query_include_subannotation]')
         .prop('checked', false)
         .attr({
           id: 'neuron_query_include_subannotation' + this.widgetID + '_' +
               this.nextFieldID,
           name: 'neuron_query_include_subannotation' + this.widgetID + '_' +
-              this.nextFieldID,
-    });
+              this.nextFieldID
+        });
 
     this.nextFieldID += 1;
   };

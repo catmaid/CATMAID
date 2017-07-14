@@ -55,6 +55,12 @@ Node filters:
   value below/same as/above a user defined number.
 
 
+Neuron Search:
+
+- It is now possible to use the "not" operator with neuron name and annotation
+  search criteria.
+
+
 Miscellaneous:
 
 - Split/Merge dialog: the node count for both respectively remaining/new and

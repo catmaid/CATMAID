@@ -437,6 +437,10 @@ div.clustering-content .content {
   margin-left: 0.2em;
 }
 
+table.neuron_annotations_query_fields {
+  border-spacing: 0.5em 0.1em;
+}
+
 .neuron_annotations_query_results_table td {
   padding: 2px;
   vertical-align: top;

@@ -19,20 +19,25 @@ from catmaid.control.common import defaultdict, get_relation_to_id_map, \
 from six.moves import range, map
 
 
-def create_basic_annotated_entity_query(project, params, relations, classes,
-        allowed_classes=['neuron', 'annotation']):
+def get_annotated_entities(project, params, relations, classes,
+        allowed_classes=['neuron', 'annotation'], sort_by=None, sort_dir=None,
+        range_start=None, range_length=None, with_annotations=True, with_skeletons=True):
+    """Get a list of annotated entities based on the passed in search criteria.
+    """
     # Get IDs of constraining classes.
-    allowed_class_ids = [classes[c] for c in allowed_classes]
-
-    annotated_with = relations['annotated_with']
+    allowed_class_idx = {classes[c]:c for c in allowed_classes}
+    allowed_class_ids = allowed_class_idx.keys()
 
     # One list of annotation sets for requested annotations and one for those
     # of which subannotations should be included
     annotation_sets = set()
+    not_annotation_sets = set()
     annotation_sets_to_expand = set()
+    not_annotation_sets = set()
 
     # Get name, annotator and time constraints, if available
     name = params.get('name', "").strip()
+    name_not = params.get('name_not', "false") == "true"
     annotator_ids = set(map(int, params.getlist('annotated_by')))
     start_date = params.get('annotation_date_start', "").strip()
     end_date = params.get('annotation_date_end', "").strip()
@@ -43,32 +48,38 @@ def create_basic_annotated_entity_query(project, params, relations, classes,
         if key.startswith('annotated_with'):
             annotation_set = frozenset(int(a) for a in params[key].split(','))
             annotation_sets.add(annotation_set)
+        elif key.startswith('not_annotated_with'):
+            not_annotation_set = frozenset(int(a) for a in params[key].split(','))
+            not_annotation_sets.add(not_annotation_set)
         elif key.startswith('sub_annotated_with'):
             annotation_set = frozenset(int(a) for a in params[key].split(','))
             annotation_sets_to_expand.add(annotation_set)
 
-    # Construct a dictionary that contains all the filters needed for the
-    # current query.
-    filters = {
-        'project': project,
-        'class_column_id__in': allowed_class_ids,
+    filters = [
+        'ci.project_id = %(project_id)s',
+        'ci.class_id = ANY (%(class_ids)s)'
+    ]
+    params = {
+        "project_id": project.id,
+        "class_ids": allowed_class_ids,
+        "annotated_with": relations['annotated_with'],
+        "model_of": relations['model_of']
     }
+
+    if len(annotator_ids) > 0:
+        params['annotator_ids'] = list(annotator_ids)
+    if start_date:
+        params['start_date'] = start_date
+    if end_date:
+        params['end_date'] = end_date
 
     # If a name is given, add this to the query
     if name:
-        filters['name__iregex'] = name
-
-    # Add annotator and time constraints, if available
-    if annotator_ids:
-        if len(annotator_ids) == 1:
-            filters['cici_via_a__user'] = next(iter(annotator_ids))
+        if name_not:
+            filters.append("ci.name !~* %(name)s")
         else:
-            filters['cici_via_a__user__in'] = annotator_ids
-        filters['cici_via_a__relation_id'] = annotated_with
-    if start_date:
-        filters['cici_via_a__creation_time__gte'] = start_date
-    if end_date:
-        filters['cici_via_a__creation_time__lte'] = end_date
+            filters.append("ci.name ~* %(name)s")
+        params["name"] = name
 
     # Map annotation sets to their expanded sub-annotations
     sub_annotation_ids = get_sub_annotation_ids(project, annotation_sets_to_expand,
@@ -86,26 +97,169 @@ def create_basic_annotated_entity_query(project, params, relations, classes,
             current_annotation_ids.update(sa_ids)
         annotation_id_sets.append(current_annotation_ids)
 
-    # Due to Django's QuerySet syntax, we have to add the first
-    # annotation ID set constraint to the first filter we add.
-    if annotation_id_sets:
-        first_id_set = annotation_id_sets.pop()
-        filters['cici_via_a__relation_id'] = annotated_with
-        # Use IN (OR) for a single annotation and its sub-annotations
-        filters['cici_via_a__class_instance_b_id__in'] = first_id_set
+    not_annotation_id_sets = []
+    for not_annotation_set in not_annotation_sets:
+        current_not_annotation_ids = set(not_annotation_set)
+        # Add sub annotations, if requested
+        sa_ids = sub_annotation_ids.get(not_annotation_set)
+        if sa_ids and len(sa_ids):
+           current_not_annotation_ids.update(sa_ids)
+        not_annotation_id_sets.append(current_not_annotation_ids)
 
-    # Create basic filter, possibly containing *one* annotation ID set
-    entities = ClassInstance.objects.filter(**filters)
+    # Build needed joins for annotated_with search criteria
+    joins = []
+    for n, annotation_id_set in enumerate(annotation_id_sets):
+        joins.append("""
+            INNER JOIN class_instance_class_instance cici{n}
+                    ON ci.id = cici{n}.class_instance_a
+        """.format(n=n))
 
-    # Add remaining filters for annotation constraints, if any
-    for annotation_id_set in annotation_id_sets:
-        entities = entities.filter(
-            cici_via_a__relation_id=annotated_with,
-            cici_via_a__class_instance_b_id__in=annotation_id_set)
+        filters.append("""
+            cici{n}.relation_id = %(annotated_with)s AND
+            cici{n}.class_instance_b = ANY (%(cici{n}_ann)s)
+        """.format(n=n))
 
-    # Create final query. Without any restriction, the result set will contain
-    # all instances of the given set of allowed classes.
-    return entities
+        params['cici{}_ann'.format(n)] = list(annotation_id_set)
+
+        # Add annotator and time constraints, if available
+        if annotator_ids:
+            filters.append("""
+                cici{n}.user_id = ANY (%(annotator_ids)s)
+            """.format(n=n))
+        if start_date:
+            filters.append("""
+                cici{n}.creation_time >= %(start_date)
+            """.format(n=n))
+        if end_date:
+            filters.append("""
+                cici{n}.creation_time <= %(end_date)
+             """.format(n=n))
+
+    # To exclude class instsances that are linked to particular annotation, all
+    # annotations are collected and if in this list of annotations contains an
+    # exclusion annotation, it is removed.
+    if not_annotation_sets:
+        joins.append("""
+            LEFT JOIN LATERAL (
+                SELECT cici_a.class_instance_a AS id,
+                        array_agg(cici_a.class_instance_b) AS annotations
+                FROM class_instance_class_instance cici_a
+                WHERE cici_a.class_instance_a = ci.id
+                  AND cici_a.relation_id = %(annotated_with)s
+                GROUP BY 1
+            ) ann_link ON ci.id = ann_link.id
+        """)
+        for n, annotation_id_set in enumerate(not_annotation_sets):
+            filters.append("""
+                NOT (ann_link.annotations && %(cici_ex{n}_ann)s)
+            """.format(n=n))
+            params['cici_ex{n}_ann'.format(n=n)] = list(annotation_id_set)
+
+    # The bassic query
+    query = """
+        SELECT {fields}
+        FROM class_instance ci
+        {joins}
+        WHERE {where}
+        {sort}
+        {offset}
+    """
+
+    cursor = connection.cursor()
+
+    # If there are range limits and given that it is likely that there are many
+    # entities returned, it is more efficient to get the total result number
+    # with two queries: 1. Get total number of neurons 2. Get limited set. The
+    # (too expensive) alternative would be to get all neurons for counting and
+    # limiting on the Python side.
+    num_total_records = None
+    offset = ""
+    if range_start is not None and range_length is not None:
+        # Get total number of results with separate query. No sorting or offset
+        # is needed for this.
+        query_fmt_params = {
+            'fields': 'COUNT(*)',
+            'joins': '\n'.join(joins),
+            'where': ' AND '.join(filters),
+            'sort': '',
+            'offset': ''
+        }
+        cursor.execute(query.format(**query_fmt_params), params)
+        num_total_records = cursor.fetchone()[0]
+
+        offset = "OFFSET %(range_start)s LIMIT %(range_length)s"
+        params['range_start'] = int(range_start)
+        params['range_length'] = int(range_length)
+
+    # Add skeleton ID info (if available)
+    joins.append("""
+        LEFT JOIN LATERAL (
+            SELECT cici_n.class_instance_b AS id,
+                    array_agg(cici_n.class_instance_a) AS skeletons
+            FROM class_instance_class_instance cici_n
+            WHERE cici_n.class_instance_b = ci.id
+              AND cici_n.relation_id = %(model_of)s
+            GROUP BY 1
+        ) skel_link ON ci.id = skel_link.id
+    """)
+
+    query_fmt_params = {
+        "joins": "\n".join(joins),
+        "where": " AND ".join(filters),
+        "sort": "",
+        "offset": offset,
+        "fields": "ci.id, ci.user_id, ci.creation_time, " \
+            "ci.edition_time, ci.project_id, ci.class_id, ci.name, " \
+            "skel_link.skeletons"
+    }
+
+    # Sort if requested
+    if sort_dir and sort_by:
+        query_fmt_params['sort'] = "ORDER BY {sort_col} {sort_dir}".format(
+                sort_col=sort_by, sort_dir=sort_dir.upper())
+
+    # Execute quert and build result data structure
+    cursor.execute(query.format(**query_fmt_params), params)
+
+    entities = []
+    for e in cursor.fetchall():
+        class_name = allowed_class_idx[e[5]]
+        entity_info = {
+            'id': e[0],
+            'name': e[6],
+            'type': class_name,
+        }
+
+        # Depending on the type of entity, some extra information is added.
+        if class_name == 'neuron':
+            entity_info['skeleton_ids'] = e[7]
+
+        entities.append(entity_info)
+
+    if num_total_records is None:
+        num_total_records = len(entities)
+
+    if with_annotations:
+        entity_ids = [e['id'] for e in entities]
+        # Make second query to retrieve annotations and skeletons
+        annotations = ClassInstanceClassInstance.objects.filter(
+            relation_id = relations['annotated_with'],
+            class_instance_a__id__in = entity_ids).order_by('id').values_list(
+                    'class_instance_a', 'class_instance_b',
+                    'class_instance_b__name', 'user__id')
+
+        annotation_dict = {}
+        for a in annotations:
+            if a[0] not in annotation_dict:
+                annotation_dict[a[0]] = []
+            annotation_dict[a[0]].append(
+            {'id': a[1], 'name': a[2], 'uid': a[3]})
+
+        for e in entities:
+            e['annotations'] = annotation_dict.get(e['id'], [])
+
+    return entities, num_total_records
+
 
 def get_sub_annotation_ids(project_id, annotation_sets, relations, classes):
     """ Sub-annotations are annotations that are annotated with an annotation
@@ -159,63 +313,6 @@ def get_sub_annotation_ids(project_id, annotation_sets, relations, classes):
         sa_ids[annotation_set] = list(ls)
 
     return sa_ids
-
-def create_annotated_entity_list(project, entities_qs, relations, annotations=True):
-    """ Executes the expected class instance queryset in <entities> and expands
-    it to aquire more information.
-    """
-    # Cache class name
-    entities = entities_qs.select_related('class_column')
-    entity_ids = [e.id for e in entities]
-
-    # Make third query to retrieve all skeletons and root nodes for entities (if
-    # they have such).
-    skeletons = ClassInstanceClassInstance.objects.filter(
-            relation_id = relations['model_of'],
-            class_instance_b__in = entity_ids).order_by('id').values_list(
-                'class_instance_a', 'class_instance_b')
-
-    skeleton_dict = {}
-    for s in skeletons:
-        if s[1] not in skeleton_dict:
-            skeleton_dict[s[1]] = []
-        skeleton_dict[s[1]].append(s[0])
-
-    annotated_entities = []
-    for e in entities:
-        class_name = e.class_column.class_name
-        entity_info = {
-            'id': e.id,
-            'name': e.name,
-            'type': class_name,
-        }
-
-        # Depending on the type of entity, some extra information is added.
-        if class_name == 'neuron':
-            entity_info['skeleton_ids'] = skeleton_dict[e.id] \
-                    if e.id in skeleton_dict else []
-
-        annotated_entities.append(entity_info)
-
-    if annotations:
-        # Make second query to retrieve annotations and skeletons
-        annotations = ClassInstanceClassInstance.objects.filter(
-            relation_id = relations['annotated_with'],
-            class_instance_a__id__in = entity_ids).order_by('id').values_list(
-                    'class_instance_a', 'class_instance_b',
-                    'class_instance_b__name', 'user__id')
-
-        annotation_dict = {}
-        for a in annotations:
-            if a[0] not in annotation_dict:
-                annotation_dict[a[0]] = []
-            annotation_dict[a[0]].append(
-            {'id': a[1], 'name': a[2], 'uid': a[3]})
-
-        for e in annotated_entities:
-            e['annotations'] = annotation_dict.get(e['id'], [])
-
-    return annotated_entities
 
 @api_view(['POST'])
 @requires_user_role([UserRole.Browse])
@@ -283,8 +380,8 @@ def query_annotated_classinstances(request, project_id = None):
         description: The first result element index.
         type: integer
         paramType: form
-      - name: range_end
-        description: The maximum number result elements.
+      - name: range_length
+        description: The number of results
         type: integer
         paramType: form
     models:
@@ -328,10 +425,6 @@ def query_annotated_classinstances(request, project_id = None):
     # Type constraints
     allowed_classes = get_request_list(request.POST, 'types', ['neuron', 'annotation'])
 
-    query = create_basic_annotated_entity_query(p, request.POST,
-            relations, classes, allowed_classes)
-
-    # Sorting
     sort_by = request.POST.get('sort_by', 'id')
     if sort_by not in ('id', 'name', 'first_name', 'last_name'):
         raise ValueError("Only 'id', 'name', 'first_name' and 'last_name' "
@@ -339,35 +432,18 @@ def query_annotated_classinstances(request, project_id = None):
     sort_dir = request.POST.get('sort_dir', 'asc')
     if sort_dir not in ('asc', 'desc'):
         raise ValueError("Only 'asc' and 'desc' are allowed for the 'sort-dir' parameter")
-    query = query.order_by(sort_by if sort_dir == 'asc' else ('-' + sort_by))
 
-    # Make sure we get a distinct result, which otherwise might not be the case
-    # due to the joins made.
-    query = query.distinct()
-
-    # If there are range limits and given that it is very likely that there are
-    # many entities returned, it is more efficient to get the total result
-    # number with two queries: 1. Get total number of neurons 2. Get limited
-    # set. The (too expensive) alternative would be to get all neurons for
-    # counting and limiting on the Python side.
     range_start = request.POST.get('range_start', None)
     range_length = request.POST.get('range_length', None)
     with_annotations = request.POST.get('with_annotations', 'false') == 'true'
-    if range_start and range_length:
-        range_start = int(range_start)
-        range_length = int(range_length)
-        num_records = query.count()
-        entities = create_annotated_entity_list(p,
-                query[range_start:range_start + range_length],
-                relations, with_annotations)
-    else:
-        entities = create_annotated_entity_list(p, query, relations,
-                with_annotations)
-        num_records = len(entities)
+
+    entities, num_total_records = get_annotated_entities(p, request.POST,
+            relations, classes, allowed_classes, sort_by, sort_dir, range_start,
+            range_length, with_annotations)
 
     return JsonResponse({
       'entities': entities,
-      'totalRecords': num_records,
+      'totalRecords': num_total_records,
     })
 
 

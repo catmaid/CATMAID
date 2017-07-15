@@ -26,7 +26,7 @@ def get_annotated_entities(project, params, relations, classes,
     """
     # Get IDs of constraining classes.
     allowed_class_idx = {classes[c]:c for c in allowed_classes}
-    allowed_class_ids = allowed_class_idx.keys()
+    allowed_class_ids = list(six.iterkeys(allowed_class_idx))
 
     # One list of annotation sets for requested annotations and one for those
     # of which subannotations should be included

@@ -942,8 +942,8 @@
         for (var eId in expandedModels) {
           // Make sure we only announce now unavailable skeletons as removed
           if (!(eId in currentModels)) {
-            delete expandedModels[e.id];
-            delete this.entityMap[e.id];
+            delete expandedModels[eId];
+            delete this.entityMap[eId];
           }
         }
         if (!CATMAID.tools.isEmpty(expandedModels)) {

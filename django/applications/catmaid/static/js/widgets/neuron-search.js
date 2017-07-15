@@ -171,6 +171,12 @@
         // Replace {{NA-ID}} with the actual widget ID
         content.innerHTML = container_html.replace(/{{NA-ID}}/g, this.widgetID);
 
+        // Add a header click handler to know when a sorting event happens
+        $("thead th:nth-child(-n+2)", content).on('click', (function() {
+          // Remove any expansions before sorting
+          this.removeAllExpansions();
+        }).bind(this));
+
         // Add a container that gets displayed if no results could be found
         var no_results = document.createElement('div');
         no_results.setAttribute('id', 'neuron_annotations_query_no_results' + this.widgetID);
@@ -494,8 +500,8 @@
         order: [],
         processing: true,
         columns: [
-          { "orderable": false },
-          { "orderable": false },
+          { "orderable": true },
+          { "orderable": true },
           { "orderable": false, "visible": this.displayAnnotations }
         ]
       }).off('.dt').on('draw.dt', this, function(e) {
@@ -810,6 +816,49 @@
       if (datatable) {
         datatable.rows().invalidate();
       }
+    }
+  };
+
+  /**
+   * Clear all expansions
+   */
+  NeuronSearch.prototype.removeAllExpansions = function() {
+    var $table = $('#neuron_annotations_query_results_table' + this.widgetID);
+    var $datatable = $table.DataTable();
+    $datatable.rows($('tr[expansion]', $table)).remove();
+    $('tr[expanded]', $table).removeAttr('expanded');
+
+    var self = this;
+    var expandedModels = {};
+    this.expansions.forEach(function(expansionSlot, entity) {
+      var expandedEntities = self.queryResults[expansionSlot];
+      if (expandedEntities) {
+        for (var skid in getSkeletonIDsInResult(expandedEntities)) {
+          expandedModels[skid] = self.getSkeletonModel(skid);
+        }
+      }
+
+      // Delete sub-expansion query result and reference to it
+      self.expansions.delete(entity);
+      self.queryResults.splice(expansionSlot, 1);
+    });
+
+    // Update current result table classes
+    this.update_result_row_classes();
+
+    // Find all unique skeletons that now are not available anymore from
+    // this widget (i.e. that are not part of any other expansion or the
+    // general results).
+    var currentModels = this.getSkeletonModels();
+    for (var eId in expandedModels) {
+      // Make sure we only announce now unavailable skeletons as removed
+      if (!(eId in currentModels)) {
+        delete expandedModels[eId];
+        delete this.entityMap[eId];
+      }
+    }
+    if (!CATMAID.tools.isEmpty(expandedModels)) {
+      this.triggerRemove(expandedModels);
     }
   };
 

@@ -60,6 +60,8 @@ Neuron Search:
 - It is now possible to use the "not" operator with neuron name and annotation
   search criteria.
 
+- Both neuron name and type columns can now be sorted.
+
 
 Miscellaneous:
 

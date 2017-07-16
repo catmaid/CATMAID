@@ -98,6 +98,7 @@
           columns: [
             {className: "cm-center", title: "Skeleton ID", data: "skeletonId"},
             {className: "cm-center", title: "Tracing time", data: "tracingTime"},
+            {className: "cm-center", title: "Review time", data: "reviewTime"},
           ]
         });
       }
@@ -144,7 +145,7 @@
       with_tags: true,
       with_history: true,
       with_merge_history: true,
-      with_review: true
+      with_reviews: true
     }).then(function(detail) {
       var skeletonStats = [];
       for (var i=0, max=skeletonIds.length; i<max; ++i) {
@@ -167,7 +168,8 @@
         var availableEvents = {
           nodes: new TS.EventSource(skeletonDetail[0], 8),
           connectors: new TS.EventSource(skeletonDetail[1], 6),
-          tags: new TS.EventSource(tags, 2)
+          tags: new TS.EventSource(tags, 2),
+          reviews: new TS.EventSource(skeletonDetail[3], 3)
         };
 
         // Get the sorted history of each node
@@ -176,13 +178,14 @@
         // Get sorted total events
         // TODO: Count annotations
         var tracingEvents = TS.mergeEventSources(availableEvents, ["nodes", "connectors", "tags"], 'asc');
+        var reviewEvents = TS.mergeEventSources(availableEvents, ["reviews"], 'asc');
 
         // Calculate tracing time by finding active bouts. Each bout is
         // represented by a lists of events that contribute to the
         // reconstruction of a neuron. These events are currently node edits and
         // connector edits.
         var activeTracingBouts = TS.getActiveBouts(tracingEvents, maxInactivityTime);
-        //var activeReviewBouts = TS.getActiveBouts(reviewEvents, maxInactivityTime);
+        var activeReviewBouts = TS.getActiveBouts(reviewEvents, maxInactivityTime);
 
         //var firstReviewTime = TS.getMinTime(activeTracingBouts);
         //var lastReviewTime = TS.getMaxTime(activeTracingBouts);
@@ -191,11 +194,12 @@
         //var arborAfterReview = getArborAfterPointInTime(tracingEvents, lastReviewTime);
 
         var totalTime = TS.getTotalTime(activeTracingBouts);
+        var reviewTime = TS.getTotalTime(activeReviewBouts);
 
         skeletonStats.push({
           skeletonId: skeletonId,
           tracingTime: CATMAID.tools.humanReadableTimeInterval(totalTime),
-          reviewTime: "?", //TS.getTotalTime(activeReviewBouts),
+          reviewTime: CATMAID.tools.humanReadableTimeInterval(reviewTime),
           cableBeforeReview: "?", //arborBeforeReview.cableLength(positions),
           cableAfterReview: "?", //arborAfterReview.cableLength(positions),
           connBeforeReview: "?",

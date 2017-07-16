@@ -99,6 +99,8 @@
             {className: "cm-center", title: "Skeleton ID", data: "skeletonId"},
             {className: "cm-center", title: "Tracing time", data: "tracingTime"},
             {className: "cm-center", title: "Review time", data: "reviewTime"},
+            {title: "Cable before review", data: "cableBeforeReview"},
+            {title: "Cable after review", data: "cableAfterReview"},
           ]
         });
       }
@@ -164,7 +166,6 @@
         var tags = Array.prototype.concat.apply([], inputTagLists);
 
         var TS = CATMAID.TimeSeries;
-        // TODO: Review info
         var availableEvents = {
           nodes: new TS.EventSource(skeletonDetail[0], 8),
           connectors: new TS.EventSource(skeletonDetail[1], 6),
@@ -173,35 +174,62 @@
         };
 
         // Get the sorted history of each node
-        var history = TS.makeHistoryIndex(availableEvents);
+        var history = TS.makeHistoryIndex(availableEvents, true);
 
-        // Get sorted total events
-        // TODO: Count annotations
+        // Set parent ID of parent nodes that are not available from the index
+        // null. This essentially makes them root nodes. Which, however, for a
+        // the given point in time is correct.
+        TS.setUnavailableReferencesNull(availableEvents.nodes, history.nodes, 1);
+
+        // Get sorted total events for both reconstruction and review
+        // TODO: Count annotations and all writes
         var tracingEvents = TS.mergeEventSources(availableEvents, ["nodes", "connectors", "tags"], 'asc');
         var reviewEvents = TS.mergeEventSources(availableEvents, ["reviews"], 'asc');
 
-        // Calculate tracing time by finding active bouts. Each bout is
-        // represented by a lists of events that contribute to the
-        // reconstruction of a neuron. These events are currently node edits and
-        // connector edits.
+        // Calculate tracing time by finding active bouts. Each bout consists of
+        // a lists of events that contribute to the reconstruction of a neuron.
+        // These events are currently node edits and connector edits.
         var activeTracingBouts = TS.getActiveBouts(tracingEvents, maxInactivityTime);
         var activeReviewBouts = TS.getActiveBouts(reviewEvents, maxInactivityTime);
 
-        //var firstReviewTime = TS.getMinTime(activeTracingBouts);
-        //var lastReviewTime = TS.getMaxTime(activeTracingBouts);
-
-        //var arborBeforeReview = getArborBeforePointInTime(tracingEvents, firstReviewTime);
-        //var arborAfterReview = getArborAfterPointInTime(tracingEvents, lastReviewTime);
-
+        // Comput total time intervals
         var totalTime = TS.getTotalTime(activeTracingBouts);
         var reviewTime = TS.getTotalTime(activeReviewBouts);
+
+        // Get first and last review event. Bouts are sorted already, which
+        // makes it easy to get min and max time.
+        var firstReviewTime, lastReviewTime;
+        if (activeReviewBouts.length > 0) {
+          firstReviewTime = activeReviewBouts[0].minDate;
+          lastReviewTime = activeReviewBouts[activeReviewBouts.length -1].maxDate;
+        }
+        var reviewAvailable = firstReviewTime && lastReviewTime;
+
+        var cableBeforeReview = "N/A", cableAfterReview = "N/A";
+        if (reviewAvailable) {
+          var arborParserBeforeReview = TS.getArborBeforePointInTime(history.nodes, firstReviewTime);
+          cableBeforeReview = Math.round(arborParserBeforeReview.arbor.cableLength(
+              arborParserBeforeReview.positions));
+          // TODO: Is it okay to take "now" as reference or do we need the last
+          // review time? I.e. is the final arbor the interesting one or the one
+          // right after review?
+          var arborParserAfterReview = TS.getArborBeforePointInTime(history.nodes, new Date());
+          cableAfterReview = Math.round(arborParserAfterReview.arbor.cableLength(
+              arborParserAfterReview.positions));
+        } else {
+          // without reviews, the arbor at its current state is the one before
+          // reviews.
+          var arborParserBeforeReview = TS.getArborBeforePointInTime(history.nodes, new Date());
+          cableBeforeReview = Math.round(arborParserBeforeReview.arbor.cableLength(
+              arborParserBeforeReview.positions));
+        }
 
         skeletonStats.push({
           skeletonId: skeletonId,
           tracingTime: CATMAID.tools.humanReadableTimeInterval(totalTime),
           reviewTime: CATMAID.tools.humanReadableTimeInterval(reviewTime),
-          cableBeforeReview: "?", //arborBeforeReview.cableLength(positions),
-          cableAfterReview: "?", //arborAfterReview.cableLength(positions),
+          cableBeforeReview: cableBeforeReview,
+          cableAfterReview: cableAfterReview,
           connBeforeReview: "?",
           connAfterReview: "?",
           splitsDuringReview: "?",

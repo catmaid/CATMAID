@@ -248,8 +248,11 @@
    * Create history data structure to make timestamp based look-up easier. Each
    * data type has its own map of IDs to historic and present data, with each
    * datum represented by an actual date, which in turn maps to element data.
+   *
+   * @param {Object} options Maps entry name to a {data: [], timeIndex: n}
+   *                          array.
    */
-  TimeSeries.makeHistoryIndex = function(options) {
+  TimeSeries.makeHistoryIndex = function(options, setUnavailableNull) {
     var history = {};
     for (var field in options) {
       var config = options[field];
@@ -261,6 +264,27 @@
       ids.forEach(CATMAID.TimeSeries.sortArrays.bind(history[field], config.timeIndex));
     }
     return history;
+  };
+
+  /* Test each <data> element if the value at index <idx> is available as key in
+   * the passted in <historyIndex> (see makeHistoryIndex()). If not, the value
+   * at index <idx> will become null.
+   *
+   * @param {EventSource}  eventSource  The list of data elements to check.
+   * @param {HistoryIndex} historyIndex A history index created with
+   *                                    makeHistoryIndex().
+   * @param {idx}          idx          The index in a data element to test and
+   *                                    update.
+   */
+  TimeSeries.setUnavailableReferencesNull = function(eventSource, historyIndex, idx) {
+    var data = eventSource.data;
+    for (var i=0, max=data.length; i<max; ++i) {
+      var element = data[i];
+      var key = element[idx];
+      if (historyIndex[key] === undefined) {
+        element[idx] = null;
+      }
+    }
   };
 
   /**
@@ -297,6 +321,15 @@
       }
       return o;
     }, [[], null]);
+  };
+
+  /**
+   * Get a new arbor parser instance valid at the given point in time.
+   */
+  TimeSeries.getArborBeforePointInTime = function(nodeHistory, timestamp) {
+    var nodes = TimeSeries.getDataUntil(nodeHistory, timestamp)[0];
+    var parser = new CATMAID.ArborParser();
+    return parser.tree(nodes);
   };
 
 

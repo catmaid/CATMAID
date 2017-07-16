@@ -172,14 +172,24 @@ def compact_skeleton_detail(request, project_id=None, skeleton_id=None):
       paramType: form
     - name: with_history
       description: |
-        Whether history information should be returned for each treenode and connector.
+        Whether history information should be returned for each treenode and
+        connector.
       required: false
       type: boolean
       defaultValue: "false"
       paramType: form
     - name: with_merge_history
       description: |
-        Whether the history of arbors merged into the requested skeleton should be returned. Only used if history is returned.
+        Whether the history of arbors merged into the requested skeleton should
+        be returned. Only used if history is returned.
+      required: false
+      type: boolean
+      defaultValue: "false"
+      paramType: form
+    - name: with_reviews
+      description: |
+        Whether a node index should be returned that maps node IDs to the
+        list of reviews done on them, respects history parameter.
       required: false
       type: boolean
       defaultValue: "false"
@@ -197,9 +207,11 @@ def compact_skeleton_detail(request, project_id=None, skeleton_id=None):
     with_tags = request.GET.get("with_tags", "false")
     with_history = request.GET.get("with_history", "false") == "true"
     with_merge_history = request.GET.get("with_merge_history", "false") == "true"
+    with_reviews = request.GET.get("with_reviews", "false") == "true"
 
     result = _compact_skeleton(project_id, skeleton_id, with_connectors,
-                               with_tags, with_history, with_merge_history)
+                               with_tags, with_history, with_merge_history,
+                               with_reviews)
 
     return JsonResponse(result, safe=False,
             json_dumps_params={
@@ -224,9 +236,11 @@ def compact_skeleton(request, project_id=None, skeleton_id=None, with_connectors
     # Indicate if history of merged in skeletons should also be included if
     # history is returned. Ignored if history is not retrieved.
     with_merge_history = request.GET.get("with_merge_history", "false") == "true"
+    with_reviews = request.GET.get("with_reviews", "false") == "true"
 
     result = _compact_skeleton(project_id, skeleton_id, with_connectors,
-                               with_tags, with_history, with_merge_history)
+                               with_tags, with_history, with_merge_history,
+                               with_reviews)
 
     return JsonResponse(result, safe=False,
             json_dumps_params={
@@ -300,6 +314,14 @@ def compact_skeleton_detail_many(request, project_id=None):
       type: boolean
       defaultValue: "false"
       paramType: form
+    - name: with_reviews
+      description: |
+        Whether a node index should be returned that maps node IDs to the
+        list of reviews done on them, respects history parameter.
+      required: false
+      type: boolean
+      defaultValue: "false"
+      paramType: form
     type:
     - type: array
       items:
@@ -312,15 +334,16 @@ def compact_skeleton_detail_many(request, project_id=None):
     with_tags = request.POST.get("with_tags", "false")
     with_history = request.POST.get("with_history", "false") == "true"
     with_merge_history = request.POST.get("with_merge_history", "false") == "true"
+    with_reviews = request.POST.get("with_reviews", "false") == "true"
 
     if not skeleton_ids:
         raise ValueError("No skeleton IDs provided")
 
     skeletons = {}
     for skeleton_id in skeleton_ids:
-        print skeleton_id
         skeletons[skeleton_id] = _compact_skeleton(project_id, skeleton_id,
-                with_connectors, with_tags, with_history, with_merge_history)
+                with_connectors, with_tags, with_history, with_merge_history,
+                with_reviews)
 
     return JsonResponse({
         "skeletons": skeletons
@@ -330,13 +353,16 @@ def compact_skeleton_detail_many(request, project_id=None):
     })
 
 
-def _compact_skeleton(project_id, skeleton_id, with_connectors=True, with_tags=True, with_history=False, with_merge_history=True):
+def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
+        with_tags=True, with_history=False, with_merge_history=True,
+        with_reviews=False):
     """Get a compact treenode representation of a skeleton, optionally with the
     history of individual nodes and connectors. Note this function is
-    performance critical!
-
-    Returns, in JSON, [[nodes], [connectors], {nodeID: [tags]}], with
-    connectors and tags being empty when 0 == with_connectors and 0 ==
+    performance critical! Returns, in JSON:
+    
+      [[nodes], [connectors], {nodeID: [tags]}, [reviews]]
+    
+    with connectors and tags being empty when 0 == with_connectors and 0 ==
     with_tags, respectively.
 
     If history data is requested, each row contains a validity interval. Note
@@ -434,6 +460,7 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True, with_tags=T
 
     connectors = ()
     tags = defaultdict(list)
+    reviews = []
 
     if with_connectors or with_tags:
         # postgres is caching this query
@@ -527,10 +554,26 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True, with_tags=T
               AND c.id = tci.class_instance_id
         '''.format(t_history_query, history_suffix), (skeleton_id, relations['labeled_as']))
 
-        for row in cursor.fetchall():
-            tags[row[0]].append(row[1])
+        if with_history:
+            for row in cursor.fetchall():
+                tags[row[0]].append([row[1], row[2]])
+        else:
+            for row in cursor.fetchall():
+                tags[row[0]].append(row[1])
 
-    return [nodes, connectors, tags]
+    if with_reviews:
+        r_history_query = ', r.review_time' if with_history else ''
+        history_suffix = '__with_history' if with_history else ''
+        cursor.execute("""
+            SELECT r.treenode_id, r.id, r.reviewer_id{0}
+            FROM review{1} r
+            WHERE r.skeleton_id = %s
+        """.format(r_history_query, history_suffix), [skeleton_id])
+
+        for r in cursor.fetchall():
+            reviews.append(r)
+
+    return [nodes, connectors, tags, reviews]
 
 
 def _compact_arbor(project_id=None, skeleton_id=None, with_nodes=None,

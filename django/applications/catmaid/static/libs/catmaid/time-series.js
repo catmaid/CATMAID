@@ -86,7 +86,15 @@
   };
 
   TimeSeries.EventSource = function(data, timeIndex) {
-    this.data = data;
+    if (Array.isArray(data)) {
+      this.data = data;
+    } else {
+      var unmappedData = Object.keys(data);
+      for (var i=0, max=unmappedData.length; i<max; ++i) {
+        unmappedData[i] = data[unmappedData[i]];
+      }
+      this.data = unmappedData;
+    }
     this.timeIndex = timeIndex;
   };
 

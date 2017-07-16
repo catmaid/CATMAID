@@ -156,18 +156,26 @@
           continue;
         }
 
+        var inputTagLists = [];
+        for (var tag in skeletonDetail[3]) {
+          inputTagLists.push(skeletonDetail[3][tag]);
+        }
+        var tags = Array.prototype.concat.apply([], inputTagLists);
+
         var TS = CATMAID.TimeSeries;
         // TODO: Review info
         var availableEvents = {
           nodes: new TS.EventSource(skeletonDetail[0], 8),
-          connectors: new TS.EventSource(skeletonDetail[1], 6)
+          connectors: new TS.EventSource(skeletonDetail[1], 6),
+          tags: new TS.EventSource(tags, 2)
         };
 
         // Get the sorted history of each node
         var history = TS.makeHistoryIndex(availableEvents);
 
         // Get sorted total events
-        var tracingEvents = TS.mergeEventSources(availableEvents, ["nodes", "connectors"], 'asc');
+        // TODO: Count annotations
+        var tracingEvents = TS.mergeEventSources(availableEvents, ["nodes", "connectors", "tags"], 'asc');
 
         // Calculate tracing time by finding active bouts. Each bout is
         // represented by a lists of events that contribute to the

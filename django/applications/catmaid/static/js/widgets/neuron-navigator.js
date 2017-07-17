@@ -2193,6 +2193,20 @@
       }
     }).bind(this);
 
+    var neuronHistoryButton = document.createElement('input');
+    neuronHistoryButton.setAttribute('type', 'button');
+    neuronHistoryButton.setAttribute('value', 'Neuron history');
+    container.append(neuronHistoryButton);
+
+    neuronHistoryButton.onclick = (function() {
+      if (this.skeleton_ids.length > 0) {
+        var handles = WindowMaker.create('neuron-history');
+        if (handles && handles.widget) {
+          handles.widget.skeletonSource.append(this.getSelectedSkeletonModels());
+        }
+      }
+    }).bind(this);
+
 
     /* Skeletons: Request compact JSON data */
     var content = document.createElement('div');

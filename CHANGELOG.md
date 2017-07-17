@@ -65,11 +65,13 @@ Neuron Search:
 
 Neuron History:
 
-- This new widget can be opened using Ctrl+Space and the key "neuron-history".
-  For all neurons added to this widget some time information is presented.
-  Currently, there are: Tracing time, review time, cable length before review,
-  cable length after review, connectors before review and connectors after
-  review.
+- This new widget can be opened using Ctrl+Space together with the key
+  "neuron-history" or through a button in the Neuron Navigator.
+
+- For all neurons added to this widget, time related information is presented.
+  Currently, the following is calculated: Tracing time, review time, cable
+  length before review, cable length after review, connectors before review and
+  connectors after review.
 
 
 Miscellaneous:

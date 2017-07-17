@@ -3022,9 +3022,19 @@ SkeletonAnnotations.TracingOverlay.prototype.updateNodes = function (callback,
       self.refreshNodesFromTuples(json, extraNodes);
 
       // initialization hack for "URL to this view"
+      var nodeSelected = false;
       if (SkeletonAnnotations.hasOwnProperty('init_active_node_id')) {
+        nodeSelected = true;
         self.activateNode(self.nodes[SkeletonAnnotations.init_active_node_id]);
         delete SkeletonAnnotations.init_active_node_id;
+      }
+      if (SkeletonAnnotations.hasOwnProperty('init_active_skeleton_id')) {
+        if (!nodeSelected) {
+          SkeletonAnnotations.staticMoveToAndSelectClosestNode(project.coordinates.x,
+              project.coordinates.y, project.coordinates.z,
+              SkeletonAnnotations.init_active_skeleton_id, true);
+        }
+        delete SkeletonAnnotations.init_active_skeleton_id;
       }
 
       self.redraw();

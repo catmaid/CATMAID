@@ -187,7 +187,7 @@ var project;
     var yp;
     var xp;
     var init_active_node_id;
-    var init_active_skeleton;
+    var init_active_skeleton_id;
     var singleStackViewer = false;
     var initialDataviewId = null;
 
@@ -206,7 +206,7 @@ var project;
       if ( isNaN( x ) ) x = undefined;
       if ( options[ "s" ] ) s = parseFloat( options[ "s" ] );
       if ( isNaN( s ) ) s = undefined;
-      if ( options[ "active_skeleton_id" ] ) init_active_skeleton = parseInt( options[ "active_skeleton_id" ] );
+      if ( options[ "active_skeleton_id" ] ) init_active_skeleton_id = parseInt( options[ "active_skeleton_id" ] );
       if ( options[ "active_node_id" ] ) init_active_node_id = parseInt( options[ "active_node_id" ] );
 
       if ( !(
@@ -380,6 +380,10 @@ var project;
           if (init_active_node_id) {
             // initialization hack
             SkeletonAnnotations.init_active_node_id = init_active_node_id;
+          }
+          if (init_active_skeleton_id) {
+            // initialization hack
+            SkeletonAnnotations.init_active_skeleton_id = init_active_skeleton_id;
           }
         });
 

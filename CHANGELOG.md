@@ -99,6 +99,9 @@ Miscellaneous:
   were changed by other users. Additionally, such a cache update is performed
   automatically once every hour.
 
+- URLs to a particular view work now also with a location and a skeleton ID only
+  rather than requiring a node ID always.
+
 ### Bug fixes
 
 - Graph widget: re-layout works again.

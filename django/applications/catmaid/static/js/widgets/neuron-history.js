@@ -129,6 +129,20 @@
     return a[6] < a[6];
   }
 
+  function cableLength(arbor, positions) {
+    var children = arbor.childrenArray(),
+        sum = 0;
+    for (var i=0; i<children.length; ++i) {
+      var node = children[i];
+      var parentPos = positions[arbor.edges[node]];
+      if (!parentPos) {
+        parentPos = positions[node];
+      }
+      sum += positions[node].distanceTo(parentPos);
+    }
+    return sum;
+  }
+
   /**
    * Return a promise that resolves with a list of objects, where each
    * represents a set of statistics for a neuron. These statistics are:
@@ -236,12 +250,12 @@
         // Cable length information
         var cableBeforeReview = "N/A", cableAfterReview = "N/A";
         if (reviewAvailable) {
-          cableBeforeReview = Math.round(arborParserBeforeReview.arbor.cableLength(
+          cableBeforeReview = Math.round(cableLength(arborParserBeforeReview.arbor,
               arborParserBeforeReview.positions));
-          cableAfterReview = Math.round(arborParserAfterReview.arbor.cableLength(
+          cableAfterReview = Math.round(cableLength(arborParserAfterReview.arbor,
               arborParserAfterReview.positions));
         } else {
-          cableBeforeReview = Math.round(arborParserBeforeReview.arbor.cableLength(
+          cableBeforeReview = Math.round(cableLength(arborParserBeforeReview.arbor,
               arborParserBeforeReview.positions));
         }
 

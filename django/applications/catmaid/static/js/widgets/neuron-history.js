@@ -117,7 +117,31 @@
                 help: "Number of synaptic connections to partners after last review."},
           ]
         });
-      }
+      },
+      helpText: [
+        '<p>This widget shows statistics on reconstruction and review of ',
+        'neurons over time. To do this, it groups at all events that are either ',
+        'part of the reconstruction or the review process of the input neurons. Events ',
+        'that are seen as reconstruction events are <em>Node creation/update/',
+        'deletion, connector creation/update/deletion as well as tag creation/',
+        'update/deletion</em>. </em>Reconstruction events</em> are only represented by ',
+        'themselves. Both lists of events are then used to create lists of so ',
+        'called active bouts, a sorted series of events where the time ',
+        'between two successive events isn\'t larger than a defined ',
+        '<em>maximum inactivity time</em>. The default length of this time is ',
+        '3 minutes. Based on these lists of bouts, the widget calculates the ',
+        'following for each input skeleton:',
+        '<dl>',
+        '<dt>Tracing time</dt><dd>The sum of all active tracing bouts by all users.</dt>',
+        '<dt>Review time</dt><dd>The sum of all active review bouts by all users.</dt>',
+        '<dt>Cable before review</dt><dd>Cable length before first review event.</dt>',
+        '<dt>Cable after review</dt><dd>Cable length after last review event.</dt>',
+        '<dt>Connectors before review</dt><dd>The number of connectors before first review event.</dt>',
+        '<dt>Connectors after review</dt><dd>The number of connectors after last review event</dt>',
+        '</dl></p>',
+        '<p>All values are calulate per skeleton and depending on the skeleton\'s ',
+        'size, it is possivle this takes a few minutes.</p>',
+      ].join('\n')
     };
   };
 

@@ -187,14 +187,6 @@
           reviews: new TS.EventSource(skeletonDetail[3], 3)
         };
 
-        // Get the sorted history of each node
-        var history = TS.makeHistoryIndex(availableEvents, true);
-
-        // Set parent ID of parent nodes that are not available from the index
-        // null. This essentially makes them root nodes. Which, however, for a
-        // the given point in time is correct.
-        TS.setUnavailableReferencesNull(availableEvents.nodes, history.nodes, 1);
-
         // Get sorted total events for both reconstruction and review
         // TODO: Count annotations and all writes
         var tracingEvents = TS.mergeEventSources(availableEvents, ["nodes", "connectors", "tags"], 'asc');
@@ -218,6 +210,14 @@
           lastReviewTime = activeReviewBouts[activeReviewBouts.length -1].maxDate;
         }
         var reviewAvailable = firstReviewTime && lastReviewTime;
+
+        // Get the sorted history of each node
+        var history = TS.makeHistoryIndex(availableEvents, true);
+
+        // Set parent ID of parent nodes that are not available from the index
+        // null. This essentially makes them root nodes. Which, however, for a
+        // the given point in time is correct.
+        TS.setUnavailableReferencesNull(availableEvents.nodes, history.nodes, 1);
 
         // Review relative arbors
         var arborParserBeforeReview, arborParserAfterReview;

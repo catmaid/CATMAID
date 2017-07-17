@@ -252,7 +252,7 @@
    * @param {Object} options Maps entry name to a {data: [], timeIndex: n}
    *                          array.
    */
-  TimeSeries.makeHistoryIndex = function(options, setUnavailableNull) {
+  TimeSeries.makeHistoryIndex = function(options) {
     var history = {};
     for (var field in options) {
       var config = options[field];
@@ -326,10 +326,15 @@
   /**
    * Get a new arbor parser instance valid at the given point in time.
    */
-  TimeSeries.getArborBeforePointInTime = function(nodeHistory, timestamp) {
+  TimeSeries.getArborBeforePointInTime = function(nodeHistory, connectorHistory, timestamp) {
     var nodes = TimeSeries.getDataUntil(nodeHistory, timestamp)[0];
     var parser = new CATMAID.ArborParser();
-    return parser.tree(nodes);
+    var parser =  parser.tree(nodes);
+    if (connectorHistory) {
+      var connectors = TimeSeries.getDataUntil(connectorHistory, timestamp)[0];
+      parser.connectors(connectors);
+    }
+    return parser;
   };
 
 

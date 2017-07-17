@@ -95,12 +95,26 @@
               })
               .catch(CATMAID.handleError);
           },
+          "headerCallback": function( nHead, aData, iStart, iEnd, aiDisplay ) {
+            var datatable = $(table).DataTable();
+            datatable.columns().iterator('column', function ( settings, column) {
+              if (settings.aoColumns[ column ].help!== undefined) {
+                $(datatable.column(column).header()).attr('title', settings.aoColumns[ column ].help);
+              }
+            });
+          },
           columns: [
             {className: "cm-center", title: "Skeleton ID", data: "skeletonId"},
             {className: "cm-center", title: "Tracing time", data: "tracingTime"},
             {className: "cm-center", title: "Review time", data: "reviewTime"},
-            {title: "Cable before review", data: "cableBeforeReview"},
-            {title: "Cable after review", data: "cableAfterReview"},
+            {title: "Cable before review", data: "cableBeforeReview",
+                help: "Unsmoothed cable length before first review, measured in nanometers."},
+            {title: "Cable after review", data: "cableAfterReview",
+                help: "Unsmoothed cable length after last review, measured in nanometers."},
+            {title: "Connectors before review", data: "connBeforeReview",
+                help: "Number of synaptic connections to partners before first review."},
+            {title: "Connectors after review", data: "connAfterReview",
+                help: "Number of synaptic connections to partners after last review."},
           ]
         });
       }
@@ -205,23 +219,42 @@
         }
         var reviewAvailable = firstReviewTime && lastReviewTime;
 
-        var cableBeforeReview = "N/A", cableAfterReview = "N/A";
+        // Review relative arbors
+        var arborParserBeforeReview, arborParserAfterReview;
         if (reviewAvailable) {
-          var arborParserBeforeReview = TS.getArborBeforePointInTime(history.nodes, firstReviewTime);
-          cableBeforeReview = Math.round(arborParserBeforeReview.arbor.cableLength(
-              arborParserBeforeReview.positions));
+          arborParserBeforeReview = TS.getArborBeforePointInTime(history.nodes, history.connectors, firstReviewTime);
           // TODO: Is it okay to take "now" as reference or do we need the last
           // review time? I.e. is the final arbor the interesting one or the one
           // right after review?
-          var arborParserAfterReview = TS.getArborBeforePointInTime(history.nodes, new Date());
+          arborParserAfterReview = TS.getArborBeforePointInTime(history.nodes, history.connectors, new Date());
+        } else {
+          // Without reviews, the arbor at its current state is the one before
+          // reviews.
+          arborParserBeforeReview = TS.getArborBeforePointInTime(history.nodes, history.connectors, new Date());
+        }
+
+        // Cable length information
+        var cableBeforeReview = "N/A", cableAfterReview = "N/A";
+        if (reviewAvailable) {
+          cableBeforeReview = Math.round(arborParserBeforeReview.arbor.cableLength(
+              arborParserBeforeReview.positions));
           cableAfterReview = Math.round(arborParserAfterReview.arbor.cableLength(
               arborParserAfterReview.positions));
         } else {
-          // without reviews, the arbor at its current state is the one before
-          // reviews.
-          var arborParserBeforeReview = TS.getArborBeforePointInTime(history.nodes, new Date());
           cableBeforeReview = Math.round(arborParserBeforeReview.arbor.cableLength(
               arborParserBeforeReview.positions));
+        }
+
+        // Connector information
+        var connectorsBeforeReview = "N/A", connectorsAfterReview = "N/A";
+        if (reviewAvailable) {
+          connectorsBeforeReview = arborParserBeforeReview.n_inputs +
+              arborParserBeforeReview.n_presynaptic_sites;
+          connectorsAfterReview = arborParserAfterReview.n_inputs +
+              arborParserAfterReview.n_presynaptic_sites;
+        } else {
+          connectorsBeforeReview = arborParserBeforeReview.n_inputs +
+              arborParserBeforeReview.n_presynaptic_sites;
         }
 
         skeletonStats.push({
@@ -230,8 +263,8 @@
           reviewTime: CATMAID.tools.humanReadableTimeInterval(reviewTime),
           cableBeforeReview: cableBeforeReview,
           cableAfterReview: cableAfterReview,
-          connBeforeReview: "?",
-          connAfterReview: "?",
+          connBeforeReview: connectorsBeforeReview,
+          connAfterReview: connectorsAfterReview,
           splitsDuringReview: "?",
           mergesDuringReview: "?"
         });

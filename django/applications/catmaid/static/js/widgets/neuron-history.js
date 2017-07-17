@@ -61,6 +61,20 @@
         refresh.setAttribute("value", "Refresh");
         refresh.onclick = this.refresh.bind(this);
         controls.appendChild(refresh);
+
+        var maxInactivityTime = document.createElement('input');
+        maxInactivityTime.setAttribute("type", "number");
+        maxInactivityTime.setAttribute("min", "0");
+        maxInactivityTime.style.width = "4em";
+        maxInactivityTime.setAttribute("value", this.maxInactivityTime);
+        maxInactivityTime.onclick = function() {
+          self.maxInactivityTime = this.value;
+          self.refresh();
+        };
+        var maxInactivityTimeLabel = document.createElement('label');
+        maxInactivityTimeLabel.appendChild(document.createTextNode('Max. inactivity time'));
+        maxInactivityTimeLabel.appendChild(maxInactivityTime);
+        controls.appendChild(maxInactivityTimeLabel);
       },
       createContent: function(content) {
         var self = this;

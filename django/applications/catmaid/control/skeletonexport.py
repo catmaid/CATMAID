@@ -22,7 +22,7 @@ from catmaid.models import UserRole, ClassInstance, Treenode, \
         TreenodeClassInstance, ConnectorClassInstance, Review
 from catmaid.control import export_NeuroML_Level3
 from catmaid.control.authentication import requires_user_role
-from catmaid.control.common import get_relation_to_id_map
+from catmaid.control.common import get_relation_to_id_map, get_request_list
 from catmaid.control.review import get_treenodes_to_reviews, \
         get_treenodes_to_reviews_with_time
 
@@ -172,14 +172,24 @@ def compact_skeleton_detail(request, project_id=None, skeleton_id=None):
       paramType: form
     - name: with_history
       description: |
-        Whether history information should be returned for each treenode and connector.
+        Whether history information should be returned for each treenode and
+        connector.
       required: false
       type: boolean
       defaultValue: "false"
       paramType: form
     - name: with_merge_history
       description: |
-        Whether the history of arbors merged into the requested skeleton should be returned. Only used if history is returned.
+        Whether the history of arbors merged into the requested skeleton should
+        be returned. Only used if history is returned.
+      required: false
+      type: boolean
+      defaultValue: "false"
+      paramType: form
+    - name: with_reviews
+      description: |
+        Whether a node index should be returned that maps node IDs to the
+        list of reviews done on them, respects history parameter.
       required: false
       type: boolean
       defaultValue: "false"
@@ -197,9 +207,11 @@ def compact_skeleton_detail(request, project_id=None, skeleton_id=None):
     with_tags = request.GET.get("with_tags", "false")
     with_history = request.GET.get("with_history", "false") == "true"
     with_merge_history = request.GET.get("with_merge_history", "false") == "true"
+    with_reviews = request.GET.get("with_reviews", "false") == "true"
 
     result = _compact_skeleton(project_id, skeleton_id, with_connectors,
-                               with_tags, with_history, with_merge_history)
+                               with_tags, with_history, with_merge_history,
+                               with_reviews)
 
     return JsonResponse(result, safe=False,
             json_dumps_params={
@@ -224,9 +236,11 @@ def compact_skeleton(request, project_id=None, skeleton_id=None, with_connectors
     # Indicate if history of merged in skeletons should also be included if
     # history is returned. Ignored if history is not retrieved.
     with_merge_history = request.GET.get("with_merge_history", "false") == "true"
+    with_reviews = request.GET.get("with_reviews", "false") == "true"
 
     result = _compact_skeleton(project_id, skeleton_id, with_connectors,
-                               with_tags, with_history, with_merge_history)
+                               with_tags, with_history, with_merge_history,
+                               with_reviews)
 
     return JsonResponse(result, safe=False,
             json_dumps_params={
@@ -235,13 +249,120 @@ def compact_skeleton(request, project_id=None, skeleton_id=None, with_connectors
             })
 
 
-def _compact_skeleton(project_id, skeleton_id, with_connectors=True, with_tags=True, with_history=False, with_merge_history=True):
-    """Get a compact treenode representation of a skeleton, optionally with the
-    history of individual nodes and connectors. Note this function is
-    performance critical!
+@api_view(['POST'])
+@requires_user_role(UserRole.Browse)
+def compact_skeleton_detail_many(request, project_id=None):
+    """Get a compact treenode representation of a list of skeletons, optionally
+    with the history of individual nodes and connectors.
 
     Returns, in JSON, [[nodes], [connectors], {nodeID: [tags]}], with
     connectors and tags being empty when 0 == with_connectors and 0 ==
+    with_tags, respectively.
+
+    Each element in the [nodes] array has the following form:
+
+    [skeleton_id, id, parent_id, user_id, location_x, location_y, location_z, radius, confidence].
+
+    Each element in the [connectors] array has the following form, with the
+    third element representing the connector link as 0 = presynaptic, 1 =
+    postsynaptic, 2 = gap junction, -1 = other:
+
+    [treenode_id, connector_id, 0|1|2|-1, location_x, location_y, location_z]
+
+    If history data is requested, each row contains a validity interval. Note
+    that for the live table entry (the currently valid version), there are
+    special semantics for this interval: The upper bound is older than or the
+    same as the lower bound. This is done to encode the information of this row
+    being the most recent version and including the original creation time at
+    the same time, plus it requires less queries on the back-end to retireve
+    data. This requires the client to do slightly more work, but unfortunately
+    the original creation time is needed for data that was created without
+    history tables enabled.
+    ---
+    parameters:
+    - skeleton_ids:
+        description: List of skeletons
+        type: array
+        items:
+          type: integer
+        required: true
+    - name: with_connectors
+      description: |
+        Whether linked connectors should be returned.
+      required: false
+      type: boolean
+      defaultValue: "false"
+      paramType: form
+    - name: with_tags
+      description: |
+        Whether tags should be returned.
+      required: false
+      type: boolean
+      defaultValue: "false"
+      paramType: form
+    - name: with_history
+      description: |
+        Whether history information should be returned for each treenode and connector.
+      required: false
+      type: boolean
+      defaultValue: "false"
+      paramType: form
+    - name: with_merge_history
+      description: |
+        Whether the history of arbors merged into the requested skeleton should be returned. Only used if history is returned.
+      required: false
+      type: boolean
+      defaultValue: "false"
+      paramType: form
+    - name: with_reviews
+      description: |
+        Whether a node index should be returned that maps node IDs to the
+        list of reviews done on them, respects history parameter.
+      required: false
+      type: boolean
+      defaultValue: "false"
+      paramType: form
+    type:
+    - type: array
+      items:
+        type: string
+      required: true
+    """
+    # Sanitize
+    skeleton_ids = get_request_list(request.POST, "skeleton_ids", map_fn=int)
+    with_connectors = request.POST.get("with_connectors", "false") == "true"
+    with_tags = request.POST.get("with_tags", "false")
+    with_history = request.POST.get("with_history", "false") == "true"
+    with_merge_history = request.POST.get("with_merge_history", "false") == "true"
+    with_reviews = request.POST.get("with_reviews", "false") == "true"
+
+    if not skeleton_ids:
+        raise ValueError("No skeleton IDs provided")
+
+    skeletons = {}
+    for skeleton_id in skeleton_ids:
+        skeletons[skeleton_id] = _compact_skeleton(project_id, skeleton_id,
+                with_connectors, with_tags, with_history, with_merge_history,
+                with_reviews)
+
+    return JsonResponse({
+        "skeletons": skeletons
+    }, safe=False, json_dumps_params={
+        'separators': (',', ':'),
+        'default': default
+    })
+
+
+def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
+        with_tags=True, with_history=False, with_merge_history=True,
+        with_reviews=False):
+    """Get a compact treenode representation of a skeleton, optionally with the
+    history of individual nodes and connectors. Note this function is
+    performance critical! Returns, in JSON:
+    
+      [[nodes], [connectors], {nodeID: [tags]}, [reviews]]
+    
+    with connectors and tags being empty when 0 == with_connectors and 0 ==
     with_tags, respectively.
 
     If history data is requested, each row contains a validity interval. Note
@@ -339,6 +460,7 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True, with_tags=T
 
     connectors = ()
     tags = defaultdict(list)
+    reviews = []
 
     if with_connectors or with_tags:
         # postgres is caching this query
@@ -432,10 +554,26 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True, with_tags=T
               AND c.id = tci.class_instance_id
         '''.format(t_history_query, history_suffix), (skeleton_id, relations['labeled_as']))
 
-        for row in cursor.fetchall():
-            tags[row[0]].append(row[1])
+        if with_history:
+            for row in cursor.fetchall():
+                tags[row[0]].append([row[1], row[2]])
+        else:
+            for row in cursor.fetchall():
+                tags[row[0]].append(row[1])
 
-    return [nodes, connectors, tags]
+    if with_reviews:
+        r_history_query = ', r.review_time' if with_history else ''
+        history_suffix = '__with_history' if with_history else ''
+        cursor.execute("""
+            SELECT r.treenode_id, r.id, r.reviewer_id{0}
+            FROM review{1} r
+            WHERE r.skeleton_id = %s
+        """.format(r_history_query, history_suffix), [skeleton_id])
+
+        for r in cursor.fetchall():
+            reviews.append(r)
+
+    return [nodes, connectors, tags, reviews]
 
 
 def _compact_arbor(project_id=None, skeleton_id=None, with_nodes=None,

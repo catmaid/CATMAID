@@ -406,6 +406,39 @@ CATMAID.tools = CATMAID.tools || {};
     };
   })();
 
+  tools.numberSuffix = function(n) {
+    return n > 1 ? 's' : '';
+  };
+
+  /**
+   * Return a human readable form of an amount of milliseconds.
+   */
+  tools.humanReadableTimeInterval = function(ms) {
+    var msPerSecond = 1000;
+    var msPerMinute = 60 * msPerSecond;
+    var msPerHour   = 60 * msPerMinute;
+    var msPerDay    = 24 * msPerHour;
+
+    var units = ["d", "h", "min", "sec"];
+    var values = [];
+    values.push(ms / msPerDay); ms %= msPerDay;
+    values.push(ms / msPerHour); ms %= msPerHour;
+    values.push(ms / msPerMinute); ms %= msPerMinute;
+    values.push(ms / msPerSecond); ms %= msPerSecond;
+
+    var pretty = "";
+    for (var i=0; i<values.length; ++i) {
+      var val = Math.round(values[i]);
+      if(val <= 0) continue;
+      if (i > 0) {
+        pretty += " ";
+      }
+
+      pretty += val + units[i];
+    }
+    return pretty;
+  };
+
   /**
    * Escape a string so it can be used in a regular expression without
    * triggering any regular expression patern (e.g. to search for slashes).

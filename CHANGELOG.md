@@ -63,6 +63,15 @@ Neuron Search:
 - Both neuron name and type columns can now be sorted.
 
 
+Neuron History:
+
+- This new widget can be opened using Ctrl+Space and the key "neuron-history".
+  For all neurons added to this widget some time information is presented.
+  Currently, there are: Tracing time, review time, cable length before review,
+  cable length after review, connectors before review and connectors after
+  review.
+
+
 Miscellaneous:
 
 - Split/Merge dialog: the node count for both respectively remaining/new and

@@ -20,6 +20,11 @@ None.
   'annotated_with' list, it contains annotation IDs. Results will not have the
   annotations passed in with the `not_annotated_with` list.
 
+- `GET /{project_id}/skeletons/{skeleton_id}/compact-detail` and
+  `GET /{project_id}/skeletons/compact-detail`
+  Accepts a new parameter: with_reviews. To also return a list of reviews for
+  each returned skeleto.
+
 ### Deprecations
 
 None.

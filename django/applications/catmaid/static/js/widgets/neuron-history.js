@@ -12,10 +12,11 @@
   var NeuronHistoryWidget = function() {
     this.widgetID = this.registerInstance();
     var refresh = this.refresh.bind(this);
+    var refreshSkeletons = this.refreshSkeletons.bind(this);
     this.skeletonSource = new CATMAID.BasicSkeletonSource(this.getName(), {
-      handleAddedModels: refresh,
+      handleAddedModels: refreshSkeletons,
       handleChangedModels: refresh,
-      handleRemovedModels: refresh
+      handleRemovedModels: refreshSkeletons
     });
     // The maximum allowed inacitivty time (minutes)
     this.maxInactivityTime = 3;
@@ -373,9 +374,30 @@
     this.refresh();
   };
 
+  /**
+   * Update neuron name service and refresh widget.
+   */
+  NeuronHistoryWidget.prototype.refreshSkeletons = function() {
+    var self = this;
+    var nns = CATMAID.NeuronNameService.getInstance();
+    nns.unregister(this);
+    nns.registerAll(this, this.skeletonSource.getSkeletonModels())
+      .then(function() {
+        self.refresh();
+      })
+      .catch(CATMAID.handleError);
+  };
+
   NeuronHistoryWidget.prototype.refresh = function() {
     if (this.table) {
       this.table.ajax.reload();
+    }
+  };
+
+  NeuronHistoryWidget.prototype.updateNeuronNames = function() {
+    if (this.table) {
+      this.table.rows().invalidate('data');
+      this.table.draw(false);
     }
   };
 

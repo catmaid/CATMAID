@@ -22,8 +22,9 @@ None.
 
 - `GET /{project_id}/skeletons/{skeleton_id}/compact-detail` and
   `GET /{project_id}/skeletons/compact-detail`
-  Accepts a new parameter: with_reviews. To also return a list of reviews for
-  each returned skeleto.
+  Accepts two new parameters: with_reviews and with_annotations. To also return
+  a list of reviews and a list of linked skeleton IDs respectively for each
+  returned skeleton.
 
 ### Deprecations
 

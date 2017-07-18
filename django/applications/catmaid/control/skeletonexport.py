@@ -194,6 +194,14 @@ def compact_skeleton_detail(request, project_id=None, skeleton_id=None):
       type: boolean
       defaultValue: "false"
       paramType: form
+    - name: with_annotations
+      description: |
+        Whether the list of linked annotations should be returned. If history
+        should be returned, returns all link versions.
+      required: false
+      type: boolean
+      defaultValue: "false"
+      paramType: form
     type:
     - type: array
       items:
@@ -208,10 +216,11 @@ def compact_skeleton_detail(request, project_id=None, skeleton_id=None):
     with_history = request.GET.get("with_history", "false") == "true"
     with_merge_history = request.GET.get("with_merge_history", "false") == "true"
     with_reviews = request.GET.get("with_reviews", "false") == "true"
+    with_annotations = request.GET.get("with_annotations", "false") == "true"
 
     result = _compact_skeleton(project_id, skeleton_id, with_connectors,
                                with_tags, with_history, with_merge_history,
-                               with_reviews)
+                               with_reviews, with_annotations)
 
     return JsonResponse(result, safe=False,
             json_dumps_params={
@@ -220,7 +229,8 @@ def compact_skeleton_detail(request, project_id=None, skeleton_id=None):
             })
 
 @requires_user_role(UserRole.Browse)
-def compact_skeleton(request, project_id=None, skeleton_id=None, with_connectors=None, with_tags=None):
+def compact_skeleton(request, project_id=None, skeleton_id=None,
+        with_connectors=None, with_tags=None):
     """Get a compact treenode representation of a skeleton, optionally with the
     history of individual nodes and connectors. This does exactly the same as
     compact_skeleton_detail(), but provides a slightly different interface. This
@@ -232,15 +242,16 @@ def compact_skeleton(request, project_id=None, skeleton_id=None, with_connectors
     skeleton_id = int(skeleton_id)
     with_connectors  = int(with_connectors) != 0
     with_tags = int(with_tags) != 0
-    with_history = request.GET.get("with_history", "false") == "true"
+    with_history = request.GET.get("with_history", "false").lower() == "true"
     # Indicate if history of merged in skeletons should also be included if
     # history is returned. Ignored if history is not retrieved.
-    with_merge_history = request.GET.get("with_merge_history", "false") == "true"
-    with_reviews = request.GET.get("with_reviews", "false") == "true"
+    with_merge_history = request.GET.get("with_merge_history", "false").lower() == "true"
+    with_reviews = request.GET.get("with_reviews", "false").lower() == "true"
+    with_annotations = request.GET.get("with_annotations", "false").lower() == "true"
 
     result = _compact_skeleton(project_id, skeleton_id, with_connectors,
                                with_tags, with_history, with_merge_history,
-                               with_reviews)
+                               with_reviews, with_annotations)
 
     return JsonResponse(result, safe=False,
             json_dumps_params={
@@ -322,6 +333,14 @@ def compact_skeleton_detail_many(request, project_id=None):
       type: boolean
       defaultValue: "false"
       paramType: form
+    - name: with_annotations
+      description: |
+        Whether the list of linked annotations should be returned. If history
+        should be returned, returns all link versions.
+      required: false
+      type: boolean
+      defaultValue: "false"
+      paramType: form
     type:
     - type: array
       items:
@@ -335,6 +354,7 @@ def compact_skeleton_detail_many(request, project_id=None):
     with_history = request.POST.get("with_history", "false") == "true"
     with_merge_history = request.POST.get("with_merge_history", "false") == "true"
     with_reviews = request.POST.get("with_reviews", "false") == "true"
+    with_annotations = request.POST.get("with_annotations", "false") == "true"
 
     if not skeleton_ids:
         raise ValueError("No skeleton IDs provided")
@@ -343,7 +363,7 @@ def compact_skeleton_detail_many(request, project_id=None):
     for skeleton_id in skeleton_ids:
         skeletons[skeleton_id] = _compact_skeleton(project_id, skeleton_id,
                 with_connectors, with_tags, with_history, with_merge_history,
-                with_reviews)
+                with_reviews, with_annotations)
 
     return JsonResponse({
         "skeletons": skeletons
@@ -355,12 +375,12 @@ def compact_skeleton_detail_many(request, project_id=None):
 
 def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
         with_tags=True, with_history=False, with_merge_history=True,
-        with_reviews=False):
+        with_reviews=False, with_annotations=False):
     """Get a compact treenode representation of a skeleton, optionally with the
-    history of individual nodes and connectors. Note this function is
-    performance critical! Returns, in JSON:
+    history of individual nodes and connector, reviews and annotationss. Note
+    this function is performance critical! Returns, in JSON:
     
-      [[nodes], [connectors], {nodeID: [tags]}, [reviews]]
+      [[nodes], [connectors], {nodeID: [tags]}, [reviews], [annotations]]
     
     with connectors and tags being empty when 0 == with_connectors and 0 ==
     with_tags, respectively.
@@ -462,7 +482,7 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
     tags = defaultdict(list)
     reviews = []
 
-    if with_connectors or with_tags:
+    if with_connectors or with_tags or with_annotations:
         # postgres is caching this query
         cursor.execute("SELECT relation_name, id FROM relation WHERE project_id=%s" % project_id)
         relations = dict(cursor.fetchall())
@@ -573,7 +593,29 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
         for r in cursor.fetchall():
             reviews.append(r)
 
-    return [nodes, connectors, tags, reviews]
+    annotations = []
+    if with_annotations:
+        history_suffix = '__with_history' if with_history else ''
+        link_history_query = ', annotation_link.edition_time' if with_history else ''
+        # Fetch all node tags
+        cursor.execute('''
+            SELECT annotation_link.class_instance_b
+                   {0}
+            FROM class_instance_class_instance{1} neuron_link
+            JOIN class_instance_class_instance{1} annotation_link
+                ON annotation_link.class_instance_a = neuron_link.class_instance_b
+            WHERE neuron_link.class_instance_a = %(skeleton_id)s
+              AND neuron_link.relation_id = %(model_of)s
+              AND annotation_link.relation_id = %(annotated_with)s
+        '''.format(link_history_query, history_suffix), {
+            'skeleton_id': skeleton_id,
+            'model_of': relations['model_of'],
+            'annotated_with': relations['annotated_with']
+        })
+
+        annotations = list(cursor.fetchall())
+
+    return [nodes, connectors, tags, reviews, annotations]
 
 
 def _compact_arbor(project_id=None, skeleton_id=None, with_nodes=None,

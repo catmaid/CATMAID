@@ -14,6 +14,7 @@ from guardian.utils import get_anonymous_user
 from guardian.management import create_anonymous_user
 
 from catmaid.control.project import validate_project_setup
+from catmaid.control.neuron_annotations import _annotate_entities
 from catmaid.fields import Double3D, Integer3D
 from catmaid.models import Project, Stack, ProjectStack, StackMirror
 from catmaid.models import ClassInstance, Log
@@ -193,6 +194,7 @@ class ViewPageTests(TestCase):
         """ Creates a new test client and test user. The user is assigned
         permissions to modify an existing test project.
         """
+        init_consistent_data()
         self.test_project_id = 3
         self.test_user_id = 3
         self.client = Client()
@@ -205,15 +207,6 @@ class ViewPageTests(TestCase):
         # Assign the new user permissions to browse and annotate projects
         assign_perm('can_browse', user, p)
         assign_perm('can_annotate', user, p)
-
-        cursor = connection.cursor()
-        # Make sure all counters are set correctly
-        cursor.execute("""
-            SELECT setval('concept_id_seq', coalesce(max("id"), 1), max("id") IS NOT null) FROM concept;
-        """)
-        cursor.execute("""
-            SELECT setval('location_id_seq', coalesce(max("id"), 1), max("id") IS NOT null) FROM location;
-        """)
 
     def test_testdata(self):
         """Makes sure the test data doesn't contain rows for the base tables
@@ -409,10 +402,47 @@ class ViewPageTests(TestCase):
                  [409, 407, 3, 6630.0, 4330.0, 0.0, -1.0, 5]],
                 [[377, 356, 1, 6730.0, 2700.0, 0.0],
                  [409, 421, 1, 6260.0, 3990.0, 0.0]],
-                {"uncertain end": [403]}]
+                {"uncertain end": [403]},
+                [],
+                []]
+        six.assertCountEqual(self, parsed_response, expected_response)
         six.assertCountEqual(self, parsed_response[0], expected_response[0])
         six.assertCountEqual(self, parsed_response[1], expected_response[1])
         self.assertEqual(parsed_response[2], expected_response[2])
+        self.assertEqual(parsed_response[3], expected_response[3])
+        self.assertEqual(parsed_response[4], expected_response[4])
+
+    def test_export_compact_skeleton_with_annotations(self):
+        self.fake_authentication()
+
+        skeleton_id = 373
+        neuron_id = 374
+        _, new_annotations = _annotate_entities(self.test_project_id, [neuron_id],
+                {'myannotation': {'user_id': self.test_user_id}})
+        new_annotation_link_id = new_annotations.pop()
+        url = '/%d/%d/1/1/compact-skeleton' % (self.test_project_id, skeleton_id)
+        response = self.client.get(url, {
+            'with_annotations': True
+        })
+        self.assertEqual(response.status_code, 200)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        expected_response = [
+                [[377, None, 3, 7620.0, 2890.0, 0.0, -1.0, 5],
+                 [403, 377, 3, 7840.0, 2380.0, 0.0, -1.0, 5],
+                 [405, 377, 3, 7390.0, 3510.0, 0.0, -1.0, 5],
+                 [407, 405, 3, 7080.0, 3960.0, 0.0, -1.0, 5],
+                 [409, 407, 3, 6630.0, 4330.0, 0.0, -1.0, 5]],
+                [[377, 356, 1, 6730.0, 2700.0, 0.0],
+                 [409, 421, 1, 6260.0, 3990.0, 0.0]],
+                {"uncertain end": [403]},
+                [],
+                [[new_annotation_link_id]]]
+        six.assertCountEqual(self, parsed_response, expected_response)
+        six.assertCountEqual(self, parsed_response[0], expected_response[0])
+        six.assertCountEqual(self, parsed_response[1], expected_response[1])
+        self.assertEqual(parsed_response[2], expected_response[2])
+        self.assertEqual(parsed_response[3], expected_response[3])
+        self.assertEqual(parsed_response[4], expected_response[4])
 
     def test_export_compact_arbor(self):
         self.fake_authentication()

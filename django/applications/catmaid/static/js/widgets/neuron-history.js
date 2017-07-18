@@ -19,6 +19,8 @@
     });
     // The maximum allowed inacitivty time (minutes)
     this.maxInactivityTime = 3;
+    // All components that constitute the tracing time
+    this.tracingTimeComponents = new Set(["nodes", "connectors", "tags", "annotations"]);
     // Will store a datatable instance
     this.table = null;
 
@@ -75,6 +77,24 @@
         maxInactivityTimeLabel.appendChild(document.createTextNode('Max. inactivity time'));
         maxInactivityTimeLabel.appendChild(maxInactivityTime);
         controls.appendChild(maxInactivityTimeLabel);
+
+        var tracingEvents = CATMAID.DOM.createCheckboxSelect("Tracing time", [{
+          title: "Skeleton nodes", value: "nodes"}, {
+          title: "Connector links", value: "connectors"}, {
+          title: "Tags", value: "tags"}, {
+          title: "Annotations", value: "annotations"}
+        ], Array.from(this.tracingTimeComponents));
+        tracingEvents.onchange = function(e) {
+          var checked = e.target.checked;
+          var component = e.target.value;
+          if (checked) {
+            self.tracingTimeComponents.add(component);
+          } else {
+            self.tracingTimeComponents.delete(component);
+          }
+          self.refresh();
+        };
+        controls.append(tracingEvents);
       },
       createContent: function(content) {
         var self = this;
@@ -224,6 +244,7 @@
     }
 
     var maxInactivityTime = this.maxInactivityTime;
+    var tracingTimeComponents = this.tracingTimeComponents;
     return CATMAID.fetch(project.id + "/skeletons/compact-detail", "POST", {
       skeleton_ids: skeletonIds,
       with_connectors: true,
@@ -262,7 +283,7 @@
         // Get sorted total events for both reconstruction and review
         // TODO: Count annotations and all writes
         var tracingEvents = TS.mergeEventSources(availableEvents,
-            ["nodes", "connectors", "tags", "annotations"], 'asc');
+            Array.from(tracingTimeComponents), 'asc');
         var reviewEvents = TS.mergeEventSources(availableEvents, ["reviews"], 'asc');
 
         // Calculate tracing time by finding active bouts. Each bout consists of

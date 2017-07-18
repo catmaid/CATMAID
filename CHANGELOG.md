@@ -73,6 +73,9 @@ Neuron History:
   length before review, cable length after review, connectors before review and
   connectors after review.
 
+- The components that contribute to the tracing time can be adjusted with the
+  "Tracing time" drop down menu.
+
 
 Miscellaneous:
 

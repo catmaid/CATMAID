@@ -436,6 +436,9 @@ CATMAID.tools = CATMAID.tools || {};
 
       pretty += val + units[i];
     }
+    if (!pretty) {
+      pretty = "< sec";
+    }
     return pretty;
   };
 

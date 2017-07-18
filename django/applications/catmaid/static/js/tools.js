@@ -603,4 +603,9 @@ CATMAID.tools = CATMAID.tools || {};
     return target;
   };
 
+  tools.getDateSuffix = function() {
+    var now = new Date();
+    return now.getFullYear() + '-' + now.getMonth() + '-' + now.getDay() + '-' + now.getHours() + '-' + now.getMinutes();
+  };
+
 })(CATMAID.tools);

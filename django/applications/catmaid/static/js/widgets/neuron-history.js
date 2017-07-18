@@ -66,6 +66,12 @@
         refresh.onclick = this.refresh.bind(this);
         controls.appendChild(refresh);
 
+        var csv = document.createElement('input');
+        csv.setAttribute("type", "button");
+        csv.setAttribute("value", "Export CSV");
+        csv.onclick = this.exportCSV.bind(this);
+        controls.appendChild(csv);
+
         var maxInactivityTime = document.createElement('input');
         maxInactivityTime.setAttribute("type", "number");
         maxInactivityTime.setAttribute("min", "0");
@@ -410,6 +416,25 @@
         allRows.filter('tr[data-skeleton-id=' + skeletonId + ']').addClass('highlight');
       }
     }
+  };
+
+  NeuronHistoryWidget.prototype.exportCSV = function() {
+    if (!this.table) return;
+    var data = this.table.buttons.exportData({
+      modifier: {
+        search: 'applied'
+      }
+    });
+    if (0 === data.body.length) {
+      CATMAID.warn("Please load at least one skeleton first");
+      return;
+    }
+    var csv = data.header.join(',') + '\n' + data.body.map(function(row) {
+      return '"' + row[0] + '","' + row[1] + '","' + row[2] + '",' +
+          row.slice(3).join(',');
+    }).join('\n');
+    var blob = new Blob([csv], {type: 'text/plain'});
+    saveAs(blob, 'catmaid-neuron-history-' + CATMAID.tools.getDateSuffix() + '.csv');
   };
 
   // Export widget

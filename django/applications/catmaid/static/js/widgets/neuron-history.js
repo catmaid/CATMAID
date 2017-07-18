@@ -313,7 +313,7 @@
         skeletonStats.push({
           skeletonId: skeletonId,
           tracingTime: CATMAID.tools.humanReadableTimeInterval(totalTime),
-          reviewTime: CATMAID.tools.humanReadableTimeInterval(reviewTime),
+          reviewTime: reviewTime ? CATMAID.tools.humanReadableTimeInterval(reviewTime) : "0",
           cableBeforeReview: cableBeforeReview,
           cableAfterReview: cableAfterReview,
           connBeforeReview: connectorsBeforeReview,

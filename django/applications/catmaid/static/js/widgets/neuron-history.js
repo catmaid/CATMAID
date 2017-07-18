@@ -68,7 +68,7 @@
         maxInactivityTime.style.width = "4em";
         maxInactivityTime.setAttribute("value", this.maxInactivityTime);
         maxInactivityTime.onclick = function() {
-          self.maxInactivityTime = this.value;
+          self.maxInactivityTime = parseInt(this.value, 10);
           self.refresh();
         };
         var maxInactivityTimeLabel = document.createElement('label');

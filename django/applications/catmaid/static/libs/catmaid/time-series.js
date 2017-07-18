@@ -32,6 +32,26 @@
     this.data = data;
   };
 
+  /**
+   * Compare two dates in millisecond precision using date objects.
+   */
+  var compareEventsFast = function(a, b) {
+    // The time stamp is added as first element
+    var ta = a.date;
+    var tb = b.date;
+    if (ta > tb) {
+      return -1;
+    }
+    if (ta < tb) {
+      return 1;
+    }
+    return 0;
+  };
+
+  var compareEventsAscFast = function(a, b) {
+   return -1 * compareEventsFast(a, b);
+  };
+
   // Sort functions for sorting history data newest first. Since JavaScript
   // Date objects only support Microsecond precision, we need to compare
   // Postgres strings if two timestamps are equal up to the microsecond.
@@ -111,8 +131,11 @@
   /**
    * Combine multiple event sources from a passed in pool into a list of events,
    * which can optionally be sorted.
+   *
+   * @param {Bool} sortExact Whether sorting needs to be microsecond precise or
+   *                         millisecond sorting is okay.
    */
-  TimeSeries.mergeEventSources = function(eventSources, selectedSources, sort) {
+  TimeSeries.mergeEventSources = function(eventSources, selectedSources, sort, sortExact) {
     var nEvents = selectedSources.reduce(sumEventSourceLengths.bind(eventSources), 0);
     var mergedEvents = new Array(nEvents);
     var addedEvents = 0;
@@ -133,9 +156,9 @@
 
     if (sort) {
       if (sort === "asc") {
-        mergedEvents.sort(compareEventsAsc);
+        mergedEvents.sort(sortExact ? compareEventsAsc : compareEventsAscFast);
       } else if (sort === "desc") {
-        mergedEvents.sort(compareEvents);
+        mergedEvents.sort(sortExact ? compareEvents : compareEventsFast);
       } else {
         throw new CATMAID.ValueError("The sort parameter can only be 'asc' or 'desc'");
       }

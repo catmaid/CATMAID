@@ -117,8 +117,22 @@
               }
             });
           },
+          createdRow: function(row, data, index) {
+            var tds = $('td', row);
+            // Store skeleton ID in row
+            $(row).attr('data-skeleton-id', data.skeletonId);
+          },
           columns: [
-            {className: "cm-center", title: "Skeleton ID", data: "skeletonId"},
+            {
+              className: "cm-center",
+              title: "Skeleton ID",
+              data: "skeletonId",
+              render: function(data, type, row, meta) {
+                var name = CATMAID.NeuronNameService.getInstance().getName(data);
+                return '<a href="#" class="neuron-selection-link action-select">' +
+                  (name ? name : "(undefined)") + '</a>';
+              }
+            },
             {className: "cm-center", title: "Tracing time", data: "tracingTime"},
             {className: "cm-center", title: "Review time", data: "reviewTime"},
             {title: "Cable before review", data: "cableBeforeReview",
@@ -130,6 +144,9 @@
             {title: "Connectors after review", data: "connAfterReview",
                 help: "Number of synaptic connections to partners after last review."},
           ]
+        }).on("click", "td .action-select", this, function(e) {
+          var skeletonId = $(this).closest("tr").attr("data-skeleton-id");
+          CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeletonId);
         });
       },
       helpText: [
@@ -315,7 +332,7 @@
 
         skeletonStats.push({
           skeletonId: skeletonId,
-          tracingTime: CATMAID.tools.humanReadableTimeInterval(totalTime),
+          tracingTime: totalTime ? CATMAID.tools.humanReadableTimeInterval(totalTime) : "0",
           reviewTime: reviewTime ? CATMAID.tools.humanReadableTimeInterval(reviewTime) : "0",
           cableBeforeReview: cableBeforeReview,
           cableAfterReview: cableAfterReview,

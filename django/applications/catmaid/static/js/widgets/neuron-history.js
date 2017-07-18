@@ -18,6 +18,7 @@
       handleChangedModels: refresh,
       handleRemovedModels: refreshSkeletons
     });
+    this.skeletonSource.highlight = this.highlight.bind(this);
     // The maximum allowed inacitivty time (minutes)
     this.maxInactivityTime = 3;
     // All components that constitute the tracing time
@@ -398,6 +399,16 @@
     if (this.table) {
       this.table.rows().invalidate('data');
       this.table.draw(false);
+    }
+  };
+
+  NeuronHistoryWidget.prototype.highlight = function(skeletonId) {
+    if (this.table) {
+      var allRows = this.table.rows().nodes().to$();
+      allRows.removeClass('highlight');
+      if (skeletonId) {
+        allRows.filter('tr[data-skeleton-id=' + skeletonId + ']').addClass('highlight');
+      }
     }
   };
 

@@ -257,12 +257,12 @@
 
         // Get first and last review event. Bouts are sorted already, which
         // makes it easy to get min and max time.
-        var firstReviewTime, lastReviewTime;
+        var firstReviewTime = null, lastReviewTime = null;
         if (activeReviewBouts.length > 0) {
           firstReviewTime = activeReviewBouts[0].minDate;
           lastReviewTime = activeReviewBouts[activeReviewBouts.length -1].maxDate;
         }
-        var reviewAvailable = firstReviewTime && lastReviewTime;
+        var reviewAvailable = !!firstReviewTime && !!lastReviewTime;
 
         // Get the sorted history of each node
         var history = TS.makeHistoryIndex(availableEvents, true);

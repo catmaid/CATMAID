@@ -213,7 +213,8 @@
       with_tags: true,
       with_history: true,
       with_merge_history: true,
-      with_reviews: true
+      with_reviews: true,
+      with_annotations: true
     }).then(function(detail) {
       var skeletonStats = [];
       for (var i=0, max=skeletonIds.length; i<max; ++i) {
@@ -237,12 +238,14 @@
           nodes: new TS.EventSource(skeletonDetail[0], 8),
           connectors: new TS.EventSource(skeletonDetail[1], 6),
           tags: new TS.EventSource(tags, 1),
-          reviews: new TS.EventSource(skeletonDetail[3], 3)
+          reviews: new TS.EventSource(skeletonDetail[3], 3),
+          annotations: new TS.EventSource(skeletonDetail[4], 1)
         };
 
         // Get sorted total events for both reconstruction and review
         // TODO: Count annotations and all writes
-        var tracingEvents = TS.mergeEventSources(availableEvents, ["nodes", "connectors", "tags"], 'asc');
+        var tracingEvents = TS.mergeEventSources(availableEvents,
+            ["nodes", "connectors", "tags", "annotations"], 'asc');
         var reviewEvents = TS.mergeEventSources(availableEvents, ["reviews"], 'asc');
 
         // Calculate tracing time by finding active bouts. Each bout consists of

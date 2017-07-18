@@ -226,8 +226,9 @@
         }
 
         var inputTagLists = [];
-        for (var tag in skeletonDetail[3]) {
-          inputTagLists.push(skeletonDetail[3][tag]);
+        var tagMap = skeletonDetail[2];
+        for (var tag in tagMap) {
+          inputTagLists.push(tagMap[tag]);
         }
         var tags = Array.prototype.concat.apply([], inputTagLists);
 
@@ -235,7 +236,7 @@
         var availableEvents = {
           nodes: new TS.EventSource(skeletonDetail[0], 8),
           connectors: new TS.EventSource(skeletonDetail[1], 6),
-          tags: new TS.EventSource(tags, 2),
+          tags: new TS.EventSource(tags, 1),
           reviews: new TS.EventSource(skeletonDetail[3], 3)
         };
 

@@ -11,8 +11,6 @@
  d3
 */
 
-// TODO to be opened from the connectivity widget
-
 (function(CATMAID) {
 
   "use strict";
@@ -52,7 +50,7 @@
     // Map from skeleton ID to group ID
     this.groupOf = {};
 
-    this.mode = this.DOWNSTREAM;
+    this.mode = this.UPSTREAM;
 
     this.confidence_threshold = 0; // TODO add UI
 

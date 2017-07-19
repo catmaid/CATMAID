@@ -124,10 +124,14 @@
           paging: true,
           order: [],
           lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
+          processing: true,
           ajax: function(data, callback, settings) {
             // Compile skeleton statistics and call datatables with results.
-            self.getNeuronStatistics()
-              .then(function(data) {
+            self.getNeuronStatistics(function(nLoaded, nTotal) {
+              // Updatethe table processing display
+              $('.dataTables_wrapper .dataTables_processing', content).text(
+                "Loaded statistics for " + nLoaded + " of " + nTotal + " skeletons. Please wait.");
+            }).then(function(data) {
                 callback({
                   draw: data.draw,
                   recordsTotal: data.length,
@@ -171,7 +175,10 @@
                 help: "Number of synaptic connections to partners before first review."},
             {title: "Connectors after review", data: "connAfterReview",
                 help: "Number of synaptic connections to partners after last review."},
-          ]
+          ],
+          language: {
+            processing: "Compiling statistics. Please wait."
+          }
         }).on("click", "td .action-select", this, function(e) {
           var skeletonId = $(this).closest("tr").attr("data-skeleton-id");
           CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeletonId);
@@ -239,10 +246,11 @@
    * Review splits: Number of splits between first and last review event
    * Review merges: Number of merges between first and last review event
    *
+   * @param {Function} tick Optional, called each time a skeleton was loaded.
    * @returns Promise instance resolving in above statistics for each skeleton
    *          in this widget's skeleton source.
    */
-  NeuronHistoryWidget.prototype.getNeuronStatistics = function() {
+  NeuronHistoryWidget.prototype.getNeuronStatistics = function(tick) {
     // For each neuron, get each node along with its history
     var models = this.skeletonSource.getSkeletonModels();
     var skeletonIds = Object.keys(models);
@@ -251,9 +259,10 @@
       return Promise.resolve([]);
     }
 
+    var loadedSkeletons = 0;
     var maxInactivityTime = this.maxInactivityTime;
     var tracingTimeComponents = this.tracingTimeComponents;
-    var skeletonPromises = skeletonIds.map(function(skeletonId) {
+    var skeletonPromises = skeletonIds.map(function(skeletonId, i, ids) {
       return CATMAID.fetch(project.id + "/skeletons/" + skeletonId + "/compact-detail", "GET", {
         with_connectors: true,
         with_tags: true,
@@ -267,6 +276,10 @@
           CATMAID.warn("No skeleton details on " + skeletonId);
           return null;
         }
+
+        loadedSkeletons++;
+        CATMAID.tools.callIfFn(tick, loadedSkeletons, ids.length);
+
         return NeuronHistoryWidget.skeletonDetailToStats(skeletonId,
             skeletonDetail, maxInactivityTime, tracingTimeComponents);
       });

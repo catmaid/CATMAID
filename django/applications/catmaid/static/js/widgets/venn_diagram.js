@@ -84,20 +84,14 @@
       return this.selected;
   };
 
-  VennDiagram.prototype.Group = function(models, name, color) {
-      this.models = models;
-      this.name = name;
-      this.color = color;
-  };
-
   /** Appends skeletons as a group*/
   VennDiagram.prototype.append = function(models) {
-      var visible = Object.keys(models).reduce(function(o, skid) {
+      var visibleModels = Object.keys(models).reduce(function(o, skid) {
           var model = models[skid];
           if (model.selected) o[skid] = model;
           return o;
       }, {});
-      if (0 === Object.keys(visible).length) return;
+      if (0 === Object.keys(visibleModels).length) return;
 
       // Add new group
       var options = new CATMAID.OptionsDialog("Group properties");
@@ -125,8 +119,8 @@
           else {
               return alert("Must provide a group name!");
           }
-          self.groups.push(new VennDiagram.prototype.Group(
-                      visible,
+          self.groups.push(new CATMAID.SkeletonGroup(
+                      visibleModels,
                       label,
                       new THREE.Color(groupColor)));
 
@@ -319,6 +313,24 @@
 
   VennDiagram.prototype.highlight = function(skeleton_id) {
       // TODO
+  };
+
+  /**
+   * Returns array of CATMAID.SkeletonGroup instances
+   * Implements duck-typing interface SkeletonGroupSource
+   */
+  VennDiagram.prototype.getGroups = function() {
+    return this.groups.map(function(group) { return group.clone(); });
+  };
+
+  /**
+   * Returns array of CATMAID.SkeletonGroup instances with a single entry for the selected skeletons if any
+   * Implements duck-typing interface SkeletonGroupSource
+   */
+  VennDiagram.prototype.getSelectedGroups = function() {
+    if (0 == Object.keys(this.selected).length) return [];
+    var label = $('#venn_diagram_sel' + this.widgetID);
+    return [new CATMAID.SkeletonGroup($.extend({}, this.selected), label.text(), new THREE.Color(1, 1, 0))];
   };
 
   // Export widget into CATMAID namespace

@@ -2648,6 +2648,35 @@
     this.initial_position = initial_position; // will be deleted after adding the group for the first time
   };
 
+  /**
+   * Returns array of CATMAID.SkeletonGroup instances
+   * Implements duck-typing interface SkeletonGroupSource
+   */
+  GroupGraph.prototype.getGroups = function() {
+    return Object.keys(this.groups).map(function(gid) {
+      var group = this.groups[gid];
+      return new CATMAID.SkeletonGroup(group.models, group.label, group.color).clone(); // deep clone
+    }, this);
+  };
+
+  /**
+   * Returns array of CATMAID.SkeletonGroup instances, one for each selected node
+   * (a node is a group of at least one skeleton ID).
+   * Implements duck-typing interface SkeletonGroupSource
+   */
+  GroupGraph.prototype.getSelectedGroups = function() {
+    var groups = [];
+    this.cy.nodes().each(function(i, node) {
+      if (node.selected()) {
+        var data = node.data();
+        var models = data.skeletons.reduce(function(o, model) { o[model.id] = model.clone(); return o; }, {});
+        groups.push(new CATMAID.SkeletonGroup(models, data.label, new THREE.Color(data.color)));
+      }
+    });
+    return groups;
+  };
+
+
   /** Reformat in place the data object, to:
    * 1) Group some of the nodes if any groups exist.
    * 2) Exclude from existing groups any splitted neurons, removing them from the group.

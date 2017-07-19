@@ -31,6 +31,9 @@
     // Whether to show the 'others' heap
     this.show_others = true;
 
+    // Whether x axis labels should be rotated
+    this.rotateXLabels = true;
+
     // Color partner skeletons using these colors
     this.partner_colors = {};
 
@@ -80,6 +83,7 @@
         var modes = CATMAID.DOM.createSelect("synapse_fraction_mode" + this.widgetID, this.MODES);
         modes.onchange = this.onchangeMode.bind(this, modes);
 
+        var self= this;
         CATMAID.DOM.appendToTab(tabs['Main'],
             [[document.createTextNode('From')],
              [CATMAID.skeletonListSources.createSelect(this)],
@@ -89,7 +93,17 @@
              [document.createTextNode(' - ')],
              [modes],
              [document.createTextNode(' - ')],
-             ['Export SVG', this.exportSVG.bind(this)]]);
+             ['Export SVG', this.exportSVG.bind(this)],
+             {
+               type: 'checkbox',
+               label: 'Rotated labels',
+               title: 'Rotate neuron name labels on X axis',
+               value: this.rotateXLabels,
+               onclick: function() {
+                 self.rotateXLabels = this.checked;
+                 self.redraw();
+               }
+             }]);
 
         var nf = CATMAID.DOM.createNumericField("synapse_threshold" + this.widgetID, // id
                                     "By synapse threshold: ",             // label
@@ -448,26 +462,67 @@
         width = container.width() - margin.left - margin.right,
         height = container.height() - margin.top - margin.bottom;
 
-    var x = d3.scale.ordinal().rangeRoundBands([0, width], 0.1);
-    x.domain(sorted_entries);
-    var y = d3.scale.linear().rangeRound([height, 0]);
-
-    var xAxis = d3.svg.axis()
-      .scale(x)
-      .orient("bottom")
-      .tickFormat(function(entry) { return entry.name; });
-
-    var yAxis = d3.svg.axis()
-      .scale(y)
-      .orient("left")
-      .tickFormat(d3.format(".0%"));
-
     var svg = d3.select(containerID).append("svg")
             .attr("id", 'svg_' + containerID)
             .attr("width", width + margin.left + margin.right)
             .attr("height", height + margin.top + margin.bottom)
             .append("g")
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    var x = d3.scale.ordinal().rangeRoundBands([0, width], 0.1);
+    x.domain(sorted_entries);
+
+    var xAxis = d3.svg.axis()
+      .scale(x)
+      .orient("bottom")
+      .tickFormat(function(entry) { return entry.name; });
+
+    var xg = svg.append("g")
+        .attr("class", "x axis")
+        .attr("fill", "none")
+        .attr("stroke", "black")
+        .style("shape-rendering", "crispEdges")
+        .call(xAxis);
+
+    if (this.rotateXLabels) {
+      var rotation = -65;
+      xg.selectAll('text').
+          style("text-anchor", "end")
+          .attr("dx", "-0.8em")
+          .attr("dy", ".15em")
+          .attr("transform", "rotate(" + rotation + ")" );
+
+        // Find max label height height, adjust the height accordingly and transform the x axis.
+        var maxWidth = 0;
+        xg.selectAll("text").each(function () {
+          var boxWidth = this.getBBox().width;
+          if (boxWidth > maxWidth) maxWidth = boxWidth;
+        });
+        // Only count the projected width, since we typically don't rotate 90 degree
+        maxWidth = Math.abs(maxWidth * Math.sin(rotation * 2.0  * Math.PI / 360.0));
+        height = height - maxWidth;
+    }
+    xg.attr("transform", "translate(0," + height + ")");
+
+    xg.selectAll("text")
+        .attr("fill", "black")
+        .attr("stroke", "none");
+
+    var y = d3.scale.linear().rangeRound([height, 0]);
+    var yAxis = d3.svg.axis()
+      .scale(y)
+      .orient("left")
+      .tickFormat(d3.format(".0%"));
+
+    var yg = svg.append("g")
+        .attr("class", "y axis")
+        .attr("fill", "none")
+        .attr("stroke", "black")
+        .style("shape-rendering", "crispEdges")
+        .call(yAxis);
+    yg.selectAll("text")
+        .attr("fill", "black")
+        .attr("stroke", "none");
 
     var state = svg.selectAll(".state")
       .data(sorted_entries)
@@ -526,27 +581,6 @@
             else title = CATMAID.NeuronNameService.getInstance().getName(d.id);
             return title + ": " + d.counts + " synapses";
           }).bind(this));
-
-      var xg = svg.append("g")
-          .attr("class", "x axis")
-          .attr("transform", "translate(0," + height + ")")
-          .attr("fill", "none")
-          .attr("stroke", "black")
-          .style("shape-rendering", "crispEdges")
-          .call(xAxis);
-      xg.selectAll("text")
-          .attr("fill", "black")
-          .attr("stroke", "none");
-
-      var yg = svg.append("g")
-          .attr("class", "y axis")
-          .attr("fill", "none")
-          .attr("stroke", "black")
-          .style("shape-rendering", "crispEdges")
-          .call(yAxis);
-      yg.selectAll("text")
-          .attr("fill", "black")
-          .attr("stroke", "none");
 
     var legend = svg.selectAll(".legend")
       .data(order.map(function(a) { return a;}).reverse()) // no clone method

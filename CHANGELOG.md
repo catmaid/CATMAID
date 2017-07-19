@@ -116,6 +116,9 @@ Miscellaneous:
 - URLs to a particular view work now also with a location and a skeleton ID only
   rather than requiring a node ID always.
 
+- Synapse Fractions: X axis labels can now be rotated.
+
+
 ### Bug fixes
 
 - Graph widget: re-layout works again.

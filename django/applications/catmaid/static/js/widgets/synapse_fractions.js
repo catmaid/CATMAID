@@ -20,7 +20,7 @@
     CATMAID.SkeletonSource.call(this, true);
 
     // Appended neurons
-    this.models = {};
+    this.items = []; // An array of CATMAID.SkeletonGroup
 
     // Neurons receiving less than this number of synapses get stashed into the 'others' heap.
     this.threshold = 5;
@@ -161,40 +161,48 @@
   };
 
   SynapseFractions.prototype.getSelectedSkeletons = function() {
-    return Object.keys(this.models);
+    return this.items.reduce(function(a, item) {
+      return a.concat(Object.keys(item.models));
+    }, []);
   };
 
   SynapseFractions.prototype.getSkeletons = SynapseFractions.prototype.getSelectedSkeletons;
 
   SynapseFractions.prototype.getSkeletonColor = function(skid) {
-    var skeleton = this.models[skid];
-    if (skeleton) return skeleton.color.clone();
+    var model = this.getSkeletonModel(skid);
+    if (model) return model.color.clone();
     return new THREE.Color();
   };
 
   SynapseFractions.prototype.hasSkeleton = function(skid) {
-    return this.models.hasOwnProperty(skid);
+    return this.items.some(function(item) {
+      return item.models.hasOwnProperty(skid);
+    });
   };
 
   SynapseFractions.prototype.getSkeletonModel = function(skid) {
-    var model = this.models[skid];
-    if (model) return model.clone();
+    for (var i=0; i<this.items.length; ++i) {
+      var model = items[i].models[skid];
+      if (model) return model.clone();
+    }
+    return null;
   };
 
   SynapseFractions.prototype.getSkeletonModels = function() {
-    return Object.keys(this.models).reduce((function(m, skid) {
-      m[skid] = this[skid].clone();
-      return m;
-    }).bind(this.models), {});
+    return this.items.reduce(function(o, item) {
+      return Object.keys(item.models).reduce(function(o, skid) {
+        o[skid] = item.models[skid].clone();
+        return o;
+      }, o);
+    }, {});
   };
 
   SynapseFractions.prototype.getSelectedSkeletonModels = SynapseFractions.prototype.getSkeletonModels;
 
   SynapseFractions.prototype.update = function() {
-    var models = this.models;
     var morphologies = {};
     var fractions = null;
-    this.append(models);
+    this.updateMorphologies(this.getSkeletons());
   };
 
   SynapseFractions.prototype.resize = function() {
@@ -206,7 +214,7 @@
   };
 
   SynapseFractions.prototype.clear = function() {
-    this.models = {};
+    this.items = [];
     this.only = null;
     this.morphologies = {};
     this.fractions = null;
@@ -223,7 +231,7 @@
   };
 
   SynapseFractions.prototype._append = function(models) {
-    var existing = this.models;
+    var existing = this.getSkeletonModels();
     var updated = false;
 
     var to_add = Object.keys(models).reduce(function(o, skid) {
@@ -242,21 +250,45 @@
       return;
     }
 
+    skids.forEach(function(skid) {
+      // register
+      var model = models[skid];
+      this.items.push(new CATMAID.SkeletonGroup(
+            {[skid]: model}, // [skid] evaluates skid
+            CATMAID.NeuronNameService.getInstance().getName(skid), // will be updated upon invoking redraw, when sorting the entries into "sorted_entries"
+            model.color));
+    }, this);
+
+    this.updateMorphologies(skids);
+  };
+
+  /** Update arbor and synapse data, and then update the graph.
+   * @skids An array of skeleton IDs to update. */
+  SynapseFractions.prototype.updateMorphologies = function(skids) {
     fetchSkeletons(
         skids,
         function(skid) { return django_url + project.id + '/' + skid + '/1/1/1/compact-arbor'; },
         function(skid) { return {}; }, // POST
         (function(skid, json) {
           // register
-          this.models[skid] = models[skid];
           this.morphologies[skid] = {nodes: json[0],
                                      synapses: json[1],
                                      tags: json[2]};
         }).bind(this),
         (function(skid) {
           // Failed to load
-          delete this.models[skid];
           delete this.morphologies[skid];
+          // Remove from items
+          console.log("Removing skeleton which failed to load:", skid, CATMAID.NeuronNameService.getInstance().getName(skid));
+          for (var i=0; i<this.items.length; ++i) {
+            if (items[i].models.hasOwnProperty(skid)) {
+              delete items[i].models[skid];
+            }
+            if (0 == Object.keys(items[i].models).length) {
+              items.splice(i, 1);
+            }
+            break;
+          }
         }).bind(this),
         (function() { this.updateGraph(); }).bind(this));
   };
@@ -286,48 +318,53 @@
     this.updateGraph();
   };
 
+  /** Updates this.fractions and this.other_source, and invokes redraw.  */
   SynapseFractions.prototype.updateGraph = function() {
-    if (0 === Object.keys(this.models)) return;
+    if (0 === this.items.length) return;
 
-    var skids2 = {};
-    this.fractions = {};
+    var skids2 = {}; // unique partner skeleton IDs
 
-    Object.keys(this.morphologies).forEach(function(skid) {
-      // TODO split into e.g. axon and dendrite
-      var morphology = this.morphologies[skid];
-      // Collect counts of synapses with partner neurons
-      var type = this.mode === this.DOWNSTREAM ? 0 : 1; // 0 is pre, 1 is post
-      var partners = morphology.synapses.reduce((function(o, row) {
-        // compact-arbor indices:
-        // 1: confidence of synaptic relation between skid and connector
-        // 3: confidence of synaptic relation between connector and other skid
-        // 5: skeleton ID of the other skeleton
-        // 6: relation_id for skid to connector
-        if (row[6] === type && Math.min(row[1], row[3]) >= this.confidence_threshold) {
-          var skid2 = row[5],
-              count = o[skid2];
-          o[skid2] = count ? count + 1 : 1;
-        }
-        return o;
-      }).bind(this), {});
-      // Filter partners
-      this.fractions[skid] = Object.keys(partners).reduce((function(o, skid2) {
-        var count = partners[skid2];
-        if (count < this.threshold
-          || (this.only && !this.only[skid2])) {
-          o.others += count;
-        } else {
-          // Place either into a group or by itself
-          var gid = this.groupOf[skid2];
-          if (gid) {
-            var gcount = o[gid];
-            o[gid] = (gcount ? gcount : 0) + count;
-          } else {
-            o[skid2] = count;
+    // An array of synapse counts, one per item in this.items
+    this.fractions = this.items.map(function(item) {
+      // For every model in items
+      return Object.keys(item.models).reduce((function(fractions, skid) {
+        var morphology = this.morphologies[skid];
+        // Collect counts of synapses with partner neurons
+        var type = this.mode === this.DOWNSTREAM ? 0 : 1; // 0 is pre, 1 is post
+        var partners = morphology.synapses.reduce((function(o, row) {
+          // compact-arbor indices:
+          // 1: confidence of synaptic relation between skid and connector
+          // 3: confidence of synaptic relation between connector and other skid
+          // 5: skeleton ID of the other skeleton
+          // 6: relation_id for skid to connector
+          if (row[6] === type && Math.min(row[1], row[3]) >= this.confidence_threshold) {
+            var skid2 = row[5],
+                count = o[skid2];
+            o[skid2] = count ? count + 1 : 1;
           }
-          skids2[skid2] = true; // SIDE EFFECT: accumulate unique skeleton IDs
-        }
-        return o;
+          return o;
+        }).bind(this), {});
+        // Filter partners and add up synapse counts
+        Object.keys(partners).forEach((function(skid2) {
+          var count = partners[skid2];
+          if (count < this.threshold
+            || (this.only && !this.only[skid2])) {
+            // Add to others the counts for partner skeletons that are under threshold or not in the exclusive "only" list
+            fractions.others += count;
+          } else {
+            // Place either into a group or by itself
+            var gid = this.groupOf[skid2];
+            if (gid) {
+              var gcount = fractions[gid];
+              fractions[gid] = (gcount ? gcount : 0) + count;
+            } else {
+              fractions[skid2] = count;
+            }
+            // SIDE EFFECT: accumulate unique skeleton IDs
+            skids2[skid2] = true;
+          }
+        }).bind(this));
+        return fractions;
       }).bind(this), {others: 0});
     }, this);
 
@@ -349,7 +386,7 @@
     container.empty();
 
     // Stop if empty
-    if (!this.fractions || 0 === Object.keys(this.fractions)) return;
+    if (!this.fractions || 0 === this.fractions.length) return;
 
     // Load names of both pre and post skids
     CATMAID.NeuronNameService.getInstance().registerAll(
@@ -358,18 +395,17 @@
   };
 
   SynapseFractions.prototype._redraw = function(container, containerID) {
-
-    // Map of partners vs counts of synapses across all models
-    var partners = Object.keys(this.fractions).reduce((function(o, skid) {
-      var counts = this.fractions[skid];
+    // Map of partner skeletin IDs or group IDs, vs counts of synapses across all models,
+    // useful for sorting later the blocks inside each column
+    var partners = this.fractions.reduce(function(o, counts) {
       return Object.keys(counts).reduce(function(o, id) {
         var sum = o[id];
         o[id] = (sum ? sum : 0) + counts[id];
         return o;
       }, o);
-    }).bind(this), {});
+    }, {});
 
-    // List of partner skeleton IDs, sorted from most synapses to least
+    // List of partner skeleton IDs or group IDs, sorted from most synapses to least
     // with 'other' always at the end
     var other = partners['others'];
     delete partners['others'];
@@ -379,13 +415,25 @@
       .map(function(pair) { return pair[0]; });
 
     if (this.show_others) {
+      // Append at the end
       order.push('others');
     }
 
-    var sorted_skids = Object.keys(this.models)
-      .map(function(skid) { return [skid, CATMAID.NeuronNameService.getInstance().getName(skid)]; })
-      .sort(function(a, b) { return a[1] > b[1] ? 1 : -1; })
-      .map(function(pair) { return pair[0]; });
+    // Sort by name. TODO: other sorting methods
+    var sorted_entries = this.items
+      .map(function(item, i) {
+        // Update name
+        var name = item.name;
+        var skids = Object.keys(item.models);
+        if (1 === skids.length) {
+          // Single neuron group
+          name = CATMAID.NeuronNameService.getInstance().getName(skids[0]);
+        }
+        return {item: item,
+                name: name,
+                fractions: this.fractions[i]};
+      }, this)
+      .sort(function(a, b) { return a.name > b.name ? 1 : -1; });
 
     var colors = (function(partner_colors, colorFn, groups) {
           var i = 0;
@@ -401,13 +449,13 @@
         height = container.height() - margin.top - margin.bottom;
 
     var x = d3.scale.ordinal().rangeRoundBands([0, width], 0.1);
-    x.domain(sorted_skids);
+    x.domain(sorted_entries);
     var y = d3.scale.linear().rangeRound([height, 0]);
 
     var xAxis = d3.svg.axis()
       .scale(x)
       .orient("bottom")
-      .tickFormat(function(skid) { return CATMAID.NeuronNameService.getInstance().getName(skid); });
+      .tickFormat(function(entry) { return entry.name; });
 
     var yAxis = d3.svg.axis()
       .scale(y)
@@ -422,7 +470,7 @@
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
     var state = svg.selectAll(".state")
-      .data(sorted_skids)
+      .data(sorted_entries)
       .enter()
       .append('g')
       .attr("class", "state")
@@ -451,8 +499,8 @@
     };
 
     state.selectAll("rect")
-      .data((function(skid) {
-        return prepare(this.fractions[skid]);
+      .data((function(entry) {
+        return prepare(entry.fractions);
       }).bind(this))
       .enter()
         .append('rect')

@@ -80,6 +80,14 @@
       }, {});
   };
 
+  VennDiagram.prototype.getSkeletonModel = function(skid) {
+    for (var i=0; i<this.groups.length; ++i) {
+      var model = this.groups[i].models[skid];
+      if (model) return model;
+    }
+    return null;
+  };
+
   VennDiagram.prototype.getSelectedSkeletonModels = function() {
       return this.selected;
   };

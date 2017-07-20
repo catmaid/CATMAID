@@ -184,6 +184,34 @@
         graph.style.backgroundColor = "#ffffff";
         content.appendChild(graph);
       },
+      helpText: [
+        '<h1>Synapse Fractions</h1>',
+        '<p>Plot the fraction (in percent) of inputs or outputs allocated to synaptic partner neurons.</p>',
+        '<h2>Main</h2>',
+        '<p>Choose "Downstream" for outputs (postsynaptic partners), and "Upstream" for inputs (pre-synaptic partners).</p>',
+        '<h2>Filter</h2>',
+        '<ul>',
+        '<li>By synapse threshold: synaptic partners with less than the specified number of synapses will be throwninto the "others" group.</li>',
+        '<li>Only in: partner neurons not included in the chosen list will be thrown into the "others" group.</li>',
+        '<li>Show others: whether the show the "others" group or not.</li>',
+        '<li>Synapse confidence threshold: include synapses whose confidence value is the chosen number or higher. The default of "1" includes all synapses.</li>',
+        '</ul>',
+        '<h2>Color</h2>',
+        '<p>Choose a colorizing function, and additionally use colors from the specified list (e.g. from a Selection Table).</p>',
+        '<p>Notice that each color square in the legend is clickable and pops up a color picker for that neuron or group.</p>',
+        '<h2>Partner groups</h2>',
+        '<p>Create a new group of partner skeletons from the selected neurons in the chosen list.</p>',
+        '<h2>Options</h2>',
+        '<p>Choose whether the text labels in the X-axis are shown at an angle, which can be typed in. Type -90 for vertical labels.</p>',
+        '<h2>Mouse operations</h2>',
+        '<ul>',
+        '<li>Mouse click: select that partner neuron in the stack viewer (does nothing for groups of partner neurons).</li>',
+        '<li>Shift+click: toggle selected/deselected status of a partner neuron or group of partner neurons. Push "j" then to create a new partner group.</li>',
+        '<li>Mouse over: show the name of the partner neuron.</li>',
+        '</ul>',
+        '<h2>Key bindings</h2>',
+        '<p><b>J</b>: if more than two partner skeletons or groups are selected, create a new group. When a single group is selected, this provides the opportunity to rename the group.</p>',
+      ].join('\n')
     };
   };
 

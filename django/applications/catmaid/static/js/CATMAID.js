@@ -5,17 +5,7 @@
 
   "use strict";
 
-  // Attach a general error handler
-  window.onerror = function(msg, url, lineno, colno, err)
-  {
-    var userAgent = navigator ? navigator.userAgent : 'N/A';
-
-    var info = 'An error occured in CATMAID and the current action can\'t be ' +
-        'completed. You can try to reload the widget or tool you just used.';
-    var detail = 'Error: ' + msg + ' URL: ' + url + ' Line: ' + lineno +
-        ' Column: ' + colno + ' User agent: ' + userAgent + ' Stacktrace: ' +
-        (err ? err.stack : 'N/A');
-
+  function handleUnhandledError(message, detail) {
     // Log the error detail to the console
     console.log(detail);
 
@@ -44,6 +34,20 @@
     } else {
       alert(info + ' Detail: ' + detail);
     }
+  }
+
+  // Attach a general error handler
+  window.onerror = function(msg, url, lineno, colno, err)
+  {
+    var userAgent = navigator ? navigator.userAgent : 'N/A';
+
+    var info = 'An error occured in CATMAID and the current action can\'t be ' +
+        'completed. You can try to reload the widget or tool you just used.';
+    var detail = 'Error: ' + msg + ' URL: ' + url + ' Line: ' + lineno +
+        ' Column: ' + colno + ' User agent: ' + userAgent + ' Stacktrace: ' +
+        (err ? err.stack : 'N/A');
+
+    handleUnhandledError(info, detail);
 
     // Return true to indicate the exception is handled and doesn't need to be
     // shown to the user.

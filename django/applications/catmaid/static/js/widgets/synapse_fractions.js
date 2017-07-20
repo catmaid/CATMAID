@@ -34,6 +34,8 @@
     // Whether x axis labels should be rotated
     this.rotateXLabels = true;
 
+    this.rotationXLabels = -65;
+
     // Color partner skeletons using these colors
     this.partner_colors = {};
 
@@ -55,7 +57,7 @@
 
     this.mode = this.UPSTREAM;
 
-    this.confidence_threshold = 0; // TODO add UI
+    this.confidence_threshold = 1;
 
     this.other_source = new CATMAID.BasicSkeletonSource(this.getName() + ' partners');
   };
@@ -75,7 +77,7 @@
       contentID: "synapse_fractions_widget" + this.widgetID,
       createControls: function(controls) {
         var tabs = CATMAID.DOM.addTabGroup(controls, this.widgetID,
-            ['Main', 'Filter', 'Color', 'Partner groups']);
+            ['Main', 'Filter', 'Color', 'Partner groups', 'Options']);
 
         var partners_source = CATMAID.skeletonListSources.createPushSelect(this, "filter");
         partners_source.onchange = this.onchangeFilterPartnerSkeletons.bind(this);
@@ -93,17 +95,8 @@
              [document.createTextNode(' - ')],
              [modes],
              [document.createTextNode(' - ')],
-             ['Export SVG', this.exportSVG.bind(this)],
-             {
-               type: 'checkbox',
-               label: 'Rotated labels',
-               title: 'Rotate neuron name labels on X axis',
-               value: this.rotateXLabels,
-               onclick: function() {
-                 self.rotateXLabels = this.checked;
-                 self.redraw();
-               }
-             }]);
+             ['Export SVG', this.exportSVG.bind(this)]
+            ]);
 
         var nf = CATMAID.DOM.createNumericField("synapse_threshold" + this.widgetID, // id
                                     "By synapse threshold: ",             // label
@@ -115,12 +108,18 @@
 
         var cb = CATMAID.DOM.createCheckbox('show others', this.show_others, this.toggleOthers.bind(this));
 
+        var confidence = CATMAID.DOM.createSelect("synapse_confidence_threshold" + this.widgetID, [1, 2, 3, 4, 5]);
+        confidence.selectedIndex = Math.max(0, Math.min(4, this.confidence_threshold - 1));
+        confidence.onchange = this.onchangeSynapseConfidence.bind(this, confidence);
+
         CATMAID.DOM.appendToTab(tabs['Filter'],
             [[nf],
              [document.createTextNode(' - Only in: ')],
              [partners_source],
              [cb[0]],
-             [cb[1]]
+             [cb[1]],
+             [document.createTextNode(' - Synapse confidence threshold: ')],
+             [confidence]
             ]);
 
         var partners_color = CATMAID.skeletonListSources.createPushSelect(this, "color");
@@ -146,6 +145,29 @@
         CATMAID.DOM.appendToTab(tabs['Partner groups'],
             [[partner_group],
              ['Create group', this.createPartnerGroup.bind(this)]]);
+
+        CATMAID.DOM.appendToTab(tabs['Options'],
+            [{
+               type: 'checkbox',
+               label: 'Rotated labels',
+               title: 'Rotate neuron name labels on X axis',
+               value: this.rotateXLabels,
+               onclick: function() {
+                 self.rotateXLabels = this.checked;
+                 self.redraw();
+               }
+             },
+             [CATMAID.DOM.createNumericField(
+               "rotation" + this.widgetID,
+               "X-axis label rotation: ",
+               "The rotation of the text labels in the X axis",
+               this.rotationXLabels,
+               undefined,
+               this.onchangeXLabelRotation.bind(this),
+               5)]
+            ]);
+
+
 
         $(controls).tabs();
       },
@@ -485,7 +507,7 @@
         .call(xAxis);
 
     if (this.rotateXLabels) {
-      var rotation = -65;
+      var rotation = this.rotationXLabels;
       xg.selectAll('text').
           style("text-anchor", "end")
           .attr("dx", "-0.8em")
@@ -791,6 +813,25 @@
       })(colorbrewer[scheme]);
     }
     this.redraw();
+  };
+
+  SynapseFractions.prototype.onchangeXLabelRotation = function(ev) {
+    var val = Number(ev.target.value);
+    if (Number.isNaN(val)) {
+      CATMAID.msg("Warning", "Invalid number");
+      return;
+    }
+    if (val !== this.rotationXLabels) {
+      this.rotationXLabels = val;
+      this.redraw();
+    }
+  };
+
+  SynapseFractions.prototype.onchangeSynapseConfidence = function(choice) {
+    var ct = choice.selectedIndex + 1;
+    if (ct === this.confidence_threshold) return;
+    this.confidence_threshold = ct;
+    this.updateGraph();
   };
 
   SynapseFractions.prototype.exportCSV = function() {

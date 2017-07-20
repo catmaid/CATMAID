@@ -267,6 +267,7 @@
         (function() { this._append(models); }).bind(this));
   };
 
+  /** Existing skeletons will be ignored. */
   SynapseFractions.prototype._append = function(models) {
     var existing = this.getSkeletonModels();
     var updated = false;
@@ -325,7 +326,8 @@
     groupname.focus();
   };
 
-  /** Does not call updateGraph */
+  /** If a skeleton already exists, it will be now shown as part of the group.
+   *  You must call updateMorphologies after invoking this function one or more times. */
   SynapseFractions.prototype.appendGroup = function(models, group_name, append_count_to_name) {
     var skids = Object.keys(models);
     // At least one

@@ -5,7 +5,7 @@
 
   "use strict";
 
-  function handleUnhandledError(message, detail) {
+  function handleUnhandledError(err, detail) {
     // Log the error detail to the console
     console.log(detail);
 
@@ -27,32 +27,48 @@
       console.log('No error object was provided');
     }
 
+    var generalErrorMessage = 'An error occured in CATMAID and the current ' +
+        'action can\'t be completed. You can try to reload the widget or ' +
+        'tool you just used.';
+
     // Use alert() to inform the user, if the error function isn't available for
     // some reason
     if (CATMAID && CATMAID.error) {
-      CATMAID.error(info, detail);
+      CATMAID.error(generalErrorMessage, detail);
     } else {
-      alert(info + ' Detail: ' + detail);
+      alert(generalErrorMessage + ' Detail: ' + detail);
     }
   }
 
   // Attach a general error handler
-  window.onerror = function(msg, url, lineno, colno, err)
-  {
+  window.onerror = function(msg, url, lineno, colno, err) {
     var userAgent = navigator ? navigator.userAgent : 'N/A';
-
-    var info = 'An error occured in CATMAID and the current action can\'t be ' +
-        'completed. You can try to reload the widget or tool you just used.';
     var detail = 'Error: ' + msg + ' URL: ' + url + ' Line: ' + lineno +
         ' Column: ' + colno + ' User agent: ' + userAgent + ' Stacktrace: ' +
         (err ? err.stack : 'N/A');
 
-    handleUnhandledError(info, detail);
+    handleUnhandledError(err, detail);
 
     // Return true to indicate the exception is handled and doesn't need to be
     // shown to the user.
     return true;
   };
+
+  // Catch unhandled rejected promises. At the time of writing only Chromium
+  // based browsers (like Chrome) have native suport for this.
+  window.addEventListener('unhandledrejection', function handleRejection(event) {
+    var reason = event.reason || {};
+    var userAgent = navigator ? navigator.userAgent : 'N/A';
+    var detail = 'Error: ' + reason.message + ' User agent: ' + userAgent +
+        ' Stacktrace: ' + reason.stack;
+
+    // We take care of the logging ourselves
+    event.preventDefault();
+
+    handleUnhandledError(event.promise, detail);
+
+    return true;
+  });
 
   // Let user cancel going back in browser history
   window.onbeforeunload = function() {

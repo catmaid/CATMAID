@@ -6,8 +6,19 @@
   "use strict";
 
   function handleUnhandledError(err, detail) {
+    console.group("Undhandled CATMAID error");
     // Log the error detail to the console
     console.log(detail);
+
+    // Log the error object, if available
+    if (err) {
+      console.log('Error object:');
+      console.log(err);
+    } else {
+      console.log('No error object was provided');
+    }
+
+    console.groupEnd();
 
     // Log the error in the backend, bypass the request queue and make a direct
     // AJAX call through jQuery.
@@ -18,14 +29,6 @@
         'msg': detail,
       }
     });
-
-    // Log the error object, if available
-    if (err) {
-      console.log('Error object:');
-      console.log(err);
-    } else {
-      console.log('No error object was provided');
-    }
 
     var generalErrorMessage = 'An error occured in CATMAID and the current ' +
         'action can\'t be completed. You can try to reload the widget or ' +

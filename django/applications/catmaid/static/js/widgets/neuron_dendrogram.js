@@ -971,8 +971,9 @@
                 n.loc_y,
                 n.loc_x)
             .then(function () {
-              SkeletonAnnotations.staticSelectNode(n.id);
-            });
+              return SkeletonAnnotations.staticSelectNode(n.id);
+            })
+            .catch(CATMAID.handleError);
         };
       }(this.currentSkeletonId);
 

@@ -221,7 +221,7 @@
           (self.isYView() || center) ? node.y : project.coordinates.y,
           (self.isXView() || center) ? node.x : project.coordinates.x)
       .then(function () {
-        SkeletonAnnotations.staticSelectNode( node.id, self.currentSkeletonId );
+        return SkeletonAnnotations.staticSelectNode( node.id, self.currentSkeletonId );
       })
       .catch(CATMAID.handleError);
     };
@@ -1359,7 +1359,7 @@
               SkeletonAnnotations.staticMoveTo(json[3], json[2], json[1]);
             })
             .then(function() {
-              SkeletonAnnotations.staticSelectNode(tnid, skeleton_id);
+              return SkeletonAnnotations.staticSelectNode(tnid, skeleton_id);
             })
             .catch(CATMAID.handleError);
         });

@@ -137,8 +137,9 @@
                            .click(function(event) {
                              SkeletonAnnotations.staticMoveTo(z, y, x)
                                 .then(function() {
-                                  SkeletonAnnotations.staticSelectNode(id, skid);
-                                });
+                                  return SkeletonAnnotations.staticSelectNode(id, skid);
+                                })
+                                .catch(CATMAID.handleError);
                              return false;
                            })
                            .text("[" + index + "]")

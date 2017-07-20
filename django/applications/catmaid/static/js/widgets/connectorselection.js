@@ -238,8 +238,9 @@
       var loc = locations[nid];
       SkeletonAnnotations.staticMoveTo(loc[2], loc[1], loc[0])
           .then(function() {
-            SkeletonAnnotations.staticSelectNode(nid);
-          });
+            return SkeletonAnnotations.staticSelectNode(nid);
+          })
+          .catch(CATMAID.handleError);
     });
   };
 

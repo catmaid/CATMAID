@@ -51,7 +51,8 @@ var SkeletonAnnotations = {
 SkeletonAnnotations.handleDeletedNode = function(nodeId, parentId) {
   // Use == to allow string and integer IDs
   if (nodeId == SkeletonAnnotations.getActiveNodeId()) {
-    SkeletonAnnotations.staticSelectNode(parentId);
+    SkeletonAnnotations.staticSelectNode(parentId)
+      .catch(CATMAID.handleError);
   }
 };
 
@@ -1261,7 +1262,7 @@ SkeletonAnnotations.TracingOverlay.prototype.selectNode = function(id) {
     this.activateNode(node);
     return Promise.resolve(node);
   }
-  return Promise.reject(id);
+  return Promise.reject(new CATMAID.Warning("Could not find node " + id));
 };
 
 /**
@@ -3136,7 +3137,8 @@ SkeletonAnnotations.TracingOverlay.prototype.goToPreviousBranchOrRootNode = func
         } else {
           self.moveTo(json[3], json[2], json[1],
             function() {
-              self.selectNode(json[0], json[4]);
+              self.selectNode(json[0], json[4])
+                .catch(CATMAID.handleError);
             });
         }
       });
@@ -3970,7 +3972,7 @@ SkeletonAnnotations.TracingOverlay.prototype.goToLastEditedNode = function(skele
     function (json) {
       if (json.id) {
         self.moveTo(json.z, json.y, json.x,
-          function() { self.selectNode(json.id); });
+          function() { self.selectNode(json.id).catch(CATMAID.handleError); });
       } else {
         CATMAID.msg('Information',
             'You are not the most recent editor of any nodes in this skeleton.');
@@ -4379,11 +4381,11 @@ SkeletonAnnotations.TracingOverlay.prototype.deleteNode = function(nodeId) {
           var postIDs = Object.keys(connectornode.postgroup);
           var gjIDs = Object.keys(connectornode.gjgroup);
           if (preIDs.length > 0) {
-              self.selectNode(preIDs[0]);
+              self.selectNode(preIDs[0]).catch(CATMAID.handleError);
           } else if (postIDs.length > 0) {
-              self.selectNode(postIDs[0]);
+              self.selectNode(postIDs[0]).catch(CATMAID.handleError);
           } else if (gjIDs.length > 0) {
-              self.selectNode(gjIDs[0]);
+              self.selectNode(gjIDs[0]).catch(CATMAID.handleError);
           } else {
               self.activateNode(null);
           }
@@ -4421,13 +4423,13 @@ SkeletonAnnotations.TracingOverlay.prototype.deleteNode = function(nodeId) {
           var pp = self.findConnectors(node.id);
           // Try first connectors for which node is postsynaptic:
           if (pp[1].length > 0) {
-            self.selectNode(pp[1][0]);
+            self.selectNode(pp[1][0]).catch(CATMAID.handleError);
           // Then try connectors for which node is presynaptic
           } else if (pp[0].length > 0) {
-            self.selectNode(pp[0][0]);
+            self.selectNode(pp[0][0]).catch(CATMAID.handleError);
           // Then try connectors for which node has gap junction with
           } else if (pp[2].length > 0) {
-            self.selectNode(pp[2][0]);
+            self.selectNode(pp[2][0]).catch(CATMAID.handleError);
           } else {
             self.activateNode(null);
           }

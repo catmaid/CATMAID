@@ -194,8 +194,9 @@
           if (action === 'show') {
             SkeletonAnnotations.staticMoveTo(row_data[6], row_data[5], row_data[4])
                 .then(function () {
-                  SkeletonAnnotations.staticSelectNode(row_data[7]);
-                });
+                  return SkeletonAnnotations.staticSelectNode(row_data[7]);
+                })
+                .catch(CATMAID.handleError);
           }
           else if (action === 'approve') {
             self.approve(row_data[0]);

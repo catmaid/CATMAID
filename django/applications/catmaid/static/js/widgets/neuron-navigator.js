@@ -2126,8 +2126,9 @@
             json.detail).show();
         SkeletonAnnotations.staticMoveTo(json.z, json.y, json.x)
             .then(function() {
-              SkeletonAnnotations.staticSelectNode(json.root_id);
-            });
+              return SkeletonAnnotations.staticSelectNode(json.root_id);
+            })
+            .catch(CATMAID.handleError);
       });
     }).bind(this);
 

@@ -521,8 +521,9 @@
       var z = parseFloat(aData[6]);
       SkeletonAnnotations.staticMoveTo(z, y, x)
           .then(function () {
-            SkeletonAnnotations.staticSelectNode(id);
-          });
+            return SkeletonAnnotations.staticSelectNode(id);
+          })
+          .catch(CATMAID.handleError);
     });
   };
 

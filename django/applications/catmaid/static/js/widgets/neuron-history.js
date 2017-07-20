@@ -177,7 +177,7 @@
           columns: [
             {
               className: "cm-center",
-              title: "Skeleton ID",
+              title: "Neuron",
               data: "skeletonId",
               render: function(data, type, row, meta) {
                 var name = CATMAID.NeuronNameService.getInstance().getName(data);

@@ -60,6 +60,8 @@
     this.confidence_threshold = 1;
 
     this.other_source = new CATMAID.BasicSkeletonSource(this.getName() + ' partners');
+
+    this.selected = {};
   };
 
   SynapseFractions.prototype = Object.create(CATMAID.SkeletonSource.prototype);
@@ -259,6 +261,7 @@
     this.partner_colors = {};
     this.groups = {};
     this.groupOf = {};
+    this.selected = {};
     this.redraw();
   };
 
@@ -633,6 +636,8 @@
       return data;
     };
 
+    var self = this;
+
     state.selectAll("rect")
       .data((function(index) {
         return prepare(sorted_entries[index].fractions);
@@ -649,9 +654,25 @@
         .style("fill", function(d, i) {
           return colors[d.id];
         })
+        .style("stroke", function(d, i) {
+          if (self.selected.hasOwnProperty(d.id)) {
+            return '#000000'; // black
+          }
+          return colors[d.id];
+        })
         .on('click', function(d) {
-          if ("others" === d.id || d.id < 0) return; // negative when it is a group
-          CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', d.id);
+          if (d3.event.shiftKey) {
+            d3.event.stopPropagation();
+            if (self.selected.hasOwnProperty(d.id)) {
+              delete self.selected[d.id];
+            } else {
+              self.selected[d.id] = true;
+            }
+            self.redraw();
+          } else {
+            if ("others" === d.id || d.id < 0) return; // negative when it is a group
+            CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', d.id);
+          }
         })
         .append('svg:title') // on mouse over
           .text((function(d) {
@@ -890,6 +911,49 @@
     if (ct === this.confidence_threshold) return;
     this.confidence_threshold = ct;
     this.updateGraph();
+  };
+
+  SynapseFractions.prototype.handleKeyPress = function(event) {
+  };
+
+  SynapseFractions.prototype.handleKeyUp = function(event) {
+    if (event.key === 'j') {
+      var ids = Object.keys(this.selected);
+      if (ids.length > 1) {
+        var name = prompt("Group name", "");
+        if (!name) return; // cancelled
+        // Collect skeleton IDs from partner groups and skeletons
+        var groups = this.groups;
+        var skids = ids.reduce(function(o, id) {
+          if (id < 0) {
+            // A group of partner skeletons
+            $.extend(o, groups[id].skids);
+            // Remove the group
+            delete groups[id];
+          } else {
+            // A partner skeleton
+            o[id] = true;
+          }
+          return o;
+        }, {});
+        // Create new partner skeleton group
+        var gid = this.next_group_id--;
+        this.groups[gid] = {
+          id: gid,
+          skids: skids,
+          name: name,
+          autocolor: true,
+          color: '#ffff00'
+        };
+        Object.keys(skids).forEach(function(skid) { this.groupOf[skid] = gid; }, this);
+        // clear selection
+        this.selected = {};
+        // Recompute fractions and redraw
+        this.updateGraph();
+      } else {
+        CATMAID.msg("Info", "Select at least 2 partner skeletons or groups with shift+click.");
+      }
+    }
   };
 
   SynapseFractions.prototype.exportCSV = function() {

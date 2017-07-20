@@ -4,15 +4,6 @@
   login
 */
 
-/* It's very easy to accidentally leave in a console.log if you're working with
- * Firebug, but this will break CATMAID for some browsers.  If window.console
- * isn't defined, create a noop version of console.log: */
-if (!window.console) {
-  window.console = {};
-  window.console.log = function() {};
-}
-
-
 // Attach a general error handler
 window.onerror = function(msg, url, lineno, colno, err)
 {

@@ -15,6 +15,20 @@
 
 ### Features and enhancements
 
+Synapse Fractions:
+
+- New button "Append as group". Multiple neurons will be shown in a single column.
+
+- New UI functions to set the synapse confidence.
+
+- Default to Upstream (fractions for input neurons).
+
+- Shift-click to toggle selected state of partner neurons or groups, and then
+  push 'J' to create a new partner group.
+
+- X axis labels can now be rotated, from the Options tab.
+
+
 3D Viewer:
 
 - New skeleton shading modes:
@@ -115,8 +129,6 @@ Miscellaneous:
 
 - URLs to a particular view work now also with a location and a skeleton ID only
   rather than requiring a node ID always.
-
-- Synapse Fractions: X axis labels can now be rotated.
 
 
 ### Bug fixes

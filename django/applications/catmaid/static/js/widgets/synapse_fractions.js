@@ -303,13 +303,11 @@
   SynapseFractions.prototype.updateMorphologies = function(skids) {
     fetchSkeletons(
         skids,
-        function(skid) { return django_url + project.id + '/' + skid + '/1/1/1/compact-arbor'; },
+        function(skid) { return django_url + project.id + '/' + skid + '/0/1/0/compact-arbor'; },
         function(skid) { return {}; }, // POST
         (function(skid, json) {
           // register
-          this.morphologies[skid] = {nodes: json[0],
-                                     synapses: json[1],
-                                     tags: json[2]};
+          this.morphologies[skid] = {synapses: json[1]}; // not using nodes or tags
         }).bind(this),
         (function(skid) {
           // Failed to load

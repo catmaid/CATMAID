@@ -57,8 +57,10 @@
 
 })();
 
-(function(CATMAID)
- {
+(function(CATMAID) {
+
+  "use strict";
+
   CATMAID.MAX_WEBGL_CONTEXTS = 16;  // may change and/or be browser-dependent
 
   // The UI singleton

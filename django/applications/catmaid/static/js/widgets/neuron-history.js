@@ -195,8 +195,10 @@
                 help: "Number of synaptic connections to partners before first review."},
             {title: "Connectors after review", data: "connAfterReview",
                 help: "Number of synaptic connections to partners after last review."},
+            {className: "cm-center", title: "First Tracing", data: "firstTracingTime"},
+            {className: "cm-center", title: "Last Tracing", data: "firstTracingTime"},
             {className: "cm-center", title: "First Review", data: "firstReviewTime"},
-            {className: "cm-center", title: "Last Review", data: "lastReviewTime"},
+            {className: "cm-center", title: "Last Review", data: "lastReviewTime"}
           ],
           language: {
             processing: "Compiling statistics. Please wait."
@@ -423,6 +425,8 @@
       connAfterReview: connectorsAfterReview,
       splitsDuringReview: "?",
       mergesDuringReview: "?",
+      firstTracingTime: activeTracingBouts ? activeTracingBouts[0].minDate : "N/A",
+      lastTracingTime: activeTracingBouts ? activeTracingBouts[activeTracingBouts.length - 1].maxDate : "N/A",
       firstReviewTime: reviewAvailable ? firstReviewTime : "N/A",
       lastReviewTime: reviewAvailable ? lastReviewTime : "N/A"
     };

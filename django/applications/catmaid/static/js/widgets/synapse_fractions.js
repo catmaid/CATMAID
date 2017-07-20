@@ -314,7 +314,7 @@
       var name = $('#sf-name').val();
       if (name && name.length > 0) {
         name = name.trim();
-        this.appendGroup(models, name, $('sf-number').prop('checked'));
+        this.appendGroup(models, name, $('#sf-number').prop('checked'));
         this.updateMorphologies(Object.keys(models));
       } else {
         return alert("Must provide a group name!");

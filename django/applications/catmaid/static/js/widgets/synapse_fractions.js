@@ -88,6 +88,8 @@
         modes.selectedIndex = 1;
         modes.onchange = this.onchangeMode.bind(this, modes);
 
+        var fileButton = CATMAID.DOM.createFileButton('sf-file-dialog-' + this.widgetID, false, (function(evt) { this.loadFromFiles(evt.target.files); }).bind(this));
+
         var self= this;
         CATMAID.DOM.appendToTab(tabs['Main'],
             [[document.createTextNode('From')],
@@ -99,7 +101,10 @@
              [document.createTextNode(' - ')],
              [modes],
              [document.createTextNode(' - ')],
-             ['Export SVG', this.exportSVG.bind(this)]
+             ['Export SVG', this.exportSVG.bind(this)],
+             [document.createTextNode(' - ')],
+             ['Save', this.saveToFile.bind(this)],
+             ['Open', function() { fileButton.click(); }],
             ]);
 
         var nf = CATMAID.DOM.createNumericField("synapse_threshold" + this.widgetID, // id
@@ -202,6 +207,7 @@
         '<p>Notice that each color square in the legend is clickable and pops up a color picker for that neuron or group.</p>',
         '<h2>Partner groups</h2>',
         '<p>Create a new group of partner skeletons from the selected neurons in the chosen list.</p>',
+        '<p>To edit the name or color of a group of partner skeletons, or to remove it, click on the group name in the legend to open a dialog.</p>',
         '<h2>Options</h2>',
         '<p>Choose whether the text labels in the X-axis are shown at an angle, which can be typed in. Type -90 for vertical labels.</p>',
         '<h2>Mouse operations</h2>',
@@ -691,7 +697,7 @@
         })
         .on('click', function(d) {
           if (d3.event.shiftKey) {
-            d3.event.stopPropagation();
+            d3.event.preventDefault();
             if (self.selected.hasOwnProperty(d.id)) {
               delete self.selected[d.id];
             } else {
@@ -983,6 +989,112 @@
         CATMAID.msg("Info", "Select at least 2 partner skeletons or groups with shift+click.");
       }
     }
+  };
+
+  SynapseFractions.prototype.saveToFile = function() {
+    var today = new Date();
+    var defaultFileName = 'synapse-fractions-' + today.getFullYear() + '-' + (today.getMonth() + 1) + '-' + today.getDate() + ".json";
+    var filename = prompt('File name', defaultFileName);
+    if (!filename) return;
+
+    // Missing: rotateXLabels, rotationXLabels and show_others, whose UI elements don't have IDs so the UI can't be updated.
+    var data = {
+      items: this.items,
+      threshold: this.threshold,
+      only: this.only,
+      partner_colors: this.partner_colors,
+      groups: this.groups,
+      mode: this.mode,
+      confidence_threshold: this.confidence_threshold
+    };
+
+    saveAs(new Blob([JSON.stringify(data, null, ' ')], {type: 'text/plain'}), filename);
+  };
+
+  /**
+   * Does not consider the case that some skeleton IDs don't exist. Will fail gracefully.
+   */
+  SynapseFractions.prototype.loadFromFiles = function(files) {
+      if (!CATMAID.isValidJSONFile(files)) {
+        return;
+      }
+      this.clear();
+      var self = this;
+
+      var parse = function(json) {
+        var skids = {};
+        // Transform model data into SkeletonModel instances
+        for (var i=0; i<json.items.length; ++i) {
+          var item = json.items[i];
+          item.models = Object.keys(item.models).reduce(function(o, skid) {
+            if (skids.hasOwnProperty(skid)) {
+              console.log("skeleton ID already seen", skid);
+              return;
+            } else {
+              skids[skid] = true;
+            }
+            var pseudomodel = item.models[skid];
+            var model = new CATMAID.SkeletonModel(skid, pseudomodel.baseName, new THREE.Color(pseudomodel.color.r, pseudomodel.color.g, pseudomodel.color.b));
+            model.meta_visible = pseudomodel.meta_visible;
+            model.opacity = pseudomodel.opacity;
+            model.post_visible = pseudomodel.post_visible;
+            model.pre_visible = pseudomodel.pre_visible;
+            model.selected = pseudomodel.selected;
+            model.text_visible = pseudomodel.text_visible;
+            o[skid] = model;
+            return o;
+          }, {});
+          var count = Object.keys(item.models).length;
+          if (0 === count) continue; // skip item
+          self.items.push(item);
+          // Transform color data
+          item.color = new THREE.Color(item.color.r, item.color.g, item.color.b);
+          if (1 === count) {
+            // Update name
+            item.name = CATMAID.NeuronNameService.getInstance().getName(Object.keys(item.models)[0]);
+          }
+          // TODO: item.name might need an update when it is a group of more than 1 and some where repeated
+        }
+        // No need to transform anything for groups
+        self.groups = json.groups;
+        self.next_group_id = Math.min.apply(null, Object.keys(self.groups)) -1 || -1;
+        // Generate groupOf
+        self.groupOf = Object.keys(self.groups).reduce(function(o, gid) {
+          var group = self.groups[gid];
+          Object.keys(group.models).forEach(function(skid) {
+            o[skid] = gid;
+          });
+          return o;
+        }, {});
+        // Other properties
+        self.confidence_threshold = Math.max(1, Math.min(5, json.confidence_threshold)) || 1;
+        $('#synapse_confidence_threshold' + self.widgetID)[0].value = self.confidence_threshold;
+        self.mode = Math.max(1, Math.min(2, json.mode)) || 2;
+        $('#synapse_fraction_mode' + self.widgetID)[0].value = self.mode;
+        self.only = json.only; // null or a map of skid vs true
+        self.partner_colors = json.partner_colors; // colors in hex
+        self.threshold = Math.max(0, json.threshold) || 5;
+        $('#synapse_threshold' + self.widgetID)[0].value = self.threshold;
+
+        self.updateMorphologies(Object.keys(skids));
+      };
+      
+      var registerAndParse = function(json) {
+        var pseudomodels = json.items.reduce(function(o, item) {
+          $.extend(o, item.models);
+          return o;
+        }, {});
+        CATMAID.NeuronNameService.getInstance().registerAll(self, pseudomodels, function() { parse(json); });
+      };
+
+      var reader = new FileReader();
+
+      reader.onload = function(e) {
+        var json = JSON.parse(e.target.result);
+        registerAndParse(json);
+      };
+
+      reader.readAsText(files[0]);
   };
 
   SynapseFractions.prototype.exportCSV = function() {

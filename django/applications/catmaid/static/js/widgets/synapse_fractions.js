@@ -90,6 +90,7 @@
             [[document.createTextNode('From')],
              [CATMAID.skeletonListSources.createSelect(this)],
              ['Append', this.loadSource.bind(this)],
+             ['Append as group', this.appendAsGroup.bind(this)],
              ['Clear', this.clear.bind(this)],
              ['Refresh', this.update.bind(this)],
              [document.createTextNode(' - ')],
@@ -298,6 +299,58 @@
     this.updateMorphologies(skids);
   };
 
+  SynapseFractions.prototype.appendAsGroup = function() {
+    var models = CATMAID.skeletonListSources.getSelectedSkeletonModels(this);
+    CATMAID.NeuronNameService.getInstance().registerAll(this, models,
+        (function() { this._appendAsGroup(models); }).bind(this));
+  };
+
+  SynapseFractions.prototype._appendAsGroup = function(models) {
+    // Ask for group name
+    var options = new CATMAID.OptionsDialog("Group properties");
+    var groupname = options.appendField("Name:", "sf-name", "", null);
+    options.appendCheckbox("Append number of neurons to name", "sf-number", true);
+    options.onOK = (function() {
+      var name = $('#sf-name').val();
+      if (name && name.length > 0) {
+        name = name.trim();
+        this.appendGroup(models, name, $('sf-number').prop('checked'));
+        this.updateMorphologies(Object.keys(models));
+      } else {
+        return alert("Must provide a group name!");
+      }
+    }).bind(this);
+
+    options.show(300, 500, true);
+    groupname.focus();
+  };
+
+  /** Does not call updateGraph */
+  SynapseFractions.prototype.appendGroup = function(models, group_name, append_count_to_name) {
+    var skids = Object.keys(models);
+    // At least one
+    if (0 === skids.length) return;
+    // Remove any skids from existing items if already present
+    for (var i=0; i<this.items.length; ++i) {
+      var item = items[i];
+      for (var k=0; k<skids.length; ++k) {
+        var skid = skids[k];
+        if (item.models.hasOwnProperty(skid)) {
+          delete item.models[skid];
+        }
+      }
+      if (0 === Object.keys(item.models).length) {
+        this.items.splice(i, 1);
+        i--;
+      }
+    }
+
+    if (append_count_to_name) group_name += ' [#' + skids.length + ']';
+
+    // Add all as a new group
+    this.items.push(new CATMAID.SkeletonGroup(models, group_name, models[skids[0]].color.clone()));
+  };
+
   /** Update arbor and synapse data, and then update the graph.
    * @skids An array of skeleton IDs to update. */
   SynapseFractions.prototype.updateMorphologies = function(skids) {
@@ -317,6 +370,7 @@
           for (var i=0; i<this.items.length; ++i) {
             if (items[i].models.hasOwnProperty(skid)) {
               delete items[i].models[skid];
+              // TODO update name if it has the number attached at the end
             }
             if (0 == Object.keys(items[i].models).length) {
               items.splice(i, 1);
@@ -467,7 +521,8 @@
                 name: name,
                 fractions: this.fractions[i]};
       }, this)
-      .sort(function(a, b) { return a.name > b.name ? 1 : -1; });
+      .sort(function(a, b) { return a.name > b.name ? 1 : -1; })
+      .reduce(function(o, entry, i) { o[i] = entry; return o; }, {}); // need hashable keys for d3. The objects themselves won't do.
 
     var colors = (function(partner_colors, colorFn, groups) {
           var i = 0;
@@ -490,12 +545,14 @@
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
     var x = d3.scale.ordinal().rangeRoundBands([0, width], 0.1);
-    x.domain(sorted_entries);
+    x.domain(Object.keys(sorted_entries));
 
     var xAxis = d3.svg.axis()
       .scale(x)
       .orient("bottom")
-      .tickFormat(function(entry) { return entry.name; });
+      .tickFormat(function(index) {
+        return sorted_entries[index].name;
+      });
 
     var xg = svg.append("g")
         .attr("class", "x axis")
@@ -522,6 +579,7 @@
         maxWidth = Math.abs(maxWidth * Math.sin(rotation * 2.0  * Math.PI / 360.0));
         height = height - maxWidth;
     }
+
     xg.attr("transform", "translate(0," + height + ")");
 
     xg.selectAll("text")
@@ -545,7 +603,7 @@
         .attr("stroke", "none");
 
     var state = svg.selectAll(".state")
-      .data(sorted_entries)
+      .data(Object.keys(sorted_entries))
       .enter()
       .append('g')
       .attr("class", "state")
@@ -574,8 +632,8 @@
     };
 
     state.selectAll("rect")
-      .data((function(entry) {
-        return prepare(entry.fractions);
+      .data((function(index) {
+        return prepare(sorted_entries[index].fractions);
       }).bind(this))
       .enter()
         .append('rect')

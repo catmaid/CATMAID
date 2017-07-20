@@ -1220,8 +1220,11 @@
             });
   };
 
-  NeuronSearch.prototype.toggle_neuron_selections = function()
+  NeuronSearch.prototype.toggle_neuron_selections = function(event)
   {
+    // Don't bubble this event up or we sort the name column.
+    event.stopPropagation();
+
     // Get current check state and update checkboxes and selection map
     var newValue = $("#neuron_annotations_toggle_neuron_selections_checkbox" +
         this.widgetID)[0].checked;

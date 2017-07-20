@@ -405,7 +405,7 @@ class ViewPageTests(TestCase):
                 {"uncertain end": [403]},
                 [],
                 []]
-        six.assertEqual(self, len(parsed_response), len(expected_response))
+        self.assertEqual(self, len(parsed_response), len(expected_response))
         six.assertCountEqual(self, parsed_response[0], expected_response[0])
         six.assertCountEqual(self, parsed_response[1], expected_response[1])
         self.assertEqual(parsed_response[2], expected_response[2])
@@ -437,7 +437,7 @@ class ViewPageTests(TestCase):
                 {"uncertain end": [403]},
                 [],
                 [[new_annotation_link_id]]]
-        six.assertEqual(self, len(parsed_response), len(expected_response))
+        self.assertEqual(self, len(parsed_response), len(expected_response))
         six.assertCountEqual(self, parsed_response[0], expected_response[0])
         six.assertCountEqual(self, parsed_response[1], expected_response[1])
         self.assertEqual(parsed_response[2], expected_response[2])

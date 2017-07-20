@@ -23,6 +23,8 @@
     this.maxInactivityTime = 3;
     // All components that constitute the tracing time
     this.tracingTimeComponents = new Set(["nodes", "connectors", "tags", "annotations"]);
+    // The time components the tracing time is represented with
+    this.timeUnits = new Set(["sec", "min", "hours", "days"]);
     // Will store a datatable instance
     this.table = null;
 
@@ -103,6 +105,24 @@
           self.refresh();
         };
         controls.append(tracingEvents);
+
+        var timeUnits = CATMAID.DOM.createCheckboxSelect("Tracing time units", [{
+          title: "Seconds", value: "sec"}, {
+          title: "Minutes", value: "min"}, {
+          title: "Hours", value: "hours"}, {
+          title: "Days", value: "days"}
+        ], Array.from(this.timeUnits));
+        timeUnits.onchange = function(e) {
+          var checked = e.target.checked;
+          var component = e.target.value;
+          if (checked) {
+            self.timeUnits.add(component);
+          } else {
+            self.timeUnits.delete(component);
+          }
+          self.refresh();
+        };
+        controls.append(timeUnits);
       },
       createContent: function(content) {
         var self = this;
@@ -264,6 +284,7 @@
     var loadedSkeletons = 0;
     var maxInactivityTime = this.maxInactivityTime;
     var tracingTimeComponents = this.tracingTimeComponents;
+    var timeUnits = this.timeUnits;
     var skeletonPromises = skeletonIds.map(function(skeletonId, i, ids) {
       return CATMAID.fetch(project.id + "/skeletons/" + skeletonId + "/compact-detail", "GET", {
         with_connectors: true,
@@ -283,7 +304,8 @@
         CATMAID.tools.callIfFn(tick, loadedSkeletons, ids.length);
 
         return NeuronHistoryWidget.skeletonDetailToStats(skeletonId,
-            skeletonDetail, maxInactivityTime, tracingTimeComponents);
+            skeletonDetail, maxInactivityTime, tracingTimeComponents,
+            timeUnits);
       });
     });
 
@@ -302,7 +324,8 @@
   };
 
   NeuronHistoryWidget.skeletonDetailToStats = function(skeletonId,
-      skeletonDetail, maxInactivityTime, tracingTimeComponents) {
+      skeletonDetail, maxInactivityTime, tracingTimeComponents,
+      timeUnits) {
     var inputTagLists = [];
     var tagMap = skeletonDetail[2];
     for (var tag in tagMap) {
@@ -392,8 +415,8 @@
 
     return {
       skeletonId: skeletonId,
-      tracingTime: totalTime ? CATMAID.tools.humanReadableTimeInterval(totalTime) : "0",
-      reviewTime: reviewTime ? CATMAID.tools.humanReadableTimeInterval(reviewTime) : "0",
+      tracingTime: totalTime ? CATMAID.tools.humanReadableTimeInterval(totalTime, timeUnits) : "0",
+      reviewTime: reviewTime ? CATMAID.tools.humanReadableTimeInterval(reviewTime, timeUnits) : "0",
       cableBeforeReview: cableBeforeReview,
       cableAfterReview: cableAfterReview,
       connBeforeReview: connectorsBeforeReview,

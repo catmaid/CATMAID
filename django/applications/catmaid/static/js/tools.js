@@ -413,34 +413,56 @@ CATMAID.tools = CATMAID.tools || {};
   /**
    * Return a human readable form of an amount of milliseconds.
    */
-  tools.humanReadableTimeInterval = function(ms) {
+  tools.humanReadableTimeInterval = (function() {
+
+    var defaultTimeComponents = new Set(["sec", "min", "hours", "days"]);
     var msPerSecond = 1000;
     var msPerMinute = 60 * msPerSecond;
     var msPerHour   = 60 * msPerMinute;
     var msPerDay    = 24 * msPerHour;
 
-    var units = ["d", "h", "min", "sec"];
-    var values = [];
-    values.push(ms / msPerDay); ms %= msPerDay;
-    values.push(ms / msPerHour); ms %= msPerHour;
-    values.push(ms / msPerMinute); ms %= msPerMinute;
-    values.push(ms / msPerSecond); ms %= msPerSecond;
+    return function(ms, components) {
+      components = components || defaultTimeComponents;
 
-    var pretty = "";
-    for (var i=0; i<values.length; ++i) {
-      var val = Math.round(values[i]);
-      if(val <= 0) continue;
-      if (i > 0) {
-        pretty += " ";
+      var units = [];
+      var values = [];
+      if (components.has("days")) {
+        units.push("d");
+        values.push(ms / msPerDay); ms %= msPerDay;
+      }
+      if (components.has("hours")) {
+        units.push("h");
+        values.push(ms / msPerHour); ms %= msPerHour;
+      }
+      if (components.has("min")) {
+        units.push("min");
+        values.push(ms / msPerMinute); ms %= msPerMinute;
+      }
+      if (components.has("sec")) {
+        units.push("sec");
+        values.push(ms / msPerSecond); ms %= msPerSecond;
       }
 
-      pretty += val + units[i];
-    }
-    if (!pretty) {
-      pretty = "< sec";
-    }
-    return pretty;
-  };
+      var pretty = "";
+      for (var i=0; i<values.length; ++i) {
+        var val = Math.round(values[i]);
+        if(val <= 0) continue;
+        if (i > 0) {
+          pretty += " ";
+        }
+
+        pretty += val + units[i];
+      }
+
+      // If there is no valid time representation found, state the passed in
+      // value is smaller than the smallest available time unit.
+      if (!pretty) {
+        pretty = "< "+ (values.length === 0 ? "infinity" : ("1" + units[units.length - 1]));
+      }
+
+      return pretty;
+    };
+  })();
 
   /**
    * Escape a string so it can be used in a regular expression without

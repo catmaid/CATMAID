@@ -71,7 +71,7 @@
               '<td class="neuron_annotations_query_field">' +
                 '<label><input type="checkbox" name="neuron_query_by_name_not" ' +
                     'id="neuron_query_by_name_not{{NA-ID}}" />not</label>' +
-                '<input type="text" name="neuron_query_by_name" ' +
+                '<input type="text" name="neuron_query_by_name" tabindex="1" ' +
                     'id="neuron_query_by_name{{NA-ID}}" value="" class="" />' +
               '</td> ' +
               '<td><div class="help">Optional</div></td>' +
@@ -81,10 +81,10 @@
               '<td class="neuron_annotations_query_field">' +
                 '<label><input type="checkbox" name="neuron_query_by_annotation_not" ' +
                     'id="neuron_query_not{{NA-ID}}" />not</label>' +
-                '<input type="text" name="neuron_query_by_annotation" autocomplete="off" ' +
+                '<input type="text" name="neuron_query_by_annotation" autocomplete="off" tabindex="2" ' +
                     'class="neuron_query_by_annotation_name{{NA-ID}}" value="" placeholder="Use / for RegEx" />' +
               '</td><td>' +
-                '<label><input type="checkbox" name="neuron_query_include_subannotation" ' +
+                '<label><input type="checkbox" name="neuron_query_include_subannotation" tabindex="3"' +
                     'class="neuron_query_include_subannotation{{NA-ID}}" value="" />' +
                 'Include sub-annotations</label> ' +
                 '<input type="button" name="neuron_annotations_add_annotation" ' +
@@ -116,7 +116,7 @@
               '<td><div class="help">Respected for included annotations</div></td>' +
             '</tr>' +
           '</table>' +
-          '<input type="submit" />' +
+          '<input type="submit" tabindex="4"/>' +
           '</form>';
         // Replace {{NA-ID}} with the actual widget ID
         var queryFields = document.createElement('div');

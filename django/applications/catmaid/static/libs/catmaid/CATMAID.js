@@ -501,4 +501,26 @@ var requestQueue = new RequestQueue();
     return options.hasOwnProperty(key) ? options[key] : defaultValue;
   };
 
+  /**
+   * Test if <files> is a valid source of a single JSON file name.
+   */
+  CATMAID.isValidJSONFile = function(files) {
+      if (0 === files.length) {
+        CATMAID.error("Choose at least one file!");
+        return false;
+      }
+      if (files.length > 1) {
+        CATMAID.error("Choose only one file!");
+        return false;
+      }
+
+      var name = files[0].name;
+      if (name.lastIndexOf('.json') !== name.length - 5) {
+        CATMAID.error("File extension must be '.json'");
+        return false;
+      }
+
+      return true;
+  };
+
 })(CATMAID);

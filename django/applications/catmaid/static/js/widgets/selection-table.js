@@ -1597,18 +1597,7 @@
    * Open a list of skeletons including their colors from a file.
    */
   SelectionTable.prototype.loadFromFiles = function(files) {
-      if (0 === files.length) {
-        CATMAID.error("Choose at least one file!");
-        return;
-      }
-      if (files.length > 1) {
-        CATMAID.error("Choose only one file!");
-        return;
-      }
-
-      var name = files[0].name;
-      if (name.lastIndexOf('.json') !== name.length - 5) {
-        CATMAID.error("File extension must be '.json'");
+      if (!CATMAID.isValidJSONFile(files)) {
         return;
       }
 

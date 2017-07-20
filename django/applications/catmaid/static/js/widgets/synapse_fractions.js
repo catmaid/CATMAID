@@ -85,6 +85,7 @@
         partners_source.onchange = this.onchangeFilterPartnerSkeletons.bind(this);
 
         var modes = CATMAID.DOM.createSelect("synapse_fraction_mode" + this.widgetID, this.MODES);
+        modes.selectedIndex = 1;
         modes.onchange = this.onchangeMode.bind(this, modes);
 
         var self= this;

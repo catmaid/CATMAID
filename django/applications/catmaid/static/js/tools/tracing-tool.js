@@ -1309,8 +1309,12 @@
       var result = false;
       var keyAction = CATMAID.UI.getMappedKeyAction(keyToAction, e);
       if (keyAction) {
-        activeTracingLayer.tracingOverlay.ensureFocused();
-        result = keyAction.run(e);
+        if (activeTracingLayer) {
+          activeTracingLayer.tracingOverlay.ensureFocused();
+          result = keyAction.run(e);
+        } else {
+          CATMAID.warn("Tracing layer not yet loaded, ignoring key short cut");
+        }
       }
       if (!result) {
         result = this.prototype.handleKeyPress(e);

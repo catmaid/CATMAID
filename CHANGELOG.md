@@ -166,6 +166,8 @@ Miscellaneous:
 - User interaction without a reachable server (e.g. due to a disconnected
   network) doesn't lead to image and tracing data freezing anymore.
 
+- Pressing key combinations before the tracing layer has loaded is now handled
+  more gracefully (no error dialog).
 
 ## 2017.05.17
 

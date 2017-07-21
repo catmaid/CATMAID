@@ -169,6 +169,9 @@ Miscellaneous:
 - Pressing key combinations before the tracing layer has loaded is now handled
   more gracefully (no error dialog).
 
+- 3D viewer: the active node split shading can now handle changed virtual nodes
+  to which it is lacking information and won't raise an error.
+
 ## 2017.05.17
 
 Contributors: Andrew Champion, Tom Kazimiers

@@ -673,8 +673,14 @@
             var vn = SkeletonAnnotations.getActiveNodeId();
             var parentPos = locations[SkeletonAnnotations.getParentOfVirtualNode(vn)];
             var childPos = locations[SkeletonAnnotations.getChildOfVirtualNode(vn)];
-            var distRatio = parentPos.distanceToSquared(vnPos) / parentPos.distanceToSquared(childPos);
-            node_weights[atn] = up - distRatio * (up - down);
+            // In some situations, the real child and real `parent location is
+            // not available. For instance if a virtual node between the active
+            // virtual node and its real child is materialized and the 3D viewer
+            // isn't updated. In this cae, don't set any weights.
+            if (childPos &&parentPos) {
+              var distRatio = parentPos.distanceToSquared(vnPos) / parentPos.distanceToSquared(childPos);
+              node_weights[atn] = up - distRatio * (up - down);
+            }
           }
         }
 

@@ -61,7 +61,14 @@
 
     this.other_source = new CATMAID.BasicSkeletonSource(this.getName() + ' partners');
 
+    // Set of selected partners or partner groups, with shift+click
     this.selected = {};
+
+    // Matching function: if an item's name matches, its legend is drawn in bold
+    this.highlightFn = null;
+
+    // Set of items to skip displaying, as a map of index vs true
+    this.skip = {};
   };
 
   SynapseFractions.prototype = Object.create(CATMAID.SkeletonSource.prototype);
@@ -79,7 +86,7 @@
       contentID: "synapse_fractions_widget" + this.widgetID,
       createControls: function(controls) {
         var tabs = CATMAID.DOM.addTabGroup(controls, this.widgetID,
-            ['Main', 'Filter', 'Color', 'Partner groups', 'Options']);
+            ['Main', 'Filter & Highlight', 'Filter partners', 'Color', 'Partner groups', 'Options']);
 
         var partners_source = CATMAID.skeletonListSources.createPushSelect(this, "filter");
         partners_source.onchange = this.onchangeFilterPartnerSkeletons.bind(this);
@@ -107,6 +114,13 @@
              ['Open', function() { fileButton.click(); }],
             ]);
 
+        CATMAID.DOM.appendToTab(tabs['Filter & Highlight'],
+            [[document.createTextNode('Show only: ')],
+             [CATMAID.DOM.createTextField('sf-filter-by-regex' + this.widgetID, null, null, '', null, this.filterByRegex.bind(this), 10, null)],
+             [document.createTextNode(' - Highlight: ')],
+             [CATMAID.DOM.createTextField('sf-highlight' + this.widgetID, null, null, '', null, this.highlightByRegex.bind(this), 10, null)]
+            ]);
+
         var nf = CATMAID.DOM.createNumericField("synapse_threshold" + this.widgetID, // id
                                     "By synapse threshold: ",             // label
                                     "Below this number, neuron gets added to the 'others' heap", // title
@@ -121,7 +135,7 @@
         confidence.selectedIndex = Math.max(0, Math.min(4, this.confidence_threshold - 1));
         confidence.onchange = this.onchangeSynapseConfidence.bind(this, confidence);
 
-        CATMAID.DOM.appendToTab(tabs['Filter'],
+        CATMAID.DOM.appendToTab(tabs['Filter partners'],
             [[nf],
              [document.createTextNode(' - Only in: ')],
              [partners_source],
@@ -195,7 +209,14 @@
         '<p>Plot the fraction (in percent) of inputs or outputs allocated to synaptic partner neurons.</p>',
         '<h2>Main</h2>',
         '<p>Choose "Downstream" for outputs (postsynaptic partners), and "Upstream" for inputs (pre-synaptic partners).</p>',
-        '<h2>Filter</h2>',
+        '<h2>Filter &amp; Highlight</h2>',
+        '<ul>',
+        '<li>Show only: type any text and push return. Will show only entries matching the text.</li>',
+        '<li>Highlight: type any text and push return. Will render in bold text the labels of matching entries. </li>',
+        '</ul>',
+        '<p>Add leading "/" for regular expressions.</p>',
+        '<p>Erase text and push return to reset.</p>',
+        '<h2>Filter Partners</h2>',
         '<ul>',
         '<li>By synapse threshold: synaptic partners with less than the specified number of synapses will be throwninto the "others" group.</li>',
         '<li>Only in: partner neurons not included in the chosen list will be thrown into the "others" group.</li>',
@@ -549,6 +570,9 @@
 
     // Sort by name. TODO: other sorting methods
     var sorted_entries = this.items
+      .filter(function(item, i) {
+        return !this.skip.hasOwnProperty(i);
+      }, this)
       .map(function(item, i) {
         // Update name
         var name = item.name;
@@ -561,8 +585,13 @@
                 name: name,
                 fractions: this.fractions[i]};
       }, this)
-      .sort(function(a, b) { return a.name > b.name ? 1 : -1; })
-      .reduce(function(o, entry, i) { o[i] = entry; return o; }, {}); // need hashable keys for d3. The objects themselves won't do.
+      .sort(function(a, b) { return a.name > b.name ? 1 : -1; });
+
+    if (0 === sorted_entries.length) return;
+
+    // Turn array into map
+    // Need hashable keys for d3. The objects themselves won't do.
+    sorted_entries = sorted_entries.reduce(function(o, entry, i) { o[i] = entry; return o; }, {});
 
     var colors = (function(partner_colors, colorFn, groups) {
           var i = 0;
@@ -625,6 +654,11 @@
     xg.selectAll("text")
         .attr("fill", "black")
         .attr("stroke", "none");
+
+    if (this.highlightFn) {
+      xg.selectAll("text")
+        .style("font-weight", (function(index) { return this.highlightFn(sorted_entries[index].name) ? "bold" : ""; }).bind(this));
+    }
 
     var y = d3.scale.linear().rangeRound([height, 0]);
     var yAxis = d3.svg.axis()
@@ -1097,6 +1131,40 @@
       reader.readAsText(files[0]);
   };
 
+  /** Show only those items whose name matches a text or a regular expression. */
+  SynapseFractions.prototype.filterByRegex = function() {
+    var text = $('#sf-filter-by-regex' + this.widgetID)[0].value.trim();
+    if (!text || 0 === text.length) {
+      this.skip = {};
+      this.redraw();
+    } else {
+      var match = CATMAID.createTextMatchingFunction(text);
+      if (match) {
+        this.items.forEach(function(item, i) {
+          if (!match(item.name)) this.skip[i] = true;
+        }, this);
+        this.redraw();
+      }
+    }
+  };
+
+  /** Highlight with a bold legend those items whose name matches a text or a regular expression. */
+  SynapseFractions.prototype.highlightByRegex = function() {
+    var text = $('#sf-highlight' + this.widgetID)[0].value.trim();
+    if (!text || 0 === text.length) {
+      // Stop highlighting
+      this.highlightFn = null;
+      this.redraw();
+    } else {
+      // Setup matching function
+      var match = CATMAID.createTextMatchingFunction(text);
+      if (match) {
+        this.highlightFn = match;
+        this.redraw();
+      }
+    }
+  };
+
   SynapseFractions.prototype.exportCSV = function() {
     // TODO
   };
@@ -1106,7 +1174,6 @@
   };
 
   SynapseFractions.prototype.highlight = function(skid) {
-    // TODO
   };
 
   // Export synapse plot into CATMAID namespace
